@@ -6,7 +6,7 @@ import { useRefetchOnReactivate } from "./use-refetch-on-reactivate";
 // The hook only needs `connection.serviceMap` from the provider; mock it so the
 // test can hand it a fake set of services without a real Arkitekt connection.
 const connectionRef: { current: unknown } = { current: undefined };
-vi.mock("@/core/lib/arkitekt/provider", () => ({
+vi.mock("@/core/connection/arkitekt/provider", () => ({
   useConnection: () => connectionRef.current,
 }));
 

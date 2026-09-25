@@ -1,11 +1,11 @@
-import { Guard } from "@/core/lib/arkitekt/host";
-import { Button } from "@/core/components/ui/button";
-import { Input } from "@/core/components/ui/input";
-import { Label } from "@/core/components/ui/label";
+import { Guard } from "@/core/connection/arkitekt/host";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
+import { Label } from "@/core/ui/label";
 import MembershipBrandWriter, {
   type EditedBrand,
 } from "@/lok/components/MembershipBrandWriter";
-import { defaultSettings, Settings } from "@/core/providers/settings/validator";
+import { defaultSettings, Settings } from "@/core/settings/store/validator";
 import React from "react";
 import { Control, useController } from "react-hook-form";
 

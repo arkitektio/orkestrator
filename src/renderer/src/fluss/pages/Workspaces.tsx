@@ -1,4 +1,4 @@
-import { PageLayout } from "@/core/components/layout/PageLayout";
+import { PageLayout } from "@/core/layout/PageLayout";
 import React from "react";
 import WorkspaceList from "../components/lists/WorkspaceList";
 import WorkspaceCarousel from "../edit/carousels/WorkspaceCarousel";

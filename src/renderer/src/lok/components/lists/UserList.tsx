@@ -1,4 +1,4 @@
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import { LokUser } from "@/core/linkers";
 
 import {

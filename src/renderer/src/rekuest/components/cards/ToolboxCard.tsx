@@ -1,6 +1,6 @@
 import React from "react";
-import { Card, CardFooter, CardHeader, CardTitle } from "@/core/components/ui/card";
-import { cn } from "@/core/lib/utils";
+import { Card, CardFooter, CardHeader, CardTitle } from "@/core/ui/card";
+import { cn } from "@/core/util/utils";
 import { RekuestToolbox } from "@/core/linkers";
 
 import { ListToolboxFragment } from "@/rekuest/api/graphql";

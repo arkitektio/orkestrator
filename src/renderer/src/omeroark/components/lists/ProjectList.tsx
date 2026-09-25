@@ -1,4 +1,4 @@
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import { OmeroArkProject } from "@/core/linkers";
 import { useListProjectsQuery } from "@/omeroark/api/graphql";
 import ProjectCard from "../cards/ProjectCard";

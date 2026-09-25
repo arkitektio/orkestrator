@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphNaturalEventCategory } from "@/core/linkers";
 import { TermBadge } from "../components/TermBadge";
 import { useGetNaturalEventCategoryQuery } from "../api/graphql";

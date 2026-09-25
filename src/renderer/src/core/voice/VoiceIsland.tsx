@@ -4,7 +4,7 @@ import {
   RailIslandProgress,
   RailIslandRow,
 } from "@/core/ui/rail/RailIsland";
-import { useSettings } from "@/core/providers/settings/SettingsContext";
+import { useSettings } from "@/core/settings/store/SettingsContext";
 import { AlertCircle, Mic } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import type { VoiceModelProgress } from "../../../../main/voice/protocol";

@@ -11,8 +11,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 let client: ApolloClient<unknown>;
 
-vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   useSelfClient: () => client,
   Arkitekt: { useSelfService: () => ({ client }) },
 }));
@@ -23,7 +23,7 @@ import {
   MyContextDocument,
   UpdateMembershipColorsDocument,
 } from "../api/graphql";
-import { resetBrandTheme, setBrandBase } from "@/core/providers/settings/brandTheme";
+import { resetBrandTheme, setBrandBase } from "@/core/settings/store/brandTheme";
 import { MembershipBrandWriter } from "./MembershipBrandWriter";
 
 const ORG = { __typename: "Organization", id: "org-1", name: "Org", slug: "org" };

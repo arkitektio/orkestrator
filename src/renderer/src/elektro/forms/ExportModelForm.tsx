@@ -1,5 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { Download } from "lucide-react";
 
 export const NEURON_MODEL_IDENTIFIER = "@elektro/neuronmodel";

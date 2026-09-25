@@ -1,9 +1,9 @@
-import { GraphQLSearchField } from "@/core/components/fields/GraphQLSearchField";
-import { Form, FormControl, FormField, FormItem } from "@/core/components/ui/form";
-import { Input } from "@/core/components/ui/input";
-import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/core/components/ui/popover";
+import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
+import { Form, FormControl, FormField, FormItem } from "@/core/ui/form";
+import { Input } from "@/core/ui/input";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { useProtocolOptionsLazyQuery } from "@/rekuest/api/graphql";
-import { useLatestRef } from "@/core/hooks/useLatestRef";
+import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 import { ArrowDown } from "lucide-react";
 import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";

@@ -1,4 +1,4 @@
-import { Image } from "@/core/components/ui/image";
+import { Image } from "@/core/ui/image";
 import { KraphProtocolEventCategory } from "@/core/linkers";
 import { NodeProps, NodeResizer } from "@xyflow/react";
 import { memo } from "react";

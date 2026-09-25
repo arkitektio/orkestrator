@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { ListRender } from "@/core/components/layout/ListRender";
-import { Card, CardContent } from "@/core/components/ui/card";
-import { Image } from "@/core/components/ui/image";
+import { ListRender } from "@/core/layout/ListRender";
+import { Card, CardContent } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokApp } from "@/core/linkers";
 import { useDetailAppQuery } from "../api/graphql";

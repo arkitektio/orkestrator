@@ -1,7 +1,7 @@
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import { LovekitSoloBroadcast } from "@/core/linkers";
 import { SoloBroadcastFilter, useListSoloBroadcastsQuery } from "@/lovekit/api/graphql";
-import type { OffsetPaginationInput } from "@/core/lib/pagination";
+import type { OffsetPaginationInput } from "@/core/layout/pagination";
 import SoloBroadcastCard from "../cards/SoloBroadcastCard";
 
 export type Props = {

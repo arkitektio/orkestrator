@@ -1,6 +1,6 @@
 import React from "react";
-import { Card } from "@/core/components/ui/card";
-import { Image } from "@/core/components/ui/image";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { ListMeasurementCategoryFragment } from "@/kraph/api/graphql";
 import { KraphMeasurementCategory } from "@/core/linkers";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";

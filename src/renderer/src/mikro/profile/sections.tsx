@@ -1,10 +1,10 @@
 import { MikroGuard } from "@/mikro/api/funcs";
-import { Card } from "@/core/components/ui/card";
-import { Image } from "@/core/components/ui/image";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { useResolve } from "@/core/datalayer/hooks/useResolve";
-import { ProfileSectionFrame } from "@/core/lib/profile/ProfileSections";
-import { ProfileRow, ProfileRows } from "@/core/lib/profile/rows";
-import type { ProfileContext, ProfileSection } from "@/core/lib/profile/section";
+import { ProfileSectionFrame } from "@/core/connection/profile/ProfileSections";
+import { ProfileRow, ProfileRows } from "@/core/connection/profile/rows";
+import type { ProfileContext, ProfileSection } from "@/core/connection/profile/section";
 import { MikroArrayDataset, MikroFile, MikroFolder } from "@/core/linkers";
 import { Boxes, File, Folder, Images } from "lucide-react";
 import {

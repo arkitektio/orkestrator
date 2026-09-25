@@ -1,4 +1,4 @@
-import { defineModule } from "@/core/lib/module-host/define";
+import { defineModule } from "@/core/modules/host/define";
 import { KRAPH_ACTIONS } from "./actions";
 import { EntityCategoryDisplay } from "./displays/EntityCategoryDisplay";
 import { EntityDisplay } from "./displays/EntityDisplay";

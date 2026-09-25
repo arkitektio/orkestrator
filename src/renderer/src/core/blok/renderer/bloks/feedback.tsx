@@ -2,8 +2,8 @@ import {
   Alert as ShadAlert,
   AlertDescription as ShadAlertDescription,
   AlertTitle as ShadAlertTitle,
-} from '@/core/components/ui/alert';
-import {Badge as ShadBadge} from '@/core/components/ui/badge';
+} from '@/core/ui/alert';
+import {Badge as ShadBadge} from '@/core/ui/badge';
 import {
   Empty as ShadEmpty,
   EmptyContent as ShadEmptyContent,
@@ -11,10 +11,10 @@ import {
   EmptyHeader as ShadEmptyHeader,
   EmptyMedia as ShadEmptyMedia,
   EmptyTitle as ShadEmptyTitle,
-} from '@/core/components/ui/empty';
-import {Progress as ShadProgress} from '@/core/components/ui/progress';
-import {Skeleton as ShadSkeleton} from '@/core/components/ui/skeleton';
-import {Spinner as ShadSpinner} from '@/core/components/ui/spinner';
+} from '@/core/ui/empty';
+import {Progress as ShadProgress} from '@/core/ui/progress';
+import {Skeleton as ShadSkeleton} from '@/core/ui/skeleton';
+import {Spinner as ShadSpinner} from '@/core/ui/spinner';
 import * as z from 'zod';
 import {BlokPropSchemas, createBlokComponent, useBlok, useValue} from '../runtime';
 import {iconNameSchema, renderIcon} from './icons';

@@ -5,10 +5,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
+} from "@/core/ui/card";
 import { FlussRun, FlussWorkspace } from "@/core/linkers";
 import { ListRunFragment } from "@/fluss/api/graphql";
-import Timestamp from "@/core/components/ui/timestamp";
+import Timestamp from "@/core/ui/timestamp";
 import { Clock, Hash } from "lucide-react";
 import RunStatusBadge from "./RunStatusBadge";
 

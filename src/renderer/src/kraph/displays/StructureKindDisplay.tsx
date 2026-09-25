@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphStructureKind } from "@/core/linkers";
 import { useGetStructureKindQuery } from "../api/graphql";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";

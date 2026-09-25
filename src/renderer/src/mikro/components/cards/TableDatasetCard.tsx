@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardTitle } from "@/core/components/ui/card";
+import { Card, CardTitle } from "@/core/ui/card";
 import { MikroTableDataset } from "@/core/linkers";
 import { ListTableDatasetFragment } from "../../api/graphql";
 

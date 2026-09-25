@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/core/ui/card";
 import { RekuestDashboard } from "@/core/linkers";
 
 import { ListDashboardFragment } from "@/rekuest/api/graphql";

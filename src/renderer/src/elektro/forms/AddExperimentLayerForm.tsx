@@ -1,10 +1,10 @@
 import { ElektroGuard } from "@/elektro/api/funcs";
 import { useDialog } from "@/core/dialogs/registry";
-import { Button } from "@/core/components/ui/button";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
-import { Input } from "@/core/components/ui/input";
-import { useDebounce } from "@/core/hooks/use-debounce";
-import { cn } from "@/core/lib/utils";
+import { Button } from "@/core/ui/button";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import { Input } from "@/core/ui/input";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
+import { cn } from "@/core/util/utils";
 import { useState } from "react";
 import { toast } from "sonner";
 import {

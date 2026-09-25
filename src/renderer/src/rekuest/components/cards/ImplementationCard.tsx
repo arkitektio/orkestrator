@@ -1,13 +1,13 @@
 import React from "react";
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import {
   Card,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle
-} from "@/core/components/ui/card";
-import { DialogButton } from "@/core/components/ui/dialogbutton";
+} from "@/core/ui/card";
+import { DialogButton } from "@/core/ui/dialogbutton";
 import { RekuestImplementation } from "@/core/linkers";
 
 

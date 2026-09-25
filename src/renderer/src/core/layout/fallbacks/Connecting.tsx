@@ -1,5 +1,5 @@
-import { Button } from "@/core/components/ui/button";
-import { useArkitektActions } from "@/core/lib/arkitekt/provider";
+import { Button } from "@/core/ui/button";
+import { useArkitektActions } from "@/core/connection/arkitekt/provider";
 import { ArkitektLogo } from "../../ui/logos/ArkitektLogo";
 
 export const ConnectingFallback = () => {

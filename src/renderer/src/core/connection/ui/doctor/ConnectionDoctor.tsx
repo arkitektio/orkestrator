@@ -1,4 +1,4 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -6,11 +6,11 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/core/components/ui/sheet";
-import type { DoctorContext } from "@/core/lib/arkitekt/doctor/findings";
-import type { HubHealthFacts } from "@/core/lib/arkitekt/doctor/hubHealth";
+} from "@/core/ui/sheet";
+import type { DoctorContext } from "@/core/connection/arkitekt/doctor/findings";
+import type { HubHealthFacts } from "@/core/connection/arkitekt/doctor/hubHealth";
 import type { ProbeTarget } from "../../../../../../main/doctor/protocol";
-import { useConnectionDoctor } from "@/core/lib/arkitekt/doctor/useConnectionDoctor";
+import { useConnectionDoctor } from "@/core/connection/arkitekt/doctor/useConnectionDoctor";
 import { Stethoscope } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConnectionDoctorPanel } from "./ConnectionDoctorPanel";

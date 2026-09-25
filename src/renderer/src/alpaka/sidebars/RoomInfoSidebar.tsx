@@ -1,5 +1,5 @@
-import { Badge } from "@/core/components/ui/badge";
-import Timestamp from "@/core/components/ui/timestamp";
+import { Badge } from "@/core/ui/badge";
+import Timestamp from "@/core/ui/timestamp";
 import { Bot, MessageSquare, Users } from "lucide-react";
 import { RoomFragment } from "../api/graphql";
 import { agentDisplayName } from "../agentName";

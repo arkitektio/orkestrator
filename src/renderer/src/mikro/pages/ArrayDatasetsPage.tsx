@@ -1,4 +1,4 @@
-import { Explainer } from "@/core/components/explainer/Explainer";
+import { Explainer } from "@/core/layout/Explainer";
 import { MikroArrayDataset } from "@/core/linkers";
 import React from "react";
 import { useArrayDatasetFilterBar } from "../components/filter/ArrayDatasetFilterBar";

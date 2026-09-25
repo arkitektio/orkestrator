@@ -3,10 +3,10 @@ import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
-import { TabIdContext } from "@/core/command/tabs/TabContext";
-import { useDebug } from "@/core/providers/debug/DebugContext";
-import { DebugProvider } from "@/core/providers/debug/DebugProvider";
-import { useDebugReport, type DebugReport } from "@/core/providers/debug/useDebugReport";
+import { TabIdContext } from "@/core/tabs/TabContext";
+import { useDebug } from "@/core/debug/DebugContext";
+import { DebugProvider } from "@/core/debug/DebugProvider";
+import { useDebugReport, type DebugReport } from "@/core/debug/useDebugReport";
 
 import { DebugBadge } from "./DebugBadge";
 

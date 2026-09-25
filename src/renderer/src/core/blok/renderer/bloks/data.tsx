@@ -3,7 +3,7 @@ import {
   Avatar as ShadAvatar,
   AvatarFallback as ShadAvatarFallback,
   AvatarImage as ShadAvatarImage,
-} from '@/core/components/ui/avatar';
+} from '@/core/ui/avatar';
 import {
   Card as ShadCard,
   CardContent as ShadCardContent,
@@ -11,14 +11,14 @@ import {
   CardFooter as ShadCardFooter,
   CardHeader as ShadCardHeader,
   CardTitle as ShadCardTitle,
-} from '@/core/components/ui/card';
+} from '@/core/ui/card';
 import {
   Carousel as ShadCarousel,
   CarouselContent as ShadCarouselContent,
   CarouselItem as ShadCarouselItem,
   CarouselNext as ShadCarouselNext,
   CarouselPrevious as ShadCarouselPrevious,
-} from '@/core/components/ui/carousel';
+} from '@/core/ui/carousel';
 import {
   ChartContainer as ShadChartContainer,
   ChartLegend as ShadChartLegend,
@@ -26,7 +26,7 @@ import {
   ChartTooltip as ShadChartTooltip,
   ChartTooltipContent as ShadChartTooltipContent,
   type ChartConfig,
-} from '@/core/components/ui/chart';
+} from '@/core/ui/chart';
 import {
   Item as ShadItem,
   ItemActions as ShadItemActions,
@@ -35,7 +35,7 @@ import {
   ItemGroup as ShadItemGroup,
   ItemMedia as ShadItemMedia,
   ItemTitle as ShadItemTitle,
-} from '@/core/components/ui/item';
+} from '@/core/ui/item';
 import {
   Table as ShadTable,
   TableBody as ShadTableBody,
@@ -45,8 +45,8 @@ import {
   TableHead as ShadTableHead,
   TableHeader as ShadTableHeader,
   TableRow as ShadTableRow,
-} from '@/core/components/ui/table';
-import {cn} from '@/core/lib/utils';
+} from '@/core/ui/table';
+import {cn} from '@/core/util/utils';
 import {
   Area,
   AreaChart,

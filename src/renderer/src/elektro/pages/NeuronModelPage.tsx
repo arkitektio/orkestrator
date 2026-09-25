@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { buttonVariants } from "@/core/components/ui/button";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { buttonVariants } from "@/core/ui/button";
 import { ElektroNeuronModel } from "@/core/linkers";
 import { useDetailNeuronModelQuery } from "../api/graphql";
 import { NeuronModelTitleOverlay } from "../components/neuronmodel/NeuronModelTitleOverlay";

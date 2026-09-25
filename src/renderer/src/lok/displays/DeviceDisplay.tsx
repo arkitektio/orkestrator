@@ -1,4 +1,4 @@
-import type { DisplayWidgetProps } from "@/core/lib/display/registry";
+import type { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { DeviceImprint } from "../components/UserAvatar";
 import { useGetDeviceQuery } from "../api/graphql";
 

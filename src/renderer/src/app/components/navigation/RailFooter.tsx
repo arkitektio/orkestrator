@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import ProfileSwitcher from "@/app/components/profile/ProfileSwitcher";
 import { profileDetail, profileTitle } from "@/core/connection/profile/ui/profileLabels";
 import { ProfileBrandAvatar } from "@/core/connection/profile/ui/ProfileBrandAvatar";
@@ -9,10 +9,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
-import { DroppableNavLink } from "@/core/components/ui/link";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
-import { cn } from "@/core/lib/utils";
+} from "@/core/ui/dropdown-menu";
+import { DroppableNavLink } from "@/core/ui/link";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
+import { cn } from "@/core/util/utils";
 import { ChevronsUpDown, Settings, UsersRound } from "lucide-react";
 import React from "react";
 

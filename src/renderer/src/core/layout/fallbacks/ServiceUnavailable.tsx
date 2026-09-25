@@ -1,16 +1,16 @@
 import { HubAwareConnectionDoctor } from "@/core/connection/ui/doctor/HubAwareConnectionDoctor";
-import { Button } from "@/core/components/ui/button";
-import { cn } from "@/core/lib/utils";
-import { aliasToHttpPath } from "@/core/lib/arkitekt/alias/helpers";
-import { instanceToProbeTargets } from "@/core/lib/arkitekt/doctor/targets";
+import { Button } from "@/core/ui/button";
+import { cn } from "@/core/util/utils";
+import { aliasToHttpPath } from "@/core/connection/arkitekt/alias/helpers";
+import { instanceToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
 import {
   useArkitektStore,
   useAvailableServices,
   useServiceState,
-} from "@/core/lib/arkitekt/hooks";
-import { useActiveProfile } from "@/core/lib/arkitekt/hooks";
-import { useArkitektActions } from "@/core/lib/arkitekt/provider";
-import type { ServiceRuntimeState } from "@/core/lib/arkitekt/types";
+} from "@/core/connection/arkitekt/hooks";
+import { useActiveProfile } from "@/core/connection/arkitekt/hooks";
+import { useArkitektActions } from "@/core/connection/arkitekt/provider";
+import type { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
 import { Loader2, RefreshCw, Stethoscope, Unplug, WifiOff } from "lucide-react";
 import { useMemo, useState } from "react";
 

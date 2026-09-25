@@ -1,6 +1,6 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
-import { meshNeeded } from "@/core/lib/mesh/meshNeed";
-import { claimProfileMesh, joiningMeshes, meshClaimFor } from "@/core/lib/mesh/profileMesh";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { meshNeeded } from "@/core/connection/mesh/meshNeed";
+import { claimProfileMesh, joiningMeshes, meshClaimFor } from "@/core/connection/mesh/profileMesh";
 import { useEffect, useSyncExternalStore } from "react";
 
 /**

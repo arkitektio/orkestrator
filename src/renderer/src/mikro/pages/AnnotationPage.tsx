@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { useSceneOpen } from "../lib/zarr/useDatalayerWarmup";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Card } from "@/core/components/ui/card";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Card } from "@/core/ui/card";
 import { MikroAnnotation } from "@/core/linkers";
 
 import {

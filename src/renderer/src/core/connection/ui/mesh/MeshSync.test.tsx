@@ -8,13 +8,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 const state = { profile: undefined as unknown };
-vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: { useActiveProfile: () => state.profile },
 }));
 
 const { MeshSync } = await import("./MeshSync");
-const { joinAndPark } = await import("@/core/lib/mesh/profileMesh");
+const { joinAndPark } = await import("@/core/connection/mesh/profileMesh");
 
 const MESH = { id: "lab", label: "Lab", controlUrl: "https://mesh.arkitekt.live", hosts: [], enabled: true };
 const alias = (host: string) => ({ id: host, host, ssl: true, challenge: "ht" });

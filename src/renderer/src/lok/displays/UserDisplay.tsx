@@ -1,4 +1,4 @@
-import type { DisplayWidgetProps } from "@/core/lib/display/registry";
+import type { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { UserInfo } from "../components/protected/UserInfo";
 import { JustUsername, UserAvatar, UserAvatarUsername } from "../components/UserAvatar";
 

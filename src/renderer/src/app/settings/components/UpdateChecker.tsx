@@ -13,16 +13,16 @@ import {
   X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, AlertDescription, AlertTitle } from "../../../core/components/ui/alert";
-import { Button } from "../../../core/components/ui/button";
-import { Progress } from "../../../core/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "../../../core/ui/alert";
+import { Button } from "../../../core/ui/button";
+import { Progress } from "../../../core/ui/progress";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../core/components/ui/select";
+} from "../../../core/ui/select";
 
 type UpdateChannel = "latest" | "next";
 

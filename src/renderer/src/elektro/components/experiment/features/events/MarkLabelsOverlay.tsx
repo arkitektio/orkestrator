@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { bindFields } from "@/core/lib/scene/stores/bindStore";
+import { bindFields } from "@/core/data/scene/stores/bindStore";
 import { pixelAtTime } from "../../platform/camera/rangeToCamera";
 import { useRangeStoreApi } from "../../platform/stores/rangeStore";
 import { bandKey, useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";

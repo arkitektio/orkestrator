@@ -11,8 +11,8 @@ import { Structure } from "@/core/types";
 import { Network, Ruler } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
-import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
-import type { PassDownProps } from "@/core/providers/smart/extensions/types";
+import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
+import type { PassDownProps } from "@/core/smart/extensions/types";
 
 /**
  * The rows of the kraph slice of the smart context menu: what you can record

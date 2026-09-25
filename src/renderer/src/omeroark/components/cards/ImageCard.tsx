@@ -1,7 +1,7 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
-import { Card } from "@/core/components/ui/card";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { Card } from "@/core/ui/card";
 import { OmeroArkImage } from "@/core/linkers";
-import { aliasToHttpPath } from "@/core/lib/arkitekt/alias/helpers";
+import { aliasToHttpPath } from "@/core/connection/arkitekt/alias/helpers";
 
 import { ListOmeroImageFragment } from "@/omeroark/api/graphql";
 import React from "react";

@@ -2,8 +2,8 @@ import {
   HoverRow,
   HoverShell,
   HoverSkeleton,
-} from "@/core/components/hover/HoverShell";
-import { Badge } from "@/core/components/ui/badge";
+} from "@/core/ui/HoverShell";
+import { Badge } from "@/core/ui/badge";
 import { Object } from "@/core/types";
 import { useDetailNeuronModelQuery } from "../../api/graphql";
 

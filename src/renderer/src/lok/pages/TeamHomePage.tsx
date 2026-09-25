@@ -1,8 +1,8 @@
 import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { HelpSidebar } from "@/core/components/sidebars/help";
-import { PageAction } from "@/core/components/ui/page-action";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { HelpSidebar } from "@/core/layout/help";
+import { PageAction } from "@/core/ui/page-action";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { useState } from "react";
 import { toast } from "sonner";

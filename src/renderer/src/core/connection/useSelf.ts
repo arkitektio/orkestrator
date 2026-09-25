@@ -1,4 +1,4 @@
-import { useActiveProfile } from "@/core/lib/arkitekt/hooks";
+import { useActiveProfile } from "@/core/connection/arkitekt/hooks";
 
 /**
  * Who is signed in, as the host knows it: the active profile's identity,

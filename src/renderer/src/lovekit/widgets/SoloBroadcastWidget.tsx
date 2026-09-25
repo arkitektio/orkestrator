@@ -1,4 +1,4 @@
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 import { useGetSoloBroadcastQuery } from "@/lovekit/api/graphql";
 import { StreamJoiner } from "../components/StreamJoiner";
 

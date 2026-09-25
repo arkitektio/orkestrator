@@ -1,10 +1,10 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
-import { ParagraphField } from "@/core/components/fields/ParagraphField";
-import { StringField } from "@/core/components/fields/StringField";
-import { SwitchField } from "@/core/components/fields/SwitchField";
-import { Button } from "@/core/components/ui/button";
-import { DialogFooter } from "@/core/components/ui/dialog";
-import { Form } from "@/core/components/ui/form";
+import { ParagraphField } from "@/core/forms/ParagraphField";
+import { StringField } from "@/core/forms/StringField";
+import { SwitchField } from "@/core/forms/SwitchField";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import {
   CreateGraphMutation,

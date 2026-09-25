@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Image } from "@/core/components/ui/image";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Image } from "@/core/ui/image";
 import { useResolve } from "@/core/datalayer/hooks/useResolve";
 import { DokumentsPage } from "@/core/linkers";
 import { useGetPageQuery } from "../api/graphql";

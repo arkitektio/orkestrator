@@ -1,7 +1,7 @@
 import React from "react";
-import { Card } from "@/core/components/ui/card";
-import { Progress } from "@/core/components/ui/progress";
-import Timestamp from "@/core/components/ui/timestamp";
+import { Card } from "@/core/ui/card";
+import { Progress } from "@/core/ui/progress";
+import Timestamp from "@/core/ui/timestamp";
 import { RekuestAgent, RekuestTask } from "@/core/linkers";
 import { ListTaskFragment } from "../../api/graphql";
 import {

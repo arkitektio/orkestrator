@@ -6,16 +6,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/core/components/ui/alert-dialog";
-import { Button } from "@/core/components/ui/button";
+} from "@/core/ui/alert-dialog";
+import { Button } from "@/core/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
-import { Input } from "@/core/components/ui/input";
+} from "@/core/ui/card";
+import { Input } from "@/core/ui/input";
 import { RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

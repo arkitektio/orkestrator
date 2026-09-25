@@ -1,4 +1,4 @@
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 import { AnimatePresence, motion } from "framer-motion";
 
 /**

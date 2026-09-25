@@ -1,26 +1,26 @@
-import { portHash } from "@/core/lib/ports/utils";
-import { StringField } from "@/core/components/fields/StringField";
-import { SwitchField } from "@/core/components/fields/SwitchField";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+import { portHash } from "@/core/ports/engine/utils";
+import { StringField } from "@/core/forms/StringField";
+import { SwitchField } from "@/core/forms/SwitchField";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/core/components/ui/collapsible";
+} from "@/core/ui/collapsible";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/core/components/ui/dialog";
-import { Form } from "@/core/components/ui/form";
-import { ActionDescription, FormActionDescription } from "@/core/lib/ports/ActionDescription";
-import { notEmpty } from "@/core/lib/utils";
+} from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
+import { ActionDescription, FormActionDescription } from "@/core/ports/engine/ActionDescription";
+import { notEmpty } from "@/core/util/utils";
 import { RekuestShortcut } from "@/core/linkers";
-import { EffectWrapper } from "@/core/lib/ports/EffectWrapper";
-import { ArgsContainerProps } from "@/core/lib/ports/tailwind";
-import { Port, PortGroup } from "@/core/lib/ports/types";
+import { EffectWrapper } from "@/core/ports/engine/EffectWrapper";
+import { ArgsContainerProps } from "@/core/ports/engine/tailwind";
+import { Port, PortGroup } from "@/core/ports/engine/types";
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import * as z from "zod";
@@ -28,8 +28,8 @@ import {
   useCreateShortcutMutation,
   useDetailActionQuery
 } from "../api/graphql";
-import { usePortForm } from "@/core/lib/ports/usePortForm";
-import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
+import { usePortForm } from "@/core/ports/engine/usePortForm";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 
 export type FilledGroup = PortGroup & {
   filledPorts: Port[];

@@ -1,7 +1,7 @@
-import { Card } from "@/core/components/ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/core/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
-import { ActionDescription } from "@/core/lib/ports/ActionDescription";
+import { Card } from "@/core/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
+import { ActionDescription } from "@/core/ports/engine/ActionDescription";
 import { ActionScope, ListActionFragment } from "@/rekuest/api/graphql";
 import clsx from "clsx";
 import { TemplateSelector } from "./TemplateSelector";

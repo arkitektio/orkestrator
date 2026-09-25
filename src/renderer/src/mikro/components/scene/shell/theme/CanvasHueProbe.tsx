@@ -1,7 +1,7 @@
 import { addAfterEffect, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
-import { useSettings } from "@/core/providers/settings/SettingsContext";
-import type { BrandTarget } from "@/core/providers/settings/brandTheme";
+import { useSettings } from "@/core/settings/store/SettingsContext";
+import type { BrandTarget } from "@/core/settings/store/brandTheme";
 import { qualityGovernor } from "../../platform/quality/qualityGovernor";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { useViewStoreApi } from "../../platform/stores/viewStore";

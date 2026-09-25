@@ -1,4 +1,4 @@
-import { useSettings } from "@/core/providers/settings/SettingsContext";
+import { useSettings } from "@/core/settings/store/SettingsContext";
 import { TaskNotificationStack } from "./TaskNotificationStack";
 
 /**

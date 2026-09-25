@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/core/ui/card";
 import { RekuestTask } from "@/core/linkers";
-import Timestamp from "@/core/components/ui/timestamp";
+import Timestamp from "@/core/ui/timestamp";
 import { MinimalTaskFragment } from "../../api/graphql";
 interface Props {
   item: MinimalTaskFragment;

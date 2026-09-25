@@ -1,4 +1,4 @@
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import { KabinetDefinition } from "@/core/linkers";
 import { OffsetPaginationInput, useListPodQuery } from "../../api/graphql";
 import PodCard from "../cards/PodCard";

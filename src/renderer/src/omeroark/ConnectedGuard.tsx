@@ -1,7 +1,7 @@
-import { Button } from "@/core/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/core/components/ui/card";
-import { Input } from "@/core/components/ui/input";
-import { Label } from "@/core/components/ui/label";
+import { Button } from "@/core/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
+import { Input } from "@/core/ui/input";
+import { Label } from "@/core/ui/label";
 import { useForm } from "react-hook-form";
 import { TbPlugConnected } from "react-icons/tb";
 import { MeDocument, useDeleteMeMutation, useEnsureOmeroUserMutation, useMeQuery } from "./api/graphql";

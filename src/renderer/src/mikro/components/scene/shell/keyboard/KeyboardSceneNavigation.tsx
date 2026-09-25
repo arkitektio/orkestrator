@@ -1,13 +1,13 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
-import { navigationActionForKey, stepSceneZ } from "@/core/lib/scene/camera/sceneNavigation";
+import { navigationActionForKey, stepSceneZ } from "@/core/data/scene/camera/sceneNavigation";
 import {
   asNavControls,
   orbitCamera,
   panCamera,
   zoomCamera,
-} from "@/core/lib/scene/camera/keyboardNavigation";
-import { applyFitToCamera } from "@/core/lib/scene/camera/cameraFit";
+} from "@/core/data/scene/camera/keyboardNavigation";
+import { applyFitToCamera } from "@/core/data/scene/camera/cameraFit";
 import { computeSceneWorldBox } from "../../platform/camera/sceneFit";
 import { sceneZExtent } from "../../platform/coords/worldTransform";
 import { useModeStoreApi } from "../../platform/stores/modeStore";

@@ -1,8 +1,8 @@
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import { AlpakaLLMModel } from "@/core/linkers";
 
 import { LlmModelFilter, useListLlModelsQuery } from "@/alpaka/api/graphql";
-import type { OffsetPaginationInput } from "@/core/lib/pagination";
+import type { OffsetPaginationInput } from "@/core/layout/pagination";
 import LLMModelCard from "../cards/LLMModelCard";
 
 export type Props = {

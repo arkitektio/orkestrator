@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 // The graphql document module this imports reaches `window` at import time.
 import { describe, expect, it, vi } from "vitest";
-import { S3_CREDENTIAL_REFRESH_SKEW_MS } from "@/core/lib/zarr/runner/s3-request";
-import type { MikroClient } from "@/core/lib/zarr/store/types";
+import { S3_CREDENTIAL_REFRESH_SKEW_MS } from "@/core/data/zarr/runner/s3-request";
+import type { MikroClient } from "@/core/data/zarr/store/types";
 import { buildS3FetchConfig, getGeneralAccess, isGrantUsable } from "./access";
 
 const grant = (accessKey: string, expiresIn: number) => ({

@@ -1,6 +1,6 @@
-import { AppMark, MarkCanvas } from "@/core/lib/marks";
-import { cn } from "@/core/lib/utils";
-import { useTabVisible } from "@/core/command/tabs/TabVisibilityContext";
+import { AppMark, MarkCanvas } from "@/kabinet/lib/marks";
+import { cn } from "@/core/util/utils";
+import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
 import type { AppIdentity } from "../appIdentity";
 
 /**

@@ -1,4 +1,4 @@
-import { createList } from "@/core/components/layout/createList";
+import { createList } from "@/core/layout/createList";
 import { RekuestAction } from "@/core/linkers";
 import { useBrowseActionsQuery } from "@/rekuest/api/graphql";
 import ActionCard from "../cards/ActionCard";

@@ -14,7 +14,7 @@ import {
   resolveVoxelIndex,
   type AxisSelection,
 } from "../../../platform/coords/selection";
-import { createRafCoalescer } from "@/core/lib/scene/perf/rafCoalesce";
+import { createRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import { effectiveProbeLayerId, layerAnswersProbe } from "../../../platform/probe/probeTargeting";
 import type { ProbeOrigin, ProbeResult } from "../../../platform/probe/probeTypes";
 import {

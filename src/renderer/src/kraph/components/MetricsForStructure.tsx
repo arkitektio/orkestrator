@@ -5,7 +5,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/core/components/ui/table";
+} from "@/core/ui/table";
 import { useMetricsForStructureQuery } from "../api/graphql";
 
 /**

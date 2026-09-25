@@ -1,12 +1,12 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { buildAssignInput } from "@/rekuest/assign";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
-import { PageAction } from "@/core/components/ui/page-action";
-import { Card, CardContent, CardHeader, CardTitle } from "@/core/components/ui/card";
-import { Form } from "@/core/components/ui/form";
-import { Separator } from "@/core/components/ui/separator";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { PageAction } from "@/core/ui/page-action";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
+import { Form } from "@/core/ui/form";
+import { Separator } from "@/core/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -14,8 +14,8 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/core/components/ui/sheet";
-import { ArgsContainer } from "@/core/components/ports/ArgsContainer";
+} from "@/core/ui/sheet";
+import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
 import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
 import { ApolloError } from "@apollo/client";
 import {
@@ -25,7 +25,7 @@ import {
   RekuestResolution,
   RekuestState,
 } from "@/core/linkers";
-import { PageSections } from "@/core/components/layout/PageSections";
+import { PageSections } from "@/core/layout/PageSections";
 import {
   TaskEventKind,
   DetailImplementationFragment,
@@ -42,10 +42,10 @@ import TaskList from "../components/lists/TaskList";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { useImplementationForm } from "../hooks/useImplementationForm";
 import { ImplementationStatsSidebar } from "../sidebars/ImplementationStatistics";
-import { ReturnsContainer } from "@/core/lib/ports/tailwind";
-import PortConstraintBadges from "@/core/components/ports/PortConstraintBadges";
-import { portToLabel } from "@/core/lib/ports/utils";
-import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
+import { ReturnsContainer } from "@/core/ports/engine/tailwind";
+import PortConstraintBadges from "@/core/ports/widgets/PortConstraintBadges";
+import { portToLabel } from "@/core/ports/engine/utils";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 
 
 export const DoForm = ({ id }: { id: string }) => {

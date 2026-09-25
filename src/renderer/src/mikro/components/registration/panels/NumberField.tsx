@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Input } from "@/core/components/ui/input";
+import { Input } from "@/core/ui/input";
 
 const format = (value: number, digits: number): string => {
   if (!Number.isFinite(value)) return "";

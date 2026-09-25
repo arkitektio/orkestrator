@@ -12,7 +12,7 @@ vi.mock("aws4fetch", () => ({
 }));
 
 import { FinishFabriksUploadDocument, RequestFabriksUploadDocument } from "@/mikro/api/graphql";
-import type { MikroClient } from "@/core/lib/zarr/store/types";
+import type { MikroClient } from "@/core/data/zarr/store/types";
 import { FabriksUploadError, uploadFabriksPrefix } from "./fabriksUpload";
 
 const GRANT = {

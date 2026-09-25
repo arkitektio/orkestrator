@@ -1,9 +1,9 @@
-import { smartRegistry } from "@/core/providers/smart/registry";
+import { smartRegistry } from "@/core/smart/registry";
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useCommandPalette } from "./CommandPaletteProvider";
-import { useTabActions } from "./tabs/TabsProvider";
+import { useTabActions } from "../tabs/TabsProvider";
 import { useRecordRecent } from "./useRecordRecent";
 
 /**

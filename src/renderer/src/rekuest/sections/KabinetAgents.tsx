@@ -1,5 +1,5 @@
-import { Button } from "@/core/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { Button } from "@/core/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import { RekuestAgent } from "@/core/linkers";
 import type { Object } from "@/core/types";
 import { buildAssignInput } from "../assign";

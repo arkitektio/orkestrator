@@ -1,7 +1,7 @@
-import {Button as ShadButton} from '@/core/components/ui/button';
-import {ButtonGroup as ShadButtonGroup} from '@/core/components/ui/button-group';
-import {Calendar as ShadCalendar} from '@/core/components/ui/calendar';
-import {Checkbox as ShadCheckbox} from '@/core/components/ui/checkbox';
+import {Button as ShadButton} from '@/core/ui/button';
+import {ButtonGroup as ShadButtonGroup} from '@/core/ui/button-group';
+import {Calendar as ShadCalendar} from '@/core/ui/calendar';
+import {Checkbox as ShadCheckbox} from '@/core/ui/checkbox';
 import {
   Field as ShadField,
   FieldDescription as ShadFieldDescription,
@@ -9,20 +9,20 @@ import {
   FieldGroup as ShadFieldGroup,
   FieldLabel as ShadFieldLabel,
   FieldSet as ShadFieldSet,
-} from '@/core/components/ui/field';
-import {Input as ShadInput} from '@/core/components/ui/input';
+} from '@/core/ui/field';
+import {Input as ShadInput} from '@/core/ui/input';
 import {
   InputGroup as ShadInputGroup,
   InputGroupAddon as ShadInputGroupAddon,
   InputGroupText as ShadInputGroupText,
-} from '@/core/components/ui/input-group';
+} from '@/core/ui/input-group';
 import {
   InputOTP as ShadInputOTP,
   InputOTPGroup as ShadInputOTPGroup,
   InputOTPSlot as ShadInputOTPSlot,
-} from '@/core/components/ui/input-otp';
-import {Label as ShadLabel} from '@/core/components/ui/label';
-import {RadioGroup as ShadRadioGroup, RadioGroupItem as ShadRadioGroupItem} from '@/core/components/ui/radio-group';
+} from '@/core/ui/input-otp';
+import {Label as ShadLabel} from '@/core/ui/label';
+import {RadioGroup as ShadRadioGroup, RadioGroupItem as ShadRadioGroupItem} from '@/core/ui/radio-group';
 import {
   Select as ShadSelect,
   SelectContent as ShadSelectContent,
@@ -31,13 +31,13 @@ import {
   SelectLabel as ShadSelectLabel,
   SelectTrigger as ShadSelectTrigger,
   SelectValue as ShadSelectValue,
-} from '@/core/components/ui/select';
-import {Slider as ShadSlider} from '@/core/components/ui/slider';
-import {Switch as ShadSwitch} from '@/core/components/ui/switch';
-import {Textarea as ShadTextarea} from '@/core/components/ui/textarea';
-import {Toggle as ShadToggle} from '@/core/components/ui/toggle';
-import {ToggleGroup as ShadToggleGroup, ToggleGroupItem as ShadToggleGroupItem} from '@/core/components/ui/toggle-group';
-import {cn} from '@/core/lib/utils';
+} from '@/core/ui/select';
+import {Slider as ShadSlider} from '@/core/ui/slider';
+import {Switch as ShadSwitch} from '@/core/ui/switch';
+import {Textarea as ShadTextarea} from '@/core/ui/textarea';
+import {Toggle as ShadToggle} from '@/core/ui/toggle';
+import {ToggleGroup as ShadToggleGroup, ToggleGroupItem as ShadToggleGroupItem} from '@/core/ui/toggle-group';
+import {cn} from '@/core/util/utils';
 import * as z from 'zod';
 import {
   BlokPropSchemas,

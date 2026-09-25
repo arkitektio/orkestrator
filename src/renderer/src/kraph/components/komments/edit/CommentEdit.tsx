@@ -1,4 +1,4 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { DescendantInput, DescendantKind } from "@/kraph/api/graphql";
 import { BoldPlugin, CodePlugin, UnderlinePlugin } from "@platejs/basic-nodes/react";
 import { MentionPlugin } from "@platejs/mention/react";

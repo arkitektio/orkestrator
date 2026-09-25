@@ -1,12 +1,12 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { ConnectingFallback } from "@/core/layout/fallbacks/Connecting";
 import { QuietPage } from "@/core/layout/fallbacks/QuietPage";
 import { ShellSignInNotice } from "@/core/connection/ui/ShellSignInNotice";
-import { Button } from "@/core/components/ui/button";
-import { ServiceRuntimeState } from "@/core/lib/arkitekt/types";
+import { Button } from "@/core/ui/button";
+import { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
 import { useMyContextQuery } from "@/lok/api/graphql";
-import { useDashboardRegistry } from "@/core/providers/dashboard";
-import type { DashboardWidgetRegistration } from "@/core/providers/dashboard";
+import { useDashboardRegistry } from "@/core/dashboard";
+import type { DashboardWidgetRegistration } from "@/core/dashboard";
 import {
   DockviewApi,
   DockviewReact,
@@ -26,16 +26,16 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import BreadCrumbs from "@/core/components/navigation/BreadCrumbs";
+import BreadCrumbs from "@/core/layout/BreadCrumbs";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
+} from "@/core/ui/dropdown-menu";
 import ProfileSwitcher from "@/app/components/profile/ProfileSwitcher";
 // The dashboard layout scope and the profile id are deliberately the same
 // string, so a profile switch re-scopes the dockview layout for free.
-import { buildScopeKey } from "@/core/lib/arkitekt/fakts/profileStorageSchema";
+import { buildScopeKey } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import { hasRestorablePanels, widgetKeysToAdd } from "./dashboardLayout";
 
 

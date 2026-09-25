@@ -1,6 +1,6 @@
 import React from "react";
-import { Card, CardContent, CardTitle } from "@/core/components/ui/card";
-import { cn } from "@/core/lib/utils";
+import { Card, CardContent, CardTitle } from "@/core/ui/card";
+import { cn } from "@/core/util/utils";
 import { ElektroFile } from "@/core/linkers";
 import { ListFileFragment } from "../../api/graphql";
 

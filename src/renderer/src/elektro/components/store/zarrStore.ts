@@ -1,13 +1,13 @@
 import { ApolloClient, NormalizedCache } from "@apollo/client";
-import { S3FetchConfig } from "@/core/lib/zarr/runner/s3-request";
-import { ConfiguredS3Store } from "@/core/lib/zarr/store/s3Store";
-import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
+import { S3FetchConfig } from "@/core/data/zarr/runner/s3-request";
+import { ConfiguredS3Store } from "@/core/data/zarr/store/s3Store";
+import { createScopedStoreHooks } from "@/core/util/createScopedStore";
 
-import { openZarrArray, type OpenedZarrArray } from "@/core/lib/zarr/openArray";
-import { ByteBudgetChunkCache } from "@/core/lib/zarr/caches/byteBudgetChunkCache";
-import { INTERACTIVE_FETCH_PRIORITY } from "@/core/lib/zarr/pool/types";
-import { workerPool } from "@/core/lib/zarr/pool/sharedWorkerPool";
-import { readArrayWindow } from "@/core/lib/zarr/readArrayWindow";
+import { openZarrArray, type OpenedZarrArray } from "@/core/data/zarr/openArray";
+import { ByteBudgetChunkCache } from "@/core/data/zarr/caches/byteBudgetChunkCache";
+import { INTERACTIVE_FETCH_PRIORITY } from "@/core/data/zarr/pool/types";
+import { workerPool } from "@/core/data/zarr/pool/sharedWorkerPool";
+import { readArrayWindow } from "@/core/data/zarr/readArrayWindow";
 import type { AxisRange } from "@/elektro/components/experiment/platform/sources/axisSelection";
 import { createStore } from "zustand/vanilla";
 import {

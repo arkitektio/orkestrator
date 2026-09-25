@@ -15,9 +15,9 @@ import type {
   SectionItems,
   SmartContextSection,
   SmartSectionContext,
-} from "@/core/providers/smart/extensions/section";
-import type { SmartContextProps } from "@/core/providers/smart/extensions/types";
-import { useStableData } from "@/core/providers/smart/extensions/useStableData";
+} from "@/core/smart/extensions/section";
+import type { SmartContextProps } from "@/core/smart/extensions/types";
+import { useStableData } from "@/core/smart/extensions/useStableData";
 import {
   AssignButton,
   BatchAssignButton,

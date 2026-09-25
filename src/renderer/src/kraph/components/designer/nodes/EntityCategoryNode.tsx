@@ -1,5 +1,5 @@
-import { Card } from "@/core/components/ui/card";
-import { Image } from "@/core/components/ui/image";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { KraphEntityCategory } from "@/core/linkers";
 import { NodeProps, NodeResizer } from "@xyflow/react";
 import { memo } from "react";

@@ -1,5 +1,5 @@
 import type { AttributeLookupEngine } from "@/mikro/lib/attributes/lookupEngine";
-import { LruMap } from "@/core/lib/generic/lruMap";
+import { LruMap } from "@/core/util/lruMap";
 import {
   columnValueAt,
   readColumnValues,

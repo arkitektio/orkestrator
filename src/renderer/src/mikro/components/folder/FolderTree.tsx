@@ -1,8 +1,8 @@
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
-import { Input } from "@/core/components/ui/input";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
 import { Ordering, useGetFoldersQuery } from "@/mikro/api/graphql";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 import { ChevronRight, Folder, FolderPlus } from "lucide-react";
 import { useState } from "react";
 

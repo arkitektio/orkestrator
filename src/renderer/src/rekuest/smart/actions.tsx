@@ -1,7 +1,7 @@
-import { toWire } from "@/core/lib/structure";
+import { toWire } from "@/core/smart/structure";
 import { useDialog } from "@/core/dialogs/registry";
-import { Button } from "@/core/components/ui/button";
-import { cn } from "@/core/lib/utils";
+import { Button } from "@/core/ui/button";
+import { cn } from "@/core/util/utils";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import React from "react";
@@ -16,8 +16,8 @@ import { buildAssignInput } from "@/rekuest/assign";
 import { trackTask } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Boxes, PlayCircle } from "lucide-react";
-import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
-import type { SmartContextProps } from "@/core/providers/smart/extensions/types";
+import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
+import type { SmartContextProps } from "@/core/smart/extensions/types";
 import {
   ACTIVE_IMPLEMENTATION_ORDERING,
   SMART_IMPLEMENTATION_PAGE_SIZE,

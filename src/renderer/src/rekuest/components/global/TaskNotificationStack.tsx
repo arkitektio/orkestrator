@@ -1,5 +1,5 @@
-import { useLatestRef } from '@/core/hooks/useLatestRef'
-import { cn } from '@/core/lib/utils'
+import { useLatestRef } from '@/core/util/hooks/useLatestRef'
+import { cn } from '@/core/util/utils'
 import { LiveTaskFragment, TaskEventKind } from '@/rekuest/api/graphql'
 import { useTasks } from '@/rekuest/hooks/useTasks'
 import { AnimatePresence, motion } from 'framer-motion'

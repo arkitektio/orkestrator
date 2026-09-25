@@ -1,13 +1,13 @@
 import { ElektroGuard } from "@/elektro/api/funcs";
-import { Button } from "@/core/components/ui/button";
-import { Input } from "@/core/components/ui/input";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/core/components/ui/select";
+} from "@/core/ui/select";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { useListMechanismsQuery } from "../../api/graphql";

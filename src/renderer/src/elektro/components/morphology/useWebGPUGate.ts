@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { assertWebGPUSupported } from "@/core/lib/scene/gpu/webgpuSupport";
+import { assertWebGPUSupported } from "@/core/data/scene/gpu/webgpuSupport";
 
 export type WebGPUGate = {
   phase: "checking" | "ready" | "unsupported";

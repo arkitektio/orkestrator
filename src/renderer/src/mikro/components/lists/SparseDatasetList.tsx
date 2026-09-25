@@ -1,4 +1,4 @@
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import { MikroSparseDataset } from "@/core/linkers";
 import {
   OffsetPaginationInput,

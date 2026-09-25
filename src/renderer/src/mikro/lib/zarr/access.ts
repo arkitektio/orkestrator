@@ -1,7 +1,7 @@
 import {
   S3_CREDENTIAL_REFRESH_SKEW_MS,
   type S3FetchConfig,
-} from "@/core/lib/zarr/runner/s3-request";
+} from "@/core/data/zarr/runner/s3-request";
 import {
   RequestGeneralFabriksAccessDocument,
   RequestGeneralFabriksAccessMutation,
@@ -10,7 +10,7 @@ import {
   RequestGeneralZarrAccessDocument,
   RequestGeneralZarrAccessMutation,
 } from "@/mikro/api/graphql";
-import type { GeneralZarrAccessGrant, MikroClient } from "@/core/lib/zarr/store/types";
+import type { GeneralZarrAccessGrant, MikroClient } from "@/core/data/zarr/store/types";
 
 /**
  * Which datalayer credential a caller wants.

@@ -1,5 +1,5 @@
-import { Card } from "@/core/components/ui/card";
-import { DialogButton } from "@/core/components/ui/dialog-button";
+import { Card } from "@/core/ui/card";
+import { DialogButton } from "@/core/ui/dialog-button";
 import { KraphRelationCategory } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";

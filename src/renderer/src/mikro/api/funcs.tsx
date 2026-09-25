@@ -1,4 +1,4 @@
-import { serviceGuard, useServiceClient } from "@/core/lib/arkitekt/host";
+import { serviceGuard, useServiceClient } from "@/core/connection/arkitekt/host";
 import {
   LazyQueryHookOptions,
   MutationHookOptions,
@@ -9,7 +9,7 @@ import {
   useQuery as useApolloQuery,
   useSubscription as useApolloSubscription,
 } from "@apollo/client";
-import { onApolloError } from "@/core/lib/errorHandler";
+import { onApolloError } from "@/core/connection/graphql/errorHandler";
 
 
 /**

@@ -1,7 +1,7 @@
 import {  MediaAccessGrantFragment, MediaStoreFragment, RequestMediaAccessDocument, RequestMediaAccessInput, RequestMediaAccessMutation, RequestMediaAccessMutationVariables } from "@/rekuest/api/graphql";
-import { grantExpiresAt, presignS3Url } from "@/core/lib/datalayer/s3request";
+import { grantExpiresAt, presignS3Url } from "@/core/data/s3/s3request";
 import { ApolloClient } from "@apollo/client";
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useRekuest } from "@/rekuest/api/hooks";
 import React from "react";
 

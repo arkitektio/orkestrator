@@ -1,5 +1,5 @@
-import { Badge } from "@/core/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
 import { useAppsQuery } from "@/lok/api/graphql";
 import { Clock, Shield } from "lucide-react";
 import AppCard from "../cards/AppCard";

@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroTableDataset } from "@/core/linkers";
 import { useGetTableDatasetQuery } from "@/mikro/api/graphql";
 

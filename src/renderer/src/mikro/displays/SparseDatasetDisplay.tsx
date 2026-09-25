@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroSparseDataset } from "@/core/linkers";
 import { useGetSparseDatasetQuery } from "@/mikro/api/graphql";
 import { describeShape, sparseDatasetTitle } from "@/mikro/components/sparse/sparseFacts";

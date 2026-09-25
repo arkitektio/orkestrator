@@ -1,8 +1,8 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { AsyncBoundary } from "@/core/components/boundaries/AsyncBoundary";
-import { Card } from "@/core/components/ui/card";
-import { Slider } from "@/core/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs";
+import { AsyncBoundary } from "@/core/ui/AsyncBoundary";
+import { Card } from "@/core/ui/card";
+import { Slider } from "@/core/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import { RekuestAgent } from "@/core/linkers";
 import {
   StateFragment,
@@ -11,7 +11,7 @@ import {
   useCheckoutQuery,
 } from "@/rekuest/api/graphql";
 import { useAgentStates } from "@/rekuest/hooks/useLiveState";
-import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { useMemo, useState } from "react";
 
 const AgentStateValueDisplay = ({

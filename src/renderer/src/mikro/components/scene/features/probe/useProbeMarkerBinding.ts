@@ -5,7 +5,7 @@ import type * as THREE from "three";
 import { resolveProbeMarkerGeometry } from "../../platform/probe/probeWorld";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
-import { bindAll } from "@/core/lib/scene/stores/bindStore";
+import { bindAll } from "@/core/data/scene/stores/bindStore";
 
 /**
  * Binds the probe marker to the live probe WITHOUT re-rendering per move.

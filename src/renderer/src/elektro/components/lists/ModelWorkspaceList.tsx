@@ -1,4 +1,4 @@
-import { createList } from "@/core/components/layout/createList";
+import { createList } from "@/core/layout/createList";
 import { useListModelWorkspacesQuery } from "@/elektro/api/graphql";
 import { ElektroModelWorkspace } from "@/core/linkers";
 import ModelWorkspaceCard from "../cards/ModelWorkspaceCard";

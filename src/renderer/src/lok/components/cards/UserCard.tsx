@@ -1,6 +1,6 @@
 import React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
-import { Card, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/ui/avatar";
+import { Card, CardHeader, CardTitle } from "@/core/ui/card";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokUser } from "@/core/linkers";
 import { ListUserFragment } from "../../api/graphql";

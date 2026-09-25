@@ -1,5 +1,5 @@
 import { KRAPH_TYPE_POLICIES } from "@/core/connection/graphql/cachePolicies";
-import { createGraphQLServiceBuilder } from "@/core/lib/arkitekt/builders/graphQlServiceBuidler";
+import { createGraphQLServiceBuilder } from "@/core/connection/arkitekt/builders/graphQlServiceBuidler";
 import kraphResult from "./api/fragments";
 
 /**

@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Card, CardContent } from "@/core/components/ui/card";
-import { Image } from "@/core/components/ui/image";
+import { Card, CardContent } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokLayer } from "@/core/linkers";
 import {

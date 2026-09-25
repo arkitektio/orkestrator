@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import {
   MetadataChip,
   MetadataOverlayFrame,
-} from "@/core/lib/scene/metadata/MetadataChrome";
+} from "@/core/data/scene/metadata/MetadataChrome";
 import {
   type GetTableDatasetAnchorsQuery,
   useGetTableDatasetAnchorsFullQuery,

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { createBlokComponent, useBlok, useValue } from "../../runtime";
 import * as z from "zod";
 import { LovekitSoloBroadcast } from "@/core/linkers";

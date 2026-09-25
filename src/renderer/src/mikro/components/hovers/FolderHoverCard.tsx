@@ -1,4 +1,4 @@
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import { MikroFile } from "@/core/linkers";
 import { Object } from "@/core/types";
 import { formatDistanceToNow } from "date-fns";

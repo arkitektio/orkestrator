@@ -1,4 +1,4 @@
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import { RekuestAction } from "@/core/linkers";
 import { useListStructurePackageQuery } from "@/rekuest/api/graphql";
 import StructurePackageCard from "../cards/StructurePackageCard";

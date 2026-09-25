@@ -1,4 +1,4 @@
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/core/components/ui/hover-card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/core/ui/hover-card";
 import React, { Suspense, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { NavLink } from "react-router-dom";

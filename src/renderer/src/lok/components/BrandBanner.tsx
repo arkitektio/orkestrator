@@ -1,6 +1,6 @@
-import { acceptsFiles } from "@/core/lib/dnd/files";
-import { useCanDrop, useDropTarget } from "@/core/lib/dnd/react";
-import { cn } from "@/core/lib/utils";
+import { acceptsFiles } from "@/core/dnd/files";
+import { useCanDrop, useDropTarget } from "@/core/dnd/react";
+import { cn } from "@/core/util/utils";
 import { Loader2 } from "lucide-react";
 import type React from "react";
 import { useRef } from "react";

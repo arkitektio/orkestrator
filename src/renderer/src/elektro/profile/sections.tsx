@@ -1,7 +1,7 @@
 import { ElektroGuard } from "@/elektro/api/funcs";
-import { ProfileSectionFrame } from "@/core/lib/profile/ProfileSections";
-import { ProfileRow, ProfileRows } from "@/core/lib/profile/rows";
-import type { ProfileContext, ProfileSection } from "@/core/lib/profile/section";
+import { ProfileSectionFrame } from "@/core/connection/profile/ProfileSections";
+import { ProfileRow, ProfileRows } from "@/core/connection/profile/rows";
+import type { ProfileContext, ProfileSection } from "@/core/connection/profile/section";
 import { ElektroExperiment, ElektroNeuronModel } from "@/core/linkers";
 import { formatDistanceToNow } from "date-fns";
 import { BsLightning } from "react-icons/bs";

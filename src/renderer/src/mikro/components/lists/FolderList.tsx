@@ -1,4 +1,4 @@
-import { createList } from "@/core/components/layout/createList";
+import { createList } from "@/core/layout/createList";
 import { MikroFolder } from "@/core/linkers";
 import {
   FolderFilter,

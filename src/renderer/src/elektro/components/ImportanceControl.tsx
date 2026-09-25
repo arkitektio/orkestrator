@@ -1,15 +1,15 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/core/components/ui/popover";
-import { Slider } from "@/core/components/ui/slider";
+} from "@/core/ui/popover";
+import { Slider } from "@/core/ui/slider";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/core/components/ui/tooltip";
+} from "@/core/ui/tooltip";
 import { Flame, HelpCircle, Pin, RotateCcw, Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {

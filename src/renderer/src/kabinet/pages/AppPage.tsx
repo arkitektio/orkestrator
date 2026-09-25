@@ -1,5 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import { KabinetApp } from "@/core/linkers";
 import { Boxes, KeyRound, Layers, Tag } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";

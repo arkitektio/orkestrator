@@ -37,10 +37,9 @@ const ROOTS = Object.entries(MODULE_ROOTS)
 
 /**
  * The owner of a source-relative path: a module namespace, `host:app` for the
- * app (the composition root, `app/`), or `host:<area>` where area is the
- * package under `core/` (`host:dialogs`, `host:components`) or, under
- * `core/lib/`, the lib package (`host:lib/export`). Entry files at the source
- * root (`main.tsx`, `App.tsx`) are `host:root`.
+ * app (the composition root, `app/`), or `host:<package>` for a package under
+ * `core/` (`host:dialogs`, `host:ports`). Entry files at the source root
+ * (`main.tsx`, `App.tsx`) and core's own root files are `host:root`.
  */
 export const ownerOf = (path: string): string => {
   for (const { module, root } of ROOTS) {
@@ -48,7 +47,6 @@ export const ownerOf = (path: string): string => {
   }
   const parts = (path.startsWith("core/") ? path.slice("core/".length) : path).split("/");
   if (parts.length === 1) return "host:root";
-  if (parts[0] === "lib") return parts.length === 2 ? "host:lib" : `host:lib/${parts[1]}`;
   return `host:${parts[0]}`;
 };
 
@@ -183,7 +181,7 @@ describe("the boundary parser", () => {
   it("owns paths by their longest root", () => {
     expect(ownerOf("mikro/api/funcs.tsx")).toBe("mikro");
     expect(ownerOf("mikro/pages/ImagePage.tsx")).toBe("mikro");
-    expect(ownerOf("core/lib/export/fileDownloaders.ts")).toBe("host:lib/export");
+    expect(ownerOf("core/modules/export/fileDownloaders.ts")).toBe("host:modules");
     expect(ownerOf("app/AppShell.tsx")).toBe("host:app");
     expect(ownerOf("core/dialogs/registry.tsx")).toBe("host:dialogs");
     expect(ownerOf("core/linkers.tsx")).toBe("host:root");
@@ -198,7 +196,7 @@ describe("the boundary parser", () => {
   });
 
   it("resolves relative specifiers that escape a module", () => {
-    const target = resolveSpecifier("core/providers/smart/extensions/useTalkAbout.ts", "../../../../alpaka/api/graphql");
+    const target = resolveSpecifier("core/smart/extensions/useTalkAbout.ts", "../../../alpaka/api/graphql");
     expect(target).toBe("alpaka/api/graphql");
     expect(resolveSpecifier("kraph/x.ts", "react")).toBeNull();
   });

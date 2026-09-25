@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/ui/avatar";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { useMeQuery, useMyContextQuery } from "../api/graphql";
 

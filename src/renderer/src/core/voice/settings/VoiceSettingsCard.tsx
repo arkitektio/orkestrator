@@ -1,22 +1,22 @@
-import { SwitchField } from "@/core/components/fields/SwitchField";
-import { Button } from "@/core/components/ui/button";
+import { SwitchField } from "@/core/forms/SwitchField";
+import { Button } from "@/core/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
-import { FormDescription, FormItem, FormLabel } from "@/core/components/ui/form";
-import { Input } from "@/core/components/ui/input";
+} from "@/core/ui/card";
+import { FormDescription, FormItem, FormLabel } from "@/core/ui/form";
+import { Input } from "@/core/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/core/components/ui/select";
-import type { Settings } from "@/core/providers/settings/validator";
+} from "@/core/ui/select";
+import type { Settings } from "@/core/settings/store/validator";
 import { Check, Download, Mic, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useController, useFormContext, useWatch } from "react-hook-form";

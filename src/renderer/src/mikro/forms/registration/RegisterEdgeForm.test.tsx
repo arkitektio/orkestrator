@@ -22,8 +22,8 @@ vi.mock("@/core/dialogs/registry", () => ({
   useDialog: () => ({ closeDialog, openDialog: vi.fn(), openSheet: vi.fn() }),
 }));
 
-vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   // Module bindings (`useMikro`, `MikroGuard`) read the host facade.
   useServiceClient: () => new ApolloClient({ link: new MockLink([]), cache: new InMemoryCache() }),
   serviceGuard: () => ({ children }: { children: React.ReactNode }) => children,

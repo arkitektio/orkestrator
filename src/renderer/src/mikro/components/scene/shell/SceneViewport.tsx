@@ -4,11 +4,11 @@ import {
   useStore as useThreeStore,
   useThree,
 } from "@react-three/fiber";
-import { useTabVisible } from "@/core/command/tabs/TabVisibilityContext";
+import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
 import { useEffect, type ReactNode } from "react";
 import { LongCommitProfiler } from "../platform/perf/commitProfiler";
 import { useViewStoreApi } from "../platform/stores/viewStore";
-import { createWebGPURendererFactory } from "@/core/lib/scene/gpu/createWebGPURenderer";
+import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
 import * as THREE from "three";
 import { CameraMatrixSync } from "../platform/camera/CameraMatrixSync";
 import { PerfFrameProbe } from "../platform/perf/PerfFrameProbe";
@@ -52,7 +52,7 @@ import { SelectedPointPanel } from "../features/probe/SelectedPointPanel";
 import { RoiDeleteKeybinding } from "../features/annotations/RoiDeleteKeybinding";
 import { HoveredAnnotationButton } from "../features/annotations/hover/HoveredAnnotationButton";
 import { ZSliderPanel } from "./chrome/ZSliderPanel";
-import { WebGPUUnavailableError } from "@/core/lib/scene/gpu/webgpuSupport";
+import { WebGPUUnavailableError } from "@/core/data/scene/gpu/webgpuSupport";
 import { useModeStore } from "../platform/stores/modeStore";
 import { useViewerStore } from "../platform/stores/viewerStore";
 

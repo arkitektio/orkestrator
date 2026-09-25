@@ -1,5 +1,5 @@
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { PageAction } from "@/core/components/ui/page-action";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { PageAction } from "@/core/ui/page-action";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import React from "react";
 

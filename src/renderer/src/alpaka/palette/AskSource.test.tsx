@@ -17,8 +17,8 @@ vi.mock("react-router-dom", async (orig) => ({
   useNavigate: () => navigate,
 }));
 
-import { Command, CommandList } from "@/core/components/ui/command";
-import { TooltipProvider } from "@/core/components/ui/tooltip";
+import { Command, CommandList } from "@/core/ui/command";
+import { TooltipProvider } from "@/core/ui/tooltip";
 import type { Structure } from "@/core/types";
 import { AskSource } from "./AskSource";
 

@@ -1,5 +1,5 @@
-import { srgbToOklch } from "@/core/lib/color/oklch";
-import type { BrandTarget } from "@/core/providers/settings/brandTheme";
+import { srgbToOklch } from "@/core/data/color/oklch";
+import type { BrandTarget } from "@/core/settings/store/brandTheme";
 import { MAX_BRAND_CHROMA } from "./brandTarget";
 
 /**

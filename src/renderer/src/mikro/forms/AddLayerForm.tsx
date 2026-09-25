@@ -1,17 +1,17 @@
 import { MikroGuard } from "@/mikro/api/funcs";
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
-import { ChoicesField } from "@/core/components/fields/ChoicesField";
-import { FloatField } from "@/core/components/fields/FloatField";
-import { SwitchField } from "@/core/components/fields/SwitchField";
-import { Button } from "@/core/components/ui/button";
+import { ChoicesField } from "@/core/forms/ChoicesField";
+import { FloatField } from "@/core/forms/FloatField";
+import { SwitchField } from "@/core/forms/SwitchField";
+import { Button } from "@/core/ui/button";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/core/components/ui/dialog";
-import { Form } from "@/core/components/ui/form";
-import { Input } from "@/core/components/ui/input";
+} from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
+import { Input } from "@/core/ui/input";
 import { modifierSpecsOf, spatialSpecOf } from "@/mikro/specs";
 import {
   ChevronDown,

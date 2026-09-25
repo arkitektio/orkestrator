@@ -1,8 +1,8 @@
 import { QuietPage } from "@/core/layout/fallbacks/QuietPage";
 import { ShellSignInNotice } from "@/core/connection/ui/ShellSignInNotice";
 import { ConnectingFallback } from "@/core/layout/fallbacks/Connecting";
-import { Guard } from "@/core/lib/arkitekt/host";
-import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
+import { Guard } from "@/core/connection/arkitekt/host";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppPage from "./pages/AppPage";

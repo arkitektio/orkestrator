@@ -1,5 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Card } from "@/core/components/ui/card";
+import { Card } from "@/core/ui/card";
 import { ElektroModelWorkspace, ElektroNeuronModel } from "@/core/linkers";
 import { useEffect } from "react";
 import { useDetailModelWorkspaceQuery, useDetailNeuronModelQuery } from "../api/graphql";

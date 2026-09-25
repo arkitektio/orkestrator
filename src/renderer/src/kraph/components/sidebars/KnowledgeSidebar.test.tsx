@@ -6,8 +6,8 @@ const knowledge = vi.fn();
 const informing = vi.fn();
 const me = vi.fn();
 
-vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Guard: { Lok: ({ children }: { children: React.ReactNode }) => <>{children}</> },
   useKraph: () => ({}),
 }));
@@ -21,17 +21,17 @@ vi.mock("@/kraph/api/graphql", () => ({
   useSearchAssignableTermsQuery: () => ({ data: { terms: [] }, loading: false }),
   useInformingStructuresQuery: (o: unknown) => informing(o),
 }));
-vi.mock("@/core/hooks/use-debounce", () => ({ useDebounce: (v: unknown) => v }));
+vi.mock("@/core/util/hooks/use-debounce", () => ({ useDebounce: (v: unknown) => v }));
 // Surfaces with their own plumbing: the discussion, the drop zone, the drag
 // target, the measurement button and the evidence popover.
 vi.mock("../komments/Komments", () => ({ Komments: () => <div data-testid="komments" /> }));
-vi.mock("@/core/providers/smart/Drop", () => ({
+vi.mock("@/core/smart/Drop", () => ({
   SmartDropZone: ({ children }: { children: React.ReactNode }) => <div data-testid="dropzone">{children}</div>,
 }));
 vi.mock("../knowledge/SameAsDropTarget", () => ({
   SameAsDropTarget: ({ term }: { term: string }) => <div data-testid="same-as-drop">{term}</div>,
 }));
-vi.mock("@/core/providers/smart/ObjectButton", () => ({
+vi.mock("@/core/smart/ObjectButton", () => ({
   ObjectButton: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 vi.mock("@/kraph/components/AssertionEvidence", () => ({ AssertionEvidence: () => null }));

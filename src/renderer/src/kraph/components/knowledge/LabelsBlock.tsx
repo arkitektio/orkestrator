@@ -1,4 +1,4 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import type { Identifier, Object, Structure } from "@/core/types";
 import { useState } from "react";
 import { LabelCard } from "./LabelCard";

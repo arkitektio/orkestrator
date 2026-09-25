@@ -1,4 +1,4 @@
-import { Explainer } from "@/core/components/explainer/Explainer";
+import { Explainer } from "@/core/layout/Explainer";
 import { MikroTableDataset } from "@/core/linkers";
 import React from "react";
 import TableDatasetList from "../components/lists/TableDatasetList";

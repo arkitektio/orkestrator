@@ -1,5 +1,5 @@
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Button } from "@/core/components/ui/button";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Button } from "@/core/ui/button";
 import { useState } from "react";
 
 export const Dashboards = () => {

@@ -1,6 +1,6 @@
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 
 /**
  * The show/hide and remove buttons every layer card puts in

@@ -1,14 +1,14 @@
-import { Button } from "@/core/components/ui/button";
-import { Form } from "@/core/components/ui/form";
-import { notEmpty } from "@/core/lib/utils";
+import { Button } from "@/core/ui/button";
+import { Form } from "@/core/ui/form";
+import { notEmpty } from "@/core/util/utils";
 import { FlussArgPortFragment } from "@/fluss/api/graphql";
 import { AssignWidgetFragment } from "@/rekuest/api/graphql";
-import { usePortForm } from "@/core/lib/ports/usePortForm";
-import { EffectWrapper } from "@/core/lib/ports/EffectWrapper";
-import { ArgPort as RekuestArgPort } from "@/core/lib/ports/types";
-import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
-import { portHash, submittedDataToRekuestFormat } from "@/core/lib/ports/utils";
-import { useLatestRef } from "@/core/hooks/useLatestRef";
+import { usePortForm } from "@/core/ports/engine/usePortForm";
+import { EffectWrapper } from "@/core/ports/engine/EffectWrapper";
+import { ArgPort as RekuestArgPort } from "@/core/ports/engine/types";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { portHash, submittedDataToRekuestFormat } from "@/core/ports/engine/utils";
+import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 
 import { ChevronUpIcon, DoubleArrowUpIcon } from "@radix-ui/react-icons";
 import { useEffect, useMemo } from "react";
@@ -42,10 +42,10 @@ export const ArgsContainer = ({
   path,
 }: {
   ports: FlussArgPortFragment[];
-  options?: import("@/core/lib/ports/types").PortOptions;
+  options?: import("@/core/ports/engine/types").PortOptions;
   bound?: string;
   path: string[];
-  registry: import("@/core/lib/ports/types").WidgetRegistryType;
+  registry: import("@/core/ports/engine/types").WidgetRegistryType;
   onToArg?: (port: FlussArgPortFragment) => void;
   onToGlobal?: (port: FlussArgPortFragment, key?: string | undefined) => void;
 }) => {

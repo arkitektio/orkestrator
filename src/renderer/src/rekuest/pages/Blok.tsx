@@ -1,12 +1,12 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { registry } from "@/core/smart/localactions/registry";
-import { LocalActionButton } from "@/core/components/ui/localactionbutton";
+import { LocalActionButton } from "@/core/ui/localactionbutton";
 import { RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
 import DemoBlokRenderer from "@/rekuest/components/DemoBlokRenderer";
 import { useGetBlokQuery } from "../api/graphql";
-import { Button } from "@/core/components/ui/button";
-import { PageAction } from "@/core/components/ui/page-action";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/core/components/ui/dialog";
+import { Button } from "@/core/ui/button";
+import { PageAction } from "@/core/ui/page-action";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/core/ui/dialog";
 import { MaterializeBlokForm } from "../forms/MaterializeBlokForm";
 import { useState } from "react";
 import { toast } from "sonner";

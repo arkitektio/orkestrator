@@ -1,12 +1,12 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/core/components/ui/dialog";
-import { Input } from "@/core/components/ui/input";
+} from "@/core/ui/dialog";
+import { Input } from "@/core/ui/input";
 import {
   FolderTree,
   type CreatingAt,

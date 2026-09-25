@@ -4,10 +4,10 @@ import {
   HoverSectionLabel,
   HoverShell,
   HoverSkeleton,
-} from "@/core/components/hover/HoverShell";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
-import { cn } from "@/core/lib/utils";
+} from "@/core/ui/HoverShell";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { cn } from "@/core/util/utils";
 import { Object } from "@/core/types";
 import { Zap } from "lucide-react";
 import { PortKind, useHoverImplementationQuery } from "../../api/graphql";

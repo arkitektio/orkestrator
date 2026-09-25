@@ -1,10 +1,10 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import {
   DetailPane,
   DetailPaneHeader,
   DetailPaneTitle,
-} from "@/core/components/ui/pane";
+} from "@/core/ui/pane";
 import { OmeroArkDataset } from "@/core/linkers";
 import { useGetDatasetQuery } from "../api/graphql";
 import ImageCard from "../components/cards/ImageCard";

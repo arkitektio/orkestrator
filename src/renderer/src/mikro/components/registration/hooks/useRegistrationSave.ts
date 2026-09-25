@@ -8,7 +8,7 @@ import {
   useGetRegistrationEdgeQuery,
   useUpdateTransformationMutation,
 } from "../../../api/graphql";
-import { spatialAxisTriple } from "@/core/lib/scene/coords/transformGraph";
+import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
 import { useSceneWorld } from "../../scene/sceneHost";
 import { describeSession } from "../math/constraints";
 import { classifyPlacement, type RegistrationEdgeLike } from "../math/eligibility";

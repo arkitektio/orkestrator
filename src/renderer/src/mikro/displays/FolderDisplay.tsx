@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroFolder } from "@/core/linkers";
 import { useGetFolderQuery } from "@/mikro/api/graphql";
 

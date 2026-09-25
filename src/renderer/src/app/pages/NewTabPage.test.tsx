@@ -9,8 +9,8 @@ const modules = [
   { key: "rekuest", status: "checking", route: "/rekuest", definition: { key: "rekuest", label: "Rekuest" } },
   { key: "kraph", status: "invalid", route: "/kraph", definition: { key: "kraph", label: "Kraph" } },
 ];
-vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: { useAvailableModules: () => modules },
   moduleRegistry: { mikro: { label: "Mikro" }, rekuest: { label: "Rekuest" }, kraph: { label: "Kraph" } },
 }));
@@ -18,7 +18,7 @@ vi.mock("@/core/modules/moduleIcons", () => ({ matchIcon: (k: string) => <i>{k}<
 vi.mock("@uidotdev/usehooks", () => ({ useDebounce: (v: unknown) => v }));
 
 const title = vi.fn();
-vi.mock("@/core/command/tabs/useTabTitle", () => ({ useTabTitle: (t: string) => title(t) }));
+vi.mock("@/core/tabs/useTabTitle", () => ({ useTabTitle: (t: string) => title(t) }));
 
 // The palette's sources, reduced to what they were handed.
 vi.mock("@/core/command/sources/ApplicableRecents", () => ({

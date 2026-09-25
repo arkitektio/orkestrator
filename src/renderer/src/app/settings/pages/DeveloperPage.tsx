@@ -1,13 +1,13 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
+} from "@/core/ui/card";
 import { UpdateChecker } from "@/app/settings/components/UpdateChecker";
-import { useDebug } from "@/core/providers/debug/DebugContext";
+import { useDebug } from "@/core/debug/DebugContext";
 import { Bug } from "lucide-react";
 import { SettingsPage } from "../components/SettingsPage";
 

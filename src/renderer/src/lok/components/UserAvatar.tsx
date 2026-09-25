@@ -1,10 +1,10 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokDevice, LokUser } from "@/core/linkers";
 import { useListDevicesQuery, useUserQuery } from "../api/graphql";
-import { cn } from "@/core/lib/utils";
-import { Badge } from "@/core/components/ui/badge";
+import { cn } from "@/core/util/utils";
+import { Badge } from "@/core/ui/badge";
 
 export const UserAvatar = (props: { sub: string, className?: string }) => {
   const { data } = useUserQuery({

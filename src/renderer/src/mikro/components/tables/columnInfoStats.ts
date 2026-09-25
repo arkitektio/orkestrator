@@ -1,4 +1,4 @@
-import { LruMap } from "@/core/lib/generic/lruMap";
+import { LruMap } from "@/core/util/lruMap";
 import {
   readColumnDistinct,
   readColumnDomain,
@@ -7,8 +7,8 @@ import {
   type ColumnDistinct,
   type ColumnDomain,
   type ColumnSummary,
-} from "@/core/lib/parquet/columnStats";
-import type { ParquetQueryEngine, ParquetStoreRef } from "@/core/lib/parquet/parquetEngine";
+} from "@/core/data/parquet/columnStats";
+import type { ParquetQueryEngine, ParquetStoreRef } from "@/core/data/parquet/parquetEngine";
 import { ColumnControl, type ColumnRole } from "@/mikro/api/graphql";
 
 import { controlForRole } from "../scene/platform/layerui/columnOptions";

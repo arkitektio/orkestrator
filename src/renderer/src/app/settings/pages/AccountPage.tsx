@@ -1,15 +1,15 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { ProfileBrandAvatar } from "@/core/connection/profile/ui/ProfileBrandAvatar";
 import { profileDetail, profileTitle } from "@/core/connection/profile/ui/profileLabels";
 import { openRailSwitcher } from "@/app/components/navigation/railSwitcher";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
+} from "@/core/ui/card";
 import { ChevronsUpDown, LogOut, Stethoscope, Trash2, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";

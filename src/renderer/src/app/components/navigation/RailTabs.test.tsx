@@ -6,7 +6,7 @@ const tabsValue = vi.fn();
 // One fixture, fanned out across the narrow hooks the strip now reads. The
 // split is the point of the refactor: a row takes only the (stable) actions, so
 // it does not re-render when another tab navigates.
-vi.mock("@/core/command/tabs/TabsProvider", () => ({
+vi.mock("@/core/tabs/TabsProvider", () => ({
   useTabList: () => tabsValue().tabs,
   useActiveTabId: () => tabsValue().activeId,
   // `split` is an ACTION on the fixture; the panes live under `panes`.
@@ -15,15 +15,15 @@ vi.mock("@/core/command/tabs/TabsProvider", () => ({
 }));
 
 import RailTabs, { TAB_SPRING_DELAY_MS } from "./RailTabs";
-import { NEW_TAB_PATH } from "@/core/command/tabs/tabs";
+import { NEW_TAB_PATH } from "@/core/tabs/tabs";
 import { SMART_MODEL_DROP_TYPE } from "@/core/constants";
-import { createDragSource, installDndEngine } from "@/core/lib/dnd/engine";
+import { createDragSource, installDndEngine } from "@/core/dnd/engine";
 import {
   dragOnto as dragNodeOnto,
   dragOutOfWindow,
   FakeDataTransfer,
   fireDrag,
-} from "@/core/lib/dnd/testing";
+} from "@/core/dnd/testing";
 
 /** The strip, with the dnd engine listening — its rows are drop targets. */
 const renderStrip = () => render(<RailTabs />);

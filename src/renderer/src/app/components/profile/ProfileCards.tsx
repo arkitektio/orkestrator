@@ -1,15 +1,15 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
-import { Button } from "@/core/components/ui/button";
-import { Checkbox } from "@/core/components/ui/checkbox";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { Button } from "@/core/ui/button";
+import { Checkbox } from "@/core/ui/checkbox";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/core/components/ui/popover";
-import { grantHintForProfile } from "@/core/lib/arkitekt/fakts/grantHint";
-import type { StoredProfile } from "@/core/lib/arkitekt/fakts/profileStorageSchema";
-import { describeRefreshFailure } from "@/core/lib/arkitekt/runtime/profileAuth";
-import { cn } from "@/core/lib/utils";
+} from "@/core/ui/popover";
+import { grantHintForProfile } from "@/core/connection/arkitekt/fakts/grantHint";
+import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
+import { describeRefreshFailure } from "@/core/connection/arkitekt/runtime/profileAuth";
+import { cn } from "@/core/util/utils";
 
 import { ProfileBrandAvatar } from "../../../core/connection/profile/ui/ProfileBrandAvatar";
 import { profileDetail, profileShortDetail, profileTitle } from "../../../core/connection/profile/ui/profileLabels";

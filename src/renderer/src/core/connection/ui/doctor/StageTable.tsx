@@ -1,6 +1,6 @@
 import type { NetworkProbeResult } from "../../../../../../main/doctor/protocol";
-import { STAGES, STAGE_LABEL, stageOf, type StageState } from "@/core/lib/arkitekt/doctor/stages";
-import { cn } from "@/core/lib/utils";
+import { STAGES, STAGE_LABEL, stageOf, type StageState } from "@/core/connection/arkitekt/doctor/stages";
+import { cn } from "@/core/util/utils";
 
 /**
  * Every address that was tried, stage by stage — the raw facts behind the

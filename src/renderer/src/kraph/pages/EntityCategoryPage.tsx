@@ -1,10 +1,10 @@
-import { PageSections } from "@/core/components/layout/PageSections";
+import { PageSections } from "@/core/layout/PageSections";
 import { useDialog } from "@/core/dialogs/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { PageAction } from "@/core/components/ui/page-action";
-import { DialogButton } from "@/core/components/ui/dialogbutton";
-import { DragZone } from "@/core/components/upload/drag";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageAction } from "@/core/ui/page-action";
+import { DialogButton } from "@/core/ui/dialogbutton";
+import { DragZone } from "@/core/datalayer/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import { KraphEntityCategory } from "@/core/linkers";
 import { Plus, Settings2 } from "lucide-react";

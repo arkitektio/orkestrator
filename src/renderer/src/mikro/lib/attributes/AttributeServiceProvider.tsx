@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import type { AxisCoords } from "../coords/axisPath";
 import type { AttributePlanLike } from "./attributeTypes";

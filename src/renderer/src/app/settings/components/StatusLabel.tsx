@@ -1,4 +1,4 @@
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 
 /**
  * The settings pages' one way to show a state: a coloured dot and a short

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check } from "lucide-react";
-import { Input } from "@/core/components/ui/input";
-import { Slider } from "@/core/components/ui/slider";
-import { Switch } from "@/core/components/ui/switch";
+import { Input } from "@/core/ui/input";
+import { Slider } from "@/core/ui/slider";
+import { Switch } from "@/core/ui/switch";
 import {
   ColorMap,
   ColumnControl,
   useGetTableDatasetLazyQuery,
 } from "@/mikro/api/graphql";
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import { loadSparseSource } from "@/mikro/lib/sparse/sparseSource";
@@ -30,7 +30,7 @@ import {
   qualitativePalette,
   sampleColormapCSS,
 } from "./colormap-utils";
-import { ColormapSelect, type ColormapChoice } from "@/core/lib/scene/layerui/ColormapSelect";
+import { ColormapSelect, type ColormapChoice } from "@/core/data/scene/layerui/ColormapSelect";
 import { SparsePositionPicker } from "./SparsePositionPicker";
 import {
   DEFAULT_INSTANCE_COLORMAP,

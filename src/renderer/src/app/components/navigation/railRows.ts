@@ -1,4 +1,4 @@
-import { type TabRecord } from "@/core/command/tabs/tabs";
+import { type TabRecord } from "@/core/tabs/tabs";
 
 /**
  * The strip's rows, as distinct from its tabs.

@@ -1,8 +1,8 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Badge } from "@/core/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/core/components/ui/card";
-import { Image } from "@/core/components/ui/image";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { useResolve } from "@/core/datalayer/hooks/useResolve";
 import { DokumentsDocument, DokumentsPage, LovekitStream } from "@/core/linkers";
 import { Eye, FileTextIcon } from "lucide-react";

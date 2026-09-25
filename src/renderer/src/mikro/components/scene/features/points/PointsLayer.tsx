@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import { loadSparseSource } from "@/mikro/lib/sparse/sparseSource";
@@ -28,7 +28,7 @@ import { TIME_DIM, type DimExtent } from "../../platform/model/dimExtents";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { usePublishDimExtents } from "../../platform/stores/useLayerDimExtents";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
-import { placementToSpatialAffine, spatialAxisTriple } from "@/core/lib/scene/coords/transformGraph";
+import { placementToSpatialAffine, spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { StorageInstancedBufferAttribute } from "three/webgpu";
 import { createPointMaterial, setPointValues, type PointMaterialBundle } from "./pointsMaterial";
@@ -43,7 +43,7 @@ import {
 import { fillPointFilterMask } from "./pointsFilterMask";
 import { loadPointGeometry, scatterPointValues, type PointGeometry } from "./pointsSource";
 import { valueWindowOf } from "../../platform/attributes/valueWindow";
-import { bindField } from "@/core/lib/scene/stores/bindStore";
+import { bindField } from "@/core/data/scene/stores/bindStore";
 import { useActivePickers } from "../../platform/attributes/useActivePickers";
 
 export const PointLayerRenderer = ({ layerId }: { layerId: string }) => {

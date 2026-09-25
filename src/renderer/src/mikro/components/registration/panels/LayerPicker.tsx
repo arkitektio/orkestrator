@@ -1,5 +1,5 @@
 import { Waypoints } from "lucide-react";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { useLayerVerdicts, useStartRegistration } from "../hooks/useRegistrationSession";
 
 /**

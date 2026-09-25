@@ -1,4 +1,4 @@
-import { createList } from "@/core/components/layout/createList";
+import { createList } from "@/core/layout/createList";
 import { MikroArrayDataset } from "@/core/linkers";
 import { useGetArrayDatasetsQuery } from "../../api/graphql";
 import ArrayDatasetCard from "../cards/ArrayDatasetCard";

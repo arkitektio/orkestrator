@@ -1,5 +1,5 @@
-import { createDialogProvider } from "@/core/lib/generic/providers/DialogProvider";
-import { derivedRecord } from "@/core/lib/module-host/lazy";
+import { createDialogProvider } from "@/core/dialogs/DialogProvider";
+import { derivedRecord } from "@/core/modules/host/lazy";
 import { MODULE_DIALOGS } from "../modules/registries";
 import type { DialogRegistry } from "@/core/modules/types";
 

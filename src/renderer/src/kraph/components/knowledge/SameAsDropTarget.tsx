@@ -8,16 +8,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/core/components/ui/alert-dialog";
+} from "@/core/ui/alert-dialog";
 import {
   executeSameness,
   explainSameness,
   planSameness,
   type SamenessPlan,
 } from "@/kraph/lib/sameness";
-import { useCanDrop, useDropTarget } from "@/core/lib/dnd/react";
-import { cn } from "@/core/lib/utils";
-import { acceptsSmartDrag, resolveSmartDrop } from "@/core/providers/smart/dragPayload";
+import { useCanDrop, useDropTarget } from "@/core/dnd/react";
+import { cn } from "@/core/util/utils";
+import { acceptsSmartDrag, resolveSmartDrop } from "@/core/smart/dragPayload";
 import type { Structure } from "@/core/types";
 import { useState } from "react";
 import { toast } from "sonner";

@@ -1,6 +1,6 @@
 import React from "react";
-import { Card } from "@/core/components/ui/card";
-import { Image } from "@/core/components/ui/image";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { ListProtocolEventCategoryFragment } from "@/kraph/api/graphql";
 import { KraphProtocolEventCategory } from "@/core/linkers";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";

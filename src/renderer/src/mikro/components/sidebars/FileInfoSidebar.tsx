@@ -1,4 +1,4 @@
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import { GetFileQuery, useGetFileDerivedQuery } from "../../api/graphql";
 import { formatBytes } from "../../specs";
 import { FileLinksSection } from "./FileLinksSection";

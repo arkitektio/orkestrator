@@ -1,6 +1,6 @@
 import React from "react";
-import { Badge } from "@/core/components/ui/badge";
-import { Card, CardTitle } from "@/core/components/ui/card";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardTitle } from "@/core/ui/card";
 import { MikroSparseDataset } from "@/core/linkers";
 import { ListSparseDatasetFragment } from "../../api/graphql";
 import { describeShape, sparseDatasetTitle } from "../sparse/sparseFacts";

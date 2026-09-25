@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {cn} from '@/core/lib/utils';
+import {cn} from '@/core/util/utils';
 import {toast} from 'sonner';
 import BlokDebugState from './BlokDebugState';
 import {defaultBlokCatalog} from './catalog';

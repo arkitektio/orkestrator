@@ -1,4 +1,4 @@
-import { useSelfClient } from "@/core/lib/arkitekt/host";
+import { useSelfClient } from "@/core/connection/arkitekt/host";
 import {
   LazyQueryHookOptions,
   MutationHookOptions,
@@ -9,7 +9,7 @@ import {
   useQuery as useApolloQuery,
   useSubscription as useApolloSubscription,
 } from "@apollo/client";
-import { onApolloError } from "@/core/lib/errorHandler";
+import { onApolloError } from "@/core/connection/graphql/errorHandler";
 
 
 /** lok is the session's own service: its client is the self service's. */

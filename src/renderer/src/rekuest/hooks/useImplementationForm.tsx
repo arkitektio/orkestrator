@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import Zod from "zod";
 import { DetailImplementationFragment, ListDependencyFragment, ResolvedDependencyInput } from "../api/graphql";
-import { createPortResolver } from "@/core/lib/ports/portResolver";
+import { createPortResolver } from "@/core/ports/engine/portResolver";
 import {
   buildZodSchema,
   extractErrorMessages,
@@ -11,7 +11,7 @@ import {
   portToDefaults,
   pruneUnmountedPorts,
   submittedDataToRekuestFormat,
-} from "@/core/lib/ports/utils";
+} from "@/core/ports/engine/utils";
 
 export { portHash };
 

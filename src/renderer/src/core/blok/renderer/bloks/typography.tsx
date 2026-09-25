@@ -1,6 +1,6 @@
-import {Kbd as ShadKbd} from '@/core/components/ui/kbd';
-import {Markdown as ShadMarkdown} from '@/core/components/ui/markdown';
-import {cn} from '@/core/lib/utils';
+import {Kbd as ShadKbd} from '@/core/ui/kbd';
+import {Markdown as ShadMarkdown} from '@/core/ui/markdown';
+import {cn} from '@/core/util/utils';
 import * as z from 'zod';
 import {BlokPropSchemas, createBlokComponent, useBlok, useValue} from '../runtime';
 import {

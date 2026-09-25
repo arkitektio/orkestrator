@@ -1,9 +1,9 @@
-import { grantExpiresAt, presignS3Url } from "@/core/lib/datalayer/s3request";
+import { grantExpiresAt, presignS3Url } from "@/core/data/s3/s3request";
 import { ApolloClient } from "@apollo/client";
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import React from "react";
-import { useNearViewport } from "@/core/lib/datalayer/useNearViewport";
+import { useNearViewport } from "@/core/data/s3/useNearViewport";
 import { GeneralMediaAccessGrantFragment, MediaStoreFragment, RequestGeneralMediaAccessDocument, RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables } from "@/mikro/api/graphql";
 
 /** A grant plus the absolute expiry derived from its `expiresIn` — computed

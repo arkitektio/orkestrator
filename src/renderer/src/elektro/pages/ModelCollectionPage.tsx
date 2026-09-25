@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Card } from "@/core/components/ui/card";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Card } from "@/core/ui/card";
 import { ElektroModelCollection, ElektroNeuronModel } from "@/core/linkers";
 import { useDetailModelCollectionQuery, useDetailNeuronModelQuery } from "../api/graphql";
 // NeuronModelCard import removed; inline expandable cards are used instead

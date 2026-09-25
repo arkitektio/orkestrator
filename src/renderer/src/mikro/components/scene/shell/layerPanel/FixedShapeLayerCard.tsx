@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { Collapsible, CollapsibleContent } from "@/core/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/core/ui/collapsible";
 import {
   ProjectionMode,
   useUpdateIntensityLayerMutation,
@@ -13,7 +13,7 @@ import {
   Segment,
   SegmentGroup,
   layerCardShellClasses,
-} from "@/core/lib/scene/layerui/cardControls";
+} from "@/core/data/scene/layerui/cardControls";
 import type { LayerState } from "../../platform/stores/sceneStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewStoreApi } from "../../platform/stores/viewStore";

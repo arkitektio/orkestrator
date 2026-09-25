@@ -1,6 +1,6 @@
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Badge } from "@/core/components/ui/badge";
-import { Card } from "@/core/components/ui/card";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Badge } from "@/core/ui/badge";
+import { Card } from "@/core/ui/card";
 import { KraphGraphQuery } from "@/core/linkers";
 import { useGetGraphQuery } from "../../api/graphql";
 import { useRequiredGraphScope } from "../../providers/GraphScopeProvider";

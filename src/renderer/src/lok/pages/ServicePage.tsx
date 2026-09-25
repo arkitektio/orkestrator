@@ -1,8 +1,8 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Card, CardContent } from "@/core/components/ui/card";
-import { DialogButton } from "@/core/components/ui/dialog-button";
-import { Image } from "@/core/components/ui/image";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Card, CardContent } from "@/core/ui/card";
+import { DialogButton } from "@/core/ui/dialog-button";
+import { Image } from "@/core/ui/image";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { PlusIcon } from "lucide-react";

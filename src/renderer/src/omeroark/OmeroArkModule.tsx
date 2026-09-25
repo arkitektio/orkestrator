@@ -1,6 +1,6 @@
 import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { OmeroArkGuard } from "@/omeroark/api/funcs";
-import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import { Route, Routes } from "react-router-dom";
 import { ConnectedGuard } from "./ConnectedGuard";
 import DatasetPage from "./pages/DatasetPage";

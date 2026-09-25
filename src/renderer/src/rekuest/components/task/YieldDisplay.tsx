@@ -1,7 +1,7 @@
 import { useDetailActionQuery } from "@/rekuest/api/graphql";
-import { cn } from "@/core/lib/utils";
-import { WrappedReturnsContainer } from "@/core/lib/ports/tailwind";
-import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
+import { cn } from "@/core/util/utils";
+import { WrappedReturnsContainer } from "@/core/ports/engine/tailwind";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 
 /** Renders a task's latest yielded values with the action's return ports. */
 export const DynamicYieldDisplay = (props: {

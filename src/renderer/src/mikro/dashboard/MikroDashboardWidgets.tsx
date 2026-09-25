@@ -1,4 +1,4 @@
-import { useRegisterDashboardWidget } from "@/core/providers/dashboard/hooks";
+import { useRegisterDashboardWidget } from "@/core/dashboard/hooks";
 import { Boxes, Loader2 } from "lucide-react";
 import {
   useHomePageQuery as useMikroHomePageQuery,

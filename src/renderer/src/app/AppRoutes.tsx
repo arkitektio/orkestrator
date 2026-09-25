@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { BackNavigationErrorCatcher } from "./AppProvider";
@@ -10,7 +10,7 @@ import { QuietPage } from "../core/layout/fallbacks/QuietPage";
 import { ShellSignInNotice } from "../core/connection/ui/ShellSignInNotice";
 import { NotFound } from "../core/layout/fallbacks/NotFound";
 import { MODULE_ALIASES, ModuleRedirect } from "./components/navigation/ModuleRedirect";
-import { useModuleHostVersion } from "@/core/lib/module-host/host";
+import { useModuleHostVersion } from "@/core/modules/host/host";
 import { modulePages } from "../core/modules/registries";
 
 // The dashboard carries dockview; it is the index route, but a deep link into a

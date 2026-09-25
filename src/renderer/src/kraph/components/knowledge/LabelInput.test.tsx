@@ -10,7 +10,7 @@ vi.mock("@/kraph/api/graphql", () => ({
   TermKind: { Entity: "ENTITY" },
   useSearchAssignableTermsQuery: (o: unknown) => search(o),
 }));
-vi.mock("@/core/hooks/use-debounce", () => ({ useDebounce: (v: unknown) => v }));
+vi.mock("@/core/util/hooks/use-debounce", () => ({ useDebounce: (v: unknown) => v }));
 
 import { LabelInput } from "./LabelInput";
 

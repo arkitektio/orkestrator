@@ -1,4 +1,4 @@
-import type { ModuleManifest } from "@/core/lib/module-spec";
+import type { ModuleManifest } from "@/core/modules/spec";
 
 /**
  * Kraph: what this module is, as data (module spec v1). The host reads

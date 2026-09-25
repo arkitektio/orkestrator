@@ -1,5 +1,5 @@
 import { RekuestGuard } from "@/rekuest/api/hooks";
-import { toast } from "@/core/components/ui/use-toast";
+import { toast } from "@/core/ui/use-toast";
 import { FlowFragment, GraphInput } from "@/fluss/api/graphql";
 import { EditFlowCanvas } from "@/fluss/edit/components/EditFlowCanvas";
 import { EditFlowStoreContext } from "@/fluss/edit/context";

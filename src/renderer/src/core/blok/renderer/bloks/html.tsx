@@ -1,5 +1,5 @@
-import {Image as ShadImage} from '@/core/components/ui/image';
-import {cn} from '@/core/lib/utils';
+import {Image as ShadImage} from '@/core/ui/image';
+import {cn} from '@/core/util/utils';
 import * as z from 'zod';
 import {
   BlokPropSchemas,

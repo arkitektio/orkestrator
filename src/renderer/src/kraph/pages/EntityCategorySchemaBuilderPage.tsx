@@ -1,4 +1,4 @@
-import { PageLayout } from "@/core/components/layout/PageLayout";
+import { PageLayout } from "@/core/layout/PageLayout";
 import { SchemaBuilderPage } from "@/kraph/pages/SchemaBuilderPage";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEntityNodesQuery, useGetEntityCategoryQuery, useUpdateEntityCategoryMutation } from "../api/graphql";

@@ -7,7 +7,7 @@ import {
   type MediaUploadGrantFragment,
   type RequestMediaUploadMutation,
 } from "@/mikro/api/graphql";
-import type { MikroClient } from "@/core/lib/zarr/store/types";
+import type { MikroClient } from "@/core/data/zarr/store/types";
 
 /**
  * Uploading a blob to the datalayer as a media file.

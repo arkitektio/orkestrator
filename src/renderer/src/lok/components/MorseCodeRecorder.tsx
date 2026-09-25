@@ -1,6 +1,6 @@
-import { Badge } from '@/core/components/ui/badge';
-import { Button } from '@/core/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/core/components/ui/card';
+import { Badge } from '@/core/ui/badge';
+import { Button } from '@/core/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/core/ui/card';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // Morse code timing constants (in milliseconds)

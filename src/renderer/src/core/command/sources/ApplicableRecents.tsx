@@ -1,7 +1,7 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
-import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
-import type { PassDownProps } from "@/core/providers/smart/extensions/types";
-import { smartRegistry } from "@/core/providers/smart/registry";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
+import type { PassDownProps } from "@/core/smart/extensions/types";
+import { smartRegistry } from "@/core/smart/registry";
 import { CommandGroup } from "cmdk";
 import { History } from "lucide-react";
 import { useMemo } from "react";

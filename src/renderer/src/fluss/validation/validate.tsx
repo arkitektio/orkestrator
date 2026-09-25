@@ -1,7 +1,7 @@
 import { GraphNodeKind } from "@/fluss/api/graphql";
 import { handleToStream } from "@/fluss/utils";
 import { PortKind } from "@/rekuest/api/graphql";
-import { buildZodSchema, portHash } from "@/core/lib/ports/utils";
+import { buildZodSchema, portHash } from "@/core/ports/engine/utils";
 import { ZodError, ZodTypeAny } from "zod";
 import { FlowEdge, FlowNode } from "../types";
 import {

@@ -1,12 +1,12 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { buildAssignInput } from "@/rekuest/assign";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
+} from "@/core/ui/dropdown-menu";
 import { DemandKind, PortKind, PrimaryActionFragment, useAllPrimaryActionsQuery } from "@/rekuest/api/graphql";
 import { useAssignWithCallback } from "@/rekuest/hooks/useAssign";
 import { Identifier, Object } from "@/core/types";

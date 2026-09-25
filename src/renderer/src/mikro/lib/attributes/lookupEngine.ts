@@ -15,7 +15,7 @@ import {
   ParquetQueryEngine,
   resultKey,
   type ParquetEngineDeps,
-} from "@/core/lib/parquet/parquetEngine";
+} from "@/core/data/parquet/parquetEngine";
 
 /**
  * The DuckDB half of attribute-plan execution — the attribute-plan reads, on top
@@ -62,7 +62,7 @@ export type {
   ParquetGrantLike,
   PreparedStatementLike,
   QueryResultLike,
-} from "@/core/lib/parquet/parquetEngine";
+} from "@/core/data/parquet/parquetEngine";
 
 /** The deps a lookup engine is built with — the shared engine's. */
 export type LookupEngineDeps = ParquetEngineDeps;

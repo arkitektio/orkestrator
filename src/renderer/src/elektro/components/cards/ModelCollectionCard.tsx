@@ -1,6 +1,6 @@
 import React from "react";
-import { Card } from "@/core/components/ui/card";
-import { cn } from "@/core/lib/utils";
+import { Card } from "@/core/ui/card";
+import { cn } from "@/core/util/utils";
 import { ElektroModelCollection } from "@/core/linkers";
 import { ListModelCollectionFragment } from "../../api/graphql";
 

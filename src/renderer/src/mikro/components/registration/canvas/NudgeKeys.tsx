@@ -1,6 +1,6 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
-import { isTypingTarget } from "@/core/lib/input/keyboardTarget";
+import { isTypingTarget } from "@/core/dnd/keyboardTarget";
 import { nudge, worldUnitsPerPixel } from "../math/gizmoMath";
 import type { Vec3 } from "../math/mat4";
 import { useRegistrationApi } from "../store/context";

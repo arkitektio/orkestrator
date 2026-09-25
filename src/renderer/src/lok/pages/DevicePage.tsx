@@ -1,8 +1,8 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { FormSheet } from "@/core/components/dialog/FormDialog";
+import { FormSheet } from "@/core/dialogs/FormDialog";
 import { LokDevice } from "@/core/linkers";
-import { PageSections } from "@/core/components/layout/PageSections";
+import { PageSections } from "@/core/layout/PageSections";
 import { Pencil } from "lucide-react";
 import { useGetDeviceQuery } from "../api/graphql";
 import { UpdateComputeNodeForm } from "../forms/UpdateComputeNodeForm";

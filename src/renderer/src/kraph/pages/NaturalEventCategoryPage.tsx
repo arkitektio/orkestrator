@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Card } from "@/core/components/ui/card";
-import { DragZone } from "@/core/components/upload/drag";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Card } from "@/core/ui/card";
+import { DragZone } from "@/core/datalayer/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import { KraphNaturalEventCategory } from "@/core/linkers";
 import {

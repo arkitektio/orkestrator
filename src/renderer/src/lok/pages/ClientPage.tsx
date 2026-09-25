@@ -1,11 +1,11 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Badge } from "@/core/components/ui/badge";
-import { PageAction } from "@/core/components/ui/page-action";
-import { Image } from "@/core/components/ui/image";
-import { Separator } from "@/core/components/ui/separator";
+import { Badge } from "@/core/ui/badge";
+import { PageAction } from "@/core/ui/page-action";
+import { Image } from "@/core/ui/image";
+import { Separator } from "@/core/ui/separator";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
-import { PageSections } from "@/core/components/layout/PageSections";
+import { PageSections } from "@/core/layout/PageSections";
 import { LokClient, LokDevice } from "@/core/linkers";
 import {
   Bug,

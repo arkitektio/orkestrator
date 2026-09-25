@@ -7,7 +7,7 @@ vi.mock("sonner", () => ({
 }));
 
 import { CleanupActionsDocument } from "@/rekuest/api/graphql";
-import type { ActionState, Structure } from "@/core/lib/localactions/LocalActionProvider";
+import type { ActionState, Structure } from "@/core/smart/localactions/LocalActionProvider";
 import { REKUEST_ACTIONS } from "./actions";
 
 const structure = (

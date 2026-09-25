@@ -1,5 +1,5 @@
-import { Card } from "@/core/components/ui/card";
-import { Image } from "@/core/components/ui/image";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokClient, LokUser } from "@/core/linkers";
 import { DetailClientFragment } from "@/lok/api/graphql";

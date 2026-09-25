@@ -1,4 +1,4 @@
-import { defineModule } from "@/core/lib/module-host/define";
+import { defineModule } from "@/core/modules/host/define";
 import { manifest } from "./manifest";
 import { service } from "./service";
 

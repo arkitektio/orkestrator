@@ -1,6 +1,6 @@
 import React from "react";
-import { Card } from "@/core/components/ui/card";
-import { cn } from "@/core/lib/utils";
+import { Card } from "@/core/ui/card";
+import { cn } from "@/core/util/utils";
 import { ElektroNeuronModel } from "@/core/linkers";
 import { ListNeuronModelFragment } from "../../api/graphql";
 

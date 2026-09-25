@@ -1,8 +1,8 @@
 import { Color } from "three";
 import type { StoreApi } from "zustand/vanilla";
-import type { ParquetQueryEngine } from "@/core/lib/parquet/parquetEngine";
-import { sampleColorMapRgb, type ColorMap } from "@/core/lib/scene/gpu/colormaps";
-import type { SparseBlock, SparseLayoutHandle } from "@/core/lib/sparse/sparseReader";
+import type { ParquetQueryEngine } from "@/core/data/parquet/parquetEngine";
+import { sampleColorMapRgb, type ColorMap } from "@/core/data/scene/gpu/colormaps";
+import type { SparseBlock, SparseLayoutHandle } from "@/core/data/sparse/sparseReader";
 import type { LayerDriver } from "../../platform/drivers/layerDriver";
 import type { LayerState } from "../../platform/model/layerModel";
 import { activeEntries, rulesKeep } from "../../platform/pickers/pickerModel";

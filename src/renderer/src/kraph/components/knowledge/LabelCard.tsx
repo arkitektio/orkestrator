@@ -1,10 +1,10 @@
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/core/components/ui/collapsible";
-import Timestamp from "@/core/components/ui/timestamp";
+} from "@/core/ui/collapsible";
+import Timestamp from "@/core/ui/timestamp";
 import type { KnowledgeInstanceFragment } from "@/kraph/api/graphql";
 import { AssertionEvidence } from "@/kraph/components/AssertionEvidence";
 import { TermBadge } from "@/kraph/components/TermBadge";

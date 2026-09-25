@@ -1,6 +1,6 @@
-import type { Finding } from "@/core/lib/arkitekt/doctor/findings";
-import type { HopState, PathHop } from "@/core/lib/arkitekt/doctor/path";
-import { cn } from "@/core/lib/utils";
+import type { Finding } from "@/core/connection/arkitekt/doctor/findings";
+import type { HopState, PathHop } from "@/core/connection/arkitekt/doctor/path";
+import { cn } from "@/core/util/utils";
 import { AlertTriangle, CheckCircle2, ChevronDown, CircleDashed, XCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";

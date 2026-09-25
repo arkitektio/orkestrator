@@ -12,7 +12,7 @@ vi.mock("@/core/linkers", () => {
     RekuestAgent: { DetailLink: Link },
   };
 });
-vi.mock("@/core/components/ui/timestamp", () => ({
+vi.mock("@/core/ui/timestamp", () => ({
   default: () => <span>some time ago</span>,
 }));
 

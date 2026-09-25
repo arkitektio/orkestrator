@@ -1,6 +1,6 @@
 import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { KabinetGuard } from "@/kabinet/api/hooks";
-import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import AppPage from "./pages/AppPage";

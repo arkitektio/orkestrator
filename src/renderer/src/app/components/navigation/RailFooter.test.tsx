@@ -8,8 +8,8 @@ const activeProfile = vi.fn();
 const autoLoggingIn = vi.fn(() => false);
 const parkSession = vi.fn();
 
-vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: {
     useActiveProfile: () => activeProfile(),
     useIsAutoLoggingIn: () => autoLoggingIn(),
@@ -25,7 +25,7 @@ vi.mock("@/app/components/profile/ProfileSwitcher", () => ({
 
 // `DroppableNavLink` navigates, so it needs a router; this test is about the
 // footer, not navigation or drag-and-drop.
-vi.mock("@/core/components/ui/link", () => ({
+vi.mock("@/core/ui/link", () => ({
   DroppableNavLink: ({
     to,
     children,

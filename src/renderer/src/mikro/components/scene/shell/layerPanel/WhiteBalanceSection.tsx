@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Pipette, RotateCcw } from "lucide-react";
 
-import { Slider } from "@/core/components/ui/slider";
-import { CardSection, RowAction, Segment, SegmentGroup } from "@/core/lib/scene/layerui/cardControls";
+import { Slider } from "@/core/ui/slider";
+import { CardSection, RowAction, Segment, SegmentGroup } from "@/core/data/scene/layerui/cardControls";
 import type { Plane } from "./rgbPlanes";
 import { useNeutralPick } from "./useNeutralPick";
 import {

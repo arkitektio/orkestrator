@@ -1,4 +1,4 @@
-import type { MikroClient } from "@/core/lib/zarr/store/types";
+import type { MikroClient } from "@/core/data/zarr/store/types";
 import type { AxisCoords } from "../coords/axisPath";
 import { createSparseProfileReader } from "../sparse/sparseProfile";
 import {
@@ -34,7 +34,7 @@ import {
   type PlanHopStates,
 } from "./executePlan";
 import type { AttributeLookupEngine } from "./lookupEngine";
-import { LruMap } from "@/core/lib/generic/lruMap";
+import { LruMap } from "@/core/util/lruMap";
 import type { HeldValue } from "./planExec";
 import { AttributePlanCache, type QueryClient } from "./planCache";
 

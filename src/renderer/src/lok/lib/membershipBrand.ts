@@ -11,7 +11,7 @@
  * and below the open scene's tint.
  */
 
-import type { PartialBrand } from "@/core/providers/settings/brandTheme";
+import type { PartialBrand } from "@/core/settings/store/brandTheme";
 import type { ContextFragment } from "../api/graphql";
 
 /** Out-of-range values are dropped rather than clamped: a hue of 400 or a

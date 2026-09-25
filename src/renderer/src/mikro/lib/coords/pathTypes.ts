@@ -1,4 +1,4 @@
-import type { TransformLike } from "@/core/lib/scene/coords/transformGraph";
+import type { TransformLike } from "@/core/data/scene/coords/transformGraph";
 
 /**
  * Path-step types shared by coordinate mapping (`axisPath`) and the

@@ -2,7 +2,7 @@ import type { ApolloError } from "@apollo/client";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { ElektroExperiment } from "@/core/linkers";
 import { useGetExperimentSceneQuery } from "../api/graphql";
 import { ExperimentScene } from "../components/experiment/ExperimentScene";

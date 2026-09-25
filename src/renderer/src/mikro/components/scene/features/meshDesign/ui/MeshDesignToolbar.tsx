@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { ToggleGroup, ToggleGroupItem } from "@/core/components/ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { useModeStore } from "../../../platform/stores/modeStore";
 import { useRoiDrawingStore, type AnnotateTool } from "../../annotations/roiDrawingStore";
 import { applicableEnhancers } from "../../annotations/enhancers/registry";

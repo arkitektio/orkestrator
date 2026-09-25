@@ -1,6 +1,6 @@
-import { FormDialog } from "@/core/components/dialog/FormDialog";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+import { FormDialog } from "@/core/dialogs/FormDialog";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,20 +9,20 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
-import { Input } from "@/core/components/ui/input";
+} from "@/core/ui/dropdown-menu";
+import { Input } from "@/core/ui/input";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
   PageActionGroup,
-} from "@/core/components/ui/page-action";
-import { cn } from "@/core/lib/utils";
+} from "@/core/ui/page-action";
+import { cn } from "@/core/util/utils";
 import { MikroArrayDataset, MikroFile, MikroFolder, MikroTableDataset } from "@/core/linkers";
 
-import { useTabActions } from "@/core/command/tabs/TabsProvider";
-import { SmartObjectButtonProps } from "@/core/providers/smart/buildSmartAdapters";
-import { useDebounce } from "@/core/hooks/use-debounce";
+import { useTabActions } from "@/core/tabs/TabsProvider";
+import { SmartObjectButtonProps } from "@/core/smart/buildSmartAdapters";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
 import {
   ChildrenQuery,
   FolderFragment,
@@ -33,10 +33,10 @@ import {
   usePutTableDatasetsInFolderMutation,
 } from "@/mikro/api/graphql";
 import { ViewType } from "@/mikro/pages/FolderPage";
-import { DragSession } from "@/core/lib/dnd/engine";
-import { useSelection } from "@/core/providers/selection/SelectionContext";
-import { smartDragStructures } from "@/core/providers/smart/dragPayload";
-import { useSmartCanDrop, useSmartDrop } from "@/core/providers/smart/hooks";
+import { DragSession } from "@/core/dnd/engine";
+import { useSelection } from "@/core/dnd/selection/SelectionContext";
+import { smartDragStructures } from "@/core/smart/dragPayload";
+import { useSmartCanDrop, useSmartDrop } from "@/core/smart/hooks";
 import { Structure } from "@/core/types";
 import {
   ArrowLeft,

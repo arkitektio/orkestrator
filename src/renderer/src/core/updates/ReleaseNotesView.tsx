@@ -1,5 +1,5 @@
-import { Markdown } from "@/core/components/ui/markdown";
-import { cn } from "@/core/lib/utils";
+import { Markdown } from "@/core/ui/markdown";
+import { cn } from "@/core/util/utils";
 import React, { useMemo } from "react";
 import { looksLikeHtml, type ReleaseNote } from "./releaseNotes";
 

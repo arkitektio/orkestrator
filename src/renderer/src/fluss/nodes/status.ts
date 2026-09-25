@@ -1,5 +1,5 @@
 import { RunEventFragment, RunEventKind } from "@/fluss/api/graphql";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 
 /** Border/shadow classes for a node given its latest run event (track mode). */
 export const statusClassName = (event: RunEventFragment | undefined, base?: string) =>

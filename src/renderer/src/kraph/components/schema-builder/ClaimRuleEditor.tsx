@@ -1,16 +1,16 @@
-import { Guard } from "@/core/lib/arkitekt/host";
-import { AsyncCombobox } from "@/core/components/fields/AsyncCombobox";
-import { Option, SearchFunction } from "@/core/components/fields/SearchField";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
-import { Input } from "@/core/components/ui/input";
+import { Guard } from "@/core/connection/arkitekt/host";
+import { AsyncCombobox } from "@/core/forms/AsyncCombobox";
+import { Option, SearchFunction } from "@/core/forms/SearchField";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/core/components/ui/select";
+} from "@/core/ui/select";
 import { useStructureOptions } from "@/core/modules/hooks/useStructureOptions";
 import { Plus, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";

@@ -1,4 +1,4 @@
-import { Empty, EmptyDescription, EmptyTitle } from "@/core/components/ui/empty";
+import { Empty, EmptyDescription, EmptyTitle } from "@/core/ui/empty";
 import { MikroArrayDataset, MikroCoordinateSystem } from "@/core/linkers";
 import { CornerDownRight } from "lucide-react";
 import { ParentEdge, parentDatasetOfEdge } from "./derivedGrouping";

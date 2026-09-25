@@ -1,6 +1,6 @@
-import { Button } from "@/core/components/ui/button";
-import { Input } from "@/core/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/components/ui/select";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
 import { ArrowDownToLine, Filter, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useIsNodeInPath, useReturnColumnManager, useWhereClauseManager, WhereCondition } from "../OntologyGraphProvider";

@@ -2,7 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
-import type { ServiceRuntimeState } from "@/core/lib/arkitekt/types";
+import type { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
 import { ServiceCard } from "./ServiceCard";
 
 const alias = (id: string, host: string, ssl = true) => ({ id, host, ssl, challenge: "ht", port: null, path: "mikro" });

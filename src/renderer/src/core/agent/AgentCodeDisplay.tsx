@@ -1,4 +1,4 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 
 export const AgentCodeDisplay = ({ code }: { code: number }) => {
   const getMessage = (code: number) => {

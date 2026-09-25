@@ -1,9 +1,9 @@
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/core/components/ui/popover";
+} from "@/core/ui/popover";
 import { MikroCoordinateSystem } from "@/core/linkers";
 import { GetArrayDatasetQuery, useGetArrayDatasetDerivedQuery } from "../../api/graphql";
 import {

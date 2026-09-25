@@ -1,6 +1,6 @@
 import React from "react";
-import { Card } from "@/core/components/ui/card";
-import { Image } from "@/core/components/ui/image";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokApp } from "@/core/linkers";
 import { ListAppFragment } from "../../api/graphql";

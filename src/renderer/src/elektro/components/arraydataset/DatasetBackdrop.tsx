@@ -1,7 +1,7 @@
 import { AudioLines, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,8 +9,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
-import { formatShape } from "@/core/lib/arrays/formatShape";
+} from "@/core/ui/dropdown-menu";
+import { formatShape } from "@/core/data/arrays/formatShape";
 import {
   GetArrayDatasetQuery,
   useCreateExperimentFromCoordinateSystemMutation,

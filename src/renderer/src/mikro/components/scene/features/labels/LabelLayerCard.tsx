@@ -1,4 +1,4 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { Eye, EyeOff, Save, Shapes, Spline, Trash2 } from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import {
@@ -13,7 +13,7 @@ import {
   IconToggle,
   LayerCardShell,
   OpacityRow,
-} from "@/core/lib/scene/layerui/cardControls";
+} from "@/core/data/scene/layerui/cardControls";
 import { type ColumnOptionSource } from "../../platform/layerui/ColumnOptionPicker";
 import {
   ColorBySection,

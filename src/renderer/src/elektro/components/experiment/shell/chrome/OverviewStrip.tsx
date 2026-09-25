@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { bindFields } from "@/core/lib/scene/stores/bindStore";
+import { bindFields } from "@/core/data/scene/stores/bindStore";
 import {
   isLayerHidden,
   useExperimentStore,

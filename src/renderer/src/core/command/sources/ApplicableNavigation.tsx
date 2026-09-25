@@ -1,12 +1,12 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { useDialog } from "@/core/dialogs/registry";
 import { moduleIcon } from "@/core/modules/moduleIcons";
-import { useDebug } from "@/core/providers/debug/DebugContext";
-import { useSettings } from "@/core/providers/settings/SettingsContext";
-import { useTheme } from "@/core/providers/ThemeProvider";
-import { smartRegistry } from "@/core/providers/smart/registry";
-import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
-import type { PassDownProps } from "@/core/providers/smart/extensions/types";
+import { useDebug } from "@/core/debug/DebugContext";
+import { useSettings } from "@/core/settings/store/SettingsContext";
+import { useTheme } from "@/core/settings/theme/ThemeProvider";
+import { smartRegistry } from "@/core/smart/registry";
+import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
+import type { PassDownProps } from "@/core/smart/extensions/types";
 import { CommandGroup } from "cmdk";
 import { ArrowRight, Pin, PinOff } from "lucide-react";
 import { useMemo } from "react";
@@ -15,11 +15,11 @@ import { useNavigate } from "react-router-dom";
 
 import { matchesFilter, rankByFilter } from "../filter";
 import { useOpenTarget } from "../useOpenTarget";
-import { useActiveTab, useTabActions } from "../tabs/TabsProvider";
+import { useActiveTab, useTabActions } from "../../tabs/TabsProvider";
 import { APP_COMMANDS } from "./appCommands";
 import { routeCatalog, searchRoutes } from "./routeCatalog";
-import { breadcrumbText } from "@/core/lib/breadcrumbText";
-import { isElectron } from "@/core/lib/platform";
+import { breadcrumbText } from "@/core/command/breadcrumbText";
+import { isElectron } from "@/core/util/platform";
 
 /**
  * Where you can go, and what the app itself can do.

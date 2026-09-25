@@ -7,7 +7,7 @@ import {
   type FinishFabriksUploadMutation,
   type RequestFabriksUploadMutation,
 } from "@/mikro/api/graphql";
-import type { MikroClient } from "@/core/lib/zarr/store/types";
+import type { MikroClient } from "@/core/data/zarr/store/types";
 import { MANIFEST_NAME } from "../fabriksManifest";
 
 /**

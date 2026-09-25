@@ -1,5 +1,5 @@
-import { Badge } from "@/core/components/ui/badge";
-import Timestamp from "@/core/components/ui/timestamp";
+import { Badge } from "@/core/ui/badge";
+import Timestamp from "@/core/ui/timestamp";
 import { KabinetFlavour } from "@/core/linkers";
 import { ExternalLink, Github } from "lucide-react";
 import { GetRepoQuery } from "../../api/graphql";

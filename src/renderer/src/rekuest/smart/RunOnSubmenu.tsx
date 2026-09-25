@@ -3,9 +3,9 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuTrigger,
-} from "@/core/components/ui/context-menu";
+} from "@/core/ui/context-menu";
 import React from "react";
-import type { SmartContextProps } from "@/core/providers/smart/extensions/types";
+import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { DirectImplementationAssignment } from "./actions";
 import { RunOnApi, RunOnContext, RunOnTarget } from "./runOnContext";
 

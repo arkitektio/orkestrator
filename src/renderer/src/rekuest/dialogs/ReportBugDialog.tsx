@@ -1,9 +1,9 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { Button } from "@/core/components/ui/button";
-import { DialogFooter, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
+import { Button } from "@/core/ui/button";
+import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { PortKind, PostmanTaskFragment, useDetailTaskQuery } from "@/rekuest/api/graphql";
-import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
-import { WidgetRegistryType } from "@/core/lib/ports/types";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { WidgetRegistryType } from "@/core/ports/engine/types";
 import { useEffect } from "react";
 
 export interface ReportBugDialogProps {

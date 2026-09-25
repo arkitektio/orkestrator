@@ -1,4 +1,4 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { AlertCircle, Sparkles, X } from "lucide-react";
 import {
   cancelLocalActionRun,

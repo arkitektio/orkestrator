@@ -4,9 +4,9 @@ import {
   HoverSectionLabel,
   HoverShell,
   HoverSkeleton,
-} from "@/core/components/hover/HoverShell";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+} from "@/core/ui/HoverShell";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import { RekuestImplementation } from "@/core/linkers";
 import { Object } from "@/core/types";
 import { Zap } from "lucide-react";

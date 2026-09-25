@@ -1,11 +1,11 @@
-import { Card, CardContent } from "@/core/components/ui/card";
+import { Card, CardContent } from "@/core/ui/card";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "@/core/components/ui/carousel";
+} from "@/core/ui/carousel";
 import { FlussRun } from "@/core/linkers";
 import { useRunCarouselQuery } from "@/fluss/api/graphql";
 import { TrackFlow } from "@/fluss/track/TrackFlow";

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useBrandOverride } from "@/core/providers/settings/useBrandOverride";
+import { useBrandOverride } from "@/core/settings/store/useBrandOverride";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useSelectionStore } from "../../platform/stores/selectionStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";

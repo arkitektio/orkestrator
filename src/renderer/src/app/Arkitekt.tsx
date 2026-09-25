@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { manifest } from "@/core/constants";
-import { buildArkitekt } from "@/core/lib/arkitekt";
-import { aliasToHttpPath } from "@/core/lib/arkitekt/alias/helpers";
-import { coordinationBase } from "@/core/lib/arkitekt/coordination";
-import { useArkitektStore } from "@/core/lib/arkitekt/provider";
-import { ModuleRegistry, ServiceBuilderMap } from "@/core/lib/arkitekt/types";
+import { buildArkitekt } from "@/core/connection/arkitekt";
+import { aliasToHttpPath } from "@/core/connection/arkitekt/alias/helpers";
+import { coordinationBase } from "@/core/connection/arkitekt/coordination";
+import { useArkitektStore } from "@/core/connection/arkitekt/provider";
+import { ModuleRegistry, ServiceBuilderMap } from "@/core/connection/arkitekt/types";
 import { selfService } from "@/lok/service";
 import { MODULES, moduleRegistryOf, servicesOf } from "./modules";
-import { createLivekitClient } from "@/core/lib/livekit copy/client";
+import { createLivekitClient } from "@/core/connection/livekit/client";
 
 export const electronRedirect = async (
   url: string,

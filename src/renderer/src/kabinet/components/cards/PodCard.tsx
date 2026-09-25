@@ -5,7 +5,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
+} from "@/core/ui/card";
 import { KabinetPod } from "@/core/linkers";
 import { ListPodFragment } from "../../api/graphql";
 

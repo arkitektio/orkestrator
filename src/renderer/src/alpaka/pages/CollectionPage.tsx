@@ -1,8 +1,8 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { StringField } from "@/core/components/fields/StringField";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Form } from "@/core/components/ui/form";
-import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { StringField } from "@/core/forms/StringField";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Form } from "@/core/ui/form";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { AlpakaCollection, AlpakaLLMModel } from "@/core/linkers";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useEffect } from "react";

@@ -1,6 +1,6 @@
 import { createStore } from "zustand/vanilla";
 import { immer } from "zustand/middleware/immer";
-import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/util/createScopedStore";
 
 export interface SelectionState {
   selectedLayerId: string | null;

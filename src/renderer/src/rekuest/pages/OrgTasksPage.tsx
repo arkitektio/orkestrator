@@ -1,6 +1,6 @@
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
-import { DateTimeRangePicker } from "@/core/components/ui/date-time-range-picker";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { DateTimeRangePicker } from "@/core/ui/date-time-range-picker";
 import { RekuestTask } from "@/core/linkers";
 import { Ordering, TaskEventKind } from "@/rekuest/api/graphql";
 import TaskList from "@/rekuest/components/lists/TaskList";
@@ -16,7 +16,7 @@ import {
   parseAsIsoDateTime,
   parseAsStringLiteral,
   useQueryState,
-} from "@/core/hooks/use-search-param-state";
+} from "@/core/util/hooks/use-search-param-state";
 
 /**
  * Org-wide tasks view: every root task across the organization (the `tasks`

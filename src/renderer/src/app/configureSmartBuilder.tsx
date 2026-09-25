@@ -1,15 +1,15 @@
-import { ListPageLayout } from "@/core/components/layout/ListPageLayout";
-import { ModelPageLayout } from "@/core/components/layout/ModelPageLayout";
-import { PageVariant } from "@/core/components/layout/PageLayout";
+import { ListPageLayout } from "@/core/layout/ListPageLayout";
+import { ModelPageLayout } from "@/core/layout/ModelPageLayout";
+import { PageVariant } from "@/core/layout/PageLayout";
 import {
   configureSmartBuilder,
   SmartListPageProps,
   SmartModelPage,
   SmartNewButtonProps,
   SmartObjectButtonProps,
-} from "@/core/providers/smart/buildSmartAdapters";
-import { ObjectButton } from "@/core/providers/smart/extensions/context";
-import { SlotSections } from "@/core/components/layout/PageSections";
+} from "@/core/smart/buildSmartAdapters";
+import { ObjectButton } from "@/core/smart/extensions/context";
+import { SlotSections } from "@/core/layout/PageSections";
 import { MODULE_HOVERS } from "../core/modules/registries";
 
 // Hover cards are each module's `hovers` builtin, paired with its module guard

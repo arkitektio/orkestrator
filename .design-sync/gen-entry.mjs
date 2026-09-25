@@ -1,8 +1,8 @@
 import { writeFileSync, readFileSync } from 'node:fs';
 
-const UI = 'src/renderer/src/core/components/ui';
-const FIELDS = 'src/renderer/src/core/components/fields';
-const LAYOUT = 'src/renderer/src/core/components/layout';
+const UI = 'src/renderer/src/core/ui';
+const FIELDS = 'src/renderer/src/core/forms';
+const LAYOUT = 'src/renderer/src/core/layout';
 
 // cardName -> { file, default? }  (cardName MUST be a real export name on the global)
 const map = {

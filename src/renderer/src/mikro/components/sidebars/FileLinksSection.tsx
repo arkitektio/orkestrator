@@ -1,4 +1,4 @@
-import { Empty, EmptyDescription, EmptyTitle } from "@/core/components/ui/empty";
+import { Empty, EmptyDescription, EmptyTitle } from "@/core/ui/empty";
 import { MikroArrayDataset, MikroTableDataset } from "@/core/linkers";
 import { Boxes, FileType2, Grid3x3, Shapes, Table2 } from "lucide-react";
 import { FileLinkFragment } from "../../api/graphql";

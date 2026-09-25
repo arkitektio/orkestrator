@@ -1,9 +1,9 @@
 import { NO_RECONNECT_CODES } from "@/core/constants";
-import { aliasToWsPath } from "@/core/lib/arkitekt/alias/helpers";
-import type { AppContext } from "@/core/lib/arkitekt/provider";
-import type { AvailableService } from "@/core/lib/arkitekt/types";
-import { TokenResponse } from "@/core/lib/arkitekt/fakts/tokenSchema";
-import { selectAlias, selectApolloClient } from "@/core/lib/arkitekt/utils";
+import { aliasToWsPath } from "@/core/connection/arkitekt/alias/helpers";
+import type { AppContext } from "@/core/connection/arkitekt/provider";
+import type { AvailableService } from "@/core/connection/arkitekt/types";
+import { TokenResponse } from "@/core/connection/arkitekt/fakts/tokenSchema";
+import { selectAlias, selectApolloClient } from "@/core/connection/arkitekt/utils";
 import { DefinitionInput, EnsureAgentDocument, EnsureAgentMutation, EnsureAgentMutationVariables, ImplementAgentDocument, ImplementAgentMutation, ImplementAgentMutationVariables, ImplementationInput} from "@/rekuest/api/graphql";
 import { ApolloClient, NormalizedCache } from "@apollo/client";
 import {

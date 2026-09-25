@@ -1,4 +1,4 @@
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useKraph } from "@/kraph/api/funcs";
 import {
   MediaUploadGrantFragment,

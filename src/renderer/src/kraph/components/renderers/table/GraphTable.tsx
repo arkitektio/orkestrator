@@ -11,14 +11,14 @@ import {
 import { ChevronDown } from "lucide-react";
 import * as React from "react";
 
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
-import { Input } from "@/core/components/ui/input";
+} from "@/core/ui/dropdown-menu";
+import { Input } from "@/core/ui/input";
 import {
   Table,
   TableBody,
@@ -26,7 +26,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/core/components/ui/table";
+} from "@/core/ui/table";
 
 import {
   RenderGraphTableFilter,

@@ -1,4 +1,4 @@
-import { smartOf } from "@/core/providers/smart/fromManifest";
+import { smartOf } from "@/core/smart/fromManifest";
 import { manifest } from "./manifest";
 
 // Omero Ark's smart objects (Smart cards, links, pages), built from the models

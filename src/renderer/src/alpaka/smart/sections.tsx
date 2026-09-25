@@ -1,6 +1,6 @@
 import { AlpakaGuard } from "@/alpaka/api/funcs";
 import { MessageSquareMore } from "lucide-react";
-import type { SmartContextSection } from "@/core/providers/smart/extensions/section";
+import type { SmartContextSection } from "@/core/smart/extensions/section";
 import { TalkAboutButton, talkTargets } from "./talk";
 import type { TalkTarget } from "./useTalkAbout";
 

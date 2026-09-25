@@ -1,4 +1,4 @@
-import { Explainer } from "@/core/components/explainer/Explainer";
+import { Explainer } from "@/core/layout/Explainer";
 import { LokDevice } from "@/core/linkers";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import React from "react";

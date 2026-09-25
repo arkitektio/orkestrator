@@ -14,23 +14,23 @@ import {
 import { ChevronDown, Download, RefreshCw } from "lucide-react";
 import * as React from "react";
 
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
-import { FancyInput } from "@/core/components/ui/fancy-input";
+} from "@/core/ui/dropdown-menu";
+import { FancyInput } from "@/core/ui/fancy-input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/core/components/ui/select";
+} from "@/core/ui/select";
 import {
   Table,
   TableBody,
@@ -38,7 +38,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/core/components/ui/table";
+} from "@/core/ui/table";
 import {
   ListStructuresQuery,
   Ordering,

@@ -3,7 +3,7 @@ import { LayerDriverRegistry } from "../platform/drivers/layerDriver";
 import type { ExperimentStoreState } from "../platform/stores/experimentStore";
 import type { RangeState } from "../platform/stores/rangeStore";
 import type { ViewerState } from "../platform/stores/viewerStore";
-import type { ParquetQueryEngine } from "@/core/lib/parquet/parquetEngine";
+import type { ParquetQueryEngine } from "@/core/data/parquet/parquetEngine";
 import { AnnotationMarksIndexer } from "../features/annotations/AnnotationMarksIndexer";
 import type { AnnotationSlice } from "../features/annotations/store/annotationSlice";
 import { EventTableDriver } from "../features/events/EventTableDriver";

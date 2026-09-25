@@ -6,7 +6,7 @@ import { useRoiDrawingStoreApi } from "../../features/annotations/roiDrawingStor
 import { layersPlanKey } from "../../platform/model/layerPlanKey";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
-import { stepSceneZ } from "@/core/lib/scene/camera/sceneNavigation";
+import { stepSceneZ } from "@/core/data/scene/camera/sceneNavigation";
 import { sceneZExtent } from "../../platform/coords/worldTransform";
 
 /** Hold-to-activate bindings. Release restores whatever was active before. */

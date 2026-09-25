@@ -1,6 +1,6 @@
-import { EXCLUDE_FROM_CAPTURE } from "@/core/lib/scene/capture/captureVisibility";
+import { EXCLUDE_FROM_CAPTURE } from "@/core/data/scene/capture/captureVisibility";
 import { useViewerStore } from "../../platform/stores/viewerStore";
-import { Line } from "@/core/lib/scene/draw/Line";
+import { Line } from "@/core/data/scene/draw/Line";
 
 /**
  * The origin crosshair: X in red, Y in green, marking where the stage is.

@@ -4,7 +4,7 @@
  * with. The reader itself — opening a layout, `indptr`, reading a run — is
  * shared with elektro and lives in `@/lib/sparse/sparseReader`.
  */
-import type { MikroClient } from "@/core/lib/zarr/store/types";
+import type { MikroClient } from "@/core/data/zarr/store/types";
 import type { SparseColouringSourceFragment } from "@/mikro/api/graphql";
 import {
   openSparseLayout as openSparseLayoutWith,
@@ -13,7 +13,7 @@ import {
   type SparseLayoutHandle,
   type SparseSlice,
   type SparseStoreAccess,
-} from "@/core/lib/sparse/sparseReader";
+} from "@/core/data/sparse/sparseReader";
 import { buildS3FetchConfig, getGeneralAccess } from "../zarr/access";
 
 export {
@@ -24,7 +24,7 @@ export {
   type SparseLayoutChoiceStore,
   type SparseLayoutHandle,
   type SparseSlice,
-} from "@/core/lib/sparse/sparseReader";
+} from "@/core/data/sparse/sparseReader";
 
 /**
  * Mikro's credentials for sparse stores. `SparseStore.bucketKey` is `"zarr"`,

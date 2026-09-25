@@ -1,4 +1,4 @@
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import { KraphMetricKind } from "@/core/linkers";
 import {
   MetricKindFilter,

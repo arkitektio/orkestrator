@@ -1,5 +1,5 @@
 
-import { createList } from "@/core/components/layout/createList";
+import { createList } from "@/core/layout/createList";
 import { useListModelCollectionsQuery } from "@/elektro/api/graphql";
 import { ElektroModelCollection } from "@/core/linkers";
 import ModelCollectionCard from "../cards/ModelCollectionCard";

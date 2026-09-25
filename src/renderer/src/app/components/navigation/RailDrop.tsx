@@ -1,5 +1,5 @@
-import { cn } from "@/core/lib/utils";
-import { useSmartDragActive, useSmartTabDrop } from "@/core/providers/smart/useSmartTabDrop";
+import { cn } from "@/core/util/utils";
+import { useSmartDragActive, useSmartTabDrop } from "@/core/smart/useSmartTabDrop";
 
 /**
  * The whole rail as one place to drop a card: let one go anywhere on it — a

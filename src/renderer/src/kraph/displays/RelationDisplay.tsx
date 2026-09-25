@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphRelation } from "@/core/linkers";
 import { useGetRelationQuery } from "../api/graphql";
 

@@ -1,4 +1,4 @@
-import { Card } from "@/core/components/ui/card";
+import { Card } from "@/core/ui/card";
 import { KraphRelationCategory } from "@/core/linkers";
 import {
   BaseEdge,

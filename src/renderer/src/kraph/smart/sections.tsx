@@ -1,6 +1,6 @@
 import { KraphGuard } from "@/kraph/api/funcs";
 import { useDialog } from "@/core/dialogs/registry";
-import { CommandItem } from "@/core/components/ui/command";
+import { CommandItem } from "@/core/ui/command";
 import {
   ListCandidateRelationCategoriesQuery,
   ListMeasurementCategoryWithGraphFragment,
@@ -21,9 +21,9 @@ import type {
   SectionStatus,
   SmartContextSection,
   SmartSectionContext,
-} from "@/core/providers/smart/extensions/section";
-import type { SmartContextProps } from "@/core/providers/smart/extensions/types";
-import { useStableData } from "@/core/providers/smart/extensions/useStableData";
+} from "@/core/smart/extensions/section";
+import type { SmartContextProps } from "@/core/smart/extensions/types";
+import { useStableData } from "@/core/smart/extensions/useStableData";
 import {
   CreateMeasurementButton,
   EntityRelateButton,

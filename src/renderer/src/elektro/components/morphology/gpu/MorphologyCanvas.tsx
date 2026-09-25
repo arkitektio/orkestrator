@@ -2,24 +2,24 @@ import { OrbitControls } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { useTabVisible } from "@/core/command/tabs/TabVisibilityContext";
-import { isSceneNavigationTarget } from "@/core/lib/input/keyboardTarget";
-import { captureFrameBlob, type CaptureRenderer } from "@/core/lib/scene/capture/captureFrame";
-import { EXCLUDE_FROM_CAPTURE } from "@/core/lib/scene/capture/captureVisibility";
-import { computeSphereFitPose } from "@/core/lib/scene/camera/fitPose";
+import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
+import { isSceneNavigationTarget } from "@/core/dnd/keyboardTarget";
+import { captureFrameBlob, type CaptureRenderer } from "@/core/data/scene/capture/captureFrame";
+import { EXCLUDE_FROM_CAPTURE } from "@/core/data/scene/capture/captureVisibility";
+import { computeSphereFitPose } from "@/core/data/scene/camera/fitPose";
 import {
   asNavControls,
   orbitCamera,
   panCamera,
   zoomCamera,
-} from "@/core/lib/scene/camera/keyboardNavigation";
-import { NAVIGATE_BUTTONS_3D } from "@/core/lib/scene/camera/navigateButtons";
+} from "@/core/data/scene/camera/keyboardNavigation";
+import { NAVIGATE_BUTTONS_3D } from "@/core/data/scene/camera/navigateButtons";
 import {
   navigationActionForKey,
   worldUnitsPerPixelAt,
-} from "@/core/lib/scene/camera/sceneNavigation";
-import { getNiceNumber } from "@/core/lib/scene/chrome/ScaleBar";
-import { createWebGPURendererFactory } from "@/core/lib/scene/gpu/createWebGPURenderer";
+} from "@/core/data/scene/camera/sceneNavigation";
+import { getNiceNumber } from "@/core/data/scene/chrome/ScaleBar";
+import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
 import type { Morphology } from "../model/buildMorphology";
 import { type Frame, wholeFrame } from "../model/focus";
 import { useMorphologyStore, useMorphologyStoreApi } from "../stores/morphologyStore";

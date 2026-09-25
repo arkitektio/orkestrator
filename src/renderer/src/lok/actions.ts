@@ -1,4 +1,4 @@
-import { Action } from '@/core/lib/localactions/LocalActionProvider'
+import { Action } from '@/core/smart/localactions/LocalActionProvider'
 import { BellRing, Building2 } from 'lucide-react'
 
 export const LOK_ACTIONS = {

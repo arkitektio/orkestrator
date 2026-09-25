@@ -7,13 +7,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/core/components/ui/alert-dialog";
-import { useTabActions } from "@/core/command/tabs/TabsProvider";
-import { useConnection } from "@/core/lib/arkitekt/provider";
-import { Action, ActionState } from "@/core/lib/localactions/LocalActionProvider";
-import type { ServiceMap } from "@/core/lib/arkitekt/provider";
-import type { OnDone } from "@/core/providers/smart/extensions/types";
-import { useSelectionSelector } from "@/core/providers/selection/SelectionContext";
+} from "@/core/ui/alert-dialog";
+import { useTabActions } from "@/core/tabs/TabsProvider";
+import { useConnection } from "@/core/connection/arkitekt/provider";
+import { Action, ActionState } from "@/core/smart/localactions/LocalActionProvider";
+import type { ServiceMap } from "@/core/connection/arkitekt/provider";
+import type { OnDone } from "@/core/smart/extensions/types";
+import { useSelectionSelector } from "@/core/dnd/selection/SelectionContext";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";

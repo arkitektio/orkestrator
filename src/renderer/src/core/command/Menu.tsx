@@ -1,19 +1,19 @@
 import { useDisplayComponent } from "@/core/smart/display/displays";
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import {
   Command,
   CommandEmpty,
   CommandList,
-} from "@/core/components/ui/command";
+} from "@/core/ui/command";
 // The input is used RAW, not through `ui/command`'s `CommandInput`: that one
 // wraps itself in a padded `InputGroup` with its own background and border,
 // which is exactly the nested "second search bar" this panel must not have.
 import { Command as CommandPrimitive } from "cmdk";
-import { Dialog } from "@/core/components/ui/dialog";
-import { cn } from "@/core/lib/utils";
-import { SmartLink } from "@/core/providers/smart/builder";
-import { PaletteSections } from "@/core/providers/smart/extensions/PaletteSections";
-import { SmartMenuWrappers } from "@/core/providers/smart/extensions/SmartMenuWrappers";
+import { Dialog } from "@/core/ui/dialog";
+import { cn } from "@/core/util/utils";
+import { SmartLink } from "@/core/smart/builder";
+import { PaletteSections } from "@/core/smart/extensions/PaletteSections";
+import { SmartMenuWrappers } from "@/core/smart/extensions/SmartMenuWrappers";
 import { Structure } from "@/core/types";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { DialogPortal } from "@radix-ui/react-dialog";

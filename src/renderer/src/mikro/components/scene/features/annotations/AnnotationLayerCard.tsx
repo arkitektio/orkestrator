@@ -1,4 +1,4 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { Eye, EyeOff, Shapes, Trash2 } from "lucide-react";
 import { memo, useMemo } from "react";
 import {
@@ -12,7 +12,7 @@ import {
   LayerCardShell,
   RowLabel,
   formatCount,
-} from "@/core/lib/scene/layerui/cardControls";
+} from "@/core/data/scene/layerui/cardControls";
 
 /**
  * A compact card for an `AnnotationLayer` in the Layers panel.

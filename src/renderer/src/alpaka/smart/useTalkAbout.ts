@@ -1,5 +1,5 @@
 import { useCreateRoomMutation } from "@/alpaka/api/graphql";
-import { useTabActions } from "@/core/command/tabs/TabsProvider";
+import { useTabActions } from "@/core/tabs/TabsProvider";
 import { AlpakaRoom } from "@/core/linkers";
 import React from "react";
 import { useNavigate } from "react-router-dom";

@@ -2,20 +2,20 @@ import {
   ListMessageFragment,
   StructureInput,
 } from "@/alpaka/api/graphql";
-import { Card, CardContent } from "@/core/components/ui/card";
-import { cn } from "@/core/lib/utils";
+import { Card, CardContent } from "@/core/ui/card";
+import { cn } from "@/core/util/utils";
 import { useSelf } from "@/core/connection/useSelf";
-import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Loader2, CheckCircle2, AlertCircle, XCircle, X, Ban, RefreshCw } from "lucide-react";
 import { agentDisplayName, displayInitials } from "@/alpaka/agentName";
 import { ActiveTask } from "./activeTasks";
 import { isUnconfirmed, settlePending, type PendingMessage } from "./pendingMessages";
 import React, { useCallback, useRef } from "react";
-import { useLatestRef } from "@/core/hooks/useLatestRef";
-import { Avatar, AvatarFallback } from "@/core/components/ui/avatar";
+import { useLatestRef } from "@/core/util/hooks/useLatestRef";
+import { Avatar, AvatarFallback } from "@/core/ui/avatar";
 import ChatBottombar from "./chat-bottombar";
-import { Markdown } from "@/core/components/ui/markdown";
+import { Markdown } from "@/core/ui/markdown";
 
 interface ChatListProps {
   messages?: ListMessageFragment[];

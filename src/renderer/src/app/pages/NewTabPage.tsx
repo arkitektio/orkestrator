@@ -1,12 +1,12 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { moduleRegistry } from "@/app/Arkitekt";
 import { matchIcon } from "@/core/modules/moduleIcons";
 import { ApplicableEntitySearch } from "@/core/command/sources/entity/ApplicableEntitySearch";
 import { ApplicableNavigation } from "@/core/command/sources/ApplicableNavigation";
 import { ApplicableRecents } from "@/core/command/sources/ApplicableRecents";
-import { useTabTitle } from "@/core/command/tabs/useTabTitle";
-import { Command, CommandEmpty, CommandList } from "@/core/components/ui/command";
-import { cn } from "@/core/lib/utils";
+import { useTabTitle } from "@/core/tabs/useTabTitle";
+import { Command, CommandEmpty, CommandList } from "@/core/ui/command";
+import { cn } from "@/core/util/utils";
 import { useDebounce } from "@uidotdev/usehooks";
 import { Command as CommandPrimitive } from "cmdk";
 import { Search } from "lucide-react";

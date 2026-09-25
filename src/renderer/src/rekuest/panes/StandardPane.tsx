@@ -1,9 +1,9 @@
 import { AgentController } from "@/core/agent/AgentController";
-import { ListRender } from "@/core/components/layout/ListRender";
-import { SidebarLayout } from "@/core/components/layout/SidebarLayout";
-import { FancyInput } from "@/core/components/ui/fancy-input";
-import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/components/ui/sidepane";
-import { cn } from "@/core/lib/utils";
+import { ListRender } from "@/core/layout/ListRender";
+import { SidebarLayout } from "@/core/layout/SidebarLayout";
+import { FancyInput } from "@/core/ui/fancy-input";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/ui/sidepane";
+import { cn } from "@/core/util/utils";
 import { RekuestAgent, RekuestDashboard } from "@/core/linkers";
 import { ListAgentFragment } from "@/rekuest/api/graphql";
 import { useDebounce } from "@uidotdev/usehooks";

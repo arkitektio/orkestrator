@@ -3,7 +3,7 @@ import {
   AccordionContent as ShadAccordionContent,
   AccordionItem as ShadAccordionItem,
   AccordionTrigger as ShadAccordionTrigger,
-} from '@/core/components/ui/accordion';
+} from '@/core/ui/accordion';
 import {
   Breadcrumb as ShadBreadcrumb,
   BreadcrumbItem as ShadBreadcrumbItem,
@@ -11,12 +11,12 @@ import {
   BreadcrumbList as ShadBreadcrumbList,
   BreadcrumbPage as ShadBreadcrumbPage,
   BreadcrumbSeparator as ShadBreadcrumbSeparator,
-} from '@/core/components/ui/breadcrumb';
+} from '@/core/ui/breadcrumb';
 import {
   Collapsible as ShadCollapsible,
   CollapsibleContent as ShadCollapsibleContent,
   CollapsibleTrigger as ShadCollapsibleTrigger,
-} from '@/core/components/ui/collapsible';
+} from '@/core/ui/collapsible';
 import {
   Menubar as ShadMenubar,
   MenubarContent as ShadMenubarContent,
@@ -24,7 +24,7 @@ import {
   MenubarMenu as ShadMenubarMenu,
   MenubarSeparator as ShadMenubarSeparator,
   MenubarTrigger as ShadMenubarTrigger,
-} from '@/core/components/ui/menubar';
+} from '@/core/ui/menubar';
 import {
   Pagination as ShadPagination,
   PaginationContent as ShadPaginationContent,
@@ -33,13 +33,13 @@ import {
   PaginationLink as ShadPaginationLink,
   PaginationNext as ShadPaginationNext,
   PaginationPrevious as ShadPaginationPrevious,
-} from '@/core/components/ui/pagination';
+} from '@/core/ui/pagination';
 import {
   Tabs as ShadTabs,
   TabsContent as ShadTabsContent,
   TabsList as ShadTabsList,
   TabsTrigger as ShadTabsTrigger,
-} from '@/core/components/ui/tabs';
+} from '@/core/ui/tabs';
 import * as z from 'zod';
 import {
   BlokPropSchemas,

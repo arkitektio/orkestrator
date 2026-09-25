@@ -1,9 +1,9 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { PageAction } from "@/core/components/ui/page-action";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageAction } from "@/core/ui/page-action";
 import { useElektroBigFileDownload } from "@/elektro/datalayer/useElektroBigFileDownload";
 import { ElektroFile } from "@/core/linkers";
-import { useDownload } from "@/core/providers/download/DownloadProvider";
+import { useDownload } from "@/core/modules/download/DownloadProvider";
 import { DownloadIcon, FileIcon } from "lucide-react";
 import { useGetFileQuery } from "../api/graphql";
 

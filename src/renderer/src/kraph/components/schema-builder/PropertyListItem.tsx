@@ -1,5 +1,5 @@
 import { GripVertical, Search, Database } from "lucide-react";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 import { PropertyDefinition, dataTypeConfigs } from "./utils";
 
 interface PropertyListItemProps {

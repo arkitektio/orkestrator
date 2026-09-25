@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { PhasorCursorKind } from "@/mikro/api/graphql";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 import {
   UNIVERSAL_SEMICIRCLE,
   cursorHit,

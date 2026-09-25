@@ -1,4 +1,4 @@
-import { createList } from "@/core/components/layout/createList";
+import { createList } from "@/core/layout/createList";
 import { useListArrayDatasetsQuery } from "@/elektro/api/graphql";
 import { ElektroArrayDataset } from "@/core/linkers";
 import ArrayDatasetCard from "../cards/ArrayDatasetCard";

@@ -1,4 +1,4 @@
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 import { motion, useReducedMotion } from "framer-motion";
 import { TaskEventKind } from "../../api/graphql";
 import { statusBucket } from "../../lib/taskStatus";

@@ -2,7 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { DoctorReport, Finding } from "@/core/lib/arkitekt/doctor/findings";
+import type { DoctorReport, Finding } from "@/core/connection/arkitekt/doctor/findings";
 import { ConnectionDoctorPanel } from "./ConnectionDoctorPanel";
 
 const report = (findings: Finding[]): DoctorReport => ({

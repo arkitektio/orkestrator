@@ -23,7 +23,7 @@
  *
  * Pure: imports nothing generated, so its suite runs in `node`.
  */
-import { invert4, type TransformLike } from "@/core/lib/scene/coords/transformGraph";
+import { invert4, type TransformLike } from "@/core/data/scene/coords/transformGraph";
 
 export type NamedAffine = {
   inputAxes: readonly string[];

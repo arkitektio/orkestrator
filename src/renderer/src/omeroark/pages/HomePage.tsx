@@ -1,7 +1,7 @@
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { HelpSidebar } from "@/core/components/sidebars/help";
-import { DialogButton } from "@/core/components/ui/dialog-button";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { HelpSidebar } from "@/core/layout/help";
+import { DialogButton } from "@/core/ui/dialog-button";
 import { OmeroArkProject } from "@/core/linkers";
 import { PlusIcon } from "@radix-ui/react-icons";
 import { useNavigate } from "react-router-dom";

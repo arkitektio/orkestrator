@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
-import { Slider } from '@/core/components/ui/slider'
-import { cn } from '@/core/lib/utils'
+import { Slider } from '@/core/ui/slider'
+import { cn } from '@/core/util/utils'
 import { useSceneDockOrientation, type SceneDockOrientation } from '../SceneDock'
 import { useModeStore } from '../../platform/stores/modeStore'
 import { layersPlanKey } from '../../platform/model/layerPlanKey'

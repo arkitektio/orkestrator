@@ -1,13 +1,13 @@
 import React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
-import { Badge } from "@/core/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/ui/avatar";
+import { Badge } from "@/core/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
+} from "@/core/ui/card";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokClient } from "@/core/linkers";
 import { Server, User } from "lucide-react";

@@ -1,6 +1,6 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import { RekuestTask } from "@/core/linkers";
 import type { Object } from "@/core/types";
 import { AlertTriangle, Bug } from "lucide-react";

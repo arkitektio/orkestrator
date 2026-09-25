@@ -1,6 +1,6 @@
 import React from "react";
-import { Avatar, AvatarFallback } from "@/core/components/ui/avatar";
-import { Card } from "@/core/components/ui/card";
+import { Avatar, AvatarFallback } from "@/core/ui/avatar";
+import { Card } from "@/core/ui/card";
 import { LokRedeemToken } from "@/core/linkers";
 import { ListRedeemTokenFragment } from "../../api/graphql";
 import { clientAppVersion } from "@/lok/lib/clientLabels";

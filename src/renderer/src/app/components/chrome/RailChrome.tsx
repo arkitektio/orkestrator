@@ -1,23 +1,23 @@
-import { dragZoneDoubleClick, getChromeMode, trafficLightGutter, useWindowState } from "@/core/lib/platform";
-import { cn } from "@/core/lib/utils";
+import { dragZoneDoubleClick, getChromeMode, trafficLightGutter, useWindowState } from "@/core/util/platform";
+import { cn } from "@/core/util/utils";
 import { ArrowLeft, ArrowRight, Check, ChevronsRight, Code2, Link2, Link2Off, MoreHorizontal, RotateCw, Share2 } from "lucide-react";
 
 import { Fragment } from "react";
 
-import { useActiveTabNavigation } from "@/core/command/tabs/useActiveTabNavigation";
+import { useActiveTabNavigation } from "@/core/tabs/useActiveTabNavigation";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "@/core/components/ui/context-menu";
+} from "@/core/ui/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
-import { useCopyUniversalLink } from "@/core/hooks/use-copy-universal-link";
+} from "@/core/ui/dropdown-menu";
+import { useCopyUniversalLink } from "@/core/tabs/sharing/use-copy-universal-link";
 import { useMeasuredWidth, visibleNavCount } from "./navOverflow";
 import { TitleSearchBar } from "./TitleSearchBar";
 import { WindowControls } from "./WindowControls";

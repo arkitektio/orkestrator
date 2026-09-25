@@ -9,8 +9,8 @@ import React, {
   useState,
 } from "react";
 
-import { useTabId } from "./tabs/TabContext";
-import { useActiveTabIdOrNull } from "./tabs/TabsProvider";
+import { useTabId } from "../tabs/TabContext";
+import { useActiveTabIdOrNull } from "../tabs/TabsProvider";
 
 import { Modifier } from "./ExtensionContext";
 

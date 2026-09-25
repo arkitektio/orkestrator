@@ -3,7 +3,7 @@ import { SceneLayerFragment } from "@/mikro/api/graphql";
 import {
   placementToSpatialAffine,
   spatialAxisTriple,
-} from "@/core/lib/scene/coords/transformGraph";
+} from "@/core/data/scene/coords/transformGraph";
 import type { SceneTransformContext } from "./layerModel";
 import { affineToMatrix4 } from "../coords/worldTransform";
 

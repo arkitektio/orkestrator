@@ -1,6 +1,6 @@
 import { moduleSearches } from "@/core/modules/registries";
-import { useModuleHostVersion } from "@/core/lib/module-host/host";
-import type { PassDownProps } from "@/core/providers/smart/extensions/types";
+import { useModuleHostVersion } from "@/core/modules/host/host";
+import type { PassDownProps } from "@/core/smart/extensions/types";
 import { useDebounce } from "@uidotdev/usehooks";
 
 import { MIN_TERM_LENGTH } from "./shared";

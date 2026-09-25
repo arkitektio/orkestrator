@@ -1,4 +1,4 @@
-import { parseQuantity } from "@/core/lib/quantities";
+import { parseQuantity } from "@/core/util/quantities";
 
 /**
  * The ONE place a time quantity is converted into a clock's own units.

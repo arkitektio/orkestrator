@@ -19,7 +19,7 @@
  * with the dedicated edge query and are only judged when present.
  */
 import { namedAffineOf } from "../../../lib/coords/namedAffine";
-import type { TransformLike } from "@/core/lib/scene/coords/transformGraph";
+import type { TransformLike } from "@/core/data/scene/coords/transformGraph";
 
 export type RegistrationEdgeLike = NonNullable<TransformLike> & {
   id: string;

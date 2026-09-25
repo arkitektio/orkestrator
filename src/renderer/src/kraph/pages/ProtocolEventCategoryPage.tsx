@@ -1,9 +1,9 @@
-import { PageSections } from "@/core/components/layout/PageSections";
+import { PageSections } from "@/core/layout/PageSections";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { FormSheet } from "@/core/components/dialog/FormDialog";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { PageAction } from "@/core/components/ui/page-action";
-import { DragZone } from "@/core/components/upload/drag";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageAction } from "@/core/ui/page-action";
+import { DragZone } from "@/core/datalayer/upload/drag";
 import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import {
   KraphProtocolEventCategory,

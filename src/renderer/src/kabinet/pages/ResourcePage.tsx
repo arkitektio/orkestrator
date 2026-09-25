@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { ResponsiveContainerGrid } from "@/core/components/layout/ContainerGrid";
-import { Card } from "@/core/components/ui/card";
+import { ResponsiveContainerGrid } from "@/core/layout/ContainerGrid";
+import { Card } from "@/core/ui/card";
 import { KabinetResource } from "@/core/linkers";
 import { useGetResourceQuery } from "../api/graphql";
 import PodCard from "../components/cards/PodCard";

@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { useCallback } from "react";
 
 import { recordRecent, type RecentEntry } from "./recents";

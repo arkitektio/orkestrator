@@ -1,10 +1,10 @@
-import { LOCAL_SECTIONS } from "@/core/providers/smart/extensions/local/sections";
-import { provideSmartRegistries } from "@/core/providers/smart/hostRegistries";
+import { LOCAL_SECTIONS } from "@/core/smart/extensions/local/sections";
+import { provideSmartRegistries } from "@/core/smart/hostRegistries";
 import {
   createSmartSectionRegistry,
   type SmartSectionRegistry,
-} from "@/core/providers/smart/extensions/sectionRegistry";
-import { derived } from "@/core/lib/module-host/lazy";
+} from "@/core/smart/extensions/sectionRegistry";
+import { derived } from "@/core/modules/host/lazy";
 import { moduleMenuWrappers, moduleSections } from "../modules/registries";
 
 const build = derived(() => createSmartSectionRegistry([...LOCAL_SECTIONS, ...moduleSections()]));

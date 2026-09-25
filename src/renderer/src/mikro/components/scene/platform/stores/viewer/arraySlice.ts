@@ -1,4 +1,4 @@
-import type { OpenedZarrArray } from "@/core/lib/zarr/openArray";
+import type { OpenedZarrArray } from "@/core/data/zarr/openArray";
 /**
  * The opened-zarr-array registry. Deliberately not reactive state — see
  * `registerArrays`.

@@ -1,4 +1,4 @@
-import { AppContext } from '@/core/lib/arkitekt/provider'
+import { AppContext } from '@/core/connection/arkitekt/provider'
 import { DefinitionInput, ArgPortInput, PortKind } from '@/rekuest/api/graphql'
 import { Assign, FromAgentMessage } from './message'
 

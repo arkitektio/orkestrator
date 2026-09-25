@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Badge } from "@/core/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs";
+import { Badge } from "@/core/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import { KabinetApp, KabinetRelease } from "@/core/linkers";
 import { Boxes, KeyRound, Layers } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";

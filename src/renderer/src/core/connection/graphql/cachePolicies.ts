@@ -3,7 +3,7 @@ import {
   buildOffsetPaginationPolicies,
   portsByKeyPolicy,
   type PaginatedFieldMap,
-} from "@/core/lib/arkitekt/builders/cachePolicies";
+} from "@/core/connection/arkitekt/builders/cachePolicies";
 
 /**
  * Root `Query` fields that take a `pagination` argument, per service, mapped

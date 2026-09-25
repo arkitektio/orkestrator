@@ -1,6 +1,6 @@
 import type { AbsolutePath } from "@zarrita/storage";
-import { CredentialRotation, type S3FetchConfigRefresher } from "@/core/lib/zarr/store/credentialRotation";
-import { fetchS3Path, type S3FetchConfig } from "@/core/lib/zarr/runner/s3-request";
+import { CredentialRotation, type S3FetchConfigRefresher } from "@/core/data/zarr/store/credentialRotation";
+import { fetchS3Path, type S3FetchConfig } from "@/core/data/zarr/runner/s3-request";
 import { LruByteCache } from "./lruByteCache";
 import type { ParquetTransport, ParquetTransportStats } from "./transport";
 

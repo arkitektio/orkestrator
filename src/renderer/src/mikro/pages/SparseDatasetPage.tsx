@@ -1,5 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { MikroSparseDataset } from "@/core/linkers";
 import { useGetSparseDatasetQuery } from "../api/graphql";
 import { sparseDatasetTitle } from "../components/sparse/sparseFacts";

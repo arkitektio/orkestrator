@@ -9,14 +9,14 @@ import { describe, expect, it, vi } from "vitest";
  */
 
 const state = { profile: undefined as unknown };
-vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: {
     useActiveProfile: () => state.profile,
     useSetProfileMesh: () => vi.fn(),
   },
 }));
-vi.mock("@/core/lib/mesh/useMeshes", () => ({
+vi.mock("@/core/connection/mesh/useMeshes", () => ({
   useMeshes: () => ({
     available: true,
     sidecar: { state: "ready", version: "t" },

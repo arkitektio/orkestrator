@@ -1,4 +1,4 @@
-import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 
 import { usePeerHomePageStatsQuery } from "@/mikro/api/graphql";
 import {

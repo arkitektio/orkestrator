@@ -1,7 +1,7 @@
-import { Arkitekt, serviceGuard } from "@/core/lib/arkitekt/host";
+import { Arkitekt, serviceGuard } from "@/core/connection/arkitekt/host";
 import { moduleRegistry } from "@/app/Arkitekt";
-import { DroppableNavLink } from "@/core/components/ui/link";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { DroppableNavLink } from "@/core/ui/link";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -9,9 +9,9 @@ import {
   ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from "@/core/components/ui/context-menu";
-import { cn } from "@/core/lib/utils";
-import { aliasToHttpPath } from "@/core/lib/arkitekt/alias/helpers";
+} from "@/core/ui/context-menu";
+import { cn } from "@/core/util/utils";
+import { aliasToHttpPath } from "@/core/connection/arkitekt/alias/helpers";
 import {
   Home,
   RefreshCw,
@@ -25,8 +25,8 @@ import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHo
 import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
 import { ModuleRailIslands } from "@/core/modules/registries";
-import { UploadIsland } from "@/core/providers/upload/UploadProvider";
-import { DownloadIsland } from "@/core/providers/download/DownloadProvider";
+import { UploadIsland } from "@/core/datalayer/UploadProvider";
+import { DownloadIsland } from "@/core/modules/download/DownloadProvider";
 import { AgentIsland } from "@/core/agent/AgentIsland";
 import { LocalActionIsland } from "@/app/components/rail/LocalActionIsland";
 import { RailIslandStack } from "@/core/ui/rail/RailIsland";

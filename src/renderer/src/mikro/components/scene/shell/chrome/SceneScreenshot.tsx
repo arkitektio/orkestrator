@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useThree } from "@react-three/fiber";
-import { captureFrameBlob, type CaptureRenderer } from "@/core/lib/scene/capture/captureFrame";
+import { captureFrameBlob, type CaptureRenderer } from "@/core/data/scene/capture/captureFrame";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 
 /**

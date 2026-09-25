@@ -1,21 +1,21 @@
 import React, { type ComponentType, type ReactNode } from "react";
 
-import { Arkitekt, serviceGuard } from "@/core/lib/arkitekt/host";
-import type { DisplayWidgetProps } from "@/core/lib/display/registry";
-import type { FileDownloader } from "@/core/lib/export/fileDownloaders";
-import type { Action } from "@/core/lib/localactions/LocalActionProvider";
+import { Arkitekt, serviceGuard } from "@/core/connection/arkitekt/host";
+import type { DisplayWidgetProps } from "@/core/smart/display/registry";
+import type { FileDownloader } from "@/core/modules/export/fileDownloaders";
+import type { Action } from "@/core/smart/localactions/LocalActionProvider";
 import type {
   ModuleBuiltins,
   ModuleDefinition,
   PageSection,
   PaletteHitActionProps,
-} from "@/core/lib/module-host/define";
-import type { PassDownProps } from "@/core/providers/smart/extensions/types";
-import { installedModules, useModuleHostVersion } from "@/core/lib/module-host/host";
-import { derived, derivedRecord } from "@/core/lib/module-host/lazy";
-import type { ProfileSection } from "@/core/lib/profile/section";
-import type { TaskHook } from "@/core/lib/taskhooks/types";
-import type { SmartContextSection } from "@/core/providers/smart/extensions/section";
+} from "@/core/modules/host/define";
+import type { PassDownProps } from "@/core/smart/extensions/types";
+import { installedModules, useModuleHostVersion } from "@/core/modules/host/host";
+import { derived, derivedRecord } from "@/core/modules/host/lazy";
+import type { ProfileSection } from "@/core/connection/profile/section";
+import type { TaskHook } from "@/core/modules/taskhooks/types";
+import type { SmartContextSection } from "@/core/smart/extensions/section";
 import type { DialogRegistry } from "./types";
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createTab, type TabRecord } from "@/core/command/tabs/tabs";
+import { createTab, type TabRecord } from "@/core/tabs/tabs";
 
 import { rowBlock, rowMoves, rowsOf } from "./railRows";
 

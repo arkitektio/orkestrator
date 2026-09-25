@@ -1,16 +1,16 @@
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { HelpSidebar } from "@/core/components/sidebars/help";
-import { Badge } from "@/core/components/ui/badge";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { HelpSidebar } from "@/core/layout/help";
+import { Badge } from "@/core/ui/badge";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
-} from "@/core/components/ui/page-action";
-import { CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
-import { CollapsibleSearch } from "@/core/components/ui/collapsible-search";
-import { DateTimeRangePicker } from "@/core/components/ui/date-time-range-picker";
-import { DialogButton } from "@/core/components/ui/dialog-button";
+} from "@/core/ui/page-action";
+import { CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
+import { DateTimeRangePicker } from "@/core/ui/date-time-range-picker";
+import { DialogButton } from "@/core/ui/dialog-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,14 +19,14 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
-import { Separator } from "@/core/components/ui/separator";
+} from "@/core/ui/dropdown-menu";
+import { Separator } from "@/core/ui/separator";
 import {
   parseAsIsoDateTime,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
-} from "@/core/hooks/use-search-param-state";
+} from "@/core/util/hooks/use-search-param-state";
 import { FlussWorkspace } from "@/core/linkers";
 import {
   FlowOrder,
@@ -55,7 +55,7 @@ import RunList from "../components/lists/RunList";
 import WorkspaceList from "../components/lists/WorkspaceList";
 import WorkspaceCarousel from "../edit/carousels/WorkspaceCarousel";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 
 const ACTIVE_RUNS_WINDOW = 30;
 

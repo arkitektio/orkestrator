@@ -5,7 +5,7 @@ import { Easing } from "@/mikro/api/graphql";
 import type { AnimationFragment, CameraStateFragment, SceneFragment } from "@/mikro/api/graphql";
 import { tourDurationMs } from "../camera/animation";
 import type { SceneCameraFrame } from "../camera/cameraState";
-import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/util/createScopedStore";
 
 /**
  * The scene's camera tours: the saved ones, the one playing, and the one being

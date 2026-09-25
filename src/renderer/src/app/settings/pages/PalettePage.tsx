@@ -3,18 +3,18 @@ import {
   usePinnedActionIds,
   useTogglePinnedAction,
 } from "@/core/smart/localactions/registry";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
-import { Input } from "@/core/components/ui/input";
-import { ScrollArea } from "@/core/components/ui/scroll-area";
-import type { Action } from "@/core/lib/localactions/LocalActionProvider";
+} from "@/core/ui/card";
+import { Input } from "@/core/ui/input";
+import { ScrollArea } from "@/core/ui/scroll-area";
+import type { Action } from "@/core/smart/localactions/LocalActionProvider";
 import { Pin, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SettingsPage } from "../components/SettingsPage";

@@ -1,6 +1,6 @@
-import { Explainer } from "@/core/components/explainer/Explainer";
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { DialogButton } from "@/core/components/ui/dialog-button";
+import { Explainer } from "@/core/layout/Explainer";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { DialogButton } from "@/core/ui/dialog-button";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { PlusIcon } from "lucide-react";
 import React from "react";

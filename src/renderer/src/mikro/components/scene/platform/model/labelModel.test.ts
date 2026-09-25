@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { LabelLayerFragment } from "./layerGuards";
 import { isLabelLayerState, normalizeLabelLayer } from "./layerModel";
 import { LABEL_ID_CEILING, resolveLayerDataRange } from "./dataRange";
-import type { SceneTransformContext } from "@/core/lib/scene/coords/transformGraph";
+import type { SceneTransformContext } from "@/core/data/scene/coords/transformGraph";
 
 /**
  * `normalizeLabelLayer` is what lets a label mask join `LayerState` and therefore

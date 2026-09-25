@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { LocalActionButton, type LocalActionButtonProps } from "@/core/components/ui/localactionbutton";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { LocalActionButton, type LocalActionButtonProps } from "@/core/ui/localactionbutton";
 import { RekuestDashboard } from "@/core/linkers";
 import { useGetDashboardQuery } from "../api/graphql";
 import { DashboardBlokSidebar, DashboardScene, DashboardSceneProvider } from "../dashboard-scene";

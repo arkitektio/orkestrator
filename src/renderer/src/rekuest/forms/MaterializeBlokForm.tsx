@@ -1,7 +1,7 @@
-import { Button } from "@/core/components/ui/button";
-import { DialogFooter } from "@/core/components/ui/dialog";
-import { Form } from "@/core/components/ui/form";
-import { cn } from "@/core/lib/utils";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
+import { cn } from "@/core/util/utils";
 import { ApolloError } from "@apollo/client";
 import { toast } from "sonner";
 import {

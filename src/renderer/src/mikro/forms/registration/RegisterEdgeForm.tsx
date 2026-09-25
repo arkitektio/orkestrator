@@ -1,15 +1,15 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
-import { DialogFooter } from "@/core/components/ui/dialog";
-import { Input } from "@/core/components/ui/input";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Input } from "@/core/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/core/components/ui/select";
+} from "@/core/ui/select";
 import { AlertTriangle } from "lucide-react";
 import { useMemo, useState } from "react";
 import {

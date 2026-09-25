@@ -1,8 +1,8 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
-import { GraphQLListSearchField } from "@/core/components/fields/GraphQLListSearchField";
-import { Button } from "@/core/components/ui/button";
-import { DialogFooter } from "@/core/components/ui/dialog";
-import { Form } from "@/core/components/ui/form";
+import { GraphQLListSearchField } from "@/core/forms/GraphQLListSearchField";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import {
   ServiceInstanceFragment,

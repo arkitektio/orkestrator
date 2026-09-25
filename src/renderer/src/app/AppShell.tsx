@@ -1,5 +1,5 @@
-import { LinkContextMenu } from "@/core/command/tabs/LinkContextMenu";
-import { TabOutlet } from "@/core/command/tabs/TabOutlet";
+import { LinkContextMenu } from "@/core/tabs/LinkContextMenu";
+import { TabOutlet } from "@/core/tabs/TabOutlet";
 import { PageCorner } from "../core/debug/ui/PageCorner";
 import { AppLayout } from "@/app/layout/AppLayout";
 import { WelcomeLayout } from "@/app/layout/WelcomeLayout";

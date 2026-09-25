@@ -1,5 +1,5 @@
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Separator } from "@/core/components/ui/separator";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Separator } from "@/core/ui/separator";
 import React from "react";
 import PodsList from "../components/lists/PodsList";
 

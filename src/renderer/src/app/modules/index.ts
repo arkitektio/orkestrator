@@ -10,7 +10,7 @@ import { manifest as kabinet } from "@/kabinet/manifest";
 import { service as kabinetService } from "@/kabinet/service";
 import { manifest as kraph } from "@/kraph/manifest";
 import { service as kraphService } from "@/kraph/service";
-import type { ModuleManifest } from "@/core/lib/module-spec";
+import type { ModuleManifest } from "@/core/modules/spec";
 import { manifest as lok } from "@/lok/manifest";
 import { manifest as lovekit } from "@/lovekit/manifest";
 import { service as lovekitService } from "@/lovekit/service";

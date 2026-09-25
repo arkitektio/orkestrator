@@ -2,7 +2,7 @@
 // (majorityHue reaches `brandTarget` → `platform/gpu/colormaps`, which transitively
 // touches `window`)
 import { describe, expect, it } from "vitest";
-import { srgbToOklch } from "@/core/lib/color/oklch";
+import { srgbToOklch } from "@/core/data/color/oklch";
 import { majorityHueFromPixels, sameBrandTarget } from "./majorityHue";
 
 /** Build an ImageData-shaped buffer from [r, g, b, a] pixels. */

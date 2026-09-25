@@ -1,8 +1,8 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { DisplayWidget } from "@/core/command/Menu";
-import { FormSheet } from "@/core/components/dialog/FormDialog";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Card } from "@/core/components/ui/card";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Card } from "@/core/ui/card";
 import { KraphStructure, KraphStructureKind } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetStructureQuery } from "../api/graphql";

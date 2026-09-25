@@ -2,7 +2,7 @@ import { buildAssignInput } from "@/rekuest/assign";
 import * as React from 'react';
 import BlokRenderer from '@/core/blok/renderer/BlokRenderer';
 import {useBlokRuntime, type BlokDispatchActionHandler} from '@/core/blok/renderer/runtime';
-import {formatApolloError} from '@/core/lib/errorHandler';
+import {formatApolloError} from '@/core/connection/graphql/errorHandler';
 import {v4 as uuidv4} from 'uuid';
 import {useAssign} from '@/rekuest/hooks/useAssign';
 import {useAgentLiveState} from '@/rekuest/hooks/useLiveState';

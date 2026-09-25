@@ -6,7 +6,7 @@
  * React state instead would mean recompiling the shader on every camera move,
  * which is exactly what the uniform-push contract exists to avoid. */
 import { useThree } from "@react-three/fiber";
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import { useCallback, useEffect, useRef } from "react";
 

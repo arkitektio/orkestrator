@@ -1,5 +1,5 @@
 import { AxisType, PhasorColorMode } from "@/mikro/api/graphql";
-import { toBase } from "@/core/lib/quantities";
+import { toBase } from "@/core/util/quantities";
 
 /**
  * Phasor math — the single source of truth, mirrored in three places that must

@@ -1,4 +1,4 @@
-import { Guard } from "@/core/lib/arkitekt/host";
+import { Guard } from "@/core/connection/arkitekt/host";
 import { AppAvatar } from "../AppAvatar";
 
 export const AppInfo = (props: { clientId: string | undefined }) => {

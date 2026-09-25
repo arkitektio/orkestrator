@@ -1,5 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Card } from "@/core/components/ui/card";
+import { Card } from "@/core/ui/card";
 import { ElektroMechanism } from "@/core/linkers";
 import { useDetailMechanismQuery } from "../api/graphql";
 

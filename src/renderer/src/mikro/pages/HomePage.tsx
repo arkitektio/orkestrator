@@ -1,15 +1,15 @@
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Separator } from "@/core/components/ui/separator";
-import { UploadWrapper } from "@/core/components/upload/wrapper";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Separator } from "@/core/ui/separator";
+import { UploadWrapper } from "@/core/datalayer/upload/wrapper";
 import { useCreateFile } from "@/mikro/api/hooks";
 
 import { asParamlessRoute } from "@/core/layout/routes/ParamlessRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { HelpSidebar } from "@/core/components/sidebars/help";
-import { Badge } from "@/core/components/ui/badge";
-import { CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
-import { CollapsibleSearch } from "@/core/components/ui/collapsible-search";
-import { DateTimeRangePicker } from "@/core/components/ui/date-time-range-picker";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { HelpSidebar } from "@/core/layout/help";
+import { Badge } from "@/core/ui/badge";
+import { CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
+import { DateTimeRangePicker } from "@/core/ui/date-time-range-picker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,13 +18,13 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
+} from "@/core/ui/dropdown-menu";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
-} from "@/core/components/ui/page-action";
-import { useUpload } from "@/core/providers/upload/UploadProvider";
+} from "@/core/ui/page-action";
+import { useUpload } from "@/core/datalayer/UploadProvider";
 import {
   ArrowDownWideNarrow,
   ArrowUpDown,
@@ -63,7 +63,7 @@ import FileList from "../components/lists/FileList";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { StatisticsSidebar } from "../components/sidebars/StatisticsSidebar";
 import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
-import { parseAsIsoDateTime, parseAsString, parseAsStringLiteral, useQueryState } from "@/core/hooks/use-search-param-state";
+import { parseAsIsoDateTime, parseAsString, parseAsStringLiteral, useQueryState } from "@/core/util/hooks/use-search-param-state";
 
 
 export interface IRepresentationScreenProps { }

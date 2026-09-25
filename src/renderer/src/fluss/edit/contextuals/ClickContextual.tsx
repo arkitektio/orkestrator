@@ -1,13 +1,13 @@
-import { Card } from "@/core/components/ui/card";
-import { Separator } from "@/core/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { Card } from "@/core/ui/card";
+import { Separator } from "@/core/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import { ClickContextualParams, FlowNode } from "@/fluss/types";
 import { ListAgentFragment, useAgentsQuery } from "@/rekuest/api/graphql";
 import { useMemo, useState } from "react";
 import { useEditFlowStore } from "../context";
 import { buildAgentSubflowNode } from "../store/graph";
 import { ActionSuggestions } from "./ActionSuggestions";
-import { ContextualContainer } from "@/core/components/ui/contextual-container";
+import { ContextualContainer } from "@/core/ui/contextual-container";
 import { ReactiveSuggestions } from "./ReactiveSuggestions";
 import { SearchForm, SearchValues } from "./SearchForm";
 import { clickSuggestions } from "./suggestions";

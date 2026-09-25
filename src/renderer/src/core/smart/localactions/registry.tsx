@@ -2,22 +2,22 @@ import {
   Action,
   ActionParams,
   createLocalActionProvider,
-} from "@/core/lib/localactions/LocalActionProvider";
-import { derivedRecord } from "@/core/lib/module-host/lazy";
-import { linkBuilder } from "@/core/providers/smart/builder";
-import { provideSmartRegistries } from "@/core/providers/smart/hostRegistries";
+} from "@/core/smart/localactions/LocalActionProvider";
+import { derivedRecord } from "@/core/modules/host/lazy";
+import { linkBuilder } from "@/core/smart/builder";
+import { provideSmartRegistries } from "@/core/smart/hostRegistries";
 import { MODULE_ACTIONS } from "../../modules/registries";
-import { smartRegistry } from "@/core/providers/smart/registry";
-import { structureTabTarget } from "@/core/providers/smart/tabTargets";
-import { requestExport } from "@/core/lib/export/exportRequests";
+import { smartRegistry } from "@/core/smart/registry";
+import { structureTabTarget } from "@/core/smart/tabTargets";
+import { requestExport } from "@/core/modules/export/exportRequests";
 import { Columns2, Download, ExternalLink, FolderOpen, Link2, Link2Off, PanelLeftOpen } from "lucide-react";
 import { toast } from "sonner";
 import {
   getActiveProfile,
   loadStoredProfileBook,
-} from "@/core/lib/arkitekt/fakts/profileStorageSchema";
-import type { ShareScope } from "@/core/lib/shareScope";
-import { copyText, privateLinkFor, scopedLinkFor, universalLinkFor } from "@/core/lib/universalLink";
+} from "@/core/connection/arkitekt/fakts/profileStorageSchema";
+import type { ShareScope } from "@/core/tabs/sharing/shareScope";
+import { copyText, privateLinkFor, scopedLinkFor, universalLinkFor } from "@/core/tabs/sharing/universalLink";
 
 const NavigateAction: Action = {
   title: "Open",

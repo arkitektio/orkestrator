@@ -1,14 +1,14 @@
-import { ResponsiveContainerGrid } from "@/core/components/layout/ContainerGrid";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { HelpSidebar } from "@/core/components/sidebars/help";
-import { Button } from "@/core/components/ui/button";
+import { ResponsiveContainerGrid } from "@/core/layout/ContainerGrid";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { HelpSidebar } from "@/core/layout/help";
+import { Button } from "@/core/ui/button";
 import {
   CardDescription,
   CardHeader,
   CardTitle
-} from "@/core/components/ui/card";
-import { DialogButton } from "@/core/components/ui/dialog-button";
+} from "@/core/ui/card";
+import { DialogButton } from "@/core/ui/dialog-button";
 import { KraphGraph } from "@/core/linkers";
 import {
   BarChart3,

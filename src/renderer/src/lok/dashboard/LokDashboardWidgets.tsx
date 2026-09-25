@@ -1,9 +1,9 @@
-import { SlotSections } from "@/core/components/layout/PageSections";
-import { NotificationCountProvider } from "@/core/providers/dashboard/notificationCount";
-import { useRegisterDashboardWidget } from "@/core/providers/dashboard/hooks";
+import { SlotSections } from "@/core/layout/PageSections";
+import { NotificationCountProvider } from "@/core/dashboard/notificationCount";
+import { useRegisterDashboardWidget } from "@/core/dashboard/hooks";
 import { useSelf } from "@/core/connection/useSelf";
-import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
-import { Skeleton } from "@/core/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/core/ui/avatar";
+import { Skeleton } from "@/core/ui/skeleton";
 import {
   useMyActiveMessagesQuery,
   useUsersQuery,

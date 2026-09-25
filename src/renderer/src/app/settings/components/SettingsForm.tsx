@@ -1,6 +1,6 @@
-import { Form } from "@/core/components/ui/form";
-import { useSettings } from "@/core/providers/settings/SettingsContext";
-import type { Settings } from "@/core/providers/settings/validator";
+import { Form } from "@/core/ui/form";
+import { useSettings } from "@/core/settings/store/SettingsContext";
+import type { Settings } from "@/core/settings/store/validator";
 import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 

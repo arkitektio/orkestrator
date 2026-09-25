@@ -4,8 +4,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
-import { ActionDescription } from "@/core/lib/ports/ActionDescription";
+} from "@/core/ui/card";
+import { ActionDescription } from "@/core/ports/engine/ActionDescription";
 import { KabinetDefinition } from "@/core/linkers";
 import { ListDefinitionFragment } from "../../api/graphql";
 

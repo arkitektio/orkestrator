@@ -1,6 +1,6 @@
 import React from "react";
-import { Card } from "@/core/components/ui/card";
-import { cn } from "@/core/lib/utils";
+import { Card } from "@/core/ui/card";
+import { cn } from "@/core/util/utils";
 import { AlpakaProvider } from "@/core/linkers";
 import Anthropic from "@lobehub/icons-static-svg/icons/anthropic.svg";
 import Aws from "@lobehub/icons-static-svg/icons/aws.svg";

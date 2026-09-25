@@ -1,8 +1,8 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { ListRender } from "@/core/components/layout/ListRender";
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Card, CardContent } from "@/core/components/ui/card";
-import { SheetButton } from "@/core/components/ui/sheetbutton";
+import { ListRender } from "@/core/layout/ListRender";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Card, CardContent } from "@/core/ui/card";
+import { SheetButton } from "@/core/ui/sheetbutton";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { PlusIcon } from "lucide-react";
 import { useGetServiceInstanceQuery } from "../api/graphql";
@@ -10,7 +10,7 @@ import GroupCard from "../components/cards/GroupCard";
 import UserCard from "../components/cards/UserCard";
 import InstanceCompositionGraph from "../components/graphs/InstanceCompositionGraph";
 
-import { Image } from "@/core/components/ui/image";
+import { Image } from "@/core/ui/image";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 
 export type IRepresentationScreenProps = {};

@@ -2,7 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { ServiceRuntimeState } from "@/core/lib/arkitekt/types";
+import type { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
 import { ServiceStatusPanel } from "./ServiceUnavailable";
 
 const state = (overrides: Partial<ServiceRuntimeState> = {}): ServiceRuntimeState =>

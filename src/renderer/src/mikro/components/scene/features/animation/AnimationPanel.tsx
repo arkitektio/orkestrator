@@ -10,8 +10,8 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Button } from "@/core/components/ui/button";
-import { Input } from "@/core/components/ui/input";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
 import { Easing } from "@/mikro/api/graphql";
 import { tourDurationMs } from "../../platform/camera/animation";
 import { useAnimationStore } from "../../platform/stores/animationStore";

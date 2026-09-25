@@ -1,5 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import { ElektroEnvironment, ElektroMechanism } from "@/core/linkers";
 import { useDetailModEnvironmentQuery } from "../api/graphql";
 

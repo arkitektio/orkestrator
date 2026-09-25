@@ -1,4 +1,4 @@
-import { Guard } from "@/core/lib/arkitekt/host";
+import { Guard } from "@/core/connection/arkitekt/host";
 import { Arkitekt } from "@/app/Arkitekt";
 // Installs every module's builtins; must precede anything that reads a registry.
 import "@/app/modules/install";
@@ -8,23 +8,23 @@ import "@/app/configureSmartBuilder";
 import "@/core/smart/smartcontext";
 import { DialogProvider } from "@/core/dialogs/registry";
 import { LocalActionProvider } from "@/core/smart/localactions/registry";
-import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Button } from "@/core/components/ui/button";
-import { ButtonGroup } from "@/core/components/ui/button-group";
-import { Toaster } from "@/core/components/ui/sonner";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Button } from "@/core/ui/button";
+import { ButtonGroup } from "@/core/ui/button-group";
+import { Toaster } from "@/core/ui/sonner";
 import { UpdateListener } from "@/app/updates/UpdateListener";
-import { TooltipProvider } from "@/core/components/ui/tooltip";
-import { useFatalReport } from "@/core/hooks/use-report";
-import { ThemeProvider } from "@/core/providers/ThemeProvider";
-import { DebugProvider } from "@/core/providers/debug/DebugProvider";
-import { SelectionProvider } from "@/core/providers/selection/SelectionProvider";
-import { SettingsProvider } from "@/core/providers/settings/SettingsProvider";
-import { SmartProvider } from "@/core/providers/smart/provider";
-import { SmartPrefetchProvider } from "@/core/providers/smart/SmartPrefetchProvider";
-import { SmartSurface } from "@/core/providers/smart/SmartSurface";
-import { ExportHost } from "@/core/lib/export/ExportHost";
-import { WidgetRegistryProvider } from "@/core/lib/ports/WidgetsProvider";
+import { TooltipProvider } from "@/core/ui/tooltip";
+import { useFatalReport } from "@/core/debug/use-report";
+import { ThemeProvider } from "@/core/settings/theme/ThemeProvider";
+import { DebugProvider } from "@/core/debug/DebugProvider";
+import { SelectionProvider } from "@/core/dnd/selection/SelectionProvider";
+import { SettingsProvider } from "@/core/settings/store/SettingsProvider";
+import { SmartProvider } from "@/core/smart/provider";
+import { SmartPrefetchProvider } from "@/core/smart/SmartPrefetchProvider";
+import { SmartSurface } from "@/core/smart/SmartSurface";
+import { ExportHost } from "@/core/modules/export/ExportHost";
+import { WidgetRegistryProvider } from "@/core/ports/engine/WidgetsProvider";
 import React from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { useNavigate } from "react-router-dom";
@@ -92,15 +92,15 @@ export const BackNavigationErrorCatcher = ({
   );
 };
 
-import { UploadProvider } from "@/core/providers/upload/UploadProvider";
-import { DownloadProvider } from "@/core/providers/download/DownloadProvider";
+import { UploadProvider } from "@/core/datalayer/UploadProvider";
+import { DownloadProvider } from "@/core/modules/download/DownloadProvider";
 
 // The AppProvider is the root component of the application.
 // It is responsible for providing all the context providers that are used in the application.
 // It wraps the Easy Provider, which allows for the configuration of an Easy App through Arkitekt,
 // Additionally, it wraps the DisplayProvider, which allows for the configuration of the display registry.
 import { AgentProvider } from "../core/agent/AgentProvider";
-import { WardRegistrar } from "@/core/lib/arkitekt/WardRegistrar";
+import { WardRegistrar } from "@/core/connection/arkitekt/WardRegistrar";
 import { RefetchOnReactivate } from "@/app/hooks/use-refetch-on-reactivate";
 import { GcOnNavigate } from "@/app/hooks/use-gc-on-navigate";
 import { OrganizationBrandSync } from "@/lok/components/OrganizationBrandSync";
@@ -108,8 +108,8 @@ import { ProfileIdentitySync } from "@/lok/components/ProfileIdentitySync";
 import { MeshSync } from "../core/connection/ui/mesh/MeshSync";
 import { CommandPaletteProvider } from "@/core/command/CommandPaletteProvider";
 import { CommandMenuHost } from "@/core/command/Host";
-import { ActiveTabRouter } from "@/core/command/tabs/ActiveTabRouter";
-import { TabsProvider } from "@/core/command/tabs/TabsProvider";
+import { ActiveTabRouter } from "@/core/tabs/ActiveTabRouter";
+import { TabsProvider } from "@/core/tabs/TabsProvider";
 import { VoiceInput } from "@/core/voice";
 
 

@@ -42,8 +42,8 @@ vi.mock("@/app/layout/AppLayout", () => ({
 vi.mock("./components/navigation/PrivateNavigationBar", () => ({
   PrivateNavigationBar: () => <div>rail</div>,
 }));
-vi.mock("@/core/command/tabs/TabOutlet", () => ({ TabOutlet: () => <div>tabs</div> }));
-vi.mock("@/core/command/tabs/LinkContextMenu", () => ({ LinkContextMenu: () => null }));
+vi.mock("@/core/tabs/TabOutlet", () => ({ TabOutlet: () => <div>tabs</div> }));
+vi.mock("@/core/tabs/LinkContextMenu", () => ({ LinkContextMenu: () => null }));
 vi.mock("./AppRoutes", () => ({ AppRoutes: () => null }));
 vi.mock("../core/debug/ui/PageCorner", () => ({ PageCorner: () => <div>corner</div> }));
 vi.mock("./components/fallbacks/NotConnected", () => ({

@@ -1,4 +1,4 @@
-import { Card } from "@/core/components/ui/card";
+import { Card } from "@/core/ui/card";
 import { LokServiceInstance } from "@/core/linkers";
 import { ListServiceInstanceFragment } from "@/lok/api/graphql";
 import { Handle, Node, NodeProps, Position } from "@xyflow/react";

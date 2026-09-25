@@ -1,8 +1,8 @@
-import { useGraphQlFormDialog } from "@/core/components/dialog/FormDialog";
-import { StringField } from "@/core/components/fields/StringField";
-import { Button } from "@/core/components/ui/button";
-import { DialogFooter } from "@/core/components/ui/dialog";
-import { Form } from "@/core/components/ui/form";
+import { useGraphQlFormDialog } from "@/core/dialogs/FormDialog";
+import { StringField } from "@/core/forms/StringField";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import { DetailDeviceFragment, UpdateDeviceMutationVariables, useUpdateDeviceMutation } from "../api/graphql";
 

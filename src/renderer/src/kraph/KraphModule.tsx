@@ -1,7 +1,7 @@
 import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { KraphGuard } from "@/kraph/api/funcs";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
-import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import EntityCategoriesPage from "./pages/EntityCategoriesPage";

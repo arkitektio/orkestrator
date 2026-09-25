@@ -1,9 +1,9 @@
 import { PROFILE_SECTIONS } from "@/core/connection/profile/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokUser } from "@/core/linkers";
-import { ProfileSections } from "@/core/lib/profile/ProfileSections";
+import { ProfileSections } from "@/core/connection/profile/ProfileSections";
 import {
   useMyContextQuery,
   useUpdateUserProfileMutation,

@@ -1,9 +1,9 @@
-import { StructureDisplay } from "@/core/components/display/StructureDisplay";
-import { Badge } from "@/core/components/ui/badge";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
+import { Badge } from "@/core/ui/badge";
 
 import { MikroFolder } from "@/core/linkers";
 import { FolderIcon } from "lucide-react";
-import Timestamp from "@/core/components/ui/timestamp";
+import Timestamp from "@/core/ui/timestamp";
 import { GetFolderQuery } from "../../api/graphql";
 import { ProvenanceSection } from "./ProvenanceSection";
 

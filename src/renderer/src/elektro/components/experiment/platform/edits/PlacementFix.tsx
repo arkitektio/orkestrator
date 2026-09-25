@@ -1,6 +1,6 @@
 import { MapPin } from "lucide-react";
 import { useDialog } from "@/core/dialogs/registry";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import type { LayerState } from "../model/layerModel";
 import { useExperimentStore } from "../stores/experimentStore";
 

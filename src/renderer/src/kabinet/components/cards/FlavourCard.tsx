@@ -1,7 +1,7 @@
 import React from "react";
-import { Badge } from "@/core/components/ui/badge";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
-import { PageSections } from "@/core/components/layout/PageSections";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
+import { PageSections } from "@/core/layout/PageSections";
 import { KabinetFlavour } from "@/core/linkers";
 import { ListFlavourFragment } from "../../api/graphql";
 import { logoFor, releaseIdentity } from "../../appIdentity";

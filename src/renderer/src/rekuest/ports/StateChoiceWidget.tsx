@@ -1,5 +1,5 @@
-import { SearchField, SearchOptions } from "@/core/components/fields/SearchField";
-import { FormLabel } from "@/core/components/ui/form";
+import { SearchField, SearchOptions } from "@/core/forms/SearchField";
+import { FormLabel } from "@/core/ui/form";
 import {
   PortKind,
   ResolvedDependencyInput,
@@ -9,9 +9,9 @@ import { useAgentLiveState } from "@/rekuest/hooks/useLiveState";
 import {
   resolveDependencyDefinition,
   useDependencyDefinitions,
-} from "@/core/lib/ports/DependencyContext";
-import { InputWidgetProps } from "@/core/lib/ports/types";
-import { pathToName } from "@/core/lib/ports/utils";
+} from "@/core/ports/engine/DependencyContext";
+import { InputWidgetProps } from "@/core/ports/engine/types";
+import { pathToName } from "@/core/ports/engine/utils";
 import { useCallback, useMemo } from "react";
 import { useWatch } from "react-hook-form";
 

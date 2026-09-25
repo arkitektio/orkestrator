@@ -1,4 +1,4 @@
-import { formatApolloError } from "@/core/lib/errorHandler";
+import { formatApolloError } from "@/core/connection/graphql/errorHandler";
 import type { ApolloError } from "@apollo/client";
 import { useCallback } from "react";
 import {

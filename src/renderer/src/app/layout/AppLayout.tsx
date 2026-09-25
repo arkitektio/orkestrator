@@ -3,10 +3,10 @@ import { RailChrome } from "@/app/components/chrome/RailChrome";
 import { RailResizer } from "@/app/components/chrome/RailResizer";
 import { RailDropOverlay, useRailDrop } from "@/app/components/navigation/RailDrop";
 import { RightEdge } from "@/app/components/navigation/RightEdge";
-import { dragZoneDoubleClick, getChromeMode } from "@/core/lib/platform";
-import { cn } from "@/core/lib/utils";
-import { ChromeSurfaceProvider } from "../../core/components/layout/ChromeSurface";
-import { PageDialogHost } from "../../core/components/layout/PageDialogHost";
+import { dragZoneDoubleClick, getChromeMode } from "@/core/util/platform";
+import { cn } from "@/core/util/utils";
+import { ChromeSurfaceProvider } from "../../core/ui/ChromeSurface";
+import { PageDialogHost } from "../../core/dialogs/PageDialogHost";
 
 export type AppLayoutProps = {
   navigationBar: React.ReactNode;

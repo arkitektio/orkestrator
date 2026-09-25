@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Badge } from "@/core/components/ui/badge";
-import { UploadWrapper } from "@/core/components/upload/wrapper";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Badge } from "@/core/ui/badge";
+import { UploadWrapper } from "@/core/datalayer/upload/wrapper";
 import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
 import { useCreateFile } from "@/mikro/api/hooks";
 import { MikroFolder } from "@/core/linkers";

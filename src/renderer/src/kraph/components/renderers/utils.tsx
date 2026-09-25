@@ -10,7 +10,7 @@ import {
   ValueKind,
 } from "@/kraph/api/graphql";
 import { KraphEntity } from "@/core/linkers";
-import Timestamp from "@/core/components/ui/timestamp";
+import Timestamp from "@/core/ui/timestamp";
 import { CypherSchema } from "../cypher/CypherField";
 
 const columnToDef = (

@@ -3,7 +3,7 @@ import { type ThreeEvent, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { MeshStandardNodeMaterial } from "three/webgpu";
-import { Line } from "@/core/lib/scene/draw/Line";
+import { Line } from "@/core/data/scene/draw/Line";
 import {
   NetworkLayout,
   PlacedStimulator,

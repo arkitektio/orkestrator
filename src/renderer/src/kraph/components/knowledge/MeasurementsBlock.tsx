@@ -1,7 +1,7 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import type { KnowledgeStructureFragment } from "@/kraph/api/graphql";
 import { MetricsTable } from "@/kraph/components/tables/MetricsTable";
-import { ObjectButton } from "@/core/providers/smart/ObjectButton";
+import { ObjectButton } from "@/core/smart/ObjectButton";
 import type { Identifier, Object } from "@/core/types";
 import { Microscope } from "lucide-react";
 

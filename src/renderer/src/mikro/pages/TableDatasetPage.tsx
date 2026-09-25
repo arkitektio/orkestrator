@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Badge } from "@/core/components/ui/badge";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Badge } from "@/core/ui/badge";
 import { MikroTableDataset } from "@/core/linkers";
 import { useGetTableDatasetQuery } from "../api/graphql";
 import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";

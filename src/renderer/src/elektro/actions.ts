@@ -17,8 +17,8 @@ import { findOrCreateExperimentForWorld } from '@/elektro/lib/openOnTimeline'
 import { ElektroExperiment, ElektroModelWorkspace } from '@/core/linkers'
 import { ApolloClient, NormalizedCache } from '@apollo/client'
 import { AudioLines, LayoutDashboard, Layers } from 'lucide-react'
-import { Action } from '@/core/lib/localactions/LocalActionProvider'
-import { buildDeleteAction } from '@/core/lib/localactions/builders/deleteAction'
+import { Action } from '@/core/smart/localactions/LocalActionProvider'
+import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 
 /**
  * Spin up a fresh workspace seeded with the selected neuron model, make it the

@@ -1,10 +1,10 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { AutoDerivedStringField, StringField } from "@/core/components/fields/StringField";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
-import { Form } from "@/core/components/ui/form";
-import { Input } from "@/core/components/ui/input";
-import { ScrollArea } from "@/core/components/ui/scroll-area";
+import { AutoDerivedStringField, StringField } from "@/core/forms/StringField";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { Form } from "@/core/ui/form";
+import { Input } from "@/core/ui/input";
+import { ScrollArea } from "@/core/ui/scroll-area";
 import {
   CreateMeasurementCategoryInput,
   useCreateMeasurementCategoryMutation,

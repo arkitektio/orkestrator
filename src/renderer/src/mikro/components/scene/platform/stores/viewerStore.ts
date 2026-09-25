@@ -5,10 +5,10 @@ import { createDimsSlice, type DimsSlice } from "./viewer/dimsSlice";
 import { createArraySlice, type ArraySlice } from "./viewer/arraySlice";
 import { createProbeSlice, type ProbeSlice } from "./viewer/probeSlice";
 import { createBudgetSlice, type BudgetSlice } from "./viewer/budgetSlice";
-import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore"
+import { createScopedStoreHooks } from "@/core/util/createScopedStore"
 import { RefObject } from "react";
 import * as THREE from 'three';
-import type { OpenedZarrArray } from "@/core/lib/zarr/openArray";
+import type { OpenedZarrArray } from "@/core/data/zarr/openArray";
 
 /** The subset of the R3F root state we need for camera operations */
 export interface CanvasContext {

@@ -1,4 +1,4 @@
-import { StructureDisplay } from "@/core/components/display/StructureDisplay";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 "use client";
 
 import {
@@ -14,7 +14,7 @@ import {
 } from "@tanstack/react-table";
 import * as React from "react";
 
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   Table,
   TableBody,
@@ -22,7 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/core/components/ui/table";
+} from "@/core/ui/table";
 import { LokUser, RekuestTask } from "@/core/linkers";
 
 import { ArrowUpDown } from "lucide-react";

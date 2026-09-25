@@ -9,7 +9,7 @@ import {
   AlertDialogHeader as ShadAlertDialogHeader,
   AlertDialogTitle as ShadAlertDialogTitle,
   AlertDialogTrigger as ShadAlertDialogTrigger,
-} from '@/core/components/ui/alert-dialog';
+} from '@/core/ui/alert-dialog';
 import {
   ContextMenu as ShadContextMenu,
   ContextMenuCheckboxItem as ShadContextMenuCheckboxItem,
@@ -18,7 +18,7 @@ import {
   ContextMenuLabel as ShadContextMenuLabel,
   ContextMenuSeparator as ShadContextMenuSeparator,
   ContextMenuTrigger as ShadContextMenuTrigger,
-} from '@/core/components/ui/context-menu';
+} from '@/core/ui/context-menu';
 import {
   Dialog as ShadDialog,
   DialogClose as ShadDialogClose,
@@ -28,7 +28,7 @@ import {
   DialogHeader as ShadDialogHeader,
   DialogTitle as ShadDialogTitle,
   DialogTrigger as ShadDialogTrigger,
-} from '@/core/components/ui/dialog';
+} from '@/core/ui/dialog';
 import {
   Drawer as ShadDrawer,
   DrawerContent as ShadDrawerContent,
@@ -37,7 +37,7 @@ import {
   DrawerHeader as ShadDrawerHeader,
   DrawerTitle as ShadDrawerTitle,
   DrawerTrigger as ShadDrawerTrigger,
-} from '@/core/components/ui/drawer';
+} from '@/core/ui/drawer';
 import {
   DropdownMenu as ShadDropdownMenu,
   DropdownMenuCheckboxItem as ShadDropdownMenuCheckboxItem,
@@ -46,17 +46,17 @@ import {
   DropdownMenuLabel as ShadDropdownMenuLabel,
   DropdownMenuSeparator as ShadDropdownMenuSeparator,
   DropdownMenuTrigger as ShadDropdownMenuTrigger,
-} from '@/core/components/ui/dropdown-menu';
+} from '@/core/ui/dropdown-menu';
 import {
   HoverCard as ShadHoverCard,
   HoverCardContent as ShadHoverCardContent,
   HoverCardTrigger as ShadHoverCardTrigger,
-} from '@/core/components/ui/hover-card';
+} from '@/core/ui/hover-card';
 import {
   Popover as ShadPopover,
   PopoverContent as ShadPopoverContent,
   PopoverTrigger as ShadPopoverTrigger,
-} from '@/core/components/ui/popover';
+} from '@/core/ui/popover';
 import {
   Sheet as ShadSheet,
   SheetContent as ShadSheetContent,
@@ -65,12 +65,12 @@ import {
   SheetHeader as ShadSheetHeader,
   SheetTitle as ShadSheetTitle,
   SheetTrigger as ShadSheetTrigger,
-} from '@/core/components/ui/sheet';
+} from '@/core/ui/sheet';
 import {
   Tooltip as ShadTooltip,
   TooltipContent as ShadTooltipContent,
   TooltipTrigger as ShadTooltipTrigger,
-} from '@/core/components/ui/tooltip';
+} from '@/core/ui/tooltip';
 import * as z from 'zod';
 import {
   BlokPropSchemas,

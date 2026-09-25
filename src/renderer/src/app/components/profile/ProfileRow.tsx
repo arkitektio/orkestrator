@@ -3,9 +3,9 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-} from "@/core/components/ui/dropdown-menu";
-import type { StoredProfile } from "@/core/lib/arkitekt/fakts/profileStorageSchema";
-import { cn } from "@/core/lib/utils";
+} from "@/core/ui/dropdown-menu";
+import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
+import { cn } from "@/core/util/utils";
 import { AlertTriangle, Check, Loader2, LogOut, MoreHorizontal, Trash2 } from "lucide-react";
 import React from "react";
 

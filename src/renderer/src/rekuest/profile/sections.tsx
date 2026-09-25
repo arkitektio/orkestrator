@@ -1,8 +1,8 @@
 import { RekuestGuard } from "@/rekuest/api/hooks";
-import { ProfileSectionFrame } from "@/core/lib/profile/ProfileSections";
-import { ProfileRow, ProfileRows } from "@/core/lib/profile/rows";
-import type { ProfileContext, ProfileSection } from "@/core/lib/profile/section";
-import { cn } from "@/core/lib/utils";
+import { ProfileSectionFrame } from "@/core/connection/profile/ProfileSections";
+import { ProfileRow, ProfileRows } from "@/core/connection/profile/rows";
+import type { ProfileContext, ProfileSection } from "@/core/connection/profile/section";
+import { cn } from "@/core/util/utils";
 import { RekuestAgent } from "@/core/linkers";
 import { formatDistanceToNow } from "date-fns";
 import { Bot } from "lucide-react";

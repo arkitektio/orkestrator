@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { DisplayWidget } from "@/core/command/Menu";
-import { FormSheet } from "@/core/components/dialog/FormDialog";
-import { Badge } from "@/core/components/ui/badge";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Badge } from "@/core/ui/badge";
 import { KraphStructureRelation } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetStructureRelationQuery } from "../api/graphql";

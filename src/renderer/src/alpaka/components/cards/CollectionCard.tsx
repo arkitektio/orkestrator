@@ -1,6 +1,6 @@
 import React from "react";
-import { Badge } from "@/core/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/core/components/ui/card";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
 import { AlpakaCollection } from "@/core/linkers";
 import { Library } from "lucide-react";
 import { ListChromaCollectionFragment } from "../../api/graphql";

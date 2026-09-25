@@ -20,7 +20,7 @@ import {
   RequestMediaUploadDocument,
 } from "@/mikro/api/graphql";
 import { MediaUploadError, uploadMediaBlob } from "./mediaUpload";
-import type { MikroClient } from "@/core/lib/zarr/store/types";
+import type { MikroClient } from "@/core/data/zarr/store/types";
 
 const GRANT = {
   accessKey: "AK",

@@ -1,17 +1,17 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
+} from "@/core/ui/dropdown-menu";
 import {
   Empty,
   EmptyContent,
   EmptyDescription,
   EmptyTitle,
-} from "@/core/components/ui/empty";
+} from "@/core/ui/empty";
 import { RekuestGuard } from "@/rekuest/api/hooks";
 import { Identifier, Object } from "@/core/types";
 import { Check, Menu, Plus } from "lucide-react";

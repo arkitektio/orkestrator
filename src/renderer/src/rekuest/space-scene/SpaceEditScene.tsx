@@ -1,5 +1,5 @@
 import CheckoutMaterializedBlokRenderer from "@/rekuest/components/CheckoutMaterializedBlokRenderer";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,11 +7,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/core/components/ui/dialog";
-import { Input } from "@/core/components/ui/input";
-import { Label } from "@/core/components/ui/label";
+} from "@/core/ui/dialog";
+import { Input } from "@/core/ui/input";
+import { Label } from "@/core/ui/label";
 import { WithMediaUrl } from "@/rekuest/datalayer/rekuestAccess";
-import { useSmartDrop } from "@/core/providers/smart/hooks";
+import { useSmartDrop } from "@/core/smart/hooks";
 import type { Structure } from "@/core/types";
 import {
   Center,

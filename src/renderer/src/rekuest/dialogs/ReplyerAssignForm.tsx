@@ -1,21 +1,21 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { buildAssignInput } from "@/rekuest/assign";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/core/components/ui/dialog";
-import { Form } from "@/core/components/ui/form";
-import { ArgsContainer } from "@/core/components/ports/ArgsContainer";
-import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
-import { usePortForm } from "@/core/lib/ports/usePortForm";
+} from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
+import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { usePortForm } from "@/core/ports/engine/usePortForm";
 import { useDetailActionQuery, PortKind } from "@/rekuest/api/graphql";
 import { useOperation } from "@/core/modules/hooks/useOperation";
 import { useAssign } from "@/rekuest/hooks/useAssign";
-import { submittedDataToRekuestFormat } from "@/core/lib/ports/utils";
-import { smartRegistry } from "@/core/providers/smart/registry";
+import { submittedDataToRekuestFormat } from "@/core/ports/engine/utils";
+import { smartRegistry } from "@/core/smart/registry";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useMemo, useState } from "react";

@@ -1,13 +1,13 @@
-import { useRegisterDashboardWidget } from "@/core/providers/dashboard/hooks";
+import { useRegisterDashboardWidget } from "@/core/dashboard/hooks";
 import { Boxes, Loader2 } from "lucide-react";
 import {
   useGetArrayDatasetsQuery,
   Ordering,
 } from "@/mikro/api/graphql";
-import { Image } from "@/core/components/ui/image";
+import { Image } from "@/core/ui/image";
 import { useResolve } from "@/core/datalayer/hooks/useResolve";
 import { MikroArrayDataset } from "@/core/linkers";
-import { Card } from "@/core/components/ui/card";
+import { Card } from "@/core/ui/card";
 
 const LatestArrayDatasetsWidget = () => {
   const resolve = useResolve();

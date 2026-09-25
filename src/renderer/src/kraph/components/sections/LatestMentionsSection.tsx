@@ -1,13 +1,13 @@
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
+} from "@/core/ui/card";
 import { useMyMentionsQuery } from "@/kraph/api/graphql";
-import { SmartLink } from "@/core/providers/smart/builder";
+import { SmartLink } from "@/core/smart/builder";
 import { formatDistanceToNow } from "date-fns";
 import { Clock, MessageSquare, User } from "lucide-react";
 import { Comment } from "../komments/display/Comment";

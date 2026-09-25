@@ -1,24 +1,24 @@
-import { CreatableListSearchField } from "@/core/components/fields/CreatableListSearchField";
+import { CreatableListSearchField } from "@/core/forms/CreatableListSearchField";
 import { useDialog } from "@/core/dialogs/registry";
-import { GraphQLCreatableSearchField } from "@/core/components/fields/GraphQLCreateableSearchField";
-import { ParagraphField } from "@/core/components/fields/ParagraphField";
-import { SearchOptions } from "@/core/components/fields/SearchField";
-import { StringField } from "@/core/components/fields/StringField";
-import { Button } from "@/core/components/ui/button";
+import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
+import { ParagraphField } from "@/core/forms/ParagraphField";
+import { SearchOptions } from "@/core/forms/SearchField";
+import { StringField } from "@/core/forms/StringField";
+import { Button } from "@/core/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/core/components/ui/collapsible";
-import { Form } from "@/core/components/ui/form";
-import { Separator } from "@/core/components/ui/separator";
+} from "@/core/ui/collapsible";
+import { Form } from "@/core/ui/form";
+import { Separator } from "@/core/ui/separator";
 import {
   CreateStructureRelationCategoryMutationVariables,
   useCreateInlineGraphMutation,
   useCreateStructureRelationCategoryMutation,
   useSearchGraphsLazyQuery,
 } from "@/kraph/api/graphql";
-import { smartRegistry } from "@/core/providers/smart/registry";
+import { smartRegistry } from "@/core/smart/registry";
 import { Structure } from "@/core/types";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";

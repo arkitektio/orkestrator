@@ -1,5 +1,5 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
-import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/util/createScopedStore";
 import { useStore } from "zustand";
 import { createChromeSlice, type ChromeSlice } from "./viewer/chromeSlice";
 import { createLayoutSlice, type LayoutSlice } from "./viewer/layoutSlice";

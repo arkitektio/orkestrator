@@ -1,7 +1,7 @@
-import { Badge } from "@/core/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/core/components/ui/card";
-import { Input } from "@/core/components/ui/input";
-import { ScrollArea } from "@/core/components/ui/scroll-area";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
+import { Input } from "@/core/ui/input";
+import { ScrollArea } from "@/core/ui/scroll-area";
 import { Globe, Search, Settings } from "lucide-react";
 import React, { useState } from "react";
 

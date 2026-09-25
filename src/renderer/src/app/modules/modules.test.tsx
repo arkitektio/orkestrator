@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 
-import { validateManifest } from "@/core/lib/module-spec";
+import { validateManifest } from "@/core/modules/spec";
 
 const MODULE_FILES = [
   "@/alpaka/module",

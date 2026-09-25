@@ -1,13 +1,13 @@
 import { MikroGuard } from "@/mikro/api/funcs";
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/core/components/ui/dialog";
-import { Input } from "@/core/components/ui/input";
+} from "@/core/ui/dialog";
+import { Input } from "@/core/ui/input";
 import { AlertTriangle } from "lucide-react";
 import { useMemo, useState } from "react";
 import {

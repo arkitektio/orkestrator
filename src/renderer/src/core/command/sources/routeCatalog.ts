@@ -1,5 +1,5 @@
 import { moduleNavLinks } from "@/core/modules/registries";
-import { derived } from "@/core/lib/module-host/lazy";
+import { derived } from "@/core/modules/host/lazy";
 import { rankByFilter } from "../filter";
 
 /** A page inside a module, as its rail pane links to it. */

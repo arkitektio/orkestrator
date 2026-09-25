@@ -1,4 +1,4 @@
-import { defineModule } from "@/core/lib/module-host/define";
+import { defineModule } from "@/core/modules/host/define";
 import { ELEKTRO_ACTIONS } from "./actions";
 import ElektroArrayDatasetHoverCard from "./components/hovers/ArrayDatasetHoverCard";
 import ExperimentHoverCard from "./components/hovers/ExperimentHoverCard";

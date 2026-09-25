@@ -28,7 +28,7 @@ vi.mock("../../CommandPaletteProvider", () => ({
   useCommandPalette: () => ({ activateModifier, query }),
 }));
 
-vi.mock("@/core/providers/smart/registry", () => ({
+vi.mock("@/core/smart/registry", () => ({
   smartRegistry: { getDisplayName: (i: string) => i },
 }));
 
@@ -36,15 +36,15 @@ const createRoom = vi.fn(async () => ({ data: { createRoom: { id: "room-9" } } }
 vi.mock("@/alpaka/api/graphql", () => ({ useCreateRoomMutation: () => [createRoom] }));
 vi.mock("@/core/linkers", () => ({ AlpakaRoom: { linkBuilder: (id: string) => `/alpaka/rooms/${id}` } }));
 const openBeside = vi.fn();
-vi.mock("@/core/command/tabs/TabsProvider", () => ({ useTabActions: () => ({ openBeside }) }));
+vi.mock("@/core/tabs/TabsProvider", () => ({ useTabActions: () => ({ openBeside }) }));
 const navigate = vi.fn();
 vi.mock("react-router-dom", async (orig) => ({
   ...(await orig<typeof import("react-router-dom")>()),
   useNavigate: () => navigate,
 }));
 
-import { Command, CommandList } from "@/core/components/ui/command";
-import { TooltipProvider } from "@/core/components/ui/tooltip";
+import { Command, CommandList } from "@/core/ui/command";
+import { TooltipProvider } from "@/core/ui/tooltip";
 import { EntityRow } from "./EntityRow";
 
 const renderRow = () =>

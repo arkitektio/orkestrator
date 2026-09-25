@@ -193,7 +193,7 @@ export const splitAxesBySpec = (
 
 // Promoted to `@/lib/arrays` (elektro reads shapes the same way); re-exported so
 // mikro's callers keep their import.
-export { formatShape } from '@/core/lib/arrays/formatShape'
+export { formatShape } from '@/core/data/arrays/formatShape'
 
 /**
  * The same reading, for axes that have already been paired up — which is what

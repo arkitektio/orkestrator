@@ -1,4 +1,4 @@
-import { Slider } from "@/core/components/ui/slider";
+import { Slider } from "@/core/ui/slider";
 import {
   Badge,
   CardSection,
@@ -8,7 +8,7 @@ import {
   Segment,
   SegmentGroup,
   formatCount,
-} from "@/core/lib/scene/layerui/cardControls";
+} from "@/core/data/scene/layerui/cardControls";
 import { Eye, EyeOff, GitBranch, RotateCcw, Waypoints } from "lucide-react";
 import { useEffect, useState } from "react";
 import {

@@ -1,5 +1,5 @@
-import { cn } from "@/core/lib/utils";
-import type { StoredProfile } from "@/core/lib/arkitekt/fakts/profileStorageSchema";
+import { cn } from "@/core/util/utils";
+import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 
 /**
  * A profile's mark, painted from numbers alone.

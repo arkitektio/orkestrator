@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { ApolloClient } from "@apollo/client";
-import { useConnection } from "@/core/lib/arkitekt/provider";
+import { useConnection } from "@/core/connection/arkitekt/provider";
 
 /** Paired `focus` + `visibilitychange` events fire for one reactivation, and a
  *  user alt-tabbing back and forth should not trigger a sweep each time.

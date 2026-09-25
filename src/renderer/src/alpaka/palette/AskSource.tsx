@@ -4,8 +4,8 @@ import {
   talkTargetFromModifiers,
   useTalkAbout,
 } from "@/alpaka/smart/useTalkAbout";
-import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
-import type { PassDownProps } from "@/core/providers/smart/extensions/types";
+import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
+import type { PassDownProps } from "@/core/smart/extensions/types";
 import { CommandGroup } from "cmdk";
 import { MessageSquareMore } from "lucide-react";
 

@@ -1,4 +1,4 @@
-import type { NavLinkDecl } from "@/core/lib/module-host/define";
+import type { NavLinkDecl } from "@/core/modules/host/define";
 import { ARRAY_DATASET_SPECS, arrayDatasetSpecLink } from "./specs";
 
 /**

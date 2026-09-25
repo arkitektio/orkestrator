@@ -1,14 +1,14 @@
 import { Filter, X } from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { ColorMap, ColumnControl } from "@/mikro/api/graphql";
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import { readDefaultFilterRule } from "@/mikro/lib/attributes/columnStats";
 import { sliceDomain } from "@/mikro/lib/sparse/sliceStats";
 import { loadSparseSource } from "@/mikro/lib/sparse/sparseSource";
 import { perfMonitor } from "../perf/perfMonitor";
-import { CardSection, EntryRow, RowAction } from "@/core/lib/scene/layerui/cardControls";
+import { CardSection, EntryRow, RowAction } from "@/core/data/scene/layerui/cardControls";
 import { colormapGradientCSS } from "./colormap-utils";
 import { ColumnEntrySettings } from "./ColumnEntryEditor";
 import { ColumnOptionPicker, type ColumnOptionSource } from "./ColumnOptionPicker";

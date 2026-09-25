@@ -1,12 +1,12 @@
-import {AspectRatio as ShadAspectRatio} from '@/core/components/ui/aspect-ratio';
-import {ScrollArea as ShadScrollArea} from '@/core/components/ui/scroll-area';
+import {AspectRatio as ShadAspectRatio} from '@/core/ui/aspect-ratio';
+import {ScrollArea as ShadScrollArea} from '@/core/ui/scroll-area';
 import {
   ResizableHandle as ShadResizableHandle,
   ResizablePanel as ShadResizablePanel,
   ResizablePanelGroup as ShadResizablePanelGroup,
-} from '@/core/components/ui/resizable';
-import {Separator as ShadSeparator} from '@/core/components/ui/separator';
-import {cn} from '@/core/lib/utils';
+} from '@/core/ui/resizable';
+import {Separator as ShadSeparator} from '@/core/ui/separator';
+import {cn} from '@/core/util/utils';
 import * as z from 'zod';
 import {createBlokComponent, useBlok, useValue} from '../runtime';
 import {

@@ -1,5 +1,5 @@
-import { createDisplayProvider } from "@/core/lib/display/registry";
-import { derivedRecord } from "@/core/lib/module-host/lazy";
+import { createDisplayProvider } from "@/core/smart/display/registry";
+import { derivedRecord } from "@/core/modules/host/lazy";
 import { MODULE_DISPLAYS } from "../../modules/registries";
 
 /**

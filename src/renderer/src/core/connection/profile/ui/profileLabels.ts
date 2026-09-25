@@ -1,4 +1,4 @@
-import type { StoredProfile } from "@/core/lib/arkitekt/fakts/profileStorageSchema";
+import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 
 /**
  * How a parked login names itself, everywhere one is drawn.

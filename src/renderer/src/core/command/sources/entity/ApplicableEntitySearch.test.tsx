@@ -49,7 +49,7 @@ vi.mock("./EntityRow", () => ({
   ),
 }));
 
-import { Command, CommandList } from "@/core/components/ui/command";
+import { Command, CommandList } from "@/core/ui/command";
 import { ApplicableEntitySearch } from "./ApplicableEntitySearch";
 
 /** `CommandGroup` needs a cmdk `Command` ancestor, exactly as in the palette. */

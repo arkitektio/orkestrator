@@ -1,4 +1,4 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,8 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/core/components/ui/dialog";
-import { cn } from "@/core/lib/utils";
+} from "@/core/ui/dialog";
+import { cn } from "@/core/util/utils";
 import { Database, File, Image, Upload, X } from "lucide-react";
 import React, { useRef, useState } from "react";
 

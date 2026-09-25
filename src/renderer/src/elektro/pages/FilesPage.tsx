@@ -1,5 +1,5 @@
-import { Explainer } from "@/core/components/explainer/Explainer";
-import { PageAction } from "@/core/components/ui/page-action";
+import { Explainer } from "@/core/layout/Explainer";
+import { PageAction } from "@/core/ui/page-action";
 import { ElektroFile } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";

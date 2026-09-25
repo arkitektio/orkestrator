@@ -3,9 +3,9 @@ import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
-import { TooltipProvider } from "@/core/components/ui/tooltip";
-import { useDebug } from "@/core/providers/debug/DebugContext";
-import { DebugProvider } from "@/core/providers/debug/DebugProvider";
+import { TooltipProvider } from "@/core/ui/tooltip";
+import { useDebug } from "@/core/debug/DebugContext";
+import { DebugProvider } from "@/core/debug/DebugProvider";
 
 import { PageCorner } from "./PageCorner";
 

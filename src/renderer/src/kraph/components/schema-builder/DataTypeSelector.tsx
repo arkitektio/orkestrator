@@ -3,8 +3,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/core/components/ui/tooltip";
-import { cn } from "@/core/lib/utils";
+} from "@/core/ui/tooltip";
+import { cn } from "@/core/util/utils";
 import { ValueKind } from "../../api/graphql";
 import { dataTypeConfigs } from "./utils";
 

@@ -1,5 +1,5 @@
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Card } from "@/core/components/ui/card";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Card } from "@/core/ui/card";
 
 export const LoadingPage = () => {
   return (

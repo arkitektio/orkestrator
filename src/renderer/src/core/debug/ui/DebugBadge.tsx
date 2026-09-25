@@ -1,9 +1,9 @@
-import { useActiveTabIdOrNull } from "@/core/command/tabs/TabsProvider";
-import { Button } from "@/core/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/core/components/ui/popover";
-import { ScrollArea } from "@/core/components/ui/scroll-area";
-import { cn } from "@/core/lib/utils";
-import { useDebug, type DebugEntry } from "@/core/providers/debug/DebugContext";
+import { useActiveTabIdOrNull } from "@/core/tabs/TabsProvider";
+import { Button } from "@/core/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
+import { ScrollArea } from "@/core/ui/scroll-area";
+import { cn } from "@/core/util/utils";
+import { useDebug, type DebugEntry } from "@/core/debug/DebugContext";
 import { Bug, Copy } from "lucide-react";
 
 import { ReportBugButton } from "./ReportBugButton";

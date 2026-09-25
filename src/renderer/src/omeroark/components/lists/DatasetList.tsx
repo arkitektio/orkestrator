@@ -1,4 +1,4 @@
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import { OmeroArkDataset } from "@/core/linkers";
 import { useListDatasetsQuery } from "@/omeroark/api/graphql";
 import DatasetCard from "../cards/DatasetCard";

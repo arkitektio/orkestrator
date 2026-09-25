@@ -1,5 +1,5 @@
-import { Explainer } from "@/core/components/explainer/Explainer";
-import { DialogButton } from "@/core/components/ui/dialog-button";
+import { Explainer } from "@/core/layout/Explainer";
+import { DialogButton } from "@/core/ui/dialog-button";
 import { LokUser } from "@/core/linkers";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { PlusIcon } from "lucide-react";

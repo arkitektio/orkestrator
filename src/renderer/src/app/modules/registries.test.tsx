@@ -10,7 +10,7 @@ import { registry as ACTIONS } from "@/core/smart/localactions/registry";
 import { PROFILE_SECTIONS } from "@/core/connection/profile/registry";
 import { SMART_SECTIONS } from "@/core/smart/smartcontext";
 import { FILE_DOWNLOADERS } from "@/core/modules/registries";
-import { TASK_HOOKS } from "@/core/lib/taskhooks/registry";
+import { TASK_HOOKS } from "@/core/modules/taskhooks/registry";
 
 /**
  * What every host registry holds, pinned. The registries are derived from

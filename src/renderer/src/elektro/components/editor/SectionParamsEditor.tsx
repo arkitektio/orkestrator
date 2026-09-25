@@ -1,8 +1,8 @@
-import { Button } from "@/core/components/ui/button";
-import { Input } from "@/core/components/ui/input";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
 import { Plus, Trash2 } from "lucide-react";
 import { EditableCompartment } from "../../lib/modelSerialization";
-import { QuantityInput } from "@/core/components/fields/QuantityInput";
+import { QuantityInput } from "@/core/forms/QuantityInput";
 import { useMechanismParamMeta } from "./MechanismCatalog";
 
 type EditableSectionParam = EditableCompartment["sectionParams"][number];

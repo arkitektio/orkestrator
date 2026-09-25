@@ -1,7 +1,7 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 
 import { moduleNavLoaders } from "@/core/modules/registries";
-import { derivedRecord } from "@/core/lib/module-host/lazy";
+import { derivedRecord } from "@/core/modules/host/lazy";
 
 /**
  * Each module's in-module navigation, hoisted into the rail.

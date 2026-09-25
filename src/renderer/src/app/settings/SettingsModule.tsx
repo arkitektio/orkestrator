@@ -1,5 +1,5 @@
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
-import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { SettingsLayout } from "./components/SettingsLayout";

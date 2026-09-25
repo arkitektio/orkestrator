@@ -1,14 +1,14 @@
-import { Guard } from "@/core/lib/arkitekt/host";
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { HelpSidebar } from "@/core/components/sidebars/help";
-import { Button } from "@/core/components/ui/button";
-import { Input } from "@/core/components/ui/input";
-import { Skeleton } from "@/core/components/ui/skeleton";
-import { Textarea } from "@/core/components/ui/textarea";
-import Timestamp from "@/core/components/ui/timestamp";
+import { Guard } from "@/core/connection/arkitekt/host";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { HelpSidebar } from "@/core/layout/help";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
+import { Skeleton } from "@/core/ui/skeleton";
+import { Textarea } from "@/core/ui/textarea";
+import Timestamp from "@/core/ui/timestamp";
 import { AlpakaRoom } from "@/core/linkers";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 import { useSelf } from "@/core/connection/useSelf";
 
 import {

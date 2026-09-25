@@ -1,4 +1,4 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { Maximize } from "lucide-react";
 import { useMorphologyStore } from "../stores/morphologyStore";
 import { MorphologySettings } from "./MorphologySettings";

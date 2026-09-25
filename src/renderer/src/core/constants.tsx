@@ -1,6 +1,6 @@
 // Constants used in the app
 
-import { Manifest } from "@/core/lib/arkitekt/fakts/manifestSchema";
+import { Manifest } from "@/core/connection/arkitekt/fakts/manifestSchema";
 
 declare global {
   interface Window {

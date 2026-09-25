@@ -1,5 +1,5 @@
 import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
-import { Sidebars } from "@/core/components/layout/Sidebars";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { LokUser } from "@/core/linkers";
 import { useMeQuery } from "../api/graphql";
 import { MorseCodeRecorder } from "../components/MorseCodeRecorder";

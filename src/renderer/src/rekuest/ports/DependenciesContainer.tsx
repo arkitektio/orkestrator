@@ -1,7 +1,7 @@
-import { StructureDisplay } from "@/core/components/display/StructureDisplay";
-import { portHash } from "@/core/lib/ports/utils";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
+import { portHash } from "@/core/ports/engine/utils";
 import { ListAgentFragment, ListDependencyFragment, ResolvedDependencyInput, useAgentForDependencyLazyQuery } from "@/rekuest/api/graphql";
-import { ArgPort, PortGroup } from "@/core/lib/ports/types";
+import { ArgPort, PortGroup } from "@/core/ports/engine/types";
 
 import {
   Command,
@@ -9,19 +9,19 @@ import {
   CommandGroup,
   CommandItem,
   CommandList,
-} from "@/core/components/ui/command";
+} from "@/core/ui/command";
 import { Command as CommandPrimitive } from "cmdk"
-import { cn, notEmpty } from "@/core/lib/utils";
+import { cn, notEmpty } from "@/core/util/utils";
 
 import { CheckIcon } from "@radix-ui/react-icons";
 import { Bot, Circle, SearchIcon, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useDebouncedCallback } from "@/core/hooks/useDebouncedCallback";
+import { useDebouncedCallback } from "@/core/util/hooks/useDebouncedCallback";
 import { useFormContext, useWatch } from "react-hook-form";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
-import { FormDescription, FormLabel } from "@/core/components/ui/form";
-import { InputGroup, InputGroupAddon } from "@/core/components/ui/input-group";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { FormDescription, FormLabel } from "@/core/ui/form";
+import { InputGroup, InputGroupAddon } from "@/core/ui/input-group";
 
 export type FilledGroup = PortGroup & {
   filledPorts: ArgPort[];

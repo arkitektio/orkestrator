@@ -1,31 +1,31 @@
-import { Arkitekt, Guard } from "@/core/lib/arkitekt/host";
+import { Arkitekt, Guard } from "@/core/connection/arkitekt/host";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
-} from "@/core/components/ui/page-action";
+} from "@/core/ui/page-action";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
+} from "@/core/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/core/components/ui/dialog";
+} from "@/core/ui/dialog";
 import { Send, Server, Settings, Stethoscope, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useMeshes } from "@/core/lib/mesh/useMeshes";
+import { useMeshes } from "@/core/connection/mesh/useMeshes";
 import { toast } from "sonner";
 import { HubAwareConnectionDoctor } from "@/core/connection/ui/doctor/HubAwareConnectionDoctor";
-import { instanceToProbeTargets } from "@/core/lib/arkitekt/doctor/targets";
-import { toHubHealthFacts, type HubHealthFacts } from "@/core/lib/arkitekt/doctor/hubHealth";
-import type { ServiceRuntimeState } from "@/core/lib/arkitekt/types";
+import { instanceToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
+import { toHubHealthFacts, type HubHealthFacts } from "@/core/connection/arkitekt/doctor/hubHealth";
+import type { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
 import { useMyHubHealthQuery } from "@/lok/api/graphql";
 import type { ProbeTarget } from "../../../../../main/doctor/protocol";
 import { FaktsViewer } from "../components/FaktsViewer";

@@ -1,6 +1,6 @@
 import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { AlpakaGuard } from "@/alpaka/api/funcs";
-import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import CollectionPage from "./pages/CollectionPage";

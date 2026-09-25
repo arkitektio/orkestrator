@@ -1,7 +1,7 @@
 import { createStore } from "zustand/vanilla";
 import { immer } from "zustand/middleware/immer";
 import { AnnotationKind } from "@/mikro/api/graphql";
-import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/util/createScopedStore";
 import type { ZSpan } from "./annotationVisibility";
 
 export interface SelectedRoi {

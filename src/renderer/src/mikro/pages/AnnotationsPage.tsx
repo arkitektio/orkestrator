@@ -1,4 +1,4 @@
-import { Explainer } from "@/core/components/explainer/Explainer";
+import { Explainer } from "@/core/layout/Explainer";
 import { MikroAnnotation } from "@/core/linkers";
 import React from "react";
 

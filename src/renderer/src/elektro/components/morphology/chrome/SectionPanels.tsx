@@ -4,7 +4,7 @@ import {
   PopoutNote,
   PopoutSection,
   ThreeDPopoutCard,
-} from "@/core/components/popout/ThreeDPopoutCard";
+} from "@/elektro/components/popout/ThreeDPopoutCard";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";

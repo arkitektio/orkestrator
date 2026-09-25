@@ -3,16 +3,16 @@ import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Route, Routes } from "react-router-dom";
 
-vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: { useActiveProfileId: () => "org-a" },
 }));
 vi.mock("@/core/constants", () => ({ baseName: "" }));
 
 import { CommandPaletteProvider, useCommandContext, useCommandPalette } from "./CommandPaletteProvider";
-import { ActiveTabRouter } from "./tabs/ActiveTabRouter";
-import { TabOutlet } from "./tabs/TabOutlet";
-import { TabsProvider, useTabActions, useTabList } from "./tabs/TabsProvider";
+import { ActiveTabRouter } from "../tabs/ActiveTabRouter";
+import { TabOutlet } from "../tabs/TabOutlet";
+import { TabsProvider, useTabActions, useTabList } from "../tabs/TabsProvider";
 
 /** A page that offers one object to the palette, named after its path. */
 const Page = ({ name }: { name: string }) => {

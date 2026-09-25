@@ -1,4 +1,4 @@
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import { MikroCoordinateSystem, MikroFolder, MikroSparseDataset } from "@/core/linkers";
 import {
   GetSparseDatasetQuery,

@@ -1,5 +1,5 @@
-import { Toggle } from "@/core/components/ui/toggle";
-import { cn } from "@/core/lib/utils";
+import { Toggle } from "@/core/ui/toggle";
+import { cn } from "@/core/util/utils";
 import { BsPinAngle, BsPinFill } from "react-icons/bs";
 
 export const PinToggle = ({

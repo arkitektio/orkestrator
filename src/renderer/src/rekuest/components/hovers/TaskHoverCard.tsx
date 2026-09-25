@@ -3,8 +3,8 @@ import {
   HoverSectionLabel,
   HoverShell,
   HoverSkeleton,
-} from "@/core/components/hover/HoverShell";
-import { Progress } from "@/core/components/ui/progress";
+} from "@/core/ui/HoverShell";
+import { Progress } from "@/core/ui/progress";
 import { Object } from "@/core/types";
 import { formatDistanceToNow } from "date-fns";
 import { useHoverTaskQuery } from "../../api/graphql";

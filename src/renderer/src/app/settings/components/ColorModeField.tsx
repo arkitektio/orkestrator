@@ -1,6 +1,6 @@
-import { Label } from "@/core/components/ui/label";
-import { ToggleGroup, ToggleGroupItem } from "@/core/components/ui/toggle-group";
-import { useTheme, type Theme } from "@/core/providers/ThemeProvider";
+import { Label } from "@/core/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
+import { useTheme, type Theme } from "@/core/settings/theme/ThemeProvider";
 import { Laptop, Moon, Sun } from "lucide-react";
 
 const OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [

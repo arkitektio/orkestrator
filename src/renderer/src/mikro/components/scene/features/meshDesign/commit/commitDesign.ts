@@ -9,7 +9,7 @@ import {
   type CreateMeshCollectionMutation,
   type CreateMeshLayerMutation,
 } from "@/mikro/api/graphql";
-import type { MikroClient } from "@/core/lib/zarr/store/types";
+import type { MikroClient } from "@/core/data/zarr/store/types";
 import { buildFabriksPrefix } from "../../meshes/fabriks/writer/fabriksPrefix";
 import type { BakeMesh } from "../../meshes/fabriks/writer/fabriksBake";
 import { uploadFabriksPrefix, type FabriksUploadProgress } from "../../meshes/fabriks/writer/fabriksUpload";

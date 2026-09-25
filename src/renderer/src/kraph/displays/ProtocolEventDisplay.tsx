@@ -1,7 +1,7 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphInstance } from "@/core/linkers";
 import { useGetInstanceQuery } from "../api/graphql";
-import Timestamp from "@/core/components/ui/timestamp";
+import Timestamp from "@/core/ui/timestamp";
 
 /**
  * Claim-grain, deliberately — see `EntityDisplay`. Displays render from outside

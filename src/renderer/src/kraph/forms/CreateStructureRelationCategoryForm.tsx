@@ -1,11 +1,11 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
-import { GraphQLCreatableSearchField } from "@/core/components/fields/GraphQLCreateableSearchField";
-import { ParagraphField } from "@/core/components/fields/ParagraphField";
-import { StringField } from "@/core/components/fields/StringField";
-import { Button } from "@/core/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/components/ui/collapsible";
-import { DialogFooter } from "@/core/components/ui/dialog";
-import { Form } from "@/core/components/ui/form";
+import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
+import { ParagraphField } from "@/core/forms/ParagraphField";
+import { StringField } from "@/core/forms/StringField";
+import { Button } from "@/core/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/ui/collapsible";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import {
   CreateStructureRelationCategoryMutation,

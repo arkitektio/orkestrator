@@ -1,4 +1,4 @@
-import { PaneLink, SidePaneGroup } from "@/core/components/ui/sidepane";
+import { PaneLink, SidePaneGroup } from "@/core/ui/sidepane";
 import { Outlet } from "react-router-dom";
 import { SETTINGS_GROUPS, SETTINGS_SECTIONS, settingsLink } from "../sections";
 

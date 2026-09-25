@@ -1,8 +1,8 @@
 import React from "react";
-import { Badge } from '@/core/components/ui/badge'
-import { Card, CardTitle } from '@/core/components/ui/card'
+import { Badge } from '@/core/ui/badge'
+import { Card, CardTitle } from '@/core/ui/card'
 import { MikroArrayDataset, MikroScene } from '@/core/linkers'
-import { cn } from '@/core/lib/utils'
+import { cn } from '@/core/util/utils'
 import { Clapperboard, Grid3x3 } from 'lucide-react'
 import { ListArrayDatasetFragment } from '../../api/graphql'
 import { modifierSpecsOf, spatialSpecOf, splitAxesBySpec, type ArrayDatasetAxis } from '../../specs'

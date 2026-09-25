@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { useSettings } from "@/core/providers/settings/SettingsContext";
+import { useSettings } from "@/core/settings/store/SettingsContext";
 import { cameraInteraction } from "../../platform/camera/cameraMotion";
 import { AUTO_SNAPSHOT_QUIET_MS, decideAutoSnapshot } from "./autoSnapshotGate";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";

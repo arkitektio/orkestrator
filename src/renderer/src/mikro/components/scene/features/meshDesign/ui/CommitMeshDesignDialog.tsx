@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/core/components/ui/button";
-import { Input } from "@/core/components/ui/input";
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import { useDialog } from "@/core/dialogs/registry";
 import { commitMeshDesign, type CommitProgress, type CommitResult, type WorldSystemLike } from "../commit/commitDesign";

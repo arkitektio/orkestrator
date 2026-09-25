@@ -1,6 +1,6 @@
 import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
-import { serviceGuard } from "@/core/lib/arkitekt/host";
-import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
+import { serviceGuard } from "@/core/connection/arkitekt/host";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { Dashboards } from "./pages/Dashboards";

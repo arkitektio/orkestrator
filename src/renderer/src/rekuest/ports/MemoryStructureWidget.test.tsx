@@ -8,7 +8,7 @@ vi.mock("@/rekuest/api/graphql", () => ({
   useSearchMemoryDrawerLazyQuery: () => [vi.fn(async () => ({ data: { options: [] } }))],
 }));
 
-import type { InputWidgetProps } from "@/core/lib/ports/types";
+import type { InputWidgetProps } from "@/core/ports/engine/types";
 import { MemoryStructureWidget } from "./MemoryStructureWidget";
 
 const port = {

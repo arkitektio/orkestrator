@@ -1,5 +1,5 @@
-import { Badge } from "@/core/components/ui/badge";
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { Badge } from "@/core/ui/badge";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroArrayDataset } from "@/core/linkers";
 import { Grid3x3 } from "lucide-react";
 import { SnapshotBackdrop } from "../components/cards/SnapshotBackdrop";

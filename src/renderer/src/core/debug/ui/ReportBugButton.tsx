@@ -1,6 +1,6 @@
-import { Button } from "@/core/components/ui/button";
-import { useReport } from "@/core/hooks/use-report";
-import { isElectron } from "@/core/lib/platform";
+import { Button } from "@/core/ui/button";
+import { useReport } from "@/core/debug/use-report";
+import { isElectron } from "@/core/util/platform";
 import { Flag } from "lucide-react";
 
 /**

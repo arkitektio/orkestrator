@@ -1,7 +1,7 @@
 import React from "react";
-import { Badge } from "@/core/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/core/components/ui/card";
-import { cn } from "@/core/lib/utils";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/core/ui/card";
+import { cn } from "@/core/util/utils";
 import { AlpakaRoom } from "@/core/linkers";
 import { ArrowUpRight, MessageSquareText, Paperclip } from "lucide-react";
 import { ListRoomFragment, RoomFragment } from "../../api/graphql";

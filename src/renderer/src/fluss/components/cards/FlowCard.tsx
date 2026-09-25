@@ -5,10 +5,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
+} from "@/core/ui/card";
 import { FlussFlow, FlussWorkspace } from "@/core/linkers";
 import { ListFlowFragment } from "@/fluss/api/graphql";
-import Timestamp from "@/core/components/ui/timestamp";
+import Timestamp from "@/core/ui/timestamp";
 import { Clock, GitBranch } from "lucide-react";
 
 interface Props {

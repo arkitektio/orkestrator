@@ -1,12 +1,12 @@
-import { Badge } from '@/core/components/ui/badge'
-import { Button } from '@/core/components/ui/button'
+import { Badge } from '@/core/ui/badge'
+import { Button } from '@/core/ui/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/core/components/ui/select'
+} from '@/core/ui/select'
 import { MikroArrayDataset } from '@/core/linkers'
 import { Star } from 'lucide-react'
 import { GetArrayDatasetQuery, useSetDefaultSceneMutation } from '../../api/graphql'

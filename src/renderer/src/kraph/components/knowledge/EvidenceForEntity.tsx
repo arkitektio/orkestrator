@@ -1,4 +1,4 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { useAssertInformsMutation } from "@/kraph/api/graphql";
 import { AssignedEntity, EntityAssigner } from "@/kraph/components/EntityAssigner";
 import type { Identifier, Object } from "@/core/types";

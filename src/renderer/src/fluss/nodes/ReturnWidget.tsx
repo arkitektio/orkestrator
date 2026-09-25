@@ -2,7 +2,7 @@ import { RunEventKind } from "@/fluss/api/graphql";
 import { InStream } from "@/fluss/base/Instream";
 import { NodeDescription, NodeHeader, NodeShowLayout, NodeTitle } from "@/fluss/base/NodeShow";
 import { ReturnNodeProps } from "@/fluss/types";
-import { portToLabel } from "@/core/lib/ports/utils";
+import { portToLabel } from "@/core/ports/engine/utils";
 import React from "react";
 import { useFlowAdapter } from "./adapter";
 import { errorClassName, statusClassName } from "./status";

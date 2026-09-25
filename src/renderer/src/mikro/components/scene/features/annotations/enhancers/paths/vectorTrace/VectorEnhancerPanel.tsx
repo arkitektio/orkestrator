@@ -1,5 +1,5 @@
-import { Slider } from "@/core/components/ui/slider";
-import { Toggle } from "@/core/components/ui/toggle";
+import { Slider } from "@/core/ui/slider";
+import { Toggle } from "@/core/ui/toggle";
 import { useRoiDrawingStore } from "../../../roiDrawingStore";
 import { MAX_TRACE_COST, type TraceWeights } from "./traceCost";
 

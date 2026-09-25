@@ -1,14 +1,14 @@
-import { ListRender } from "@/core/components/layout/ListRender";
-import { SidebarLayout } from "@/core/components/layout/SidebarLayout";
-import { FancyInput } from "@/core/components/ui/fancy-input";
-import { DialogButton } from "@/core/components/ui/dialog-button";
-import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/components/ui/sidepane";
-import { useDebounce } from "@/core/hooks/use-debounce";
+import { ListRender } from "@/core/layout/ListRender";
+import { SidebarLayout } from "@/core/layout/SidebarLayout";
+import { FancyInput } from "@/core/ui/fancy-input";
+import { DialogButton } from "@/core/ui/dialog-button";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/ui/sidepane";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { FlussRun, FlussWorkspace } from "@/core/linkers";
 import { CubeIcon } from "@radix-ui/react-icons";
 import { Home, PlusIcon } from "lucide-react";
 import * as React from "react";
-import Timestamp from "@/core/components/ui/timestamp";
+import Timestamp from "@/core/ui/timestamp";
 import {
   GlobalSearchQueryVariables,
   Ordering,

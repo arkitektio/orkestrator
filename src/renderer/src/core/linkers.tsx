@@ -1,4 +1,4 @@
-import { buildSmart } from "@/core/providers/smart/builder";
+import { buildSmart } from "@/core/smart/builder";
 
 // The app-wide barrel of smart objects. Each module builds its own from its
 // manifest (`<module>/linkers.tsx`); only host-owned models are declared here.

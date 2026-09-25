@@ -1,7 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { ListRender } from "@/core/components/layout/ListRender";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { useActionDescription } from "@/core/lib/ports/ActionDescription";
+import { ListRender } from "@/core/layout/ListRender";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { useActionDescription } from "@/core/ports/engine/ActionDescription";
 import { KabinetDefinition } from "@/core/linkers";
 import { useCallback } from "react";
 import { useGetDefinitionQuery } from "../api/graphql";

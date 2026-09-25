@@ -10,7 +10,7 @@ import {
 import { KabinetGuard } from "@/kabinet/api/hooks";
 import { useRekuest } from "@/rekuest/api/hooks";
 import { buildAssignInput } from "@/rekuest/assign";
-import { useSmartDrop } from "@/core/providers/smart/hooks";
+import { useSmartDrop } from "@/core/smart/hooks";
 import {
   Ban,
   Bot,
@@ -20,21 +20,21 @@ import {
   MessageSquareText,
   PackagePlus,
 } from "lucide-react";
-import { Card } from "@/core/components/ui/card";
+import { Card } from "@/core/ui/card";
 import { ChatList } from "./chat-list";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Form } from "@/core/components/ui/form";
-import { ArgsContainer } from "@/core/components/ports/ArgsContainer";
-import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
-import { usePortForm } from "@/core/lib/ports/usePortForm";
-import { submittedDataToRekuestFormat } from "@/core/lib/ports/utils";
-import { Button } from "@/core/components/ui/button";
+import { Form } from "@/core/ui/form";
+import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { usePortForm } from "@/core/ports/engine/usePortForm";
+import { submittedDataToRekuestFormat } from "@/core/ports/engine/utils";
+import { Button } from "@/core/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/core/components/ui/popover";
+} from "@/core/ui/popover";
 import {
   Command,
   CommandGroup,
@@ -42,7 +42,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/core/components/ui/command";
+} from "@/core/ui/command";
 import {
   useAllActionsQuery,
   useDetailActionQuery,

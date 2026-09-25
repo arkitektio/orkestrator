@@ -1,5 +1,5 @@
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
-import type { SparseStoreAccess } from "@/core/lib/sparse/sparseReader";
+import type { SparseStoreAccess } from "@/core/data/sparse/sparseReader";
 import {
   RequestGeneralSparseAccessDocument,
   type RequestGeneralSparseAccessMutation,

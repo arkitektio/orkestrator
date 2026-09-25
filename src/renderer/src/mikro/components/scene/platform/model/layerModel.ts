@@ -27,7 +27,7 @@ import {
 } from "./renderGraph";
 import { resolveIntensityAxis, resolvePhasorAxis } from "./dims";
 import { readGains } from "./whiteBalanceGains";
-import { composeLayerAffine, type SceneTransformContext } from "@/core/lib/scene/coords/transformGraph";
+import { composeLayerAffine, type SceneTransformContext } from "@/core/data/scene/coords/transformGraph";
 
 export type { SceneTransformContext };
 

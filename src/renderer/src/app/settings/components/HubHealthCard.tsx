@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/core/components/ui/card";
-import type { HubHealthFacts } from "@/core/lib/arkitekt/doctor/hubHealth";
+import { Card, CardContent } from "@/core/ui/card";
+import type { HubHealthFacts } from "@/core/connection/arkitekt/doctor/hubHealth";
 import { formatDistanceToNow } from "date-fns";
 import { Radio } from "lucide-react";
 import { StatusLabel, type Tone } from "./StatusLabel";

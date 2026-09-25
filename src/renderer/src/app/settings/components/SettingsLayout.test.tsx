@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 // Spring-loaded drop targets need the DnD runtime; the nav only needs links.
-vi.mock("@/core/lib/dnd/react", () => ({
+vi.mock("@/core/dnd/react", () => ({
   useSpringLoaded: () => ({ ref: () => undefined, isOver: false }),
 }));
 

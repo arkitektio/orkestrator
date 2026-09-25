@@ -1,4 +1,4 @@
-import { badgeMarkdownFor, universalLinkFor } from "@/core/lib/universalLink";
+import { badgeMarkdownFor, universalLinkFor } from "@/core/tabs/sharing/universalLink";
 
 /**
  * A GitHub repository as Kabinet names it: owner + repository.

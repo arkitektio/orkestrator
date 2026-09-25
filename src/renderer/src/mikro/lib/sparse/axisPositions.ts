@@ -17,7 +17,7 @@ import { ColumnRole } from "@/mikro/api/graphql";
 import type { SparseColouringSourceFragment } from "@/mikro/api/graphql";
 import type { AttributeLookupEngine } from "../attributes/lookupEngine";
 import { escapeSqlIdentifier, escapeSqlLiteral } from "../attributes/sqlBind";
-import { LruMap } from "@/core/lib/generic/lruMap";
+import { LruMap } from "@/core/util/lruMap";
 
 export type AxisPosition = { value: number; label: string };
 

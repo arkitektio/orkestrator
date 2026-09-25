@@ -1,6 +1,6 @@
 import React from "react";
-import { Badge } from "@/core/components/ui/badge";
-import { Card, CardTitle } from "@/core/components/ui/card";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardTitle } from "@/core/ui/card";
 import { MikroAnnotation, MikroScene } from "@/core/linkers";
 import { Clapperboard } from "lucide-react";
 

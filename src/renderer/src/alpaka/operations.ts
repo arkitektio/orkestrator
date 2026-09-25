@@ -1,4 +1,4 @@
-import type { OperationHandler } from "@/core/lib/module-host/operations";
+import type { OperationHandler } from "@/core/modules/host/operations";
 import type { JSONObject } from "@/core/types";
 import {
   CreateRoomDocument,

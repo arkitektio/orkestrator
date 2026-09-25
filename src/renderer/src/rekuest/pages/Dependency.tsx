@@ -2,7 +2,7 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import {
   DetailPane,
   DetailPaneHeader
-} from "@/core/components/ui/pane";
+} from "@/core/ui/pane";
 import { RekuestDependency } from "@/core/linkers";
 import { useDependencyQuery } from "@/rekuest/api/graphql";
 

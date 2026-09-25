@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { ApolloClient } from "@apollo/client";
 import { useLocation } from "react-router-dom";
-import { useConnection } from "@/core/lib/arkitekt/provider";
+import { useConnection } from "@/core/connection/arkitekt/provider";
 
 /** At most one sweep per this window, however often the route changes. */
 const THROTTLE_MS = 60_000;

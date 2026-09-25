@@ -1,4 +1,4 @@
-import { formatDisplay } from "@/core/lib/quantities";
+import { formatDisplay } from "@/core/util/quantities";
 import {
   DeviceRows,
   MetadataAnchorBox,
@@ -6,7 +6,7 @@ import {
   MetadataHeader,
   MetadataRow,
   ValueHistogramSpoke,
-} from "@/core/lib/scene/metadata/MetadataChrome";
+} from "@/core/data/scene/metadata/MetadataChrome";
 import type {
   FullCoordinateAnchorFragment,
   LightpathGraphFragment,

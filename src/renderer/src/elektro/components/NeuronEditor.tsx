@@ -1,18 +1,18 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/core/components/ui/accordion";
-import { Button } from "@/core/components/ui/button";
-import { Card } from "@/core/components/ui/card";
-import { Input } from "@/core/components/ui/input";
-import { Label } from "@/core/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/components/ui/select";
-import { Slider } from "@/core/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/core/ui/accordion";
+import { Button } from "@/core/ui/button";
+import { Card } from "@/core/ui/card";
+import { Input } from "@/core/ui/input";
+import { Label } from "@/core/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
+import { Slider } from "@/core/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import { Check, Copy, GitBranch, HelpCircle, Pencil, Save, Trash2, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
 import { useDialog } from "@/core/dialogs/registry";
-import { toBase } from "@/core/lib/quantities";
+import { toBase } from "@/core/util/quantities";
 import { DetailNeuronModelFragment, SectionFragment } from "../api/graphql";
 import {
   EditableCompartment,
@@ -43,7 +43,7 @@ import { compartmentColors, sectionColor, sectionColors } from "./morphology/mod
 import { buildNetworkLayout } from "./morphology/model/networkLayout";
 import { createMorphologyStore, MorphologyStoreContext } from "./morphology/stores/morphologyStore";
 import { useWebGPUGate } from "./morphology/useWebGPUGate";
-import { QuantityInput } from "@/core/components/fields/QuantityInput";
+import { QuantityInput } from "@/core/forms/QuantityInput";
 
 const getParentInfo = (section: SectionFragment) => {
   if (!section.parent) return null;

@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 const useMarkImage = vi.fn();
-vi.mock("@/core/lib/marks/useMarkImage", () => ({
+vi.mock("@/kabinet/lib/marks/useMarkImage", () => ({
   useMarkImage: (input: unknown) => useMarkImage(input),
 }));
 import { AppIcon } from "./AppIcon";

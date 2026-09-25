@@ -1,12 +1,12 @@
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/core/components/ui/tooltip";
+} from "@/core/ui/tooltip";
 import { GraphProjectionFragment, ProjectionStatus } from "../api/graphql";
-import Timestamp from "@/core/components/ui/timestamp";
+import Timestamp from "@/core/ui/timestamp";
 
 /**
  * Whether this view has drawn the log yet.

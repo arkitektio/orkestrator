@@ -1,16 +1,16 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
-import { Input } from "@/core/components/ui/input";
-import { ScrollArea } from "@/core/components/ui/scroll-area";
-import { useDebounce } from "@/core/hooks/use-debounce";
+} from "@/core/ui/card";
+import { Input } from "@/core/ui/input";
+import { ScrollArea } from "@/core/ui/scroll-area";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
 import {
   ListMeasurementCategoryWithGraphFragment,
   useAssertMeasurementExistsMutation,

@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { Focus } from "lucide-react";
-import { Button } from "@/core/components/ui/button";
-import { Card, CardTitle } from "@/core/components/ui/card";
+import { Button } from "@/core/ui/button";
+import { Card, CardTitle } from "@/core/ui/card";
 import { MikroAnnotation } from "@/core/linkers";
 import { useGetSceneAnnotationsQuery, type SceneAnnotationFragment } from "@/mikro/api/graphql";
 import {

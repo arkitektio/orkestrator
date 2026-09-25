@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from "@/core/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/core/ui/card";
 import { SolvedError } from "@/fluss/validation/types";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { SolvedErrorRender } from "../../ErrorRender";

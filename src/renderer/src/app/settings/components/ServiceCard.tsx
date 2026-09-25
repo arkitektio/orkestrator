@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/core/components/ui/card";
+import { Card, CardContent } from "@/core/ui/card";
 import {
   CLIENT_SIDE_LABEL,
   HUB_SIDE_LABEL,
@@ -6,11 +6,11 @@ import {
   clientSideFor,
   compareService,
   type HubHealthFacts,
-} from "@/core/lib/arkitekt/doctor/hubHealth";
-import { aliasToHttpPath } from "@/core/lib/arkitekt/alias/helpers";
-import { ServiceRuntimeState } from "@/core/lib/arkitekt/types";
-import { serviceRoute, type ServiceRoute } from "@/core/lib/mesh/route";
-import { cn } from "@/core/lib/utils";
+} from "@/core/connection/arkitekt/doctor/hubHealth";
+import { aliasToHttpPath } from "@/core/connection/arkitekt/alias/helpers";
+import { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
+import { serviceRoute, type ServiceRoute } from "@/core/connection/mesh/route";
+import { cn } from "@/core/util/utils";
 import { formatDistanceToNow } from "date-fns";
 import { Globe, Lock, LockOpen, Network, Server } from "lucide-react";
 import React from "react";

@@ -1,4 +1,4 @@
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import { ElektroCell, ElektroEnvironment, ElektroModelCollection } from "@/core/linkers";
 import { DetailNeuronModelFragment } from "../../api/graphql";
 import HistoryCard from "../cards/HistoryCard";

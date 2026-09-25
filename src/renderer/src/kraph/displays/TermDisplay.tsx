@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphTerm } from "@/core/linkers";
 import { useGetTermQuery } from "../api/graphql";
 import { termKindLabel, termTint } from "../lib/terms";

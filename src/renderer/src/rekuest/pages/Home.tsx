@@ -1,16 +1,16 @@
-import { ListRender } from "@/core/components/layout/ListRender";
-import { PageLayout } from "@/core/components/layout/PageLayout";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { HelpSidebar } from "@/core/components/sidebars/help";
-import { Badge } from "@/core/components/ui/badge";
-import { Button, buttonVariants } from "@/core/components/ui/button";
-import { CollapsibleSearch } from "@/core/components/ui/collapsible-search";
+import { ListRender } from "@/core/layout/ListRender";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { HelpSidebar } from "@/core/layout/help";
+import { Badge } from "@/core/ui/badge";
+import { Button, buttonVariants } from "@/core/ui/button";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
   PageActionPolicy,
-} from "@/core/components/ui/page-action";
+} from "@/core/ui/page-action";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,15 +23,15 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
+} from "@/core/ui/dropdown-menu";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/core/components/ui/empty";
-import { parseAsBoolean, parseAsString, useQueryState } from "@/core/hooks/use-search-param-state";
+} from "@/core/ui/empty";
+import { parseAsBoolean, parseAsString, useQueryState } from "@/core/util/hooks/use-search-param-state";
 import { RekuestAgent } from "@/core/linkers";
 import { useStructureOptionList } from "@/core/modules/hooks/useStructureOptions";
 import { ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";

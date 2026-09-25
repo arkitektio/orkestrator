@@ -1,13 +1,13 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import {
   DropdownMenuGroup,
   DropdownMenuLabel,
-} from "@/core/components/ui/dropdown-menu";
+} from "@/core/ui/dropdown-menu";
 import {
   groupProfilesByDeployment,
   type StoredProfile,
-} from "@/core/lib/arkitekt/fakts/profileStorageSchema";
-import { describeRefreshFailure } from "@/core/lib/arkitekt/runtime/profileAuth";
+} from "@/core/connection/arkitekt/fakts/profileStorageSchema";
+import { describeRefreshFailure } from "@/core/connection/arkitekt/runtime/profileAuth";
 import { Building2 } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";

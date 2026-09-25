@@ -1,5 +1,5 @@
-import { buildDeleteAction } from "@/core/lib/localactions/builders/deleteAction";
-import type { ModuleServices } from "@/core/lib/arkitekt/host";
+import { buildDeleteAction } from "@/core/smart/localactions/builders/deleteAction";
+import type { ModuleServices } from "@/core/connection/arkitekt/host";
 import {
   CreateSceneFromCoordinateSystemDocument,
   CreateSceneFromCoordinateSystemMutation,
@@ -29,7 +29,7 @@ import {
   PutTableDatasetsInFolderMutation,
   PutTableDatasetsInFolderMutationVariables,
 } from "@/mikro/api/graphql";
-import { linkBuilder } from "@/core/providers/smart/builder";
+import { linkBuilder } from "@/core/smart/builder";
 import { sceneRegistrationLink } from "@/mikro/components/registration/entry";
 import {
   Boxes,
@@ -42,8 +42,8 @@ import {
   Ruler,
   Waypoints,
 } from "lucide-react";
-import { Action } from "@/core/lib/localactions/LocalActionProvider";
-import { getRefetchableQueriesForEntities } from "@/core/lib/localactions/helpers/refetch";
+import { Action } from "@/core/smart/localactions/LocalActionProvider";
+import { getRefetchableQueriesForEntities } from "@/core/smart/localactions/helpers/refetch";
 
 type MikroAction = Action<ModuleServices<"mikro">>;
 

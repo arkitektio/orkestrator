@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { findOptionSource } from "@/core/modules/registries";
-import type { SearchOptions } from "@/core/components/fields/SearchField";
-import { useModuleHostVersion } from "@/core/lib/module-host/host";
-import { resolveServiceClient } from "@/core/lib/module-host/operations";
-import type { StructureOption } from "@/core/lib/module-host/options";
+import type { SearchOptions } from "@/core/forms/SearchField";
+import { useModuleHostVersion } from "@/core/modules/host/host";
+import { resolveServiceClient } from "@/core/modules/host/operations";
+import type { StructureOption } from "@/core/modules/host/options";
 
 /**
  * A search over another module's models, for a picker (a user chip, an app

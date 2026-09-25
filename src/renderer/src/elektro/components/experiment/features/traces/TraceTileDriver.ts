@@ -1,6 +1,6 @@
 import type { StoreApi } from "zustand/vanilla";
-import { createRafCoalescer } from "@/core/lib/scene/perf/rafCoalesce";
-import { INTERACTIVE_FETCH_PRIORITY } from "@/core/lib/zarr/pool/types";
+import { createRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
+import { INTERACTIVE_FETCH_PRIORITY } from "@/core/data/zarr/pool/types";
 import type { LayerDriver } from "../../platform/drivers/layerDriver";
 import type { LayerState } from "../../platform/model/layerModel";
 import {

@@ -1,4 +1,4 @@
-import { PageAction } from "@/core/components/ui/page-action";
+import { PageAction } from "@/core/ui/page-action";
 import { MikroFile } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";

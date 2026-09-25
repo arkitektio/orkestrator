@@ -5,7 +5,7 @@ import {
   profileShortDetail,
   profileTitle,
 } from "./profileLabels";
-import type { StoredProfile } from "@/core/lib/arkitekt/fakts/profileStorageSchema";
+import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 
 const profile = (label: Record<string, unknown>) =>
   ({

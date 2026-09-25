@@ -1,5 +1,5 @@
 import { createStore } from "zustand/vanilla";
-import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";
+import { createScopedStoreHooks } from "@/core/util/createScopedStore";
 
 /**
  * RENDER-PLANE state for the drawing gesture in flight. Written at pointer

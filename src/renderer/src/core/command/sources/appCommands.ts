@@ -1,4 +1,4 @@
-import type { Theme } from "@/core/providers/ThemeProvider";
+import type { Theme } from "@/core/settings/theme/ThemeProvider";
 import type { LucideIcon } from "lucide-react";
 import {
   Bug,

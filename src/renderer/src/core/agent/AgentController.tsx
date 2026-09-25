@@ -1,8 +1,8 @@
-import { Alert, AlertDescription, AlertTitle } from "@/core/components/ui/alert";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/components/ui/collapsible";
-import { useSettings } from "@/core/providers/settings/SettingsContext";
+import { Alert, AlertDescription, AlertTitle } from "@/core/ui/alert";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/ui/collapsible";
+import { useSettings } from "@/core/settings/store/SettingsContext";
 import { Activity, AlertCircle, ChevronDown, ChevronUp, Power, Wifi, WifiOff } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { AgentCodeDisplay } from "./AgentCodeDisplay";

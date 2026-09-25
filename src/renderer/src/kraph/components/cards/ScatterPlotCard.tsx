@@ -1,5 +1,5 @@
 import React from "react";
-import { Card } from "@/core/components/ui/card";
+import { Card } from "@/core/ui/card";
 import { KraphScatterPlot } from "@/core/linkers";
 import {
   ListScatterPlotFragment

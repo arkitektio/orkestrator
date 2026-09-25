@@ -1,12 +1,12 @@
 import { useRoomsQuery } from "@/alpaka/api/graphql";
-import { Card, CardContent } from "@/core/components/ui/card";
+import { Card, CardContent } from "@/core/ui/card";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "@/core/components/ui/carousel";
+} from "@/core/ui/carousel";
 import { AlpakaRoom } from "@/core/linkers";
 import { useSelf } from "@/core/connection/useSelf";
 

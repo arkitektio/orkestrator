@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Card } from "@/core/components/ui/card";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Card } from "@/core/ui/card";
 import { RekuestMemoryShelve } from "@/core/linkers";
 import {
   useMemoryShelveQuery

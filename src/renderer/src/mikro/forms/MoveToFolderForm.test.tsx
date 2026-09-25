@@ -21,8 +21,8 @@ vi.mock("@/core/dialogs/registry", () => ({
 }));
 
 let client: ApolloClient<unknown>;
-vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   // Module bindings (`useMikro`, `MikroGuard`) read the host facade.
   useServiceClient: () => client,
 }));
@@ -33,7 +33,7 @@ import {
   Ordering,
   PutFilesInFolderDocument,
 } from "@/mikro/api/graphql";
-import { Dialog } from "@/core/components/ui/dialog";
+import { Dialog } from "@/core/ui/dialog";
 import { MoveToFolderForm } from "./MoveToFolderForm";
 
 const folder = (id: string, name: string) => ({

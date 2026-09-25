@@ -1,4 +1,4 @@
-import { PageLayout } from "@/core/components/layout/PageLayout";
+import { PageLayout } from "@/core/layout/PageLayout";
 import { sectionBySlug } from "../sections";
 
 /**

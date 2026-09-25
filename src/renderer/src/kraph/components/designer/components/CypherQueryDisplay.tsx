@@ -1,10 +1,10 @@
-import { Button } from "@/core/components/ui/button";
-import { Card } from "@/core/components/ui/card";
+import { Button } from "@/core/ui/button";
+import { Card } from "@/core/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/core/components/ui/collapsible";
+} from "@/core/ui/collapsible";
 import { Check, ChevronDown, ChevronRight, Copy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

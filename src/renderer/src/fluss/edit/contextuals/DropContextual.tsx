@@ -1,5 +1,5 @@
-import { Separator } from "@/core/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
+import { Separator } from "@/core/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import {
   DropContextualParams,
   FlowNode,
@@ -13,7 +13,7 @@ import { useEditFlowStore, useEditNode } from "../context";
 import { parentNode } from "../store/graph";
 import { positionInSubflow } from "../store/placement";
 import { ActionSuggestions } from "./ActionSuggestions";
-import { ContextualContainer } from "@/core/components/ui/contextual-container";
+import { ContextualContainer } from "@/core/ui/contextual-container";
 import { ReactiveSuggestions } from "./ReactiveSuggestions";
 import { SearchForm, SearchValues } from "./SearchForm";
 import { dropSuggestions } from "./suggestions";

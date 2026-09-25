@@ -1,6 +1,6 @@
 import { Eye, EyeOff } from "lucide-react";
 import type { ReactNode } from "react";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 
 /**
  * The shared card surface every layer kind renders into — one dialect for all of

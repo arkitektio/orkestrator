@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { AnnotationKind, type SceneAnnotationFragment } from "@/mikro/api/graphql";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 
 import { getAnnotationSelectionPoints } from "../scene/features/annotations/annotationBounds";
 import {

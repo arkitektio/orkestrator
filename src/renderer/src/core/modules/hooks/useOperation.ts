@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { MODULE_OPERATIONS } from "@/core/modules/registries";
-import { resolveServiceClient } from "@/core/lib/module-host/operations";
+import { resolveServiceClient } from "@/core/modules/host/operations";
 import type { JSONObject, JSONValue } from "@/core/types";
 
 /**

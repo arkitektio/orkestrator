@@ -1,6 +1,6 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
+} from "@/core/ui/dropdown-menu";
 import { Ordering, useGetFoldersQuery } from "@/mikro/api/graphql";
 import { Check, FolderInput, FolderPlus, Search } from "lucide-react";
 import { toast } from "sonner";

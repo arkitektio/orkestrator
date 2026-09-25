@@ -1,5 +1,5 @@
 import { effectiveFlatNormals } from "./meshLayerDefaults";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   Box,
   Crosshair,
@@ -34,9 +34,9 @@ import {
   Segment,
   SegmentGroup,
   formatCount,
-} from "@/core/lib/scene/layerui/cardControls";
+} from "@/core/data/scene/layerui/cardControls";
 import { instancePaletteCSS } from "../../platform/layerui/colormap-utils";
-import { ColormapSelect, type ColormapChoice } from "@/core/lib/scene/layerui/ColormapSelect";
+import { ColormapSelect, type ColormapChoice } from "@/core/data/scene/layerui/ColormapSelect";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import {
   ColorBySection,

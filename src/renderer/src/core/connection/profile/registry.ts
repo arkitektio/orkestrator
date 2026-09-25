@@ -1,8 +1,8 @@
-import { derived } from "@/core/lib/module-host/lazy";
+import { derived } from "@/core/modules/host/lazy";
 import {
   createProfileSectionRegistry,
   type ProfileSectionRegistry,
-} from "@/core/lib/profile/section";
+} from "@/core/connection/profile/section";
 import { moduleProfileSections } from "../../modules/registries";
 
 const build = derived(() => createProfileSectionRegistry(moduleProfileSections()));

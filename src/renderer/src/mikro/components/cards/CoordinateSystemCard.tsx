@@ -1,6 +1,6 @@
 import React from "react";
-import { Badge } from "@/core/components/ui/badge";
-import { Card, CardTitle } from "@/core/components/ui/card";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardTitle } from "@/core/ui/card";
 import { MikroCoordinateSystem } from "@/core/linkers";
 import { ListCoordinateSystemFragment } from "../../api/graphql";
 import { occupancyLabel } from "../coordinates/residents";

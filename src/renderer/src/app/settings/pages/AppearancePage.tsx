@@ -1,22 +1,22 @@
-import { SwitchField } from "@/core/components/fields/SwitchField";
-import { Button } from "@/core/components/ui/button";
+import { SwitchField } from "@/core/forms/SwitchField";
+import { Button } from "@/core/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
+} from "@/core/ui/card";
 import {
   FormControl,
   FormDescription,
   FormField,
   FormItem,
   FormLabel,
-} from "@/core/components/ui/form";
-import { Slider } from "@/core/components/ui/slider";
-import { getPlatform } from "@/core/lib/platform";
-import type { Settings } from "@/core/providers/settings/validator";
+} from "@/core/ui/form";
+import { Slider } from "@/core/ui/slider";
+import { getPlatform } from "@/core/util/platform";
+import type { Settings } from "@/core/settings/store/validator";
 import { Minus, Plus } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { ColorModeField } from "../components/ColorModeField";

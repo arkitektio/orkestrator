@@ -1,11 +1,11 @@
-import { SwitchField } from "@/core/components/fields/SwitchField";
+import { SwitchField } from "@/core/forms/SwitchField";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
+} from "@/core/ui/card";
 import { FlaskConical } from "lucide-react";
 import { SettingsForm } from "../components/SettingsForm";
 import { SettingsPage } from "../components/SettingsPage";

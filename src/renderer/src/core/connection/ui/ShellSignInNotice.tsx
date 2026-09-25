@@ -1,6 +1,6 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
-import { Button } from "@/core/components/ui/button";
-import { grantHintForProfile } from "@/core/lib/arkitekt/fakts/grantHint";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { Button } from "@/core/ui/button";
+import { grantHintForProfile } from "@/core/connection/arkitekt/fakts/grantHint";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import React from "react";
 

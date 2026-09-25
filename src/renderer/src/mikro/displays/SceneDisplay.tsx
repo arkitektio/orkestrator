@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { MikroScene } from "@/core/linkers";
 import { useGetSceneQuery } from "@/mikro/api/graphql";
 

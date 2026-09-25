@@ -1,6 +1,6 @@
 import { asGraphDetailQueryRoute } from "@/kraph/routes/graphRoutes";
-import { FormSheet } from "@/core/components/dialog/FormDialog";
-import { Sidebars } from "@/core/components/layout/Sidebars";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Sidebars } from "@/core/layout/Sidebars";
 import {
   KraphEntity,
   KraphProtocolEvent,

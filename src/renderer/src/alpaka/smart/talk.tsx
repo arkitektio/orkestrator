@@ -1,7 +1,7 @@
 import { Columns2, ExternalLink, MessageSquareMore } from "lucide-react";
 
-import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
-import type { PassDownProps } from "@/core/providers/smart/extensions/types";
+import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
+import type { PassDownProps } from "@/core/smart/extensions/types";
 import { canTalkInNewWindow, useTalkAbout, type TalkTarget } from "./useTalkAbout";
 
 const buildRoomTitle = (props: PassDownProps) => {

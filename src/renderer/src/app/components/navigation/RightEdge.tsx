@@ -1,4 +1,4 @@
-import { useSmartDragActive, useSmartTabDrop } from "@/core/providers/smart/useSmartTabDrop";
+import { useSmartDragActive, useSmartTabDrop } from "@/core/smart/useSmartTabDrop";
 import { Columns2 } from "lucide-react";
 
 /**

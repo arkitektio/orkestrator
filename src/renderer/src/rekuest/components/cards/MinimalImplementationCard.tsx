@@ -5,8 +5,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/core/components/ui/card";
-import { DialogButton } from "@/core/components/ui/dialogbutton";
+} from "@/core/ui/card";
+import { DialogButton } from "@/core/ui/dialogbutton";
 import { RekuestImplementation } from "@/core/linkers";
 
 

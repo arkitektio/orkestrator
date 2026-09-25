@@ -1,18 +1,18 @@
 import { RekuestGuard } from "@/rekuest/api/hooks";
-import { Badge } from "@/core/components/ui/badge";
-import { Button } from "@/core/components/ui/button";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
-import { cn } from "@/core/lib/utils";
+} from "@/core/ui/dropdown-menu";
+import { cn } from "@/core/util/utils";
 import { Cpu, Download, Sparkles, Zap } from "lucide-react";
 import React from "react";
 import { StoreFlavourFragment } from "../../api/graphql";
-import { PageSections } from "@/core/components/layout/PageSections";
+import { PageSections } from "@/core/layout/PageSections";
 import { selectorLabel, StoreApp } from "./storeModel";
 
 export const HardwareBadges = ({

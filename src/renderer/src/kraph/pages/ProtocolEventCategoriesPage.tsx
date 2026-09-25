@@ -1,4 +1,4 @@
-import { Card } from "@/core/components/ui/card";
+import { Card } from "@/core/ui/card";
 import { KraphProtocolEventCategory } from "@/core/linkers";
 import React from "react";
 import ProtocolEventCategoryList from "../components/lists/ProtocolEventCategoryList";

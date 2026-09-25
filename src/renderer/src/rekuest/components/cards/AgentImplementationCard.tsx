@@ -1,6 +1,6 @@
 import React from "react";
 import { useDialog } from "@/core/dialogs/registry";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 import { RekuestImplementation } from "@/core/linkers";
 import { ListImplementationFragment } from "@/rekuest/api/graphql";
 import { PlayCircle } from "lucide-react";

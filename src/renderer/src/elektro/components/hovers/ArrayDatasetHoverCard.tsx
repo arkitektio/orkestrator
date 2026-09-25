@@ -1,6 +1,6 @@
-import { HoverRow, HoverShell, HoverSkeleton } from "@/core/components/hover/HoverShell";
-import { formatShape } from "@/core/lib/arrays/formatShape";
-import { formatDisplay } from "@/core/lib/quantities";
+import { HoverRow, HoverShell, HoverSkeleton } from "@/core/ui/HoverShell";
+import { formatShape } from "@/core/data/arrays/formatShape";
+import { formatDisplay } from "@/core/util/quantities";
 import { Object } from "@/core/types";
 import { useGetArrayDatasetQuery } from "../../api/graphql";
 

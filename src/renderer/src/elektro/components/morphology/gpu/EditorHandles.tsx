@@ -1,4 +1,4 @@
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { Html } from "@react-three/drei";
 import { useEffect, useState } from "react";
 import type * as THREE from "three";

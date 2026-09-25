@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { EXCLUDE_FROM_CAPTURE } from "@/core/lib/scene/capture/captureVisibility";
+import { EXCLUDE_FROM_CAPTURE } from "@/core/data/scene/capture/captureVisibility";
 import { computeSceneWorldBox } from "../../platform/camera/sceneFit";
 import { layersPlanKey } from "../../platform/model/layerPlanKey";
 import { useModeStore } from "../../platform/stores/modeStore";
@@ -7,7 +7,7 @@ import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStor
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
-import { bindAll } from "@/core/lib/scene/stores/bindStore";
+import { bindAll } from "@/core/data/scene/stores/bindStore";
 
 /**
  * Three axis-aligned guide lines through the probed point, spanning the scene

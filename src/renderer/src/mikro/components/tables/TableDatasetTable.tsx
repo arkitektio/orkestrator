@@ -22,15 +22,15 @@ import {
 } from "lucide-react";
 import * as React from "react";
 
-import { Button } from "@/core/components/ui/button";
-import { Checkbox } from "@/core/components/ui/checkbox";
+import { Button } from "@/core/ui/button";
+import { Checkbox } from "@/core/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu";
-import { Input } from "@/core/components/ui/input";
+} from "@/core/ui/dropdown-menu";
+import { Input } from "@/core/ui/input";
 import {
   Table,
   TableBody,
@@ -38,12 +38,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/core/components/ui/table";
+} from "@/core/ui/table";
 import {
   type TableDatasetFragment,
   useGetTableDatasetAnchorsQuery,
 } from "@/mikro/api/graphql";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 
 import {
   ColumnAxisGlyph,

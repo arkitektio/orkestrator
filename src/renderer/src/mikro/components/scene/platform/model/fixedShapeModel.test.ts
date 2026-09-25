@@ -18,7 +18,7 @@ import {
 } from "./layerModel";
 import type { ChannelRenderNode, PhasorRenderNode, TransferFn } from "./renderGraph";
 import { CHANNEL_KIND, PHASOR_KIND } from "./renderGraph";
-import type { SceneTransformContext } from "@/core/lib/scene/coords/transformGraph";
+import type { SceneTransformContext } from "@/core/data/scene/coords/transformGraph";
 
 /**
  * The three FIXED-SHAPE lens layers normalize into the same `LayerState` an

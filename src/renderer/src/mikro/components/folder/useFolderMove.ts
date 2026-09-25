@@ -1,5 +1,5 @@
 import { useMikro } from "@/mikro/api/funcs";
-import { getRefetchableQueriesForEntities } from "@/core/lib/localactions/helpers/refetch";
+import { getRefetchableQueriesForEntities } from "@/core/smart/localactions/helpers/refetch";
 import {
   usePutArrayDatasetsInFolderMutation,
   usePutFilesInFolderMutation,

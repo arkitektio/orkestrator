@@ -1,9 +1,9 @@
 import { DefaultKind, useUseModelForMutation } from "@/alpaka/api/graphql";
 import { useDialog } from "@/core/dialogs/registry";
-import { ChoicesField } from "@/core/components/fields/ChoicesField";
-import { Button } from "@/core/components/ui/button";
-import { DialogFooter, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
-import { Form } from "@/core/components/ui/form";
+import { ChoicesField } from "@/core/forms/ChoicesField";
+import { Button } from "@/core/ui/button";
+import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 

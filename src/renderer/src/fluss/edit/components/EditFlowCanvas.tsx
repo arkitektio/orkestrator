@@ -1,5 +1,5 @@
-import { Button } from "@/core/components/ui/button";
-import { Card } from "@/core/components/ui/card";
+import { Button } from "@/core/ui/button";
+import { Card } from "@/core/ui/card";
 import { Graph } from "@/fluss/base/Graph";
 import { useEditFlowStore, useEditFlowStoreApi } from "@/fluss/edit/context";
 import { EdgeTypes, NodeTypes } from "@/fluss/types";

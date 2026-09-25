@@ -1,6 +1,6 @@
-import { Button } from "@/core/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/core/components/ui/popover";
-import { Switch } from "@/core/components/ui/switch";
+import { Button } from "@/core/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
+import { Switch } from "@/core/ui/switch";
 import { Camera, Settings2 } from "lucide-react";
 import { type HudSettings, useMorphologyStore } from "../stores/morphologyStore";
 

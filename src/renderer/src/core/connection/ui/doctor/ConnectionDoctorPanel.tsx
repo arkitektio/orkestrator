@@ -8,29 +8,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/core/components/ui/alert-dialog";
-import { Button } from "@/core/components/ui/button";
+} from "@/core/ui/alert-dialog";
+import { Button } from "@/core/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/core/components/ui/collapsible";
+} from "@/core/ui/collapsible";
 import type { RemedyId, RemedyResult } from "../../../../../../main/doctor/protocol";
 import type {
   DoctorReport,
   Finding,
   FindingSeverity,
   Remedy,
-} from "@/core/lib/arkitekt/doctor/findings";
-import { primaryFinding, secondaryFindings } from "@/core/lib/arkitekt/doctor/findings";
-import type { DoctorStatus } from "@/core/lib/arkitekt/doctor/useConnectionDoctor";
-import { breakingHop, buildConnectionPath } from "@/core/lib/arkitekt/doctor/path";
-import { formatReport } from "@/core/lib/arkitekt/doctor/reportText";
+} from "@/core/connection/arkitekt/doctor/findings";
+import { primaryFinding, secondaryFindings } from "@/core/connection/arkitekt/doctor/findings";
+import type { DoctorStatus } from "@/core/connection/arkitekt/doctor/useConnectionDoctor";
+import { breakingHop, buildConnectionPath } from "@/core/connection/arkitekt/doctor/path";
+import { formatReport } from "@/core/connection/arkitekt/doctor/reportText";
 import { ConnectionPath } from "./ConnectionPath";
 import { StageTable } from "./StageTable";
 import { AlertTriangle, ArrowRight, CheckCircle2, ChevronDown, ClipboardCopy, Copy, ExternalLink, Info, Loader2, Stethoscope, XCircle } from "lucide-react";
 import { Link, useInRouterContext } from "react-router-dom";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 import { useMemo, useState } from "react";
 
 /**

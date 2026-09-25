@@ -3,7 +3,7 @@ import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const open = vi.hoisted(() => vi.fn());
-vi.mock("@/core/command/tabs/TabsProvider", () => ({
+vi.mock("@/core/tabs/TabsProvider", () => ({
   useTabActions: () => ({ open, openBeside: vi.fn() }),
 }));
 
@@ -15,9 +15,9 @@ vi.mock("@/app/components/chrome/AutoHideTitleBar", () => ({
 }));
 
 import { SMART_MODEL_DROP_TYPE } from "@/core/constants";
-import { createDragSource, installDndEngine } from "@/core/lib/dnd/engine";
-import { dragOnto, fireDrag } from "@/core/lib/dnd/testing";
-import { smartRegistry } from "@/core/providers/smart/registry";
+import { createDragSource, installDndEngine } from "@/core/dnd/engine";
+import { dragOnto, fireDrag } from "@/core/dnd/testing";
+import { smartRegistry } from "@/core/smart/registry";
 
 import { AppLayout } from "./AppLayout";
 

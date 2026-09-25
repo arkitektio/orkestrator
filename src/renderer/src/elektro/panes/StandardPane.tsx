@@ -1,10 +1,10 @@
-import { ListRender } from "@/core/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import ExperimentCard from "../components/cards/ExperimentCard";
 import ArrayDatasetCard from "../components/cards/ArrayDatasetCard";
-import { SidebarLayout } from "@/core/components/layout/SidebarLayout";
-import { FancyInput } from "@/core/components/ui/fancy-input";
-import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/components/ui/sidepane";
-import { useDebounce } from "@/core/hooks/use-debounce";
+import { SidebarLayout } from "@/core/layout/SidebarLayout";
+import { FancyInput } from "@/core/ui/fancy-input";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/ui/sidepane";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { CubeIcon } from "@radix-ui/react-icons";
 import {
   FileIcon,

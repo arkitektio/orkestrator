@@ -1,5 +1,5 @@
 import React from "react";
-import { Card } from "@/core/components/ui/card";
+import { Card } from "@/core/ui/card";
 import { ListTermFragment } from "@/kraph/api/graphql";
 import { KraphTerm } from "@/core/linkers";
 import { termKindLabel, termTint } from "@/kraph/lib/terms";

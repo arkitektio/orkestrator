@@ -1,9 +1,9 @@
 import { Crosshair, Trash2, Wand2 } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import { Button } from "@/core/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/core/components/ui/toggle-group";
+import { Button } from "@/core/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { useSceneDisplayMode, useSceneHostLayers, useSceneWorld } from "../../scene/sceneHost";
 import { landmarkResiduals } from "../math/residuals";
 import { fitLandmarks, minimumPairs } from "../math/solvers";

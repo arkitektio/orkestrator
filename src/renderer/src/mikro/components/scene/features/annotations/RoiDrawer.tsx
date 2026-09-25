@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { Line } from "@/core/lib/scene/draw/Line";
+import { Line } from "@/core/data/scene/draw/Line";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
 import { VertexHandles } from "./VertexHandles";
 import { isTypingTarget } from "../../platform/input/keyboardTarget";
@@ -26,7 +26,7 @@ import { useRoiDrawSessionStoreApi } from "./roiDrawSessionStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { useCreateSceneAnnotation } from "./useCreateSceneAnnotation";
-import { createRafCoalescer } from "@/core/lib/scene/perf/rafCoalesce";
+import { createRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import {
   DRAG_THRESHOLD_PX,
   exceedsDragThreshold,

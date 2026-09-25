@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KabinetPod } from "@/core/linkers";
 import { useGetPodQuery } from "../api/graphql";
 

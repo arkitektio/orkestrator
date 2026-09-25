@@ -1,7 +1,7 @@
 import { Flag, Minus, Pencil, Pentagon, SquareDashed, Trash2, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { useDeleteExperimentAnnotationMutation } from "@/elektro/api/graphql";
 import { evictAnnotation } from "./annotationCache";
 import { formatValue } from "../../platform/probe/formatValue";

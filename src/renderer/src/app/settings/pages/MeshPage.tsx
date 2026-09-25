@@ -1,6 +1,6 @@
-import { Arkitekt } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { StatusDot, TONE_TEXT, type Tone } from "../components/StatusLabel";
-import { meshAliases } from "@/core/lib/mesh/meshNeed";
+import { meshAliases } from "@/core/connection/mesh/meshNeed";
 import { profileTitle } from "@/core/connection/profile/ui/profileLabels";
 import {
   AlertDialog,
@@ -11,9 +11,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/core/components/ui/alert-dialog";
-import { Button } from "@/core/components/ui/button";
-import { Checkbox } from "@/core/components/ui/checkbox";
+} from "@/core/ui/alert-dialog";
+import { Button } from "@/core/ui/button";
+import { Checkbox } from "@/core/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -21,13 +21,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/core/components/ui/dialog";
-import { Textarea } from "@/core/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card";
-import { Switch } from "@/core/components/ui/switch";
-import type { ProfileMesh } from "@/core/lib/arkitekt/fakts/profileStorageSchema";
-import { useMeshes } from "@/core/lib/mesh/useMeshes";
-import { cn } from "@/core/lib/utils";
+} from "@/core/ui/dialog";
+import { Textarea } from "@/core/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
+import { Switch } from "@/core/ui/switch";
+import type { ProfileMesh } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
+import { useMeshes } from "@/core/connection/mesh/useMeshes";
+import { cn } from "@/core/util/utils";
 import { AlertTriangle, Check, Clock, Copy, Loader2, Lock, Network, Radio, RotateCw, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";

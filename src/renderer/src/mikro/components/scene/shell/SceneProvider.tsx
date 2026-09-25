@@ -1,4 +1,4 @@
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import { SceneFragment } from "@/mikro/api/graphql";
 import { AttributeServiceProvider } from "@/mikro/lib/attributes/AttributeServiceProvider";
@@ -16,8 +16,8 @@ import {
   createConfiguredSceneStores,
   openMissingSceneArrays,
 } from "../platform/sources/zarrSources";
-import { openSceneArrays } from "@/core/lib/zarr/openArray";
-import { assertWebGPUSupported } from "@/core/lib/scene/gpu/webgpuSupport";
+import { openSceneArrays } from "@/core/data/zarr/openArray";
+import { assertWebGPUSupported } from "@/core/data/scene/gpu/webgpuSupport";
 import {
   AnimationStoreContext,
   createAnimationStore,

@@ -1,5 +1,5 @@
 import { KabinetApp } from "@/core/linkers";
-import { cn } from "@/core/lib/utils";
+import { cn } from "@/core/util/utils";
 import { ArrowUpRight, Boxes, Layers } from "lucide-react";
 import React from "react";
 import { Link } from "react-router-dom";

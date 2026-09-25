@@ -1,4 +1,4 @@
-import { Badge } from "@/core/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import { ElektroCell, ElektroSection } from "@/core/linkers";
 import { DetailSectionFragment } from "../../api/graphql";
 import SessionCard from "../cards/SessionCard";

@@ -1,4 +1,4 @@
-import { useDebugReport } from "@/core/providers/debug/useDebugReport";
+import { useDebugReport } from "@/core/debug/useDebugReport";
 import {
   ApolloQueryResult,
   DocumentNode,

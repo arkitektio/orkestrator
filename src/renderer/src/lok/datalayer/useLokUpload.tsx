@@ -1,4 +1,4 @@
-import { useCoordinationEndpoint } from "@/core/lib/arkitekt/host";
+import { useCoordinationEndpoint } from "@/core/connection/arkitekt/host";
 import { useLok } from "@/lok/api/hooks";
 import {
   PresignedPostCredentialsFragment,

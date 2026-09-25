@@ -1,8 +1,8 @@
 import { AutoHideTitleBar } from "@/app/components/chrome/AutoHideTitleBar";
 import { WindowControls } from "@/app/components/chrome/WindowControls";
 import { UpdateIsland } from "@/core/updates/UpdateIsland";
-import { dragZoneDoubleClick, getChromeMode, useWindowState } from "@/core/lib/platform";
-import { cn } from "@/core/lib/utils";
+import { dragZoneDoubleClick, getChromeMode, useWindowState } from "@/core/util/platform";
+import { cn } from "@/core/util/utils";
 import { useEffect } from "react";
 
 export type WelcomeLayoutProps = {

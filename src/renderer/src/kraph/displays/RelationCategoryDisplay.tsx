@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/core/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { KraphRelationCategory } from "@/core/linkers";
 import { TermBadge } from "../components/TermBadge";
 import { useGetRelationCategoryQuery } from "../api/graphql";

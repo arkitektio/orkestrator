@@ -1,10 +1,10 @@
 import { ApolloClient, gql } from "@apollo/client";
-import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useKraph } from "@/kraph/api/funcs";
 import { MediaStoreFragment } from "@/kraph/api/graphql";
 import React from "react";
-import { grantExpiresAt, presignS3Url, S3SigningCredentials } from "@/core/lib/datalayer/s3request";
-import { useNearViewport } from "@/core/lib/datalayer/useNearViewport";
+import { grantExpiresAt, presignS3Url, S3SigningCredentials } from "@/core/data/s3/s3request";
+import { useNearViewport } from "@/core/data/s3/useNearViewport";
 
 /**
  * Kraph media (category and term images) through an access grant, mirroring

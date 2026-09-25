@@ -1,5 +1,5 @@
 import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
-import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import { FlussGuard } from "@/fluss/api/hooks";
 import React from "react";
 import { Route, Routes } from "react-router-dom";

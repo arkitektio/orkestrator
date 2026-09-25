@@ -1,5 +1,5 @@
 import { MODULE_ALIASES } from "@/app/components/navigation/ModuleRedirect";
-import type { ModuleManifest } from "@/core/lib/module-spec";
+import type { ModuleManifest } from "@/core/modules/spec";
 
 /** Host-owned top-level routes that are not modules. */
 const HOST_PATHS = ["settings", "blok"] as const;

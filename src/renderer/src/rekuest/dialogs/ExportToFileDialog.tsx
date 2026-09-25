@@ -1,15 +1,15 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { Button } from "@/core/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/core/components/ui/dialog";
-import { Form } from "@/core/components/ui/form";
-import { ArgsContainer } from "@/core/components/ports/ArgsContainer";
-import { FormActionDescription } from "@/core/lib/ports/ActionDescription";
-import { usePendingHooksStore } from "@/core/lib/taskhooks/pendingHooksStore";
-import { smartRegistry } from "@/core/providers/smart/registry";
+} from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
+import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { FormActionDescription } from "@/core/ports/engine/ActionDescription";
+import { usePendingHooksStore } from "@/core/modules/taskhooks/pendingHooksStore";
+import { smartRegistry } from "@/core/smart/registry";
 import {
   ActionFilter,
   DemandKind,
@@ -18,8 +18,8 @@ import {
 } from "@/rekuest/api/graphql";
 import { buildAssignInput } from "@/rekuest/assign";
 import { useAction } from "@/rekuest/hooks/useAction";
-import { usePortForm } from "@/core/lib/ports/usePortForm";
-import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
+import { usePortForm } from "@/core/ports/engine/usePortForm";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { Structure } from "@/core/types";
 import { ArrowLeft, Download } from "lucide-react";
 import { useState } from "react";
@@ -27,8 +27,8 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
 import { FILE_DOWNLOADERS } from "@/core/modules/registries";
-import { structureLabel } from "@/core/lib/export/structureLabel";
-import { FILE_DOWNLOAD_HOOK } from "@/core/lib/export/taskHooks";
+import { structureLabel } from "@/core/modules/export/structureLabel";
+import { FILE_DOWNLOAD_HOOK } from "@/core/modules/export/taskHooks";
 
 export type ExportToFileDialogProps = {
   structure: Structure;

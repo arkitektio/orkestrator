@@ -1,4 +1,4 @@
-import { defineModule } from "@/core/lib/module-host/define";
+import { defineModule } from "@/core/modules/host/define";
 import { KABINET_ACTIONS } from "./actions";
 import { PodDisplay } from "./displays/PodDisplay";
 import { KABINET_DIALOGS } from "./dialogRegistry";

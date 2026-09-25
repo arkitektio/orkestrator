@@ -1,9 +1,9 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { Sidebars } from "@/core/components/layout/Sidebars";
-import { Badge } from "@/core/components/ui/badge";
-import { Card } from "@/core/components/ui/card";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Badge } from "@/core/ui/badge";
+import { Card } from "@/core/ui/card";
 import { KraphGraph, KraphInstance, KraphNode, KraphTerm } from "@/core/linkers";
-import Timestamp from "@/core/components/ui/timestamp";
+import Timestamp from "@/core/ui/timestamp";
 import { useGetDetailInstanceQuery } from "../api/graphql";
 import { StandingsPanel } from "../components/StandingsPanel";
 

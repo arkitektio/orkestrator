@@ -1,4 +1,4 @@
-import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/components/ui/sidepane";
+import { PaneLink, SidePaneGroup, SidePaneNav } from "@/core/ui/sidepane";
 import { Home, Image } from "lucide-react";
 
 export const NavigationPane = (_props: {}) => {

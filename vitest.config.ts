@@ -33,9 +33,9 @@ export default defineConfig({
       // is meaningful instead of ~0% diluted across the whole 1000-file tree.
       // Widen this list as more suites are added.
       include: [
-        "src/renderer/src/core/lib/marks/*.ts",
-        "src/renderer/src/reaktion/validation/utils.tsx",
-        "src/renderer/src/core/lib/utils.ts",
+        "src/renderer/src/kabinet/lib/marks/*.ts",
+        "src/renderer/src/fluss/validation/utils.tsx",
+        "src/renderer/src/core/util/utils.ts",
         "src/renderer/src/core/blok/renderer/runtime/utils.ts",
         "src/renderer/src/core/blok/renderer/runtime/context.tsx",
         "src/renderer/src/core/blok/renderer/runtime/resolution.ts",
@@ -45,10 +45,10 @@ export default defineConfig({
         "src/renderer/src/core/blok/renderer/runtime/checks.ts",
         "src/renderer/src/core/blok/renderer/functions/**/*.ts",
         "src/renderer/src/rekuest/widgets/utils.tsx",
-        "src/renderer/src/core/lib/localactions/LocalActionProvider.tsx",
-        "src/renderer/src/core/providers/selection/store.tsx",
-        "src/renderer/src/core/providers/dashboard/store.ts",
-        "src/renderer/src/core/lib/arkitekt/index.tsx",
+        "src/renderer/src/core/smart/localactions/LocalActionProvider.tsx",
+        "src/renderer/src/core/dnd/selection/store.tsx",
+        "src/renderer/src/core/dashboard/store.ts",
+        "src/renderer/src/core/connection/arkitekt/index.tsx",
       ],
       // Generated GraphQL artifacts are never worth covering.
       exclude: ["**/api/graphql.ts", "**/api/fragments.ts"],

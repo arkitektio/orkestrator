@@ -1,6 +1,6 @@
-import { useArkitektActions, useArkitektStore } from "@/core/lib/arkitekt/provider";
-import { useArkitektStoreApi } from "@/core/lib/arkitekt/hooks";
-import { useSettings } from "@/core/providers/settings/SettingsContext";
+import { useArkitektActions, useArkitektStore } from "@/core/connection/arkitekt/provider";
+import { useArkitektStoreApi } from "@/core/connection/arkitekt/hooks";
+import { useSettings } from "@/core/settings/store/SettingsContext";
 import React, {
   createContext,
   useContext,
