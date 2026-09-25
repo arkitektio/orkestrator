@@ -3,7 +3,7 @@ import { MODULE_ALIASES, moveModulePath } from "./ModuleRedirect";
 
 describe("moveModulePath", () => {
   it("moves a deep link and keeps its search", () => {
-    expect(moveModulePath("/lok/users/5", "team", "lok", "?x=1")).toBe("/lok/users/5?x=1");
+    expect(moveModulePath("/team/users/5", "team", "lok", "?x=1")).toBe("/lok/users/5?x=1");
   });
 
   it("moves the module root", () => {
@@ -11,7 +11,7 @@ describe("moveModulePath", () => {
   });
 
   it("leaves a lookalike segment alone", () => {
-    expect(moveModulePath("/lokwork/x", "team", "lok")).toBe("/lokwork/x");
+    expect(moveModulePath("/teamwork/x", "team", "lok")).toBe("/teamwork/x");
   });
 
   it("points every alias at a namespace without underscores", () => {

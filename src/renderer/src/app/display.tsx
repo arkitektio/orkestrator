@@ -33,7 +33,7 @@ import { SparseDatasetDisplay } from "@/mikro/displays/SparseDatasetDisplay";
 // Example:
 // import { UserDisplay } from "@/components/displays/UserDisplay";
 
-export const { DisplayProvider, useDisplay, useDisplayComponent } =
+export const { DisplayProvider, useDisplay, useDisplayComponent, registry: DISPLAY_REGISTRY } =
   createDisplayProvider({
     // mikro
     "@mikro/file": FileDisplay,
