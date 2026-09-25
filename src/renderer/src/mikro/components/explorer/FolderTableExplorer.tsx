@@ -51,8 +51,7 @@ import {
 import { Sidebars } from "@/components/layout/Sidebars";
 import { useDebounce } from "@/hooks/use-debounce";
 import { MikroArrayDataset, MikroFile, MikroFolder, MikroTableDataset } from "@/linkers";
-import { Guard } from "@/app/Arkitekt";
-import { KnowledgeSidebar } from "@/kraph/components/sidebars/KnowledgeSidebar";
+import { SlotSections } from "@/components/layout/PageSections";
 import {
   ChildrenQuery,
   FolderFragment,
@@ -349,12 +348,11 @@ export const FolderTableExplorer = (props: {
       sidebars={
         <Sidebars>
           <Sidebars.Tab label="Knowledge">
-            <Guard.Kraph>
-              <KnowledgeSidebar
-                identifier="@mikro/folder"
-                object={props.folder}
-              />
-            </Guard.Kraph>
+            <SlotSections
+              slot="knowledge"
+              identifier="@mikro/folder"
+              object={props.folder}
+            />
           </Sidebars.Tab>
           <Sidebars.Tab label="Provenance">
             <ProvenanceSidebar items={props.folder.provenanceEntries} />

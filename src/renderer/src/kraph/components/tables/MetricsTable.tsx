@@ -1,3 +1,4 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 "use client";
 
 import {
@@ -24,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { LokUser, RekuestTask } from "@/linkers";
 import { JustClientName } from "@/lok/components/ClientAvatar";
-import { JustUsername } from "@/lok/components/UserAvatar";
+
 import { ArrowUpDown } from "lucide-react";
 
 export type MetricsTableItem = {
@@ -105,7 +106,7 @@ const columns: ColumnDef<MetricsTableItem>[] = [
     cell: ({ row }) =>
       row.original.createdBy ? (
         <LokUser.DetailLink object={{id: row.original.createdBy}}>
-          <JustUsername sub={row.original.createdBy} />
+          <StructureDisplay identifier="@lok/user" id={row.original.createdBy} variant="inline" />
         </LokUser.DetailLink>
       ) : (
         <div className="text-muted-foreground"></div>

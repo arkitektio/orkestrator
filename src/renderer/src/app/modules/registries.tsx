@@ -4,7 +4,7 @@ import { Arkitekt } from "@/app/Arkitekt";
 import type { DisplayWidgetProps } from "@/lib/display/registry";
 import type { FileDownloader } from "@/lib/export/fileDownloaders";
 import type { Action } from "@/lib/localactions/LocalActionProvider";
-import type { ModuleBuiltins, ModuleDefinition } from "@/lib/module-host/define";
+import type { ModuleBuiltins, ModuleDefinition, PageSection } from "@/lib/module-host/define";
 import { installedModules } from "@/lib/module-host/installed";
 import { lazyRecord, lazyValue } from "@/lib/module-host/lazy";
 import type { ProfileSection } from "@/lib/profile/section";
@@ -152,6 +152,35 @@ export const FILE_DOWNLOADERS = lazyRecord(
   (): Record<string, FileDownloader> =>
     mergeRecords((builtins) => builtins.fileDownloaders, "File downloader"),
 );
+
+export type HostPageSection = PageSection & { namespace: string };
+
+/** Every module's page sections, each Component behind its module's guard. */
+export const modulePageSections = lazyValue((): HostPageSection[] =>
+  (moduleDefinitions() as readonly ModuleDefinition[]).flatMap((definition) =>
+    (definition.builtins.pageSections ?? []).map((section) => ({
+      ...section,
+      namespace: namespaceOf(definition),
+      Component: guarded(namespaceOf(definition), section.Component),
+    })),
+  ),
+);
+
+/** The sections that apply to a page of `identifier`, in module order. */
+export const pageSectionsFor = (
+  identifier: string,
+  where: { placement?: PageSection["placement"]; slot?: PageSection["slot"] | null },
+  isDatum: boolean,
+): HostPageSection[] =>
+  modulePageSections().filter((section) => {
+    if (where.placement && section.placement !== where.placement) return false;
+    if (where.slot !== undefined && (section.slot ?? null) !== where.slot) return false;
+    const { identifiers, datum } = section.match;
+    const byIdentifier = !!identifiers?.includes(identifier);
+    const byDatum = !!datum && isDatum;
+    const everywhere = !identifiers?.length && !datum;
+    return everywhere || byIdentifier || byDatum;
+  });
 
 export type ModuleSearch = {
   namespace: string;

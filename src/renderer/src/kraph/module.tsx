@@ -20,6 +20,7 @@ import { StructureRelationCategoryDisplay } from "./displays/StructureRelationCa
 import { TermDisplay } from "./displays/TermDisplay";
 import { KRAPH_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { KnowledgeSidebar } from "./components/sidebars/KnowledgeSidebar";
 import { KraphEntitySearch } from "./search";
 import { KRAPH_SECTIONS } from "./smart/sections";
 
@@ -53,6 +54,17 @@ export const KRAPH_MODULE = defineModule({
     },
     dialogs: KRAPH_DIALOGS,
     actions: KRAPH_ACTIONS,
+    pageSections: [
+      {
+        // Claims and comments about any datum: the host's Knowledge sidebar.
+        id: "kraph.knowledge",
+        title: "Knowledge",
+        placement: "sidebar",
+        slot: "knowledge",
+        match: { datum: true },
+        Component: KnowledgeSidebar,
+      },
+    ],
     sections: KRAPH_SECTIONS,
     search: KraphEntitySearch,
   },

@@ -1,9 +1,6 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  UserAvatar,
-  UserAvatarUsername,
-  UserUsername,
-} from "@/lok/components/UserAvatar";
+
 import { cn } from "@/lib/utils";
 import Timestamp from "@/components/ui/timestamp";
 import {
@@ -53,14 +50,11 @@ export const renderDescendant = (x: DescendantType) => {
  */
 const Reply = ({ reply }: { reply: ReplyCommentType }) => (
   <div className="flex gap-2">
-    <UserAvatar
-      sub={reply.assertion.subject}
-      className="h-6 w-6 flex-shrink-0"
-    />
+    <StructureDisplay identifier="@lok/user" id={reply.assertion.subject} variant="avatar" className="h-6 w-6 flex-shrink-0" />
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 mb-1">
         <span className="font-semibold text-xs">
-          <UserUsername sub={reply.assertion.subject} />
+          <StructureDisplay identifier="@lok/user" id={reply.assertion.subject} variant="inline" link />
         </span>
         {reply?.createdAt && (
           <Timestamp
@@ -91,7 +85,7 @@ export const Comment = ({ comment }: { comment: ListCommentType }) => {
   return (
     <div className="flex gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors group w-full">
       <div className="flex-shrink-0 mt-1">
-        <UserAvatarUsername sub={subject} />
+        <StructureDisplay identifier="@lok/user" id={subject} variant="chip" />
       </div>
 
       <div className="flex flex-col flex-grow min-w-0">
@@ -106,7 +100,7 @@ export const Comment = ({ comment }: { comment: ListCommentType }) => {
         <div className="flex h-7">
           <div className="flex-1 flex items-center gap-2">
             <span className="font-light text-sm hover:underline">
-              <UserUsername sub={subject} />
+              <StructureDisplay identifier="@lok/user" id={subject} variant="inline" link />
             </span>
             {comment?.createdAt && (
               <Timestamp

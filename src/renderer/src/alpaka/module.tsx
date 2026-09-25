@@ -3,6 +3,7 @@ import { ALPAKA_ACTIONS } from "./actions";
 import { MessageDisplay } from "./displays/MessageDisplay";
 import { ALPAKA_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { StructureRoomsSidebar } from "./sidebars/StructureRoomsSidebar";
 import { ALPAKA_SECTIONS } from "./smart/sections";
 
 export const ALPAKA_MODULE = defineModule({
@@ -15,6 +16,17 @@ export const ALPAKA_MODULE = defineModule({
     },
     dialogs: ALPAKA_DIALOGS,
     actions: ALPAKA_ACTIONS,
+    pageSections: [
+      {
+        // Conversations about any model: the host's Chat sidebar.
+        id: "alpaka.rooms",
+        title: "Chat",
+        placement: "sidebar",
+        slot: "chat",
+        match: {},
+        Component: StructureRoomsSidebar,
+      },
+    ],
     sections: ALPAKA_SECTIONS,
   },
 });

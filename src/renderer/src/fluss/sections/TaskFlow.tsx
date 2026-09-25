@@ -1,24 +1,21 @@
-import { useRunForTaskQuery } from "@/fluss/api/graphql";
-import { TrackFlow } from "@/fluss/track/TrackFlow";
-import { DetailTaskFragment } from "@/rekuest/api/graphql";
+import type { Object } from "@/types";
 import { useEffect, useRef } from "react";
+import { useRunForTaskQuery } from "../api/graphql";
+import { TrackFlow } from "../track/TrackFlow";
 
 const RETRY_BASE_MS = 1000;
 const RETRY_MAX_MS = 30_000;
 const RETRY_MAX_ATTEMPTS = 6;
 
 /**
- * Live flow view for tasks whose implementation is a reaktion `run_flow`.
- * Kept in its own module so pages that never render flows don't pull in the
- * reaktion dependency.
+ * Live flow view for a rekuest task whose implementation is a fluss
+ * `run_flow`: fluss's `main` section on `@rekuest/task` pages. Needs only the
+ * task's id; the run is fluss's own to look up.
  */
-export const TaskFlow = (props: {
-  id: string;
-  task: DetailTaskFragment;
-}) => {
+export const TaskFlow = (props: { identifier: string; object: Object }) => {
   const { data, error, refetch } = useRunForTaskQuery({
     variables: {
-      id: props.task.id,
+      id: props.object.id,
     },
   });
 

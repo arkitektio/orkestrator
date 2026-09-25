@@ -10,8 +10,18 @@ export type DisplayWidgetProps = {
   identifier: Identifier;
   id: string;
   small?: boolean; // Optional prop for small display
+  /**
+   * SPEC ADDITION: how much of the object to show where it is embedded in
+   * someone else's UI. "inline": its name, as text; "avatar": its picture;
+   * "chip": picture and name; "card" (default): the full display. A display
+   * that knows no variant renders its default.
+   */
+  variant?: DisplayVariant;
+  className?: string;
   context?: "command" | "widget"; // "command" = compact, "widget" = full display
 };
+
+export type DisplayVariant = "inline" | "avatar" | "chip" | "card";
 
 export type HookWidget = (props: { value: string }) => React.ReactNode;
 

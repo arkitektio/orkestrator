@@ -12,6 +12,8 @@ export const manifest: ModuleManifest = {
   version: "0.0.0",
   label: "Fluss",
   icon: "workflow",
+  // The flow editor builds on rekuest's actions, agents and implementations.
+  requires: { services: ["rekuest"] },
   models: [
     { identifier: "@fluss/flow", name: "Flow", datum: false, path: "flows/:id" },
     { identifier: "@fluss/workspace", name: "Workspace", datum: false, path: "workspaces/:id" },

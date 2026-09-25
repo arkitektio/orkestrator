@@ -1,19 +1,13 @@
 import { useDialog } from "@/app/dialog";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { PageAction } from "@/components/ui/page-action";
 import { Image } from "@/components/ui/image";
 import { Separator } from "@/components/ui/separator";
 import { useLokResolve } from "@/datalayer/hooks/useResolve";
-import { LokClient, LokDevice, RekuestTask } from "@/linkers";
+import { PageSections } from "@/components/layout/PageSections";
+import { LokClient, LokDevice } from "@/linkers";
 import {
-  TaskEventKind,
-  PostmanTaskFragment,
-  useListTasksDetailsQuery,
-} from "@/rekuest/api/graphql";
-import {
-  AlertTriangle,
   Bug,
   ExternalLink,
   Server,
@@ -21,65 +15,6 @@ import {
 } from "lucide-react";
 import { useDetailClientQuery } from "../api/graphql";
 import { clientAppIdentifier } from "../lib/clientLabels";
-
-const FailedTasks = ({ clientId }: { clientId: string }) => {
-  const { openDialog } = useDialog();
-
-  const { data } = useListTasksDetailsQuery({
-    variables: {
-      filter: {
-        clientId: clientId,
-        state: [TaskEventKind.Critical],
-      },
-    },
-  });
-
-  if (!data?.tasks?.length) return null;
-
-  const handleReportBug = (task: PostmanTaskFragment) => {
-    openDialog("reportbug", {
-      taskId: task.id,
-    });
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 text-red-500 font-medium">
-        <AlertTriangle className="h-5 w-5" />
-        <h3>Critical Failures</h3>
-      </div>
-      <div className="border rounded-md divide-y">
-        {data.tasks.map((ex, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
-          >
-            <RekuestTask.DetailLink object={{id: ex.id}} className="flex flex-col gap-1">
-              <div className="font-medium flex items-center gap-2">
-                {ex.action.name}
-                <Badge variant="destructive" className="text-[10px] h-5">
-                  CRITICAL
-                </Badge>
-              </div>
-              <div className="text-xs text-muted-foreground font-mono">
-                {ex.id}
-              </div>
-            </RekuestTask.DetailLink>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              onClick={() => handleReportBug(ex)}
-            >
-              <Bug className="h-4 w-4 mr-2" />
-              Report
-            </Button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 export default asDetailQueryRoute(useDetailClientQuery, ({ data }) => {
   const resolve = useLokResolve();
@@ -185,7 +120,13 @@ export default asDetailQueryRoute(useDetailClientQuery, ({ data }) => {
 
 
         {/* Failed Tasks Section */}
-        <FailedTasks clientId={data.client.clientId} />
+        {/* What other modules show about a client (rekuest: its failed tasks),
+            given the client's OAuth id to filter by. */}
+        <PageSections
+          placement="main"
+          identifier="@lok/client"
+          object={{ id: data.client.id, clientId: data.client.clientId }}
+        />
       </div>
     </LokClient.ModelPage>
   );

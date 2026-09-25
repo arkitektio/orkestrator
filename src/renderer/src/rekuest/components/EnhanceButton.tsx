@@ -21,7 +21,8 @@ import { toast } from "sonner";
 export type EnhanceButtonProps = {
   identifier: Identifier;
   object: Object;
-  refetch?: () => Promise<any>;
+  /** The page's refetch, run once an enhancement finished. */
+  onChanged?: () => unknown;
 };
 
 
@@ -50,7 +51,7 @@ export const EnhanceButton = (props: EnhanceButtonProps) => {
 
   const { assign } = useAssignWithCallback({
     onDone: () => {
-      props.refetch?.();
+      props.onChanged?.();
     }
   });
   const { openDialog } = useDialog();

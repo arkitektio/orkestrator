@@ -1,5 +1,3 @@
-import { Guard } from "@/app/Arkitekt";
-import { StructureRoomsSidebar } from "@/alpaka/sidebars/StructureRoomsSidebar";
 import { CommandContext } from "@/command/CommandContext";
 import { ObjectButton } from "@/providers/smart/ObjectButton";
 import { structure } from "@/lib/structure";
@@ -14,7 +12,7 @@ import {
 } from "react";
 import { flattenChildren, Sidebars } from "./Sidebars";
 import { PageLayout, PageVariant } from "./PageLayout";
-import { KnowledgeSidebar } from "@/kraph/components/sidebars/KnowledgeSidebar";
+import { SlotSections } from "./PageSections";
 import { smartRegistry } from "@/providers/smart/registry";
 
 /** Label of the rail tab holding this structure's conversations. */
@@ -135,15 +133,15 @@ export const ModelPageLayout = ({
     [identifier, object.id, label],
   );
   const datum = smartRegistry.isDatum(identifier);
+  // The two host-drawn sidebars, filled by whichever modules contribute to
+  // their slot (kraph: knowledge, alpaka: chat), each behind its own guard.
   const knowledgeSidebar = (
-    <KnowledgeSidebar identifier={identifier} object={object} />
+    <SlotSections slot="knowledge" identifier={identifier} object={object} />
   );
 
   const chatTab = (
     <Sidebars.Tab label={CHAT_TAB_LABEL} key={CHAT_TAB_LABEL}>
-      <Guard.Alpaka>
-        <StructureRoomsSidebar identifier={identifier} object={object} />
-      </Guard.Alpaka>
+      <SlotSections slot="chat" identifier={identifier} object={object} />
     </Sidebars.Tab>
   );
 
@@ -157,9 +155,7 @@ export const ModelPageLayout = ({
           variant={overlay ? "overlay" : "default"}
         >
           {datum && (
-            <Sidebars.Tab label={KNOWLEDGE_TAB_LABEL}>
-              <Guard.Kraph>{knowledgeSidebar}</Guard.Kraph>
-            </Sidebars.Tab>
+            <Sidebars.Tab label={KNOWLEDGE_TAB_LABEL}>{knowledgeSidebar}</Sidebars.Tab>
           )}
           {additionalSidebars}
           {chat && chatTab}

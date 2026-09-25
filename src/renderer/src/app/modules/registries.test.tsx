@@ -94,6 +94,7 @@ describe("host registries", () => {
       "@kraph/structurekind",
       "@kraph/structurerelationcategory",
       "@kraph/term",
+      "@lok/user",
       "@lovekit/solo_broadcast",
       "@mikro/arraydataset",
       "@mikro/file",

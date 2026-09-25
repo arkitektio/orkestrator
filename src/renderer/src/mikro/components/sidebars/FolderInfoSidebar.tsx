@@ -1,5 +1,6 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { Badge } from "@/components/ui/badge";
-import { UserInfo } from "@/lok/components/protected/UserInfo";
+
 import { MikroFolder } from "@/linkers";
 import { FolderIcon } from "lucide-react";
 import Timestamp from "@/components/ui/timestamp";
@@ -114,7 +115,7 @@ export const FolderInfoSidebar = ({ folder }: { folder: PageFolder }) => {
           {folder.creator && (
             <>
               <span>by</span>
-              <UserInfo sub={folder.creator.sub} />
+              <StructureDisplay identifier="@lok/user" id={folder.creator.sub} />
             </>
           )}
         </div>

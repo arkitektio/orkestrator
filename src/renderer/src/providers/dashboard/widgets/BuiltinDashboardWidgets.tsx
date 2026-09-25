@@ -1,3 +1,4 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { useRegisterDashboardWidget } from "../hooks";
 import { Guard } from "@/app/Arkitekt";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,7 +8,7 @@ import {
   useMyActiveMessagesQuery,
   useUsersQuery,
 } from "@/lok/api/graphql";
-import { JustUsername } from "@/lok/components/UserAvatar";
+
 import { Bell, MessageSquare, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -62,7 +63,7 @@ const MentionsList = ({ onCount }: { onCount: (n: number) => void }) => {
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">
               <span className="font-medium text-foreground">
-                <JustUsername sub={mention.assertion.subject} />
+                <StructureDisplay identifier="@lok/user" id={mention.assertion.subject} variant="inline" />
               </span>{" "}
               mentioned you
             </p>

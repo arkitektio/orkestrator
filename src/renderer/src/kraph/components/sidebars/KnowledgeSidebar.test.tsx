@@ -10,7 +10,7 @@ vi.mock("@/app/Arkitekt", () => ({
   Guard: { Lok: ({ children }: { children: React.ReactNode }) => <>{children}</> },
   useKraph: () => ({}),
 }));
-vi.mock("@/lok/api/graphql", () => ({ useMeQuery: () => me() }));
+vi.mock("@/app/hooks/useSelf", () => ({ useSelf: () => me() }));
 vi.mock("@/kraph/api/graphql", () => ({
   InstanceKind: { Entity: "ENTITY" },
   TermKind: { Entity: "ENTITY" },
@@ -78,7 +78,7 @@ beforeEach(() => {
   knowledge.mockReset();
   informing.mockReset();
   me.mockReset();
-  me.mockReturnValue({ data: { me: { id: "user-1" } } });
+  me.mockReturnValue({ userId: "user-1", username: "ada" });
   informing.mockReturnValue({ data: { informingStructures: [] }, loading: false });
 });
 
@@ -166,7 +166,7 @@ describe("KnowledgeSidebar", () => {
   });
 
   it("does not mark someone else's claim as yours", () => {
-    me.mockReturnValue({ data: { me: { id: "user-2" } } });
+    me.mockReturnValue({ userId: "user-2", username: "grace" });
     knowledge.mockReturnValue({
       data: { structureByIdentifier: { metrics: [], informs: [instance("i1", "AIS")] } },
       loading: false,

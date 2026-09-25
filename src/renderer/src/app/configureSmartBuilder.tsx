@@ -1,4 +1,3 @@
-import { Guard } from "@/app/Arkitekt";
 import { ListPageLayout } from "@/components/layout/ListPageLayout";
 import { ModelPageLayout } from "@/components/layout/ModelPageLayout";
 import { PageVariant } from "@/components/layout/PageLayout";
@@ -10,7 +9,7 @@ import {
   SmartObjectButtonProps,
 } from "@/providers/smart/buildSmartAdapters";
 import { ObjectButton } from "@/providers/smart/extensions/context";
-import { KnowledgeSidebar } from "@/kraph/components/sidebars/KnowledgeSidebar";
+import { SlotSections } from "@/components/layout/PageSections";
 import { MODULE_HOVERS } from "./modules/registries";
 
 // Hover cards are each module's `hovers` builtin, paired with its module guard
@@ -26,16 +25,11 @@ const asPageVariant = (variant: unknown): PageVariant | undefined =>
 
 
 configureSmartBuilder({
-  renderKnowledge: ({ identifier, object }) => {
-    // Claims and comments both live in kraph, so this whole surface is
-    // module-specific: the guard has to sit outside, since the queries fire on
-    // mount.
-    return (
-      <Guard.Kraph>
-        <KnowledgeSidebar identifier={identifier} object={object} />
-      </Guard.Kraph>
-    );
-  },
+  // The host-drawn Knowledge surface, filled by whichever module contributes
+  // to the "knowledge" slot (kraph), behind that module's guard.
+  renderKnowledge: ({ identifier, object }) => (
+    <SlotSections slot="knowledge" identifier={identifier} object={object} />
+  ),
   renderHover: ({ identifier, object }) => {
     const entry = MODULE_HOVERS[identifier];
     if (!entry) {

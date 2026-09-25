@@ -1,6 +1,7 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { Badge } from "@/components/ui/badge";
 import { LokUser } from "@/linkers";
-import { JustUsername } from "@/lok/components/UserAvatar";
+
 import { MentionType } from "../types";
 
 /**
@@ -22,7 +23,7 @@ export const Mention = ({ element }: { element: MentionType }) => {
           variant="secondary"
           className="inline-flex items-center gap-1 font-normal cursor-pointer hover:bg-secondary/80"
         >
-          @<JustUsername sub={element.subject} />
+          @<StructureDisplay identifier="@lok/user" id={element.subject} variant="inline" />
         </Badge>
       </LokUser.DetailLink>
     </LokUser.Smart>

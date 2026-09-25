@@ -1,3 +1,4 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { portHash } from "@/lib/ports/utils";
 import { ListAgentFragment, ListDependencyFragment, ResolvedDependencyInput, useAgentForDependencyLazyQuery } from "@/rekuest/api/graphql";
 import { ArgPort, PortGroup } from "@/lib/ports/types";
@@ -11,7 +12,7 @@ import {
 } from "@/components/ui/command";
 import { Command as CommandPrimitive } from "cmdk"
 import { cn, notEmpty } from "@/lib/utils";
-import { UserAvatar } from "@/lok/components/UserAvatar";
+
 import { CheckIcon } from "@radix-ui/react-icons";
 import { Bot, Circle, SearchIcon, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -35,8 +36,6 @@ export const NanaContainer = () => {
     </div>
   );
 };
-
-
 
 function CommandInputWithBadges({
   className,
@@ -66,16 +65,6 @@ function CommandInputWithBadges({
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
 
 export type DependencyFieldProps = {
   dependency: ListDependencyFragment;
@@ -318,7 +307,6 @@ export const DependencySearchField = ({
               })}
             </>
 
-
             </CommandInputWithBadges>
           </div>
 
@@ -349,7 +337,7 @@ export const DependencySearchField = ({
                           className="flex items-center gap-3 py-2"
                         >
                           <div className="relative flex-shrink-0">
-                            <UserAvatar sub={agent.user.sub} className="h-7 w-7" />
+                            <StructureDisplay identifier="@lok/user" id={agent.user.sub} variant="avatar" className="h-7 w-7" />
                             <Circle
                               className={cn(
                                 "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full fill-current ring-2 ring-popover",

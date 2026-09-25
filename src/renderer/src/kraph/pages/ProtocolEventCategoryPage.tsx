@@ -1,4 +1,4 @@
-import { EnhanceButton } from "@/alpaka/components/EnhanceButton";
+import { PageSections } from "@/components/layout/PageSections";
 import { ImageCreator } from "@/alpaka/components/ImageCreator";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { FormSheet } from "@/components/dialog/FormDialog";
@@ -59,7 +59,12 @@ const Page =  asDetailQueryRoute(
                 id={data.protocolEventCategory.id}
               />
             </FormSheet>
-            <EnhanceButton identifier="@kraph/protocoleventcategory" object={{ id: data.protocolEventCategory.id }} />
+            {/* Whatever other modules add here (rekuest: "Enhance"). */}
+            <PageSections
+              placement="actions"
+              identifier="@kraph/protocoleventcategory"
+              object={{ id: data.protocolEventCategory.id }}
+            />
           </>
         }
         sidebars={

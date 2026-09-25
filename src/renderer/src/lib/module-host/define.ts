@@ -6,11 +6,32 @@ import type { Action } from "@/lib/localactions/LocalActionProvider";
 import type {
   ActionDecl,
   ModuleManifest,
+  SectionPlacement,
   SurfaceDecl,
 } from "@/lib/module-spec";
 import type { ProfileSection } from "@/lib/profile/section";
 import type { TaskHook } from "@/lib/taskhooks/types";
 import type { SmartContextSection } from "@/providers/smart/extensions/section";
+import type { Object } from "@/types";
+
+/**
+ * A contribution to ANOTHER model's page (spec: a `section` surface).
+ * `slot` names one of the host-drawn sidebars every datum page has; without
+ * one, `placement` says where the page puts it.
+ */
+export type PageSection = {
+  /** `"<namespace>.<name>"` */
+  id: string;
+  /** The tab label / heading the host draws. */
+  title: string;
+  placement: SectionPlacement;
+  /** Host-owned sidebars: "knowledge" (claims, comments) and "chat" (conversations). */
+  slot?: "knowledge" | "chat";
+  /** Which pages: by identifier(s), and/or every datum. Empty = every model page. */
+  match: { identifiers?: readonly string[]; datum?: boolean };
+  /** `onChanged`: the section changed the object; the page should refetch. */
+  Component: ComponentType<{ identifier: string; object: Object; onChanged?: () => unknown }>;
+};
 
 /**
  * The code half of a first-party module: everything its manifest refers to
@@ -35,6 +56,8 @@ export type ModuleBuiltins = {
   dialogs?: Record<string, ComponentType<any>>;
   /** Local actions, by id; become `perform: { kind: "builtin" }` actions. */
   actions?: Record<string, Action<any>>;
+  /** `section` surfaces: what this module adds to other models' pages. */
+  pageSections?: readonly PageSection[];
   /** EXTENSION: sections of the smart context menu. */
   sections?: readonly SmartContextSection<any>[];
   /** EXTENSION: sections of a member's profile page. */
@@ -79,6 +102,21 @@ export const describeBuiltins = (manifest: ModuleManifest, builtins: ModuleBuilt
         render: { renderer: "builtin", component: own(`display:${identifier}`) },
       }),
     ),
+    ...(builtins.pageSections ?? []).flatMap((section): SurfaceDecl[] => {
+      const identifiers: (string | undefined)[] = section.match.identifiers?.length
+        ? [...section.match.identifiers]
+        : [undefined];
+      return identifiers.map(
+        (identifier): SurfaceDecl => ({
+          id: identifiers.length > 1 ? `section:${section.id}:${identifier}` : `section:${section.id}`,
+          kind: "section",
+          match: { ...(identifier ? { identifier } : {}), ...(section.match.datum ? { datum: true } : {}) },
+          placement: section.placement,
+          title: section.title,
+          render: { renderer: "builtin", component: own(`section:${section.id}`) },
+        }),
+      );
+    }),
     ...Object.keys(builtins.dialogs ?? {}).map(
       (id): SurfaceDecl => ({
         id: `dialog:${id}`,

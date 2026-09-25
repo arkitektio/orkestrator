@@ -54,10 +54,11 @@ const isModule = (owner: string): boolean => !owner.startsWith("host:");
 
 /**
  * A module's public face: the files the HOST may import. The manifest is
- * data, `linkers` its smart objects, `service` its client binding and
- * `module` its builtins. Everything else in a module is private to it.
+ * data, `linkers` its smart objects, `service` its client binding, `module`
+ * its builtins and `dialogRegistry` its dialogs (read type-only by the host
+ * to type `openDialog`). Everything else in a module is private to it.
  */
-const PUBLIC_ENTRIES = ["manifest", "linkers", "service", "module"];
+const PUBLIC_ENTRIES = ["manifest", "linkers", "service", "module", "dialogRegistry"];
 
 export const isPublicEntry = (path: string): boolean => {
   const owner = ownerOf(path);

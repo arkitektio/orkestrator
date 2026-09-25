@@ -1,6 +1,7 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { RekuestTask } from "@/linkers";
 import { AppInfo } from "@/lok/components/protected/AppInfo";
-import { UserInfo } from "@/lok/components/protected/UserInfo";
+
 import Timestamp from "@/components/ui/timestamp";
 import { HistoryKind, ProvenanceEntryFragment } from "../../api/graphql";
 import { changeShape, summarizeFields } from "./provenanceSummary";
@@ -42,7 +43,7 @@ export const ProvenanceEntryBody = ({
     <div className="flex flex-col gap-1.5">
       {/* Who, what, when. */}
       <div className="flex flex-row flex-wrap items-center gap-x-1.5 gap-y-1 text-sm">
-        <UserInfo sub={entry.user?.sub} />
+        <StructureDisplay identifier="@lok/user" id={entry.user?.sub} />
         <span className="text-muted-foreground">
           {VERB[entry.kind]}
           {entry.kind === HistoryKind.Update && summary ? ` ${summary}` : ""}

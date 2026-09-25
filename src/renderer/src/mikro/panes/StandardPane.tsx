@@ -1,3 +1,4 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { ListRender } from '@/components/layout/ListRender'
 import { SidebarLayout } from '@/components/layout/SidebarLayout'
 import { FancyInput } from '@/components/ui/fancy-input'
@@ -5,7 +6,7 @@ import { DroppableNavLink } from '@/components/ui/link'
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { PaneLink, SidePaneGroup, SidePaneNav } from '@/components/ui/sidepane'
 import { Toggle } from '@/components/ui/toggle'
-import { JustUsername } from '@/lok/components/UserAvatar'
+
 import { useDebounce } from '@uidotdev/usehooks'
 import { ArrowDown, Axis3d, File, Folder, Grid2x2, Grid3x3, Home, PenTool, Table2 } from 'lucide-react'
 import * as React from 'react'
@@ -78,7 +79,7 @@ export const NavigationPane = () => {
           moreTo={`/mikro/peerhome/${i.user.sub}`}
           title={
             <DroppableNavLink to={`/mikro/peerhome/${i.user.sub}`}>
-              <JustUsername sub={i.user.sub} />
+              <StructureDisplay identifier="@lok/user" id={i.user.sub} variant="inline" />
             </DroppableNavLink>
           }
         >

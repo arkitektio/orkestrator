@@ -154,6 +154,18 @@ The host derives every registry from these (`app/modules/`): `index.ts`
   label? }`, compared by value (`lib/structure.ts`). A module never imports
   another module's components or GraphQL; `app/moduleBoundaries.test.ts`
   fails on any edge not in `moduleBoundaries.allowlist.ts`, and that list only
-  shrinks. Cross-module UI goes through host slots (displays by identifier).
+  shrinks. Cross-module UI goes through host slots:
+  - **Displays:** `<StructureDisplay identifier="@lok/user" id={sub}
+    variant="inline" | "avatar" | "chip" | "card" />` renders another
+    module's object; the owner registers it in `displays`.
+  - **Page sections:** a module adds to another model's page with a
+    `pageSections` builtin (`placement: sidebar | main | actions`, matched by
+    identifier or `datum`). The page names the place with
+    `<PageSections placement=… identifier object />`; the host-drawn Knowledge
+    and Chat sidebars are the `knowledge` / `chat` slots (`<SlotSections>`).
+    A page passes only what the section needs (`{ id, clientId }`), not its
+    whole fragment.
+  - **The signed-in user** is the host's: `useSelf()` (`app/hooks/useSelf`),
+    never a lok `me` query.
 - `providers/smart` is host library: it reads app registries through
   `providers/smart/hostRegistries.ts`, never by importing `app/*`.

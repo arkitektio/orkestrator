@@ -1,4 +1,5 @@
-import { JustUsername } from "@/lok/components/UserAvatar";
+import { StructureDisplay } from "@/components/display/StructureDisplay";
+
 import { usePeerHomePageStatsQuery } from "@/mikro/api/graphql";
 import {
   Activity,
@@ -55,7 +56,7 @@ export const PeerStatisticsSidebar = (props: { sub: string }) => {
     if (error) {
         return (
             <div className="p-4">
-                <h2 className="text-lg font-semibold mb-4">Statistics for <JustUsername sub={props.sub} /></h2>
+                <h2 className="text-lg font-semibold mb-4">Statistics for <StructureDisplay identifier="@lok/user" id={props.sub} variant="inline" /></h2>
                 <div className="p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
                     <p className="text-sm text-red-600 dark:text-red-400">
                         Error loading statistics: {error.message}
@@ -68,7 +69,7 @@ export const PeerStatisticsSidebar = (props: { sub: string }) => {
     return (
         <div className="p-4 space-y-4">
             <div className="mb-6">
-                <h2 className="text-lg font-semibold mb-2">Image Statistics for <JustUsername sub={props.sub} /></h2>
+                <h2 className="text-lg font-semibold mb-2">Image Statistics for <StructureDisplay identifier="@lok/user" id={props.sub} variant="inline" /></h2>
                 <p className="text-sm text-muted-foreground">
                     Microscopy and scientific images stored in your Mikro repository.
                     These include raw data, processed images, and analysis results from your experiments.

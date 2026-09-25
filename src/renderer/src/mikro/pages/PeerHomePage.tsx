@@ -1,3 +1,4 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Separator } from "@/components/ui/separator";
 
@@ -7,7 +8,7 @@ import { HelpSidebar } from "@/components/sidebars/help";
 import { PageAction } from "@/components/ui/page-action";
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
-import { JustUsername } from "@/lok/components/UserAvatar";
+
 import { Database } from "lucide-react";
 import { parseAsBoolean, parseAsIsoDateTime, useQueryState } from "@/hooks/use-search-param-state";
 import { usePeerHomePageQuery } from "../api/graphql";
@@ -16,9 +17,7 @@ import FileList from "../components/lists/FileList";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { PeerStatisticsSidebar } from "../components/sidebars/PeerStatisticsSidebar";
 
-
 export interface IRepresentationScreenProps { }
-
 
 const Page = asDetailQueryRoute(usePeerHomePageQuery, ({ id }) => {
 
@@ -41,8 +40,6 @@ const Page = asDetailQueryRoute(usePeerHomePageQuery, ({ id }) => {
     createdAfter: createdAfter ?? undefined,
     createdBefore: createdBefore ?? undefined,
   };
-
-
 
   return (
     <PageLayout
@@ -78,7 +75,7 @@ const Page = asDetailQueryRoute(usePeerHomePageQuery, ({ id }) => {
         <CardHeader>
           <CardTitle className="text-3xl flex items-center gap-3">
             <Database className="h-8 w-8 text-primary" />
-            <JustUsername sub={id} />
+            <StructureDisplay identifier="@lok/user" id={id} variant="inline" />
             {"'s Data"}
           </CardTitle>
           <CardDescription className="text-lg">

@@ -1,4 +1,3 @@
-import { Guard } from "@/app/Arkitekt";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -8,7 +7,7 @@ import {
   DetailPaneTitle,
 } from "@/components/ui/pane";
 import { OmeroArkImage } from "@/linkers";
-import { KnowledgeSidebar } from "@/kraph/components/sidebars/KnowledgeSidebar";
+import { SlotSections } from "@/components/layout/PageSections";
 import { useGetOmeroImageQuery } from "../api/graphql";
 import AuthorizedImage from "../components/Thumbnail";
 
@@ -20,14 +19,13 @@ const Page = asDetailQueryRoute(useGetOmeroImageQuery, ({ data, id }) => {
       sidebars={
         <Sidebars>
           <Sidebars.Tab label="Knowledge">
-            <Guard.Kraph>
-              {data?.image ? (
-                <KnowledgeSidebar
-                  identifier="@omeroark/image"
-                  object={data.image}
-                />
-              ) : null}
-            </Guard.Kraph>
+            {data?.image ? (
+              <SlotSections
+                slot="knowledge"
+                identifier="@omeroark/image"
+                object={data.image}
+              />
+            ) : null}
           </Sidebars.Tab>
         </Sidebars>
       }

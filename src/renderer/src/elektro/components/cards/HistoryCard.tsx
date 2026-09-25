@@ -1,3 +1,4 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { RekuestTask } from "@/linkers";
 import { AppInfo } from "@/lok/components/protected/AppInfo";
-import { UserInfo } from "@/lok/components/protected/UserInfo";
+
 import Timestamp from "@/components/ui/timestamp";
 import { HistoryKind, ProvenanceEntryFragment } from "../../api/graphql";
 
@@ -22,7 +23,7 @@ const HistoryCard = ({ history }: HistoryCardProps) => {
     <Card key={history.id}>
       <CardHeader className="flex flex-row gap-1">
         <div className="my-auto">
-          <UserInfo sub={history.user?.sub} />
+          <StructureDisplay identifier="@lok/user" id={history.user?.sub} />
         </div>
         <div>
           <CardTitle>
@@ -55,7 +56,7 @@ const HistoryCard = ({ history }: HistoryCardProps) => {
                     <span className="text-xs text-muted-foreground">
                       assigned by
                     </span>
-                    <UserInfo sub={history.task.assigner.sub} />
+                    <StructureDisplay identifier="@lok/user" id={history.task.assigner.sub} />
                   </>
                 )}
               </div>

@@ -25,8 +25,7 @@ import {
   RekuestResolution,
   RekuestState,
 } from "@/linkers";
-import { useFlowQuery } from "@/fluss/api/graphql";
-import { ShowFlow } from "@/fluss/show/ShowFlow";
+import { PageSections } from "@/components/layout/PageSections";
 import {
   TaskEventKind,
   DetailImplementationFragment,
@@ -189,20 +188,6 @@ export const DoForm = ({ id }: { id: string }) => {
           </div>
         </form>
       </Form>
-    </>
-  );
-};
-
-export const ImplementationFlow = (props: { implementation: DetailImplementationFragment }) => {
-  const { data } = useFlowQuery({
-    variables: {
-      id: props.implementation.params.flow,
-    },
-  });
-
-  return (
-    <>
-      {data?.flow && <ShowFlow flow={data?.flow} template={props.implementation} />}
     </>
   );
 };
@@ -589,7 +574,12 @@ export const DefaultRenderer = (props: {
 export const FlowRender = (props: { implementation: DetailImplementationFragment }) => {
   return (
     <div className="w-full h-full">
-      <ImplementationFlow implementation={props.implementation} />
+      {/* The flow it runs, drawn by fluss (a `main` section on implementations). */}
+      <PageSections
+        placement="main"
+        identifier="@rekuest/implementation"
+        object={{ id: props.implementation.id }}
+      />
     </div>
   );
 };

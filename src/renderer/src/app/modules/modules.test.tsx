@@ -61,3 +61,23 @@ describe("evaluation order", () => {
     expect(registries.modulePages().length).toBe(MODULE_FILES.length);
   }, 60_000);
 });
+
+describe("page sections", () => {
+  it("fill the host's slots and places by identifier and datum", async () => {
+    await import("./install");
+    const { pageSectionsFor } = await import("./registries");
+    const ids = (identifier: string, where: Parameters<typeof pageSectionsFor>[1], datum: boolean) =>
+      pageSectionsFor(identifier, where, datum).map((section) => section.id);
+
+    // Knowledge is a datum's affair; chat applies to every model.
+    expect(ids("@mikro/image", { slot: "knowledge" }, true)).toEqual(["kraph.knowledge"]);
+    expect(ids("@rekuest/agent", { slot: "knowledge" }, false)).toEqual([]);
+    expect(ids("@rekuest/agent", { slot: "chat" }, false)).toEqual(["alpaka.rooms"]);
+
+    // Contributions to other modules' pages, by identifier and placement.
+    expect(ids("@kraph/entitycategory", { placement: "actions", slot: null }, false)).toEqual(["rekuest.enhance"]);
+    expect(ids("@kraph/graph", { placement: "actions", slot: null }, false)).toEqual([]);
+    expect(ids("@rekuest/task", { placement: "main", slot: null }, false)).toEqual(["fluss.taskflow"]);
+    expect(ids("@lok/client", { placement: "main", slot: null }, false)).toEqual(["rekuest.clientfailures"]);
+  }, 60_000);
+});

@@ -22,7 +22,7 @@ import {
   DefaultRenderer,
   TaskTimeLine,
 } from "../components/task/TaskEventLog";
-import { TaskFlow } from "../components/task/TaskFlow";
+import { PageSections } from "@/components/layout/PageSections";
 import { useCancelTask } from "../hooks/useAssign";
 import { useReassign } from "../hooks/useReassign";
 import { isCancelable, isInterruptable } from "../lib/taskStatus";
@@ -225,9 +225,11 @@ export const TPage = asDetailQueryRoute(
                 </TabsList>
 
                 <TabsContent value="flow" className="flex-grow">
-                  <TaskFlow
-                    id={data?.task?.implementation?.interface}
-                    task={data.task}
+                  {/* The live run, drawn by fluss (a `main` section on tasks). */}
+                  <PageSections
+                    placement="main"
+                    identifier="@rekuest/task"
+                    object={{ id: data.task.id }}
                   />
                 </TabsContent>
                 <TabsContent value="logs" className="h-full w-full">

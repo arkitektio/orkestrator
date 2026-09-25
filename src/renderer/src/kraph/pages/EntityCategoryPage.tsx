@@ -1,4 +1,4 @@
-import { EnhanceButton } from "@/alpaka/components/EnhanceButton";
+import { PageSections } from "@/components/layout/PageSections";
 import { useDialog } from "@/app/dialog";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/components/layout/Sidebars";
@@ -114,7 +114,13 @@ export const Page = asDetailQueryRoute(
             >
               Schema Builder
             </PageAction>
-            <EnhanceButton identifier="@kraph/entitycategory" object={data.entityCategory} refetch={refetch} />
+            {/* Whatever other modules add here (rekuest: "Enhance"). */}
+            <PageSections
+              placement="actions"
+              identifier="@kraph/entitycategory"
+              object={data.entityCategory}
+              onChanged={refetch}
+            />
 
             {/* Filling the category is what the page is for. */}
             <PageAction

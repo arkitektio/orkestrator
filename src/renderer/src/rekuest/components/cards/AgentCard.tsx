@@ -1,8 +1,9 @@
+import { StructureDisplay } from "@/components/display/StructureDisplay";
 import React from "react";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { RekuestAgent } from "@/linkers";
-import { DeviceImprint, UserAvatar } from "@/lok/components/UserAvatar";
+import { DeviceImprint } from "@/lok/components/UserAvatar";
 
 import { ListAgentFragment } from "@/rekuest/api/graphql";
 
@@ -32,7 +33,7 @@ const TheCard = ({ item }: Props) => {
         <CardFooter>
         </CardFooter>
 
-        <UserAvatar sub={item.user.sub} className="absolute bottom-2 right-2 w-8 h-8" />
+        <StructureDisplay identifier="@lok/user" id={item.user.sub} variant="avatar" className="absolute bottom-2 right-2 w-8 h-8" />
         {item.device && (
           <DeviceImprint
             deviceId={item.device.deviceId}

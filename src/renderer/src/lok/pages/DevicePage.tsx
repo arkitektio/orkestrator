@@ -1,8 +1,8 @@
-import { Arkitekt, Guard } from "@/app/Arkitekt";
+import { Arkitekt } from "@/app/Arkitekt";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { FormSheet } from "@/components/dialog/FormDialog";
 import { LokDevice } from "@/linkers";
-import AgentList from "@/rekuest/components/lists/AgentList";
+import { PageSections } from "@/components/layout/PageSections";
 import { Pencil } from "lucide-react";
 import { useGetDeviceQuery } from "../api/graphql";
 import { UpdateComputeNodeForm } from "../forms/UpdateComputeNodeForm";
@@ -45,18 +45,13 @@ export const ComputeNodePage = asDetailQueryRoute(useGetDeviceQuery, ({ data }) 
       )}
 
 
-      <div className="p-3" >
-
-      <Guard.Rekuest>
-
-        <AgentList filters={{ deviceId: data.device.nodeId }} title="Agents running here"/>
-
-
-      </Guard.Rekuest>
-      </div>
-
-
-
+      {/* What other modules show about a device (rekuest: its agents),
+          given the device's node id to filter by. */}
+      <PageSections
+        placement="main"
+        identifier="@lok/device"
+        object={{ id: data.device.id, nodeId: data.device.nodeId }}
+      />
     </LokDevice.ModelPage>
   );
 });

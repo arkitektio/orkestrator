@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import Timestamp from "@/components/ui/timestamp";
 import { AlpakaRoom } from "@/linkers";
 import { cn } from "@/lib/utils";
-import { Username } from "@/lok/components/Me";
+import { useSelf } from "@/app/hooks/useSelf";
+
 import {
   ArrowRight,
   ArrowUp,
@@ -33,6 +34,9 @@ import {
   titleFromPrompt,
 } from "../recentRooms";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
+
+/** The signed-in user's name (host identity, not a lok query). */
+const Username = () => <>{useSelf().username}</>;
 
 const RECENT_LIMIT = 50;
 
