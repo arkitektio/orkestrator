@@ -17,6 +17,12 @@ export type DisplayWidgetProps = {
    * that knows no variant renders its default.
    */
   variant?: DisplayVariant;
+  /**
+   * SPEC ADDITION: which of the model's keys `id` is, when the caller holds a
+   * foreign key rather than the model's own id (lok clients by their OAuth
+   * `clientId`, devices by `nodeId`). Absent: the model's own id.
+   */
+  by?: string;
   className?: string;
   /** Shown instead while the owning module's service is not ready. */
   fallback?: React.ReactNode;

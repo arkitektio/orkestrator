@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { RekuestTask } from "@/linkers";
-import { AppInfo } from "@/lok/components/protected/AppInfo";
 
 import Timestamp from "@/components/ui/timestamp";
 import { HistoryKind, ProvenanceEntryFragment } from "../../api/graphql";
@@ -36,7 +35,7 @@ const HistoryCard = ({ history }: HistoryCardProps) => {
             <div className="text-muted-xs w-auto text-sm">
               {history.client && (
                 <>
-                  utilizing <AppInfo clientId={history.client?.clientId} />
+                  utilizing <StructureDisplay identifier="@lok/client" by="clientId" id={history.client?.clientId} />
                 </>
               )}
             </div>

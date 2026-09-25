@@ -1,5 +1,4 @@
 import { PageSections } from "@/components/layout/PageSections";
-import { ImageCreator } from "@/alpaka/components/ImageCreator";
 import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
 import { FormSheet } from "@/components/dialog/FormDialog";
 import { Sidebars } from "@/components/layout/Sidebars";
@@ -90,14 +89,8 @@ const Page =  asDetailQueryRoute(
                 )}
               </WithKraphMediaUrl>
             ) : (
-              <ImageCreator
-                kind="Category"
-                prompt={
-                  data.protocolEventCategory.description ||
-                  "A scientific category"
-                }
-                onCreate={createFile}
-              />
+              // No image yet: drop one below, or let an "Enhance" action make one.
+              <div className="text-sm text-muted-foreground">No image yet</div>
             )}
           </div>
           <div>

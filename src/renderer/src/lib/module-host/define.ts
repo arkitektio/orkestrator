@@ -9,6 +9,7 @@ import type {
   SectionPlacement,
   SurfaceDecl,
 } from "@/lib/module-spec";
+import type { OptionSource } from "./options";
 import type { ProfileSection } from "@/lib/profile/section";
 import type { TaskHook } from "@/lib/taskhooks/types";
 import type { SmartContextSection, SmartMenuWrapperProps } from "@/providers/smart/extensions/section";
@@ -64,6 +65,8 @@ export type ModuleBuiltins = {
   pageSections?: readonly PageSection[];
   /** EXTENSION: wrappers around the smart menu and palette (rekuest's "Run on"). */
   menuWrappers?: readonly ComponentType<SmartMenuWrapperProps>[];
+  /** EXTENSION: its models as options for pickers in other modules' UI. */
+  optionSources?: readonly OptionSource[];
   /** EXTENSION: sections of the smart context menu. */
   sections?: readonly SmartContextSection<any>[];
   /** EXTENSION: sections of a member's profile page. */

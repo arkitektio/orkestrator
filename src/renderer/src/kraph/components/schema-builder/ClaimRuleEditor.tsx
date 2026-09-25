@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useUserOptionsLazyQuery } from "@/lok/api/graphql";
+import { useStructureOptions } from "@/app/hooks/useStructureOptions";
 import { Plus, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { ClaimField, ClaimOperator, useSearchEntityTermsLazyQuery } from "../../api/graphql";
@@ -302,11 +302,8 @@ const UserChips = (props: {
   condition: ClaimConditionDraft;
   onChange: (condition: ClaimConditionDraft) => void;
 }) => {
-  const [searchUsers] = useUserOptionsLazyQuery();
-  const search = useCallback<SearchFunction>(
-    async ({ search }) => (await searchUsers({ variables: { search } })).data?.options ?? [],
-    [searchUsers],
-  );
+  // Lok's users, answered by lok (its option sources).
+  const search = useStructureOptions("@lok/user");
   return <ValueChips {...props} search={search} placeholder="Pick a user…" />;
 };
 

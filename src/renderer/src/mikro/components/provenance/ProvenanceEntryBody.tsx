@@ -1,6 +1,5 @@
 import { StructureDisplay } from "@/components/display/StructureDisplay";
 import { RekuestTask } from "@/linkers";
-import { AppInfo } from "@/lok/components/protected/AppInfo";
 
 import Timestamp from "@/components/ui/timestamp";
 import { HistoryKind, ProvenanceEntryFragment } from "../../api/graphql";
@@ -62,7 +61,7 @@ export const ProvenanceEntryBody = ({
           {entry.client && (
             <>
               <span>via</span>
-              <AppInfo clientId={entry.client.clientId} />
+              <StructureDisplay identifier="@lok/client" by="clientId" id={entry.client.clientId} />
             </>
           )}
           {entry.task && (

@@ -3,7 +3,6 @@ import React from "react";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { RekuestAgent } from "@/linkers";
-import { DeviceImprint } from "@/lok/components/UserAvatar";
 
 import { ListAgentFragment } from "@/rekuest/api/graphql";
 
@@ -35,8 +34,11 @@ const TheCard = ({ item }: Props) => {
 
         <StructureDisplay identifier="@lok/user" id={item.user.sub} variant="avatar" className="absolute bottom-2 right-2 w-8 h-8" />
         {item.device && (
-          <DeviceImprint
-            deviceId={item.device.deviceId}
+          <StructureDisplay
+            identifier="@lok/device"
+            by="nodeId"
+            id={item.device.deviceId}
+            variant="inline"
             className="absolute bottom-0 left-1/2 mx-0 w-auto max-w-[80%] -translate-x-1/2 translate-y-1/2 justify-center"
           />
         )}

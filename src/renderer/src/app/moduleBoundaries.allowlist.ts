@@ -10,7 +10,6 @@
 export const EDGE_ALLOWLIST: Record<string, string> = {
   "alpaka -> kabinet": "open: alpaka chat runs actions on kabinet definitions/pods",
   "alpaka -> rekuest": "open: alpaka's agent chat assigns rekuest actions (candidate: requires rekuest, like fluss)",
-  "elektro -> lok": "open: AppInfo by OAuth client_id; @lok/client is addressed by its internal id",
   "fluss -> rekuest": "kept: fluss declares requires.services [\"rekuest\"]",
   "host:app -> lok": "kept: lok is the session service (identity/brand sync, doctor, hero)",
   "host:app -> rekuest": "kept: the in-app agent (app/agent) and the port widget registry speak rekuest; open: TaskNotificationStack",
@@ -23,8 +22,4 @@ export const EDGE_ALLOWLIST: Record<string, string> = {
   "host:lib/taskhooks -> rekuest": "kept: task hooks run on rekuest task events",
   "host:settings -> lok": "kept: services page and brand writer (lok is the session service)",
   "kabinet -> rekuest": "open: kabinet cards deploy through rekuest (-> rekuest sections on @kabinet/*)",
-  "kraph -> alpaka": "open: ImageCreator hands a generated File back to kraph's upload",
-  "kraph -> lok": "open: ClaimRuleEditor user search (-> lok search builtin); client names by client_id",
-  "mikro -> lok": "open: AppInfo by OAuth client_id; @lok/client is addressed by its internal id",
-  "rekuest -> lok": "open: DeviceImprint by nodeId; facet filter and Home stats query lok",
 };

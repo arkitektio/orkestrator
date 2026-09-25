@@ -160,6 +160,12 @@ export const moduleSections = derived(
 
 export const moduleMenuWrappers = derived(() => concat((builtins) => builtins.menuWrappers));
 
+export const moduleOptionSources = derived(() => concat((builtins) => builtins.optionSources));
+
+/** The module that answers options for `identifier` (keyed by `by`), if any. */
+export const findOptionSource = (identifier: string, by?: string) =>
+  moduleOptionSources().find((source) => source.identifier === identifier && source.by === by);
+
 export const moduleProfileSections = derived(
   (): ProfileSection[] => concat((builtins) => builtins.profileSections),
 );

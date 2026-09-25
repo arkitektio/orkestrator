@@ -24,7 +24,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LokUser, RekuestTask } from "@/linkers";
-import { JustClientName } from "@/lok/components/ClientAvatar";
 
 import { ArrowUpDown } from "lucide-react";
 
@@ -118,7 +117,7 @@ const columns: ColumnDef<MetricsTableItem>[] = [
     header: () => <div>Creating App</div>,
     cell: ({ row }) =>
       row.original.createdApp ? (
-        <JustClientName clientId={row.original.createdApp} />
+        <StructureDisplay identifier="@lok/client" by="clientId" id={row.original.createdApp} variant="inline" />
       ) : (
         <div className="text-muted-foreground"></div>
       ),

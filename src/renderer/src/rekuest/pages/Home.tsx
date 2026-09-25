@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/empty";
 import { parseAsBoolean, parseAsString, useQueryState } from "@/hooks/use-search-param-state";
 import { RekuestAgent } from "@/linkers";
-import { useAppsQuery, useListDevicesQuery, useUsersQuery } from "@/lok/api/graphql";
+import { useStructureOptionList } from "@/app/hooks/useStructureOptions";
 import { ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
 import AgentCard from "@/rekuest/components/cards/AgentCard";
 import ActionList from "@/rekuest/components/lists/ActionList";
@@ -63,12 +63,13 @@ const FilterMenu = ({
   filters: Filters;
   onChange: (next: Partial<Filters>) => void;
 }) => {
-  const { data: users } = useUsersQuery();
-  const { data: apps } = useAppsQuery();
-  const { data: devices } = useListDevicesQuery();
+  // Lok's users, apps and devices, answered by lok (its option sources).
+  const users = useStructureOptionList("@lok/user");
+  const apps = useStructureOptionList("@lok/app", "identifier");
+  const devices = useStructureOptionList("@lok/device", "nodeId");
 
-  const userLabel = users?.users.find((u) => u.id === filters.user)?.username;
-  const deviceLabel = devices?.devices.find((d) => d.nodeId === filters.device)?.name;
+  const userLabel = users.find((u) => u.value === filters.user)?.label;
+  const deviceLabel = devices.find((d) => d.value === filters.device)?.label;
   const active = [filters.user, filters.app, filters.device].filter(Boolean).length;
 
   return (
@@ -100,9 +101,9 @@ const FilterMenu = ({
               onValueChange={(v) => onChange({ app: v === ALL ? null : v })}
             >
               <DropdownMenuRadioItem value={ALL}>All apps</DropdownMenuRadioItem>
-              {apps?.apps.map((a) => (
-                <DropdownMenuRadioItem key={a.identifier} value={a.identifier}>
-                  {a.identifier}
+              {apps.map((a) => (
+                <DropdownMenuRadioItem key={a.value} value={a.value}>
+                  {a.label}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -124,9 +125,9 @@ const FilterMenu = ({
               onValueChange={(v) => onChange({ user: v === ALL ? null : v })}
             >
               <DropdownMenuRadioItem value={ALL}>All users</DropdownMenuRadioItem>
-              {users?.users.map((u) => (
-                <DropdownMenuRadioItem key={u.id} value={u.id}>
-                  {u.username}
+              {users.map((u) => (
+                <DropdownMenuRadioItem key={u.value} value={u.value}>
+                  {u.label}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>
@@ -148,9 +149,9 @@ const FilterMenu = ({
               onValueChange={(v) => onChange({ device: v === ALL ? null : v })}
             >
               <DropdownMenuRadioItem value={ALL}>All devices</DropdownMenuRadioItem>
-              {devices?.devices.map((d) => (
-                <DropdownMenuRadioItem key={d.nodeId} value={d.nodeId}>
-                  {d.name || `Unnamed device (${d.nodeId})`}
+              {devices.map((d) => (
+                <DropdownMenuRadioItem key={d.value} value={d.value}>
+                  {d.label}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>

@@ -20,6 +20,7 @@ export const StructureDisplay = ({
   small,
   className,
   link,
+  by,
   fallback = null,
 }: {
   identifier: string;
@@ -28,8 +29,13 @@ export const StructureDisplay = ({
   variant?: DisplayVariant;
   small?: boolean;
   className?: string;
-  /** Wrap it in a link to the structure's own page. */
+  /**
+   * Wrap it in a link to the structure's own page. Only with the model's own
+   * id: a foreign key (`by`) is not an address.
+   */
   link?: boolean;
+  /** Which key `id` is, when it is not the model's own id (see DisplayWidgetProps). */
+  by?: string;
   /**
    * Shown when nothing can display it: no module displays this identifier,
    * or the owning module's service is not ready.
@@ -47,13 +53,14 @@ export const StructureDisplay = ({
         identifier={identifier}
         id={id}
         variant={variant}
+        by={by}
         small={small}
         className={className}
         fallback={fallback}
       />
     </Suspense>
   );
-  return link ? (
+  return link && !by ? (
     <SmartLink identifier={identifier} object={id}>
       {shown}
     </SmartLink>
