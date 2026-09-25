@@ -1,5 +1,5 @@
 import { Arkitekt } from "@/core/lib/arkitekt/host";
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FormSheet } from "@/core/components/dialog/FormDialog";
 import { LokDevice } from "@/core/linkers";
 import { PageSections } from "@/core/components/layout/PageSections";

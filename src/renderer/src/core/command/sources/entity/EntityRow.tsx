@@ -1,5 +1,5 @@
-import { useModifierState } from "@/core/app/hooks/modifierTracker";
-import { ModulePaletteHitActions } from "@/core/app/modules/registries";
+import { useModifierState } from "@/core/util/modifierTracker";
+import { ModulePaletteHitActions } from "@/core/modules/registries";
 import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
 import { smartRegistry } from "@/core/providers/smart/registry";
 import { Box } from "lucide-react";

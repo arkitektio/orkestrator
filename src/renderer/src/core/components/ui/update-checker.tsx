@@ -1,9 +1,9 @@
-import { ReleaseNotes } from "@/core/app/updates/ReleaseNotesView";
-import type { UpdateProblem } from "@/core/app/updates/updateErrors";
+import { ReleaseNotes } from "@/core/updates/ReleaseNotesView";
+import type { UpdateProblem } from "@/core/updates/updateErrors";
 import {
   updateError as recordUpdateError,
   useUpdateState,
-} from "@/core/app/updates/updateStore";
+} from "@/core/updates/updateStore";
 import {
   AlertTriangle,
   CheckCircle,

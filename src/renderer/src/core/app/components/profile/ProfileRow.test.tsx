@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DropdownMenu, DropdownMenuContent } from "@/core/components/ui/dropdown-menu";
 import { createProfileFromSession } from "@/core/lib/arkitekt/fakts/profileStorageSchema";
 import ProfileRow from "./ProfileRow";
-import { profileInitials } from "./ProfileBrandAvatar";
+import { profileInitials } from "../../../connection/profile/ui/ProfileBrandAvatar";
 
 const ALIAS = { id: "a1", host: "localhost", ssl: false, challenge: "ht" };
 

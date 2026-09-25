@@ -1,7 +1,7 @@
 import { Arkitekt } from "@/core/lib/arkitekt/host";
 import ProfileSwitcher from "@/core/app/components/profile/ProfileSwitcher";
-import { profileDetail, profileTitle } from "@/core/app/components/profile/profileLabels";
-import { ProfileBrandAvatar } from "@/core/app/components/profile/ProfileBrandAvatar";
+import { profileDetail, profileTitle } from "@/core/connection/profile/ui/profileLabels";
+import { ProfileBrandAvatar } from "@/core/connection/profile/ui/ProfileBrandAvatar";
 import {
   DropdownMenu,
   DropdownMenuContent,

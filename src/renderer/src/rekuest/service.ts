@@ -1,4 +1,4 @@
-import { REKUEST_TYPE_POLICIES } from "@/core/app/cachePolicies";
+import { REKUEST_TYPE_POLICIES } from "@/core/connection/graphql/cachePolicies";
 import { createGraphQLServiceBuilder } from "@/core/lib/arkitekt/builders/graphQlServiceBuidler";
 import rekuestResult from "./api/fragments";
 

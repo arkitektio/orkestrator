@@ -11,7 +11,7 @@ import type { REKUEST_DIALOGS } from "@/rekuest/dialogRegistry";
 /**
  * Every module's dialogs, as one type: what `openDialog(id, props)` checks
  * the props against. Type-only on purpose (see `<module>/dialogRegistry.ts`);
- * the runtime registry is `MODULE_DIALOGS` in `./builtins`.
+ * the runtime registry is `MODULE_DIALOGS` in `core/modules/registries`.
  */
 export type ModuleDialogs = typeof ALPAKA_DIALOGS &
   typeof ELEKTRO_DIALOGS &
@@ -22,3 +22,13 @@ export type ModuleDialogs = typeof ALPAKA_DIALOGS &
   typeof MIKRO_DIALOGS &
   typeof OMEROARK_DIALOGS &
   typeof REKUEST_DIALOGS;
+
+/**
+ * The app composes these modules, so it tells core what their dialogs are:
+ * `openDialog("createentity", props)` is typed from here (see
+ * `core/modules/types.ts`).
+ */
+declare module "@/core/modules/types" {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface DialogRegistry extends ModuleDialogs {}
+}

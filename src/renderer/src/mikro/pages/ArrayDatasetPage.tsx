@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from '@/core/app/routes/DetailQueryRoute'
+import { asDetailQueryRoute } from '@/core/layout/routes/DetailQueryRoute'
 import { useSceneOpen } from "../lib/zarr/useDatalayerWarmup";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { MikroArrayDataset } from '@/core/linkers'

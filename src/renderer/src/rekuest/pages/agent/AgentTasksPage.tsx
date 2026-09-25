@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { DateTimeRangePicker } from "@/core/components/ui/date-time-range-picker";
 import { Badge } from "@/core/components/ui/badge";
 import { Button } from "@/core/components/ui/button";

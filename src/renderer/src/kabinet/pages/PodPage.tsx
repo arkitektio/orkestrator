@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Badge } from "@/core/components/ui/badge";
 import {
   Card,

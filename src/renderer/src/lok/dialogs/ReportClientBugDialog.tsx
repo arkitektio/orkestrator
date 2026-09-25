@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { ParagraphField } from "@/core/components/fields/ParagraphField";
 import { StringField } from "@/core/components/fields/StringField";
 import { Button } from "@/core/components/ui/button";

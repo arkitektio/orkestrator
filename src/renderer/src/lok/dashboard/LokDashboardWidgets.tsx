@@ -1,7 +1,7 @@
 import { SlotSections } from "@/core/components/layout/PageSections";
 import { NotificationCountProvider } from "@/core/providers/dashboard/notificationCount";
 import { useRegisterDashboardWidget } from "@/core/providers/dashboard/hooks";
-import { useSelf } from "@/core/app/hooks/useSelf";
+import { useSelf } from "@/core/connection/useSelf";
 import { Avatar, AvatarFallback, AvatarImage } from "@/core/components/ui/avatar";
 import { Skeleton } from "@/core/components/ui/skeleton";
 import {

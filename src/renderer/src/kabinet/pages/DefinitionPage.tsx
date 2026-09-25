@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { ListRender } from "@/core/components/layout/ListRender";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { useActionDescription } from "@/core/lib/ports/ActionDescription";

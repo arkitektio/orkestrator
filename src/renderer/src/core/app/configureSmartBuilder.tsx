@@ -10,7 +10,7 @@ import {
 } from "@/core/providers/smart/buildSmartAdapters";
 import { ObjectButton } from "@/core/providers/smart/extensions/context";
 import { SlotSections } from "@/core/components/layout/PageSections";
-import { MODULE_HOVERS } from "./modules/registries";
+import { MODULE_HOVERS } from "../modules/registries";
 
 // Hover cards are each module's `hovers` builtin, paired with its module guard
 // (app/modules/registries). They run module-specific GraphQL, so the guard wraps

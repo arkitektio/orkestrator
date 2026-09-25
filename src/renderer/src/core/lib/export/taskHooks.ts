@@ -1,7 +1,7 @@
 import { TaskHook } from "@/core/lib/taskhooks/types";
 import { toast } from "sonner";
 
-import { FILE_DOWNLOADERS } from "@/core/app/modules/registries";
+import { FILE_DOWNLOADERS } from "@/core/modules/registries";
 
 export const FILE_DOWNLOAD_HOOK = "file.download";
 

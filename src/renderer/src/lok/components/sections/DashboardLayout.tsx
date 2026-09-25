@@ -1,4 +1,4 @@
-import { useSelf } from "@/core/app/hooks/useSelf";
+import { useSelf } from "@/core/connection/useSelf";
 import { SlotSections } from "@/core/components/layout/PageSections";
 import { Separator } from "@/core/components/ui/separator";
 import { Username } from "../Me";

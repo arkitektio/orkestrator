@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { createStore, type StoreApi } from "zustand/vanilla";
 
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { matchesFilter, scoreFilter } from "@/core/command/filter";
 import type { TabActions } from "@/core/command/tabs/TabsProvider";
 import { createScopedStoreHooks } from "@/core/lib/generic/createScopedStore";

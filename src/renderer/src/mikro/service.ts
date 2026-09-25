@@ -1,4 +1,4 @@
-import { MIKRO_TYPE_POLICIES } from "@/core/app/cachePolicies";
+import { MIKRO_TYPE_POLICIES } from "@/core/connection/graphql/cachePolicies";
 import { createGraphQLServiceBuilder } from "@/core/lib/arkitekt/builders/graphQlServiceBuidler";
 import mikroResult from "./api/fragments";
 

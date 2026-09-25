@@ -1,4 +1,4 @@
-import { ELEKTRO_TYPE_POLICIES } from "@/core/app/cachePolicies";
+import { ELEKTRO_TYPE_POLICIES } from "@/core/connection/graphql/cachePolicies";
 import { createGraphQLServiceBuilder } from "@/core/lib/arkitekt/builders/graphQlServiceBuidler";
 import elektroResult from "./api/fragments";
 

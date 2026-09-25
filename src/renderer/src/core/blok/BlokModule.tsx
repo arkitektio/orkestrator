@@ -1,4 +1,4 @@
-import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { serviceGuard } from "@/core/lib/arkitekt/host";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
@@ -6,7 +6,7 @@ import { Route, Routes } from "react-router-dom";
 import { Dashboards } from "./pages/Dashboards";
 import { Home } from "./pages/Home";
 import StandardPane from "./panes/StandardPane";
-import { NotFound } from "@/core/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 
 const RekuestGuard = serviceGuard("rekuest");
 interface Props { }

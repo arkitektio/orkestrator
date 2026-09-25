@@ -1,5 +1,5 @@
 import { MikroGuard } from "@/mikro/api/funcs";
-import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
+import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { ChoicesField } from "@/core/components/fields/ChoicesField";
 import { FloatField } from "@/core/components/fields/FloatField";
 import { SwitchField } from "@/core/components/fields/SwitchField";

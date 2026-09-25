@@ -1,5 +1,5 @@
 import { CreatableListSearchField } from "@/core/components/fields/CreatableListSearchField";
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { GraphQLCreatableSearchField } from "@/core/components/fields/GraphQLCreateableSearchField";
 import { ParagraphField } from "@/core/components/fields/ParagraphField";
 import { SearchOptions } from "@/core/components/fields/SearchField";

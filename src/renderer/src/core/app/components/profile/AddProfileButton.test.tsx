@@ -24,7 +24,7 @@ vi.mock("@/core/lib/arkitekt/fakts/discover", () => ({
 vi.mock("@/core/lib/arkitekt/fakts/popout", () => ({
   popOutWindowOpen: vi.fn(async () => ({ close: async () => {} })),
 }));
-vi.mock("@/core/app/components/doctor/ConnectionDoctor", () => ({
+vi.mock("@/core/connection/ui/doctor/ConnectionDoctor", () => ({
   ConnectionDoctorSheet: () => <div>doctor</div>,
 }));
 

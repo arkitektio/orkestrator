@@ -11,7 +11,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/core/components/ui/sheet";
-import { ConnectionDoctor } from "@/core/app/components/doctor/ConnectionDoctor";
+import { ConnectionDoctor } from "@/core/connection/ui/doctor/ConnectionDoctor";
 import { discover } from "@/core/lib/arkitekt/fakts/discover";
 import { endpointToProbeTargets } from "@/core/lib/arkitekt/doctor/targets";
 import { AlertCircle } from "lucide-react";

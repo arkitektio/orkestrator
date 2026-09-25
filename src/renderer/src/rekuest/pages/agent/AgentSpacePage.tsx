@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { RekuestAgent } from "@/core/linkers";
 import { useAgentQuery, useDetailTaskQuery } from "@/rekuest/api/graphql";
 import { ChildTaskUpdater } from "@/rekuest/components/updaters/ChildTaskUpdater";

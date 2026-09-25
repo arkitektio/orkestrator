@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/core/app/dialog", () => ({ useDialog: () => ({}) }));
+vi.mock("@/core/dialogs/registry", () => ({ useDialog: () => ({}) }));
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), info: vi.fn(), error: vi.fn() },
 }));

@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Card } from "@/core/components/ui/card";
 import { ElektroModelWorkspace, ElektroNeuronModel } from "@/core/linkers";
 import { useEffect } from "react";

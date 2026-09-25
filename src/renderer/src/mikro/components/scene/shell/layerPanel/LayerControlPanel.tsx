@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { useDeleteLayerMutation, type SceneLayerFragment } from "@/mikro/api/graphql";
 import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";

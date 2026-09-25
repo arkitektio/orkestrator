@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FlussRun } from "@/core/linkers";
 import { useFlowQuery, useGetRunQuery } from "@/fluss/api/graphql";
 import { EditFlow } from "@/fluss/edit/EditFlow";

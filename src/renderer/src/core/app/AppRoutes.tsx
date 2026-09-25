@@ -4,14 +4,14 @@ import { Route, Routes } from "react-router-dom";
 import { BackNavigationErrorCatcher } from "./AppProvider";
 import { NewTabPage } from "./pages/NewTabPage";
 import { ShareGatePage } from "./pages/ShareGatePage";
-import { ConnectingFallback } from "./components/fallbacks/Connecting";
+import { ConnectingFallback } from "../layout/fallbacks/Connecting";
 import { ModuleLoadingFallback } from "./components/fallbacks/ModuleLoading";
-import { QuietPage } from "./components/fallbacks/QuietPage";
-import { ShellSignInNotice } from "./components/shell/ShellSignInNotice";
-import { NotFound } from "./components/fallbacks/NotFound";
+import { QuietPage } from "../layout/fallbacks/QuietPage";
+import { ShellSignInNotice } from "../connection/ui/ShellSignInNotice";
+import { NotFound } from "../layout/fallbacks/NotFound";
 import { MODULE_ALIASES, ModuleRedirect } from "./components/navigation/ModuleRedirect";
 import { useModuleHostVersion } from "@/core/lib/module-host/host";
-import { modulePages } from "./modules/registries";
+import { modulePages } from "../modules/registries";
 
 // The dashboard carries dockview; it is the index route, but a deep link into a
 // module should not pay for it.
@@ -23,7 +23,7 @@ const Hero = React.lazy(() => import("@/core/app/pages/Hero"));
 // Modules come from their builtins (`page`), one lazy chunk each; only the
 // host's own routes are named here.
 const BlokModule = React.lazy(() => import("@/core/blok/BlokModule"));
-const SettingsModule = React.lazy(() => import("@/core/settings/SettingsModule"));
+const SettingsModule = React.lazy(() => import("@/core/app/settings/SettingsModule"));
 
 // Entrypoint of the application.
 // We provide two main routers, one for the public routes, and one for the private routes.

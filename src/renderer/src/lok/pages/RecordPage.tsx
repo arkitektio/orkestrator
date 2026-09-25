@@ -1,4 +1,4 @@
-import { LoadingPage } from "@/core/app/components/fallbacks/LoadingPage";
+import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { LokUser } from "@/core/linkers";
 import { useMeQuery } from "../api/graphql";

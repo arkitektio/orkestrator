@@ -57,7 +57,7 @@ import {
 import { keyify } from "./utils";
 import { DerivationRuleEditor } from "../components/schema-builder/DerivationRuleEditor";
 import { buildDerivationRule } from "../components/schema-builder/utils";
-import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
+import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { RadioGroup, RadioGroupItem } from "@/core/components/ui/radio-group";
 import { cn } from "@/core/lib/utils";
 import { ClaimRulesEditor } from "../components/schema-builder/ClaimRuleEditor";

@@ -49,10 +49,10 @@ describe("evaluation order", () => {
     vi.resetModules();
     await import(/* @vite-ignore */ first);
     await import("./install");
-    const registries = await import("./registries");
-    const { registry: dialogs } = await import("@/core/app/dialog");
-    const { registry: actions } = await import("@/core/app/localactions");
-    const { SMART_SECTIONS } = await import("@/core/app/smartcontext");
+    const registries = await import("../../modules/registries");
+    const { registry: dialogs } = await import("@/core/dialogs/registry");
+    const { registry: actions } = await import("@/core/smart/localactions/registry");
+    const { SMART_SECTIONS } = await import("@/core/smart/smartcontext");
 
     expect(Object.keys(dialogs).length).toBeGreaterThan(40);
     expect(Object.keys(actions).length).toBeGreaterThan(60);
@@ -65,7 +65,7 @@ describe("evaluation order", () => {
 describe("page sections", () => {
   it("fill the host's slots and places by identifier and datum", async () => {
     await import("./install");
-    const { pageSectionsFor } = await import("./registries");
+    const { pageSectionsFor } = await import("../../modules/registries");
     const ids = (identifier: string, where: Parameters<typeof pageSectionsFor>[1], datum: boolean) =>
       pageSectionsFor(identifier, where, datum).map((section) => section.id);
 
@@ -85,8 +85,8 @@ describe("page sections", () => {
 describe("the smart menu's module parts", () => {
   it("offers exactly the palette sections to ⌘K, and rekuest's Run-on around both", async () => {
     await import("./install");
-    const { SMART_SECTIONS } = await import("@/core/app/smartcontext");
-    const { moduleMenuWrappers } = await import("./registries");
+    const { SMART_SECTIONS } = await import("@/core/smart/smartcontext");
+    const { moduleMenuWrappers } = await import("../../modules/registries");
     const palette = SMART_SECTIONS.sections.filter((section) => section.palette).map((section) => section.id);
     expect(palette).toEqual(["local.actions", "rekuest.shortcuts", "rekuest.actions", "kabinet.definitions"]);
     expect(moduleMenuWrappers().map((wrapper) => wrapper.name)).toEqual(["RunOnSubmenu"]);

@@ -1,5 +1,5 @@
 import { KraphGuard } from "@/kraph/api/funcs";
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { CommandItem } from "@/core/components/ui/command";
 import {
   ListCandidateRelationCategoriesQuery,

@@ -20,17 +20,17 @@ import {
   Clock,
 } from "lucide-react";
 import React from "react";
-import { matchIcon } from "./moduleIcons";
+import { matchIcon } from "../../../modules/moduleIcons";
 import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHover";
 import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
-import { ModuleRailIslands } from "@/core/app/modules/registries";
+import { ModuleRailIslands } from "@/core/modules/registries";
 import { UploadIsland } from "@/core/providers/upload/UploadProvider";
 import { DownloadIsland } from "@/core/providers/download/DownloadProvider";
-import { AgentIsland } from "@/core/app/agent/AgentIsland";
+import { AgentIsland } from "@/core/agent/AgentIsland";
 import { LocalActionIsland } from "@/core/app/components/rail/LocalActionIsland";
-import { RailIslandStack } from "@/core/app/components/rail/RailIsland";
-import { UpdateIsland } from "@/core/app/updates/UpdateIsland";
+import { RailIslandStack } from "@/core/ui/rail/RailIsland";
+import { UpdateIsland } from "@/core/updates/UpdateIsland";
 import { VoiceIsland } from "@/core/voice";
 
 const RekuestGuard = serviceGuard("rekuest");

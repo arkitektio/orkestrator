@@ -8,7 +8,7 @@ import {
   RailIslandRow,
   RailIslandName,
   RailIslandProgress,
-} from "@/core/app/components/rail/RailIsland";
+} from "@/core/ui/rail/RailIsland";
 
 export type DownloadStatus = "pending" | "downloading" | "completed" | "error";
 

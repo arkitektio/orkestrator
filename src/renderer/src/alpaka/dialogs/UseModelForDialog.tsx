@@ -1,5 +1,5 @@
 import { DefaultKind, useUseModelForMutation } from "@/alpaka/api/graphql";
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { ChoicesField } from "@/core/components/fields/ChoicesField";
 import { Button } from "@/core/components/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";

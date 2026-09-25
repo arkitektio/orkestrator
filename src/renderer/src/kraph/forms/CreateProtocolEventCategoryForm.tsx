@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { GraphQLListSearchField } from "@/core/components/fields/GraphQLListSearchField";
 import { GraphQLSearchField } from "@/core/components/fields/GraphQLSearchField";
 import { StringField } from "@/core/components/fields/StringField";

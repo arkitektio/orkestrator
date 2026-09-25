@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { AutoDerivedStringField, StringField } from "@/core/components/fields/StringField";
 import { Badge } from "@/core/components/ui/badge";
 import { Button } from "@/core/components/ui/button";

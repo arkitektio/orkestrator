@@ -3,7 +3,7 @@ import { Separator } from "@/core/components/ui/separator";
 import { UploadWrapper } from "@/core/components/upload/wrapper";
 import { useCreateFile } from "@/mikro/api/hooks";
 
-import { asParamlessRoute } from "@/core/app/routes/ParamlessRoute";
+import { asParamlessRoute } from "@/core/layout/routes/ParamlessRoute";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { HelpSidebar } from "@/core/components/sidebars/help";
 import { Badge } from "@/core/components/ui/badge";
@@ -35,7 +35,7 @@ import {
   TrendingUp,
   Upload,
 } from "lucide-react";
-import { HookFunction } from "@/core/app/routes/ParamlessRoute";
+import { HookFunction } from "@/core/layout/routes/ParamlessRoute";
 import { OperationVariables, QueryHookOptions } from "@apollo/client";
 import {
   ArrayDatasetOrder,

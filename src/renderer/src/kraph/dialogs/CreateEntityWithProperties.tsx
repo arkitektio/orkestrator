@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/components/ui/button";
 import { DateTimePicker } from "@/core/components/ui/datetime-picker";
 import { Form } from "@/core/components/ui/form";

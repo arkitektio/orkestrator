@@ -1,4 +1,4 @@
-import { usePerformAction } from "@/core/app/hooks/useLocalAction";
+import { usePerformAction } from "@/core/smart/localactions/useLocalAction";
 import { Action, ActionState } from "@/core/lib/localactions/LocalActionProvider";
 import { Sparkles } from "lucide-react";
 import { CommandActionRow } from "../CommandActionRow";

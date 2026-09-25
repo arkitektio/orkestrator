@@ -8,7 +8,7 @@ import {
   CarouselPrevious,
 } from "@/core/components/ui/carousel";
 import { AlpakaRoom } from "@/core/linkers";
-import { useSelf } from "@/core/app/hooks/useSelf";
+import { useSelf } from "@/core/connection/useSelf";
 
 /** The signed-in user's name (host identity, not a lok query). */
 const Username = () => <>{useSelf().username}</>;

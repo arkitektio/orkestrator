@@ -1,4 +1,4 @@
-import { AgentController } from "@/core/app/agent/AgentController";
+import { AgentController } from "@/core/agent/AgentController";
 import { ListRender } from "@/core/components/layout/ListRender";
 import { SidebarLayout } from "@/core/components/layout/SidebarLayout";
 import { FancyInput } from "@/core/components/ui/fancy-input";

@@ -1,7 +1,7 @@
 import type React from "react";
 import { Suspense, type ComponentType } from "react";
 
-import { useDisplay } from "@/core/app/display";
+import { useDisplay } from "@/core/smart/display/displays";
 import { useModuleHostVersion } from "@/core/lib/module-host/host";
 import type { DisplayVariant, DisplayWidgetProps } from "@/core/lib/display/registry";
 import { SmartLink } from "@/core/providers/smart/builder";

@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * behind that module's guard; stand in for the host with just alpaka's.
  */
 let alpakaReady = true;
-vi.mock("@/core/app/modules/registries", async () => {
+vi.mock("@/core/modules/registries", async () => {
   const { TalkAboutHit } = await import("@/alpaka/palette/TalkAboutHit");
   return {
     ModulePaletteHitActions: (props: React.ComponentProps<typeof TalkAboutHit>) =>
@@ -17,7 +17,7 @@ vi.mock("@/core/app/modules/registries", async () => {
 });
 
 const modifiers = { shiftKey: false, altKey: false, metaKey: false, ctrlKey: false };
-vi.mock("@/core/app/hooks/modifierTracker", () => ({ useModifierState: () => modifiers }));
+vi.mock("@/core/util/modifierTracker", () => ({ useModifierState: () => modifiers }));
 
 const openTarget = vi.fn();
 vi.mock("../../useOpenTarget", () => ({ useOpenTarget: () => openTarget }));

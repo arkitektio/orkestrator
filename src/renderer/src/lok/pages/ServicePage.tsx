@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { PageLayout } from "@/core/components/layout/PageLayout";
 import { Card, CardContent } from "@/core/components/ui/card";
 import { DialogButton } from "@/core/components/ui/dialog-button";

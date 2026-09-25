@@ -1,4 +1,4 @@
-import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
+import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { ParagraphField } from "@/core/components/fields/ParagraphField";
 import { StringField } from "@/core/components/fields/StringField";
 import { SwitchField } from "@/core/components/fields/SwitchField";

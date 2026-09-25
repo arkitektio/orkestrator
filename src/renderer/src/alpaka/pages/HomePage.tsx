@@ -9,7 +9,7 @@ import { Textarea } from "@/core/components/ui/textarea";
 import Timestamp from "@/core/components/ui/timestamp";
 import { AlpakaRoom } from "@/core/linkers";
 import { cn } from "@/core/lib/utils";
-import { useSelf } from "@/core/app/hooks/useSelf";
+import { useSelf } from "@/core/connection/useSelf";
 
 import {
   ArrowRight,

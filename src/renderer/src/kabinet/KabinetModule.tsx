@@ -1,4 +1,4 @@
-import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { KabinetGuard } from "@/kabinet/api/hooks";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
@@ -18,7 +18,7 @@ import ReposPage from "./pages/ReposPage";
 import ReleasePage from "./pages/ReleasePage";
 import ResourcePage from "./pages/ResourcePage";
 import StandardPane from "./panes/StandardPane";
-import { NotFound } from "@/core/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 interface Props { }
 
 export const KabinetModule: React.FC<Props> = () => {

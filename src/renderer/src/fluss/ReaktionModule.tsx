@@ -1,4 +1,4 @@
-import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import { FlussGuard } from "@/fluss/api/hooks";
 import React from "react";
@@ -10,7 +10,7 @@ import Runs from "./pages/Runs";
 import Workspace from "./pages/Workspace";
 import Workspaces from "./pages/Workspaces";
 import SearchPane from "./panes/SearchPane";
-import { NotFound } from "@/core/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 
 interface Props { }
 

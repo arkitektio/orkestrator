@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { MikroArrayDataset, MikroCoordinateSystem, MikroLens } from "@/core/linkers";
 
 import { useGetLensQuery } from "../api/graphql";

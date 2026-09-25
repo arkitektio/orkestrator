@@ -2,7 +2,7 @@ import { StructureDisplay } from "@/core/components/display/StructureDisplay";
 import { PageLayout } from "@/core/components/layout/PageLayout";
 import { Separator } from "@/core/components/ui/separator";
 
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { HelpSidebar } from "@/core/components/sidebars/help";
 import { PageAction } from "@/core/components/ui/page-action";

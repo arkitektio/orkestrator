@@ -1,4 +1,4 @@
-import { NotImplementedYet } from "@/core/app/components/fallbacks/NotImplemted";
+import { NotImplementedYet } from "@/core/layout/fallbacks/NotImplemented";
 import { ReturnWidgetProps } from "@/core/lib/ports/types";
 import React from "react";
 

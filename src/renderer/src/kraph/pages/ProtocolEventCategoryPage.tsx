@@ -1,5 +1,5 @@
 import { PageSections } from "@/core/components/layout/PageSections";
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FormSheet } from "@/core/components/dialog/FormDialog";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { PageAction } from "@/core/components/ui/page-action";

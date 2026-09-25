@@ -1,4 +1,4 @@
-import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { LovekitGuard } from "@/lovekit/api/funcs";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
@@ -8,7 +8,7 @@ import StreamPage from "./pages/StreamPage";
 import StandardPane from "./panes/StandardPane";
 import SoloBroadcast from "./pages/SoloBroadcast";
 import SoloBroadcasts from "./pages/SoloBroadcasts";
-import { NotFound } from "@/core/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 interface Props { }
 
 export const Module: React.FC<Props> = (_props) => {

@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { ResponsiveContainerGrid } from "@/core/components/layout/ContainerGrid";
 import { Card } from "@/core/components/ui/card";
 import { KabinetResource } from "@/core/linkers";

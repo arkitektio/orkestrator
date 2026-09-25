@@ -92,13 +92,39 @@ export const resolveSpecifier = (
   return null;
 };
 
-const sourceFiles = (dir: string): string[] => {
+const sourceFiles = (dir: string, withTests = false): string[] => {
   const out: string[] = [];
   for (const entry of readdirSync(dir)) {
     if (entry === "node_modules") continue;
     const full = join(dir, entry);
-    if (statSync(full).isDirectory()) out.push(...sourceFiles(full));
-    else if (/\.tsx?$/.test(entry) && !/\.test\.tsx?$/.test(entry)) out.push(full);
+    if (statSync(full).isDirectory()) out.push(...sourceFiles(full, withTests));
+    else if (/\.tsx?$/.test(entry) && (withTests || !/\.test\.tsx?$/.test(entry))) out.push(full);
+  }
+  return out;
+};
+
+/** Where the app (the composition root) lives; core is what it composes. */
+const APP_ROOT = "core/app";
+
+/**
+ * Tests that deliberately compose the real app to exercise core against it
+ * (the route catalog walks the installed modules' routes).
+ */
+const APP_IMPORT_EXEMPT = ["core/command/sources/routeCatalog.test.ts"];
+
+/** Files under core (not the app) that import the app. */
+export const coreImportsOfApp = (srcRoot: string): string[] => {
+  const out: string[] = [];
+  for (const file of sourceFiles(join(srcRoot, "core"), true)) {
+    const rel = relative(srcRoot, file).split("\\").join("/");
+    if (rel.startsWith(`${APP_ROOT}/`) || APP_IMPORT_EXEMPT.includes(rel)) continue;
+    const text = readFileSync(file, "utf8");
+    for (const specifier of importSpecifiers(text)) {
+      const target = resolveSpecifier(rel, specifier);
+      if (target === APP_ROOT || target?.startsWith(`${APP_ROOT}/`)) {
+        out.push(`${rel} -> ${specifier}`);
+      }
+    }
   }
   return out;
 };
@@ -188,6 +214,10 @@ describe("module boundaries", () => {
       .filter(([key]) => !(key in EDGE_ALLOWLIST))
       .map(([key, files]) => `${key}: ${files.join(", ")}`);
     expect(offenders).toEqual([]);
+  });
+
+  it("keeps core free of the app (core is what the app composes)", () => {
+    expect(coreImportsOfApp(SRC_ROOT)).toEqual([]);
   });
 
   it("keeps the allowlist honest (every entry is still a real edge)", () => {

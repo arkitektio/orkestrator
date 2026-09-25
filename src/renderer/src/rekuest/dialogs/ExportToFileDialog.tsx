@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/components/ui/button";
 import {
   DialogDescription,
@@ -26,7 +26,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-import { FILE_DOWNLOADERS } from "@/core/app/modules/registries";
+import { FILE_DOWNLOADERS } from "@/core/modules/registries";
 import { structureLabel } from "@/core/lib/export/structureLabel";
 import { FILE_DOWNLOAD_HOOK } from "@/core/lib/export/taskHooks";
 

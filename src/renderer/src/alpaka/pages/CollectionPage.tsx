@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { StringField } from "@/core/components/fields/StringField";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { Form } from "@/core/components/ui/form";

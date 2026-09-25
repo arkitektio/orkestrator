@@ -1,5 +1,5 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
-import { registry } from "@/core/app/localactions";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { registry } from "@/core/smart/localactions/registry";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { LocalActionButton } from "@/core/components/ui/localactionbutton";
 import {

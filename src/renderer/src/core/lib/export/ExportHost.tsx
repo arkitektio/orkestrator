@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { useConnection } from "@/core/lib/arkitekt/provider";
 import { useDownload } from "@/core/providers/download/DownloadProvider";
 import { Structure } from "@/core/types";
@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 import { useLatestRef } from "@/core/hooks/useLatestRef";
 
-import { FILE_DOWNLOADERS } from "@/core/app/modules/registries";
+import { FILE_DOWNLOADERS } from "@/core/modules/registries";
 import type { FileDownloadContext } from "./fileDownloaders";
 import { subscribeExportRequests } from "./exportRequests";
 import { structureLabel } from "./structureLabel";

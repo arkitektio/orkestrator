@@ -14,7 +14,7 @@ vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
   Arkitekt: { useAvailableModules: () => modules },
   moduleRegistry: { mikro: { label: "Mikro" }, rekuest: { label: "Rekuest" }, kraph: { label: "Kraph" } },
 }));
-vi.mock("@/core/app/components/navigation/moduleIcons", () => ({ matchIcon: (k: string) => <i>{k}</i> }));
+vi.mock("@/core/modules/moduleIcons", () => ({ matchIcon: (k: string) => <i>{k}</i> }));
 vi.mock("@uidotdev/usehooks", () => ({ useDebounce: (v: unknown) => v }));
 
 const title = vi.fn();

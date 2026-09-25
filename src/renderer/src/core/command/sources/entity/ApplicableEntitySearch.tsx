@@ -1,4 +1,4 @@
-import { moduleSearches } from "@/core/app/modules/registries";
+import { moduleSearches } from "@/core/modules/registries";
 import { useModuleHostVersion } from "@/core/lib/module-host/host";
 import type { PassDownProps } from "@/core/providers/smart/extensions/types";
 import { useDebounce } from "@uidotdev/usehooks";

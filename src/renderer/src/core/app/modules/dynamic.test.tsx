@@ -4,9 +4,9 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { defineModule } from "@/core/lib/module-host/define";
 import { registerModule, resetModuleHost, useModuleHostVersion } from "@/core/lib/module-host/host";
-import { registry as DIALOGS } from "@/core/app/dialog";
-import { registry as ACTIONS } from "@/core/app/localactions";
-import { MODULE_DISPLAYS, modulePages, pageSectionsFor } from "./registries";
+import { registry as DIALOGS } from "@/core/dialogs/registry";
+import { registry as ACTIONS } from "@/core/smart/localactions/registry";
+import { MODULE_DISPLAYS, modulePages, pageSectionsFor } from "../../modules/registries";
 
 /**
  * A module that is not in the source tree arriving at runtime, as a remote

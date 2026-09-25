@@ -10,7 +10,7 @@ const Shown = (props: DisplayWidgetProps) => (
   </span>
 );
 
-vi.mock("@/core/app/display", () => ({
+vi.mock("@/core/smart/display/displays", () => ({
   useDisplay: () => ({ registry: { "@lok/client": Shown } }),
 }));
 vi.mock("@/core/providers/smart/builder", () => ({

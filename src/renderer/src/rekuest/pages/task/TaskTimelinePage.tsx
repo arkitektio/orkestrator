@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { PageAction } from "@/core/components/ui/page-action";
 import { RekuestTask } from "@/core/linkers";

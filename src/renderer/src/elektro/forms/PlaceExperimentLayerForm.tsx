@@ -1,5 +1,5 @@
 import { ElektroGuard } from "@/elektro/api/funcs";
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/components/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
 import { Input } from "@/core/components/ui/input";

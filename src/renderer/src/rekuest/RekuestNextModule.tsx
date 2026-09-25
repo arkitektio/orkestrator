@@ -1,4 +1,4 @@
-import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import { RekuestGuard } from "@/rekuest/api/hooks";
 import React from "react";
@@ -44,7 +44,7 @@ import StatePage from "./pages/StatePage";
 import SpaceEditPage from "./pages/SpaceEditPage";
 import SpacePage from "./pages/SpacePage";
 import SpacesPage from "./pages/SpacesPage";
-import { NotFound } from "@/core/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 
 /**
  *

@@ -1,4 +1,4 @@
-import { registry, useDialog } from "@/core/app/dialog";
+import { registry, useDialog } from "@/core/dialogs/registry";
 import { cn } from "@/core/lib/utils";
 import React, { useCallback } from "react";
 import { Button, ButtonProps } from "./button";

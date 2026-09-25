@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { Structure } from "@/core/types";
 import {
   ListStructureRelationCategoryWithGraphFragment,

@@ -1,5 +1,5 @@
 import React from "react";
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { cn } from "@/core/lib/utils";
 import { RekuestImplementation } from "@/core/linkers";
 import { ListImplementationFragment } from "@/rekuest/api/graphql";

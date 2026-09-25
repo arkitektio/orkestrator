@@ -1,4 +1,4 @@
-import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { ElektroGuard } from "@/elektro/api/funcs";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
@@ -26,7 +26,7 @@ import { MechanismPage } from "./pages/MechanismPage";
 import { EnvironmentPage } from "./pages/EnvironmentPage";
 import { ElektroZarrStoreProvider } from "./components/store/ElektroZarrStoreProvider";
 import { ElektroParquetProvider } from "./components/store/parquetEngine";
-import { NotFound } from "@/core/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 interface Props { }
 
 export const ElektroModule: React.FC<Props> = () => {

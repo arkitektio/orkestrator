@@ -1,4 +1,4 @@
-import type { useDialog } from "@/core/app/dialog";
+import type { useDialog } from "@/core/dialogs/registry";
 import type { DownloadProps } from "@/core/providers/download/DownloadProvider";
 import type { FullTaskQuery } from "@/rekuest/api/graphql";
 import type { ApolloClient } from "@apollo/client";

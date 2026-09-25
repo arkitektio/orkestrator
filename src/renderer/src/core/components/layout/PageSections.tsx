@@ -1,4 +1,4 @@
-import { pageSectionsFor } from "@/core/app/modules/registries";
+import { pageSectionsFor } from "@/core/modules/registries";
 import type { PageSection } from "@/core/lib/module-host/define";
 import { useModuleHostVersion } from "@/core/lib/module-host/host";
 import { smartRegistry } from "@/core/providers/smart/registry";

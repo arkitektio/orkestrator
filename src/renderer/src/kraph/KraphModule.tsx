@@ -1,6 +1,6 @@
-import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { KraphGuard } from "@/kraph/api/funcs";
-import { NotFound } from "@/core/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";

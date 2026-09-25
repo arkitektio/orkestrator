@@ -3,7 +3,7 @@ import {
   RailIslandName,
   RailIslandProgress,
   RailIslandRow,
-} from "@/core/app/components/rail/RailIsland";
+} from "@/core/ui/rail/RailIsland";
 import { useSettings } from "@/core/providers/settings/SettingsContext";
 import { AlertCircle, Mic } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";

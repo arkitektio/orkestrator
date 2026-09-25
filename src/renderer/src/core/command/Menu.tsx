@@ -1,4 +1,4 @@
-import { useDisplayComponent } from "@/core/app/display";
+import { useDisplayComponent } from "@/core/smart/display/displays";
 import { Badge } from "@/core/components/ui/badge";
 import {
   Command,
@@ -26,7 +26,7 @@ import { useCommandPalette } from "./CommandPaletteProvider";
 import { usePaletteGrow } from "./usePaletteGrow";
 import { resolveContextObjects } from "./contextObjects";
 import { CyclingPlaceholder } from "./CyclingPlaceholder";
-import { ModulePaletteSources } from "@/core/app/modules/registries";
+import { ModulePaletteSources } from "@/core/modules/registries";
 import { ApplicableNavigation } from "./sources/ApplicableNavigation";
 import { ApplicableRecents } from "./sources/ApplicableRecents";
 import { ApplicableEntitySearch } from "./sources/entity/ApplicableEntitySearch";

@@ -1,7 +1,7 @@
 import { Arkitekt } from "@/core/lib/arkitekt/host";
-import { ConnectingFallback } from "@/core/app/components/fallbacks/Connecting";
-import { QuietPage } from "@/core/app/components/fallbacks/QuietPage";
-import { ShellSignInNotice } from "@/core/app/components/shell/ShellSignInNotice";
+import { ConnectingFallback } from "@/core/layout/fallbacks/Connecting";
+import { QuietPage } from "@/core/layout/fallbacks/QuietPage";
+import { ShellSignInNotice } from "@/core/connection/ui/ShellSignInNotice";
 import { Button } from "@/core/components/ui/button";
 import { ServiceRuntimeState } from "@/core/lib/arkitekt/types";
 import { useMyContextQuery } from "@/lok/api/graphql";

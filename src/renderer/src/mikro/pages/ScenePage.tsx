@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { MikroScene } from "@/core/linkers";
 import { useParams } from "react-router-dom";

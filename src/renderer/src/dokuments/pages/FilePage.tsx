@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Icons } from "@/core/components/icons";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { Badge } from "@/core/components/ui/badge";

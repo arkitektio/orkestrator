@@ -11,7 +11,7 @@ vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
   Guard: { Lok: ({ children }: { children: React.ReactNode }) => <>{children}</> },
   useKraph: () => ({}),
 }));
-vi.mock("@/core/app/hooks/useSelf", () => ({ useSelf: () => me() }));
+vi.mock("@/core/connection/useSelf", () => ({ useSelf: () => me() }));
 vi.mock("@/kraph/api/graphql", () => ({
   InstanceKind: { Entity: "ENTITY" },
   TermKind: { Entity: "ENTITY" },

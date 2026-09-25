@@ -5,7 +5,7 @@ import {
   DEFAULT_COORDINATION_SERVER_HOST,
   DEFAULT_COORDINATION_SERVER_URL,
 } from "@/core/constants";
-import { ConnectionDoctorSheet } from "@/core/app/components/doctor/ConnectionDoctor";
+import { ConnectionDoctorSheet } from "@/core/connection/ui/doctor/ConnectionDoctor";
 import { endpointToProbeTargets } from "@/core/lib/arkitekt/doctor/targets";
 import { discover } from "@/core/lib/arkitekt/fakts/discover";
 import { popOutWindowOpen } from "@/core/lib/arkitekt/fakts/popout";

@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { useConnection } from "@/core/lib/arkitekt/provider";
 import { useDownload } from "@/core/providers/download/DownloadProvider";
 import { TaskEventKind, useFullTaskQuery } from "@/rekuest/api/graphql";

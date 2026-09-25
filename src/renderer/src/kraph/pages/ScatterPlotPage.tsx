@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Button } from "@/core/components/ui/button";
 import { PageAction } from "@/core/components/ui/page-action";
 import { KraphGraphQuery, KraphScatterPlot } from "@/core/linkers";

@@ -1,6 +1,6 @@
 import { Arkitekt } from "@/core/lib/arkitekt/host";
-import { useDialog } from "@/core/app/dialog";
-import { moduleIcon } from "@/core/app/components/navigation/moduleIcons";
+import { useDialog } from "@/core/dialogs/registry";
+import { moduleIcon } from "@/core/modules/moduleIcons";
 import { useDebug } from "@/core/providers/debug/DebugContext";
 import { useSettings } from "@/core/providers/settings/SettingsContext";
 import { useTheme } from "@/core/providers/ThemeProvider";

@@ -1,6 +1,6 @@
 import type { ApolloError } from "@apollo/client";
 import { useCallback, useMemo, useState } from "react";
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { ElektroArrayDataset } from "@/core/linkers";
 import { useGetArrayDatasetQuery, useGetExperimentSceneQuery } from "../api/graphql";

@@ -1,6 +1,6 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 
-import { moduleNavLoaders } from "@/core/app/modules/registries";
+import { moduleNavLoaders } from "@/core/modules/registries";
 import { derivedRecord } from "@/core/lib/module-host/lazy";
 
 /**

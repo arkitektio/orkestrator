@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { DisplayWidget } from "@/core/command/Menu";
 import { FormSheet } from "@/core/components/dialog/FormDialog";
 import { Badge } from "@/core/components/ui/badge";

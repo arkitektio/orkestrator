@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Card, CardContent } from "@/core/components/ui/card";
 import { PageSections } from "@/core/components/layout/PageSections";
 import { KabinetBackend } from "@/core/linkers";

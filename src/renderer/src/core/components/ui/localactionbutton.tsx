@@ -1,5 +1,5 @@
-import { usePerformAction } from "@/core/app/hooks/useLocalAction";
-import { registry, useAction } from "@/core/app/localactions";
+import { usePerformAction } from "@/core/smart/localactions/useLocalAction";
+import { registry, useAction } from "@/core/smart/localactions/registry";
 import { ActionState } from "@/core/lib/localactions/LocalActionProvider";
 import { cn } from "@/core/lib/utils";
 import React from "react";

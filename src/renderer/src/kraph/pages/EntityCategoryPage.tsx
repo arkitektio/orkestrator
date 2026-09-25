@@ -1,6 +1,6 @@
 import { PageSections } from "@/core/components/layout/PageSections";
-import { useDialog } from "@/core/app/dialog";
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { useDialog } from "@/core/dialogs/registry";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { PageAction } from "@/core/components/ui/page-action";
 import { DialogButton } from "@/core/components/ui/dialogbutton";

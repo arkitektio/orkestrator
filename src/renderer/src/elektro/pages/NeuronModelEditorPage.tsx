@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { ElektroNeuronModel } from "@/core/linkers";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";

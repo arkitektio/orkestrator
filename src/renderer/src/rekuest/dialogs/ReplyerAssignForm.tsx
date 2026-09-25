@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { buildAssignInput } from "@/rekuest/assign";
 import { Button } from "@/core/components/ui/button";
 import {
@@ -12,7 +12,7 @@ import { ArgsContainer } from "@/core/components/ports/ArgsContainer";
 import { useWidgetRegistry } from "@/core/lib/ports/WidgetsContext";
 import { usePortForm } from "@/core/lib/ports/usePortForm";
 import { useDetailActionQuery, PortKind } from "@/rekuest/api/graphql";
-import { useOperation } from "@/core/app/hooks/useOperation";
+import { useOperation } from "@/core/modules/hooks/useOperation";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { submittedDataToRekuestFormat } from "@/core/lib/ports/utils";
 import { smartRegistry } from "@/core/providers/smart/registry";

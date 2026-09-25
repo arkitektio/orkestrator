@@ -2,12 +2,12 @@ import { Guard } from "@/core/lib/arkitekt/host";
 import { Arkitekt } from "@/core/app/Arkitekt";
 // Installs every module's builtins; must precede anything that reads a registry.
 import "@/core/app/modules/install";
-import { ModuleBackground } from "@/core/app/modules/registries";
+import { ModuleBackground } from "@/core/modules/registries";
 import "@/core/app/configureSmartBuilder";
 // Hands the menu its sections (providers/smart/hostRegistries).
-import "@/core/app/smartcontext";
-import { DialogProvider } from "@/core/app/dialog";
-import { LocalActionProvider } from "@/core/app/localactions";
+import "@/core/smart/smartcontext";
+import { DialogProvider } from "@/core/dialogs/registry";
+import { LocalActionProvider } from "@/core/smart/localactions/registry";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import { PageLayout } from "@/core/components/layout/PageLayout";
 import { Button } from "@/core/components/ui/button";
@@ -28,7 +28,7 @@ import { WidgetRegistryProvider } from "@/core/lib/ports/WidgetsProvider";
 import React from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { useNavigate } from "react-router-dom";
-import { DisplayProvider } from "./display";
+import { DisplayProvider } from "../smart/display/displays";
 import { THE_WIDGET_REGISTRY } from "./shadCnWidgetRegistry";
 
 
@@ -99,13 +99,13 @@ import { DownloadProvider } from "@/core/providers/download/DownloadProvider";
 // It is responsible for providing all the context providers that are used in the application.
 // It wraps the Easy Provider, which allows for the configuration of an Easy App through Arkitekt,
 // Additionally, it wraps the DisplayProvider, which allows for the configuration of the display registry.
-import { AgentProvider } from "./agent/AgentProvider";
+import { AgentProvider } from "../agent/AgentProvider";
 import { WardRegistrar } from "@/core/lib/arkitekt/WardRegistrar";
 import { RefetchOnReactivate } from "@/core/hooks/use-refetch-on-reactivate";
 import { GcOnNavigate } from "@/core/hooks/use-gc-on-navigate";
 import { OrganizationBrandSync } from "@/lok/components/OrganizationBrandSync";
 import { ProfileIdentitySync } from "@/lok/components/ProfileIdentitySync";
-import { MeshSync } from "./components/mesh/MeshSync";
+import { MeshSync } from "../connection/ui/mesh/MeshSync";
 import { CommandPaletteProvider } from "@/core/command/CommandPaletteProvider";
 import { CommandMenuHost } from "@/core/command/Host";
 import { ActiveTabRouter } from "@/core/command/tabs/ActiveTabRouter";

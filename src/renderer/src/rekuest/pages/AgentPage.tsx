@@ -1,5 +1,5 @@
 import { useRekuest } from "@/rekuest/api/hooks";
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { VerticalListRender } from "@/core/components/layout/VerticalListRender";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { Badge } from "@/core/components/ui/badge";

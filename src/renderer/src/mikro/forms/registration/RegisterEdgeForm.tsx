@@ -1,4 +1,4 @@
-import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
+import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { Badge } from "@/core/components/ui/badge";
 import { Button } from "@/core/components/ui/button";
 import { DialogFooter } from "@/core/components/ui/dialog";

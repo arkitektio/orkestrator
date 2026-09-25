@@ -1,5 +1,5 @@
-import { PROFILE_SECTIONS } from "@/core/app/profilesections";
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { PROFILE_SECTIONS } from "@/core/connection/profile/registry";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokUser } from "@/core/linkers";

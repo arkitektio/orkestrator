@@ -1,6 +1,6 @@
 
 
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { StringField } from "@/core/components/fields/StringField";
 import { DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
 import { Form } from "@/core/components/ui/form";

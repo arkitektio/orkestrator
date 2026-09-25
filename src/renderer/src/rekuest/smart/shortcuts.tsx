@@ -1,5 +1,5 @@
 import { toWire } from "@/core/lib/structure";
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { buildAssignInput } from "@/rekuest/assign";
 import { Badge } from "@/core/components/ui/badge";
 import { LightningBoltIcon } from "@radix-ui/react-icons";

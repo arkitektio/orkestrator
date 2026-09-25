@@ -1,6 +1,6 @@
 import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { moduleRegistry } from "@/core/app/Arkitekt";
-import { matchIcon } from "@/core/app/components/navigation/moduleIcons";
+import { matchIcon } from "@/core/modules/moduleIcons";
 import { ApplicableEntitySearch } from "@/core/command/sources/entity/ApplicableEntitySearch";
 import { ApplicableNavigation } from "@/core/command/sources/ApplicableNavigation";
 import { ApplicableRecents } from "@/core/command/sources/ApplicableRecents";

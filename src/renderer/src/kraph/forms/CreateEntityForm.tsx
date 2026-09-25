@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { GraphQLCreatableSearchField } from "@/core/components/fields/GraphQLCreateableSearchField";
 import { Button } from "@/core/components/ui/button";
 import { DialogFooter } from "@/core/components/ui/dialog";

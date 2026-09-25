@@ -33,7 +33,7 @@ import {
 } from "@/core/components/ui/empty";
 import { parseAsBoolean, parseAsString, useQueryState } from "@/core/hooks/use-search-param-state";
 import { RekuestAgent } from "@/core/linkers";
-import { useStructureOptionList } from "@/core/app/hooks/useStructureOptions";
+import { useStructureOptionList } from "@/core/modules/hooks/useStructureOptions";
 import { ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
 import AgentCard from "@/rekuest/components/cards/AgentCard";
 import ActionList from "@/rekuest/components/lists/ActionList";

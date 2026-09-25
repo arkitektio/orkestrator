@@ -23,7 +23,7 @@ vi.mock("@/core/app/components/profile/AddProfileButton", () => ({
 vi.mock("./CustomEndpointSheet", () => ({
   CustomEndpointSheet: () => <div>custom endpoint</div>,
 }));
-vi.mock("@/core/app/components/doctor/ConnectionDoctor", () => ({
+vi.mock("@/core/connection/ui/doctor/ConnectionDoctor", () => ({
   ConnectionDoctorSheet: () => <div>connection doctor</div>,
 }));
 

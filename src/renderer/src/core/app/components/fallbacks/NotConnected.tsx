@@ -1,5 +1,5 @@
 import { Arkitekt } from "@/core/lib/arkitekt/host";
-import { ArkitektLogo } from "@/core/app/components/logos/ArkitektLogo";
+import { ArkitektLogo } from "@/core/ui/logos/ArkitektLogo";
 import { Button } from "@/core/components/ui/button";
 import {
   Collapsible,
@@ -10,7 +10,7 @@ import { ChevronDown, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { AddProfileButton } from "@/core/app/components/profile/AddProfileButton";
 import { ProfileCards } from "@/core/app/components/profile/ProfileCards";
-import { ConnectionDoctorSheet } from "@/core/app/components/doctor/ConnectionDoctor";
+import { ConnectionDoctorSheet } from "@/core/connection/ui/doctor/ConnectionDoctor";
 import { DEFAULT_COORDINATION_SERVER_HOST, DEFAULT_COORDINATION_SERVER_URL } from "@/core/constants";
 import { endpointToProbeTargets } from "@/core/lib/arkitekt/doctor/targets";
 import { CustomEndpointSheet } from "./CustomEndpointSheet";

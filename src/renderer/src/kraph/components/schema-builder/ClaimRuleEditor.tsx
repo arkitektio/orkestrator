@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/core/components/ui/select";
-import { useStructureOptions } from "@/core/app/hooks/useStructureOptions";
+import { useStructureOptions } from "@/core/modules/hooks/useStructureOptions";
 import { Plus, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { ClaimField, ClaimOperator, useSearchEntityTermsLazyQuery } from "../../api/graphql";

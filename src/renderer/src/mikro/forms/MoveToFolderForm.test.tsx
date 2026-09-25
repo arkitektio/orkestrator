@@ -16,7 +16,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 const closeDialog = vi.fn();
-vi.mock("@/core/app/dialog", () => ({
+vi.mock("@/core/dialogs/registry", () => ({
   useDialog: () => ({ closeDialog, openDialog: vi.fn(), openSheet: vi.fn() }),
 }));
 

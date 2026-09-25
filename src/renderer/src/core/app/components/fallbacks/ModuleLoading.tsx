@@ -1,4 +1,4 @@
-import { ArkitektLogo } from "../logos/ArkitektLogo";
+import { ArkitektLogo } from "../../../ui/logos/ArkitektLogo";
 
 /**
  * What a lazy route shows while its chunk is fetched.

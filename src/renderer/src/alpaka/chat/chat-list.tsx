@@ -4,7 +4,7 @@ import {
 } from "@/alpaka/api/graphql";
 import { Card, CardContent } from "@/core/components/ui/card";
 import { cn } from "@/core/lib/utils";
-import { useSelf } from "@/core/app/hooks/useSelf";
+import { useSelf } from "@/core/connection/useSelf";
 import { StructureDisplay } from "@/core/components/display/StructureDisplay";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Loader2, CheckCircle2, AlertCircle, XCircle, X, Ban, RefreshCw } from "lucide-react";

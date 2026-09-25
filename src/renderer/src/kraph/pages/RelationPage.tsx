@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FormSheet } from "@/core/components/dialog/FormDialog";
 import { Badge } from "@/core/components/ui/badge";
 import { KraphReagent, KraphRelation } from "@/core/linkers";

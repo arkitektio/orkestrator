@@ -14,7 +14,7 @@ const ready = { mikro: true, rekuest: true, kraph: true, lok: true };
 
 // The palette loops over every module's `search` builtin, each inside its
 // module's guard. Give it the real searches behind guards driven by `ready`.
-vi.mock("@/core/app/modules/registries", async () => {
+vi.mock("@/core/modules/registries", async () => {
   const { MikroEntitySearch } = await import("@/mikro/search");
   const { RekuestEntitySearch } = await import("@/rekuest/search");
   const { KraphEntitySearch } = await import("@/kraph/search");

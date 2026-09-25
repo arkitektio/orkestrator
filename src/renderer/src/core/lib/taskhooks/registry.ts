@@ -1,4 +1,4 @@
-import { moduleTaskHooks } from "@/core/app/modules/registries";
+import { moduleTaskHooks } from "@/core/modules/registries";
 import { fileDownloadHook } from "@/core/lib/export/taskHooks";
 import { derivedRecord } from "@/core/lib/module-host/lazy";
 import { TaskHook } from "./types";

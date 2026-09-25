@@ -1,4 +1,4 @@
-import { moduleNavLinks } from "@/core/app/modules/registries";
+import { moduleNavLinks } from "@/core/modules/registries";
 import { derived } from "@/core/lib/module-host/lazy";
 import { rankByFilter } from "../filter";
 

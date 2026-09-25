@@ -11,8 +11,8 @@ import type { StoredProfile } from "@/core/lib/arkitekt/fakts/profileStorageSche
 import { describeRefreshFailure } from "@/core/lib/arkitekt/runtime/profileAuth";
 import { cn } from "@/core/lib/utils";
 
-import { ProfileBrandAvatar } from "./ProfileBrandAvatar";
-import { profileDetail, profileShortDetail, profileTitle } from "./profileLabels";
+import { ProfileBrandAvatar } from "../../../connection/profile/ui/ProfileBrandAvatar";
+import { profileDetail, profileShortDetail, profileTitle } from "../../../connection/profile/ui/profileLabels";
 import { AlertTriangle, Loader2, LogOut, Trash2 } from "lucide-react";
 import React from "react";
 

@@ -11,7 +11,7 @@ import { useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { toBase } from "@/core/lib/quantities";
 import { DetailNeuronModelFragment, SectionFragment } from "../api/graphql";
 import {

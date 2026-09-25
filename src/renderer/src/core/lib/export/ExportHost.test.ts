@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const download = vi.hoisted(() => vi.fn(async () => "file.bin"));
-vi.mock("@/core/app/modules/registries", () => ({
+vi.mock("@/core/modules/registries", () => ({
   FILE_DOWNLOADERS: {
     "@mikro/file": { identifier: "@mikro/file", service: "mikro", download },
     "@elektro/file": { identifier: "@elektro/file", service: "elektro", download },
   },
 }));
 // The host itself pulls in the dialog registry; only the handler is under test.
-vi.mock("@/core/app/dialog", () => ({ useDialog: () => ({}) }));
+vi.mock("@/core/dialogs/registry", () => ({ useDialog: () => ({}) }));
 vi.mock("@/core/lib/arkitekt/provider", () => ({ useConnection: () => null }));
 vi.mock("@/core/providers/download/DownloadProvider", () => ({ useDownload: () => ({}) }));
 

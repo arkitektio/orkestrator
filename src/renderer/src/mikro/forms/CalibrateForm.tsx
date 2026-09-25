@@ -1,5 +1,5 @@
 import { MikroGuard } from "@/mikro/api/funcs";
-import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
+import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { Button } from "@/core/components/ui/button";
 import {
   DialogDescription,

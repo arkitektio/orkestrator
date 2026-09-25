@@ -9,8 +9,8 @@ import { cn } from "@/core/lib/utils";
 import { AlertTriangle, Check, Loader2, LogOut, MoreHorizontal, Trash2 } from "lucide-react";
 import React from "react";
 
-import { ProfileBrandAvatar } from "./ProfileBrandAvatar";
-import { profileDetail, profileTitle } from "./profileLabels";
+import { ProfileBrandAvatar } from "../../../connection/profile/ui/ProfileBrandAvatar";
+import { profileDetail, profileTitle } from "../../../connection/profile/ui/profileLabels";
 
 export type ProfileRowProps = {
   profile: StoredProfile;

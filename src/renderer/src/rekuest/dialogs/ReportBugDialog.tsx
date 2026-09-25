@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/components/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
 import { PortKind, PostmanTaskFragment, useDetailTaskQuery } from "@/rekuest/api/graphql";

@@ -1,5 +1,5 @@
 import { portHash } from "@/core/lib/ports/utils";
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { IntField } from "@/core/components/fields/IntField";
 import { StringField } from "@/core/components/fields/StringField";
 import { SwitchField } from "@/core/components/fields/SwitchField";

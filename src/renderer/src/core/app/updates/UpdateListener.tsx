@@ -6,7 +6,7 @@ import {
   updateError,
   updateNone,
   updateProgress,
-} from "./updateStore";
+} from "../../updates/updateStore";
 
 /**
  * The one subscription to the updater's events, feeding `updateStore`.

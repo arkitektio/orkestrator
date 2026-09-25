@@ -1,4 +1,4 @@
-import { KABINET_TYPE_POLICIES } from "@/core/app/cachePolicies";
+import { KABINET_TYPE_POLICIES } from "@/core/connection/graphql/cachePolicies";
 import { createGraphQLServiceBuilder } from "@/core/lib/arkitekt/builders/graphQlServiceBuidler";
 import kabinetResult from "./api/fragments";
 

@@ -1,4 +1,4 @@
-import { LoadingPage } from "@/core/app/components/fallbacks/LoadingPage";
+import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
 import { PageLayout } from "@/core/components/layout/PageLayout";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { HelpSidebar } from "@/core/components/sidebars/help";

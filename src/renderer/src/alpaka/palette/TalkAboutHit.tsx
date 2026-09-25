@@ -1,5 +1,5 @@
 import type { PaletteHitActionProps } from "@/core/lib/module-host/define";
-import { useModifierState } from "@/core/app/hooks/modifierTracker";
+import { useModifierState } from "@/core/util/modifierTracker";
 import { talkTargetFromModifiers, useTalkAbout } from "../smart/useTalkAbout";
 import { cn } from "@/core/lib/utils";
 import { MessageSquareMore } from "lucide-react";

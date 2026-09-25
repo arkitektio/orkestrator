@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { ListRender } from "@/core/components/layout/ListRender";
 import { Image } from "@/core/components/ui/image";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";

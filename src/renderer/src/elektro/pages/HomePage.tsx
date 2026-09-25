@@ -1,4 +1,4 @@
-import { asParamlessRoute, HookFunction } from "@/core/app/routes/ParamlessRoute";
+import { asParamlessRoute, HookFunction } from "@/core/layout/routes/ParamlessRoute";
 import { OperationVariables } from "@apollo/client";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { PageLayout } from "@/core/components/layout/PageLayout";

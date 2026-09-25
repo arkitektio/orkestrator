@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { buildAssignInput } from "@/rekuest/assign";
 import { RekuestResolution, RekuestToolbox } from "@/core/linkers";

@@ -2,7 +2,7 @@ import { buildAssignInput } from "@/rekuest/assign";
 import { Button } from "@/core/components/ui/button";
 import { DialogFooter } from "@/core/components/ui/dialog";
 import { Form } from "@/core/components/ui/form";
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { useMemo, useRef } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { ArgsContainer } from "@/core/components/ports/ArgsContainer";

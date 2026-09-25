@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/core/app/dialog", () => ({ useDialog: () => ({}) }));
+vi.mock("@/core/dialogs/registry", () => ({ useDialog: () => ({}) }));
 
 import type { ActionState, Structure } from "../LocalActionProvider";
 import { buildDeleteAction } from "./deleteAction";

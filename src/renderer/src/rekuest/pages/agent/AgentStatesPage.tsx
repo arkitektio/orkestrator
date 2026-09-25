@@ -1,4 +1,4 @@
-import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { AsyncBoundary } from "@/core/components/boundaries/AsyncBoundary";
 import { Card } from "@/core/components/ui/card";
 import { Slider } from "@/core/components/ui/slider";

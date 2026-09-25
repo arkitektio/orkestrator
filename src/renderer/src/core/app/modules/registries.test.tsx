@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 // As the app does: install the modules before anything reads a registry.
 import "@/core/app/modules/install";
 
-import { registry as DIALOGS } from "@/core/app/dialog";
-import { DISPLAY_REGISTRY } from "@/core/app/display";
-import { registry as ACTIONS } from "@/core/app/localactions";
-import { PROFILE_SECTIONS } from "@/core/app/profilesections";
-import { SMART_SECTIONS } from "@/core/app/smartcontext";
-import { FILE_DOWNLOADERS } from "@/core/app/modules/registries";
+import { registry as DIALOGS } from "@/core/dialogs/registry";
+import { DISPLAY_REGISTRY } from "@/core/smart/display/displays";
+import { registry as ACTIONS } from "@/core/smart/localactions/registry";
+import { PROFILE_SECTIONS } from "@/core/connection/profile/registry";
+import { SMART_SECTIONS } from "@/core/smart/smartcontext";
+import { FILE_DOWNLOADERS } from "@/core/modules/registries";
 import { TASK_HOOKS } from "@/core/lib/taskhooks/registry";
 
 /**

@@ -13,7 +13,7 @@ import {
   PopoverTrigger,
 } from "@/core/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/core/components/ui/toggle-group";
-import { useStructureOptions } from "@/core/app/hooks/useStructureOptions";
+import { useStructureOptions } from "@/core/modules/hooks/useStructureOptions";
 import { ActionKind, useProtocolOptionsLazyQuery } from "@/rekuest/api/graphql";
 import { Filter, X } from "lucide-react";
 import { useCallback } from "react";

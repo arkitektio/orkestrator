@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // The exported matchers are pure, but importing the module runs top-level code
 // (the scoped-store factory) and pulls in the dialog registry. Stub those heavy
 // imports so the unit under test (condition matching) is isolated.
-vi.mock("@/core/app/dialog", () => ({ useDialog: () => ({}) }));
+vi.mock("@/core/dialogs/registry", () => ({ useDialog: () => ({}) }));
 vi.mock("@/core/lib/generic/createScopedStore", () => ({
   createScopedStoreHooks: () => ({
     StoreContext: { Provider: ({ children }: { children: unknown }) => children },

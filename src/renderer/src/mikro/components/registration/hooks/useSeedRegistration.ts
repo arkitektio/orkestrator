@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { useDialog } from "@/core/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import { useSceneHostLayers, useSceneWorld } from "../../scene/sceneHost";
 import { useRegistrationApi } from "../store/context";
 

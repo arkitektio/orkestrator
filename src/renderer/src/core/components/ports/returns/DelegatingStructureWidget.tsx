@@ -1,4 +1,4 @@
-import { useDisplayComponent } from "@/core/app/display";
+import { useDisplayComponent } from "@/core/smart/display/displays";
 import { ReturnWidgetProps } from "@/core/lib/ports/types";
 
 export const DelegatingStructureWidget = (props: ReturnWidgetProps) => {

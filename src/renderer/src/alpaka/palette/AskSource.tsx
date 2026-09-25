@@ -1,5 +1,5 @@
 import { titleFromPrompt } from "@/alpaka/recentRooms";
-import { useModifierState } from "@/core/app/hooks/modifierTracker";
+import { useModifierState } from "@/core/util/modifierTracker";
 import {
   talkTargetFromModifiers,
   useTalkAbout,

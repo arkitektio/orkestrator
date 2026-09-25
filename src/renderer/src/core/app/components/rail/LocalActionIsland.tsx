@@ -4,13 +4,13 @@ import {
   cancelLocalActionRun,
   dismissLocalActionRun,
   useLocalActionRuns,
-} from "../../localActionRuns";
+} from "../../../smart/localactions/localActionRuns";
 import {
   RailIsland,
   RailIslandName,
   RailIslandProgress,
   RailIslandRow,
-} from "./RailIsland";
+} from "../../../ui/rail/RailIsland";
 
 /**
  * Local actions still running, as an island in the rail.

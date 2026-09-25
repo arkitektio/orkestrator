@@ -1,4 +1,4 @@
-import { useMatchingActionEntries, usePinnedActionIds } from "@/core/app/localactions";
+import { useMatchingActionEntries, usePinnedActionIds } from "@/core/smart/localactions/registry";
 import { Action, orderActionEntries } from "@/core/lib/localactions/LocalActionProvider";
 import { Sparkles } from "lucide-react";
 import React from "react";
