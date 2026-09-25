@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { ElektroGuard } from "@/elektro/api/funcs";
 import { ProfileSectionFrame } from "@/core/lib/profile/ProfileSections";
 import { ProfileRow, ProfileRows } from "@/core/lib/profile/rows";
 import type { ProfileContext, ProfileSection } from "@/core/lib/profile/section";
@@ -81,7 +81,7 @@ export const ELEKTRO_PROFILE_SECTIONS: ProfileSection[] = [
     title: "Experiments",
     icon: ElektroIcon,
     priority: 40,
-    Guard: Guard.Elektro,
+    Guard: ElektroGuard,
     Component: Experiments,
   },
   {
@@ -90,7 +90,7 @@ export const ELEKTRO_PROFILE_SECTIONS: ProfileSection[] = [
     title: "Neuron models",
     icon: Network,
     priority: 50,
-    Guard: Guard.Elektro,
+    Guard: ElektroGuard,
     Component: NeuronModels,
   },
 ];

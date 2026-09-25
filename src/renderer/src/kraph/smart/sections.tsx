@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { KraphGuard } from "@/kraph/api/funcs";
 import { useDialog } from "@/core/app/dialog";
 import { CommandItem } from "@/core/components/ui/command";
 import {
@@ -90,7 +90,7 @@ export const KRAPH_MEASUREMENTS_SECTION: SmartContextSection<ListMeasurementCate
   icon: Ruler,
   priority: 30,
   tier: "remote",
-  Guard: Guard.Kraph,
+  Guard: KraphGuard,
   applies: (props) => props.objects.length > 0 && !(props.partners?.length ?? 0),
   useItems: useMeasurementItems,
   itemKey: (category) => category.id,
@@ -192,7 +192,7 @@ export const KRAPH_ENTITY_RELATIONS_SECTION: SmartContextSection<RelationCandida
   icon: Network,
   priority: 31,
   tier: "remote",
-  Guard: Guard.Kraph,
+  Guard: KraphGuard,
   applies: bothEntities,
   useItems: useEntityRelationItems,
   itemKey: (category) => category.id,
@@ -278,7 +278,7 @@ export const KRAPH_STRUCTURE_RELATIONS_SECTION: SmartContextSection<StructureRel
   icon: Network,
   priority: 32,
   tier: "remote",
-  Guard: Guard.Kraph,
+  Guard: KraphGuard,
   applies: (props) => (props.partners?.length ?? 0) > 0 && !bothEntities(props),
   useItems: useStructureRelationItems,
   itemKey: (item) => (item.kind === "relate" ? item.category.id : "no-relation"),

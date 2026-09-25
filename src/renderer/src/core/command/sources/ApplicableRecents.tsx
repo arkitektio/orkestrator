@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { CommandActionRow } from "@/core/providers/smart/extensions/CommandActionRow";
 import type { PassDownProps } from "@/core/providers/smart/extensions/types";
 import { smartRegistry } from "@/core/providers/smart/registry";

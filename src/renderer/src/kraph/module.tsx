@@ -20,6 +20,7 @@ import { StructureRelationCategoryDisplay } from "./displays/StructureRelationCa
 import { TermDisplay } from "./displays/TermDisplay";
 import { KRAPH_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { service } from "./service";
 import { KRAPH_NAV_LINKS } from "./navLinks";
 import { KnowledgeSidebar } from "./components/sidebars/KnowledgeSidebar";
 import { HomeMentions } from "./dashboard/HomeMentions";
@@ -29,6 +30,7 @@ import { KRAPH_SECTIONS } from "./smart/sections";
 
 export const KRAPH_MODULE = defineModule({
   manifest,
+  serviceKey: service.key,
   builtins: {
     page: () => import("./KraphModule"),
     nav: () => import("./panes/StandardPane"),

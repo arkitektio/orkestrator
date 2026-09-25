@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { Guard } from "@/core/lib/arkitekt/host";
 import { PageLayout } from "@/core/components/layout/PageLayout";
 import { Sidebars } from "@/core/components/layout/Sidebars";
 import { HelpSidebar } from "@/core/components/sidebars/help";

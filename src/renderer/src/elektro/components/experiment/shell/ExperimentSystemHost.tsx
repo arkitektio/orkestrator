@@ -1,6 +1,7 @@
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
 import { useEffect, useRef } from "react";
-import { useDatalayerEndpoint, useElektro } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useElektro } from "@/elektro/api/funcs";
 import {
   GetTableDatasetDocument,
   type GetTableDatasetQuery,

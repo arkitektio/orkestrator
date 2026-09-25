@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { baseName } from "@/core/constants";
 import React, {
   createContext,

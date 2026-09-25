@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { MikroGuard } from "@/mikro/api/funcs";
 import { Badge } from "@/core/components/ui/badge";
 import { Button } from "@/core/components/ui/button";
 import {
@@ -388,9 +388,9 @@ const RegisterFormInner = (props: RegisterFormProps) => {
 // The mikro guard must wrap from the outside: the inner component's queries
 // fire on mount, before any JSX-level guard could stop them (CLAUDE.md §1).
 export const RegisterForm = (props: RegisterFormProps) => (
-  <Guard.Mikro>
+  <MikroGuard>
     <RegisterFormInner {...props} />
-  </Guard.Mikro>
+  </MikroGuard>
 );
 
 export default RegisterForm;

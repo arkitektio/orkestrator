@@ -26,6 +26,7 @@ const bankk = defineModule({
     label: "Bankk",
     models: [{ identifier: "@bankk/transaction", name: "Transaction", datum: true, path: "transactions/:id" }],
   },
+  serviceKey: "bankk",
   builtins: {
     page: async () => ({ default: () => null }),
     displays: { "@bankk/transaction": Display },

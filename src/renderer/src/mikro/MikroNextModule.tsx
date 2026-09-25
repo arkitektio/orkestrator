@@ -1,5 +1,5 @@
 import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/core/app/Arkitekt";
+import { MikroGuard } from "@/mikro/api/funcs";
 import { NotFound } from "@/core/app/components/fallbacks/NotFound";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import { Route, Routes } from "react-router-dom";
@@ -28,7 +28,7 @@ import StandardPane from "./panes/StandardPane";
 
 export const MikroNextModule = () => {
   return (
-    <Guard.Mikro fallback={<ServiceUnavailable serviceKey="mikro" />}>
+    <MikroGuard fallback={<ServiceUnavailable serviceKey="mikro" />}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route index element={<HomePage />} />
@@ -61,7 +61,7 @@ export const MikroNextModule = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>
-    </Guard.Mikro>
+    </MikroGuard>
   );
 };
 

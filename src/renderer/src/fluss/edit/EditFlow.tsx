@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { RekuestGuard } from "@/rekuest/api/hooks";
 import { toast } from "@/core/components/ui/use-toast";
 import { FlowFragment, GraphInput } from "@/fluss/api/graphql";
 import { EditFlowCanvas } from "@/fluss/edit/components/EditFlowCanvas";
@@ -76,7 +76,7 @@ export const EditFlow: React.FC<Props> = ({ flow, onSave }) => {
   }, [onSave, store]);
 
   return (
-    <Guard.Rekuest unavailable={<RekuestRequired />}>
+    <RekuestGuard unavailable={<RekuestRequired />}>
       <EditFlowStoreContext.Provider value={store}>
         <FlowAdapterProvider adapter={adapter}>
           <RedoUndoHandler />
@@ -88,6 +88,6 @@ export const EditFlow: React.FC<Props> = ({ flow, onSave }) => {
           />
         </FlowAdapterProvider>
       </EditFlowStoreContext.Provider>
-    </Guard.Rekuest>
+    </RekuestGuard>
   );
 };

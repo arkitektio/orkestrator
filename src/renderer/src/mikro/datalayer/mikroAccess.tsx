@@ -1,6 +1,7 @@
 import { grantExpiresAt, presignS3Url } from "@/core/lib/datalayer/s3request";
 import { ApolloClient } from "@apollo/client";
-import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useMikro } from "@/mikro/api/funcs";
 import React from "react";
 import { useNearViewport } from "@/core/lib/datalayer/useNearViewport";
 import { GeneralMediaAccessGrantFragment, MediaStoreFragment, RequestGeneralMediaAccessDocument, RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables } from "@/mikro/api/graphql";

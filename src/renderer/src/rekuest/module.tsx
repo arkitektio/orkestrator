@@ -14,6 +14,7 @@ import { LatestTasksDashboardWidget } from "./dashboard/LatestTasksDashboardWidg
 import { RekuestDashboardWidgets } from "./dashboard/RekuestDashboardWidgets";
 import { REKUEST_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { service } from "./service";
 import { REKUEST_NAV_LINKS } from "./navLinks";
 import { REKUEST_PROFILE_SECTIONS } from "./profile/sections";
 import { RekuestEntitySearch } from "./search";
@@ -26,6 +27,7 @@ import { REKUEST_SECTIONS } from "./smart/sections";
 
 export const REKUEST_MODULE = defineModule({
   manifest,
+  serviceKey: service.key,
   builtins: {
     page: () => import("./RekuestNextModule"),
     nav: () => import("./panes/StandardPane"),

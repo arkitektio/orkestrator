@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { ElektroGuard } from "@/elektro/api/funcs";
 import { useDialog } from "@/core/app/dialog";
 import { Button } from "@/core/components/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/components/ui/dialog";
@@ -41,9 +41,9 @@ const hasTime = (system: { axes: { type?: string | null }[] }) => system.axes.so
  * guards Rekuest, and these queries run on mount.
  */
 export const PlaceExperimentLayerForm = (props: PlaceExperimentLayerFormProps) => (
-  <Guard.Elektro unavailable={<div className="p-4 text-sm">Elektro is not available.</div>}>
+  <ElektroGuard unavailable={<div className="p-4 text-sm">Elektro is not available.</div>}>
     <PlaceExperimentLayer {...props} />
-  </Guard.Elektro>
+  </ElektroGuard>
 );
 
 const PlaceExperimentLayer = ({ source, world, worldName, label }: PlaceExperimentLayerFormProps) => {

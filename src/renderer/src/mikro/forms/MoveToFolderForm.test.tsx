@@ -21,8 +21,10 @@ vi.mock("@/core/app/dialog", () => ({
 }));
 
 let client: ApolloClient<unknown>;
-vi.mock("@/core/app/Arkitekt", () => ({
-  useMikro: () => client,
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+  // Module bindings (`useMikro`, `MikroGuard`) read the host facade.
+  useServiceClient: () => client,
 }));
 
 import {

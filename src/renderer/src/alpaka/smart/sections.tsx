@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { AlpakaGuard } from "@/alpaka/api/funcs";
 import { MessageSquareMore } from "lucide-react";
 import type { SmartContextSection } from "@/core/providers/smart/extensions/section";
 import { TalkAboutButton, talkTargets } from "./talk";
@@ -19,7 +19,7 @@ export const ALPAKA_TALK_SECTION: SmartContextSection<TalkItem> = {
   icon: MessageSquareMore,
   priority: 10,
   tier: "instant",
-  Guard: Guard.Alpaka,
+  Guard: AlpakaGuard,
   applies: (props) => props.objects.length > 0,
   useItems: () => ({ items: TALK_ITEMS, status: "ready" }),
   itemKey: (item) => item.key,

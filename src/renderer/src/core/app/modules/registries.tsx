@@ -1,6 +1,6 @@
 import React, { type ComponentType, type ReactNode } from "react";
 
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt, serviceGuard } from "@/core/lib/arkitekt/host";
 import type { DisplayWidgetProps } from "@/core/lib/display/registry";
 import type { FileDownloader } from "@/core/lib/export/fileDownloaders";
 import type { Action } from "@/core/lib/localactions/LocalActionProvider";
@@ -18,7 +18,6 @@ import type { TaskHook } from "@/core/lib/taskhooks/types";
 import type { SmartContextSection } from "@/core/providers/smart/extensions/section";
 import type { ModuleDialogs } from "./dialogTypes";
 import type { ModuleActions } from "./install";
-import { MODULES, SELF_MODULE } from "./index";
 
 /**
  * The host registries, derived from the registered modules' builtins.
@@ -71,20 +70,21 @@ const notReady = (fallback: ReactNode = <></>) => ({
   challenging: fallback,
 });
 
-const SERVICE_KEYS: Record<string, string> = Object.fromEntries(
-  MODULES.map(({ manifest, service }) => [manifest.namespace, service.key]),
-);
-
 const NoService: GuardComponent = ({ fallback }) => <>{fallback ?? null}</>;
 
 /**
- * The guard for one module (CLAUDE.md §1), silent in every not-ready state.
- * Lok is the session's own service, so its guard is the session's. A module
- * the host has no service binding for yet renders nothing: its builtins
- * would query a client that does not exist.
+ * The guard for one module (CLAUDE.md §1), silent in every not-ready state
+ * unless given a `fallback`. The key comes from the module's definition
+ * (`serviceKey`); "self" is the session's own service (lok). A module that is
+ * not installed renders nothing: its builtins would query a client that does
+ * not exist.
  */
-const buildGuard = (namespace: string): GuardComponent => {
-  if (namespace === SELF_MODULE.namespace) {
+const buildModuleGuard = (namespace: string): GuardComponent => {
+  const definition = (moduleDefinitions() as readonly ModuleDefinition[]).find(
+    (candidate) => namespaceOf(candidate) === namespace,
+  );
+  if (!definition) return NoService;
+  if (definition.serviceKey === "self") {
     const SelfGuard: GuardComponent = ({ children, fallback = <></> }) => (
       <Arkitekt.Guard notConnectedFallback={fallback} connectingFallback={fallback}>
         {children}
@@ -92,9 +92,7 @@ const buildGuard = (namespace: string): GuardComponent => {
     );
     return SelfGuard;
   }
-  const key = SERVICE_KEYS[namespace];
-  if (!key) return NoService;
-  const ServiceGuard = Arkitekt.buildServiceGuard(key as never);
+  const ServiceGuard = serviceGuard(definition.serviceKey);
   const Guard: GuardComponent = ({ children, fallback }) => (
     <ServiceGuard {...notReady(fallback)}>{children}</ServiceGuard>
   );
@@ -104,8 +102,14 @@ const buildGuard = (namespace: string): GuardComponent => {
 
 const guardCache: Record<string, GuardComponent> = {};
 
-export const moduleGuard = (namespace: string): GuardComponent =>
-  (guardCache[namespace] ??= buildGuard(namespace));
+export const moduleGuard = (namespace: string): GuardComponent => {
+  const cached = guardCache[namespace];
+  if (cached) return cached;
+  const guard = buildModuleGuard(namespace);
+  // Not cached while the module is missing: it may register later.
+  if (guard !== NoService) guardCache[namespace] = guard;
+  return guard;
+};
 
 /** `Component`, mounted only once its module's service is ready. */
 const guarded = <P extends object>(namespace: string, Component: ComponentType<P>): ComponentType<P> => {

@@ -1,5 +1,5 @@
 import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/core/app/Arkitekt";
+import { DokumentsGuard } from "./api/funcs";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -13,7 +13,7 @@ interface Props { }
 
 export const Module: React.FC<Props> = (_props) => {
   return (
-    <Guard.Lovekit fallback={<ServiceUnavailable serviceKey="lovekit" />}>
+    <DokumentsGuard fallback={<ServiceUnavailable serviceKey="dokuments" />}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route path="files/:id" element={<FilePage />} />
@@ -23,7 +23,7 @@ export const Module: React.FC<Props> = (_props) => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>
-    </Guard.Lovekit>
+    </DokumentsGuard>
   );
 };
 

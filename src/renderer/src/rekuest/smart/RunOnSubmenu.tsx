@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { RekuestGuard } from "@/rekuest/api/hooks";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -77,9 +77,9 @@ export const RunOnSubmenu = ({
           }}
         >
           {target ? (
-            <Guard.Rekuest unavailable={<></>}>
+            <RekuestGuard unavailable={<></>}>
               <DirectImplementationAssignment {...context} action={target.action} />
-            </Guard.Rekuest>
+            </RekuestGuard>
           ) : null}
         </ContextMenuContent>
       </ContextMenu>

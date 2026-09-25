@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { MikroGuard } from "@/mikro/api/funcs";
 import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
 import { Button } from "@/core/components/ui/button";
 import {
@@ -214,9 +214,9 @@ const CalibrateFormBody = (props: {
 // The mikro guard must wrap from the outside: the inner component's queries
 // fire on mount, before any JSX-level guard could stop them (CLAUDE.md §1).
 export const CalibrateForm = (props: { dataset: string }) => (
-  <Guard.Mikro>
+  <MikroGuard>
     <CalibrateFormInner {...props} />
-  </Guard.Mikro>
+  </MikroGuard>
 );
 
 export default CalibrateForm;

@@ -8,7 +8,8 @@ import {
   ColumnControl,
   useGetTableDatasetLazyQuery,
 } from "@/mikro/api/graphql";
-import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useMikro } from "@/mikro/api/funcs";
 import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import { loadSparseSource } from "@/mikro/lib/sparse/sparseSource";
 import { sliceDomain, sliceHistogram } from "@/mikro/lib/sparse/sliceStats";

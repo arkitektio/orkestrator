@@ -1,4 +1,4 @@
-import { useRekuest } from "@/core/app/Arkitekt";
+import { useRekuest } from "@/rekuest/api/hooks";
 import type { ApolloClient } from "@apollo/client";
 import { applyPatch } from "fast-json-patch";
 import { useCallback, useRef, useState, useSyncExternalStore } from "react";

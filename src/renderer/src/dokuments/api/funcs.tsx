@@ -1,4 +1,4 @@
-import { useDokuments } from "@/core/app/Arkitekt";
+import { serviceGuard, useServiceClient } from "@/core/lib/arkitekt/host";
 import {
   LazyQueryHookOptions,
   MutationHookOptions,
@@ -10,6 +10,14 @@ import {
   useSubscription as useApolloSubscription,
 } from "@apollo/client";
 import { onApolloError } from "@/core/lib/errorHandler";
+
+
+/**
+ * dokuments's own service binding: its client (fakts key "dokuments") and the guard
+ * that mounts children only while that service is ready (CLAUDE.md §1).
+ */
+export const useDokuments = () => useServiceClient("dokuments");
+export const DokumentsGuard = serviceGuard("dokuments");
 
 type MutationFuncType = typeof useApolloMutation;
 type QueryFuncType = typeof useApolloQuery;

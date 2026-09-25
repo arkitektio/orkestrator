@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { Button } from "@/core/components/ui/button";
 import { Checkbox } from "@/core/components/ui/checkbox";
 import {

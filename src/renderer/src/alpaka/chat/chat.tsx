@@ -7,7 +7,8 @@ import {
   firstMessageAttachments,
   toStructureInputs,
 } from "@/alpaka/roomTalkingAbout";
-import { Guard, useRekuest } from "@/core/app/Arkitekt";
+import { KabinetGuard } from "@/kabinet/api/hooks";
+import { useRekuest } from "@/rekuest/api/hooks";
 import { buildAssignInput } from "@/rekuest/assign";
 import { useSmartDrop } from "@/core/providers/smart/hooks";
 import {
@@ -328,13 +329,13 @@ const ReplyerControl = (props: {
                   </CommandItem>
                 ))}
               </CommandGroup>
-              <Guard.Kabinet unavailable={<></>}>
+              <KabinetGuard unavailable={<></>}>
                 <CommandSeparator />
                 <InstallReplyerSection
                   search={search}
                   onInstalled={() => setPickerOpen(false)}
                 />
-              </Guard.Kabinet>
+              </KabinetGuard>
             </CommandList>
           </Command>
         </PopoverContent>

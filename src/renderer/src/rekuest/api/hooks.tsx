@@ -1,4 +1,4 @@
-import { useRekuest } from "@/core/app/Arkitekt";
+import { serviceGuard, useServiceClient } from "@/core/lib/arkitekt/host";
 import {
   LazyQueryHookOptions,
   MutationHookOptions,
@@ -10,6 +10,14 @@ import {
   useSubscription as useApolloSubscription,
 } from "@apollo/client";
 import { onApolloError } from "@/core/lib/errorHandler";
+
+
+/**
+ * rekuest's own service binding: its client (fakts key "rekuest") and the guard
+ * that mounts children only while that service is ready (CLAUDE.md §1).
+ */
+export const useRekuest = () => useServiceClient("rekuest");
+export const RekuestGuard = serviceGuard("rekuest");
 
 type MutationFuncType = typeof useApolloMutation;
 type QueryFuncType = typeof useApolloQuery;

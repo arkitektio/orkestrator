@@ -7,7 +7,8 @@ import * as THREE from "three";
 const hitScratch = new THREE.Vector3();
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 
-import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useMikro } from "@/mikro/api/funcs";
 
 import { createRafCoalescer } from "@/core/lib/scene/perf/rafCoalesce";
 import { sceneZExtent } from "../../platform/coords/worldTransform";

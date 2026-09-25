@@ -11,7 +11,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const URL = "https://go.arkitekt.live/configure/abc";
 const connect = vi.fn();
 
-vi.mock("@/core/app/Arkitekt", () => ({
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
   Arkitekt: {
     useConnect: () => connect,
     useAutoLoginError: () => undefined,

@@ -1,4 +1,4 @@
-import { Arkitekt, Guard } from "@/core/app/Arkitekt";
+import { Arkitekt, Guard } from "@/core/lib/arkitekt/host";
 import { toHubHealthFacts } from "@/core/lib/arkitekt/doctor/hubHealth";
 import { useMyHubHealthLazyQuery } from "@/lok/api/graphql";
 import { useCallback } from "react";

@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { StatusDot, TONE_TEXT, type Tone } from "../components/StatusLabel";
 import { meshAliases } from "@/core/lib/mesh/meshNeed";
 import { profileTitle } from "@/core/app/components/profile/profileLabels";

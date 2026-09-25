@@ -16,7 +16,8 @@ const state = {
   removeProfile: vi.fn(),
 };
 
-vi.mock("@/core/app/Arkitekt", () => ({
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
   Arkitekt: {
     useProfiles: () => state.profiles,
     useSwitchingProfileId: () => state.switchingProfileId,

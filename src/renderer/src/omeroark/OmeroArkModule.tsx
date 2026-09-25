@@ -1,5 +1,5 @@
 import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/core/app/Arkitekt";
+import { OmeroArkGuard } from "@/omeroark/api/funcs";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import { Route, Routes } from "react-router-dom";
 import { ConnectedGuard } from "./ConnectedGuard";
@@ -15,7 +15,7 @@ import { NotFound } from "@/core/app/components/fallbacks/NotFound";
 
 export const OmeroArkModule = () => {
   return (
-    <Guard.OmeroArk fallback={<ServiceUnavailable serviceKey="omero_ark" />}>
+    <OmeroArkGuard fallback={<ServiceUnavailable serviceKey="omero_ark" />}>
       <ModuleLayout pane={<StandardPane />}>
         <ConnectedGuard>
           <Routes>
@@ -29,7 +29,7 @@ export const OmeroArkModule = () => {
           </Routes>
         </ConnectedGuard>
       </ModuleLayout>
-    </Guard.OmeroArk>
+    </OmeroArkGuard>
   );
 };
 

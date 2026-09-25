@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { useSettings } from "@/core/providers/settings/SettingsContext";
 import React from "react";
 import { createSmartPrefetcher, type PrefetchClient } from "./extensions/prefetch";

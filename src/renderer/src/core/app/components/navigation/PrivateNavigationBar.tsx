@@ -1,4 +1,5 @@
-import { Arkitekt, Guard, moduleRegistry } from "@/core/app/Arkitekt";
+import { Arkitekt, serviceGuard } from "@/core/lib/arkitekt/host";
+import { moduleRegistry } from "@/core/app/Arkitekt";
 import { DroppableNavLink } from "@/core/components/ui/link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
 import {
@@ -31,6 +32,8 @@ import { LocalActionIsland } from "@/core/app/components/rail/LocalActionIsland"
 import { RailIslandStack } from "@/core/app/components/rail/RailIsland";
 import { UpdateIsland } from "@/core/app/updates/UpdateIsland";
 import { VoiceIsland } from "@/core/voice";
+
+const RekuestGuard = serviceGuard("rekuest");
 
 
 export type INavigationBarProps = {
@@ -377,9 +380,9 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
       <RailIslandStack>
         <UpdateIsland />
         <VoiceIsland />
-        <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
+        <RekuestGuard unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
           <AgentIsland />
-        </Guard.Rekuest>
+        </RekuestGuard>
         <ModuleRailIslands />
         <LocalActionIsland />
         <DownloadIsland />

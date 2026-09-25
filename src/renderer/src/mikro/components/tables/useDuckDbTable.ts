@@ -15,7 +15,7 @@ import {
   useRequestParquetAccessMutation,
   useRequestGeneralParquetAccessMutation,
 } from "@/mikro/api/graphql";
-import { useDatalayerEndpoint } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
 import { useDebounce } from "@/core/hooks/use-debounce";
 
 // The minimal shape the DuckDB reader needs from a parquet-backed model: a

@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { Button } from "@/core/components/ui/button";
 import { profileScope, useActiveScope } from "@/core/hooks/use-active-scope";
 import type { StoredProfile } from "@/core/lib/arkitekt/fakts/profileStorageSchema";

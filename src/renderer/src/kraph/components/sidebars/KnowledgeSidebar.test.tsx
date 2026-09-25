@@ -6,7 +6,8 @@ const knowledge = vi.fn();
 const informing = vi.fn();
 const me = vi.fn();
 
-vi.mock("@/core/app/Arkitekt", () => ({
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
   Guard: { Lok: ({ children }: { children: React.ReactNode }) => <>{children}</> },
   useKraph: () => ({}),
 }));

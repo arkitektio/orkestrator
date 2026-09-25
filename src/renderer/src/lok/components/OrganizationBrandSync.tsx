@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { setBrandRemote } from "@/core/providers/settings/brandTheme";
 import { EMPTY_BRAND } from "../lib/membershipBrand";
 

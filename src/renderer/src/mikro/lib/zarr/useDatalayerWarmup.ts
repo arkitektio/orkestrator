@@ -3,7 +3,7 @@ import { workerPool } from "@/core/lib/zarr/pool/sharedWorkerPool";
 import { assertWebGPUSupported } from "@/core/lib/scene/gpu/webgpuSupport";
 import type { MikroClient } from "@/core/lib/zarr/store/types";
 import { getGeneralAccess } from "./access";
-import { useMikro } from "@/core/app/Arkitekt";
+import { useMikro } from "@/mikro/api/funcs";
 import { coldOpenTimeline } from "@/mikro/components/scene/platform/perf/coldOpenTimeline";
 
 /**

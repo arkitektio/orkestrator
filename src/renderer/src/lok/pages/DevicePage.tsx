@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
 import { FormSheet } from "@/core/components/dialog/FormDialog";
 import { LokDevice } from "@/core/linkers";

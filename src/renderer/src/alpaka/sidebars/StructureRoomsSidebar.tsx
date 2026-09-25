@@ -12,7 +12,7 @@ import {
   EmptyDescription,
   EmptyTitle,
 } from "@/core/components/ui/empty";
-import { Guard } from "@/core/app/Arkitekt";
+import { RekuestGuard } from "@/rekuest/api/hooks";
 import { Identifier, Object } from "@/core/types";
 import { Check, Menu, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -152,7 +152,7 @@ const StructureRoomView = ({
       {/* `Chat` talks to rekuest (and kabinet) for its action picker, so it
           must not mount at all without that service — guarded from out here,
           before its hooks can fire. */}
-      <Guard.Rekuest
+      <RekuestGuard
         unavailable={
           <div className="p-3 text-xs text-muted-foreground">
             Chat needs the rekuest service.
@@ -160,7 +160,7 @@ const StructureRoomView = ({
         }
       >
         <Chat isMobile={isMobile} room={data.room} talkingAbout={[talkingAbout]} />
-      </Guard.Rekuest>
+      </RekuestGuard>
     </div>
   );
 };

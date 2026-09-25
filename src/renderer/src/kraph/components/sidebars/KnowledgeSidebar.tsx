@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { Guard } from "@/core/lib/arkitekt/host";
 import { Separator } from "@/core/components/ui/separator";
 import { useSelf } from "@/core/app/hooks/useSelf";
 import { SmartDropZone } from "@/core/providers/smart/Drop";

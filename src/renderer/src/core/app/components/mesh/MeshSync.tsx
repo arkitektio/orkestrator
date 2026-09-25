@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { meshNeeded } from "@/core/lib/mesh/meshNeed";
 import { claimProfileMesh, joiningMeshes, meshClaimFor } from "@/core/lib/mesh/profileMesh";
 import { useEffect, useSyncExternalStore } from "react";

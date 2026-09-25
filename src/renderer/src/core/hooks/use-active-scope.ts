@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import type { ShareScope } from "@/core/lib/shareScope";
 import type { StoredProfile } from "@/core/lib/arkitekt/fakts/profileStorageSchema";
 import { useMemo } from "react";

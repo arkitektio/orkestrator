@@ -1,5 +1,5 @@
 import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/core/app/Arkitekt";
+import { AlpakaGuard } from "@/alpaka/api/funcs";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -18,7 +18,7 @@ interface Props { }
 
 export const AlpakaModule: React.FC<Props> = () => {
   return (
-    <Guard.Alpaka fallback={<ServiceUnavailable serviceKey="alpaka" />}>
+    <AlpakaGuard fallback={<ServiceUnavailable serviceKey="alpaka" />}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route path="rooms/:id" element={<RoomPage />} />
@@ -33,7 +33,7 @@ export const AlpakaModule: React.FC<Props> = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>
-    </Guard.Alpaka>
+    </AlpakaGuard>
   );
 };
 

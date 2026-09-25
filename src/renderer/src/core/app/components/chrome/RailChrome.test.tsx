@@ -15,7 +15,8 @@ import { RailChrome } from "./RailChrome";
 const { profileRef } = vi.hoisted(() => ({
   profileRef: { current: null as unknown },
 }));
-vi.mock("@/core/app/Arkitekt", () => ({
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
   Arkitekt: {
     useActiveProfileId: () => "org-a",
     useActiveProfile: () => profileRef.current,

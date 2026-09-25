@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import ProfileSwitcher from "@/core/app/components/profile/ProfileSwitcher";
 import { profileDetail, profileTitle } from "@/core/app/components/profile/profileLabels";
 import { ProfileBrandAvatar } from "@/core/app/components/profile/ProfileBrandAvatar";

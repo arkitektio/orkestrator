@@ -5,8 +5,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // `buildGuard` is a pure function of `useServiceState`. Stub the provider (and
 // the hooks barrel it pulls in) so we can drive the service status directly
 // without standing up the whole Arkitekt connection machinery.
-vi.mock("./provider", () => ({ useServiceState: vi.fn() }));
-vi.mock("./hooks", () => ({ useSelfService: vi.fn() }));
+vi.mock("./provider", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./provider")>()),
+  useServiceState: vi.fn(),
+}));
+vi.mock("./hooks", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./hooks")>()),
+  useSelfService: vi.fn(),
+}));
 
 import { buildGuard } from "./index";
 import { useServiceState } from "./provider";

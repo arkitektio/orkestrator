@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Guard } from "@/core/app/Arkitekt";
+import { MikroGuard } from "@/mikro/api/funcs";
 import { SceneHostGuard } from "../scene/sceneHost";
 import { BlinkKey } from "./canvas/BlinkKey";
 import { Gizmo } from "./canvas/Gizmo";
@@ -70,9 +70,9 @@ const SidebarBody = () => {
  */
 const Sidebar = () => (
   <SceneHostGuard fallback={<div className="p-4 text-center text-xs text-muted-foreground">Loading scene…</div>}>
-    <Guard.Mikro unavailable={<></>}>
+    <MikroGuard unavailable={<></>}>
       <SidebarBody />
-    </Guard.Mikro>
+    </MikroGuard>
   </SceneHostGuard>
 );
 

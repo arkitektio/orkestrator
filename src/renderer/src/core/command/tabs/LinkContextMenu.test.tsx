@@ -2,7 +2,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/core/app/Arkitekt", () => ({
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
   Arkitekt: { useActiveProfileId: () => "org-a" },
 }));
 vi.mock("@/core/constants", () => ({ baseName: "" }));

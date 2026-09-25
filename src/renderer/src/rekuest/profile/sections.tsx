@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { RekuestGuard } from "@/rekuest/api/hooks";
 import { ProfileSectionFrame } from "@/core/lib/profile/ProfileSections";
 import { ProfileRow, ProfileRows } from "@/core/lib/profile/rows";
 import type { ProfileContext, ProfileSection } from "@/core/lib/profile/section";
@@ -63,7 +63,7 @@ export const REKUEST_PROFILE_SECTIONS: ProfileSection[] = [
     title: "Agents",
     icon: Bot,
     priority: 30,
-    Guard: Guard.Rekuest,
+    Guard: RekuestGuard,
     Component: Agents,
   },
 ];

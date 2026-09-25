@@ -1,4 +1,4 @@
-import { useOmeroArk } from "@/core/app/Arkitekt";
+import { serviceGuard, useServiceClient } from "@/core/lib/arkitekt/host";
 import {
   LazyQueryHookOptions,
   MutationHookOptions,
@@ -10,6 +10,14 @@ import {
   useSubscription as useApolloSubscription,
 } from "@apollo/client";
 import { onApolloError } from "@/core/lib/errorHandler";
+
+
+/**
+ * omeroark's own service binding: its client (fakts key "omero_ark") and the guard
+ * that mounts children only while that service is ready (CLAUDE.md §1).
+ */
+export const useOmeroArk = () => useServiceClient("omero_ark");
+export const OmeroArkGuard = serviceGuard("omero_ark");
 
 type MutationFuncType = typeof useApolloMutation;
 type QueryFuncType = typeof useApolloQuery;

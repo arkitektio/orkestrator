@@ -12,6 +12,7 @@ import { LokEntitySearch } from "./search";
 
 export const LOK_MODULE = defineModule({
   manifest,
+  serviceKey: "self",
   builtins: {
     page: () => import("./LokNextModule"),
     nav: () => import("./panes/StandardPane"),

@@ -1,5 +1,6 @@
 import { ApolloClient, gql } from "@apollo/client";
-import { useDatalayerEndpoint, useKraph } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useKraph } from "@/kraph/api/funcs";
 import { MediaStoreFragment } from "@/kraph/api/graphql";
 import React from "react";
 import { grantExpiresAt, presignS3Url, S3SigningCredentials } from "@/core/lib/datalayer/s3request";

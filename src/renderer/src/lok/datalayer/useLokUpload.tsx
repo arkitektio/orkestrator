@@ -1,4 +1,5 @@
-import { useCoordinationEndpoint, useLok } from "@/core/app/Arkitekt";
+import { useCoordinationEndpoint } from "@/core/lib/arkitekt/host";
+import { useLok } from "@/lok/api/hooks";
 import {
   PresignedPostCredentialsFragment,
   RequestMediaUploadDocument,

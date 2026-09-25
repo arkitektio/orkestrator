@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { MikroGuard } from "@/mikro/api/funcs";
 import { Card } from "@/core/components/ui/card";
 import { Image } from "@/core/components/ui/image";
 import { useResolve } from "@/core/datalayer/hooks/useResolve";
@@ -115,7 +115,7 @@ export const MIKRO_PROFILE_SECTIONS: ProfileSection[] = [
     title: "Latest images",
     icon: Images,
     priority: 10,
-    Guard: Guard.Mikro,
+    Guard: MikroGuard,
     Component: LatestImages,
   },
   {
@@ -124,7 +124,7 @@ export const MIKRO_PROFILE_SECTIONS: ProfileSection[] = [
     title: "Files & folders",
     icon: Folder,
     priority: 20,
-    Guard: Guard.Mikro,
+    Guard: MikroGuard,
     Component: RecentFiles,
   },
 ];

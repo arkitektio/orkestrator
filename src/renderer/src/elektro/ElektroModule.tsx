@@ -1,5 +1,5 @@
 import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/core/app/Arkitekt";
+import { ElektroGuard } from "@/elektro/api/funcs";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -31,7 +31,7 @@ interface Props { }
 
 export const ElektroModule: React.FC<Props> = () => {
   return (
-    <Guard.Elektro fallback={<ServiceUnavailable serviceKey="elektro" />}>
+    <ElektroGuard fallback={<ServiceUnavailable serviceKey="elektro" />}>
       <ElektroZarrStoreProvider>
         <ElektroParquetProvider>
         <ModuleLayout pane={<StandardPane />}>
@@ -67,7 +67,7 @@ export const ElektroModule: React.FC<Props> = () => {
         </ModuleLayout>
         </ElektroParquetProvider>
       </ElektroZarrStoreProvider>
-    </Guard.Elektro>
+    </ElektroGuard>
   );
 };
 

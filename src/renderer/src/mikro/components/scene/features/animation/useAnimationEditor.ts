@@ -8,7 +8,8 @@ import {
   useUpdateSceneMutation,
 } from "@/mikro/api/graphql";
 import type { PreferredView } from "@/mikro/api/graphql";
-import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useMikro } from "@/mikro/api/funcs";
 import { serializeWaypoint } from "../../platform/camera/animation";
 import { captureCameraState } from "../../platform/camera/cameraState";
 import { uploadMediaBlob } from "../../platform/sources/mediaUpload";

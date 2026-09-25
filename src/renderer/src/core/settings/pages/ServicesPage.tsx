@@ -1,4 +1,4 @@
-import { Arkitekt, Guard } from "@/core/app/Arkitekt";
+import { Arkitekt, Guard } from "@/core/lib/arkitekt/host";
 import {
   ActionLabel,
   ActionTrigger,

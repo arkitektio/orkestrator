@@ -1,4 +1,4 @@
-import { useLivekit } from "@/core/app/Arkitekt";
+import { useLivekit } from "@/core/lib/arkitekt/host";
 import {
   SoloBroadcastFragment,
   useJoinBroadcastMutation

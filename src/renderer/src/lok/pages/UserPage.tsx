@@ -1,4 +1,3 @@
-import { Guard } from "@/core/app/Arkitekt";
 import { PROFILE_SECTIONS } from "@/core/app/profilesections";
 import { asDetailQueryRoute } from "@/core/app/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/components/layout/Sidebars";
@@ -83,9 +82,8 @@ const Page = asDetailQueryRoute(useUserQuery, ({ data }) => {
           </div>
         </Sidebars.Tab>,
         <Sidebars.Tab key="knowledge" label="Knowledge">
-          <Guard.Kraph>
-            <LokUser.Knowledge object={user} />
-          </Guard.Kraph>
+          {/* The host's Knowledge surface: kraph fills it, behind its own guard. */}
+          <LokUser.Knowledge object={user} />
         </Sidebars.Tab>,
       ]}
     >

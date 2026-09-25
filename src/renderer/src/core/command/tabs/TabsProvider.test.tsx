@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const profileId = vi.fn<[], string | null>(() => "org-a");
-vi.mock("@/core/app/Arkitekt", () => ({
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
   Arkitekt: { useActiveProfileId: () => profileId() },
 }));
 vi.mock("@/core/constants", () => ({ baseName: "" }));

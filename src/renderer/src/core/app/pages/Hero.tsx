@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { ConnectingFallback } from "@/core/app/components/fallbacks/Connecting";
 import { QuietPage } from "@/core/app/components/fallbacks/QuietPage";
 import { ShellSignInNotice } from "@/core/app/components/shell/ShellSignInNotice";

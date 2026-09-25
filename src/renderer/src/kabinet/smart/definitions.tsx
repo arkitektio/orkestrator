@@ -1,4 +1,4 @@
-import { useRekuest } from "@/core/app/Arkitekt";
+import { useRekuest } from "@/rekuest/api/hooks";
 import { ListDefinitionFragment } from "@/kabinet/api/graphql";
 import { useHashActionWithProgress } from "@/rekuest/hooks/useHashActionWithProgress";
 import { Download } from "lucide-react";

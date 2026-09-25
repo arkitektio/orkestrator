@@ -1,5 +1,5 @@
 import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/core/app/Arkitekt";
+import { serviceGuard } from "@/core/lib/arkitekt/host";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -7,6 +7,8 @@ import { Dashboards } from "./pages/Dashboards";
 import { Home } from "./pages/Home";
 import StandardPane from "./panes/StandardPane";
 import { NotFound } from "@/core/app/components/fallbacks/NotFound";
+
+const RekuestGuard = serviceGuard("rekuest");
 interface Props { }
 /**
  *
@@ -15,7 +17,7 @@ interface Props { }
  */
 const Module: React.FC<Props> = () => {
   return (
-    <Guard.Rekuest fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}>
+    <RekuestGuard fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route index element={<Home />} />
@@ -24,7 +26,7 @@ const Module: React.FC<Props> = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>
-    </Guard.Rekuest>
+    </RekuestGuard>
   );
 };
 

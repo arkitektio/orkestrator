@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { ElektroGuard } from "@/elektro/api/funcs";
 import { Button } from "@/core/components/ui/button";
 import { Input } from "@/core/components/ui/input";
 import {
@@ -116,7 +116,7 @@ const MechanismPickerInner = ({ value, onChange }: MechanismPickerProps) => {
  * mechanisms can still be typed.
  */
 export const MechanismPicker = (props: MechanismPickerProps) => (
-  <Guard.Elektro unavailable={<FreeTextMechanismPicker {...props} />}>
+  <ElektroGuard unavailable={<FreeTextMechanismPicker {...props} />}>
     <MechanismPickerInner {...props} />
-  </Guard.Elektro>
+  </ElektroGuard>
 );

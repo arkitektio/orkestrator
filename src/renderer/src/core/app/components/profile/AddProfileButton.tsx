@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { Button } from "@/core/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/components/ui/tooltip";
 import {

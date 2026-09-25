@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { findOptionSource } from "@/core/app/modules/registries";
 import type { SearchOptions } from "@/core/components/fields/SearchField";
 import { useModuleHostVersion } from "@/core/lib/module-host/host";

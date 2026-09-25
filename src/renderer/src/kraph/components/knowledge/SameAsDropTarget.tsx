@@ -1,4 +1,4 @@
-import { useKraph } from "@/core/app/Arkitekt";
+import { useKraph } from "@/kraph/api/funcs";
 import {
   AlertDialog,
   AlertDialogAction,

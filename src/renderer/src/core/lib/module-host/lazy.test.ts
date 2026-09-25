@@ -7,6 +7,7 @@ import { derived, derivedRecord } from "./lazy";
 const module = (namespace: string) =>
   defineModule({
     manifest: { schema: 1, namespace, service: `io.test.${namespace}`, version: "0", label: namespace },
+    serviceKey: namespace,
     builtins: { page: async () => ({ default: () => null }) },
   });
 

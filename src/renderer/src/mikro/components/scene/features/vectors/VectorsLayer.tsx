@@ -21,7 +21,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 
-import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useMikro } from "@/mikro/api/funcs";
 import { collapsibleLensDims } from "../../platform/model/dimExtents";
 import { createSettler } from "@/core/lib/scene/perf/settle";
 import { useSceneStore } from "../../platform/stores/sceneStore";

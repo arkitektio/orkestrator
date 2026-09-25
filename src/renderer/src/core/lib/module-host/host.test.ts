@@ -21,6 +21,7 @@ const module = (namespace: string, builtins: Partial<ModuleBuiltins> = {}) =>
       label: namespace,
       models: [{ identifier: `@${namespace}/thing`, name: "Thing", datum: true, path: "things/:id" }],
     },
+    serviceKey: namespace,
     builtins: { page, ...builtins },
   });
 

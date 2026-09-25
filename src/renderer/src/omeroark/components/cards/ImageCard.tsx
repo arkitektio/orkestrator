@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { Card } from "@/core/components/ui/card";
 import { OmeroArkImage } from "@/core/linkers";
 import { aliasToHttpPath } from "@/core/lib/arkitekt/alias/helpers";

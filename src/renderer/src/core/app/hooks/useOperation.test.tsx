@@ -9,7 +9,8 @@ const { state, run } = vi.hoisted(() => ({
   },
   run: vi.fn(async (client: unknown, args: unknown) => ({ client, args })),
 }));
-vi.mock("@/core/app/Arkitekt", () => ({ Arkitekt: { useStoreApi: () => ({ getState: () => state }) } }));
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()), Arkitekt: { useStoreApi: () => ({ getState: () => state }) } }));
 
 vi.mock("@/core/app/modules/registries", () => ({
   MODULE_OPERATIONS: {

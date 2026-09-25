@@ -1,4 +1,4 @@
-import { Arkitekt } from "@/core/app/Arkitekt";
+import { Arkitekt } from "@/core/lib/arkitekt/host";
 import { useDialog } from "@/core/app/dialog";
 import { moduleIcon } from "@/core/app/components/navigation/moduleIcons";
 import { useDebug } from "@/core/providers/debug/DebugContext";

@@ -1,5 +1,5 @@
 import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/core/app/Arkitekt";
+import { KraphGuard } from "@/kraph/api/funcs";
 import { NotFound } from "@/core/app/components/fallbacks/NotFound";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
@@ -49,7 +49,7 @@ interface Props { }
 
 export const KraphModule: React.FC<Props> = () => {
   return (
-    <Guard.Kraph fallback={<ServiceUnavailable serviceKey="kraph" />}>
+    <KraphGuard fallback={<ServiceUnavailable serviceKey="kraph" />}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route index element={<HomePage />} />
@@ -152,7 +152,7 @@ export const KraphModule: React.FC<Props> = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>
-    </Guard.Kraph>
+    </KraphGuard>
   );
 };
 

@@ -1,5 +1,5 @@
 import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/core/app/Arkitekt";
+import { KabinetGuard } from "@/kabinet/api/hooks";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -23,7 +23,7 @@ interface Props { }
 
 export const KabinetModule: React.FC<Props> = () => {
   return (
-    <Guard.Kabinet fallback={<ServiceUnavailable serviceKey="kabinet" />}>
+    <KabinetGuard fallback={<ServiceUnavailable serviceKey="kabinet" />}>
       <ModuleLayout pane={<StandardPane />}>
         <Routes>
           <Route path="app-store" element={<AppStorePage />} />
@@ -47,7 +47,7 @@ export const KabinetModule: React.FC<Props> = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>
-    </Guard.Kabinet>
+    </KabinetGuard>
   );
 };
 

@@ -1,5 +1,5 @@
 import { buildDeleteAction } from "@/core/lib/localactions/builders/deleteAction";
-import type { Arkitekt } from "@/core/app/Arkitekt";
+import type { ModuleServices } from "@/core/lib/arkitekt/host";
 import {
   CreateSceneFromCoordinateSystemDocument,
   CreateSceneFromCoordinateSystemMutation,
@@ -45,7 +45,7 @@ import {
 import { Action } from "@/core/lib/localactions/LocalActionProvider";
 import { getRefetchableQueriesForEntities } from "@/core/lib/localactions/helpers/refetch";
 
-type MikroAction = Action<typeof Arkitekt>;
+type MikroAction = Action<ModuleServices<"mikro">>;
 
 export const MIKRO_ACTIONS: Record<string, MikroAction> = {
   'create-scene-from-arrayDataset': {
@@ -393,7 +393,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       dialog.openDialog('updatefolder', { folder: data.folder });
     },
   },
-  'delete-mikro-file': buildDeleteAction<typeof Arkitekt>({
+  'delete-mikro-file': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete File',
     identifier: '@mikro/file',
     description: 'Delete the file',
@@ -627,7 +627,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       })
     }
   },
-  'delete-mikro-scene': buildDeleteAction<typeof Arkitekt>({
+  'delete-mikro-scene': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete Scene',
     identifier: '@mikro/scene',
     description: 'Delete the scene',
@@ -635,7 +635,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     typename: 'Scene',
     mutation: DeleteSceneDocument
   }),
-  'delete-mikro-arrayDataset': buildDeleteAction<typeof Arkitekt>({
+  'delete-mikro-arrayDataset': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete Dataset',
     identifier: '@mikro/arraydataset',
     description:
@@ -644,7 +644,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     typename: 'ArrayDataset',
     mutation: DeleteArrayDatasetDocument
   }),
-  'delete-mikro-folder': buildDeleteAction<typeof Arkitekt>({
+  'delete-mikro-folder': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete Folder',
     identifier: '@mikro/folder',
     description: 'Delete the folder',

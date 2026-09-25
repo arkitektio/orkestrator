@@ -22,10 +22,11 @@ vi.mock("@/core/app/dialog", () => ({
   useDialog: () => ({ closeDialog, openDialog: vi.fn(), openSheet: vi.fn() }),
 }));
 
-vi.mock("@/core/app/Arkitekt", () => ({
-  useMikro: () =>
-    new ApolloClient({ link: new MockLink([]), cache: new InMemoryCache() }),
-  Guard: { Mikro: ({ children }: { children: React.ReactNode }) => children },
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+  // Module bindings (`useMikro`, `MikroGuard`) read the host facade.
+  useServiceClient: () => new ApolloClient({ link: new MockLink([]), cache: new InMemoryCache() }),
+  serviceGuard: () => ({ children }: { children: React.ReactNode }) => children,
 }));
 
 // The linkers module reaches deep into the smart/provider tree; the edge form

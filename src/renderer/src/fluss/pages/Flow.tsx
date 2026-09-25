@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { FlussGuard } from "@/fluss/api/hooks";
 import { useFlowQuery } from "@/fluss/api/graphql";
 import { EditFlow } from "@/fluss/edit/EditFlow";
 import { useParams } from "react-router-dom";
@@ -18,9 +18,9 @@ function Page() {
   }
 
   return (
-    <Guard.Fluss>
+    <FlussGuard>
       <FlowDetail id={id} />
-    </Guard.Fluss>
+    </FlussGuard>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useMikro } from "@/core/app/Arkitekt";
+import { useMikro } from "@/mikro/api/funcs";
 import { getRefetchableQueriesForEntities } from "@/core/lib/localactions/helpers/refetch";
 import {
   usePutArrayDatasetsInFolderMutation,

@@ -1,4 +1,4 @@
-import { useFluss } from "@/core/app/Arkitekt";
+import { serviceGuard, useServiceClient } from "@/core/lib/arkitekt/host";
 import {
   LazyQueryHookOptions,
   MutationHookOptions,
@@ -10,6 +10,14 @@ import {
   useSubscription as useApolloSubscription,
 } from "@apollo/client";
 import { onApolloError } from "@/core/lib/errorHandler";
+
+
+/**
+ * fluss's own service binding: its client (fakts key "fluss") and the guard
+ * that mounts children only while that service is ready (CLAUDE.md §1).
+ */
+export const useFluss = () => useServiceClient("fluss");
+export const FlussGuard = serviceGuard("fluss");
 
 type MutationFuncType = typeof useApolloMutation;
 type QueryFuncType = typeof useApolloQuery;

@@ -9,11 +9,13 @@ import { ELEKTRO_FILE_DOWNLOADERS } from "./downloads";
 import { ELEKTRO_TASK_HOOKS } from "./hooks/taskHooks";
 import { ELEKTRO_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { service } from "./service";
 import { ELEKTRO_NAV_LINKS } from "./navLinks";
 import { ELEKTRO_PROFILE_SECTIONS } from "./profile/sections";
 
 export const ELEKTRO_MODULE = defineModule({
   manifest,
+  serviceKey: service.key,
   builtins: {
     page: () => import("./ElektroModule"),
     nav: () => import("./panes/StandardPane"),

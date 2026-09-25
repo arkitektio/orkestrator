@@ -3,8 +3,10 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/core/app/Arkitekt", () => ({
-  Guard: { Rekuest: ({ children }: { children: React.ReactNode }) => <>{children}</> },
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+  // RekuestGuard (rekuest/api) is a host `serviceGuard`: let it through.
+  serviceGuard: () => ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 vi.mock("./actions", () => ({
   DirectImplementationAssignment: ({ action }: { action: { id: string } }) => (

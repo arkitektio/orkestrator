@@ -1,4 +1,4 @@
-import { useRekuest } from "@/core/app/Arkitekt";
+import { useRekuest } from "@/rekuest/api/hooks";
 import { useEffect, useRef } from "react";
 import {
   MyTasksDocument,

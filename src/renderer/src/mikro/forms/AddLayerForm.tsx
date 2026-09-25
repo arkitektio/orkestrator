@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { MikroGuard } from "@/mikro/api/funcs";
 import { useGraphQLDialog } from "@/core/app/hooks/useGraphQLDialog";
 import { ChoicesField } from "@/core/components/fields/ChoicesField";
 import { FloatField } from "@/core/components/fields/FloatField";
@@ -1205,7 +1205,7 @@ const AddLayerFormInner = (props: { scene: string }) => {
 // The mikro guard must wrap from the outside: the inner component's queries
 // fire on mount, before any JSX-level guard could stop them (CLAUDE.md §1).
 export const AddLayerForm = (props: { scene: string }) => (
-  <Guard.Mikro>
+  <MikroGuard>
     <AddLayerFormInner {...props} />
-  </Guard.Mikro>
+  </MikroGuard>
 );

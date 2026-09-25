@@ -3,7 +3,8 @@ import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Route, Routes, useNavigate } from "react-router-dom";
 
-vi.mock("@/core/app/Arkitekt", () => ({
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
   // `useActiveProfile` too: the page's share button stamps its link with the
   // connection it was copied from. Null here — this test is about tab titles,
   // and an unconnected app still names its tabs.

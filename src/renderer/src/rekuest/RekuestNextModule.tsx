@@ -1,6 +1,6 @@
 import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
-import { Guard } from "@/core/app/Arkitekt";
+import { RekuestGuard } from "@/rekuest/api/hooks";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import Action from "./pages/ActionPage";
@@ -53,9 +53,9 @@ import { NotFound } from "@/core/app/components/fallbacks/NotFound";
  */
 const Module: React.FC = () => {
   return (
-      <ModuleLayout pane={<Guard.Rekuest fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}><Standardpane /></Guard.Rekuest>}>
+      <ModuleLayout pane={<RekuestGuard fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}><Standardpane /></RekuestGuard>}>
 
-    <Guard.Rekuest fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}>
+    <RekuestGuard fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}>
         <Routes>
           <Route index element={<Home />} />
           <Route path="home" element={<Home />} />
@@ -102,7 +102,7 @@ const Module: React.FC = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
 
-      </Guard.Rekuest>
+      </RekuestGuard>
       </ModuleLayout>
   );
 };

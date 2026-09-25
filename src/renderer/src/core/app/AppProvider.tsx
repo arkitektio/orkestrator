@@ -1,4 +1,5 @@
-import { Arkitekt, Guard } from "@/core/app/Arkitekt";
+import { Guard } from "@/core/lib/arkitekt/host";
+import { Arkitekt } from "@/core/app/Arkitekt";
 // Installs every module's builtins; must precede anything that reads a registry.
 import "@/core/app/modules/install";
 import { ModuleBackground } from "@/core/app/modules/registries";

@@ -1,12 +1,14 @@
 import { defineModule } from "@/core/lib/module-host/define";
 import { FLUSS_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { service } from "./service";
 import { FLUSS_NAV_LINKS } from "./navLinks";
 import { ImplementationFlow } from "./sections/ImplementationFlow";
 import { TaskFlow } from "./sections/TaskFlow";
 
 export const FLUSS_MODULE = defineModule({
   manifest,
+  serviceKey: service.key,
   builtins: {
     page: () => import("./ReaktionModule"),
     nav: () => import("./panes/SearchPane"),

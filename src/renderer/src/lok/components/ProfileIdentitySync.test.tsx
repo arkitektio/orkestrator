@@ -12,7 +12,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 let client: ApolloClient<unknown>;
 const setProfileIdentity = vi.fn();
 
-vi.mock("@/core/app/Arkitekt", () => ({
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
+  useSelfClient: () => client,
   Arkitekt: {
     useSelfService: () => ({ client }),
     useActiveProfileId: () => "pending-1",

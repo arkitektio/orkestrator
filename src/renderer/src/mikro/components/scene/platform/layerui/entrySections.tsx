@@ -1,7 +1,8 @@
 import { Filter, X } from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { ColorMap, ColumnControl } from "@/mikro/api/graphql";
-import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useMikro } from "@/mikro/api/funcs";
 import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import { readDefaultFilterRule } from "@/mikro/lib/attributes/columnStats";
 import { sliceDomain } from "@/mikro/lib/sparse/sliceStats";

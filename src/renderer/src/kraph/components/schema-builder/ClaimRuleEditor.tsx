@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { Guard } from "@/core/lib/arkitekt/host";
 import { AsyncCombobox } from "@/core/components/fields/AsyncCombobox";
 import { Option, SearchFunction } from "@/core/components/fields/SearchField";
 import { Badge } from "@/core/components/ui/badge";

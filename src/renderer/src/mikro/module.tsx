@@ -14,12 +14,14 @@ import { TableDatasetDisplay } from "./displays/TableDatasetDisplay";
 import { MIKRO_FILE_DOWNLOADERS } from "./downloads";
 import { MIKRO_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { service } from "./service";
 import { MIKRO_NAV_LINKS } from "./navLinks";
 import { MIKRO_PROFILE_SECTIONS } from "./profile/sections";
 import { MikroEntitySearch } from "./search";
 
 export const MIKRO_MODULE = defineModule({
   manifest,
+  serviceKey: service.key,
   builtins: {
     page: () => import("./MikroNextModule"),
     nav: () => import("./panes/StandardPane"),

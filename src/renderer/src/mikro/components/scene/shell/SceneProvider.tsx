@@ -1,4 +1,5 @@
-import { useDatalayerEndpoint, useMikro } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useMikro } from "@/mikro/api/funcs";
 import { SceneFragment } from "@/mikro/api/graphql";
 import { AttributeServiceProvider } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import {

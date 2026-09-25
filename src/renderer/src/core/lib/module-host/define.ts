@@ -118,6 +118,12 @@ export type ModuleBuiltins = {
 
 export type ModuleDefinition<B extends ModuleBuiltins = ModuleBuiltins> = {
   manifest: ModuleManifest;
+  /**
+   * How the host reaches the module's service: its fakts requirement key
+   * (`"omero_ark"`), or `"self"` for the session's own service (lok). The
+   * host guards the module's builtins on it.
+   */
+  serviceKey: string;
   builtins: B;
 };
 
@@ -186,8 +192,10 @@ export const describeBuiltins = (manifest: ModuleManifest, builtins: ModuleBuilt
  */
 export const defineModule = <const B extends ModuleBuiltins>(definition: {
   manifest: ModuleManifest;
+  serviceKey: string;
   builtins: B;
 }): ModuleDefinition<B> => ({
   manifest: describeBuiltins(definition.manifest, definition.builtins),
+  serviceKey: definition.serviceKey,
   builtins: definition.builtins,
 });

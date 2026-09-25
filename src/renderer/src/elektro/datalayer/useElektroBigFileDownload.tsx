@@ -1,4 +1,5 @@
-import { useDatalayerEndpoint, useElektro } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useElektro } from "@/elektro/api/funcs";
 import {
   BigFileAccessGrantFragment,
   FinishBigfileUploadDocument,

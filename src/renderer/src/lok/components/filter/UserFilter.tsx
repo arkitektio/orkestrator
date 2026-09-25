@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { Guard } from "@/core/lib/arkitekt/host";
 import { GraphQLSearchField } from "@/core/components/fields/GraphQLSearchField";
 import { SwitchField } from "@/core/components/fields/SwitchField";
 import { AutoSubmitter } from "@/core/components/form/AutoSubmitter";

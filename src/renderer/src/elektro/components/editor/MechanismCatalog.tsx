@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { ElektroGuard } from "@/elektro/api/funcs";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { ParameterFragment, useListMechanismsQuery } from "../../api/graphql";
 
@@ -46,9 +46,9 @@ const MechanismCatalogInner = ({ children }: { children: ReactNode }) => {
  * quantity entry).
  */
 export const MechanismCatalogProvider = ({ children }: { children: ReactNode }) => (
-  <Guard.Elektro unavailable={<>{children}</>}>
+  <ElektroGuard unavailable={<>{children}</>}>
     <MechanismCatalogInner>{children}</MechanismCatalogInner>
-  </Guard.Elektro>
+  </ElektroGuard>
 );
 
 /**

@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { KabinetGuard } from "@/kabinet/api/hooks";
 import {
   ListDefinitionFragment,
   useAllPrimaryDefinitionsQuery,
@@ -59,7 +59,7 @@ export const KABINET_DEFINITIONS_SECTION: SmartContextSection<InstallItem> = {
   icon: Download,
   priority: 50,
   tier: "remote",
-  Guard: Guard.Kabinet,
+  Guard: KabinetGuard,
   applies: () => true,
   useItems: useInstallItems,
   itemKey: (item) => `${item.definition.id}-${item.action.id}`,

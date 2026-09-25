@@ -8,7 +8,8 @@ const activeProfile = vi.fn();
 const autoLoggingIn = vi.fn(() => false);
 const parkSession = vi.fn();
 
-vi.mock("@/core/app/Arkitekt", () => ({
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
   Arkitekt: {
     useActiveProfile: () => activeProfile(),
     useIsAutoLoggingIn: () => autoLoggingIn(),

@@ -1,4 +1,5 @@
-import { useDatalayerEndpoint, useElektro } from "@/core/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/lib/arkitekt/host";
+import { useElektro } from "@/elektro/api/funcs";
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ensureHttpfs, getDuckDb, resolveDuckDbEndpoint } from "@/core/lib/parquet/duckdb";

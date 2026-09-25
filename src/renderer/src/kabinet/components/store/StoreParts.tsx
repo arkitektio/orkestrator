@@ -1,4 +1,4 @@
-import { Guard } from "@/core/app/Arkitekt";
+import { RekuestGuard } from "@/rekuest/api/hooks";
 import { Badge } from "@/core/components/ui/badge";
 import { Button } from "@/core/components/ui/button";
 import {
@@ -77,7 +77,7 @@ export const InstallMenu = ({
   className?: string;
   label?: React.ReactNode;
 }) => (
-  <Guard.Rekuest unavailable={<></>}>
+  <RekuestGuard unavailable={<></>}>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
@@ -110,7 +110,7 @@ export const InstallMenu = ({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  </Guard.Rekuest>
+  </RekuestGuard>
 );
 
 export const FeaturedBadge = () => (

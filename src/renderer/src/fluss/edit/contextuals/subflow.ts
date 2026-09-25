@@ -1,4 +1,4 @@
-import { useRekuest } from "@/core/app/Arkitekt";
+import { useRekuest } from "@/rekuest/api/hooks";
 import { rekuestActionToMatchingNode } from "@/fluss/plugins/rekuest";
 import { FlowNode } from "@/fluss/types";
 import { ConstantActionDocument, ConstantActionQuery } from "@/rekuest/api/graphql";

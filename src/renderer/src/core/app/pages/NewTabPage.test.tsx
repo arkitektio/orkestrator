@@ -9,7 +9,8 @@ const modules = [
   { key: "rekuest", status: "checking", route: "/rekuest", definition: { key: "rekuest", label: "Rekuest" } },
   { key: "kraph", status: "invalid", route: "/kraph", definition: { key: "kraph", label: "Kraph" } },
 ];
-vi.mock("@/core/app/Arkitekt", () => ({
+vi.mock("@/core/lib/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/lib/arkitekt/host")>()),
   Arkitekt: { useAvailableModules: () => modules },
   moduleRegistry: { mikro: { label: "Mikro" }, rekuest: { label: "Rekuest" }, kraph: { label: "Kraph" } },
 }));

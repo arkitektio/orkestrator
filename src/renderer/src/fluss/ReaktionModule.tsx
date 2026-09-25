@@ -1,6 +1,6 @@
 import { ServiceUnavailable } from "@/core/app/components/fallbacks/ServiceUnavailable";
 import { ModuleLayout } from "@/core/components/layout/ModuleLayout";
-import { Guard } from "@/core/app/Arkitekt";
+import { FlussGuard } from "@/fluss/api/hooks";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import Flow from "./pages/Flow";
@@ -24,7 +24,7 @@ interface Props { }
 
 const Module: React.FC<Props> = () => {
   return (
-    <Guard.Fluss fallback={<ServiceUnavailable serviceKey="fluss" />}>
+    <FlussGuard fallback={<ServiceUnavailable serviceKey="fluss" />}>
       <ModuleLayout
         pane={
           <>
@@ -43,7 +43,7 @@ const Module: React.FC<Props> = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>
-    </Guard.Fluss>
+    </FlussGuard>
   );
 };
 
