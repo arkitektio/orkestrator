@@ -11,7 +11,7 @@ import { ExportModelButton } from "../forms/ExportModelForm";
 export type IRepresentationScreenProps = {};
 
 /**
- * Laid out like `mikro-next`'s `ArrayDatasetPage`: the content area is the
+ * Laid out like `mikro`'s `ArrayDatasetPage`: the content area is the
  * viewport and nothing else, the name floats over it in the top-left, and the
  * facts (globals, ions, environment, comparisons, simulations, history) are
  * one Info tab in the rail.

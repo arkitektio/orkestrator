@@ -28,10 +28,10 @@ vi.mock("@/app/Arkitekt", () => {
   };
 });
 
-vi.mock("@/mikro-next/api/graphql", () => ({ useGlobalSearchQuery: (o: unknown) => mikroQuery(o) }));
+vi.mock("@/mikro/api/graphql", () => ({ useGlobalSearchQuery: (o: unknown) => mikroQuery(o) }));
 vi.mock("@/rekuest/api/graphql", () => ({ useGlobalSearchQuery: (o: unknown) => rekuestQuery(o) }));
 vi.mock("@/kraph/api/graphql", () => ({ useGlobalSearchQuery: (o: unknown) => kraphQuery(o) }));
-vi.mock("@/lok-next/api/graphql", () => ({ useGlobalSearchQuery: (o: unknown) => lokQuery(o) }));
+vi.mock("@/lok/api/graphql", () => ({ useGlobalSearchQuery: (o: unknown) => lokQuery(o) }));
 
 // The debounce would otherwise swallow the term for 250ms.
 vi.mock("@uidotdev/usehooks", () => ({ useDebounce: (v: unknown) => v }));

@@ -1,4 +1,4 @@
-import { useGlobalSearchQuery } from "@/lok-next/api/graphql";
+import { useGlobalSearchQuery } from "@/lok/api/graphql";
 import { CommandGroup } from "cmdk";
 
 import { EntityRow } from "./EntityRow";

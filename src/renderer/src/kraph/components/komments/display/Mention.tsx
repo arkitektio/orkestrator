@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { LokUser } from "@/linkers";
-import { JustUsername } from "@/lok-next/components/UserAvatar";
+import { JustUsername } from "@/lok/components/UserAvatar";
 import { MentionType } from "../types";
 
 /**

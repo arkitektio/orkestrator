@@ -4,7 +4,7 @@ import { AlpakaRoom } from "@/linkers";
 import { RoomFilter, useListRoomsQuery } from "@/alpaka/api/graphql";
 import {
   OffsetPaginationInput
-} from "@/lok-next/api/graphql";
+} from "@/lok/api/graphql";
 import RoomCard from "../cards/RoomCard";
 
 export type Props = {

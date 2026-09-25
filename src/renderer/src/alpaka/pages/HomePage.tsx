@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Timestamp from "@/components/ui/timestamp";
 import { AlpakaRoom } from "@/linkers";
 import { cn } from "@/lib/utils";
-import { Username } from "@/lok-next/components/Me";
+import { Username } from "@/lok/components/Me";
 import {
   ArrowRight,
   ArrowUp,

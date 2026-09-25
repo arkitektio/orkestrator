@@ -26,7 +26,7 @@ import { HubAwareConnectionDoctor } from "@/app/components/doctor/HubAwareConnec
 import { instanceToProbeTargets } from "@/lib/arkitekt/doctor/targets";
 import { toHubHealthFacts, type HubHealthFacts } from "@/lib/arkitekt/doctor/hubHealth";
 import type { ServiceRuntimeState } from "@/lib/arkitekt/types";
-import { useMyHubHealthQuery } from "@/lok-next/api/graphql";
+import { useMyHubHealthQuery } from "@/lok/api/graphql";
 import type { ProbeTarget } from "../../../../main/doctor/protocol";
 import { FaktsViewer } from "../components/FaktsViewer";
 import { HubHealthCard } from "../components/HubHealthCard";

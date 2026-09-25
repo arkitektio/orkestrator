@@ -12,9 +12,9 @@ import {
 import { ObjectButton } from "@/providers/smart/extensions/context";
 import { ComponentType, ReactNode } from "react";
 import { KnowledgeSidebar } from "@/kraph/components/sidebars/KnowledgeSidebar";
-import ArrayDatasetHoverCard from "@/mikro-next/components/hovers/ArrayDatasetHoverCard";
-import FileHoverCard from "@/mikro-next/components/hovers/FileHoverCard";
-import FolderHoverCard from "@/mikro-next/components/hovers/FolderHoverCard";
+import ArrayDatasetHoverCard from "@/mikro/components/hovers/ArrayDatasetHoverCard";
+import FileHoverCard from "@/mikro/components/hovers/FileHoverCard";
+import FolderHoverCard from "@/mikro/components/hovers/FolderHoverCard";
 import ActionHoverCard from "@/rekuest/components/hovers/ActionHoverCard";
 import AgentHoverCard from "@/rekuest/components/hovers/AgentHoverCard";
 import TaskHoverCard from "@/rekuest/components/hovers/TaskHoverCard";

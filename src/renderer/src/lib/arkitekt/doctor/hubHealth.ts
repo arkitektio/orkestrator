@@ -1,4 +1,4 @@
-import type { HubHealthFragment } from "@/lok-next/api/graphql";
+import type { HubHealthFragment } from "@/lok/api/graphql";
 import type { Instance } from "../fakts/faktsSchema";
 import type { ServiceHealthStatus } from "../types";
 

@@ -1,5 +1,5 @@
 import { isModulePath } from "@/app/modules";
-import { useMeQuery } from "@/lok-next/api/graphql";
+import { useMeQuery } from "@/lok/api/graphql";
 import { NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 
 export const NotFound = () => {

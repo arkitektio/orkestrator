@@ -65,7 +65,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
         ROUTE_CATALOG,
         [
           // Team (lok) is the session's own service: signed in means it is up.
-          { key: "team", label: "Team" },
+          { key: "lok", label: "Team" },
           ...modules.filter((m) => m.status === "ready").map((m) => ({ key: m.key, label: m.definition.label })),
         ],
         filter,

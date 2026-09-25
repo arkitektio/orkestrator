@@ -4,10 +4,10 @@ schema:
     handleAsSDL: true
 documents: "graphql/fluss-next/**/*.graphql"
 generates:
-  src/renderer/src/reaktion/api/fragments.ts:
+  src/renderer/src/fluss/api/fragments.ts:
     plugins:
       - "fragment-matcher"
-  src/renderer/src/reaktion/api/graphql.ts:
+  src/renderer/src/fluss/api/graphql.ts:
     plugins:
       - "typescript"
       - "typescript-operations"
@@ -19,7 +19,7 @@ generates:
       # Reference fragment types by name instead of inlining them: the deep port
       # fragments otherwise blow graphql.ts up to tens of MB and stall tsc.
       inlineFragmentTypes: combine
-  src/renderer/src/reaktion/graphql.schema.json:
+  src/renderer/src/fluss/graphql.schema.json:
     plugins:
       - "introspection"
 

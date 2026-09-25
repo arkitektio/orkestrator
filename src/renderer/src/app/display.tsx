@@ -22,12 +22,12 @@ import { StructureRelationCategoryDisplay } from "@/kraph/displays/StructureRela
 import { createDisplayProvider } from "@/lib/display/registry";
 import { MessageDisplay } from "@/alpaka/displays/MessageDisplay";
 import { SoloBroadcastDisplay } from "@/lovekit/displays/SoloBroadcastDisplay";
-import { FolderDisplay } from "@/mikro-next/displays/FolderDisplay";
-import { ArrayDatasetDisplay } from "@/mikro-next/displays/ArrayDatasetDisplay";
-import { FileDisplay } from "@/mikro-next/displays/FileDisplay";
-import { SceneDisplay } from "@/mikro-next/displays/SceneDisplay";
-import { TableDatasetDisplay } from "@/mikro-next/displays/TableDatasetDisplay";
-import { SparseDatasetDisplay } from "@/mikro-next/displays/SparseDatasetDisplay";
+import { FolderDisplay } from "@/mikro/displays/FolderDisplay";
+import { ArrayDatasetDisplay } from "@/mikro/displays/ArrayDatasetDisplay";
+import { FileDisplay } from "@/mikro/displays/FileDisplay";
+import { SceneDisplay } from "@/mikro/displays/SceneDisplay";
+import { TableDatasetDisplay } from "@/mikro/displays/TableDatasetDisplay";
+import { SparseDatasetDisplay } from "@/mikro/displays/SparseDatasetDisplay";
 
 // Import your display components here
 // Example:
@@ -36,7 +36,6 @@ import { SparseDatasetDisplay } from "@/mikro-next/displays/SparseDatasetDisplay
 export const { DisplayProvider, useDisplay, useDisplayComponent } =
   createDisplayProvider({
     // mikro
-    "@mikro-next/file": FileDisplay,
     "@mikro/file": FileDisplay,
     "@mikro/scene": SceneDisplay,
     "@mikro/arraydataset": ArrayDatasetDisplay,

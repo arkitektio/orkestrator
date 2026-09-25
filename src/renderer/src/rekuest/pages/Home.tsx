@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/empty";
 import { parseAsBoolean, parseAsString, useQueryState } from "@/hooks/use-search-param-state";
 import { RekuestAgent } from "@/linkers";
-import { useAppsQuery, useListDevicesQuery, useUsersQuery } from "@/lok-next/api/graphql";
+import { useAppsQuery, useListDevicesQuery, useUsersQuery } from "@/lok/api/graphql";
 import { ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
 import AgentCard from "@/rekuest/components/cards/AgentCard";
 import ActionList from "@/rekuest/components/lists/ActionList";

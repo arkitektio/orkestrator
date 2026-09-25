@@ -10,7 +10,7 @@ import {
   RequestBigfileUploadDocument,
   RequestBigfileUploadMutation,
   RequestBigfileUploadMutationVariables
-} from "@/mikro-next/api/graphql";
+} from "@/mikro/api/graphql";
 import { useCallback } from "react";
 
 export const uploadFetch = (

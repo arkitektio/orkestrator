@@ -315,13 +315,3 @@ export const buildScopedSmart = <T extends Object>({
 };
 
 export type Smart = ReturnType<typeof buildSmart>;
-
-export const buildModuleLink = (module: string) => {
-  return ({ children, ...props }: OmitedNavLinkProps) => {
-    return (
-      <NavLink {...props} to={`/${module}`}>
-        {children}
-      </NavLink>
-    );
-  };
-};

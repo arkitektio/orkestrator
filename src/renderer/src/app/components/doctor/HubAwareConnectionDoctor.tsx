@@ -1,6 +1,6 @@
 import { Arkitekt, Guard } from "@/app/Arkitekt";
 import { toHubHealthFacts } from "@/lib/arkitekt/doctor/hubHealth";
-import { useMyHubHealthLazyQuery } from "@/lok-next/api/graphql";
+import { useMyHubHealthLazyQuery } from "@/lok/api/graphql";
 import { useCallback } from "react";
 import { ConnectionDoctor, type ConnectionDoctorProps } from "./ConnectionDoctor";
 

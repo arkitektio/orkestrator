@@ -1,4 +1,4 @@
-import { useFrom_File_LikeMutation } from "@/mikro-next/api/graphql";
+import { useFrom_File_LikeMutation } from "@/mikro/api/graphql";
 
 /**
  * Register an uploaded big-file store entry as a mikro file.

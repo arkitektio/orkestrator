@@ -8,7 +8,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { AlpakaRoom } from "@/linkers";
-import { Username } from "@/lok-next/components/Me";
+import { Username } from "@/lok/components/Me";
 
 export const Test = () => {
   return <div>Hallo</div>;

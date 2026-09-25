@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
-// jsdom, not node: the catalog derives Mikro's spec pages from `@/mikro-next/specs`,
+// jsdom, not node: the catalog derives Mikro's spec pages from `@/mikro/specs`,
 // which reaches the generated GraphQL module and, through it, `constants.tsx`'s
 // `window` read at import time. `node:fs` still works under jsdom.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { ADATASET_SPECS, arrayDatasetSpecLink } from "@/mikro-next/specs";
+import { ADATASET_SPECS, arrayDatasetSpecLink } from "@/mikro/specs";
 import {
   ARRAY_DATASET_SPECS as ELEKTRO_ARRAY_DATASET_SPECS,
   arrayDatasetSpecLink as elektroArrayDatasetSpecLink,
@@ -20,17 +20,17 @@ import { ROUTE_CATALOG, searchRoutes } from "./routeCatalog";
  * not a set of pages to offer.
  */
 const PANES: Record<string, string> = {
-  mikro: "mikro-next/panes/StandardPane.tsx",
+  mikro: "mikro/panes/StandardPane.tsx",
   rekuest: "rekuest/panes/StandardPane.tsx",
   kraph: "kraph/panes/StandardPane.tsx",
   elektro: "elektro/panes/StandardPane.tsx",
   kabinet: "kabinet/panes/StandardPane.tsx",
   alpaka: "alpaka/panes/StandardPane.tsx",
-  team: "lok-next/panes/StandardPane.tsx",
+  lok: "lok/panes/StandardPane.tsx",
   lovekit: "lovekit/panes/StandardPane.tsx",
-  omero_ark: "omero-ark/panes/StandardPane.tsx",
+  omeroark: "omeroark/panes/StandardPane.tsx",
   blok: "blok/panes/StandardPane.tsx",
-  fluss: "reaktion/panes/SearchPane.tsx",
+  fluss: "fluss/panes/SearchPane.tsx",
 };
 
 const LINK = /<(PaneLink|DroppableNavLink|NavLink|Link)\b[^>]*?to="(\/[^"]*)"[^>]*>(.*?)<\/\1>/gs;

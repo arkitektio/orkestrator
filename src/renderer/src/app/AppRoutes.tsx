@@ -9,7 +9,7 @@ import { ModuleLoadingFallback } from "./components/fallbacks/ModuleLoading";
 import { QuietPage } from "./components/fallbacks/QuietPage";
 import { ShellSignInNotice } from "./components/shell/ShellSignInNotice";
 import { NotFound } from "./components/fallbacks/NotFound";
-import { LokRedirect } from "./components/navigation/LokRedirect";
+import { MODULE_ALIASES, ModuleRedirect } from "./components/navigation/ModuleRedirect";
 
 // The dashboard carries dockview; it is the index route, but a deep link into a
 // module should not pay for it.
@@ -24,11 +24,11 @@ const DokumentsModule = React.lazy(() => import("@/dokuments/DokumentsModule"));
 const ElektroModule = React.lazy(() => import("@/elektro/ElektroModule"));
 const KabinetModule = React.lazy(() => import("@/kabinet/KabinetModule"));
 const KraphModule = React.lazy(() => import("@/kraph/KraphModule"));
-const LokNextModule = React.lazy(() => import("@/lok-next/LokNextModule"));
+const LokNextModule = React.lazy(() => import("@/lok/LokNextModule"));
 const LovekitModule = React.lazy(() => import("@/lovekit/LovekitModule"));
-const MikroNextModule = React.lazy(() => import("@/mikro-next/MikroNextModule"));
-const OmeroArkModule = React.lazy(() => import("@/omero-ark/OmeroArkModule"));
-const ReaktionModule = React.lazy(() => import("@/reaktion/ReaktionModule"));
+const MikroNextModule = React.lazy(() => import("@/mikro/MikroNextModule"));
+const OmeroArkModule = React.lazy(() => import("@/omeroark/OmeroArkModule"));
+const ReaktionModule = React.lazy(() => import("@/fluss/ReaktionModule"));
 const RekuestNextModule = React.lazy(() => import("@/rekuest/RekuestNextModule"));
 const SettingsModule = React.lazy(() => import("@/settings/SettingsModule"));
 
@@ -82,17 +82,18 @@ export const AppRoutes = () => (
         <Route path="rekuest/*" element={protectModule(<RekuestNextModule />)} />
         <Route path="fluss/*" element={protectModule(<ReaktionModule />)} />
         <Route path="kabinet/*" element={protectModule(<KabinetModule />)} />
-        <Route path="omero_ark/*" element={protectModule(<OmeroArkModule />)} />
+        <Route path="omeroark/*" element={protectModule(<OmeroArkModule />)} />
         <Route path="kraph/*" element={protectModule(<KraphModule />)} />
-        {/* Team is the lok module under its people-first name; `/lok/*` is
-            the old address, kept alive for open tabs and pasted links. */}
-        <Route path="team/*" element={protectModule(<LokNextModule />)} />
-        <Route path="lok/*" element={<LokRedirect />} />
+        {/* Lok is labelled "Team" in the rail, but routes by namespace. */}
+        <Route path="lok/*" element={protectModule(<LokNextModule />)} />
         <Route path="settings/*" element={protectModule(<SettingsModule />)} />
         <Route path="blok/*" element={protectModule(<BlokModule />)} />
         <Route path="alpaka/*" element={protectModule(<AlpakaModule />)} />
         <Route path="lovekit/*" element={protectModule(<LovekitModule />)} />
         <Route path="dokuments/*" element={protectModule(<DokumentsModule />)} />
+        {Object.entries(MODULE_ALIASES).map(([from, to]) => (
+          <Route key={from} path={`${from}/*`} element={<ModuleRedirect from={from} to={to} />} />
+        ))}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BackNavigationErrorCatcher>

@@ -1,4 +1,4 @@
-import { buildModuleLink, buildScopedSmart, buildSmart } from "@/providers/smart/builder";
+import { buildScopedSmart, buildSmart } from "@/providers/smart/builder";
 
 // Linkers for the smart models
 // Linkers represent ways to reference a smart model consistently in the ui, and
@@ -517,7 +517,7 @@ export const KraphProtocolStepTemplate = buildSmart({
 
 export const OmeroArkProject = buildSmart({
   identifier: "@omeroark/project",
-  path: "omero_ark/projects",
+  path: "omeroark/projects",
   name: "Project",
 });
 
@@ -534,14 +534,14 @@ export const PortDefinition = buildSmart({
 
 export const OmeroArkDataset = buildSmart({
   identifier: "@omeroark/dataset",
-  path: "omero_ark/datasets",
+  path: "omeroark/datasets",
   name: "Dataset (Omero Ark)",
   datum: true,
 });
 
 export const OmeroArkImage = buildSmart({
   identifier: "@omeroark/image",
-  path: "omero_ark/images",
+  path: "omeroark/images",
   name: "Image (Omero Ark)",
   datum: true,
 });
@@ -617,64 +617,60 @@ export const MikroSpecimen = buildSmart({
   datum: true,
 });
 
-export const RekuestModuleLink = buildModuleLink("rekuestnext");
-export const MikroModuleLink = buildModuleLink("mikro");
-export const ReaktionModuleLink = buildModuleLink("fluss");
-export const OmeroArkModuleLink = buildModuleLink("omero-ark");
 
 export const LokUser = buildSmart({
   identifier: "@lok/user",
-  path: "team/members",
+  path: "lok/members",
   name: "User",
 });
 export const LokRedeemToken = buildSmart({
   identifier: "@lok/redeemtoken",
-  path: "team/redeemtokens",
+  path: "lok/redeemtokens",
   name: "Redeem Token",
 });
 export const LokGroup = buildSmart({
   identifier: "@lok/group",
-  path: "team/groups",
+  path: "lok/groups",
   name: "Group",
 });
 export const LokClient = buildSmart({
   identifier: "@lok/client",
-  path: "team/clients",
+  path: "lok/clients",
   name: "Client",
 });
 export const LokDevice = buildSmart({
   identifier: "@lok/device",
-  path: "team/devices",
+  path: "lok/devices",
   name: "Device ",
 });
 export const LokApp = buildSmart({
   identifier: "@lok/app",
-  path: "team/apps",
+  path: "lok/apps",
   name: "App",
 });
 export const LokRelease = buildSmart({
   identifier: "@lok/release",
-  path: "team/releases",
+  path: "lok/releases",
   name: "Release (Lok)",
 });
 export const LokService = buildSmart({
   identifier: "@lok/service",
-  path: "team/services",
+  path: "lok/services",
   name: "Service",
 });
 export const LokBackend = buildSmart({
   identifier: "@lok/backend",
-  path: "team/backends",
+  path: "lok/backends",
   name: "Backend (Lok)",
 });
 export const LokServiceInstance = buildSmart({
   identifier: "@lok/serviceinstance",
-  path: "team/serviceinstances",
+  path: "lok/serviceinstances",
   name: "Service Instance",
 });
 export const LokLayer = buildSmart({
   identifier: "@lok/layer",
-  path: "team/layers",
+  path: "lok/layers",
   name: "Layer",
 });
 
@@ -717,12 +713,12 @@ export const AlpakaCollection = buildSmart({
 });
 export const LokMapping = buildSmart({
   identifier: "@lok/mapping",
-  path: "team/mappings",
+  path: "lok/mappings",
   name: "Mapping",
 });
 export const LokComposition = buildSmart({
   identifier: "@lok/composition",
-  path: "team/composition",
+  path: "lok/composition",
   name: "Composition",
 });
 

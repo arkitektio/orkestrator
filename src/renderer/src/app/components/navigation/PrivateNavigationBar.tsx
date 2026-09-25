@@ -201,11 +201,11 @@ const tileClass = (active: boolean) =>
  * only renders inside a signed-in shell, where lok is by definition ready.
  */
 const TeamNavItem = () => (
-  <ModuleNavHover moduleKey="team" ready to="/team" label="Team" icon={matchIcon("team")}>
-    <DroppableNavLink to="/team" className="block" aria-label="Team">
+  <ModuleNavHover moduleKey="lok" ready to="/lok" label="Team" icon={matchIcon("lok")}>
+    <DroppableNavLink to="/lok" className="block" aria-label="Team">
       {({ isActive }) => (
         <span data-active={isActive} className={tileClass(isActive)}>
-          {matchIcon("team")}
+          {matchIcon("lok")}
         </span>
       )}
     </DroppableNavLink>
@@ -310,7 +310,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
   const availableKeys = Arkitekt.useAvailableModuleKeys();
   const readyModules = Arkitekt.useReadyModuleKeys();
   const moduleOrder = Object.keys(moduleRegistry).filter((key) => availableKeys.includes(key));
-  const preload = React.useMemo(() => ["team", ...readyModules], [readyModules]);
+  const preload = React.useMemo(() => ["lok", ...readyModules], [readyModules]);
 
   return (
     <>

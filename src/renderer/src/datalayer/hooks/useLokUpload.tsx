@@ -4,7 +4,7 @@ import {
   RequestMediaUploadDocument,
   RequestMediaUploadMutation,
   RequestMediaUploadMutationVariables,
-} from "@/lok-next/api/graphql";
+} from "@/lok/api/graphql";
 import { ApolloClient, NormalizedCache } from "@apollo/client";
 import { useCallback } from "react";
 

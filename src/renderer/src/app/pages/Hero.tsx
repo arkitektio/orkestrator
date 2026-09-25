@@ -4,7 +4,7 @@ import { QuietPage } from "@/app/components/fallbacks/QuietPage";
 import { ShellSignInNotice } from "@/app/components/shell/ShellSignInNotice";
 import { Button } from "@/components/ui/button";
 import { ServiceRuntimeState } from "@/lib/arkitekt/types";
-import { useMyContextQuery } from "@/lok-next/api/graphql";
+import { useMyContextQuery } from "@/lok/api/graphql";
 import { useDashboardRegistry } from "@/providers/dashboard";
 import type { DashboardWidgetRegistration } from "@/providers/dashboard";
 import {

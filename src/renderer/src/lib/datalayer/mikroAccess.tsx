@@ -3,7 +3,7 @@ import { ApolloClient } from "@apollo/client";
 import { useDatalayerEndpoint, useMikro } from "@/app/Arkitekt";
 import React from "react";
 import { useNearViewport } from "./useNearViewport";
-import { GeneralMediaAccessGrantFragment, MediaStoreFragment, RequestGeneralMediaAccessDocument, RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables } from "@/mikro-next/api/graphql";
+import { GeneralMediaAccessGrantFragment, MediaStoreFragment, RequestGeneralMediaAccessDocument, RequestGeneralMediaAccessMutation, RequestGeneralMediaAccessMutationVariables } from "@/mikro/api/graphql";
 
 /** A grant plus the absolute expiry derived from its `expiresIn` — computed
  * once on arrival so the presign memo (keyed on it) stays stable. */

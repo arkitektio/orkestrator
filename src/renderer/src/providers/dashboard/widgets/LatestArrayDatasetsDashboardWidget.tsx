@@ -3,7 +3,7 @@ import { Boxes, Loader2 } from "lucide-react";
 import {
   useGetArrayDatasetsQuery,
   Ordering,
-} from "@/mikro-next/api/graphql";
+} from "@/mikro/api/graphql";
 import { Image } from "@/components/ui/image";
 import { useResolve } from "@/datalayer/hooks/useResolve";
 import { MikroArrayDataset } from "@/linkers";

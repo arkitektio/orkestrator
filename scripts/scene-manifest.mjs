@@ -15,7 +15,7 @@ import { join, dirname, relative, resolve, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-export const SCENE = join(ROOT, "src/renderer/src/mikro-next/components/scene");
+export const SCENE = join(ROOT, "src/renderer/src/mikro/components/scene");
 
 /** [destination dir, ...basenames] — matched against the file's scene-relative dir. */
 const byDir = {

@@ -1,6 +1,6 @@
 import { Guard } from "@/app/Arkitekt";
 import { Separator } from "@/components/ui/separator";
-import { useMeQuery } from "@/lok-next/api/graphql";
+import { useMeQuery } from "@/lok/api/graphql";
 import { SmartDropZone } from "@/providers/smart/Drop";
 import { Identifier, Object } from "@/types";
 import { Komments } from "../komments/Komments";

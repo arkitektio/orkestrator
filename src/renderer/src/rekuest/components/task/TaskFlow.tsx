@@ -1,5 +1,5 @@
-import { useRunForTaskQuery } from "@/reaktion/api/graphql";
-import { TrackFlow } from "@/reaktion/track/TrackFlow";
+import { useRunForTaskQuery } from "@/fluss/api/graphql";
+import { TrackFlow } from "@/fluss/track/TrackFlow";
 import { DetailTaskFragment } from "@/rekuest/api/graphql";
 import { useEffect, useRef } from "react";
 

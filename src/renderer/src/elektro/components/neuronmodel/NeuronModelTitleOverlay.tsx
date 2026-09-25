@@ -5,7 +5,7 @@ import { neuronModelCounts } from "./counts";
 
 /**
  * What the page is *about*, said once and quietly: the model's name and the
- * size of what is drawn underneath. The counterpart of `mikro-next`'s
+ * size of what is drawn underneath. The counterpart of `mikro`'s
  * `DatasetTitleOverlay` — positioned by the page, not by the renderer, so it
  * stays put whatever the viewport does. The detail (globals, ions, history)
  * lives in the Info sidebar tab instead.

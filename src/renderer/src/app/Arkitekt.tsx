@@ -23,11 +23,11 @@ import {
   REKUEST_TYPE_POLICIES,
 } from "@/app/cachePolicies";
 import { createLivekitClient } from "@/lib/livekit copy/client";
-import lokResult from "@/lok-next/api/fragments";
+import lokResult from "@/lok/api/fragments";
 import lovekitResult from "@/lovekit/api/fragments";
-import mikroResult from "@/mikro-next/api/fragments";
-import omeroArkResult from "@/omero-ark/api/fragments";
-import flussResult from "@/reaktion/api/fragments";
+import mikroResult from "@/mikro/api/fragments";
+import omeroArkResult from "@/omeroark/api/fragments";
+import flussResult from "@/fluss/api/fragments";
 import rekuestResult from "@/rekuest/api/fragments";
 
 export const electronRedirect = async (
@@ -163,9 +163,9 @@ export const moduleRegistry = {
     label: "Kabinet",
     requirement: { serviceKey: "kabinet" },
   },
-  omero_ark: {
-    key: "omero_ark",
-    route: "/omero_ark",
+  omeroark: {
+    key: "omeroark",
+    route: "/omeroark",
     label: "Omero Ark",
     requirement: { serviceKey: "omero_ark" },
   },

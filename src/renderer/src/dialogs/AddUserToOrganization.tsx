@@ -3,7 +3,7 @@ import { GraphQLListSearchField } from "@/components/fields/GraphQLListSearchFie
 import { Button } from "@/components/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { useAddUserToOrganizationMutation, useMyContextQuery, useRoleOptionsLazyQuery } from "@/lok-next/api/graphql";
+import { useAddUserToOrganizationMutation, useMyContextQuery, useRoleOptionsLazyQuery } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 

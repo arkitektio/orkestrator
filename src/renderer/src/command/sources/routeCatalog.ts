@@ -1,4 +1,4 @@
-import { ADATASET_SPECS, arrayDatasetSpecLink } from "@/mikro-next/specs";
+import { ADATASET_SPECS, arrayDatasetSpecLink } from "@/mikro/specs";
 import {
   ARRAY_DATASET_SPECS as ELEKTRO_ARRAY_DATASET_SPECS,
   arrayDatasetSpecLink as elektroArrayDatasetSpecLink,
@@ -97,23 +97,23 @@ export const ROUTE_CATALOG: CatalogRoute[] = [
   { module: "alpaka", label: "Models", route: "/alpaka/llmmodels", keywords: ["llm"] },
   { module: "alpaka", label: "Providers", route: "/alpaka/providers" },
   // team (the lok module)
-  { module: "team", label: "Members", route: "/team", keywords: ["people", "organization", "users"] },
-  { module: "team", label: "Me", route: "/team/me", keywords: ["profile", "account"] },
-  { module: "team", label: "Overview", route: "/team/overview", keywords: ["dashboard", "lok"] },
-  { module: "team", label: "Users", route: "/team/users" },
-  { module: "team", label: "Apps", route: "/team/apps", keywords: ["clients"] },
-  { module: "team", label: "Services", route: "/team/services" },
-  { module: "team", label: "Instances", route: "/team/instances" },
-  { module: "team", label: "Redeem Tokens", route: "/team/redeemtokens" },
-  { module: "team", label: "Devices", route: "/team/devices", keywords: ["compute", "nodes"] },
+  { module: "lok", label: "Members", route: "/lok", keywords: ["people", "organization", "users"] },
+  { module: "lok", label: "Me", route: "/lok/me", keywords: ["profile", "account"] },
+  { module: "lok", label: "Overview", route: "/lok/overview", keywords: ["dashboard", "lok"] },
+  { module: "lok", label: "Users", route: "/lok/users" },
+  { module: "lok", label: "Apps", route: "/lok/apps", keywords: ["clients"] },
+  { module: "lok", label: "Services", route: "/lok/services" },
+  { module: "lok", label: "Instances", route: "/lok/instances" },
+  { module: "lok", label: "Redeem Tokens", route: "/lok/redeemtokens" },
+  { module: "lok", label: "Devices", route: "/lok/devices", keywords: ["compute", "nodes"] },
   // lovekit
   { module: "lovekit", label: "Dashboard", route: "/lovekit" },
   { module: "lovekit", label: "Streams", route: "/lovekit/streams" },
   { module: "lovekit", label: "Solo Broadcasts", route: "/lovekit/solobroadcasts" },
-  // omero_ark
-  { module: "omero_ark", label: "Dashboard", route: "/omero_ark" },
-  { module: "omero_ark", label: "Datasets", route: "/omero_ark/datasets" },
-  { module: "omero_ark", label: "Projects", route: "/omero_ark/projects" },
+  // omeroark
+  { module: "omeroark", label: "Dashboard", route: "/omeroark" },
+  { module: "omeroark", label: "Datasets", route: "/omeroark/datasets" },
+  { module: "omeroark", label: "Projects", route: "/omeroark/projects" },
   // blok
   { module: "blok", label: "Dashboard", route: "/blok" },
   { module: "blok", label: "Dashboards", route: "/blok/dashboards" },

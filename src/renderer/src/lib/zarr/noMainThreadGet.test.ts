@@ -28,11 +28,11 @@ const ZARR_ROOT = resolve(__dirname);
 /** `.chunks` reads that are not planning, each with the reason it is allowed. */
 const CHUNKS_ALLOWLIST: Record<string, string> = {
   // Compares the inner shape with the shard shape to REPORT sharding (debug).
-  "mikro-next/components/scene/features/bricks/residency/brickResidency.ts":
+  "mikro/components/scene/features/bricks/residency/brickResidency.ts":
     "debug report: compares effective (inner) chunks with the shard shape",
   // `effectiveChunkShapeOf(arr) ?? arr.chunks`: the fallback is only reached
   // for an unsharded array (where the two agree) or a test fixture.
-  "mikro-next/components/scene/platform/coords/levelGeometry.ts":
+  "mikro/components/scene/platform/coords/levelGeometry.ts":
     "fallback beside effectiveChunkShapeOf, unsharded arrays and fixtures only",
 };
 

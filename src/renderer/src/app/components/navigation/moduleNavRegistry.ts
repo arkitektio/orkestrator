@@ -17,17 +17,17 @@ type NavComponent = LazyExoticComponent<ComponentType>;
 type PaneLoader = () => Promise<{ NavigationPane: ComponentType<Record<string, never>> }>;
 
 const LOADERS: Record<string, PaneLoader> = {
-  mikro: () => import("@/mikro-next/panes/StandardPane"),
+  mikro: () => import("@/mikro/panes/StandardPane"),
   rekuest: () => import("@/rekuest/panes/StandardPane"),
   kraph: () => import("@/kraph/panes/StandardPane"),
   elektro: () => import("@/elektro/panes/StandardPane"),
   kabinet: () => import("@/kabinet/panes/StandardPane"),
   alpaka: () => import("@/alpaka/panes/StandardPane"),
-  team: () => import("@/lok-next/panes/StandardPane"),
+  lok: () => import("@/lok/panes/StandardPane"),
   lovekit: () => import("@/lovekit/panes/StandardPane"),
   dokuments: () => import("@/dokuments/panes/StandardPane"),
-  omero_ark: () => import("@/omero-ark/panes/StandardPane"),
-  fluss: () => import("@/reaktion/panes/SearchPane"),
+  omeroark: () => import("@/omeroark/panes/StandardPane"),
+  fluss: () => import("@/fluss/panes/SearchPane"),
   blok: () => import("@/blok/panes/StandardPane"),
 };
 

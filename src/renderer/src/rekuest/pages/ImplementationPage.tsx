@@ -25,8 +25,8 @@ import {
   RekuestResolution,
   RekuestState,
 } from "@/linkers";
-import { useFlowQuery } from "@/reaktion/api/graphql";
-import { ShowFlow } from "@/reaktion/show/ShowFlow";
+import { useFlowQuery } from "@/fluss/api/graphql";
+import { ShowFlow } from "@/fluss/show/ShowFlow";
 import {
   TaskEventKind,
   DetailImplementationFragment,

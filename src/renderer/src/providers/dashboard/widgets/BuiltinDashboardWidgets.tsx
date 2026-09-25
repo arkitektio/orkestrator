@@ -6,8 +6,8 @@ import { useMyMentionsQuery } from "@/kraph/api/graphql";
 import {
   useMyActiveMessagesQuery,
   useUsersQuery,
-} from "@/lok-next/api/graphql";
-import { JustUsername } from "@/lok-next/components/UserAvatar";
+} from "@/lok/api/graphql";
+import { JustUsername } from "@/lok/components/UserAvatar";
 import { Bell, MessageSquare, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 

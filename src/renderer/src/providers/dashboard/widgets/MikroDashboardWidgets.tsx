@@ -3,7 +3,7 @@ import { Boxes, Loader2 } from "lucide-react";
 import {
   useHomePageQuery as useMikroHomePageQuery,
   useHomePageStatsQuery as useMikroHomePageStatsQuery,
-} from "@/mikro-next/api/graphql";
+} from "@/mikro/api/graphql";
 import { useResolve } from "@/datalayer/hooks/useResolve";
 
 const MikroWidget = () => {

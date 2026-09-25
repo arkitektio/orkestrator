@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/command";
 import { Command as CommandPrimitive } from "cmdk"
 import { cn, notEmpty } from "@/lib/utils";
-import { UserAvatar } from "@/lok-next/components/UserAvatar";
+import { UserAvatar } from "@/lok/components/UserAvatar";
 import { CheckIcon } from "@radix-ui/react-icons";
 import { Bot, Circle, SearchIcon, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

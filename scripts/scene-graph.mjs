@@ -19,8 +19,8 @@ import { join, dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const SCENE = join(ROOT, "src/renderer/src/mikro-next/components/scene");
-const ALIAS_PREFIX = "@/mikro-next/components/scene/";
+const SCENE = join(ROOT, "src/renderer/src/mikro/components/scene");
+const ALIAS_PREFIX = "@/mikro/components/scene/";
 
 /** Bucket a scene-relative path into the unit the layering rules talk about. */
 export const bucketOf = (rel) => {

@@ -3,7 +3,7 @@ import {
   UserAvatar,
   UserAvatarUsername,
   UserUsername,
-} from "@/lok-next/components/UserAvatar";
+} from "@/lok/components/UserAvatar";
 import { cn } from "@/lib/utils";
 import Timestamp from "@/components/ui/timestamp";
 import {

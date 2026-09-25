@@ -1,6 +1,6 @@
 import { ELEKTRO_PROFILE_SECTIONS } from "@/elektro/profile/sections";
 import { createProfileSectionRegistry } from "@/lib/profile/section";
-import { MIKRO_PROFILE_SECTIONS } from "@/mikro-next/profile/sections";
+import { MIKRO_PROFILE_SECTIONS } from "@/mikro/profile/sections";
 import { REKUEST_PROFILE_SECTIONS } from "@/rekuest/profile/sections";
 
 /**

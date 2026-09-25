@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useUserOptionsLazyQuery } from "@/lok-next/api/graphql";
+import { useUserOptionsLazyQuery } from "@/lok/api/graphql";
 import { Plus, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { ClaimField, ClaimOperator, useSearchEntityTermsLazyQuery } from "../../api/graphql";

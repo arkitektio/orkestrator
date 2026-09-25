@@ -5,7 +5,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { useResolve } from "@/datalayer/hooks/useResolve";
 import { cn } from "@/lib/utils";
-import { useMeQuery } from "@/lok-next/api/graphql";
+import { useMeQuery } from "@/lok/api/graphql";
 import { PortKind } from "@/rekuest/api/graphql";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Loader2, CheckCircle2, AlertCircle, XCircle, X, Ban, RefreshCw } from "lucide-react";

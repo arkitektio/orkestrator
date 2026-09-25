@@ -12,7 +12,7 @@ import { Fact, SectionHeader } from "./sidebarParts";
  * how it differs from its collections, the sessions it was run in, and
  * how it has been edited since.
  *
- * Mirrors `mikro-next`'s `DatasetInfoSidebar`: the page's content area is the
+ * Mirrors `mikro`'s `DatasetInfoSidebar`: the page's content area is the
  * 3D viewport, so the prose and the facts move off the canvas into one Info
  * tab rather than a column that eats a quarter of the picture.
  */

@@ -28,9 +28,9 @@ import {
   PutTableDatasetsInFolderDocument,
   PutTableDatasetsInFolderMutation,
   PutTableDatasetsInFolderMutationVariables,
-} from "@/mikro-next/api/graphql";
+} from "@/mikro/api/graphql";
 import { linkBuilder } from "@/providers/smart/builder";
-import { sceneRegistrationLink } from "@/mikro-next/components/registration/entry";
+import { sceneRegistrationLink } from "@/mikro/components/registration/entry";
 import {
   Boxes,
   Clapperboard,
@@ -323,7 +323,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       );
     },
   },
-  // Interactive registration is its own PAGE (mikro-next/pages/
+  // Interactive registration is its own PAGE (mikro/pages/
   // SceneRegistrationPage — the workspace in components/registration composed
   // over the viewer), not a dialog and not a mode of the scene page: aligning
   // data means looking at it, and the scene page stays a viewer. This action is

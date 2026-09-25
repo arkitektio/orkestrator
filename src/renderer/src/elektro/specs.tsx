@@ -10,7 +10,7 @@ import { ArrayDatasetSpec } from "./api/graphql";
  * array — and SCALAR ("no spatial extent") holds for nearly every recording, so a
  * page of it would just be every dataset again. Those are deliberately absent:
  * no page, no nav link, no tag. Mikro keeps its own catalogue
- * (`mikro-next/specs.tsx`), in a micrograph's words.
+ * (`mikro/specs.tsx`), in a micrograph's words.
  */
 
 export type ArrayDatasetSpecEntry = {

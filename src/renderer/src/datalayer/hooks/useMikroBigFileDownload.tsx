@@ -7,7 +7,7 @@ import {
   FinishBigfileUploadMutation,
   FinishBigfileUploadMutationVariables,
   BigFileAccessGrantFragment,
-} from "@/mikro-next/api/graphql";
+} from "@/mikro/api/graphql";
 import type { ApolloClient } from "@apollo/client";
 import { useCallback } from "react";
 

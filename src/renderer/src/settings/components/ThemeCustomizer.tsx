@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import MembershipBrandWriter, {
   type EditedBrand,
-} from "@/lok-next/components/MembershipBrandWriter";
+} from "@/lok/components/MembershipBrandWriter";
 import { defaultSettings, Settings } from "@/providers/settings/validator";
 import React from "react";
 import { Control, useController } from "react-hook-form";

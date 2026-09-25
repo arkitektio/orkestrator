@@ -85,7 +85,7 @@ const defaultMetadataKeys: AbsolutePath[] = ["/zarr.json"];
 /**
  * Mints a fresh config for THIS store — same bucket/key, new credentials. The
  * store never talks to the credential service itself: it is in `lib/`, and who
- * issues grants is a module concern (see `mikro-next/lib/zarr/access.ts`).
+ * issues grants is a module concern (see `mikro/lib/zarr/access.ts`).
  *
  * Defined with the rotation logic it drives; re-exported here because this is
  * where callers have always imported it from.

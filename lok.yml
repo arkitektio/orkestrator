@@ -5,10 +5,10 @@ schema:
 
 documents: "graphql/lok-next/**/*.graphql"
 generates:
-  src/renderer/src/lok-next/api/fragments.ts:
+  src/renderer/src/lok/api/fragments.ts:
     plugins:
       - "fragment-matcher"
-  src/renderer/src/lok-next/api/graphql.ts:
+  src/renderer/src/lok/api/graphql.ts:
     plugins:
       - "typescript"
       - "typescript-operations"
@@ -20,7 +20,7 @@ generates:
       # Reference fragment types by name instead of inlining them: deep fragments
       # otherwise blow graphql.ts up to many MB and stall tsc.
       inlineFragmentTypes: combine
-  src/renderer/src/lok-next/graphql.schema.json:
+  src/renderer/src/lok/graphql.schema.json:
     plugins:
       - "introspection"
   graphql/schemas/lok-next.graphql:

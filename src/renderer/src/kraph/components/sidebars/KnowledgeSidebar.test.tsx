@@ -10,7 +10,7 @@ vi.mock("@/app/Arkitekt", () => ({
   Guard: { Lok: ({ children }: { children: React.ReactNode }) => <>{children}</> },
   useKraph: () => ({}),
 }));
-vi.mock("@/lok-next/api/graphql", () => ({ useMeQuery: () => me() }));
+vi.mock("@/lok/api/graphql", () => ({ useMeQuery: () => me() }));
 vi.mock("@/kraph/api/graphql", () => ({
   InstanceKind: { Entity: "ENTITY" },
   TermKind: { Entity: "ENTITY" },

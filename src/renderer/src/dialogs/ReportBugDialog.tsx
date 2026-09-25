@@ -4,7 +4,7 @@ import { StringField } from "@/components/fields/StringField";
 import { Button } from "@/components/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { DetailClientFragment, useClientQuery } from "@/lok-next/api/graphql";
+import { DetailClientFragment, useClientQuery } from "@/lok/api/graphql";
 import { DetailTaskFragment, PortKind, PostmanTaskFragment, useDetailTaskQuery } from "@/rekuest/api/graphql";
 import { useWidgetRegistry } from "@/rekuest/widgets/WidgetsContext";
 import { WidgetRegistryType } from "@/rekuest/widgets/types";

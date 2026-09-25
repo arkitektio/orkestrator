@@ -6,7 +6,7 @@ import {
 } from "@/alpaka/api/graphql";
 import {
   OffsetPaginationInput
-} from "@/lok-next/api/graphql";
+} from "@/lok/api/graphql";
 import CollectionCard from "../cards/CollectionCard";
 
 export type Props = {

@@ -106,8 +106,8 @@ import { RekuestDashboardWidgets } from "@/providers/dashboard/widgets/RekuestDa
 import { MikroDashboardWidgets } from "@/providers/dashboard/widgets/MikroDashboardWidgets";
 import { LatestTasksDashboardWidget } from "@/providers/dashboard/widgets/LatestTasksDashboardWidget";
 import { LatestArrayDatasetsDashboardWidget } from "@/providers/dashboard/widgets/LatestArrayDatasetsDashboardWidget";
-import { OrganizationBrandSync } from "@/lok-next/components/OrganizationBrandSync";
-import { ProfileIdentitySync } from "@/lok-next/components/ProfileIdentitySync";
+import { OrganizationBrandSync } from "@/lok/components/OrganizationBrandSync";
+import { ProfileIdentitySync } from "@/lok/components/ProfileIdentitySync";
 import { MeshSync } from "./components/mesh/MeshSync";
 import { CommandPaletteProvider } from "@/command/CommandPaletteProvider";
 import { CommandMenuHost } from "@/command/Host";

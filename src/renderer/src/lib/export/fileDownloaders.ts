@@ -9,7 +9,7 @@ import {
   GetFileDocument as MikroGetFileDocument,
   GetFileQuery as MikroGetFileQuery,
   GetFileQueryVariables as MikroGetFileQueryVariables,
-} from "@/mikro-next/api/graphql";
+} from "@/mikro/api/graphql";
 import type { DownloadProps } from "@/providers/download/DownloadProvider";
 import type { ApolloClient, DocumentNode } from "@apollo/client";
 

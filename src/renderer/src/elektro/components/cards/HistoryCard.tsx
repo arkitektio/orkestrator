@@ -8,8 +8,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { RekuestTask } from "@/linkers";
-import { AppInfo } from "@/lok-next/components/protected/AppInfo";
-import { UserInfo } from "@/lok-next/components/protected/UserInfo";
+import { AppInfo } from "@/lok/components/protected/AppInfo";
+import { UserInfo } from "@/lok/components/protected/UserInfo";
 import Timestamp from "@/components/ui/timestamp";
 import { HistoryKind, ProvenanceEntryFragment } from "../../api/graphql";
 

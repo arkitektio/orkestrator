@@ -8,10 +8,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { DetailClientFragment } from "@/lok-next/api/graphql";
+import { DetailClientFragment } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { clientAppIdentifier, clientAppVersion } from "@/lok-next/lib/clientLabels";
+import { clientAppIdentifier, clientAppVersion } from "@/lok/lib/clientLabels";
 
 type ReportClientBugFormData = {
   title: string;

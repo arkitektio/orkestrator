@@ -4,10 +4,10 @@ schema:
     handleAsSDL: true
 documents: "graphql/mikro-next/**/*.graphql"
 generates:
-  src/renderer/src/mikro-next/api/fragments.ts:
+  src/renderer/src/mikro/api/fragments.ts:
     plugins:
       - "fragment-matcher"
-  src/renderer/src/mikro-next/api/graphql.ts:
+  src/renderer/src/mikro/api/graphql.ts:
     plugins:
       - "typescript"
       - "typescript-operations"
@@ -23,14 +23,14 @@ generates:
         # Pint-like quantity scalars: unit-bearing strings ("100 ms", "1 µm").
         # Mapped to named types in ./api/scalars.ts so generated fields read as
         # `Duration`/`Length` rather than `any`. Parse via @/lib/quantities.
-        Duration: "@/mikro-next/api/scalars#Duration"
-        Length: "@/mikro-next/api/scalars#Length"
-        Frequency: "@/mikro-next/api/scalars#Frequency"
-        Power: "@/mikro-next/api/scalars#Power"
+        Duration: "@/mikro/api/scalars#Duration"
+        Length: "@/mikro/api/scalars#Length"
+        Frequency: "@/mikro/api/scalars#Frequency"
+        Power: "@/mikro/api/scalars#Power"
         # Dimension-free: the value carries whatever unit it has (a MICROTIME
         # bin width is a time, a SPECTRUM one a length). Parse with the
         # dimension resolved from the phasor's axisType.
-        GenericQuantity: "@/mikro-next/api/scalars#GenericQuantity"
+        GenericQuantity: "@/mikro/api/scalars#GenericQuantity"
   src/main/schemas/mikro.ts:
     plugins:
       - "typescript"

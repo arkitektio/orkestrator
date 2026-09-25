@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { RekuestAgent } from "@/linkers";
-import { DeviceImprint, UserAvatar } from "@/lok-next/components/UserAvatar";
+import { DeviceImprint, UserAvatar } from "@/lok/components/UserAvatar";
 
 import { ListAgentFragment } from "@/rekuest/api/graphql";
 

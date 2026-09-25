@@ -17,13 +17,13 @@ export const MODULE_ROOTS: Record<string, readonly string[]> = {
   datalayer: ["datalayer", "lib/datalayer"],
   dokuments: ["dokuments", "lib/dokuments"],
   elektro: ["elektro", "lib/elektro"],
-  fluss: ["reaktion", "lib/fluss"],
+  fluss: ["fluss", "lib/fluss"],
   kabinet: ["kabinet", "lib/kabinet"],
   kraph: ["kraph", "lib/kraph"],
-  lok: ["lok-next", "lib/lok"],
+  lok: ["lok", "lib/lok"],
   lovekit: ["lovekit", "lib/lovekit"],
-  mikro: ["mikro-next", "lib/mikro"],
-  omeroark: ["omero-ark", "lib/omero-ark"],
+  mikro: ["mikro", "lib/mikro"],
+  omeroark: ["omeroark", "lib/omeroark"],
   rekuest: ["rekuest", "lib/rekuest"],
 };
 
@@ -119,22 +119,22 @@ describe("the boundary parser", () => {
   it("reads static, re-export, side-effect and dynamic imports", () => {
     const text = [
       'import { a } from "@/kraph/api/graphql";',
-      'export { b } from "../lok-next/x";',
-      'import "@/mikro-next/side";',
+      'export { b } from "../lok/x";',
+      'import "@/mikro/side";',
       'const c = () => import("@/rekuest/lazy");',
       '// import { gone } from "@/alpaka/commented";',
     ].join("\n");
     expect(importSpecifiers(text)).toEqual([
       "@/kraph/api/graphql",
-      "../lok-next/x",
-      "@/mikro-next/side",
+      "../lok/x",
+      "@/mikro/side",
       "@/rekuest/lazy",
     ]);
   });
 
   it("owns paths by their longest root", () => {
     expect(ownerOf("lib/mikro/funcs.tsx")).toBe("mikro");
-    expect(ownerOf("mikro-next/pages/ImagePage.tsx")).toBe("mikro");
+    expect(ownerOf("mikro/pages/ImagePage.tsx")).toBe("mikro");
     expect(ownerOf("lib/export/fileDownloaders.ts")).toBe("host:lib/export");
     expect(ownerOf("app/dialog.tsx")).toBe("host:app");
     expect(ownerOf("linkers.tsx")).toBe("host:root");

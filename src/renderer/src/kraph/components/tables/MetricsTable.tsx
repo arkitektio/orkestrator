@@ -23,8 +23,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { LokUser, RekuestTask } from "@/linkers";
-import { JustClientName } from "@/lok-next/components/ClientAvatar";
-import { JustUsername } from "@/lok-next/components/UserAvatar";
+import { JustClientName } from "@/lok/components/ClientAvatar";
+import { JustUsername } from "@/lok/components/UserAvatar";
 import { ArrowUpDown } from "lucide-react";
 
 export type MetricsTableItem = {

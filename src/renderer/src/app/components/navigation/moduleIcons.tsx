@@ -18,11 +18,10 @@ export const matchIcon = (key: string) => {
       return <Podcast className="h-4 w-4" />;
     case "mikro":
       return <Database className="h-4 w-4" />;
-    case "omero_ark":
+    case "omeroark":
       return <PiDatabaseLight className="h-4 w-4" />;
     case "fluss":
       return <Workflow className="h-4 w-4" />;
-    case "team":
     case "lok":
       return <Users2 className="h-4 w-4" />;
     case "settings":

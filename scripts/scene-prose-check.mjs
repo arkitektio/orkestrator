@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(ROOT, "src/renderer/src");
-const SCENE = join(SRC, "mikro-next/components/scene");
+const SCENE = join(SRC, "mikro/components/scene");
 
 /** Paths that intentionally name something that no longer exists. */
 const HISTORICAL = [
