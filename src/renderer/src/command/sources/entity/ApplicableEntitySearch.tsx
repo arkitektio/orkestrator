@@ -1,4 +1,5 @@
 import { moduleSearches } from "@/app/modules/registries";
+import { useModuleHostVersion } from "@/lib/module-host/host";
 import type { PassDownProps } from "@/providers/smart/extensions/types";
 import { useDebounce } from "@uidotdev/usehooks";
 
@@ -22,6 +23,7 @@ export const ApplicableEntitySearch = ({ filter, onDone }: PassDownProps) => {
   // local filtering; without this, every keystroke-pause would fan out into one
   // network request per module. Do not "simplify" the two into one.
   const term = useDebounce(filter?.trim() ?? "", 250);
+  useModuleHostVersion();
 
   // One or two characters match most of a database and help nobody.
   if (term.length < MIN_TERM_LENGTH) {

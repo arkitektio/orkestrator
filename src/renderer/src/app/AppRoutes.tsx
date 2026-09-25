@@ -10,6 +10,7 @@ import { QuietPage } from "./components/fallbacks/QuietPage";
 import { ShellSignInNotice } from "./components/shell/ShellSignInNotice";
 import { NotFound } from "./components/fallbacks/NotFound";
 import { MODULE_ALIASES, ModuleRedirect } from "./components/navigation/ModuleRedirect";
+import { useModuleHostVersion } from "@/lib/module-host/host";
 import { modulePages } from "./modules/registries";
 
 // The dashboard carries dockview; it is the index route, but a deep link into a
@@ -51,37 +52,41 @@ const protectModule = (component: React.ReactNode, fallback?: React.ReactNode) =
  * own memory router. Nothing here knows tabs exist: a page mounted in a
  * background tab is the same page it always was.
  */
-export const AppRoutes = () => (
-  <>
-    <BackNavigationErrorCatcher>
-      <Routes>
-        <Route
-          index
-          element={
-            <React.Suspense fallback={<ModuleLoadingFallback />}>
-              <Hero />
-            </React.Suspense>
-          }
-        />
-        {/* What ⌘T opens: the search as a page, plus the modules. */}
-        <Route path="new" element={<NewTabPage />} />
-        {/* Where a scoped share link lands before it becomes a page. Not
-            protected: deciding where a link belongs must work while we are on
-            the wrong connection, or none. */}
-        <Route path="open" element={<ShareGatePage />} />
-        {/* Every module under its namespace (lok too: labelled "Team", routed as lok). */}
-        {modulePages().map(({ namespace, Page }) => (
-          <Route key={namespace} path={`${namespace}/*`} element={protectModule(<Page />)} />
-        ))}
-        <Route path="settings/*" element={protectModule(<SettingsModule />)} />
-        <Route path="blok/*" element={protectModule(<BlokModule />)} />
-        {Object.entries(MODULE_ALIASES).map(([from, to]) => (
-          <Route key={from} path={`${from}/*`} element={<ModuleRedirect from={from} to={to} />} />
-        ))}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BackNavigationErrorCatcher>
-  </>
-);
+export const AppRoutes = () => {
+  // A module arriving (or leaving) adds (or drops) its routes.
+  useModuleHostVersion();
+  return (
+    <>
+      <BackNavigationErrorCatcher>
+        <Routes>
+          <Route
+            index
+            element={
+              <React.Suspense fallback={<ModuleLoadingFallback />}>
+                <Hero />
+              </React.Suspense>
+            }
+          />
+          {/* What ⌘T opens: the search as a page, plus the modules. */}
+          <Route path="new" element={<NewTabPage />} />
+          {/* Where a scoped share link lands before it becomes a page. Not
+              protected: deciding where a link belongs must work while we are on
+              the wrong connection, or none. */}
+          <Route path="open" element={<ShareGatePage />} />
+          {/* Every module under its namespace (lok too: labelled "Team", routed as lok). */}
+          {modulePages().map(({ namespace, Page }) => (
+            <Route key={namespace} path={`${namespace}/*`} element={protectModule(<Page />)} />
+          ))}
+          <Route path="settings/*" element={protectModule(<SettingsModule />)} />
+          <Route path="blok/*" element={protectModule(<BlokModule />)} />
+          {Object.entries(MODULE_ALIASES).map(([from, to]) => (
+            <Route key={from} path={`${from}/*`} element={<ModuleRedirect from={from} to={to} />} />
+          ))}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BackNavigationErrorCatcher>
+    </>
+  );
+};
 
 export default AppRoutes;

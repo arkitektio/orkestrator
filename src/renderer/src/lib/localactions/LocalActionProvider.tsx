@@ -328,11 +328,11 @@ export const  createLocalActionProvider = <TAppOrServices = ServiceMap, TRegistr
     );
   };
 
-  // Read on first use, not when the provider is created: the registry may be
-  // a lazy record that resolves the modules' builtins (see lib/module-host).
-  let declaredPinned: LocalActionId[] | undefined;
+  // Read on use, not when the provider is created: the registry may be a
+  // live record over the registered modules (see lib/module-host), which is
+  // empty while files are evaluated and grows as modules arrive.
   const declaredPinnedActionIds = () =>
-    (declaredPinned ??= getDeclaredPinnedActionIds(registry) as LocalActionId[]);
+    getDeclaredPinnedActionIds(registry) as LocalActionId[];
 
   const persistPinnedActionIds = (pinnedActionIds: LocalActionId[]) => {
     if (typeof window === "undefined") {

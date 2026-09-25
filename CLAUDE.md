@@ -141,15 +141,22 @@ else from it:
 
 The host derives every registry from these (`app/modules/`): `index.ts`
 (manifests + services, data only — `app/Arkitekt` reads it), `install.tsx`
-(imports every `module.tsx`, installed once by `AppProvider`), and
-`registries.tsx` (a leaf: reads the installed modules **lazily**). Rules:
+(registers every first-party `module.tsx` with the module host, imported once
+by `AppProvider`), and `registries.tsx` (a leaf: derives each registry from
+the module host, `lib/module-host/host.ts`). Rules:
 
-- **Adding a module** is a folder with those four files plus one line in
-  `app/modules/index.ts` and `app/modules/install.tsx`.
-- **Registries are lazy.** A file a module component imports for a hook
-  (`app/dialog`, `app/localactions`, …) must never import module code or read
-  a registry while being evaluated (`lib/module-host/lazy.ts`,
-  `app/modules/modules.test.tsx` checks every entry order).
+- **Modules register.** `registerModule(definition)` validates the manifest,
+  refuses a taken namespace or a builtin id another module claims, and
+  returns `unregister`. First-party modules go through `registerModules`,
+  which throws on refusal. A module can arrive or leave at runtime.
+- **Registries are derived, never built at import.** A file a module
+  component imports for a hook (`app/dialog`, `app/localactions`, …) must
+  never import module code or read a registry while being evaluated. Use
+  `derived` / `derivedRecord` (`lib/module-host/lazy.ts`): built on use,
+  rebuilt when the host's version moves. A component that LISTS modules
+  (routes, palette, page sections) calls `useModuleHostVersion()` so it
+  re-renders when one arrives. `app/modules/modules.test.tsx` checks every
+  entry order.
 - **Only Structures cross.** `Structure = { identifier, id, descriptors?,
   label? }`, compared by value (`lib/structure.ts`). A module never imports
   another module's components or GraphQL; `app/moduleBoundaries.test.ts`

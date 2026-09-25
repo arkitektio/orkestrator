@@ -1,6 +1,6 @@
 import { moduleTaskHooks } from "@/app/modules/registries";
 import { fileDownloadHook } from "@/lib/export/taskHooks";
-import { lazyRecord } from "@/lib/module-host/lazy";
+import { derivedRecord } from "@/lib/module-host/lazy";
 import { TaskHook } from "./types";
 
 /**
@@ -8,6 +8,6 @@ import { TaskHook } from "./types";
  * `taskHooks` builtin. Keyed by `type` for O(1) dispatch in the runner, and
  * built on first read (see `app/modules/registries`).
  */
-export const TASK_HOOKS: Record<string, TaskHook> = lazyRecord(() =>
+export const TASK_HOOKS: Record<string, TaskHook> = derivedRecord(() =>
   Object.fromEntries([fileDownloadHook, ...moduleTaskHooks()].map((hook) => [hook.type, hook])),
 );

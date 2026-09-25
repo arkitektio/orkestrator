@@ -5,7 +5,7 @@ import { FLUSS_MODULE } from "@/fluss/module";
 import { KABINET_MODULE } from "@/kabinet/module";
 import { KRAPH_MODULE } from "@/kraph/module";
 import type { ModuleBuiltins } from "@/lib/module-host/define";
-import { installModules } from "@/lib/module-host/installed";
+import { registerModules } from "@/lib/module-host/host";
 import { LOK_MODULE } from "@/lok/module";
 import { LOVEKIT_MODULE } from "@/lovekit/module";
 import { MIKRO_MODULE } from "@/mikro/module";
@@ -13,9 +13,11 @@ import { OMEROARK_MODULE } from "@/omeroark/module";
 import { REKUEST_MODULE } from "@/rekuest/module";
 
 /**
- * Installs every first-party module's builtins. Imported for its side effect
- * by the app's entry (`app/AppProvider`) and nothing else — see
- * `lib/module-host/installed` for why registries never import this.
+ * Registers every first-party module with the module host. Imported for its
+ * side effect by the app's entry (`app/AppProvider`) and nothing else — see
+ * `lib/module-host/host` for why registries never import this. A first-party
+ * module the host refuses (invalid manifest, clashing ids) is a bug: this
+ * throws.
  *
  * Rail order; lok last (it has no rail tile).
  */
@@ -33,7 +35,7 @@ export const MODULE_DEFINITIONS = [
   LOK_MODULE,
 ] as const;
 
-installModules(MODULE_DEFINITIONS);
+registerModules(MODULE_DEFINITIONS);
 
 type UnionToIntersection<U> = (U extends unknown ? (value: U) => void : never) extends (
   value: infer I,

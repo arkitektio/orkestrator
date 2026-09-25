@@ -2,7 +2,7 @@ import { ReportBugDialog } from "@/dialogs/ReportBugDialog";
 import { ReportClientBugDialog } from "@/dialogs/ReportClientBugDialog";
 import { ExportToFileDialog } from "@/lib/export/ExportToFileDialog";
 import { createDialogProvider } from "@/lib/generic/providers/DialogProvider";
-import { lazyRecord } from "@/lib/module-host/lazy";
+import { derivedRecord } from "@/lib/module-host/lazy";
 import { MODULE_DIALOGS } from "./modules/registries";
 import type { ModuleDialogs } from "./modules/dialogTypes";
 
@@ -20,5 +20,5 @@ const HOST_DIALOGS = {
  * evaluates a module's builtins (see `app/modules/registries`).
  */
 export const { DialogProvider, useDialog, registry } = createDialogProvider(
-  lazyRecord(() => ({ ...HOST_DIALOGS, ...MODULE_DIALOGS })) as typeof HOST_DIALOGS & ModuleDialogs,
+  derivedRecord(() => ({ ...HOST_DIALOGS, ...MODULE_DIALOGS })) as typeof HOST_DIALOGS & ModuleDialogs,
 );

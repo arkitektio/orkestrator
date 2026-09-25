@@ -1,6 +1,7 @@
 import { Suspense, type ComponentType } from "react";
 
 import { useDisplay } from "@/app/display";
+import { useModuleHostVersion } from "@/lib/module-host/host";
 import type { DisplayVariant, DisplayWidgetProps } from "@/lib/display/registry";
 import { SmartLink } from "@/providers/smart/builder";
 
@@ -29,6 +30,7 @@ export const StructureDisplay = ({
   link?: boolean;
 }) => {
   const { registry } = useDisplay();
+  useModuleHostVersion();
   const Display = (registry as Record<string, ComponentType<DisplayWidgetProps> | undefined>)[identifier];
   if (!Display || !id) return null;
   const shown = (

@@ -4,10 +4,10 @@ import {
   createSmartSectionRegistry,
   type SmartSectionRegistry,
 } from "@/providers/smart/extensions/sectionRegistry";
-import { lazyValue } from "@/lib/module-host/lazy";
+import { derived } from "@/lib/module-host/lazy";
 import { moduleSections } from "./modules/registries";
 
-const build = lazyValue(() => createSmartSectionRegistry([...LOCAL_SECTIONS, ...moduleSections()]));
+const build = derived(() => createSmartSectionRegistry([...LOCAL_SECTIONS, ...moduleSections()]));
 
 /**
  * The sections of the smart context menu: the host's local-actions section

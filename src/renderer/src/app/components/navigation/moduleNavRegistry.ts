@@ -1,7 +1,7 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 
 import { moduleNavLoaders } from "@/app/modules/registries";
-import { lazyRecord } from "@/lib/module-host/lazy";
+import { derivedRecord } from "@/lib/module-host/lazy";
 
 /**
  * Each module's in-module navigation, hoisted into the rail.
@@ -48,7 +48,7 @@ export const preloadModuleNav = (key: string): void => {
   if (key in loaders()) void load(key).catch(() => undefined);
 };
 
-export const MODULE_NAV: Record<string, NavComponent> = lazyRecord(() => Object.fromEntries(
+export const MODULE_NAV: Record<string, NavComponent> = derivedRecord(() => Object.fromEntries(
   Object.keys(loaders()).map((key) => [
     key,
     lazy(async () => ({ default: (await load(key)).NavigationPane as ComponentType })),

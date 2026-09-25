@@ -1,33 +1,29 @@
+import { moduleHostVersion } from "./host";
+
 /**
- * Registries derived from the module list are read LAZILY.
+ * Registries derived from the module host are read on use, never while
+ * files are being evaluated, and rebuilt when a module comes or goes.
  *
- * Almost every module component imports a host registry file for its hook
- * (`useDialog` from `@/app/dialog`, ...). If that file built its registry from
- * the module list while being evaluated, whichever component happened to be
- * imported first would re-enter the list mid-evaluation and read a binding
- * that is not initialised yet. So: a registry file may import the list, but
- * only touch it on first use. `lazyRecord` / `lazyValue` are how.
+ * `derived(build)` memoises `build` on the host's version; `liveRecord(get)`
+ * is a plain-looking record (property read, `in`, `Object.keys`, spread)
+ * that always answers from `get()`. Creating either builds nothing.
  */
 
-export const lazyValue = <T>(build: () => T): (() => T) => {
-  let built = false;
+export const derived = <T>(build: () => T): (() => T) => {
+  let builtAt = -1;
   let value: T;
   return () => {
-    if (!built) {
+    const version = moduleHostVersion();
+    if (version !== builtAt) {
       value = build();
-      built = true;
+      builtAt = version;
     }
     return value;
   };
 };
 
-/**
- * A plain-looking record whose entries are built on first access (property
- * read, `in`, `Object.keys`, spread). Nothing is built by creating it.
- */
-export const lazyRecord = <T extends Record<string, unknown>>(build: () => T): T => {
-  const get = lazyValue(build);
-  return new Proxy({} as T, {
+export const liveRecord = <T extends Record<string, unknown>>(get: () => T): T =>
+  new Proxy({} as T, {
     get: (_target, key) => (typeof key === "string" ? get()[key] : undefined),
     has: (_target, key) => typeof key === "string" && key in get(),
     ownKeys: () => Reflect.ownKeys(get()),
@@ -37,4 +33,7 @@ export const lazyRecord = <T extends Record<string, unknown>>(build: () => T): T
       return { configurable: true, enumerable: true, writable: false, value: record[key] };
     },
   });
-};
+
+/** A record derived from the installed modules, rebuilt when they change. */
+export const derivedRecord = <T extends Record<string, unknown>>(build: () => T): T =>
+  liveRecord(derived(build));

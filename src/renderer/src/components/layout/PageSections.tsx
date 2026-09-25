@@ -1,5 +1,6 @@
 import { pageSectionsFor } from "@/app/modules/registries";
 import type { PageSection } from "@/lib/module-host/define";
+import { useModuleHostVersion } from "@/lib/module-host/host";
 import { smartRegistry } from "@/providers/smart/registry";
 import type { Identifier, Object } from "@/types";
 
@@ -21,15 +22,18 @@ export const PageSections = ({
   object,
   placement,
   onChanged,
-}: SectionsProps & { placement: PageSection["placement"] }) => (
-  <>
-    {pageSectionsFor(identifier, { placement, slot: null }, smartRegistry.isDatum(identifier)).map(
-      ({ id, Component }) => (
-        <Component key={id} identifier={identifier} object={object} onChanged={onChanged} />
-      ),
-    )}
-  </>
-);
+}: SectionsProps & { placement: PageSection["placement"] }) => {
+  useModuleHostVersion();
+  return (
+    <>
+      {pageSectionsFor(identifier, { placement, slot: null }, smartRegistry.isDatum(identifier)).map(
+        ({ id, Component }) => (
+          <Component key={id} identifier={identifier} object={object} onChanged={onChanged} />
+        ),
+      )}
+    </>
+  );
+};
 
 /** Whether anything fills a host-drawn sidebar for this model. */
 export const hasSlotSections = (identifier: Identifier, slot: NonNullable<PageSection["slot"]>) =>
@@ -40,10 +44,13 @@ export const SlotSections = ({
   identifier,
   object,
   slot,
-}: SectionsProps & { slot: NonNullable<PageSection["slot"]> }) => (
-  <>
-    {pageSectionsFor(identifier, { slot }, smartRegistry.isDatum(identifier)).map(({ id, Component }) => (
-      <Component key={id} identifier={identifier} object={object} />
-    ))}
-  </>
-);
+}: SectionsProps & { slot: NonNullable<PageSection["slot"]> }) => {
+  useModuleHostVersion();
+  return (
+    <>
+      {pageSectionsFor(identifier, { slot }, smartRegistry.isDatum(identifier)).map(({ id, Component }) => (
+        <Component key={id} identifier={identifier} object={object} />
+      ))}
+    </>
+  );
+};

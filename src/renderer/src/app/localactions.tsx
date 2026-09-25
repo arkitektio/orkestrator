@@ -3,7 +3,7 @@ import {
   ActionParams,
   createLocalActionProvider,
 } from "@/lib/localactions/LocalActionProvider";
-import { lazyRecord } from "@/lib/module-host/lazy";
+import { derivedRecord } from "@/lib/module-host/lazy";
 import { linkBuilder } from "@/providers/smart/builder";
 import { provideSmartRegistries } from "@/providers/smart/hostRegistries";
 import type { ModuleActions } from "./modules/install";
@@ -243,7 +243,7 @@ export const {
   // Every module's `actions` builtin, then the host's own. Lazy, so importing
   // this for a hook never evaluates a module's builtins (app/modules/registries).
   createLocalActionProvider(
-    lazyRecord(() => ({ ...MODULE_ACTIONS, ...HOST_ACTIONS })) as ModuleActions & typeof HOST_ACTIONS,
+    derivedRecord(() => ({ ...MODULE_ACTIONS, ...HOST_ACTIONS })) as ModuleActions & typeof HOST_ACTIONS,
   );
 
 // Drop handling in `providers/smart` reads the actions through this.

@@ -1,11 +1,11 @@
-import { lazyValue } from "@/lib/module-host/lazy";
+import { derived } from "@/lib/module-host/lazy";
 import {
   createProfileSectionRegistry,
   type ProfileSectionRegistry,
 } from "@/lib/profile/section";
 import { moduleProfileSections } from "./modules/registries";
 
-const build = lazyValue(() => createProfileSectionRegistry(moduleProfileSections()));
+const build = derived(() => createProfileSectionRegistry(moduleProfileSections()));
 
 /**
  * What each module shows on a member's profile: every module's
