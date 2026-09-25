@@ -7,8 +7,8 @@ import { EDGE_ALLOWLIST } from "./moduleBoundaries.allowlist";
 /**
  * The module border, as data the boundary test (and nothing else) reads.
  *
- * A module is a service namespace; its code lives under its roots (the module
- * folder plus its `lib/<namespace>` client wrappers). Everything outside every
+ * A module is a service namespace; its code lives under its root (the module
+ * folder, client wrappers included in `<module>/api`). Everything outside every
  * root is the host. An EDGE is "some file in A imports something in B"; the
  * test fails on every edge that is not in `moduleBoundaries.allowlist.ts`.
  *
@@ -17,17 +17,17 @@ import { EDGE_ALLOWLIST } from "./moduleBoundaries.allowlist";
  * module requests its grants from its own service (`<module>/datalayer/`).
  */
 export const MODULE_ROOTS: Record<string, readonly string[]> = {
-  alpaka: ["alpaka", "lib/alpaka"],
-  dokuments: ["dokuments", "lib/dokuments"],
-  elektro: ["elektro", "lib/elektro"],
-  fluss: ["fluss", "lib/fluss"],
-  kabinet: ["kabinet", "lib/kabinet"],
-  kraph: ["kraph", "lib/kraph"],
-  lok: ["lok", "lib/lok"],
-  lovekit: ["lovekit", "lib/lovekit"],
-  mikro: ["mikro", "lib/mikro"],
-  omeroark: ["omeroark", "lib/omeroark"],
-  rekuest: ["rekuest", "lib/rekuest"],
+  alpaka: ["alpaka"],
+  dokuments: ["dokuments"],
+  elektro: ["elektro"],
+  fluss: ["fluss"],
+  kabinet: ["kabinet"],
+  kraph: ["kraph"],
+  lok: ["lok"],
+  lovekit: ["lovekit"],
+  mikro: ["mikro"],
+  omeroark: ["omeroark"],
+  rekuest: ["rekuest"],
 };
 
 const ROOTS = Object.entries(MODULE_ROOTS)
@@ -153,7 +153,7 @@ describe("the boundary parser", () => {
   });
 
   it("owns paths by their longest root", () => {
-    expect(ownerOf("lib/mikro/funcs.tsx")).toBe("mikro");
+    expect(ownerOf("mikro/api/funcs.tsx")).toBe("mikro");
     expect(ownerOf("mikro/pages/ImagePage.tsx")).toBe("mikro");
     expect(ownerOf("lib/export/fileDownloaders.ts")).toBe("host:lib/export");
     expect(ownerOf("app/dialog.tsx")).toBe("host:app");
@@ -164,7 +164,7 @@ describe("the boundary parser", () => {
     expect(isPublicEntry("kraph/manifest")).toBe(true);
     expect(isPublicEntry("kraph/module.tsx")).toBe(true);
     expect(isPublicEntry("kraph/components/KnowledgeSidebar")).toBe(false);
-    expect(isPublicEntry("lib/kraph/manifest")).toBe(false);
+    expect(isPublicEntry("kraph/api/manifest")).toBe(false);
   });
 
   it("resolves relative specifiers that escape a module", () => {

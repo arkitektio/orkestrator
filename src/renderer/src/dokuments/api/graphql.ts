@@ -1,4 +1,4 @@
-import * as ApolloReactHooks from '@/lib/dokuments/funcs';
+import * as ApolloReactHooks from '@/dokuments/api/funcs';
 import * as Apollo from '@apollo/client';
 import { gql } from '@apollo/client';
 export type Maybe<T> = T | null

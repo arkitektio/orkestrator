@@ -17,7 +17,7 @@ generates:
       withHooks: true
       reactApolloVersion: 3
       arrayInputCoercion: false
-      apolloReactHooksImportFrom: "@/lib/rekuest/hooks"
+      apolloReactHooksImportFrom: "@/rekuest/api/hooks"
       # Reference fragment types by name instead of inlining them: the deep port
       # fragments otherwise blow graphql.ts up to tens of MB and stall tsc.
       inlineFragmentTypes: combine

@@ -1,4 +1,4 @@
-import * as ApolloReactHooks from '@/lib/omeroark/funcs';
+import * as ApolloReactHooks from '@/omeroark/api/funcs';
 import * as Apollo from '@apollo/client';
 import { gql } from '@apollo/client';
 export type Maybe<T> = T | null

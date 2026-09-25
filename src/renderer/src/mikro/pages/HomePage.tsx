@@ -1,7 +1,7 @@
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Separator } from "@/components/ui/separator";
 import { UploadWrapper } from "@/components/upload/wrapper";
-import { useCreateFile } from "@/lib/mikro/hooks";
+import { useCreateFile } from "@/mikro/api/hooks";
 
 import { asParamlessRoute } from "@/app/routes/ParamlessRoute";
 import { Sidebars } from "@/components/layout/Sidebars";

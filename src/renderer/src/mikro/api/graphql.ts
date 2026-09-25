@@ -4,7 +4,7 @@ import { Length } from '@/mikro/api/scalars';
 import { Power } from '@/mikro/api/scalars';
 import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
-import * as ApolloReactHooks from '@/lib/mikro/funcs';
+import * as ApolloReactHooks from '@/mikro/api/funcs';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };

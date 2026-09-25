@@ -15,7 +15,7 @@ generates:
     config:
       withHooks: true
       reactApolloVersion: 3
-      apolloReactHooksImportFrom: "@/lib/alpaka/funcs"
+      apolloReactHooksImportFrom: "@/alpaka/api/funcs"
       # Reference fragment types by name instead of inlining them: deep fragments
       # otherwise blow graphql.ts up to many MB and stall tsc.
       inlineFragmentTypes: combine

@@ -3,7 +3,7 @@ import { Sidebars } from "@/components/layout/Sidebars";
 import { Badge } from "@/components/ui/badge";
 import { UploadWrapper } from "@/components/upload/wrapper";
 import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
-import { useCreateFile } from "@/lib/mikro/hooks";
+import { useCreateFile } from "@/mikro/api/hooks";
 import { MikroFolder } from "@/linkers";
 import { useState } from "react";
 import { useGetFolderQuery } from "../api/graphql";
