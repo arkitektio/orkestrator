@@ -118,12 +118,16 @@ export const CreateableSearchField = ({
   }, [debouncedQuery]);
 
   const createValue = (input: string) => {
-    create(input).then((value) => {
-      search({ values: [value] })
-      return form.setValue(name, value, {
-        shouldValidate: false,
+    create(input)
+      .then((value) => {
+        search({ values: [value] })
+        return form.setValue(name, value, {
+          shouldValidate: false,
+        });
+      })
+      .catch((err) => {
+        setError(err.message);
       });
-    });
   };
 
   useEffect(() => {
