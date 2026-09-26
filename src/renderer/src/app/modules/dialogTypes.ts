@@ -4,6 +4,7 @@ import type { ELEKTRO_DIALOGS } from "@/elektro/dialogRegistry";
 import type { FLUSS_DIALOGS } from "@/fluss/dialogRegistry";
 import type { KABINET_DIALOGS } from "@/kabinet/dialogRegistry";
 import type { KRAPH_DIALOGS } from "@/kraph/dialogRegistry";
+import type { KUVERT_DIALOGS } from "@/kuvert/dialogRegistry";
 import type { LOK_DIALOGS } from "@/lok/dialogRegistry";
 import type { MIKRO_DIALOGS } from "@/mikro/dialogRegistry";
 import type { OMEROARK_DIALOGS } from "@/omeroark/dialogRegistry";
@@ -20,6 +21,7 @@ export type ModuleDialogs = typeof ALPAKA_DIALOGS &
   typeof FLUSS_DIALOGS &
   typeof KABINET_DIALOGS &
   typeof KRAPH_DIALOGS &
+  typeof KUVERT_DIALOGS &
   typeof LOK_DIALOGS &
   typeof MIKRO_DIALOGS &
   typeof OMEROARK_DIALOGS &

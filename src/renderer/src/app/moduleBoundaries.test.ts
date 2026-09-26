@@ -24,6 +24,7 @@ export const MODULE_ROOTS: Record<string, readonly string[]> = {
   fluss: ["fluss"],
   kabinet: ["kabinet"],
   kraph: ["kraph"],
+  kuvert: ["kuvert"],
   lok: ["lok"],
   lovekit: ["lovekit"],
   mikro: ["mikro"],

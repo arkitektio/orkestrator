@@ -1,0 +1,13 @@
+fragment AuthSession on AuthSession {
+  state
+  openUrl
+  expiresAt
+  finish
+  redirectUrl
+  provider
+  account {
+    id
+    name
+    emailAddress
+  }
+}

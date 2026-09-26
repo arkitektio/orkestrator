@@ -1,0 +1,44 @@
+query ListMailAccounts($filters: MailAccountFilter, $pagination: OffsetPaginationInput) {
+  mailAccounts(filters: $filters, pagination: $pagination) {
+    ...ListMailAccount
+  }
+}
+
+query GetMailAccount($id: ID!) {
+  mailAccount(id: $id) {
+    ...MailAccount
+  }
+}
+
+# The pane: every mailbox with its folders, in one request.
+query MailboxTree {
+  mailAccounts {
+    ...ListMailAccount
+    folders(filters: { syncEnabled: true }) {
+      ...MailFolder
+    }
+  }
+}
+
+query SenderAccounts {
+  mailAccounts(filters: { status: ACTIVE }) {
+    ...SenderAccount
+  }
+}
+
+query SearchMailAccounts($search: String, $values: [ID!]) {
+  options: mailAccounts(filters: { ids: $values }, pagination: { limit: 20 }) {
+    value: id
+    label: emailAddress
+  }
+}
+
+query MailPresets($address: String) {
+  mailPresets(address: $address) {
+    ...MailPreset
+  }
+}
+
+query OAuthProviders {
+  oauthProviders
+}

@@ -30,6 +30,7 @@ const PANES: Record<string, string> = {
   kabinet: "kabinet/panes/StandardPane.tsx",
   alpaka: "alpaka/panes/StandardPane.tsx",
   bank: "bank/panes/StandardPane.tsx",
+  kuvert: "kuvert/panes/StandardPane.tsx",
   lok: "lok/panes/StandardPane.tsx",
   lovekit: "lovekit/panes/StandardPane.tsx",
   omeroark: "omeroark/panes/StandardPane.tsx",

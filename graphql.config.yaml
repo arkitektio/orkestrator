@@ -26,3 +26,7 @@ projects:
   bank:
     schema: "graphql/schemas/bank.graphql"
     documents: "graphql/bank/**/*.graphql"
+
+  kuvert:
+    schema: "graphql/schemas/kuvert.graphql"
+    documents: "graphql/kuvert/**/*.graphql"

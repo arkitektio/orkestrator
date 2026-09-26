@@ -11,6 +11,7 @@ const MODULE_FILES = [
   "@/fluss/module",
   "@/kabinet/module",
   "@/kraph/module",
+  "@/kuvert/module",
   "@/lok/module",
   "@/lovekit/module",
   "@/mikro/module",

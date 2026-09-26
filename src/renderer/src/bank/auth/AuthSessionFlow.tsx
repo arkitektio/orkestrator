@@ -14,8 +14,8 @@ import {
   ListBankConnectionsDocument,
 } from "../api/graphql";
 import { describeError, errorCodeOf, errorMessageOf } from "../errors";
-import { openInBrowser } from "../openInBrowser";
-import { parseRedirect } from "./redirect";
+import { openInBrowser } from "@/core/util/openInBrowser";
+import { parseRedirect } from "@/core/connection/oauth/redirect";
 import { Connection, useAuthSession } from "./useAuthSession";
 
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;

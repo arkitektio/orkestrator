@@ -12,6 +12,8 @@ import { manifest as kabinet } from "@/kabinet/manifest";
 import { service as kabinetService } from "@/kabinet/service";
 import { manifest as kraph } from "@/kraph/manifest";
 import { service as kraphService } from "@/kraph/service";
+import { manifest as kuvert } from "@/kuvert/manifest";
+import { service as kuvertService } from "@/kuvert/service";
 import type { ModuleManifest } from "@/core/modules/spec";
 import { manifest as lok } from "@/lok/manifest";
 import { manifest as lovekit } from "@/lovekit/manifest";
@@ -48,6 +50,7 @@ export const MODULES = [
   { manifest: lovekit, service: lovekitService },
   { manifest: dokuments, service: dokumentsService },
   { manifest: bank, service: bankService },
+  { manifest: kuvert, service: kuvertService },
 ] as const;
 
 /** The session's own module: lok, served by the self service. Not on the rail list. */

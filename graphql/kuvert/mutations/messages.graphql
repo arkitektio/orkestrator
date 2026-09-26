@@ -1,0 +1,42 @@
+fragment MessageState on Message {
+  id
+  flags
+  isRead
+  isFlagged
+  isAnswered
+  folder {
+    id
+    name
+    role
+  }
+}
+
+mutation SetMessageFlags($input: SetMessageFlagsInput!) {
+  setMessageFlags(input: $input) {
+    ...MessageState
+  }
+}
+
+mutation MarkMessagesRead($input: MarkMessagesInput!) {
+  markMessagesRead(input: $input) {
+    ...MessageState
+  }
+}
+
+mutation MoveMessages($input: MoveMessagesInput!) {
+  moveMessages(input: $input) {
+    ...MessageState
+  }
+}
+
+mutation DeleteMessages($input: DeleteMessagesInput!) {
+  deleteMessages(input: $input) {
+    deleted
+  }
+}
+
+mutation SendMessage($input: SendMessageInput!) {
+  sendMessage(input: $input) {
+    ...OutgoingMessage
+  }
+}

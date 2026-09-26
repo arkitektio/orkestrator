@@ -19,7 +19,7 @@ import {
 import { AuthSessionFlow } from "../auth/AuthSessionFlow";
 import { Connection } from "../auth/useAuthSession";
 
-export { parseRedirect } from "../auth/redirect";
+export { parseRedirect } from "@/core/connection/oauth/redirect";
 
 const BackTitle = ({ children, onBack }: { children: React.ReactNode; onBack?: () => void }) => (
   <DialogTitle className="flex items-center gap-2">

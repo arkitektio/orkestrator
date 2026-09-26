@@ -1,0 +1,60 @@
+fragment Recipients on OutgoingMessage {
+  to {
+    ...Address
+  }
+  cc {
+    ...Address
+  }
+  bcc {
+    ...Address
+  }
+}
+
+fragment ListOutgoingMessage on OutgoingMessage {
+  id
+  subject
+  status
+  error
+  errorCode
+  createdAt
+  sentAt
+  account {
+    id
+    name
+    emailAddress
+  }
+  to {
+    ...Address
+  }
+}
+
+fragment OutgoingMessage on OutgoingMessage {
+  ...ListOutgoingMessage
+  ...Recipients
+  textBody
+  htmlBody
+  messageId
+  savedToSent
+  creator {
+    id
+    sub
+  }
+  inReplyTo {
+    id
+    subject
+    thread {
+      id
+    }
+  }
+  attachments {
+    id
+    originalFileName
+    contentType
+    sizeBytes
+  }
+  refused {
+    address
+    code
+    message
+  }
+}
