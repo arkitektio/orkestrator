@@ -189,7 +189,7 @@ const TrackLines = ({ layer }: { layer: TrackLayerView }) => {
   /**
    * Upload in a LAYOUT effect, not a passive one.
    *
-   * `platform/draw/Line.tsx` records why: the WGSL vertex layout is derived
+   * `@/core/data/scene/draw/Line` records why: the WGSL vertex layout is derived
    * from the geometry's attributes, so they must exist before the first frame
    * draws. A bare geometry has no `instanceStart`/`instanceEnd` yet, and the
    * missing attribute collapses to a scalar 0.0 in the generated shader rather

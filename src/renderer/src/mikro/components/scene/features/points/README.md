@@ -107,7 +107,16 @@ silently, which is why the layout is unit-tested.
 
 Culling tests against a box in the DATA's own space, not the camera frustum: the layer's affine
 sits between the data and the world, so a world-space test would need the inverse per point.
-The box is currently unbounded — threading a viewport box through is the one place to change.
+`pointsCullBounds.ts` carries the frustum into data space (exact AABB of frustum ∩ the cloud's
+bounds, via `platform/visibility/frustumClip.ts`), grown by the quad radius and a 25% slack, and
+re-culls on the view store's throttled camera emissions. While `cameraMoving` is set the box is
+unbounded, so a throttled cull never trails the view mid-gesture; anything the math cannot vouch
+for (singular placement, no bounds) is unbounded, never empty.
+
+Position (and time) buffers are ONE `StorageInstancedBufferAttribute`, shared by the cull pass
+and the material and owned by the layer. Three frees no storage or indirect buffer on its own,
+so the passes and the material expose `dispose(release)` and the layer frees everything through
+the renderer's attribute map (`storageAttributeReleaser`) on each geometry change.
 
 ## What is not built
 

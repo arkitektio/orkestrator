@@ -28,6 +28,8 @@ import { TIME_DIM, type DimExtent } from "../../platform/model/dimExtents";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { usePublishDimExtents } from "../../platform/stores/useLayerDimExtents";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
+import { useViewStoreApi } from "../../platform/stores/viewStore";
+import type { FrustumClipCoordinateSystem } from "../../platform/visibility/frustumClip";
 import { placementToSpatialAffine, spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { StorageInstancedBufferAttribute } from "three/webgpu";
@@ -36,10 +38,18 @@ import {
   createCullPass,
   createScatterPass,
   loadScatterPairs,
+  storageAttributeReleaser,
   VERTICES_PER_POINT,
   type PointCull,
   type PointScatter,
 } from "./pointsCompute";
+import {
+  pointCullBox,
+  pointDataBounds,
+  sameCullBox,
+  UNBOUNDED_CULL_BOX,
+  type CullBox,
+} from "./pointsCullBounds";
 import { fillPointFilterMask } from "./pointsFilterMask";
 import { loadPointGeometry, scatterPointValues, type PointGeometry } from "./pointsSource";
 import { valueWindowOf } from "../../platform/attributes/valueWindow";
@@ -61,6 +71,8 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
   const renderer = useThree((state) => state.gl) as unknown as {
     computeAsync: (node: unknown) => Promise<void>;
   };
+  // The live camera, read at cull time rather than subscribed to.
+  const getThree = useThree((state) => state.get);
   const service = useAttributeServiceOrNull();
   const client = useMikro();
   const datalayer = useDatalayerEndpoint();
@@ -71,7 +83,11 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
   const cullRef = useRef<PointCull | null>(null);
   const scatterRef = useRef<PointScatter | null>(null);
   const [bundle, setBundle] = useState<PointMaterialBundle | null>(null);
-
+  /** The layer's group: its `matrixWorld` is what carries the frustum into data space. */
+  const groupRef = useRef<THREE.Group | null>(null);
+  /** The box the cull uniforms currently hold, so a camera emission that does not move it
+   *  costs no dispatch. */
+  const appliedBoxRef = useRef<CullBox | null>(null);
 
   // The world's own axis order, needed to read `asAffine`'s ROWS. Not the
   // scene's spatial unit — the names, which mikro writes with x last.
@@ -147,16 +163,13 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
   useEffect(() => {
     if (!geometry) return;
     // The cull pass first: the material reads through its survivor list, so the two are built
-    // together or the draw indexes the wrong points.
-    const culling = createCullPass(
-      // The material owns the position buffer, so it is created first and handed over.
-      new StorageInstancedBufferAttribute(geometry.positions, geometry.stride),
-      geometry.count,
-      geometry.stride,
-      geometry.times ? new StorageInstancedBufferAttribute(geometry.times, 1) : null,
-    );
+    // together or the draw indexes the wrong points. ONE position buffer, read by both — the
+    // layer owns it and frees it below; neither the pass nor the material does.
+    const positions = new StorageInstancedBufferAttribute(geometry.positions, geometry.stride);
+    const times = geometry.times ? new StorageInstancedBufferAttribute(geometry.times, 1) : null;
+    const culling = createCullPass(positions, geometry.count, geometry.stride, times);
     const made = createPointMaterial(
-      geometry.positions,
+      positions,
       new Float32Array(geometry.count),
       geometry.stride,
       { attribute: culling.visible, count: geometry.count },
@@ -168,14 +181,25 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
     bundleRef.current = made;
     cullRef.current = culling;
     scatterRef.current = scattering;
+    appliedBoxRef.current = null;
     setBundle(made);
     return () => {
-      made.dispose();
+      // Three frees none of these storage buffers on its own (see `storageAttributeReleaser`),
+      // so without this every geometry change leaked a full set of them.
+      const release = storageAttributeReleaser(renderer);
+      scattering.dispose(release);
+      culling.dispose(release);
+      made.dispose(release);
+      release(positions);
+      if (times) release(times);
       bundleRef.current = null;
       cullRef.current = null;
       scatterRef.current = null;
+      appliedBoxRef.current = null;
       setBundle(null);
     };
+    // `renderer` is the canvas's for the component's lifetime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geometry]);
 
   // ------------------------------------------------------------------ the colouring
@@ -290,27 +314,69 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
   }, [bundle, colorBy, layer.colormap, layer.pointSize, layer.opacity, invalidate]);
 
   // ------------------------------------------------------------------ culling
+  const dataBounds = useMemo(
+    () => (geometry ? pointDataBounds(geometry.positions, geometry.stride, geometry.count) : null),
+    [geometry],
+  );
+  const viewApi = useViewStoreApi();
+  // Read at cull time, so a size change needs a re-cull but no new callback.
+  const pointSizeRef = useRef(layer.pointSize ?? 3);
+  pointSizeRef.current = layer.pointSize ?? 3;
+  const viewProjectionRef = useRef(new THREE.Matrix4());
+
   /**
-   * Re-dispatch the cull pass. Called when the view moves and when the time
-   * scrubber moves — both change which points survive, neither changes a buffer.
+   * The box the cull should hold NOW, in the data's own space (`pointsCullBounds.ts`).
+   * Unbounded while the camera is flagged moving: emissions are throttled, so a tight box
+   * would trail the view by up to a throttle interval and pop points in at the edges exactly
+   * while the user watches them. Culling is for the view at rest. Also unbounded before the
+   * group has mounted — nothing to place the frustum against yet.
+   */
+  const viewCullBox = useCallback((): CullBox => {
+    const group = groupRef.current;
+    if (!group || viewApi.getState().cameraMoving) return UNBOUNDED_CULL_BOX;
+    const camera = getThree().camera;
+    group.updateWorldMatrix(true, false);
+    return pointCullBox({
+      viewProjection: viewProjectionRef.current.multiplyMatrices(
+        camera.projectionMatrix,
+        camera.matrixWorldInverse,
+      ),
+      model: group.matrixWorld,
+      dataBounds,
+      pointSize: pointSizeRef.current,
+      coordinateSystem: camera.coordinateSystem as FrustumClipCoordinateSystem,
+    });
+  }, [viewApi, getThree, dataBounds]);
+
+  /** Writes the box into the cull uniforms; true when it moved. */
+  const applyCullBox = useCallback(
+    (culling: PointCull, box: CullBox): boolean => {
+      if (sameCullBox(appliedBoxRef.current, box)) return false;
+      // Mutate the uniform vectors in place: assigning a NEW object to a
+      // uniform's `.value` makes the backend re-resolve the binding on every
+      // cull (view move / time scrub).
+      const min = culling.bounds.min.value as THREE.Vector3 | undefined;
+      if (min && typeof min.set === "function") min.set(box.min[0], box.min[1], box.min[2]);
+      else culling.bounds.min.value = new THREE.Vector3(box.min[0], box.min[1], box.min[2]);
+      const max = culling.bounds.max.value as THREE.Vector3 | undefined;
+      if (max && typeof max.set === "function") max.set(box.max[0], box.max[1], box.max[2]);
+      else culling.bounds.max.value = new THREE.Vector3(box.max[0], box.max[1], box.max[2]);
+      appliedBoxRef.current = box;
+      return true;
+    },
+    [],
+  );
+
+  /**
+   * Re-dispatch the cull pass. Called when the time scrubber or a filter moves — which change
+   * which points survive whatever the box — and refreshes the box on the way.
    */
   const runCull = useCallback(() => {
     const culling = cullRef.current;
     if (!culling) return;
-    // The box is in the DATA's own space, because the layer's affine sits between it and the
-    // world -- testing in world space would need the inverse per point. Unbounded until a
-    // viewport box is threaded through, at which point this is the one place to set it.
-    // Mutate the uniform vectors in place: assigning a NEW object to a
-    // uniform's `.value` makes the backend re-resolve the binding on every
-    // cull (view move / time scrub), and these are constants.
-    const min = culling.bounds.min.value as THREE.Vector3 | undefined;
-    if (min && typeof min.set === "function") min.set(-Infinity, -Infinity, -Infinity);
-    else culling.bounds.min.value = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
-    const max = culling.bounds.max.value as THREE.Vector3 | undefined;
-    if (max && typeof max.set === "function") max.set(Infinity, Infinity, Infinity);
-    else culling.bounds.max.value = new THREE.Vector3(Infinity, Infinity, Infinity);
+    applyCullBox(culling, viewCullBox());
     void renderer.computeAsync(culling.node as never).then(() => invalidate());
-  }, [renderer, invalidate]);
+  }, [renderer, invalidate, applyCullBox, viewCullBox]);
 
   // ------------------------------------------------------------------ filters
   // The stored `filterBys`, applied at last: resolved to a per-point uint mask
@@ -405,16 +471,32 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [service, geometry, bundle, filterKey, runCull, invalidate]);
 
-  // Re-run when the view moves, not every frame: the survivor list is only wrong once the
-  // camera has actually changed what is on screen, and a dispatch per frame would spend more
-  // than the culling saves at the sizes this layer is capped to.
-  const cullBounds = useSceneStore((s) => s.transformContext);
+  // Re-run when the placement or the point size moves (both change the box), and once the
+  // group has mounted so the first box is a real one.
   useEffect(() => {
     if (!geometry) return;
     runCull();
-    // `runCull` is stable infrastructure; the view is what re-runs this.
+    // `runCull` is stable infrastructure; these are what re-run this.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geometry, bundle, cullBounds]);
+  }, [geometry, bundle, affine, layer.pointSize, layer.visible]);
+
+  // Re-run when the view moves, not every frame: on the view store's throttled camera
+  // emissions, and only when the box they imply actually moved — a dispatch per frame would
+  // spend more than the culling saves at the sizes this layer is capped to. A plain store
+  // subscription, so a camera gesture never re-renders this layer.
+  useEffect(() => {
+    if (!bundle) return;
+    let lastMatrix = viewApi.getState().viewProjectionMatrix;
+    let lastMoving = viewApi.getState().cameraMoving;
+    return viewApi.subscribe((state) => {
+      if (state.viewProjectionMatrix === lastMatrix && state.cameraMoving === lastMoving) return;
+      lastMatrix = state.viewProjectionMatrix;
+      lastMoving = state.cameraMoving;
+      const culling = cullRef.current;
+      if (!culling || !applyCullBox(culling, viewCullBox())) return;
+      void renderer.computeAsync(culling.node as never).then(() => invalidate());
+    });
+  }, [bundle, viewApi, applyCullBox, viewCullBox, renderer, invalidate]);
 
   /**
    * The timepoint, read IMPERATIVELY, exactly as the tracks layer reads it.
@@ -488,7 +570,7 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
   if (layer.visible === false || !bundle || !geometry) return null;
 
   return (
-    <group matrix={affine} matrixAutoUpdate={false}>
+    <group ref={groupRef} matrix={affine} matrixAutoUpdate={false}>
       <mesh
         frustumCulled={false}
         // Six vertices per instance, one instance per point. The geometry carries no

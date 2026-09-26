@@ -5,10 +5,15 @@ import {
   useThree,
 } from "@react-three/fiber";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { LongCommitProfiler } from "../platform/perf/commitProfiler";
 import { useViewStoreApi } from "../platform/stores/viewStore";
-import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
+import {
+  createWebGPURendererFactory,
+  type DeviceLostInfo,
+} from "@/core/data/scene/gpu/createWebGPURenderer";
+import { RendererDisposer } from "@/core/data/scene/gpu/RendererDisposer";
+import { Button } from "@/core/ui/button";
 import * as THREE from "three";
 import { CameraMatrixSync } from "../platform/camera/CameraMatrixSync";
 import { PerfFrameProbe } from "../platform/perf/PerfFrameProbe";
@@ -47,6 +52,7 @@ import { SceneScreenshot } from "./chrome/SceneScreenshot";
 import { SceneAutoSnapshot } from "../features/animation/useAutoSnapshot";
 import { CanvasHueProbe } from "./theme/CanvasHueProbe";
 import { DebugPanel } from "../features/debug/DebugPanel";
+import { DEBUG_SECTIONS } from "./debugRegistry";
 import { DimSliderPanel } from "./chrome/DimSliderPanel";
 import { SelectedPointPanel } from "../features/probe/SelectedPointPanel";
 import { RoiDeleteKeybinding } from "../features/annotations/RoiDeleteKeybinding";
@@ -170,18 +176,29 @@ const TabVisibilitySync = () => {
   return null;
 };
 
-/**
- * The WebGPU renderer, via the shared factory — the fallback-nulling, timestamp
- * parking and drei anisotropy shim all live there now, shared with elektro's
- * timeline. Module-level so r3f sees one stable `gl` prop.
- */
-const sceneRendererFactory = createWebGPURendererFactory({
-  label: "scene",
-  // The device is live: everything before this was pre-GPU cold open.
-  onInitialized: () => coldOpenTimeline.stamp("canvasMount"),
-});
-
 const SceneWrapper = ({ children }: { children: ReactNode }) => {
+  // A lost device (driver reset, GPU switch, sleep/wake) cannot be revived:
+  // three latches `_isDeviceLost` and every later render is a silent no-op.
+  // Recovery is a new device — a remount of the Canvas under a new key.
+  // BrickSystemProvider rebinds the brick manager to the new renderer
+  // (detach disposes the old pools, attach rebuilds and refetches).
+  const [deviceLost, setDeviceLost] = useState<DeviceLostInfo | null>(null);
+  const [canvasGeneration, setCanvasGeneration] = useState(0);
+  /**
+   * The WebGPU renderer, via the shared factory — the fallback-nulling,
+   * timestamp parking and drei anisotropy shim live there, shared with
+   * elektro. Memoized so r3f sees one stable `gl` prop per wrapper.
+   */
+  const rendererFactory = useMemo(
+    () =>
+      createWebGPURendererFactory({
+        label: "scene",
+        // The device is live: everything before this was pre-GPU cold open.
+        onInitialized: () => coldOpenTimeline.stamp("canvasMount"),
+        onDeviceLost: setDeviceLost,
+      }),
+    [],
+  );
   // A tab that is mounted but not on screen must not schedule frames. In
   // demand mode a scene at rest already draws nothing; "never" also stops the
   // odd frame a chunk arriving in the background would otherwise trigger.
@@ -193,11 +210,36 @@ const SceneWrapper = ({ children }: { children: ReactNode }) => {
   // WebGPU is required — SceneProvider gates on assertWebGPUSupported() before
   // this ever mounts. On macOS this is native Metal, which is what kills the
   // ANGLE texSubImage3D upload stalls (P19).
-  return <Canvas
+  return (
+    <>
+      <Canvas
+        key={canvasGeneration}
         className="select-none [-webkit-user-select:none]"
-        frameloop={visible ? "demand" : "never"}
+        frameloop={visible && !deviceLost ? "demand" : "never"}
         events={sceneEvents}
-        gl={sceneRendererFactory}>{children}</Canvas>;
+        gl={rendererFactory}>
+        <RendererDisposer />
+        {children}
+      </Canvas>
+      {deviceLost && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/70 px-8 text-center text-sm text-zinc-300">
+          <div>
+            The GPU device was lost ({deviceLost.reason ?? "unknown reason"}): {deviceLost.message}
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setDeviceLost(null);
+              setCanvasGeneration((generation) => generation + 1);
+            }}
+          >
+            Reload view
+          </Button>
+        </div>
+      )}
+    </>
+  );
 };
 
 const SceneModeContent = () => {
@@ -374,7 +416,7 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
         </LongCommitProfiler>
 
         <WhenDebug>
-          <DebugPanel />
+          <DebugPanel sections={DEBUG_SECTIONS} />
         </WhenDebug>
         {/* The renderer's own overlays, bracketed so their commits are
             attributable: `SelectedPointPanel` in particular used to sit

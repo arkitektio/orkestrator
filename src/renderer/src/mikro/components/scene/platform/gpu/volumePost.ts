@@ -19,7 +19,7 @@ import {
 // The TSL display nodes are NOT in the `three/tsl` barrel — that ships only the
 // core `src/nodes/display/*` set (pass, renderOutput, luminance, the
 // ColorAdjustment family). Everything else lives in the addons, which the repo
-// already imports from elsewhere (`platform/draw/Line.tsx`,
+// already imports from elsewhere (`@/core/data/scene/draw/Line`,
 // `features/tracks/TracksLayer.tsx`).
 import { bloom } from "three/examples/jsm/tsl/display/BloomNode.js";
 
@@ -135,6 +135,7 @@ export type VolumePostHandle = {
 export function buildVolumeCompositeNode(
   map: THREE.Texture,
   settings: VolumePostSettings | null,
+  options?: VolumeBloomScheduling,
 ): VolumePostHandle {
   if (!settings || isPostInert(settings)) {
     // SCIENTIFIC / inert: the pre-existing node, untouched. `screenUV` is
@@ -193,6 +194,7 @@ export function buildVolumeCompositeNode(
     settings.bloomRadius,
     settings.bloomThreshold,
   );
+  scheduleBloom(glowRaw, options);
   const glow = nodeObject(glowRaw);
 
   let rgb = base.rgb.add(glow.rgb);
@@ -235,6 +237,43 @@ export function buildVolumeCompositeNode(
     dispose: () => glowRaw.dispose?.(),
   };
 }
+
+/**
+ * When and at what size the bloom re-runs.
+ *
+ * Out of the box `BloomNode` re-renders its high-pass and every blur mip on
+ * EVERY frame the composite draws (`updateBeforeType = FRAME`), sized from
+ * the renderer's full-DPR drawing buffer. Both are wrong here: the compositor
+ * serves a CACHED volume target on most frames (overlay/ROI interaction, label
+ * edits), so the glow of an unchanged input is recomputed for nothing; and its
+ * input is the volume target, which is itself 0.5–1× of that buffer.
+ */
+export type VolumeBloomScheduling = {
+  /** False ⇒ skip the blur passes and composite last frame's glow. The glow
+   * lives in BloomNode's own persistent targets, so skipping is free. */
+  shouldUpdate?: () => boolean;
+  /** The bloom's working size: the volume target's, not the canvas's. */
+  sizeOf?: () => { width: number; height: number };
+};
+
+const scheduleBloom = (glowRaw: any, options: VolumeBloomScheduling | undefined): void => {
+  if (options?.sizeOf) {
+    const setSize = glowRaw.setSize.bind(glowRaw);
+    // `updateBefore` calls this with the drawing-buffer size; RenderTarget
+    // setSize is a no-op when unchanged, so this costs nothing per frame.
+    glowRaw.setSize = () => {
+      const size = options.sizeOf!();
+      setSize(Math.max(2, size.width), Math.max(2, size.height));
+    };
+  }
+  if (options?.shouldUpdate) {
+    const updateBefore = glowRaw.updateBefore.bind(glowRaw);
+    glowRaw.updateBefore = (frame: unknown) => {
+      if (!options.shouldUpdate!()) return;
+      return updateBefore(frame);
+    };
+  }
+};
 
 /** Push settings into a built chain. No-op for a passthrough chain. */
 export function updateVolumePostUniforms(

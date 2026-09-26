@@ -203,6 +203,19 @@ export function residentBrickSkippable(members: readonly MemberSkipState[]): boo
 }
 
 /**
+ * The EMPTY-cell hop (shader lockstep: the `esSkipAll` block in
+ * `brickNodeMaterials.ts`). A uniform brick yields ONE value everywhere, so
+ * each member's `upperNorm` is `emptyStepMaxNorm` of the fill over that
+ * member's slots — exact rather than a bound — and the hop is the resident
+ * predicate verbatim. Strictly looser than the old `shouldSkipStep` EMPTY
+ * rule (which is the `done = false`, invisible-only special case), and just
+ * as conservative: a hopped cell cannot change any member's accumulator.
+ */
+export function emptyCellSkippable(members: readonly MemberSkipState[]): boolean {
+  return residentBrickSkippable(members);
+}
+
+/**
  * ATTENUATED_MIP early ray termination bound. The projection ranks samples by
  * `norm · exp(-1.5 · depthFrac)`; `depthFrac` strictly increases along the ray
  * and `norm ≤ 1`, so every future contribution is strictly below

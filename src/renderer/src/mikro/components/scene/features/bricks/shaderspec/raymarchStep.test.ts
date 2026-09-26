@@ -8,6 +8,7 @@ import {
   attenuationAt,
   desiredLevelForDistance,
   directionProjectedPitch,
+  emptyCellSkippable,
   emptyStepMaxNorm,
   normalizeSlotValue,
   occupancyUpperNorm,
@@ -469,5 +470,56 @@ describe("occupancyUpperNormPerSlab", () => {
     expect(occupancyUpperNormPerSlab(perSlab, 0, 255, [{ ...slot(), slab: 7 }])).toBe(
       occupancyUpperNorm(0, 255, 0, 255, [slot()]),
     );
+  });
+});
+
+describe("emptyCellSkippable", () => {
+  const slot = { climMin: 0, climMax: 1, gamma: 1, invert: false, visible: true };
+  const member = (over: Partial<Parameters<typeof emptyCellSkippable>[0][number]>) => ({
+    projectionMode: 0,
+    upperNorm: 0,
+    bestNorm: 0,
+    isoThreshold: 0.5,
+    done: false,
+    ...over,
+  });
+
+  it("contains the old invisible-only rule", () => {
+    for (const fill of [0, 0.0005, 0.2, 0.9]) {
+      const norm = emptyStepMaxNorm(fill, 0, 1, [slot]);
+      if (shouldSkipStep(2, norm)) {
+        expect(emptyCellSkippable([member({ upperNorm: norm })])).toBe(true);
+      }
+    }
+  });
+
+  it("hops a bright fill a MIP ray has already beaten", () => {
+    const norm = emptyStepMaxNorm(0.4, 0, 1, [slot]);
+    expect(shouldSkipStep(2, norm)).toBe(false);
+    expect(emptyCellSkippable([member({ upperNorm: norm, bestNorm: 0.6 })])).toBe(true);
+    // A fill that ties the max changes nothing either: MIP updates on `>`.
+    expect(emptyCellSkippable([member({ upperNorm: norm, bestNorm: norm })])).toBe(true);
+    expect(emptyCellSkippable([member({ upperNorm: norm, bestNorm: 0.3 })])).toBe(false);
+  });
+
+  it("hops an ISO fill below threshold but never a VOLUME fill that shows", () => {
+    expect(emptyCellSkippable([member({ projectionMode: 3, upperNorm: 0.4 })])).toBe(true);
+    expect(emptyCellSkippable([member({ projectionMode: 3, upperNorm: 0.6 })])).toBe(false);
+    expect(emptyCellSkippable([member({ projectionMode: 2, upperNorm: 0.4, bestNorm: 1 })])).toBe(false);
+  });
+
+  it("needs every merged member to agree", () => {
+    expect(
+      emptyCellSkippable([
+        member({ upperNorm: 0.4, bestNorm: 0.6 }),
+        member({ projectionMode: 2, upperNorm: 0.4 }),
+      ]),
+    ).toBe(false);
+    expect(
+      emptyCellSkippable([
+        member({ upperNorm: 0.4, bestNorm: 0.6 }),
+        member({ projectionMode: 2, upperNorm: 0.4, done: true }),
+      ]),
+    ).toBe(true);
   });
 });

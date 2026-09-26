@@ -18,10 +18,25 @@ export type WebGPURendererFactoryOptions = {
   label: string;
   /** Runs once the device is live — e.g. a cold-open timeline stamp. */
   onInitialized?: (renderer: WebGPURenderer) => void;
+  /**
+   * The device was lost (driver reset, GPU switch, sleep/wake) — NOT fired for
+   * our own `dispose()`, whose loss reason is `destroyed`. three's default only
+   * logs and makes every later `render()` a silent no-op, so a caller that
+   * does nothing here shows a frozen frame. The fix is a new device: remount
+   * the Canvas.
+   */
+  onDeviceLost?: (info: DeviceLostInfo) => void;
 };
 
+export type DeviceLostInfo = { message: string; reason: string | null };
+
+/** Uncaptured GPU errors logged per renderer before going quiet: a broken
+ *  pipeline reports once per draw, and 60 identical lines a second bury the
+ *  first — which is the one that names the cause. */
+const MAX_LOGGED_GPU_ERRORS = 10;
+
 export const createWebGPURendererFactory =
-  ({ label, onInitialized }: WebGPURendererFactoryOptions) =>
+  ({ label, onInitialized, onDeviceLost }: WebGPURendererFactoryOptions) =>
   async (props: unknown): Promise<WebGPURenderer> => {
     const renderer = new WebGPURenderer({
       ...(props as Record<string, unknown>),
@@ -57,6 +72,35 @@ export const createWebGPURendererFactory =
     if (tsBackend) {
       tsBackend.__timestampQuerySupported = tsBackend.trackTimestamp === true;
       tsBackend.trackTimestamp = false;
+    }
+
+    // Keep three's handler (it logs and latches `_isDeviceLost`), then tell
+    // the caller.
+    const lossRenderer = renderer as unknown as {
+      onDeviceLost: (info: DeviceLostInfo) => void;
+      _onDeviceLost: (info: DeviceLostInfo) => void;
+    };
+    lossRenderer.onDeviceLost = (info) => {
+      lossRenderer._onDeviceLost(info);
+      onDeviceLost?.({ message: info.message, reason: info.reason ?? null });
+    };
+
+    // WebGPU validation errors are ASYNC: they never throw out of `render()`,
+    // so a try/catch around a pass cannot see them and, unhandled, they reach
+    // the console only as a browser warning without our label.
+    // (No @webgpu/types in this project: the device is typed structurally.)
+    const device = (renderer as unknown as { backend?: { device?: EventTarget } }).backend?.device;
+    if (device) {
+      let logged = 0;
+      device.addEventListener("uncapturederror", (event) => {
+        if (logged >= MAX_LOGGED_GPU_ERRORS) return;
+        logged += 1;
+        const message =
+          (event as Event & { error?: { message?: string } }).error?.message ?? String(event);
+        console.error(
+          `[${label}] uncaptured GPU error${logged === MAX_LOGGED_GPU_ERRORS ? " (further errors suppressed)" : ""}: ${message}`,
+        );
+      });
     }
 
     const anyRenderer = renderer as unknown as {

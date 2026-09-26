@@ -11,6 +11,11 @@ import {
   identityPaletteTexture,
   setMeasurePalette,
 } from "../../platform/gpu/measurePalette";
+import {
+  createPickMaterial,
+  createPickSlotUniform,
+  pickOutputNode,
+} from "../../platform/draw/gpuPickNodes";
 
 // Same escape hatch as `brickNodeMaterials.ts` and `pointsMaterial.ts`: three's
 // TSL TypeScript surface lags the runtime API (node method chaining is typed
@@ -134,6 +139,9 @@ export type NetworkUniforms = {
   uInstanceSaturation: any;
   uInstanceValue: any;
   uInstanceTiered: any;
+  /** The GPU pick pass's source slot (`platform/draw/gpuPick.ts`); the picker
+   *  writes it before this layer's pass. */
+  uPickSlot: any;
 };
 
 /** Created by the manager at construction, BEFORE any bundle exists, so
@@ -155,6 +163,7 @@ export const createNetworkUniforms = (): NetworkUniforms => {
     uInstanceSaturation: uniform(spec.saturation, "float"),
     uInstanceValue: uniform(spec.value, "float"),
     uInstanceTiered: uniform(spec.tiered ? 1 : 0, "float"),
+    uPickSlot: createPickSlotUniform(),
   };
 };
 
@@ -177,13 +186,33 @@ export type NetworkGpuBundle = {
   segments: THREE.Mesh;
   nodeGlyphs: THREE.Mesh;
   arrowGlyphs: THREE.Mesh;
+  /**
+   * The id-writing SIBLING of each display material, for the GPU pick pass:
+   * the same `positionNode`/`vertexNode` objects (so the same storage-buffer
+   * vertex pulling and the same slab clip), the same visibility/isolate
+   * discards, and `pickOutputNode(objectOrdinal, uPickSlot)` as the output.
+   * Compiled on the first pick, never before.
+   */
+  pickMaterialFor: (object: THREE.Object3D) => THREE.Material | null;
   /** Swap the colormap row all three materials sample. A texture swap, never a
    *  recompile; pass null to go back to the identity (flat white) row. */
   setPalette: (row: THREE.DataTexture | null) => void;
   /** Per-plan draw state — three reads `instanceCount` fresh every draw. */
   setCounts: (nodes: number, edges: number) => void;
-  /** Flip `needsUpdate` on the four attributes after a pack. */
-  markUploaded: () => void;
+  /**
+   * Flip `needsUpdate` after a pack. With `used` (element counts per array,
+   * `PackUsed`) only each written prefix is uploaded — an `updateRanges`
+   * write, which three's WebGPU backend honours for storage buffers
+   * (`WebGPUAttributeUtils.updateAttribute`, three r184). An array with
+   * nothing written is skipped. Without `used`, every buffer uploads whole.
+   */
+  markUploaded: (used?: {
+    positions: number;
+    aux: number;
+    values: number;
+    edges: number;
+    edgeValues: number;
+  }) => void;
   dispose: () => void;
 };
 
@@ -311,7 +340,10 @@ export function createNetworkGpuBundle(
 
   const segmentMaterial = new MeshBasicNodeMaterial();
   segmentMaterial.color = new THREE.Color(0.85, 0.86, 0.9);
-  segmentMaterial.transparent = true;
+  // Opaque until the layer asks for opacity < 1 (`applyMaterialToBundle`):
+  // an opaque network writes depth as a compositor OCCLUDER, so it hides the
+  // volumes behind it like a mesh does.
+  segmentMaterial.transparent = false;
   // A quad expanded in the vertex program has no meaningful facing — the two
   // triangles wind either way depending on which side of the camera the
   // segment passes — so culling would drop half of every network.
@@ -452,7 +484,7 @@ export function createNetworkGpuBundle(
 
   const glyphMaterial = new MeshBasicNodeMaterial();
   glyphMaterial.color = new THREE.Color(0.85, 0.86, 0.9);
-  glyphMaterial.transparent = true;
+  glyphMaterial.transparent = false;
 
   // The sphere's local-space vertex, hoisted so the slab clip reads it too
   // (see the segment material's docblock).
@@ -483,7 +515,7 @@ export function createNetworkGpuBundle(
 
   const arrowMaterial = new MeshBasicNodeMaterial();
   arrowMaterial.color = new THREE.Color(0.85, 0.86, 0.9);
-  arrowMaterial.transparent = true;
+  arrowMaterial.transparent = false;
 
   // The cone's local-space vertex, hoisted for the slab clip like the sphere's.
   const arrowPlaced = (() => {
@@ -544,6 +576,53 @@ export function createNetworkGpuBundle(
   arrowGlyphs.frustumCulled = false;
   arrowGlyphs.visible = false;
 
+  // --- pick siblings --------------------------------------------------------
+
+  /**
+   * The object ordinal a pick fragment reports, after the discards its
+   * DISPLAY twin applies — so what is hidden on screen can never be picked.
+   * Segments test the edge bit and isolation; glyphs test the node bit and
+   * arrows the edge bit, and neither isolates (their display programs do not).
+   */
+  const pickOrdinal = (nodeIndex: any, bit: "node" | "edge", isolates: boolean): any => {
+    const auxRow = auxNode.element(nodeIndex);
+    const ordinal = varying(auxRow.y);
+    const visibility = varying(auxRow.w);
+    TSL.Discard(
+      bit === "edge" ? visibility.lessThan(1.5) : visibility.mod(2.0).lessThan(0.5),
+    );
+    if (isolates) {
+      const selected = ordinal.equal(float(uniforms.selectedOrdinal));
+      TSL.Discard(float(uniforms.isolate).greaterThan(0.5).and(selected.not()));
+    }
+    return ordinal;
+  };
+
+  const pickSibling = (display: MeshBasicNodeMaterial, output: any): MeshBasicNodeMaterial => {
+    const material = createPickMaterial(display.side);
+    material.positionNode = display.positionNode;
+    material.vertexNode = display.vertexNode;
+    material.outputNode = output;
+    return material;
+  };
+
+  const segmentPick = pickSibling(
+    segmentMaterial,
+    Fn(() =>
+      pickOutputNode(pickOrdinal(edgesNode.element(instanceIndex.mul(2)), "edge", true), uniforms.uPickSlot),
+    )(),
+  );
+  const glyphPick = pickSibling(
+    glyphMaterial,
+    Fn(() => pickOutputNode(pickOrdinal(instanceIndex, "node", false), uniforms.uPickSlot))(),
+  );
+  const arrowPick = pickSibling(
+    arrowMaterial,
+    Fn(() =>
+      pickOutputNode(pickOrdinal(edgesNode.element(instanceIndex.mul(2)), "edge", false), uniforms.uPickSlot),
+    )(),
+  );
+
   // --- draw state and teardown ---------------------------------------------
 
   const geometries = [segments.geometry, nodeGlyphs.geometry, arrowGlyphs.geometry] as [
@@ -566,24 +645,52 @@ export function createNetworkGpuBundle(
     segments,
     nodeGlyphs,
     arrowGlyphs,
+    pickMaterialFor: (object) =>
+      object === segments
+        ? segmentPick
+        : object === nodeGlyphs
+          ? glyphPick
+          : object === arrowGlyphs
+            ? arrowPick
+            : null,
     setPalette: (row) => setMeasurePalette(paletteNode, paletteIdentity, row),
     setCounts: (nodes, edgeCount) => {
       geometries[0].instanceCount = edgeCount;
       geometries[1].instanceCount = nodes;
       geometries[2].instanceCount = edgeCount;
     },
-    markUploaded: () => {
-      positions.needsUpdate = true;
-      aux.needsUpdate = true;
-      values.needsUpdate = true;
-      edgeValues.needsUpdate = true;
-      edges.needsUpdate = true;
+    markUploaded: (used) => {
+      // Ranges are in the SOURCE array's elements. For `positions` that is the
+      // 3-stride layout the pack writes even after three re-hosts it 4-stride:
+      // the ranged path divides by 3 and rescales to 4 itself.
+      const uploads: [StorageBufferAttribute, number | undefined][] = [
+        [positions, used?.positions],
+        [aux, used?.aux],
+        [values, used?.values],
+        [edgeValues, used?.edgeValues],
+        [edges, used?.edges],
+      ];
+      for (const [attribute, count] of uploads) {
+        // Cleared first: an attribute first uploaded whole (creation) keeps
+        // the ranges it was given until its next ranged write.
+        attribute.clearUpdateRanges();
+        if (count === undefined) {
+          attribute.needsUpdate = true;
+          continue;
+        }
+        if (count <= 0) continue;
+        attribute.addUpdateRange(0, count);
+        attribute.needsUpdate = true;
+      }
     },
     dispose: () => {
       for (const geometry of geometries) geometry.dispose();
       segmentMaterial.dispose();
       glyphMaterial.dispose();
       arrowMaterial.dispose();
+      segmentPick.dispose();
+      glyphPick.dispose();
+      arrowPick.dispose();
       disposeMeasurePalette(paletteNode, paletteIdentity);
     },
   };

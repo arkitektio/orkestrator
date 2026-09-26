@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   VOLUME_POST_DEFAULTS,
   VOLUME_POST_RANGES,
@@ -165,3 +165,60 @@ describe("buildVolumeCompositeNode", () => {
     });
   });
 });
+
+describe("bloom scheduling", () => {
+  const map = new THREE.Texture();
+
+  it("skips the blur passes while nothing changed, and sizes to the volume target", async () => {
+    const { default: BloomNode } = (await import(
+      "three/examples/jsm/tsl/display/BloomNode.js"
+    )) as unknown as { default: { prototype: Record<string, (...a: unknown[]) => unknown> } };
+    const updateBefore = vi
+      .spyOn(BloomNode.prototype, "updateBefore")
+      .mockImplementation(function (this: { setSize(w: number, h: number): void }) {
+        // What the real one does first: size from the drawing buffer.
+        this.setSize(3840, 2160);
+      });
+    const setSize = vi.spyOn(BloomNode.prototype, "setSize").mockImplementation(() => {});
+    try {
+      let dirty = true;
+      const chain = buildVolumeCompositeNode(map, VOLUME_POST_DEFAULTS, {
+        shouldUpdate: () => dirty,
+        sizeOf: () => ({ width: 960, height: 540 }),
+      });
+      // The raw BloomNode is what three calls `updateBefore` on.
+      const node = findBloomNode(chain.colorNode);
+      node.updateBefore({});
+      expect(updateBefore).toHaveBeenCalledTimes(1);
+      expect(setSize).toHaveBeenLastCalledWith(960, 540);
+      dirty = false;
+      node.updateBefore({});
+      expect(updateBefore).toHaveBeenCalledTimes(1);
+      dirty = true;
+      node.updateBefore({});
+      expect(updateBefore).toHaveBeenCalledTimes(2);
+    } finally {
+      updateBefore.mockRestore();
+      setSize.mockRestore();
+    }
+  });
+});
+
+/** Walk a TSL graph to the BloomNode (the chain does not expose it). */
+const findBloomNode = (root: unknown): { updateBefore(frame: unknown): unknown } => {
+  const seen = new Set<unknown>();
+  const stack = [root];
+  while (stack.length) {
+    const node = stack.pop() as Record<string, unknown> | null;
+    if (!node || typeof node !== "object" || seen.has(node)) continue;
+    seen.add(node);
+    if ((node as { constructor?: { name?: string } }).constructor?.name === "BloomNode") {
+      return node as never;
+    }
+    for (const value of Object.values(node)) {
+      if (value && typeof value === "object") stack.push(value);
+      if (Array.isArray(value)) stack.push(...value);
+    }
+  }
+  throw new Error("no BloomNode in the chain");
+};

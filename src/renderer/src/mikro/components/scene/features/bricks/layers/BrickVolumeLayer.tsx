@@ -54,6 +54,7 @@ import {
   useVolumePassRegistration,
   useVolumeRayUniforms,
 } from "./useVolumeRayUniforms";
+import { usePrecompiledBundle } from "./usePrecompiledBundle";
 import {
   buildMergedChannelUniformData,
   buildMergedChannelWindows,
@@ -471,17 +472,20 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
    */
   const hiddenMaterial = isPrimary ? null : HIDDEN_RAYCAST_MATERIAL;
 
-  useEffect(() => {
-    const material = bundle?.material;
-    return () => {
-      material?.dispose();
+  // Compiled off the frame (compileAsync) while the previous material keeps
+  // drawing; the hook owns disposal of every build (see usePrecompiledBundle).
+  const displayed = usePrecompiledBundle(
+    bundle,
+    (built) => {
+      built.material.dispose();
       // Whatever textures are bound at teardown (adoption keeps them long-lived).
-      bundle?.nodes.colormapAtlas.value?.dispose();
+      built.nodes.colormapAtlas.value?.dispose();
       // Absent on a SLIM (all-fixed-shape) material.
-      bundle?.nodes.sourceParams?.value?.dispose();
-      bundle?.nodes.cursorParams?.value?.dispose();
-    };
-  }, [bundle]);
+      built.nodes.sourceParams?.value?.dispose();
+      built.nodes.cursorParams?.value?.dispose();
+    },
+    pool?.structureSignature ?? null,
+  );
 
   // Dynamic uniform-node pushes (no material rebuild).
   useEffect(() => {
@@ -597,11 +601,9 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   }, [bundle, pool, poolsVersion, invalidate, viewerStoreApi]);
 
   useVolumeRayUniforms(bundle?.nodes, {
-    pool,
     // The FINEST level any member planned: residency is shared and the walk goes
     // coarser from here, so this is the finest data actually resident.
     desiredLevel: mergeGroup?.targetLevel ?? planTargetLevel,
-    planTargetLevel,
     // Merged groups share one affine by construction (quantized affine keys
     // in the merge grouping), so the primary's matrix speaks for the group.
     worldMatrix: affineMatrix,
@@ -612,10 +614,9 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   // gradient is taken in level voxels, and microscopy z-steps are routinely 5×
   // the lateral pitch, so an uncorrected normal visibly tilts toward z.
   //
-  // NOTE this uses the layer's true voxel→world scale unconditionally, unlike
-  // `uVoxelWorldSize` above, which the `orkestrator.worldLod` flag can pin to
-  // (1,1,1): that flag is an LOD-metric policy, while anisotropy correction is
-  // a geometric fact about the data.
+  // NOTE this uses the layer's true voxel→world scale, like `uVoxelWorldSize`
+  // above, but for a different reason: that one is an LOD-metric policy,
+  // anisotropy correction is a geometric fact about the data.
   useEffect(() => {
     const nodes = bundle?.nodes;
     if (!nodes) return;
@@ -763,7 +764,7 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
   if (planMode !== "3D" || !pool) return null;
   // The primary must have its material before it can draw; a non-primary
   // renders the invisible placeholder and keeps its interaction surface.
-  const meshMaterial = isPrimary ? bundle?.material : hiddenMaterial;
+  const meshMaterial = isPrimary ? displayed?.material : hiddenMaterial;
   if (!meshMaterial) return null;
 
   const base = pool.geometry.levels[0];

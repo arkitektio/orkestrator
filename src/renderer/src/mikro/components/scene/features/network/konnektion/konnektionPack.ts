@@ -187,6 +187,18 @@ const keeps = (
   return rule.exclude ? !test : test;
 };
 
+/** Elements written into each `PackTarget` array, all from index 0 — the
+ *  prefix an upload needs. Everything past it is stale and never drawn
+ *  (`instanceCount` stops before it). */
+export type PackUsed = {
+  positions: number;
+  aux: number;
+  values: number;
+  edges: number;
+  /** 0 when no per-edge colouring is active: the buffer is then never read. */
+  edgeValues: number;
+};
+
 export type PackResult = {
   /** Packed node slots, ghosts included. */
   nodes: number;
@@ -194,6 +206,8 @@ export type PackResult = {
   edges: number;
   /** Cells packed before any clamp (equals the input length normally). */
   cells: number;
+  /** The written prefix per target array, for a ranged upload. */
+  used: PackUsed;
   /** True when a cell did not fit — unreachable when the target was sized by
    *  `networkCapacityFor` against the budgets the plan ran under. */
   clamped: boolean;
@@ -219,7 +233,15 @@ export function packNetworkCells(
   target: PackTarget,
   styling: NetworkStyling = IDENTITY_STYLING,
 ): PackResult {
-  const capNodes = Math.floor(target.positions.length / 3);
+  // Node capacity from `aux`, never from `positions` alone: three's WebGPU
+  // backend re-hosts an itemSize-3 storage attribute as a 4-stride array on
+  // first upload (`_force3to4BytesAlignment`), so after that
+  // `positions.length / 3` overstates the capacity by a third.
+  const capNodes = Math.min(
+    Math.floor(target.positions.length / 3),
+    Math.floor(target.aux.length / 4),
+    target.values.length,
+  );
   const capEdges = Math.floor(target.edges.length / 2);
 
   let nodeOffset = 0;
@@ -339,6 +361,13 @@ export function packNetworkCells(
     nodes: nodeOffset,
     edges: edgeOffset,
     cells: packed,
+    used: {
+      positions: nodeOffset * 3,
+      aux: nodeOffset * 4,
+      values: nodeOffset,
+      edges: edgeOffset * 2,
+      edgeValues: styling.edgeValues ? edgeOffset : 0,
+    },
     clamped,
     attributesMissing: [...missing].sort(),
     valueMin: Number.isFinite(valueMin) ? valueMin : null,

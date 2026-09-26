@@ -5,7 +5,7 @@
  * polyline, and getting that right means clip → NDC divide, an aspect
  * correction, a perpendicular offset and endcaps. `Line2NodeMaterial` already
  * does all of it in TSL (`three/src/materials/nodes/Line2NodeMaterial.js:159-310`),
- * it is a plain `NodeMaterial` underneath, and `platform/draw/Line.tsx` already
+ * it is a plain `NodeMaterial` underneath, and `@/core/data/scene/draw/Line` already
  * runs it in this scene. Rewriting that expansion to gain a fade would be
  * re-deriving working, load-bearing math.
  *
@@ -19,7 +19,7 @@
  *    MULTIPLIES the edge AA rather than replacing it — a faded line keeps its
  *    smooth edges.
  *
- * THE BLENDING TRAP, and why `transparent` stays false. `platform/draw/Line.tsx`
+ * THE BLENDING TRAP, and why `transparent` stays false. `@/core/data/scene/draw/Line`
  * documents that setting `material.transparent` on a `Line2NodeMaterial` makes
  * its setup composite against `viewportOpaqueMipTexture()` — copying the whole
  * drawing buffer and rebuilding its mip chain EVERY FRAME (`:458-462`). So we
@@ -98,7 +98,7 @@ export const createTrackMaterial = (options: {
 
   // `linewidth`, lowercase — that is the property `materialLineWidth` reads
   // (`MaterialNode.LINE_WIDTH = 'linewidth'`), and the camelCase spelling would
-  // be a silently ignored field. `platform/draw/Line.tsx:116` sets the same one.
+  // be a silently ignored field. `@/core/data/scene/draw/Line` sets the same one.
   material.linewidth = options.lineWidth;
   // Screen-space pixels, which is what `Line2NodeMaterial` implements and also
   // the honest unit: a `lineWidth` in SCENE units is a well-defined length only

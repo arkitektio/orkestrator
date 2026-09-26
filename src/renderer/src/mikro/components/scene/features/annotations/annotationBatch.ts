@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { AnnotationKind, type SceneAnnotationFragment } from "@/mikro/api/graphql";
 import { MIN_DEPTH, ellipseRing, getVectorPoint } from "./annotationBounds";
 import { resolveStyle } from "./annotationStyle";
+import { ellipsoidCrossSectionScale } from "./primitiveDraw";
 
 /**
  * Merged annotation outlines: one `LineSegments2` per (collection, stroke
@@ -11,9 +12,10 @@ import { resolveStyle } from "./annotationStyle";
  *
  * This module is the PURE half — outline geometry and batch layout, unit
  * tested — so the component side only uploads buffers and maps picks.
- * `outlinePoints` MUST stay in lockstep with `AnnotationShape`'s Line-
- * producing branches (`AnnotationLayer.tsx`): it is the same drawing decision,
- * expressed as data.
+ * Every flat shape's outline is drawn here: plane-independent ones by
+ * `buildOutlineBatches`, the plane-following SECTIONED ellipsoid rings by
+ * `buildSectionedOutlineBatches`. `AnnotationShape` keeps only the 3D
+ * wireframe meshes (`drawsOwnMesh`); interiors are `interiorBatch.ts`.
  */
 
 /** Smallest cross-section drawn for an ellipsoid the plane barely grazes. */
@@ -22,11 +24,112 @@ export const MIN_CROSS_SECTION_SCALE = 0.05;
 export const ELLIPSE_SEGMENTS = 48;
 
 /**
- * The polyline a shape's OUTLINE draws, in the collection's space — exactly
- * the points `AnnotationShape` hands its `<Line>`, or null when the shape
- * draws no fat line (points, and the 3D wireframe box/sphere branches).
- * `planeZ` is the flat view's slice in the collection's space (the ellipsoid
- * section input); null in 3D and in scenes without a z axis.
+ * Whether a shape is an extruded 3D box/ellipsoid, drawn as its own
+ * wireframe (+ fill) mesh by `AnnotationShape` rather than by any batch.
+ */
+export function drawsOwnMesh(
+  annotation: SceneAnnotationFragment,
+  flattenToPlane: boolean,
+): boolean {
+  const vectors = annotation.vectors;
+  if (flattenToPlane || !vectors || vectors.length < 2) return false;
+  const isBox =
+    annotation.kind === AnnotationKind.Rectangle || annotation.kind === AnnotationKind.Cube;
+  const isRound =
+    annotation.kind === AnnotationKind.Ellipse || annotation.kind === AnnotationKind.Sphere;
+  if (!isBox && !isRound) return false;
+  const depth = Math.abs((vectors[1][2] ?? 0) - (vectors[0][2] ?? 0));
+  // Box compares the full depth, the ellipsoid its z RADIUS (as the branches do).
+  return (isBox ? depth : depth / 2) >= MIN_DEPTH;
+}
+
+/**
+ * A depth-bearing ellipse/sphere in the flat view: its ring is the cross-
+ * section the plane cuts, so it moves with the plane and lives in the
+ * SECTIONED batches (rebuilt per scrub, over these few shapes only).
+ */
+export function isSectionedEllipse(
+  annotation: SceneAnnotationFragment,
+  flattenToPlane: boolean,
+): boolean {
+  const vectors = annotation.vectors;
+  if (!flattenToPlane || !vectors || vectors.length < 2) return false;
+  if (annotation.kind !== AnnotationKind.Ellipse && annotation.kind !== AnnotationKind.Sphere) {
+    return false;
+  }
+  return Math.abs((vectors[1][2] ?? 0) - (vectors[0][2] ?? 0)) / 2 >= MIN_DEPTH;
+}
+
+export type EllipseRing = { cx: number; cy: number; z: number; rx: number; ry: number };
+
+/**
+ * The drawn ring of a flat ellipse/sphere — for a sectioned one, scaled to the
+ * cross-section at `planeZ` (the flat view's slice in the collection's space;
+ * null in 3D and in scenes without a z axis → unscaled). Null for kinds that
+ * draw no ring (and for the 3D ellipsoid, which is a mesh).
+ */
+export function ellipseRingOf(
+  annotation: SceneAnnotationFragment,
+  flattenToPlane: boolean,
+  planeZ: number | null,
+): EllipseRing | null {
+  const vectors = annotation.vectors;
+  if (!vectors || vectors.length < 2) return null;
+  if (annotation.kind !== AnnotationKind.Ellipse && annotation.kind !== AnnotationKind.Sphere) {
+    return null;
+  }
+  const [[x0, y0, z0], [x1, y1, z1]] = vectors.map((vector) =>
+    getVectorPoint(vector, flattenToPlane),
+  );
+  const rx = Math.abs(x1 - x0) / 2;
+  const ry = Math.abs(y1 - y0) / 2;
+  // True 3D sphere/ellipsoid: wireframe mesh, not a ring.
+  if (!flattenToPlane && Math.abs(z1 - z0) / 2 >= MIN_DEPTH) return null;
+
+  // Depth comes from the raw vectors (`getVectorPoint` discarded z for drawing).
+  const depthCenter = ((vectors[0][2] ?? 0) + (vectors[1][2] ?? 0)) / 2;
+  const depthRadius = Math.abs((vectors[1][2] ?? 0) - (vectors[0][2] ?? 0)) / 2;
+  const sectioned = flattenToPlane && depthRadius >= MIN_DEPTH;
+  const section =
+    planeZ === null || !sectioned
+      ? 1
+      : Math.max(
+          ellipsoidCrossSectionScale(planeZ, depthCenter, depthRadius) ?? 0,
+          // The plane is past the pole — it only reached this shape through
+          // the visibility slab's half-slice of slack. Mark where the
+          // ellipsoid ends rather than collapsing to nothing.
+          MIN_CROSS_SECTION_SCALE,
+        );
+  return {
+    cx: (x0 + x1) / 2,
+    cy: (y0 + y1) / 2,
+    z: z0,
+    rx: rx * section,
+    ry: ry * section,
+  };
+}
+
+/**
+ * The closed polyline of a SECTIONED ellipsoid's ring at `planeZ`, or null
+ * for every other shape (those are `outlinePoints`' job).
+ */
+export function sectionedOutlinePoints(
+  annotation: SceneAnnotationFragment,
+  flattenToPlane: boolean,
+  planeZ: number | null,
+): [number, number, number][] | null {
+  if (!isSectionedEllipse(annotation, flattenToPlane)) return null;
+  const ring = ellipseRingOf(annotation, flattenToPlane, planeZ);
+  if (!ring) return null;
+  const points = ellipseRing(ring.cx, ring.cy, ring.z, ring.rx, ring.ry, ELLIPSE_SEGMENTS);
+  points.push(points[0]);
+  return points;
+}
+
+/**
+ * The polyline a shape's plane-independent OUTLINE draws, in the collection's
+ * space, or null when the shape draws no fat line here (points, the 3D
+ * wireframe box/sphere, and sectioned ellipsoids — `sectionedOutlinePoints`).
  */
 export function outlinePoints(
   annotation: SceneAnnotationFragment,
@@ -74,11 +177,10 @@ export function outlinePoints(
     // True 3D sphere/ellipsoid: wireframe mesh, not a fat line.
     if (!flattenToPlane && rz >= MIN_DEPTH) return null;
 
-    // A SECTIONED ellipsoid's ring depends on the drawn plane, and the batch
+    // A SECTIONED ellipsoid's ring depends on the drawn plane, and this batch
     // deliberately does not: rebuilding every collection's Float32Arrays at
-    // z-scrub cadence was the cost the batch exists to avoid. Those few
-    // shapes keep their own per-shape `<Line>` (AnnotationShape's ellipse
-    // branch), which re-renders alone on a scrub (`shapeReadsPlaneZ`).
+    // z-scrub cadence was the cost the batch exists to avoid. Those shapes go
+    // to `buildSectionedOutlineBatches`, rebuilt per scrub over them alone.
     const depthRadius = Math.abs((vectors[1][2] ?? 0) - (vectors[0][2] ?? 0)) / 2;
     if (flattenToPlane && depthRadius >= MIN_DEPTH) return null;
 
@@ -122,13 +224,35 @@ export type OutlineBatch<R> = {
 const SCRATCH_COLOR = new THREE.Color();
 
 /**
- * Fold the shown shapes' outlines into one batch per stroke width. Point
- * order inside a batch is entry order, so `ranges` is sorted by construction
- * and `roiForSegment` can binary-search a picked `faceIndex`.
+ * Fold the shown shapes' plane-independent outlines into one batch per stroke
+ * width. Point order inside a batch is entry order, so `ranges` is sorted by
+ * construction and `roiForSegment` can binary-search a picked `faceIndex`.
  */
 export function buildOutlineBatches<R>(
   entries: readonly { annotation: SceneAnnotationFragment; roi: R }[],
   flattenToPlane: boolean,
+): OutlineBatch<R>[] {
+  return foldOutlineBatches(entries, (annotation) => outlinePoints(annotation, flattenToPlane));
+}
+
+/**
+ * The sectioned ellipsoid rings at `planeZ`, batched the same way. Callers
+ * pass ONLY the sectioned entries (`isSectionedEllipse`), so a scrub rebuilds
+ * these few rings and never the collection's static batches.
+ */
+export function buildSectionedOutlineBatches<R>(
+  entries: readonly { annotation: SceneAnnotationFragment; roi: R }[],
+  flattenToPlane: boolean,
+  planeZ: number | null,
+): OutlineBatch<R>[] {
+  return foldOutlineBatches(entries, (annotation) =>
+    sectionedOutlinePoints(annotation, flattenToPlane, planeZ),
+  );
+}
+
+function foldOutlineBatches<R>(
+  entries: readonly { annotation: SceneAnnotationFragment; roi: R }[],
+  pointsOf: (annotation: SceneAnnotationFragment) => [number, number, number][] | null,
 ): OutlineBatch<R>[] {
   type Accumulator = {
     lineWidth: number;
@@ -140,7 +264,7 @@ export function buildOutlineBatches<R>(
   const byWidth = new Map<number, Accumulator>();
 
   for (const { annotation, roi } of entries) {
-    const points = outlinePoints(annotation, flattenToPlane);
+    const points = pointsOf(annotation);
     if (!points || points.length < 2) continue;
     // GEOMETRY is selection-independent (selection changes color, never
     // width — asserted below in `batchColors`): a click re-tints, it never
@@ -202,7 +326,10 @@ export function batchColors<R>(
   return colors;
 }
 
-/** The ROI owning a picked segment (`faceIndex` from the fat-line raycast). */
+/**
+ * The ROI owning a picked segment (`faceIndex` from the fat-line raycast) —
+ * or, over an interior batch's triangle ranges, a picked triangle.
+ */
 export function roiForSegment<R>(
   ranges: readonly OutlineRange<R>[],
   segmentIndex: number | null | undefined,

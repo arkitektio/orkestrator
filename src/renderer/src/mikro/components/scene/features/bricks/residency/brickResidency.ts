@@ -1,123 +1,45 @@
-import type { Chunk, DataType } from "zarrita";
 import type { StoreApi } from "zustand/vanilla";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { coldOpenTimeline } from "../../../platform/perf/coldOpenTimeline";
 import {
   DRAIN_PUMP_MS,
   FRAME_UPLOAD_BUDGET,
-  MAX_STALE_QUEUE,
-  gpuFlushUploadBytes,
-  partitionUploadQueue,
   resolveDrainPolicy,
   resolveStreamFrameAction,
-  shouldContinueDrain,
-  shouldContinueStaleDrain,
   shouldDispatchFetch,
 } from "../../../platform/quality/uploadBudget";
 import { qualityGovernor } from "../../../platform/quality/qualityGovernor";
-import { getMax3DTextureSize, type SceneRenderer } from "../../../platform/gpu/sceneRenderer";
-import {
-  chunkCacheKeyFor,
-  effectiveChunkShapeOf,
-  getChunkGroupWorker,
-  getChunkWorker,
-  prefetchShardIndex,
-  readArrayMetadataCached,
-  type ArrayMetadata,
-} from "@/core/data/zarr/runner/index";
-import { workerPool } from "@/core/data/zarr/pool/sharedWorkerPool";
+import type { SceneRenderer } from "../../../platform/gpu/sceneRenderer";
+import { effectiveChunkShapeOf } from "@/core/data/zarr/runner/index";
 import { INTERACTIVE_FETCH_PRIORITY } from "@/core/data/zarr/pool/types";
-import { getInitialVolumeTextureBudgetBytes } from "../../../platform/quality/lodPlanning";
-import {
-  dtypeRangeIsWeakProxy,
-  resolveLayerDataRange,
-  serverHistogramRange,
-} from "../../../platform/model/dataRange";
-import { resolveFixedDimIndex } from "../../../platform/coords/selection";
-import {
-  decodeEmptyValue,
-  encodeEmptyTexel,
-  encodeEmptyValue,
-  encodeOccupancyTexel,
-  type EmptyValueBits,
-} from "../octree/brickEncoding";
-import { ChunkRefRegistry } from "../octree/chunkRefRegistry";
-import { ByteBudgetChunkCache } from "@/core/data/zarr/caches/byteBudgetChunkCache";
-import {
-  BrickPoolState,
-  selectTrimCandidates,
-  type ProtectedKeys,
-} from "../octree/brickPoolState";
-import type { BrickArray, RepackChunk } from "../octree/brickRepack";
-import { assessPoolViability } from "../octree/poolViability";
-import { buildPoolKey, buildStructureSignature, poolValueSemantics } from "../octree/poolKey";
-import {
-  MIN_POOL_HEADROOM_SLOTS,
-  getDecodedChunkCacheBytes,
-  poolHeadroomSlots,
-  resolvePoolBudget,
-} from "../octree/poolBudget";
-import {
-  aggregateIfComplete,
-  aggregateSlabsIfComplete,
-  parentCellsOf,
-} from "../octree/occupancyAggregate";
-import { normalizeSlabRanges, occSlabCountFor } from "../octree/occupancySlabs";
+import { selectTrimCandidates } from "../octree/brickPoolState";
+import type { BrickArray } from "../octree/brickRepack";
+import { getDecodedChunkCacheBytes, poolHeadroomSlots } from "../octree/poolBudget";
+import { normalizeSlabRanges } from "../octree/occupancySlabs";
 import type { RepackDispatcher } from "../octree/repackDispatcher";
-import { resolveBrickSpec, type BrickSpec } from "../octree/brickSpec";
 import {
-  buildLayerLevelGeometry,
-  buildLevelSources,
   hasPhasorSlabs,
-  type LayerLevelGeometry,
   type LevelSource,
   type Vec3,
 } from "../../../platform/coords/levelGeometry";
 import {
-  brickGridForLevel,
   brickFetchBox,
-  chunksTouchingBrick,
   type FetchPhase,
-  nodeKey,
   nodeVoxelBox,
   parseNodeKey,
-  totalBrickCount,
 } from "../octree/nodeAddress";
+import { haloStillWanted, initialFetchPhase } from "./twoPhase";
 import {
-  haloStillWanted,
-  initialFetchPhase,
-  needsHaloRefine,
-} from "./twoPhase";
-import { createNodeKeyMemo, type NodeKeyMemo } from "../octree/nodeKeyMemo";
-import {
-  adjacentSelectionChunk,
-  adjacentSlabBrickZ,
   compareFetchOrder,
   type LayerNodePlan,
   type PlannedNode,
 } from "../octree/nodePlanning";
-import {
-  PAGE_FLAG_EMPTY,
-  PAGE_FLAG_RESIDENT,
-  PAGE_FLAG_UNMAPPED,
-  buildPageTableLayout,
-} from "../octree/pageTableLayout";
+import { PAGE_FLAG_UNMAPPED } from "../octree/pageTableLayout";
 import type { LayerState } from "../../../platform/model/layerModel";
 import type { SceneState } from "../../../platform/stores/sceneStore";
 import type { ViewerState } from "../../../platform/stores/viewerStore";
-import {
-  atlasKindForGeometry,
-  atlasSlotBytes,
-  chunkFidelityForDtype,
-  decodedBytesPerVoxel,
-} from "../octree/atlasFormat";
-import {
-  createBrickAtlas,
-  disposeBrickAtlas,
-  mirrorBrickToBacking,
-  writeBrickToAtlas,
-  type BrickAtlas,
-} from "../gpu/brickAtlas";
+import { atlasSlotBytes } from "../octree/atlasFormat";
+import { disposeBrickAtlas } from "../gpu/brickAtlas";
 import {
   createGpuRepacker,
   type GpuFlushOutcome,
@@ -127,17 +49,63 @@ import {
   runGpuRepackSelfTest,
   type GpuRepackSelfTestResult,
 } from "../gpu/computeRepackSelfTest";
-import {
-  clearPageTable,
-  createPageTableTexture,
-  disposePageTable,
-  ensureAggregate,
-  flushPageTable,
-  setAggregateEntry,
-  setPageEntry,
-  type PageTableTexture,
-} from "../gpu/pageTableTexture";
+import { disposePageTable, flushPageTable, setPageEntry } from "../gpu/pageTableTexture";
 import type { BrickSlice } from "../store/brickSlice";
+import { AdjacentPrefetcher } from "./adjacentPrefetch";
+import {
+  computeFixedIndices,
+  enumerateBrickChunkCoords,
+  warmShardIndexes,
+} from "./brickChunks";
+import { ChunkService } from "./chunkService";
+import {
+  applyGpuOutcomeToPools,
+  type GpuOutcomeContext,
+} from "./gpuOutcome";
+import {
+  buildPoolDerivation,
+  createLayerBrickPool,
+  deriveLayerStructure,
+  resetPoolContents,
+  retargetMovedPool,
+  type LayerStructure,
+} from "./poolLifecycle";
+import {
+  blankOccupancyEntries,
+  foldAutoRange,
+  hasPendingEncodeWork,
+  occPromotionWorthwhile,
+  reencodeEmptyEntries,
+  reencodeOccupancyEntries,
+} from "./rangeEncoding";
+import { buildResidencyDebugReport } from "./residencyDebugReport";
+import { readExactVoxel, resolveResidentRead, sampleChunkCacheSync } from "./residentProbes";
+import {
+  laneOf,
+  partitionDrainLanes,
+  releaseDrainLanes,
+  runDrainLanes,
+  writeBackLane,
+  type DrainEntryDeps,
+  type DrainLane,
+} from "./uploadDrain";
+import type {
+  BrickSystemStats,
+  GpuBrickToken,
+  GpuQueuedChunk,
+  LayerBrickPool,
+  PendingBrick,
+  PoolDerivation,
+  ResidentBrickInfo,
+} from "./residencyTypes";
+
+// The public surface, unchanged by the split: importers keep this path.
+export type { BrickSystemStats, LayerBrickPool, ResidentBrickInfo } from "./residencyTypes";
+export {
+  hasPendingEncodeWork,
+  occPromotionWorthwhile,
+  resolveReusedAutoRange,
+} from "./rangeEncoding";
 
 /**
  * CPU-side octree residency: subscribes to `viewerStore.nodePlans`, fetches
@@ -147,100 +115,23 @@ import type { BrickSlice } from "../store/brickSlice";
  *
  * Owned by `BrickSystemProvider` (needs the renderer); a plain class
  * like `CanvasContext`, referenced from the store by handle only.
+ *
+ * This file is the manager itself — plan reconcile, fetch dispatch and the
+ * brick fetch, the per-frame drain's orchestration, streaming flags and
+ * timers. Its seams live beside it: `residencyTypes` (data shapes),
+ * `chunkService` (decoded-chunk cache + in-flight sharing), `brickChunks`
+ * (chunk enumeration, fixed indices), `poolLifecycle`, `uploadDrain`,
+ * `gpuOutcome`, `rangeEncoding`, `residentProbes`, `adjacentPrefetch`,
+ * `residencyDebugReport` (OCTREE_RENDERER.md §2.8).
  */
 
 // Per-frame texSubImage3D budget lives in ./uploadBudget (bytes + bricks +
 // WALL-CLOCK cap — the time cap is what keeps integrated GPUs smooth, P19).
-const PAGE_TEXTURE_MAX_EXTENT = 2048;
 // In-flight fetch count, residency-bump throttle and upload time budget are
 // TIER-scaled — read from the quality governor's profile at use sites (P19).
 
 const DECODED_CHUNK_CACHE_BYTES = getDecodedChunkCacheBytes();
 
-/** The range occupancy texels are quantized against — the pool range unless
- * the observed-range flag promoted a tighter one (see `occObservedRange`).
- * MUST be the range the shader's `uOccDecodeMin/Range` uniforms hold. */
-const occEncodeRangeOf = (pool: LayerBrickPool): { minValue: number; maxValue: number } => ({
-  minValue: pool.occEncodeMin,
-  maxValue: pool.occEncodeMax,
-});
-
-type SlabRanges = readonly (readonly [number, number])[];
-
-/** Per-slab occupancy texels for a multi-plane pool (`orkestrator.occPerSlab`),
- * or undefined when the pool has one plane / no per-slab measurement — the
- * sidecar then takes the union texel for every plane. */
-const slabTexelsOf = (
-  pool: LayerBrickPool,
-  ranges: SlabRanges | null | undefined,
-): (readonly [number, number])[] | undefined =>
-  pool.occSlabs > 1 && ranges
-    ? ranges.map((range) => encodeOccupancyTexel(range[0], range[1], occEncodeRangeOf(pool)))
-    : undefined;
-
-/**
- * Whether a pool derives `minValue`/`maxValue` from the bricks that land rather
- * than from the dtype (see `LayerBrickPool.autoRange`).
- *
- * Written ONCE and called from both derivation sites — fresh pool creation and
- * the range-move re-derivation — because the two must never disagree.
- *
- * NEVER for a label pool, whatever its dtype: the EMPTY encoding quantizes
- * against exactly this range, so a moving range would make every already-
- * written uniform brick start decoding to a different id.
- */
-const shouldAutoRange = (
-  valueSemantics: "intensity" | "labelIds",
-  dtype: string,
-  layer: Parameters<typeof serverHistogramRange>[0],
-): boolean =>
-  valueSemantics === "intensity" &&
-  dtypeRangeIsWeakProxy(dtype) &&
-  serverHistogramRange(layer) === null;
-
-/**
- * How a REUSED pool's auto-range state carries across `ensurePool`'s movable
- * path (a slice-signature change: T / dim slider, axis remap — never z, which
- * `sliceSignature` deliberately excludes).
- *
- * **`keepRange`** — `derivation.dataRange` is the DTYPE range for an
- * auto-ranging pool (the histogram branch found nothing to use), so taking it
- * would throw away the measured range and re-run the whole ratchet on every
- * slider step. For a SIGNED dtype the dtype range is the pathological one (raw
- * 0 sits at mid-gray), so the layer would flash fogged AND lose empty-space
- * skipping until the first brick lands again. Kept only when the pool was
- * ALREADY auto-ranging, STAYS auto-ranging, and has a real measured range; a
- * policy change — a late server histogram turning `autoRange` off — must take
- * the derived range instead.
- *
- * **`autoRangeInitialized`** — the kept range is a SEED, not a floor. This
- * branch is the only thing that ever clears the flag (`flushPool` does not
- * touch it), and `accumulateAutoRange` only ever WIDENS while it is set. Keep
- * it across a flush and one hot timepoint would permanently dim every other
- * one: scrub to a t with a 30000 spike on otherwise 0..4000 data and every
- * later slice renders windowed to [0, 30000] for the life of the pool.
- * Photobleaching and per-timepoint exposure make that ordinary microscopy, not
- * a corner case. So a FLUSHED pool clears it and the next brick re-FITS
- * wholesale — while `minValue`/`maxValue` still hold the previous slice's
- * range, so nothing ever renders at the dtype range in between. Without a
- * flush the data is unchanged and there is nothing to re-fit.
- *
- * Exported for the vitest matrix, like `occPromotionWorthwhile`.
- */
-export const resolveReusedAutoRange = (
-  pool: { autoRange: boolean; autoRangeInitialized: boolean },
-  nextAutoRange: boolean,
-  flushed: boolean,
-): { keepRange: boolean; autoRangeInitialized: boolean } => {
-  const keepRange = pool.autoRange && nextAutoRange && pool.autoRangeInitialized;
-  return { keepRange, autoRangeInitialized: keepRange && !flushed };
-};
-
-/** Encode work a drain still owes a pool: the two-drain occupancy-range
- * promotion (either phase) or a pending auto-range EMPTY re-encode. The
- * drain idle-latch must NOT clear while any of these is set, or the second
- * drain of the promotion protocol never runs under the demand frame loop
- * (exported for the vitest matrix). */
 /**
  * Margin-only prefetch (fetchBand 2) dispatch gate — see startNextFetchesGlobal.
  * Pure so the policy is unit-testable without a manager.
@@ -253,96 +144,14 @@ export function shouldDeferPrefetch(input: {
   return input.fetchBand === 2 && (input.inFlightOnScreen > 0 || input.interacting);
 }
 
-export const hasPendingEncodeWork = (pool: {
-  occReencodePending: boolean;
-  autoRangeEncodeDirty: boolean;
-}): boolean => pool.occReencodePending || pool.autoRangeEncodeDirty;
-
-/**
- * Whether a DRAINED-EDGE occupancy-range promotion is worth a sidecar
- * rewrite: the observed union escaped the encode range, or tightened to
- * under 80% of it. The escape epsilon is relative to the OBSERVED span —
- * an epsilon on the (possibly tiny, post-first-promotion) encode span
- * turned every union growth during a cold load into an escape, cascading
- * 10-40 promotions per load. Pure, exported for the vitest matrix.
- */
-export const occPromotionWorthwhile = (pool: {
-  occObservedInitialized: boolean;
-  occObservedMin: number;
-  occObservedMax: number;
-  occEncodeMin: number;
-  occEncodeMax: number;
-}): boolean => {
-  if (!pool.occObservedInitialized) return false;
-  const observedSpan = pool.occObservedMax - pool.occObservedMin;
-  if (!(observedSpan > 0)) return false;
-  const encodeSpan = Math.max(pool.occEncodeMax - pool.occEncodeMin, 1e-6);
-  const eps = observedSpan * 0.01;
-  const escaped =
-    pool.occObservedMin < pool.occEncodeMin - eps ||
-    pool.occObservedMax > pool.occEncodeMax + eps;
-  const tightened = observedSpan < encodeSpan * 0.8;
-  return escaped || tightened;
-};
-
-/** A decoded chunk plus its shared-cache key (doubles as the GPU-buffer key). */
-type GpuQueuedChunk = RepackChunk & { cacheKey: string };
-
-type PendingBrick = {
-  key: string;
-  level: number;
-  coords: Vec3;
-  /** CPU path: the repacked brick ready for upload. Null on the GPU path. */
-  data: BrickArray | null;
-  uniformValue: number | null;
-  /** Raw brick [min, max] from the repack scan (occupancy sidecar). Null on
-   * the GPU path — its min/max arrives with the async readback. */
-  range: [number, number] | null;
-  /** Per-slab [min, max] (`RepackResult.slabRanges`), normalized to the
-   * pool's slab count; null on the GPU path until the readback lands. */
-  slabRanges: SlabRanges | null;
-  bytes: number;
-  /** GPU path: raw decoded chunks; the repack runs as a compute dispatch at
-   * drain time, once a slot is acquired. */
-  gpu: { chunks: GpuQueuedChunk[] } | null;
-  /** Which voxel box this brick was fetched with (two-phase bricks): `core`
-   * = payload only, border edge-replicated → the resident brick is
-   * provisional and a `full` halo refine follows; `full` = payload + border. */
-  phase: FetchPhase;
-  /** Drains this PLANNED brick found every slot protected (defer-retry). */
-  acquireRetries?: number;
-};
-
-/** Frames a planned brick waits for a free slot before being dropped. A
- * replan or eviction can free slots any moment, so retrying from the queue
- * is far cheaper than the old drop-and-refetch (which redid the fetch/repack
- * every 200 ms for as long as the plan overshot capacity). The planner's
- * coarsest reservation makes overshoot rare; this makes it cheap. */
-const MAX_ACQUIRE_RETRIES = 30;
-
-/** Identifies a dispatched brick across the async min/max readback; every
- * field is re-validated against the CURRENT mapping when the readback lands. */
-type GpuBrickToken = { poolKey: string; key: string; slotIndex: number };
-
 /** All the manager needs to know about a resource built on its renderer. */
 type RendererBoundResource = { dispose(): void };
-
-/** `acquire()` sentinel treating every occupant as protected: the acquisition
- * succeeds only into a FREE slot, never by eviction — how out-of-plan bricks
- * are allowed to land without displacing planned ones. */
-const FREE_SLOTS_ONLY: ProtectedKeys = { has: () => true };
 
 /** Rate limit for auto-range `poolsVersion` bumps: during early float-layer
  * streaming, range moves can land several times per frame and each bump
  * re-renders the layer components + levels editor. */
 const AUTO_RANGE_BUMP_MS = 150;
 
-/**
- * One-time diagnostic per brick key for the GPU-repack "no dispatches" case.
- * Capped so a pathological dataset cannot grow it without bound (past the cap
- * it degrades to warn-never, which is acceptable for a diagnostics channel —
- * the same trade `transformGraph`'s warnOnce makes).
- */
 /**
  * What the governor's `streaming` flag should do this drain — hysteretic on
  * BOTH edges. Pure so the timing rules are stated once and testable, in the
@@ -393,178 +202,6 @@ export function decideStreamingFlag(input: {
   return now - input.lastStreamingTrueAt >= input.clearMs ? "clear" : "arm-clear";
 }
 
-const GPU_INELIGIBLE_WARN_CAP = 64;
-const gpuIneligibleWarned = new Set<string>();
-const warnOnceGpuIneligible = (key: string, message: string): void => {
-  if (gpuIneligibleWarned.has(key) || gpuIneligibleWarned.size >= GPU_INELIGIBLE_WARN_CAP) return;
-  gpuIneligibleWarned.add(key);
-  console.warn(message);
-};
-
-/** Per-layer derivation feeding `ensurePool` — side-effect free, so layers can
- * be grouped by `poolKey` before anything is allocated. */
-type PoolDerivation = {
-  /** The layer this was derived from. Any member of the group works for the
-   * pool-wide fields (they are equal by construction — that is what the key
-   * asserts); it is kept for `computeFixedIndices` and warnings. */
-  layer: LayerState;
-  mode: "2D" | "3D";
-  levels: readonly LevelSource[];
-  geometry: LayerLevelGeometry;
-  spec: BrickSpec;
-  structureSignature: string;
-  sliceSignature: string;
-  dataRange: readonly [number, number];
-  /** What a slot's contents mean; decides the EMPTY code width. */
-  valueSemantics: "intensity" | "labelIds";
-  poolKey: string;
-};
-
-export type LayerBrickPool = {
-  /** Content address (see `buildPoolKey`) — the map key. NOT a layer id: every
-   * layer whose data, slicing and value range match shares this one pool. */
-  poolKey: string;
-  /**
-   * How wide an EMPTY (uniform) brick's value is encoded in its page entry —
-   * 8 bits for intensities, 24 for label ids. Derived from the pool key's
-   * `valueSemantics`, so every member agrees by construction, and carried here
-   * because both the write path and the CPU mirror need it at every call.
-   */
-  emptyBits: EmptyValueBits;
-  /** Layer ids currently backed by this pool. Refcount: the pool is disposed
-   * when the last member leaves. Never empty for a live pool. */
-  members: Set<string>;
-  mode: "2D" | "3D";
-  sliceSignature: string;
-  /** Structural identity: levels + spec + slabs + mode. Distinct from
-   * `poolKey`, which additionally pins the slice and the value range — a pool
-   * whose structure still matches can be FLUSHED in place (atlas reused)
-   * instead of rebuilt. */
-  structureSignature: string;
-  geometry: LayerLevelGeometry;
-  spec: BrickSpec;
-  atlas: BrickAtlas;
-  pageTable: PageTableTexture;
-  pool: BrickPoolState;
-  protectedKeys: Set<string>;
-  /** Resident coarsest-level keys — maintained incrementally so reconcile can
-   * pin them without walking (and string-parsing) the whole pool per replan. */
-  coarsestResident: Set<string>;
-  inFlight: Map<string, AbortController>;
-  /** Plan nodes waiting for a free fetch slot (refreshed per reconcile), in
-   * REVERSE dispatch order — startNextFetches pops from the tail (O(1); a
-   * shift-consumed queue was O(n²) across a large plan). */
-  pendingFetch: PlannedNode[];
-  /** Resident bricks uploaded from a `core` fetch whose 1-voxel border is
-   * still edge-replicated (two-phase bricks). Cleared by the halo refine,
-   * eviction, or flush. */
-  provisionalKeys: Set<string>;
-  /** Halo refines waiting for dispatch (tail = next), served only when no
-   * pool has planned core work and the camera rests — see dispatchHalos. */
-  pendingHalo: PlannedNode[];
-  /** Bounded per-key retry counts for failed fetches of still-planned bricks
-   * (self-heal without waiting for the next replan). Cleared per reconcile. */
-  fetchRetries: Map<string, number>;
-  queue: PendingBrick[];
-  /** Keys currently in `queue` (O(1) membership for reconcile). */
-  queuedKeys: Set<string>;
-  /** Uniform bricks: page-mapped EMPTY, no slot; value = the uniform fill. */
-  emptyValues: Map<string, number>;
-  /** Bricks the GPU repacker reported as `unsupported` — it can never produce
-   * them, so they must take the CPU path on every retry. Without this the
-   * requeue re-dispatched them to the GPU, they failed identically, and the
-   * page entry unmapped/refilled forever with no camera motion (see the
-   * `unsupported` bucket in `GpuFlushOutcome`). Bounded by brick count. */
-  gpuIneligibleKeys: Set<string>;
-  /** Raw `[min, max]` of every RESIDENT brick (from the repack min/max scan /
-   * GPU readback) — backs the occupancy sidecar's re-encode when the pool
-   * range moves (quantization is relative to the range, exactly like
-   * `emptyValues`). Entries are dropped on evict; bounded by slot count. */
-  brickRanges: Map<string, [number, number]>;
-  /** Per-dim fixed chunk coords / in-chunk offsets for non-spatial dims. */
-  fixedChunkCoords: number[];
-  fixedOffsets: number[];
-  /** Layer data range (raw value space) — shader normalization + EMPTY encode. */
-  minValue: number;
-  maxValue: number;
-  /** Weak-proxy-dtype layers with no server value histogram would normalize
-   * against a dtype fallback that does not describe the data — floats saturate
-   * anything valued >1 to white, signed integers put raw 0 at mid-gray (see
-   * `dtypeRangeIsWeakProxy`). When true, `minValue`/`maxValue` are instead
-   * derived from a running min/max over the per-brick ranges the repack
-   * pipeline already computes (auto-contrast). */
-  autoRange: boolean;
-  /** A range move requires re-encoding every EMPTY page entry (they store the
-   * value quantized against the pool range). Marked here and applied ONCE per
-   * drain frame — early float streaming can move the range several times per
-   * frame, and each immediate rewrite re-uploaded page-table regions. */
-  autoRangeEncodeDirty: boolean;
-  /** True once a non-degenerate brick has seeded the real auto-range, so the
-   * first update replaces the provisional `[0,1]` seed instead of unioning. */
-  autoRangeInitialized: boolean;
-  /** Occupancy OBSERVED-range encoding (`orkestrator.occObservedRange`,
-   * captured at pool creation): quantize the occupancy sidecar against the
-   * running union of every landed brick range instead of the pool (dtype)
-   * range — on dim integer data the dtype-range encoding collapses to a few
-   * codes and MIP maximum-culling never fires. `occEncodeMin/Max` is the
-   * range the sidecar texels are CURRENTLY encoded against (the shader's
-   * `uOccDecodeMin/Range` must always equal it — the lockstep invariant);
-   * `occObserved*` is the running union that PROMOTES into it via a
-   * DRAINED-EDGE two-drain protocol (the drain flush loop promotes only
-   * when the pipeline is quiet AND `occPromotionWorthwhile`: blank all
-   * texels + promote + bump, then `occReencodePending` → re-encode next
-   * drain) so there is never a frame where texels are encoded against a
-   * range the shader uniforms don't hold — blanked texels are the "never
-   * skip" sentinel under ANY uniforms, and promotion happens at most ONCE
-   * per stream burst (per-brick promotion cascaded 10-40 sidecar rewrites
-   * + off-cadence frames per cold load). Flag off: `occEncode*` mirrors
-   * the pool range (bit-identical to the legacy single-range behavior). */
-  occObservedRange: boolean;
-  occObservedMin: number;
-  occObservedMax: number;
-  occObservedInitialized: boolean;
-  occEncodeMin: number;
-  occEncodeMax: number;
-  occReencodePending: boolean;
-  /** Hierarchical occupancy (R4, `orkestrator.occHierarchy`, captured at
-   * pool creation). `measuredRanges` holds every brick's raw measured
-   * [min,max] (uniform bricks as [v,v]) and — unlike `brickRanges` —
-   * SURVIVES EVICTION: ranges are statements about the data, invalidated
-   * only by a pool flush. `aggregateRanges` holds the written level-h
-   * aggregates (key = nodeKey(h, cell)) so promotions can blank/re-encode
-   * them without re-checking completeness. See occupancyAggregate.ts. */
-  occHierarchy: boolean;
-  measuredRanges: Map<string, readonly [number, number]>;
-  aggregateRanges: Map<string, readonly [number, number]>;
-  /** Per-slab occupancy (`orkestrator.occPerSlab`, `octree/occupancySlabs.ts`):
-   * the sidecar plane count captured at pool creation (the page table's
-   * textures are sized by it, so unlike the other flags it cannot be
-   * re-captured on reuse), and the per-slab twins of `brickRanges` /
-   * `measuredRanges` / `aggregateRanges` — populated only when `occSlabs > 1`
-   * and cleared alongside their union maps. */
-  occSlabs: number;
-  brickSlabRanges: Map<string, SlabRanges>;
-  measuredSlabRanges: Map<string, SlabRanges>;
-  aggregateSlabRanges: Map<string, SlabRanges>;
-  /** Keys whose slot was written by the GPU repack kernel: the CPU atlas
-   * mirror never sees those writes, so `sampleResident` must read THESE bricks
-   * from the decoded chunk cache instead (`sampleChunkCacheSync`). Scoped
-   * per brick — CPU-uploaded bricks keep the fast mirror read. */
-  gpuStaleKeys: Set<string>;
-  /** Min target level across the member plans, from the last reconcile. Bricks
-   * FINER than this are unreachable by the shader (its residency walk starts at
-   * the desired level and moves coarser), so they are trimmed from the pool and
-   * refused entry by the stale drain. */
-  minTargetLevel: number;
-  /** Which repack path the LAST fetched brick took, with the reason when it
-   * fell back to the CPU (debug report only): "gpu", "cpu:phasor",
-   * "cpu:no-repacker", "cpu:pending"/"cpu:broken", "cpu:unsupported:<kind>". */
-  lastRepackPath: string | null;
-  /** Per-level `nodeKey` memo for the CPU probe walk — see nodeKeyMemo.ts.
-   * Garbage avoidance only; it caches no residency and needs no invalidation. */
-  nodeKeys: NodeKeyMemo;
-};
-
 type Deps = {
   viewerStore: StoreApi<ViewerState & BrickSlice>;
   sceneStore: StoreApi<SceneState>;
@@ -577,130 +214,12 @@ type Deps = {
   isInteracting?: () => boolean;
 };
 
-export type ResidentBrickInfo = {
-  level: number;
-  coords: Vec3;
-  empty: boolean;
-};
-
-export type BrickSystemStats = {
-  /** Bricks whose fetch completed AND entered the upload queue (bricks
-   * discarded by the staleness checkpoint count as `staleFetches` instead). */
-  bricksFetched: number;
-  /** Two-phase bricks: fetches that ran payload-only (`core`), and resident
-   * provisional bricks whose halo refine has since landed. */
-  coreBricks: number;
-  haloRefines: number;
-  chunkRequests: number;
-  /** Worker fetch tasks actually enqueued for brick chunks. Below
-   * `chunkRequests` when inner chunks of one shard coalesced into a single
-   * ranged GET (`chunkRequests / rangeRequests` = chunks per request). */
-  rangeRequests: number;
-  /** Bytes of FIRST-SEEN chunks only — approximates unique decode volume
-   * (cache hits and shared in-flight awaits are not re-counted). */
-  bytesDecoded: number;
-  fetchMs: number;
-  repackMs: number;
-  /** GPU-repacked bricks (compute dispatch instead of worker + upload). */
-  gpuBricks: number;
-  /** NOT A COST. Sum over flushes of submit→min/max-readback LATENCY. One flush
-   * is submitted per drainUploads (i.e. per frame) and flushes OVERLAP, so this
-   * double-counts wall time and is not additive with anything. It also excludes
-   * every synchronous part of the submit path — the chunk writeBuffer, params
-   * packing, encoder recording and queue.submit all run before the first await
-   * inside flush(), so they land in `uploadMs`. Do NOT divide it by gpuBricks:
-   * a batch of one brick bills a full submit→map round trip (~1.5 vsync) and
-   * reads as "24 ms per brick" when the real main-thread cost is `uploadMs`.
-   * For the honest per-brick cost use uploadMs; for pipeline health use
-   * timeToSharpMs; for the worst single round trip use gpuRepackLatencyMaxMs. */
-  gpuRepackLatencyMsSum: number;
-  /** Longest single submit→readback round trip. A real regression moves THIS. */
-  gpuRepackLatencyMaxMs: number;
-  /** Batch sizes seen by the GPU repacker: total dispatched bricks / flushes.
-   * A mean near 1 means the 32 s-style latency sums are pure pipeline latency
-   * with no batching to amortize them. */
-  gpuRepackFlushes: number;
-  uploadMs: number;
-  /** WALL-CLOCK ms from "plan enqueued work while idle" to "pipeline drained"
-   * (queue+inFlight+pendingFetch empty) — the honest time-to-sharp number.
-   * fetchMs/repackMs are SUMS across concurrent bricks and overstate wall
-   * time; judge streaming changes against this, not those. */
-  timeToSharpMs: number;
-  /** WALL-CLOCK ms from the most recent slice-signature flush (t/τ slider
-   * step) to the pipeline draining — the perceived cost of a dim step. The
-   * adjacent-selection prefetch exists to shrink this on ±1 scrubs. */
-  lastFlushToDrainedMs: number;
-  bricksUploaded: number;
-  bytesUploaded: number;
-  emptyBricks: number;
-  evictions: number;
-  /** Queued out-of-plan bricks dropped: no free slot at drain time, or
-   * stale-queue cap overflow. The repack was paid for; nothing landed. */
-  planDrops: number;
-  /** Planned bricks that found every slot protected at drain time. */
-  acquireFailures: number;
-  /** Residents released because they were finer than every plan's target level
-   * — slots the shader could never read, reclaimed as cache headroom. */
-  trimmed: number;
-  /** Bricks whose fetch completed after the plan moved on: repack and upload
-   * skipped, decoded chunks retained in the cache (flip-back stays cheap). */
-  staleFetches: number;
-  /** Out-of-plan bricks uploaded into FREE slots on leftover budget —
-   * fallback data, never under the first-brick free pass. */
-  staleUploads: number;
-  /** Zero-referrer chunk fetches aborted after their LAST brick let go:
-   * still-queued decode tasks are cancelled outright (the win); already
-   * started ones finish into the chunk cache regardless (aborting shared
-   * in-progress decodes was the 13× amplification bug — never do that). */
-  cancelledDecodes: number;
-  fetchErrors: number;
-  /** Streaming wakeups whose render was coalesced by the cadence gate — each
-   * one is a whole-scene re-raymarch that no longer happened (gap 1a). */
-  streamFramesCoalesced: number;
-  /** Hierarchical-occupancy aggregate texels written (R4) — a write happens
-   * when a parent cell's LAST child range lands (or on re-encode). */
-  aggregateWrites: number;
-};
-
 export class BrickResidencyManager {
   /** Keyed by POOL KEY (content address), not layer id — see `buildPoolKey`. */
   private readonly pools = new Map<string, LayerBrickPool>();
   /** layer id → pool key, so the public per-layer accessors (`getLayerPool`,
    * `sampleResident`, …) keep their signatures and every consumer is unchanged. */
   private readonly layerToPoolKey = new Map<string, string>();
-  private readonly chunkCache = new ByteBudgetChunkCache(DECODED_CHUNK_CACHE_BYTES);
-  /** Per-store zarr chunk-key encoders for the sync chunk-cache probe read
-   * (`sampleChunkCacheSync`). null = metadata resolution in flight. */
-  /** Per store: the array metadata the probe path keys the chunk cache with
-   * (encoder + sharding layout); `null` while resolving. */
-  private readonly chunkKeyEncoders = new Map<string, ArrayMetadata | null>();
-  /** Single-entry memo for the sync chunk-cache probe: consecutive march
-   * steps overwhelmingly read the SAME decoded chunk, so the last one is
-   * kept keyed by its FULL zarr chunk coords — a hit skips the cache-key
-   * string build and the LRU mutation entirely (≈256×/frame during a 3D
-   * hover). Safe without invalidation: decoded chunks are immutable and any
-   * slice/dim change alters the coord tuple, which is compared in full. */
-  private lastChunkRead: {
-    storeId: string;
-    coords: number[];
-    chunk: Chunk<DataType>;
-  } | null = null;
-  /** Scratch for the memo's coord tuple (avoids a per-sample allocation). */
-  private readonly chunkCoordsScratch: number[] = [];
-  /** Scratch for `resolveResidentRead`'s per-level voxel (probe march hot
-   * path; read and discarded within the loop body, never retained). */
-  private readonly levelVoxelScratch: [number, number, number] = [0, 0, 0];
-  /** In-flight decoded-chunk promises, shared across bricks: without this,
-   * N concurrent bricks touching the same plane chunk decode it N times
-   * (observed 73× fetch amplification on plane-chunked SPIM data). */
-  private readonly inFlightChunks = new Map<string, Promise<Chunk<DataType>>>();
-  /** Per-in-flight-chunk abort: fired ONLY when the last referring brick
-   * releases (see chunkRefs) — the worker pool then cancels the task if it
-   * is still QUEUED, while a started task ignores it and finishes into the
-   * cache. Entries live exactly as long as their inFlightChunks entry. */
-  private readonly inFlightChunkAborts = new Map<string, AbortController>();
-  /** Which live bricks need which in-flight chunk (`features/bricks/octree/chunkRefRegistry`). */
-  private readonly chunkRefs = new ChunkRefRegistry();
   /** Monotonic per-fetch owner suffix: a brick dropped and immediately
    * re-planned runs TWO overlapping fetchBrick invocations with the SAME
    * node.key — with the bare key as owner, the old invocation's finally
@@ -713,9 +232,6 @@ export class BrickResidencyManager {
    * pools. Margin prefetch (band 2) dispatches only when this is 0 and the
    * camera is at rest — see startNextFetchesGlobal. */
   private inFlightOnScreen = 0;
-  /** Chunk fetches outlive individual brick aborts (shared!); this cancels
-   * them all on dispose. */
-  private readonly fetchAbort = new AbortController();
   private disposed = false;
   private lastResidencyBumpAt = 0;
   /** Monotonic plan generation, used as the worker-pool priority of every
@@ -736,17 +252,6 @@ export class BrickResidencyManager {
    * null while quiet / already streaming. See applyStreamingFlag. */
   private busySinceAt: number | null = null;
   private streamingAssertTimer: ReturnType<typeof setTimeout> | null = null;
-  /** CPU-uploaded bricks whose backing-mirror copy is deferred to idle time
-   * (the copy is main-thread work inside the drain budget otherwise). Until
-   * it lands the key sits in `gpuStaleKeys`, so probes read the chunk cache. */
-  private readonly mirrorQueue: {
-    pool: LayerBrickPool;
-    key: string;
-    slotIndex: number;
-    slotCoords: Vec3;
-    data: BrickArray;
-  }[] = [];
-  private mirrorIdleScheduled = false;
   /** Per-layer geometry/spec derivation cache: nodePlanTracker derives the
    * identical values moments earlier in the same tick, and re-running
    * buildLevelSources + buildLayerLevelGeometry + resolveBrickSpec +
@@ -754,19 +259,7 @@ export class BrickResidencyManager {
    * (≤5×/s during a zoom) was pure allocation churn. Keyed on the input
    * identities the derivation actually reads; only successes are cached, so
    * a store that opens late retries naturally. */
-  private readonly layerDerivationCache = new Map<
-    string,
-    {
-      layer: LayerState;
-      dataArrays: unknown;
-      mode: "2D" | "3D";
-      levels: LevelSource[];
-      geometry: LayerLevelGeometry;
-      spec: BrickSpec;
-      structureSignature: string;
-      viability: ReturnType<typeof assessPoolViability>;
-    }
-  >();
+  private readonly layerDerivationCache = new Map<string, LayerStructure>();
   /** Auto-range bump throttle (see AUTO_RANGE_BUMP_MS); the trailing timer
    * guarantees the LAST range move of a burst always publishes. */
   private lastPoolsBumpAt = 0;
@@ -805,6 +298,12 @@ export class BrickResidencyManager {
     streamFramesCoalesced: 0,
     aggregateWrites: 0,
   };
+  /** Decoded-chunk cache, in-flight sharing and referrer cancellation. */
+  private readonly chunks = new ChunkService(this.stats, DECODED_CHUNK_CACHE_BYTES);
+  /** Idle-edge neighbour warm-up (z±1 slabs, ±1 collapsed-dim selections). */
+  private readonly prefetcher = new AdjacentPrefetcher(this.pools, this.chunks, () =>
+    this.deps.viewerStore.getState(),
+  );
   /** Streaming render-cadence gate (gap 1a — see resolveStreamFrameAction):
    * last actually-issued streaming invalidate, and the off-frame pump timer
    * that keeps drainUploads running between the coalesced frames. */
@@ -814,12 +313,8 @@ export class BrickResidencyManager {
    * pump keeps re-entering the gate until the cadence window closes and the
    * frame lands, even if the upload queue drained mid-window. */
   private pendingStreamFrame = false;
-  /** Chunk keys already counted toward bytesDecoded. */
-  private readonly countedChunkKeys = new Set<string>();
   /** Layers already warned about a non-viable pool (one warning per layer). */
   private readonly warnedUnviable = new Set<string>();
-  /** Stores whose chunk-key metadata read failed at least once (one warning). */
-  private readonly warnedEncoderStores = new Set<string>();
   /** undefined = not yet attempted; null = unavailable (pipeline failed, or
    * disabled via the localStorage kill switch) — the CPU worker path then
    * handles every brick. */
@@ -967,10 +462,6 @@ export class BrickResidencyManager {
     return runGpuRepackSelfTest(this.renderer);
   }
 
-  /** Debug-report probe: every channel slab's raw value at two fixed voxels
-   * (volume center and quarter point), read from the atlas CPU mirror via
-   * `sampleResident`. Null entries = nothing resident there (or the mirror is
-   * stale on the GPU-repack path). */
   /**
    * Whether a level's array is `sharding_indexed` — i.e. its planning chunk
    * shape (inner chunks) differs from zarrita's `arr.chunks` (the shard).
@@ -986,27 +477,6 @@ export class BrickResidencyManager {
     }
   }
 
-  private probeChannelSlabs(
-    pool: LayerBrickPool,
-  ): { voxel: Vec3; values: (number | null)[] }[] {
-    const [sx, sy, sz] = pool.geometry.levels[0].spatialShape;
-    const voxels: Vec3[] = [
-      [Math.floor(sx / 2), Math.floor(sy / 2), Math.floor(sz / 2)],
-      [Math.floor(sx / 4), Math.floor(sy / 4), Math.floor(sz / 4)],
-    ];
-    // Any member resolves to this same pool, so the probe reads the shared
-    // atlas regardless of which id it goes through.
-    const anyMember = pool.members.values().next().value;
-    if (anyMember === undefined) return [];
-    return voxels.map((voxel) => ({
-      voxel,
-      values: Array.from({ length: pool.spec.channelCount }, (_, channel) =>
-        this.sampleResident(anyMember, voxel, 0, channel),
-      ),
-    }));
-  }
-
-  /** Structured snapshot for the DebugPanel's copyable report. */
   /**
    * Bytes a LIVE pool's atlas was actually allocated at, or null if no such
    * pool exists yet.
@@ -1026,124 +496,24 @@ export class BrickResidencyManager {
     return this.pools.get(poolKey)?.atlas.byteLength ?? null;
   }
 
+  /** Structured snapshot for the DebugPanel's copyable report. */
   buildDebugReport(): Record<string, unknown> {
-    let atlasBytesTotal = 0;
-    for (const pool of this.pools.values()) atlasBytesTotal += pool.atlas.byteLength;
-    return {
-      stats: { ...this.stats, chunkCacheBytes: this.chunkCache.sizeBytes },
-      /** Time-to-first-voxel decomposition for THIS scene open. The only
-       * instrumentation that can see the cold open — perfMonitor only arms
-       * once the scene is already up. See coldOpenTimeline. */
-      coldOpen: coldOpenTimeline.buildReport(),
-      /** Pools, NOT layers. Fewer pools than layers means sharing is working;
-       * one pool per layer over the same image means the key is splitting on
-       * something it should not (compare the `poolKey`s). */
-      poolCount: this.pools.size,
+    return buildResidencyDebugReport({
+      pools: this.pools,
+      stats: this.stats,
+      chunkCacheBytes: this.chunks.sizeBytes,
       layerCount: this.layerToPoolKey.size,
-      /** Which compositor this session compiled. The fixed-shape specialization
-       * is a build-time choice with no runtime trace, and it is bisected by a
-       * kill switch — so a pasted report has to SAY which side it was on, or
-       * the switch is not a bisect tool (pitfall P10: telemetry that lies is
-       * worse than none). "off" includes the case where `shaderFastPath` is
-       * off, which mutes it. */
-      fixedShapeFastPath: "on",
-      /** Summed atlas GPU bytes across pools. In lazy-mirror mode (the
-       * default, roadmap R3) this IS the footprint; with
-       * `orkestrator.atlasMirror = "on"` a JS-heap copy costs the same again. */
-      atlasBytesTotal,
-      timeToSharpRing: this.timeToSharpRing.map((ms) => Math.round(ms)),
+      timeToSharpRing: this.timeToSharpRing,
       gpuRepack:
         this.gpuRepacker === undefined
           ? "not-attempted"
           : this.gpuRepacker === null
             ? "unavailable"
             : this.gpuRepacker.status(),
-      pools: [...this.pools.values()].map((pool) => {
-        const residentByLevel: Record<number, number> = {};
-        for (const key of pool.pool.keys()) {
-          const { level } = parseNodeKey(key);
-          residentByLevel[level] = (residentByLevel[level] ?? 0) + 1;
-        }
-        return {
-          poolKey: pool.poolKey,
-          /** Every layer this pool backs. Four ids here = four layers sharing
-           * one atlas (the one-layer-per-channel case). */
-          members: [...pool.members],
-          mode: pool.mode,
-          spec: {
-            payload: pool.spec.payload,
-            border: pool.spec.border,
-            stored: pool.spec.stored,
-            channels: pool.spec.channelCount,
-          },
-          levels: pool.geometry.levels.map((level) => ({
-            spatialShape: level.spatialShape,
-            // INNER chunks for a sharded level (the fetch unit); `sharded`
-            // says whether `spatialChunks` differs from the storage object.
-            spatialChunks: level.spatialChunks,
-            sharded: this.levelIsSharded(level.storeId),
-            scale: level.scale,
-            dtype: level.dtype,
-            storeId: level.storeId,
-          })),
-          atlas: {
-            kind: pool.atlas.kind,
-            channelsPerTexel: pool.atlas.channelsPerTexel,
-            size: pool.atlas.size,
-            slotGrid: pool.atlas.slotGrid,
-            capacity: pool.atlas.capacity,
-            bytes: pool.atlas.byteLength,
-          },
-          pageTableSize: pool.pageTable.layout.size,
-          slotsUsed: pool.pool.size,
-          // Cache headroom actually achieved vs. intended. `chooseSlotGrid`
-          // factorises the slot count and can round DOWN, so the target is a
-          // goal, not a guarantee — read these two together before concluding
-          // the budget maths is wrong.
-          freeSlots: pool.atlas.capacity - pool.pool.size,
-          // The EFFECTIVE target (capped at half a small pool — reporting the
-          // raw constant read as "8 free of 64 wanted" on a 9-slot atlas that
-          // was in fact perfectly sized).
-          headroomTarget: poolHeadroomSlots(pool.atlas.capacity),
-          residentByLevel,
-          emptyBricks: pool.emptyValues.size,
-          inFlight: pool.inFlight.size,
-          uploadQueue: pool.queue.length,
-          pendingFetch: pool.pendingFetch.length,
-          // Two-phase bricks: residents still wearing a replicated rind, and
-          // halo refines waiting for an idle pipeline.
-          provisional: pool.provisionalKeys.size,
-          pendingHalo: pool.pendingHalo.length,
-          protectedKeys: pool.protectedKeys.size,
-          dataRange: [pool.minValue, pool.maxValue],
-          occEncodeRange: [pool.occEncodeMin, pool.occEncodeMax],
-          occObservedRange: pool.occObservedInitialized
-            ? [pool.occObservedMin, pool.occObservedMax]
-            : null,
-          occHierarchy: pool.occHierarchy
-            ? {
-                measured: pool.measuredRanges.size,
-                aggregatesComplete: pool.aggregateRanges.size,
-              }
-            : null,
-          // Per-slab occupancy: plane count (1 = union) and a sample of the
-          // per-channel brackets, to eyeball that channels really differ.
-          occSlabs: pool.occSlabs,
-          slabRangesSample: [...pool.brickSlabRanges.values()].slice(0, 3),
-          sliceSignature: pool.sliceSignature,
-          // Why bricks did (not) take the GPU repack path — "ready" above only
-          // means the pipeline compiled; per-brick `supports()` can still
-          // reject every job (e.g. "cpu:unsupported:r8" for uint8 layers).
-          gpuPath: pool.lastRepackPath,
-          // Raw atlas values per channel slab at two fixed voxels (CPU mirror
-          // of the shader's channel tap). Identical values across channels of
-          // a multi-channel layer at both probes = the slabs hold the same
-          // data (repack/fetch); differing values = slabs are fine and a
-          // wrong channel on screen is a shader/uniform bug.
-          channelSlabProbe: this.probeChannelSlabs(pool),
-        };
-      }),
-    };
+      levelIsSharded: (storeId) => this.levelIsSharded(storeId),
+      sampleResident: (layerId, voxel, level, channel) =>
+        this.sampleResident(layerId, voxel, level, channel),
+    });
   }
 
   /** Subscribe to node plans; returns the unsubscribe handle. */
@@ -1197,93 +567,11 @@ export class BrickResidencyManager {
   }
 
   /**
-   * Shared address resolution for the CPU-mirror reads: walk levels from
-   * desiredLevel to coarsest, resolve the finest resident brick and return
-   * either its (page-table-quantized) uniform value or the atlas backing
-   * index of the voxel at channel slab 0 plus the per-slab index stride.
-   * A brick whose slot was written by the GPU repack kernel has no CPU mirror
-   * (reading it would return stale zeros, which is worse than not reading) and
-   * resolves to `kind: "gpu"`: the caller reads the voxel from the DECODED
-   * CHUNK CACHE instead (`sampleChunkCacheSync` — the "Phase D" probe), which
-   * holds the CPU copy of exactly what the GPU repacked. Staleness is tracked
-   * per brick (`gpuStaleKeys`), so CPU-uploaded bricks keep the fast mirror
-   * read. Null only when nothing is resident at any level.
-   */
-  private resolveResidentRead(
-    pool: LayerBrickPool,
-    baseVoxel: Vec3,
-    desiredLevel: number,
-  ):
-    | { kind: "empty"; level: number; value: number }
-    | { kind: "slot"; level: number; index0: number; slabStride: number }
-    | { kind: "gpu"; level: number }
-    | null {
-    const { geometry, spec, atlas } = pool;
-
-    // Reused scratch, and a memoized key: this loop runs per LEVEL per MARCH
-    // STEP (~256 steps a frame while hover probing), and used to allocate two
-    // Vec3s and a fresh key string every time round. The values are consumed
-    // synchronously below and never retained, and consecutive steps almost
-    // always share a brick — see features/bricks/octree/nodeKeyMemo.ts.
-    const levelVoxel = this.levelVoxelScratch;
-    for (let level = Math.max(0, desiredLevel); level < geometry.levels.length; level++) {
-      const { scale, spatialShape } = geometry.levels[level];
-      levelVoxel[0] = Math.min(Math.max(baseVoxel[0] / scale[0], 0), spatialShape[0] - 1e-3);
-      levelVoxel[1] = Math.min(Math.max(baseVoxel[1] / scale[1], 0), spatialShape[1] - 1e-3);
-      levelVoxel[2] = Math.min(Math.max(baseVoxel[2] / scale[2], 0), spatialShape[2] - 1e-3);
-      const brickX = Math.floor(levelVoxel[0] / spec.payload[0]);
-      const brickY = Math.floor(levelVoxel[1] / spec.payload[1]);
-      const brickZ = Math.floor(levelVoxel[2] / spec.payload[2]);
-      const key = pool.nodeKeys.keyFor(level, brickX, brickY, brickZ);
-
-      const emptyValue = pool.emptyValues.get(key);
-      if (emptyValue !== undefined) {
-        // The GPU only has the 8-bit page-table encoding of this value; mirror
-        // the same encode→decode round-trip so the CPU march matches the
-        // rendered image (OCTREE_RENDERER.md P11).
-        return {
-          kind: "empty",
-          level,
-          value: decodeEmptyValue(
-            encodeEmptyValue(emptyValue, pool, pool.emptyBits),
-            pool,
-            pool.emptyBits,
-          ),
-        };
-      }
-
-      const slot = pool.pool.slotOf(key);
-      if (!slot) continue;
-      // Lazy-mirror mode (backing null — the default, roadmap R3): EVERY
-      // resident brick reads through the decoded chunk cache, the path
-      // GPU-repacked bricks have always used.
-      if (pool.gpuStaleKeys.has(key) || !atlas.backing) return { kind: "gpu", level };
-
-      const texel: Vec3 = [
-        slot.coords[0] * atlas.slotSize[0] +
-          spec.border +
-          Math.floor(levelVoxel[0] - brickX * spec.payload[0]),
-        slot.coords[1] * atlas.slotSize[1] +
-          spec.border +
-          Math.floor(levelVoxel[1] - brickY * spec.payload[1]),
-        slot.coords[2] * atlas.slotSize[2] +
-          spec.border +
-          Math.floor(levelVoxel[2] - brickZ * spec.payload[2]),
-      ];
-      return {
-        kind: "slot",
-        level,
-        index0: (texel[2] * atlas.size[1] + texel[1]) * atlas.size[0] + texel[0],
-        slabStride: spec.stored[2] * atlas.size[1] * atlas.size[0],
-      };
-    }
-    return null;
-  }
-
-  /**
-   * CPU mirror of the shader's `sampleBrickEx`: raw value of the finest
-   * resident brick at or coarser than desiredLevel, read from the atlas
-   * backing store (probes, CPU raymarching). Null when nothing is resident.
+   * CPU twin of the shader's `sampleBrickEx`: raw value of the finest
+   * resident brick at or coarser than desiredLevel — its page-table-quantized
+   * EMPTY value, or the voxel read from the decoded-chunk cache (probes, CPU
+   * raymarching; see residentProbes.ts). Null when nothing is resident, or
+   * the chunk has been evicted.
    */
   sampleResident(
     layerId: string,
@@ -1293,16 +581,10 @@ export class BrickResidencyManager {
   ): number | null {
     const pool = this.poolFor(layerId);
     if (!pool) return null;
-    const read = this.resolveResidentRead(pool, baseVoxel, desiredLevel);
+    const read = resolveResidentRead(pool, baseVoxel, desiredLevel);
     if (!read) return null;
     if (read.kind === "empty") return read.value;
-    if (read.kind === "gpu") {
-      return this.sampleChunkCacheSync(pool, read.level, baseVoxel, channel);
-    }
-    const clampedChannel = Math.min(Math.max(channel, 0), pool.spec.channelCount - 1);
-    // kind "slot" implies a live backing (resolveResidentRead routes
-    // mirror-less pools to "gpu"); the fallback is belt-and-braces.
-    return pool.atlas.backing?.[read.index0 + clampedChannel * read.slabStride] ?? null;
+    return this.sampleChunkCacheSync(pool, read.level, baseVoxel, channel);
   }
 
   /**
@@ -1318,26 +600,17 @@ export class BrickResidencyManager {
   ): { values: number[]; level: number } | null {
     const pool = this.poolFor(layerId);
     if (!pool) return null;
-    const read = this.resolveResidentRead(pool, baseVoxel, desiredLevel);
+    const read = resolveResidentRead(pool, baseVoxel, desiredLevel);
     if (!read) return null;
     const channelCount = Math.max(1, pool.geometry.channelSlabCount);
     if (read.kind === "empty") {
       return { values: Array<number>(channelCount).fill(read.value), level: read.level };
     }
-    if (read.kind === "gpu") {
-      const values = new Array<number>(channelCount);
-      for (let channel = 0; channel < channelCount; channel++) {
-        const value = this.sampleChunkCacheSync(pool, read.level, baseVoxel, channel);
-        if (value === null) return null; // chunk evicted: whole readout pends
-        values[channel] = value;
-      }
-      return { values, level: read.level };
-    }
-    const backing = pool.atlas.backing;
-    if (!backing) return null; // unreachable for kind "slot"; belt-and-braces
     const values = new Array<number>(channelCount);
     for (let channel = 0; channel < channelCount; channel++) {
-      values[channel] = backing[read.index0 + channel * read.slabStride];
+      const value = this.sampleChunkCacheSync(pool, read.level, baseVoxel, channel);
+      if (value === null) return null; // chunk evicted: whole readout pends
+      values[channel] = value;
     }
     return { values, level: read.level };
   }
@@ -1348,50 +621,16 @@ export class BrickResidencyManager {
    * Null when nothing is resident at any level (the walk fell off the top).
    *
    * Deliberately NOT `sampleResidentEx(...)?.level`: that answers null when
-   * the value is unavailable, which for a GPU-repacked brick (no CPU mirror,
-   * chunk evicted from the decode cache) it routinely is — reporting "nothing
-   * resident" for a brick that is on screen. The level is settled by the
-   * page-table walk alone, so a level-only question must not be gated on a
-   * value read. Consumer: `features/bricks/CenterLodReadout.tsx`.
+   * the value is unavailable, which for a brick whose chunk was evicted from
+   * the decode cache it routinely is — reporting "nothing resident" for a
+   * brick that is on screen. The level is settled by the page-table walk
+   * alone, so a level-only question must not be gated on a value read.
+   * Consumer: `features/bricks/CenterLodReadout.tsx`.
    */
   residentLevelAt(layerId: string, baseVoxel: Vec3, desiredLevel: number): number | null {
     const pool = this.poolFor(layerId);
     if (!pool) return null;
-    return this.resolveResidentRead(pool, baseVoxel, desiredLevel)?.level ?? null;
-  }
-
-  /**
-   * "Phase D" probe read: a voxel value straight from the DECODED CHUNK
-   * CACHE, synchronously. This is the CPU-side answer for GPU-repacked
-   * bricks — their data never reaches the atlas CPU mirror, but the decoded
-   * source chunks passed through `fetchChunkShared`'s byte-budget cache on
-   * the way to the GPU kernel and usually still live there. Null when the
-   * chunk was evicted or the store's chunk-key encoder is still resolving
-   * (kicked off here; the next probe move finds it cached).
-   */
-  /**
-   * Resolve a store's zarr chunk-key encoder for the SYNC chunk-cache probe.
-   * `sampleChunkCacheSync` cannot await, so the encoder must be resolved ahead
-   * of the first probe — `ensurePool` warms every level eagerly (the metadata
-   * is already in `readArrayMetadataCached`'s cache from the brick fetches, so
-   * this is a microtask, not a network read). Failure schedules a retry on the
-   * next call and warns once per store.
-   */
-  private warmChunkKeyEncoder(
-    storeId: string,
-    arr: Parameters<typeof getChunkWorker>[0],
-  ): void {
-    if (this.chunkKeyEncoders.has(storeId)) return;
-    this.chunkKeyEncoders.set(storeId, null); // resolving
-    void readArrayMetadataCached(arr)
-      .then((meta) => this.chunkKeyEncoders.set(storeId, meta))
-      .catch((error) => {
-        this.chunkKeyEncoders.delete(storeId); // retry on the next probe
-        if (!this.warnedEncoderStores.has(storeId)) {
-          this.warnedEncoderStores.add(storeId);
-          console.warn(`[bricks] chunk-key metadata read failed for store ${storeId}`, error);
-        }
-      });
+    return resolveResidentRead(pool, baseVoxel, desiredLevel)?.level ?? null;
   }
 
   private sampleChunkCacheSync(
@@ -1400,105 +639,26 @@ export class BrickResidencyManager {
     baseVoxel: Vec3,
     channel: number,
   ): number | null {
-    const { geometry } = pool;
-    const level = geometry.levels[levelIndex];
-    const { xPos, yPos, zPos, intensityPos } = geometry.axes;
-
-    // Allocation-free address math: this runs per march STEP on the hover
-    // path (≤256×/frame), so plain locals instead of mapped arrays.
-    const clampVoxel = (i: number) =>
-      Math.min(
-        Math.max(Math.floor(baseVoxel[i] / level.scale[i]), 0),
-        level.spatialShape[i] - 1,
-      );
-    const vx = clampVoxel(0);
-    const vy = clampVoxel(1);
-    const vz = clampVoxel(2);
-    const cx = Math.floor(vx / level.spatialChunks[0]);
-    const cy = Math.floor(vy / level.spatialChunks[1]);
-    const cz = Math.floor(vz / level.spatialChunks[2]);
-    const ox = vx - cx * level.spatialChunks[0];
-    const oy = vy - cy * level.spatialChunks[1];
-    const oz = vz - cz * level.spatialChunks[2];
-    const channelsPerChunk =
-      intensityPos !== -1 ? Math.max(1, level.chunks[intensityPos] ?? 1) : 1;
-    const channelChunk = intensityPos !== -1 ? Math.floor(channel / channelsPerChunk) : 0;
-
-    // Same coords the brick fetch used — the cache key must match what was
-    // fetched (collapsed dims via the pool's fixed chunk coords, like the
-    // node fetch itself).
-    const dims = geometry.dims;
-    const coords = this.chunkCoordsScratch;
-    coords.length = dims.length;
-    for (let d = 0; d < dims.length; d++) {
-      coords[d] =
-        d === xPos
-          ? cx
-          : d === yPos
-            ? cy
-            : d === zPos
-              ? cz
-              : d === intensityPos
-                ? channelChunk
-                : pool.fixedChunkCoords[d];
-    }
-
-    let chunk: Chunk<DataType> | undefined;
-    const memo = this.lastChunkRead;
-    if (
-      memo &&
-      memo.storeId === level.storeId &&
-      memo.coords.length === coords.length &&
-      memo.coords.every((v, d) => v === coords[d])
-    ) {
-      chunk = memo.chunk; // hot path: no key build, no LRU touch
-    } else {
-      let arr: Parameters<typeof getChunkWorker>[0];
-      try {
-        arr = this.deps.viewerStore.getState().getArrayForStoreId(level.storeId);
-      } catch {
-        return null;
-      }
-      const encoder = this.chunkKeyEncoders.get(level.storeId);
-      if (encoder === undefined) {
-        // Fallback only — ensurePool warms every level's encoder eagerly, so
-        // this fires just for pools created before the warm-up (or after a
-        // metadata failure scheduled a retry).
-        this.warmChunkKeyEncoder(level.storeId, arr);
-        return null;
-      }
-      if (encoder === null) return null; // metadata still resolving
-      chunk = this.chunkCache.get(chunkCacheKeyFor(arr, encoder, coords));
-      if (!chunk) return null;
-      this.lastChunkRead = { storeId: level.storeId, coords: coords.slice(), chunk };
-    }
-
-    let index = 0;
-    for (let d = 0; d < dims.length; d++) {
-      const offset =
-        d === xPos
-          ? ox
-          : d === yPos
-            ? oy
-            : d === zPos
-              ? oz
-              : d === intensityPos
-                ? channel % channelsPerChunk
-                : pool.fixedOffsets[d];
-      index += offset * (chunk.stride[d] ?? 0);
-    }
-    const value = (chunk.data as ArrayLike<number | bigint>)[index];
-    return value === undefined ? null : Number(value);
+    return sampleChunkCacheSync(
+      this.chunks,
+      this.getArrayForStoreId,
+      pool,
+      levelIndex,
+      baseVoxel,
+      channel,
+    );
   }
 
+  /** Store lookup for the sync probe (throws while the store is not open). */
+  private readonly getArrayForStoreId = (storeId: string) =>
+    this.deps.viewerStore.getState().getArrayForStoreId(storeId);
+
   /**
-   * Exact level-0 voxel read for the probe's async value upgrade: fetches the
-   * decoded chunk(s) covering the voxel through `fetchChunkShared` (in-flight
-   * dedup + byte-budget cache + worker decode) and reads every channel value
-   * with the chunk's strides. Resolves null when the pool is gone or its
-   * slice signature changed while awaiting (the caller re-guards on merge),
-   * and for phasor layers — their slabs are derived at repack time and have
-   * no per-voxel source value to read.
+   * Exact level-0 voxel read for the probe's async value upgrade (see
+   * `readExactVoxel`). Resolves null when the pool is gone or its slice
+   * signature changed while awaiting (the caller re-guards on merge), and
+   * for phasor layers — their slabs are derived at repack time and have no
+   * per-voxel source value to read.
    */
   async fetchExactVoxel(
     layerId: string,
@@ -1507,69 +667,11 @@ export class BrickResidencyManager {
     const pool = this.poolFor(layerId);
     if (!pool || hasPhasorSlabs(pool.geometry)) return null;
     const sliceSignature = pool.sliceSignature;
-    const { geometry } = pool;
-    const level = geometry.levels[0];
-    const { xPos, yPos, zPos, intensityPos } = geometry.axes;
-    const arr = this.deps.viewerStore.getState().getArrayForStoreId(level.storeId);
-
-    const voxel = [0, 1, 2].map((i) =>
-      Math.min(Math.max(Math.floor(baseVoxel[i]), 0), level.spatialShape[i] - 1),
-    ) as unknown as Vec3;
-    const spatialChunk = [0, 1, 2].map((i) =>
-      Math.floor(voxel[i] / level.spatialChunks[i]),
-    );
-    const spatialOffset = [0, 1, 2].map(
-      (i) => voxel[i] - spatialChunk[i] * level.spatialChunks[i],
-    );
-
-    const channelCount = Math.max(1, geometry.channelSlabCount);
-    const channelsPerChunk =
-      intensityPos !== -1 ? Math.max(1, level.chunks[intensityPos] ?? 1) : 1;
-
-    // Group channels sharing a chunk into one fetch.
-    const groups = new Map<number, number[]>();
-    for (let channel = 0; channel < channelCount; channel++) {
-      const chunk = intensityPos !== -1 ? Math.floor(channel / channelsPerChunk) : 0;
-      const group = groups.get(chunk);
-      if (group) group.push(channel);
-      else groups.set(chunk, [channel]);
-    }
-
-    const values = new Array<number>(channelCount).fill(Number.NaN);
-    await Promise.all(
-      [...groups.entries()].map(async ([channelChunk, channels]) => {
-        const chunkCoords = geometry.dims.map((_, d) => {
-          if (d === xPos) return spatialChunk[0];
-          if (d === yPos) return spatialChunk[1];
-          if (d === zPos) return spatialChunk[2];
-          if (d === intensityPos) return channelChunk;
-          return pool.fixedChunkCoords[d];
-        });
-        // Interactive tier: a probe's exact-voxel read must not queue behind
-        // streaming decodes (whose priorities scale with fetchGeneration).
-        const chunk = await this.fetchChunkShared(
-          arr,
-          level.storeId,
-          chunkCoords,
-          INTERACTIVE_FETCH_PRIORITY,
-        );
-        for (const channel of channels) {
-          const index = geometry.dims.reduce((acc, _, d) => {
-            const offset =
-              d === xPos
-                ? spatialOffset[0]
-                : d === yPos
-                  ? spatialOffset[1]
-                  : d === zPos
-                    ? spatialOffset[2]
-                    : d === intensityPos
-                      ? channel % channelsPerChunk
-                      : pool.fixedOffsets[d];
-            return acc + offset * (chunk.stride[d] ?? 0);
-          }, 0);
-          values[channel] = Number(chunk.data[index]);
-        }
-      }),
+    const arr = this.getArrayForStoreId(pool.geometry.levels[0].storeId);
+    const values = await readExactVoxel(pool, baseVoxel, (storeId, chunkCoords) =>
+      // Interactive tier: a probe's exact-voxel read must not queue behind
+      // streaming decodes (whose priorities scale with fetchGeneration).
+      this.chunks.fetchChunkShared(arr, storeId, chunkCoords, INTERACTIVE_FETCH_PRIORITY),
     );
 
     if (this.disposed) return null;
@@ -1784,10 +886,11 @@ export class BrickResidencyManager {
    * inference into something that fails loudly if either side ever changes.
    */
   private assertFixedIndicesMatch(pool: LayerBrickPool, derivation: PoolDerivation): void {
-    const { fixedChunkCoords, fixedOffsets } = this.computeFixedIndices(
+    const { fixedChunkCoords, fixedOffsets } = computeFixedIndices(
       derivation.layer,
       derivation.geometry,
       derivation.levels as LevelSource[],
+      this.deps.viewerStore.getState().dimSelections,
     );
     const same =
       fixedChunkCoords.length === pool.fixedChunkCoords.length &&
@@ -1884,7 +987,13 @@ export class BrickResidencyManager {
     // Sharded levels: warm the shard indexes the first fetches will need, so
     // the index round trip overlaps the queue wait instead of preceding the
     // first inner-chunk read of every shard.
-    this.warmShardIndexes(pool, pool.pendingFetch);
+    warmShardIndexes(
+      pool,
+      pool.pendingFetch,
+      this.initialPhase(pool),
+      this.chunks,
+      this.getArrayForStoreId,
+    );
     // Fresh plan → fresh retry allowance (see the fetchBrick catch).
     pool.fetchRetries.clear();
 
@@ -1937,7 +1046,6 @@ export class BrickResidencyManager {
       const { level, coords } = parseNodeKey(key);
       pool.pool.release(key);
       setPageEntry(pool.pageTable, level, coords, null, PAGE_FLAG_UNMAPPED);
-      pool.gpuStaleKeys.delete(key);
       pool.provisionalKeys.delete(key);
       pool.coarsestResident.delete(key);
       // Same bookkeeping as eviction: brickRanges is bounded by slot count
@@ -2103,54 +1211,14 @@ export class BrickResidencyManager {
   private derivePool(layer: LayerState, plan: LayerNodePlan): PoolDerivation | null {
     const viewerState = this.deps.viewerStore.getState();
 
-    let levels: LevelSource[];
-    let geometry: LayerLevelGeometry;
-    let spec: BrickSpec;
-    let structureSignature: string;
-    let viability: ReturnType<typeof assessPoolViability>;
-
-    const dataset = layer.lens.dataset;
-    const cached = this.layerDerivationCache.get(layer.id);
-    if (
-      cached &&
-      cached.layer === layer &&
-      cached.dataArrays === dataset.dataArrays &&
-      cached.mode === plan.mode
-    ) {
-      ({ levels, geometry, spec, structureSignature, viability } = cached);
-    } else {
-      try {
-        levels = buildLevelSources(
-          dataset.dataArrays,
-          dataset.axisNames.length,
-          viewerState.getArrayForStoreId,
-        );
-      } catch {
-        return null;
-      }
-
-      const built = buildLayerLevelGeometry(dataset.axisNames, layer, levels);
-      if (!built) return null;
-      geometry = built;
-      spec = resolveBrickSpec(geometry, plan.mode);
-      viability = assessPoolViability(geometry, spec);
-      structureSignature = buildStructureSignature({
-        mode: plan.mode,
-        spec,
-        geometry,
-        levels,
-      });
-      this.layerDerivationCache.set(layer.id, {
-        layer,
-        dataArrays: dataset.dataArrays,
-        mode: plan.mode,
-        levels,
-        geometry,
-        spec,
-        structureSignature,
-        viability,
-      });
-    }
+    const structure = deriveLayerStructure(
+      layer,
+      plan.mode,
+      this.layerDerivationCache,
+      viewerState.getArrayForStoreId,
+    );
+    if (!structure) return null;
+    const { viability } = structure;
 
     // Hard stop (defense in depth — nodePlanTracker refuses such layers before
     // any plan exists): the coarsest-grid slot floor below OVERRIDES the byte
@@ -2180,29 +1248,7 @@ export class BrickResidencyManager {
       return null;
     }
 
-    const dtype = geometry.levels[0].dtype;
-    const dataRange = resolveLayerDataRange(layer, dtype);
-    const valueSemantics = poolValueSemantics(layer);
-    return {
-      layer,
-      mode: plan.mode,
-      levels,
-      geometry,
-      spec,
-      structureSignature,
-      sliceSignature: plan.sliceSignature,
-      dataRange,
-      valueSemantics,
-      poolKey: buildPoolKey({
-        mode: plan.mode,
-        spec,
-        geometry,
-        levels,
-        sliceSignature: plan.sliceSignature,
-        dataRange,
-        valueSemantics,
-      }),
-    };
+    return buildPoolDerivation(layer, plan, structure);
   }
 
   /**
@@ -2218,7 +1264,7 @@ export class BrickResidencyManager {
     planCount: number,
   ): LayerBrickPool | null {
     const viewerState = this.deps.viewerStore.getState();
-    const { levels, geometry, spec, structureSignature, poolKey } = derivation;
+    const { levels, geometry, structureSignature, poolKey } = derivation;
     const layer = derivation.layer;
 
     const existing = this.pools.get(poolKey);
@@ -2238,61 +1284,12 @@ export class BrickResidencyManager {
     );
     if (movable) {
       this.pools.delete(movable.poolKey);
-      this.prefetchedSlabMarker.delete(movable.poolKey);
+      this.prefetcher.forgetSlab(movable.poolKey);
       const flushed = movable.sliceSignature !== derivation.sliceSignature;
       if (flushed) {
         this.flushPool(movable, derivation.sliceSignature, layer, levels as LevelSource[]);
       }
-      const nextAutoRange = shouldAutoRange(
-        derivation.valueSemantics,
-        geometry.levels[0].dtype,
-        layer,
-      );
-      const reuse = resolveReusedAutoRange(movable, nextAutoRange, flushed);
-      // See `resolveReusedAutoRange`. Keeping the range is safe on every
-      // invariant the reset was protecting: the range does not move, so no
-      // EMPTY entry needs re-encoding; `flushPool` above already reset
-      // `occObserved*`/`occEncode*` against this same range and cleared the
-      // page table; and a pool key holding the dtype range while the live range
-      // has drifted is the NORMAL auto-range state, exactly as it is for a
-      // fresh pool (see the `poolKey.ts` module doc).
-      if (reuse.keepRange) {
-        // Kept as a SEED: a flushed pool re-fits from its first brick rather
-        // than unioning the previous slice's range forever.
-        movable.autoRangeInitialized = reuse.autoRangeInitialized;
-      } else if (
-        movable.minValue !== derivation.dataRange[0] ||
-        movable.maxValue !== derivation.dataRange[1]
-      ) {
-        // EMPTY page entries quantize against the pool range, so a range move
-        // invalidates every one of them (see reencodeEmptyEntries).
-        movable.minValue = derivation.dataRange[0];
-        movable.maxValue = derivation.dataRange[1];
-        movable.autoRangeEncodeDirty = true;
-        // A range move also restarts the auto-range fit and the occupancy
-        // encode/observed state, which must re-derive from the NEW pool range
-        // (flushPool above reset it against the OLD one — ordering matters).
-        // Encode ≡ decode stays intact because the decode uniforms ride the
-        // poolsVersion bump below. (The auto-range POLICY is re-derived below,
-        // outside this branch — it can flip without the range moving.)
-        movable.autoRangeInitialized = false;
-        movable.occObservedInitialized = false;
-        movable.occEncodeMin = movable.minValue;
-        movable.occEncodeMax = movable.maxValue;
-        movable.occReencodePending = false;
-        this.wakeDrain();
-      }
-      // Outside the range branch: the policy can flip without the range moving
-      // (a pool seeded at the dtype range whose histogram arrives before any
-      // brick lands has autoRange to turn OFF while `dataRange` still matches).
-      movable.autoRange = nextAutoRange;
-      // Re-capture the pool-creation-time flags: a toggle followed by a
-      // slice/range change would otherwise pin this pool on the old policy
-      // for its whole life.
-      movable.occObservedRange =
-        derivation.valueSemantics === "intensity";
-      movable.occHierarchy = true;
-      movable.poolKey = poolKey;
+      if (retargetMovedPool(movable, derivation, flushed)) this.wakeDrain();
       this.pools.set(poolKey, movable);
       // The decode uniforms (minValue/maxValue, uEmptyDecode*, uOccDecode*)
       // ride poolsVersion — without this bump a moved range left EMPTY
@@ -2302,193 +1299,34 @@ export class BrickResidencyManager {
       return movable;
     }
 
-    const layout = buildPageTableLayout(geometry, spec.payload, PAGE_TEXTURE_MAX_EXTENT);
-    if (!layout) return null;
-
-    // Shared with the planner's byte accounting (see atlasKindForGeometry):
-    // the two MUST agree on bytes-per-slot or plans request more slots than
-    // the pool holds. `resolvePoolBudget` is the shared call that also reserves
-    // the cache headroom the plan is not allowed to spend — without it a plan
-    // that maxes the budget leaves zero free slots and the pool thrashes.
-    const atlasKind = atlasKindForGeometry(geometry);
-    const slotBytes = atlasSlotBytes(spec, atlasKind);
-    const maxUsefulSlotsForBudget = totalBrickCount(geometry, spec);
-    const deviceBudgetBytes = getInitialVolumeTextureBudgetBytes();
-    const { atlasBytes } = resolvePoolBudget({
-      deviceBudgetBytes,
-      poolCount: planCount,
-      slotBytes,
-      totalBrickBytes: maxUsefulSlotsForBudget * slotBytes,
-    });
-    const coarsestGrid = brickGridForLevel(geometry, spec, geometry.levels.length - 1);
-    // `PAGE_TEXTURE_MAX_EXTENT` is 2048 and 2048 is also the WebGPU spec
-    // MINIMUM for `maxTextureDimension3D`, so the detached fallback below is
-    // not a guess — it is the same number the min would have produced anyway.
-    const maxTextureExtent = Math.min(
-      PAGE_TEXTURE_MAX_EXTENT,
-      this.renderer === null ? PAGE_TEXTURE_MAX_EXTENT : getMax3DTextureSize(this.renderer),
-    );
-    // The pool can never need more slots than the pyramid has bricks — cap
-    // there so small datasets get small atlases (the budget share only binds
-    // for genuinely large pyramids).
-    const maxUsefulSlots = totalBrickCount(geometry, spec);
-    const minSlots = Math.min(
-      maxUsefulSlots,
-      coarsestGrid[0] * coarsestGrid[1] * coarsestGrid[2] + MIN_POOL_HEADROOM_SLOTS,
-    );
-    // Creation-order overshoot guard: shares divide by the CURRENT pool count
-    // and existing atlases are never resized, so pools created when few
-    // existed keep their large allocations and the SUM across pools could
-    // exceed the device budget as layers open (each atlas also exists twice —
-    // VRAM + its CPU backing — so overshoot hurts double on unified memory).
-    // Cap this pool's allocation to what the device budget has LEFT, never
-    // below the coarsest floor (the shader's fallback invariant, P18 —
-    // `assessPoolViability` already vetted the floor itself as affordable).
     let allocatedAtlasBytes = 0;
     for (const pool of this.pools.values()) {
       allocatedAtlasBytes += pool.atlas.byteLength;
     }
-    const remainingBudgetBytes = Math.max(0, deviceBudgetBytes - allocatedAtlasBytes);
-    const cappedAtlasBytes = Math.min(
-      atlasBytes,
-      Math.max(remainingBudgetBytes, minSlots * slotBytes),
-    );
-    const desiredSlots = Math.min(
-      maxUsefulSlots,
-      Math.max(minSlots, Math.floor(cappedAtlasBytes / slotBytes)),
-    );
-
-    // Called for its side effect only — build the repacker now, while we are
-    // already off the hot path. Its RESULT must not decide the atlas usage
-    // flags (see `computeStorage` below).
-    this.ensureGpuRepacker();
-    const atlas = createBrickAtlas({
-      spec,
-      dtype: geometry.levels[0].dtype,
-      kind: atlasKind,
-      desiredSlots,
-      // The P16 floor travels with the request so the grid factorization can
-      // tell "under budget" from "cannot hold the coarsest level".
-      minSlots,
-      maxExtent: maxTextureExtent,
-      filter: spec.border > 0 ? "linear" : "nearest",
-      // A phasor layer never repacks on the GPU (the kernel cannot reduce), so
-      // it has no use for the storage-binding usage flag either.
-      // MUST NOT be `gpuRepacker !== null`: a pool created before the
-      // renderer attaches would see null and allocate an atlas WITHOUT the
-      // storage binding — permanently, silently disabling GPU repack for this
-      // pool's whole life. Decide from the flag + geometry, which do not
-      // depend on whether the device exists yet. (OCTREE_RENDERER.md P23.)
-      computeStorage: !hasPhasorSlabs(geometry),
+    const pool = createLayerBrickPool({
+      derivation,
+      members,
+      planCount,
+      renderer: this.renderer,
+      allocatedAtlasBytes,
+      // Called for its side effect only — build the repacker now, while we
+      // are already off the hot path.
+      ensureGpuRepacker: () => {
+        this.ensureGpuRepacker();
+      },
+      dimSelections: () => this.deps.viewerStore.getState().dimSelections,
     });
-    // One occupancy plane per slab where the flag and the texture extent
-    // allow it (intensity pools only — a label's id-space has no windowing).
-    const occSlabs = occSlabCountFor(
-      spec.channelCount,
-      layout.size[2],
-      PAGE_TEXTURE_MAX_EXTENT,
-      derivation.valueSemantics === "intensity",
-    );
-    const pageTable = createPageTableTexture(layout, occSlabs);
-
-    // Create the backend GPUTexture now, for EVERY pool (it used to be
-    // compute-repack pools only): compute dispatches must not race the first
-    // draw's lazy texture creation, and in lazy-mirror mode (backing null —
-    // roadmap R3) `uploadTexSubImage3D`'s needsUpdate fallback has no CPU
-    // data to re-spec from, so `writeTexture` must always find the texture
-    // already created. WebGPU textures are zero-initialized by spec, so the
-    // eager creation costs no upload.
-    // No-op while detached; `attachRenderer` re-runs it for every pool that
-    // was created before the device existed.
-    (
-      this.renderer as unknown as { initTexture?: (texture: unknown) => void } | null
-    )?.initTexture?.(atlas.texture);
-
-    const { fixedChunkCoords, fixedOffsets } = this.computeFixedIndices(
-      layer,
-      geometry,
-      levels as LevelSource[],
-    );
-
-    const dtype = geometry.levels[0].dtype;
-    const [minValue, maxValue] = derivation.dataRange;
-    // Weak-proxy dtypes without a server histogram normalize against a dtype
-    // fallback that does not describe the data: floats whites-out anything
-    // valued >1, and signed integers put raw 0 at mid-gray. Accumulate the real
-    // range from decoded bricks instead (see `accumulateAutoRange`).
-    //
-    // Not a pool-key field: it is implied by dtype (keyed) plus "the range fell
-    // back to the dtype's" (keyed as dataRange), so members always agree — see
-    // the poolKey module doc.
-    const autoRange = shouldAutoRange(derivation.valueSemantics, dtype, layer);
-
-    const pool: LayerBrickPool = {
-      poolKey,
-      // Ids must survive the page table EXACTLY (a mask is mostly uniform
-      // bricks); an intensity is about to be normalized anyway. See
-      // `EmptyValueBits`.
-      emptyBits: derivation.valueSemantics === "labelIds" ? 24 : 8,
-      members: new Set(members.map((m) => m.id)),
-      mode: derivation.mode,
-      sliceSignature: derivation.sliceSignature,
-      structureSignature,
-      geometry,
-      spec,
-      atlas,
-      pageTable,
-      pool: new BrickPoolState(atlas.slotGrid),
-      protectedKeys: new Set(),
-      coarsestResident: new Set(),
-      inFlight: new Map(),
-      pendingFetch: [],
-      provisionalKeys: new Set(),
-      pendingHalo: [],
-      fetchRetries: new Map(),
-      queue: [],
-      queuedKeys: new Set(),
-      emptyValues: new Map(),
-      gpuIneligibleKeys: new Set(),
-      brickRanges: new Map(),
-      fixedChunkCoords,
-      fixedOffsets,
-      minValue,
-      maxValue,
-      autoRange,
-      autoRangeEncodeDirty: false,
-      autoRangeInitialized: false,
-      // Occupancy encode range starts at the pool range (legacy behavior)
-      // and, when the flag is on, tightens to the observed union as bricks
-      // land. NEVER for label pools: their occupancy is id-space where
-      // "range" has no windowing meaning, exactly like autoRange.
-      occObservedRange:
-        derivation.valueSemantics === "intensity",
-      occObservedMin: 0,
-      occObservedMax: 0,
-      occObservedInitialized: false,
-      occEncodeMin: minValue,
-      occEncodeMax: maxValue,
-      occReencodePending: false,
-      occHierarchy: true,
-      measuredRanges: new Map(),
-      aggregateRanges: new Map(),
-      occSlabs,
-      brickSlabRanges: new Map(),
-      measuredSlabRanges: new Map(),
-      aggregateSlabRanges: new Map(),
-      // (aggregate sidecar is allocated below only when the flag is on)
-      gpuStaleKeys: new Set(),
-      minTargetLevel: 0,
-      lastRepackPath: null,
-      nodeKeys: createNodeKeyMemo(geometry.levels.length),
-    };
-    if (pool.occHierarchy) ensureAggregate(pool.pageTable);
+    if (!pool) return null;
     this.pools.set(poolKey, pool);
     // Warm the sync-probe chunk-key encoders for every level now — the debug
     // report's channel-slab probe runs synchronously and cannot await the
     // metadata (see warmChunkKeyEncoder).
     for (const level of geometry.levels) {
       try {
-        this.warmChunkKeyEncoder(level.storeId, viewerState.getArrayForStoreId(level.storeId));
+        this.chunks.warmChunkKeyEncoder(
+          level.storeId,
+          viewerState.getArrayForStoreId(level.storeId),
+        );
       } catch {
         // Store not resolvable yet — the sampleChunkCacheSync fallback retries.
       }
@@ -2498,242 +1336,6 @@ export class BrickResidencyManager {
     this.deps.viewerStore.getState().bumpPoolsVersion();
     coldOpenTimeline.stamp("poolCreated");
     return pool;
-  }
-
-  /**
-   * Decoded-chunk fetch with in-flight sharing: every brick wanting the same
-   * chunk awaits ONE decode. Deliberately not bound to a brick's abort
-   * signal — a shared result may still serve other bricks (or the cache);
-   * the manager-level signal cancels everything on dispose.
-   */
-  /**
-   * Grouped twin of `fetchChunkShared` for a brick's chunk set: the same
-   * per-chunk in-flight sharing and per-chunk abort bookkeeping, but chunks
-   * not already in flight go through `getChunkGroupWorker`, which coalesces
-   * near-adjacent inner chunks of one shard into a single ranged GET — also
-   * ACROSS bricks dispatched in the same tick (`shardRunBatch.ts`), which is
-   * why `rangeRequests` accumulates (`onDispatch` fires per flushed batch,
-   * each physical request attributed once scene-wide). Returns one promise
-   * per coordinate, in order.
-   */
-  private fetchChunksShared(
-    arr: Parameters<typeof getChunkWorker>[0],
-    storeId: string,
-    coordsList: number[][],
-    priority: number,
-  ): Promise<Chunk<DataType>>[] {
-    const out: Promise<Chunk<DataType>>[] = new Array(coordsList.length);
-    const fresh: { index: number; key: string; abort: AbortController }[] = [];
-    for (let i = 0; i < coordsList.length; i++) {
-      const key = `${storeId}:${coordsList[i].join(",")}`;
-      const existing = this.inFlightChunks.get(key);
-      if (existing) {
-        const existingAbort = this.inFlightChunkAborts.get(key);
-        if (!existingAbort || !existingAbort.signal.aborted) {
-          out[i] = existing;
-          continue;
-        }
-        this.inFlightChunks.delete(key);
-        this.inFlightChunkAborts.delete(key);
-      }
-      const abort = new AbortController();
-      this.inFlightChunkAborts.set(key, abort);
-      fresh.push({ index: i, key, abort });
-    }
-    if (fresh.length === 0) return out;
-
-    const promises = getChunkGroupWorker(
-      arr,
-      fresh.map((entry) => coordsList[entry.index]),
-      {
-        pool: workerPool,
-        priority,
-        signal: this.fetchAbort.signal,
-        signals: fresh.map((entry) => entry.abort.signal),
-        useSharedArrayBuffer: true,
-        cache: this.chunkCache,
-        textureFidelity: chunkFidelityForDtype(arr.dtype),
-        onDispatch: (tasks) => {
-          this.stats.rangeRequests += tasks;
-        },
-      },
-    );
-    fresh.forEach((entry, j) => {
-      const promise: Promise<Chunk<DataType>> = promises[j]
-        .then((chunk) => {
-          if (!this.countedChunkKeys.has(entry.key)) {
-            this.countedChunkKeys.add(entry.key);
-            this.stats.bytesDecoded += (chunk.data as { byteLength?: number }).byteLength ?? 0;
-          }
-          return chunk as Chunk<DataType>;
-        })
-        .finally(() => {
-          if (this.inFlightChunks.get(entry.key) === promise) {
-            this.inFlightChunks.delete(entry.key);
-            this.inFlightChunkAborts.delete(entry.key);
-          }
-        });
-      this.inFlightChunks.set(entry.key, promise);
-      out[entry.index] = promise;
-    });
-    return out;
-  }
-
-  private fetchChunkShared(
-    arr: Parameters<typeof getChunkWorker>[0],
-    storeId: string,
-    chunkCoords: number[],
-    priority: number,
-  ): Promise<Chunk<DataType>> {
-    const key = `${storeId}:${chunkCoords.join(",")}`;
-    const existing = this.inFlightChunks.get(key);
-    if (existing) {
-      // NEVER hand out a DOOMED entry: a brick abort fires the per-chunk
-      // controller synchronously and then synchronously starts replacement
-      // fetches (finally → startNextFetches), all BEFORE the cancelled
-      // promise's own async cleanup has removed it from this map. A new
-      // subscriber to that promise inherits the rejection and its brick
-      // stays unloaded until the next replan — the "sometimes doesn't load /
-      // loads seconds later" regression. An aborted entry is cleared here
-      // and the fetch re-issued fresh.
-      const existingAbort = this.inFlightChunkAborts.get(key);
-      if (!existingAbort || !existingAbort.signal.aborted) return existing;
-      this.inFlightChunks.delete(key);
-      this.inFlightChunkAborts.delete(key);
-    }
-
-    // Per-chunk abort on top of the dispose-scoped one: fired only when the
-    // LAST referring brick releases this chunk (fetchBrick's finally). The
-    // worker runner's abort path cancels the task if still queued; a started
-    // task ignores the cancellation and its decode lands in the cache.
-    const chunkAbort = new AbortController();
-    this.inFlightChunkAborts.set(key, chunkAbort);
-    const promise = getChunkWorker(arr, chunkCoords, {
-      pool: workerPool,
-      priority,
-      signal: AbortSignal.any([this.fetchAbort.signal, chunkAbort.signal]),
-      useSharedArrayBuffer: true,
-      cache: this.chunkCache,
-      // ARRAY-level representation (dtype + orkestrator.raw16): every scene
-      // fetch of this array must agree, because the cache key and the
-      // in-flight key above carry no fidelity component.
-      textureFidelity: chunkFidelityForDtype(arr.dtype),
-    })
-      .then((chunk) => {
-        if (!this.countedChunkKeys.has(key)) {
-          this.countedChunkKeys.add(key);
-          this.stats.bytesDecoded += (chunk.data as { byteLength?: number }).byteLength ?? 0;
-        }
-        return chunk as Chunk<DataType>;
-      })
-      .finally(() => {
-        // Identity-guarded: a doomed entry may already have been REPLACED by
-        // a fresh fetch (the branch above). Unconditional deletes here tore
-        // down the replacement's dedup + cancellation entries.
-        if (this.inFlightChunks.get(key) === promise) {
-          this.inFlightChunks.delete(key);
-          this.inFlightChunkAborts.delete(key);
-        }
-      });
-    this.inFlightChunks.set(key, promise);
-    return promise;
-  }
-
-  /** Zarr chunk coords (dims order) for every chunk a brick's fetch touches —
-   * spatial chunks × channel chunks, collapsed dims fixed. Shared by
-   * `fetchBrick` and the adjacent-slab prefetch so the two enumerate
-   * IDENTICAL chunk keys (a prefetched key must be the key the real fetch
-   * asks for, or the warm cache never hits). */
-  private enumerateBrickChunkCoords(
-    pool: LayerBrickPool,
-    levelIndex: number,
-    brickCoords: Vec3,
-    phase: FetchPhase = "full",
-  ): {
-    spatial: Vec3;
-    channelChunk: number;
-    phasorChunk: number;
-    chunkCoords: number[];
-  }[] {
-    const level = pool.geometry.levels[levelIndex];
-    const { xPos, yPos, zPos, intensityPos, phasorPos } = pool.geometry.axes;
-    const spatialChunks = chunksTouchingBrick(
-      pool.geometry,
-      pool.spec,
-      levelIndex,
-      brickCoords,
-      phase,
-    );
-    const channelsPerChunk =
-      intensityPos !== -1 ? Math.max(1, level.chunks[intensityPos] ?? 1) : 1;
-    const channelChunkCount =
-      intensityPos !== -1
-        ? Math.ceil(pool.geometry.channelSlabCount / channelsPerChunk)
-        : 1;
-
-    // A reduced phasor axis is fetched WHOLE — every chunk along it, because the
-    // repack needs every bin of the profile. (Contrast the collapsed dims, which
-    // contribute one fixed chunk coord each.)
-    const phasorBins = pool.geometry.phasorBins;
-    const binsPerChunk =
-      phasorPos !== -1 ? Math.max(1, level.chunks[phasorPos] ?? 1) : 1;
-    const phasorChunkCount =
-      phasorPos !== -1 && phasorBins > 0 ? Math.ceil(phasorBins / binsPerChunk) : 1;
-
-    const out: {
-      spatial: Vec3;
-      channelChunk: number;
-      phasorChunk: number;
-      chunkCoords: number[];
-    }[] = [];
-    for (const spatial of spatialChunks) {
-      for (let channelChunk = 0; channelChunk < channelChunkCount; channelChunk++) {
-        for (let phasorChunk = 0; phasorChunk < phasorChunkCount; phasorChunk++) {
-          out.push({
-            spatial,
-            channelChunk,
-            phasorChunk,
-            chunkCoords: pool.geometry.dims.map((_, d) => {
-              if (d === xPos) return spatial[0];
-              if (d === yPos) return spatial[1];
-              if (d === zPos) return spatial[2];
-              if (d === intensityPos) return channelChunk;
-              if (d === phasorPos && phasorBins > 0) return phasorChunk;
-              return pool.fixedChunkCoords[d];
-            }),
-          });
-        }
-      }
-    }
-    return out;
-  }
-
-  /**
-   * Fire-and-forget shard-index prefetch for the head of a pool's fetch
-   * queue (tail of the reversed array = dispatched first). Bounded per call;
-   * the index cache dedups shards, so this costs at most one small ranged
-   * read per shard per scene. No-op for unsharded levels.
-   */
-  private warmShardIndexes(pool: LayerBrickPool, pendingReversed: readonly PlannedNode[]): void {
-    let budget = 256;
-    const state = this.deps.viewerStore.getState();
-    for (let i = pendingReversed.length - 1; i >= 0 && budget > 0; i--) {
-      const node = pendingReversed[i];
-      const level = pool.geometry.levels[node.level];
-      const meta = this.chunkKeyEncoders.get(level.storeId);
-      if (!meta?.sharding) continue;
-      let arr: ReturnType<typeof state.getArrayForStoreId>;
-      try {
-        arr = state.getArrayForStoreId(level.storeId);
-      } catch {
-        continue;
-      }
-      const phase = this.initialPhase(pool);
-      for (const { chunkCoords } of this.enumerateBrickChunkCoords(pool, node.level, node.coords, phase)) {
-        if (budget-- <= 0) return;
-        prefetchShardIndex(arr, meta, chunkCoords);
-      }
-    }
   }
 
   /** The phase a brick's FIRST fetch runs in for this pool (two-phase bricks). */
@@ -2776,17 +1378,17 @@ export class BrickResidencyManager {
       const level = pool.geometry.levels[node.level];
       const arr = this.deps.viewerStore.getState().getArrayForStoreId(level.storeId);
 
-      const chunkSpecs = this.enumerateBrickChunkCoords(pool, node.level, node.coords, phase);
+      const chunkSpecs = enumerateBrickChunkCoords(pool, node.level, node.coords, phase);
       for (const { chunkCoords } of chunkSpecs) {
         const chunkKey = `${level.storeId}:${chunkCoords.join(",")}`;
         acquiredChunkKeys.push(chunkKey);
-        this.chunkRefs.acquire(chunkKey, ownerToken);
+        this.chunks.acquireRef(chunkKey, ownerToken);
       }
 
       // One grouped call: inner chunks of the same shard that sit close in
       // the object coalesce into one ranged GET (sharded arrays only; the
       // group degenerates to per-chunk fetches otherwise).
-      const chunkPromises = this.fetchChunksShared(
+      const chunkPromises = this.chunks.fetchChunksShared(
         arr,
         level.storeId,
         chunkSpecs.map((spec) => spec.chunkCoords),
@@ -2979,22 +1581,9 @@ export class BrickResidencyManager {
         }
       }
     } finally {
-      // Dead-queue cancellation: this brick no longer needs its chunks. Any
-      // chunk whose LAST referrer just left gets its per-chunk abort fired —
-      // a still-QUEUED decode is cancelled outright (the wasted work this
-      // exists to reclaim); a started one ignores it and finishes into the
-      // cache, so flip-backs stay cheap (never abort shared in-progress
-      // decodes — that was the 13× amplification bug). Happy-path releases
-      // are no-ops: the chunk promise already settled and cleared its entry.
-      for (const chunkKey of acquiredChunkKeys) {
-        if (this.chunkRefs.release(chunkKey, ownerToken)) {
-          const chunkAbort = this.inFlightChunkAborts.get(chunkKey);
-          if (chunkAbort) {
-            chunkAbort.abort();
-            this.stats.cancelledDecodes += 1;
-          }
-        }
-      }
+      // Dead-queue cancellation: this brick no longer needs its chunks (see
+      // ChunkService.releaseRef — never aborts a started shared decode).
+      for (const chunkKey of acquiredChunkKeys) this.chunks.releaseRef(chunkKey, ownerToken);
       pool.inFlight.delete(node.key);
       if (
         retryNode &&
@@ -3012,230 +1601,16 @@ export class BrickResidencyManager {
     }
   }
 
-  /**
-   * Upload/map one queued brick. `planned` decides eviction rights (planned
-   * bricks may evict unprotected occupants; stale ones take FREE slots only)
-   * and the failure counter; `progress` accumulates the frame budget.
-   * Returns "defer" when a PLANNED brick found every slot protected and
-   * should stay queued for the next drain (slots free up via replans and
-   * evictions) — the caller keeps it in the queue instead of dropping it
-   * into a refetch loop.
-   */
-  private drainEntry(
-    pool: LayerBrickPool,
-    pending: PendingBrick,
-    planned: boolean,
-    progress: { bytes: number; bricks: number; uploadedAny: boolean },
-  ): "done" | "defer" {
-    if (pending.uniformValue !== null) {
-      // A halo refine of a resident brick cannot come back uniform (the
-      // payload was not), but never leave a slot behind an EMPTY entry.
-      if (pool.pool.has(pending.key)) {
-        pool.pool.release(pending.key);
-        pool.gpuStaleKeys.delete(pending.key);
-        pool.coarsestResident.delete(pending.key);
-        pool.brickRanges.delete(pending.key);
-        pool.brickSlabRanges.delete(pending.key);
-      }
-      pool.provisionalKeys.delete(pending.key);
-      // Encode the uniform value 8-bit-quantized in R (see brickTraversal).
-      // Mapped even when the plan moved on: EMPTY costs no slot and is
-      // valid fallback data.
-      const texel = encodeEmptyTexel(pending.uniformValue, pool, pool.emptyBits);
-      setPageEntry(pool.pageTable, pending.level, pending.coords, texel, PAGE_FLAG_EMPTY);
-      pool.emptyValues.set(pending.key, pending.uniformValue);
-      // Uniform values fold into the occupancy OBSERVED range too — Phase D
-      // aggregates union them, and an out-of-range uniform would otherwise
-      // clamp its aggregate to the "unbounded" sentinel (lost discrimination
-      // on mostly-uniform volumes).
-      this.accumulateOccRange(pool, pending.uniformValue, pending.uniformValue);
-      this.recordMeasuredRange(
-        pool,
-        pending.key,
-        pending.level,
-        pending.coords,
-        pending.uniformValue,
-        pending.uniformValue,
-      );
-      this.stats.emptyBricks += 1;
-      progress.uploadedAny = true;
-      return "done";
-    }
-
-    const acquired = pool.pool.acquire(
-      pending.key,
-      planned ? pool.protectedKeys : FREE_SLOTS_ONLY,
-    );
-    if (!acquired) {
-      if (planned && (pending.acquireRetries ?? 0) < MAX_ACQUIRE_RETRIES) {
-        pending.acquireRetries = (pending.acquireRetries ?? 0) + 1;
-        return "defer";
-      }
-      if (planned) this.stats.acquireFailures += 1;
-      else this.stats.planDrops += 1;
-      // Dropped without upload: the repacked payload is dead — recycle it.
-      if (pending.data) this.deps.repack.release(pending.data);
-      return "done";
-    }
-
-    if (acquired.evictedKey) {
-      const evicted = parseNodeKey(acquired.evictedKey);
-      setPageEntry(pool.pageTable, evicted.level, evicted.coords, null, PAGE_FLAG_UNMAPPED);
-      pool.gpuStaleKeys.delete(acquired.evictedKey);
-      pool.provisionalKeys.delete(acquired.evictedKey);
-      pool.coarsestResident.delete(acquired.evictedKey);
-      pool.brickRanges.delete(acquired.evictedKey);
-      pool.brickSlabRanges.delete(acquired.evictedKey);
-      this.stats.evictions += 1;
-    }
-    if (pending.level === pool.geometry.levels.length - 1) {
-      pool.coarsestResident.add(pending.key);
-    }
-
-    // What this brick actually costs the frame. CPU path: the atlas-slot
-    // payload the writeTexture below uploads. GPU path: `flush()` must
-    // writeBuffer every source chunk not already in the GPU chunk cache
-    // (a plane chunk can be ~14 MB — far more than the slot bytes), and the
-    // flush itself has no wall-clock gate, so the budget has to charge those
-    // bytes HERE, at dispatch time. That bounds the flush's synchronous work
-    // to the frame budget: one cold plane-chunk brick fills the byte budget
-    // for the frame, while cache-hit bricks stay nearly free.
-    const frameCostBytes = pending.gpu
-      ? gpuFlushUploadBytes(
-          pending.gpu.chunks.map((chunk) => ({
-            cacheKey: chunk.cacheKey,
-            byteLength: chunk.data.byteLength,
-          })),
-          (cacheKey) => this.gpuRepacker?.hasChunk(cacheKey) ?? false,
-        )
-      : pending.bytes;
-
-    if (pending.gpu) {
-      // Compute repack straight into the slot. The page entry goes
-      // RESIDENT optimistically — content is correct either way; the
-      // min/max readback demotes uniform bricks to EMPTY a few frames
-      // later (applyGpuOutcome).
-      this.gpuRepacker!.dispatch({
-        atlas: pool.atlas,
-        input: {
-          spec: pool.spec,
-          level: pool.geometry.levels[pending.level],
-          axes: pool.geometry.axes,
-          // Always plain channel slabs here: a phasor layer never reaches
-          // the GPU kernel (it cannot reduce — see fetchBrick).
-          slabs: pool.geometry.slabs,
-          phasorBins: pool.geometry.phasorBins,
-          brickBox: nodeVoxelBox(pool.geometry, pool.spec, pending.level, pending.coords),
-          // Core phase: the kernel's border replication is a clamp to the
-          // fetch box, so the payload box alone yields the replicated rind.
-          fetchBox: brickFetchBox(
-            pool.geometry,
-            pool.spec,
-            pending.level,
-            pending.coords,
-            pending.phase,
-          ),
-          fixedOffsets: pool.fixedOffsets,
-          chunks: pending.gpu.chunks,
-        },
-        chunkKeys: pending.gpu.chunks.map((chunk) => chunk.cacheKey),
-        slotCoords: acquired.slot.coords,
-        token: { poolKey: pool.poolKey, key: pending.key, slotIndex: acquired.slot.index },
-      });
-      this.stats.gpuBricks += 1;
-      pool.gpuStaleKeys.add(pending.key);
-    } else {
-      writeBrickToAtlas(this.renderer!, pool.atlas, acquired.slot.coords, pending.data!);
-      pool.gpuStaleKeys.add(pending.key);
-      if (pool.atlas.backing) {
-        // Legacy eager-mirror mode only (orkestrator.atlasMirror = "on"): the
-        // backing copy is deferred to idle time (it used to eat a sizable
-        // share of the drain's wall budget); until it lands the key reads
-        // through the chunk-cache path, exactly like a GPU-repacked one.
-        // LAZY mode (the default, roadmap R3) has no backing at all — the key
-        // stays in gpuStaleKeys for good and probes always read the decoded
-        // chunk cache, halving the atlas' real memory footprint.
-        this.mirrorQueue.push({
-          pool,
-          key: pending.key,
-          slotIndex: acquired.slot.index,
-          slotCoords: acquired.slot.coords,
-          data: pending.data!,
-        });
-        this.scheduleMirrorDrain();
-      } else if (pending.data) {
-        // No mirror will consume the payload — recycle it now (the mirror
-        // drain used to be the release point for CPU-path bricks).
-        this.deps.repack.release(pending.data);
-      }
-    }
-    // Occupancy sidecar: the brick's conservative min/max bracket (skip
-    // predicate for the raymarcher). GPU-path bricks have no range yet —
-    // the default texel means "unknown, never skip" until the readback
-    // continuation writes the real one (applyGpuOutcome). While a range
-    // promotion is in flight (occReencodePending) new texels stay "unknown"
-    // too: the shader's decode uniforms may not yet hold the new encode
-    // range, and the re-encode pass writes the real texel from brickRanges.
-    if (pending.range) {
-      pool.brickRanges.set(pending.key, pending.range);
-      if (pending.slabRanges) pool.brickSlabRanges.set(pending.key, pending.slabRanges);
-      this.accumulateOccRange(pool, pending.range[0], pending.range[1]);
-      this.recordMeasuredRange(
-        pool,
-        pending.key,
-        pending.level,
-        pending.coords,
-        pending.range[0],
-        pending.range[1],
-        pending.slabRanges,
-      );
-    }
-    setPageEntry(
-      pool.pageTable,
-      pending.level,
-      pending.coords,
-      acquired.slot.coords,
-      PAGE_FLAG_RESIDENT,
-      pending.range && !pool.occReencodePending
-        ? encodeOccupancyTexel(pending.range[0], pending.range[1], occEncodeRangeOf(pool))
-        : undefined,
-      pending.range && !pool.occReencodePending ? slabTexelsOf(pool, pending.slabRanges) : undefined,
-    );
-    progress.bytes += frameCostBytes;
-    progress.bricks += 1;
-    this.stats.bricksUploaded += 1;
-    coldOpenTimeline.stamp("firstBrickUploaded");
-    // Two-phase bookkeeping: a core upload leaves the brick provisional and
-    // queues its halo refine; a full upload (primary or refine) settles it.
-    if (needsHaloRefine({ phase: pending.phase, uniform: false })) {
-      pool.provisionalKeys.add(pending.key);
-      pool.pendingHalo.push({
-        key: pending.key,
-        level: pending.level,
-        coords: pending.coords,
-        role: "target",
-        priority: 0,
-        fetchScore: 0,
-        fetchBand: 2,
-      });
-    } else {
-      if (pool.provisionalKeys.delete(pending.key)) this.stats.haloRefines += 1;
-      coldOpenTimeline.stamp("firstBrickFull");
-    }
-    this.stats.bytesUploaded += pending.bytes;
-    if (!planned) this.stats.staleUploads += 1;
-    progress.uploadedAny = true;
-    return "done";
-  }
+  /** Reusable progress snapshot for `drainUploads` (see `progressOf`). */
+  private readonly drainProgressScratch = { bytes: 0, bricks: 0, elapsedMs: 0 };
+  /** Per-pool drain lanes, reused across drains (see `DrainLane`). */
+  private readonly drainLanes: DrainLane[] = [];
 
   /** Called from the provider's useFrame: bounded texture uploads per frame.
    * `interacting` (the camera is mid-gesture) switches to the trickle policy —
    * no free pass, no stale drain, no GPU-repack dispatch (see
    * `resolveDrainPolicy`) — so uploads stop colliding with gesture frames;
    * the deferred backlog drains at full budget on the first settled frame. */
-  /** Reusable progress snapshot for `drainUploads` (see `progressOf`). */
-  private readonly drainProgressScratch = { bytes: 0, bricks: 0, elapsedMs: 0 };
-
   drainUploads(interacting = false): void {
     if (this.disposed) return;
     // No device, no uploads. Belt-and-braces — the only caller is the canvas
@@ -3252,7 +1627,6 @@ export class BrickResidencyManager {
       { ...FRAME_UPLOAD_BUDGET, maxMs: profile.uploadBudgetMs },
       interacting,
     );
-    const budget = policy.budget;
     const progress = { bytes: 0, bricks: 0, uploadedAny: false };
     // Evaluated in the drain loops' conditions, i.e. once per brick
     // considered per frame while streaming: fill one reusable view instead of
@@ -3265,69 +1639,18 @@ export class BrickResidencyManager {
       return progressView;
     };
 
-    // Planned-first two-pass drain, ordered GLOBALLY across pools: visible
-    // (planned) bricks from every pool spend the budget first — with the
-    // first-brick free pass so streaming always makes progress (P19: on
-    // integrated GPUs a single texSubImage3D can cost >15 ms; the ms cap is
-    // tier-scaled). Stale (out-of-plan) bricks upload only on genuinely
-    // leftover budget, into FREE slots, and never under the free pass — a
-    // stale brick must never be the one causing the >maxMs hitch it permits.
-    // The partition re-evaluates protectedKeys each drain, so a stale entry
-    // whose plan flips back is automatically promoted to planned.
-    const partitions = new Map<
-      LayerBrickPool,
-      { planned: PendingBrick[]; stale: PendingBrick[] }
-    >();
-    for (const pool of this.pools.values()) {
-      if (pool.queue.length === 0) continue; // no per-frame partition alloc for idle pools
-      const { planned, stale, dropped } = partitionUploadQueue(
-        pool.queue,
-        pool.protectedKeys,
-        MAX_STALE_QUEUE,
-        pool.minTargetLevel,
-      );
-      for (const entry of dropped) {
-        pool.queuedKeys.delete(entry.key);
-        this.stats.planDrops += 1;
-        // Never uploaded: the repacked payload is dead — recycle it.
-        if (entry.data) this.deps.repack.release(entry.data);
-      }
-      partitions.set(pool, { planned, stale });
-    }
-
-    // The free pass exists so streaming always progresses; while interacting
-    // it is exactly the >maxMs hitch we are avoiding, so the strict predicate
-    // applies to planned bricks too.
-    const continuePlanned = policy.allowFreePass
-      ? shouldContinueDrain
-      : shouldContinueStaleDrain;
-    for (const [pool, part] of partitions) {
-      while (part.planned.length > 0 && continuePlanned(progressOf(), budget)) {
-        const pending = part.planned[0];
-        // A GPU-path brick commits flush() to its source-chunk writeBuffers
-        // this frame — deferred while interacting (stays queued; the decoded
-        // chunks stay cached, so it lands at cache-hit cost on settle).
-        if (pending.gpu && !policy.allowGpuDispatch) break;
-        const outcome = this.drainEntry(
-          pool,
-          pending,
-          pool.protectedKeys.has(pending.key),
-          progress,
-        );
-        if (outcome === "defer") break; // no free slot this frame; retry next drain
-        part.planned.shift();
-        pool.queuedKeys.delete(pending.key);
-      }
-    }
-    if (policy.allowStale) {
-      for (const [pool, part] of partitions) {
-        while (part.stale.length > 0 && shouldContinueStaleDrain(progressOf(), budget)) {
-          const pending = part.stale.shift()!;
-          pool.queuedKeys.delete(pending.key);
-          this.drainEntry(pool, pending, false, progress);
-        }
-      }
-    }
+    // Planned-first two-pass drain over every pool's partitioned queue
+    // (uploadDrain.ts: planned bricks from every pool spend the budget first,
+    // stale ones only leftover budget into FREE slots).
+    const drainDeps: DrainEntryDeps = {
+      stats: this.stats,
+      repack: this.deps.repack,
+      renderer: this.renderer,
+      gpuRepacker: this.gpuRepacker,
+    };
+    const lanes = this.drainLanes;
+    const laneCount = partitionDrainLanes(this.pools.values(), lanes, drainDeps);
+    runDrainLanes(drainDeps, lanes, laneCount, policy, progress, progressOf);
 
     // Write the undrained remainder back (feeds the streaming predicate and
     // the budget-exhausted invalidate below), apply any coalesced auto-range
@@ -3342,12 +1665,12 @@ export class BrickResidencyManager {
     // burst, so promotion happens at most ONCE per burst.
     const pipelineQuiet = !this.anyPipelineWork();
     for (const pool of this.pools.values()) {
-      const part = partitions.get(pool);
-      if (part) pool.queue = [...part.planned, ...part.stale];
+      const lane = laneOf(lanes, laneCount, pool);
+      if (lane) writeBackLane(lane);
       if (pool.autoRangeEncodeDirty) {
         pool.autoRangeEncodeDirty = false;
-        this.reencodeEmptyEntries(pool);
-        this.reencodeOccupancyEntries(pool);
+        reencodeEmptyEntries(pool);
+        reencodeOccupancyEntries(pool);
       }
       // Occupancy range promotion, two drains (see the occObservedRange
       // field doc): the promote drain blanks every texel to the
@@ -3358,7 +1681,7 @@ export class BrickResidencyManager {
       // promotion can be considered, so promotion can never starve it.
       if (pool.occReencodePending) {
         pool.occReencodePending = false;
-        this.reencodeOccupancyEntries(pool);
+        reencodeOccupancyEntries(pool);
       } else if (
         pipelineQuiet &&
         pool.occObservedRange &&
@@ -3366,7 +1689,7 @@ export class BrickResidencyManager {
       ) {
         pool.occEncodeMin = pool.occObservedMin;
         pool.occEncodeMax = pool.occObservedMax;
-        this.blankOccupancyEntries(pool);
+        blankOccupancyEntries(pool);
         pool.occReencodePending = true;
         this.wakeDrain();
         // Once per burst, so the unthrottled bump is cheap. The re-encode
@@ -3380,6 +1703,9 @@ export class BrickResidencyManager {
       }
       flushPageTable(this.renderer!, pool.pageTable);
     }
+    // Only a pool that left the map mid-drain skips its write-back; its
+    // partition dies with it (as the old per-drain Map's did).
+    releaseDrainLanes(lanes, laneCount);
 
     // Submit this frame's compute-repack batch (before R3F renders, so the
     // page entries flushed above and the brick contents land in the same
@@ -3431,7 +1757,7 @@ export class BrickResidencyManager {
         this.stats.lastFlushToDrainedMs = drainedAt - this.flushedAt;
         this.flushedAt = null;
       }
-      this.prefetchAdjacent();
+      this.prefetcher.run();
     }
 
     if (progress.uploadedAny) {
@@ -3480,54 +1806,6 @@ export class BrickResidencyManager {
     }
   }
 
-  /** Per idle callback, how long mirror copies may run. */
-  private static readonly MIRROR_DRAIN_MS = 2;
-
-  private scheduleMirrorDrain(): void {
-    if (this.mirrorIdleScheduled || this.disposed) return;
-    this.mirrorIdleScheduled = true;
-    const run = () => {
-      this.mirrorIdleScheduled = false;
-      this.drainMirrorQueue();
-    };
-    // Idle time when the platform offers it; a timer well past the current
-    // frame otherwise. Either way this never competes with drainUploads.
-    if (typeof requestIdleCallback === "function") {
-      requestIdleCallback(run, { timeout: 500 });
-    } else {
-      setTimeout(run, 32);
-    }
-  }
-
-  private drainMirrorQueue(): void {
-    if (this.disposed) {
-      this.mirrorQueue.length = 0;
-      return;
-    }
-    const startedAt = performance.now();
-    while (
-      this.mirrorQueue.length > 0 &&
-      performance.now() - startedAt < BrickResidencyManager.MIRROR_DRAIN_MS
-    ) {
-      const entry = this.mirrorQueue.shift()!;
-      const { pool, key, slotIndex, slotCoords, data } = entry;
-      // The copy is only valid while the brick still owns the slot it was
-      // uploaded into — evictions, remaps and flushes may have intervened,
-      // and mirroring then would corrupt another brick's mirror slot.
-      // Either way this entry held the payload's LAST reference (the atlas
-      // upload already copied it out at drain time) — recycle it.
-      if (this.pools.get(pool.poolKey) === pool) {
-        const slot = pool.pool.slotOf(key);
-        if (slot && slot.index === slotIndex) {
-          mirrorBrickToBacking(pool.atlas, slotCoords, data);
-          pool.gpuStaleKeys.delete(key);
-        }
-      }
-      this.deps.repack.release(data);
-    }
-    if (this.mirrorQueue.length > 0) this.scheduleMirrorDrain();
-  }
-
   /** How long the pipeline must stay drained before the governor's streaming
    * flag clears — long enough to bridge the gap between 200 ms replans. */
   private static readonly STREAMING_CLEAR_MS = 300;
@@ -3537,7 +1815,6 @@ export class BrickResidencyManager {
    * far shorter than `ACTIVE_DPR_DELAY_MS` (250 ms), so real streaming still
    * drops quality on time. */
   private static readonly STREAMING_ASSERT_MS = 120;
-
 
   private clearStreamingAssertTimer(): void {
     if (this.streamingAssertTimer !== null) {
@@ -3638,60 +1915,60 @@ export class BrickResidencyManager {
 
   /**
    * Fold one brick's raw min/max into the layer's auto-contrast range
-   * (weak-proxy-dtype layers with no server histogram — see
-   * `LayerBrickPool.autoRange` and `shouldAutoRange`). The
-   * per-brick min/max is already computed by both repack paths; this is the
-   * only consumer of it for range purposes.
-   *
-   * When the range moves, EMPTY page entries must be re-encoded (they store
-   * the value quantized against the pool range), and `poolsVersion` is bumped
-   * so `BrickVolumeLayer` rebuilds the `minValue`/`maxValue` uniforms — no
-   * material rebuild. Bricks resident in the atlas hold raw values and
-   * normalize live in the shader, so they need no rewrite.
+   * (`foldAutoRange`, rangeEncoding.ts) and schedule what a move implies: a
+   * drain for the coalesced EMPTY re-encode, and the rate-limited
+   * `poolsVersion` bump — with a trailing timer, so the LAST range move of a
+   * burst always publishes (the drain's idle edge is not a safe trailing
+   * site — applyGpuOutcome can fold ranges in after the pipeline already
+   * went idle).
    */
   private accumulateAutoRange(pool: LayerBrickPool, brickMin: number, brickMax: number): void {
-    if (!pool.autoRange) return;
-    if (!Number.isFinite(brickMin) || !Number.isFinite(brickMax) || brickMax <= brickMin) return;
-
-    const nextMin = pool.autoRangeInitialized ? Math.min(pool.minValue, brickMin) : brickMin;
-    const nextMax = pool.autoRangeInitialized ? Math.max(pool.maxValue, brickMax) : brickMax;
-
-    // Ignore sub-1% wobble so a stream of bricks doesn't churn the uniforms;
-    // the first (uninitialized) update always applies.
-    const span = Math.max(pool.maxValue - pool.minValue, 1e-6);
-    const changed =
-      !pool.autoRangeInitialized ||
-      Math.abs(nextMin - pool.minValue) > span * 0.01 ||
-      Math.abs(nextMax - pool.maxValue) > span * 0.01;
-    if (!changed) return;
-
-    pool.minValue = nextMin;
-    pool.maxValue = nextMax;
-    pool.autoRangeInitialized = true;
-    // Flag-off pools keep the occupancy encode range mirroring the pool
-    // range (legacy single-range behavior); the autoRangeEncodeDirty pass
-    // below re-encodes the sidecar against it, exactly as before.
-    if (!pool.occObservedRange) {
-      pool.occEncodeMin = nextMin;
-      pool.occEncodeMax = nextMax;
-    }
-
-    // EMPTY page entries encode their value against the pool range, so a
-    // range move requires re-encoding them — but COALESCED to one pass per
-    // drain frame (early float streaming lands several moves per frame, and
-    // each immediate rewrite re-uploaded page-table regions). The next drain
-    // applies it; a drain is guaranteed by the invalidate paths below.
-    if (pool.emptyValues.size > 0) {
-      pool.autoRangeEncodeDirty = true;
-      this.wakeDrain();
-    }
-
-    // The React-facing bump is rate-limited with a trailing timer so the
-    // LAST range move of a burst always publishes (the drain's idle edge is
-    // not a safe trailing site — applyGpuOutcome can fold ranges in after
-    // the pipeline already went idle).
+    const moved = foldAutoRange(pool, brickMin, brickMax);
+    if (moved === "unchanged") return;
+    if (moved === "moved-reencode") this.wakeDrain();
     this.schedulePoolsBump();
   }
+
+  /**
+   * Min/max-readback continuation for a GPU repack batch. The per-brick
+   * bookkeeping (token validation, EMPTY demotion, unmap + requeue of failed
+   * dispatches) is `applyGpuOutcomeToPools`; this adds the scheduling.
+   */
+  private applyGpuOutcome(outcome: GpuFlushOutcome<GpuBrickToken>): void {
+    if (this.disposed) return;
+    if (applyGpuOutcomeToPools(outcome, this.gpuOutcomeContext)) {
+      // The page-table flush and the invalidate are the correctness half and
+      // stay unconditional. The store bump is throttled exactly as the drain
+      // path throttles it (see drainUploads) — this continuation runs once per
+      // GPU flush, i.e. up to once per frame, and every bump re-renders the
+      // residencyVersion consumers. The `!streaming` clause guarantees the
+      // drained edge always lands, so consumers settle on the complete state.
+      const now = performance.now();
+      const streaming = this.anyPipelineWork();
+      if (
+        !streaming ||
+        now - this.lastResidencyBumpAt > qualityGovernor.getProfile().residencyBumpMs
+      ) {
+        this.lastResidencyBumpAt = now;
+        this.deps.viewerStore.getState().bumpResidencyVersion();
+      }
+      // Gated (gap 1a), same as the drain path — the drained edge
+      // (!streaming) still invalidates unconditionally through the gate.
+      this.scheduleStreamingFrame(this.deps.isInteracting?.() ?? false, streaming);
+    }
+  }
+
+  private readonly gpuOutcomeContext: GpuOutcomeContext = {
+    pools: this.pools,
+    stats: this.stats,
+    accumulateAutoRange: (pool, brickMin, brickMax) =>
+      this.accumulateAutoRange(pool, brickMin, brickMax),
+    requeueFetch: (pool, node) => {
+      this.wakeDrain();
+      pool.pendingFetch.push(node);
+      this.startNextFetchesGlobal();
+    },
+  };
 
   /** Throttled `poolsVersion` bump + invalidate with a trailing timer, so
    * the LAST event of a burst always publishes. Shared by the auto-range
@@ -3716,610 +1993,25 @@ export class BrickResidencyManager {
     }
   }
 
-  /**
-   * Fold a landed brick range into the pool's occupancy OBSERVED range —
-   * UNION ONLY, no scheduling. The promotion decision moved to the drain
-   * flush loop's drained-edge check (`occPromotionWorthwhile`): promoting
-   * per landed brick cascaded during cold loads (the growing union
-   * re-promoted on nearly every drain, each one blanking the whole sidecar,
-   * starving the re-encode and injecting off-cadence frames that defeated
-   * the streaming coalescer — ~9× the intended rendered frames with
-   * occupancy culling dead the whole time). During a stream the texels
-   * simply keep encoding against the CURRENT range: stale-but-conservative
-   * by the four-corner clamp + byte-0 sentinel.
-   */
-  private accumulateOccRange(pool: LayerBrickPool, brickMin: number, brickMax: number): void {
-    if (!pool.occObservedRange) return;
-    if (!Number.isFinite(brickMin) || !Number.isFinite(brickMax) || brickMax < brickMin) return;
-
-    pool.occObservedMin = pool.occObservedInitialized
-      ? Math.min(pool.occObservedMin, brickMin)
-      : brickMin;
-    pool.occObservedMax = pool.occObservedInitialized
-      ? Math.max(pool.occObservedMax, brickMax)
-      : brickMax;
-    pool.occObservedInitialized = true;
-  }
-
-  /** Re-encode every EMPTY page entry against the current pool range (the
-   * page table is flushed by the caller). */
-  private reencodeEmptyEntries(pool: LayerBrickPool): void {
-    for (const [key, value] of pool.emptyValues) {
-      const { level, coords } = parseNodeKey(key);
-      setPageEntry(
-        pool.pageTable,
-        level,
-        coords,
-        encodeEmptyTexel(value, pool, pool.emptyBits),
-        PAGE_FLAG_EMPTY,
-      );
-    }
-  }
-
-  /** Re-encode every RESIDENT brick's occupancy texel against the current
-   * occupancy ENCODE range (same quantization dependency as the EMPTY
-   * entries; a range move leaves old encodings relative to the old range,
-   * which may no longer bracket the brick). */
-  private reencodeOccupancyEntries(pool: LayerBrickPool): void {
-    const encodeRange = occEncodeRangeOf(pool);
-    for (const [key, range] of pool.brickRanges) {
-      const slot = pool.pool.slotOf(key);
-      if (!slot) continue; // evicted since — its page entry is UNMAPPED
-      const { level, coords } = parseNodeKey(key);
-      setPageEntry(
-        pool.pageTable,
-        level,
-        coords,
-        slot.coords,
-        PAGE_FLAG_RESIDENT,
-        encodeOccupancyTexel(range[0], range[1], encodeRange),
-        slabTexelsOf(pool, pool.brickSlabRanges.get(key)),
-      );
-    }
-    for (const [key, range] of pool.aggregateRanges) {
-      const { level, coords } = parseNodeKey(key);
-      setAggregateEntry(
-        pool.pageTable,
-        level,
-        coords,
-        encodeOccupancyTexel(range[0], range[1], encodeRange),
-        slabTexelsOf(pool, pool.aggregateSlabRanges.get(key)),
-      );
-    }
-  }
-
-  /** Blank every RESIDENT brick's occupancy texel (and every aggregate
-   * texel) to the all-zero "unknown, never skip/hop" sentinel — the
-   * conservative intermediate state of a range promotion (valid under ANY
-   * decode uniforms; see `occObservedRange`). */
-  private blankOccupancyEntries(pool: LayerBrickPool): void {
-    for (const key of pool.brickRanges.keys()) {
-      const slot = pool.pool.slotOf(key);
-      if (!slot) continue;
-      const { level, coords } = parseNodeKey(key);
-      setPageEntry(pool.pageTable, level, coords, slot.coords, PAGE_FLAG_RESIDENT);
-    }
-    for (const key of pool.aggregateRanges.keys()) {
-      const { level, coords } = parseNodeKey(key);
-      setAggregateEntry(pool.pageTable, level, coords, null);
-    }
-  }
-
-  /**
-   * Hierarchical occupancy (R4): fold one brick's measured range into
-   * `measuredRanges` and write every parent cell's aggregate that just
-   * became complete (`occupancyAggregate.ts`). Uniform (EMPTY) bricks land
-   * here too, as [v, v] — an aggregate is only as complete as ALL its
-   * children. While a range promotion is in flight the texel is written as
-   * the unknown sentinel (like the per-brick path); the re-encode pass
-   * rewrites it from `aggregateRanges`.
-   */
-  private recordMeasuredRange(
-    pool: LayerBrickPool,
-    key: string,
-    level: number,
-    coords: Vec3,
-    brickMin: number,
-    brickMax: number,
-    /** Per-slab ranges (multi-plane pools). Omitted — a uniform brick — means
-     * every slab is [brickMin, brickMax]. */
-    slabRanges?: SlabRanges | null,
-  ): void {
-    if (!pool.occHierarchy) return;
-    if (!Number.isFinite(brickMin) || !Number.isFinite(brickMax) || brickMax < brickMin) return;
-    pool.measuredRanges.set(key, [brickMin, brickMax]);
-    const perSlab = pool.occSlabs > 1;
-    if (perSlab) {
-      pool.measuredSlabRanges.set(
-        key,
-        slabRanges ??
-          Array.from({ length: pool.occSlabs }, () => [brickMin, brickMax] as const),
-      );
-    }
-    const parentLevel = level + 1;
-    for (const cell of parentCellsOf(pool.geometry, pool.spec, level, coords)) {
-      const aggregate = aggregateIfComplete(
-        pool.geometry,
-        pool.spec,
-        parentLevel,
-        cell,
-        pool.measuredRanges,
-      );
-      if (!aggregate) continue;
-      const parentKey = nodeKey(parentLevel, cell);
-      pool.aggregateRanges.set(parentKey, aggregate);
-      const slabAggregate = perSlab
-        ? aggregateSlabsIfComplete(
-            pool.geometry,
-            pool.spec,
-            parentLevel,
-            cell,
-            pool.measuredSlabRanges,
-            pool.occSlabs,
-          )
-        : null;
-      if (slabAggregate) pool.aggregateSlabRanges.set(parentKey, slabAggregate);
-      setAggregateEntry(
-        pool.pageTable,
-        parentLevel,
-        cell,
-        pool.occReencodePending
-          ? null
-          : encodeOccupancyTexel(aggregate[0], aggregate[1], occEncodeRangeOf(pool)),
-        pool.occReencodePending ? null : slabTexelsOf(pool, slabAggregate),
-      );
-      this.stats.aggregateWrites += 1;
-    }
-  }
-
-  /**
-   * Min/max-readback continuation for a GPU repack batch: EMPTY demotion of
-   * uniform bricks and unmapping of failed dispatches. Lands a few frames
-   * after the dispatch, so every token re-validates against the CURRENT slot
-   * mapping — an evicted/remapped/flushed brick is silently skipped.
-   */
-  private applyGpuOutcome(outcome: GpuFlushOutcome<GpuBrickToken>): void {
-    if (this.disposed) return;
-    const touchedPools = new Set<LayerBrickPool>();
-
-    for (const result of outcome.results) {
-      const pool = this.resolveGpuToken(result.token);
-      if (!pool) continue;
-      // Fold every brick's range into the layer auto-contrast, uniform or not.
-      this.accumulateAutoRange(pool, result.min, result.max);
-      if (result.uniformValue === null) {
-        // Non-uniform GPU brick: its occupancy texel was written as "unknown"
-        // at dispatch — backfill the real min/max bracket now that the
-        // readback delivered it (resolveGpuToken already validated the slot).
-        const { level, coords } = parseNodeKey(result.token.key);
-        const slot = pool.pool.slotOf(result.token.key);
-        if (slot) {
-          pool.brickRanges.set(result.token.key, [result.min, result.max]);
-          const slabRanges =
-            pool.occSlabs > 1
-              ? normalizeSlabRanges(result.slabRanges, pool.spec.channelCount)
-              : null;
-          if (slabRanges) pool.brickSlabRanges.set(result.token.key, slabRanges);
-          this.accumulateOccRange(pool, result.min, result.max);
-          this.recordMeasuredRange(
-            pool,
-            result.token.key,
-            level,
-            coords,
-            result.min,
-            result.max,
-            slabRanges,
-          );
-          setPageEntry(
-            pool.pageTable,
-            level,
-            coords,
-            slot.coords,
-            PAGE_FLAG_RESIDENT,
-            // "Unknown" while a promotion is in flight — see drainEntry.
-            pool.occReencodePending
-              ? undefined
-              : encodeOccupancyTexel(result.min, result.max, occEncodeRangeOf(pool)),
-            pool.occReencodePending ? undefined : slabTexelsOf(pool, slabRanges),
-          );
-          touchedPools.add(pool);
-        }
-        continue;
-      }
-      const { level, coords } = parseNodeKey(result.token.key);
-      // Uniform brick: the same EMPTY demotion the CPU path applies before
-      // acquiring a slot — just deferred to the readback; the slot frees up.
-      const texel = encodeEmptyTexel(result.uniformValue, pool, pool.emptyBits);
-      setPageEntry(pool.pageTable, level, coords, texel, PAGE_FLAG_EMPTY);
-      pool.pool.release(result.token.key);
-      pool.gpuStaleKeys.delete(result.token.key);
-      pool.provisionalKeys.delete(result.token.key);
-      pool.coarsestResident.delete(result.token.key);
-      pool.brickRanges.delete(result.token.key);
-      pool.brickSlabRanges.delete(result.token.key);
-      pool.emptyValues.set(result.token.key, result.uniformValue);
-      // See the CPU EMPTY-demotion site: uniforms feed the observed range.
-      this.accumulateOccRange(pool, result.uniformValue, result.uniformValue);
-      this.recordMeasuredRange(
-        pool,
-        result.token.key,
-        level,
-        coords,
-        result.uniformValue,
-        result.uniformValue,
-      );
-      this.stats.emptyBricks += 1;
-      touchedPools.add(pool);
-    }
-
-    // Bricks the GPU repacker can NEVER produce. Marked BEFORE the shared
-    // unmap/requeue below so the retry this schedules already sees the key as
-    // GPU-ineligible and takes the CPU path. Skipping this is what made the
-    // requeue an infinite loop: `broken` is only set by a BATCH failure, so a
-    // per-job failure left the repacker healthy and the retry came straight
-    // back here.
-    for (const token of outcome.unsupported) {
-      const pool = this.resolveGpuToken(token);
-      if (!pool) continue;
-      pool.gpuIneligibleKeys.add(token.key);
-      const { level, coords } = parseNodeKey(token.key);
-      warnOnceGpuIneligible(
-        token.key,
-        `[bricks] gpu repack produced no dispatches for brick ${level}:${coords.join(",")} ` +
-          `(no chunk overlaps it); falling back to CPU repack for this brick. ` +
-          `This usually means the planner asked for a brick the level geometry does not cover.`,
-      );
-    }
-
-    for (const token of [...outcome.failed, ...outcome.unsupported]) {
-      const pool = this.resolveGpuToken(token);
-      if (!pool) continue;
-      const { level, coords } = parseNodeKey(token.key);
-      // The dispatch never wrote the slot: unmap it and requeue the fetch.
-      // A failed BATCH marks the repacker broken, so that retry repacks on the
-      // CPU path; an `unsupported` job is diverted per-key just above.
-      setPageEntry(pool.pageTable, level, coords, null, PAGE_FLAG_UNMAPPED);
-      pool.pool.release(token.key);
-      pool.gpuStaleKeys.delete(token.key);
-      pool.provisionalKeys.delete(token.key);
-      pool.coarsestResident.delete(token.key);
-      pool.brickRanges.delete(token.key);
-      pool.brickSlabRanges.delete(token.key);
-      this.stats.fetchErrors += 1;
-      if (pool.protectedKeys.has(token.key)) {
-        this.wakeDrain();
-        // Tail = next to dispatch (pendingFetch is in reverse dispatch order
-        // and never re-sorted after reconcile, so score/band are inert here).
-        pool.pendingFetch.push({
-          key: token.key,
-          level,
-          coords,
-          role: "target",
-          priority: 0,
-          fetchScore: 0,
-          fetchBand: 0,
-        });
-        this.startNextFetchesGlobal();
-      }
-      touchedPools.add(pool);
-    }
-
-    if (touchedPools.size > 0) {
-      // The page-table flush and the invalidate are the correctness half and
-      // stay unconditional. The store bump is throttled exactly as the drain
-      // path throttles it (see drainUploads) — this continuation runs once per
-      // GPU flush, i.e. up to once per frame, and every bump re-renders the
-      // residencyVersion consumers. The `!streaming` clause guarantees the
-      // drained edge always lands, so consumers settle on the complete state.
-      const now = performance.now();
-      const streaming = this.anyPipelineWork();
-      if (
-        !streaming ||
-        now - this.lastResidencyBumpAt > qualityGovernor.getProfile().residencyBumpMs
-      ) {
-        this.lastResidencyBumpAt = now;
-        this.deps.viewerStore.getState().bumpResidencyVersion();
-      }
-      // Gated (gap 1a), same as the drain path — the drained edge
-      // (!streaming) still invalidates unconditionally through the gate.
-      this.scheduleStreamingFrame(this.deps.isInteracting?.() ?? false, streaming);
-    }
-  }
-
-  /** The pool for a GPU token, iff the brick still occupies the slot it was
-   * dispatched into (nothing evicted, remapped, flushed, or disposed since). */
-  private resolveGpuToken(token: GpuBrickToken): LayerBrickPool | null {
-    const pool = this.pools.get(token.poolKey);
-    if (!pool) return null;
-    const slot = pool.pool.slotOf(token.key);
-    if (!slot || slot.index !== token.slotIndex) return null;
-    return pool;
-  }
-
-  /** One prefetch marker per POOL (key): `sliceSignature|slabZ` last prefetched. */
-  private readonly prefetchedSlabMarker = new Map<string, string>();
-  /** One marker per POOL: the sliceSignature whose adjacent collapsed-dim
-   * selections were last prefetched. A dim step changes the signature (that is
-   * what flushes the pool), so a stale marker means "new selection → warm its
-   * neighbors once". */
-  private readonly prefetchedDimMarker = new Map<string, string>();
-
-  /**
-   * Adjacent-data prefetch, run once per streaming→idle edge — decoded-chunk-
-   * cache warmth ONLY (no atlas slots, no page-table writes, no residency
-   * interaction, P7 intact). Both passes draw on ONE shared chunk/byte budget
-   * so plane-chunked datasets can't evict the CURRENT working set out of the
-   * byte-budgeted chunk cache; within the worker pool their tasks sort BELOW
-   * everything visible (priority −1 vs generation-scaled priorities ≥ 1), so
-   * a new plan mid-prefetch jumps the queue naturally.
-   */
-  private prefetchAdjacent(): void {
-    /** Remaining allowance, shared across both passes (decremented in place). */
-    const budget = { chunks: 32, bytes: 64 * 1024 * 1024 };
-    this.prefetchAdjacentSlabs(budget);
-    this.prefetchAdjacentSelections(budget);
-  }
-
-  /**
-   * z±1 adjacent-slab prefetch (2D mode): a later scrub to the neighbor slab
-   * costs repack+upload instead of network+decode. (3D z needs no prefetch —
-   * z is a brick axis there; the page table holds every slab.)
-   */
-  private prefetchAdjacentSlabs(budget: { chunks: number; bytes: number }): void {
-    const state = this.deps.viewerStore.getState();
-
-    for (const pool of this.pools.values()) {
-      if (pool.mode !== "2D" || pool.geometry.axes.zPos === -1) continue;
-      // Any member's plan will do: members share a slice signature and mode, so
-      // they agree on slabZ (it derives from the scene-wide currentZ). They can
-      // differ in view range, which only affects WHICH nodes are planned — and
-      // the prefetch reads nodes at targetLevel purely to warm the chunk cache.
-      let plan: LayerNodePlan | undefined;
-      for (const layerId of pool.members) {
-        const candidate = state.nodePlans[layerId];
-        if (candidate) {
-          plan = candidate;
-          break;
-        }
-      }
-      if (!plan || plan.mode !== "2D" || plan.slabZ === null || plan.slabZ === undefined) {
-        continue;
-      }
-      const marker = `${pool.sliceSignature}|${plan.slabZ}`;
-      if (this.prefetchedSlabMarker.get(pool.poolKey) === marker) continue;
-      this.prefetchedSlabMarker.set(pool.poolKey, marker);
-
-      const baseLevel = pool.geometry.levels[0];
-      const issued = new Set<string>();
-
-      for (const node of plan.nodes) {
-        if (node.level !== plan.targetLevel) continue;
-        const level = pool.geometry.levels[node.level];
-        // Decoded footprint per the worker's representation: uint8 1 B/voxel,
-        // uint16 2 B under raw16, everything else widened to f32.
-        const chunkBytes =
-          level.chunks.reduce((total, extent) => total * Math.max(1, extent), 1) *
-          decodedBytesPerVoxel(level.dtype);
-        let arr: ReturnType<typeof state.getArrayForStoreId>;
-        try {
-          arr = state.getArrayForStoreId(level.storeId);
-        } catch {
-          continue;
-        }
-
-        for (const dz of [1, -1]) {
-          const brickZ = adjacentSlabBrickZ(
-            plan.slabZ,
-            dz,
-            baseLevel.scale[2],
-            level.scale[2],
-            level.spatialShape[2],
-            pool.spec.payload[2],
-            baseLevel.spatialShape[2],
-          );
-          // Same brick as the current slab = already resident; skip.
-          if (brickZ === null || brickZ === node.coords[2]) continue;
-
-          const coords: Vec3 = [node.coords[0], node.coords[1], brickZ];
-          for (const { chunkCoords } of this.enumerateBrickChunkCoords(pool, node.level, coords)) {
-            const key = `${level.storeId}:${chunkCoords.join(",")}`;
-            if (issued.has(key)) continue;
-            if (budget.chunks <= 0 || budget.bytes < chunkBytes) {
-              return;
-            }
-            issued.add(key);
-            budget.chunks -= 1;
-            budget.bytes -= chunkBytes;
-            // Fire-and-forget: results land in the chunk cache; failures
-            // (abort on dispose, transient network) are non-events here.
-            void this.fetchChunkShared(arr, level.storeId, chunkCoords, -1).catch(() => {});
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Collapsed-dim (t/τ/…) ±1 prefetch: warm the decoded-chunk cache with the
-   * chunks the CURRENT plan's target-level bricks would need at the adjacent
-   * selection index, so a dim-slider step (which flushes the pool wholesale)
-   * costs repack+upload instead of network+decode. Runs in BOTH 2D and 3D —
-   * unlike z, a collapsed dim always refetches on change.
-   *
-   * Key parity is load-bearing: after a step, `computeFixedIndices` derives
-   * `fixedChunkCoords[d]` from LEVEL-0 chunk extents and
-   * `enumerateBrickChunkCoords` applies that same value at every level — so
-   * the neighbor's chunk coordinate here must come from level-0 chunking too,
-   * or the warmed keys are never the keys the real fetch asks for.
-   */
-  private prefetchAdjacentSelections(budget: { chunks: number; bytes: number }): void {
-    const state = this.deps.viewerStore.getState();
-
-    for (const pool of this.pools.values()) {
-      const { xPos, yPos, zPos, intensityPos, phasorPos } = pool.geometry.axes;
-      const level0 = pool.geometry.levels[0];
-      // Collapsed dims with anywhere to step: same predicate as
-      // computeFixedIndices, minus extent-1 dims (no neighbor to warm).
-      const collapsedDims: number[] = [];
-      pool.geometry.dims.forEach((_, d) => {
-        if (d === xPos || d === yPos || d === zPos || d === intensityPos) return;
-        if (d === phasorPos && pool.geometry.phasorBins > 0) return;
-        if ((level0.shape[d] ?? 1) <= 1) return;
-        collapsedDims.push(d);
-      });
-      if (collapsedDims.length === 0) continue;
-      if (this.prefetchedDimMarker.get(pool.poolKey) === pool.sliceSignature) continue;
-
-      // Any member's plan will do — same reasoning as the slab prefetch.
-      let plan: LayerNodePlan | undefined;
-      for (const layerId of pool.members) {
-        const candidate = state.nodePlans[layerId];
-        if (candidate) {
-          plan = candidate;
-          break;
-        }
-      }
-      // No plan yet: leave the marker unset so a later idle edge (once a plan
-      // exists) still warms this signature's neighbors.
-      if (!plan) continue;
-      this.prefetchedDimMarker.set(pool.poolKey, pool.sliceSignature);
-
-      const issued = new Set<string>();
-
-      for (const node of plan.nodes) {
-        if (node.level !== plan.targetLevel) continue;
-        const level = pool.geometry.levels[node.level];
-        // Decoded footprint per the worker's representation: uint8 1 B/voxel,
-        // uint16 2 B under raw16, everything else widened to f32.
-        const chunkBytes =
-          level.chunks.reduce((total, extent) => total * Math.max(1, extent), 1) *
-          decodedBytesPerVoxel(level.dtype);
-        let arr: ReturnType<typeof state.getArrayForStoreId>;
-        try {
-          arr = state.getArrayForStoreId(level.storeId);
-        } catch {
-          continue;
-        }
-
-        for (const d of collapsedDims) {
-          for (const delta of [1, -1]) {
-            const neighborChunk = adjacentSelectionChunk(
-              pool.fixedChunkCoords[d],
-              pool.fixedOffsets[d],
-              Math.max(1, level0.chunks[d] ?? 1),
-              Math.max(1, level0.shape[d] ?? 1),
-              delta,
-            );
-            if (neighborChunk === null) continue;
-
-            for (const spec of this.enumerateBrickChunkCoords(pool, node.level, node.coords)) {
-              const chunkCoords = [...spec.chunkCoords];
-              chunkCoords[d] = neighborChunk;
-              const key = `${level.storeId}:${chunkCoords.join(",")}`;
-              if (issued.has(key)) continue;
-              if (budget.chunks <= 0 || budget.bytes < chunkBytes) {
-                return;
-              }
-              issued.add(key);
-              budget.chunks -= 1;
-              budget.bytes -= chunkBytes;
-              // Fire-and-forget, exactly like the slab prefetch.
-              void this.fetchChunkShared(arr, level.storeId, chunkCoords, -1).catch(() => {});
-            }
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Fixed (collapsed) indices for every non-spatial, non-channel, non-phasor
-   * dim of a layer: the scene-wide dim-slider selection when present, else the
-   * lens slice's collapsed default. Computed at pool CREATION and recomputed on
-   * every signature FLUSH — a flushed pool that kept its old indices would
-   * refetch exactly the slice it just invalidated (the t-slider's data
-   * would never change).
-   *
-   * A phasor axis is NOT collapsed: the repack reduces every one of its bins
-   * (`brickRepack.reduceChunks`), so pinning one index here would hand it a
-   * single bin and the DFT would read a constant.
-   */
-  private computeFixedIndices(
-    layer: LayerState,
-    geometry: LayerLevelGeometry,
-    levels: LevelSource[],
-  ): { fixedChunkCoords: number[]; fixedOffsets: number[] } {
-    const dims = layer.lens.dataset.axisNames;
-    const { xPos, yPos, zPos, intensityPos, phasorPos } = geometry.axes;
-    const sliceMap = layer.lens.slices.reduce<Record<string, (typeof layer.lens.slices)[number]>>(
-      (acc, slice) => {
-        acc[slice.axis] = slice;
-        return acc;
-      },
-      {},
-    );
-    const dimSelections = this.deps.viewerStore.getState().dimSelections;
-    const fixedChunkCoords = dims.map(() => 0);
-    const fixedOffsets = dims.map(() => 0);
-    dims.forEach((dim, d) => {
-      if (d === xPos || d === yPos || d === zPos || d === intensityPos) return;
-      if (d === phasorPos && geometry.phasorBins > 0) return;
-      const fixedIndex = resolveFixedDimIndex(
-        sliceMap[dim],
-        dimSelections[dim],
-        levels[0].shape[d] ?? 1,
-      );
-      const chunkExtent = Math.max(1, levels[0].chunks[d] ?? 1);
-      fixedChunkCoords[d] = Math.floor(fixedIndex / chunkExtent);
-      fixedOffsets[d] = fixedIndex % chunkExtent;
-    });
-    return { fixedChunkCoords, fixedOffsets };
-  }
-
   private flushPool(
     pool: LayerBrickPool,
     nextSliceSignature: string,
     layer: LayerState,
     levels: LevelSource[],
   ): void {
-    for (const controller of pool.inFlight.values()) controller.abort();
-    pool.inFlight.clear();
-    pool.pendingFetch = [];
-    pool.pendingHalo = [];
-    pool.provisionalKeys.clear();
-    pool.queue = [];
-    pool.queuedKeys.clear();
-    pool.emptyValues.clear();
-    pool.brickRanges.clear();
-    pool.brickSlabRanges.clear();
-    pool.pool.clear();
-    pool.gpuStaleKeys.clear();
-    pool.coarsestResident.clear();
-    pool.autoRangeEncodeDirty = false;
-    // Occupancy observed range is a statement about the flushed data —
-    // reset to the pool range and re-observe from the refetched bricks.
-    pool.occObservedInitialized = false;
-    pool.occEncodeMin = pool.minValue;
-    pool.occEncodeMax = pool.maxValue;
-    pool.occReencodePending = false;
-    // Measured ranges/aggregates describe the flushed slice's data — the ONE
-    // event that invalidates them (they deliberately survive eviction).
-    pool.measuredRanges.clear();
-    pool.aggregateRanges.clear();
-    pool.measuredSlabRanges.clear();
-    pool.aggregateSlabRanges.clear();
-    clearPageTable(pool.pageTable);
-    pool.sliceSignature = nextSliceSignature;
     // The signature changed because the SELECTION changed (slices or a dim
     // slider) — the collapsed indices must follow, or the refetch reproduces
     // the flushed data.
-    const { fixedChunkCoords, fixedOffsets } = this.computeFixedIndices(
-      layer,
-      pool.geometry,
-      levels,
+    resetPoolContents(
+      pool,
+      nextSliceSignature,
+      computeFixedIndices(
+        layer,
+        pool.geometry,
+        levels,
+        this.deps.viewerStore.getState().dimSelections,
+      ),
     );
-    pool.fixedChunkCoords = fixedChunkCoords;
-    pool.fixedOffsets = fixedOffsets;
     this.flushedAt = performance.now();
     // A flush changes what the volume LOOKS like (the previous slice's
     // bricks are gone) but moves none of the compositor's cache-key
@@ -4333,8 +2025,7 @@ export class BrickResidencyManager {
   private disposePool(pool: LayerBrickPool): void {
     for (const controller of pool.inFlight.values()) controller.abort();
     pool.inFlight.clear();
-    this.prefetchedSlabMarker.delete(pool.poolKey);
-    this.prefetchedDimMarker.delete(pool.poolKey);
+    this.prefetcher.forget(pool.poolKey);
     disposeBrickAtlas(pool.atlas);
     disposePageTable(pool.pageTable);
     // Pool lifecycle event — layer components must drop their pool handle.
@@ -4343,11 +2034,7 @@ export class BrickResidencyManager {
 
   dispose(): void {
     this.disposed = true;
-    this.fetchAbort.abort();
-    this.inFlightChunks.clear();
-    this.inFlightChunkAborts.clear();
-    this.chunkRefs.clear();
-    this.lastChunkRead = null;
+    this.chunks.dispose();
     if (this.poolsBumpTimer !== null) {
       clearTimeout(this.poolsBumpTimer);
       this.poolsBumpTimer = null;
@@ -4360,7 +2047,6 @@ export class BrickResidencyManager {
       clearTimeout(this.drainPumpTimer);
       this.drainPumpTimer = null;
     }
-    this.mirrorQueue.length = 0;
     this.gpuRepacker?.dispose();
     this.gpuRepacker = null;
     for (const slot of this.rendererResources) {

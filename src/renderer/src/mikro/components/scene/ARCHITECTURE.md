@@ -75,7 +75,7 @@ the one folder other features may import.
 | `network/` | the konnektion Parquet network-collection renderer end-to-end — node/edge graphs (traced arbors, vessel trees, connectomes) |
 | `probe/` | the probe trackers, readout settler, axis guides, and the readout UI |
 | `animation/` | the camera-tour editor and player |
-| `debug/` | the debug panel shell and the residency overlay |
+| `debug/` | the debug panel chrome and the `DebugSection` contract (features contribute sections via `shell/debugRegistry.ts`) |
 
 ### The registries
 
@@ -86,7 +86,7 @@ contributes one entry to each**:
 ```
 shell/layerRegistry.ts            __typename -> { Layer2D, Layer3D }   exists
 shell/layerPanel/cardRegistry.ts  __typename -> LayerCard              exists
-shell/debugRegistry.ts            feature    -> DebugSection           PLANNED
+shell/debugRegistry.ts            feature    -> DebugSection           exists
 ```
 
 `cardRegistry.ts` landed when the schema split `ImageLayer` into the
@@ -97,9 +97,17 @@ lens-backed kinds, which MUST edit the objects the renderer reads, vs
 block order the panel groups by). The panel owns ordering and chrome and knows
 nothing about which card is which.
 
-The remaining planned one, the debug registry, lets each feature contribute its
-own `DebugPanel` section instead of the panel reaching into brick and mesh
-internals — the last big sideways cluster.
+`debugRegistry.ts` retired the last big sideways cluster: `DebugPanel` used to
+reach into brick and mesh internals (and the annotation skeleton self-test) to
+report on them. Each feature now owns its section in its own folder
+(`bricks/BrickDebugSection.tsx`, `meshes/MeshDebugSection.tsx`,
+`annotations/AnnotationsDebugSection.ts`) and fills the slots it has —
+`Warnings`, `budgets`, `Controls`, `Body`, and a `useContribution` hook for
+self-tests and copied-report keys. The contract lives in
+`features/debug/debugSection.ts`; features match it STRUCTURALLY (they may not
+import `features/debug`), and the registry's `Record<DebugFeature, DebugSection>`
+is where a drifted entry fails to compile. `SceneViewport` hands the ordered
+`DEBUG_SECTIONS` to the panel, which imports no feature.
 
 **Adding a LENS-backed layer type has a third, and it is the one that fails
 silently:** `platform/model/layerGuards.ts`'s `isBrickLayer`. The two registries

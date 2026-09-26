@@ -72,7 +72,7 @@ export const BrickLabelPlaneLayer = ({ layerId }: { layerId: string }) => {
 
   // Recreated only when the pool is rebuilt (the mesh remounts on that key);
   // everything dynamic flows through the uniform NODES below.
-  const bundle = useBrickMaterialBundle(
+  const { bundle, displayed } = useBrickMaterialBundle(
     pool,
     (p) => createLabelPlaneNodeMaterial(p, p, labelData),
   );
@@ -95,7 +95,7 @@ export const BrickLabelPlaneLayer = ({ layerId }: { layerId: string }) => {
   useLabelColorLut(bundle?.nodes, layer);
 
   if (layer?.visible === false) return null;
-  if (!planHasNodes || !pool || !bundle) return null;
+  if (!planHasNodes || !pool || !displayed) return null;
 
   const base = pool.geometry.levels[0];
   const totalX = base.spatialShape[0] * base.scale[0];
@@ -120,7 +120,7 @@ export const BrickLabelPlaneLayer = ({ layerId }: { layerId: string }) => {
         renderOrder={2}
       >
         <planeGeometry args={[1, 1]} />
-        <primitive object={bundle.material} attach="material" />
+        <primitive object={displayed.material} attach="material" />
       </mesh>
     </group>
   );

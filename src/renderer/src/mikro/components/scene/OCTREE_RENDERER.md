@@ -229,8 +229,8 @@ otherwise kept serving the previous timepoint from cache).
 
 One `Data3DTexture` per (layer, mode), format `R8`, `R16F` or `R32F`. The zarr
 worker emits `Uint8Array` or `Float32Array` chunks (uint16 is promoted to
-float32 in the CHUNKS) — or, under `orkestrator.raw16` (C3, default OFF), raw
-`Uint16Array` for uint16 arrays: half the decode-cache/transfer/GPU-upload
+float32 in the CHUNKS) — except uint16, which stays raw `Uint16Array` (C3,
+formerly `orkestrator.raw16`, settled ON in §6.9): half the decode-cache/transfer/GPU-upload
 bytes, an ARRAY-level decision via `chunkFidelityForDtype` since the chunk
 cache carries no representation in its keys. Either way uint16 INTENSITY
 pools store their bricks as
@@ -267,8 +267,8 @@ every atlas byte used to exist twice — VRAM plus the JS-heap array the
 `Data3DTexture` was built over — doubling the real footprint on
 unified-memory machines. Probes (`sampleResident`) now read EVERY resident
 brick through the decoded-chunk cache (`sampleChunkCacheSync`), the path
-GPU-repacked bricks — the majority on this WebGPU-only build — always used:
-keys simply never leave `gpuStaleKeys`. The atlas texture is created over
+GPU-repacked bricks — the majority on this WebGPU-only build — always used
+(`residency/residentProbes.ts`). The atlas texture is created over
 NULL data with **`texture.source.dataReady = false`** — the load-bearing
 flag: three's `Textures.updateTexture` runs `backend.createTexture` (pure
 GPU allocation, zero-initialized by WebGPU — which also skips the old
@@ -278,10 +278,8 @@ without it, `initTexture` crashed pool creation outright
 resolution failed"). `initTexture` runs eagerly for every pool so
 `writeTexture` never needs the needsUpdate re-spec fallback. A lost device
 restores by refetch (the chunk cache is warm — a repack, not a network
-storm).
-`orkestrator.atlasMirror = "on"` (DebugPanel toggle) restores the eager
-mirror for A/B, except for R16F atlases, whose backing would hold half-float
-BITS a raw probe read would misinterpret.
+storm). The eager mirror `orkestrator.atlasMirror` once restored is deleted
+(§6.9): `BrickAtlas` has no `backing` field.
 
 ### 2.6 The unified planner (`features/bricks/octree/nodePlanning.ts`)
 
@@ -432,7 +430,20 @@ Two structural costs were removed from the replan itself:
 
 ### 2.8 Residency manager (`features/bricks/residency/brickResidency.ts`)
 
-A plain class (registered in `viewerStore`, like `canvas`). Key mechanics:
+A plain class (registered in `viewerStore`, like `canvas`). The class keeps
+plan reconcile, fetch dispatch + `fetchBrick`, the drain's orchestration and
+the streaming flags/timers; its seams are sibling modules in `residency/`
+(free functions over the pool records, or small owned helpers):
+`residencyTypes` (`LayerBrickPool`, `PendingBrick`, stats — re-exported from
+`brickResidency.ts`), `chunkService` (decoded-chunk cache, in-flight sharing,
+referrer cancellation, sync-probe encoders), `brickChunks` (chunk
+enumeration, fixed indices, shard-index warm-up), `poolLifecycle` (derive /
+create / retarget / flush a pool), `uploadDrain` (`drainEntry` + the
+planned-first drain lanes — index cursors, one splice per pool),
+`gpuOutcome` (readback continuation, `resolveGpuToken`), `rangeEncoding`
+(auto-range, occupancy encode/promotion, R4 aggregates), `residentProbes`
+(`sampleResident*`, `fetchExactVoxel`), `adjacentPrefetch`,
+`residencyDebugReport`. Key mechanics:
 
 - **It starts OUTSIDE the canvas, and the renderer is LATE-BOUND**
   (`orkestrator.earlyBricks`, default ON). `features/bricks/residency/BrickSystemHost.tsx`
@@ -527,7 +538,7 @@ as `planDrops` when none is free).
 `recycled` transfer): the worker used to allocate a fresh ~1.1 MB output per
 brick — sustained multi-MB/frame garbage while streaming. The residency
 manager calls `dispatcher.release(data)` at the three points a payload is
-provably dead (mirror copy landed / skipped, dropped without upload), the
+provably dead (atlas upload landed, dropped without upload), the
 dispatcher size-classes the buffer by exact byteLength (cap
 `MAX_FREE_BUFFERS = 24`) and transfers it back to the worker with the next
 matching job. Recycled buffers are ZEROED in the worker — the phasor reduce
@@ -535,10 +546,9 @@ path accumulates `+=` and relies on arriving zeroed. Missed release points
 just fall to GC; releasing a live buffer would detach it, so release only
 where the last reference dies.
 
-Related main-thread costs, assessed: the per-upload CPU backing-mirror copy in
-`writeBrickToAtlas` (§2.5) is KEPT — `sampleResident` (probes) and
-context-loss restore both read `atlas.backing`, and the copy is bounded by the
-6 MB/frame upload budget. Per-chunk `zarr.json` re-parsing on the main thread
+Related main-thread costs, assessed: the per-upload CPU backing-mirror copy is
+GONE with the mirror itself (§2.5, §6.9) — probes read the decoded-chunk
+cache and a lost device restores by refetch. Per-chunk `zarr.json` re-parsing on the main thread
 was removed via a per-array metadata memo
 (`lib/zarr/runner/get-worker.ts` `readArrayMetadataCached`).
 
@@ -749,7 +759,7 @@ Keep the two in sync when touching either.
 | Coordinate graph | `@/mikro/lib/coords/transformGraph.ts` (+ `.test.ts`) — client-side edge composition into `LayerState.affineMatrix` / mesh & ROI transforms; see COORDINATE_SYSTEMS.md |
 | Mesh layers | `features/meshes/fabriks/` (fabriks prefix, row-group streaming, own README + `fabriksCore.test.ts`) |
 | Network layers | `features/network/konnektion/` (konnektion prefix, ONE level at a time — the format makes no boundary claim, so a seam between levels is a missing branch rather than a crack; own README + `konnektionCore.test.ts`) |
-| Drivers | `features/bricks/residency/nodePlanTracker.ts`, `features/bricks/residency/brickResidency.ts`, `features/bricks/residency/BrickSystemProvider.tsx`, started from `shell/VisibilityManager.tsx` |
+| Drivers | `features/bricks/residency/nodePlanTracker.ts`, `features/bricks/residency/brickResidency.ts` (+ its split-out seams, §2.8: `residency/{residencyTypes, chunkService, brickChunks, poolLifecycle, uploadDrain, gpuOutcome, rangeEncoding, residentProbes, adjacentPrefetch, residencyDebugReport}.ts`), `features/bricks/residency/BrickSystemProvider.tsx`, started from `shell/VisibilityManager.tsx` |
 | GPU | `features/bricks/gpu/{texSubImage3d, brickAtlas, pageTableTexture}.ts` |
 | Shaders | `features/bricks/gpu/{brickNodeMaterials, channelUniforms}.ts` (TSL → WGSL) |
 | Materials | `features/bricks/layers/{BrickPlaneLayer, BrickVolumeLayer}.tsx` |
@@ -1684,9 +1694,10 @@ branch from git history at the commit that removed it.
 **OFF**: its ON branch restored the *legacy eager CPU mirror* of the atlas, kept
 only as an A/B lever after R3 made the mirror lazy. Turning it on would have
 reinstated roughly 4× the host memory for intensity pools. What was deleted here
-is the eager path — the mirror queue, its idle drain, and the `kind: "slot"` read
-path that existed only to read it. Probes read the decoded-chunk cache through
-`gpuStaleKeys`, as they already did by default.
+is the eager path — the mirror queue, its idle drain, the `kind: "slot"` read
+path that existed only to read it, and (2026-09-26) the per-brick
+`gpuStaleKeys` set whose only reader was that choice. Probes read every
+resident brick through the decoded-chunk cache, as they already did by default.
 
 **Two user-facing overrides survive**, because they are preferences and not kill
 switches: `orkestrator.volumeBudgetMB` and `orkestrator.decodeCacheMB`, plus the
@@ -1782,8 +1793,8 @@ fullscreen composite quad shown. All decisions live in the pure, tested core
 intensity pools store `raw/65535` half floats in `r16float` atlases
 (`features/bricks/octree/halfFloat.ts`; labels excluded via `geometry.exactValues`;
 GPU repack rejects them → CPU worker path), and the CPU backing mirror is
-gone by default — probes read the decoded-chunk cache via the `gpuStaleKeys`
-path all GPU-repacked bricks already used. ≈4× memory for uint16 data.
+gone — probes read the decoded-chunk cache, the path all GPU-repacked bricks
+already used. ≈4× memory for uint16 data.
 Kill switches: `orkestrator.r16Atlas`, `orkestrator.atlasMirror` (DebugPanel
 toggles). See §2.5.
 
@@ -1804,17 +1815,19 @@ ownership does NOT hold. Min/max reduce the RAW float (`decodeMinMax`), per
 slab (R8). Parity: `repackKernel.test.ts` (arena simulator bit-identical to
 the worker's `encodeHalfArray`), DebugPanel GPU self-test r16f fixture
 (half bits within 1 ulp — `pack2x16float` rounding is implementation-
-defined among the nearest). C3 — SHIPPED DARK (`orkestrator.raw16`, default
-OFF pending live validation): the `'raw16'` texture fidelity keeps uint16
+defined among the nearest). C3 — LIVE (was `orkestrator.raw16`, shipped dark
+2026-08-27, settled ON 2026-09-01 per §6.9, still awaiting live validation):
+the `'raw16'` texture fidelity keeps uint16
 chunks `Uint16Array` end-to-end (halves decode-cache and upload bytes; the
 `REPACK_KERNEL_R16_U16_WGSL` kernel reads `array<u32>` with `extractBits`,
 and the CPU repack reads the u16 chunks through its generic element loops).
 The decode budget currency follows (`decodedBytesPerVoxel`, 2 B/voxel for
-uint16 under the flag), deliberately moving `budgetMinLevel` finer on uint16
+uint16), deliberately moving `budgetMinLevel` finer on uint16
 pyramids — the same cache holds twice the working set.
 
-**R4 — Hierarchical occupancy — SHIPPED DARK (2026-08-19,
-`orkestrator.occHierarchy`, default OFF pending live validation).**
+**R4 — Hierarchical occupancy — LIVE (landed dark 2026-08-19 as
+`orkestrator.occHierarchy`; settled ON 2026-09-01 per §6.9 WITHOUT the live
+validation it was waiting for — the first suspect for a raymarch artefact).**
 CPU: every landed brick range (uniform bricks as [v,v]) goes into a per-pool
 `measuredRanges` map that SURVIVES EVICTION (data statements, invalidated
 only by a pool flush); each landing writes any parent cell whose child set
@@ -1946,6 +1959,41 @@ queue. (b) Prefetch is 2D-adjacent-z only — no 3D margin or temporal (t±1)
 prefetch; band-2 margin prefetch is gated to a resting camera with an empty
 on-screen pipeline (P30). (c) The settle restore lands DPR + tricubic + adaptive depth in one
 frame — a visible quality pop; staggering them would soften it.
+
+**R10 — Review pass (2026-09-26).** A code-level review of the renderer; all
+unconditional (no flags), all awaiting live GPU validation.
+
+- *Per-brick residency cache* (`emitCachedResidency`, CPU mirror + proof
+  `shaderspec/residencyCache.ts`): both raymarchers keep the last walk's
+  answer with its validity box — the INTERSECTION of every visited level's
+  brick box, faces pulled in by 1e-3 voxel — and re-walk only when the sample
+  leaves it or `desiredLevelAt` changes. The walk used to run every step
+  (~30–60× per brick for the same answer). The property test covers dyadic,
+  xy-only and non-nested (z 4.22) pyramids.
+- *Walk starts at the desired level* (`start: max(desiredLevel, 0)`), not at 0
+  with `Continue` up to it.
+- *EMPTY-cell hop uses the resident predicate* (`emptyCellSkippable` ≡
+  `residentBrickSkippable` with upper = the fill's exact norm): a uniform
+  brick now also hops when MIP cannot beat it, ISO never reaches it, or every
+  member is done — not only when invisible.
+- *pcg2d jitter* (`shaderspec/jitterHash.ts`) replaces the sin-hash.
+- *Settled constants removed*: `smoothZoom`, `anisoStride`, `worldLod`,
+  `fastPathEnabled` literals and their legacy arms; `uMinDelta` is gone from
+  both materials and `useVolumeRayUniforms`.
+- *Pipelines pre-compile* (`layers/usePrecompiledBundle.ts`): a new brick
+  material goes through `renderer.compileAsync` while the previous one keeps
+  drawing (same pool structure only — an old material over a rebuilt pool
+  would sample disposed textures). The hook owns disposal.
+- *Bloom runs only on dirty frames, at target size* (`VolumeBloomScheduling`
+  in `platform/gpu/volumePost.ts`): its `updateBefore` is gated on a volume
+  render / settings push, and it sizes from the volume target, not the
+  full-DPR buffer. The glow persists in BloomNode's own targets.
+- *WGSL build tests* (`gpu/volumeMaterialWgsl.test.ts`,
+  `labels/labelVolumeWgsl.test.ts`, harness `gpu/__testing__/wgslHarness.ts`):
+  both raymarchers compile to WGSL device-free in CI, so an invalid shader
+  module can no longer ship silently.
+- Not done: `outputBufferType: UnsignedByteType` (halves the forced RGBA16F
+  framebuffer's bandwidth) needs a live banding check before it can land.
 
 **Non-gaps** (deliberate design differences — do not "fix"): slice-first
 economics and the precomputed/sharded data format are Neuroglancer choices

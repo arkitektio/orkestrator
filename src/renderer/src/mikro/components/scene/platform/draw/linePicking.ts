@@ -3,7 +3,7 @@ import * as THREE from "three";
 /**
  * How wide an annotation outline's pick band is.
  *
- * `platform/draw/Line.tsx` draws with three's WebGPU fat line, whose raycast
+ * `@/core/data/scene/draw/Line` draws with three's WebGPU fat line, whose raycast
  * (`three/examples/jsm/lines/webgpu/LineSegments2.js`) works in SCREEN space: it
  * projects ray and segments into `NDC × resolution / 2` and accepts a hit when
  *

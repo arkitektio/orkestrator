@@ -10,7 +10,13 @@ import * as TSL from "three/tsl";
 // These cover the CPU-side contracts, which are the ones that fail SILENTLY: a wrong indirect
 // word draws nothing or draws garbage, and neither raises. The TSL graphs themselves need a
 // GPU to say anything about.
-import { VERTICES_PER_POINT, createCullPass, loadScatterPairs } from "./pointsCompute";
+import {
+  VERTICES_PER_POINT,
+  createCullPass,
+  createScatterPass,
+  loadScatterPairs,
+  storageAttributeReleaser,
+} from "./pointsCompute";
 
 describe("the indirect draw arguments", () => {
   it("lays out [vertexCount, instanceCount, firstVertex, firstInstance]", () => {
@@ -132,5 +138,42 @@ describe("the cull pass's WGSL", () => {
     const wgsl = wgslOf(cull);
     expect(wgsl).toMatch(/atomicAdd\( &\w+\.value\[ 1u \], 1u \)/);
     expect(wgsl).not.toMatch(/\.value\[ 1u \] = /);
+  });
+});
+
+/**
+ * Three frees none of these buffers on its own, so a dispose that forgets one leaks it for the
+ * renderer's lifetime — and one that frees the SHARED position buffer breaks the material.
+ */
+describe("disposing the passes", () => {
+  it("the cull frees what it owns, never the shared positions or times", () => {
+    const positions = new StorageInstancedBufferAttribute(new Float32Array(8), 2);
+    const times = new StorageInstancedBufferAttribute(new Float32Array(4), 1);
+    const cull = createCullPass(positions, 4, 2, times);
+    const released: unknown[] = [];
+    cull.dispose((attribute) => released.push(attribute));
+    expect(released).toHaveLength(3);
+    expect(released).toContain(cull.indirect);
+    expect(released).toContain(cull.visible);
+    expect(released).toContain(cull.mask);
+    expect(released).not.toContain(positions);
+    expect(released).not.toContain(times);
+  });
+
+  it("the scatter frees its pair buffers, never the material's target", () => {
+    const target = new StorageInstancedBufferAttribute(new Float32Array(4), 1);
+    const scatter = createScatterPass(target, 4, 4);
+    const released: unknown[] = [];
+    scatter.dispose((attribute) => released.push(attribute));
+    expect(released).toEqual([scatter.indices, scatter.values]);
+  });
+
+  it("releases through the renderer's attribute map, and degrades to a no-op without one", () => {
+    const deleted: unknown[] = [];
+    const attribute = new StorageInstancedBufferAttribute(new Float32Array(1), 1);
+    storageAttributeReleaser({ _attributes: { delete: (a: unknown) => deleted.push(a) } })(attribute);
+    expect(deleted).toEqual([attribute]);
+    expect(() => storageAttributeReleaser({})(attribute)).not.toThrow();
+    expect(() => storageAttributeReleaser(null)(attribute)).not.toThrow();
   });
 });

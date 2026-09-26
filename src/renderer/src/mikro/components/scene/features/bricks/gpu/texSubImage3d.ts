@@ -11,10 +11,12 @@ import {
  * constraints and no global unpack state. The ANGLE `texSubImage3D` path this
  * replaced cost ~17.5 ms/brick on an M2.
  *
- * When the texture is not yet initialized (first frames, before a draw has
- * bound it) this falls back to `texture.needsUpdate = true` — the CPU backing
- * array mirrors every write, so a full re-spec is correct, just not
- * incremental.
+ * When the texture is not yet initialized (first frames, or a fresh device
+ * after a remount) it is realized on the spot with `renderer.initTexture`,
+ * then written. Only if that fails does it fall back to a full
+ * `needsUpdate` re-spec — correct ONLY for textures with a CPU source
+ * (page tables). Atlases have none (lazy mirror, R3), so for them the
+ * fallback would upload nothing while reporting success: return false.
  *
  * All brick and page-level buffers are contiguous exactly at their upload
  * extents (tightly packed rows/images).
@@ -51,11 +53,18 @@ export function uploadTexSubImage3D(
   const device = getWebGPUDevice(renderer);
   if (!device) return false;
 
-  const gpuTexture = (backend.get(texture) as { texture?: unknown } | undefined)
-    ?.texture;
+  const lookup = () =>
+    (backend.get(texture) as { texture?: unknown } | undefined)?.texture;
+  let gpuTexture = lookup();
   if (!gpuTexture) {
-    // Not yet created by the backend (no draw has sampled it): a full
-    // needsUpdate upload from the backing mirror is correct and rare.
+    (renderer as unknown as { initTexture?: (texture: unknown) => void }).initTexture?.(texture);
+    gpuTexture = lookup();
+  }
+  if (!gpuTexture) {
+    const image = texture.image as { data?: ArrayBufferView | null } | undefined;
+    if (!image?.data) return false;
+    // A CPU source mirrors every write: a full re-spec is correct, just not
+    // incremental.
     texture.needsUpdate = true;
     return true;
   }

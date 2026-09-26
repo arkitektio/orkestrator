@@ -87,17 +87,13 @@ export const BrickPlaneLayer = ({ layerId }: { layerId: string }) => {
   const { groupRef, handlers } = useBrickPlaneProbe({ layerId, layer, pool });
 
   // --- Which compositor -----------------------------------------------------
-  // Read ONCE per mount, like every other build-time shader flag: a material is
-  // specialised when it is compiled, so a mid-session toggle takes effect on the
-  // next scene mount rather than leaving a half-built material bound.
-  const fastPathEnabled = true;
   // The layer's own `renderKind` is EARNED from its sources (layerModel.ts), so
   // this demotes itself the moment an edit gives the layer something the
   // specialised shader cannot express — and `variantKey` turns that into a
   // rebuild.
   const kind = layer?.renderKind;
   const variant: "intensity" | "rgb" | "graph" =
-    fastPathEnabled && (kind === "intensity" || kind === "rgb") ? kind : "graph";
+    kind === "intensity" || kind === "rgb" ? kind : "graph";
 
   // --- Channel derivation (ChunkPlane parity) -------------------------------
   // STRUCTURE-keyed (see channelDataSignature.ts): a clim/gamma drag moves
@@ -174,7 +170,7 @@ export const BrickPlaneLayer = ({ layerId }: { layerId: string }) => {
   // TSL node material. Recreated only when
   // the pool is rebuilt (mesh remounts on that key); everything dynamic flows
   // through the uniform NODES below.
-  const bundle = useBrickMaterialBundle(
+  const { bundle, displayed } = useBrickMaterialBundle(
     pool,
     (p) =>
       rgbData
@@ -380,7 +376,7 @@ export const BrickPlaneLayer = ({ layerId }: { layerId: string }) => {
   }, [isDebug, bundle]);
 
   if (layer?.visible === false) return null;
-  if (!planHasNodes || !pool || !bundle) return null;
+  if (!planHasNodes || !pool || !displayed) return null;
 
   const base = pool.geometry.levels[0];
   const totalX = base.spatialShape[0] * base.scale[0];
@@ -407,7 +403,7 @@ export const BrickPlaneLayer = ({ layerId }: { layerId: string }) => {
       >
         <planeGeometry args={[1, 1]} />
         {/* TSL node material — see brickNodeMaterials.ts (WGSL + GLSL). */}
-        <primitive object={bundle.material} attach="material" />
+        <primitive object={displayed.material} attach="material" />
       </mesh>
     </group>
   );

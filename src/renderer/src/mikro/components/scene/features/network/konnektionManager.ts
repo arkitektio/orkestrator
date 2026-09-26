@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ClippingGroup } from "three/webgpu";
+import type { GpuPickSource } from "../../platform/draw/gpuPick";
 import {
   DEFAULT_INSTANCE_COLORMAP,
   INSTANCE_COLORMAP_SPECS,
@@ -31,7 +31,10 @@ import {
   type NetworkGpuBundle,
   type NetworkUniforms,
 } from "./networkMaterial";
-import { createSlabPlanes, updateSlabPlanes } from "../../platform/coords/slabClip";
+import {
+  CollectionManagerBase,
+  type SlabClip,
+} from "../../platform/collections/collectionManagerBase";
 
 /**
  * Everything that draws a konnektion collection, and nothing that renders
@@ -117,7 +120,7 @@ export type NetworkPlanConfig = {
   maxLevel?: number | null;
 };
 
-export type SlabClip = { z: number; thickness: number } | null;
+export type { SlabClip };
 
 /** How the packed values become colour. Null clim ends stretch over the packed
  *  range, the "over what you read" convention every other picker keeps. */
@@ -158,16 +161,23 @@ const DEFAULT_MAX_EDGES = 2_000_000;
 /** Fallback half-width when neither the layer nor the collection states one. */
 const DEFAULT_LINE_WIDTH = 1;
 
+type KonnektionPlanView = Omit<
+  KonnektionPlanInput,
+  "index" | "maxCells" | "maxLevel" | "pixelBudget" | "previousLevel"
+>;
+
 type Options = {
   collection: KonnektionCollection;
   onInvalidate: () => void;
   onStatsChanged: () => void;
 };
 
-export class KonnektionCollectionManager {
-  /** A `ClippingGroup` so 2D slab clipping is a property of the subtree rather
-   *  than of each material — setting it never rebuilds a pipeline. */
-  readonly group = new ClippingGroup();
+export class KonnektionCollectionManager extends CollectionManagerBase<
+  KonnektionCellRow,
+  KonnektionCellIndex
+> {
+  // `group` (a ClippingGroup), placement, the slab clip and the generation /
+  // disposed guard live in `CollectionManagerBase`.
 
   readonly stats: NetworkManagerStats = {
     plannedCells: 0,
@@ -185,21 +195,15 @@ export class KonnektionCollectionManager {
   };
 
   private readonly collection: KonnektionCollection;
-  private readonly onInvalidate: () => void;
-  private readonly onStatsChanged: () => void;
 
   /** Live from construction, so selection and width writes never need the
    *  bundle to exist yet. */
   private readonly uniforms: NetworkUniforms = createNetworkUniforms();
   private bundle: NetworkGpuBundle | null = null;
 
-  private catalogRows: KonnektionCellRow[] | null = null;
   private indexPromise: Promise<KonnektionCellIndex> | null = null;
-  private index: KonnektionCellIndex | null = null;
   private objects: Map<number, KonnektionObjectEntry> | null = null;
 
-  /** Voxel → world for this layer, updated in place via `setVoxelToWorld`. */
-  private readonly voxelToWorld = new THREE.Matrix4();
   private planConfig: Required<Omit<NetworkPlanConfig, "maxLevel">> & {
     maxLevel: number | null;
   } = {
@@ -211,6 +215,9 @@ export class KonnektionCollectionManager {
   };
   private material: NetworkMaterialConfig = {};
   private lastPlan: KonnektionPlan | null = null;
+  /** The newest settle's camera inputs, replayed when a placement change
+   *  rebuilds the index — recorded even while hidden. */
+  private lastView: KonnektionPlanView | null = null;
   private visible = true;
   private warnedTruncated = false;
 
@@ -229,51 +236,34 @@ export class KonnektionCollectionManager {
    */
   private residentCells: readonly DecodedNetworkCell[] = [];
 
-  /** Bumped on every plan; a fetch that finishes against a stale generation is
-   *  dropped rather than mounted, which is the whole of the race handling a
-   *  swap-the-buffers strategy needs. */
-  private generation = 0;
-
-  /** Order and pairing come from `platform/coords/slabClip.ts`; this used to
-   *  declare the pair in the opposite order from the mesh manager's. */
-  private readonly clipPlanes = createSlabPlanes();
+  // The base's `generation` is bumped on every plan: a fetch that finishes
+  // against a stale one is dropped rather than mounted, which is the whole of
+  // the race handling a swap-the-buffers strategy needs. Its `disposed` stops a
+  // plan in flight at unmount from building a bundle nothing frees (P13).
 
   constructor(options: Options) {
+    super({ onInvalidate: options.onInvalidate, onStatsChanged: options.onStatsChanged });
     this.collection = options.collection;
-    this.onInvalidate = options.onInvalidate;
-    this.onStatsChanged = options.onStatsChanged;
-    this.group.clippingPlanes = [];
-    // Set ONCE, here: the group's matrix is written directly by
-    // `setVoxelToWorld`, so three must not recompose it from
-    // position/quaternion/scale on any frame between construction and the
-    // first placement.
-    this.group.matrixAutoUpdate = false;
+  }
+
+  protected buildIndex(rows: KonnektionCellRow[], voxelToWorld: THREE.Matrix4): KonnektionCellIndex {
+    return buildKonnektionCellIndex(rows, this.collection.manifest, voxelToWorld);
+  }
+
+  /**
+   * A placement change moved every world box, so the mounted level was chosen
+   * against the old ones. This used NOT to replan (only fabriks did), so a
+   * moved network kept drawing the old placement's in-view cells until the
+   * next camera settle. `sameKeys` makes an unchanged plan free.
+   */
+  protected replanAfterPlacement(): void {
+    if (this.lastView) void this.updatePlan(this.lastView);
   }
 
   // --- configuration ------------------------------------------------------
 
   getCollection(): KonnektionCollection {
     return this.collection;
-  }
-
-  setVoxelToWorld(matrix: THREE.Matrix4): void {
-    if (this.voxelToWorld.equals(matrix)) return;
-    this.voxelToWorld.copy(matrix);
-    this.group.matrix.copy(matrix);
-    // Flag rather than traverse: the render loop does the walk, and doing it
-    // here would descend a subtree whose drawables may not exist yet.
-    this.group.matrixWorldNeedsUpdate = true;
-    // The cell index caches WORLD boxes and a world-scaled LOD error, so a
-    // placement change invalidates it — but not the catalog, which is in voxel
-    // space and never moves.
-    if (this.catalogRows) {
-      this.index = buildKonnektionCellIndex(
-        this.catalogRows,
-        this.collection.manifest,
-        this.voxelToWorld,
-      );
-    }
-    this.onInvalidate();
   }
 
   /**
@@ -296,7 +286,7 @@ export class KonnektionCollectionManager {
     this.uniforms.uInstanceValue.value = spec.value;
     this.uniforms.uInstanceTiered.value = spec.tiered ? 1 : 0;
     if (this.bundle) this.applyMaterialToBundle(this.bundle);
-    this.onInvalidate();
+    this.invalidate();
   }
 
   /** The cached config onto a bundle — also run once at bundle creation, so a
@@ -312,6 +302,15 @@ export class KonnektionCollectionManager {
     bundle.segmentMaterial.opacity = opacity;
     bundle.glyphMaterial.opacity = opacity;
     bundle.arrowMaterial.opacity = opacity;
+    // The fabriks rule: transparent only below full opacity, and `needsUpdate`
+    // only on the flip — it recompiles the pipeline, so a slider must not set
+    // it per tick. Opaque, the network is a depth-prepass occluder.
+    const transparent = opacity < 1;
+    for (const material of [bundle.segmentMaterial, bundle.glyphMaterial, bundle.arrowMaterial]) {
+      if (material.transparent === transparent) continue;
+      material.transparent = transparent;
+      material.needsUpdate = true;
+    }
     // `visible` rather than a zero count: it skips the render-list insertion
     // outright, and keeps `instanceCount` meaning "live data" alone.
     bundle.nodeGlyphs.visible = this.material.showNodes === true;
@@ -324,13 +323,28 @@ export class KonnektionCollectionManager {
 
   setPlanConfig(config: NetworkPlanConfig): void {
     this.planConfig = { ...this.planConfig, ...config };
-    this.onInvalidate();
+    this.invalidate();
   }
 
   setVisible(visible: boolean): void {
     this.visible = visible;
     this.group.visible = visible;
-    this.onInvalidate();
+    this.invalidate();
+  }
+
+  /**
+   * This collection as a GPU pick source (`platform/draw/gpuPick.ts`): the
+   * group (so the slab clip applies), each of the bundle's three draws with
+   * its id sibling (`NetworkGpuBundle.pickMaterialFor`). Nothing to pick
+   * before the first plan built a bundle.
+   */
+  pickSource(key: string): GpuPickSource {
+    return {
+      key,
+      slot: this.uniforms.uPickSlot,
+      root: () => (this.disposed || !this.bundle ? null : this.group),
+      pickMaterialFor: (object) => this.bundle?.pickMaterialFor(object) ?? null,
+    };
   }
 
   getSelection(): number {
@@ -341,7 +355,7 @@ export class KonnektionCollectionManager {
   setSelection(ordinal: number | null, isolate = false): void {
     this.uniforms.selectedOrdinal.value = ordinal ?? -1;
     this.uniforms.isolate.value = isolate ? 1 : 0;
-    this.onInvalidate();
+    this.invalidate();
   }
 
   /**
@@ -379,24 +393,7 @@ export class KonnektionCollectionManager {
     this.uniforms.uApplyToGlyphs.value = this.appearance.applyToGlyphs ? 1 : 0;
     this.uniforms.uValueSource.value = this.appearance.valueSource === "edge" ? 1 : 0;
     this.bundle?.setPalette(this.appearance.palette);
-    this.onInvalidate();
-  }
-
-  /**
-   * The 2D slab: draw only what is within `thickness` of `z`.
-   *
-   * Mutates the two plane constants and nothing else — no replan, no refetch,
-   * no pipeline rebuild — which is what makes z-scrubbing free.
-   */
-  setSlabClip(slab: SlabClip): void {
-    if (!slab) {
-      this.group.clippingPlanes = [];
-      this.onInvalidate();
-      return;
-    }
-    updateSlabPlanes(this.clipPlanes, slab);
-    this.group.clippingPlanes = [...this.clipPlanes];
-    this.onInvalidate();
+    this.invalidate();
   }
 
   // --- the catalog and the plan -------------------------------------------
@@ -406,15 +403,7 @@ export class KonnektionCollectionManager {
     if (!this.indexPromise) {
       this.indexPromise = this.collection
         .loadCellCatalog()
-        .then((rows) => {
-          this.catalogRows = rows;
-          this.index = buildKonnektionCellIndex(
-            rows,
-            this.collection.manifest,
-            this.voxelToWorld,
-          );
-          return this.index;
-        })
+        .then((rows) => this.adoptCatalog(rows))
         .catch((error: unknown) => {
           this.indexPromise = null;
           this.stats.errors++;
@@ -435,9 +424,11 @@ export class KonnektionCollectionManager {
    *
    * Called at camera-SETTLE cadence, never per frame.
    */
-  async updatePlan(view: Omit<KonnektionPlanInput, "index" | "maxCells" | "maxLevel" | "pixelBudget" | "previousLevel">): Promise<void> {
-    if (!this.visible) return;
+  async updatePlan(view: KonnektionPlanView): Promise<void> {
+    this.lastView = view;
+    if (!this.visible || this.disposed) return;
     const index = this.index ?? (await this.ensureIndex());
+    if (this.disposed) return;
 
     // Once the bundle exists its capacity is the hard ceiling: budgets raised
     // afterwards are clamped rather than honoured, because honouring them
@@ -472,26 +463,31 @@ export class KonnektionCollectionManager {
           `deliberately not drawn — it would not fit in memory.`,
       );
     }
-    this.onStatsChanged();
+    this.notifyStats();
 
-    const generation = ++this.generation;
+    const generation = this.bumpGeneration();
     const started = performance.now();
     const decoded: DecodedNetworkCell[] = [];
     try {
       for (const group of groupByRowGroup(plan.cells)) {
         const cells = await this.collection.readFetchGroup(group);
-        if (generation !== this.generation) return; // superseded mid-flight
+        if (this.isStale(generation)) return; // superseded mid-flight
         for (const cell of cells.values()) decoded.push(cell);
       }
     } catch (error) {
+      if (this.isStale(generation)) return;
+      // Forget the plan, or the next settle with the same keys hits the
+      // `sameKeys` early return and the layer stays empty until the camera
+      // moves far enough to change the plan.
+      this.lastPlan = null;
       this.stats.errors++;
       console.error("[konnektion] failed to read a planned level", error);
-      this.onStatsChanged();
+      this.notifyStats();
       return;
     }
     this.stats.fetchMs += performance.now() - started;
 
-    if (generation !== this.generation) return;
+    if (this.isStale(generation)) return;
     // Retained past the upload, because the pickers made the pack a function
     // of editable state — see the field's own comment.
     this.residentCells = decoded;
@@ -508,6 +504,7 @@ export class KonnektionCollectionManager {
    */
   private ensureBundle(): NetworkGpuBundle | null {
     if (this.bundle) return this.bundle;
+    if (this.disposed) return null;
     if (!this.index) return null; // unreachable off updatePlan, which awaited it
     const capacity = networkCapacityFor(this.index, {
       maxNodes: this.planConfig.maxNodes,
@@ -558,7 +555,9 @@ export class KonnektionCollectionManager {
         },
         this.styling,
       );
-      bundle.markUploaded();
+      // Only the written prefix of each buffer goes to the GPU: a plan swap at a
+      // fraction of capacity no longer re-uploads the whole allocation.
+      bundle.markUploaded(packed.used);
       bundle.setCounts(packed.nodes, packed.edges);
       this.lastValueRange = { min: packed.valueMin, max: packed.valueMax };
       this.applyAppearance();
@@ -582,8 +581,8 @@ export class KonnektionCollectionManager {
     }
 
     this.stats.decodeMs += performance.now() - started;
-    this.onStatsChanged();
-    this.onInvalidate();
+    this.notifyStats();
+    this.invalidate();
   }
 
   // --- teardown -----------------------------------------------------------
@@ -591,6 +590,7 @@ export class KonnektionCollectionManager {
   /** The bundle owns its geometries and materials and must dispose them
    *  explicitly (P13): three disposes nothing on `remove()` or GC. */
   dispose(): void {
+    this.markDisposed(); // strands any fetch still in flight
     if (this.bundle) {
       this.group.remove(this.bundle.segments, this.bundle.nodeGlyphs, this.bundle.arrowGlyphs);
       this.bundle.dispose();

@@ -33,14 +33,6 @@ const FEATURE_ALLOWLIST = new Set([
  * This list is a ceiling, not a licence.
  */
 const KNOWN_SIDEWAYS: Record<string, number> = {
-  // The debug panel reaches into brick and mesh internals to report on them.
-  // Removed by shell/debugRegistry.ts, where each feature contributes its own
-  // section instead.
-  // Was 8. Settling the kill switches removed six of them: the panel no
-  // longer imports brick flag modules just to toggle them.
-  "features/debug->features/bricks": 2,
-  "features/debug->features/meshes": 3,
-  "features/debug->features/annotations": 1,
   // BrickVolumeLayer and useBrickPlaneProbe run annotation drawing inline,
   // and both capture DESIGN gestures into the brush store (the plane carries
   // the label LIFT click). Removed when BrickVolumeLayer is split.

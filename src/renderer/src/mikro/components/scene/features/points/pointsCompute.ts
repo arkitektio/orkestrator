@@ -18,6 +18,7 @@
  * redundant on-screen, so zoomed out the survivors still overdraw each other. The mesh planner
  * answers that by substituting pre-authored coarser geometry, which a point set has none of.
  */
+import type { BufferAttribute } from "three";
 import { IndirectStorageBufferAttribute, StorageBufferAttribute, StorageInstancedBufferAttribute } from "three/webgpu";
 import * as TSLTyped from "three/tsl";
 
@@ -27,6 +28,44 @@ const { Fn, If, atomicAdd, atomicStore, float, instanceIndex, storage, uint, uni
 
 /** Vertices per point. Two triangles of a billboard quad, from `vertexIndex` alone. */
 export const VERTICES_PER_POINT = 6;
+
+/**
+ * Frees one attribute's GPU buffer. Injected rather than imported so the passes stay
+ * renderer-free (and testable); the layer builds it with `storageAttributeReleaser`.
+ */
+export type ReleaseAttribute = (attribute: BufferAttribute) => void;
+
+/**
+ * The only path three has to free a STORAGE attribute's GPU buffer.
+ *
+ * Three frees a geometry's vertex and index attributes when the geometry is disposed, and
+ * nothing else: a buffer bound as `storage(...)` (a compute pass's, a material's) or used as
+ * `geometry.indirect` is created by `Bindings`/`Geometries` through the renderer's `Attributes`
+ * map and never deleted, so every rebuild leaks it for the renderer's lifetime. `Attributes.delete`
+ * is what `Geometries` calls on dispose — it destroys the `GPUBuffer` and drops the entry, and is
+ * a no-op for an attribute that never reached the GPU. It is renderer-internal (`_attributes`),
+ * hence the guard: without it this degrades to the old leak, never to a throw.
+ */
+export const storageAttributeReleaser = (renderer: unknown): ReleaseAttribute => {
+  const attributes = (renderer as { _attributes?: { delete?: (attribute: BufferAttribute) => unknown } | null })
+    ?._attributes;
+  return (attribute) => {
+    if (!attributes || typeof attributes.delete !== "function") return;
+    try {
+      attributes.delete(attribute);
+    } catch (error) {
+      console.warn("[points] could not free a storage buffer:", error);
+    }
+  };
+};
+
+/** Drops a compute node's pipeline and bindings (three's `dispose` event on a `ComputeNode`). */
+const disposeComputeNodes = (nodes: unknown[]): void => {
+  for (const node of nodes) {
+    const disposable = node as { dispose?: () => void } | null;
+    if (disposable && typeof disposable.dispose === "function") disposable.dispose();
+  }
+};
 
 export type PointScatter = {
   /** The object indices a slice carries values for. */
@@ -38,6 +77,8 @@ export type PointScatter = {
   /** Runs the clear then the scatter. */
   node: unknown;
   capacity: number;
+  /** Frees the pair buffers and the two pipelines. The TARGET is the material's, not freed here. */
+  dispose: (release: ReleaseAttribute) => void;
 };
 
 /**
@@ -76,7 +117,13 @@ export const createScatterPass = (
     });
   })().compute(capacity);
 
-  return { indices, values, count, node: [clear, scatter], capacity, floor } as never;
+  const dispose = (release: ReleaseAttribute) => {
+    disposeComputeNodes([clear, scatter]);
+    release(indices);
+    release(values);
+  };
+
+  return { indices, values, count, node: [clear, scatter], capacity, floor, dispose } as never;
 };
 
 /**
@@ -124,6 +171,11 @@ export type PointCull = {
   /** One uint per point, 1 = visible — the `filterBys` mask
    *  (`pointsFilterMask.ts`). Refill `.array`, flip `needsUpdate`, re-dispatch. */
   mask: StorageBufferAttribute;
+  /**
+   * Frees what the pass OWNS — indirect, survivors, mask — and its two pipelines. The position
+   * and time buffers are passed in and shared with the material, so their owner frees them.
+   */
+  dispose: (release: ReleaseAttribute) => void;
 };
 
 /**
@@ -140,9 +192,13 @@ export type PointCull = {
  * pass produced cannot disagree. `firstVertex` and `firstInstance` stay 0; `vertexCount` is
  * seeded once because a quad is always six vertices.
  *
- * Culling is against a world-space box the layer supplies, not the camera frustum directly:
- * the layer's affine sits between the data and the world, so testing in the data's own space
- * would need the inverse per point. A box is coarser than a frustum and costs one comparison.
+ * Culling is against a box in the DATA's own space the layer supplies, not the camera frustum
+ * directly: the layer's affine sits between the data and the world, so a world-space test would
+ * need the transform per point. The layer carries the frustum into data space instead
+ * (`pointsCullBounds.ts`). A box is coarser than a frustum and costs one comparison.
+ *
+ * `positions` (and `times`) are SHARED with the material, which reads the same buffer by
+ * `visible[instanceIndex]` — one GPU copy of the data, owned by the layer.
  */
 export const createCullPass = (
   positions: StorageInstancedBufferAttribute,
@@ -212,5 +268,11 @@ export const createCullPass = (
     bounds: { min: boundsMin, max: boundsMax },
     time: { min: timeMin, max: timeMax },
     mask,
+    dispose: (release) => {
+      disposeComputeNodes([reset, cull]);
+      release(indirect);
+      release(visible);
+      release(mask);
+    },
   };
 };

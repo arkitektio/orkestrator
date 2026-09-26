@@ -88,7 +88,14 @@ describe("packNetworkCells", () => {
     const target = targetFor(8, 8);
 
     const result = packNetworkCells([first, second], target);
-    expect(result).toEqual({ nodes: 5, edges: 2, cells: 2, clamped: false, ...unstyled });
+    expect(result).toEqual({
+      nodes: 5,
+      edges: 2,
+      cells: 2,
+      clamped: false,
+      used: { positions: 15, aux: 20, values: 5, edges: 4, edgeValues: 0 },
+      ...unstyled,
+    });
 
     // Positions memcpy'd at the right slots.
     expect([...target.positions.subarray(0, 6)]).toEqual([...first.positions]);
@@ -96,6 +103,17 @@ describe("packNetworkCells", () => {
 
     // Edges rebased by each cell's node offset — the ghost endpoint included.
     expect([...target.edges.subarray(0, 4)]).toEqual([0, 1, 2, 4]);
+  });
+
+  it("sizes node capacity from aux, not from a 4-stride-padded positions array", () => {
+    // three's WebGPU backend re-hosts an itemSize-3 storage attribute as a
+    // 4-stride array after its first upload; `positions.length / 3` would then
+    // claim room for 4 nodes where aux/values hold 3.
+    const cell = cellOf({ nodeCount: 4, ghostCount: 0, edges: [] });
+    const target = { ...targetFor(3, 1), positions: new Float32Array(3 * 4) };
+    const result = packNetworkCells([cell], target);
+    expect(result.clamped).toBe(true);
+    expect(result.used.aux).toBe(0);
   });
 
   it("writes radius, ordinal and the ghost glyph flag into aux", () => {
@@ -134,7 +152,14 @@ describe("packNetworkCells", () => {
     const target = targetFor(3, 2);
 
     const result = packNetworkCells([first, second], target);
-    expect(result).toEqual({ nodes: 2, edges: 1, cells: 1, clamped: true, ...unstyled });
+    expect(result).toEqual({
+      nodes: 2,
+      edges: 1,
+      cells: 1,
+      clamped: true,
+      used: { positions: 6, aux: 8, values: 2, edges: 2, edgeValues: 0 },
+      ...unstyled,
+    });
     // Nothing of the second cell landed anywhere.
     expect([...target.positions.subarray(6)]).toEqual([0, 0, 0]);
   });
@@ -146,6 +171,7 @@ describe("packNetworkCells", () => {
       edges: 0,
       cells: 0,
       clamped: false,
+      used: { positions: 0, aux: 0, values: 0, edges: 0, edgeValues: 0 },
       ...unstyled,
     });
   });

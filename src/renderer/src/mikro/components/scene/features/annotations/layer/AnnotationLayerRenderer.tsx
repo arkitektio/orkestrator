@@ -21,7 +21,17 @@ import {
   type AnnotationCollectionRef,
   type AnnotationLayerVariant,
 } from "../annotationBounds";
-import { buildOutlineBatches } from "../annotationBatch";
+import {
+  buildOutlineBatches,
+  buildSectionedOutlineBatches,
+  drawsOwnMesh,
+  isSectionedEllipse,
+} from "../annotationBatch";
+import {
+  buildInteriorBatches,
+  sectionedInteriorTriangles,
+  staticInteriorTriangles,
+} from "../interiorBatch";
 import { prunedSelections, repairedSelections } from "../selectionRepair";
 import { isDrawingTool, useRoiDrawingStore } from "../roiDrawingStore";
 import {
@@ -29,6 +39,7 @@ import {
   useRoiSelectionStoreApi,
   type SelectedRoi,
 } from "../roiSelectionStore";
+import { AnnotationInteriorBatch } from "./AnnotationInteriorBatch";
 import { AnnotationOutlineBatch } from "./AnnotationOutlineBatch";
 import { AnnotationPoints } from "./AnnotationPoints";
 import { AnnotationShape } from "./AnnotationShape";
@@ -55,12 +66,13 @@ import {
  * - **poll delta / draw / delete**: re-place ONLY the changed rows
  *   (`placedAnnotations`' per-row cache keeps every other entry, and with it
  *   every other `AnnotationShape`'s memo).
- * - **z-scrub tick** (pointer cadence): re-filter `shown`; sectioned
- *   ellipsoids re-render (they draw the moving cross-section); the batches
- *   and the instanced points SKIP (plane-independent geometry; value-equal
- *   entry lists); the visible-ROI store write is identity-gated.
- * - **selection click**: shapes with changed `isActive` re-render; batches
- *   re-tint (color-only pass, no geometry upload).
+ * - **z-scrub tick** (pointer cadence): re-filter `shown`; the SECTIONED
+ *   batches (outline + interior of the depth-bearing ellipsoids, the only
+ *   plane-dependent geometry) rebuild over those shapes alone; the static
+ *   batches and the instanced points SKIP (plane-independent geometry;
+ *   value-equal entry lists); the visible-ROI store write is identity-gated.
+ * - **selection click**: 3D mesh shapes with changed `isActive` re-render;
+ *   batches re-tint (color-only pass, no geometry upload).
  */
 export const AnnotationLayerRenderer = ({ layerId }: { layerId: string }) => {
   const layer = useSceneStore((s) => s.sceneLayers.find((candidate) => candidate.id === layerId));
@@ -294,6 +306,45 @@ const AnnotationCollectionGroup = ({
     [otherShapes, flattenToPlane],
   );
 
+  // Merged INTERIORS (the flat shapes' fill / pick surface), same deps and
+  // same contract as the outline batches.
+  const interiorBatches = useMemo(
+    () =>
+      buildInteriorBatches(otherShapes, (annotation) =>
+        staticInteriorTriangles(annotation, flattenToPlane),
+      ),
+    [otherShapes, flattenToPlane],
+  );
+
+  // The plane-following shapes (depth-bearing ellipsoids in the flat view):
+  // their ring AND interior are rebuilt per scrub — over these entries only.
+  const sectionedShapes = useMemo(
+    () => otherShapes.filter((entry) => isSectionedEllipse(entry.annotation, flattenToPlane)),
+    [otherShapes, flattenToPlane],
+  );
+  const sectionedOutlines = useMemo(
+    () =>
+      sectionedShapes.length === 0
+        ? []
+        : buildSectionedOutlineBatches(sectionedShapes, flattenToPlane, planeZLocal),
+    [sectionedShapes, flattenToPlane, planeZLocal],
+  );
+  const sectionedInteriors = useMemo(
+    () =>
+      sectionedShapes.length === 0
+        ? []
+        : buildInteriorBatches(sectionedShapes, (annotation) =>
+            sectionedInteriorTriangles(annotation, flattenToPlane, planeZLocal),
+          ),
+    [sectionedShapes, flattenToPlane, planeZLocal],
+  );
+
+  // Only the extruded 3D boxes/ellipsoids still mount a component each.
+  const meshShapes = useMemo(
+    () => otherShapes.filter((entry) => drawsOwnMesh(entry.annotation, flattenToPlane)),
+    [otherShapes, flattenToPlane],
+  );
+
   if (shown.length === 0) return null;
 
   return (
@@ -322,13 +373,48 @@ const AnnotationCollectionGroup = ({
           onUnhoverRoi={onUnhoverRoi}
         />
       ))}
-      {otherShapes.map(({ annotation, roi }) => (
+      {sectionedOutlines.map((batch) => (
+        <AnnotationOutlineBatch
+          key={`sectioned:${batch.lineWidth}`}
+          batch={batch}
+          selectedIds={selectedRoiIds}
+          selectable={selectable}
+          onSelectRoi={onSelectRoi}
+          hoverable={hoverable}
+          onHoverRoi={onHoverRoi}
+          onUnhoverRoi={onUnhoverRoi}
+        />
+      ))}
+      {interiorBatches.map((batch) => (
+        <AnnotationInteriorBatch
+          key={batch.key}
+          batch={batch}
+          selectedIds={selectedRoiIds}
+          selectable={selectable}
+          onSelectRoi={onSelectRoi}
+          hoverable={hoverable}
+          onHoverRoi={onHoverRoi}
+          onUnhoverRoi={onUnhoverRoi}
+        />
+      ))}
+      {sectionedInteriors.map((batch) => (
+        <AnnotationInteriorBatch
+          key={`sectioned:${batch.key}`}
+          batch={batch}
+          selectedIds={selectedRoiIds}
+          selectable={selectable}
+          onSelectRoi={onSelectRoi}
+          hoverable={hoverable}
+          onHoverRoi={onHoverRoi}
+          onUnhoverRoi={onUnhoverRoi}
+        />
+      ))}
+      {meshShapes.map(({ annotation, roi }) => (
         <AnnotationShape
           key={annotation.id}
           annotation={annotation}
           roi={roi}
           flattenToPlane={flattenToPlane}
-          planeZ={planeZLocal}
           isActive={selectedRoiIds.has(annotation.id)}
           selectable={selectable}
           onSelectRoi={onSelectRoi}

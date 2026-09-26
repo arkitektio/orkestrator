@@ -20,6 +20,7 @@ import {
 } from "@/core/data/scene/camera/sceneNavigation";
 import { getNiceNumber } from "@/core/data/scene/chrome/ScaleBar";
 import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
+import { RendererDisposer } from "@/core/data/scene/gpu/RendererDisposer";
 import type { Morphology } from "../model/buildMorphology";
 import { type Frame, wholeFrame } from "../model/focus";
 import { useMorphologyStore, useMorphologyStoreApi } from "../stores/morphologyStore";
@@ -250,6 +251,7 @@ export const MorphologyCanvas = ({
       camera={{ fov: FOV, position: [0, 0, 5] }}
       onPointerMissed={onPointerMissed}
     >
+      <RendererDisposer />
       <ambientLight intensity={0.6} />
       <directionalLight position={[10, 50, 20]} intensity={1.2} />
       <directionalLight position={[-20, -30, -10]} intensity={0.35} />

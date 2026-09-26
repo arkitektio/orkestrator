@@ -8,7 +8,7 @@ import type { BrickResidencyManager } from "./brickResidency";
 
 /**
  * The scene-only RESIDENT fast path for attribute sampling: an optimistic
- * sync pre-read from the brick atlas's CPU mirror, bound only when it is
+ * sync pre-read of the resident bricks (decoded-chunk cache), bound only when it is
  * provably reading the same slice — the plan must be locally rooted (empty
  * path: its non-spatial coordinates then come from the SAME scene-wide
  * `dimSelections` the layer's pool collapsed on) and the plan's array must be

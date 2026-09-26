@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
 import { isTypingTarget } from "@/core/dnd/keyboardTarget";
 import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
+import { RendererDisposer } from "@/core/data/scene/gpu/RendererDisposer";
 import { AnnotationDrawer } from "../features/annotations/AnnotationDrawer";
 import { AnnotationToolbar } from "../features/annotations/AnnotationToolbar";
 import { MarkLabelsOverlay } from "../features/events/MarkLabelsOverlay";
@@ -87,6 +88,7 @@ const ReadyViewport = ({ variant }: { variant: ExperimentViewportVariant }) => {
 
       <div className="absolute inset-x-0 top-0 bottom-12">
         <Canvas frameloop={visible ? "demand" : "never"} gl={rendererFactory}>
+          <RendererDisposer />
           <TimelineCamera />
           <LayerRenderer />
         </Canvas>

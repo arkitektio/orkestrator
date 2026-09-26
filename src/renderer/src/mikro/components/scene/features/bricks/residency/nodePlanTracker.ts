@@ -174,7 +174,6 @@ export function startNodePlanTracking({
     const viewProjectionMatrix = snapshot?.viewProjectionMatrix ?? liveView.viewProjectionMatrix;
     const viewportSize = snapshot?.viewportSize ?? liveView.viewportSize;
     const cameraPose = snapshot ? snapshot.cameraPose : liveView.cameraPose;
-    const worldLod = true;
 
     const prevPlans = viewerState.nodePlans;
     const nextPlans: Record<string, LayerNodePlan> = {};
@@ -344,11 +343,10 @@ export function startNodePlanTracking({
         // Corner-anchored: voxel v sits at affine(v), so the frustum/camera
         // math below runs in plain voxel space.
         const voxelToWorld = buildAffineMatrix(layer);
-        // World-metric LOD (`orkestrator.worldLod`, read per replan — live
-        // toggle): hand the planner the per-axis world voxel size so its
-        // footprint/foveation/aniso math runs in world units. Off ⇒ omit ⇒
-        // the planner's identity fallback IS the legacy voxel metric.
-        const voxelWorldSize = worldLod ? voxelWorldSizeOf(voxelToWorld) : undefined;
+        // World-metric LOD: hand the planner the per-axis world voxel size
+        // so its footprint/foveation/aniso math runs in world units (shader
+        // lockstep: `uVoxelWorldSize`, pushed by useVolumeRayUniforms).
+        const voxelWorldSize = voxelWorldSizeOf(voxelToWorld);
         scratchVoxelVP.copy(viewProjectionMatrix).multiply(voxelToWorld);
         // Plane extraction must match the matrix's NDC z convention —
         // WebGPU maps z to [0,1]; the WebGL default would place the near

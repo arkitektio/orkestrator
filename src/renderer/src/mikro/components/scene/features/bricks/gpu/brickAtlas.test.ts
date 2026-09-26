@@ -87,7 +87,7 @@ describe("createBrickAtlas (roadmap R3: lazy mirror + R16F)", () => {
       maxExtent: 2048,
       filter: "linear",
     });
-    expect(atlas.backing).toBeNull();
+    expect("backing" in atlas).toBe(false);
     expect(atlas.byteLength).toBe(atlas.size[0] * atlas.size[1] * atlas.size[2] * 4);
     atlas.texture.dispose();
   });
@@ -106,7 +106,7 @@ describe("createBrickAtlas (roadmap R3: lazy mirror + R16F)", () => {
     expect(atlas.kind).toBe("r16f");
     expect(atlas.dataScale).toBe(65535);
     expect(atlas.texture.type).toBe(THREE.HalfFloatType);
-    expect(atlas.backing).toBeNull();
+    expect("backing" in atlas).toBe(false);
     expect(atlas.byteLength).toBe(atlas.size[0] * atlas.size[1] * atlas.size[2] * 2);
     atlas.texture.dispose();
   });
@@ -129,7 +129,7 @@ describe("lazy-mirror texture creation (the initTexture crash regression)", () =
       maxExtent: 2048,
       filter: "linear",
     });
-    expect(lazy.backing).toBeNull();
+    expect("backing" in lazy).toBe(false);
     expect(lazy.texture.source.dataReady).toBe(false);
     lazy.texture.dispose();
   });
@@ -156,7 +156,7 @@ describe("createBrickAtlas — rgba8", () => {
     expect(atlas.texture.type).toBe(THREE.UnsignedByteType);
     expect(atlas.dataScale).toBe(255);
     expect(atlas.byteLength).toBe(atlas.size[0] * atlas.size[1] * atlas.size[2] * 4);
-    expect(atlas.backing).toBeNull();
+    expect("backing" in atlas).toBe(false);
     // The r8 twin stacks the three slabs along z.
     const r8 = createBrickAtlas({
       spec: spec as never,

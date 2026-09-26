@@ -7,6 +7,8 @@
  * is exactly what the uniform-push contract exists to avoid. */
 import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
+import type * as THREE from "three";
+import { usePrecompiledBundle } from "./usePrecompiledBundle";
 
 /**
  * The material bundle for a brick layer: built once per pool STRUCTURE, seeded
@@ -33,7 +35,7 @@ import { useEffect, useMemo } from "react";
  */
 export const useBrickMaterialBundle = <
   T extends {
-    material: { dispose(): void };
+    material: THREE.Material;
     /** Every brick material exposes this; the traversal reads it to map a
      * fragment to a base voxel. */
     nodes: { uBaseShape: { value: { set(x: number, y: number, z: number): void } } };
@@ -44,7 +46,12 @@ export const useBrickMaterialBundle = <
   extraDispose?: (bundle: T) => void,
   /** Anything the BUILD specialised on. Changing it rebuilds the material. */
   variantKey: string = "",
-): T | null => {
+): {
+  /** The newest build: push uniforms here, so it is ready when it is shown. */
+  bundle: T | null;
+  /** What to MOUNT: the newest build once compiled, else its predecessor. */
+  displayed: T | null;
+} => {
   const bundle = useMemo(() => {
     if (!pool) return null;
     const created = create(pool as never);
@@ -57,16 +64,18 @@ export const useBrickMaterialBundle = <
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool, pool?.structureSignature, variantKey]);
 
-  useEffect(() => {
-    if (!bundle) return;
-    return () => {
-      bundle.material.dispose();
-      extraDispose?.(bundle);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bundle]);
+  // Compile off the frame, keep the previous material up meanwhile, and own
+  // disposal of both (see usePrecompiledBundle).
+  const displayed = usePrecompiledBundle(
+    bundle,
+    (built) => {
+      built.material.dispose();
+      extraDispose?.(built);
+    },
+    pool?.structureSignature ?? null,
+  );
 
-  return bundle;
+  return { bundle, displayed };
 };
 
 /**

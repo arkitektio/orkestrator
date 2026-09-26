@@ -1,8 +1,10 @@
 import { useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
 
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
+import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 
 import { sceneZExtent } from "../../platform/coords/worldTransform";
 import { useModeStore } from "../../platform/stores/modeStore";
@@ -38,6 +40,14 @@ import { createLeadingThrottle } from "../../platform/perf/leadingThrottle";
 import { useActivePickers } from "../../platform/attributes/useActivePickers";
 import { usePickerResolution } from "../../platform/attributes/pickerResolution";
 import { useCollectionDriver } from "../../platform/collections/useCollectionDriver";
+import { useGpuPicker } from "../../platform/draw/useGpuPicker";
+import type { GpuPickHit } from "../../platform/draw/gpuPick";
+import { perfMonitor } from "../../platform/perf/perfMonitor";
+import {
+  clickProbeEnabled,
+  hoverProbeEnabled,
+  type ProbeGateInput,
+} from "../../platform/probe/probeGating";
 import {
   collectionSlabThickness,
   useCollectionPlacement,
@@ -92,6 +102,20 @@ type NetworkLayerView = NetworkLayerVariant & NetworkLayerSessionState;
  */
 const DETAIL_BUDGETS = { fine: 2, balanced: 5, fast: 10 } as const;
 
+/** R3F's click rule: a press that travelled further than this is a drag
+ *  (an orbit), not a click. */
+const CLICK_SLOP_PX = 2;
+
+/** Scratch for the pick's world → voxel transform (never escapes a callback). */
+const voxelScratch = new THREE.Vector3();
+
+/** One picked object: its ordinal, and where on it the pointer landed. */
+type NetworkHit = {
+  ordinal: number;
+  voxelIndex: [number, number, number];
+  worldPos: [number, number, number];
+};
+
 const NetworkCollectionGroup = ({
   layer,
   collection,
@@ -113,10 +137,8 @@ const NetworkCollectionGroup = ({
    * the mesh layer's contract, for the same reason: the compositor CACHES its
    * offscreen volume target, so a scene change that reaches that target must
    * move a cache key or the stale composite is served until the camera moves.
-   * Konnektion segments are transparent today and so never occlude, but that
-   * is a material flag, not a structural fact — keeping both collection
-   * layers on one contract is what stops it from becoming a silent
-   * regression.
+   * An opaque network (opacity 1) is a depth-prepass occluder exactly like a
+   * mesh, so a plan swap changes the target's occlusion and must move the key.
    */
   const invalidate = useCallback(() => {
     viewerApi.getState().volumeInputs.bump("network-collection");
@@ -140,7 +162,9 @@ const NetworkCollectionGroup = ({
   useEffect(() => () => statsThrottle.cancel(), [statsThrottle]);
   const onStatsChanged = statsThrottle.trigger;
 
-  const { matrix } = useCollectionPlacement(layer, collection, transformContext);
+  // `inverse` is the hook's scratch matrix, kept current in place — the pick
+  // callbacks below read it live.
+  const { matrix, inverse } = useCollectionPlacement(layer, collection, transformContext);
 
   // Opening costs NO S3 round trip: the server mirrors konnektion.json onto the
   // store node. Collections are immutable per version, so the open survives as
@@ -394,10 +418,265 @@ const NetworkCollectionGroup = ({
     },
   );
 
+  // --- Object picking --------------------------------------------------------
+  //
+  // GPU only: a network is vertex-pulled from storage buffers, so there is no
+  // CPU geometry a raycast could test. The id-buffer pick
+  // (`platform/draw/gpuPick.ts`) renders this layer's three draws with their
+  // id siblings and answers with the object ordinal and the surface point.
+  //
+  // The contract it plugs into is the MESH layer's, deliberately: the
+  // scene-wide `meshSelection` (layerId-scoped, so the two kinds never cross)
+  // drives this layer's highlight/isolate uniforms, and a pick publishes a
+  // `strategy: "mesh"` probe whose value is the object id. What does not
+  // follow yet: the attribute tracker resolves plans for MESH layers only, so
+  // a network probe carries its object id and no attribute rows.
+  //
+  // Events arrive as DOM listeners on the canvas rather than R3F handlers —
+  // an R3F handler would need a raycastable object, which is exactly what a
+  // network lacks — so this layer does not take part in R3F's nearest-first
+  // stopPropagation routing: a volume layer answering the same move still
+  // publishes its own probe. The listeners are attached only while the probe
+  // gates say so (P20's gate, applied to attachment exactly as before).
+  const picker = useGpuPicker();
+  const gl = useThree((state) => state.gl);
+  const getThree = useThree((state) => state.get);
+  useEffect(() => {
+    if (!manager || !picker) return;
+    return picker.register(manager.pickSource(layer.id));
+  }, [manager, picker, layer.id]);
+
+  // Selection → uniforms, VANILLA-subscribed like the mesh layer: it changes
+  // at hover cadence under probe-marking.
+  useEffect(() => {
+    if (!manager) return;
+    const apply = () => {
+      const selection = viewerApi.getState().meshSelection;
+      if (selection && selection.layerId === layer.id) {
+        manager.setSelection(selection.ordinal, selection.isolate);
+      } else {
+        manager.setSelection(null);
+      }
+      invalidate();
+    };
+    apply();
+    return viewerApi.subscribe((state, prev) => {
+      if (state.meshSelection !== prev.meshSelection) apply();
+    });
+  }, [manager, viewerApi, layer.id, invalidate]);
+
+  /** ordinal → objectId, loaded once on the first pick. */
+  const objectIdsRef = useRef<Map<number, number> | null>(null);
+  const objectIdsLoading = useRef<Promise<Map<number, number>> | null>(null);
+  useEffect(() => {
+    objectIdsRef.current = null;
+    objectIdsLoading.current = null;
+  }, [manager]);
+  const objectIdFor = (ordinal: number): number | null | Promise<number | null> => {
+    const known = objectIdsRef.current;
+    if (known) return known.get(ordinal) ?? null;
+    if (!manager) return null;
+    objectIdsLoading.current ??= manager.listObjects().then((entries) => {
+      const map = new Map(entries.map((entry) => [entry.ordinal, entry.objectId] as const));
+      objectIdsRef.current = map;
+      return map;
+    });
+    return objectIdsLoading.current.then((map) => map.get(ordinal) ?? null);
+  };
+
+  const interactionMode = useModeStore((s) => s.interactionMode);
+  const probeFollowsCursor = useModeStore((s) => s.probeFollowsCursor);
+  // PROBE mode only: `annotateProbes: false` keeps this layer out of ANNOTATE
+  // placement (the mesh layer's ANNOTATE arm reads the ROI drawing store,
+  // which a network has no business depending on).
+  const gate: ProbeGateInput = {
+    interactionMode,
+    probeFollowsCursor,
+    drawingToolActive: false,
+    annotateProbes: false,
+  };
+  const visible = layer.visible !== false;
+  const hoverEnabled = visible && hoverProbeEnabled(gate);
+  const pickEnabled = visible && clickProbeEnabled(gate) && interactionMode === "PROBE";
+
+  /** Bumped on leave / disarm: a pick answering afterwards is dropped. */
+  const hoverGeneration = useRef(0);
+  const lastHover = useRef<{ ordinal: number; x: number; y: number; z: number } | null>(null);
+
+  const hitFromGpu = (hit: GpuPickHit | null): NetworkHit | null => {
+    if (!hit || hit.key !== layer.id) return null;
+    const local = voxelScratch
+      .set(hit.worldPos[0], hit.worldPos[1], hit.worldPos[2])
+      .applyMatrix4(inverse);
+    return {
+      ordinal: hit.ordinal,
+      voxelIndex: [Math.floor(local.x), Math.floor(local.y), Math.floor(local.z)],
+      worldPos: hit.worldPos,
+    };
+  };
+
+  /** The mesh layer's publish, minus its hull/stats: a probe now, the object
+   *  id as soon as the catalog answers. */
+  const publishProbe = (hit: NetworkHit, origin: "click" | "hover") => {
+    perfMonitor.markProbe();
+    const state = viewerApi.getState();
+    if (origin === "hover" && state.markProbedInstances) {
+      const current = state.meshSelection;
+      if (!(current?.layerId === layer.id && current.ordinal === hit.ordinal)) {
+        state.setMeshSelection({
+          layerId: layer.id,
+          ordinal: hit.ordinal,
+          objectId: null,
+          stats: null,
+          isolate: current?.layerId === layer.id ? current.isolate : false,
+        });
+      }
+    }
+    const emit = (objectId: number | null) =>
+      viewerApi.getState().setProbedCoordinate({
+        layerId: layer.id,
+        localPos: [0, 0, 0],
+        voxelIndex: hit.voxelIndex,
+        worldPos: hit.worldPos,
+        strategy: "mesh",
+        origin,
+        purpose: "readout",
+        values: [{ channel: 0, value: objectId }],
+        provenance: { source: "exact", level: 0 },
+        dtype: "uint32",
+        sliceSignature: `network:${collection.version ?? "0"}`,
+      });
+    const patchSelection = (objectId: number | null) => {
+      const current = viewerApi.getState().meshSelection;
+      if (current?.layerId === layer.id && current.ordinal === hit.ordinal) {
+        viewerApi.getState().setMeshSelection({ ...current, objectId });
+      }
+    };
+    const objectId = objectIdFor(hit.ordinal);
+    if (!(objectId instanceof Promise)) {
+      emit(objectId);
+      patchSelection(objectId);
+      return;
+    }
+    emit(null);
+    void objectId
+      .then((resolved) => {
+        const probe = viewerApi.getState().probedCoordinate;
+        if (
+          probe?.layerId === layer.id &&
+          probe.values[0]?.value == null &&
+          probe.voxelIndex.join(",") === hit.voxelIndex.join(",")
+        ) {
+          emit(resolved);
+        }
+        patchSelection(resolved);
+      })
+      .catch((error: unknown) => console.warn("[konnektion] object lookup failed:", error));
+  };
+
+  const retractHover = () => {
+    lastHover.current = null;
+    const state = viewerApi.getState();
+    if (
+      state.probedCoordinate?.strategy === "mesh" &&
+      state.probedCoordinate.layerId === layer.id &&
+      state.probedCoordinate.origin === "hover"
+    ) {
+      state.setProbedCoordinate(null);
+    }
+  };
+
+  const acceptHover = (hit: NetworkHit) => {
+    const [x, y, z] = hit.voxelIndex;
+    const last = lastHover.current;
+    if (last && last.ordinal === hit.ordinal && last.x === x && last.y === y && last.z === z) {
+      return;
+    }
+    lastHover.current = { ordinal: hit.ordinal, x, y, z };
+    publishProbe(hit, "hover");
+  };
+
+  const applyClick = (hit: NetworkHit) => {
+    const state = viewerApi.getState();
+    const previous = state.meshSelection;
+    if (previous && previous.layerId === layer.id && previous.ordinal === hit.ordinal) {
+      state.setMeshSelection(null);
+      if (state.probedCoordinate?.layerId === layer.id) state.setProbedCoordinate(null);
+      return;
+    }
+    state.setMeshSelection({
+      layerId: layer.id,
+      ordinal: hit.ordinal,
+      objectId: null,
+      stats: null,
+      isolate: previous?.layerId === layer.id ? previous.isolate : false,
+    });
+    publishProbe(hit, "click");
+  };
+
+  // The handlers change identity every render; the listeners read the latest
+  // through a ref so arming them depends on the GATES alone.
+  const handlersRef = useLatestRef({ acceptHover, retractHover, applyClick, hitFromGpu });
+
+  useEffect(() => {
+    if (!manager || !picker || !(hoverEnabled || pickEnabled)) return;
+    const element = gl.domElement;
+    const request = (event: MouseEvent) => ({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      camera: getThree().camera,
+    });
+
+    const onMove = (event: PointerEvent) => {
+      if (event.buttons !== 0) return;
+      const generation = hoverGeneration.current;
+      picker.pick("hover", request(event), (gpuHit) => {
+        if (generation !== hoverGeneration.current) return;
+        const handlers = handlersRef.current;
+        const hit = handlers.hitFromGpu(gpuHit);
+        if (hit) handlers.acceptHover(hit);
+        else handlers.retractHover();
+      });
+    };
+    const onLeave = () => {
+      hoverGeneration.current++;
+      handlersRef.current.retractHover();
+    };
+
+    let pressedAt: { x: number; y: number } | null = null;
+    const onDown = (event: PointerEvent) => {
+      pressedAt = event.button === 0 ? { x: event.clientX, y: event.clientY } : null;
+    };
+    const onClick = (event: MouseEvent) => {
+      const from = pressedAt;
+      pressedAt = null;
+      if (event.button !== 0 || !from) return;
+      if (Math.hypot(event.clientX - from.x, event.clientY - from.y) > CLICK_SLOP_PX) return;
+      picker.pick("click", request(event), (gpuHit) => {
+        const hit = handlersRef.current.hitFromGpu(gpuHit);
+        if (hit) handlersRef.current.applyClick(hit);
+      });
+    };
+
+    if (hoverEnabled) {
+      element.addEventListener("pointermove", onMove);
+      element.addEventListener("pointerleave", onLeave);
+    }
+    if (pickEnabled) {
+      element.addEventListener("pointerdown", onDown);
+      element.addEventListener("click", onClick);
+    }
+    return () => {
+      element.removeEventListener("pointermove", onMove);
+      element.removeEventListener("pointerleave", onLeave);
+      element.removeEventListener("pointerdown", onDown);
+      element.removeEventListener("click", onClick);
+      // Disarming is a leave: drop in-flight hovers, retract the hover probe.
+      hoverGeneration.current++;
+      if (hoverEnabled) handlersRef.current.retractHover();
+    };
+  }, [manager, picker, gl, getThree, hoverEnabled, pickEnabled, handlersRef]);
+
   if (!manager) return null;
-  // No pointer handlers attached at all: picking is not wired for this layer
-  // yet, and P20 is explicit that ATTACHMENT is the raycast gate — an
-  // unconditional handler would cost a full raycast per pointer move in every
-  // mode, for nothing.
   return <primitive object={manager.group} />;
 };

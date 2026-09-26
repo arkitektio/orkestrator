@@ -60,7 +60,7 @@ export const isRaw16Dtype = (dtype: string): boolean => {
 
 /**
  * The fidelity the scene requests from `getChunkWorker` for an array of this
- * dtype — 'raw16' for uint16 when the flag is on, 'default' otherwise. ONE
+ * dtype — 'raw16' for uint16, 'default' otherwise. ONE
  * call site rule: every scene fetch of pixel chunks must go through this, or
  * the shared chunk cache holds mixed representations for one array.
  */
@@ -97,8 +97,8 @@ export const decodedBytesPerVoxel = (dtype: string): number => {
  * multiply-only `uAtlasScale` rescale and stays R32F.
  *
  * The scene requests fidelity through `chunkFidelityForDtype` only: 'default'
- * promotion, or 'raw16' (uint16 stays Uint16Array, RAW values) under the
- * `orkestrator.raw16` flag — which changes the CHUNK representation but not
+ * promotion, or 'raw16' (uint16 stays Uint16Array, RAW values; the former
+ * `orkestrator.raw16` flag, settled ON) — which changes the CHUNK representation but not
  * the atlas kind (the repack widens/encodes brick-side either way). The
  * per-chunk-normalized 'low'/'high' fidelities would break this decision AND
  * multi-chunk normalization; `getChunkWorker` refuses them — keep the

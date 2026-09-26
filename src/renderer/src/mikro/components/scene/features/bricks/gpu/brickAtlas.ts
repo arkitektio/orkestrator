@@ -17,16 +17,14 @@ import type { SceneRenderer } from "../../../platform/gpu/sceneRenderer";
  * holding fixed-size slots. A slot stores one brick's `stored` voxels with
  * its channel slabs stacked along z (slot depth = stored.z × channelCount).
  *
- * The CPU BACKING MIRROR is LAZY by default (roadmap R3): every atlas byte
- * used to exist twice — VRAM plus the JS-heap array the Data3DTexture was
- * built over — which on unified-memory machines doubles the real footprint.
- * Without a mirror, probes read every brick through the decoded-chunk cache
- * (`sampleChunkCacheSync` — the path GPU-repacked bricks, the MAJORITY on
- * this WebGPU-only build, have always used), and a lost device restores by
- * refetch (the chunk cache is warm, so it is a repack, not a network storm).
- * `orkestrator.atlasMirror = "on"` restores the eager mirror for A/B — except
- * for R16F atlases, whose backing would hold half-float BITS that a raw
- * probe read would misinterpret; they are always mirror-less.
+ * There is NO CPU backing mirror (roadmap R3): every atlas byte used to
+ * exist twice — VRAM plus the JS-heap array the Data3DTexture was built
+ * over — which on unified-memory machines doubled the real footprint. Probes
+ * read every brick through the decoded-chunk cache (`sampleChunkCacheSync` —
+ * the path GPU-repacked bricks, the MAJORITY on this WebGPU-only build, have
+ * always used), and a lost device restores by refetch (the chunk cache is
+ * warm, so it is a repack, not a network storm). The eager mirror that
+ * `orkestrator.atlasMirror` once restored is deleted (OCTREE_RENDERER.md §6.9).
  */
 
 export type BrickAtlas = {
@@ -44,11 +42,9 @@ export type BrickAtlas = {
   size: Vec3;
   /** Hardware-normalization factor (255 for R8, 65535 for R16F, 1 for R32F). */
   dataScale: number;
-  /** GPU allocation size in bytes (texels × bytes/voxel) — the budget number.
-   * Independent of `backing`, which no longer necessarily exists. */
+  /** GPU allocation size in bytes (texels × bytes/voxel) — the budget number
+   * and, with no CPU mirror, the whole footprint. */
   byteLength: number;
-  /** CPU mirror; null in lazy mode (the default — see the header). */
-  backing: BrickArray | null;
 };
 
 /**
@@ -145,21 +141,11 @@ export function createBrickAtlas(opts: {
   const size: Vec3 = [gx * slotSize[0], gy * slotSize[1], gz * slotSize[2]];
   const elementCount = size[0] * size[1] * size[2];
   const bytesPerVoxel = atlasBytesPerVoxel(kind);
-  // Lazy mirror (default): NO CPU backing — WebGPU textures are zero-
-  // initialized by spec, so a null-data Data3DTexture starts black and every
-  // byte arrives via writeTexture; this also skips the one-time full zero
-  // upload the eager path paid. R16F never mirrors (half-float BITS in the
-  // backing would corrupt raw probe reads), nor does RGBA8 (interleaved
-  // texels — the probe's slab-stride read assumes one channel per texel;
-  // probes read these pools through the decoded-chunk cache).
-  const backing: BrickArray | null =
-    false
-      ? kind === "r8"
-        ? new Uint8Array(elementCount)
-        : new Float32Array(elementCount)
-      : null;
-
-  const texture = new THREE.Data3DTexture(backing, size[0], size[1], size[2]);
+  // No CPU backing: WebGPU textures are zero-initialized by spec, so a
+  // null-data Data3DTexture starts black and every byte arrives via
+  // writeTexture (this also skips the one-time full zero upload a mirror
+  // paid).
+  const texture = new THREE.Data3DTexture(null, size[0], size[1], size[2]);
   // No explicit internalFormat: the backend derives it from format+type
   // (r8unorm/r16float/r32float). Setting a WebGL enum string here would be
   // passed verbatim to GPUDevice.createTexture, which throws and silently
@@ -178,19 +164,17 @@ export function createBrickAtlas(opts: {
   texture.wrapR = THREE.ClampToEdgeWrapping;
   texture.unpackAlignment = 1;
   texture.flipY = false;
-  texture.needsUpdate = true; // create the GPU texture (uploads backing when present)
-  if (!backing) {
-    // The load-bearing line of lazy-mirror mode: three's Textures.updateTexture
-    // runs `backend.createTexture` (pure GPU allocation — WebGPU zero-
-    // initializes it) unconditionally, but gates the DATA upload on
-    // `source.dataReady` (a documented Source field for exactly this). With a
-    // null image.data the upload path would throw inside `writeTexture`
-    // ("Overload resolution failed" — no null guard in `_copyBufferToTexture`),
-    // which is precisely how `initTexture` on a mirror-less pool crashed pool
-    // creation. dataReady stays false for the texture's whole life: every
-    // byte arrives through `uploadTexSubImage3D`'s direct queue writes.
-    texture.source.dataReady = false;
-  }
+  texture.needsUpdate = true; // create the GPU texture
+  // The load-bearing line of a mirror-less atlas: three's Textures.updateTexture
+  // runs `backend.createTexture` (pure GPU allocation — WebGPU zero-
+  // initializes it) unconditionally, but gates the DATA upload on
+  // `source.dataReady` (a documented Source field for exactly this). With a
+  // null image.data the upload path would throw inside `writeTexture`
+  // ("Overload resolution failed" — no null guard in `_copyBufferToTexture`),
+  // which is precisely how `initTexture` on a mirror-less pool crashed pool
+  // creation. dataReady stays false for the texture's whole life: every
+  // byte arrives through `uploadTexSubImage3D`'s direct queue writes.
+  texture.source.dataReady = false;
 
   if (opts.computeStorage && kind === "r32f") {
     // In three r184 this flag's ONLY effect on a sampled Data3DTexture is
@@ -211,16 +195,12 @@ export function createBrickAtlas(opts: {
     size,
     dataScale: kind === "r8" || kind === "rgba8" ? 255 : kind === "r16f" ? 65535 : 1,
     byteLength: elementCount * bytesPerVoxel,
-    backing,
   };
 }
 
 /**
- * Upload one repacked brick into a slot. The CPU backing mirror is NOT
- * written here (see `mirrorBrickToBacking`): the row-by-row copy costs a
- * sizable share of the drain's wall-clock budget (thousands of `set` calls
- * per 3D brick), which throttled real uploads exactly when a zoom multiplied
- * the queue — the residency manager defers it to idle time instead.
+ * Upload one repacked brick into a slot. False when nothing reached the slot
+ * (no backend texture yet/any more) — the caller must not map it RESIDENT.
  */
 export function writeBrickToAtlas(
   renderer: SceneRenderer,
@@ -240,31 +220,6 @@ export function writeBrickToAtlas(
     [atlas.slotSize[0], atlas.slotSize[1], atlas.slotSize[2]],
     brick,
   );
-}
-
-/** Row-by-row copy of a brick into the probe mirror. No-op in lazy-mirror
- * mode (backing null) — callers gate on `atlas.backing` before queueing. */
-export function mirrorBrickToBacking(
-  atlas: BrickAtlas,
-  slotCoords: Vec3,
-  brick: BrickArray,
-): void {
-  const backing = atlas.backing;
-  if (!backing) return;
-  const origin: [number, number, number] = [
-    slotCoords[0] * atlas.slotSize[0],
-    slotCoords[1] * atlas.slotSize[1],
-    slotCoords[2] * atlas.slotSize[2],
-  ];
-  const [w, h] = [atlas.size[0], atlas.size[1]];
-  const [bw, bh, bd] = atlas.slotSize;
-  for (let z = 0; z < bd; z++) {
-    for (let y = 0; y < bh; y++) {
-      const src = (z * bh + y) * bw;
-      const dest = ((origin[2] + z) * h + (origin[1] + y)) * w + origin[0];
-      backing.set(brick.subarray(src, src + bw), dest);
-    }
-  }
 }
 
 export function disposeBrickAtlas(atlas: BrickAtlas): void {

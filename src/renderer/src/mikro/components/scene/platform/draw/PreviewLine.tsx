@@ -10,7 +10,7 @@ import type { OutlinePoint } from "../model/geometry";
 /**
  * A rubber-band border the drawers rewrite at pointer cadence, without React.
  *
- * Why not a ref on `platform/draw/Line`: that component early-returns `null` below
+ * Why not a ref on `@/core/data/scene/draw/Line`: that component early-returns `null` below
  * two points (a segment-less geometry is a real WGSL compile error, not a
  * nicety), so a forwarded handle would detach exactly when a polygon preview
  * drops to one vertex. It also has no reason to carry the six things a preview

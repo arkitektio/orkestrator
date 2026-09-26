@@ -131,7 +131,7 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
   const labelData = useMemo(() => buildLabelUniformData(layer), [layer]);
   const labelSignature = labelDataSignature(labelData);
 
-  const bundle = useBrickMaterialBundle(
+  const { bundle, displayed } = useBrickMaterialBundle(
     pool,
     (p) => createLabelVolumeNodeMaterial(p, p, labelData),
   );
@@ -148,9 +148,7 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
   }, [bundle, labelSignature, invalidate]);
 
   useVolumeRayUniforms(bundle?.nodes, {
-    pool,
     desiredLevel: planTargetLevel,
-    planTargetLevel,
     worldMatrix: affineMatrix,
   });
   // canvasPass=true: this material renders live in the canvas pass at full
@@ -257,7 +255,7 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
   };
 
   if (layer?.visible === false) return null;
-  if (planMode !== "3D" || !pool || !bundle) return null;
+  if (planMode !== "3D" || !pool || !displayed) return null;
 
   const base = pool.geometry.levels[0];
   const volumeSize: [number, number, number] = [
@@ -319,7 +317,7 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
         }}
       >
         <boxGeometry args={[1, 1, 1]} />
-        <primitive object={bundle.material} attach="material" />
+        <primitive object={displayed.material} attach="material" />
       </mesh>
     </group>
   );

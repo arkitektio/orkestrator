@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { MeshStandardNodeMaterial } from "three/webgpu";
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu";
 import * as TSLTyped from "three/tsl";
 import {
   DEFAULT_INSTANCE_COLORMAP,
@@ -18,6 +18,7 @@ import {
   emitValueLutColor,
   identityValueLutTexture,
 } from "../../../platform/gpu/valueLutNodes";
+import { createPickMaterial, pickOutputNode } from "../../../platform/draw/gpuPickNodes";
 
 // Same escape hatch as brickNodeMaterials.ts: three's TSL TypeScript surface
 // lags the runtime API (method chaining on nodes is typed dynamically).
@@ -110,6 +111,17 @@ const buildInstanceColorNode = (spec: InstanceColormapSpec) => {
   return mix(vec3(1.0), ramp, saturation).mul(value);
 };
 
+/** The ordinal's LUT texel — shared by the display and the pick material. */
+const lutTexelFor = (handle: FabriksMaterialHandle, ordinal: any): any => {
+  const width = float(handle.uniforms.lutWidth);
+  const height = float(handle.uniforms.lutHeight);
+  const column = ordinal.mod(width);
+  const row = ordinal.div(width).floor();
+  return (handle.lut.node as unknown as { sample: (uv: unknown) => any }).sample(
+    vec2(column.add(0.5).div(width), row.add(0.5).div(height)),
+  );
+};
+
 /**
  * Wrap a base color node with the per-object table lookup (colour + filter)
  * and the selection logic (isolate + highlight).
@@ -128,14 +140,7 @@ const buildInstanceColorNode = (spec: InstanceColormapSpec) => {
 const composeColorNode = (handle: FabriksMaterialHandle, baseNode: unknown) =>
   Fn(() => {
     const ordinal = attribute("objectOrdinal", "float");
-
-    const width = float(handle.uniforms.lutWidth);
-    const height = float(handle.uniforms.lutHeight);
-    const column = ordinal.mod(width);
-    const row = ordinal.div(width).floor();
-    const lutTexel = (handle.lut.node as unknown as { sample: (uv: unknown) => any }).sample(
-      vec2(column.add(0.5).div(width), row.add(0.5).div(height)),
-    );
+    const lutTexel = lutTexelFor(handle, ordinal);
 
     // The table holds a VALUE code, not a colour (`valueLut.ts`): the decode,
     // the window and the palette are uniforms, so a colormap or clim nudge
@@ -168,6 +173,38 @@ const composeColorNode = (handle: FabriksMaterialHandle, baseNode: unknown) =>
     // ~35% toward white: the identified object pops without a recompile.
     return select(selected, mix(rgb, vec3(1.0), 0.35), rgb);
   })();
+
+/**
+ * The id-writing SIBLING of the display material, for the GPU pick pass
+ * (`platform/draw/gpuPick.ts`). Same position path — the default one, so a
+ * BatchedMesh batches it exactly as it batches the display material — and the
+ * same two discards (filter rule, isolation), reading the SAME uniforms and
+ * LUT node, so what is hidden on screen can never be picked. The colour
+ * machinery is skipped: the output is `pickOutputNode(ordinal, slot)`.
+ *
+ * `side` is the caller's to keep in step with the display material.
+ */
+export function createFabriksPickMaterial(
+  handle: FabriksMaterialHandle,
+  slot: { value: number },
+): MeshBasicNodeMaterial {
+  const material = createPickMaterial(handle.material.side);
+  material.outputNode = Fn(() => {
+    const ordinal = attribute("objectOrdinal", "float");
+    const lutTexel = lutTexelFor(handle, ordinal);
+    // The LUT code, decoded exactly as `emitValueLutColor` does.
+    const code = lutTexel.g.mul(255).round().mul(256).add(lutTexel.r.mul(255).round());
+    Discard(
+      float(handle.uniforms.lutFilter)
+        .greaterThan(0.5)
+        .and(code.greaterThan(float(VALUE_LUT_HIDDEN_EDGE))),
+    );
+    const selected = ordinal.equal(float(handle.uniforms.selectedOrdinal));
+    Discard(float(handle.uniforms.isolate).greaterThan(0.5).and(selected.not()));
+    return pickOutputNode(ordinal, slot);
+  })();
+  return material;
+}
 
 export function createFabriksMaterial(): FabriksMaterialHandle {
   const material = new MeshStandardNodeMaterial();

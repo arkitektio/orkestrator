@@ -6,17 +6,21 @@ import {
   ELLIPSE_SEGMENTS,
   batchColors,
   buildOutlineBatches,
+  buildSectionedOutlineBatches,
+  drawsOwnMesh,
+  isSectionedEllipse,
   outlinePoints,
   roiForSegment,
+  sectionedOutlinePoints,
 } from "./annotationBatch";
 import { getVectorPoint } from "./annotationBounds";
 import { DEFAULT_STROKE, ACTIVE_STROKE } from "./annotationStyle";
 import * as THREE from "three";
 
 /**
- * `outlinePoints` must stay in lockstep with `AnnotationShape`'s
- * Line-producing branches — same points, same open/closed decisions — or the
- * batched view draws different geometry than the per-shape view it replaces.
+ * `outlinePoints` + `sectionedOutlinePoints` are every flat shape's outline:
+ * same points, same open/closed decisions as the per-shape `<Line>`s they
+ * replaced. `AnnotationShape` only draws what `drawsOwnMesh` accepts.
  */
 
 const annotation = (
@@ -132,8 +136,8 @@ describe("buildOutlineBatches", () => {
     expect(none[2 * 6]).toBeCloseTo(idle.r);
   });
 
-  it("sectioned ellipsoids stay OUT of the batch — their ring moves with the plane", () => {
-    // Depth-bearing ellipse in the flat view: per-shape Line, not batched.
+  it("sectioned ellipsoids stay OUT of the static batch — their ring moves with the plane", () => {
+    // Depth-bearing ellipse in the flat view: the sectioned batch's, not this one.
     expect(
       outlinePoints(annotation(AnnotationKind.Ellipse, [[0, 0, 0], [4, 2, 6]]), true),
     ).toBeNull();
@@ -155,6 +159,64 @@ describe("buildOutlineBatches", () => {
       false,
     );
     expect(batches).toHaveLength(0);
+  });
+});
+
+describe("sectioned outlines", () => {
+  const roiOf = (id: string) => ({ id });
+  const ellipsoid = annotation(AnnotationKind.Sphere, [[0, 0, 0], [4, 2, 6]], { id: "s" });
+
+  it("only depth-bearing ellipses in the flat view are sectioned", () => {
+    expect(isSectionedEllipse(ellipsoid, true)).toBe(true);
+    expect(isSectionedEllipse(ellipsoid, false)).toBe(false); // 3D: a mesh
+    expect(
+      isSectionedEllipse(annotation(AnnotationKind.Ellipse, [[0, 0, 0], [4, 2, 0]]), true),
+    ).toBe(false);
+    expect(
+      sectionedOutlinePoints(annotation(AnnotationKind.Ellipse, [[0, 0, 0], [4, 2, 0]]), true, 0),
+    ).toBeNull();
+  });
+
+  it("the ring follows the plane: full at the equator, clamped past the pole", () => {
+    // Center z 3, radius z 3; radii 2 x 1 around (2, 1).
+    const equator = sectionedOutlinePoints(ellipsoid, true, 3)!;
+    expect(equator).toHaveLength(ELLIPSE_SEGMENTS + 1);
+    expect(equator[ELLIPSE_SEGMENTS]).toEqual(equator[0]);
+    expect(equator[0][0]).toBeCloseTo(4);
+    const pastPole = sectionedOutlinePoints(ellipsoid, true, 100)!;
+    expect(pastPole[0][0]).toBeCloseTo(2 + 2 * 0.05);
+    // No plane (scene without a z stack): unscaled.
+    expect(sectionedOutlinePoints(ellipsoid, true, null)![0][0]).toBeCloseTo(4);
+  });
+
+  it("batches the rings per stroke width, with roi ranges", () => {
+    const batches = buildSectionedOutlineBatches(
+      [
+        { annotation: ellipsoid, roi: roiOf("s") },
+        // Not sectioned: skipped by the sectioned builder.
+        { annotation: annotation(AnnotationKind.Line, [[0, 0, 0], [1, 0, 0]]), roi: roiOf("l") },
+      ],
+      true,
+      3,
+    );
+    expect(batches).toHaveLength(1);
+    expect(batches[0].segmentCount).toBe(ELLIPSE_SEGMENTS);
+    expect(batches[0].ranges).toEqual([{ start: 0, end: ELLIPSE_SEGMENTS, roi: { id: "s" } }]);
+  });
+});
+
+describe("drawsOwnMesh", () => {
+  it("is exactly the extruded 3D box / ellipsoid", () => {
+    const box = annotation(AnnotationKind.Cube, [[0, 0, 0], [4, 4, 4]]);
+    const sphere = annotation(AnnotationKind.Sphere, [[0, 0, 0], [4, 4, 4]]);
+    expect(drawsOwnMesh(box, false)).toBe(true);
+    expect(drawsOwnMesh(sphere, false)).toBe(true);
+    expect(drawsOwnMesh(box, true)).toBe(false);
+    expect(drawsOwnMesh(sphere, true)).toBe(false);
+    const flatRect = annotation(AnnotationKind.Rectangle, [[0, 0, 0], [4, 4, 0]]);
+    const polygon = annotation(AnnotationKind.Polygon, [[0, 0, 0], [4, 4, 4], [0, 4, 0]]);
+    expect(drawsOwnMesh(flatRect, false)).toBe(false);
+    expect(drawsOwnMesh(polygon, false)).toBe(false);
   });
 });
 

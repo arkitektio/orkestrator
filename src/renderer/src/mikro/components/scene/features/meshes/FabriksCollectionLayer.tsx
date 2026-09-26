@@ -39,6 +39,8 @@ import { createLeadingThrottle } from "../../platform/perf/leadingThrottle";
 import { useActivePickers } from "../../platform/attributes/useActivePickers";
 import { usePickerResolution } from "../../platform/attributes/pickerResolution";
 import { useCollectionDriver } from "../../platform/collections/useCollectionDriver";
+import { useGpuPicker } from "../../platform/draw/useGpuPicker";
+import type { GpuPickHit } from "../../platform/draw/gpuPick";
 import {
   collectionSlabThickness,
   useCollectionPlacement,
@@ -90,6 +92,13 @@ type MeshLayerView = MeshLayerVariant & MeshLayerSessionState;
  * default; layers without an explicit preset get "balanced".
  */
 const DETAIL_BUDGETS = { fine: 2, balanced: 4, fast: 8 } as const;
+
+/** One picked instance, from either pick path. */
+type MeshHit = {
+  ordinal: number;
+  voxelIndex: [number, number, number];
+  worldPos: [number, number, number];
+};
 
 const FabriksCollectionGroup = ({
   layer,
@@ -397,8 +406,8 @@ const FabriksCollectionGroup = ({
    * Placement, the plan-on-settle cadence and the z-scrub clip, all on the
    * render plane (`platform/collections/collectionDriver.ts`). What stays in
    * this component is what is fabriks': the manager, its material and plan
-   * config, its colour LUT, and — below — the picking, which the network
-   * layer has none of.
+   * config, its colour LUT, and — below — the picking (GPU id buffer; the
+   * network layer's differs only in how its events arrive).
    *
    * The return value is unused: a `detail` change writes the plan config but
    * takes effect at the next camera settle, which is what it did before.
@@ -414,9 +423,28 @@ const FabriksCollectionGroup = ({
   );
 
   // --- Instance picking: click (PROBE) + debounced hover (PROBE follow /
-  // ANNOTATE drawing tools — the brick layers' etiquette). Reads the hit's
-  // per-vertex ordinal; BatchedMesh raycast windows the SHARED merged buffers
-  // via drawRange, so `face.a` addresses the batch attribute on both paths.
+  // ANNOTATE drawing tools — the brick layers' etiquette).
+  //
+  // Two paths to the same `{ ordinal, voxelIndex, worldPos }`:
+  //  - GPU (the default): R3F still ROUTES the event — nearest first,
+  //    stopPropagation, click-vs-drag — but the batch's raycast is swapped for
+  //    a box test per cell (`batchedBoundsRaycast`), and the object under the
+  //    cursor comes from the id-buffer pick (`platform/draw/gpuPick.ts`),
+  //    which also returns the surface point from the written view depth.
+  //  - CPU (fallback, when the picker is unavailable): three's exact
+  //    BatchedMesh raycast; it windows the SHARED merged buffers via
+  //    drawRange, so `face.a` addresses the batch attribute on both paths.
+  const picker = useGpuPicker();
+  useEffect(() => {
+    if (!manager || !picker) return;
+    return picker.register(manager.pickSource(layer.id));
+  }, [manager, picker, layer.id]);
+  useEffect(() => {
+    manager?.setRaycastMode(picker ? "bounds" : "exact");
+  }, [manager, picker]);
+  /** Bumped on pointer-out: a hover pick answering after the pointer left is
+   *  dropped rather than re-publishing a probe the leave just retracted. */
+  const hoverGeneration = useRef(0);
   const interactionMode = useModeStore((s) => s.interactionMode);
   const probeFollowsCursor = useModeStore((s) => s.probeFollowsCursor);
   // A RENDER subscription: the handler PROPS below are the raycast gate, and
@@ -445,23 +473,35 @@ const FabriksCollectionGroup = ({
   // Last published hover, compared numerically (no per-move string key).
   const lastHover = useRef<{ ordinal: number; x: number; y: number; z: number } | null>(null);
 
+  /** Mesh-local IS collection voxel space (corner-anchored), so the hit point
+   *  through the inverse placement is the voxel coordinate. */
+  const voxelOf = (worldPos: [number, number, number]): [number, number, number] => {
+    // Scratch vector: this runs on every pointer move, before the dedupe.
+    const local = hitScratch.set(worldPos[0], worldPos[1], worldPos[2]).applyMatrix4(inverse);
+    return [Math.floor(local.x), Math.floor(local.y), Math.floor(local.z)];
+  };
+
+  /** A GPU pick as this layer's hit — null when it missed, or when another
+   *  collection is in front (a hit belongs to whoever drew the nearest pixel). */
+  const meshHitFromGpu = (hit: GpuPickHit | null): MeshHit | null =>
+    hit && hit.key === layer.id
+      ? { ordinal: hit.ordinal, voxelIndex: voxelOf(hit.worldPos), worldPos: hit.worldPos }
+      : null;
+
+  const pickRequest = (event: ThreeEvent<MouseEvent | PointerEvent>) => ({
+    clientX: event.nativeEvent.clientX,
+    clientY: event.nativeEvent.clientY,
+    camera: event.camera,
+  });
+
   /** The picked ordinal + frame, or null when the event isn't a usable hit. */
-  const resolveMeshHit = (event: ThreeEvent<MouseEvent | PointerEvent>) => {
+  const resolveMeshHit = (event: ThreeEvent<MouseEvent | PointerEvent>): MeshHit | null => {
     const face = event.face;
     const attr = (event.object as THREE.Mesh).geometry?.getAttribute("objectOrdinal");
     if (!face || !attr) return null;
     const ordinal = attr.getX(face.a);
-    // Mesh-local IS collection voxel space (corner-anchored), so the hit
-    // point through the inverse placement is the voxel coordinate.
     const worldPos: [number, number, number] = [event.point.x, event.point.y, event.point.z];
-    // Scratch vector: this runs on every pointer move, before the dedupe.
-    const local = hitScratch.copy(event.point).applyMatrix4(inverse);
-    const voxelIndex: [number, number, number] = [
-      Math.floor(local.x),
-      Math.floor(local.y),
-      Math.floor(local.z),
-    ];
-    return { ordinal, voxelIndex, worldPos };
+    return { ordinal, voxelIndex: voxelOf(worldPos), worldPos };
   };
 
   /**
@@ -476,10 +516,7 @@ const FabriksCollectionGroup = ({
    * Clicks always select (highlight/hull); hovers select only under the debug
    * page's "marked boundary" setting, mirroring the reverse-sync gate.
    */
-  const publishMeshProbe = (
-    hit: { ordinal: number; voxelIndex: [number, number, number]; worldPos: [number, number, number] },
-    origin: "click" | "hover",
-  ) => {
+  const publishMeshProbe = (hit: MeshHit, origin: "click" | "hover") => {
     if (!manager) return;
     perfMonitor.markProbe(); // no-op unless a perf recording is armed
     const state = viewerApi.getState();
@@ -551,12 +588,10 @@ const FabriksCollectionGroup = ({
       .catch((error) => console.warn("[fabriks] object identification failed:", error));
   };
 
-  const handleClick = (event: ThreeEvent<MouseEvent>) => {
-    if (interactionMode !== "PROBE" || !manager) return;
-    const hit = resolveMeshHit(event);
-    if (!hit) return;
-    event.stopPropagation();
-
+  /** Click semantics, whichever path found the hit: re-clicking the selected
+   *  object deselects (and retracts its probe); anything else selects. */
+  const applyClick = (hit: MeshHit) => {
+    if (!manager) return;
     const state = viewerApi.getState();
     const previous = state.meshSelection;
     if (previous && previous.layerId === layer.id && previous.ordinal === hit.ordinal) {
@@ -581,11 +616,28 @@ const FabriksCollectionGroup = ({
     publishMeshProbe(hit, "click");
   };
 
-  const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
-    if (event.buttons !== 0 || !manager) return;
+  const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    if (interactionMode !== "PROBE" || !manager) return;
+    if (picker) {
+      // The event reached this layer through a CELL BOX hit: claim it as the
+      // exact hit used to, and let the id buffer say which object (if any —
+      // a click into a cell's empty space selects nothing).
+      event.stopPropagation();
+      picker.pick("click", pickRequest(event), (gpuHit) => {
+        const hit = meshHitFromGpu(gpuHit);
+        if (hit) applyClick(hit);
+      });
+      return;
+    }
     const hit = resolveMeshHit(event);
     if (!hit) return;
     event.stopPropagation();
+    applyClick(hit);
+  };
+
+  /** A hover hit, whichever path found it: deduped, then published at most
+   *  once per frame. */
+  const acceptHover = (hit: MeshHit) => {
     // Dedupe: same instance at the same voxel republishes nothing; the
     // tracker's 150 ms debounce (and its instant path) do the rest.
     const [vx, vy, vz] = hit.voxelIndex;
@@ -604,7 +656,28 @@ const FabriksCollectionGroup = ({
     hoverCoalescer.schedule(() => publishMeshProbe(hit, "hover"));
   };
 
-  const handlePointerOut = () => {
+  const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
+    if (event.buttons !== 0 || !manager) return;
+    if (picker) {
+      event.stopPropagation();
+      const generation = hoverGeneration.current;
+      picker.pick("hover", pickRequest(event), (gpuHit) => {
+        if (generation !== hoverGeneration.current) return; // the pointer left
+        const hit = meshHitFromGpu(gpuHit);
+        // Inside a cell's box but off every surface (or behind another
+        // collection): the exact raycast would have delivered pointer-out.
+        if (hit) acceptHover(hit);
+        else retractHover();
+      });
+      return;
+    }
+    const hit = resolveMeshHit(event);
+    if (!hit) return;
+    event.stopPropagation();
+    acceptHover(hit);
+  };
+
+  const retractHover = () => {
     hoverCoalescer.cancel();
     lastHover.current = null;
     const state = viewerApi.getState();
@@ -616,6 +689,11 @@ const FabriksCollectionGroup = ({
     ) {
       state.setProbedCoordinate(null);
     }
+  };
+
+  const handlePointerOut = () => {
+    hoverGeneration.current++;
+    retractHover();
   };
 
   if (!manager) return null;

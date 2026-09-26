@@ -66,14 +66,16 @@ export type PointMaterialNodes = MeasureAppearanceNodes & {
 export type PointMaterialBundle = {
   material: NodeMaterial;
   nodes: PointMaterialNodes;
-  /** Rewritten when the colouring changes; positions are not. */
+  /** Rewritten when the colouring changes; positions are not. Owned: freed by `dispose`. */
   values: StorageInstancedBufferAttribute;
+  /** Borrowed from the layer (shared with the cull pass); NOT freed by `dispose`. */
   positions: StorageInstancedBufferAttribute;
   count: number;
   /** Swap the colormap row the fragment samples; null returns to the identity
    *  (flat white). In-place under WebGPU — see `measurePalette.ts`. */
   setPalette: (row: THREE.DataTexture | null) => void;
-  dispose: () => void;
+  /** Frees the material, the palette and — given a releaser — the value buffer. */
+  dispose: (release?: (attribute: StorageInstancedBufferAttribute) => void) => void;
 };
 
 /**
@@ -101,7 +103,11 @@ const emitCorner = (): any => {
 };
 
 export const createPointMaterial = (
-  positions: Float32Array,
+  /**
+   * The position buffer, SHARED with the cull pass: both read the same GPU copy, so the layer
+   * builds it once and owns it (frees it) — the material never does.
+   */
+  positionBuffer: StorageInstancedBufferAttribute,
   values: Float32Array,
   stride: 2 | 3,
   /**
@@ -121,7 +127,6 @@ export const createPointMaterial = (
   filterMask?: StorageBufferAttribute | null,
 ): PointMaterialBundle => {
   const count = values.length;
-  const positionBuffer = new StorageInstancedBufferAttribute(positions, stride);
   const valueBuffer = new StorageInstancedBufferAttribute(values, 1);
 
   const nodes: PointMaterialNodes = {
@@ -181,9 +186,10 @@ export const createPointMaterial = (
     positions: positionBuffer,
     count,
     setPalette: (row) => setMeasurePalette(palette, paletteIdentity, row),
-    dispose: () => {
+    dispose: (release) => {
       disposeMeasurePalette(palette, paletteIdentity);
       material.dispose();
+      release?.(valueBuffer);
     },
   };
 };

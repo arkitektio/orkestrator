@@ -6,7 +6,7 @@
  * React state instead would mean recompiling the shader on every camera move,
  * which is exactly what the uniform-push contract exists to avoid. */
 import { useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import {
   qualityGovernor,
@@ -17,7 +17,6 @@ import {
 } from "../../../platform/quality/qualityGovernor";
 import { voxelWorldSizeOf } from "../../../platform/coords/worldTransform";
 import type * as THREE from "three";
-import type { LayerBrickPool } from "../residency/brickResidency";
 import { useViewStore, useViewStoreApi } from "../../../platform/stores/viewStore";
 import { useViewerStoreApi } from "../../../platform/stores/viewerStore";
 import { useModeStore } from "../../../platform/stores/modeStore";
@@ -47,7 +46,6 @@ export type VolumeRayUniformHandles = {
   uLodBias: { value: number };
   uPxPerVoxelAtUnitDist: { value: number };
   uVoxelWorldSize: { value: THREE.Vector3 };
-  uMinDelta: { value: number };
 };
 
 /** The handles `useStepScaleUniform` drives. Separate: it is imperative.
@@ -81,30 +79,21 @@ export const usePxPerVoxelAtUnitDistance = (): number =>
   );
 
 /**
- * Push the five ray uniforms. Returns nothing; it is a driver.
- *
- * `minDelta` is half a voxel of the plan's finest requested level. The actual
- * per-sample step adapts to the LOD sampled at that point (`stepLen` in the
- * shader), and the in-shader `floorDelta` guarantees every ray reaches its exit
- * within the loop bound whatever this says.
+ * Push the four ray uniforms. Returns nothing; it is a driver. (The step
+ * itself is derived in-shader from the direction-projected pitch; the former
+ * `uMinDelta` floor was inert once that became the only stride rule.)
  */
 export const useVolumeRayUniforms = (
   nodes: VolumeRayUniformHandles | undefined,
   {
-    pool,
     desiredLevel,
-    planTargetLevel,
     worldMatrix,
   }: {
-    pool: LayerBrickPool | null;
-    /** Usually `planTargetLevel`; a merged pass passes its group's level. */
+    /** Usually the layer's plan target; a merged pass passes its group's level. */
     desiredLevel: number | undefined;
-    planTargetLevel: number | undefined;
     /** The layer's voxel→world affine, for `uVoxelWorldSize` (world-metric
-     * LOD in `desiredLevelAt` / the tricubic gate). Omitted ⇒ identity ⇒
-     * legacy voxel metric — also what `orkestrator.worldLod` OFF pushes.
-     * The flag is read here at push time, so it is live per effect run
-     * (planner lockstep: nodePlanTracker reads it per replan). */
+     * LOD in `desiredLevelAt` / the tricubic gate; planner lockstep:
+     * nodePlanTracker). Omitted ⇒ identity ⇒ voxel metric. */
     worldMatrix?: THREE.Matrix4 | null;
   },
 ): void => {
@@ -119,26 +108,6 @@ export const useVolumeRayUniforms = (
     () => qualityGovernor.getVersion(),
   );
 
-  const minDelta = useMemo(() => {
-    // Derived from `desiredLevel` — the level the SHADER actually marches
-    // (a merged pass uses its group's finest planned level) — NOT the
-    // member's own planTargetLevel: a merged primary can plan coarser than
-    // another member, and a coarser-level uMinDelta floored the legacy
-    // stride/refStep/jitter ~1.33× too long at the group's finest level.
-    const levelIndex = desiredLevel ?? planTargetLevel;
-    if (!pool || levelIndex === undefined) return 1;
-    const level = pool.geometry.levels[Math.min(levelIndex, pool.geometry.levels.length - 1)];
-    // MAX spatial component — the axis rule of the planner/shader lockstep
-    // (`wantFiner` / `desiredLevelAt`); identical on pyramids where x is the
-    // max factor.
-    // Under orkestrator.anisoStride this uniform is INERT: the shader's
-    // stride floor and jitter amplitude both moved to the in-shader
-    // direction-projected pitch (a max-axis floor would pin the projection
-    // back to the legacy rule exactly on face-on thin slabs). It keeps being
-    // pushed for the legacy (flag-off) emission.
-    return 0.5 * Math.max(level.scale[0], level.scale[1], level.scale[2]);
-  }, [pool, desiredLevel, planTargetLevel]);
-
   useEffect(() => {
     if (!nodes || desiredLevel === undefined) return;
     nodes.uDesiredLevel.value = desiredLevel;
@@ -148,7 +117,6 @@ export const useVolumeRayUniforms = (
       worldMatrix ? voxelWorldSizeOf(worldMatrix) : null;
     if (worldSize) nodes.uVoxelWorldSize.value.set(worldSize[0], worldSize[1], worldSize[2]);
     else nodes.uVoxelWorldSize.value.set(1, 1, 1);
-    nodes.uMinDelta.value = minDelta;
     // uMaxSteps is driven by `useStepScaleUniform` (adaptive depth flips it
     // per activity edge — a vanilla-subscription cadence, not an effect one).
     viewerStoreApi.getState().volumeInputs.bump("ray-uniforms");
@@ -158,7 +126,6 @@ export const useVolumeRayUniforms = (
     desiredLevel,
     lodBias,
     pxPerVoxelAtUnitDistance,
-    minDelta,
     worldMatrix,
     qualityVersion,
     invalidate,
@@ -231,12 +198,11 @@ export const useStepScaleUniform = (
 
   useEffect(() => {
     if (!nodes) return;
-    // Read once per effect, not per camera tick (localStorage): flipping the
-    // flag rebuilds the material, which remounts this effect anyway.
-    const smoothZoom = true;
+    // `smoothZoom` stays a variant input (the pure resolver and its tests
+    // cover both values), but every material now compiles the filter.
     return stepScaleDriverFor(viewStoreApi).register(
       nodes,
-      { settleRefine, canvasPass, smoothZoom, cinematic, animationPlaying },
+      { settleRefine, canvasPass, smoothZoom: true, cinematic, animationPlaying },
       { viewerStoreApi, invalidate },
     );
   }, [

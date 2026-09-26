@@ -30,12 +30,12 @@ const {
   exp,
   float,
   floor,
-  fract,
   int,
   ivec2,
   ivec3,
   length,
   max,
+  min,
   mix,
   oneMinus,
   pow,
@@ -47,6 +47,7 @@ const {
   texture,
   texture3D,
   textureLoad,
+  uint,
   uniform,
   uniformArray,
   uv,
@@ -496,8 +497,12 @@ export function emitResolveBrickResidency(
      * safe, but a console warning per var per extra emission, and the very
      * mechanism this module reserves for catching REAL shadowing bugs. */
     name?: string;
+    /** Also emit the validity box and the resolved level's placement for the
+     * residency cache (`emitCachedResidency`). Volume walk only — the box
+     * math assumes no `slabZ` recentering. */
+    cellBox?: boolean;
   },
-): ResolvedResidency {
+): ResolvedResidency & { cell?: ResidencyCell } {
   const nm = (base: string) => `${opts?.name ?? "res"}${base}`;
   const status = float(0.0).toVar(nm("Status"));
   const emptyValue = float(0.0).toVar(nm("EmptyValue"));
@@ -508,10 +513,24 @@ export function emitResolveBrickResidency(
   const residentLevel = int(t.uNumLevels).sub(1).toVar(nm("ResidentLevel"));
   const slotOriginTexel = vec3(0.0).toVar(nm("SlotOrigin"));
   const pageTexel = vec3(0.0).toVar(nm("PageTexel"));
+  const cell: ResidencyCell | undefined = opts?.cellBox
+    ? {
+        boxMin: vec3(-1e30).toVar(nm("BoxMin")),
+        boxMax: vec3(1e30).toVar(nm("BoxMax")),
+        brickOrigin: vec3(0.0).toVar(nm("BrickOrigin")),
+        levelScale: vec3(1.0).toVar(nm("ResScale")),
+        levelShape: vec3(1.0).toVar(nm("ResShape")),
+      }
+    : undefined;
 
+  // The walk STARTS at the desired level (every caller passes an int node).
+  // It used to start at 0 and `Continue` up to it — `lvl` wasted iterations
+  // per call, and the raymarchers call this once per step. Clamped at 0 so a
+  // negative level can never index `uLevelScale[-1]`; a level past the
+  // coarsest runs zero iterations, exactly as the skip-everything loop did.
   Loop(
     {
-      start: int(0),
+      start: max(int(desiredLevel), int(0)),
       end: t.uNumLevels,
       type: "int",
       condition: "<",
@@ -519,9 +538,6 @@ export function emitResolveBrickResidency(
     },
     (loopArgs: any) => {
       const sbLvl = loopArgs[opts?.name ? `${opts.name}Lvl` : "sbLvl"];
-      If(int(sbLvl).lessThan(desiredLevel), () => {
-        Continue();
-      });
 
       const levelScale = vec3(t.uLevelScale.element(sbLvl)).toVar();
       const levelShape = vec3(t.uLevelShape.element(sbLvl)).toVar();
@@ -535,6 +551,15 @@ export function emitResolveBrickResidency(
         levelShape.sub(0.5001),
       ).toVar();
       const brick = ivec3(floor(levelVoxel.div(vec3(t.uBrickPayload)))).toVar();
+      if (cell) {
+        // Intersect this level's brick box (base-voxel space), faces pulled
+        // in by CELL_BOX_EPSILON (CPU mirror: shaderspec/residencyCache.ts).
+        const size = vec3(t.uBrickPayload).mul(levelScale);
+        cell.boxMin.assign(max(cell.boxMin, vec3(brick).mul(size).add(CELL_BOX_EPSILON)));
+        cell.boxMax.assign(
+          min(cell.boxMax, vec3(brick).add(1.0).mul(size).sub(CELL_BOX_EPSILON)),
+        );
+      }
       // texture3DLoad, NOT textureLoad: the plain TSL textureLoad builds a 2D
       // TextureNode whose fetch coords collapse to ivec2 — invalid WGSL for a
       // texture_3d. Entry components are rgba8unorm floats; decode bytes with
@@ -579,12 +604,125 @@ export function emitResolveBrickResidency(
         texelBase.assign(
           vec3(slot.mul(t.uSlotSize)).add(float(t.uBrickBorder)).add(inBrick),
         );
+        if (cell) {
+          cell.brickOrigin.assign(vec3(brick.mul(t.uBrickPayload)));
+          cell.levelScale.assign(levelScale);
+          cell.levelShape.assign(levelShape);
+        }
         Break();
       });
     },
   );
 
-  return { status, emptyValue, texelBase, hopLevel, residentLevel, slotOriginTexel, pageTexel };
+  return { status, emptyValue, texelBase, hopLevel, residentLevel, slotOriginTexel, pageTexel, cell };
+}
+
+/** Faces of the cache's validity box are pulled in by this many base voxels
+ * (mirror: `CELL_BOX_EPSILON` in shaderspec/residencyCache.ts). */
+const CELL_BOX_EPSILON = 1e-3;
+
+/** The extra outputs of a `cellBox` walk. */
+type ResidencyCell = {
+  /** Every point in [boxMin, boxMax) resolves identically at this level. */
+  boxMin: any;
+  boxMax: any;
+  /** Resolved (resident) level's brick origin in level voxels, scale, shape. */
+  brickOrigin: any;
+  levelScale: any;
+  levelShape: any;
+};
+
+/** The residency cache's state: declared ONCE per fragment, before the march. */
+export type ResidencyCache = {
+  desiredLevel: any;
+  boxMin: any;
+  boxMax: any;
+  status: any;
+  emptyValue: any;
+  hopLevel: any;
+  residentLevel: any;
+  slotOriginTexel: any;
+  pageTexel: any;
+  brickOrigin: any;
+  levelScale: any;
+  levelShape: any;
+};
+
+/** Declare the cache vars. Call OUTSIDE the ray loop, once per material. */
+export function makeResidencyCache(prefix = "rc"): ResidencyCache {
+  return {
+    // −1: the first step always misses.
+    desiredLevel: int(-1).toVar(`${prefix}Lvl`),
+    boxMin: vec3(0.0).toVar(`${prefix}BoxMin`),
+    boxMax: vec3(0.0).toVar(`${prefix}BoxMax`),
+    status: float(0.0).toVar(`${prefix}Status`),
+    emptyValue: float(0.0).toVar(`${prefix}EmptyValue`),
+    hopLevel: int(0).toVar(`${prefix}HopLevel`),
+    residentLevel: int(0).toVar(`${prefix}ResidentLevel`),
+    slotOriginTexel: vec3(0.0).toVar(`${prefix}SlotOrigin`),
+    pageTexel: vec3(0.0).toVar(`${prefix}PageTexel`),
+    brickOrigin: vec3(0.0).toVar(`${prefix}BrickOrigin`),
+    levelScale: vec3(1.0).toVar(`${prefix}ResScale`),
+    levelShape: vec3(1.0).toVar(`${prefix}ResShape`),
+  };
+}
+
+/**
+ * `emitResolveBrickResidency` for a RAY STEP, through the cache: the level
+ * walk (a chain of dependent page-table loads) re-runs only when the sample
+ * leaves the box in which it provably resolves the same — same desired level,
+ * inside the intersection of every visited level's brick. Inside one brick a
+ * ray takes ~30–60 steps; they used to pay the walk every one of them. Only
+ * `texelBase` is per-sample, and it is pure ALU from the cached placement.
+ * CPU mirror + the validity proof: `shaderspec/residencyCache.ts`.
+ */
+export function emitCachedResidency(
+  t: any,
+  pB: any,
+  desiredLevel: any,
+  cache: ResidencyCache,
+  name = "rcw",
+): ResolvedResidency {
+  const p = vec3(pB);
+  const hit = int(cache.desiredLevel)
+    .equal(int(desiredLevel))
+    .and(p.x.greaterThanEqual(cache.boxMin.x))
+    .and(p.y.greaterThanEqual(cache.boxMin.y))
+    .and(p.z.greaterThanEqual(cache.boxMin.z))
+    .and(p.x.lessThan(cache.boxMax.x))
+    .and(p.y.lessThan(cache.boxMax.y))
+    .and(p.z.lessThan(cache.boxMax.z));
+  If(hit.not(), () => {
+    const r = emitResolveBrickResidency(t, pB, desiredLevel, { name, cellBox: true });
+    const cell = r.cell!;
+    cache.desiredLevel.assign(int(desiredLevel));
+    cache.boxMin.assign(cell.boxMin);
+    cache.boxMax.assign(cell.boxMax);
+    cache.status.assign(r.status);
+    cache.emptyValue.assign(r.emptyValue);
+    cache.hopLevel.assign(r.hopLevel);
+    cache.residentLevel.assign(r.residentLevel);
+    cache.slotOriginTexel.assign(r.slotOriginTexel);
+    cache.pageTexel.assign(r.pageTexel);
+    cache.brickOrigin.assign(cell.brickOrigin);
+    cache.levelScale.assign(cell.levelScale);
+    cache.levelShape.assign(cell.levelShape);
+  });
+  // Same expression as the walk's RESIDENT branch, from cached placement.
+  const levelVoxel = clamp(p.div(cache.levelScale), vec3(0.0), cache.levelShape.sub(0.5001));
+  const texelBase = cache.slotOriginTexel
+    .add(float(t.uBrickBorder))
+    .add(levelVoxel.sub(cache.brickOrigin))
+    .toVar(`${name}SampleTexel`);
+  return {
+    status: cache.status,
+    emptyValue: cache.emptyValue,
+    texelBase,
+    hopLevel: cache.hopLevel,
+    residentLevel: cache.residentLevel,
+    slotOriginTexel: cache.slotOriginTexel,
+    pageTexel: cache.pageTexel,
+  };
 }
 
 /**
@@ -1296,11 +1434,27 @@ const phasorPolygonPoint = (c: any, cursor: any, index: any) => {
   return select(int(index).mod(int(2)).equal(int(0)), value.xy, value.zw);
 };
 
-/** Motion-invariant jitter source (the classic sin/dot/fract hash). */
+/**
+ * Motion-invariant jitter source: the pcg2d integer hash of the pixel
+ * (Jarzynski & Olano 2020), in [0, 1). Replaced the classic
+ * `fract(sin(dot(co, …)) · 43758.5)`, whose sin loses precision at large
+ * screen coordinates on some GPUs (banded, visibly structured grain at the
+ * 0.5× motion scale). Integer ops are exact on every backend. CPU mirror:
+ * `shaderspec/jitterHash.ts` — keep in lockstep.
+ */
+const PCG_MUL = 1664525;
+const PCG_INC = 1013904223;
 const rand2 = Fn(([co]: any[]) => {
-  return fract(
-    sin(dot(vec2(co), vec2(12.9898, 78.233))).mul(43758.5453),
-  );
+  const x = uint(float(co.x)).mul(uint(PCG_MUL)).add(uint(PCG_INC)).toVar("jhX");
+  const y = uint(float(co.y)).mul(uint(PCG_MUL)).add(uint(PCG_INC)).toVar("jhY");
+  x.addAssign(y.mul(uint(PCG_MUL)));
+  y.addAssign(x.mul(uint(PCG_MUL)));
+  x.assign(x.bitXor(x.shiftRight(uint(16))));
+  y.assign(y.bitXor(y.shiftRight(uint(16))));
+  x.addAssign(y.mul(uint(PCG_MUL)));
+  x.assign(x.bitXor(x.shiftRight(uint(16))));
+  // Top 24 bits: exactly representable in f32, so the result is < 1.
+  return float(x.shiftRight(uint(8))).mul(1 / 16777216);
 });
 
 export const commonMaterialSettings = (material: NodeMaterial) => {
@@ -1438,7 +1592,6 @@ export type VolumeMaterialNodes = TraversalNodesPublic &
     /** Per-axis world size of one base voxel (world-metric LOD; (1,1,1) =
      * legacy voxel metric — how `orkestrator.worldLod` off is pushed). */
     uVoxelWorldSize: UniformNodeLike<THREE.Vector3>;
-    uMinDelta: UniformNodeLike<number>;
     uStepScale: UniformNodeLike<number>;
     uMaxSteps: UniformNodeLike<number>;
     /** Zoom-smoothing engagement threshold (px per resolved voxel; 0 = off). */
@@ -1527,18 +1680,10 @@ export function createVolumeNodeMaterial(
   },
   memberCount = 1,
 ): VolumeMaterialBundle {
-  // Read ONCE per material build (kill switch — see shaderFlags.ts): selects
-  // which node graph is emitted. Off = the legacy emission order, verbatim.
-  // Zoom smoothing (tricubic reconstruction past uSmoothThreshold px/voxel);
-  // off = the filter is not emitted at all.
-  const smoothZoom = true;
-  // Direction-projected stride (Phase B, see shaderFlags.ts); off = the
-  // legacy max-axis pitch, verbatim.
-  const anisoStride = true;
-  // Hierarchical-occupancy coarse hop (R4, default OFF); off = not emitted.
+  // Hierarchical-occupancy coarse hop (R4, always on since §6.9 settled it).
   // The aggregate sidecar is lazily allocated — ensure it exists BEFORE
-  // makeTraversalNodes captures the texture reference (a pool created while
-  // the flag was off would otherwise hand the emission a null texture).
+  // makeTraversalNodes captures the texture reference, or the emission is
+  // handed a null texture.
   const occHierarchy = true;
   if (occHierarchy) ensureAggregate(pool.pageTable);
   const t = makeTraversalNodes(pool, dataRange);
@@ -1724,7 +1869,6 @@ export function createVolumeNodeMaterial(
   // a second copy of `desiredLevelAt` would rot the planner lockstep.
   const rayUniforms = makeVolumeRayUniforms();
   const { uDesiredLevel, uLodBias, uPxPerVoxelAtUnitDist, uBaseShape } = rayUniforms;
-  const uMinDelta = uniform(1, "float");
   const uStepScale = uniform(1, "float");
   // Zoom smoothing engages when the RESOLVED level's voxel spans at least
   // this many screen px (0 = runtime off without a rebuild). Perspective
@@ -1797,18 +1941,16 @@ export function createVolumeNodeMaterial(
     // trades step density for the same full-ray coverage.
     const floorDelta = rayLen.div(max(float(uMaxSteps), 1.0));
 
-    // Marching pitch per level. Two rules behind orkestrator.anisoStride
-    // (CPU mirror: features/bricks/shaderspec/raymarchStep.ts `directionProjectedPitch` — keep in
-    // lockstep):
-    //  - ON (default): the ELLIPSOIDAL voxel-crossing distance along the ray,
-    //    0.75 / |dirB / scale|. Identical to the max rule on isotropic levels
-    //    for EVERY direction, never exceeds 0.75·max(scale) (never
-    //    oversamples the coarsest axis), and guarantees ~one sample per voxel
-    //    crossing on every axis — which the max rule does not: on a
-    //    [2ⁿ,2ⁿ,1] pyramid (z never downsampled) a face-on ray stepped by
-    //    the xy factor straight THROUGH the z planes, a 6× undersample that
-    //    dropped thin structures from MIP.
-    //  - OFF: the legacy MAX spatial component (kept for A/B).
+    // Marching pitch per level (CPU mirror:
+    // features/bricks/shaderspec/raymarchStep.ts `directionProjectedPitch` —
+    // keep in lockstep): the ELLIPSOIDAL voxel-crossing distance along the
+    // ray, 0.75 / |dirB / scale|. Identical to the max-axis rule on isotropic
+    // levels for EVERY direction, never exceeds 0.75·max(scale) (never
+    // oversamples the coarsest axis), and guarantees ~one sample per voxel
+    // crossing on every axis — which the max rule it replaced does not: on a
+    // [2ⁿ,2ⁿ,1] pyramid (z never downsampled) a face-on ray stepped by the xy
+    // factor straight THROUGH the z planes, a 6× undersample that dropped
+    // thin structures from MIP.
     // Note the deliberate asymmetry with `wantFiner`/`desiredLevelAt`, which
     // stay max-based: LOD selection is a screen-footprint question, the
     // pitch is a marching-density one. For the SAME reason the pitch stays
@@ -1818,32 +1960,22 @@ export function createVolumeNodeMaterial(
     // over-sample the data grid, not the screen.
     const levelPitch = (level: any) => {
       const s = vec3(t.uLevelScale.element(level));
-      if (anisoStride) {
-        // dirB is unit-length in base-voxel space; |dirB/s| ≥ |dirB|/max(s)
-        // bounds the pitch by the legacy rule from below.
-        return float(0.75).div(max(float(length(dirB.div(s))), 1e-6));
-      }
-      return float(0.75).mul(max(s.x, max(s.y, s.z)));
+      // dirB is unit-length in base-voxel space; |dirB/s| ≥ |dirB|/max(s)
+      // bounds the pitch by the max-axis rule from below.
+      return float(0.75).div(max(float(length(dirB.div(s))), 1e-6));
     };
 
     // Reference step for VOLUME opacity correction (see
-    // features/bricks/shaderspec/opacityCorrection.ts — keep in lockstep). Under anisoStride the
-    // dead uMinDelta floor is dropped: uMinDelta is 0.5·max(scale) of the
-    // plan target, which would pin the pitch back to the max-axis rule and
-    // nullify the projection exactly where it matters (face-on thin slabs).
-    const refStep = anisoStride
-      ? max(floorDelta, levelPitch(uDesiredLevel)).toVar()
-      : max(max(float(uMinDelta), floorDelta), levelPitch(uDesiredLevel)).toVar();
+    // features/bricks/shaderspec/opacityCorrection.ts — keep in lockstep).
+    const refStep = max(floorDelta, levelPitch(uDesiredLevel)).toVar();
 
     // Jitter must not depend on rayLen or uStepScale (motion-invariant, P14).
-    // Under anisoStride the amplitude is the projected pitch of the plan
-    // target — like uMinDelta it changes only on replan. NOTE it matches the
-    // UNSCALED pitch, not the actual stride: the stride multiplies by
-    // uStepScale (2–3× while active), which P14 forbids in the amplitude —
-    // motion frames are deliberately under-dithered rather than flickery.
-    // (The legacy amplitude straddled ~5 face-on strides; this one matches
-    // the settled stride exactly.)
-    const jitterAmp = anisoStride ? levelPitch(uDesiredLevel) : float(uMinDelta);
+    // The amplitude is the projected pitch of the plan target, which changes
+    // only on replan. NOTE it matches the UNSCALED pitch, not the actual
+    // stride: the stride multiplies by uStepScale (2–3× while active), which
+    // P14 forbids in the amplitude — motion frames are deliberately
+    // under-dithered rather than flickery.
+    const jitterAmp = levelPitch(uDesiredLevel);
     const rayT = boundsX.add(float(rand2(screenCoordinate.xy)).mul(jitterAmp)).toVar("rayT");
 
     // The cinematic view vector is LOOP-INVARIANT (rayT > 0 always), so it is
@@ -1870,6 +2002,10 @@ export function createVolumeNodeMaterial(
       done: bool(false).toVar(),
     }));
 
+    // Residency cache (see emitCachedResidency): declared once, outside the
+    // march, so it survives from step to step.
+    const residencyCache = makeResidencyCache();
+
     Loop({ start: int(0), end: int(MAX_RAY_STEPS_CEILING), type: "int", condition: "<" }, ({ i }: any) => {
       // Tier cap: the uniform can't feed the compile-constant loop bound, so
       // it breaks here. floorDelta above guarantees full-ray coverage in
@@ -1893,19 +2029,16 @@ export function createVolumeNodeMaterial(
       const lvl = int(desiredLevelAt(pB, originB)).toVar();
 
       // LOD-adaptive step (P14): fine pitch where fine data is sampled.
-      // floorDelta stays in the max under both rules — the uMaxSteps
-      // termination guarantee is stride-rule-independent.
-      const stepLen = (anisoStride
-        ? max(floorDelta, levelPitch(lvl))
-        : max(max(float(uMinDelta), floorDelta), levelPitch(lvl))
-      )
+      // floorDelta keeps the uMaxSteps termination guarantee.
+      const stepLen = max(floorDelta, levelPitch(lvl))
         .mul(max(float(uStepScale), 1.0))
         .toVar();
 
       // Residency is channel- AND member-independent: resolve ONCE per step.
       // This is the whole point of merging — N members used to pay N level
-      // walks per step for the identical answer.
-      const resolved = emitResolveBrickResidency(t, pB, lvl);
+      // walks per step for the identical answer. And through the cache, the
+      // walk itself runs once per BRICK the ray enters, not once per step.
+      const resolved = emitCachedResidency(t, pB, lvl, residencyCache);
 
       // Empty-space skip hop: jump to the exit of the RESOLVED level's cell
       // (hopLevel: the EMPTY brick's own level, or the coarsest cell when the
@@ -1928,44 +2061,58 @@ export function createVolumeNodeMaterial(
         If(resolved.status.lessThan(0.5), () => {
           hopPastCell();
         });
-        // Uniform EMPTY brick: every slot taps the same uniform value, so the
-        // step's max norm is derivable with pure ALU (channelNormalize only —
-        // no colormap sample, no phasor taps, no cursor loop). Invisible
-        // slots are excluded, exactly like the sampling loop's guard. The
-        // max across members mirrors the legacy predicate: strictly more
-        // conservative than any single member's, so no member loses a sample.
+        // Uniform EMPTY brick: every slot taps the same uniform value, so each
+        // member's norm over the whole cell is derivable with pure ALU
+        // (channelNormalize only — no colormap sample, no phasor taps, no
+        // cursor loop), and it is EXACT, not a bound: every sample in the cell
+        // would produce it. So the cell hops under the same per-member
+        // predicate as a resident brick (CPU mirror: `emptyCellSkippable` ≡
+        // `residentBrickSkippable` with upper = the fill's norm) — invisible,
+        // a MIP it cannot beat (MIP updates on strictly greater), an ISO it
+        // never reaches, or done. It used to hop only when the fill was
+        // invisible for EVERY member, so a bright uniform background under
+        // MIP was marched step by step long after it could change nothing.
         If(resolved.status.greaterThan(1.5), () => {
-          const maxEmptyNorm = float(0.0).toVar("esMaxNorm");
+          const esSkipAll = bool(true).toVar("esSkipAll");
           memberNodes.forEach((mem, m) => {
+            const emptyNorm = float(0.0).toVar();
             if (memberFns[m].emitSimple || memberFns[m].emitRgb) {
               // Same collapse as the sampling arm: known-visible slot(s) over
-              // ONE window, so one normalize of the fill value bounds them all.
-              maxEmptyNorm.assign(
-                max(maxEmptyNorm, float(fixedNormalize(m, resolved.emptyValue))),
+              // ONE window, so one normalize of the fill value is the norm.
+              emptyNorm.assign(float(fixedNormalize(m, resolved.emptyValue)));
+            } else {
+              Loop(
+                { start: int(0), end: int(MAX_CHANNELS), type: "int", condition: "<", name: `es${m}` },
+                (args: any) => {
+                  const k = args[`es${m}`];
+                  If(int(k).greaterThanEqual(mem.slotCount), () => {
+                    Break();
+                  });
+                  const slot = int(mem.slotFirst).add(int(k)).toVar();
+                  If(vec4(c.chParamsB.element(slot)).y.lessThan(0.5), () => {
+                    Continue();
+                  });
+                  emptyNorm.assign(
+                    max(
+                      emptyNorm,
+                      float(memberFns[m].channelNormalize(slot, resolved.emptyValue)),
+                    ),
+                  );
+                },
               );
-              return;
             }
-            Loop(
-              { start: int(0), end: int(MAX_CHANNELS), type: "int", condition: "<", name: `es${m}` },
-              (args: any) => {
-                const k = args[`es${m}`];
-                If(int(k).greaterThanEqual(mem.slotCount), () => {
-                  Break();
-                });
-                const slot = int(mem.slotFirst).add(int(k)).toVar();
-                If(vec4(c.chParamsB.element(slot)).y.lessThan(0.5), () => {
-                  Continue();
-                });
-                maxEmptyNorm.assign(
-                  max(
-                    maxEmptyNorm,
-                    float(memberFns[m].channelNormalize(slot, resolved.emptyValue)),
-                  ),
-                );
-              },
+            const invisible = emptyNorm.lessThanEqual(0.001);
+            const mipBeaten = int(mem.projectionMode)
+              .equal(int(0))
+              .and(emptyNorm.lessThanEqual(acc[m].bestNorm));
+            const isoMiss = int(mem.projectionMode)
+              .equal(int(3))
+              .and(emptyNorm.lessThan(mem.isoThreshold));
+            esSkipAll.assign(
+              esSkipAll.and(acc[m].done.or(invisible).or(mipBeaten).or(isoMiss)),
             );
           });
-          If(maxEmptyNorm.lessThanEqual(0.001), () => {
+          If(esSkipAll, () => {
             hopPastCell();
           });
         });
@@ -2201,11 +2348,11 @@ export function createVolumeNodeMaterial(
       // tricubic engages only on RESIDENT samples whose resolved level is
       // magnified past uSmoothThreshold px per voxel — the same footprint
       // math as desiredLevelAt (keep in lockstep). Perspective only.
-      // DELIBERATELY max-axis even under orkestrator.anisoStride: this is a
-      // screen-footprint question ("how magnified is this level"), not a
-      // marching-density one — the stride projection does not apply here.
+      // DELIBERATELY max-axis, unlike the direction-projected stride: this is
+      // a screen-footprint question ("how magnified is this level"), not a
+      // marching-density one.
       let smoothActive: any = null;
-      if (smoothZoom) {
+      {
         // World metric, same uniform contract as desiredLevelAt: identity
         // uVoxelWorldSize reduces to the legacy voxel expressions exactly.
         const w = vec3(rayUniforms.uVoxelWorldSize);
@@ -2559,7 +2706,6 @@ export function createVolumeNodeMaterial(
       uLodBias,
       uPxPerVoxelAtUnitDist,
       uVoxelWorldSize: rayUniforms.uVoxelWorldSize,
-      uMinDelta,
       uStepScale,
       uMaxSteps,
       uSmoothThreshold,

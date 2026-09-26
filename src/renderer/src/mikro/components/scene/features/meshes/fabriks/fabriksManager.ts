@@ -1,9 +1,10 @@
 import * as THREE from "three";
-import { ClippingGroup } from "three/webgpu";
 import { LruByteCache } from "@/mikro/components/scene/platform/parquet/lruByteCache";
 import { FabriksBatchRenderer, type FabriksBatchStats } from "./fabriksBatch";
+import type { MeshBasicNodeMaterial } from "three/webgpu";
 import {
   createFabriksMaterial,
+  createFabriksPickMaterial,
   disposeColorAppearance,
   setColorAppearance,
   setColorLut,
@@ -30,7 +31,10 @@ import {
 } from "./fabriksDecodeDispatcher";
 import { cellGridBox } from "./fabriksGrid";
 import { groupByRowGroup, planFabriksCells, type FabriksPlanInput } from "./fabriksPlanner";
-import { createSlabPlanes, updateSlabPlanes } from "../../../platform/coords/slabClip";
+import { CollectionManagerBase } from "../../../platform/collections/collectionManagerBase";
+import type { GpuPickSource } from "../../../platform/draw/gpuPick";
+import { createPickSlotUniform } from "../../../platform/draw/gpuPickNodes";
+import { batchedBoundsRaycast } from "../../../platform/draw/batchedBoundsRaycast";
 
 /**
  * Imperative orchestration of one fabriks collection: plan → fetch → decode →
@@ -161,13 +165,13 @@ export type FabriksPlanSummary = {
   coarsenedRegions: number;
 };
 
-export class FabriksCollectionManager {
-  /** Mounted by the React layer via `<primitive>`; children managed here.
-   * A ClippingGroup because on the WebGPU node path clipping comes ONLY from
-   * the scene graph — `material.clippingPlanes` is WebGL-era API the node
-   * system never reads (verified: three.webgpu.js consumes planes solely via
-   * `isClippingGroup` → ClippingContext). Disabled outside slab mode. */
-  readonly group = new ClippingGroup();
+export class FabriksCollectionManager extends CollectionManagerBase<
+  FabriksCellRow,
+  FabriksCellIndex
+> {
+  // `group` (mounted by the React layer via `<primitive>`; a ClippingGroup,
+  // disabled outside slab mode), placement + index rebuild, the slab planes
+  // and the generation / disposed guard live in `CollectionManagerBase`.
 
   readonly stats: FabriksManagerStats = {
     plans: 0,
@@ -196,13 +200,6 @@ export class FabriksCollectionManager {
   private batching = true;
   /** The unbatched path's per-cell meshes (share cache-owned geometries). */
   private readonly mountedMeshes = new Map<string, THREE.Mesh>();
-  /** Voxel → world for this layer, updated in place via `setVoxelToWorld`. */
-  private readonly voxelToWorld = new THREE.Matrix4();
-  /** Catalog rows, kept so a placement change rebuilds the world-space index
-   * without re-reading the catalog — and without touching the caches, whose
-   * geometry is in VOXEL space and survives any placement. */
-  private catalogRows: FabriksCellRow[] | null = null;
-  private index: FabriksCellIndex | null = null;
   private planned = new Map<string, string>();
   private plannedEntries: readonly FabriksCellEntry[] = [];
   private lastPlan: FabriksPlanSummary | null = null;
@@ -211,14 +208,11 @@ export class FabriksCollectionManager {
   /** Where the CPU half of a row-group read runs (workers in production;
    * shared across managers — never disposed here). */
   private readonly decodeDispatcher: FabriksDecodeDispatcher;
-  /** Bumped per plan; a drain whose generation is stale abandons its work. */
-  private generation = 0;
   /** Aborts decodes still queued in the dispatcher when the plan they served
    * is superseded — see `bumpGeneration`. */
   private decodeAbort = new AbortController();
   private draining = false;
   private pendingView: FabriksPlanView | null = null;
-  private disposed = false;
   /** Hidden ≠ disposed: the caches, catalogs and batch all survive, so a
    * hide/show cycle costs nothing. Deliberate memory retention — a hidden
    * layer keeps its geometry LRU and byte cache warm. */
@@ -237,10 +231,6 @@ export class FabriksCollectionManager {
   private appliedColormap: FabriksInstanceColormap | null = DEFAULT_INSTANCE_COLORMAP;
   /** The colour LUT currently on the GPU, so a rebuild frees the old one. */
   private appliedLut: THREE.Texture | null = null;
-  /** WORLD-space clip planes for the 2D slab (constants mutated on z-scrub).
-   *  Order and pairing come from `platform/coords/slabClip.ts`. */
-  private readonly clipPlanes = createSlabPlanes();
-  private slab: { z: number; thickness: number } | null = null;
   private selection: FabriksSelection | null = null;
   /** The hull's persistent scene objects — created once, rewritten per
    * selection. A new material is a new pipeline under the WebGPU node system,
@@ -257,6 +247,15 @@ export class FabriksCollectionManager {
   /** Draw order for mounted cells (0 in 3D; 2 in slab mode — above the image
    * quad's renderOrder 1, matching the 2D overlay convention). */
   private cellRenderOrder = 0;
+  /** The GPU pick pass's sibling of `material` (`createFabriksPickMaterial`),
+   *  built on the first pick — a layer nobody points at never compiles it. */
+  private pickMaterial: MeshBasicNodeMaterial | null = null;
+  private readonly pickSlot = createPickSlotUniform();
+  /** The live BatchedMesh, for the raycast swap below. */
+  private batchMesh: THREE.BatchedMesh | null = null;
+  /** "bounds" while the GPU pick answers "which object?" — R3F then only
+   *  needs a box test per cell to route the event (`batchedBoundsRaycast`). */
+  private raycastMode: "exact" | "bounds" = "exact";
 
   constructor(
     private readonly opts: {
@@ -273,10 +272,8 @@ export class FabriksCollectionManager {
       decodeDispatcher?: FabriksDecodeDispatcher;
     },
   ) {
+    super({ onInvalidate: opts.onInvalidate, onStatsChanged: opts.onStatsChanged });
     this.decodeDispatcher = opts.decodeDispatcher ?? sharedFabriksDecodeDispatcher();
-    this.group.matrixAutoUpdate = false;
-    this.group.clippingPlanes = this.clipPlanes;
-    this.group.enabled = false; // slab mode only (setSlabClip)
     this.planConfig = {
       // The layer's "balanced" preset (DETAIL_BUDGETS); the card's effect
       // overrides this before the first plan either way.
@@ -299,8 +296,10 @@ export class FabriksCollectionManager {
       },
     );
     this.batch = new FabriksBatchRenderer(this.material, (next) => {
+      this.batchMesh = next;
+      this.applyRaycastMode();
       this.group.add(next); // the batch removes its predecessor itself
-      this.opts.onInvalidate();
+      this.invalidate();
     });
   }
 
@@ -341,6 +340,10 @@ export class FabriksCollectionManager {
     this.material.transparent = transparent;
     this.material.side = side;
     if (pipelineChanged) this.material.needsUpdate = true;
+    if (this.pickMaterial && this.pickMaterial.side !== side) {
+      this.pickMaterial.side = side;
+      this.pickMaterial.needsUpdate = true;
+    }
   }
 
   /**
@@ -368,7 +371,7 @@ export class FabriksCollectionManager {
       this.appliedLut = lut?.texture ?? null;
     }
     setColorLut(this.materialHandle, lut, modes);
-    this.opts.onInvalidate();
+    this.invalidate();
   }
 
   /**
@@ -383,7 +386,7 @@ export class FabriksCollectionManager {
     climMax: number;
   }): void {
     setColorAppearance(this.materialHandle, style);
-    this.opts.onInvalidate();
+    this.invalidate();
   }
 
   /**
@@ -396,8 +399,8 @@ export class FabriksCollectionManager {
     this.materialHandle.uniforms.selectedOrdinal.value = selection?.ordinal ?? -1;
     this.materialHandle.uniforms.isolate.value = selection?.isolate ? 1 : 0;
     this.updateSelectionHull();
-    this.opts.onInvalidate();
-    this.opts.onStatsChanged?.();
+    this.invalidate();
+    this.notifyStats();
   }
 
   /**
@@ -418,7 +421,7 @@ export class FabriksCollectionManager {
         // Latest-wins: the selection may have moved while the catalog loaded.
         if (this.disposed || this.selection?.ordinal !== ordinal) return;
         this.buildSelectionHull(ordinal, entry);
-        this.opts.onInvalidate();
+        this.invalidate();
       })
       .catch(() => {
         // No catalog, no hull — the shader highlight still marks the object.
@@ -595,40 +598,29 @@ export class FabriksCollectionManager {
     return this.ordinalIndexPromise;
   }
 
-  /**
-   * The layer's placement, applied without disruption: the group matrix moves,
-   * the world-space index is rebuilt from the kept catalog rows, and the plan
-   * re-runs — but the byte and geometry caches survive untouched, because the
-   * geometry itself is in voxel space. (This used to rebuild the entire
-   * manager, which turned any placement-adjacent store change into a full
-   * refetch.) A value-equal matrix is a no-op.
-   */
   /** The open collection — for readers that extract geometry outside the
    * render plan (the mesh designer's edit-existing path). */
   getCollection(): FabriksCollection {
     return this.opts.collection;
   }
 
-  /** A copy of the current voxel → world placement. */
-  getVoxelToWorld(): THREE.Matrix4 {
-    return this.voxelToWorld.clone();
+  protected buildIndex(rows: FabriksCellRow[], voxelToWorld: THREE.Matrix4): FabriksCellIndex {
+    return buildFabriksCellIndex(rows, this.opts.collection.manifest, voxelToWorld);
   }
 
-  setVoxelToWorld(matrix: THREE.Matrix4): void {
-    if (this.disposed || this.voxelToWorld.equals(matrix)) return;
-    this.voxelToWorld.copy(matrix);
-    this.group.matrix.copy(matrix);
-    this.group.matrixWorldNeedsUpdate = true;
-    if (this.catalogRows) {
-      this.index = buildFabriksCellIndex(
-        this.catalogRows,
-        this.opts.collection.manifest,
-        this.voxelToWorld,
-      );
-      this.stats.indexRebuilds++;
-      if (!this.planConfig.frozen && this.lastView) this.runPlan(this.lastView);
-    }
-    this.opts.onInvalidate();
+  /**
+   * Placement (`setVoxelToWorld`, in the base) moves the group and rebuilds
+   * the world-space index; the plan re-runs here — but the byte and geometry
+   * caches survive untouched, because the geometry is in voxel space. (This
+   * used to rebuild the entire manager, which turned any placement-adjacent
+   * store change into a full refetch.)
+   */
+  protected replanAfterPlacement(): void {
+    if (!this.planConfig.frozen && this.lastView) this.runPlan(this.lastView);
+  }
+
+  protected override onIndexRebuilt(): void {
+    this.stats.indexRebuilds++;
   }
 
   getFlatNormals(): boolean {
@@ -663,8 +655,8 @@ export class FabriksCollectionManager {
       });
     }
     if (this.batching) this.batch.refresh();
-    this.opts.onInvalidate();
-    this.opts.onStatsChanged?.();
+    this.invalidate();
+    this.notifyStats();
   }
 
   getPlanConfig(): Readonly<FabriksPlanConfig> {
@@ -684,26 +676,15 @@ export class FabriksCollectionManager {
    * `null` restores the 3D state. A z-scrub with the slab already on mutates
    * only the plane constants (uniforms) — no pipeline rebuild.
    */
-  setSlabClip(slab: { z: number; thickness: number } | null): void {
-    const wasClipping = this.slab !== null;
-    this.slab = slab ? { ...slab } : null;
-    if (slab) updateSlabPlanes(this.clipPlanes, slab);
-    const clipping = slab !== null;
-    if (clipping !== wasClipping) {
-      // The plane-count change flows through the ClippingGroup's context and
-      // rebuilds pipelines by itself; needsUpdate covers the depth flip.
-      this.group.enabled = clipping;
-      this.material.depthTest = !clipping;
-      this.material.needsUpdate = true;
-      this.cellRenderOrder = clipping ? 2 : 0;
-      this.batch.setRenderOrder(this.cellRenderOrder);
-      for (const mesh of this.mountedMeshes.values()) mesh.renderOrder = this.cellRenderOrder;
-    }
-    this.opts.onInvalidate();
-  }
-
-  getSlabClip(): { z: number; thickness: number } | null {
-    return this.slab ? { ...this.slab } : null;
+  protected override onSlabModeChanged(clipping: boolean): void {
+    // The group's `enabled` flip (the base) changes the plane count through the
+    // ClippingGroup's context and rebuilds pipelines by itself; needsUpdate
+    // covers the depth flip.
+    this.material.depthTest = !clipping;
+    this.material.needsUpdate = true;
+    this.cellRenderOrder = clipping ? 2 : 0;
+    this.batch.setRenderOrder(this.cellRenderOrder);
+    for (const mesh of this.mountedMeshes.values()) mesh.renderOrder = this.cellRenderOrder;
   }
 
   /**
@@ -730,7 +711,7 @@ export class FabriksCollectionManager {
   setShowCellBoxes(show: boolean): void {
     this.showCellBoxes = show;
     this.rebuildCellBoxes();
-    this.opts.onInvalidate();
+    this.invalidate();
   }
 
   getShowCellBoxes(): boolean {
@@ -742,8 +723,7 @@ export class FabriksCollectionManager {
     if (this.index || this.disposed) return;
     const rows: FabriksCellRow[] = await this.opts.collection.loadCellCatalog();
     if (this.disposed) return;
-    this.catalogRows = rows;
-    this.index = buildFabriksCellIndex(rows, this.opts.collection.manifest, this.voxelToWorld);
+    this.adoptCatalog(rows);
   }
 
   /**
@@ -767,7 +747,7 @@ export class FabriksCollectionManager {
       this.bumpGeneration(); // stale-mark the current drain; it stops at its next await
       this.pendingView = null;
     }
-    this.opts.onInvalidate();
+    this.invalidate();
   }
 
   updatePlan(view: FabriksPlanView): void {
@@ -841,8 +821,8 @@ export class FabriksCollectionManager {
     this.stats.plans++;
     this.stats.planMs += performance.now() - planStart;
     this.planStartedAt = planStart;
-    this.opts.onInvalidate();
-    this.opts.onStatsChanged?.();
+    this.invalidate();
+    this.notifyStats();
 
     // A replan invalidates whatever the previous drain was doing.
     this.bumpGeneration();
@@ -866,7 +846,7 @@ export class FabriksCollectionManager {
           .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined);
         if (missing.length === 0) {
           this.stats.completeMs = performance.now() - this.planStartedAt;
-          this.opts.onStatsChanged?.();
+          this.notifyStats();
           continue;
         }
 
@@ -916,7 +896,7 @@ export class FabriksCollectionManager {
           continue;
         }
         this.stats.completeMs = performance.now() - this.planStartedAt;
-        this.opts.onStatsChanged?.();
+        this.notifyStats();
       }
     } finally {
       this.draining = false;
@@ -948,7 +928,7 @@ export class FabriksCollectionManager {
       // A superseded plan's queued decode was dropped on purpose, not failed.
       if (this.isStale(generation)) return false;
       this.stats.fetchErrors++;
-      this.opts.onStatsChanged?.();
+      this.notifyStats();
       console.error(
         `[fabriks] failed to read level ${group.level} part ${group.part} row group ${group.rowGroup}:`,
         error,
@@ -987,22 +967,20 @@ export class FabriksCollectionManager {
     }
     this.stats.buildMs += performance.now() - buildStart;
     this.stats.decodedCells += decoded.size;
-    this.opts.onInvalidate();
-    this.opts.onStatsChanged?.();
+    this.invalidate();
+    this.notifyStats();
     return true;
   }
 
-  /** A drain from a superseded plan stops rather than mounting stale work. */
-  private isStale(generation: number): boolean {
-    return this.disposed || generation !== this.generation;
-  }
-
-  /** Stale-mark the running drain AND drop its decodes still queued in the
-   * dispatcher, so a replan never waits behind work nobody will mount. */
-  private bumpGeneration(): void {
-    this.generation++;
+  /** Stale-mark the running drain (the base's generation — `isStale` is how a
+   * superseded drain stops rather than mounting stale work) AND drop its
+   * decodes still queued in the dispatcher, so a replan never waits behind
+   * work nobody will mount. */
+  protected override bumpGeneration(): number {
+    const generation = super.bumpGeneration();
     this.decodeAbort.abort();
     this.decodeAbort = new AbortController();
+    return generation;
   }
 
   getBatching(): boolean {
@@ -1020,8 +998,8 @@ export class FabriksCollectionManager {
       const cached = this.cache.get(key);
       if (cached) this.mountCell(key, cached);
     }
-    this.opts.onInvalidate();
-    this.opts.onStatsChanged?.();
+    this.invalidate();
+    this.notifyStats();
   }
 
   private mountedKeys(): IterableIterator<string> {
@@ -1065,7 +1043,7 @@ export class FabriksCollectionManager {
 
   private abandon(): void {
     this.stats.abortedDrains++;
-    this.opts.onStatsChanged?.();
+    this.notifyStats();
   }
 
   /** One paste-able snapshot for DebugPanel and the octree debug report. */
@@ -1182,9 +1160,51 @@ export class FabriksCollectionManager {
     this.group.add(this.cellBoxes);
   }
 
+  /**
+   * This collection as a GPU pick source (`platform/draw/gpuPick.ts`): the
+   * group (so the slab clip applies), every drawable carrying the display
+   * material drawn with its id sibling — the BatchedMesh and the unbatched
+   * A/B meshes alike, both of which carry `objectOrdinal` — and everything
+   * else (the selection hull, the cell boxes) hidden for the pass.
+   */
+  pickSource(key: string): GpuPickSource {
+    return {
+      key,
+      slot: this.pickSlot,
+      root: () => (this.disposed ? null : this.group),
+      pickMaterialFor: (object) =>
+        (object as THREE.Mesh).material === this.material ? this.ensurePickMaterial() : null,
+    };
+  }
+
+  private ensurePickMaterial(): MeshBasicNodeMaterial {
+    this.pickMaterial ??= createFabriksPickMaterial(this.materialHandle, this.pickSlot);
+    return this.pickMaterial;
+  }
+
+  /**
+   * "bounds" swaps the BatchedMesh's per-triangle raycast for a box test per
+   * cell; "exact" restores three's. Only the batch: the unbatched A/B path is
+   * a debug toggle and keeps its exact raycast. Survives batch rebuilds.
+   */
+  setRaycastMode(mode: "exact" | "bounds"): void {
+    this.raycastMode = mode;
+    this.applyRaycastMode();
+  }
+
+  private applyRaycastMode(): void {
+    const batch = this.batchMesh;
+    if (!batch) return;
+    if (this.raycastMode === "bounds") {
+      batch.raycast = batchedBoundsRaycast;
+    } else {
+      // Drop the own property: the prototype's exact raycast shows through.
+      delete (batch as { raycast?: unknown }).raycast;
+    }
+  }
+
   dispose(): void {
-    this.disposed = true;
-    this.bumpGeneration();
+    this.markDisposed();
     this.cache.clear(); // evictions unmount and dispose every geometry
     this.batch.dispose();
     this.mountedMeshes.clear();
@@ -1199,6 +1219,8 @@ export class FabriksCollectionManager {
     this.appliedLut = null;
     disposeColorAppearance(this.materialHandle);
     this.material.dispose();
+    this.pickMaterial?.dispose();
+    this.pickMaterial = null;
     this.opts.collection.release();
   }
 }

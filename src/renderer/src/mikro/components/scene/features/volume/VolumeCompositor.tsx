@@ -154,12 +154,21 @@ export const VolumeCompositor = () => {
   // chain depends on `postActive`, its VALUES ride live uniforms.
   const postRef = useRef(post);
   postRef.current = post;
+  // The bloom re-runs only when its input or its settings changed (see
+  // `VolumeBloomScheduling`): set on a volume render, a settings push and a
+  // chain rebuild; cleared once a canvas pass has drawn the composite.
+  const bloomDirtyRef = useRef(true);
 
   const quad = useMemo(() => {
     const material = new NodeMaterial();
+    bloomDirtyRef.current = true;
     const chain = buildVolumeCompositeNode(
       target.texture,
       postActive ? postRef.current : null,
+      {
+        shouldUpdate: () => bloomDirtyRef.current,
+        sizeOf: () => ({ width: target.width, height: target.height }),
+      },
     );
     material.colorNode = chain.colorNode;
     material.userData.postChain = chain;
@@ -218,6 +227,7 @@ export const VolumeCompositor = () => {
       | undefined;
     if (!chain) return;
     updateVolumePostUniforms(chain, post);
+    bloomDirtyRef.current = true;
     invalidate();
   }, [quad, post, invalidate]);
 
@@ -324,13 +334,33 @@ export const VolumeCompositor = () => {
 
   type FrameState = Parameters<Parameters<typeof useFrame>[0]>[0];
   const renderCompositedFrame = (state: FrameState) => {
-    const gl = state.gl as unknown as CompositorRenderer;
     const { scene, camera } = state;
 
     // World matrices BEFORE key derivation — the renderer would refresh them
     // mid-render, which is too late for a frame-accurate structure compare.
     scene.updateMatrixWorld();
     camera.updateMatrixWorld();
+
+    // ...and ONLY here. Every `gl.render` re-walks the whole graph for this
+    // otherwise (`Renderer.render`: `if (scene.matrixWorldAutoUpdate)`), and a
+    // volume frame renders up to three times — nothing moves between them
+    // (the passes only toggle visibility and colorWrite; the composite quad
+    // writes its matrixWorld directly).
+    const sceneAutoUpdate = scene.matrixWorldAutoUpdate;
+    const cameraAutoUpdate = camera.matrixWorldAutoUpdate;
+    scene.matrixWorldAutoUpdate = false;
+    camera.matrixWorldAutoUpdate = false;
+    try {
+      renderPasses(state);
+    } finally {
+      scene.matrixWorldAutoUpdate = sceneAutoUpdate;
+      camera.matrixWorldAutoUpdate = cameraAutoUpdate;
+    }
+  };
+
+  const renderPasses = (state: FrameState) => {
+    const gl = state.gl as unknown as CompositorRenderer;
+    const { scene, camera } = state;
 
     const sets = collectPassSets(scene, passSetsRef.current);
     if (sets.volumeMeshes.length === 0) {
@@ -445,6 +475,7 @@ export const VolumeCompositor = () => {
           gl.render(scene, camera);
         }
         hasContentRef.current = true;
+        bloomDirtyRef.current = true;
       } finally {
         // `restoreHidden` is a no-op on an empty (never filled) list.
         restoreHidden(hideScratch.occluders);
@@ -492,6 +523,8 @@ export const VolumeCompositor = () => {
     if (quad.visible) fitQuadToCamera(quad, camera);
     try {
       gl.render(scene, camera);
+      // The composite drew, so the bloom (if any) consumed its input.
+      if (quad.visible) bloomDirtyRef.current = false;
     } finally {
       quad.visible = false;
       restoreHidden(volumesCanvas);
