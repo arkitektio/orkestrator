@@ -1,0 +1,21 @@
+query ListBudgets(
+  $filters: BudgetFilter
+  $ordering: [BudgetOrder!]! = [{ startMonth: DESC }]
+  $pagination: OffsetPaginationInput
+) {
+  budgets(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...Budget
+  }
+}
+
+query GetBudget($id: ID!) {
+  budget(id: $id) {
+    ...Budget
+  }
+}
+
+query BudgetStatus($month: Date) {
+  budgetStatus(month: $month) {
+    ...BudgetStatus
+  }
+}

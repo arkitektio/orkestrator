@@ -1,6 +1,7 @@
 import React, { type ComponentType, type ReactNode } from "react";
 
 import { Arkitekt, serviceGuard } from "@/core/connection/arkitekt/host";
+import { DialogDescription, DialogTitle } from "@/core/ui/dialog";
 import type { DisplayWidgetProps } from "@/core/smart/display/registry";
 import type { FileDownloader } from "@/core/modules/export/fileDownloaders";
 import type { Action } from "@/core/smart/localactions/LocalActionProvider";
@@ -36,11 +37,13 @@ const namespaceOf = (definition: ModuleDefinition) => definition.manifest.namesp
 
 /**
  * Merges one builtin map across modules. Two modules claiming the same key
- * is a bug (the second would silently win), so it throws.
+ * is a bug (the second would silently win), so it throws. `wrap` sees each
+ * value with the module that owns it (to guard it by that module).
  */
 const mergeRecords = <V,>(
   pick: (builtins: ModuleBuiltins) => Record<string, V> | undefined,
   what: string,
+  wrap: (definition: ModuleDefinition, value: V) => V = (_, value) => value,
 ): Record<string, V> => {
   const merged: Record<string, V> = {};
   const owner: Record<string, string> = {};
@@ -49,7 +52,7 @@ const mergeRecords = <V,>(
       if (key in merged) {
         throw new Error(`${what} "${key}" is claimed by ${owner[key]} and ${namespaceOf(definition)}`);
       }
-      merged[key] = value;
+      merged[key] = wrap(definition, value);
       owner[key] = namespaceOf(definition);
     }
   }
@@ -133,8 +136,51 @@ const guarded = <P extends object>(namespace: string, Component: ComponentType<P
 // --- registries ---------------------------------------------------------------
 
 
+/**
+ * What a dialog shows while a service it needs is not ready. It carries a
+ * title, because the host's `DialogContent` is already open around it; an
+ * empty dialog is both useless and inaccessible.
+ */
+const DialogUnavailable = ({ label }: { label: string }) => (
+  <div className="flex flex-col gap-1.5">
+    <DialogTitle>{label} is not available</DialogTitle>
+    <DialogDescription>
+      This needs the {label} service, which is not reachable right now. Check the connection and try again.
+    </DialogDescription>
+  </div>
+);
+
+/**
+ * A dialog, mounted only once every service it needs is ready: its own
+ * module's and each one the module declares in `manifest.requires.services`
+ * (CLAUDE.md §1). Another module being down does not blank it.
+ */
+const guardedDialog = <P extends object>(definition: ModuleDefinition, Dialog: ComponentType<P>): ComponentType<P> => {
+  const needs = [namespaceOf(definition), ...(definition.manifest.requires?.services ?? [])];
+  const Guarded = (props: P) =>
+    needs.reduceRight<ReactNode>((inner, namespace) => {
+      const Guard = moduleGuard(namespace);
+      const label =
+        (moduleDefinitions() as readonly ModuleDefinition[]).find((d) => namespaceOf(d) === namespace)?.manifest
+          .label ?? namespace;
+      return (
+        <Guard key={namespace} fallback={<DialogUnavailable label={label} />}>
+          {inner}
+        </Guard>
+      );
+    }, <Dialog {...props} />);
+  Guarded.displayName = `GuardedDialog(${Dialog.displayName ?? Dialog.name ?? namespaceOf(definition)})`;
+  return Guarded;
+};
+
+/** Dialogs, each behind the guards of the services it needs (see `guardedDialog`). */
 export const MODULE_DIALOGS = derivedRecord(
-  () => mergeRecords((builtins) => builtins.dialogs, "Dialog") as DialogRegistry,
+  () =>
+    mergeRecords(
+      (builtins) => builtins.dialogs as Record<string, ComponentType<object>> | undefined,
+      "Dialog",
+      guardedDialog,
+    ) as DialogRegistry,
 );
 
 export const MODULE_ACTIONS = derivedRecord(

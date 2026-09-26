@@ -22,3 +22,7 @@ projects:
   kabinet:
     schema: "graphql/schemas/kabinet.graphql"
     documents: "graphql/kabinet/**/*.graphql"
+
+  bank:
+    schema: "graphql/schemas/bank.graphql"
+    documents: "graphql/bank/**/*.graphql"

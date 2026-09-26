@@ -1,0 +1,22 @@
+fragment Budget on Budget {
+  id
+  amount
+  currency
+  startMonth
+  endMonth
+  createdAt
+  category {
+    ...ListCategory
+  }
+}
+
+fragment BudgetStatus on BudgetStatus {
+  month
+  budgeted
+  spent
+  remaining
+  ratio
+  budget {
+    ...Budget
+  }
+}

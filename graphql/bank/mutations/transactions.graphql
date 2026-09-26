@@ -1,0 +1,29 @@
+mutation CategorizeTransaction($input: CategorizeTransactionInput!) {
+  categorizeTransaction(input: $input) {
+    ...Transaction
+  }
+}
+
+mutation SetTransactionNote($input: SetTransactionNoteInput!) {
+  setTransactionNote(input: $input) {
+    ...Transaction
+  }
+}
+
+mutation CategorizeTransactions($ids: [ID!]!, $category: ID) {
+  categorizeTransactions(ids: $ids, category: $category) {
+    ...ListTransaction
+  }
+}
+
+mutation MarkTransfers($ids: [ID!]!, $isTransfer: Boolean) {
+  markTransfers(ids: $ids, isTransfer: $isTransfer) {
+    ...ListTransaction
+  }
+}
+
+mutation MarkTransfer($input: MarkTransferInput!) {
+  markTransfer(input: $input) {
+    ...Transaction
+  }
+}

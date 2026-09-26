@@ -1,0 +1,23 @@
+fragment ListRecurringPayment on RecurringPayment {
+  id
+  label
+  amount
+  currency
+  intervalDays
+  occurrences
+  lastSeen
+  nextExpected
+  status
+  account {
+    id
+    name
+    iban
+  }
+}
+
+fragment RecurringPayment on RecurringPayment {
+  ...ListRecurringPayment
+  transactions(ordering: [{ bookingDate: DESC }], pagination: { limit: 24 }) {
+    ...ListTransaction
+  }
+}

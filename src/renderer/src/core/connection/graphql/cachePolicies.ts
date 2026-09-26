@@ -38,6 +38,17 @@ export const ALPAKA_PAGINATED_FIELDS: PaginatedFieldMap = {
   rooms: ["filters", "ordering"],
 };
 
+/** `bank.graphql` */
+export const BANK_PAGINATED_FIELDS: PaginatedFieldMap = {
+  bankAccounts: ["filters", "ordering"],
+  bankConnections: ["filters"],
+  budgets: ["filters", "ordering"],
+  categories: ["filters", "ordering"],
+  categoryRules: ["filters"],
+  recurringPayments: ["filters", "ordering"],
+  transactions: ["filters", "ordering"],
+};
+
 /** `elektro.graphql` */
 export const ELEKTRO_PAGINATED_FIELDS: PaginatedFieldMap = {
   annotationCollections: ["filters", "ordering"],
@@ -193,6 +204,7 @@ export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
 };
 
 export const ALPAKA_TYPE_POLICIES = buildOffsetPaginationPolicies(ALPAKA_PAGINATED_FIELDS);
+export const BANK_TYPE_POLICIES = buildOffsetPaginationPolicies(BANK_PAGINATED_FIELDS);
 /**
  * A neuron model's cells and sections carry the id from the model's config,
  * which is unique only WITHIN a model — every model has a `soma`. Keyed on

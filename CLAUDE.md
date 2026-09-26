@@ -37,7 +37,9 @@ Examples in-tree:
   definition's `serviceKey`); a module does not guard its own builtins.
 - `core/smart/extensions/SectionHost.tsx` wraps each menu section's query
   in the section's `Guard` (declared on its descriptor, see §4).
-- The dialog provider wraps every dialog in the rekuest guard.
+- Each dialog is wrapped in its own module's guard plus the guard of every
+  service its manifest `requires` (`guardedDialog` in `core/modules/registries.tsx`);
+  while one is not ready the dialog says which service is missing.
 
 ## 2. The dialog system
 
@@ -61,7 +63,8 @@ Dialogs are a central **id registry**, not ad-hoc `<Dialog>` instances.
   `openSheet(id, props, { side, size })` shows the same component in a side
   `Sheet`. `closeDialog()` dismisses.
 - **Rendering:** the provider renders the matched component inside one shared
-  `DialogContent` / `SheetContent`, wrapped in the rekuest guard. Default dialog
+  `DialogContent` / `SheetContent`; the registry has already wrapped it in its
+  module's guard (and those of `manifest.requires.services`). Default dialog
   is wide (`min-w-[80vw]` when no `size`/`className` given) — pass `size` /
   `className` to shrink. The component receives its props directly and calls
   `closeDialog()` itself (e.g. after a successful mutation).

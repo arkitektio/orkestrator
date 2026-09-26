@@ -1,0 +1,34 @@
+query ListCategories(
+  $filters: CategoryFilter
+  $ordering: [CategoryOrder!]! = [{ name: ASC }]
+  $pagination: OffsetPaginationInput
+) {
+  categories(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListCategory
+  }
+}
+
+query GetCategory($id: ID!) {
+  category(id: $id) {
+    ...Category
+  }
+}
+
+query SearchCategories($search: String, $values: [ID!]) {
+  options: categories(filters: { search: $search, ids: $values }, ordering: [{ name: ASC }], pagination: { limit: 20 }) {
+    value: id
+    label: name
+  }
+}
+
+query ListCategoryRules($filters: CategoryRuleFilter, $pagination: OffsetPaginationInput) {
+  categoryRules(filters: $filters, pagination: $pagination) {
+    ...CategoryRule
+  }
+}
+
+query GetCategoryRule($id: ID!) {
+  categoryRule(id: $id) {
+    ...CategoryRule
+  }
+}

@@ -1,6 +1,5 @@
 // typed-dialog-provider.tsx
 
-import { serviceGuard } from "@/core/connection/arkitekt/host";
 import { usePageDialogHost } from "@/core/dialogs/PageDialogHost";
 import { Dialog, DialogContent } from "@/core/ui/dialog";
 import { Sheet, SheetContent } from "@/core/ui/sheet";
@@ -12,8 +11,6 @@ import React, {
   useMemo,
   useState,
 } from "react";
-
-const RekuestGuard = serviceGuard("rekuest");
 
 /**
  * Enhanced Dialog Provider with Sheet Support
@@ -201,9 +198,8 @@ export function createDialogProvider<
               modalState.size === "large" && "w-screen !min-w-[90cqw] !max-w-[90cqw] !min-h-[80cqh] !max-h-[80cqh]",
               !modalState.className && modalState.size === undefined && "min-w-[80cqw]",
             )}>
-              <RekuestGuard>
-                <Component {...modalState.props} />
-              </RekuestGuard>
+              {/* Guarded per dialog by the services it needs (MODULE_DIALOGS). */}
+              <Component {...modalState.props} />
             </DialogContent>
           )}
         </Dialog>
@@ -235,9 +231,8 @@ export function createDialogProvider<
                 modalState.size === "large" && "!max-w-lg w-[60cqw]",
               )}
             >
-              <RekuestGuard>
-                <Component {...modalState.props} />
-              </RekuestGuard>
+              {/* Guarded per dialog by the services it needs (MODULE_DIALOGS). */}
+              <Component {...modalState.props} />
             </SheetContent>
           )}
         </Sheet>

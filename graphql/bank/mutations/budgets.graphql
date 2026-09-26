@@ -1,0 +1,15 @@
+mutation CreateBudget($input: CreateBudgetInput!) {
+  createBudget(input: $input) {
+    ...Budget
+  }
+}
+
+mutation UpdateBudget($input: UpdateBudgetInput!) {
+  updateBudget(input: $input) {
+    ...Budget
+  }
+}
+
+mutation DeleteBudget($id: ID!) {
+  deleteBudget(id: $id)
+}

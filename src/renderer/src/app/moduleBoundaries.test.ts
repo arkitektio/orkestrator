@@ -18,6 +18,7 @@ import { EDGE_ALLOWLIST } from "./moduleBoundaries.allowlist";
  */
 export const MODULE_ROOTS: Record<string, readonly string[]> = {
   alpaka: ["alpaka"],
+  bank: ["bank"],
   dokuments: ["dokuments"],
   elektro: ["elektro"],
   fluss: ["fluss"],

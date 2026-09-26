@@ -1,0 +1,37 @@
+fragment ListCategory on Category {
+  id
+  name
+  color
+  kind
+  parent {
+    id
+    name
+  }
+}
+
+fragment CategoryRule on CategoryRule {
+  id
+  priority
+  field
+  match
+  pattern
+  direction
+  amountMin
+  amountMax
+  active
+  createdAt
+  category {
+    ...ListCategory
+  }
+}
+
+fragment Category on Category {
+  ...ListCategory
+  createdAt
+  children(ordering: [{ name: ASC }]) {
+    ...ListCategory
+  }
+  rules {
+    ...CategoryRule
+  }
+}

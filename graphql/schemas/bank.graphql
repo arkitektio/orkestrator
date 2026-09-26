@@ -1,0 +1,1155 @@
+directive @auth(required_org_roles: [String!] = null, required_roles: [String!] = null, required_scopes: [String!] = null) on FIELD_DEFINITION
+
+"""
+What an account holds. A DEPOT's balance is its market valuation; its positions are `holdings`.
+"""
+enum AccountKind {
+  CASH
+  DEPOT
+  SAVINGS
+}
+
+"""An account finished syncing."""
+type AccountSyncEvent {
+  accountId: ID!
+  created: Int!
+  pendingReplaced: Int!
+  updated: Int!
+}
+
+"""How a started login finishes."""
+enum AuthFinish {
+  POLL
+  REDIRECT
+}
+
+"""
+A started (or resumed) login, the same shape for every provider. Open `openUrl` in the user's browser; then, by `finish`: REDIRECT — the provider redirects to `redirectUrl` with `code` and `state`, call `completeBankLink`; POLL — call `completeScalableLink(state)` every `interval` seconds until the connection is ACTIVE. `state` is stored server-side, so any replica completes it and `resumeLink` returns it again.
+"""
+type AuthSession {
+  connection: BankConnection!
+  expiresAt: DateTime!
+  finish: AuthFinish!
+
+  """POLL only: seconds between complete calls."""
+  interval: Int
+  openUrl: String!
+
+  """REDIRECT only: where the provider sends the browser back to."""
+  redirectUrl: String
+  state: String!
+
+  """POLL only: the code the user checks on the provider's page."""
+  userCode: String
+}
+
+"""An end-of-day account balance."""
+type BalancePoint {
+  amount: Decimal!
+  currency: String!
+  date: Date!
+
+  """
+  True if the bank reported this balance; false if derived from transactions.
+  """
+  reported: Boolean!
+}
+
+"""An account balance as the bank reported it on a day."""
+type BalanceSnapshot {
+  """The account."""
+  account: BankAccount!
+
+  """The balance."""
+  amount: Decimal!
+
+  """
+  The ISO 20022 balance type (CLBD closing booked, ITAV interim available, …).
+  """
+  balanceType: String!
+
+  """ISO currency of the balance."""
+  currency: String!
+
+  """The day the balance refers to."""
+  date: Date!
+  id: ID!
+}
+
+"""An account at a bank. Keeps its history across relinks."""
+type BankAccount {
+  """Every balance the bank reported, one per day and type."""
+  balances: [BalanceSnapshot!]!
+
+  """The consent this account is currently reached through."""
+  connection: BankConnection
+
+  """When the account was first linked."""
+  createdAt: DateTime!
+
+  """The account's ISO currency."""
+  currency: String!
+
+  """A depot's positions as of its latest sync (empty for other accounts)."""
+  currentHoldings: [HoldingSnapshot!]!
+
+  """The account's IBAN, if the bank reports one."""
+  iban: String
+  id: ID!
+
+  """True while a sync holds the account."""
+  isSyncing: Boolean!
+
+  """Cash, securities depot, or savings."""
+  kind: AccountKind!
+
+  """Why the last sync failed, if it did."""
+  lastError: String
+
+  """The kind of `lastError`, for the client to offer a fix."""
+  lastErrorCode: BankErrorCode
+
+  """When the last successful sync finished."""
+  lastSyncedAt: DateTime
+
+  """The newest balance the bank reported, of the most authoritative type."""
+  latestBalance: BalanceSnapshot
+
+  """The account's name at the bank."""
+  name: String
+
+  """
+  The earliest this account may sync (null: now) — after today's budget is spent or the provider asked to wait. Syncing earlier fails with RATE_LIMITED without contacting the provider.
+  """
+  nextSyncAllowedAt: DateTime
+
+  """The organization this account belongs to."""
+  organization: Organization!
+
+  """The bank's product name for the account."""
+  product: String
+
+  """Syncs left today under the provider's daily limit (null: no limit)."""
+  syncsRemainingToday: Int
+
+  """The account's transactions."""
+  transactions(filters: TransactionFilter, ordering: [TransactionOrder!]! = [], pagination: OffsetPaginationInput): [Transaction!]!
+}
+
+"""
+An account at a bank, reached through a connection.
+
+Keyed by ``identification_key`` (Enable Banking's cross-session identification hash,
+else the IBAN), so relinking an expired consent re-attaches the same account and its
+history instead of starting over.
+"""
+input BankAccountFilter {
+  AND: BankAccountFilter
+  DISTINCT: Boolean
+  NOT: BankAccountFilter
+  OR: BankAccountFilter
+  connection: ID
+  ids: [ID!]
+  kind: AccountKind
+  search: String
+}
+
+input BankAccountOrder @oneOf {
+  createdAt: Ordering
+  currency: Ordering
+  kind: Ordering
+  lastSyncedAt: Ordering
+  name: Ordering
+}
+
+"""
+One consent at one bank. Accounts are synced through it while it is ACTIVE.
+"""
+type BankConnection {
+  """The consent this account is currently reached through."""
+  accounts(filters: BankAccountFilter, ordering: [BankAccountOrder!]! = [], pagination: OffsetPaginationInput): [BankAccount!]!
+
+  """The bank's ISO country code."""
+  aspspCountry: String!
+
+  """The bank's name, exactly as Enable Banking lists it."""
+  aspspName: String!
+
+  """When the link was started."""
+  createdAt: DateTime!
+
+  """The user who started the link."""
+  creator: User
+  id: ID!
+
+  """
+  PENDING and past `pendingExpiresAt`: the login can no longer be completed.
+  """
+  isAbandoned: Boolean!
+
+  """The last error talking to the bank, if any."""
+  lastError: String
+
+  """The kind of `lastError`, for the client to offer a fix."""
+  lastErrorCode: BankErrorCode
+
+  """Where a Scalable link is in its login."""
+  linkStep: LinkStep
+
+  """When the link was completed."""
+  linkedAt: DateTime
+
+  """
+  True when the consent ran out or was withdrawn: start a new link to the same bank to continue.
+  """
+  needsReauth: Boolean!
+
+  """
+  The earliest every account of the connection may sync again (null: now). `syncConnection` needs all of them.
+  """
+  nextSyncAllowedAt: DateTime
+
+  """The organization this connection belongs to."""
+  organization: Organization!
+
+  """
+  PENDING only: when the login can no longer be completed. Nothing flips it on a timer — past this, a PENDING link is dead: hide it or `cancelLink` it.
+  """
+  pendingExpiresAt: DateTime
+
+  """Who the accounts are reached through."""
+  provider: Provider!
+
+  """Where this consent is in its lifecycle."""
+  status: ConnectionStatus!
+
+  """
+  The fewest syncs any account of the connection has left today (null: no limit).
+  """
+  syncsRemainingToday: Int
+
+  """When the bank consent runs out."""
+  validUntil: DateTime
+}
+
+"""
+One consent at one bank (an Enable Banking session) or one Scalable Capital login.
+
+A Scalable connection keeps its credentials — the DPoP private key and the rotating refresh
+token bound to it — Fernet-encrypted in ``secret`` (see :mod:`finance.scalable.crypto`).
+"""
+input BankConnectionFilter {
+  AND: BankConnectionFilter
+  DISTINCT: Boolean
+  NOT: BankConnectionFilter
+  OR: BankConnectionFilter
+  ids: [ID!]
+  status: ConnectionStatus
+}
+
+"""
+What went wrong, so a client can offer the fix: CONSENT_EXPIRED → relink, RATE_LIMITED → try again at nextSyncAllowedAt, MFA_REJECTED → log in again, CODE_EXPIRED → get a new code, INVALID_STATE → start over, BANK_UNAVAILABLE → try later. Also every GraphQL error's `extensions.code`.
+"""
+enum BankErrorCode {
+  BANK_ERROR
+  BANK_UNAVAILABLE
+  CODE_EXPIRED
+  CONNECTION_INACTIVE
+  CONSENT_EXPIRED
+  INVALID_STATE
+  MFA_REJECTED
+  NOT_CONFIGURED
+  RATE_LIMITED
+  SYNC_IN_PROGRESS
+}
+
+"""
+A monthly spending limit for a category and its children, in one currency.
+"""
+type Budget {
+  """The monthly limit, as a positive amount."""
+  amount: Decimal!
+
+  """The budgeted category; child categories count towards it."""
+  category: Category!
+
+  """When the budget was created."""
+  createdAt: DateTime!
+
+  """ISO currency of the limit; only transactions in it count."""
+  currency: String!
+
+  """Last month the budget applies to, or open-ended."""
+  endMonth: Date
+  id: ID!
+
+  """First month the budget applies to (the first day of it)."""
+  startMonth: Date!
+}
+
+"""
+A monthly spending limit for a category (and its children), in one currency.
+"""
+input BudgetFilter {
+  AND: BudgetFilter
+  DISTINCT: Boolean
+  NOT: BudgetFilter
+  OR: BudgetFilter
+  activeIn: Date
+  category: ID
+}
+
+input BudgetOrder @oneOf {
+  amount: Ordering
+  createdAt: Ordering
+  startMonth: Ordering
+}
+
+"""One budget in one month."""
+type BudgetStatus {
+  budget: Budget!
+  budgeted: Decimal!
+  month: Date!
+
+  """spent / budgeted."""
+  ratio: Float!
+
+  """Negative when over budget."""
+  remaining: Decimal!
+
+  """Net money out in the category and its children, as a positive amount."""
+  spent: Decimal!
+}
+
+"""Money in and out during one month or week, in one currency."""
+type CashflowBucket {
+  count: Int!
+  currency: String!
+
+  """Money out, as a positive amount."""
+  expense: Decimal!
+  income: Decimal!
+  net: Decimal!
+  periodStart: Date!
+}
+
+"""Set or clear a transaction's category."""
+input CategorizeTransactionInput {
+  """The category; null clears it and lets the rules decide again."""
+  category: ID = null
+  id: ID!
+}
+
+"""
+A spending or income category. Categories nest; budgets and stats roll children up.
+"""
+type Category {
+  """The parent category, if nested."""
+  children(filters: CategoryFilter, ordering: [CategoryOrder!]! = [], pagination: OffsetPaginationInput): [Category!]!
+
+  """A display color (e.g. ``#4f46e5``)."""
+  color: String
+
+  """When the category was created."""
+  createdAt: DateTime!
+  id: ID!
+
+  """
+  Whether money in this category is an expense, income, or a transfer between own accounts.
+  """
+  kind: CategoryKind!
+
+  """The category's name, unique among its siblings."""
+  name: String!
+
+  """The organization this category belongs to."""
+  organization: Organization!
+
+  """The parent category, if nested."""
+  parent: Category
+
+  """The category matching transactions get."""
+  rules(filters: CategoryRuleFilter, pagination: OffsetPaginationInput): [CategoryRule!]!
+}
+
+"""
+A spending or income category. Categories nest (groceries under household).
+"""
+input CategoryFilter {
+  AND: CategoryFilter
+  DISTINCT: Boolean
+  NOT: CategoryFilter
+  OR: CategoryFilter
+  ids: [ID!]
+  kind: CategoryKind
+  roots: Boolean
+  search: String
+}
+
+"""
+Whether a category holds expenses, income, or transfers between own accounts (excluded from stats).
+"""
+enum CategoryKind {
+  EXPENSE
+  INCOME
+  TRANSFER
+}
+
+input CategoryOrder @oneOf {
+  createdAt: Ordering
+  kind: Ordering
+  name: Ordering
+}
+
+"""
+Assigns a category to matching transactions; the first active rule by priority wins.
+"""
+type CategoryRule {
+  """Inactive rules are skipped."""
+  active: Boolean!
+
+  """Only match when the absolute amount is at most this."""
+  amountMax: Decimal
+
+  """Only match when the absolute amount is at least this."""
+  amountMin: Decimal
+
+  """The category matching transactions get."""
+  category: Category!
+
+  """When the rule was created."""
+  createdAt: DateTime!
+
+  """Only match money in, money out, or both."""
+  direction: RuleDirection!
+
+  """The transaction field the pattern is matched against."""
+  field: RuleField!
+  id: ID!
+
+  """How the pattern is compared (case-insensitive)."""
+  match: RuleMatch!
+
+  """The text or regular expression to match."""
+  pattern: String!
+
+  """Lower runs first; the first matching rule wins."""
+  priority: Int!
+}
+
+"""
+Assigns a category to matching transactions on import (never to manually categorized ones).
+"""
+input CategoryRuleFilter {
+  AND: CategoryRuleFilter
+  DISTINCT: Boolean
+  NOT: CategoryRuleFilter
+  OR: CategoryRuleFilter
+  active: Boolean
+  category: ID
+}
+
+"""Who set a transaction's category; rules never override a manual one."""
+enum CategorySource {
+  MANUAL
+  NONE
+  RULE
+}
+
+"""
+Money in and out of one category, in one currency. `category` is null for uncategorized transactions.
+"""
+type CategoryTotal {
+  category: Category
+  count: Int!
+  currency: String!
+
+  """Money out, as a positive amount."""
+  expense: Decimal!
+  income: Decimal!
+  net: Decimal!
+}
+
+"""Finish a bank link with what the bank redirected back with."""
+input CompleteBankLinkInput {
+  """The `code` query parameter of the redirect."""
+  code: String!
+
+  """The `state` query parameter of the redirect."""
+  state: String!
+}
+
+"""Lifecycle of a bank consent."""
+enum ConnectionStatus {
+  ACTIVE
+  EXPIRED
+  FAILED
+  PENDING
+  REVOKED
+}
+
+"""Money to or from one counterparty, in one currency."""
+type CounterpartyTotal {
+  count: Int!
+  counterparty: String!
+  currency: String!
+
+  """As a positive amount."""
+  total: Decimal!
+}
+
+"""A new monthly budget."""
+input CreateBudgetInput {
+  """The monthly limit, positive."""
+  amount: Decimal!
+  category: ID!
+  currency: String! = "EUR"
+
+  """Any day of the last month; open-ended by default."""
+  endMonth: Date = null
+
+  """Any day of the first month; the current month by default."""
+  startMonth: Date = null
+}
+
+"""A new category."""
+input CreateCategoryInput {
+  color: String = null
+  kind: CategoryKind! = EXPENSE
+  name: String!
+  parent: ID = null
+}
+
+"""A new categorization rule."""
+input CreateCategoryRuleInput {
+  active: Boolean! = true
+  amountMax: Decimal = null
+  amountMin: Decimal = null
+
+  """
+  Re-categorize existing transactions right away (never manually categorized ones).
+  """
+  apply: Boolean! = true
+  category: ID!
+  direction: RuleDirection! = ANY
+  field: RuleField!
+  match: RuleMatch! = CONTAINS
+  pattern: String!
+
+  """Lower runs first; the first matching rule wins."""
+  priority: Int! = 100
+}
+
+"""Date (isoformat)"""
+scalar Date
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+"""Decimal (fixed-point)"""
+scalar Decimal
+
+"""Money in or money out."""
+enum Direction {
+  IN
+  OUT
+}
+
+"""An expected end-of-day balance."""
+type ForecastPoint {
+  amount: Decimal!
+  currency: String!
+  date: Date!
+}
+
+"""The bucket size of a cashflow series."""
+enum Granularity {
+  MONTH
+  WEEK
+}
+
+"""
+One security position in a depot on a day. One row per day and ISIN is the depot's history.
+"""
+type HoldingSnapshot {
+  """The depot."""
+  account: BankAccount!
+
+  """ISO currency of the valuation."""
+  currency: String!
+
+  """The day the position refers to."""
+  date: Date!
+
+  """Average buy-in price per unit (FIFO)."""
+  fifoPrice: Decimal
+  id: ID!
+
+  """The security's ISIN."""
+  isin: String!
+
+  """The security's name."""
+  name: String!
+
+  """The last quoted mid price per unit."""
+  price: Decimal
+
+  """Units held (filled)."""
+  quantity: Decimal!
+
+  """ETF, STOCK, FUND, CRYPTO, …"""
+  securityType: String
+
+  """
+  valuation − quantity × fifoPrice: the unrealized gain (negative for a loss).
+  """
+  unrealizedGain: Decimal
+
+  """The position's market value."""
+  valuation: Decimal!
+}
+
+"""A bank Enable Banking can reach."""
+type Institution {
+  bic: String
+  country: String!
+  logo: String
+
+  """The longest consent this bank grants, in days."""
+  maximumConsentDays: Int
+  name: String!
+}
+
+"""
+Where a Scalable link is: waiting for the login code to be approved, then for the second factor.
+"""
+enum LinkStep {
+  DEVICE
+  DONE
+  MFA
+}
+
+"""Set whether a transaction moves money between own accounts."""
+input MarkTransferInput {
+  id: ID!
+
+  """
+  True or false pins it; null returns it to automatic detection (by counterparty IBAN).
+  """
+  isTransfer: Boolean = null
+}
+
+type Mutation {
+  """Delete a pending link you started."""
+  cancelLink(connection: ID!): ID!
+
+  """Set or clear a transaction's category."""
+  categorizeTransaction(input: CategorizeTransactionInput!): Transaction!
+
+  """Set or clear the category of many transactions at once."""
+  categorizeTransactions(category: ID = null, ids: [ID!]!): [Transaction!]!
+
+  """Finish linking a bank with the redirect's code and state."""
+  completeBankLink(input: CompleteBankLinkInput!): BankConnection!
+
+  """Advance a Scalable Capital link; call until the connection is ACTIVE."""
+  completeScalableLink(state: String!): BankConnection!
+
+  """Create a monthly budget."""
+  createBudget(input: CreateBudgetInput!): Budget!
+
+  """Create a category."""
+  createCategory(input: CreateCategoryInput!): Category!
+
+  """Create a categorization rule."""
+  createCategoryRule(input: CreateCategoryRuleInput!): CategoryRule!
+
+  """Delete a budget."""
+  deleteBudget(id: ID!): ID!
+
+  """Delete a category."""
+  deleteCategory(id: ID!): ID!
+
+  """Delete a categorization rule."""
+  deleteCategoryRule(apply: Boolean! = true, id: ID!): ID!
+
+  """Detect recurring payments."""
+  detectRecurring(accounts: [ID!] = null): [RecurringPayment!]!
+
+  """Pin or un-pin a transaction as a transfer between own accounts."""
+  markTransfer(input: MarkTransferInput!): Transaction!
+
+  """Pin or un-pin many transactions as transfers at once."""
+  markTransfers(ids: [ID!]!, isTransfer: Boolean = null): [Transaction!]!
+
+  """Run the rules over existing transactions."""
+  reapplyRules(accounts: [ID!] = null): Int!
+
+  """
+  Get the auth session of a pending link you started again (to continue a login).
+  """
+  resumeLink(connection: ID!): AuthSession!
+
+  """Withdraw a bank consent; data is kept."""
+  revokeBankConnection(id: ID!): BankConnection!
+
+  """Add the default categories."""
+  seedDefaultCategories: [Category!]!
+
+  """Confirm or ignore a recurring payment."""
+  setRecurringStatus(input: SetRecurringStatusInput!): RecurringPayment!
+
+  """Confirm or ignore many recurring payments at once."""
+  setRecurringStatuses(ids: [ID!]!, status: RecurringStatus!): [RecurringPayment!]!
+
+  """Set or clear a transaction's note."""
+  setTransactionNote(input: SetTransactionNoteInput!): Transaction!
+
+  """Start linking a bank; returns the auth session (finish: REDIRECT)."""
+  startBankLink(input: StartBankLinkInput!): AuthSession!
+
+  """
+  Start linking Scalable Capital; returns the auth session (finish: POLL).
+  """
+  startScalableLink: AuthSession!
+
+  """Pull an account from the bank now."""
+  syncAccount(id: ID!): SyncResult!
+
+  """Pull every account of a connection now."""
+  syncConnection(id: ID!): [SyncResult!]!
+
+  """Change a budget."""
+  updateBudget(input: UpdateBudgetInput!): Budget!
+
+  """Change a category."""
+  updateCategory(input: UpdateCategoryInput!): Category!
+
+  """Change a categorization rule."""
+  updateCategoryRule(input: UpdateCategoryRuleInput!): CategoryRule!
+}
+
+input OffsetPaginationInput {
+  limit: Int
+  offset: Int! = 0
+}
+
+enum Ordering {
+  ASC
+  ASC_NULLS_FIRST
+  ASC_NULLS_LAST
+  DESC
+  DESC_NULLS_FIRST
+  DESC_NULLS_LAST
+}
+
+"""
+An organization (tenant). Every bank object belongs to exactly one, and queries only see the current one's data.
+"""
+type Organization {
+  id: ID!
+  slug: String!
+}
+
+"""Who a connection reaches its accounts through."""
+enum Provider {
+  ENABLEBANKING
+  SCALABLE
+}
+
+type Query {
+  _entities(representations: [_Any!]!): [_Entity]!
+  _service: _Service!
+
+  """An account's end-of-day balance over a range."""
+  balanceHistory(account: ID!, dateFrom: Date!, dateTo: Date = null): [BalancePoint!]!
+
+  """A bank account by id."""
+  bankAccount(id: ID!): BankAccount!
+
+  """The organization's bank accounts."""
+  bankAccounts(filters: BankAccountFilter, ordering: [BankAccountOrder!]! = [], pagination: OffsetPaginationInput): [BankAccount!]!
+
+  """A bank connection by id."""
+  bankConnection(id: ID!): BankConnection!
+
+  """The organization's bank connections."""
+  bankConnections(filters: BankConnectionFilter, pagination: OffsetPaginationInput): [BankConnection!]!
+
+  """The banks that can be linked in a country."""
+  bankInstitutions(country: String!): [Institution!]!
+
+  """A budget by id."""
+  budget(id: ID!): Budget!
+
+  """Budgeted vs. spent for a month."""
+  budgetStatus(month: Date = null): [BudgetStatus!]!
+
+  """The organization's budgets."""
+  budgets(filters: BudgetFilter, ordering: [BudgetOrder!]! = [], pagination: OffsetPaginationInput): [Budget!]!
+
+  """Income, expense and net per month or week and currency."""
+  cashflow(accounts: [ID!] = null, dateFrom: Date = null, dateTo: Date = null, granularity: Granularity! = MONTH, includeTransfers: Boolean! = false): [CashflowBucket!]!
+
+  """The organization's categories."""
+  categories(filters: CategoryFilter, ordering: [CategoryOrder!]! = [], pagination: OffsetPaginationInput): [Category!]!
+
+  """A category by id."""
+  category(id: ID!): Category!
+
+  """A categorization rule by id."""
+  categoryRule(id: ID!): CategoryRule!
+
+  """The organization's categorization rules."""
+  categoryRules(filters: CategoryRuleFilter, pagination: OffsetPaginationInput): [CategoryRule!]!
+
+  """An account's expected balance over the coming days."""
+  forecast(account: ID!, horizonDays: Int! = 90, includeBudgets: Boolean! = false, includeDetected: Boolean! = false): [ForecastPoint!]!
+
+  """A depot's positions on a day (its latest synced day by default)."""
+  holdings(account: ID!, date: Date = null): [HoldingSnapshot!]!
+
+  """A recurring payment by id."""
+  recurringPayment(id: ID!): RecurringPayment!
+
+  """Detected recurring payments."""
+  recurringPayments(filters: RecurringPaymentFilter, ordering: [RecurringPaymentOrder!]! = [], pagination: OffsetPaginationInput): [RecurringPayment!]!
+
+  """Income, expense and net per category and currency."""
+  spendingByCategory(accounts: [ID!] = null, dateFrom: Date = null, dateTo: Date = null, includeTransfers: Boolean! = false): [CategoryTotal!]!
+
+  """Where the most money went, or came from."""
+  topCounterparties(accounts: [ID!] = null, dateFrom: Date = null, dateTo: Date = null, direction: Direction! = OUT, limit: Int! = 10): [CounterpartyTotal!]!
+
+  """A transaction by id."""
+  transaction(id: ID!): Transaction!
+
+  """
+  Transactions across the organization's accounts (paginated, filterable, orderable).
+  """
+  transactions(filters: TransactionFilter, ordering: [TransactionOrder!]! = [], pagination: OffsetPaginationInput): [Transaction!]!
+
+  """How many transactions match the filters."""
+  transactionsCount(filters: TransactionFilter = null): Int!
+}
+
+"""
+A payment that repeats at a regular interval, detected from an account's history.
+"""
+type RecurringPayment {
+  """The account it recurs on."""
+  account: BankAccount!
+
+  """The typical (median) signed amount."""
+  amount: Decimal!
+
+  """ISO currency."""
+  currency: String!
+  id: ID!
+
+  """Days between occurrences (7, 14, 30, 91 or 365)."""
+  intervalDays: Int!
+
+  """A readable name (the counterparty as last seen)."""
+  label: String!
+
+  """The date of the latest occurrence."""
+  lastSeen: Date!
+
+  """When the next occurrence is expected."""
+  nextExpected: Date!
+
+  """How many matching transactions were found."""
+  occurrences: Int!
+
+  """Whether a user confirmed or ignored it."""
+  status: RecurringStatus!
+
+  """The transactions that make up the pattern."""
+  transactions(filters: TransactionFilter, ordering: [TransactionOrder!]! = [], pagination: OffsetPaginationInput): [Transaction!]!
+}
+
+"""
+A payment detected to repeat at a regular interval (rent, salary, a subscription).
+"""
+input RecurringPaymentFilter {
+  AND: RecurringPaymentFilter
+  DISTINCT: Boolean
+  NOT: RecurringPaymentFilter
+  OR: RecurringPaymentFilter
+  accounts: [ID!]
+  status: RecurringStatus
+}
+
+input RecurringPaymentOrder @oneOf {
+  amount: Ordering
+  label: Ordering
+  lastSeen: Ordering
+  nextExpected: Ordering
+}
+
+"""
+Whether a user confirmed or ignored a detected recurring payment. Only CONFIRMED ones feed forecasts by default.
+"""
+enum RecurringStatus {
+  CONFIRMED
+  DETECTED
+  IGNORED
+}
+
+"""Which transactions a rule applies to, by sign."""
+enum RuleDirection {
+  ANY
+  IN
+  OUT
+}
+
+"""The transaction field a rule matches against."""
+enum RuleField {
+  COUNTERPARTY
+  IBAN
+  REMITTANCE
+}
+
+"""How a rule's pattern is compared (case-insensitive)."""
+enum RuleMatch {
+  CONTAINS
+  EQUALS
+  REGEX
+}
+
+"""Confirm or ignore a detected recurring payment."""
+input SetRecurringStatusInput {
+  id: ID!
+  status: RecurringStatus!
+}
+
+"""Set or clear a transaction's note."""
+input SetTransactionNoteInput {
+  id: ID!
+  note: String = null
+}
+
+"""Start linking a bank."""
+input StartBankLinkInput {
+  """The bank's name exactly as `bankInstitutions` lists it."""
+  aspspName: String!
+
+  """The bank's ISO country code, e.g. AT."""
+  country: String!
+
+  """One of the server's registered redirect URLs; the first by default."""
+  redirectUrl: String = null
+}
+
+type Subscription {
+  """Events whenever one of the organization's accounts finished syncing."""
+  accountSyncs: AccountSyncEvent!
+}
+
+"""What a sync of one account did."""
+type SyncResult {
+  account: BankAccount!
+  balances: Int!
+  categorized: Int!
+  created: Int!
+
+  """Depot positions stored."""
+  holdings: Int!
+  pendingReplaced: Int!
+  updated: Int!
+}
+
+"""
+A booked or pending transaction. Amounts are signed: negative is money out.
+"""
+type Transaction {
+  """The account the transaction is on."""
+  account: BankAccount!
+
+  """Signed amount: negative is money out."""
+  amount: Decimal!
+
+  """When the bank booked it."""
+  bookingDate: Date
+
+  """The transaction's category."""
+  category: Category
+
+  """Who set the category; rules never override a manual one."""
+  categorySource: CategorySource!
+
+  """Who was paid, or who paid."""
+  counterparty: String
+
+  """The counterparty's IBAN, if reported."""
+  counterpartyIban: String
+
+  """When this service first saw the transaction."""
+  createdAt: DateTime!
+
+  """ISO currency of the amount."""
+  currency: String!
+
+  """The bank's own reference, when it sends one."""
+  entryReference: String
+  id: ID!
+
+  """Money moved between own accounts; excluded from stats."""
+  isTransfer: Boolean!
+
+  """``is_transfer`` was set by a user and is not recomputed."""
+  isTransferManual: Boolean!
+
+  """The security traded or paying out, if any."""
+  isin: String
+
+  """
+  The provider's transaction type (Scalable: BUY, SELL, DEPOSIT, DISTRIBUTION, INTEREST, FEE, TAX, …); null for bank transactions.
+  """
+  kind: TransactionKind
+
+  """A user's note."""
+  note: String
+
+  """Units of the security, if any."""
+  quantity: Decimal
+
+  """The remittance information (purpose line)."""
+  remittance: String
+
+  """Booked or pending."""
+  status: TransactionStatus!
+
+  """When it was made (e.g. the card payment)."""
+  transactionDate: Date
+
+  """When the row last changed."""
+  updatedAt: DateTime!
+
+  """When it took effect for interest."""
+  valueDate: Date
+}
+
+"""
+A single booked or pending transaction on an account.
+
+Bank fields are overwritten by every sync; ``category``, ``note`` and ``is_transfer``
+belong to the users and survive re-syncs of booked rows (see :mod:`finance.sync`).
+"""
+input TransactionFilter {
+  AND: TransactionFilter
+  DISTINCT: Boolean
+  NOT: TransactionFilter
+  OR: TransactionFilter
+  accounts: [ID!]
+  amountMax: Decimal
+  amountMin: Decimal
+  categories: [ID!]
+  dateFrom: Date
+  dateTo: Date
+  direction: Direction
+  ids: [ID!]
+  includeChildCategories: Boolean
+  isTransfer: Boolean
+  kind: TransactionKind
+  kinds: [TransactionKind!]
+  search: String
+  status: TransactionStatus
+  uncategorized: Boolean
+}
+
+"""
+A provider's transaction type (Scalable's broker and savings types). OTHER is a type this service does not know yet.
+"""
+enum TransactionKind {
+  BUY
+  CASH_TRANSFER_IN
+  CASH_TRANSFER_OUT
+  CORPORATE_ACTION
+  CURRENCY_SWITCH_BUY
+  CURRENCY_SWITCH_SELL
+  DEPOSIT
+  DISTRIBUTION
+  FEE
+  INTEREST
+  OTHER
+  POCKET_MONEY
+  REINVESTMENT
+  REINVESTMENT_DISTRIBUTION
+  REINVESTMENT_POCKET_MONEY
+  SAVINGS_PLAN
+  SELL
+  SWAP_IN
+  SWAP_OUT
+  TAX
+  TAX_RETURN
+  TRANSFER_IN
+  TRANSFER_OUT
+  WITHDRAWAL
+}
+
+input TransactionOrder @oneOf {
+  amount: Ordering
+  bookingDate: Ordering
+  createdAt: Ordering
+}
+
+"""Booking status as reported by the bank."""
+enum TransactionStatus {
+  BOOKED
+  OTHER
+  PENDING
+}
+
+"""Changes to a budget; omitted fields stay as they are."""
+input UpdateBudgetInput {
+  amount: Decimal
+  currency: String
+  endMonth: Date
+  id: ID!
+  startMonth: Date
+}
+
+"""Changes to a category; omitted fields stay as they are."""
+input UpdateCategoryInput {
+  color: String
+  id: ID!
+  kind: CategoryKind
+  name: String
+
+  """The new parent, or null to make it top-level."""
+  parent: ID
+}
+
+"""Changes to a rule; omitted fields stay as they are."""
+input UpdateCategoryRuleInput {
+  active: Boolean
+  amountMax: Decimal
+  amountMin: Decimal
+  apply: Boolean! = true
+  category: ID
+  direction: RuleDirection
+  field: RuleField
+  id: ID!
+  match: RuleMatch
+  pattern: String
+  priority: Int
+}
+
+"""
+A user account; sub is the stable subject identifier from the identity provider.
+"""
+type User {
+  id: ID!
+  preferredUsername: String!
+  sub: String!
+}
+
+scalar _Any
+
+union _Entity = BalanceSnapshot | BankAccount | BankConnection | Budget | Category | CategoryRule | HoldingSnapshot | Organization | RecurringPayment | Transaction | User
+
+type _Service {
+  sdl: String!
+}

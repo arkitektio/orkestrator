@@ -1,0 +1,17 @@
+mutation DetectRecurring($accounts: [ID!]) {
+  detectRecurring(accounts: $accounts) {
+    ...ListRecurringPayment
+  }
+}
+
+mutation SetRecurringStatuses($ids: [ID!]!, $status: RecurringStatus!) {
+  setRecurringStatuses(ids: $ids, status: $status) {
+    ...ListRecurringPayment
+  }
+}
+
+mutation SetRecurringStatus($input: SetRecurringStatusInput!) {
+  setRecurringStatus(input: $input) {
+    ...ListRecurringPayment
+  }
+}

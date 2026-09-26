@@ -1,4 +1,5 @@
 import type { ALPAKA_DIALOGS } from "@/alpaka/dialogRegistry";
+import type { BANK_DIALOGS } from "@/bank/dialogRegistry";
 import type { ELEKTRO_DIALOGS } from "@/elektro/dialogRegistry";
 import type { FLUSS_DIALOGS } from "@/fluss/dialogRegistry";
 import type { KABINET_DIALOGS } from "@/kabinet/dialogRegistry";
@@ -14,6 +15,7 @@ import type { REKUEST_DIALOGS } from "@/rekuest/dialogRegistry";
  * the runtime registry is `MODULE_DIALOGS` in `core/modules/registries`.
  */
 export type ModuleDialogs = typeof ALPAKA_DIALOGS &
+  typeof BANK_DIALOGS &
   typeof ELEKTRO_DIALOGS &
   typeof FLUSS_DIALOGS &
   typeof KABINET_DIALOGS &

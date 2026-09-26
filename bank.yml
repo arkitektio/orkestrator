@@ -1,0 +1,31 @@
+overwrite: true
+schema:
+  "http://jhnnsrs-lab/bank/schema":
+    handleAsSDL: true
+documents: "graphql/bank/**/*.graphql"
+generates:
+  src/renderer/src/bank/api/fragments.ts:
+    plugins:
+      - "fragment-matcher"
+  src/renderer/src/bank/api/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+    config:
+      withHooks: true
+      reactApolloVersion: 3
+      apolloReactHooksImportFrom: "@/bank/api/funcs"
+      # Reference fragment types by name instead of inlining them: deep fragments
+      # otherwise blow graphql.ts up to many MB and stall tsc.
+      inlineFragmentTypes: combine
+      scalars:
+        # Isoformat strings on the wire. Decimals stay strings so money is
+        # never rounded through a float; parse only where you format.
+        Date: "string"
+        DateTime: "string"
+        Decimal: "string"
+
+  graphql/schemas/bank.graphql:
+    plugins:
+      - schema-ast

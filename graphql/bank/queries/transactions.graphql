@@ -1,0 +1,19 @@
+query ListTransactions(
+  $filters: TransactionFilter
+  $ordering: [TransactionOrder!]! = [{ bookingDate: DESC }]
+  $pagination: OffsetPaginationInput
+) {
+  transactions(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListTransaction
+  }
+}
+
+query TransactionsCount($filters: TransactionFilter) {
+  transactionsCount(filters: $filters)
+}
+
+query GetTransaction($id: ID!) {
+  transaction(id: $id) {
+    ...Transaction
+  }
+}

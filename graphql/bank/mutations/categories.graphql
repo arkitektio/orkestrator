@@ -1,0 +1,41 @@
+mutation CreateCategory($input: CreateCategoryInput!) {
+  createCategory(input: $input) {
+    ...Category
+  }
+}
+
+mutation UpdateCategory($input: UpdateCategoryInput!) {
+  updateCategory(input: $input) {
+    ...Category
+  }
+}
+
+mutation DeleteCategory($id: ID!) {
+  deleteCategory(id: $id)
+}
+
+mutation SeedDefaultCategories {
+  seedDefaultCategories {
+    ...ListCategory
+  }
+}
+
+mutation CreateCategoryRule($input: CreateCategoryRuleInput!) {
+  createCategoryRule(input: $input) {
+    ...CategoryRule
+  }
+}
+
+mutation UpdateCategoryRule($input: UpdateCategoryRuleInput!) {
+  updateCategoryRule(input: $input) {
+    ...CategoryRule
+  }
+}
+
+mutation DeleteCategoryRule($id: ID!) {
+  deleteCategoryRule(id: $id)
+}
+
+mutation ReapplyRules($accounts: [ID!]) {
+  reapplyRules(accounts: $accounts)
+}

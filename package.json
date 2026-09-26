@@ -34,6 +34,7 @@
     "lovekit": "graphql-codegen --config lovekit.yml",
     "lok": "graphql-codegen --config lok.yml",
     "elektro": "graphql-codegen --config elektro.yml",
+    "bank": "graphql-codegen --config bank.yml",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",

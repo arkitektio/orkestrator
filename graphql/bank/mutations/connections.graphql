@@ -1,0 +1,51 @@
+mutation StartBankLink($input: StartBankLinkInput!) {
+  startBankLink(input: $input) {
+    ...AuthSession
+  }
+}
+
+mutation CompleteBankLink($input: CompleteBankLinkInput!) {
+  completeBankLink(input: $input) {
+    ...BankConnection
+  }
+}
+
+mutation RevokeBankConnection($id: ID!) {
+  revokeBankConnection(id: $id) {
+    ...BankConnection
+  }
+}
+
+mutation SyncAccount($id: ID!) {
+  syncAccount(id: $id) {
+    ...SyncResult
+  }
+}
+
+mutation SyncConnection($id: ID!) {
+  syncConnection(id: $id) {
+    ...SyncResult
+  }
+}
+
+mutation StartScalableLink {
+  startScalableLink {
+    ...AuthSession
+  }
+}
+
+mutation CompleteScalableLink($state: String!) {
+  completeScalableLink(state: $state) {
+    ...BankConnection
+  }
+}
+
+mutation ResumeLink($connection: ID!) {
+  resumeLink(connection: $connection) {
+    ...AuthSession
+  }
+}
+
+mutation CancelLink($connection: ID!) {
+  cancelLink(connection: $connection)
+}

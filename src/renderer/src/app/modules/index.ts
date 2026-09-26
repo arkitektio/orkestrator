@@ -1,5 +1,7 @@
 import { manifest as alpaka } from "@/alpaka/manifest";
 import { service as alpakaService } from "@/alpaka/service";
+import { manifest as bank } from "@/bank/manifest";
+import { service as bankService } from "@/bank/service";
 import { manifest as dokuments } from "@/dokuments/manifest";
 import { service as dokumentsService } from "@/dokuments/service";
 import { manifest as elektro } from "@/elektro/manifest";
@@ -45,6 +47,7 @@ export const MODULES = [
   { manifest: elektro, service: elektroService },
   { manifest: lovekit, service: lovekitService },
   { manifest: dokuments, service: dokumentsService },
+  { manifest: bank, service: bankService },
 ] as const;
 
 /** The session's own module: lok, served by the self service. Not on the rail list. */

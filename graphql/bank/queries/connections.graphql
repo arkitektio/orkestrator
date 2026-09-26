@@ -1,0 +1,21 @@
+query ListBankConnections($filters: BankConnectionFilter, $pagination: OffsetPaginationInput) {
+  bankConnections(filters: $filters, pagination: $pagination) {
+    ...ListBankConnection
+  }
+}
+
+query GetBankConnection($id: ID!) {
+  bankConnection(id: $id) {
+    ...BankConnection
+  }
+}
+
+query BankInstitutions($country: String!) {
+  bankInstitutions(country: $country) {
+    name
+    country
+    logo
+    bic
+    maximumConsentDays
+  }
+}

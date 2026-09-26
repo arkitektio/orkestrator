@@ -5,6 +5,7 @@ import { validateManifest } from "@/core/modules/spec";
 
 const MODULE_FILES = [
   "@/alpaka/module",
+  "@/bank/module",
   "@/dokuments/module",
   "@/elektro/module",
   "@/fluss/module",

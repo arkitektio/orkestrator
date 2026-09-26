@@ -1,4 +1,5 @@
 import { ALPAKA_MODULE } from "@/alpaka/module";
+import { BANK_MODULE } from "@/bank/module";
 import { DOKUMENTS_MODULE } from "@/dokuments/module";
 import { ELEKTRO_MODULE } from "@/elektro/module";
 import { FLUSS_MODULE } from "@/fluss/module";
@@ -15,7 +16,7 @@ import { REKUEST_MODULE } from "@/rekuest/module";
 /**
  * Registers every first-party module with the module host. Imported for its
  * side effect by the app's entry (`app/AppProvider`) and nothing else — see
- * `lib/module-host/host` for why registries never import this. A first-party
+ * `core/modules/host/host` for why registries never import this. A first-party
  * module the host refuses (invalid manifest, clashing ids) is a bug: this
  * throws.
  *
@@ -32,10 +33,16 @@ export const MODULE_DEFINITIONS = [
   ELEKTRO_MODULE,
   LOVEKIT_MODULE,
   DOKUMENTS_MODULE,
+  BANK_MODULE,
   LOK_MODULE,
 ] as const;
 
-registerModules(MODULE_DEFINITIONS);
+const unregister = registerModules(MODULE_DEFINITIONS);
+
+// Dev: editing a module hot-reloads this file (through AppProvider's refresh
+// boundary) while the module host store keeps its state, so the new run would
+// be refused as a duplicate. The old run leaves the host first.
+import.meta.hot?.dispose(unregister);
 
 type UnionToIntersection<U> = (U extends unknown ? (value: U) => void : never) extends (
   value: infer I,
