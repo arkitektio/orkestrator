@@ -2,13 +2,13 @@ import { PageAction } from "@/core/ui/page-action";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { BankCategory } from "@/bank/linkers";
 import { toast } from "sonner";
-import { ListCategoriesDocument, useSeedDefaultCategoriesMutation } from "../api/graphql";
+import { ListCategoriesDocument, useSyncBaseCategoriesMutation } from "../api/graphql";
 import CategoryList from "../components/lists/CategoryList";
 
 const ROOTS = { roots: true };
 
 const CategoriesPage = () => {
-  const [seed, { loading }] = useSeedDefaultCategoriesMutation({ refetchQueries: [ListCategoriesDocument] });
+  const [sync, { loading }] = useSyncBaseCategoriesMutation({ refetchQueries: [ListCategoriesDocument] });
   return (
     <BankCategory.ListPage
       title="Categories"
@@ -22,8 +22,11 @@ const CategoriesPage = () => {
             priority={-10}
             disabled={loading}
             onClick={() =>
-              seed()
-                .then((r) => toast.success(`Added ${r.data?.seedDefaultCategories.length ?? 0} categories`))
+              sync()
+                .then((r) => {
+                  const added = r.data?.syncBaseCategories.length ?? 0;
+                  toast.success(added ? `Added ${added} default categories` : "All default categories are there");
+                })
                 .catch((e: Error) => toast.error(e.message))
             }
           >

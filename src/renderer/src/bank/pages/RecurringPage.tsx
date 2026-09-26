@@ -2,6 +2,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { BankRecurring } from "@/bank/linkers";
 import { toast } from "sonner";
 import { ListRecurringPaymentsDocument, RecurringStatus, useDetectRecurringMutation } from "../api/graphql";
+import { RecurringSummary } from "../components/insights/recurring/RecurringSummary";
 import RecurringList from "../components/lists/RecurringList";
 
 const DETECTED = { status: RecurringStatus.Detected };
@@ -27,6 +28,7 @@ const RecurringPage = () => {
       }
     >
       <div className="p-3 flex flex-col gap-6">
+        <RecurringSummary />
         <RecurringList title="Confirmed" filters={CONFIRMED} defaultLimit={50} />
         <RecurringList title="To review" filters={DETECTED} defaultLimit={50} />
       </div>

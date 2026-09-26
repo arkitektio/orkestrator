@@ -17,6 +17,8 @@ export const manifest: ModuleManifest = {
     { identifier: "@bank/account", name: "Bank Account", datum: false, path: "accounts/:id" },
     { identifier: "@bank/transaction", name: "Transaction (Bank)", datum: false, path: "transactions/:id" },
     { identifier: "@bank/category", name: "Category (Bank)", datum: false, path: "categories/:id" },
+    { identifier: "@bank/merchant", name: "Merchant", datum: false, path: "merchants/:id" },
+    { identifier: "@bank/place", name: "Place", datum: false, path: "places/:id" },
     { identifier: "@bank/rule", name: "Category Rule", datum: false, path: "rules/:id" },
     { identifier: "@bank/budget", name: "Budget", datum: false, path: "budgets/:id" },
     { identifier: "@bank/recurring", name: "Recurring Payment", datum: false, path: "recurring/:id" },

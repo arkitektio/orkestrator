@@ -15,11 +15,14 @@ import { ArrowUpDown, Filter } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { KIND_GROUPS, KindGroup } from "../kinds";
-import { Direction, Ordering, TransactionFilter, TransactionOrder } from "../../api/graphql";
+import { CategorySource, Direction, Ordering, TransactionFilter, TransactionOrder } from "../../api/graphql";
 
-type Sort = "date" | "amount-out" | "amount-in";
+type Sort = "relevance" | "date" | "amount-out" | "amount-in";
 
+// An explicit ordering replaces the server's search ranking (substring matches
+// first, then similarity), so "Best match" sends none.
 const SORTS: Record<Sort, { label: string; ordering: TransactionOrder[] }> = {
+  relevance: { label: "Best match", ordering: [] },
   date: { label: "Newest", ordering: [{ bookingDate: Ordering.DescNullsFirst }] },
   "amount-out": { label: "Largest out", ordering: [{ amount: Ordering.Asc }] },
   "amount-in": { label: "Largest in", ordering: [{ amount: Ordering.Desc }] },
@@ -30,6 +33,7 @@ const SORTS: Record<Sort, { label: string; ordering: TransactionOrder[] }> = {
  * itself carries no toolbar). `base` scopes it, e.g. to one account; `kinds`
  * adds the broker kind filter (depots). The URL seeds it once
  * (`?uncategorized=1`, `?search=…`), so a link can open a filtered list.
+ * While searching, the list is ranked by match unless a sort is picked.
  */
 export const useTransactionFilterBar = (base?: TransactionFilter, { kinds = false }: { kinds?: boolean } = {}) => {
   const [params] = useSearchParams();
@@ -38,7 +42,10 @@ export const useTransactionFilterBar = (base?: TransactionFilter, { kinds = fals
   const [uncategorized, setUncategorized] = useState(() => params.get("uncategorized") === "1");
   const [hideTransfers, setHideTransfers] = useState(() => params.get("uncategorized") === "1");
   const [group, setGroup] = useState<KindGroup | "ALL">("ALL");
-  const [sort, setSort] = useState<Sort>("date");
+  const [guessed, setGuessed] = useState(false);
+  const [picked, setPicked] = useState<Sort | null>(null);
+  const searching = search.trim() !== "";
+  const sort: Sort = picked && (picked !== "relevance" || searching) ? picked : searching ? "relevance" : "date";
 
   const filters = useMemo<TransactionFilter>(
     () => ({
@@ -47,13 +54,14 @@ export const useTransactionFilterBar = (base?: TransactionFilter, { kinds = fals
       ...(direction !== "ANY" ? { direction } : {}),
       ...(uncategorized ? { uncategorized: true } : {}),
       ...(hideTransfers ? { isTransfer: false } : {}),
+      ...(guessed ? { categorySource: CategorySource.Semantic } : {}),
       ...(group !== "ALL" ? { kinds: [...KIND_GROUPS[group].kinds] } : {}),
     }),
-    [JSON.stringify(base), search, direction, uncategorized, hideTransfers, group],
+    [JSON.stringify(base), search, direction, uncategorized, hideTransfers, guessed, group],
   );
   const ordering = SORTS[sort].ordering;
   const active =
-    (direction !== "ANY" ? 1 : 0) + (uncategorized ? 1 : 0) + (hideTransfers ? 1 : 0) + (group !== "ALL" ? 1 : 0);
+    (direction !== "ANY" ? 1 : 0) + (uncategorized ? 1 : 0) + (hideTransfers ? 1 : 0) + (guessed ? 1 : 0) + (group !== "ALL" ? 1 : 0);
 
   const actions = (
     <>
@@ -94,6 +102,9 @@ export const useTransactionFilterBar = (base?: TransactionFilter, { kinds = fals
             <DropdownMenuCheckboxItem checked={uncategorized} onCheckedChange={(v) => setUncategorized(!!v)}>
               Uncategorized only
             </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem checked={guessed} onCheckedChange={(v) => setGuessed(!!v)}>
+              Auto-categorized only
+            </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem checked={hideTransfers} onCheckedChange={(v) => setHideTransfers(!!v)}>
               Hide transfers
             </DropdownMenuCheckboxItem>
@@ -109,12 +120,14 @@ export const useTransactionFilterBar = (base?: TransactionFilter, { kinds = fals
             </ActionTrigger>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuRadioGroup value={sort} onValueChange={(v) => setSort(v as Sort)}>
-              {(Object.keys(SORTS) as Sort[]).map((key) => (
-                <DropdownMenuRadioItem key={key} value={key}>
-                  {SORTS[key].label}
-                </DropdownMenuRadioItem>
-              ))}
+            <DropdownMenuRadioGroup value={sort} onValueChange={(v) => setPicked(v as Sort)}>
+              {(Object.keys(SORTS) as Sort[])
+                .filter((key) => key !== "relevance" || searching)
+                .map((key) => (
+                  <DropdownMenuRadioItem key={key} value={key}>
+                    {SORTS[key].label}
+                  </DropdownMenuRadioItem>
+                ))}
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>

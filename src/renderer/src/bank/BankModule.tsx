@@ -13,12 +13,19 @@ import CategoriesPage from "./pages/CategoriesPage";
 import CategoryPage from "./pages/CategoryPage";
 import ConnectionPage from "./pages/ConnectionPage";
 import ConnectionsPage from "./pages/ConnectionsPage";
+import DiscoverMerchantsPage from "./pages/DiscoverMerchantsPage";
 import HomePage from "./pages/HomePage";
+import InsightsPage from "./pages/InsightsPage";
+import MerchantPage from "./pages/MerchantPage";
+import MerchantsPage from "./pages/MerchantsPage";
+import PlacePage from "./pages/PlacePage";
+import PlacesPage from "./pages/PlacesPage";
 import PortfolioPage from "./pages/PortfolioPage";
 import RecurringPage from "./pages/RecurringPage";
 import RecurringPaymentPage from "./pages/RecurringPaymentPage";
 import RulePage from "./pages/RulePage";
 import RulesPage from "./pages/RulesPage";
+import TopMerchantsPage from "./pages/TopMerchantsPage";
 import TransactionPage from "./pages/TransactionPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import StandardPane from "./panes/StandardPane";
@@ -29,6 +36,7 @@ export const BankModule: React.FC = () => (
       <Routes>
         {/* Where `orkestrator://bank/auth/callback?code&state` lands (coord relay). */}
         <Route path="auth/callback" element={<AuthCallbackPage />} />
+        <Route path="insights" element={<InsightsPage />} />
         <Route path="accounts" element={<AccountsPage />} />
         <Route path="accounts/:id" element={<AccountPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
@@ -39,6 +47,12 @@ export const BankModule: React.FC = () => (
         <Route path="categories/:id" element={<CategoryPage />} />
         <Route path="rules" element={<RulesPage />} />
         <Route path="rules/:id" element={<RulePage />} />
+        <Route path="merchants" element={<MerchantsPage />} />
+        <Route path="merchants/top" element={<TopMerchantsPage />} />
+        <Route path="merchants/discover" element={<DiscoverMerchantsPage />} />
+        <Route path="merchants/:id" element={<MerchantPage />} />
+        <Route path="places" element={<PlacesPage />} />
+        <Route path="places/:id" element={<PlacePage />} />
         <Route path="portfolio" element={<PortfolioPage />} />
         <Route path="budgets" element={<BudgetsPage />} />
         <Route path="budgets/:id" element={<BudgetPage />} />

@@ -2,20 +2,42 @@ import type { Service } from "@/core/connection/arkitekt/types";
 import { buildDeleteAction } from "@/core/smart/localactions/builders/deleteAction";
 import { Action, ActionParams } from "@/core/smart/localactions/LocalActionProvider";
 import { ApolloClient, NormalizedCache } from "@apollo/client";
-import { ArrowLeftRight, Check, EyeOff, Link2, ListPlus, PiggyBank, RefreshCw, Tag, Tags, Unplug, X } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Check,
+  EyeOff,
+  Link2,
+  ListPlus,
+  MapPin,
+  Merge,
+  Pencil,
+  Store,
+  PiggyBank,
+  RefreshCw,
+  Tag,
+  Tags,
+  Trash2,
+  Unplug,
+  X,
+} from "lucide-react";
 import { toastText } from "./errors";
 import {
   CancelLinkDocument,
+  AssignMerchantDocument,
   CategorizeTransactionsDocument,
   DeleteBudgetDocument,
-  DeleteCategoryDocument,
   DeleteCategoryRuleDocument,
+  DeleteMerchantDocument,
+  DeleteMerchantLocationDocument,
+  GetMerchantLocationDocument,
+  GetMerchantLocationQuery,
   GetBankConnectionDocument,
   GetBankConnectionQuery,
   GetTransactionDocument,
   GetTransactionQuery,
   ListBankConnectionsDocument,
   MarkTransfersDocument,
+  MergeMerchantsDocument,
   Provider,
   RecurringStatus,
   RevokeBankConnectionDocument,
@@ -28,6 +50,8 @@ const CONNECTION = "@bank/connection";
 const ACCOUNT = "@bank/account";
 const TRANSACTION = "@bank/transaction";
 const CATEGORY = "@bank/category";
+const MERCHANT = "@bank/merchant";
+const PLACE = "@bank/place";
 const RULE = "@bank/rule";
 const BUDGET = "@bank/budget";
 const RECURRING = "@bank/recurring";
@@ -208,6 +232,90 @@ export const BANK_ACTIONS: Record<string, Action> = {
       onProgress?.(100);
     },
   },
+  "bank-assign-merchant-into": {
+    title: "Set merchant",
+    description: "Say the dragged transactions were with this merchant",
+    icon: Store,
+    conditions: [
+      { type: "identifier", identifier: TRANSACTION },
+      { type: "pidentifier", identifier: MERCHANT },
+    ],
+    execute: async ({ services, state, onProgress }) => {
+      const merchant = state.right?.find((s) => s.identifier === MERCHANT);
+      if (!merchant) throw new Error("Drop the transactions onto a merchant");
+      const ids = idsOf(state, TRANSACTION);
+      if (ids.length === 0) throw new Error("No transactions selected");
+      await bankMutate(services, {
+        mutation: AssignMerchantDocument,
+        variables: { input: { transactions: ids, merchant: { id: String(merchant.id) } } },
+      });
+      onProgress?.(100);
+    },
+  },
+  "bank-assign-place-into": {
+    title: "Set place",
+    description: "Say the dragged transactions happened at this place",
+    icon: MapPin,
+    conditions: [
+      { type: "identifier", identifier: TRANSACTION },
+      { type: "pidentifier", identifier: PLACE },
+    ],
+    execute: async ({ services, state, onProgress }) => {
+      const place = state.right?.find((s) => s.identifier === PLACE);
+      if (!place) throw new Error("Drop the transactions onto a place");
+      const ids = idsOf(state, TRANSACTION);
+      if (ids.length === 0) throw new Error("No transactions selected");
+      // A place belongs to one merchant; the link needs both.
+      const { data } = await bankClient(services).query<GetMerchantLocationQuery>({
+        query: GetMerchantLocationDocument,
+        variables: { id: String(place.id) },
+      });
+      await bankMutate(services, {
+        mutation: AssignMerchantDocument,
+        variables: {
+          input: {
+            transactions: ids,
+            merchant: { id: data.merchantLocation.merchant.id },
+            location: { id: String(place.id) },
+          },
+        },
+      });
+      onProgress?.(100);
+    },
+  },
+  "bank-assign-merchant": {
+    title: "Set merchant",
+    description: "Say who the selected transactions were with, and where",
+    icon: Store,
+    conditions: [{ type: "identifier", identifier: TRANSACTION }, { type: "nopartner" }],
+    execute: async ({ dialog, state }) => {
+      dialog.openDialog("bankassignmerchant", { ids: idsOf(state, TRANSACTION) }, { size: "small" });
+    },
+  },
+  "bank-merge-merchant-into": {
+    title: "Merge into this merchant",
+    description: "Fold the dragged merchant into this one: its aliases, places and transactions move over",
+    icon: Merge,
+    conditions: [
+      { type: "identifier", identifier: MERCHANT },
+      { type: "pidentifier", identifier: MERCHANT },
+    ],
+    execute: async ({ services, state, confirm }) => {
+      const into = state.right?.find((s) => s.identifier === MERCHANT);
+      const merchants = idsOf(state, MERCHANT).filter((id) => id !== String(into?.id));
+      if (!into || merchants.length === 0) throw new Error("Drop a merchant onto another one");
+      const ok = await confirm({
+        title: merchants.length === 1 ? "Merge this merchant?" : `Merge ${merchants.length} merchants?`,
+        description: `They are folded into ${into.label ?? "the target"} and deleted.`,
+        confirmLabel: "Merge",
+        destructive: true,
+      });
+      if (!ok) return;
+      for (const merchant of merchants) {
+        await bankMutate(services, { mutation: MergeMerchantsDocument, variables: { merchant, into: String(into.id) } });
+      }
+    },
+  },
   "bank-rule-from-transaction": {
     title: "Rule from counterparty",
     description: "Categorize every transaction from this counterparty the same way",
@@ -270,13 +378,81 @@ export const BANK_ACTIONS: Record<string, Action> = {
     RecurringStatus.Ignored,
     EyeOff,
   ),
-  "bank-delete-category": buildDeleteAction({
+  "bank-edit-category": {
+    title: "Edit category",
+    description: "Rename, describe, move or hide the category",
+    icon: Pencil,
+    conditions: [{ type: "identifier", identifier: CATEGORY }, { type: "nopartner" }],
+    execute: async ({ dialog, state }) => {
+      dialog.openDialog("bankeditcategory", { id: idsOf(state, CATEGORY)[0] }, { size: "medium" });
+    },
+  },
+  "bank-delete-category": {
     title: "Delete category",
-    identifier: CATEGORY,
-    description: "Delete the category",
+    description: "Delete the category, after showing what goes with it",
+    icon: Trash2,
+    conditions: [{ type: "identifier", identifier: CATEGORY }, { type: "nopartner" }],
+    execute: async ({ dialog, state }) => {
+      const category = state.left.find((s) => s.identifier === CATEGORY);
+      if (!category) throw new Error("No category selected");
+      dialog.openDialog(
+        "bankdeletecategory",
+        { id: String(category.id), name: category.label ?? undefined },
+        { size: "small" },
+      );
+    },
+  },
+  "bank-edit-merchant": {
+    title: "Edit merchant",
+    description: "Rename the merchant or set its category, website and logo",
+    icon: Pencil,
+    conditions: [{ type: "identifier", identifier: MERCHANT }, { type: "nopartner" }],
+    execute: async ({ dialog, state }) => {
+      dialog.openDialog("bankeditmerchant", { id: idsOf(state, MERCHANT)[0] }, { size: "medium" });
+    },
+  },
+  "bank-merge-merchant": {
+    title: "Merge into…",
+    description: "Fold this merchant into another one",
+    icon: Merge,
+    conditions: [{ type: "identifier", identifier: MERCHANT }, { type: "nopartner" }],
+    execute: async ({ dialog, state }) => {
+      dialog.openDialog("bankmergemerchant", { id: idsOf(state, MERCHANT)[0] }, { size: "small" });
+    },
+  },
+  "bank-add-place": {
+    title: "Add place",
+    description: "Add a store of this merchant",
+    icon: MapPin,
+    conditions: [{ type: "identifier", identifier: MERCHANT }, { type: "nopartner" }],
+    execute: async ({ dialog, state }) => {
+      dialog.openDialog("bankplace", { merchant: idsOf(state, MERCHANT)[0] }, { size: "medium" });
+    },
+  },
+  "bank-edit-place": {
+    title: "Edit place",
+    description: "Change the place's name, address or store number",
+    icon: Pencil,
+    conditions: [{ type: "identifier", identifier: PLACE }, { type: "nopartner" }],
+    execute: async ({ dialog, state }) => {
+      dialog.openDialog("bankplace", { id: idsOf(state, PLACE)[0] }, { size: "medium" });
+    },
+  },
+  "bank-delete-place": buildDeleteAction({
+    title: "Delete place",
+    identifier: PLACE,
+    description: "Delete the place; its transactions keep their merchant",
     service: "bank",
-    typename: "Category",
-    mutation: DeleteCategoryDocument,
+    typename: "MerchantLocation",
+    mutation: DeleteMerchantLocationDocument,
+  }),
+  "bank-delete-merchant": buildDeleteAction({
+    title: "Delete merchant",
+    identifier: MERCHANT,
+    description: "Delete the merchant and its places; its transactions stay",
+    service: "bank",
+    typename: "Merchant",
+    mutation: DeleteMerchantDocument,
   }),
   "bank-delete-rule": buildDeleteAction({
     title: "Delete rule",

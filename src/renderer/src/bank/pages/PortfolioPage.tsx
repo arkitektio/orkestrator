@@ -5,6 +5,7 @@ import { LineChart } from "lucide-react";
 import { useMemo } from "react";
 import { Provider, usePortfolioQuery } from "../api/graphql";
 import { PortfolioOverview } from "../components/holdings/PortfolioOverview";
+import { PortfolioInsights } from "../components/insights/portfolio/PortfolioInsights";
 import { formatMoney } from "../format";
 
 /**
@@ -47,6 +48,7 @@ const PortfolioPage = () => {
         </div>
       ) : (
         <div className="flex flex-col gap-8 p-6">
+          <PortfolioInsights />
           <PortfolioOverview holdings={holdings} />
           {depots.length > 1 && (
             <section className="flex flex-col gap-2">

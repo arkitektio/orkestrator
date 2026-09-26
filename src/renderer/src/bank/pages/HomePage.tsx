@@ -2,7 +2,7 @@ import { PageLayout } from "@/core/layout/PageLayout";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { cn } from "@/core/util/utils";
-import { BankAccount, BankBudget, BankRecurring, BankTransaction } from "@/bank/linkers";
+import { BankAccount, BankBudget, BankCategory, BankRecurring, BankTransaction } from "@/bank/linkers";
 import { Landmark } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -15,8 +15,10 @@ import {
   useListBankAccountsQuery,
   useListBankConnectionsQuery,
   useListRecurringPaymentsQuery,
+  useMerchantCandidatesQuery,
+  useMerchantLocationsGeojsonQuery,
   useSpendingByCategoryQuery,
-  useTopCounterpartiesQuery,
+  useSpendingByMerchantQuery,
   useTransactionsCountQuery,
 } from "../api/graphql";
 import AccountCard from "../components/cards/AccountCard";
@@ -25,7 +27,11 @@ import RecurringCard from "../components/cards/RecurringCard";
 import { CashflowChart } from "../components/charts/CashflowChart";
 import { dominantCurrency } from "../components/charts/currency";
 import { SpendingBreakdown } from "../components/charts/SpendingBreakdown";
+import { AttentionChips } from "../components/home/AttentionChips";
+import { ExploreLinks } from "../components/home/ExploreLinks";
 import TransactionList from "../components/lists/TransactionList";
+import { MerchantMap } from "../components/map/MerchantMap";
+import { MerchantSpending } from "../components/merchants/MerchantSpending";
 import { daysAgo, firstOfMonth, formatMoney, toNumber } from "../format";
 
 const Section = ({
@@ -96,7 +102,11 @@ const Overview = () => {
   const thisMonth = useCashflowQuery({ variables: { dateFrom: monthStart, granularity: Granularity.Month } });
   const spending = useSpendingByCategoryQuery({ variables: { dateFrom: monthStart } });
   const budgets = useBudgetStatusQuery();
-  const counterparties = useTopCounterpartiesQuery({ variables: { dateFrom: monthStart, limit: 6 } });
+  const merchants = useSpendingByMerchantQuery({ variables: { dateFrom: monthStart, limit: 12 } });
+  const connections = useListBankConnectionsQuery({ variables: { pagination: { limit: 50 } } });
+  const candidates = useMerchantCandidatesQuery();
+  // Same variables as the map's own query, so the preview reuses this result.
+  const places = useMerchantLocationsGeojsonQuery();
   const recurring = useListRecurringPaymentsQuery({
     variables: { filters: { status: RecurringStatus.Confirmed }, pagination: { limit: 5 } },
   });
@@ -132,7 +142,12 @@ const Overview = () => {
 
   const hasSpending = (spending.data?.spendingByCategory ?? []).some((total) => toNumber(total.expense) > 0);
   const budgetRows = budgets.data?.budgetStatus ?? [];
-  const topRows = counterparties.data?.topCounterparties ?? [];
+  const uncategorizedCount = uncategorized.data?.transactionsCount ?? 0;
+  const discoverCount = candidates.data?.merchantCandidates.length ?? 0;
+  const reauthCount = (connections.data?.bankConnections ?? []).filter((c) => c.needsReauth).length;
+  const hasDepot = (accounts.data?.bankAccounts ?? []).some((account) => account.kind === AccountKind.Depot);
+  const hasPlaces = (places.data?.merchantLocationsGeojson.features.length ?? 0) > 0;
+  const topRows = (merchants.data?.spendingByMerchant ?? []).filter((row) => toNumber(row.expense) > 0);
 
   return (
     <div className="flex flex-col gap-8 p-6">
@@ -149,28 +164,28 @@ const Overview = () => {
         )}
       </div>
 
-      {!!uncategorized.data?.transactionsCount && (
-        <Link
-          to="/bank/transactions?uncategorized=1"
-          className="-mt-4 self-start rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          {uncategorized.data.transactionsCount} uncategorized this month · review
-        </Link>
-      )}
+      <AttentionChips uncategorized={uncategorizedCount} discover={discoverCount} reauth={reauthCount} />
+
+      <ExploreLinks uncategorized={uncategorizedCount} discover={discoverCount} hasDepot={hasDepot} />
 
       <Section
         title="Cashflow"
         link={
-          <ToggleGroup
-            type="single"
-            size="sm"
-            variant="outline"
-            value={weekly ? "week" : "month"}
-            onValueChange={(v) => v && setWeekly(v === "week")}
-          >
-            <ToggleGroupItem value="month">Months</ToggleGroupItem>
-            <ToggleGroupItem value="week">Weeks</ToggleGroupItem>
-          </ToggleGroup>
+          <span className="flex items-center gap-3">
+            <Link to="/bank/insights" className="text-xs text-muted-foreground hover:text-foreground">
+              Insights
+            </Link>
+            <ToggleGroup
+              type="single"
+              size="sm"
+              variant="outline"
+              value={weekly ? "week" : "month"}
+              onValueChange={(v) => v && setWeekly(v === "week")}
+            >
+              <ToggleGroupItem value="month">Months</ToggleGroupItem>
+              <ToggleGroupItem value="week">Weeks</ToggleGroupItem>
+            </ToggleGroup>
+          </span>
         }
       >
         <CashflowChart buckets={cashflow.data?.cashflow ?? []} weekly={weekly} />
@@ -179,7 +194,14 @@ const Overview = () => {
       {(hasSpending || budgetRows.length > 0) && (
         <div className="grid gap-8 lg:grid-cols-2">
           {hasSpending && (
-            <Section title="Spending this month">
+            <Section
+              title="Spending this month"
+              link={
+                <BankCategory.ListLink className="text-xs text-muted-foreground hover:text-foreground">
+                  Categories
+                </BankCategory.ListLink>
+              }
+            >
               <SpendingBreakdown totals={spending.data!.spendingByCategory} />
             </Section>
           )}
@@ -205,17 +227,20 @@ const Overview = () => {
       {(topRows.length > 0 || upcoming.length > 0) && (
         <div className="grid gap-8 lg:grid-cols-2">
           {topRows.length > 0 && (
-            <Section title="Where it went this month">
-              <div className="flex flex-col divide-y text-sm">
-                {topRows.map((row) => (
-                  <div key={row.counterparty + row.currency} className="flex items-center justify-between gap-3 py-1.5">
-                    <span className="truncate">{row.counterparty}</span>
-                    <span className="shrink-0 tabular-nums text-muted-foreground">
-                      {row.count}× · {formatMoney(row.total, row.currency)}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            <Section
+              title="Where it went this month"
+              link={
+                <span className="flex gap-3 text-xs text-muted-foreground">
+                  <Link to="/bank/merchants" className="hover:text-foreground">
+                    Merchants
+                  </Link>
+                  <Link to="/bank/merchants/top" className="hover:text-foreground">
+                    Top
+                  </Link>
+                </span>
+              }
+            >
+              <MerchantSpending totals={topRows} limit={6} />
             </Section>
           )}
           {upcoming.length > 0 && (
@@ -235,6 +260,24 @@ const Overview = () => {
             </Section>
           )}
         </div>
+      )}
+
+      {hasPlaces && (
+        <Section
+          title="Places"
+          link={
+            <span className="flex gap-3 text-xs text-muted-foreground">
+              <Link to="/bank/places" className="hover:text-foreground">
+                All places
+              </Link>
+              <Link to="/bank/merchants" className="hover:text-foreground">
+                Open map
+              </Link>
+            </span>
+          }
+        >
+          <MerchantMap className="h-72" />
+        </Section>
       )}
 
       {!!accounts.data?.bankAccounts.length && (

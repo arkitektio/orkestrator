@@ -2,9 +2,14 @@ query ListTransactions(
   $filters: TransactionFilter
   $ordering: [TransactionOrder!]! = [{ bookingDate: DESC }]
   $pagination: OffsetPaginationInput
+  $withSuggestions: Boolean! = false
 ) {
   transactions(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListTransaction
+    # Only for lists that offer one-click categorizing (the server ranks per row).
+    suggestedCategories(limit: 3) @include(if: $withSuggestions) {
+      ...SuggestionChip
+    }
   }
 }
 
@@ -15,5 +20,14 @@ query TransactionsCount($filters: TransactionFilter) {
 query GetTransaction($id: ID!) {
   transaction(id: $id) {
     ...Transaction
+  }
+}
+
+query TransactionSuggestions($id: ID!, $limit: Int! = 3) {
+  transaction(id: $id) {
+    id
+    suggestedCategories(limit: $limit) {
+      ...CategorySuggestion
+    }
   }
 }

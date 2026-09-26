@@ -7,15 +7,23 @@
       const result: PossibleTypesResultData = {
   "possibleTypes": {
     "_Entity": [
+      "AccountSyncer",
       "BalanceSnapshot",
       "BankAccount",
       "BankConnection",
+      "BigFileStore",
       "Budget",
       "Category",
       "CategoryRule",
       "HoldingSnapshot",
+      "ImportCategoryMapping",
+      "Merchant",
+      "MerchantAlias",
+      "MerchantLocation",
+      "MerchantRule",
       "Organization",
       "RecurringPayment",
+      "StatementImport",
       "Transaction",
       "User"
     ]

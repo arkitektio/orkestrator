@@ -1,6 +1,6 @@
 import { BankTransaction } from "@/bank/linkers";
 import { useTransactionsCountQuery } from "../api/graphql";
-import TransactionList from "../components/lists/TransactionList";
+import ReviewTransactionList from "../components/lists/ReviewTransactionList";
 import { useTransactionFilterBar } from "../components/filter/TransactionFilterBar";
 
 const TransactionsPage = () => {
@@ -14,7 +14,7 @@ const TransactionsPage = () => {
       pageActions={actions}
     >
       <div className="p-3">
-        <TransactionList filters={filters} ordering={ordering} defaultLimit={50} title="" />
+        <ReviewTransactionList filters={filters} ordering={ordering} defaultLimit={50} title="" />
       </div>
     </BankTransaction.ListPage>
   );

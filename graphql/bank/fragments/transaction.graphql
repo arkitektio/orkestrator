@@ -21,6 +21,12 @@ fragment ListTransaction on Transaction {
   isin
   quantity
   categorySource
+  merchantSource
+  merchant {
+    id
+    name
+    logoUrl
+  }
   category {
     ...TransactionCategory
   }
@@ -36,6 +42,14 @@ fragment Transaction on Transaction {
   counterpartyIban
   entryReference
   isTransferManual
+  merchantLocation {
+    id
+    name
+    street
+    city
+    latitude
+    longitude
+  }
   createdAt
   updatedAt
 }

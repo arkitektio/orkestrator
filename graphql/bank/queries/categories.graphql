@@ -15,7 +15,7 @@ query GetCategory($id: ID!) {
 }
 
 query SearchCategories($search: String, $values: [ID!]) {
-  options: categories(filters: { search: $search, ids: $values }, ordering: [{ name: ASC }], pagination: { limit: 20 }) {
+  options: categories(filters: { search: $search, ids: $values, hidden: false }, ordering: [{ name: ASC }], pagination: { limit: 20 }) {
     value: id
     label: name
   }
@@ -30,5 +30,14 @@ query ListCategoryRules($filters: CategoryRuleFilter, $pagination: OffsetPaginat
 query GetCategoryRule($id: ID!) {
   categoryRule(id: $id) {
     ...CategoryRule
+  }
+}
+
+query CategoryCandidates($id: ID!, $limit: Int! = 20) {
+  category(id: $id) {
+    id
+    candidates(limit: $limit) {
+      ...ListTransaction
+    }
   }
 }

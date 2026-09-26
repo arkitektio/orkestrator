@@ -6,12 +6,17 @@ import { BankAccount } from "@/bank/linkers";
 import { useDebounce } from "@uidotdev/usehooks";
 import {
   ArrowLeftRight,
+  ChartNoAxesCombined,
   Home,
   Landmark,
   LineChart,
   ListChecks,
   PiggyBank,
   Repeat,
+  Map as MapIcon,
+  MapPin,
+  Sparkles,
+  Trophy,
   Tags,
   Wallet,
 } from "lucide-react";
@@ -30,6 +35,10 @@ export const NavigationPane = () => {
         <PaneLink to="/bank">
           <Home />
           Overview
+        </PaneLink>
+        <PaneLink to="/bank/insights">
+          <ChartNoAxesCombined />
+          Insights
         </PaneLink>
         <PaneLink to="/bank/accounts">
           <Wallet />
@@ -62,6 +71,25 @@ export const NavigationPane = () => {
         <PaneLink to="/bank/connections">
           <Landmark />
           Connections
+        </PaneLink>
+      </SidePaneGroup>
+
+      <SidePaneGroup title="Merchants">
+        <PaneLink to="/bank/merchants">
+          <MapIcon />
+          Merchants
+        </PaneLink>
+        <PaneLink to="/bank/places">
+          <MapPin />
+          Places
+        </PaneLink>
+        <PaneLink to="/bank/merchants/top">
+          <Trophy />
+          Top merchants
+        </PaneLink>
+        <PaneLink to="/bank/merchants/discover">
+          <Sparkles />
+          Discover
         </PaneLink>
       </SidePaneGroup>
 

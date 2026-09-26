@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useCategorizeTransactionsMutation, useSearchCategoriesLazyQuery } from "../api/graphql";
+import { CategorySuggestions } from "../components/CategorySuggestions";
 import { toastText } from "../errors";
 
 /**
@@ -42,6 +43,9 @@ export const CategorizeForm = (props: { ids: string[]; category?: string | null 
           </DialogTitle>
           <DialogDescription>A category set by hand is never overridden by rules.</DialogDescription>
         </DialogHeader>
+        {props.ids.length === 1 && (
+          <CategorySuggestions transaction={props.ids[0]} exclude={props.category} onPick={apply} disabled={busy} />
+        )}
         <GraphQLSearchField name="category" label="Category" searchQuery={searchCategories} />
         <DialogFooter className="gap-2">
           <Button type="button" variant="ghost" disabled={busy} onClick={() => apply(null)}>

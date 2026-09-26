@@ -10,12 +10,26 @@ mutation UpdateCategory($input: UpdateCategoryInput!) {
   }
 }
 
-mutation DeleteCategory($id: ID!) {
-  deleteCategory(id: $id)
+mutation DeleteCategory($id: ID!, $reassignTo: ID, $dryRun: Boolean! = false) {
+  deleteCategory(id: $id, reassignTo: $reassignTo, dryRun: $dryRun) {
+    ...CategoryDeletion
+  }
 }
 
 mutation SeedDefaultCategories {
   seedDefaultCategories {
+    ...ListCategory
+  }
+}
+
+mutation SyncBaseCategories {
+  syncBaseCategories {
+    ...ListCategory
+  }
+}
+
+mutation RestoreBaseCategory($key: String!) {
+  restoreBaseCategory(key: $key) {
     ...ListCategory
   }
 }
@@ -36,6 +50,6 @@ mutation DeleteCategoryRule($id: ID!) {
   deleteCategoryRule(id: $id)
 }
 
-mutation ReapplyRules($accounts: [ID!]) {
-  reapplyRules(accounts: $accounts)
+mutation ReapplyRules($accounts: [ID!], $semanticAssign: Boolean! = true) {
+  reapplyRules(accounts: $accounts, semanticAssign: $semanticAssign)
 }

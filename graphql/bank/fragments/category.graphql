@@ -3,6 +3,10 @@ fragment ListCategory on Category {
   name
   color
   kind
+  key
+  isBase
+  hidden
+  description
   parent {
     id
     name
@@ -28,10 +32,46 @@ fragment CategoryRule on CategoryRule {
 fragment Category on Category {
   ...ListCategory
   createdAt
+  terms
   children(ordering: [{ name: ASC }]) {
     ...ListCategory
   }
   rules {
     ...CategoryRule
+  }
+}
+
+fragment CategoryDeletion on CategoryDeletion {
+  categories
+  transactions
+  rules
+  budgets
+  dismissedBaseKeys
+}
+
+fragment CategorySuggestion on CategorySuggestion {
+  score
+  reason
+  neighbours
+  category {
+    ...TransactionCategory
+  }
+  evidence {
+    id
+    counterparty
+    remittance
+    amount
+    currency
+    bookingDate
+    transactionDate
+  }
+}
+
+fragment SuggestionChip on CategorySuggestion {
+  score
+  reason
+  neighbours
+  category {
+    ...TransactionCategory
   }
 }

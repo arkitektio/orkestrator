@@ -24,7 +24,8 @@ import { syncBudget } from "../sync";
 import { BalanceChart } from "../components/charts/BalanceChart";
 import { useTransactionFilterBar } from "../components/filter/TransactionFilterBar";
 import { InfoList } from "../components/InfoList";
-import TransactionList from "../components/lists/TransactionList";
+import { AccountInsightsTab } from "../components/insights/tabs/AccountInsightsTab";
+import ReviewTransactionList from "../components/lists/ReviewTransactionList";
 import { Money } from "../components/Money";
 import { daysAgo, formatDay, formatIban, isoDay } from "../format";
 import { PortfolioOverview } from "../components/holdings/PortfolioOverview";
@@ -123,29 +124,34 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
         </>
       }
       additionalSidebars={
-        <Sidebars.Tab label="Info">
-          <InfoList
-            rows={[
-              ["IBAN", account.iban && <span className="font-mono text-xs">{formatIban(account.iban)}</span>],
-              ["Kind", account.kind.toLowerCase()],
-              ["Product", account.product],
-              ["Currency", account.currency],
-              [
-                "Bank",
-                account.connection && (
-                  <BankConnection.DetailLink object={account.connection}>
-                    {account.connection.aspspName}
-                  </BankConnection.DetailLink>
-                ),
-              ],
-              ["Linked", <Timestamp date={account.createdAt} relative />],
-              ["Last sync", account.lastSyncedAt && <Timestamp date={account.lastSyncedAt} relative />],
-              ["Syncs left today", budget.remaining],
-              ["Next sync allowed", budget.until && <Timestamp date={budget.until} relative />],
-              ["Balance as of", balance && `${formatDay(balance.date)} (${balance.balanceType})`],
-            ]}
-          />
-        </Sidebars.Tab>
+        <>
+          <Sidebars.Tab label="Info">
+            <InfoList
+              rows={[
+                ["IBAN", account.iban && <span className="font-mono text-xs">{formatIban(account.iban)}</span>],
+                ["Kind", account.kind.toLowerCase()],
+                ["Product", account.product],
+                ["Currency", account.currency],
+                [
+                  "Bank",
+                  account.connection && (
+                    <BankConnection.DetailLink object={account.connection}>
+                      {account.connection.aspspName}
+                    </BankConnection.DetailLink>
+                  ),
+                ],
+                ["Linked", <Timestamp date={account.createdAt} relative />],
+                ["Last sync", account.lastSyncedAt && <Timestamp date={account.lastSyncedAt} relative />],
+                ["Syncs left today", budget.remaining],
+                ["Next sync allowed", budget.until && <Timestamp date={budget.until} relative />],
+                ["Balance as of", balance && `${formatDay(balance.date)} (${balance.balanceType})`],
+              ]}
+            />
+          </Sidebars.Tab>
+          <Sidebars.Tab label="Insights">
+            <AccountInsightsTab account={account.id} />
+          </Sidebars.Tab>
+        </>
       }
       defaultSidebar="Info"
     >
@@ -213,7 +219,7 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
           currency={account.currency}
         />
 
-        <TransactionList filters={filters} ordering={ordering} defaultLimit={30} title={depot ? "Activity" : "Transactions"} />
+        <ReviewTransactionList filters={filters} ordering={ordering} defaultLimit={30} title={depot ? "Activity" : "Transactions"} />
       </div>
     </BankAccount.ModelPage>
   );

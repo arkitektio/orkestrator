@@ -1,5 +1,20 @@
 directive @auth(required_org_roles: [String!] = null, required_roles: [String!] = null, required_scopes: [String!] = null) on FIELD_DEFINITION
 
+"""Everything about one account over a window."""
+type AccountInsights {
+  account: BankAccount!
+  averageBalance: [CurrencyTotal!]!
+  highestBalance: BalanceExtreme
+  largestIn: [Transaction!]!
+  largestOut: [Transaction!]!
+  lowestBalance: BalanceExtreme
+  monthly: [CashflowBucket!]!
+  topCategories: [RankedCategory!]!
+  topMerchants: [RankedMerchant!]!
+  totals: [MoneyTotals!]!
+  window: WindowInfo!
+}
+
 """
 What an account holds. A DEPOT's balance is its market valuation; its positions are `holdings`.
 """
@@ -15,6 +30,92 @@ type AccountSyncEvent {
   created: Int!
   pendingReplaced: Int!
   updated: Int!
+}
+
+"""
+One way an account is pulled from a provider (an Enable Banking account, a Scalable pot). Lease, daily budget and last outcome are per syncer.
+"""
+type AccountSyncer {
+  """The account it feeds."""
+  account: BankAccount!
+
+  """Which provider it pulls from."""
+  backend: Provider!
+
+  """The consent or login it is reached through; null once that is deleted."""
+  connection: BankConnection
+
+  """When the syncer was first linked."""
+  createdAt: DateTime!
+  id: ID!
+
+  """True while a sync holds the syncer."""
+  isSyncing: Boolean!
+
+  """Why the last sync failed, if it did."""
+  lastError: String
+
+  """The kind of `lastError`, for the client to offer a fix."""
+  lastErrorCode: BankErrorCode
+
+  """When the last successful sync finished."""
+  lastSyncedAt: DateTime
+
+  """
+  The earliest this syncer may sync (null: now) — after today's budget is spent or the provider asked to wait.
+  """
+  nextSyncAllowedAt: DateTime
+
+  """Syncs left today under the provider's daily limit (null: no limit)."""
+  syncsRemainingToday: Int
+}
+
+"""How much of the depot one security type is."""
+type Allocation {
+  currency: String!
+  securityType: String!
+  share: Float!
+  valuation: Decimal!
+}
+
+"""Apply a previewed import."""
+input ApplyStatementImportInput {
+  """
+  Choices for accounts of the file; the others go where the preview said (an AMBIGUOUS one needs a choice).
+  """
+  accounts: [ImportAccountChoice!] = null
+  id: ID!
+}
+
+"""A map area: a circle (`near`) or a viewport (`within`) — give one."""
+input AreaInput {
+  near: NearInput = null
+  within: BoundsInput = null
+}
+
+"""Spending at located places inside a map area."""
+type AreaInsights {
+  categories: [RankedCategory!]!
+  locations: [RankedLocation!]!
+  merchants: [RankedMerchant!]!
+  monthly: [CashflowBucket!]!
+  totals: [MoneyTotals!]!
+  window: WindowInfo!
+}
+
+"""
+Link transactions to a merchant (and place) by hand — MANUAL, never re-matched. A null `merchant` hands them back to alias matching.
+"""
+input AssignMerchantInput {
+  """Create the place when `location.storeCode` is new for the merchant."""
+  createLocation: Boolean! = true
+
+  """By id or store number (created if new, see `createLocation`)."""
+  location: LocationRef = null
+
+  """By id or key; null clears the manual link."""
+  merchant: MerchantRef = null
+  transactions: [ID!]!
 }
 
 """How a started login finishes."""
@@ -41,6 +142,13 @@ type AuthSession {
 
   """POLL only: the code the user checks on the provider's page."""
   userCode: String
+}
+
+"""An end-of-day balance."""
+type BalanceExtreme {
+  amount: Decimal!
+  currency: String!
+  date: Date!
 }
 
 """An end-of-day account balance."""
@@ -76,15 +184,19 @@ type BalanceSnapshot {
   id: ID!
 }
 
-"""An account at a bank. Keeps its history across relinks."""
+"""
+An account. Keeps its history across relinks; fed by its syncers and by imports.
+"""
 type BankAccount {
   """Every balance the bank reported, one per day and type."""
   balances: [BalanceSnapshot!]!
 
-  """The consent this account is currently reached through."""
+  """
+  The connection of the account's live syncer (else of its newest one); null for an account fed only by imports.
+  """
   connection: BankConnection
 
-  """When the account was first linked."""
+  """When the account was first seen."""
   createdAt: DateTime!
 
   """The account's ISO currency."""
@@ -93,23 +205,28 @@ type BankAccount {
   """A depot's positions as of its latest sync (empty for other accounts)."""
   currentHoldings: [HoldingSnapshot!]!
 
-  """The account's IBAN, if the bank reports one."""
+  """The account's IBAN, if known."""
   iban: String
   id: ID!
 
-  """True while a sync holds the account."""
+  """
+  True when no live syncer pulls the account (no connection, or only expired/revoked ones): it grows by imports only.
+  """
+  isImportOnly: Boolean!
+
+  """True while a sync holds one of the account's syncers."""
   isSyncing: Boolean!
 
   """Cash, securities depot, or savings."""
   kind: AccountKind!
 
-  """Why the last sync failed, if it did."""
+  """Why the last sync of a syncer failed, if one did."""
   lastError: String
 
   """The kind of `lastError`, for the client to offer a fix."""
   lastErrorCode: BankErrorCode
 
-  """When the last successful sync finished."""
+  """When the last successful sync of any syncer finished."""
   lastSyncedAt: DateTime
 
   """The newest balance the bank reported, of the most authoritative type."""
@@ -119,7 +236,7 @@ type BankAccount {
   name: String
 
   """
-  The earliest this account may sync (null: now) — after today's budget is spent or the provider asked to wait. Syncing earlier fails with RATE_LIMITED without contacting the provider.
+  The earliest every live syncer may sync (null: now) — after today's budget is spent or the provider asked to wait. Syncing earlier fails with RATE_LIMITED without contacting the provider.
   """
   nextSyncAllowedAt: DateTime
 
@@ -129,7 +246,12 @@ type BankAccount {
   """The bank's product name for the account."""
   product: String
 
-  """Syncs left today under the provider's daily limit (null: no limit)."""
+  """
+  How the account is pulled from providers; empty for an account fed only by imports.
+  """
+  syncers: [AccountSyncer!]!
+
+  """The fewest syncs any live syncer has left today (null: no limit)."""
   syncsRemainingToday: Int
 
   """The account's transactions."""
@@ -137,11 +259,12 @@ type BankAccount {
 }
 
 """
-An account at a bank, reached through a connection.
+An account: its identity, and the history of every syncer and import that fed it.
 
-Keyed by ``identification_key`` (Enable Banking's cross-session identification hash,
-else the IBAN), so relinking an expired consent re-attaches the same account and its
-history instead of starting over.
+What reaches the account at a provider lives on its :class:`AccountSyncer` rows (one per
+provider identity); an account with no syncer is fed only by imports (a bank that is no
+longer linked). A relink re-attaches the same account — by the syncer's identity, else by
+IBAN — so the history, categories and notes stay.
 """
 input BankAccountFilter {
   AND: BankAccountFilter
@@ -166,8 +289,8 @@ input BankAccountOrder @oneOf {
 One consent at one bank. Accounts are synced through it while it is ACTIVE.
 """
 type BankConnection {
-  """The consent this account is currently reached through."""
-  accounts(filters: BankAccountFilter, ordering: [BankAccountOrder!]! = [], pagination: OffsetPaginationInput): [BankAccount!]!
+  """The accounts reached through this connection (through their syncers)."""
+  accounts: [BankAccount!]!
 
   """The bank's ISO country code."""
   aspspCountry: String!
@@ -223,6 +346,9 @@ type BankConnection {
   """Where this consent is in its lifecycle."""
   status: ConnectionStatus!
 
+  """The syncers reached through this connection."""
+  syncers: [AccountSyncer!]!
+
   """
   The fewest syncs any account of the connection has left today (null: no limit).
   """
@@ -261,6 +387,79 @@ enum BankErrorCode {
   NOT_CONFIGURED
   RATE_LIMITED
   SYNC_IN_PROGRESS
+}
+
+"""Temporary S3 credentials for reading a big file."""
+type BigFileAccessGrant {
+  accessKey: String!
+  bucket: String!
+  expiresIn: Int!
+  key: String!
+  path: String!
+  region: String!
+  secretKey: String!
+  sessionToken: String!
+  status: String!
+  store: String
+}
+
+"""
+A BigFileStore represents a large object stored behind the S3 datalayer.
+"""
+type BigFileStore {
+  """Get temporary S3 read credentials for the object."""
+  accessGrant(host: String = null): BigFileAccessGrant!
+
+  """The datalayer bucket/service this store belongs to."""
+  bucket: String!
+
+  """The client-provided content type for the uploaded file."""
+  contentType: String
+  id: ID!
+
+  """The object key/path within the datalayer bucket."""
+  key: String!
+
+  """The original client-provided file name."""
+  originalFileName: String
+
+  """The object-store URI of the file"""
+  path: String!
+  presignedUrl: String!
+
+  """
+  How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
+  """
+  sizeBytes: ByteCount
+}
+
+"""Temporary S3 credentials for uploading a big file."""
+type BigFileUploadGrant {
+  accessKey: String!
+  bucket: String!
+  expiresIn: Int!
+  key: String!
+  maxBytes: ByteCount!
+  originalFileName: String
+  path: String!
+  region: String!
+  secretKey: String!
+  sessionToken: String!
+  status: String!
+  store: String!
+  uploadContentType: String
+  uploadFileName: String!
+  uploadFormField: String!
+}
+
+"""
+A map viewport: the WGS84 box between south/north latitudes and west/east longitudes.
+"""
+input BoundsInput {
+  east: Float!
+  north: Float!
+  south: Float!
+  west: Float!
 }
 
 """
@@ -321,6 +520,11 @@ type BudgetStatus {
   spent: Decimal!
 }
 
+"""
+A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string.
+"""
+scalar ByteCount
+
 """Money in and out during one month or week, in one currency."""
 type CashflowBucket {
   count: Int!
@@ -344,6 +548,11 @@ input CategorizeTransactionInput {
 A spending or income category. Categories nest; budgets and stats roll children up.
 """
 type Category {
+  """
+  Uncategorized (or semantically guessed) transactions that look like they belong here, closest first: close to what the organization put in this category, or to one of its terms.
+  """
+  candidates(limit: Int! = 20): [Transaction!]!
+
   """The parent category, if nested."""
   children(filters: CategoryFilter, ordering: [CategoryOrder!]! = [], pagination: OffsetPaginationInput): [Category!]!
 
@@ -352,10 +561,26 @@ type Category {
 
   """When the category was created."""
   createdAt: DateTime!
-  id: ID!
 
   """
-  Whether money in this category is an expense, income, or a transfer between own accounts.
+  What belongs here, in words bank lines use. Each comma-separated phrase is a term the category is recognized by.
+  """
+  description: String!
+
+  """Hidden from pickers, suggestions and automatic assignment."""
+  hidden: Boolean!
+  id: ID!
+
+  """True for a base category (it has a `key`); it stays fully editable."""
+  isBase: Boolean!
+
+  """
+  The base-taxonomy key (`food.groceries`) of a base category; null for the organization's own.
+  """
+  key: String
+
+  """
+  Expense, income or transfer — always the root's kind, for the whole subtree.
   """
   kind: CategoryKind!
 
@@ -370,20 +595,95 @@ type Category {
 
   """The category matching transactions get."""
   rules(filters: CategoryRuleFilter, pagination: OffsetPaginationInput): [CategoryRule!]!
+
+  """
+  The phrases this category is recognized by: its name and each phrase of its description.
+  """
+  terms: [String!]!
+}
+
+"""What a category commits per month in recurring payments."""
+type CategoryCommitment {
+  category: Category
+  count: Int!
+  currency: String!
+
+  """Money per month (positive for payments out)."""
+  monthly: Decimal!
 }
 
 """
-A spending or income category. Categories nest (groceries under household).
+What deleting a category does (or did): counted over the category and its children.
+"""
+type CategoryDeletion {
+  """Budgets on them (deleted with them)."""
+  budgets: Int!
+
+  """The category and its descendants."""
+  categories: Int!
+
+  """
+  Base categories among them; they are not re-added by syncBaseCategories until restored.
+  """
+  dismissedBaseKeys: [String!]!
+
+  """Rules assigning them (deleted with them)."""
+  rules: Int!
+
+  """
+  Transactions in them: reassigned, or handed back to rules and suggestions.
+  """
+  transactions: Int!
+}
+
+"""
+A spending or income category. Categories nest (groceries under food).
+
+A category's ``kind`` is always its root's: the whole subtree is expense, income or
+transfer, so stats and budgets never disagree about a child. Base categories carry the
+``key`` of their node in :mod:`finance.taxonomy`; everything about them stays editable.
+Name + description are embedded, which is what lets a never-seen merchant land in the
+right category (:mod:`finance.semantic`).
 """
 input CategoryFilter {
   AND: CategoryFilter
   DISTINCT: Boolean
   NOT: CategoryFilter
   OR: CategoryFilter
+  base: Boolean
+  hidden: Boolean
   ids: [ID!]
   kind: CategoryKind
   roots: Boolean
+
+  """
+  Search by text: a substring of name or description, or semantic similarity to both.
+  """
   search: String
+}
+
+"""Everything about one category (children rolled up) over a window."""
+type CategoryInsights {
+  """This month's status of budgets on it."""
+  budgets: [BudgetStatus!]!
+  category: Category!
+  changes: [Change!]!
+  children: [RankedCategory!]!
+  monthly: [CashflowBucket!]!
+
+  """
+  Totals divided by the months in the window (`count` is the number of months).
+  """
+  monthlyAverage: [MoneyTotals!]!
+  previous: [MoneyTotals!]!
+
+  """Its part of all expense."""
+  shareOfSpending: [Share!]!
+  tickets: [TicketStats!]!
+  topCounterparties: [CounterpartyTotal!]!
+  topMerchants: [RankedMerchant!]!
+  totals: [MoneyTotals!]!
+  window: WindowInfo!
 }
 
 """
@@ -393,6 +693,12 @@ enum CategoryKind {
   EXPENSE
   INCOME
   TRANSFER
+}
+
+"""A category that moved most against the comparison window."""
+type CategoryMove {
+  category: Category
+  change: Change!
 }
 
 input CategoryOrder @oneOf {
@@ -449,11 +755,33 @@ input CategoryRuleFilter {
   category: ID
 }
 
-"""Who set a transaction's category; rules never override a manual one."""
+"""
+Who set a transaction's category: a rule, a user (MANUAL — nothing overrides it), or SEMANTIC (similar categorized transactions or a category term agreed; rules and users override it).
+"""
 enum CategorySource {
+  IMPORT
   MANUAL
+  MERCHANT
   NONE
   RULE
+  SEMANTIC
+}
+
+"""A likely category for a transaction."""
+type CategorySuggestion {
+  category: Category!
+
+  """Up to three of those transactions."""
+  evidence: [Transaction!]!
+
+  """How many similar categorized transactions voted for it."""
+  neighbours: Int!
+  reason: SuggestionReason!
+
+  """
+  The category's share (0–1) of all votes; above the auto-assign threshold with evidence, sync assigns it (source SEMANTIC).
+  """
+  score: Float!
 }
 
 """
@@ -468,6 +796,27 @@ type CategoryTotal {
   expense: Decimal!
   income: Decimal!
   net: Decimal!
+}
+
+"""How one metric moved against the comparison window."""
+type Change {
+  currency: String!
+  current: Decimal!
+
+  """current − previous."""
+  delta: Decimal!
+  metric: StatMetric!
+  previous: Decimal!
+
+  """delta / previous; null when previous is zero."""
+  ratio: Float
+}
+
+"""What a view compares its window with."""
+enum Comparison {
+  NONE
+  PREVIOUS_PERIOD
+  SAME_PERIOD_LAST_YEAR
 }
 
 """Finish a bank link with what the bank redirected back with."""
@@ -512,9 +861,19 @@ input CreateBudgetInput {
   startMonth: Date = null
 }
 
-"""A new category."""
+"""
+A new category. Under a parent it takes the parent's kind (a subtree is one kind).
+"""
 input CreateCategoryInput {
   color: String = null
+
+  """
+  What belongs here, in words bank lines use (merchants, keywords; commas separate terms). Drives suggestions.
+  """
+  description: String! = ""
+  hidden: Boolean! = false
+
+  """For a top-level category; a child always takes its parent's kind."""
   kind: CategoryKind! = EXPENSE
   name: String!
   parent: ID = null
@@ -540,11 +899,86 @@ input CreateCategoryRuleInput {
   priority: Int! = 100
 }
 
+"""Preview an uploaded Finanzguru export."""
+input CreateFinanzguruImportInput {
+  """The uploaded file's store (`finishBigfileUpload`'s id)."""
+  file: ID!
+}
+
+"""
+A new merchant. Aliases default to the match keys of `fromTransactions` (else the name).
+"""
+input CreateMerchantInput {
+  """
+  Texts that mean this merchant on a bank line; normalized ("Spar Dankt" → "spar").
+  """
+  aliases: [String!] = null
+
+  """Default category of its transactions."""
+  category: ID = null
+
+  """…or the default category by its base key ("food.groceries")."""
+  categoryKey: String = null
+  description: String! = ""
+
+  """
+  Transactions to derive aliases from and attach (e.g. a `merchantCandidates` entry's `transactionIds`).
+  """
+  fromTransactions: [ID!] = null
+
+  """
+  The stable key to link by; the normalized name by default. It never changes on rename.
+  """
+  key: String = null
+  logoUrl: String = null
+  name: String!
+  online: Boolean! = false
+  website: String = null
+}
+
+"""
+A new merchant rule: matching transactions get the merchant (before aliases; never over a manual link).
+"""
+input CreateMerchantRuleInput {
+  active: Boolean! = true
+  amountMax: Decimal = null
+  amountMin: Decimal = null
+
+  """Re-match existing transactions right away."""
+  apply: Boolean! = true
+  direction: RuleDirection! = ANY
+  field: RuleField!
+
+  """Pin a place (by id or store number, created if new)."""
+  location: LocationRef = null
+  match: RuleMatch! = CONTAINS
+  merchant: MerchantRef!
+  pattern: String!
+
+  """Lower runs first; the first matching rule wins."""
+  priority: Int! = 100
+}
+
+"""An amount in one currency."""
+type CurrencyTotal {
+  amount: Decimal!
+  currency: String!
+}
+
 """Date (isoformat)"""
 scalar Date
 
 """Date with time (isoformat)"""
 scalar DateTime
+
+"""Totals for one day (only days with activity)."""
+type DayTotals {
+  count: Int!
+  currency: String!
+  date: Date!
+  expense: Decimal!
+  income: Decimal!
+}
 
 """Decimal (fixed-point)"""
 scalar Decimal
@@ -555,6 +989,11 @@ enum Direction {
   OUT
 }
 
+input FinishBigFileUploadInput {
+  storeId: String!
+  valid: Boolean! = true
+}
+
 """An expected end-of-day balance."""
 type ForecastPoint {
   amount: Decimal!
@@ -562,10 +1001,53 @@ type ForecastPoint {
   date: Date!
 }
 
+"""A geocoder hit."""
+type GeocodeResult {
+  city: String
+  country: String
+  label: String!
+  latitude: Decimal!
+  longitude: Decimal!
+  osmId: String
+  postalCode: String
+  region: String
+  street: String
+}
+
 """The bucket size of a cashflow series."""
 enum Granularity {
   MONTH
   WEEK
+}
+
+"""
+A GeoJSON Feature: one grid cell (its point is the cell's snapped center).
+"""
+type GridCell {
+  geometry: PointGeometry!
+  id: ID!
+  properties: GridCellProperties!
+  type: String!
+}
+
+"""
+A GeoJSON FeatureCollection of spending-grid cells — valid GeoJSON as returned, and typed.
+"""
+type GridCellCollection {
+  bbox: [Float!]
+  cellMeters: Float!
+  features: [GridCell!]!
+  type: String!
+}
+
+"""What a map styles a spending-grid cell by."""
+type GridCellProperties {
+  count: Int!
+  currency: String!
+  expense: Decimal!
+  income: Decimal!
+  locations: Int!
+  merchants: Int!
 }
 
 """
@@ -609,6 +1091,122 @@ type HoldingSnapshot {
   valuation: Decimal!
 }
 
+"""Where one account of the file goes, overriding the preview's choice."""
+input ImportAccountChoice {
+  """Land its rows in this account; null creates a new account."""
+  account: ID = null
+
+  """The account as the file names it (the preview's `accounts.reference`)."""
+  reference: String!
+
+  """Leave this account out of the import."""
+  skip: Boolean! = false
+}
+
+"""
+One account of the imported file (a Finanzguru `Referenzkonto`) and where its rows go.
+"""
+type ImportAccountPlan {
+  """
+  The account the rows go to; null for a new account (or when ambiguous or skipped).
+  """
+  account: BankAccount
+
+  """
+  Rows an earlier import brought in already (they are refreshed, not duplicated).
+  """
+  alreadyImported: Int!
+
+  """AMBIGUOUS only: the accounts that have its IBAN."""
+  candidates: [BankAccount!]!
+  currency: String!
+  firstDate: Date!
+  how: ImportTargetKind!
+
+  """Its IBAN, if the reference is one."""
+  iban: String
+  lastDate: Date!
+
+  """
+  Rows that are the same booking as a synced row: that row gets the import's category and note instead of a duplicate.
+  """
+  matched: Int!
+
+  """The file's name for it (`Name Referenzkonto`)."""
+  name: String
+
+  """Rows that become new transactions."""
+  new: Int!
+
+  """
+  The account as the file names it (an IBAN, or e.g. a card or PayPal account).
+  """
+  reference: String!
+  rows: Int!
+}
+
+"""
+Which category an imported app's (main, sub) category means. Proposed on first sight, editable; every import uses it.
+"""
+type ImportCategoryMapping {
+  """
+  The category rows with this pair get; null leaves them to rules and suggestions.
+  """
+  category: Category
+
+  """When the pair was first seen."""
+  createdAt: DateTime!
+  id: ID!
+
+  """The app's main category (Finanzguru: Analyse-Hauptkategorie)."""
+  main: String!
+
+  """Still the automatic proposal (false once a user set it)."""
+  proposed: Boolean!
+
+  """The app whose categories this maps."""
+  source: ImportSource!
+
+  """
+  The app's subcategory (Finanzguru: Analyse-Unterkategorie); empty if none.
+  """
+  sub: String!
+}
+
+"""Which category an imported (main, sub) category means."""
+input ImportCategoryMappingInput {
+  """The category; null leaves such rows to rules and suggestions."""
+  category: ID = null
+  main: String!
+  sub: String! = ""
+}
+
+"""Which app or format a statement import came from."""
+enum ImportSource {
+  FINANZGURU
+}
+
+"""
+Where a statement import is: PREVIEWED (nothing written yet), APPLIED, or FAILED (the file could not be read; see `error`).
+"""
+enum ImportStatus {
+  APPLIED
+  FAILED
+  PREVIEWED
+}
+
+"""
+How a source account's target was decided: IBAN (the organization's one account with its IBAN), IMPORTED (created by an earlier import), NEW (a new account will be created), AMBIGUOUS (several accounts have the IBAN — choose one when applying), CHOSEN (the caller chose it), SKIPPED.
+"""
+enum ImportTargetKind {
+  AMBIGUOUS
+  CHOSEN
+  IBAN
+  IMPORTED
+  NEW
+  SKIPPED
+}
+
 """A bank Enable Banking can reach."""
 type Institution {
   bic: String
@@ -620,6 +1218,21 @@ type Institution {
   name: String!
 }
 
+"""Investment income or cost in one year."""
+type InvestmentIncome {
+  """Signed: payouts positive, fees and taxes negative."""
+  amount: Decimal!
+  count: Int!
+  currency: String!
+  kind: TransactionKind!
+  year: Int!
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf).
+"""
+scalar JSON @specifiedBy(url: "https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf")
+
 """
 Where a Scalable link is: waiting for the login code to be approved, then for the second factor.
 """
@@ -627,6 +1240,34 @@ enum LinkStep {
   DEVICE
   DONE
   MFA
+}
+
+"""Everything about one merchant place over a window."""
+type LocationInsights {
+  location: MerchantLocation!
+  monthly: [CashflowBucket!]!
+  tickets: [TicketStats!]!
+  totals: [MoneyTotals!]!
+  visits: VisitStats!
+  weekdays: [WeekdayTotals!]!
+  window: WindowInfo!
+}
+
+"""
+A place of the merchant, by `id` or by `storeCode` (the store number bank lines carry) — give exactly one.
+"""
+input LocationRef {
+  id: ID = null
+  storeCode: String = null
+}
+
+"""
+Where a merchant location came from: a store number on a bank line (DISCOVERED, no address yet), a user (MANUAL) or the geocoder (GEOCODED).
+"""
+enum LocationSource {
+  DISCOVERED
+  GEOCODED
+  MANUAL
 }
 
 """Set whether a transaction moves money between own accounts."""
@@ -639,7 +1280,445 @@ input MarkTransferInput {
   isTransfer: Boolean = null
 }
 
+"""
+Someone the organization pays or is paid by. Recognized on bank lines by its aliases; its default category categorizes its transactions (after rules, before suggestions).
+"""
+type Merchant {
+  """The merchant it means."""
+  aliases: [MerchantAlias!]!
+
+  """The default category of its transactions (source MERCHANT)."""
+  category: Category
+
+  """When the merchant was created."""
+  createdAt: DateTime!
+
+  """Notes about the merchant."""
+  description: String!
+
+  """
+  Meters from the point of a `near` filter to its closest located store; null without one.
+  """
+  distanceMeters: Float
+
+  """The day of its first transaction."""
+  firstSeen: Date
+  id: ID!
+
+  """The normalized name; unique per organization."""
+  key: String!
+
+  """The day of its latest transaction."""
+  lastSeen: Date
+
+  """Its places."""
+  locations(filters: MerchantLocationFilter, pagination: OffsetPaginationInput): [MerchantLocation!]!
+
+  """An image URL for the merchant's logo."""
+  logoUrl: String
+
+  """The merchant's display name."""
+  name: String!
+
+  """
+  The net amount per currency over its booked transactions (negative: money spent there).
+  """
+  net: [CurrencyTotal!]!
+
+  """Online only: no physical stores."""
+  online: Boolean!
+
+  """Rules mapping transactions to it."""
+  rules(filters: MerchantRuleFilter, pagination: OffsetPaginationInput): [MerchantRule!]!
+
+  """
+  The organization's merchants closest in meaning to this one (by name and description).
+  """
+  similarMerchants(limit: Int! = 5): [Merchant!]!
+
+  """How many transactions it has."""
+  transactionCount: Int!
+
+  """Its transactions."""
+  transactions(filters: TransactionFilter, ordering: [TransactionOrder!]! = [], pagination: OffsetPaginationInput): [Transaction!]!
+
+  """The merchant's website."""
+  website: String
+}
+
+"""
+A normalized counterparty prefix that means this merchant ("spar" matches "Spar Dankt 3418").
+"""
+type MerchantAlias {
+  """When the alias was added."""
+  createdAt: DateTime!
+  id: ID!
+
+  """The merchant it means."""
+  merchant: Merchant!
+
+  """
+  Normalized words (lower-case, no numbers or boilerplate) a line's key must start with.
+  """
+  pattern: String!
+}
+
+"""
+A counterparty that recurs without a merchant: a merchant waiting to be created (`createMerchant(input: {fromTransactions: …})`).
+"""
+type MerchantCandidate {
+  count: Int!
+
+  """The normalized text its lines share (becomes the alias)."""
+  key: String!
+
+  """Up to three counterparty spellings."""
+  samples: [String!]!
+
+  """
+  How many distinct store numbers its lines carry (each becomes a location).
+  """
+  storeCodes: Int!
+
+  """What its latest transaction would most likely be categorized as."""
+  suggestedCategory: Category
+
+  """Net amount per currency."""
+  totals: [CurrencyTotal!]!
+  transactionIds: [ID!]!
+}
+
+"""
+Someone the organization pays or is paid by — "Spar", "Wiener Linien", the landlord.
+
+Recognized on bank lines by its :class:`MerchantAlias` rows (see :mod:`finance.merchants`).
+A merchant may carry a default ``category`` for its transactions (source MERCHANT: after
+rules, before semantic guesses). Name + description are embedded for semantic ``search``.
+"""
+input MerchantFilter {
+  AND: MerchantFilter
+  DISTINCT: Boolean
+  NOT: MerchantFilter
+  OR: MerchantFilter
+  category: ID
+  ids: [ID!]
+
+  """
+  Only merchants with a located store within `radiusMeters` of a point, nearest first (`distanceMeters` on each).
+  """
+  near: NearInput
+  online: Boolean
+
+  """
+  Search by text: a substring of name, description or an alias, or semantic similarity to name and description.
+  """
+  search: String
+}
+
+"""Everything about one merchant over a window."""
+type MerchantInsights {
+  changes: [Change!]!
+  locations: [RankedLocation!]!
+  merchant: Merchant!
+  monthly: [CashflowBucket!]!
+  previous: [MoneyTotals!]!
+
+  """Its part of the expense in its default category (and children)."""
+  shareOfCategory: [Share!]!
+  tickets: [TicketStats!]!
+  totals: [MoneyTotals!]!
+  visits: VisitStats!
+  weekdays: [WeekdayTotals!]!
+  window: WindowInfo!
+}
+
+"""
+A place of a merchant — a store, a branch. `latitude`/`longitude` are null until known (a store discovered from a bank line starts without an address).
+"""
+type MerchantLocation {
+  """City."""
+  city: String
+
+  """ISO 3166-1 alpha-2 country code."""
+  country: String
+
+  """When the location was created."""
+  createdAt: DateTime!
+
+  """Meters from the point of a `near` filter; null without one."""
+  distanceMeters: Float
+
+  """When it was last geocoded."""
+  geocodedAt: DateTime
+  id: ID!
+
+  """The day of the latest transaction here."""
+  lastVisit: Date
+
+  """WGS84 latitude."""
+  latitude: Decimal
+
+  """WGS84 longitude."""
+  longitude: Decimal
+
+  """The merchant."""
+  merchant: Merchant!
+
+  """A display name (e.g. 'Spar 3418', 'Spar Mariahilfer Straße')."""
+  name: String!
+
+  """Notes."""
+  notes: String!
+
+  """The OpenStreetMap object it was geocoded to (N123, W456)."""
+  osmId: String
+
+  """Postal code."""
+  postalCode: String
+
+  """State or region."""
+  region: String
+
+  """Where the location came from."""
+  source: LocationSource!
+
+  """The store number bank lines carry for this place; unique per merchant."""
+  storeCode: String
+
+  """Street and number."""
+  street: String
+
+  """How many transactions happened here."""
+  transactionCount: Int!
+
+  """Transactions at this place."""
+  transactions(filters: TransactionFilter, ordering: [TransactionOrder!]! = [], pagination: OffsetPaginationInput): [Transaction!]!
+}
+
+"""A GeoJSON Feature: one located merchant place."""
+type MerchantLocationFeature {
+  geometry: PointGeometry!
+  id: ID!
+  properties: MerchantLocationProperties!
+
+  """Always `Feature`."""
+  type: String!
+}
+
+"""
+A GeoJSON FeatureCollection of merchant places — valid GeoJSON as returned, and fully typed.
+"""
+type MerchantLocationFeatureCollection {
+  """`[west, south, east, north]` around the features; null when empty."""
+  bbox: [Float!]
+  features: [MerchantLocationFeature!]!
+
+  """Always `FeatureCollection`."""
+  type: String!
+}
+
+"""
+A place of a merchant: a store, a branch, a station.
+
+``latitude``/``longitude`` are what the API reads and writes; ``point`` is the PostGIS
+geography Postgres generates from them (GiST-indexed) for ``near`` queries — see
+:mod:`finance.geo`. A location discovered from a store number has no address until a user
+fills it in or geocodes it.
+"""
+input MerchantLocationFilter {
+  AND: MerchantLocationFilter
+  DISTINCT: Boolean
+  NOT: MerchantLocationFilter
+  OR: MerchantLocationFilter
+  category: ID
+  city: String
+  ids: [ID!]
+  merchant: ID
+
+  """
+  Only locations within `radiusMeters` of a point, nearest first (`distanceMeters` on each).
+  """
+  near: NearInput
+  unlocated: Boolean
+
+  """Only located places inside a map viewport."""
+  within: BoundsInput
+}
+
+"""A new place of a merchant."""
+input MerchantLocationInput {
+  city: String = null
+  country: String = null
+  latitude: Decimal = null
+  longitude: Decimal = null
+  merchant: ID!
+  name: String!
+  notes: String! = ""
+  postalCode: String = null
+  region: String = null
+
+  """The store number bank lines carry for this place."""
+  storeCode: String = null
+  street: String = null
+}
+
+"""What a map styles a merchant place by: flat, numeric where it matters."""
+type MerchantLocationProperties {
+  categoryId: ID
+  categoryKind: CategoryKind
+  categoryName: String
+  city: String
+
+  """The merchant's category color, if any."""
+  color: String
+  country: String
+  currency: String!
+
+  """Meters from the point of a `near` filter."""
+  distanceMeters: Float
+  id: ID!
+  lastVisit: Date
+  merchantId: ID!
+  merchantName: String!
+  name: String!
+
+  """
+  Net booked amount at this place (negative: money spent), in `currency`. A Decimal string like every amount.
+  """
+  net: Decimal!
+  postalCode: String
+  source: LocationSource!
+  storeCode: String
+  street: String
+  transactionCount: Int!
+}
+
+"""A merchant that moved most against the comparison window."""
+type MerchantMove {
+  change: Change!
+  merchant: Merchant
+}
+
+input MerchantOrder @oneOf {
+  createdAt: Ordering
+  name: Ordering
+}
+
+"""
+A merchant, by `id` or by `key` (its stable normalized name, e.g. "spar") — give exactly one.
+"""
+input MerchantRef {
+  id: ID = null
+
+  """The merchant's key; normalized like an alias ("Spar" → "spar")."""
+  key: String = null
+}
+
+"""
+Maps matching transactions to a merchant (like a category rule): the first active rule by priority wins, before aliases; a manual link wins over both.
+"""
+type MerchantRule {
+  """Inactive rules are skipped."""
+  active: Boolean!
+
+  """Only match when the absolute amount is at most this."""
+  amountMax: Decimal
+
+  """Only match when the absolute amount is at least this."""
+  amountMin: Decimal
+
+  """When the rule was created."""
+  createdAt: DateTime!
+
+  """Only match money in, money out, or both."""
+  direction: RuleDirection!
+
+  """The transaction field the pattern is matched against."""
+  field: RuleField!
+  id: ID!
+
+  """The pinned place, if any (else a store number on the line decides)."""
+  location: MerchantLocation
+
+  """How the pattern is compared (case-insensitive)."""
+  match: RuleMatch!
+
+  """The merchant matching transactions get."""
+  merchant: Merchant!
+
+  """The text or regular expression to match."""
+  pattern: String!
+
+  """Lower runs first; the first matching rule wins."""
+  priority: Int!
+
+  """How many transactions this rule currently links."""
+  transactionCount: Int!
+}
+
+"""
+Maps matching transactions to a merchant — the explicit counterpart of aliases.
+
+Same matching as :class:`CategoryRule` (field, match, pattern, direction, amount range;
+:func:`finance.rules.matches`): e.g. the landlord's IBAN, or a remittance line that names a
+shop. The first active rule by priority wins, and rules win over aliases; a user's manual
+link wins over both. A rule may pin a place (``location``); otherwise a store number on the
+line picks or discovers one, as with aliases.
+"""
+input MerchantRuleFilter {
+  AND: MerchantRuleFilter
+  DISTINCT: Boolean
+  NOT: MerchantRuleFilter
+  OR: MerchantRuleFilter
+  active: Boolean
+  merchant: ID
+}
+
+"""
+How a transaction got its merchant: a merchant rule (RULE) or an alias (AUTO) — both re-matched when rules or aliases change — or a user (MANUAL, never re-matched).
+"""
+enum MerchantSource {
+  AUTO
+  MANUAL
+  NONE
+  RULE
+}
+
+"""
+Money in and out with one merchant, in one currency. `merchant` is null for transactions without one.
+"""
+type MerchantTotal {
+  count: Int!
+  currency: String!
+
+  """Money out, as a positive amount."""
+  expense: Decimal!
+  income: Decimal!
+  merchant: Merchant
+  net: Decimal!
+}
+
+"""Money in and out in one currency; `expense` is positive."""
+type MoneyTotals {
+  count: Int!
+  currency: String!
+  expense: Decimal!
+  income: Decimal!
+  net: Decimal!
+}
+
 type Mutation {
+  """Teach a merchant another spelling."""
+  addMerchantAlias(merchant: ID!, text: String!): MerchantAlias!
+
+  """Write a previewed import into the accounts (idempotent)."""
+  applyStatementImport(input: ApplyStatementImportInput!): StatementImport!
+
+  """
+  Link many transactions to a merchant (by id or key) and place (by id or store number), by hand; null hands them back to matching.
+  """
+  assignMerchant(input: AssignMerchantInput!): [Transaction!]!
+
   """Delete a pending link you started."""
   cancelLink(connection: ID!): ID!
 
@@ -664,17 +1743,52 @@ type Mutation {
   """Create a categorization rule."""
   createCategoryRule(input: CreateCategoryRuleInput!): CategoryRule!
 
+  """
+  Preview an uploaded Finanzguru export (nothing is written into the accounts yet).
+  """
+  createFinanzguruImport(input: CreateFinanzguruImportInput!): StatementImport!
+
+  """
+  Create a merchant (aliases from `fromTransactions` by default) and match it everywhere.
+  """
+  createMerchant(input: CreateMerchantInput!): Merchant!
+
+  """Add a place to a merchant."""
+  createMerchantLocation(input: MerchantLocationInput!): MerchantLocation!
+
+  """Create a rule mapping matching transactions to a merchant."""
+  createMerchantRule(input: CreateMerchantRuleInput!): MerchantRule!
+
   """Delete a budget."""
   deleteBudget(id: ID!): ID!
 
-  """Delete a category."""
-  deleteCategory(id: ID!): ID!
+  """
+  Delete a category (reassigning its transactions, or handing them back to rules and suggestions); `dryRun` reports what would happen.
+  """
+  deleteCategory(dryRun: Boolean! = false, id: ID!, reassignTo: ID = null): CategoryDeletion!
 
   """Delete a categorization rule."""
   deleteCategoryRule(apply: Boolean! = true, id: ID!): ID!
 
+  """Delete a merchant; its transactions are categorized again."""
+  deleteMerchant(id: ID!): ID!
+
+  """Delete a merchant place."""
+  deleteMerchantLocation(id: ID!): ID!
+
+  """Delete a merchant rule."""
+  deleteMerchantRule(apply: Boolean! = true, id: ID!): ID!
+
   """Detect recurring payments."""
   detectRecurring(accounts: [ID!] = null): [RecurringPayment!]!
+
+  """Finalize a file upload after the client has written the object."""
+  finishBigfileUpload(input: FinishBigFileUploadInput!): BigFileStore!
+
+  """
+  Look a place up (OpenStreetMap) and fill in its address and coordinates.
+  """
+  geocodeMerchantLocation(id: ID!, query: String = null): MerchantLocation!
 
   """Pin or un-pin a transaction as a transfer between own accounts."""
   markTransfer(input: MarkTransferInput!): Transaction!
@@ -682,8 +1796,25 @@ type Mutation {
   """Pin or un-pin many transactions as transfers at once."""
   markTransfers(ids: [ID!]!, isTransfer: Boolean = null): [Transaction!]!
 
+  """Fold one merchant into another."""
+  mergeMerchants(into: ID!, merchant: ID!): Merchant!
+
   """Run the rules over existing transactions."""
-  reapplyRules(accounts: [ID!] = null): Int!
+  reapplyRules(accounts: [ID!] = null, semanticAssign: Boolean! = true): Int!
+
+  """Forget a merchant spelling."""
+  removeMerchantAlias(id: ID!): ID!
+
+  """Request temporary S3 read credentials for an uploaded file."""
+  requestBigfileAccess(input: RequestBigFileAccessInput!): BigFileAccessGrant!
+
+  """
+  Request temporary S3 credentials to upload one file (e.g. a statement export to import).
+  """
+  requestBigfileUpload(input: RequestBigFileUploadInput!): BigFileUploadGrant!
+
+  """Bring back a deleted base category."""
+  restoreBaseCategory(key: String!): [Category!]!
 
   """
   Get the auth session of a pending link you started again (to continue a login).
@@ -693,8 +1824,13 @@ type Mutation {
   """Withdraw a bank consent; data is kept."""
   revokeBankConnection(id: ID!): BankConnection!
 
-  """Add the default categories."""
+  """
+  Add the base categories this organization lacks; returns all categories.
+  """
   seedDefaultCategories: [Category!]!
+
+  """Set which category imported category pairs mean."""
+  setImportCategoryMappings(input: [ImportCategoryMappingInput!]!): [ImportCategoryMapping!]!
 
   """Confirm or ignore a recurring payment."""
   setRecurringStatus(input: SetRecurringStatusInput!): RecurringPayment!
@@ -716,6 +1852,11 @@ type Mutation {
   """Pull an account from the bank now."""
   syncAccount(id: ID!): SyncResult!
 
+  """
+  Add base categories this organization does not have yet; returns the created ones.
+  """
+  syncBaseCategories: [Category!]!
+
   """Pull every account of a connection now."""
   syncConnection(id: ID!): [SyncResult!]!
 
@@ -727,6 +1868,31 @@ type Mutation {
 
   """Change a categorization rule."""
   updateCategoryRule(input: UpdateCategoryRuleInput!): CategoryRule!
+
+  """
+  Change a merchant; a new default category re-categorizes its transactions.
+  """
+  updateMerchant(input: UpdateMerchantInput!): Merchant!
+
+  """Correct a merchant place."""
+  updateMerchantLocation(input: UpdateMerchantLocationInput!): MerchantLocation!
+
+  """Change a merchant rule."""
+  updateMerchantRule(input: UpdateMerchantRuleInput!): MerchantRule!
+
+  """
+  Create a merchant, or update the one with this key (aliases are added).
+  """
+  upsertMerchant(input: UpsertMerchantInput!): Merchant!
+}
+
+"""A circle on the map: WGS84 latitude/longitude and a radius in meters."""
+input NearInput {
+  latitude: Float!
+  longitude: Float!
+
+  """Radius in meters (default 1 km)."""
+  radiusMeters: Float! = 1000
 }
 
 input OffsetPaginationInput {
@@ -751,6 +1917,65 @@ type Organization {
   slug: String!
 }
 
+"""
+A dashboard for a window, compared with the previous period or the same period last year.
+"""
+type PeriodOverview {
+  categoryMovers: [CategoryMove!]!
+  changes: [Change!]!
+  daily: [DayTotals!]!
+  largestTransactions: [Transaction!]!
+  merchantMovers: [MerchantMove!]!
+
+  """Merchants whose first transaction falls in the window."""
+  newMerchants: [Merchant!]!
+  previous: [MoneyTotals!]!
+
+  """Confirmed recurring payments expected within the window."""
+  recurringDue: [RecurringPayment!]!
+
+  """(income − expense) / income per currency; can be negative."""
+  savingsRate: [Share!]!
+  totals: [MoneyTotals!]!
+  weekdays: [WeekdayTotals!]!
+  window: WindowInfo!
+}
+
+"""
+A GeoJSON Point: `coordinates` is `[longitude, latitude]` (WGS84), as GeoJSON orders them.
+"""
+type PointGeometry {
+  """`[longitude, latitude]`."""
+  coordinates: [Float!]!
+
+  """Always `Point`."""
+  type: String!
+}
+
+"""
+The depot: value over time, allocation, positions and investment income.
+"""
+type PortfolioInsights {
+  allocation: [Allocation!]!
+
+  """Σ quantity × FIFO price of the current positions."""
+  costBasis: [CurrencyTotal!]!
+  income: [InvestmentIncome!]!
+  positions: [HoldingSnapshot!]!
+  unrealizedGain: [CurrencyTotal!]!
+  valuation: [CurrencyTotal!]!
+  valuationHistory: [ValuationPoint!]!
+}
+
+"""A recurring payment whose amount changed."""
+type PriceChange {
+  currency: String!
+  current: Decimal!
+  delta: Decimal!
+  previous: Decimal!
+  recurring: RecurringPayment!
+}
+
 """Who a connection reaches its accounts through."""
 enum Provider {
   ENABLEBANKING
@@ -760,6 +1985,12 @@ enum Provider {
 type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
+
+  """Stats for one account."""
+  accountInsights(account: ID!, limit: Int! = 5, window: StatsWindowInput = null): AccountInsights!
+
+  """Stats for located places inside a circle or viewport."""
+  areaInsights(area: AreaInput!, limit: Int! = 10, window: StatsWindowInput = null): AreaInsights!
 
   """An account's end-of-day balance over a range."""
   balanceHistory(account: ID!, dateFrom: Date!, dateTo: Date = null): [BalancePoint!]!
@@ -797,6 +2028,9 @@ type Query {
   """A category by id."""
   category(id: ID!): Category!
 
+  """Stats for one category, children rolled up."""
+  categoryInsights(category: ID!, compareTo: Comparison! = PREVIOUS_PERIOD, includeChildren: Boolean! = true, window: StatsWindowInput = null): CategoryInsights!
+
   """A categorization rule by id."""
   categoryRule(id: ID!): CategoryRule!
 
@@ -806,8 +2040,54 @@ type Query {
   """An account's expected balance over the coming days."""
   forecast(account: ID!, horizonDays: Int! = 90, includeBudgets: Boolean! = false, includeDetected: Boolean! = false): [ForecastPoint!]!
 
+  """Places matching an address or name (OpenStreetMap)."""
+  geocodeSearch(limit: Int! = 5, query: String!): [GeocodeResult!]!
+
   """A depot's positions on a day (its latest synced day by default)."""
   holdings(account: ID!, date: Date = null): [HoldingSnapshot!]!
+
+  """Which category each imported category pair means."""
+  importCategoryMappings(pagination: OffsetPaginationInput): [ImportCategoryMapping!]!
+
+  """Stats for one merchant place."""
+  locationInsights(location: ID!, window: StatsWindowInput = null): LocationInsights!
+
+  """A merchant by id."""
+  merchant(id: ID!): Merchant!
+
+  """Recurring counterparties without a merchant."""
+  merchantCandidates(limit: Int! = 20, minCount: Int! = 2): [MerchantCandidate!]!
+
+  """Stats for one merchant (by id or key)."""
+  merchantInsights(compareTo: Comparison! = PREVIOUS_PERIOD, merchant: MerchantRef!, window: StatsWindowInput = null): MerchantInsights!
+
+  """A merchant location by id."""
+  merchantLocation(id: ID!): MerchantLocation!
+
+  """Merchant locations (paginated, filterable — `near`, `unlocated`)."""
+  merchantLocations(filters: MerchantLocationFilter, pagination: OffsetPaginationInput): [MerchantLocation!]!
+
+  """
+  Located merchant places as a typed GeoJSON FeatureCollection (valid GeoJSON as returned — hand it to a map renderer); same filters as `merchantLocations`, e.g. `within` a viewport.
+  """
+  merchantLocationsGeojson(filters: MerchantLocationFilter = null, limit: Int! = 5000): MerchantLocationFeatureCollection!
+
+  """The organization's merchant rules."""
+  merchantRules(filters: MerchantRuleFilter, pagination: OffsetPaginationInput): [MerchantRule!]!
+
+  """
+  The organization's merchants (paginated, filterable — e.g. `near` a point).
+  """
+  merchants(filters: MerchantFilter, ordering: [MerchantOrder!]! = [], pagination: OffsetPaginationInput): [Merchant!]!
+
+  """A dashboard for a window against a comparison window."""
+  periodOverview(compareTo: Comparison! = PREVIOUS_PERIOD, limit: Int! = 10, window: StatsWindowInput = null): PeriodOverview!
+
+  """The depot: value over time, allocation, positions, investment income."""
+  portfolioInsights(accounts: [ID!] = null, dateFrom: Date = null): PortfolioInsights!
+
+  """Recurring payments: commitment, due, missed, price changes."""
+  recurringInsights(includeDetected: Boolean! = false): RecurringInsights!
 
   """A recurring payment by id."""
   recurringPayment(id: ID!): RecurringPayment!
@@ -817,6 +2097,21 @@ type Query {
 
   """Income, expense and net per category and currency."""
   spendingByCategory(accounts: [ID!] = null, dateFrom: Date = null, dateTo: Date = null, includeTransfers: Boolean! = false): [CategoryTotal!]!
+
+  """Income, expense and net per merchant and currency."""
+  spendingByMerchant(accounts: [ID!] = null, dateFrom: Date = null, dateTo: Date = null, includeTransfers: Boolean! = false, limit: Int = null): [MerchantTotal!]!
+
+  """Spending in a viewport binned into map cells (typed GeoJSON)."""
+  spendingGrid(cellMeters: Float! = 500, window: StatsWindowInput = null, within: BoundsInput!): GridCellCollection!
+
+  """A statement import by id."""
+  statementImport(id: ID!): StatementImport!
+
+  """The organization's statement imports (uploaded exports), newest first."""
+  statementImports(pagination: OffsetPaginationInput): [StatementImport!]!
+
+  """The categories a transaction most likely belongs to."""
+  suggestCategories(limit: Int! = 3, transaction: ID!): [CategorySuggestion!]!
 
   """Where the most money went, or came from."""
   topCounterparties(accounts: [ID!] = null, dateFrom: Date = null, dateTo: Date = null, direction: Direction! = OUT, limit: Int! = 10): [CounterpartyTotal!]!
@@ -831,6 +2126,62 @@ type Query {
 
   """How many transactions match the filters."""
   transactionsCount(filters: TransactionFilter = null): Int!
+}
+
+"""
+A category's totals; `share` is its part of all expense in that currency.
+"""
+type RankedCategory {
+  category: Category
+  count: Int!
+  currency: String!
+  expense: Decimal!
+  income: Decimal!
+  net: Decimal!
+  share: Float!
+}
+
+"""A place's totals; `share` is its part of all expense in that currency."""
+type RankedLocation {
+  count: Int!
+  currency: String!
+  expense: Decimal!
+  income: Decimal!
+  location: MerchantLocation
+  net: Decimal!
+  share: Float!
+}
+
+"""
+A merchant's totals; `share` is its part of all expense in that currency.
+"""
+type RankedMerchant {
+  count: Int!
+  currency: String!
+  expense: Decimal!
+  income: Decimal!
+  merchant: Merchant
+  net: Decimal!
+  share: Float!
+}
+
+"""
+Recurring payments: what they commit, what is due, what did not come, what got pricier.
+"""
+type RecurringInsights {
+  byCategory: [CategoryCommitment!]!
+
+  """Expected within the next 30 days."""
+  dueSoon: [RecurringPayment!]!
+
+  """Expected more than 3 days ago and not seen since."""
+  missed: [RecurringPayment!]!
+
+  """
+  Normalized to a month (× 30.44 / interval); `count` is the number of payments.
+  """
+  monthlyCommitted: [MoneyTotals!]!
+  priceChanges: [PriceChange!]!
 }
 
 """
@@ -897,6 +2248,18 @@ enum RecurringStatus {
   IGNORED
 }
 
+input RequestBigFileAccessInput {
+  storeId: String!
+}
+
+input RequestBigFileUploadInput {
+  contentType: String = null
+  fileSize: ByteCount = null
+  host: String = null
+  originalFileName: String!
+  port: Int = null
+}
+
 """Which transactions a rule applies to, by sign."""
 enum RuleDirection {
   ANY
@@ -930,6 +2293,12 @@ input SetTransactionNoteInput {
   note: String = null
 }
 
+"""A share (0–1) in one currency."""
+type Share {
+  currency: String!
+  share: Float!
+}
+
 """Start linking a bank."""
 input StartBankLinkInput {
   """The bank's name exactly as `bankInstitutions` lists it."""
@@ -942,9 +2311,91 @@ input StartBankLinkInput {
   redirectUrl: String = null
 }
 
+"""Which total a change is about."""
+enum StatMetric {
+  EXPENSE
+  INCOME
+  NET
+}
+
+"""
+An uploaded statement export: previewed (nothing written), then applied into the accounts. Applying again is idempotent.
+"""
+type StatementImport {
+  """Each account of the file and where its rows go."""
+  accounts: [ImportAccountPlan!]!
+
+  """When the import was (last) applied."""
+  appliedAt: DateTime
+
+  """When the file was previewed."""
+  createdAt: DateTime!
+
+  """The user who uploaded the file."""
+  creator: User
+
+  """FAILED only: why the file could not be read."""
+  error: String
+
+  """The file's name as uploaded."""
+  fileName: String
+  id: ID!
+
+  """Everything the preview (and the last apply) found, as stored."""
+  report: JSON!
+
+  """Bookings in the file (split parts folded into their booking)."""
+  rows: Int!
+
+  """Which app or format the file came from."""
+  source: ImportSource!
+
+  """Previewed, applied, or failed."""
+  status: ImportStatus!
+
+  """
+  How many transactions carry this import (new ones and enriched synced ones).
+  """
+  transactionsCount: Int!
+
+  """
+  Category pairs of the file without a mapped category; `setImportCategoryMappings` maps them.
+  """
+  unmappedCategories: [UnmappedImportCategory!]!
+
+  """
+  What was odd about the file (skipped lines, split parts that do not add up, unknown columns).
+  """
+  warnings: [String!]!
+}
+
+"""
+Which transactions a view looks at: a booking-date range (the last 12 months by default) and optionally some accounts.
+"""
+input StatsWindowInput {
+  accounts: [ID!] = null
+  dateFrom: Date = null
+
+  """Inclusive; today by default."""
+  dateTo: Date = null
+  includePending: Boolean! = false
+
+  """
+  Count transfers between own accounts (and investing) as spending/income.
+  """
+  includeTransfers: Boolean! = false
+}
+
 type Subscription {
   """Events whenever one of the organization's accounts finished syncing."""
   accountSyncs: AccountSyncEvent!
+}
+
+"""Why a category was suggested."""
+enum SuggestionReason {
+  BOTH
+  NEIGHBOURS
+  TERMS
 }
 
 """What a sync of one account did."""
@@ -958,6 +2409,15 @@ type SyncResult {
   holdings: Int!
   pendingReplaced: Int!
   updated: Int!
+}
+
+"""Size of the outgoing payments, in one currency."""
+type TicketStats {
+  average: Decimal!
+  currency: String!
+  largest: Decimal!
+  median: Decimal!
+  smallest: Decimal!
 }
 
 """
@@ -1009,8 +2469,20 @@ type Transaction {
   """
   kind: TransactionKind
 
+  """Who the transaction was with."""
+  merchant: Merchant
+
+  """Where: the merchant's store, when the line names one."""
+  merchantLocation: MerchantLocation
+
+  """How the merchant was set (AUTO by alias, MANUAL by a user)."""
+  merchantSource: MerchantSource!
+
   """A user's note."""
   note: String
+
+  """Whether the bank fields were synced or imported from a file."""
+  origin: TransactionOrigin!
 
   """Units of the security, if any."""
   quantity: Decimal
@@ -1018,8 +2490,21 @@ type Transaction {
   """The remittance information (purpose line)."""
   remittance: String
 
+  """
+  The organization's transactions most similar to this one (same merchant, same kind of payment), closest first. `maxDistance` (cosine, 0–2) drops the far ones.
+  """
+  similarTransactions(limit: Int! = 10, maxDistance: Float = null): [Transaction!]!
+
   """Booked or pending."""
   status: TransactionStatus!
+
+  """
+  The categories this transaction most likely belongs to, best first — from similar transactions the organization categorized and from category terms. Empty when it has no embedding yet.
+  """
+  suggestedCategories(limit: Int! = 3): [CategorySuggestion!]!
+
+  """The syncer that last wrote the bank fields; null for imported rows."""
+  syncer: AccountSyncer
 
   """When it was made (e.g. the card payment)."""
   transactionDate: Date
@@ -1034,8 +2519,16 @@ type Transaction {
 """
 A single booked or pending transaction on an account.
 
+Counterparty, remittance and provider kind are embedded: similar transactions (the same
+merchant, the same kind of payment) sit close together, which drives ``search``,
+``similarTransactions`` and category suggestions (:mod:`finance.semantic`).
+
 Bank fields are overwritten by every sync; ``category``, ``note`` and ``is_transfer``
 belong to the users and survive re-syncs of booked rows (see :mod:`finance.sync`).
+
+A row is SYNC (a syncer wrote it) or IMPORT (a statement import did). A sync that finds the
+same booking as an IMPORT row takes that row over instead of adding a second one
+(:mod:`finance.matching`), keeping its category, note and ``import_raw``.
 """
 input TransactionFilter {
   AND: TransactionFilter
@@ -1046,6 +2539,7 @@ input TransactionFilter {
   amountMax: Decimal
   amountMin: Decimal
   categories: [ID!]
+  categorySource: CategorySource
   dateFrom: Date
   dateTo: Date
   direction: Direction
@@ -1054,7 +2548,29 @@ input TransactionFilter {
   isTransfer: Boolean
   kind: TransactionKind
   kinds: [TransactionKind!]
+  locations: [ID!]
+  merchantSource: MerchantSource
+  merchants: [ID!]
+
+  """
+  Only transactions at a merchant location within `radiusMeters` of a point, nearest first.
+  """
+  near: NearInput
+
+  """
+  Keep transactions that look like they belong to this category — close to what the organization put there, or to one of its terms — closest first.
+  """
+  nearCategory: ID
+
+  """
+  Search by text: a case-insensitive substring of counterparty, remittance or note; semantic similarity to them; or a category whose terms mean the text ("supermarket" finds what is in Groceries). Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  """
   search: String
+
+  """
+  Order by similarity to the given transaction, nearest first (no cut-off, composes with other filters and pagination). Empty when it is not in this organization or has no embedding yet.
+  """
+  similarTo: ID
   status: TransactionStatus
   uncategorized: Boolean
 }
@@ -1095,11 +2611,28 @@ input TransactionOrder @oneOf {
   createdAt: Ordering
 }
 
+"""
+Where a transaction's bank fields came from: a syncer (SYNC), or a file import (IMPORT) — a sync that finds the same booking later takes an IMPORT row over, keeping its category and note.
+"""
+enum TransactionOrigin {
+  IMPORT
+  SYNC
+}
+
 """Booking status as reported by the bank."""
 enum TransactionStatus {
   BOOKED
   OTHER
   PENDING
+}
+
+"""
+An imported category pair no category is mapped to (yet): its rows stay uncategorized, for rules and suggestions.
+"""
+type UnmappedImportCategory {
+  main: String!
+  rows: Int!
+  sub: String!
 }
 
 """Changes to a budget; omitted fields stay as they are."""
@@ -1114,11 +2647,17 @@ input UpdateBudgetInput {
 """Changes to a category; omitted fields stay as they are."""
 input UpdateCategoryInput {
   color: String
+  description: String
+  hidden: Boolean
   id: ID!
+
+  """Only for a top-level category; the whole subtree follows."""
   kind: CategoryKind
   name: String
 
-  """The new parent, or null to make it top-level."""
+  """
+  The new parent, or null to make it top-level. Moving takes the new root's kind.
+  """
   parent: ID
 }
 
@@ -1137,6 +2676,79 @@ input UpdateCategoryRuleInput {
   priority: Int
 }
 
+"""Changes to a merchant; omitted fields stay as they are."""
+input UpdateMerchantInput {
+  """The default category, or null for none; its transactions follow."""
+  category: ID
+
+  """…or the default category by its base key."""
+  categoryKey: String
+  description: String
+  id: ID!
+
+  """A new key — only when you mean to change what clients link by."""
+  key: String
+  logoUrl: String
+
+  """A new display name; the `key` stays (links by key keep working)."""
+  name: String
+  online: Boolean
+  website: String
+}
+
+"""Changes to a place; omitted fields stay as they are."""
+input UpdateMerchantLocationInput {
+  city: String
+  country: String
+  id: ID!
+  latitude: Decimal
+  longitude: Decimal
+  name: String
+  notes: String
+  postalCode: String
+  region: String
+  storeCode: String
+  street: String
+}
+
+"""Changes to a merchant rule; omitted fields stay as they are."""
+input UpdateMerchantRuleInput {
+  active: Boolean
+  amountMax: Decimal
+  amountMin: Decimal
+  apply: Boolean! = true
+  direction: RuleDirection
+  field: RuleField
+  id: ID!
+
+  """A place to pin, or null to let the store number decide."""
+  location: LocationRef
+  match: RuleMatch
+  merchant: MerchantRef
+  pattern: String
+  priority: Int
+}
+
+"""
+Create a merchant, or update the one with this key. Omitted fields keep their value on update; `aliases` are added (never removed).
+"""
+input UpsertMerchantInput {
+  """Texts to add as aliases (the key itself is always one)."""
+  aliases: [String!] = null
+  category: ID
+  categoryKey: String
+  description: String
+
+  """What the merchant is found by; normalized ("McDonald's" → "mcdonald")."""
+  key: String!
+  logoUrl: String
+
+  """Display name; the key's text when creating without one."""
+  name: String
+  online: Boolean
+  website: String
+}
+
 """
 A user account; sub is the stable subject identifier from the identity provider.
 """
@@ -1146,9 +2758,51 @@ type User {
   sub: String!
 }
 
+"""The depot on one day: its value, what was put in, and the gain."""
+type ValuationPoint {
+  currency: String!
+  date: Date!
+  gain: Decimal!
+
+  """
+  Net money put into securities up to this day (buys and savings plans minus sells).
+  """
+  invested: Decimal!
+  valuation: Decimal!
+}
+
+"""When and how often: visits are distinct days with a transaction."""
+type VisitStats {
+  averageDaysBetweenVisits: Float
+  daysSinceLastVisit: Int
+  firstVisit: Date
+  lastVisit: Date
+  visits: Int!
+
+  """Visits per 30.44 days of the window."""
+  visitsPerMonth: Float
+}
+
+"""Totals for one ISO weekday (1 = Monday … 7 = Sunday)."""
+type WeekdayTotals {
+  count: Int!
+  currency: String!
+  expense: Decimal!
+  income: Decimal!
+  weekday: Int!
+}
+
+"""The window a view covered, and the one it was compared with."""
+type WindowInfo {
+  end: Date!
+  previousEnd: Date
+  previousStart: Date
+  start: Date!
+}
+
 scalar _Any
 
-union _Entity = BalanceSnapshot | BankAccount | BankConnection | Budget | Category | CategoryRule | HoldingSnapshot | Organization | RecurringPayment | Transaction | User
+union _Entity = AccountSyncer | BalanceSnapshot | BankAccount | BankConnection | BigFileStore | Budget | Category | CategoryRule | HoldingSnapshot | ImportCategoryMapping | Merchant | MerchantAlias | MerchantLocation | MerchantRule | Organization | RecurringPayment | StatementImport | Transaction | User
 
 type _Service {
   sdl: String!
