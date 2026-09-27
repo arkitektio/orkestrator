@@ -10,7 +10,7 @@ import {
 import { Structure } from "@/core/types";
 import { Network, Ruler } from "lucide-react";
 import React from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
 import type { PassDownProps } from "@/core/smart/extensions/types";
 

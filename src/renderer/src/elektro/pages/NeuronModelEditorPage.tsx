@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { ElektroNeuronModel } from "@/core/linkers";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useNavigate } from "react-router-dom";
 import {
   useAddModelsToWorkspaceMutation,

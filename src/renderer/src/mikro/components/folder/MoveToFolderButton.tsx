@@ -11,7 +11,7 @@ import {
 } from "@/core/ui/dropdown-menu";
 import { Ordering, useGetFoldersQuery } from "@/mikro/api/graphql";
 import { Check, FolderInput, FolderPlus, Search } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { describeSubject, useFolderMove, type FolderMoveSubject } from "./useFolderMove";
 
 /** How many folders the quick list offers before "Browse all folders…". */

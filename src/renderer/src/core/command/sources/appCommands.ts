@@ -8,7 +8,6 @@ import {
   Moon,
   RefreshCw,
   RotateCcw,
-  Search,
   Settings,
   Sun,
   SunMoon,
@@ -71,14 +70,6 @@ export const APP_COMMANDS: AppCommand[] = [
     icon: Settings,
     keywords: ["preferences", "config"],
     run: ({ navigate }) => navigate("/settings"),
-  },
-  {
-    id: "switch-organization",
-    title: "Switch Organization",
-    description: "Change which organization you are working in",
-    icon: Search,
-    keywords: ["account", "profile", "org", "tenant"],
-    run: ({ navigate }) => navigate("/"),
   },
   {
     id: "add-account",

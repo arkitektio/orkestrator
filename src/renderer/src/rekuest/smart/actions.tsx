@@ -2,7 +2,7 @@ import { toWire } from "@/core/smart/structure";
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import { cn } from "@/core/util/utils";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { v4 as uuidv4 } from "uuid";
 import React from "react";
 import {

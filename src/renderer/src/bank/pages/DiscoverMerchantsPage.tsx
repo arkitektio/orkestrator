@@ -3,7 +3,7 @@ import { PageLayout } from "@/core/layout/PageLayout";
 import { Button } from "@/core/ui/button";
 import { Card } from "@/core/ui/card";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   MerchantCandidateFragment,
   useCategorizeTransactionsMutation,

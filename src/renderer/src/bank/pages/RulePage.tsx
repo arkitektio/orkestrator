@@ -2,7 +2,7 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Switch } from "@/core/ui/switch";
 import Timestamp from "@/core/ui/timestamp";
 import { BankRule } from "@/bank/linkers";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { ListTransactionsDocument, useGetCategoryRuleQuery, useUpdateCategoryRuleMutation } from "../api/graphql";
 import { ruleSentence } from "../components/cards/RuleCard";
 import { CategoryBadge } from "../components/CategoryBadge";

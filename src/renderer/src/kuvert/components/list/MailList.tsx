@@ -5,7 +5,7 @@ import { cn } from "@/core/util/utils";
 import { Flag, Inbox, Paperclip } from "lucide-react";
 import React, { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useKuvert } from "../../api/funcs";
 import {
   FolderRole,

@@ -12,7 +12,7 @@ import {
 } from "@/core/ui/card";
 import { ChevronsUpDown, LogOut, Stethoscope, Trash2, User } from "lucide-react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { settingsLink } from "../sections";
 import { SettingsPage } from "../components/SettingsPage";
 

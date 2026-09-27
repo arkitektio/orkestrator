@@ -9,6 +9,8 @@ import { AgentGateway } from "./gateway";
 import { registerIssueIpc } from "./issue-reporter";
 import { IpcTransport } from "./modules/IpcTransport";
 import { WindowManager } from "./modules/WindowManager";
+import { GlobalShortcutService, electronGlobalShortcutDeps } from "./modules/GlobalShortcutService";
+import { QuickPaletteWindow, electronQuickPaletteDeps } from "./modules/QuickPaletteWindow";
 import { AppUpdater } from "./modules/AppUpdater";
 import { DownloadManager } from "./modules/DownloadManager";
 import { AppManager } from "./modules/AppManager";
@@ -136,6 +138,22 @@ const exitingForFactoryReset = finishFactoryReset();
 const appManager = new AppManager();
 const transport = new IpcTransport();
 const windowManager = new WindowManager(transport);
+// The floating quick bar (Alfred-style ⌘K over any app) and the system-wide
+// shortcut that summons it. Picks that navigate land as tabs in the main window.
+const quickPalette: QuickPaletteWindow = new QuickPaletteWindow(
+  transport,
+  electronQuickPaletteDeps({
+    shouldPrewarm: () => globalShortcutService.isRegistered(),
+    mainWindowVisible: () => windowManager.mainWindowVisible,
+    openInTab: (path) => windowManager.openInTab(path),
+    openDialogInMain: (request) => windowManager.openDialogInMain(request),
+    onMainClosed: (listener) => windowManager.onMainClosed(listener),
+  }),
+);
+const globalShortcutService = new GlobalShortcutService(
+  transport,
+  electronGlobalShortcutDeps(() => quickPalette.toggle()),
+);
 const appUpdater = new AppUpdater(transport, windowManager);
 const downloadManager = new DownloadManager(transport);
 const uploadService = new UploadService(transport);
@@ -188,6 +206,8 @@ const voiceService = new VoiceService(transport, windowManager, {
 });
 
 appManager.register(windowManager);
+appManager.register(globalShortcutService);
+appManager.register(quickPalette);
 appManager.register(appUpdater);
 appManager.register(downloadManager);
 appManager.register(uploadService);

@@ -8,7 +8,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
 import { useActionDescription } from "@/core/ports/engine/ActionDescription";
 import { ApolloError } from "@apollo/client";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   PostmanTaskFragment,
   ResolvedDependencyInput,

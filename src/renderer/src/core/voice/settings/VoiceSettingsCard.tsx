@@ -20,7 +20,7 @@ import type { Settings } from "@/core/settings/store/validator";
 import { Check, Download, Mic, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useController, useFormContext, useWatch } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import type {
   VoiceCatalogEntry,
   VoiceModelProgress,

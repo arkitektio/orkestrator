@@ -68,7 +68,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     slug: "palette",
     label: "Command palette",
-    description: "Which actions sit pinned at the top of ⌘K.",
+    description: "The system-wide shortcut, and which actions sit pinned at the top of ⌘K.",
     icon: Pin,
     group: "app",
   },

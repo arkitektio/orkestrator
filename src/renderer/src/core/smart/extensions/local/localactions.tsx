@@ -23,6 +23,9 @@ export const LocalActionCommand = (props: {
   return (
     <>
       <CommandActionRow
+        // Keyed by the registry id: without a value cmdk keys a row by its
+        // TEXT, and two rows with the same text break arrow navigation.
+        value={`local:${props.actionId ?? props.action.title}`}
         onSelect={assign}
         title={props.action.title}
         description={props.action.description}

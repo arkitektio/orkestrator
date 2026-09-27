@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Marker } from "react-map-gl/maplibre";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { MerchantLocationFragment, useUpdateMerchantLocationMutation } from "../../api/graphql";
 import { toastText } from "../../errors";
 import { BankMap, Bbox, toBounds } from "./BankMap";

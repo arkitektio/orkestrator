@@ -11,7 +11,7 @@ import { smartRegistry } from "@/core/smart/registry";
 import { structureTabTarget } from "@/core/smart/tabTargets";
 import { requestExport } from "@/core/modules/export/exportRequests";
 import { Columns2, Download, ExternalLink, FolderOpen, Link2, Link2Off, PanelLeftOpen } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   getActiveProfile,
   loadStoredProfileBook,

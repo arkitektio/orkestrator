@@ -11,7 +11,7 @@ import { ChevronDown, ExternalLink, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   ListMailAccountsDocument,
   MailboxTreeDocument,

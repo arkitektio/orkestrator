@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   CreatableTransformKind,
   PlacementValidity,

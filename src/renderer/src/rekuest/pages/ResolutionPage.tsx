@@ -8,7 +8,7 @@ import {
 } from "@/rekuest/api/graphql";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { usePortForm } from "@/core/ports/engine/usePortForm";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { Form } from "@/core/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";

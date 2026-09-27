@@ -6,7 +6,7 @@ import { Form } from "@/core/ui/form";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   CategoryDeletionFragment,
   ListCategoriesDocument,

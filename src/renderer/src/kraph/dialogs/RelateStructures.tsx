@@ -6,7 +6,7 @@ import {
   useAssertStructureExistsMutation,
   useListStructureRelationCategoryQuery
 } from "@/kraph/api/graphql";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 export const RelateStructures = (props: {
   left: Structure[];

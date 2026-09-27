@@ -7,6 +7,7 @@ import { PlaceDisplay } from "./displays/PlaceDisplay";
 import { TransactionDisplay } from "./displays/TransactionDisplay";
 import { manifest } from "./manifest";
 import { BANK_NAV_LINKS } from "./navLinks";
+import { BankEntitySearch } from "./search";
 import { service } from "./service";
 
 export const BANK_MODULE = defineModule({
@@ -24,5 +25,6 @@ export const BANK_MODULE = defineModule({
     },
     dialogs: BANK_DIALOGS,
     actions: BANK_ACTIONS,
+    search: BankEntitySearch,
   },
 });

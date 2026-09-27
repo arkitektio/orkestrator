@@ -7,7 +7,7 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/co
 import { Form } from "@/core/ui/form";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   AssignMerchantInput,
   ListMerchantsDocument,

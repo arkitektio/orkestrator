@@ -17,7 +17,7 @@ import { useAssign } from "@/rekuest/hooks/useAssign";
 import { submittedDataToRekuestFormat } from "@/core/ports/engine/utils";
 import { smartRegistry } from "@/core/smart/registry";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useMemo, useState } from "react";
 
 /**

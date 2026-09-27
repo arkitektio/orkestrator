@@ -1799,8 +1799,14 @@ type Mutation {
   """Fold one merchant into another."""
   mergeMerchants(into: ID!, merchant: ID!): Merchant!
 
+  """Choose the symbol an ISIN is priced by, for one source."""
+  pinSecurityListing(input: PinSecurityListingInput!): SecurityListing!
+
   """Run the rules over existing transactions."""
   reapplyRules(accounts: [ID!] = null, semanticAssign: Boolean! = true): Int!
+
+  """Fetch and store daily closes from the enabled sources."""
+  refreshSecurityPrices(dateFrom: Date = null, dateTo: Date = null, isins: [String!] = null, sources: [PriceSource!] = null): [PriceRefresh!]!
 
   """Forget a merchant spelling."""
   removeMerchantAlias(id: ID!): ID!
@@ -1812,6 +1818,9 @@ type Mutation {
   Request temporary S3 credentials to upload one file (e.g. a statement export to import).
   """
   requestBigfileUpload(input: RequestBigFileUploadInput!): BigFileUploadGrant!
+
+  """Find listings for ISINs (OpenFIGI + preferred exchanges)."""
+  resolveSecurityListings(isins: [String!] = null, sources: [PriceSource!] = null): [SecurityListing!]!
 
   """Bring back a deleted base category."""
   restoreBaseCategory(key: String!): [Category!]!
@@ -1942,6 +1951,20 @@ type PeriodOverview {
 }
 
 """
+Choose the listing an ISIN is priced by for one source (it is never re-resolved).
+"""
+input PinSecurityListingInput {
+  exchange: String = null
+  isin: String!
+  source: PriceSource!
+
+  """
+  The source's symbol: Yahoo VWCE.DE, Twelve Data VWCE (with `exchange` XETR), Scalable the ISIN.
+  """
+  symbol: String!
+}
+
+"""
 A GeoJSON Point: `coordinates` is `[longitude, latitude]` (WGS84), as GeoJSON orders them.
 """
 type PointGeometry {
@@ -1967,6 +1990,29 @@ type PortfolioInsights {
   valuationHistory: [ValuationPoint!]!
 }
 
+"""How one depot position's price moved over a window."""
+type PositionPerformance {
+  """last − first close, per unit."""
+  change: Decimal
+
+  """change / first close."""
+  changeRatio: Float
+  currency: String
+  firstClose: Decimal
+  firstDate: Date
+  isin: String!
+  lastClose: Decimal
+  lastDate: Date
+  name: String!
+  quantity: Decimal!
+  source: PriceSource
+
+  """
+  quantity × change: what the position gained or lost in the window at today's quantity.
+  """
+  valueChange: Decimal
+}
+
 """A recurring payment whose amount changed."""
 type PriceChange {
   currency: String!
@@ -1974,6 +2020,41 @@ type PriceChange {
   delta: Decimal!
   previous: Decimal!
   recurring: RecurringPayment!
+}
+
+"""A closing price on a trading day."""
+type PricePoint {
+  close: Decimal!
+  date: Date!
+}
+
+"""What refreshing one ISIN from one source did."""
+type PriceRefresh {
+  error: String
+  isin: String!
+  points: Int!
+  source: PriceSource!
+  symbol: String
+}
+
+"""
+An ISIN's daily closes from one source (the first, in preference order, that has any in the window).
+"""
+type PriceSeries {
+  currency: String
+  isin: String!
+  points: [PricePoint!]!
+  source: PriceSource
+  symbol: String
+}
+
+"""
+Where security prices come from: SCALABLE (the organization's Scalable login), TWELVEDATA (API key), YAHOO (unofficial, no key).
+"""
+enum PriceSource {
+  SCALABLE
+  TWELVEDATA
+  YAHOO
 }
 
 """Who a connection reaches its accounts through."""
@@ -2086,6 +2167,9 @@ type Query {
   """The depot: value over time, allocation, positions, investment income."""
   portfolioInsights(accounts: [ID!] = null, dateFrom: Date = null): PortfolioInsights!
 
+  """How each depot position's price moved over a window."""
+  positionPerformance(accounts: [ID!] = null, dateFrom: Date = null, dateTo: Date = null): [PositionPerformance!]!
+
   """Recurring payments: commitment, due, missed, price changes."""
   recurringInsights(includeDetected: Boolean! = false): RecurringInsights!
 
@@ -2094,6 +2178,15 @@ type Query {
 
   """Detected recurring payments."""
   recurringPayments(filters: RecurringPaymentFilter, ordering: [RecurringPaymentOrder!]! = [], pagination: OffsetPaginationInput): [RecurringPayment!]!
+
+  """Which symbol prices each ISIN, per source."""
+  securityListings(isin: String = null): [SecurityListing!]!
+
+  """An ISIN's stored daily closes."""
+  securityPrices(dateFrom: Date = null, dateTo: Date = null, isin: String!, priceSource: PriceSource = null): PriceSeries!
+
+  """The latest price of an ISIN, fetched now."""
+  securityQuote(isin: String!, priceSource: PriceSource = null): SecurityQuote!
 
   """Income, expense and net per category and currency."""
   spendingByCategory(accounts: [ID!] = null, dateFrom: Date = null, dateTo: Date = null, includeTransfers: Boolean! = false): [CategoryTotal!]!
@@ -2279,6 +2372,59 @@ enum RuleMatch {
   CONTAINS
   EQUALS
   REGEX
+}
+
+"""
+Which listing (a source's symbol) the organization prices an ISIN by. `pinned` ones were chosen by a user.
+"""
+type SecurityListing {
+  """The listing's trading currency, once a price was fetched."""
+  currency: String
+
+  """
+  The exchange (Twelve Data: the MIC, e.g. XETR; else the OpenFIGI exchange code).
+  """
+  exchange: String
+
+  """When prices were last fetched for it."""
+  fetchedAt: DateTime
+  id: ID!
+
+  """The security."""
+  isin: String!
+
+  """Why the last fetch failed, if it did."""
+  lastError: String
+
+  """The security's name as the source knows it."""
+  name: String
+
+  """Chosen by a user: automatic resolution never changes it."""
+  pinned: Boolean!
+
+  """When it was last resolved."""
+  resolvedAt: DateTime
+
+  """The price source this listing is for."""
+  source: PriceSource!
+
+  """
+  The source's symbol (Scalable: the ISIN; Yahoo: VWCE.DE; Twelve Data: VWCE).
+  """
+  symbol: String!
+}
+
+"""The latest price of an ISIN, fetched now."""
+type SecurityQuote {
+  ask: Decimal
+  bid: Decimal
+  currency: String!
+  isin: String!
+  name: String
+  price: Decimal!
+  source: PriceSource!
+  symbol: String!
+  time: DateTime
 }
 
 """Confirm or ignore a detected recurring payment."""
@@ -2489,6 +2635,11 @@ type Transaction {
 
   """The remittance information (purpose line)."""
   remittance: String
+
+  """
+  The exact text this transaction is embedded as: its bank line (normalized: no numbers, 'DANKT', cities or legal forms), then what its merchant and place add. Two lines are similar when these texts are.
+  """
+  semanticInput: String
 
   """
   The organization's transactions most similar to this one (same merchant, same kind of payment), closest first. `maxDistance` (cosine, 0–2) drops the far ones.
@@ -2802,7 +2953,7 @@ type WindowInfo {
 
 scalar _Any
 
-union _Entity = AccountSyncer | BalanceSnapshot | BankAccount | BankConnection | BigFileStore | Budget | Category | CategoryRule | HoldingSnapshot | ImportCategoryMapping | Merchant | MerchantAlias | MerchantLocation | MerchantRule | Organization | RecurringPayment | StatementImport | Transaction | User
+union _Entity = AccountSyncer | BalanceSnapshot | BankAccount | BankConnection | BigFileStore | Budget | Category | CategoryRule | HoldingSnapshot | ImportCategoryMapping | Merchant | MerchantAlias | MerchantLocation | MerchantRule | Organization | RecurringPayment | SecurityListing | StatementImport | Transaction | User
 
 type _Service {
   sdl: String!

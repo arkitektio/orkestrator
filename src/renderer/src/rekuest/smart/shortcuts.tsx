@@ -4,7 +4,7 @@ import { buildAssignInput } from "@/rekuest/assign";
 import { Badge } from "@/core/ui/badge";
 import { LightningBoltIcon } from "@radix-ui/react-icons";
 import React from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { v4 as uuidv4 } from "uuid";
 import { TaskEventFragment, ListShortcutFragment, PortKind } from "@/rekuest/api/graphql";
 import { trackTask } from "@/rekuest/lib/taskTracker";

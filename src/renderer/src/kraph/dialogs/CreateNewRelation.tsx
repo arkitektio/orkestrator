@@ -21,7 +21,7 @@ import {
 import { smartRegistry } from "@/core/smart/registry";
 import { Structure } from "@/core/types";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 const searchIdentifiers = async ({ search, values }: SearchOptions) => {
   const models = smartRegistry

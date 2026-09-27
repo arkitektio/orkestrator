@@ -10,7 +10,7 @@ import {
 import { Form } from "@/core/ui/form";
 import { DetailClientFragment, useClientQuery } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { clientAppIdentifier, clientAppVersion } from "@/lok/lib/clientLabels";
 
 type ReportClientBugFormData = {

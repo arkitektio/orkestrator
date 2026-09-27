@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { electronAPI } from "@electron-toolkit/preload";
 import { Assign } from "../main/message";
 import type { ChromeTheme, ChromeThemeSource, WindowChromeState } from "../main/modules/WindowManager";
+import type { DialogRequest as ForwardedDialog } from "../main/modules/QuickPaletteWindow";
 import {
   DOCTOR_MESH_CHANNEL,
   DOCTOR_NETWORK_CHANNEL,
@@ -110,6 +111,37 @@ const api = {
   tabs: {
     onOpen: (cb: (payload: { path: string }) => void) =>
       subscribe<{ path: string }>("tabs:open", cb),
+  },
+  /**
+   * Dialogs the quick bar forwards to this (main) window: pushed while it is
+   * up, or waiting in main for a renderer that was still booting.
+   */
+  dialogs: {
+    onOpen: (cb: (request: ForwardedDialog) => void) => subscribe<ForwardedDialog>("dialogs:open", cb),
+    takePending: (): Promise<ForwardedDialog | null> => ipcRenderer.invoke("dialogs:take-pending"),
+  },
+  /**
+   * The system-wide palette shortcut and the floating quick bar it summons
+   * (main's GlobalShortcutService + QuickPaletteWindow). `setGlobalShortcut`
+   * swaps the OS registration and says whether it took (another app may hold
+   * it); the `*Quick*` calls are the quick-bar window's side of the protocol.
+   */
+  palette: {
+    setGlobalShortcut: (
+      accelerator: string | null,
+    ): Promise<{ status: "ok" | "off" | "taken" | "invalid"; accelerator: string | null }> =>
+      ipcRenderer.invoke("palette:set-global-shortcut", accelerator),
+    /** Quick bar only: main just showed it. */
+    onQuickShown: (cb: () => void) => subscribe<void>("quick:shown", () => cb()),
+    hideQuick: () => ipcRenderer.send("quick:hide"),
+    /** Hold the bar open through a blur (a dialog or file picker in it). */
+    keepQuickOpen: (keep: boolean) => ipcRenderer.send("quick:keepOpen", keep),
+    resizeQuick: (size: { height: number; expanded?: boolean }) =>
+      ipcRenderer.send("quick:resize", size),
+    /** Open a path as a tab in the main window (and hide the bar). */
+    openInMain: (path: string) => ipcRenderer.send("quick:open-in-main", path),
+    /** Open a registry dialog in the main window (and hide the bar). Throws if `request` does not clone. */
+    openDialogInMain: (request: ForwardedDialog) => ipcRenderer.send("quick:open-dialog-in-main", request),
   },
   reloadWindow: () => ipcRenderer.invoke("reload-window"),
   forceReloadWindow: () => ipcRenderer.invoke("force-reload-window"),

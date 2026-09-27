@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   defaultBlokCatalog,
   UI_CATALOG_DESCRIPTION,

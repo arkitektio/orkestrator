@@ -3,7 +3,7 @@ import { ListRender } from "@/core/layout/ListRender";
 import { PageAction } from "@/core/ui/page-action";
 import { BankAccount, BankRecurring } from "@/bank/linkers";
 import { Check, EyeOff } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { RecurringStatus, useGetRecurringPaymentQuery, useSetRecurringStatusMutation } from "../api/graphql";
 import TransactionCard from "../components/cards/TransactionCard";
 import { InfoList } from "../components/InfoList";

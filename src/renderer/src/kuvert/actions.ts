@@ -5,6 +5,7 @@ import { ApolloClient, NormalizedCache } from "@apollo/client";
 import {
   Archive,
   CheckCheck,
+  CopyPlus,
   Flag,
   FlagOff,
   FolderInput,
@@ -32,19 +33,25 @@ import {
   GetMailAccountQuery,
   GetMailFolderDocument,
   GetMailFolderQuery,
+  GetOutgoingMessageDocument,
+  GetOutgoingMessageQuery,
   MailboxTreeDocument,
   SyncMailAccountDocument,
   TestMailAccountDocument,
+  ThreadMessageIdsDocument,
+  ThreadMessageIdsQuery,
   UpdateMailAccountDocument,
   UpdateMailFolderDocument,
 } from "./api/graphql";
 import { toastText } from "./errors";
+import { formatAddress } from "./format";
 import { deleteMail, MAIL_VIEWS, markRead, moveTo, moveToRole, setFlagged, threadMessages } from "./mailOps";
 
 const ACCOUNT = "@kuvert/account";
 const FOLDER = "@kuvert/folder";
 const THREAD = "@kuvert/thread";
 const MESSAGE = "@kuvert/message";
+const OUTGOING = "@kuvert/outgoing";
 
 // Same cast as `buildDeleteAction`: the deferred service type does not resolve
 // here, but every concrete service carries a `.client`.
@@ -91,7 +98,9 @@ const confirmDelete = async ({ services, confirm, modifiers }: ActionParams, mes
   if (ok) await deleteMail(kuvertClient(services), messages, permanent);
 };
 
-const reply = (title: string, description: string, mode: "reply" | "replyAll" | "forward", icon: Action["icon"]): Action => ({
+type ComposeMode = "reply" | "replyAll" | "forward";
+
+const reply = (title: string, description: string, mode: ComposeMode, icon: Action["icon"]): Action => ({
   title,
   description,
   icon,
@@ -99,6 +108,25 @@ const reply = (title: string, description: string, mode: "reply" | "replyAll" | 
   execute: async ({ dialog, state }) => {
     const [id] = need(idsOf(state, MESSAGE), "mail");
     dialog.openSheet("kuvertcompose", { replyTo: id, mode }, { size: "large" });
+  },
+});
+
+/** Answers or forwards a conversation's newest mail, as the reader's inline reply does. */
+const threadReply = (title: string, description: string, mode: ComposeMode, icon: Action["icon"]): Action => ({
+  title,
+  description,
+  icon,
+  conditions: [{ type: "identifier", identifier: THREAD }, { type: "nopartner" }],
+  execute: async ({ dialog, services, state }) => {
+    const [id] = need(idsOf(state, THREAD), "conversation");
+    const { data } = await kuvertClient(services).query<ThreadMessageIdsQuery>({
+      query: ThreadMessageIdsDocument,
+      variables: { id },
+    });
+    // Oldest first.
+    const last = data.thread.messages.at(-1);
+    if (!last) throw new Error("The conversation has no mail");
+    dialog.openSheet("kuvertcompose", { replyTo: last.id, mode }, { size: "large" });
   },
 });
 
@@ -237,6 +265,9 @@ export const KUVERT_ACTIONS: Record<string, Action> = {
   },
 
   // --- Conversations ----------------------------------------------------------
+  "kuvert-thread-reply": threadReply("Reply", "Answer the newest mail's sender", "reply", Reply),
+  "kuvert-thread-reply-all": threadReply("Reply all", "Answer everyone on the newest mail", "replyAll", ReplyAll),
+  "kuvert-thread-forward": threadReply("Forward", "Send the newest mail on to someone else", "forward", Forward),
   "kuvert-thread-read": {
     title: "Mark read",
     description: "Mark every mail of the conversation as read",
@@ -392,7 +423,46 @@ export const KUVERT_ACTIONS: Record<string, Action> = {
       onProgress(100);
     },
   },
+  "kuvert-folder-compose": {
+    title: "New mail",
+    description: "Write a mail from this folder's mailbox",
+    icon: PenSquare,
+    conditions: [{ type: "identifier", identifier: FOLDER }, { type: "nopartner" }],
+    execute: async ({ dialog, services, state }) => {
+      const [id] = need(idsOf(state, FOLDER), "folder");
+      const { data } = await kuvertClient(services).query<GetMailFolderQuery>({ query: GetMailFolderDocument, variables: { id } });
+      dialog.openSheet("kuvertcompose", { account: data.mailFolder.account.id }, { size: "large" });
+    },
+  },
   "kuvert-folder-sync-on": folderSync(true),
   "kuvert-folder-sync-off": folderSync(false),
+
+  // --- Sent mail ----------------------------------------------------------------
+  "kuvert-outgoing-edit-as-new": {
+    title: "Edit as new",
+    description: "Start a new mail with this one's recipients, subject and text",
+    icon: CopyPlus,
+    conditions: [{ type: "identifier", identifier: OUTGOING }, { type: "nopartner" }],
+    execute: async ({ dialog, services, state }) => {
+      const [id] = need(idsOf(state, OUTGOING), "sent mail");
+      const { data } = await kuvertClient(services).query<GetOutgoingMessageQuery>({
+        query: GetOutgoingMessageDocument,
+        variables: { id },
+      });
+      const m = data.outgoingMessage;
+      dialog.openSheet(
+        "kuvertcompose",
+        {
+          account: m.account.id,
+          to: m.to.map(formatAddress),
+          cc: m.cc.map(formatAddress),
+          bcc: m.bcc.map(formatAddress),
+          subject: m.subject,
+          body: m.textBody,
+        },
+        { size: "large" },
+      );
+    },
+  },
 };
 

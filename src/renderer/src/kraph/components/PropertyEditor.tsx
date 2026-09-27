@@ -7,7 +7,7 @@ import { GetEntityDocument, PropertyDefinitionFragment, useAssertMetricValueMuta
 import { buildItoldyousoMetric, isManuallyAssertable } from "@/kraph/lib/itoldyouso";
 import { Check, Pencil, X } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 export const PropertyEditor = ({
   entityId,

@@ -7,7 +7,7 @@ import { Form } from "@/core/ui/form";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { ChevronDown } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   AuthMethod,
   MailAccountFragment,

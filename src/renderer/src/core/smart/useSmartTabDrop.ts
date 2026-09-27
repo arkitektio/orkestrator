@@ -1,6 +1,6 @@
 import { useTabActions } from "@/core/tabs/TabsProvider";
 import { useCanDrop, useDropTarget } from "@/core/dnd/react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 import { acceptsSmartDrag, resolveSmartDrop } from "./dragPayload";
 import { structureTabTargets } from "./tabTargets";

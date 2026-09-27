@@ -37,7 +37,7 @@ import {
 } from "@/rekuest/api/graphql";
 import { ArrowRight, SlidersHorizontal } from "lucide-react";
 import { ReactNode, useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import TaskList from "../components/lists/TaskList";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { useImplementationForm } from "../hooks/useImplementationForm";

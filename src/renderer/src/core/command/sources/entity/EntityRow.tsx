@@ -48,6 +48,9 @@ export const EntityRow = ({
 
   return (
     <CommandActionRow
+      // Identity, not text: a hit's text can equal a recent's or another
+      // hit's, and cmdk keys a value-less row by its text.
+      value={`entity:${identifier}:${id}`}
       title={label}
       description={description ?? smartRegistry.getDisplayName(identifier)}
       icon={Box}

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/cor
 import { ArrowRight, Github } from "lucide-react";
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   ListDefinitionsDocument,
   ListReleasesDocument,

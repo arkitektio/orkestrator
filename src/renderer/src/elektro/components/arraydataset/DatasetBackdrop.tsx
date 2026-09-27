@@ -1,5 +1,5 @@
 import { AudioLines, ChevronDown } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import {

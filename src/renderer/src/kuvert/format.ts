@@ -107,12 +107,20 @@ export const quoteForForward = (m: Quotable) =>
     .filter((line) => line !== null)
     .join("\n");
 
+/**
+ * Just the name and address — what `RecipientInput` takes. A fetched `Address`
+ * also carries `__typename`, which the server rejects on input.
+ */
+export const plainAddress = (a: MailAddress): MailAddress =>
+  a.name ? { name: a.name, address: a.address } : { address: a.address };
+
 type Repliable = { sender: MailAddress; replyTo: MailAddress[]; to: MailAddress[]; cc: MailAddress[] };
 
 /**
  * Who a reply goes to. Reply: Reply-To, else the sender. Reply all: also every
  * other To and Cc, minus the mailbox's own address and duplicates. A reply to
- * one's own sent mail goes back to its recipients.
+ * one's own sent mail goes back to its recipients. Plain addresses, ready to
+ * send as they are.
  */
 export const replyRecipients = (m: Repliable, own: string, all: boolean): { to: MailAddress[]; cc: MailAddress[] } => {
   const self = own.toLowerCase();
@@ -129,10 +137,10 @@ export const replyRecipients = (m: Repliable, own: string, all: boolean): { to: 
   };
   // Never to oneself, unless one wrote only to oneself.
   const others = primary.filter((a) => !isSelf(a));
-  const to = (others.length ? others : primary).filter(keep);
+  const to = (others.length ? others : primary).filter(keep).map(plainAddress);
   if (!all) return { to, cc: [] };
   const rest = fromSelf ? m.cc : [...m.to, ...m.cc];
-  return { to, cc: rest.filter((a) => !isSelf(a)).filter(keep) };
+  return { to, cc: rest.filter((a) => !isSelf(a)).filter(keep).map(plainAddress) };
 };
 
 const ROLE_ORDER: FolderRole[] = [

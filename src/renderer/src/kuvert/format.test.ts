@@ -57,6 +57,17 @@ describe("replyRecipients", () => {
     });
   });
 
+  it("hands back plain addresses, without the fetched __typename", () => {
+    const fetched = {
+      ...message,
+      sender: { __typename: "Address", name: "jhnnsrs/bank", address: "bank@noreply.github.com" },
+    };
+    expect(replyRecipients(fetched, "me@x.org", false).to[0]).toStrictEqual({
+      name: "jhnnsrs/bank",
+      address: "bank@noreply.github.com",
+    });
+  });
+
   it("prefers Reply-To", () => {
     const withReplyTo = { ...message, replyTo: [{ address: "list@x.org" }] };
     expect(replyRecipients(withReplyTo, "me@x.org", false).to).toEqual([{ address: "list@x.org" }]);

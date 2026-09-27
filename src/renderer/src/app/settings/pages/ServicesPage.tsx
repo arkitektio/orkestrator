@@ -21,7 +21,7 @@ import {
 import { Send, Server, Settings, Stethoscope, XCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useMeshes } from "@/core/connection/mesh/useMeshes";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { HubAwareConnectionDoctor } from "@/core/connection/ui/doctor/HubAwareConnectionDoctor";
 import { instanceToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
 import { toHubHealthFacts, type HubHealthFacts } from "@/core/connection/arkitekt/doctor/hubHealth";

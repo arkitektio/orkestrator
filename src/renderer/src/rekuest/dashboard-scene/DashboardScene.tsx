@@ -34,7 +34,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   type DashboardFragment,
   MaterializedBlokFragment,

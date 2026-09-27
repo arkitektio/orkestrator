@@ -2,7 +2,7 @@ import { MoreHorizontal, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Color, SRGBColorSpace } from "three";
 import { SwatchColorPicker } from "@/core/ui/SwatchColorPicker";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   AlertDialog,
   AlertDialogAction,

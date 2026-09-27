@@ -1,6 +1,6 @@
 import { Crosshair, Trash2, Wand2 } from "lucide-react";
 import { useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";

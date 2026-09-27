@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import { Check, Copy, GitBranch, HelpCircle, Pencil, Save, Trash2, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { v4 as uuidv4 } from 'uuid';
 import { useDialog } from "@/core/dialogs/registry";
 import { toBase } from "@/core/util/quantities";

@@ -10,7 +10,7 @@ import {
   AttachmentTrigger,
 } from "@/core/ui/attachment";
 import { Download } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { AttachmentFragment } from "../api/graphql";
 import { useAttachmentUrls, useSaveAttachment } from "../datalayer/attachments";
 import { formatBytes } from "../format";

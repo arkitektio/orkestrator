@@ -1,5 +1,5 @@
 import { Button } from "@/core/ui/button";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   CategoryCandidatesDocument,
   useCategorizeTransactionsMutation,

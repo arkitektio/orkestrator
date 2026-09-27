@@ -7,6 +7,7 @@ import { ThreadDisplay } from "./displays/ThreadDisplay";
 import { manifest } from "./manifest";
 import { KUVERT_NAV_LINKS } from "./navLinks";
 import { KuvertEntitySearch } from "./search";
+import { ComposeSource } from "./palette/ComposeSource";
 import { service } from "./service";
 
 export const KUVERT_MODULE = defineModule({
@@ -24,5 +25,6 @@ export const KUVERT_MODULE = defineModule({
     dialogs: KUVERT_DIALOGS,
     actions: KUVERT_ACTIONS,
     search: KuvertEntitySearch,
+    paletteSources: [ComposeSource],
   },
 });

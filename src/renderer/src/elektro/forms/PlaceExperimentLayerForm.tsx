@@ -6,7 +6,7 @@ import { Input } from "@/core/ui/input";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { cn } from "@/core/util/utils";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   useClockPickerQuery,
   useCreateClockOffsetMutation,

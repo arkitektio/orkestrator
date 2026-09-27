@@ -2,7 +2,7 @@ import type { CreateFunc, UploadFunc } from "@/core/datalayer/upload/drag";
 import { LOK_MEDIA_ACCEPT, useLokUpload } from "@/lok/datalayer/useLokUpload";
 import type React from "react";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 const messageOf = (error: unknown) =>
   error instanceof Error && error.message ? error.message : "Upload failed";

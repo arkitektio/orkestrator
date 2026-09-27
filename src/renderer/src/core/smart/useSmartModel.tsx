@@ -4,7 +4,7 @@ import { Structure } from "@/core/types";
 import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react";
 import { createSelector } from "reselect";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 import { DropPayload } from "@/core/dnd/engine";
 import { useDragSource, useDropTarget } from "@/core/dnd/react";

@@ -8,7 +8,9 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -67,6 +69,41 @@ type ModalState = {
   container?: HTMLElement | null;
 };
 
+/**
+ * A dialog opened in one window to be shown in another: the quick bar hands
+ * its actions' dialogs to the main window. Plain data only — no container,
+ * and props must survive a structured clone.
+ */
+export type DialogRequest = {
+  type: "dialog" | "sheet";
+  id: string;
+  props: Record<string, unknown>;
+  options?: Pick<OpenOptions, "className" | "side" | "size">;
+};
+
+/**
+ * The request to forward, or null when it cannot cross a window (a prop that
+ * is a function or a DOM node): such a dialog opens where it was asked for.
+ */
+export const forwardableRequest = (
+  type: DialogRequest["type"],
+  id: string,
+  props: unknown,
+  options?: OpenOptions,
+): DialogRequest | null => {
+  const request: DialogRequest = {
+    type,
+    id,
+    props: (props ?? {}) as Record<string, unknown>,
+    options: { className: options?.className, side: options?.side, size: options?.size },
+  };
+  try {
+    return structuredClone(request);
+  } catch {
+    return null;
+  }
+};
+
 type OpenOptions = {
   className?: string;
   side?: "top" | "bottom" | "left" | "right";
@@ -123,12 +160,53 @@ export function createDialogProvider<
     );
   };
 
-  const DialogProvider = ({ children }: { children: React.ReactNode }) => {
+  /**
+   * `forward`: this window shows no dialogs of its own (the quick bar) — every
+   * open goes there instead, unless it cannot cross windows. Without it, this
+   * window receives dialogs forwarded to it (`window.api.dialogs`).
+   */
+  const DialogProvider = ({
+    children,
+    forward,
+  }: {
+    children: React.ReactNode;
+    forward?: (request: DialogRequest) => void;
+  }) => {
     const [modalState, setModalState] = useState<ModalState>({
       id: null,
       props: {},
       type: "dialog",
     });
+    // Read at call time, so the open callbacks stay stable.
+    const forwardRef = useRef(forward);
+    forwardRef.current = forward;
+
+    const tryForward = (type: DialogRequest["type"], id: string, props: unknown, options?: OpenOptions) => {
+      if (!forwardRef.current) return false;
+      const request = forwardableRequest(type, id, props, options);
+      if (!request) return false;
+      forwardRef.current(request);
+      return true;
+    };
+
+    // The receiving side: pushed while up, or waiting in main from a boot.
+    useEffect(() => {
+      if (forward) return;
+      const show = (request: DialogRequest) => {
+        if (!(request.id in registry)) return;
+        setModalState({
+          id: request.id,
+          props: request.props,
+          type: request.type,
+          className: request.options?.className,
+          side: request.type === "sheet" ? request.options?.side || "right" : undefined,
+          size: request.options?.size,
+        });
+      };
+      const dispose = window.api?.dialogs?.onOpen?.(show);
+      void window.api?.dialogs?.takePending?.().then((request) => request && show(request));
+      return dispose;
+    }, [forward]);
 
     const openDialog = useCallback(
       <K extends DialogId>(
@@ -136,6 +214,7 @@ export function createDialogProvider<
         props: DialogPropsMap[K],
         options?: Omit<OpenOptions, "side">,
       ) => {
+        if (tryForward("dialog", id as string, props, options)) return;
         setModalState({
           id: id as string,
           props,
@@ -154,6 +233,7 @@ export function createDialogProvider<
         props: DialogPropsMap[K],
         options?: OpenOptions,
       ) => {
+        if (tryForward("sheet", id as string, props, options)) return;
         setModalState({
           id: id as string,
           props,

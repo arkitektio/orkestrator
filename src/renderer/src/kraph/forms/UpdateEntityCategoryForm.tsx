@@ -10,7 +10,7 @@ import { Form } from "@/core/ui/form";
 import { Trash2 } from "lucide-react";
 import { buildDerivationRule } from "../components/schema-builder/utils";
 import { useFieldArray, useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   DerivationType,
   EntityCategoryFragment,

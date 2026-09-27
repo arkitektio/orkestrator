@@ -5,6 +5,7 @@ import Store from 'electron-store';
 import { join } from 'path';
 import { AppModule } from './AppModule';
 import { IpcTransport } from './IpcTransport';
+import type { DialogRequest } from './QuickPaletteWindow';
 import { deepLinkPath } from './deepLinkPath';
 import { APP_ORIGIN } from '../scheme';
 
@@ -232,6 +233,19 @@ export class WindowManager implements AppModule {
         return this.mainWindow;
     }
 
+    /** Whether the main window is on screen (not closed, hidden or minimized). */
+    get mainWindowVisible(): boolean {
+        const win = this.mainWindow;
+        return !!win && !win.isDestroyed() && win.isVisible() && !win.isMinimized();
+    }
+
+    private mainClosedListeners: (() => void)[] = [];
+
+    /** Called when the main window is closed (not merely hidden). */
+    onMainClosed(listener: () => void) {
+        this.mainClosedListeners.push(listener);
+    }
+
     handleOrkestratorUrl(url: string) {
         // (see `deepLinkPath` below for the shape of what comes in)
         try {
@@ -331,6 +345,7 @@ export class WindowManager implements AppModule {
             this.windows.delete(currentWindow);
             if (this.mainWindow === currentWindow) {
                 this.mainWindow = null;
+                for (const listener of this.mainClosedListeners) listener();
             }
         });
 
@@ -472,7 +487,35 @@ export class WindowManager implements AppModule {
      * window first if there is none. A link arriving mid-boot is held until the
      * renderer has loaded rather than being sent into the void.
      */
-    private openInTab(path: string) {
+    /**
+     * A dialog the quick bar forwards (a local action's compose sheet, …),
+     * opened in the main window. A window still loading — or created for this —
+     * has no listener yet, so the request waits here until the renderer's
+     * dialog provider mounts and takes it (`dialogs:take-pending`).
+     */
+    openDialogInMain(request: DialogRequest) {
+        const win = this.mainWindow;
+
+        if (!win || win.isDestroyed()) {
+            this.pendingDialog = request;
+            this.createMainWindow(this.iconPath);
+            return;
+        }
+
+        if (win.isMinimized()) win.restore();
+        win.show();
+        win.focus();
+
+        if (win.webContents.isLoading()) {
+            this.pendingDialog = request;
+            return;
+        }
+        this.ipcTransport.sendTo(win.webContents, "dialogs:open", request);
+    }
+
+    private pendingDialog: DialogRequest | null = null;
+
+    openInTab(path: string) {
         const win = this.mainWindow;
 
         if (!win || win.isDestroyed()) {
@@ -636,6 +679,13 @@ export class WindowManager implements AppModule {
         // happens to hold focus.
         const senderWindow = (event: { sender: Electron.WebContents }) =>
             BrowserWindow.fromWebContents(event.sender) ?? this.mainWindow;
+
+        // A forwarded dialog that arrived before the renderer could listen.
+        this.ipcTransport.handleChannel("dialogs:take-pending", () => {
+            const request = this.pendingDialog;
+            this.pendingDialog = null;
+            return request;
+        });
 
         this.ipcTransport.onChannel("window:minimize", (event) => {
             senderWindow(event)?.minimize();

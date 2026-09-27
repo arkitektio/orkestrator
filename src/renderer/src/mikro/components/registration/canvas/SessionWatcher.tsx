@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useLayerWorldBoxGetter, useSceneHostLayers, useSceneWorld } from "../../scene/sceneHost";
 import { toSessionLayer, useStartRegistration } from "../hooks/useRegistrationSession";
 import { useRegistration, useRegistrationApi } from "../store/context";

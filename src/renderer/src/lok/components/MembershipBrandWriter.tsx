@@ -1,7 +1,7 @@
 import { Button } from "@/core/ui/button";
 import { setBrandRemote } from "@/core/settings/store/brandTheme";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import type { UpdateMembershipColorsMutation } from "../api/graphql";
 import { useMyContextQuery, useUpdateMembershipColorsMutation } from "../api/graphql";
 import { resolveContextBrand } from "../lib/membershipBrand";

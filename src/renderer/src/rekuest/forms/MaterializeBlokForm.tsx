@@ -3,7 +3,7 @@ import { DialogFooter } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { cn } from "@/core/util/utils";
 import { ApolloError } from "@apollo/client";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   ListDependencyFragment,
   MaterializedBlok,

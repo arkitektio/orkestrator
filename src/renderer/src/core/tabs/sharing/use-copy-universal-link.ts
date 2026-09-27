@@ -7,7 +7,7 @@ import {
   universalLinkFor,
 } from "@/core/tabs/sharing/universalLink";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 /**
  * "Share this page": put its universal link on the clipboard.

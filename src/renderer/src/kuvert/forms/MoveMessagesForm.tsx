@@ -3,7 +3,7 @@ import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import React, { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   ListMessagesDocument,
   ListThreadsDocument,

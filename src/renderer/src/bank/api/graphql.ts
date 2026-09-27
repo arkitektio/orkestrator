@@ -1506,14 +1506,20 @@ export type Mutation = {
   markTransfers: Array<Transaction>;
   /** Fold one merchant into another. */
   mergeMerchants: Merchant;
+  /** Choose the symbol an ISIN is priced by, for one source. */
+  pinSecurityListing: SecurityListing;
   /** Run the rules over existing transactions. */
   reapplyRules: Scalars['Int']['output'];
+  /** Fetch and store daily closes from the enabled sources. */
+  refreshSecurityPrices: Array<PriceRefresh>;
   /** Forget a merchant spelling. */
   removeMerchantAlias: Scalars['ID']['output'];
   /** Request temporary S3 read credentials for an uploaded file. */
   requestBigfileAccess: BigFileAccessGrant;
   /** Request temporary S3 credentials to upload one file (e.g. a statement export to import). */
   requestBigfileUpload: BigFileUploadGrant;
+  /** Find listings for ISINs (OpenFIGI + preferred exchanges). */
+  resolveSecurityListings: Array<SecurityListing>;
   /** Bring back a deleted base category. */
   restoreBaseCategory: Array<Category>;
   /** Get the auth session of a pending link you started again (to continue a login). */
@@ -1701,9 +1707,22 @@ export type MutationMergeMerchantsArgs = {
 };
 
 
+export type MutationPinSecurityListingArgs = {
+  input: PinSecurityListingInput;
+};
+
+
 export type MutationReapplyRulesArgs = {
   accounts?: InputMaybe<Array<Scalars['ID']['input']>>;
   semanticAssign?: Scalars['Boolean']['input'];
+};
+
+
+export type MutationRefreshSecurityPricesArgs = {
+  dateFrom?: InputMaybe<Scalars['Date']['input']>;
+  dateTo?: InputMaybe<Scalars['Date']['input']>;
+  isins?: InputMaybe<Array<Scalars['String']['input']>>;
+  sources?: InputMaybe<Array<PriceSource>>;
 };
 
 
@@ -1719,6 +1738,12 @@ export type MutationRequestBigfileAccessArgs = {
 
 export type MutationRequestBigfileUploadArgs = {
   input: RequestBigFileUploadInput;
+};
+
+
+export type MutationResolveSecurityListingsArgs = {
+  isins?: InputMaybe<Array<Scalars['String']['input']>>;
+  sources?: InputMaybe<Array<PriceSource>>;
 };
 
 
@@ -1856,6 +1881,15 @@ export type PeriodOverview = {
   window: WindowInfo;
 };
 
+/** Choose the listing an ISIN is priced by for one source (it is never re-resolved). */
+export type PinSecurityListingInput = {
+  exchange?: InputMaybe<Scalars['String']['input']>;
+  isin: Scalars['String']['input'];
+  source: PriceSource;
+  /** The source's symbol: Yahoo VWCE.DE, Twelve Data VWCE (with `exchange` XETR), Scalable the ISIN. */
+  symbol: Scalars['String']['input'];
+};
+
 /** A GeoJSON Point: `coordinates` is `[longitude, latitude]` (WGS84), as GeoJSON orders them. */
 export type PointGeometry = {
   __typename?: 'PointGeometry';
@@ -1878,6 +1912,26 @@ export type PortfolioInsights = {
   valuationHistory: Array<ValuationPoint>;
 };
 
+/** How one depot position's price moved over a window. */
+export type PositionPerformance = {
+  __typename?: 'PositionPerformance';
+  /** last − first close, per unit. */
+  change?: Maybe<Scalars['Decimal']['output']>;
+  /** change / first close. */
+  changeRatio?: Maybe<Scalars['Float']['output']>;
+  currency?: Maybe<Scalars['String']['output']>;
+  firstClose?: Maybe<Scalars['Decimal']['output']>;
+  firstDate?: Maybe<Scalars['Date']['output']>;
+  isin: Scalars['String']['output'];
+  lastClose?: Maybe<Scalars['Decimal']['output']>;
+  lastDate?: Maybe<Scalars['Date']['output']>;
+  name: Scalars['String']['output'];
+  quantity: Scalars['Decimal']['output'];
+  source?: Maybe<PriceSource>;
+  /** quantity × change: what the position gained or lost in the window at today's quantity. */
+  valueChange?: Maybe<Scalars['Decimal']['output']>;
+};
+
 /** A recurring payment whose amount changed. */
 export type PriceChange = {
   __typename?: 'PriceChange';
@@ -1887,6 +1941,40 @@ export type PriceChange = {
   previous: Scalars['Decimal']['output'];
   recurring: RecurringPayment;
 };
+
+/** A closing price on a trading day. */
+export type PricePoint = {
+  __typename?: 'PricePoint';
+  close: Scalars['Decimal']['output'];
+  date: Scalars['Date']['output'];
+};
+
+/** What refreshing one ISIN from one source did. */
+export type PriceRefresh = {
+  __typename?: 'PriceRefresh';
+  error?: Maybe<Scalars['String']['output']>;
+  isin: Scalars['String']['output'];
+  points: Scalars['Int']['output'];
+  source: PriceSource;
+  symbol?: Maybe<Scalars['String']['output']>;
+};
+
+/** An ISIN's daily closes from one source (the first, in preference order, that has any in the window). */
+export type PriceSeries = {
+  __typename?: 'PriceSeries';
+  currency?: Maybe<Scalars['String']['output']>;
+  isin: Scalars['String']['output'];
+  points: Array<PricePoint>;
+  source?: Maybe<PriceSource>;
+  symbol?: Maybe<Scalars['String']['output']>;
+};
+
+/** Where security prices come from: SCALABLE (the organization's Scalable login), TWELVEDATA (API key), YAHOO (unofficial, no key). */
+export enum PriceSource {
+  Scalable = 'SCALABLE',
+  Twelvedata = 'TWELVEDATA',
+  Yahoo = 'YAHOO'
+}
 
 /** Who a connection reaches its accounts through. */
 export enum Provider {
@@ -1962,12 +2050,20 @@ export type Query = {
   periodOverview: PeriodOverview;
   /** The depot: value over time, allocation, positions, investment income. */
   portfolioInsights: PortfolioInsights;
+  /** How each depot position's price moved over a window. */
+  positionPerformance: Array<PositionPerformance>;
   /** Recurring payments: commitment, due, missed, price changes. */
   recurringInsights: RecurringInsights;
   /** A recurring payment by id. */
   recurringPayment: RecurringPayment;
   /** Detected recurring payments. */
   recurringPayments: Array<RecurringPayment>;
+  /** Which symbol prices each ISIN, per source. */
+  securityListings: Array<SecurityListing>;
+  /** An ISIN's stored daily closes. */
+  securityPrices: PriceSeries;
+  /** The latest price of an ISIN, fetched now. */
+  securityQuote: SecurityQuote;
   /** Income, expense and net per category and currency. */
   spendingByCategory: Array<CategoryTotal>;
   /** Income, expense and net per merchant and currency. */
@@ -2194,6 +2290,13 @@ export type QueryPortfolioInsightsArgs = {
 };
 
 
+export type QueryPositionPerformanceArgs = {
+  accounts?: InputMaybe<Array<Scalars['ID']['input']>>;
+  dateFrom?: InputMaybe<Scalars['Date']['input']>;
+  dateTo?: InputMaybe<Scalars['Date']['input']>;
+};
+
+
 export type QueryRecurringInsightsArgs = {
   includeDetected?: Scalars['Boolean']['input'];
 };
@@ -2208,6 +2311,25 @@ export type QueryRecurringPaymentsArgs = {
   filters?: InputMaybe<RecurringPaymentFilter>;
   ordering?: Array<RecurringPaymentOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QuerySecurityListingsArgs = {
+  isin?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QuerySecurityPricesArgs = {
+  dateFrom?: InputMaybe<Scalars['Date']['input']>;
+  dateTo?: InputMaybe<Scalars['Date']['input']>;
+  isin: Scalars['String']['input'];
+  priceSource?: InputMaybe<PriceSource>;
+};
+
+
+export type QuerySecurityQuoteArgs = {
+  isin: Scalars['String']['input'];
+  priceSource?: InputMaybe<PriceSource>;
 };
 
 
@@ -2415,6 +2537,46 @@ export enum RuleMatch {
   Regex = 'REGEX'
 }
 
+/** Which listing (a source's symbol) the organization prices an ISIN by. `pinned` ones were chosen by a user. */
+export type SecurityListing = {
+  __typename?: 'SecurityListing';
+  /** The listing's trading currency, once a price was fetched. */
+  currency?: Maybe<Scalars['String']['output']>;
+  /** The exchange (Twelve Data: the MIC, e.g. XETR; else the OpenFIGI exchange code). */
+  exchange?: Maybe<Scalars['String']['output']>;
+  /** When prices were last fetched for it. */
+  fetchedAt?: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['ID']['output'];
+  /** The security. */
+  isin: Scalars['String']['output'];
+  /** Why the last fetch failed, if it did. */
+  lastError?: Maybe<Scalars['String']['output']>;
+  /** The security's name as the source knows it. */
+  name?: Maybe<Scalars['String']['output']>;
+  /** Chosen by a user: automatic resolution never changes it. */
+  pinned: Scalars['Boolean']['output'];
+  /** When it was last resolved. */
+  resolvedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The price source this listing is for. */
+  source: PriceSource;
+  /** The source's symbol (Scalable: the ISIN; Yahoo: VWCE.DE; Twelve Data: VWCE). */
+  symbol: Scalars['String']['output'];
+};
+
+/** The latest price of an ISIN, fetched now. */
+export type SecurityQuote = {
+  __typename?: 'SecurityQuote';
+  ask?: Maybe<Scalars['Decimal']['output']>;
+  bid?: Maybe<Scalars['Decimal']['output']>;
+  currency: Scalars['String']['output'];
+  isin: Scalars['String']['output'];
+  name?: Maybe<Scalars['String']['output']>;
+  price: Scalars['Decimal']['output'];
+  source: PriceSource;
+  symbol: Scalars['String']['output'];
+  time?: Maybe<Scalars['DateTime']['output']>;
+};
+
 /** Confirm or ignore a detected recurring payment. */
 export type SetRecurringStatusInput = {
   id: Scalars['ID']['input'];
@@ -2576,6 +2738,8 @@ export type Transaction = {
   quantity?: Maybe<Scalars['Decimal']['output']>;
   /** The remittance information (purpose line). */
   remittance?: Maybe<Scalars['String']['output']>;
+  /** The exact text this transaction is embedded as: its bank line (normalized: no numbers, 'DANKT', cities or legal forms), then what its merchant and place add. Two lines are similar when these texts are. */
+  semanticInput?: Maybe<Scalars['String']['output']>;
   /** The organization's transactions most similar to this one (same merchant, same kind of payment), closest first. `maxDistance` (cosine, 0–2) drops the far ones. */
   similarTransactions: Array<Transaction>;
   /** Booked or pending. */
@@ -2858,7 +3022,7 @@ export type WindowInfo = {
   start: Scalars['Date']['output'];
 };
 
-export type _Entity = AccountSyncer | BalanceSnapshot | BankAccount | BankConnection | BigFileStore | Budget | Category | CategoryRule | HoldingSnapshot | ImportCategoryMapping | Merchant | MerchantAlias | MerchantLocation | MerchantRule | Organization | RecurringPayment | StatementImport | Transaction | User;
+export type _Entity = AccountSyncer | BalanceSnapshot | BankAccount | BankConnection | BigFileStore | Budget | Category | CategoryRule | HoldingSnapshot | ImportCategoryMapping | Merchant | MerchantAlias | MerchantLocation | MerchantRule | Organization | RecurringPayment | SecurityListing | StatementImport | Transaction | User;
 
 export type _Service = {
   __typename?: '_Service';
@@ -4033,6 +4197,14 @@ export type GeocodeSearchQueryVariables = Exact<{
 
 
 export type GeocodeSearchQuery = { __typename?: 'Query', geocodeSearch: Array<{ __typename?: 'GeocodeResult', label: string, street?: string | null, postalCode?: string | null, city?: string | null, region?: string | null, country?: string | null, latitude: string, longitude: string, osmId?: string | null }> };
+
+export type BankPaletteSearchQueryVariables = Exact<{
+  search: Scalars['String']['input'];
+  limit: Scalars['Int']['input'];
+}>;
+
+
+export type BankPaletteSearchQuery = { __typename?: 'Query', transactions: Array<{ __typename?: 'Transaction', id: string, counterparty?: string | null, remittance?: string | null, amount: string, currency: string, bookingDate?: string | null }>, bankAccounts: Array<{ __typename?: 'BankAccount', id: string, name?: string | null, iban?: string | null, currency: string }>, merchants: Array<{ __typename?: 'Merchant', id: string, name: string, description: string }>, categories: Array<{ __typename?: 'Category', id: string, name: string, description: string }> };
 
 export type ListRecurringPaymentsQueryVariables = Exact<{
   filters?: InputMaybe<RecurringPaymentFilter>;
@@ -7969,6 +8141,66 @@ export function useGeocodeSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type GeocodeSearchQueryHookResult = ReturnType<typeof useGeocodeSearchQuery>;
 export type GeocodeSearchLazyQueryHookResult = ReturnType<typeof useGeocodeSearchLazyQuery>;
 export type GeocodeSearchQueryResult = Apollo.QueryResult<GeocodeSearchQuery, GeocodeSearchQueryVariables>;
+export const BankPaletteSearchDocument = gql`
+    query BankPaletteSearch($search: String!, $limit: Int!) {
+  transactions(filters: {search: $search}, pagination: {limit: $limit}) {
+    id
+    counterparty
+    remittance
+    amount
+    currency
+    bookingDate
+  }
+  bankAccounts(filters: {search: $search}, pagination: {limit: $limit}) {
+    id
+    name
+    iban
+    currency
+  }
+  merchants(filters: {search: $search}, pagination: {limit: $limit}) {
+    id
+    name
+    description
+  }
+  categories(
+    filters: {search: $search, hidden: false}
+    pagination: {limit: $limit}
+  ) {
+    id
+    name
+    description
+  }
+}
+    `;
+
+/**
+ * __useBankPaletteSearchQuery__
+ *
+ * To run a query within a React component, call `useBankPaletteSearchQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBankPaletteSearchQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBankPaletteSearchQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useBankPaletteSearchQuery(baseOptions: ApolloReactHooks.QueryHookOptions<BankPaletteSearchQuery, BankPaletteSearchQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BankPaletteSearchQuery, BankPaletteSearchQueryVariables>(BankPaletteSearchDocument, options);
+      }
+export function useBankPaletteSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BankPaletteSearchQuery, BankPaletteSearchQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BankPaletteSearchQuery, BankPaletteSearchQueryVariables>(BankPaletteSearchDocument, options);
+        }
+export type BankPaletteSearchQueryHookResult = ReturnType<typeof useBankPaletteSearchQuery>;
+export type BankPaletteSearchLazyQueryHookResult = ReturnType<typeof useBankPaletteSearchLazyQuery>;
+export type BankPaletteSearchQueryResult = Apollo.QueryResult<BankPaletteSearchQuery, BankPaletteSearchQueryVariables>;
 export const ListRecurringPaymentsDocument = gql`
     query ListRecurringPayments($filters: RecurringPaymentFilter, $ordering: [RecurringPaymentOrder!]! = [{nextExpected: ASC}], $pagination: OffsetPaginationInput) {
   recurringPayments(

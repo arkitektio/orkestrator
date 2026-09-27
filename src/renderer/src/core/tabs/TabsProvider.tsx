@@ -21,6 +21,8 @@ import type { TabHistory } from "./tabHistory";
 import {
   activeTab as activeTabOf,
   bootTabs,
+  forwardedPath,
+  quickTabsState,
   closeOtherTabs,
   closeTab,
   focusTab,
@@ -194,13 +196,29 @@ const createStore = (initial: TabsState): Store => {
     },
   };
 };
-export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
+export const TabsProvider = ({
+  children,
+  forward,
+}: {
+  children: React.ReactNode;
+  /**
+   * FORWARDING mode, for the quick bar: one tab parked at `/`, nothing read
+   * from or written to storage, the hash or deep links, no tab hotkeys — and
+   * every navigation (`navigate`, `open`, from any source) is handed to
+   * `forward` instead, then the tab is parked again. The quick bar must never
+   * persist: it shares localStorage with the main window, whose saved tabs it
+   * would overwrite.
+   */
+  forward?: (path: string) => void;
+}) => {
   const profileId = Arkitekt.useActiveProfileId();
 
   // Created once via the lazy initializer; re-booted (not re-created) when the
   // membership changes, so subscribers keep their subscription across a
   // profile switch.
-  const [store] = useState<Store>(() => createStore(bootTabs(profileId, readBoot())));
+  const [store] = useState<Store>(() =>
+    createStore(forward ? quickTabsState() : bootTabs(profileId, readBoot())),
+  );
 
   // Re-boot on membership change. `bootedFor` guards the first render, whose
   // boot already happened above. The boot path is deliberately `null` here:
@@ -215,11 +233,27 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (bootedFor.current === profileId) return;
     bootedFor.current = profileId;
-    store.set(bootTabs(profileId, consumePendingShare()));
-  }, [profileId, store]);
+    store.set(forward ? quickTabsState() : bootTabs(profileId, consumePendingShare()));
+  }, [profileId, store, forward]);
+
+  // Forwarding mode: hand any destination to the main window, then park again.
+  // The reset is deferred a microtask so it never lands inside the navigation
+  // (and the router render) that caused it.
+  useEffect(() => {
+    if (!forward) return;
+    return store.subscribe(() => {
+      const path = forwardedPath(store.getState());
+      if (!path) return;
+      forward(path);
+      queueMicrotask(() => {
+        if (forwardedPath(store.getState())) store.set(quickTabsState());
+      });
+    });
+  }, [store, forward]);
 
   // Persist, debounced: a burst of navigations in one tab should be one write.
   useEffect(() => {
+    if (forward) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const unsubscribe = store.subscribe(() => {
       if (timer) clearTimeout(timer);
@@ -235,14 +269,14 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
         saveTabs(profileId, store.getState());
       }
     };
-  }, [profileId, store]);
+  }, [profileId, store, forward]);
 
   // Mirror the active tab's location into the URL hash, so a reload and the
   // existing deep-link path still land somewhere. `replaceState`, never
   // `location.hash =`: the real browser history must not grow, and we must
   // not fire the `hashchange` we listen to below.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || forward) return;
     let last = "";
     const mirror = () => {
       const next = hashFor(activeTabOf(store.getState()).history.location, baseName);
@@ -268,7 +302,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
       unsubscribe();
       window.removeEventListener("hashchange", onHashChange);
     };
-  }, [store]);
+  }, [store, forward]);
 
   // Actions. All stable: they close over the store, never over state.
   const open = useCallback<TabActions["open"]>(
@@ -321,15 +355,17 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
   // build has no bridge, hence the guards. `evict` because a link the user
   // clicked must land even when the strip is full.
   useEffect(() => {
+    if (forward) return;
     const dispose = window.api?.tabs?.onOpen?.(({ path }) =>
       open(normalizeDeepLinkPath(path), { evict: true }),
     );
     return dispose;
-  }, [open]);
+  }, [open, forward]);
 
   // Hotkeys. Capture phase on `window`, like the palette's, so they win over
   // whatever has focus.
   useEffect(() => {
+    if (forward) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.repeat || e.defaultPrevented) return;
       const target = e.target as HTMLElement | null;
@@ -373,7 +409,7 @@ export const TabsProvider = ({ children }: { children: React.ReactNode }) => {
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [store, close, focus, open, toggleSplitAction, swapSplitAction]);
+  }, [store, close, focus, open, toggleSplitAction, swapSplitAction, forward]);
 
   // Links, the browser's way: ⌘/Ctrl-click and middle-click open an in-app
   // link in a background tab (`linkClicks.ts`). Capture phase on `window`, so

@@ -20,7 +20,7 @@ import { cn } from "@/core/util/utils";
 import { acceptsSmartDrag, resolveSmartDrop } from "@/core/smart/dragPayload";
 import type { Structure } from "@/core/types";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 export type SameAsDropTargetProps = {
   /** The datum this card belongs to. */

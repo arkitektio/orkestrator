@@ -1,4 +1,5 @@
 import { Structure } from "@/core/types";
+import { windowRole } from "@/core/util/windowRole";
 import React, {
   createContext,
   useCallback,
@@ -193,6 +194,9 @@ export const CommandPaletteProvider = ({ children }: { children: React.ReactNode
   // `togglePalette` is a `useCallback` with no dependencies, so its identity is
   // stable for the provider's lifetime and this effect binds exactly once.
   useEffect(() => {
+    // The quick bar IS the palette: no window hotkeys there (⌘K would only
+    // toggle what is already on screen).
+    if (windowRole() === "quick") return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) {
         return;

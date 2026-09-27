@@ -30,6 +30,15 @@ importers:
       '@electron-toolkit/utils':
         specifier: ^4.0.0
         version: 4.0.0(electron@43.1.0(supports-color@7.2.0))
+      '@platejs/indent':
+        specifier: ~52.3.10
+        version: 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@platejs/link':
+        specifier: ~52.3.17
+        version: 52.3.17(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@platejs/list':
+        specifier: ~52.3.10
+        version: 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -2416,6 +2425,34 @@ packages:
   '@platejs/core@52.3.21':
     resolution: {integrity: sha512-7aPjCmFw2VqTQK0xZVtQ9OJF9wQ85iNasrIx/O4UWI7NoqwDPrX7E8xYr5GfR5d4shdh1eMAznVbcfWC2EzJxQ==}
     peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+
+  '@platejs/floating@52.3.10':
+    resolution: {integrity: sha512-+JABj78pzSGKDehLfWDJuWeitMP6NvVFRZxu8Pi0484XOz97OS1EKuhCWJRTJtfrsN/MjoFntsX2z/fR7W2yKw==}
+    peerDependencies:
+      platejs: '>=52.0.11'
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+
+  '@platejs/indent@52.3.10':
+    resolution: {integrity: sha512-TX7jeBJDfIl1CKSWcb548wk2DwDZrYcqTzZQWPuseTugXvByj65IXxNoiJs+JAq2Dkw60ropCSh2md35MQ/NEA==}
+    peerDependencies:
+      platejs: '>=52.0.11'
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+
+  '@platejs/link@52.3.17':
+    resolution: {integrity: sha512-Gt2gD/OmDhr5AI2hh8ldNzCbOJrCFhtQ4qtT88uMKINwLgr/hmsaas1wIn32DlPCFGw5WAUdf+J6FnP8TpQ99g==}
+    peerDependencies:
+      platejs: '>=52.0.11'
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+
+  '@platejs/list@52.3.10':
+    resolution: {integrity: sha512-2x526sA9s/61lS48lmyiPaD66JRXPi1WuO4y15xVQ/BH50PSHRrhtlJbVNgKxR6CoHuwQYjuTUyXf4LAMDHcWQ==}
+    peerDependencies:
+      platejs: '>=52.0.11'
       react: '>=18.0.0'
       react-dom: '>=18.0.0'
 
@@ -12171,6 +12208,40 @@ snapshots:
       - react-native
       - scheduler
       - use-sync-external-store
+
+  '@platejs/floating@52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@floating-ui/core': 1.7.5
+      '@floating-ui/react': 0.26.28(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      react: 19.2.7
+      react-compiler-runtime: 1.0.0(react@19.2.7)
+      react-dom: 19.2.7(react@19.2.7)
+
+  '@platejs/indent@52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      react: 19.2.7
+      react-compiler-runtime: 1.0.0(react@19.2.7)
+      react-dom: 19.2.7(react@19.2.7)
+
+  '@platejs/link@52.3.17(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@platejs/floating': 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      react: 19.2.7
+      react-compiler-runtime: 1.0.0(react@19.2.7)
+      react-dom: 19.2.7(react@19.2.7)
+
+  '@platejs/list@52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@platejs/indent': 52.3.10(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      clsx: 2.1.1
+      lodash: 4.18.1
+      platejs: 52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7))
+      react: 19.2.7
+      react-compiler-runtime: 1.0.0(react@19.2.7)
+      react-dom: 19.2.7(react@19.2.7)
 
   '@platejs/mention@51.1.2(platejs@52.3.21(@types/react@19.2.14)(immer@10.2.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(scheduler@0.27.0)(use-sync-external-store@1.6.0(react@19.2.7)))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:

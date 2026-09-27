@@ -18,7 +18,7 @@ import { enUS } from "date-fns/locale";
 import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 type PropertyValue = string | number | boolean | Date | null | undefined;
 

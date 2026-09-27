@@ -1,7 +1,7 @@
 import Zod from "zod";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { createPortResolver } from "./portResolver";
 import { ArgPort } from "./types";
 import {

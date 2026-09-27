@@ -17,6 +17,8 @@ import { ScrollArea } from "@/core/ui/scroll-area";
 import type { Action } from "@/core/smart/localactions/LocalActionProvider";
 import { Pin, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { GlobalShortcutCard } from "../components/GlobalShortcutCard";
+import { SettingsForm } from "../components/SettingsForm";
 import { SettingsPage } from "../components/SettingsPage";
 
 /** Which local actions sit pinned at the top of the command palette. Not a settings-form field: pins have their own store. */
@@ -49,6 +51,9 @@ export const PalettePage = () => {
 
   return (
     <SettingsPage slug="palette">
+      <SettingsForm>
+        <GlobalShortcutCard />
+      </SettingsForm>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

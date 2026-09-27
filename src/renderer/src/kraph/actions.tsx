@@ -26,7 +26,7 @@ import {
 import { smartRegistry } from "@/core/smart/registry";
 import type { Structure } from "@/core/types";
 import { Equal, Link2, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { executeSameness, explainSameness, planSameness } from "./lib/sameness";
 
 export const NewEntityAction: Action = {

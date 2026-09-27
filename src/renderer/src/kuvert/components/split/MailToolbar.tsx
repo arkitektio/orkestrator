@@ -4,7 +4,7 @@ import { TooltipButton } from "@/core/ui/tooltip-button";
 import { Archive, Flag, FolderInput, Mail, Maximize2, ShieldBan, Trash2 } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useKuvert } from "../../api/funcs";
 import { FolderRole } from "../../api/graphql";
 import { deleteMail, markRead, moveToRole, setFlagged } from "../../mailOps";

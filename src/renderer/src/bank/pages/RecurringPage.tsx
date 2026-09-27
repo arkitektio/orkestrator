@@ -1,6 +1,6 @@
 import { PageAction } from "@/core/ui/page-action";
 import { BankRecurring } from "@/bank/linkers";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { ListRecurringPaymentsDocument, RecurringStatus, useDetectRecurringMutation } from "../api/graphql";
 import { RecurringSummary } from "../components/insights/recurring/RecurringSummary";
 import RecurringList from "../components/lists/RecurringList";

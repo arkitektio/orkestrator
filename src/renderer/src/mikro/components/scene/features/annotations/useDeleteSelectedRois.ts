@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useDeleteAnnotationMutation } from "@/mikro/api/graphql";
 import { useRoiSelectionStore, type SelectedRoi } from "./roiSelectionStore";
 

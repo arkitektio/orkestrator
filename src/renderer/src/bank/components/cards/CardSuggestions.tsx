@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { CategorySource, SuggestionChipFragment, SuggestionReason, useCategorizeTransactionsMutation } from "../../api/graphql";
 import { toastText } from "../../errors";
 import { SuggestionChip } from "../CategorySuggestions";

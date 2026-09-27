@@ -12,7 +12,7 @@ import { useAssignWithCallback } from "@/rekuest/hooks/useAssign";
 import { Identifier, Object } from "@/core/types";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 
 

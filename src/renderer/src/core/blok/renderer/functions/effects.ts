@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {toast} from 'sonner';
+import { toast } from "@/core/notify";
 import {createBlokFunction, createVariadicBlokFunction} from '../runtime';
 import {textSchema} from './argumentSchemas';
 

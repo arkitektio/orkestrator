@@ -3,7 +3,6 @@ import { Button } from "@/core/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText } from "@/core/ui/input-group";
-import { Textarea } from "@/core/ui/textarea";
 import {
   Attachment,
   AttachmentAction,
@@ -19,7 +18,7 @@ import { Spinner } from "@/core/ui/spinner";
 import { Paperclip, X } from "lucide-react";
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   ListOutboxDocument,
   MessageFragment,
@@ -29,9 +28,11 @@ import {
   useSendMessageMutation,
   useSenderAccountsQuery,
 } from "../api/graphql";
+import { MailContent, MailEditor, MailToolbar, useMailEditor } from "../components/editor/MailEditor";
 import { fileIcon } from "../components/fileIcon";
 import type { ComposeMode } from "../components/MessageView";
 import { useAttachmentUpload } from "../datalayer/upload";
+import { fromText, MailNode, toMailHtml, toText } from "../editor/serialize";
 import { toastText } from "../errors";
 import {
   formatBytes,
@@ -52,8 +53,13 @@ export type ComposeProps = {
   replyTo?: string;
   mode?: ComposeMode;
   to?: string[];
+  cc?: string[];
+  bcc?: string[];
   subject?: string;
+  /** A plain-text start for the body. */
   body?: string;
+  /** A formatted start for the body (the inline reply handing over); wins over `body`. */
+  content?: MailNode[];
 };
 
 type Upload = { key: string; file: File; store?: string; error?: string };
@@ -91,19 +97,27 @@ const RecipientInput = ({
   );
 };
 
-/** What a new mail starts with: empty, or a reply/forward of `original`. */
+/** What a new mail starts with: empty, or a reply/forward of `original` (quoted below the body). */
 const initial = (props: ComposeProps, original: MessageFragment | undefined) => {
-  const base = { to: (props.to ?? []).join(", "), cc: "", subject: props.subject ?? "", body: props.body ?? "" };
+  const body = props.content ?? fromText(props.body ?? "");
+  const base = {
+    to: (props.to ?? []).join(", "),
+    cc: (props.cc ?? []).join(", "),
+    bcc: (props.bcc ?? []).join(", "),
+    subject: props.subject ?? "",
+    body,
+  };
   if (!original || !props.mode) return base;
   if (props.mode === "forward") {
-    return { ...base, subject: forwardSubject(original.subject), body: base.body + quoteForForward(original) };
+    return { ...base, subject: forwardSubject(original.subject), body: [...body, ...fromText(quoteForForward(original))] };
   }
   const { to, cc } = replyRecipients(original, original.account.emailAddress, props.mode === "replyAll");
   return {
+    ...base,
     to: recipientsText(to),
     cc: recipientsText(cc),
     subject: replySubject(original.subject),
-    body: base.body + quoteForReply(original),
+    body: [...body, ...fromText(quoteForReply(original))],
   };
 };
 
@@ -124,10 +138,11 @@ const Compose = ({
   );
   const [to, setTo] = useState(start.to);
   const [cc, setCc] = useState(start.cc);
-  const [bcc, setBcc] = useState("");
-  const [showCc, setShowCc] = useState(!!start.cc);
+  const [bcc, setBcc] = useState(start.bcc);
+  const [showCc, setShowCc] = useState(!!start.cc || !!start.bcc);
   const [subject, setSubject] = useState(start.subject);
-  const [body, setBody] = useState(start.body);
+  // A reply or forward starts writing above the quote.
+  const editor = useMailEditor(start.body, props.mode ? "start" : undefined);
   const [uploads, setUploads] = useState<Upload[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
   const upload = useAttachmentUpload();
@@ -158,7 +173,8 @@ const Compose = ({
           cc: recipients.cc.recipients,
           bcc: recipients.bcc.recipients,
           subject,
-          text: body,
+          text: toText(editor.children as MailNode[]),
+          html: toMailHtml(editor.children as MailNode[]),
           inReplyTo: original && props.mode !== "forward" ? original.id : null,
           attachments: uploads.flatMap((u) => (u.store ? [u.store] : [])),
         },
@@ -244,19 +260,12 @@ const Compose = ({
           <InputGroupInput value={subject} onChange={(e) => setSubject(e.target.value)} />
         </InputGroup>
       </div>
-      <Textarea
-        autoFocus={!!to}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        className="min-h-64 flex-1 resize-none p-3 font-sans text-sm"
-        onFocus={(e) => {
-          // A reply starts above the quote.
-          if (props.mode && props.mode !== "forward" && e.currentTarget.selectionStart === body.length) {
-            const at = (props.body ?? "").length;
-            e.currentTarget.setSelectionRange(at, at);
-          }
-        }}
-      />
+      <MailEditor editor={editor}>
+        <div className="flex min-h-64 flex-1 flex-col overflow-hidden rounded-md border shadow-xs focus-within:ring-[3px] focus-within:ring-ring/50">
+          <MailToolbar className="border-b px-2 py-1" />
+          <MailContent autoFocus={!!to} className="flex-1 overflow-y-auto p-3" />
+        </div>
+      </MailEditor>
       {uploads.length > 0 && (
         <AttachmentGroup>
           {uploads.map((u) => {

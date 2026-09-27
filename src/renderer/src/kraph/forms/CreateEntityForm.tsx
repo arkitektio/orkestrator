@@ -5,7 +5,7 @@ import { DialogFooter } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   AssertEntityExistsMutationVariables,
   GetEntityCategoryDocument,

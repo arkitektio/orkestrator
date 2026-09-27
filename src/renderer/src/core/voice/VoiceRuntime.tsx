@@ -1,7 +1,7 @@
 import { useCommandPalette } from "@/core/command/CommandPaletteProvider";
 import { useSettings } from "@/core/settings/store/SettingsContext";
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import type { VoiceEvent } from "../../../../main/voice/protocol";
 import { loadSpeechEngine } from "./engine/registry";
 import type { SpeechEngine } from "./engine/types";

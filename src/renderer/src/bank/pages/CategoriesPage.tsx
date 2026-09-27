@@ -1,7 +1,7 @@
 import { PageAction } from "@/core/ui/page-action";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { BankCategory } from "@/bank/linkers";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { ListCategoriesDocument, useSyncBaseCategoriesMutation } from "../api/graphql";
 import CategoryList from "../components/lists/CategoryList";
 

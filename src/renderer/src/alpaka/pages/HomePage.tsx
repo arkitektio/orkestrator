@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useCreateRoomMutation, useRecentRoomsQuery } from "../api/graphql";
 import {
   greeting,

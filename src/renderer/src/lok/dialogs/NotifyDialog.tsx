@@ -6,7 +6,7 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/co
 import { Form } from "@/core/ui/form";
 import { useNotifyUserMutation } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 type NotifyFormData = {
   title: string;

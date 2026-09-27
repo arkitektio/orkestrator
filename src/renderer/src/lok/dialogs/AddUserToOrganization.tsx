@@ -5,7 +5,7 @@ import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useAddUserToOrganizationMutation, useMyContextQuery, useRoleOptionsLazyQuery } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 type AddUserInfoForm = {
   roles: string[];

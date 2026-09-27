@@ -6,7 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { BankAccount, BankConnection } from "@/bank/linkers";
 import { RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   AccountKind,
   ListTransactionsDocument,

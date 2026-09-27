@@ -5,7 +5,7 @@ import { HelpSidebar } from "@/core/layout/help";
 import { PageAction } from "@/core/ui/page-action";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   OrganizationFragment,
   useMyContextQuery,

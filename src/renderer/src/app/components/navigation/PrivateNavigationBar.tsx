@@ -30,6 +30,7 @@ import { DownloadIsland } from "@/core/modules/download/DownloadProvider";
 import { AgentIsland } from "@/core/agent/AgentIsland";
 import { LocalActionIsland } from "@/app/components/rail/LocalActionIsland";
 import { RailIslandStack } from "@/core/ui/rail/RailIsland";
+import { ToastIsland } from "@/core/notify";
 import { UpdateIsland } from "@/core/updates/UpdateIsland";
 import { VoiceIsland } from "@/core/voice";
 
@@ -378,6 +379,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           rare arrival above does not shove it around. The agent sits beside the
           modules' islands (rekuest: tasks). */}
       <RailIslandStack>
+        <ToastIsland />
         <UpdateIsland />
         <VoiceIsland />
         <RekuestGuard unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>

@@ -1,5 +1,5 @@
 import { ApolloError } from "@apollo/client";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 const formatGraphQLErrorEntry = (error: ApolloError["graphQLErrors"][number]) => {
   const code = typeof error.extensions?.code === "string" ? error.extensions.code : undefined;

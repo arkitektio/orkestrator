@@ -9,7 +9,7 @@ import { Textarea } from "@/core/ui/textarea";
 import { BankAccount, BankMerchant, BankPlace, BankTransaction } from "@/bank/linkers";
 import { ListPlus, MapPin, Store, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   CategorySource,
   MerchantSource,

@@ -9,7 +9,7 @@ import { cn } from "@/core/util/utils";
 import { BankMerchant, BankPlace } from "@/bank/linkers";
 import { GitMerge, MapPin, MapPinPlus, Pencil, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   MerchantFragment,
   MerchantLocationFragment,

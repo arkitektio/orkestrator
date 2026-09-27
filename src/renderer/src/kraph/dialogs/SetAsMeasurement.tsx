@@ -22,7 +22,7 @@ import { Structure } from "@/core/types";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { Activity, CircleDot } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 /**
  * Measuring is a claim: this structure measures that entity, under the word the

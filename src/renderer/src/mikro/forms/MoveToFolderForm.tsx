@@ -19,7 +19,7 @@ import {
 } from "@/mikro/components/folder/useFolderMove";
 import { FolderPlus } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useCreateFolderMutation, useGetFoldersQuery } from "../api/graphql";
 
 /** Pick the folder to file files or array datasets into. */

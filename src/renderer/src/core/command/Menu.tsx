@@ -24,6 +24,7 @@ import { createElement, Suspense, useMemo, useRef } from "react";
 import { VoicePaletteBadge } from "@/core/voice";
 import { useCommandPalette } from "./CommandPaletteProvider";
 import { usePaletteGrow } from "./usePaletteGrow";
+import { usePointerSelectionGate } from "./usePointerSelectionGate";
 import { resolveContextObjects } from "./contextObjects";
 import { CyclingPlaceholder } from "./CyclingPlaceholder";
 import { ModulePaletteSources } from "@/core/modules/registries";
@@ -142,22 +143,20 @@ const ContextCard = (props: {
   );
 };
 
-/**
- * A custom Command Menu a la VSCode.
- * This renders and filters the commands that are *currently* registered in the command provider.
- * And allows for the execution of these commands.
- *
- **/
-export const CommandMenu = (props: {
+export const PalettePanel = (props: {
   objects?: Structure[];
   collection?: string;
   partners?: Structure[];
   returns?: string[];
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  /** The ✕ in the input row: the dialog's shrink-then-close, or hiding the quick bar. */
+  onDismiss: () => void;
+  /** The hint row under the list. */
+  footer?: React.ReactNode;
 }) => {
-  // State and the hotkey now live in `CommandPaletteProvider`: this component is
-  // mounted exactly once (by `CommandMenuHost`), and used to be mounted per page
-  // with a keydown listener each — so two pages on screen meant two listeners
-  // and a toggle that cancelled itself out.
+  // State and the hotkey live in `CommandPaletteProvider`; this is the body
+  // both surfaces share — the in-app dialog (`CommandMenu`) and the floating
+  // quick bar (`QuickPalette`).
   const {
     open,
     query,
@@ -214,6 +213,167 @@ export const CommandMenu = (props: {
   // so the chip shows whenever that is the intent.
   const newTab = intent === "new-tab";
 
+  const pointerGate = usePointerSelectionGate();
+
+  return (
+      <SmartMenuWrappers context={{ objects, partners: props.partners, onDone: closePalette }}>
+      <Command
+        shouldFilter={false}
+        // Arrow past the last row wraps to the first, and back.
+        loop
+        disablePointerSelection={pointerGate.disablePointerSelection}
+        onKeyDown={pointerGate.onKeyDown}
+        onPointerMove={pointerGate.onPointerMove}
+        className="bg-transparent [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground/90 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-1 [&_[cmdk-group]]:px-2 [&_[cmdk-item]]:min-h-10 [&_[cmdk-item]]:rounded-lg [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2 [&_[cmdk-item]]:transition-colors [&_[cmdk-item][data-selected=true]]:bg-primary/20 [&_[cmdk-item][data-selected=true]]:ring-1 [&_[cmdk-item][data-selected=true]]:ring-primary/30 [&_[cmdk-item][data-selected=true]]:text-foreground [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4"
+      >
+        {/* What the user picked as context (⇧↵ on a hit) leads, above the
+            input: the query is now about it. Only picked context — the page's
+            own objects are there on open and stay under the input, so the
+            pill still grows into its own row. */}
+        {context.modifiers.length > 0 && (
+          <div className="space-y-1.5 border-b border-border/50 p-2">
+            {context.modifiers.map((m, index) => (
+              <ContextCard key={`modifier-${m.type}-${index}`} onRemove={() => removeModifier(index)}>
+                <ModifierRender modifier={m} context="widget" />
+              </ContextCard>
+            ))}
+          </div>
+        )}
+
+        {/* The pill's own row: same height, same padding, same icon, so the
+            transition from control to panel has nothing to give it away. */}
+        <div className="flex h-8 shrink-0 items-center gap-2 px-2.5">
+          <Search className="h-3.5 w-3.5 shrink-0 opacity-70" />
+          <div className="relative flex h-8 min-w-0 flex-1 items-center">
+            <CommandPrimitive.Input
+              ref={props.inputRef}
+              // Its own slot, so the voice runtime and anything else that
+              // wants THE palette's input can find it unambiguously.
+              data-slot="palette-input"
+              // The visible placeholder is the fading overlay below; this
+              // one stays for assistive tech.
+              placeholder={newTab ? "Open in a new tab…" : "Search, ask or do…"}
+              onValueChange={updateQuery}
+              value={context.query}
+              className="h-8 w-full min-w-0 flex-1 bg-transparent text-xs outline-hidden placeholder:text-transparent"
+            />
+            {!context.query && (
+              <CyclingPlaceholder
+                words={newTab ? ["Open in a new tab…"] : undefined}
+                className="absolute inset-0 flex items-center text-xs text-muted-foreground"
+              />
+            )}
+          </div>
+          {/* The microphone, while the query is being dictated. */}
+          <VoicePaletteBadge />
+          {newTab && (
+            <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
+              New tab
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={props.onDismiss}
+            className="shrink-0 cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Cross2Icon className="h-3 w-3" />
+            <span className="sr-only">Close</span>
+          </button>
+        </div>
+
+        {/* Everything below the pill's own height — revealed by the second
+            phase of the animation, which is the "drop down". */}
+        <div className="border-t border-border/50">
+          {!hasSmartModifier && props.objects && props.objects.length > 0 && (
+            <div className="space-y-1.5 border-b border-border/50 p-2">
+              {props.objects.map((m) => (
+                <div key={`object-${m.identifier}-${m.id}`}>
+                  <DisplayWidget
+                    identifier={m.identifier}
+                    id={m.id}
+                    context="command"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <CommandList className="max-h-[24rem] px-1.5 pb-2 pt-1.5">
+            {context.query && (
+              <CommandEmpty className="py-8 text-center text-xs text-muted-foreground">
+                No results for “{context.query}”.
+              </CommandEmpty>
+            )}
+            <ExtensionContext.Provider value={extensionContextValue}>
+              {hasContext && actionSources}
+              {/* Where you were, only while nothing is typed. */}
+              <ApplicableRecents
+                filter={searchFilter}
+                objects={objects}
+                partners={props.partners}
+                onDone={closePalette}
+              />
+              {/* Then, unguarded: the source that still works with no
+                  backend configured at all. */}
+              <ApplicableNavigation
+                filter={searchFilter}
+                objects={objects}
+                partners={props.partners}
+                onDone={closePalette}
+              />
+              {!hasContext && actionSources}
+              {/* Whatever was typed can be asked, so a query that matches
+                  nothing still has a row. Below what matched — a hit beats
+                  a question — and above the entity search, whose late
+                  results would otherwise push it around. */}
+              <ModulePaletteSources
+                filter={searchFilter}
+                objects={objects}
+                partners={props.partners}
+                onDone={closePalette}
+              />
+              {/* Last: the only async source, so late results never shove
+                  the synchronous rows out from under the cursor. */}
+              <ApplicableEntitySearch
+                filter={searchFilter}
+                objects={objects}
+                partners={props.partners}
+                onDone={closePalette}
+              />
+            </ExtensionContext.Provider>
+          </CommandList>
+
+          <div className="flex items-center justify-end gap-1.5 border-t border-border/50 px-2 py-1.5">
+            {props.footer ?? (
+              <>
+                <ShortcutBadge>⌘K</ShortcutBadge>
+                <ShortcutBadge>⌘T new tab</ShortcutBadge>
+              </>
+            )}
+          </div>
+        </div>
+      </Command>
+      </SmartMenuWrappers>
+  );
+};
+
+/**
+ * A custom Command Menu a la VSCode.
+ * This renders and filters the commands that are *currently* registered in the command provider.
+ * And allows for the execution of these commands.
+ *
+ **/
+export const CommandMenu = (props: {
+  objects?: Structure[];
+  collection?: string;
+  partners?: Structure[];
+  returns?: string[];
+}) => {
+  // Mounted exactly once (by `CommandMenuHost`); it used to be mounted per page
+  // with a keydown listener each — so two pages on screen meant two listeners
+  // and a toggle that cancelled itself out.
+  const { open, closePalette } = useCommandPalette();
+  const context = { open };
   const inputRef = useRef<HTMLInputElement | null>(null);
   // The panel grows out of the pill and shrinks back into it; a dismiss goes
   // through `requestClose` so the shrink can finish before the unmount.
@@ -276,122 +436,14 @@ export const CommandMenu = (props: {
             // No CSS open/close animation: `usePaletteGrow` animates the box.
           )}
         >
-          <SmartMenuWrappers context={{ objects, partners: props.partners, onDone: closePalette }}>
-          <Command
-            shouldFilter={false}
-            className="bg-transparent [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground/90 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-1 [&_[cmdk-group]]:px-2 [&_[cmdk-item]]:min-h-10 [&_[cmdk-item]]:rounded-lg [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2 [&_[cmdk-item]]:transition-colors [&_[cmdk-item][data-selected=true]]:bg-primary/10 [&_[cmdk-item][data-selected=true]]:text-foreground [&_[cmdk-item]_svg]:h-4 [&_[cmdk-item]_svg]:w-4"
-          >
-            {/* The pill's own row: same height, same padding, same icon, so the
-                transition from control to panel has nothing to give it away. */}
-            <div className="flex h-8 shrink-0 items-center gap-2 px-2.5">
-              <Search className="h-3.5 w-3.5 shrink-0 opacity-70" />
-              <div className="relative flex h-8 min-w-0 flex-1 items-center">
-                <CommandPrimitive.Input
-                  ref={inputRef}
-                  // Its own slot, so the voice runtime and anything else that
-                  // wants THE palette's input can find it unambiguously.
-                  data-slot="palette-input"
-                  // The visible placeholder is the fading overlay below; this
-                  // one stays for assistive tech.
-                  placeholder={newTab ? "Open in a new tab…" : "Search, ask or do…"}
-                  onValueChange={updateQuery}
-                  value={context.query}
-                  className="h-8 w-full min-w-0 flex-1 bg-transparent text-xs outline-hidden placeholder:text-transparent"
-                />
-                {!context.query && (
-                  <CyclingPlaceholder
-                    words={newTab ? ["Open in a new tab…"] : undefined}
-                    className="absolute inset-0 flex items-center text-xs text-muted-foreground"
-                  />
-                )}
-              </div>
-              {/* The microphone, while the query is being dictated. */}
-              <VoicePaletteBadge />
-              {newTab && (
-                <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
-                  New tab
-                </span>
-              )}
-              <DialogPrimitive.Close className="shrink-0 cursor-pointer text-muted-foreground transition-colors hover:text-foreground">
-                <Cross2Icon className="h-3 w-3" />
-                <span className="sr-only">Close</span>
-              </DialogPrimitive.Close>
-            </div>
-
-            {/* Everything below the pill's own height — revealed by the second
-                phase of the animation, which is the "drop down". */}
-            <div className="border-t border-border/50">
-              {(context.modifiers.length > 0 || (!hasSmartModifier && props.objects && props.objects.length > 0)) && (
-                <div className="space-y-1.5 border-b border-border/50 p-2">
-                  {context.modifiers.map((m, index) => (
-                    <ContextCard key={`modifier-${m.type}-${index}`} onRemove={() => removeModifier(index)}>
-                      <ModifierRender modifier={m} context="widget" />
-                    </ContextCard>
-                  ))}
-                  {!hasSmartModifier && props.objects?.map((m) => (
-                    <div key={`object-${m.identifier}-${m.id}`}>
-                      <DisplayWidget
-                        identifier={m.identifier}
-                        id={m.id}
-                        context="command"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <CommandList className="max-h-[24rem] px-1.5 pb-2 pt-1.5">
-                {context.query && (
-                  <CommandEmpty className="py-8 text-center text-xs text-muted-foreground">
-                    No results for “{context.query}”.
-                  </CommandEmpty>
-                )}
-                <ExtensionContext.Provider value={extensionContextValue}>
-                  {hasContext && actionSources}
-                  {/* Where you were, only while nothing is typed. */}
-                  <ApplicableRecents
-                    filter={searchFilter}
-                    objects={objects}
-                    partners={props.partners}
-                    onDone={closePalette}
-                  />
-                  {/* Then, unguarded: the source that still works with no
-                      backend configured at all. */}
-                  <ApplicableNavigation
-                    filter={searchFilter}
-                    objects={objects}
-                    partners={props.partners}
-                    onDone={closePalette}
-                  />
-                  {!hasContext && actionSources}
-                  {/* Whatever was typed can be asked, so a query that matches
-                      nothing still has a row. Below what matched — a hit beats
-                      a question — and above the entity search, whose late
-                      results would otherwise push it around. */}
-                  <ModulePaletteSources
-                    filter={searchFilter}
-                    objects={objects}
-                    partners={props.partners}
-                    onDone={closePalette}
-                  />
-                  {/* Last: the only async source, so late results never shove
-                      the synchronous rows out from under the cursor. */}
-                  <ApplicableEntitySearch
-                    filter={searchFilter}
-                    objects={objects}
-                    partners={props.partners}
-                    onDone={closePalette}
-                  />
-                </ExtensionContext.Provider>
-              </CommandList>
-
-              <div className="flex items-center justify-end gap-1.5 border-t border-border/50 px-2 py-1.5">
-                <ShortcutBadge>⌘K</ShortcutBadge>
-                <ShortcutBadge>⌘T new tab</ShortcutBadge>
-              </div>
-            </div>
-          </Command>
-          </SmartMenuWrappers>
+          <PalettePanel
+            objects={props.objects}
+            collection={props.collection}
+            partners={props.partners}
+            returns={props.returns}
+            inputRef={inputRef}
+            onDismiss={requestClose}
+          />
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>

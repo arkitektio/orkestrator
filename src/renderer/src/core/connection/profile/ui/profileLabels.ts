@@ -54,3 +54,14 @@ export const profileShortDetail = (profile: StoredProfile): string =>
   profile.label.username ||
   profile.label.deploymentName ||
   "";
+
+/**
+ * The organization a login is in, for a surface that names orgs rather than
+ * logins (the palette's "Switch to …"); the title when no org is known.
+ */
+export const profileOrganization = (profile: StoredProfile): string =>
+  organization(profile) || profileTitle(profile);
+
+/** What tells two logins of one organization apart: the hub, then who and where. */
+export const profileOrganizationDetail = (profile: StoredProfile): string =>
+  [profile.label.hubName, profile.label.username, profile.label.deploymentName].filter(Boolean).join(" · ");

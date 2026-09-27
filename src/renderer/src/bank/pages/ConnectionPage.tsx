@@ -7,7 +7,7 @@ import Timestamp from "@/core/ui/timestamp";
 import { BankConnection } from "@/bank/linkers";
 import { Link2, LogIn, RefreshCw, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   ConnectionStatus,
   ListBankConnectionsDocument,

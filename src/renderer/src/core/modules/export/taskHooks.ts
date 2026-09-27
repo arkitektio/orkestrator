@@ -1,5 +1,5 @@
 import { TaskHook } from "@/core/modules/taskhooks/types";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 import { FILE_DOWNLOADERS } from "@/core/modules/registries";
 

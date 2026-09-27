@@ -18,7 +18,7 @@ import {
 import { Input } from "@/core/ui/input";
 import { RotateCcw } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { SettingsPage } from "../components/SettingsPage";
 
 /** Typed to arm the button, so a stray click cannot erase a computer. */

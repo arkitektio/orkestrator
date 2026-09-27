@@ -23,6 +23,7 @@
       "MerchantRule",
       "Organization",
       "RecurringPayment",
+      "SecurityListing",
       "StatementImport",
       "Transaction",
       "User"

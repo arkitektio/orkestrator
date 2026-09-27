@@ -6,7 +6,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { Switch } from "@/core/ui/switch";
 import Timestamp from "@/core/ui/timestamp";
 import { PenSquare, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   MailFolderFragment,
   Protocol,

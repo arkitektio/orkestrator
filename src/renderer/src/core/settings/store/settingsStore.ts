@@ -3,8 +3,16 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 import { setBrandBase } from "./brandTheme";
 import { defaultSettings, type Settings, settingsValidator } from "./validator";
 
+/** What main answered for the last global-shortcut change (see GlobalShortcutService). */
+export type GlobalShortcutStatus = {
+  status: "ok" | "off" | "taken" | "invalid";
+  accelerator: string | null;
+};
+
 export type SettingsStoreState = {
   settings: Settings | undefined;
+  /** Null until main has answered (and always in the web build). */
+  globalShortcutStatus: GlobalShortcutStatus | null;
   setSettings: (settings: Settings) => void;
   hydrate: () => void;
   setDefaultSettings: (settings: Settings) => void;
@@ -110,6 +118,24 @@ function applyRailGlass(enabled: boolean, transparency: number, notifyMain: bool
   }
 }
 
+/**
+ * Hand the system-wide shortcut to main, which owns the OS registration and
+ * persists it for the next boot. Main may refuse (another app holds the
+ * combination): its answer goes to the store for the settings page to show.
+ * Absent in the web build, where there is no main process to ask.
+ */
+function applyGlobalShortcut(
+  accelerator: string | null,
+  report: (status: GlobalShortcutStatus) => void,
+) {
+  if (typeof window === "undefined") return;
+  const setGlobalShortcut = window.api?.palette?.setGlobalShortcut;
+  if (!setGlobalShortcut) return;
+  setGlobalShortcut(accelerator).then(report, (error: unknown) => {
+    console.warn("[palette] could not set the global shortcut", error);
+  });
+}
+
 export function createSettingsStore(
   initialDefaultSettings: Settings = defaultSettings,
 ): SettingsStore {
@@ -118,6 +144,7 @@ export function createSettingsStore(
 
   const store = createStore<SettingsStoreState>((set) => ({
     settings: undefined,
+    globalShortcutStatus: null,
     setSettings: (nextSettings) => {
       const previousSettings = store.getState().settings;
       const normalizedSettings = normalizeSettings(nextSettings, currentDefaultSettings);
@@ -145,6 +172,15 @@ export function createSettingsStore(
             normalizedSettings.railGlass,
             normalizedSettings.railGlassTransparency,
             glassToggled,
+          );
+        }
+
+        if (
+          isHydrating ||
+          normalizedSettings.globalPaletteShortcut !== previousSettings?.globalPaletteShortcut
+        ) {
+          applyGlobalShortcut(normalizedSettings.globalPaletteShortcut, (status) =>
+            set({ globalShortcutStatus: status }),
           );
         }
       }

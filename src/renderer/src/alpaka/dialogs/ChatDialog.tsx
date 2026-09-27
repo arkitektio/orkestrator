@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Plate, PlateContent, usePlateEditor } from "platejs/react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 export const ChatDialog = (props: { model: string }) => {
   const [chat, { loading }] = useChatMutation();

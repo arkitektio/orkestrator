@@ -1,6 +1,6 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { MutationFunction, MutationFunctionOptions, DefaultContext, ApolloCache, FetchResult } from "@apollo/client";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 export type UseGraphQLDialogOptions<TData> = {
   successMessage?: string;

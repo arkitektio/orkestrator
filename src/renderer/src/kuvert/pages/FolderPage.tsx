@@ -4,7 +4,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { PenSquare, RefreshCw } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { ListThreadsDocument, useGetMailFolderQuery, useSyncMailAccountMutation } from "../api/graphql";
 import { MailSplit } from "../components/split/MailSplit";
 import { MailList } from "../components/list/MailList";

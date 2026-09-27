@@ -1,7 +1,7 @@
 import { Structure } from "@/core/types";
 import { useFloating } from "@floating-ui/react";
 import React, { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 import { useDropTarget } from "@/core/dnd/react";
 import { acceptsSmartDrag, resolveSmartDrop } from "./dragPayload";

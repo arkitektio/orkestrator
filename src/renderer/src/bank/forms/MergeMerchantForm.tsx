@@ -5,7 +5,7 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/co
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { ListMerchantsDocument, useMergeMerchantsMutation, useSearchMerchantsLazyQuery } from "../api/graphql";
 import { toastText } from "../errors";
 import { BankMerchant } from "../linkers";

@@ -7,6 +7,7 @@ import "@/app/configureSmartBuilder";
 // Hands the menu its sections (providers/smart/hostRegistries).
 import "@/core/smart/smartcontext";
 import { DialogProvider } from "@/core/dialogs/registry";
+import type { DialogRequest } from "@/core/dialogs/DialogProvider";
 import { LocalActionProvider } from "@/core/smart/localactions/registry";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import { PageLayout } from "@/core/layout/PageLayout";
@@ -111,6 +112,12 @@ import { CommandMenuHost } from "@/core/command/Host";
 import { ActiveTabRouter } from "@/core/tabs/ActiveTabRouter";
 import { TabsProvider } from "@/core/tabs/TabsProvider";
 import { VoiceInput } from "@/core/voice";
+import type { WindowRole } from "@/core/util/windowRole";
+
+/** The quick bar's navigation goes to the main window, as a tab. Module-level: stable. */
+const forwardToMain = (path: string) => window.api?.palette?.openInMain?.(path);
+/** …and so do the dialogs its actions open (a reply's compose sheet): shown in the main window. */
+const forwardDialogToMain = (request: DialogRequest) => window.api?.palette?.openDialogInMain?.(request);
 
 
 /**
@@ -130,7 +137,20 @@ const ProfileScope = ({ children }: { children: React.ReactNode }) => {
   return <React.Fragment key={activeProfileId ?? "guest"}>{children}</React.Fragment>;
 };
 
-export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+export const AppProvider = ({
+  children,
+  role = "app",
+}: {
+  children: React.ReactNode;
+  /**
+   * `quick`: the floating quick bar (`QuickShell`). Same providers, so every
+   * palette source and action works — but tabs FORWARD to the main window,
+   * the shell renders the palette itself, and the always-on background work
+   * (module pollers, updater, dictation) stays with the real windows.
+   */
+  role?: WindowRole;
+}) => {
+  const quick = role === "quick";
   return (
     <SettingsProvider>
       <UploadProvider>
@@ -144,7 +164,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                         switch) and the chrome router below them always reflects
                         the ACTIVE tab, so every useNavigate/useLocation in this
                         tree keeps working unchanged. */}
-                    <TabsProvider>
+                    <TabsProvider forward={quick ? forwardToMain : undefined}>
                     <ActiveTabRouter>
                     <LocalActionProvider>
                       <TooltipProvider>
@@ -152,7 +172,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                           <WidgetRegistryProvider registry={THE_WIDGET_REGISTRY}>
                             <ProfileScope>
                             <SmartProvider>
-                              <DialogProvider>
+                              <DialogProvider forward={quick ? forwardDialogToMain : undefined}>
                                 <SelectionProvider>
                                   <SmartPrefetchProvider>
                                   <AgentProvider disabled={false}>
@@ -167,26 +187,28 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                         two pages nested. */}
                                     {/* No palette signed out: there is no pill for it to unfold
                                         from and nothing for it to open. Same guard as `AppShell`. */}
+                                    {!quick && (
                                     <Arkitekt.Guard notConnectedFallback={null} connectingFallback={null}>
                                       <CommandMenuHost />
                                       {/* Dictation into the palette and text fields.
                                           Renders nothing until Settings → Voice input is on. */}
                                       <VoiceInput />
                                     </Arkitekt.Guard>
+                                    )}
                                     <SmartSurface />
                                     <RefetchOnReactivate />
                                     <GcOnNavigate />
                                     <ExportHost />
                                     {/* Every module's always-on builtins (updaters,
                                         dashboard widgets), each behind its guard. */}
-                                    <ModuleBackground />
+                                    {!quick && <ModuleBackground />}
                                     <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
                                       <ProfileIdentitySync />
                                     </Guard.Lok>
                                     <Toaster />
                                     {/* One subscription to the app updater, for
                                         the rail island and the settings card. */}
-                                    <UpdateListener />
+                                    {!quick && <UpdateListener />}
                                     <BackNavigationErrorCatcher>
                                       {children}
                                     </BackNavigationErrorCatcher>

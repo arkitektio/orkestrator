@@ -46,6 +46,13 @@ export const ApplicableRecents = ({ filter, onDone }: PassDownProps) => {
         return (
           <CommandActionRow
             key={entry.kind === "entity" ? `${entry.identifier}:${entry.id}` : entry.route}
+            // Prefixed: the same object may also be a search hit below, and
+            // two rows sharing a cmdk value trap the arrow keys between them.
+            value={
+              entry.kind === "entity"
+                ? `recent:${entry.identifier}:${entry.id}`
+                : `recent:${entry.route}`
+            }
             title={entry.label}
             description={
               entry.kind === "entity"

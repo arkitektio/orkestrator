@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   profileDetail,
+  profileOrganization,
+  profileOrganizationDetail,
   profileShortDetail,
   profileTitle,
 } from "./profileLabels";
@@ -55,5 +57,16 @@ describe("profile labels", () => {
     expect(profileTitle(profile({ organizationSlug: "alpha" }))).toBe("alpha");
     expect(profileTitle(profile({ deploymentName: "lok.test" }))).toBe("lok.test");
     expect(profileTitle(profile({}))).toBe("https://lok.test/lok/f/");
+  });
+});
+
+describe("organization labels", () => {
+  it("names the organization, with the hub underneath", () => {
+    expect(profileOrganization(full)).toBe("Alpha Lab");
+    expect(profileOrganizationDetail(full)).toBe("Imaging · jhnnsrs · lok.test");
+  });
+
+  it("falls back to the title without an organization", () => {
+    expect(profileOrganization(profile({ deploymentName: "lok.test" }))).toBe("lok.test");
   });
 });

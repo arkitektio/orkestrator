@@ -4,7 +4,7 @@ import { useDownload } from "@/core/modules/download/DownloadProvider";
 import { Structure } from "@/core/types";
 import type { ApolloClient } from "@apollo/client";
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 

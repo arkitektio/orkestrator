@@ -30,7 +30,7 @@ import { useMeshes } from "@/core/connection/mesh/useMeshes";
 import { cn } from "@/core/util/utils";
 import { AlertTriangle, Check, Clock, Copy, Loader2, Lock, Network, Radio, RotateCw, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   isLockPublicKey,
   MESH_LOCK_MAX_TRUSTED_KEYS,

@@ -5,7 +5,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { BankMerchant, BankPlace } from "@/bank/linkers";
 import { MapPin, Pencil, Search } from "lucide-react";
 import { useMemo } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useGeocodeMerchantLocationMutation, useGetMerchantLocationQuery } from "../api/graphql";
 import { isLocated, placeAddress, SOURCE_LABEL } from "../components/cards/PlaceCard";
 import { CategoryBadge } from "../components/CategoryBadge";

@@ -33,6 +33,12 @@ export const settingsValidator = zod.object({
    * bare OS blur). What is left is the sidebar colour laid over the blur.
    */
   railGlassTransparency: zod.number().min(0).max(1),
+  /**
+   * The SYSTEM-WIDE shortcut that brings Orkestrator forward with the palette
+   * open, as an Electron accelerator; null turns it off. Registered by main
+   * (`GlobalShortcutService`); ⌘K stays the in-app shortcut.
+   */
+  globalPaletteShortcut: zod.string().nullable(),
 
   // ── Experiments (Settings → General) ──
   // Recent work that ships ON: each flag is the off switch for a feature that
@@ -84,6 +90,7 @@ export const defaultSettings: Settings = {
   autoSceneSnapshot: true,
   railGlass: false,
   railGlassTransparency: 0.7,
+  globalPaletteShortcut: "CommandOrControl+Shift+Space",
   experimentMenuPrefetch: true,
   experimentAnnotationHover: true,
   experimentTaskIsland: true,

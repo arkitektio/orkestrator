@@ -16,7 +16,7 @@ import type { OnDone } from "@/core/smart/extensions/types";
 import { useSelectionSelector } from "@/core/dnd/selection/SelectionContext";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useDialog } from "../../dialogs/registry";
 import {
   cancelLocalActionRun,

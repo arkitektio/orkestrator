@@ -5,7 +5,7 @@ import { copyText } from "@/core/tabs/sharing/universalLink";
 import { cn } from "@/core/util/utils";
 import { Check, ChevronDown, Copy, ExternalLink, Loader2, Smartphone, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useBank } from "../api/funcs";
 import {
   AuthFinish,

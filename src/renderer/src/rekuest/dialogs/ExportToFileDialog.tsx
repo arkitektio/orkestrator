@@ -23,7 +23,7 @@ import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { Structure } from "@/core/types";
 import { ArrowLeft, Download } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { v4 as uuidv4 } from "uuid";
 
 import { FILE_DOWNLOADERS } from "@/core/modules/registries";

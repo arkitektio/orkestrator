@@ -9,7 +9,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/core/ui/dialog";
 import { MaterializeBlokForm } from "../forms/MaterializeBlokForm";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
   const [open, setOpen] = useState(false);

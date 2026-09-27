@@ -1,7 +1,7 @@
 import { PageAction } from "@/core/ui/page-action";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { BankRule } from "@/bank/linkers";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { ListTransactionsDocument, useReapplyRulesMutation } from "../api/graphql";
 import RuleList from "../components/lists/RuleList";
 

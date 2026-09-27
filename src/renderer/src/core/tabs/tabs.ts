@@ -613,6 +613,32 @@ export const saveTabs = (
  * gate, which passes the path the user asked for — recorded before the switch
  * precisely because the hash cannot be trusted across one.
  */
+// ── forwarding (the quick bar) ──
+
+/** The quick bar's whole tab state: one tab, parked at the root. */
+export const QUICK_ROOT = "/";
+
+export const quickTabsState = (now: number = Date.now()): TabsState => {
+  const tab = createTab(QUICK_ROOT, { now });
+  return { tabs: [tab], activeId: tab.id, viewId: tab.id };
+};
+
+/**
+ * Where a navigation in the quick bar wanted to go, or null while it is still
+ * parked. The quick bar renders no pages: any location other than the root —
+ * the active tab navigated, or a tab was opened (⌘T intent, a background
+ * open) — is a destination for the MAIN window.
+ */
+export const forwardedPath = (state: TabsState): string | null => {
+  const active = locationPathOf(activeTab(state));
+  if (active !== QUICK_ROOT) return active;
+  for (const tab of state.tabs) {
+    const path = locationPathOf(tab);
+    if (path !== QUICK_ROOT) return path;
+  }
+  return null;
+};
+
 export const bootTabs = (
   profileId: string | null,
   bootPath: string | null,

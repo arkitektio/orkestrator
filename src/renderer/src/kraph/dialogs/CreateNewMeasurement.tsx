@@ -16,7 +16,7 @@ import { Structure } from "@/core/types";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 const normalizeInput = (
   data: CreateMeasurementCategoryInput,

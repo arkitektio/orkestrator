@@ -1,7 +1,7 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { useDeleteLayerMutation, type SceneLayerFragment } from "@/mikro/api/graphql";
 import { Fragment, useCallback, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { LongCommitProfiler } from "../../platform/perf/commitProfiler";
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import { useSelectionStore } from "../../platform/stores/selectionStore";

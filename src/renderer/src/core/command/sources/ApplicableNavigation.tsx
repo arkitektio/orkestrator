@@ -1,4 +1,20 @@
 import { Arkitekt } from "@/core/connection/arkitekt/host";
+import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
+import {
+  profileOrganization,
+  profileOrganizationDetail,
+} from "@/core/connection/profile/ui/profileLabels";
+import { useSwitchToProfile } from "@/core/connection/profile/ui/useSwitchToProfile";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/core/ui/alert-dialog";
 import { useDialog } from "@/core/dialogs/registry";
 import { moduleIcon } from "@/core/modules/moduleIcons";
 import { useDebug } from "@/core/debug/DebugContext";
@@ -8,8 +24,8 @@ import { smartRegistry } from "@/core/smart/registry";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
 import type { PassDownProps } from "@/core/smart/extensions/types";
 import { CommandGroup } from "cmdk";
-import { ArrowRight, Pin, PinOff } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowRight, Building2, Pin, PinOff } from "lucide-react";
+import { useMemo, useState } from "react";
 import useReactRouterBreadcrumbs from "use-react-router-breadcrumbs";
 import { useNavigate } from "react-router-dom";
 
@@ -20,6 +36,7 @@ import { APP_COMMANDS } from "./appCommands";
 import { routeCatalog, searchRoutes } from "./routeCatalog";
 import { breadcrumbText } from "@/core/command/breadcrumbText";
 import { isElectron } from "@/core/util/platform";
+import { windowRole } from "@/core/util/windowRole";
 
 /**
  * Where you can go, and what the app itself can do.
@@ -46,6 +63,11 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
   const openTarget = useOpenTarget();
   const activeTab = useActiveTab();
   const { setPinned } = useTabActions();
+  const profiles = Arkitekt.useProfiles();
+  const activeProfileId = Arkitekt.useActiveProfileId();
+  const switchToProfile = useSwitchToProfile();
+  // The org a "Switch to …" row was picked for, waiting on the confirm dialog.
+  const [pendingSwitch, setPendingSwitch] = useState<StoredProfile | null>(null);
 
   const moduleRows = useMemo(
     () =>
@@ -101,6 +123,27 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
     [tabPinned, filter, breadcrumbs],
   );
 
+  // One row per other login: an organization (hub) is a login, the org lives in
+  // its token. Not in the quick bar — that window's session is its own, so
+  // switching there would leave the main window where it was.
+  const orgRows = useMemo(
+    () =>
+      windowRole() === "quick"
+        ? []
+        : rankByFilter(
+            profiles.filter((p) => p.id !== activeProfileId),
+            (p) => [
+              `Switch to ${profileOrganization(p)}`,
+              profileOrganizationDetail(p),
+              "organization",
+              "org",
+              "account",
+            ],
+            filter,
+          ),
+    [profiles, activeProfileId, filter],
+  );
+
   const commandRows = useMemo(
     () =>
       rankByFilter(
@@ -123,6 +166,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
           {moduleRows.map((module) => (
             <CommandActionRow
               key={`module-${module.key}`}
+              value={`module:${module.key}`}
               title={module.definition.label || module.key}
               description={module.route}
               trailing={moduleIcon(module.key)}
@@ -146,6 +190,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
           {pageRows.map((page) => (
             <CommandActionRow
               key={`page-${page.route}`}
+              value={`page:${page.route}`}
               title={page.label}
               description={`${moduleLabel(modules, page.module)} · ${page.route}`}
               trailing={moduleIcon(page.module)}
@@ -165,6 +210,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
           {listRows.map((model) => (
             <CommandActionRow
               key={`list-${model.identifier}`}
+              value={`list:${model.identifier}`}
               title={smartRegistry.getDisplayName(model.identifier)}
               description={model.identifier}
               icon={ArrowRight}
@@ -185,6 +231,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
       {pinRow.length > 0 && (
         <CommandGroup heading={<GroupHeading>This tab</GroupHeading>}>
           <CommandActionRow
+            value="tab:pin"
             title={tabPinned ? "Unpin this tab" : "Pin this tab"}
             description={pinRow[0].label}
             icon={tabPinned ? PinOff : Pin}
@@ -193,11 +240,61 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
         </CommandGroup>
       )}
 
+      {orgRows.length > 0 && (
+        <CommandGroup heading={<GroupHeading>Organizations</GroupHeading>}>
+          {orgRows.map((profile) => (
+            <CommandActionRow
+              key={`org-${profile.id}`}
+              value={`org:${profile.id}`}
+              title={`Switch to ${profileOrganization(profile)}`}
+              description={
+                [profileOrganizationDetail(profile), profile.status === "stale" ? "signed out" : null]
+                  .filter(Boolean)
+                  .join(" · ")
+              }
+              icon={Building2}
+              // Confirmed first: the palette stays open under the dialog.
+              onSelect={() => setPendingSwitch(profile)}
+            />
+          ))}
+        </CommandGroup>
+      )}
+
+      <AlertDialog open={!!pendingSwitch} onOpenChange={(open) => !open && setPendingSwitch(null)}>
+        {/* Keys stay here: React bubbles them through the portal to cmdk,
+            which would otherwise select the highlighted row on Enter. */}
+        <AlertDialogContent onKeyDown={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Switch to {pendingSwitch ? profileOrganization(pendingSwitch) : ""}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingSwitch?.status === "stale"
+                ? "This account is signed out. You will be taken to the sign-in screen to sign in again; nothing else is signed out."
+                : "This window reconnects as that organization and opens its tabs. You can switch back at any time."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const profile = pendingSwitch;
+                setPendingSwitch(null);
+                if (profile) run(() => switchToProfile(profile));
+              }}
+            >
+              {pendingSwitch?.status === "stale" ? "Sign in again" : "Switch"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {commandRows.length > 0 && (
         <CommandGroup heading={<GroupHeading>Commands</GroupHeading>}>
           {commandRows.map((command) => (
             <CommandActionRow
               key={`command-${command.id}`}
+              value={`command:${command.id}`}
               title={command.title}
               description={command.description}
               icon={command.icon}

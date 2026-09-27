@@ -1,5 +1,5 @@
 import { Maximize2, Waypoints } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { useLayerWorldBoxGetter, useSceneHostLayers, useSceneWorld } from "../../scene/sceneHost";

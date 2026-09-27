@@ -79,7 +79,7 @@ import {
   startPending,
   type PendingMessage,
 } from "./pendingMessages";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { v4 as uuidv4 } from "uuid";
 
 /** How long after a message lands a still-spinning pill re-checks its task. */
