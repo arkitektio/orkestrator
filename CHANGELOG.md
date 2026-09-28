@@ -1,3 +1,34 @@
+# [2.16.0](https://github.com/arkitektio/orkestrator/compare/v2.15.0...v2.16.0) (2026-09-28)
+
+
+### Bug Fixes
+
+* **forms:** show create errors in CreateableSearchField ([8e2bc96](https://github.com/arkitektio/orkestrator/commit/8e2bc96e2e994f256efdeb3412c7828d2f336e72))
+
+
+### Features
+
+* add HomePage, PortfolioPage, RecurringPage, and TransactionPage components ([380426c](https://github.com/arkitektio/orkestrator/commit/380426c2377f9612b926a284f11ed99030e70980))
+* **bank:** semantic categories, merchants with maps, insights ([5c6e1f0](https://github.com/arkitektio/orkestrator/commit/5c6e1f0679e1e23af7970dacd1ececf7e6d80800))
+* **kabinet,lok:** release approvals and mandates for installs ([b6d237b](https://github.com/arkitektio/orkestrator/commit/b6d237b64732c32d73f094402b84f430b02fa02c))
+* **kuvert:** categories, unsynced-change queue, tasks, settings on the mailbox page ([d9b97d7](https://github.com/arkitektio/orkestrator/commit/d9b97d7ff2d51c356d9b5c59d6670a10414c694f)), closes [#login](https://github.com/arkitektio/orkestrator/issues/login)
+* **kuvert:** mail module for the kuvert email service ([a4ea2ba](https://github.com/arkitektio/orkestrator/commit/a4ea2ba4bd1b72d1cca03a37d429a41dac407bb0))
+* **modules:** a live module host — register() returns unregister ([6f7b502](https://github.com/arkitektio/orkestrator/commit/6f7b502bea54a4f11a0074f8d5632114d9f12b3b))
+* **modules:** boundary test and in-repo module spec v1 ([594d33e](https://github.com/arkitektio/orkestrator/commit/594d33e7bb6217449d77b2345f7943ebc3bd1066))
+* **modules:** host slots replace cross-module component imports ([a0539d6](https://github.com/arkitektio/orkestrator/commit/a0539d68c52c940ff1554c46981adac7bf2fdcc2))
+* **modules:** keyed displays and option sources ([04be865](https://github.com/arkitektio/orkestrator/commit/04be8650e756c830e479fb3203aaac216e0c762c))
+* **modules:** palette, rail, pickers, operations and kabinet via slots ([6d68629](https://github.com/arkitektio/orkestrator/commit/6d68629b17ce2fb6e9c1b966c333fb22edd11138))
+* quick bar, rail toast island, rich-text mail replies, org switching in ⌘K ([d704427](https://github.com/arkitektio/orkestrator/commit/d704427522b7ae40ee06253b3bf1219234511d0c))
+* **rail:** module popout as grouped page tiles from navLinks ([9ff7b81](https://github.com/arkitektio/orkestrator/commit/9ff7b81b4ff6b541d134ac2b198674661899e7ed))
+* **rail:** show how services are reached on the org switcher ([0895794](https://github.com/arkitektio/orkestrator/commit/0895794ba4465676dba81a653f97f2b9a3d24481))
+* **settings:** choose membership or local brand colour ([e3bd471](https://github.com/arkitektio/orkestrator/commit/e3bd47138760e5174ca2f016317c27725c939b7d))
+* **structure:** { identifier, id, descriptors?, label? }, compared by value ([4c5be1d](https://github.com/arkitektio/orkestrator/commit/4c5be1dd4f1333fe05e839f85dba90f8d790de6c))
+
+
+### Performance Improvements
+
+* **scene:** WebGPU renderer review pass — lifecycle, shader, picking, residency split ([e41cc85](https://github.com/arkitektio/orkestrator/commit/e41cc850529db56610e6cef126c2cf8ee6c5a967))
+
 # [2.15.0](https://github.com/arkitektio/orkestrator/compare/v2.14.0...v2.15.0) (2026-09-24)
 
 
