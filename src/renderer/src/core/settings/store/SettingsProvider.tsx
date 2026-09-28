@@ -24,8 +24,10 @@ export const SettingsProvider: React.FC<SettingsProps> = ({
 
   useEffect(() => {
     store.getState().hydrate();
+    const stopFollowing = store.followOtherWindows();
 
     return () => {
+      stopFollowing();
       store.cleanup();
     };
   }, [store]);

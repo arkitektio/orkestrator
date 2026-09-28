@@ -1,7 +1,9 @@
 import { getPlatform } from "@/core/util/platform";
 import { createStore, type StoreApi } from "zustand/vanilla";
-import { setBrandBase } from "./brandTheme";
+import { setBrandBase, setBrandSource } from "./brandTheme";
 import { defaultSettings, type Settings, settingsValidator } from "./validator";
+
+const SETTINGS_KEY = "wasser-settings";
 
 /** What main answered for the last global-shortcut change (see GlobalShortcutService). */
 export type GlobalShortcutStatus = {
@@ -20,6 +22,8 @@ export type SettingsStoreState = {
 
 export type SettingsStore = StoreApi<SettingsStoreState> & {
   cleanup: () => void;
+  /** Apply settings another window saves; returns the unsubscribe. */
+  followOtherWindows: () => () => void;
 };
 
 function normalizeSettings(
@@ -73,6 +77,7 @@ function applyThemeSettings(settings: Settings) {
 function applyBrandSettings(settings: Settings) {
   // The variables are shared with the scene tint, so they are written through
   // `brandTheme` rather than set here directly — see that module.
+  setBrandSource(settings.brandSource);
   setBrandBase({ hue: settings.brandHue, chroma: settings.brandChroma });
 }
 
@@ -149,7 +154,7 @@ export function createSettingsStore(
       const previousSettings = store.getState().settings;
       const normalizedSettings = normalizeSettings(nextSettings, currentDefaultSettings);
       if (normalizedSettings) {
-        localStorage.setItem("wasser-settings", JSON.stringify(normalizedSettings));
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(normalizedSettings));
         console.log("Settings saved to local storage");
 
         applyThemeSettings(normalizedSettings);
@@ -190,7 +195,7 @@ export function createSettingsStore(
       let localSettings: Settings | undefined;
       isHydrating = true;
       try {
-        const serializedSettings = localStorage.getItem("wasser-settings");
+        const serializedSettings = localStorage.getItem(SETTINGS_KEY);
         if (serializedSettings) {
           localSettings = normalizeSettings(
             JSON.parse(serializedSettings),
@@ -221,6 +226,25 @@ export function createSettingsStore(
   const extendedStore = store as SettingsStore;
   extendedStore.cleanup = () => {
     return;
+  };
+  // Every window of the app keeps its own store over the same localStorage
+  // key; a change saved in one (Settings open in a popout, the quick bar) must
+  // reach the others, or each window keeps the colour it booted with. The
+  // `storage` event fires only in the OTHER windows, and re-saving the same
+  // string here fires nothing, so this cannot ping-pong.
+  extendedStore.followOtherWindows = () => {
+    if (typeof window === "undefined") return () => undefined;
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== SETTINGS_KEY || !event.newValue) return;
+      try {
+        const next = normalizeSettings(JSON.parse(event.newValue), currentDefaultSettings);
+        if (next) store.getState().setSettings(next);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   };
 
   return extendedStore;

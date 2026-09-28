@@ -13,6 +13,12 @@ export const settingsValidator = zod.object({
   agentExpanded: zod.boolean().optional(),
   brandHue: zod.number().min(0).max(360).optional(),
   brandChroma: zod.number().min(0).max(1).optional(),
+  /**
+   * Whose colour tints the app: the brand on your membership in the active
+   * organization (the same on every machine), or `brandHue`/`brandChroma`
+   * here, on this machine only.
+   */
+  brandSource: zod.enum(["membership", "local"]),
   /** Let the open scene's main layer drive the brand hue. */
   sceneThemeSync: zod.boolean(),
   /**
@@ -86,6 +92,7 @@ export const defaultSettings: Settings = {
   agentExpanded: false,
   brandHue: 267.256,
   brandChroma: 0.20962,
+  brandSource: "membership",
   sceneThemeSync: true,
   autoSceneSnapshot: true,
   railGlass: false,

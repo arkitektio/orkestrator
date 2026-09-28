@@ -34,6 +34,8 @@ export type MembershipBrandWriterProps = {
    * user chose on another machine.
    */
   brand: EditedBrand | null;
+  /** The override was cleared: the caller should show the stored brand again. */
+  onCleared?: () => void;
 };
 
 /**
@@ -54,7 +56,7 @@ export type MembershipBrandWriterProps = {
  * `ProfileIdentitySync`, which stores it on the profile, and
  * `OrganizationBrandSync` paints the same value from there — so the two converge.
  */
-export const MembershipBrandWriter = ({ brand }: MembershipBrandWriterProps) => {
+export const MembershipBrandWriter = ({ brand, onCleared }: MembershipBrandWriterProps) => {
   const { data } = useMyContextQuery({ fetchPolicy: "cache-first" });
   const [updateColors, { loading }] = useUpdateMembershipColorsMutation();
   const [clearing, setClearing] = useState(false);
@@ -115,6 +117,7 @@ export const MembershipBrandWriter = ({ brand }: MembershipBrandWriterProps) => 
         variables: { input: { brandHue: null, brandChroma: null } },
       });
       if (!failed(result)) {
+        onCleared?.();
         toast.success("Using your organization's brand colour.");
       }
     } finally {
@@ -124,12 +127,13 @@ export const MembershipBrandWriter = ({ brand }: MembershipBrandWriterProps) => 
 
   return (
     <Button
+      type="button"
       variant="ghost"
       size="sm"
       onClick={clearOverride}
       disabled={loading || clearing}
     >
-      Use organization brand
+      Use organization colour
     </Button>
   );
 };

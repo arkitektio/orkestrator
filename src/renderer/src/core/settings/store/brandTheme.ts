@@ -14,7 +14,15 @@
  * through here instead, and the effective value is
  * `override ?? remote ?? base`, resolved PER FIELD: a membership that sets only
  * a hue still takes its chroma from the layer below.
+ *
+ * Which of remote and base is in play is the user's choice (`brandSource` in
+ * settings): "membership" follows the brand stored on lok, "local" ignores it
+ * and uses this machine's own colour. The remote layer is still recorded
+ * while "local" is chosen, so switching back needs no round trip.
  */
+
+/** Where the brand comes from, below a scene's tint. */
+export type BrandSource = "membership" | "local";
 
 export type Brand = {
   hue: number;
@@ -46,6 +54,15 @@ const EMPTY: PartialBrand = { hue: undefined, chroma: undefined };
 let base: PartialBrand = EMPTY;
 let remote: PartialBrand = EMPTY;
 let override: Brand | null = null;
+let source: BrandSource = "membership";
+
+const effective = (): PartialBrand => {
+  const layer = source === "membership" ? remote : EMPTY;
+  return {
+    hue: override?.hue ?? layer.hue ?? base.hue,
+    chroma: override?.chroma ?? layer.chroma ?? base.chroma,
+  };
+};
 
 const writeProperty = (name: string, value: number | undefined) => {
   if (value === undefined) {
@@ -59,8 +76,15 @@ const apply = () => {
   if (typeof document === "undefined") {
     return;
   }
-  writeProperty("--brand-hue", override?.hue ?? remote.hue ?? base.hue);
-  writeProperty("--brand-chroma", override?.chroma ?? remote.chroma ?? base.chroma);
+  const brand = effective();
+  writeProperty("--brand-hue", brand.hue);
+  writeProperty("--brand-chroma", brand.chroma);
+};
+
+/** Follow the membership's brand, or only this machine's. */
+export const setBrandSource = (next: BrandSource) => {
+  source = next;
+  apply();
 };
 
 /** The user's configured brand, from settings. `undefined` fields fall back to
@@ -73,9 +97,10 @@ export const setBrandBase = (next: PartialBrand) => {
 
 /**
  * The brand carried by the caller's membership in the active organization,
- * already resolved against the organization's own default. Outranks the local
- * settings brand: it is the user's own choice too, just stored server-side, so
- * it should follow them onto whatever machine they sign in from. Pass an empty
+ * already resolved against the organization's own default. While the source is
+ * "membership" it outranks the local settings brand: it is the user's own
+ * choice too, just stored server-side, so it follows them onto whatever machine
+ * they sign in from. Pass an empty
  * brand (or call with both fields undefined) when lok is unavailable or has
  * nothing set — the local settings brand then takes over again.
  */
@@ -94,15 +119,13 @@ export const setBrandOverride = (next: Brand | null) => {
  * callers keep it continuous so a 350° → 10° change transitions the short way
  * round rather than sweeping backwards through the whole circle. `oklch()`
  * treats hue as modulo-360, so an unwrapped value renders identically. */
-export const getEffectiveBrand = (): PartialBrand => ({
-  hue: override?.hue ?? remote.hue ?? base.hue,
-  chroma: override?.chroma ?? remote.chroma ?? base.chroma,
-});
+export const getEffectiveBrand = (): PartialBrand => effective();
 
 /** Test seam — resets every source without touching the DOM state semantics. */
 export const resetBrandTheme = () => {
   base = EMPTY;
   remote = EMPTY;
   override = null;
+  source = "membership";
   apply();
 };

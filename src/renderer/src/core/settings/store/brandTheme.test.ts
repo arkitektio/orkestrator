@@ -6,6 +6,7 @@ import {
   setBrandBase,
   setBrandOverride,
   setBrandRemote,
+  setBrandSource,
 } from "./brandTheme";
 
 const hue = () => document.documentElement.style.getPropertyValue("--brand-hue");
@@ -73,5 +74,32 @@ describe("brand layering", () => {
     setBrandBase(BASE);
     setBrandRemote(REMOTE);
     expect(getEffectiveBrand()).toEqual(REMOTE);
+  });
+});
+
+describe("brand source", () => {
+  it("ignores the membership brand while the local colour is chosen", () => {
+    setBrandBase(BASE);
+    setBrandRemote(REMOTE);
+    setBrandSource("local");
+    expect(hue()).toBe("267.256");
+    expect(chroma()).toBe("0.20962");
+    expect(getEffectiveBrand()).toEqual(BASE);
+  });
+
+  it("keeps the membership brand, so switching back needs no round trip", () => {
+    setBrandBase(BASE);
+    setBrandSource("local");
+    setBrandRemote(REMOTE);
+    expect(hue()).toBe("267.256");
+    setBrandSource("membership");
+    expect(hue()).toBe("40");
+  });
+
+  it("still lets a scene tint either source", () => {
+    setBrandBase(BASE);
+    setBrandSource("local");
+    setBrandOverride({ hue: 120, chroma: 0.1 });
+    expect(hue()).toBe("120");
   });
 });
