@@ -28,6 +28,9 @@ fragment Thread on Thread {
   lastMessageAt
   messageCount
   unread
+  tasks {
+    ...TaskChip
+  }
   account {
     ...SenderAccount
   }

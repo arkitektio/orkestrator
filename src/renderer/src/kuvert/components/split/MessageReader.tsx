@@ -44,8 +44,9 @@ export const MessageReader = ({ id }: { id: string }) => {
       }
       toolbar={
         <MailToolbar
-          messages={[message.id]}
+          mail={[message]}
           newest={message}
+          account={message.account.id}
           canSend={message.account.canSend}
           page={MailMessage.linkBuilder(message.id)}
           menu={<MailMessage.ObjectButton object={message} />}

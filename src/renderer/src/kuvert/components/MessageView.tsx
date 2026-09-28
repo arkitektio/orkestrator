@@ -8,6 +8,8 @@ import { AddressFragment, MessageFragment, useGetMessageQuery } from "../api/gra
 import { addressLabel, formatMailDate, formatMailDateTime } from "../format";
 import { MailMessage } from "../linkers";
 import { MessageAttachments } from "./Attachments";
+import { MessageCategories } from "./categories/MessageCategories";
+import { MessageSyncState } from "./changes/MessageSyncState";
 import { HtmlBody, TextBody } from "./MessageBody";
 import { Monogram } from "./Monogram";
 
@@ -120,6 +122,7 @@ export const MessageView = ({
                 <span className="hidden truncate text-xs text-muted-foreground @md:inline">{message.senderAddress}</span>
               )}
               <span className="ml-auto flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                <MessageSyncState message={message} />
                 {message.isFlagged && <Flag className="size-3 fill-current text-primary" aria-label="Flagged" />}
                 {!open && message.hasAttachments && <Paperclip className="size-3" aria-label="Attachments" />}
                 <span title={formatMailDateTime(message.date)}>
@@ -134,6 +137,7 @@ export const MessageView = ({
                 <Recipients label="Cc" list={message.cc} />
                 <Recipients label="Bcc" list={message.bcc} />
                 <Recipients label="Reply-To" list={message.replyTo} />
+                <MessageCategories categories={message.categories} />
               </>
             ) : (
               <span className="line-clamp-1 text-xs text-muted-foreground">{message.snippet}</span>

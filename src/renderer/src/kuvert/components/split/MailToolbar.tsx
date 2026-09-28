@@ -6,8 +6,9 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/core/notify";
 import { useKuvert } from "../../api/funcs";
-import { FolderRole } from "../../api/graphql";
-import { deleteMail, markRead, moveToRole, setFlagged } from "../../mailOps";
+import { CategoryChipFragment, FolderRole } from "../../api/graphql";
+import { deleteMail, markRead, moveToRole, setFlagged, undoToast } from "../../mailOps";
+import { CategoryButton } from "../categories/CategoryButton";
 import { ReplyButtons } from "../MessageView";
 
 const Divider = () => <Separator orientation="vertical" className="mx-1 h-5" />;
@@ -19,17 +20,20 @@ const Divider = () => <Separator orientation="vertical" className="mx-1 h-5" />;
  * the flag goes on the newest.
  */
 export const MailToolbar = ({
-  messages,
+  mail,
   newest,
+  account,
   canSend,
   page,
   menu,
   onGone,
 }: {
-  /** Every mail the pane shows. */
-  messages: string[];
+  /** Every mail the pane shows, with its categories. */
+  mail: readonly { id: string; categories: readonly CategoryChipFragment[] }[];
   /** The mail Reply/Forward answer and the flag marks. */
   newest?: { id: string; isFlagged: boolean };
+  /** The mailbox the mail is in. */
+  account: string;
   canSend: boolean;
   /** The route of the full page. */
   page: string;
@@ -38,14 +42,17 @@ export const MailToolbar = ({
   /** The mail left this view (archived, trashed): clear the selection. */
   onGone: () => void;
 }) => {
+  const messages = mail.map((m) => m.id);
   const client = useKuvert();
   const { openDialog } = useDialog();
   const navigate = useNavigate();
 
-  const act = (work: () => Promise<unknown>, done: string, gone = true) =>
+  // Every change here waits out an undo window before it reaches the server:
+  // the toast offers to take it back.
+  const act = (work: () => Promise<unknown>, done: string, gone = true, affected = messages) =>
     work()
       .then(() => {
-        toast.success(done);
+        undoToast(client, affected, done);
         if (gone) onGone();
       })
       .catch((e: Error) => toast.error(e.message));
@@ -74,6 +81,7 @@ export const MailToolbar = ({
       <TooltipButton variant="ghost" size="icon-lg" tooltip="Move to…" onClick={() => openDialog("kuvertmove", { messages }, { size: "small" })}>
         <FolderInput />
       </TooltipButton>
+      <CategoryButton mail={mail} account={account} />
       {newest && canSend && (
         <>
           <Divider />
@@ -86,7 +94,9 @@ export const MailToolbar = ({
           variant="ghost"
           size="icon-lg"
           tooltip={newest.isFlagged ? "Unflag" : "Flag"}
-          onClick={() => act(() => setFlagged(client, [newest.id], !newest.isFlagged), newest.isFlagged ? "Unflagged" : "Flagged", false)}
+          onClick={() =>
+            act(() => setFlagged(client, [newest.id], !newest.isFlagged), newest.isFlagged ? "Unflagged" : "Flagged", false, [newest.id])
+          }
         >
           <Flag className={newest.isFlagged ? "fill-current text-primary" : undefined} />
         </TooltipButton>

@@ -14,6 +14,10 @@ fragment ListMessage on Message {
   isFlagged
   isAnswered
   hasAttachments
+  syncState
+  categories {
+    ...CategoryChip
+  }
   account {
     id
     name
@@ -39,6 +43,10 @@ fragment Message on Message {
   hasRemoteImages
   size
   flags
+  serverFlags
+  changes {
+    ...MailChange
+  }
   truncated
   html(allowRemote: $allowRemote)
   sender {

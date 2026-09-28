@@ -1,0 +1,19 @@
+# A category as a chip on a mail (name + colour).
+fragment CategoryChip on Category {
+  id
+  name
+  color
+  sync
+}
+
+fragment Category on Category {
+  ...CategoryChip
+  keyword
+  messageCount
+  createdAt
+  account {
+    id
+    name
+    emailAddress
+  }
+}

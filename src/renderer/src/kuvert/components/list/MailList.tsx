@@ -18,7 +18,8 @@ import {
 } from "../../api/graphql";
 import { formatMailDate } from "../../format";
 import { MailMessage, MailThread } from "../../linkers";
-import { deleteMail, threadMessages } from "../../mailOps";
+import { deleteMail, threadMessages, undoToast } from "../../mailOps";
+import { CategoryDot } from "../categories/CategoryDot";
 import { useMailSelection } from "../split/selection";
 import { MailRow, rowsFromMessages, rowsFromThreads } from "./rows";
 
@@ -83,7 +84,20 @@ const Row = ({ row, selected, onOpen }: { row: MailRow; selected: boolean; onOpe
             {formatMailDate(m.date)}
           </span>
         </div>
-        <span className="truncate text-[13px]">{m.subject || "(no subject)"}</span>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-[13px]">{m.subject || "(no subject)"}</span>
+          {row.categories.length > 0 && (
+            <span className="flex shrink-0 items-center gap-0.5" title={row.categories.map((c) => c.name).join(", ")}>
+              {row.categories.slice(0, 3).map((c) => (
+                <CategoryDot
+                  key={c.id}
+                  color={c.color}
+                  className={cn(selected && "group-focus-within/list:ring-1 group-focus-within/list:ring-primary-foreground")}
+                />
+              ))}
+            </span>
+          )}
+        </div>
         {m.snippet && <span className={cn("line-clamp-2 text-xs leading-snug", soft)}>{m.snippet}</span>}
       </div>
     </button>
@@ -179,6 +193,7 @@ export const MailList = ({
       try {
         const ids = row.kind === "thread" ? await threadMessages(client, [row.id]) : [row.id];
         await deleteMail(client, ids, false);
+        undoToast(client, ids, "Moved to Trash");
         const next = rows[index + 1] ?? rows[index - 1];
         select(next ? { kind: next.kind, id: next.id } : null);
       } catch (e) {

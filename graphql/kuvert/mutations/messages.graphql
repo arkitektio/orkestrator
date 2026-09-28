@@ -4,6 +4,13 @@ fragment MessageState on Message {
   isRead
   isFlagged
   isAnswered
+  syncState
+  categories {
+    ...CategoryChip
+  }
+  changes {
+    ...MailChange
+  }
   folder {
     id
     name

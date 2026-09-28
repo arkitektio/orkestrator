@@ -3,53 +3,19 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { PageAction } from "@/core/ui/page-action";
-import { Switch } from "@/core/ui/switch";
 import Timestamp from "@/core/ui/timestamp";
 import { PenSquare, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "@/core/notify";
-import {
-  MailFolderFragment,
-  Protocol,
-  useGetMailAccountQuery,
-  useSyncMailAccountMutation,
-  useUpdateMailFolderMutation,
-} from "../api/graphql";
+import { useGetMailAccountQuery, useSyncMailAccountMutation } from "../api/graphql";
+import { AccountChanges, changesRoute } from "../components/changes/AccountChanges";
 import { InfoList } from "../components/InfoList";
 import { ProblemBanner } from "../components/ProblemBanner";
+import { AccountSettings } from "../components/settings/AccountSettings";
 import { toastText } from "../errors";
-import { sortFolders } from "../format";
-import { MailAccount, MailFolder } from "../linkers";
+import { MailAccount } from "../linkers";
 
-const FolderRow = ({ folder, canToggle }: { folder: MailFolderFragment; canToggle: boolean }) => {
-  const [update, { loading }] = useUpdateMailFolderMutation();
-  return (
-    <MailFolder.Smart object={folder}>
-      <div className="flex items-center justify-between gap-3 px-3 py-1.5 text-sm">
-        <MailFolder.DetailLink object={folder} className="min-w-0 truncate">
-          {folder.path}
-        </MailFolder.DetailLink>
-        <span className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-          <span>
-            {folder.unreadCount > 0 && `${folder.unreadCount} unread · `}
-            {folder.totalCount}
-          </span>
-          {canToggle && (
-            <Switch
-              checked={folder.syncEnabled}
-              disabled={loading || !folder.selectable}
-              title={folder.syncEnabled ? "Synced" : "Not synced"}
-              onCheckedChange={(syncEnabled) =>
-                update({ variables: { input: { id: folder.id, syncEnabled } } }).catch((e) => toast.error(toastText(e)))
-              }
-            />
-          )}
-        </span>
-      </div>
-    </MailFolder.Smart>
-  );
-};
-
-/** A mailbox: what is wrong with it (if anything), its folders and what syncs, and how it connects. */
+/** A mailbox: what is wrong with it (if anything), and its settings: names, what goes to the server, folders, categories, sign-in. */
 const AccountPage = asDetailQueryRoute(useGetMailAccountQuery, ({ data, refetch }) => {
   const account = data.mailAccount;
   const { openSheet } = useDialog();
@@ -102,7 +68,6 @@ const AccountPage = asDetailQueryRoute(useGetMailAccountQuery, ({ data, refetch 
           <InfoList
             rows={[
               ["Address", account.emailAddress],
-              ["Sender name", account.displayName],
               ["Provider", account.provider.toLowerCase()],
               ["Status", account.status.toLowerCase().replace("_", " ")],
               ["Sharing", account.visibility.toLowerCase()],
@@ -110,8 +75,14 @@ const AccountPage = asDetailQueryRoute(useGetMailAccountQuery, ({ data, refetch 
               ["Incoming", server(account.incomingHost, account.incomingPort, account.incomingSecurity)],
               ["Outgoing", server(account.smtpHost, account.smtpPort, account.smtpSecurity) ?? "cannot send"],
               ["Login", `${account.username} (${account.authMethod === "XOAUTH2" ? "OAuth" : "password"})`],
-              ["Copy to Sent", account.saveSentCopy ? "yes" : "no"],
-              ["Keep on server", account.protocol === Protocol.Pop3 && (account.popLeaveOnServer ? "yes" : "no")],
+              [
+                "Unsynced",
+                account.pendingChanges + account.failedChanges > 0 && (
+                  <Link to={changesRoute(account.id)} className="underline-offset-2 hover:underline">
+                    {account.pendingChanges} pending{account.failedChanges > 0 && `, ${account.failedChanges} failed`}
+                  </Link>
+                ),
+              ],
               ["Last synced", account.lastSyncedAt && <Timestamp date={account.lastSyncedAt} relative />],
               ["Backfill", account.backfillDone ? "complete" : "in progress"],
               ["Linked", <Timestamp date={account.createdAt} relative />],
@@ -134,13 +105,10 @@ const AccountPage = asDetailQueryRoute(useGetMailAccountQuery, ({ data, refetch 
         </Sidebars.Tab>
       }
     >
-      <div className="flex flex-col gap-3 p-3">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 p-3">
         <ProblemBanner account={account} />
-        <div className="flex flex-col divide-y rounded-md border">
-          {sortFolders(account.folders).map((folder) => (
-            <FolderRow key={folder.id} folder={folder} canToggle={account.serverSideFolders} />
-          ))}
-        </div>
+        <AccountChanges account={account} />
+        <AccountSettings account={account} />
       </div>
     </MailAccount.ModelPage>
   );

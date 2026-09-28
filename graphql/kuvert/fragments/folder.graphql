@@ -8,6 +8,8 @@ fragment MailFolder on MailFolder {
   existsOnServer
   totalCount
   unreadCount
+  serverUnreadCount
+  keywordsAllowed
   backfillDone
   lastSyncedAt
 }

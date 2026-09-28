@@ -25,6 +25,10 @@ describe("describeError", () => {
     expect(describeError(MailErrorCode.SendRejected, { message: "550 no such user" }).text).toBe("550 no such user");
   });
 
+  it("points a refused push at the sync settings", () => {
+    expect(describeError(MailErrorCode.UnsupportedByPolicy).text).toMatch(/sync settings/);
+  });
+
   it("falls back to the message", () => {
     expect(toastText(new Error("offline"))).toBe("offline");
   });

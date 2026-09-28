@@ -15,6 +15,8 @@ fragment ListMailAccount on MailAccount {
   canSend
   isOwner
   unreadCount
+  pendingChanges
+  failedChanges
 }
 
 fragment MailAccount on MailAccount {
@@ -28,6 +30,11 @@ fragment MailAccount on MailAccount {
   username
   saveSentCopy
   popLeaveOnServer
+  pushSeen
+  pushFlagged
+  pushMoves
+  pushDeletes
+  pushKeywords
   capabilities
   backfillDone
   serverSideFolders
@@ -44,6 +51,9 @@ fragment MailAccount on MailAccount {
   }
   folders {
     ...MailFolder
+  }
+  categories {
+    ...Category
   }
 }
 

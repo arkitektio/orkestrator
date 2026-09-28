@@ -1,0 +1,42 @@
+# A change made here that has not reached the server yet (pending or failed).
+fragment MailChange on MailChange {
+  id
+  kind
+  state
+  add
+  remove
+  attempts
+  error
+  errorCode
+  createdAt
+  pushAfter
+  undoable
+  createdBy {
+    id
+    sub
+  }
+  account {
+    id
+    name
+    emailAddress
+  }
+  message {
+    id
+    subject
+    senderName
+    senderAddress
+    thread {
+      id
+    }
+  }
+  originFolder {
+    id
+    name
+    role
+  }
+  targetFolder {
+    id
+    name
+    role
+  }
+}

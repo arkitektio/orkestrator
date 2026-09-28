@@ -18,5 +18,8 @@ export const manifest: ModuleManifest = {
     { identifier: "@kuvert/thread", name: "Conversation", datum: false, path: "threads/:id" },
     { identifier: "@kuvert/message", name: "Mail", datum: false, path: "messages/:id" },
     { identifier: "@kuvert/outgoing", name: "Sent Mail", datum: false, path: "outbox/:id" },
+    { identifier: "@kuvert/category", name: "Mail Category", datum: false, path: "categories/:id" },
+    { identifier: "@kuvert/task", name: "Task", datum: false, path: "tasks/:id" },
+    { identifier: "@kuvert/tasklist", name: "Task List", datum: false, path: "tasklists/:id" },
   ],
 };

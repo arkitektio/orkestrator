@@ -31,9 +31,10 @@ describe("rowsFromThreads", () => {
     }) as unknown as ListThreadFragment;
 
   it("previews the newest mail and drops conversations without one in the folder", () => {
-    const latest = { id: "m1", senderName: "Anna" } as ListMessageFragment;
+    const latest = { id: "m1", senderName: "Anna", categories: [{ id: "c1", name: "Invoices" }] } as ListMessageFragment;
     const rows = rowsFromThreads([thread("t1", latest, 1), thread("t2", null)]);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ id: "t1", kind: "thread", from: "Anna Berg", unread: true, count: 2, attachments: true });
+    expect(rows[0].categories.map((c) => c.id)).toEqual(["c1"]);
   });
 });

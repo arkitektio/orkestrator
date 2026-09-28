@@ -9,11 +9,16 @@
     "_Entity": [
       "Attachment",
       "BigFileStore",
+      "Category",
       "MailAccount",
+      "MailChange",
       "MailFolder",
       "Message",
       "Organization",
       "OutgoingMessage",
+      "Task",
+      "TaskList",
+      "TaskThread",
       "Thread",
       "User"
     ]

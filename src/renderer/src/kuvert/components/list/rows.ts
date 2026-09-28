@@ -1,4 +1,4 @@
-import { AddressFragment, ListMessageFragment, ListThreadFragment } from "../../api/graphql";
+import { AddressFragment, CategoryChipFragment, ListMessageFragment, ListThreadFragment } from "../../api/graphql";
 
 /**
  * One row of a mail list, whatever it came from: what the row shows, and
@@ -18,6 +18,8 @@ export type MailRow = {
   unread: boolean;
   flagged: boolean;
   attachments: boolean;
+  /** The categories of the previewed mail. */
+  categories: readonly CategoryChipFragment[];
 };
 
 const firstName = (a: AddressFragment) => a.name.trim().split(/\s+/)[0] || a.address.split("@")[0];
@@ -52,6 +54,7 @@ export const rowsFromThreads = (threads: readonly ListThreadFragment[]): MailRow
             unread: t.unreadCount > 0,
             flagged: t.flagged,
             attachments: t.hasAttachments,
+            categories: t.latestMessage.categories,
           },
         ]
       : [],
@@ -68,4 +71,5 @@ export const rowsFromMessages = (messages: readonly ListMessageFragment[]): Mail
     unread: !m.isRead,
     flagged: m.isFlagged,
     attachments: m.hasAttachments,
+    categories: m.categories,
   }));

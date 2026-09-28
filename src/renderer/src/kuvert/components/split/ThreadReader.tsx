@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { MailboxTreeDocument, ThreadFragment, useGetThreadQuery, useMarkMessagesReadMutation } from "../../api/graphql";
 import { MailThread } from "../../linkers";
 import { MessageView } from "../MessageView";
+import { ThreadTasks } from "../tasks/ThreadTasks";
 import { InlineReply } from "./InlineReply";
 import { MailToolbar } from "./MailToolbar";
 import { useMailSelection } from "./selection";
@@ -105,8 +106,9 @@ export const ThreadReader = ({ id }: { id: string }) => {
       meta={`${thread.messageCount} ${thread.messageCount === 1 ? "mail" : "mails"} · ${thread.account.emailAddress}`}
       toolbar={
         <MailToolbar
-          messages={thread.messages.map((m) => m.id)}
+          mail={thread.messages}
           newest={last}
+          account={thread.account.id}
           canSend={thread.account.canSend}
           page={MailThread.linkBuilder(thread.id)}
           menu={<MailThread.ObjectButton object={thread} />}
@@ -114,6 +116,7 @@ export const ThreadReader = ({ id }: { id: string }) => {
         />
       }
     >
+      <ThreadTasks thread={thread} />
       <ThreadMessages thread={thread} />
       {last && thread.account.canSend && <InlineReply key={last.id} message={last} />}
     </ReaderCanvas>

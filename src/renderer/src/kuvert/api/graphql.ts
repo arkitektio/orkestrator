@@ -134,10 +134,73 @@ export type BigFileUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
+/** Put messages into categories of their mailbox and take them out (every copy of each message). */
+export type CategorizeMessagesInput = {
+  /** Categories to put the messages into. */
+  add?: Array<Scalars['ID']['input']>;
+  messages: Array<Scalars['ID']['input']>;
+  /** Categories to take the messages out of. */
+  remove?: Array<Scalars['ID']['input']>;
+};
+
+/** A category of a mailbox, shared by everyone who sees the mailbox: LOCAL, or kept on the server as an IMAP keyword (KEYWORD). */
+export type Category = {
+  __typename?: 'Category';
+  /** The mailbox. */
+  account: MailAccount;
+  /** A display color (e.g. #4f86f7). */
+  color: Scalars['String']['output'];
+  /** When the category was created. */
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  /** The IMAP keyword a KEYWORD category is kept as. */
+  keyword: Scalars['String']['output'];
+  /** Messages in the category (every copy counts). */
+  messageCount: Scalars['Int']['output'];
+  /** The category's name. */
+  name: Scalars['String']['output'];
+  /** Where the category lives. */
+  sync: CategorySync;
+};
+
+/**
+ * A category of a mailbox, shared by everyone who sees the mailbox.
+ *
+ * A KEYWORD category *is* its keyword: a message is in it when the keyword is among its flags,
+ * so the membership reaches other mail clients and survives moves made there. A LOCAL
+ * category's members are its assignments, kept under the message key.
+ */
+export type CategoryFilter = {
+  AND?: InputMaybe<CategoryFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<CategoryFilter>;
+  OR?: InputMaybe<CategoryFilter>;
+  account?: InputMaybe<Scalars['ID']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  sync?: InputMaybe<CategorySync>;
+};
+
+/** Where a category lives. LOCAL: Only here; the server never sees it; KEYWORD: As an IMAP keyword on the server, so other mail clients see it. */
+export enum CategorySync {
+  Keyword = 'KEYWORD',
+  Local = 'LOCAL'
+}
+
 /** What the provider's redirect carried. */
 export type CompleteOAuthLinkInput = {
   code: Scalars['String']['input'];
   state: Scalars['String']['input'];
+};
+
+/** A new category of a mailbox. */
+export type CreateCategoryInput = {
+  account: Scalars['ID']['input'];
+  color?: Scalars['String']['input'];
+  /** The IMAP keyword (e.g. $Invoices); derived from the name when not given. A KEYWORD category starts out holding the messages that already carry it. */
+  keyword?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  /** LOCAL keeps it here; KEYWORD keeps it on the server as `keyword`, so other mail clients see it. */
+  sync?: CategorySync;
 };
 
 /** A mailbox to link with a username and (app) password. Servers default to the preset of the address's provider when there is one (`mailPresets`). */
@@ -167,6 +230,31 @@ export type CreateMailAccountInput = {
   visibility?: Visibility;
 };
 
+/** A new task, optionally with its conversations. */
+export type CreateTaskInput = {
+  dueAt?: InputMaybe<Scalars['DateTime']['input']>;
+  /** An app's own key; must be unique among the caller's tasks. */
+  externalKey?: InputMaybe<Scalars['String']['input']>;
+  /** How those conversations are linked. */
+  link?: InputMaybe<ThreadLinkInput>;
+  list?: InputMaybe<Scalars['ID']['input']>;
+  notes?: Scalars['String']['input'];
+  pinned?: Scalars['Boolean']['input'];
+  /** Where it sorts; after the last task by default. */
+  position?: InputMaybe<Scalars['Float']['input']>;
+  /** Conversations to put into the task. */
+  threads?: Array<Scalars['ID']['input']>;
+  title: Scalars['String']['input'];
+};
+
+/** A new task list. */
+export type CreateTaskListInput = {
+  color?: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  /** Where it sorts; after the last list by default. */
+  position?: InputMaybe<Scalars['Float']['input']>;
+};
+
 /** Delete messages: into Trash, or for good. */
 export type DeleteMessagesInput = {
   messages: Array<Scalars['ID']['input']>;
@@ -177,7 +265,7 @@ export type DeleteMessagesInput = {
 /** What a delete did. */
 export type DeleteResult = {
   __typename?: 'DeleteResult';
-  /** Messages deleted or moved to Trash. */
+  /** Messages deleted or moved to Trash (here at once; on the server after the undo window). */
   deleted: Scalars['Int']['output'];
 };
 
@@ -199,6 +287,13 @@ export enum FolderRole {
   Trash = 'TRASH'
 }
 
+/** Put conversations into a task. A conversation already in it keeps its place; its link details are updated. */
+export type LinkThreadsInput = {
+  link?: InputMaybe<ThreadLinkInput>;
+  task: Scalars['ID']['input'];
+  threads: Array<Scalars['ID']['input']>;
+};
+
 /** A linked mailbox. Private to the member who linked it unless shared (`visibility`). */
 export type MailAccount = {
   __typename?: 'MailAccount';
@@ -210,6 +305,8 @@ export type MailAccount = {
   canSend: Scalars['Boolean']['output'];
   /** What the incoming server announced (IMAP CAPABILITY, POP3 CAPA). */
   capabilities: Array<Scalars['String']['output']>;
+  /** The mailbox's categories. */
+  categories: Array<Category>;
   /** When the mailbox was linked. */
   createdAt: Scalars['DateTime']['output'];
   /** The member who linked the mailbox; only they change its credentials or sharing. */
@@ -218,6 +315,8 @@ export type MailAccount = {
   displayName: Scalars['String']['output'];
   /** The mailbox's address; the From of sent mail. */
   emailAddress: Scalars['String']['output'];
+  /** Changes made here that did not reach the server (see `mailChanges`). */
+  failedChanges: Scalars['Int']['output'];
   /** The mailbox's folders (a POP3 mailbox has one, its INBOX). */
   folders: Array<MailFolder>;
   id: Scalars['ID']['output'];
@@ -239,12 +338,24 @@ export type MailAccount = {
   name: Scalars['String']['output'];
   /** The organization this mailbox belongs to. */
   organization: Organization;
+  /** Changes made here that have not reached the server yet. */
+  pendingChanges: Scalars['Int']['output'];
   /** POP3: keep downloaded mail on the server. Off deletes it there once stored. */
   popLeaveOnServer: Scalars['Boolean']['output'];
   /** How incoming mail is read. */
   protocol: Protocol;
   /** Who hosts the mailbox. */
   provider: Provider;
+  /** Deletes are pushed to the server (else only hidden here). */
+  pushDeletes: Scalars['Boolean']['output'];
+  /** Flagging is pushed to the server (else kept here). */
+  pushFlagged: Scalars['Boolean']['output'];
+  /** Keywords (KEYWORD categories) are pushed to the server (else kept here). */
+  pushKeywords: Scalars['Boolean']['output'];
+  /** Moves are pushed to the server (else refused). */
+  pushMoves: Scalars['Boolean']['output'];
+  /** Read/unread is pushed to the server (else kept here). */
+  pushSeen: Scalars['Boolean']['output'];
   /** Append sent mail to the Sent folder (off for Gmail and Microsoft, which keep a copy themselves). */
   saveSentCopy: Scalars['Boolean']['output'];
   /** Whether folders, moves and flags live on the server (IMAP). On POP3 flags are local and moves are refused. */
@@ -261,12 +372,19 @@ export type MailAccount = {
   status: MailAccountStatus;
   /** Whether a sync holds the mailbox right now. */
   syncing: Scalars['Boolean']['output'];
-  /** Unread messages over the synced folders, as the server counts them. */
+  /** Unread messages over the synced folders, as they are here. */
   unreadCount: Scalars['Int']['output'];
   /** The login name (usually the address). */
   username: Scalars['String']['output'];
   /** Who in the organization sees the mailbox and its mail. */
   visibility: Visibility;
+};
+
+
+/** A linked mailbox. Private to the member who linked it unless shared (`visibility`). */
+export type MailAccountCategoriesArgs = {
+  filters?: InputMaybe<CategoryFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -301,7 +419,75 @@ export enum MailAccountStatus {
   NeedsReauth = 'NEEDS_REAUTH'
 }
 
-/** What went wrong, for a client to offer a fix. Also stored as ``last_error_code``. NOT_CONFIGURED: The service is not configured for this (an OAuth client, the datalayer); AUTH_FAILED: The server refused the username or password; CONSENT_EXPIRED: The OAuth grant was revoked or ran out; link the mailbox again; CONNECTION_FAILED: The server could not be reached, or the connection broke; TLS_FAILED: The TLS handshake failed (certificate or protocol); TLS_REQUIRED: The mailbox asks for a connection without TLS, which is not allowed; HOST_NOT_ALLOWED: The host resolves to a private or internal address; SYNC_IN_PROGRESS: Another sync holds this mailbox right now; RATE_LIMITED: Synced too recently; try again later; SERVER_ERROR: The server answered a command with an error; SEND_REJECTED: The SMTP server refused the message or a recipient; UNSUPPORTED_BY_PROTOCOL: POP3 cannot do this (folders, flags on the server); MAILBOX_INACTIVE: The mailbox is disabled or needs new credentials; INVALID_STATE: The link state is unknown, used or belongs to someone else; CODE_EXPIRED: The link was not completed in time; PROVIDER_ERROR: The OAuth provider answered with an error. */
+/** A change made here that has not reached the server yet (a pushed one is gone). */
+export type MailChange = {
+  __typename?: 'MailChange';
+  /** The mailbox. */
+  account: MailAccount;
+  /** FLAGS: flags and keywords to add. */
+  add: Array<Scalars['String']['output']>;
+  /** Failed attempts so far. */
+  attempts: Scalars['Int']['output'];
+  /** When the change was made. */
+  createdAt: Scalars['DateTime']['output'];
+  /** The member who made the change. */
+  createdBy?: Maybe<User>;
+  /** Why the last attempt failed. */
+  error?: Maybe<Scalars['String']['output']>;
+  /** The machine-readable kind of `error`. */
+  errorCode?: Maybe<MailErrorCode>;
+  id: Scalars['ID']['output'];
+  /** What the change does. */
+  kind: MailChangeKind;
+  /** The message (also one deleted here, while its delete is on its way). */
+  message?: Maybe<Message>;
+  /** MOVE/EXPUNGE: the folder the server has the message in. */
+  originFolder?: Maybe<MailFolder>;
+  /** Not pushed before then (the undo window, or the wait after a failure). */
+  pushAfter: Scalars['DateTime']['output'];
+  /** FLAGS: flags and keywords to remove. */
+  remove: Array<Scalars['String']['output']>;
+  /** Where the change is. */
+  state: MailChangeState;
+  /** MOVE: the folder it goes to. */
+  targetFolder?: Maybe<MailFolder>;
+  /** Whether `undoMailChanges` can still take it back (in its undo window, or FAILED). */
+  undoable: Scalars['Boolean']['output'];
+};
+
+/**
+ * A change made here that still has to reach the server (see :mod:`mail.push`).
+ *
+ * ``origin_*`` is where a MOVE or EXPUNGE finds the message on the server: the row itself has
+ * already left (moved rows wait with a null UID, deleted ones carry ``deleted_at``). A FLAGS
+ * change finds it through its row, and through ``message_key`` once sync replaced the row.
+ */
+export type MailChangeFilter = {
+  AND?: InputMaybe<MailChangeFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<MailChangeFilter>;
+  OR?: InputMaybe<MailChangeFilter>;
+  account?: InputMaybe<Scalars['ID']['input']>;
+  kind?: InputMaybe<MailChangeKind>;
+  message?: InputMaybe<Scalars['ID']['input']>;
+  state?: InputMaybe<MailChangeState>;
+};
+
+/** What a queued change does on the server. FLAGS: Add and remove flags and keywords (STORE); MOVE: Move the message to another folder; EXPUNGE: Delete the message for good; POP_DELE: Delete the message on a POP3 server. */
+export enum MailChangeKind {
+  Expunge = 'EXPUNGE',
+  Flags = 'FLAGS',
+  Move = 'MOVE',
+  PopDele = 'POP_DELE'
+}
+
+/** Where a queued change is (a pushed one is gone). PENDING: Waiting to be pushed (from `pushAfter` on); FAILED: The server refused it or it ran out of attempts; the local state stays. */
+export enum MailChangeState {
+  Failed = 'FAILED',
+  Pending = 'PENDING'
+}
+
+/** What went wrong, for a client to offer a fix. Also stored as ``last_error_code``. NOT_CONFIGURED: The service is not configured for this (an OAuth client, the datalayer); AUTH_FAILED: The server refused the username or password; CONSENT_EXPIRED: The OAuth grant was revoked or ran out; link the mailbox again; CONNECTION_FAILED: The server could not be reached, or the connection broke; TLS_FAILED: The TLS handshake failed (certificate or protocol); TLS_REQUIRED: The mailbox asks for a connection without TLS, which is not allowed; HOST_NOT_ALLOWED: The host resolves to a private or internal address; SYNC_IN_PROGRESS: Another sync holds this mailbox right now; RATE_LIMITED: Synced too recently; try again later; SERVER_ERROR: The server answered a command with an error; SEND_REJECTED: The SMTP server refused the message or a recipient; UNSUPPORTED_BY_PROTOCOL: POP3 cannot do this (folders, flags on the server); MAILBOX_INACTIVE: The mailbox is disabled or needs new credentials; INVALID_STATE: The link state is unknown, used or belongs to someone else; CODE_EXPIRED: The link was not completed in time; PROVIDER_ERROR: The OAuth provider answered with an error; UNSUPPORTED_BY_POLICY: The mailbox is set not to change this on the server (its push settings); KEYWORDS_NOT_PERMITTED: The folder does not keep keywords (no \\* in PERMANENTFLAGS), the category stays local; MESSAGE_GONE: The message is no longer where the change expected it on the server; UNSAFE_EXPUNGE: Without UIDPLUS an expunge would also remove other deleted messages of the folder. */
 export enum MailErrorCode {
   AuthFailed = 'AUTH_FAILED',
   CodeExpired = 'CODE_EXPIRED',
@@ -309,7 +495,9 @@ export enum MailErrorCode {
   ConsentExpired = 'CONSENT_EXPIRED',
   HostNotAllowed = 'HOST_NOT_ALLOWED',
   InvalidState = 'INVALID_STATE',
+  KeywordsNotPermitted = 'KEYWORDS_NOT_PERMITTED',
   MailboxInactive = 'MAILBOX_INACTIVE',
+  MessageGone = 'MESSAGE_GONE',
   NotConfigured = 'NOT_CONFIGURED',
   ProviderError = 'PROVIDER_ERROR',
   RateLimited = 'RATE_LIMITED',
@@ -318,6 +506,8 @@ export enum MailErrorCode {
   SyncInProgress = 'SYNC_IN_PROGRESS',
   TlsFailed = 'TLS_FAILED',
   TlsRequired = 'TLS_REQUIRED',
+  UnsafeExpunge = 'UNSAFE_EXPUNGE',
+  UnsupportedByPolicy = 'UNSUPPORTED_BY_POLICY',
   UnsupportedByProtocol = 'UNSUPPORTED_BY_PROTOCOL'
 }
 
@@ -333,6 +523,8 @@ export type MailFolder = {
   /** False once the server stopped listing the folder. */
   existsOnServer: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
+  /** The folder keeps any keyword on the server (else KEYWORD categories stay local here). */
+  keywordsAllowed: Scalars['Boolean']['output'];
   /** When the folder was last synced. */
   lastSyncedAt?: Maybe<Scalars['DateTime']['output']>;
   /** The folder's messages. */
@@ -345,11 +537,13 @@ export type MailFolder = {
   role: FolderRole;
   /** Whether the folder can hold messages (\Noselect folders only hold folders). */
   selectable: Scalars['Boolean']['output'];
+  /** Unread messages in the folder, as the server counted them at the last sync. */
+  serverUnreadCount: Scalars['Int']['output'];
   /** Whether syncs read this folder. */
   syncEnabled: Scalars['Boolean']['output'];
   /** Messages in the folder, as the server counts them. */
   totalCount: Scalars['Int']['output'];
-  /** Unread messages in the folder, as the server counts them. */
+  /** Unread messages in the folder, as they are here (local changes included). */
   unreadCount: Scalars['Int']['output'];
 };
 
@@ -417,13 +611,17 @@ export type Message = {
   attachments: Array<Attachment>;
   /** Bcc addresses (only known on sent mail). */
   bcc: Array<Address>;
+  /** The categories the message is in. */
+  categories: Array<Category>;
   /** Cc addresses. */
   cc: Array<Address>;
+  /** Changes made here that have not reached the server (pending or failed). */
+  changes: Array<MailChange>;
   /** When the message was first stored. */
   createdAt: Scalars['DateTime']['output'];
   /** The Date header (else when the server received it). */
   date?: Maybe<Scalars['DateTime']['output']>;
-  /** IMAP flags and keywords (\Seen, \Flagged, \Answered, \Draft, $Label…). */
+  /** The flags and keywords as they are here: the server's with local changes applied. */
   flags: Array<Scalars['String']['output']>;
   /** The folder the message is in. */
   folder: MailFolder;
@@ -458,12 +656,16 @@ export type Message = {
   senderAddress: Scalars['String']['output'];
   /** The From display name. */
   senderName: Scalars['String']['output'];
+  /** The flags and keywords as the server last had them. */
+  serverFlags: Array<Scalars['String']['output']>;
   /** The message size in bytes. */
   size: Scalars['Int']['output'];
   /** The start of the text, for list views. */
   snippet: Scalars['String']['output'];
   /** The decoded subject. */
   subject: Scalars['String']['output'];
+  /** How the message here relates to the server. */
+  syncState: SyncState;
   /** The plain-text body (converted from HTML when there is none). */
   textBody: Scalars['String']['output'];
   /** The conversation. */
@@ -489,6 +691,7 @@ export type MessageFilter = {
   NOT?: InputMaybe<MessageFilter>;
   OR?: InputMaybe<MessageFilter>;
   account?: InputMaybe<Scalars['ID']['input']>;
+  category?: InputMaybe<Scalars['ID']['input']>;
   dateFrom?: InputMaybe<Scalars['DateTime']['input']>;
   dateTo?: InputMaybe<Scalars['DateTime']['input']>;
   flagged?: InputMaybe<Scalars['Boolean']['input']>;
@@ -503,6 +706,7 @@ export type MessageFilter = {
   sender?: InputMaybe<Scalars['String']['input']>;
   /** Order by similarity to the given message, nearest first (no cut-off; composes with other filters and pagination). Empty when the message is not visible or has no embedding yet. */
   similarTo?: InputMaybe<Scalars['ID']['input']>;
+  syncState?: InputMaybe<SyncState>;
   thread?: InputMaybe<Scalars['ID']['input']>;
   unread?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -524,40 +728,78 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Drop the caller's pending OAuth login. */
   cancelOAuthLink: Scalars['String']['output'];
+  /** Put messages into categories and take them out. */
+  categorizeMessages: Array<Message>;
   /** Finish an OAuth login with the redirect's code and state. */
   completeOAuthLink: MailAccount;
+  /** Create a category of a mailbox. */
+  createCategory: Category;
   /** Link a mailbox with a username and (app) password; the login is tested first. */
   createMailAccount: MailAccount;
+  /** Create a task, optionally with conversations. */
+  createTask: Task;
+  /** Create a task list. */
+  createTaskList: TaskList;
+  /** Delete a category. */
+  deleteCategory: Scalars['ID']['output'];
   /** Unlink a mailbox (owner only). Mail on the server is untouched. */
   deleteMailAccount: Scalars['ID']['output'];
   /** Delete messages (into Trash, or for good). */
   deleteMessages: DeleteResult;
+  /** Delete a task. */
+  deleteTask: Scalars['ID']['output'];
+  /** Delete a task list; its tasks stay, on no list. */
+  deleteTaskList: Scalars['ID']['output'];
   /** Finalize the caller's file upload after the client has written the object. */
   finishBigfileUpload: BigFileStore;
+  /** Put conversations into a task. */
+  linkThreads: Array<TaskThread>;
   /** Mark messages read or unread. */
   markMessagesRead: Array<Message>;
   /** Move messages to another folder of their mailbox. */
   moveMessages: Array<Message>;
+  /** Push a mailbox's due changes now. */
+  pushMailChanges: PushResult;
   /** Request temporary S3 credentials to upload one file (an attachment to send). */
   requestBigfileUpload: BigFileUploadGrant;
   /** The caller's pending OAuth login again. */
   resumeOAuthLink: AuthSession;
+  /** Queue failed changes again. */
+  retryMailChanges: Array<MailChange>;
+  /** Drop local-only and queued flag changes of messages: back to what the server has. */
+  revertMessagesToServer: Array<Message>;
   /** Send a message through a mailbox's SMTP server. */
   sendMessage: OutgoingMessage;
   /** Add and remove flags of messages. */
   setMessageFlags: Array<Message>;
+  /** Mark tasks OPEN, DONE or DISMISSED. */
+  setTaskStatus: Array<Task>;
   /** Set who sees a mailbox (owner only). */
   shareMailAccount: MailAccount;
+  /** Snooze tasks until a time (null wakes them). */
+  snoozeTasks: Array<Task>;
   /** Start linking (or re-linking) a mailbox through OAuth. */
   startOAuthLink: AuthSession;
   /** Sync a mailbox now. */
   syncMailAccount: SyncResult;
   /** Log in to a mailbox's servers now. */
   testMailAccount: MailAccount;
+  /** Take back changes that have not reached the server. */
+  undoMailChanges: Array<Message>;
+  /** Take conversations out of a task. */
+  unlinkThreads: Task;
+  /** Change a category. */
+  updateCategory: Category;
   /** Change a mailbox (owner only); new servers or credentials are tested first. */
   updateMailAccount: MailAccount;
   /** Turn syncing a folder on or off. */
   updateMailFolder: MailFolder;
+  /** Change a task. */
+  updateTask: Task;
+  /** Rename, recolor or move a task list. */
+  updateTaskList: TaskList;
+  /** Create or update the caller's task with this externalKey, and add conversations to it. */
+  upsertTask: Task;
 };
 
 
@@ -566,13 +808,39 @@ export type MutationCancelOAuthLinkArgs = {
 };
 
 
+export type MutationCategorizeMessagesArgs = {
+  input: CategorizeMessagesInput;
+};
+
+
 export type MutationCompleteOAuthLinkArgs = {
   input: CompleteOAuthLinkInput;
 };
 
 
+export type MutationCreateCategoryArgs = {
+  input: CreateCategoryInput;
+};
+
+
 export type MutationCreateMailAccountArgs = {
   input: CreateMailAccountInput;
+};
+
+
+export type MutationCreateTaskArgs = {
+  input: CreateTaskInput;
+};
+
+
+export type MutationCreateTaskListArgs = {
+  input: CreateTaskListInput;
+};
+
+
+export type MutationDeleteCategoryArgs = {
+  id: Scalars['ID']['input'];
+  removeKeywords?: Scalars['Boolean']['input'];
 };
 
 
@@ -586,8 +854,23 @@ export type MutationDeleteMessagesArgs = {
 };
 
 
+export type MutationDeleteTaskArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteTaskListArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationFinishBigfileUploadArgs = {
   input: FinishBigFileUploadInput;
+};
+
+
+export type MutationLinkThreadsArgs = {
+  input: LinkThreadsInput;
 };
 
 
@@ -601,6 +884,11 @@ export type MutationMoveMessagesArgs = {
 };
 
 
+export type MutationPushMailChangesArgs = {
+  account: Scalars['ID']['input'];
+};
+
+
 export type MutationRequestBigfileUploadArgs = {
   input: RequestBigFileUploadInput;
 };
@@ -608,6 +896,16 @@ export type MutationRequestBigfileUploadArgs = {
 
 export type MutationResumeOAuthLinkArgs = {
   state: Scalars['String']['input'];
+};
+
+
+export type MutationRetryMailChangesArgs = {
+  changes: Array<Scalars['ID']['input']>;
+};
+
+
+export type MutationRevertMessagesToServerArgs = {
+  messages: Array<Scalars['ID']['input']>;
 };
 
 
@@ -621,8 +919,18 @@ export type MutationSetMessageFlagsArgs = {
 };
 
 
+export type MutationSetTaskStatusArgs = {
+  input: SetTaskStatusInput;
+};
+
+
 export type MutationShareMailAccountArgs = {
   input: ShareMailAccountInput;
+};
+
+
+export type MutationSnoozeTasksArgs = {
+  input: SnoozeTasksInput;
 };
 
 
@@ -642,6 +950,21 @@ export type MutationTestMailAccountArgs = {
 };
 
 
+export type MutationUndoMailChangesArgs = {
+  input: UndoMailChangesInput;
+};
+
+
+export type MutationUnlinkThreadsArgs = {
+  input: UnlinkThreadsInput;
+};
+
+
+export type MutationUpdateCategoryArgs = {
+  input: UpdateCategoryInput;
+};
+
+
 export type MutationUpdateMailAccountArgs = {
   input: UpdateMailAccountInput;
 };
@@ -649,6 +972,21 @@ export type MutationUpdateMailAccountArgs = {
 
 export type MutationUpdateMailFolderArgs = {
   input: UpdateMailFolderInput;
+};
+
+
+export type MutationUpdateTaskArgs = {
+  input: UpdateTaskInput;
+};
+
+
+export type MutationUpdateTaskListArgs = {
+  input: UpdateTaskListInput;
+};
+
+
+export type MutationUpsertTaskArgs = {
+  input: UpsertTaskInput;
 };
 
 export type OffsetPaginationInput = {
@@ -744,14 +1082,32 @@ export enum Provider {
   Microsoft = 'MICROSOFT'
 }
 
+/** What pushing a mailbox's changes did. */
+export type PushResult = {
+  __typename?: 'PushResult';
+  account: MailAccount;
+  /** Changes that did not reach the server. */
+  failed: Scalars['Int']['output'];
+  /** Changes still waiting (in their undo window, backing off, or a sync held the mailbox). */
+  pending: Scalars['Int']['output'];
+  /** Changes that reached the server. */
+  pushed: Scalars['Int']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   _entities: Array<Maybe<_Entity>>;
   _service: _Service;
+  /** Categories of the visible mailboxes (filter by `account`). */
+  categories: Array<Category>;
+  /** A category by id. */
+  category: Category;
   /** A mailbox by id. */
   mailAccount: MailAccount;
   /** The mailboxes the caller sees: their own, shared with them, and the organization's. */
   mailAccounts: Array<MailAccount>;
+  /** Changes made here that have not reached the server yet (pending or failed), oldest first. */
+  mailChanges: Array<MailChange>;
   /** A folder by id. */
   mailFolder: MailFolder;
   /** Folders of the visible mailboxes (filter by `account`). */
@@ -770,6 +1126,16 @@ export type Query = {
   outbox: Array<OutgoingMessage>;
   /** A sent message by id. */
   outgoingMessage: OutgoingMessage;
+  /** A task by id. */
+  task: Task;
+  /** A task list by id. */
+  taskList: TaskList;
+  /** The caller's task lists. */
+  taskLists: Array<TaskList>;
+  /** The caller's tasks (paginated, filterable — `active` is the Inbox view — and orderable). */
+  tasks: Array<Task>;
+  /** How many of the caller's tasks match the filters. */
+  tasksCount: Scalars['Int']['output'];
   /** A conversation by id. */
   thread: Thread;
   /** Conversations of the visible mailboxes (paginated, filterable, orderable). */
@@ -784,6 +1150,17 @@ export type Query_EntitiesArgs = {
 };
 
 
+export type QueryCategoriesArgs = {
+  filters?: InputMaybe<CategoryFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryCategoryArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QueryMailAccountArgs = {
   id: Scalars['ID']['input'];
 };
@@ -791,6 +1168,12 @@ export type QueryMailAccountArgs = {
 
 export type QueryMailAccountsArgs = {
   filters?: InputMaybe<MailAccountFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMailChangesArgs = {
+  filters?: InputMaybe<MailChangeFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -836,6 +1219,34 @@ export type QueryOutboxArgs = {
 
 export type QueryOutgoingMessageArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryTaskArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryTaskListArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryTaskListsArgs = {
+  filters?: InputMaybe<TaskListFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryTasksArgs = {
+  filters?: InputMaybe<TaskFilter>;
+  ordering?: Array<TaskOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryTasksCountArgs = {
+  filters?: InputMaybe<TaskFilter>;
 };
 
 
@@ -923,12 +1334,24 @@ export type SetMessageFlagsInput = {
   remove?: Array<Scalars['String']['input']>;
 };
 
+/** Set the status of tasks (DONE records when; OPEN clears it). */
+export type SetTaskStatusInput = {
+  status: TaskStatus;
+  tasks: Array<Scalars['ID']['input']>;
+};
+
 /** Who sees a mailbox. */
 export type ShareMailAccountInput = {
   id: Scalars['ID']['input'];
   /** The members a SHARED mailbox is shared with (replaces the list). Must be members of the organization. */
   users?: InputMaybe<Array<Scalars['ID']['input']>>;
   visibility: Visibility;
+};
+
+/** Hide tasks from the active view until a time; null wakes them now. */
+export type SnoozeTasksInput = {
+  tasks: Array<Scalars['ID']['input']>;
+  until?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
 /** Start linking a mailbox through OAuth, or re-link one (`account`) whose grant ran out. */
@@ -967,6 +1390,155 @@ export type SyncResult = {
   updated: Scalars['Int']['output'];
 };
 
+/** How a message here relates to the server. SYNCED: As the server has it; PENDING: Changed here, the change is on its way to the server; LOCAL: Changed here only (the mailbox does not push it, or it was deleted here only); FAILED: A change did not reach the server (see `changes`). */
+export enum SyncState {
+  Failed = 'FAILED',
+  Local = 'LOCAL',
+  Pending = 'PENDING',
+  Synced = 'SYNCED'
+}
+
+/** Something to do, made of mail conversations from any mailbox its owner can see. Only its owner sees it. Its status is independent of the mail: finishing a task changes no message. */
+export type Task = {
+  __typename?: 'Task';
+  /** The client id of the app that created the task, if one did. */
+  appClientId?: Maybe<Scalars['String']['output']>;
+  /** When it was marked DONE. */
+  completedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** When the task was created. */
+  createdAt: Scalars['DateTime']['output'];
+  /** When it is due. */
+  dueAt?: Maybe<Scalars['DateTime']['output']>;
+  /** An app's own key for the task: `upsertTask` finds the task by it, so sorting again updates instead of duplicating. */
+  externalKey?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** The newest message over the task's conversations. */
+  latestMessage?: Maybe<Message>;
+  /** The task's conversations with who put them there; only those in mailboxes the caller can still see. */
+  links: Array<TaskThread>;
+  /** The list it is on, if any. */
+  list?: Maybe<TaskList>;
+  /** Free notes. */
+  notes: Scalars['String']['output'];
+  /** Pinned to the top. */
+  pinned: Scalars['Boolean']['output'];
+  /** Where the task sorts in its list. */
+  position: Scalars['Float']['output'];
+  /** Whether the task is snoozed right now. */
+  snoozed: Scalars['Boolean']['output'];
+  /** Hidden from the active view until then. */
+  snoozedUntil?: Maybe<Scalars['DateTime']['output']>;
+  /** Where the task is. */
+  status: TaskStatus;
+  /** How many conversations the task has (visible ones). */
+  threadCount: Scalars['Int']['output'];
+  /** The task's conversations, newest first; only those in mailboxes the caller can still see. */
+  threads: Array<Thread>;
+  /** What to do. */
+  title: Scalars['String']['output'];
+  /** Unread messages over the task's conversations. */
+  unreadCount: Scalars['Int']['output'];
+  /** When the task last changed. */
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+/** Something to do, made of mail threads (from any mailbox its owner can see). Personal: only its owner sees it. */
+export type TaskFilter = {
+  AND?: InputMaybe<TaskFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<TaskFilter>;
+  OR?: InputMaybe<TaskFilter>;
+  active?: InputMaybe<Scalars['Boolean']['input']>;
+  dueBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  externalKey?: InputMaybe<Scalars['String']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  list?: InputMaybe<Scalars['ID']['input']>;
+  noList?: InputMaybe<Scalars['Boolean']['input']>;
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  snoozed?: InputMaybe<Scalars['Boolean']['input']>;
+  status?: InputMaybe<TaskStatus>;
+  thread?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** Who put a thread into a task. USER: A person, by hand; APP: An app that sorts mail. */
+export enum TaskLinkSource {
+  App = 'APP',
+  User = 'USER'
+}
+
+/** A member's list of tasks (an Inbox bundle or project). Only its owner sees it. */
+export type TaskList = {
+  __typename?: 'TaskList';
+  /** A display color (e.g. #4f86f7). */
+  color: Scalars['String']['output'];
+  /** When the list was created. */
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  /** The list's name. */
+  name: Scalars['String']['output'];
+  /** How many tasks on the list are OPEN. */
+  openCount: Scalars['Int']['output'];
+  /** Where the list sorts among the owner's lists. */
+  position: Scalars['Float']['output'];
+  /** The tasks on the list. */
+  tasks: Array<Task>;
+};
+
+
+/** A member's list of tasks (an Inbox bundle or project). Only its owner sees it. */
+export type TaskListTasksArgs = {
+  filters?: InputMaybe<TaskFilter>;
+  ordering?: Array<TaskOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** A member's list of tasks (an Inbox "bundle" or project). Personal: only its owner sees it. */
+export type TaskListFilter = {
+  AND?: InputMaybe<TaskListFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<TaskListFilter>;
+  OR?: InputMaybe<TaskListFilter>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type TaskOrder =
+  { createdAt: Ordering; dueAt?: never; position?: never; title?: never; updatedAt?: never; }
+  |  { createdAt?: never; dueAt: Ordering; position?: never; title?: never; updatedAt?: never; }
+  |  { createdAt?: never; dueAt?: never; position: Ordering; title?: never; updatedAt?: never; }
+  |  { createdAt?: never; dueAt?: never; position?: never; title: Ordering; updatedAt?: never; }
+  |  { createdAt?: never; dueAt?: never; position?: never; title?: never; updatedAt: Ordering; };
+
+/** Where a task is. OPEN: To do; DONE: Done; DISMISSED: Dropped without doing it. */
+export enum TaskStatus {
+  Dismissed = 'DISMISSED',
+  Done = 'DONE',
+  Open = 'OPEN'
+}
+
+/** A conversation in a task: who put it there, and (for an app) how sure it was and why. */
+export type TaskThread = {
+  __typename?: 'TaskThread';
+  /** The client id of the app the link was made from, if any. */
+  appClientId?: Maybe<Scalars['String']['output']>;
+  /** An app's confidence (0–1) that the thread belongs here. */
+  confidence?: Maybe<Scalars['Float']['output']>;
+  /** When the thread was put into the task. */
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  /** Where the thread sorts within the task. */
+  position: Scalars['Float']['output'];
+  /** Why the thread belongs here, in words. */
+  reason: Scalars['String']['output'];
+  /** Who put the thread into the task. */
+  source: TaskLinkSource;
+  /** The task. */
+  task: Task;
+  /** The conversation. */
+  thread: Thread;
+};
+
 /** A conversation: messages linked by In-Reply-To/References, across the mailbox's folders. */
 export type Thread = {
   __typename?: 'Thread';
@@ -989,6 +1561,8 @@ export type Thread = {
   participants: Array<Address>;
   /** The subject without Re:/Fwd: prefixes. */
   subject: Scalars['String']['output'];
+  /** The caller's tasks this conversation is in. */
+  tasks: Array<Task>;
   /** Whether a message of the conversation is unread. */
   unread: Scalars['Boolean']['output'];
   /** Unread messages, optionally only within a folder or a folder role. */
@@ -1016,19 +1590,57 @@ export type ThreadFilter = {
   NOT?: InputMaybe<ThreadFilter>;
   OR?: InputMaybe<ThreadFilter>;
   account?: InputMaybe<Scalars['ID']['input']>;
+  category?: InputMaybe<Scalars['ID']['input']>;
   flagged?: InputMaybe<Scalars['Boolean']['input']>;
   folder?: InputMaybe<Scalars['ID']['input']>;
   folderRole?: InputMaybe<FolderRole>;
   hasAttachments?: InputMaybe<Scalars['Boolean']['input']>;
+  hasTask?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Only conversations with a message matching the text: the same substring and meaning search as `messages(filters: {search})`. */
   search?: InputMaybe<Scalars['String']['input']>;
+  task?: InputMaybe<Scalars['ID']['input']>;
   unread?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** How a conversation is put into a task. */
+export type ThreadLinkInput = {
+  /** An app's confidence, 0–1. */
+  confidence?: InputMaybe<Scalars['Float']['input']>;
+  /** Why the conversation belongs here. */
+  reason?: Scalars['String']['input'];
+  /** APP when an app sorted it; USER when a person did. */
+  source?: TaskLinkSource;
 };
 
 export type ThreadOrder =
   { lastMessageAt: Ordering; messageCount?: never; }
   |  { lastMessageAt?: never; messageCount: Ordering; };
+
+/** Take back changes that have not reached the server: by change, or every one of some messages. */
+export type UndoMailChangesInput = {
+  changes?: InputMaybe<Array<Scalars['ID']['input']>>;
+  messages?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+/** Take conversations out of a task. */
+export type UnlinkThreadsInput = {
+  task: Scalars['ID']['input'];
+  threads: Array<Scalars['ID']['input']>;
+};
+
+/** Changes to a category. */
+export type UpdateCategoryInput = {
+  color?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  /** A new keyword; a KEYWORD category's messages are re-keyed on the server. */
+  keyword?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** KEYWORD → LOCAL: also take the keyword off the messages on the server. */
+  removeKeywords?: Scalars['Boolean']['input'];
+  /** Move the category between LOCAL and KEYWORD; its messages stay in it. */
+  sync?: InputMaybe<CategorySync>;
+};
 
 /** Changes to a mailbox; omitted fields stay as they are. Changing servers or credentials tests the login first. */
 export type UpdateMailAccountInput = {
@@ -1040,6 +1652,16 @@ export type UpdateMailAccountInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   password?: InputMaybe<Scalars['String']['input']>;
   popLeaveOnServer?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Push deletes. Off only hides deleted mail here. */
+  pushDeletes?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Push flagging to the server. Off keeps it here. */
+  pushFlagged?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Push keywords (KEYWORD categories) to the server. Off keeps them here. */
+  pushKeywords?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Push moves and archiving. Off refuses moves (a folder only exists on the server). */
+  pushMoves?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Push read/unread to the server. Off keeps it here; turning it on pushes what was kept. */
+  pushSeen?: InputMaybe<Scalars['Boolean']['input']>;
   saveSentCopy?: InputMaybe<Scalars['Boolean']['input']>;
   smtp?: InputMaybe<ServerInput>;
   smtpPassword?: InputMaybe<Scalars['String']['input']>;
@@ -1052,6 +1674,38 @@ export type UpdateMailFolderInput = {
   id: Scalars['ID']['input'];
   /** Whether syncs read the folder. Turning it off keeps what is stored. */
   syncEnabled: Scalars['Boolean']['input'];
+};
+
+/** Changes to a task; omitted fields stay as they are. */
+export type UpdateTaskInput = {
+  dueAt?: InputMaybe<Scalars['DateTime']['input']>;
+  id: Scalars['ID']['input'];
+  /** Another list; null takes it off its list. */
+  list?: InputMaybe<Scalars['ID']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  position?: InputMaybe<Scalars['Float']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Changes to a task list; omitted fields stay as they are. */
+export type UpdateTaskListInput = {
+  color?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  position?: InputMaybe<Scalars['Float']['input']>;
+};
+
+/** Create or update the caller's task with this `externalKey` (an app's idempotent sort call). Omitted fields keep their value on update; `threads` are added (never removed). */
+export type UpsertTaskInput = {
+  dueAt?: InputMaybe<Scalars['DateTime']['input']>;
+  externalKey: Scalars['String']['input'];
+  link?: InputMaybe<ThreadLinkInput>;
+  list?: InputMaybe<Scalars['ID']['input']>;
+  notes?: InputMaybe<Scalars['String']['input']>;
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  threads?: Array<Scalars['ID']['input']>;
+  title: Scalars['String']['input'];
 };
 
 /** A user account; sub is the stable subject identifier from the identity provider. */
@@ -1069,19 +1723,22 @@ export enum Visibility {
   Shared = 'SHARED'
 }
 
-export type _Entity = Attachment | BigFileStore | MailAccount | MailFolder | Message | Organization | OutgoingMessage | Thread | User;
+export type _Entity = Attachment | BigFileStore | Category | MailAccount | MailChange | MailFolder | Message | Organization | OutgoingMessage | Task | TaskList | TaskThread | Thread | User;
 
 export type _Service = {
   __typename?: '_Service';
   sdl: Scalars['String']['output'];
 };
 
-export type ListMailAccountFragment = { __typename?: 'MailAccount', id: string, name: string, emailAddress: string, displayName: string, provider: Provider, status: MailAccountStatus, protocol: Protocol, visibility: Visibility, authMethod: AuthMethod, lastSyncedAt?: string | null, lastError?: string | null, lastErrorCode?: MailErrorCode | null, syncing: boolean, canSend: boolean, isOwner: boolean, unreadCount: number };
+export type ListMailAccountFragment = { __typename?: 'MailAccount', id: string, name: string, emailAddress: string, displayName: string, provider: Provider, status: MailAccountStatus, protocol: Protocol, visibility: Visibility, authMethod: AuthMethod, lastSyncedAt?: string | null, lastError?: string | null, lastErrorCode?: MailErrorCode | null, syncing: boolean, canSend: boolean, isOwner: boolean, unreadCount: number, pendingChanges: number, failedChanges: number };
 
 export type MailAccountFragment = (
-  { __typename?: 'MailAccount', incomingHost: string, incomingPort: number, incomingSecurity: Security, smtpHost?: string | null, smtpPort?: number | null, smtpSecurity: Security, username: string, saveSentCopy: boolean, popLeaveOnServer: boolean, capabilities: Array<string>, backfillDone: boolean, serverSideFolders: boolean, createdAt: string, creator?: { __typename?: 'User', id: string, sub: string, preferredUsername: string } | null, sharedWith: Array<{ __typename?: 'User', id: string, sub: string, preferredUsername: string }>, folders: Array<(
+  { __typename?: 'MailAccount', incomingHost: string, incomingPort: number, incomingSecurity: Security, smtpHost?: string | null, smtpPort?: number | null, smtpSecurity: Security, username: string, saveSentCopy: boolean, popLeaveOnServer: boolean, pushSeen: boolean, pushFlagged: boolean, pushMoves: boolean, pushDeletes: boolean, pushKeywords: boolean, capabilities: Array<string>, backfillDone: boolean, serverSideFolders: boolean, createdAt: string, creator?: { __typename?: 'User', id: string, sub: string, preferredUsername: string } | null, sharedWith: Array<{ __typename?: 'User', id: string, sub: string, preferredUsername: string }>, folders: Array<(
     { __typename?: 'MailFolder' }
     & MailFolderFragment
+  )>, categories: Array<(
+    { __typename?: 'Category' }
+    & CategoryFragment
   )> }
   & ListMailAccountFragment
 );
@@ -1092,11 +1749,20 @@ export type AttachmentFragment = { __typename?: 'Attachment', id: string, positi
 
 export type AuthSessionFragment = { __typename?: 'AuthSession', state: string, openUrl: string, expiresAt: string, finish: string, redirectUrl: string, provider: Provider, account?: { __typename?: 'MailAccount', id: string, name: string, emailAddress: string } | null };
 
+export type CategoryChipFragment = { __typename?: 'Category', id: string, name: string, color: string, sync: CategorySync };
+
+export type CategoryFragment = (
+  { __typename?: 'Category', keyword: string, messageCount: number, createdAt: string, account: { __typename?: 'MailAccount', id: string, name: string, emailAddress: string } }
+  & CategoryChipFragment
+);
+
+export type MailChangeFragment = { __typename?: 'MailChange', id: string, kind: MailChangeKind, state: MailChangeState, add: Array<string>, remove: Array<string>, attempts: number, error?: string | null, errorCode?: MailErrorCode | null, createdAt: string, pushAfter: string, undoable: boolean, createdBy?: { __typename?: 'User', id: string, sub: string } | null, account: { __typename?: 'MailAccount', id: string, name: string, emailAddress: string }, message?: { __typename?: 'Message', id: string, subject: string, senderName: string, senderAddress: string, thread?: { __typename?: 'Thread', id: string } | null } | null, originFolder?: { __typename?: 'MailFolder', id: string, name: string, role: FolderRole } | null, targetFolder?: { __typename?: 'MailFolder', id: string, name: string, role: FolderRole } | null };
+
 export type BigFileAccessGrantFragment = { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, region: string, expiresIn: number, path: string, key: string, bucket: string };
 
 export type BigFileUploadGrantFragment = { __typename?: 'BigFileUploadGrant', accessKey: string, secretKey: string, sessionToken: string, region: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: number, store: string };
 
-export type MailFolderFragment = { __typename?: 'MailFolder', id: string, path: string, name: string, role: FolderRole, selectable: boolean, syncEnabled: boolean, existsOnServer: boolean, totalCount: number, unreadCount: number, backfillDone: boolean, lastSyncedAt?: string | null };
+export type MailFolderFragment = { __typename?: 'MailFolder', id: string, path: string, name: string, role: FolderRole, selectable: boolean, syncEnabled: boolean, existsOnServer: boolean, totalCount: number, unreadCount: number, serverUnreadCount: number, keywordsAllowed: boolean, backfillDone: boolean, lastSyncedAt?: string | null };
 
 export type DetailMailFolderFragment = (
   { __typename?: 'MailFolder', delimiter?: string | null, account: (
@@ -1108,10 +1774,16 @@ export type DetailMailFolderFragment = (
 
 export type AddressFragment = { __typename?: 'Address', name: string, address: string };
 
-export type ListMessageFragment = { __typename?: 'Message', id: string, subject: string, senderName: string, senderAddress: string, date?: string | null, snippet: string, isRead: boolean, isFlagged: boolean, isAnswered: boolean, hasAttachments: boolean, account: { __typename?: 'MailAccount', id: string, name: string, emailAddress: string, canSend: boolean }, folder: { __typename?: 'MailFolder', id: string, name: string, role: FolderRole }, thread?: { __typename?: 'Thread', id: string, messageCount: number } | null };
+export type ListMessageFragment = { __typename?: 'Message', id: string, subject: string, senderName: string, senderAddress: string, date?: string | null, snippet: string, isRead: boolean, isFlagged: boolean, isAnswered: boolean, hasAttachments: boolean, syncState: SyncState, categories: Array<(
+    { __typename?: 'Category' }
+    & CategoryChipFragment
+  )>, account: { __typename?: 'MailAccount', id: string, name: string, emailAddress: string, canSend: boolean }, folder: { __typename?: 'MailFolder', id: string, name: string, role: FolderRole }, thread?: { __typename?: 'Thread', id: string, messageCount: number } | null };
 
 export type MessageFragment = (
-  { __typename?: 'Message', messageId?: string | null, receivedAt?: string | null, textBody: string, hasRemoteImages: boolean, size: number, flags: Array<string>, truncated: boolean, html?: string | null, sender: (
+  { __typename?: 'Message', messageId?: string | null, receivedAt?: string | null, textBody: string, hasRemoteImages: boolean, size: number, flags: Array<string>, serverFlags: Array<string>, truncated: boolean, html?: string | null, changes: Array<(
+    { __typename?: 'MailChange' }
+    & MailChangeFragment
+  )>, sender: (
     { __typename?: 'Address' }
     & AddressFragment
   ), replyTo: Array<(
@@ -1168,6 +1840,31 @@ export type MailPresetFragment = { __typename?: 'MailPreset', key: string, name:
     & ServerSettingsFragment
   ) | null };
 
+export type ListTaskListFragment = { __typename?: 'TaskList', id: string, name: string, color: string, position: number, openCount: number, createdAt: string };
+
+export type TaskChipFragment = { __typename?: 'Task', id: string, title: string, status: TaskStatus, list?: { __typename?: 'TaskList', id: string, name: string, color: string } | null };
+
+export type ListTaskFragment = { __typename?: 'Task', id: string, title: string, notes: string, status: TaskStatus, pinned: boolean, dueAt?: string | null, snoozed: boolean, snoozedUntil?: string | null, completedAt?: string | null, position: number, threadCount: number, unreadCount: number, createdAt: string, updatedAt: string, externalKey?: string | null, appClientId?: string | null, list?: (
+    { __typename?: 'TaskList' }
+    & ListTaskListFragment
+  ) | null, latestMessage?: (
+    { __typename?: 'Message' }
+    & ListMessageFragment
+  ) | null };
+
+export type TaskThreadFragment = { __typename?: 'TaskThread', id: string, source: TaskLinkSource, reason: string, confidence?: number | null, position: number, createdAt: string, appClientId?: string | null, thread: (
+    { __typename?: 'Thread' }
+    & ListThreadFragment
+  ) };
+
+export type TaskFragment = (
+  { __typename?: 'Task', links: Array<(
+    { __typename?: 'TaskThread' }
+    & TaskThreadFragment
+  )> }
+  & ListTaskFragment
+);
+
 export type ListThreadFragment = { __typename?: 'Thread', id: string, subject: string, lastMessageAt?: string | null, messageCount: number, unread: boolean, flagged: boolean, hasAttachments: boolean, unreadCount: number, participants: Array<(
     { __typename?: 'Address' }
     & AddressFragment
@@ -1176,7 +1873,10 @@ export type ListThreadFragment = { __typename?: 'Thread', id: string, subject: s
     & ListMessageFragment
   ) | null };
 
-export type ThreadFragment = { __typename?: 'Thread', id: string, subject: string, lastMessageAt?: string | null, messageCount: number, unread: boolean, account: (
+export type ThreadFragment = { __typename?: 'Thread', id: string, subject: string, lastMessageAt?: string | null, messageCount: number, unread: boolean, tasks: Array<(
+    { __typename?: 'Task' }
+    & TaskChipFragment
+  )>, account: (
     { __typename?: 'MailAccount' }
     & SenderAccountFragment
   ), messages: Array<(
@@ -1252,6 +1952,84 @@ export type SyncMailAccountMutation = { __typename?: 'Mutation', syncMailAccount
       & ListMailAccountFragment
     ) } };
 
+export type CreateCategoryMutationVariables = Exact<{
+  input: CreateCategoryInput;
+}>;
+
+
+export type CreateCategoryMutation = { __typename?: 'Mutation', createCategory: (
+    { __typename?: 'Category' }
+    & CategoryFragment
+  ) };
+
+export type UpdateCategoryMutationVariables = Exact<{
+  input: UpdateCategoryInput;
+}>;
+
+
+export type UpdateCategoryMutation = { __typename?: 'Mutation', updateCategory: (
+    { __typename?: 'Category' }
+    & CategoryFragment
+  ) };
+
+export type DeleteCategoryMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  removeKeywords?: Scalars['Boolean']['input'];
+}>;
+
+
+export type DeleteCategoryMutation = { __typename?: 'Mutation', deleteCategory: string };
+
+export type CategorizeMessagesMutationVariables = Exact<{
+  input: CategorizeMessagesInput;
+}>;
+
+
+export type CategorizeMessagesMutation = { __typename?: 'Mutation', categorizeMessages: Array<(
+    { __typename?: 'Message' }
+    & MessageStateFragment
+  )> };
+
+export type PushMailChangesMutationVariables = Exact<{
+  account: Scalars['ID']['input'];
+}>;
+
+
+export type PushMailChangesMutation = { __typename?: 'Mutation', pushMailChanges: { __typename?: 'PushResult', pushed: number, failed: number, pending: number, account: (
+      { __typename?: 'MailAccount' }
+      & ListMailAccountFragment
+    ) } };
+
+export type RetryMailChangesMutationVariables = Exact<{
+  changes: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type RetryMailChangesMutation = { __typename?: 'Mutation', retryMailChanges: Array<(
+    { __typename?: 'MailChange' }
+    & MailChangeFragment
+  )> };
+
+export type UndoMailChangesMutationVariables = Exact<{
+  input: UndoMailChangesInput;
+}>;
+
+
+export type UndoMailChangesMutation = { __typename?: 'Mutation', undoMailChanges: Array<(
+    { __typename?: 'Message' }
+    & MessageStateFragment
+  )> };
+
+export type RevertMessagesToServerMutationVariables = Exact<{
+  messages: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type RevertMessagesToServerMutation = { __typename?: 'Mutation', revertMessagesToServer: Array<(
+    { __typename?: 'Message' }
+    & MessageStateFragment
+  )> };
+
 export type RequestBigfileUploadMutationVariables = Exact<{
   input: RequestBigFileUploadInput;
 }>;
@@ -1269,7 +2047,13 @@ export type FinishBigfileUploadMutationVariables = Exact<{
 
 export type FinishBigfileUploadMutation = { __typename?: 'Mutation', finishBigfileUpload: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: number | null } };
 
-export type MessageStateFragment = { __typename?: 'Message', id: string, flags: Array<string>, isRead: boolean, isFlagged: boolean, isAnswered: boolean, folder: { __typename?: 'MailFolder', id: string, name: string, role: FolderRole } };
+export type MessageStateFragment = { __typename?: 'Message', id: string, flags: Array<string>, isRead: boolean, isFlagged: boolean, isAnswered: boolean, syncState: SyncState, categories: Array<(
+    { __typename?: 'Category' }
+    & CategoryChipFragment
+  )>, changes: Array<(
+    { __typename?: 'MailChange' }
+    & MailChangeFragment
+  )>, folder: { __typename?: 'MailFolder', id: string, name: string, role: FolderRole } };
 
 export type SetMessageFlagsMutationVariables = Exact<{
   input: SetMessageFlagsInput;
@@ -1355,6 +2139,100 @@ export type CancelOAuthLinkMutationVariables = Exact<{
 
 export type CancelOAuthLinkMutation = { __typename?: 'Mutation', cancelOAuthLink: string };
 
+export type CreateTaskMutationVariables = Exact<{
+  input: CreateTaskInput;
+}>;
+
+
+export type CreateTaskMutation = { __typename?: 'Mutation', createTask: (
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  ) };
+
+export type UpdateTaskMutationVariables = Exact<{
+  input: UpdateTaskInput;
+}>;
+
+
+export type UpdateTaskMutation = { __typename?: 'Mutation', updateTask: (
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  ) };
+
+export type DeleteTaskMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteTaskMutation = { __typename?: 'Mutation', deleteTask: string };
+
+export type SetTaskStatusMutationVariables = Exact<{
+  input: SetTaskStatusInput;
+}>;
+
+
+export type SetTaskStatusMutation = { __typename?: 'Mutation', setTaskStatus: Array<(
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  )> };
+
+export type SnoozeTasksMutationVariables = Exact<{
+  input: SnoozeTasksInput;
+}>;
+
+
+export type SnoozeTasksMutation = { __typename?: 'Mutation', snoozeTasks: Array<(
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  )> };
+
+export type LinkThreadsMutationVariables = Exact<{
+  input: LinkThreadsInput;
+}>;
+
+
+export type LinkThreadsMutation = { __typename?: 'Mutation', linkThreads: Array<{ __typename?: 'TaskThread', id: string, task: { __typename?: 'Task', id: string, threadCount: number, unreadCount: number }, thread: { __typename?: 'Thread', id: string, tasks: Array<(
+        { __typename?: 'Task' }
+        & TaskChipFragment
+      )> } }> };
+
+export type UnlinkThreadsMutationVariables = Exact<{
+  input: UnlinkThreadsInput;
+}>;
+
+
+export type UnlinkThreadsMutation = { __typename?: 'Mutation', unlinkThreads: (
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  ) };
+
+export type CreateTaskListMutationVariables = Exact<{
+  input: CreateTaskListInput;
+}>;
+
+
+export type CreateTaskListMutation = { __typename?: 'Mutation', createTaskList: (
+    { __typename?: 'TaskList' }
+    & ListTaskListFragment
+  ) };
+
+export type UpdateTaskListMutationVariables = Exact<{
+  input: UpdateTaskListInput;
+}>;
+
+
+export type UpdateTaskListMutation = { __typename?: 'Mutation', updateTaskList: (
+    { __typename?: 'TaskList' }
+    & ListTaskListFragment
+  ) };
+
+export type DeleteTaskListMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteTaskListMutation = { __typename?: 'Mutation', deleteTaskList: string };
+
 export type ListMailAccountsQueryVariables = Exact<{
   filters?: InputMaybe<MailAccountFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -1417,6 +2295,38 @@ export type OAuthProvidersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type OAuthProvidersQuery = { __typename?: 'Query', oauthProviders: Array<Provider> };
+
+export type ListCategoriesQueryVariables = Exact<{
+  filters?: InputMaybe<CategoryFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListCategoriesQuery = { __typename?: 'Query', categories: Array<(
+    { __typename?: 'Category' }
+    & CategoryFragment
+  )> };
+
+export type GetCategoryQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetCategoryQuery = { __typename?: 'Query', category: (
+    { __typename?: 'Category' }
+    & CategoryFragment
+  ) };
+
+export type ListMailChangesQueryVariables = Exact<{
+  filters?: InputMaybe<MailChangeFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListMailChangesQuery = { __typename?: 'Query', mailChanges: Array<(
+    { __typename?: 'MailChange' }
+    & MailChangeFragment
+  )> };
 
 export type MessageAttachmentAccessQueryVariables = Exact<{
   message: Scalars['ID']['input'];
@@ -1511,6 +2421,74 @@ export type KuvertPaletteSearchQueryVariables = Exact<{
 
 export type KuvertPaletteSearchQuery = { __typename?: 'Query', messages: Array<{ __typename?: 'Message', id: string, subject: string, senderName: string, senderAddress: string, date?: string | null }> };
 
+export type ListTasksQueryVariables = Exact<{
+  filters?: InputMaybe<TaskFilter>;
+  ordering?: Array<TaskOrder> | TaskOrder;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListTasksQuery = { __typename?: 'Query', tasks: Array<(
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  )> };
+
+export type TasksCountQueryVariables = Exact<{
+  filters?: InputMaybe<TaskFilter>;
+}>;
+
+
+export type TasksCountQuery = { __typename?: 'Query', tasksCount: number };
+
+export type GetTaskQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  inFolder?: InputMaybe<Scalars['ID']['input']>;
+  inRole?: InputMaybe<FolderRole>;
+}>;
+
+
+export type GetTaskQuery = { __typename?: 'Query', task: (
+    { __typename?: 'Task' }
+    & TaskFragment
+  ) };
+
+export type ListTaskListsQueryVariables = Exact<{
+  filters?: InputMaybe<TaskListFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListTaskListsQuery = { __typename?: 'Query', taskLists: Array<(
+    { __typename?: 'TaskList' }
+    & ListTaskListFragment
+  )> };
+
+export type GetTaskListQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetTaskListQuery = { __typename?: 'Query', taskList: (
+    { __typename?: 'TaskList' }
+    & ListTaskListFragment
+  ) };
+
+export type SearchTasksQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']['input']>;
+  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+}>;
+
+
+export type SearchTasksQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Task', value: string, label: string }> };
+
+export type SearchTaskListsQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']['input']>;
+  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+}>;
+
+
+export type SearchTaskListsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'TaskList', value: string, label: string }> };
+
 export type ListThreadsQueryVariables = Exact<{
   filters?: InputMaybe<ThreadFilter>;
   ordering?: Array<ThreadOrder> | ThreadOrder;
@@ -1573,6 +2551,8 @@ export const ListMailAccountFragmentDoc = gql`
   canSend
   isOwner
   unreadCount
+  pendingChanges
+  failedChanges
 }
     `;
 export const MailFolderFragmentDoc = gql`
@@ -1586,10 +2566,33 @@ export const MailFolderFragmentDoc = gql`
   existsOnServer
   totalCount
   unreadCount
+  serverUnreadCount
+  keywordsAllowed
   backfillDone
   lastSyncedAt
 }
     `;
+export const CategoryChipFragmentDoc = gql`
+    fragment CategoryChip on Category {
+  id
+  name
+  color
+  sync
+}
+    `;
+export const CategoryFragmentDoc = gql`
+    fragment Category on Category {
+  ...CategoryChip
+  keyword
+  messageCount
+  createdAt
+  account {
+    id
+    name
+    emailAddress
+  }
+}
+    ${CategoryChipFragmentDoc}`;
 export const MailAccountFragmentDoc = gql`
     fragment MailAccount on MailAccount {
   ...ListMailAccount
@@ -1602,6 +2605,11 @@ export const MailAccountFragmentDoc = gql`
   username
   saveSentCopy
   popLeaveOnServer
+  pushSeen
+  pushFlagged
+  pushMoves
+  pushDeletes
+  pushKeywords
   capabilities
   backfillDone
   serverSideFolders
@@ -1619,9 +2627,13 @@ export const MailAccountFragmentDoc = gql`
   folders {
     ...MailFolder
   }
+  categories {
+    ...Category
+  }
 }
     ${ListMailAccountFragmentDoc}
-${MailFolderFragmentDoc}`;
+${MailFolderFragmentDoc}
+${CategoryFragmentDoc}`;
 export const AuthSessionFragmentDoc = gql`
     fragment AuthSession on AuthSession {
   state
@@ -1772,6 +2784,16 @@ export const MailPresetFragmentDoc = gql`
   note
 }
     ${ServerSettingsFragmentDoc}`;
+export const ListTaskListFragmentDoc = gql`
+    fragment ListTaskList on TaskList {
+  id
+  name
+  color
+  position
+  openCount
+  createdAt
+}
+    `;
 export const ListMessageFragmentDoc = gql`
     fragment ListMessage on Message {
   id
@@ -1784,6 +2806,10 @@ export const ListMessageFragmentDoc = gql`
   isFlagged
   isAnswered
   hasAttachments
+  syncState
+  categories {
+    ...CategoryChip
+  }
   account {
     id
     name
@@ -1800,7 +2826,34 @@ export const ListMessageFragmentDoc = gql`
     messageCount
   }
 }
-    `;
+    ${CategoryChipFragmentDoc}`;
+export const ListTaskFragmentDoc = gql`
+    fragment ListTask on Task {
+  id
+  title
+  notes
+  status
+  pinned
+  dueAt
+  snoozed
+  snoozedUntil
+  completedAt
+  position
+  threadCount
+  unreadCount
+  createdAt
+  updatedAt
+  externalKey
+  appClientId
+  list {
+    ...ListTaskList
+  }
+  latestMessage {
+    ...ListMessage
+  }
+}
+    ${ListTaskListFragmentDoc}
+${ListMessageFragmentDoc}`;
 export const ListThreadFragmentDoc = gql`
     fragment ListThread on Thread {
   id
@@ -1825,6 +2878,41 @@ export const ListThreadFragmentDoc = gql`
 }
     ${AddressFragmentDoc}
 ${ListMessageFragmentDoc}`;
+export const TaskThreadFragmentDoc = gql`
+    fragment TaskThread on TaskThread {
+  id
+  source
+  reason
+  confidence
+  position
+  createdAt
+  appClientId
+  thread {
+    ...ListThread
+  }
+}
+    ${ListThreadFragmentDoc}`;
+export const TaskFragmentDoc = gql`
+    fragment Task on Task {
+  ...ListTask
+  links {
+    ...TaskThread
+  }
+}
+    ${ListTaskFragmentDoc}
+${TaskThreadFragmentDoc}`;
+export const TaskChipFragmentDoc = gql`
+    fragment TaskChip on Task {
+  id
+  title
+  status
+  list {
+    id
+    name
+    color
+  }
+}
+    `;
 export const SenderAccountFragmentDoc = gql`
     fragment SenderAccount on MailAccount {
   id
@@ -1833,6 +2921,49 @@ export const SenderAccountFragmentDoc = gql`
   displayName
   canSend
   status
+}
+    `;
+export const MailChangeFragmentDoc = gql`
+    fragment MailChange on MailChange {
+  id
+  kind
+  state
+  add
+  remove
+  attempts
+  error
+  errorCode
+  createdAt
+  pushAfter
+  undoable
+  createdBy {
+    id
+    sub
+  }
+  account {
+    id
+    name
+    emailAddress
+  }
+  message {
+    id
+    subject
+    senderName
+    senderAddress
+    thread {
+      id
+    }
+  }
+  originFolder {
+    id
+    name
+    role
+  }
+  targetFolder {
+    id
+    name
+    role
+  }
 }
     `;
 export const AttachmentFragmentDoc = gql`
@@ -1858,6 +2989,10 @@ export const MessageFragmentDoc = gql`
   hasRemoteImages
   size
   flags
+  serverFlags
+  changes {
+    ...MailChange
+  }
   truncated
   html(allowRemote: $allowRemote)
   sender {
@@ -1880,6 +3015,7 @@ export const MessageFragmentDoc = gql`
   }
 }
     ${ListMessageFragmentDoc}
+${MailChangeFragmentDoc}
 ${AddressFragmentDoc}
 ${AttachmentFragmentDoc}`;
 export const ThreadFragmentDoc = gql`
@@ -1889,6 +3025,9 @@ export const ThreadFragmentDoc = gql`
   lastMessageAt
   messageCount
   unread
+  tasks {
+    ...TaskChip
+  }
   account {
     ...SenderAccount
   }
@@ -1896,7 +3035,8 @@ export const ThreadFragmentDoc = gql`
     ...Message
   }
 }
-    ${SenderAccountFragmentDoc}
+    ${TaskChipFragmentDoc}
+${SenderAccountFragmentDoc}
 ${MessageFragmentDoc}`;
 export const MessageStateFragmentDoc = gql`
     fragment MessageState on Message {
@@ -1905,13 +3045,21 @@ export const MessageStateFragmentDoc = gql`
   isRead
   isFlagged
   isAnswered
+  syncState
+  categories {
+    ...CategoryChip
+  }
+  changes {
+    ...MailChange
+  }
   folder {
     id
     name
     role
   }
 }
-    `;
+    ${CategoryChipFragmentDoc}
+${MailChangeFragmentDoc}`;
 export const CreateMailAccountDocument = gql`
     mutation CreateMailAccount($input: CreateMailAccountInput!) {
   createMailAccount(input: $input) {
@@ -2149,6 +3297,274 @@ export function useSyncMailAccountMutation(baseOptions?: ApolloReactHooks.Mutati
 export type SyncMailAccountMutationHookResult = ReturnType<typeof useSyncMailAccountMutation>;
 export type SyncMailAccountMutationResult = Apollo.MutationResult<SyncMailAccountMutation>;
 export type SyncMailAccountMutationOptions = Apollo.BaseMutationOptions<SyncMailAccountMutation, SyncMailAccountMutationVariables>;
+export const CreateCategoryDocument = gql`
+    mutation CreateCategory($input: CreateCategoryInput!) {
+  createCategory(input: $input) {
+    ...Category
+  }
+}
+    ${CategoryFragmentDoc}`;
+export type CreateCategoryMutationFn = Apollo.MutationFunction<CreateCategoryMutation, CreateCategoryMutationVariables>;
+
+/**
+ * __useCreateCategoryMutation__
+ *
+ * To run a mutation, you first call `useCreateCategoryMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateCategoryMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createCategoryMutation, { data, loading, error }] = useCreateCategoryMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateCategoryMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateCategoryMutation, CreateCategoryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateCategoryMutation, CreateCategoryMutationVariables>(CreateCategoryDocument, options);
+      }
+export type CreateCategoryMutationHookResult = ReturnType<typeof useCreateCategoryMutation>;
+export type CreateCategoryMutationResult = Apollo.MutationResult<CreateCategoryMutation>;
+export type CreateCategoryMutationOptions = Apollo.BaseMutationOptions<CreateCategoryMutation, CreateCategoryMutationVariables>;
+export const UpdateCategoryDocument = gql`
+    mutation UpdateCategory($input: UpdateCategoryInput!) {
+  updateCategory(input: $input) {
+    ...Category
+  }
+}
+    ${CategoryFragmentDoc}`;
+export type UpdateCategoryMutationFn = Apollo.MutationFunction<UpdateCategoryMutation, UpdateCategoryMutationVariables>;
+
+/**
+ * __useUpdateCategoryMutation__
+ *
+ * To run a mutation, you first call `useUpdateCategoryMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateCategoryMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateCategoryMutation, { data, loading, error }] = useUpdateCategoryMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateCategoryMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateCategoryMutation, UpdateCategoryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateCategoryMutation, UpdateCategoryMutationVariables>(UpdateCategoryDocument, options);
+      }
+export type UpdateCategoryMutationHookResult = ReturnType<typeof useUpdateCategoryMutation>;
+export type UpdateCategoryMutationResult = Apollo.MutationResult<UpdateCategoryMutation>;
+export type UpdateCategoryMutationOptions = Apollo.BaseMutationOptions<UpdateCategoryMutation, UpdateCategoryMutationVariables>;
+export const DeleteCategoryDocument = gql`
+    mutation DeleteCategory($id: ID!, $removeKeywords: Boolean! = false) {
+  deleteCategory(id: $id, removeKeywords: $removeKeywords)
+}
+    `;
+export type DeleteCategoryMutationFn = Apollo.MutationFunction<DeleteCategoryMutation, DeleteCategoryMutationVariables>;
+
+/**
+ * __useDeleteCategoryMutation__
+ *
+ * To run a mutation, you first call `useDeleteCategoryMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteCategoryMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteCategoryMutation, { data, loading, error }] = useDeleteCategoryMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      removeKeywords: // value for 'removeKeywords'
+ *   },
+ * });
+ */
+export function useDeleteCategoryMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteCategoryMutation, DeleteCategoryMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteCategoryMutation, DeleteCategoryMutationVariables>(DeleteCategoryDocument, options);
+      }
+export type DeleteCategoryMutationHookResult = ReturnType<typeof useDeleteCategoryMutation>;
+export type DeleteCategoryMutationResult = Apollo.MutationResult<DeleteCategoryMutation>;
+export type DeleteCategoryMutationOptions = Apollo.BaseMutationOptions<DeleteCategoryMutation, DeleteCategoryMutationVariables>;
+export const CategorizeMessagesDocument = gql`
+    mutation CategorizeMessages($input: CategorizeMessagesInput!) {
+  categorizeMessages(input: $input) {
+    ...MessageState
+  }
+}
+    ${MessageStateFragmentDoc}`;
+export type CategorizeMessagesMutationFn = Apollo.MutationFunction<CategorizeMessagesMutation, CategorizeMessagesMutationVariables>;
+
+/**
+ * __useCategorizeMessagesMutation__
+ *
+ * To run a mutation, you first call `useCategorizeMessagesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCategorizeMessagesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [categorizeMessagesMutation, { data, loading, error }] = useCategorizeMessagesMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCategorizeMessagesMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CategorizeMessagesMutation, CategorizeMessagesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CategorizeMessagesMutation, CategorizeMessagesMutationVariables>(CategorizeMessagesDocument, options);
+      }
+export type CategorizeMessagesMutationHookResult = ReturnType<typeof useCategorizeMessagesMutation>;
+export type CategorizeMessagesMutationResult = Apollo.MutationResult<CategorizeMessagesMutation>;
+export type CategorizeMessagesMutationOptions = Apollo.BaseMutationOptions<CategorizeMessagesMutation, CategorizeMessagesMutationVariables>;
+export const PushMailChangesDocument = gql`
+    mutation PushMailChanges($account: ID!) {
+  pushMailChanges(account: $account) {
+    pushed
+    failed
+    pending
+    account {
+      ...ListMailAccount
+    }
+  }
+}
+    ${ListMailAccountFragmentDoc}`;
+export type PushMailChangesMutationFn = Apollo.MutationFunction<PushMailChangesMutation, PushMailChangesMutationVariables>;
+
+/**
+ * __usePushMailChangesMutation__
+ *
+ * To run a mutation, you first call `usePushMailChangesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePushMailChangesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pushMailChangesMutation, { data, loading, error }] = usePushMailChangesMutation({
+ *   variables: {
+ *      account: // value for 'account'
+ *   },
+ * });
+ */
+export function usePushMailChangesMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<PushMailChangesMutation, PushMailChangesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<PushMailChangesMutation, PushMailChangesMutationVariables>(PushMailChangesDocument, options);
+      }
+export type PushMailChangesMutationHookResult = ReturnType<typeof usePushMailChangesMutation>;
+export type PushMailChangesMutationResult = Apollo.MutationResult<PushMailChangesMutation>;
+export type PushMailChangesMutationOptions = Apollo.BaseMutationOptions<PushMailChangesMutation, PushMailChangesMutationVariables>;
+export const RetryMailChangesDocument = gql`
+    mutation RetryMailChanges($changes: [ID!]!) {
+  retryMailChanges(changes: $changes) {
+    ...MailChange
+  }
+}
+    ${MailChangeFragmentDoc}`;
+export type RetryMailChangesMutationFn = Apollo.MutationFunction<RetryMailChangesMutation, RetryMailChangesMutationVariables>;
+
+/**
+ * __useRetryMailChangesMutation__
+ *
+ * To run a mutation, you first call `useRetryMailChangesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRetryMailChangesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [retryMailChangesMutation, { data, loading, error }] = useRetryMailChangesMutation({
+ *   variables: {
+ *      changes: // value for 'changes'
+ *   },
+ * });
+ */
+export function useRetryMailChangesMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RetryMailChangesMutation, RetryMailChangesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RetryMailChangesMutation, RetryMailChangesMutationVariables>(RetryMailChangesDocument, options);
+      }
+export type RetryMailChangesMutationHookResult = ReturnType<typeof useRetryMailChangesMutation>;
+export type RetryMailChangesMutationResult = Apollo.MutationResult<RetryMailChangesMutation>;
+export type RetryMailChangesMutationOptions = Apollo.BaseMutationOptions<RetryMailChangesMutation, RetryMailChangesMutationVariables>;
+export const UndoMailChangesDocument = gql`
+    mutation UndoMailChanges($input: UndoMailChangesInput!) {
+  undoMailChanges(input: $input) {
+    ...MessageState
+  }
+}
+    ${MessageStateFragmentDoc}`;
+export type UndoMailChangesMutationFn = Apollo.MutationFunction<UndoMailChangesMutation, UndoMailChangesMutationVariables>;
+
+/**
+ * __useUndoMailChangesMutation__
+ *
+ * To run a mutation, you first call `useUndoMailChangesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUndoMailChangesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [undoMailChangesMutation, { data, loading, error }] = useUndoMailChangesMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUndoMailChangesMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UndoMailChangesMutation, UndoMailChangesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UndoMailChangesMutation, UndoMailChangesMutationVariables>(UndoMailChangesDocument, options);
+      }
+export type UndoMailChangesMutationHookResult = ReturnType<typeof useUndoMailChangesMutation>;
+export type UndoMailChangesMutationResult = Apollo.MutationResult<UndoMailChangesMutation>;
+export type UndoMailChangesMutationOptions = Apollo.BaseMutationOptions<UndoMailChangesMutation, UndoMailChangesMutationVariables>;
+export const RevertMessagesToServerDocument = gql`
+    mutation RevertMessagesToServer($messages: [ID!]!) {
+  revertMessagesToServer(messages: $messages) {
+    ...MessageState
+  }
+}
+    ${MessageStateFragmentDoc}`;
+export type RevertMessagesToServerMutationFn = Apollo.MutationFunction<RevertMessagesToServerMutation, RevertMessagesToServerMutationVariables>;
+
+/**
+ * __useRevertMessagesToServerMutation__
+ *
+ * To run a mutation, you first call `useRevertMessagesToServerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRevertMessagesToServerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [revertMessagesToServerMutation, { data, loading, error }] = useRevertMessagesToServerMutation({
+ *   variables: {
+ *      messages: // value for 'messages'
+ *   },
+ * });
+ */
+export function useRevertMessagesToServerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RevertMessagesToServerMutation, RevertMessagesToServerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RevertMessagesToServerMutation, RevertMessagesToServerMutationVariables>(RevertMessagesToServerDocument, options);
+      }
+export type RevertMessagesToServerMutationHookResult = ReturnType<typeof useRevertMessagesToServerMutation>;
+export type RevertMessagesToServerMutationResult = Apollo.MutationResult<RevertMessagesToServerMutation>;
+export type RevertMessagesToServerMutationOptions = Apollo.BaseMutationOptions<RevertMessagesToServerMutation, RevertMessagesToServerMutationVariables>;
 export const RequestBigfileUploadDocument = gql`
     mutation RequestBigfileUpload($input: RequestBigFileUploadInput!) {
   requestBigfileUpload(input: $input) {
@@ -2512,6 +3928,343 @@ export function useCancelOAuthLinkMutation(baseOptions?: ApolloReactHooks.Mutati
 export type CancelOAuthLinkMutationHookResult = ReturnType<typeof useCancelOAuthLinkMutation>;
 export type CancelOAuthLinkMutationResult = Apollo.MutationResult<CancelOAuthLinkMutation>;
 export type CancelOAuthLinkMutationOptions = Apollo.BaseMutationOptions<CancelOAuthLinkMutation, CancelOAuthLinkMutationVariables>;
+export const CreateTaskDocument = gql`
+    mutation CreateTask($input: CreateTaskInput!) {
+  createTask(input: $input) {
+    ...ListTask
+  }
+}
+    ${ListTaskFragmentDoc}`;
+export type CreateTaskMutationFn = Apollo.MutationFunction<CreateTaskMutation, CreateTaskMutationVariables>;
+
+/**
+ * __useCreateTaskMutation__
+ *
+ * To run a mutation, you first call `useCreateTaskMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateTaskMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createTaskMutation, { data, loading, error }] = useCreateTaskMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateTaskMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateTaskMutation, CreateTaskMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateTaskMutation, CreateTaskMutationVariables>(CreateTaskDocument, options);
+      }
+export type CreateTaskMutationHookResult = ReturnType<typeof useCreateTaskMutation>;
+export type CreateTaskMutationResult = Apollo.MutationResult<CreateTaskMutation>;
+export type CreateTaskMutationOptions = Apollo.BaseMutationOptions<CreateTaskMutation, CreateTaskMutationVariables>;
+export const UpdateTaskDocument = gql`
+    mutation UpdateTask($input: UpdateTaskInput!) {
+  updateTask(input: $input) {
+    ...ListTask
+  }
+}
+    ${ListTaskFragmentDoc}`;
+export type UpdateTaskMutationFn = Apollo.MutationFunction<UpdateTaskMutation, UpdateTaskMutationVariables>;
+
+/**
+ * __useUpdateTaskMutation__
+ *
+ * To run a mutation, you first call `useUpdateTaskMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateTaskMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateTaskMutation, { data, loading, error }] = useUpdateTaskMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateTaskMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateTaskMutation, UpdateTaskMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateTaskMutation, UpdateTaskMutationVariables>(UpdateTaskDocument, options);
+      }
+export type UpdateTaskMutationHookResult = ReturnType<typeof useUpdateTaskMutation>;
+export type UpdateTaskMutationResult = Apollo.MutationResult<UpdateTaskMutation>;
+export type UpdateTaskMutationOptions = Apollo.BaseMutationOptions<UpdateTaskMutation, UpdateTaskMutationVariables>;
+export const DeleteTaskDocument = gql`
+    mutation DeleteTask($id: ID!) {
+  deleteTask(id: $id)
+}
+    `;
+export type DeleteTaskMutationFn = Apollo.MutationFunction<DeleteTaskMutation, DeleteTaskMutationVariables>;
+
+/**
+ * __useDeleteTaskMutation__
+ *
+ * To run a mutation, you first call `useDeleteTaskMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteTaskMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteTaskMutation, { data, loading, error }] = useDeleteTaskMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteTaskMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteTaskMutation, DeleteTaskMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteTaskMutation, DeleteTaskMutationVariables>(DeleteTaskDocument, options);
+      }
+export type DeleteTaskMutationHookResult = ReturnType<typeof useDeleteTaskMutation>;
+export type DeleteTaskMutationResult = Apollo.MutationResult<DeleteTaskMutation>;
+export type DeleteTaskMutationOptions = Apollo.BaseMutationOptions<DeleteTaskMutation, DeleteTaskMutationVariables>;
+export const SetTaskStatusDocument = gql`
+    mutation SetTaskStatus($input: SetTaskStatusInput!) {
+  setTaskStatus(input: $input) {
+    ...ListTask
+  }
+}
+    ${ListTaskFragmentDoc}`;
+export type SetTaskStatusMutationFn = Apollo.MutationFunction<SetTaskStatusMutation, SetTaskStatusMutationVariables>;
+
+/**
+ * __useSetTaskStatusMutation__
+ *
+ * To run a mutation, you first call `useSetTaskStatusMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetTaskStatusMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [setTaskStatusMutation, { data, loading, error }] = useSetTaskStatusMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useSetTaskStatusMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SetTaskStatusMutation, SetTaskStatusMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SetTaskStatusMutation, SetTaskStatusMutationVariables>(SetTaskStatusDocument, options);
+      }
+export type SetTaskStatusMutationHookResult = ReturnType<typeof useSetTaskStatusMutation>;
+export type SetTaskStatusMutationResult = Apollo.MutationResult<SetTaskStatusMutation>;
+export type SetTaskStatusMutationOptions = Apollo.BaseMutationOptions<SetTaskStatusMutation, SetTaskStatusMutationVariables>;
+export const SnoozeTasksDocument = gql`
+    mutation SnoozeTasks($input: SnoozeTasksInput!) {
+  snoozeTasks(input: $input) {
+    ...ListTask
+  }
+}
+    ${ListTaskFragmentDoc}`;
+export type SnoozeTasksMutationFn = Apollo.MutationFunction<SnoozeTasksMutation, SnoozeTasksMutationVariables>;
+
+/**
+ * __useSnoozeTasksMutation__
+ *
+ * To run a mutation, you first call `useSnoozeTasksMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSnoozeTasksMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [snoozeTasksMutation, { data, loading, error }] = useSnoozeTasksMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useSnoozeTasksMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SnoozeTasksMutation, SnoozeTasksMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SnoozeTasksMutation, SnoozeTasksMutationVariables>(SnoozeTasksDocument, options);
+      }
+export type SnoozeTasksMutationHookResult = ReturnType<typeof useSnoozeTasksMutation>;
+export type SnoozeTasksMutationResult = Apollo.MutationResult<SnoozeTasksMutation>;
+export type SnoozeTasksMutationOptions = Apollo.BaseMutationOptions<SnoozeTasksMutation, SnoozeTasksMutationVariables>;
+export const LinkThreadsDocument = gql`
+    mutation LinkThreads($input: LinkThreadsInput!) {
+  linkThreads(input: $input) {
+    id
+    task {
+      id
+      threadCount
+      unreadCount
+    }
+    thread {
+      id
+      tasks {
+        ...TaskChip
+      }
+    }
+  }
+}
+    ${TaskChipFragmentDoc}`;
+export type LinkThreadsMutationFn = Apollo.MutationFunction<LinkThreadsMutation, LinkThreadsMutationVariables>;
+
+/**
+ * __useLinkThreadsMutation__
+ *
+ * To run a mutation, you first call `useLinkThreadsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useLinkThreadsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [linkThreadsMutation, { data, loading, error }] = useLinkThreadsMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useLinkThreadsMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<LinkThreadsMutation, LinkThreadsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<LinkThreadsMutation, LinkThreadsMutationVariables>(LinkThreadsDocument, options);
+      }
+export type LinkThreadsMutationHookResult = ReturnType<typeof useLinkThreadsMutation>;
+export type LinkThreadsMutationResult = Apollo.MutationResult<LinkThreadsMutation>;
+export type LinkThreadsMutationOptions = Apollo.BaseMutationOptions<LinkThreadsMutation, LinkThreadsMutationVariables>;
+export const UnlinkThreadsDocument = gql`
+    mutation UnlinkThreads($input: UnlinkThreadsInput!) {
+  unlinkThreads(input: $input) {
+    ...ListTask
+  }
+}
+    ${ListTaskFragmentDoc}`;
+export type UnlinkThreadsMutationFn = Apollo.MutationFunction<UnlinkThreadsMutation, UnlinkThreadsMutationVariables>;
+
+/**
+ * __useUnlinkThreadsMutation__
+ *
+ * To run a mutation, you first call `useUnlinkThreadsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUnlinkThreadsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [unlinkThreadsMutation, { data, loading, error }] = useUnlinkThreadsMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUnlinkThreadsMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UnlinkThreadsMutation, UnlinkThreadsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UnlinkThreadsMutation, UnlinkThreadsMutationVariables>(UnlinkThreadsDocument, options);
+      }
+export type UnlinkThreadsMutationHookResult = ReturnType<typeof useUnlinkThreadsMutation>;
+export type UnlinkThreadsMutationResult = Apollo.MutationResult<UnlinkThreadsMutation>;
+export type UnlinkThreadsMutationOptions = Apollo.BaseMutationOptions<UnlinkThreadsMutation, UnlinkThreadsMutationVariables>;
+export const CreateTaskListDocument = gql`
+    mutation CreateTaskList($input: CreateTaskListInput!) {
+  createTaskList(input: $input) {
+    ...ListTaskList
+  }
+}
+    ${ListTaskListFragmentDoc}`;
+export type CreateTaskListMutationFn = Apollo.MutationFunction<CreateTaskListMutation, CreateTaskListMutationVariables>;
+
+/**
+ * __useCreateTaskListMutation__
+ *
+ * To run a mutation, you first call `useCreateTaskListMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateTaskListMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createTaskListMutation, { data, loading, error }] = useCreateTaskListMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateTaskListMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateTaskListMutation, CreateTaskListMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateTaskListMutation, CreateTaskListMutationVariables>(CreateTaskListDocument, options);
+      }
+export type CreateTaskListMutationHookResult = ReturnType<typeof useCreateTaskListMutation>;
+export type CreateTaskListMutationResult = Apollo.MutationResult<CreateTaskListMutation>;
+export type CreateTaskListMutationOptions = Apollo.BaseMutationOptions<CreateTaskListMutation, CreateTaskListMutationVariables>;
+export const UpdateTaskListDocument = gql`
+    mutation UpdateTaskList($input: UpdateTaskListInput!) {
+  updateTaskList(input: $input) {
+    ...ListTaskList
+  }
+}
+    ${ListTaskListFragmentDoc}`;
+export type UpdateTaskListMutationFn = Apollo.MutationFunction<UpdateTaskListMutation, UpdateTaskListMutationVariables>;
+
+/**
+ * __useUpdateTaskListMutation__
+ *
+ * To run a mutation, you first call `useUpdateTaskListMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateTaskListMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateTaskListMutation, { data, loading, error }] = useUpdateTaskListMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateTaskListMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateTaskListMutation, UpdateTaskListMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateTaskListMutation, UpdateTaskListMutationVariables>(UpdateTaskListDocument, options);
+      }
+export type UpdateTaskListMutationHookResult = ReturnType<typeof useUpdateTaskListMutation>;
+export type UpdateTaskListMutationResult = Apollo.MutationResult<UpdateTaskListMutation>;
+export type UpdateTaskListMutationOptions = Apollo.BaseMutationOptions<UpdateTaskListMutation, UpdateTaskListMutationVariables>;
+export const DeleteTaskListDocument = gql`
+    mutation DeleteTaskList($id: ID!) {
+  deleteTaskList(id: $id)
+}
+    `;
+export type DeleteTaskListMutationFn = Apollo.MutationFunction<DeleteTaskListMutation, DeleteTaskListMutationVariables>;
+
+/**
+ * __useDeleteTaskListMutation__
+ *
+ * To run a mutation, you first call `useDeleteTaskListMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteTaskListMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteTaskListMutation, { data, loading, error }] = useDeleteTaskListMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteTaskListMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteTaskListMutation, DeleteTaskListMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteTaskListMutation, DeleteTaskListMutationVariables>(DeleteTaskListDocument, options);
+      }
+export type DeleteTaskListMutationHookResult = ReturnType<typeof useDeleteTaskListMutation>;
+export type DeleteTaskListMutationResult = Apollo.MutationResult<DeleteTaskListMutation>;
+export type DeleteTaskListMutationOptions = Apollo.BaseMutationOptions<DeleteTaskListMutation, DeleteTaskListMutationVariables>;
 export const ListMailAccountsDocument = gql`
     query ListMailAccounts($filters: MailAccountFilter, $pagination: OffsetPaginationInput) {
   mailAccounts(filters: $filters, pagination: $pagination) {
@@ -2759,6 +4512,113 @@ export function useOAuthProvidersLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type OAuthProvidersQueryHookResult = ReturnType<typeof useOAuthProvidersQuery>;
 export type OAuthProvidersLazyQueryHookResult = ReturnType<typeof useOAuthProvidersLazyQuery>;
 export type OAuthProvidersQueryResult = Apollo.QueryResult<OAuthProvidersQuery, OAuthProvidersQueryVariables>;
+export const ListCategoriesDocument = gql`
+    query ListCategories($filters: CategoryFilter, $pagination: OffsetPaginationInput) {
+  categories(filters: $filters, pagination: $pagination) {
+    ...Category
+  }
+}
+    ${CategoryFragmentDoc}`;
+
+/**
+ * __useListCategoriesQuery__
+ *
+ * To run a query within a React component, call `useListCategoriesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListCategoriesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListCategoriesQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListCategoriesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListCategoriesQuery, ListCategoriesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListCategoriesQuery, ListCategoriesQueryVariables>(ListCategoriesDocument, options);
+      }
+export function useListCategoriesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListCategoriesQuery, ListCategoriesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListCategoriesQuery, ListCategoriesQueryVariables>(ListCategoriesDocument, options);
+        }
+export type ListCategoriesQueryHookResult = ReturnType<typeof useListCategoriesQuery>;
+export type ListCategoriesLazyQueryHookResult = ReturnType<typeof useListCategoriesLazyQuery>;
+export type ListCategoriesQueryResult = Apollo.QueryResult<ListCategoriesQuery, ListCategoriesQueryVariables>;
+export const GetCategoryDocument = gql`
+    query GetCategory($id: ID!) {
+  category(id: $id) {
+    ...Category
+  }
+}
+    ${CategoryFragmentDoc}`;
+
+/**
+ * __useGetCategoryQuery__
+ *
+ * To run a query within a React component, call `useGetCategoryQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetCategoryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetCategoryQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetCategoryQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetCategoryQuery, GetCategoryQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetCategoryQuery, GetCategoryQueryVariables>(GetCategoryDocument, options);
+      }
+export function useGetCategoryLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetCategoryQuery, GetCategoryQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetCategoryQuery, GetCategoryQueryVariables>(GetCategoryDocument, options);
+        }
+export type GetCategoryQueryHookResult = ReturnType<typeof useGetCategoryQuery>;
+export type GetCategoryLazyQueryHookResult = ReturnType<typeof useGetCategoryLazyQuery>;
+export type GetCategoryQueryResult = Apollo.QueryResult<GetCategoryQuery, GetCategoryQueryVariables>;
+export const ListMailChangesDocument = gql`
+    query ListMailChanges($filters: MailChangeFilter, $pagination: OffsetPaginationInput) {
+  mailChanges(filters: $filters, pagination: $pagination) {
+    ...MailChange
+  }
+}
+    ${MailChangeFragmentDoc}`;
+
+/**
+ * __useListMailChangesQuery__
+ *
+ * To run a query within a React component, call `useListMailChangesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListMailChangesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListMailChangesQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListMailChangesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListMailChangesQuery, ListMailChangesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListMailChangesQuery, ListMailChangesQueryVariables>(ListMailChangesDocument, options);
+      }
+export function useListMailChangesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListMailChangesQuery, ListMailChangesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListMailChangesQuery, ListMailChangesQueryVariables>(ListMailChangesDocument, options);
+        }
+export type ListMailChangesQueryHookResult = ReturnType<typeof useListMailChangesQuery>;
+export type ListMailChangesLazyQueryHookResult = ReturnType<typeof useListMailChangesLazyQuery>;
+export type ListMailChangesQueryResult = Apollo.QueryResult<ListMailChangesQuery, ListMailChangesQueryVariables>;
 export const MessageAttachmentAccessDocument = gql`
     query MessageAttachmentAccess($message: ID!, $host: String) {
   message(id: $message) {
@@ -3099,6 +4959,264 @@ export function useKuvertPaletteSearchLazyQuery(baseOptions?: ApolloReactHooks.L
 export type KuvertPaletteSearchQueryHookResult = ReturnType<typeof useKuvertPaletteSearchQuery>;
 export type KuvertPaletteSearchLazyQueryHookResult = ReturnType<typeof useKuvertPaletteSearchLazyQuery>;
 export type KuvertPaletteSearchQueryResult = Apollo.QueryResult<KuvertPaletteSearchQuery, KuvertPaletteSearchQueryVariables>;
+export const ListTasksDocument = gql`
+    query ListTasks($filters: TaskFilter, $ordering: [TaskOrder!]! = [{position: ASC}], $pagination: OffsetPaginationInput) {
+  tasks(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListTask
+  }
+}
+    ${ListTaskFragmentDoc}`;
+
+/**
+ * __useListTasksQuery__
+ *
+ * To run a query within a React component, call `useListTasksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListTasksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListTasksQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListTasksQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListTasksQuery, ListTasksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListTasksQuery, ListTasksQueryVariables>(ListTasksDocument, options);
+      }
+export function useListTasksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListTasksQuery, ListTasksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListTasksQuery, ListTasksQueryVariables>(ListTasksDocument, options);
+        }
+export type ListTasksQueryHookResult = ReturnType<typeof useListTasksQuery>;
+export type ListTasksLazyQueryHookResult = ReturnType<typeof useListTasksLazyQuery>;
+export type ListTasksQueryResult = Apollo.QueryResult<ListTasksQuery, ListTasksQueryVariables>;
+export const TasksCountDocument = gql`
+    query TasksCount($filters: TaskFilter) {
+  tasksCount(filters: $filters)
+}
+    `;
+
+/**
+ * __useTasksCountQuery__
+ *
+ * To run a query within a React component, call `useTasksCountQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTasksCountQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTasksCountQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *   },
+ * });
+ */
+export function useTasksCountQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<TasksCountQuery, TasksCountQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TasksCountQuery, TasksCountQueryVariables>(TasksCountDocument, options);
+      }
+export function useTasksCountLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TasksCountQuery, TasksCountQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TasksCountQuery, TasksCountQueryVariables>(TasksCountDocument, options);
+        }
+export type TasksCountQueryHookResult = ReturnType<typeof useTasksCountQuery>;
+export type TasksCountLazyQueryHookResult = ReturnType<typeof useTasksCountLazyQuery>;
+export type TasksCountQueryResult = Apollo.QueryResult<TasksCountQuery, TasksCountQueryVariables>;
+export const GetTaskDocument = gql`
+    query GetTask($id: ID!, $inFolder: ID, $inRole: FolderRole) {
+  task(id: $id) {
+    ...Task
+  }
+}
+    ${TaskFragmentDoc}`;
+
+/**
+ * __useGetTaskQuery__
+ *
+ * To run a query within a React component, call `useGetTaskQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetTaskQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetTaskQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *      inFolder: // value for 'inFolder'
+ *      inRole: // value for 'inRole'
+ *   },
+ * });
+ */
+export function useGetTaskQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetTaskQuery, GetTaskQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetTaskQuery, GetTaskQueryVariables>(GetTaskDocument, options);
+      }
+export function useGetTaskLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetTaskQuery, GetTaskQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetTaskQuery, GetTaskQueryVariables>(GetTaskDocument, options);
+        }
+export type GetTaskQueryHookResult = ReturnType<typeof useGetTaskQuery>;
+export type GetTaskLazyQueryHookResult = ReturnType<typeof useGetTaskLazyQuery>;
+export type GetTaskQueryResult = Apollo.QueryResult<GetTaskQuery, GetTaskQueryVariables>;
+export const ListTaskListsDocument = gql`
+    query ListTaskLists($filters: TaskListFilter, $pagination: OffsetPaginationInput) {
+  taskLists(filters: $filters, pagination: $pagination) {
+    ...ListTaskList
+  }
+}
+    ${ListTaskListFragmentDoc}`;
+
+/**
+ * __useListTaskListsQuery__
+ *
+ * To run a query within a React component, call `useListTaskListsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListTaskListsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListTaskListsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListTaskListsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListTaskListsQuery, ListTaskListsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListTaskListsQuery, ListTaskListsQueryVariables>(ListTaskListsDocument, options);
+      }
+export function useListTaskListsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListTaskListsQuery, ListTaskListsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListTaskListsQuery, ListTaskListsQueryVariables>(ListTaskListsDocument, options);
+        }
+export type ListTaskListsQueryHookResult = ReturnType<typeof useListTaskListsQuery>;
+export type ListTaskListsLazyQueryHookResult = ReturnType<typeof useListTaskListsLazyQuery>;
+export type ListTaskListsQueryResult = Apollo.QueryResult<ListTaskListsQuery, ListTaskListsQueryVariables>;
+export const GetTaskListDocument = gql`
+    query GetTaskList($id: ID!) {
+  taskList(id: $id) {
+    ...ListTaskList
+  }
+}
+    ${ListTaskListFragmentDoc}`;
+
+/**
+ * __useGetTaskListQuery__
+ *
+ * To run a query within a React component, call `useGetTaskListQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetTaskListQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetTaskListQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetTaskListQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetTaskListQuery, GetTaskListQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetTaskListQuery, GetTaskListQueryVariables>(GetTaskListDocument, options);
+      }
+export function useGetTaskListLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetTaskListQuery, GetTaskListQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetTaskListQuery, GetTaskListQueryVariables>(GetTaskListDocument, options);
+        }
+export type GetTaskListQueryHookResult = ReturnType<typeof useGetTaskListQuery>;
+export type GetTaskListLazyQueryHookResult = ReturnType<typeof useGetTaskListLazyQuery>;
+export type GetTaskListQueryResult = Apollo.QueryResult<GetTaskListQuery, GetTaskListQueryVariables>;
+export const SearchTasksDocument = gql`
+    query SearchTasks($search: String, $values: [ID!]) {
+  options: tasks(
+    filters: {search: $search, ids: $values, status: OPEN}
+    pagination: {limit: 20}
+  ) {
+    value: id
+    label: title
+  }
+}
+    `;
+
+/**
+ * __useSearchTasksQuery__
+ *
+ * To run a query within a React component, call `useSearchTasksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchTasksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchTasksQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *      values: // value for 'values'
+ *   },
+ * });
+ */
+export function useSearchTasksQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchTasksQuery, SearchTasksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SearchTasksQuery, SearchTasksQueryVariables>(SearchTasksDocument, options);
+      }
+export function useSearchTasksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchTasksQuery, SearchTasksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SearchTasksQuery, SearchTasksQueryVariables>(SearchTasksDocument, options);
+        }
+export type SearchTasksQueryHookResult = ReturnType<typeof useSearchTasksQuery>;
+export type SearchTasksLazyQueryHookResult = ReturnType<typeof useSearchTasksLazyQuery>;
+export type SearchTasksQueryResult = Apollo.QueryResult<SearchTasksQuery, SearchTasksQueryVariables>;
+export const SearchTaskListsDocument = gql`
+    query SearchTaskLists($search: String, $values: [ID!]) {
+  options: taskLists(
+    filters: {search: $search, ids: $values}
+    pagination: {limit: 50}
+  ) {
+    value: id
+    label: name
+  }
+}
+    `;
+
+/**
+ * __useSearchTaskListsQuery__
+ *
+ * To run a query within a React component, call `useSearchTaskListsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchTaskListsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchTaskListsQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *      values: // value for 'values'
+ *   },
+ * });
+ */
+export function useSearchTaskListsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchTaskListsQuery, SearchTaskListsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SearchTaskListsQuery, SearchTaskListsQueryVariables>(SearchTaskListsDocument, options);
+      }
+export function useSearchTaskListsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchTaskListsQuery, SearchTaskListsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SearchTaskListsQuery, SearchTaskListsQueryVariables>(SearchTaskListsDocument, options);
+        }
+export type SearchTaskListsQueryHookResult = ReturnType<typeof useSearchTaskListsQuery>;
+export type SearchTaskListsLazyQueryHookResult = ReturnType<typeof useSearchTaskListsLazyQuery>;
+export type SearchTaskListsQueryResult = Apollo.QueryResult<SearchTaskListsQuery, SearchTaskListsQueryVariables>;
 export const ListThreadsDocument = gql`
     query ListThreads($filters: ThreadFilter, $ordering: [ThreadOrder!]! = [{lastMessageAt: DESC}], $pagination: OffsetPaginationInput, $inFolder: ID, $inRole: FolderRole) {
   threads(filters: $filters, ordering: $ordering, pagination: $pagination) {

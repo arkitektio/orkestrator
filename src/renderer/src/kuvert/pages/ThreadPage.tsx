@@ -3,6 +3,7 @@ import { useGetThreadQuery } from "../api/graphql";
 import { ReplyButtons } from "../components/MessageView";
 import { InlineReply } from "../components/split/InlineReply";
 import { ThreadMessages, useMarkThreadRead } from "../components/split/ThreadReader";
+import { ThreadTasks } from "../components/tasks/ThreadTasks";
 import { MailThread } from "../linkers";
 
 /** A conversation as a page of its own (double-click in a list, or a link). */
@@ -19,6 +20,7 @@ const ThreadPage = asDetailQueryRoute(useGetThreadQuery, ({ data }) => {
     >
       <div className="-m-3 min-h-full bg-muted/40">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-4">
+          <ThreadTasks thread={thread} />
           <ThreadMessages key={thread.id} thread={thread} />
           {last && thread.account.canSend && <InlineReply key={last.id} message={last} />}
         </div>

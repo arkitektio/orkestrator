@@ -1,0 +1,28 @@
+mutation PushMailChanges($account: ID!) {
+  pushMailChanges(account: $account) {
+    pushed
+    failed
+    pending
+    account {
+      ...ListMailAccount
+    }
+  }
+}
+
+mutation RetryMailChanges($changes: [ID!]!) {
+  retryMailChanges(changes: $changes) {
+    ...MailChange
+  }
+}
+
+mutation UndoMailChanges($input: UndoMailChangesInput!) {
+  undoMailChanges(input: $input) {
+    ...MessageState
+  }
+}
+
+mutation RevertMessagesToServer($messages: [ID!]!) {
+  revertMessagesToServer(messages: $messages) {
+    ...MessageState
+  }
+}

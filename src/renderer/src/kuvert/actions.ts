@@ -15,12 +15,12 @@ import {
   MailOpen,
   Pause,
   PenSquare,
-  Pencil,
   Play,
   PlugZap,
   RefreshCw,
   Reply,
   ReplyAll,
+  Settings,
   Share2,
   Sparkles,
   Trash2,
@@ -43,7 +43,12 @@ import {
   UpdateMailAccountDocument,
   UpdateMailFolderDocument,
 } from "./api/graphql";
+import { LOGIN_ANCHOR } from "./components/settings/anchors";
+import { MailAccount } from "./linkers";
 import { toastText } from "./errors";
+import { CATEGORY_ACTIONS } from "./localactions/categories";
+import { CHANGE_ACTIONS } from "./localactions/changes";
+import { TASK_ACTIONS } from "./localactions/tasks";
 import { formatAddress } from "./format";
 import { deleteMail, MAIL_VIEWS, markRead, moveTo, moveToRole, setFlagged, threadMessages } from "./mailOps";
 
@@ -343,13 +348,13 @@ export const KUVERT_ACTIONS: Record<string, Action> = {
     },
   },
   "kuvert-edit-account": {
-    title: "Edit mailbox",
-    description: "Change its name, password or servers",
-    icon: Pencil,
+    title: "Mailbox settings",
+    description: "Its name, what goes to the server, folders, categories, password and servers",
+    icon: Settings,
     conditions: [{ type: "identifier", identifier: ACCOUNT }, { type: "nopartner" }],
-    execute: async ({ dialog, state }) => {
+    execute: async ({ navigate, state }) => {
       const [id] = need(idsOf(state, ACCOUNT), "mailbox");
-      dialog.openDialog("kuverteditaccount", { id }, { size: "medium" });
+      navigate(MailAccount.linkBuilder(id));
     },
   },
   "kuvert-share-account": {
@@ -367,7 +372,7 @@ export const KUVERT_ACTIONS: Record<string, Action> = {
     description: "Renew the mailbox's sign-in or password; its mail is kept",
     icon: KeyRound,
     conditions: [{ type: "identifier", identifier: ACCOUNT }, { type: "nopartner" }],
-    execute: async ({ dialog, services, state }) => {
+    execute: async ({ dialog, navigate, services, state }) => {
       const [id] = need(idsOf(state, ACCOUNT), "mailbox");
       const { data } = await kuvertClient(services).query<GetMailAccountQuery>({
         query: GetMailAccountDocument,
@@ -381,7 +386,7 @@ export const KUVERT_ACTIONS: Record<string, Action> = {
           { size: "medium" },
         );
       } else {
-        dialog.openDialog("kuverteditaccount", { id }, { size: "medium" });
+        navigate(`${MailAccount.linkBuilder(id)}#${LOGIN_ANCHOR}`);
       }
     },
   },
@@ -464,5 +469,8 @@ export const KUVERT_ACTIONS: Record<string, Action> = {
       );
     },
   },
-};
 
+  ...TASK_ACTIONS,
+  ...CATEGORY_ACTIONS,
+  ...CHANGE_ACTIONS,
+};

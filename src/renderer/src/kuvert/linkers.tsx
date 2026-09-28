@@ -9,3 +9,6 @@ export const MailFolder = smartOf(manifest, "@kuvert/folder");
 export const MailThread = smartOf(manifest, "@kuvert/thread");
 export const MailMessage = smartOf(manifest, "@kuvert/message");
 export const OutgoingMail = smartOf(manifest, "@kuvert/outgoing");
+export const MailCategory = smartOf(manifest, "@kuvert/category");
+export const MailTask = smartOf(manifest, "@kuvert/task");
+export const MailTaskList = smartOf(manifest, "@kuvert/tasklist");

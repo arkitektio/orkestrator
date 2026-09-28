@@ -51,6 +51,17 @@ export const describeError = (
       return { text: "The sign-in was not finished in time. Start over.", fix: "restart" };
     case MailErrorCode.ProviderError:
       return { text: message || "The sign-in provider answered with an error.", fix: "restart" };
+    case MailErrorCode.UnsupportedByPolicy:
+      return { text: "This mailbox is set not to change that on the server. See its sync settings.", fix: "none" };
+    case MailErrorCode.KeywordsNotPermitted:
+      return { text: "The folder does not keep categories on the server; the category stays here.", fix: "none" };
+    case MailErrorCode.MessageGone:
+      return { text: "The mail is no longer where the change expected it on the server.", fix: "none" };
+    case MailErrorCode.UnsafeExpunge:
+      return {
+        text: "The server cannot delete just this mail for good without also removing other deleted mail in its folder.",
+        fix: "none",
+      };
     case MailErrorCode.NotConfigured:
       return { text: "This is not set up on the server. Ask an admin.", fix: "none" };
     default:

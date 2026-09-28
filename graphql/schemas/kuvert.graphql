@@ -130,10 +130,91 @@ A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted
 """
 scalar ByteCount
 
+"""
+Put messages into categories of their mailbox and take them out (every copy of each message).
+"""
+input CategorizeMessagesInput {
+  """Categories to put the messages into."""
+  add: [ID!]! = []
+  messages: [ID!]!
+
+  """Categories to take the messages out of."""
+  remove: [ID!]! = []
+}
+
+"""
+A category of a mailbox, shared by everyone who sees the mailbox: LOCAL, or kept on the server as an IMAP keyword (KEYWORD).
+"""
+type Category {
+  """The mailbox."""
+  account: MailAccount!
+
+  """A display color (e.g. #4f86f7)."""
+  color: String!
+
+  """When the category was created."""
+  createdAt: DateTime!
+  id: ID!
+
+  """The IMAP keyword a KEYWORD category is kept as."""
+  keyword: String!
+
+  """Messages in the category (every copy counts)."""
+  messageCount: Int!
+
+  """The category's name."""
+  name: String!
+
+  """Where the category lives."""
+  sync: CategorySync!
+}
+
+"""
+A category of a mailbox, shared by everyone who sees the mailbox.
+
+A KEYWORD category *is* its keyword: a message is in it when the keyword is among its flags,
+so the membership reaches other mail clients and survives moves made there. A LOCAL
+category's members are its assignments, kept under the message key.
+"""
+input CategoryFilter {
+  AND: CategoryFilter
+  DISTINCT: Boolean
+  NOT: CategoryFilter
+  OR: CategoryFilter
+  account: ID
+  search: String
+  sync: CategorySync
+}
+
+"""
+Where a category lives. LOCAL: Only here; the server never sees it; KEYWORD: As an IMAP keyword on the server, so other mail clients see it.
+"""
+enum CategorySync {
+  KEYWORD
+  LOCAL
+}
+
 """What the provider's redirect carried."""
 input CompleteOAuthLinkInput {
   code: String!
   state: String!
+}
+
+"""A new category of a mailbox."""
+input CreateCategoryInput {
+  account: ID!
+  color: String! = ""
+
+  """
+  The IMAP keyword (e.g. $Invoices); derived from the name when not given. A KEYWORD category starts out holding the messages that already carry it.
+  """
+  keyword: String = null
+  name: String!
+
+  """
+  LOCAL keeps it here; KEYWORD keeps it on the server as `keyword`, so other mail clients see it.
+  """
+  sync: CategorySync! = LOCAL
 }
 
 """
@@ -178,6 +259,36 @@ input CreateMailAccountInput {
   visibility: Visibility! = PRIVATE
 }
 
+"""A new task, optionally with its conversations."""
+input CreateTaskInput {
+  dueAt: DateTime = null
+
+  """An app's own key; must be unique among the caller's tasks."""
+  externalKey: String = null
+
+  """How those conversations are linked."""
+  link: ThreadLinkInput = null
+  list: ID = null
+  notes: String! = ""
+  pinned: Boolean! = false
+
+  """Where it sorts; after the last task by default."""
+  position: Float = null
+
+  """Conversations to put into the task."""
+  threads: [ID!]! = []
+  title: String!
+}
+
+"""A new task list."""
+input CreateTaskListInput {
+  color: String! = ""
+  name: String!
+
+  """Where it sorts; after the last list by default."""
+  position: Float = null
+}
+
 """Date with time (isoformat)"""
 scalar DateTime
 
@@ -193,7 +304,9 @@ input DeleteMessagesInput {
 
 """What a delete did."""
 type DeleteResult {
-  """Messages deleted or moved to Trash."""
+  """
+  Messages deleted or moved to Trash (here at once; on the server after the undo window).
+  """
   deleted: Int!
 }
 
@@ -218,6 +331,15 @@ enum FolderRole {
 }
 
 """
+Put conversations into a task. A conversation already in it keeps its place; its link details are updated.
+"""
+input LinkThreadsInput {
+  link: ThreadLinkInput = null
+  task: ID!
+  threads: [ID!]!
+}
+
+"""
 A linked mailbox. Private to the member who linked it unless shared (`visibility`).
 """
 type MailAccount {
@@ -233,6 +355,9 @@ type MailAccount {
   """What the incoming server announced (IMAP CAPABILITY, POP3 CAPA)."""
   capabilities: [String!]!
 
+  """The mailbox's categories."""
+  categories(filters: CategoryFilter, pagination: OffsetPaginationInput): [Category!]!
+
   """When the mailbox was linked."""
   createdAt: DateTime!
 
@@ -246,6 +371,9 @@ type MailAccount {
 
   """The mailbox's address; the From of sent mail."""
   emailAddress: String!
+
+  """Changes made here that did not reach the server (see `mailChanges`)."""
+  failedChanges: Int!
 
   """The mailbox's folders (a POP3 mailbox has one, its INBOX)."""
   folders(filters: MailFolderFilter, pagination: OffsetPaginationInput): [MailFolder!]!
@@ -280,6 +408,9 @@ type MailAccount {
   """The organization this mailbox belongs to."""
   organization: Organization!
 
+  """Changes made here that have not reached the server yet."""
+  pendingChanges: Int!
+
   """
   POP3: keep downloaded mail on the server. Off deletes it there once stored.
   """
@@ -290,6 +421,23 @@ type MailAccount {
 
   """Who hosts the mailbox."""
   provider: Provider!
+
+  """Deletes are pushed to the server (else only hidden here)."""
+  pushDeletes: Boolean!
+
+  """Flagging is pushed to the server (else kept here)."""
+  pushFlagged: Boolean!
+
+  """
+  Keywords (KEYWORD categories) are pushed to the server (else kept here).
+  """
+  pushKeywords: Boolean!
+
+  """Moves are pushed to the server (else refused)."""
+  pushMoves: Boolean!
+
+  """Read/unread is pushed to the server (else kept here)."""
+  pushSeen: Boolean!
 
   """
   Append sent mail to the Sent folder (off for Gmail and Microsoft, which keep a copy themselves).
@@ -319,7 +467,7 @@ type MailAccount {
   """Whether a sync holds the mailbox right now."""
   syncing: Boolean!
 
-  """Unread messages over the synced folders, as the server counts them."""
+  """Unread messages over the synced folders, as they are here."""
   unreadCount: Int!
 
   """The login name (usually the address)."""
@@ -357,7 +505,96 @@ enum MailAccountStatus {
 }
 
 """
-What went wrong, for a client to offer a fix. Also stored as ``last_error_code``. NOT_CONFIGURED: The service is not configured for this (an OAuth client, the datalayer); AUTH_FAILED: The server refused the username or password; CONSENT_EXPIRED: The OAuth grant was revoked or ran out; link the mailbox again; CONNECTION_FAILED: The server could not be reached, or the connection broke; TLS_FAILED: The TLS handshake failed (certificate or protocol); TLS_REQUIRED: The mailbox asks for a connection without TLS, which is not allowed; HOST_NOT_ALLOWED: The host resolves to a private or internal address; SYNC_IN_PROGRESS: Another sync holds this mailbox right now; RATE_LIMITED: Synced too recently; try again later; SERVER_ERROR: The server answered a command with an error; SEND_REJECTED: The SMTP server refused the message or a recipient; UNSUPPORTED_BY_PROTOCOL: POP3 cannot do this (folders, flags on the server); MAILBOX_INACTIVE: The mailbox is disabled or needs new credentials; INVALID_STATE: The link state is unknown, used or belongs to someone else; CODE_EXPIRED: The link was not completed in time; PROVIDER_ERROR: The OAuth provider answered with an error.
+A change made here that has not reached the server yet (a pushed one is gone).
+"""
+type MailChange {
+  """The mailbox."""
+  account: MailAccount!
+
+  """FLAGS: flags and keywords to add."""
+  add: [String!]!
+
+  """Failed attempts so far."""
+  attempts: Int!
+
+  """When the change was made."""
+  createdAt: DateTime!
+
+  """The member who made the change."""
+  createdBy: User
+
+  """Why the last attempt failed."""
+  error: String
+
+  """The machine-readable kind of `error`."""
+  errorCode: MailErrorCode
+  id: ID!
+
+  """What the change does."""
+  kind: MailChangeKind!
+
+  """The message (also one deleted here, while its delete is on its way)."""
+  message: Message
+
+  """MOVE/EXPUNGE: the folder the server has the message in."""
+  originFolder: MailFolder
+
+  """Not pushed before then (the undo window, or the wait after a failure)."""
+  pushAfter: DateTime!
+
+  """FLAGS: flags and keywords to remove."""
+  remove: [String!]!
+
+  """Where the change is."""
+  state: MailChangeState!
+
+  """MOVE: the folder it goes to."""
+  targetFolder: MailFolder
+
+  """
+  Whether `undoMailChanges` can still take it back (in its undo window, or FAILED).
+  """
+  undoable: Boolean!
+}
+
+"""
+A change made here that still has to reach the server (see :mod:`mail.push`).
+
+``origin_*`` is where a MOVE or EXPUNGE finds the message on the server: the row itself has
+already left (moved rows wait with a null UID, deleted ones carry ``deleted_at``). A FLAGS
+change finds it through its row, and through ``message_key`` once sync replaced the row.
+"""
+input MailChangeFilter {
+  AND: MailChangeFilter
+  DISTINCT: Boolean
+  NOT: MailChangeFilter
+  OR: MailChangeFilter
+  account: ID
+  kind: MailChangeKind
+  message: ID
+  state: MailChangeState
+}
+
+"""
+What a queued change does on the server. FLAGS: Add and remove flags and keywords (STORE); MOVE: Move the message to another folder; EXPUNGE: Delete the message for good; POP_DELE: Delete the message on a POP3 server.
+"""
+enum MailChangeKind {
+  EXPUNGE
+  FLAGS
+  MOVE
+  POP_DELE
+}
+
+"""
+Where a queued change is (a pushed one is gone). PENDING: Waiting to be pushed (from `pushAfter` on); FAILED: The server refused it or it ran out of attempts; the local state stays.
+"""
+enum MailChangeState {
+  FAILED
+  PENDING
+}
+
+"""
+What went wrong, for a client to offer a fix. Also stored as ``last_error_code``. NOT_CONFIGURED: The service is not configured for this (an OAuth client, the datalayer); AUTH_FAILED: The server refused the username or password; CONSENT_EXPIRED: The OAuth grant was revoked or ran out; link the mailbox again; CONNECTION_FAILED: The server could not be reached, or the connection broke; TLS_FAILED: The TLS handshake failed (certificate or protocol); TLS_REQUIRED: The mailbox asks for a connection without TLS, which is not allowed; HOST_NOT_ALLOWED: The host resolves to a private or internal address; SYNC_IN_PROGRESS: Another sync holds this mailbox right now; RATE_LIMITED: Synced too recently; try again later; SERVER_ERROR: The server answered a command with an error; SEND_REJECTED: The SMTP server refused the message or a recipient; UNSUPPORTED_BY_PROTOCOL: POP3 cannot do this (folders, flags on the server); MAILBOX_INACTIVE: The mailbox is disabled or needs new credentials; INVALID_STATE: The link state is unknown, used or belongs to someone else; CODE_EXPIRED: The link was not completed in time; PROVIDER_ERROR: The OAuth provider answered with an error; UNSUPPORTED_BY_POLICY: The mailbox is set not to change this on the server (its push settings); KEYWORDS_NOT_PERMITTED: The folder does not keep keywords (no \\* in PERMANENTFLAGS), the category stays local; MESSAGE_GONE: The message is no longer where the change expected it on the server; UNSAFE_EXPUNGE: Without UIDPLUS an expunge would also remove other deleted messages of the folder.
 """
 enum MailErrorCode {
   AUTH_FAILED
@@ -366,7 +603,9 @@ enum MailErrorCode {
   CONSENT_EXPIRED
   HOST_NOT_ALLOWED
   INVALID_STATE
+  KEYWORDS_NOT_PERMITTED
   MAILBOX_INACTIVE
+  MESSAGE_GONE
   NOT_CONFIGURED
   PROVIDER_ERROR
   RATE_LIMITED
@@ -375,6 +614,8 @@ enum MailErrorCode {
   SYNC_IN_PROGRESS
   TLS_FAILED
   TLS_REQUIRED
+  UNSAFE_EXPUNGE
+  UNSUPPORTED_BY_POLICY
   UNSUPPORTED_BY_PROTOCOL
 }
 
@@ -392,6 +633,11 @@ type MailFolder {
   """False once the server stopped listing the folder."""
   existsOnServer: Boolean!
   id: ID!
+
+  """
+  The folder keeps any keyword on the server (else KEYWORD categories stay local here).
+  """
+  keywordsAllowed: Boolean!
 
   """When the folder was last synced."""
   lastSyncedAt: DateTime
@@ -413,13 +659,20 @@ type MailFolder {
   """
   selectable: Boolean!
 
+  """
+  Unread messages in the folder, as the server counted them at the last sync.
+  """
+  serverUnreadCount: Int!
+
   """Whether syncs read this folder."""
   syncEnabled: Boolean!
 
   """Messages in the folder, as the server counts them."""
   totalCount: Int!
 
-  """Unread messages in the folder, as the server counts them."""
+  """
+  Unread messages in the folder, as they are here (local changes included).
+  """
   unreadCount: Int!
 }
 
@@ -490,8 +743,16 @@ type Message {
   """Bcc addresses (only known on sent mail)."""
   bcc: [Address!]!
 
+  """The categories the message is in."""
+  categories: [Category!]!
+
   """Cc addresses."""
   cc: [Address!]!
+
+  """
+  Changes made here that have not reached the server (pending or failed).
+  """
+  changes: [MailChange!]!
 
   """When the message was first stored."""
   createdAt: DateTime!
@@ -499,7 +760,9 @@ type Message {
   """The Date header (else when the server received it)."""
   date: DateTime
 
-  """IMAP flags and keywords (\Seen, \Flagged, \Answered, \Draft, $Label…)."""
+  """
+  The flags and keywords as they are here: the server's with local changes applied.
+  """
   flags: [String!]!
 
   """The folder the message is in."""
@@ -553,6 +816,9 @@ type Message {
   """The From display name."""
   senderName: String!
 
+  """The flags and keywords as the server last had them."""
+  serverFlags: [String!]!
+
   """The message size in bytes."""
   size: Int!
 
@@ -561,6 +827,9 @@ type Message {
 
   """The decoded subject."""
   subject: String!
+
+  """How the message here relates to the server."""
+  syncState: SyncState!
 
   """The plain-text body (converted from HTML when there is none)."""
   textBody: String!
@@ -589,6 +858,7 @@ input MessageFilter {
   NOT: MessageFilter
   OR: MessageFilter
   account: ID
+  category: ID
   dateFrom: DateTime
   dateTo: DateTime
   flagged: Boolean
@@ -609,6 +879,7 @@ input MessageFilter {
   Order by similarity to the given message, nearest first (no cut-off; composes with other filters and pagination). Empty when the message is not visible or has no embedding yet.
   """
   similarTo: ID
+  syncState: SyncState
   thread: ID
   unread: Boolean
 }
@@ -631,13 +902,28 @@ type Mutation {
   """Drop the caller's pending OAuth login."""
   cancelOAuthLink(state: String!): String!
 
+  """Put messages into categories and take them out."""
+  categorizeMessages(input: CategorizeMessagesInput!): [Message!]!
+
   """Finish an OAuth login with the redirect's code and state."""
   completeOAuthLink(input: CompleteOAuthLinkInput!): MailAccount!
+
+  """Create a category of a mailbox."""
+  createCategory(input: CreateCategoryInput!): Category!
 
   """
   Link a mailbox with a username and (app) password; the login is tested first.
   """
   createMailAccount(input: CreateMailAccountInput!): MailAccount!
+
+  """Create a task, optionally with conversations."""
+  createTask(input: CreateTaskInput!): Task!
+
+  """Create a task list."""
+  createTaskList(input: CreateTaskListInput!): TaskList!
+
+  """Delete a category."""
+  deleteCategory(id: ID!, removeKeywords: Boolean! = false): ID!
 
   """Unlink a mailbox (owner only). Mail on the server is untouched."""
   deleteMailAccount(id: ID!): ID!
@@ -645,16 +931,28 @@ type Mutation {
   """Delete messages (into Trash, or for good)."""
   deleteMessages(input: DeleteMessagesInput!): DeleteResult!
 
+  """Delete a task."""
+  deleteTask(id: ID!): ID!
+
+  """Delete a task list; its tasks stay, on no list."""
+  deleteTaskList(id: ID!): ID!
+
   """
   Finalize the caller's file upload after the client has written the object.
   """
   finishBigfileUpload(input: FinishBigFileUploadInput!): BigFileStore!
+
+  """Put conversations into a task."""
+  linkThreads(input: LinkThreadsInput!): [TaskThread!]!
 
   """Mark messages read or unread."""
   markMessagesRead(input: MarkMessagesInput!): [Message!]!
 
   """Move messages to another folder of their mailbox."""
   moveMessages(input: MoveMessagesInput!): [Message!]!
+
+  """Push a mailbox's due changes now."""
+  pushMailChanges(account: ID!): PushResult!
 
   """
   Request temporary S3 credentials to upload one file (an attachment to send).
@@ -664,14 +962,28 @@ type Mutation {
   """The caller's pending OAuth login again."""
   resumeOAuthLink(state: String!): AuthSession!
 
+  """Queue failed changes again."""
+  retryMailChanges(changes: [ID!]!): [MailChange!]!
+
+  """
+  Drop local-only and queued flag changes of messages: back to what the server has.
+  """
+  revertMessagesToServer(messages: [ID!]!): [Message!]!
+
   """Send a message through a mailbox's SMTP server."""
   sendMessage(input: SendMessageInput!): OutgoingMessage!
 
   """Add and remove flags of messages."""
   setMessageFlags(input: SetMessageFlagsInput!): [Message!]!
 
+  """Mark tasks OPEN, DONE or DISMISSED."""
+  setTaskStatus(input: SetTaskStatusInput!): [Task!]!
+
   """Set who sees a mailbox (owner only)."""
   shareMailAccount(input: ShareMailAccountInput!): MailAccount!
+
+  """Snooze tasks until a time (null wakes them)."""
+  snoozeTasks(input: SnoozeTasksInput!): [Task!]!
 
   """Start linking (or re-linking) a mailbox through OAuth."""
   startOAuthLink(input: StartOAuthLinkInput!): AuthSession!
@@ -682,6 +994,15 @@ type Mutation {
   """Log in to a mailbox's servers now."""
   testMailAccount(id: ID!): MailAccount!
 
+  """Take back changes that have not reached the server."""
+  undoMailChanges(input: UndoMailChangesInput!): [Message!]!
+
+  """Take conversations out of a task."""
+  unlinkThreads(input: UnlinkThreadsInput!): Task!
+
+  """Change a category."""
+  updateCategory(input: UpdateCategoryInput!): Category!
+
   """
   Change a mailbox (owner only); new servers or credentials are tested first.
   """
@@ -689,6 +1010,17 @@ type Mutation {
 
   """Turn syncing a folder on or off."""
   updateMailFolder(input: UpdateMailFolderInput!): MailFolder!
+
+  """Change a task."""
+  updateTask(input: UpdateTaskInput!): Task!
+
+  """Rename, recolor or move a task list."""
+  updateTaskList(input: UpdateTaskListInput!): TaskList!
+
+  """
+  Create or update the caller's task with this externalKey, and add conversations to it.
+  """
+  upsertTask(input: UpsertTaskInput!): Task!
 }
 
 input OffsetPaginationInput {
@@ -809,9 +1141,31 @@ enum Provider {
   MICROSOFT
 }
 
+"""What pushing a mailbox's changes did."""
+type PushResult {
+  account: MailAccount!
+
+  """Changes that did not reach the server."""
+  failed: Int!
+
+  """
+  Changes still waiting (in their undo window, backing off, or a sync held the mailbox).
+  """
+  pending: Int!
+
+  """Changes that reached the server."""
+  pushed: Int!
+}
+
 type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
+
+  """Categories of the visible mailboxes (filter by `account`)."""
+  categories(filters: CategoryFilter, pagination: OffsetPaginationInput): [Category!]!
+
+  """A category by id."""
+  category(id: ID!): Category!
 
   """A mailbox by id."""
   mailAccount(id: ID!): MailAccount!
@@ -820,6 +1174,11 @@ type Query {
   The mailboxes the caller sees: their own, shared with them, and the organization's.
   """
   mailAccounts(filters: MailAccountFilter, pagination: OffsetPaginationInput): [MailAccount!]!
+
+  """
+  Changes made here that have not reached the server yet (pending or failed), oldest first.
+  """
+  mailChanges(filters: MailChangeFilter, pagination: OffsetPaginationInput): [MailChange!]!
 
   """A folder by id."""
   mailFolder(id: ID!): MailFolder!
@@ -851,6 +1210,23 @@ type Query {
 
   """A sent message by id."""
   outgoingMessage(id: ID!): OutgoingMessage!
+
+  """A task by id."""
+  task(id: ID!): Task!
+
+  """A task list by id."""
+  taskList(id: ID!): TaskList!
+
+  """The caller's task lists."""
+  taskLists(filters: TaskListFilter, pagination: OffsetPaginationInput): [TaskList!]!
+
+  """
+  The caller's tasks (paginated, filterable — `active` is the Inbox view — and orderable).
+  """
+  tasks(filters: TaskFilter, ordering: [TaskOrder!]! = [], pagination: OffsetPaginationInput): [Task!]!
+
+  """How many of the caller's tasks match the filters."""
+  tasksCount(filters: TaskFilter = null): Int!
 
   """A conversation by id."""
   thread(id: ID!): Thread!
@@ -944,6 +1320,12 @@ input SetMessageFlagsInput {
   remove: [String!]! = []
 }
 
+"""Set the status of tasks (DONE records when; OPEN clears it)."""
+input SetTaskStatusInput {
+  status: TaskStatus!
+  tasks: [ID!]!
+}
+
 """Who sees a mailbox."""
 input ShareMailAccountInput {
   id: ID!
@@ -953,6 +1335,12 @@ input ShareMailAccountInput {
   """
   users: [ID!] = null
   visibility: Visibility!
+}
+
+"""Hide tasks from the active view until a time; null wakes them now."""
+input SnoozeTasksInput {
+  tasks: [ID!]!
+  until: DateTime
 }
 
 """
@@ -1004,6 +1392,197 @@ type SyncResult {
 }
 
 """
+How a message here relates to the server. SYNCED: As the server has it; PENDING: Changed here, the change is on its way to the server; LOCAL: Changed here only (the mailbox does not push it, or it was deleted here only); FAILED: A change did not reach the server (see `changes`).
+"""
+enum SyncState {
+  FAILED
+  LOCAL
+  PENDING
+  SYNCED
+}
+
+"""
+Something to do, made of mail conversations from any mailbox its owner can see. Only its owner sees it. Its status is independent of the mail: finishing a task changes no message.
+"""
+type Task {
+  """The client id of the app that created the task, if one did."""
+  appClientId: String
+
+  """When it was marked DONE."""
+  completedAt: DateTime
+
+  """When the task was created."""
+  createdAt: DateTime!
+
+  """When it is due."""
+  dueAt: DateTime
+
+  """
+  An app's own key for the task: `upsertTask` finds the task by it, so sorting again updates instead of duplicating.
+  """
+  externalKey: String
+  id: ID!
+
+  """The newest message over the task's conversations."""
+  latestMessage: Message
+
+  """
+  The task's conversations with who put them there; only those in mailboxes the caller can still see.
+  """
+  links: [TaskThread!]!
+
+  """The list it is on, if any."""
+  list: TaskList
+
+  """Free notes."""
+  notes: String!
+
+  """Pinned to the top."""
+  pinned: Boolean!
+
+  """Where the task sorts in its list."""
+  position: Float!
+
+  """Whether the task is snoozed right now."""
+  snoozed: Boolean!
+
+  """Hidden from the active view until then."""
+  snoozedUntil: DateTime
+
+  """Where the task is."""
+  status: TaskStatus!
+
+  """How many conversations the task has (visible ones)."""
+  threadCount: Int!
+
+  """
+  The task's conversations, newest first; only those in mailboxes the caller can still see.
+  """
+  threads: [Thread!]!
+
+  """What to do."""
+  title: String!
+
+  """Unread messages over the task's conversations."""
+  unreadCount: Int!
+
+  """When the task last changed."""
+  updatedAt: DateTime!
+}
+
+"""
+Something to do, made of mail threads (from any mailbox its owner can see). Personal: only its owner sees it.
+"""
+input TaskFilter {
+  AND: TaskFilter
+  DISTINCT: Boolean
+  NOT: TaskFilter
+  OR: TaskFilter
+  active: Boolean
+  dueBefore: DateTime
+  externalKey: String
+  ids: [ID!]
+  list: ID
+  noList: Boolean
+  pinned: Boolean
+  search: String
+  snoozed: Boolean
+  status: TaskStatus
+  thread: ID
+}
+
+"""
+Who put a thread into a task. USER: A person, by hand; APP: An app that sorts mail.
+"""
+enum TaskLinkSource {
+  APP
+  USER
+}
+
+"""
+A member's list of tasks (an Inbox bundle or project). Only its owner sees it.
+"""
+type TaskList {
+  """A display color (e.g. #4f86f7)."""
+  color: String!
+
+  """When the list was created."""
+  createdAt: DateTime!
+  id: ID!
+
+  """The list's name."""
+  name: String!
+
+  """How many tasks on the list are OPEN."""
+  openCount: Int!
+
+  """Where the list sorts among the owner's lists."""
+  position: Float!
+
+  """The tasks on the list."""
+  tasks(filters: TaskFilter, ordering: [TaskOrder!]! = [], pagination: OffsetPaginationInput): [Task!]!
+}
+
+"""
+A member's list of tasks (an Inbox "bundle" or project). Personal: only its owner sees it.
+"""
+input TaskListFilter {
+  AND: TaskListFilter
+  DISTINCT: Boolean
+  NOT: TaskListFilter
+  OR: TaskListFilter
+  ids: [ID!]
+  search: String
+}
+
+input TaskOrder @oneOf {
+  createdAt: Ordering
+  dueAt: Ordering
+  position: Ordering
+  title: Ordering
+  updatedAt: Ordering
+}
+
+"""
+Where a task is. OPEN: To do; DONE: Done; DISMISSED: Dropped without doing it.
+"""
+enum TaskStatus {
+  DISMISSED
+  DONE
+  OPEN
+}
+
+"""
+A conversation in a task: who put it there, and (for an app) how sure it was and why.
+"""
+type TaskThread {
+  """The client id of the app the link was made from, if any."""
+  appClientId: String
+
+  """An app's confidence (0–1) that the thread belongs here."""
+  confidence: Float
+
+  """When the thread was put into the task."""
+  createdAt: DateTime!
+  id: ID!
+
+  """Where the thread sorts within the task."""
+  position: Float!
+
+  """Why the thread belongs here, in words."""
+  reason: String!
+
+  """Who put the thread into the task."""
+  source: TaskLinkSource!
+
+  """The task."""
+  task: Task!
+
+  """The conversation."""
+  thread: Thread!
+}
+
+"""
 A conversation: messages linked by In-Reply-To/References, across the mailbox's folders.
 """
 type Thread {
@@ -1037,6 +1616,9 @@ type Thread {
   """The subject without Re:/Fwd: prefixes."""
   subject: String!
 
+  """The caller's tasks this conversation is in."""
+  tasks: [Task!]!
+
   """Whether a message of the conversation is unread."""
   unread: Boolean!
 
@@ -1053,22 +1635,69 @@ input ThreadFilter {
   NOT: ThreadFilter
   OR: ThreadFilter
   account: ID
+  category: ID
   flagged: Boolean
   folder: ID
   folderRole: FolderRole
   hasAttachments: Boolean
+  hasTask: Boolean
   ids: [ID!]
 
   """
   Only conversations with a message matching the text: the same substring and meaning search as `messages(filters: {search})`.
   """
   search: String
+  task: ID
   unread: Boolean
+}
+
+"""How a conversation is put into a task."""
+input ThreadLinkInput {
+  """An app's confidence, 0–1."""
+  confidence: Float = null
+
+  """Why the conversation belongs here."""
+  reason: String! = ""
+
+  """APP when an app sorted it; USER when a person did."""
+  source: TaskLinkSource! = USER
 }
 
 input ThreadOrder @oneOf {
   lastMessageAt: Ordering
   messageCount: Ordering
+}
+
+"""
+Take back changes that have not reached the server: by change, or every one of some messages.
+"""
+input UndoMailChangesInput {
+  changes: [ID!] = null
+  messages: [ID!] = null
+}
+
+"""Take conversations out of a task."""
+input UnlinkThreadsInput {
+  task: ID!
+  threads: [ID!]!
+}
+
+"""Changes to a category."""
+input UpdateCategoryInput {
+  color: String = null
+  id: ID!
+
+  """
+  A new keyword; a KEYWORD category's messages are re-keyed on the server.
+  """
+  keyword: String = null
+  name: String = null
+
+  """KEYWORD → LOCAL: also take the keyword off the messages on the server."""
+  removeKeywords: Boolean! = false
+
+  """Move the category between LOCAL and KEYWORD; its messages stay in it."""
+  sync: CategorySync = null
 }
 
 """
@@ -1086,6 +1715,25 @@ input UpdateMailAccountInput {
   name: String
   password: String
   popLeaveOnServer: Boolean
+
+  """Push deletes. Off only hides deleted mail here."""
+  pushDeletes: Boolean
+
+  """Push flagging to the server. Off keeps it here."""
+  pushFlagged: Boolean
+
+  """Push keywords (KEYWORD categories) to the server. Off keeps them here."""
+  pushKeywords: Boolean
+
+  """
+  Push moves and archiving. Off refuses moves (a folder only exists on the server).
+  """
+  pushMoves: Boolean
+
+  """
+  Push read/unread to the server. Off keeps it here; turning it on pushes what was kept.
+  """
+  pushSeen: Boolean
   saveSentCopy: Boolean
   smtp: ServerInput
   smtpPassword: String
@@ -1099,6 +1747,41 @@ input UpdateMailFolderInput {
 
   """Whether syncs read the folder. Turning it off keeps what is stored."""
   syncEnabled: Boolean!
+}
+
+"""Changes to a task; omitted fields stay as they are."""
+input UpdateTaskInput {
+  dueAt: DateTime
+  id: ID!
+
+  """Another list; null takes it off its list."""
+  list: ID
+  notes: String
+  pinned: Boolean
+  position: Float
+  title: String
+}
+
+"""Changes to a task list; omitted fields stay as they are."""
+input UpdateTaskListInput {
+  color: String
+  id: ID!
+  name: String
+  position: Float
+}
+
+"""
+Create or update the caller's task with this `externalKey` (an app's idempotent sort call). Omitted fields keep their value on update; `threads` are added (never removed).
+"""
+input UpsertTaskInput {
+  dueAt: DateTime
+  externalKey: String!
+  link: ThreadLinkInput = null
+  list: ID
+  notes: String
+  pinned: Boolean
+  threads: [ID!]! = []
+  title: String!
 }
 
 """
@@ -1121,7 +1804,7 @@ enum Visibility {
 
 scalar _Any
 
-union _Entity = Attachment | BigFileStore | MailAccount | MailFolder | Message | Organization | OutgoingMessage | Thread | User
+union _Entity = Attachment | BigFileStore | Category | MailAccount | MailChange | MailFolder | Message | Organization | OutgoingMessage | Task | TaskList | TaskThread | Thread | User
 
 type _Service {
   sdl: String!

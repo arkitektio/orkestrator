@@ -1,0 +1,66 @@
+mutation CreateTask($input: CreateTaskInput!) {
+  createTask(input: $input) {
+    ...ListTask
+  }
+}
+
+mutation UpdateTask($input: UpdateTaskInput!) {
+  updateTask(input: $input) {
+    ...ListTask
+  }
+}
+
+mutation DeleteTask($id: ID!) {
+  deleteTask(id: $id)
+}
+
+mutation SetTaskStatus($input: SetTaskStatusInput!) {
+  setTaskStatus(input: $input) {
+    ...ListTask
+  }
+}
+
+mutation SnoozeTasks($input: SnoozeTasksInput!) {
+  snoozeTasks(input: $input) {
+    ...ListTask
+  }
+}
+
+mutation LinkThreads($input: LinkThreadsInput!) {
+  linkThreads(input: $input) {
+    id
+    task {
+      id
+      threadCount
+      unreadCount
+    }
+    thread {
+      id
+      tasks {
+        ...TaskChip
+      }
+    }
+  }
+}
+
+mutation UnlinkThreads($input: UnlinkThreadsInput!) {
+  unlinkThreads(input: $input) {
+    ...ListTask
+  }
+}
+
+mutation CreateTaskList($input: CreateTaskListInput!) {
+  createTaskList(input: $input) {
+    ...ListTaskList
+  }
+}
+
+mutation UpdateTaskList($input: UpdateTaskListInput!) {
+  updateTaskList(input: $input) {
+    ...ListTaskList
+  }
+}
+
+mutation DeleteTaskList($id: ID!) {
+  deleteTaskList(id: $id)
+}

@@ -1,9 +1,12 @@
 import { useDialog } from "@/core/dialogs/registry";
+import { useNavigate } from "react-router-dom";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/core/ui/alert";
 import { Button } from "@/core/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { AuthMethod, ListMailAccountFragment, MailAccountStatus, MailErrorCode } from "../api/graphql";
 import { describeError } from "../errors";
+import { MailAccount } from "../linkers";
+import { LOGIN_ANCHOR } from "./settings/anchors";
 
 type Account = Pick<
   ListMailAccountFragment,
@@ -13,6 +16,7 @@ type Account = Pick<
 /** The one thing that gets a mailbox working again: sign in again (OAuth) or new credentials. */
 export const useRelink = () => {
   const { openDialog } = useDialog();
+  const navigate = useNavigate();
   return (account: Account) =>
     account.authMethod === AuthMethod.Xoauth2
       ? openDialog(
@@ -20,7 +24,7 @@ export const useRelink = () => {
           { relink: account.id, provider: account.provider, address: account.emailAddress },
           { size: "medium" },
         )
-      : openDialog("kuverteditaccount", { id: account.id }, { size: "medium" });
+      : navigate(`${MailAccount.linkBuilder(account.id)}#${LOGIN_ANCHOR}`);
 };
 
 /**

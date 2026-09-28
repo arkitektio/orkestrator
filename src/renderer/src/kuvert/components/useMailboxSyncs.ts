@@ -2,6 +2,7 @@ import { useKuvert } from "../api/funcs";
 import {
   GetMailAccountDocument,
   GetMailFolderDocument,
+  ListMailChangesDocument,
   ListMessagesDocument,
   ListThreadsDocument,
   MailboxTreeDocument,
@@ -20,7 +21,15 @@ export const useMailboxSyncs = () => {
       const sync = event.data?.mailboxSyncs;
       if (!sync || sync.created + sync.updated + sync.deleted === 0) return;
       void client.refetchQueries({
-        include: [ListThreadsDocument, ListMessagesDocument, MailboxTreeDocument, GetMailAccountDocument, GetMailFolderDocument],
+        include: [
+          ListThreadsDocument,
+          ListMessagesDocument,
+          MailboxTreeDocument,
+          GetMailAccountDocument,
+          GetMailFolderDocument,
+          // A sync also pushes what was queued here.
+          ListMailChangesDocument,
+        ],
       });
     },
   });
