@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { RekuestDashboard } from "@/linkers";
+import { ListRender } from "@/core/layout/ListRender";
+import { RekuestDashboard } from "@/core/linkers";
 import {
   AgentFilter,
   OffsetPaginationInput,

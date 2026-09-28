@@ -5,9 +5,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { DialogButton } from "@/components/ui/dialogbutton";
-import { RekuestImplementation } from "@/linkers";
+} from "@/core/ui/card";
+import { DialogButton } from "@/core/ui/dialogbutton";
+import { RekuestImplementation } from "@/core/linkers";
 
 
 import {

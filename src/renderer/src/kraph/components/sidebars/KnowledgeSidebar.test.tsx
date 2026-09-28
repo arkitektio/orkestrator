@@ -6,11 +6,12 @@ const knowledge = vi.fn();
 const informing = vi.fn();
 const me = vi.fn();
 
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Guard: { Lok: ({ children }: { children: React.ReactNode }) => <>{children}</> },
   useKraph: () => ({}),
 }));
-vi.mock("@/lok-next/api/graphql", () => ({ useMeQuery: () => me() }));
+vi.mock("@/core/connection/useSelf", () => ({ useSelf: () => me() }));
 vi.mock("@/kraph/api/graphql", () => ({
   InstanceKind: { Entity: "ENTITY" },
   TermKind: { Entity: "ENTITY" },
@@ -20,17 +21,17 @@ vi.mock("@/kraph/api/graphql", () => ({
   useSearchAssignableTermsQuery: () => ({ data: { terms: [] }, loading: false }),
   useInformingStructuresQuery: (o: unknown) => informing(o),
 }));
-vi.mock("@/hooks/use-debounce", () => ({ useDebounce: (v: unknown) => v }));
+vi.mock("@/core/util/hooks/use-debounce", () => ({ useDebounce: (v: unknown) => v }));
 // Surfaces with their own plumbing: the discussion, the drop zone, the drag
 // target, the measurement button and the evidence popover.
 vi.mock("../komments/Komments", () => ({ Komments: () => <div data-testid="komments" /> }));
-vi.mock("@/providers/smart/Drop", () => ({
+vi.mock("@/core/smart/Drop", () => ({
   SmartDropZone: ({ children }: { children: React.ReactNode }) => <div data-testid="dropzone">{children}</div>,
 }));
 vi.mock("../knowledge/SameAsDropTarget", () => ({
   SameAsDropTarget: ({ term }: { term: string }) => <div data-testid="same-as-drop">{term}</div>,
 }));
-vi.mock("@/rekuest/buttons/ObjectButton", () => ({
+vi.mock("@/core/smart/ObjectButton", () => ({
   ObjectButton: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 vi.mock("@/kraph/components/AssertionEvidence", () => ({ AssertionEvidence: () => null }));
@@ -38,12 +39,12 @@ vi.mock("@/kraph/components/EntityAssigner", () => ({ EntityAssigner: () => <div
 vi.mock("@/kraph/components/tables/MetricsTable", () => ({
   MetricsTable: ({ metrics }: { metrics: unknown[] }) => <div data-testid="metrics">{metrics.length}</div>,
 }));
-vi.mock("@/command/Menu", () => ({
-  DisplayWidget: ({ identifier, object }: { identifier: string; object: string }) => (
-    <span data-testid="display">{identifier}:{object}</span>
+vi.mock("@/core/command/Menu", () => ({
+  DisplayWidget: ({ identifier, id }: { identifier: string; id: string }) => (
+    <span data-testid="display">{identifier}:{id}</span>
   ),
 }));
-vi.mock("@/linkers", () => {
+vi.mock("@/core/linkers", () => {
   const link =
     (name: string) =>
     ({ object, scope, children }: { object: { id: string }; scope?: string; children: React.ReactNode }) => (
@@ -78,7 +79,7 @@ beforeEach(() => {
   knowledge.mockReset();
   informing.mockReset();
   me.mockReset();
-  me.mockReturnValue({ data: { me: { id: "user-1" } } });
+  me.mockReturnValue({ userId: "user-1", username: "ada" });
   informing.mockReturnValue({ data: { informingStructures: [] }, loading: false });
 });
 
@@ -166,7 +167,7 @@ describe("KnowledgeSidebar", () => {
   });
 
   it("does not mark someone else's claim as yours", () => {
-    me.mockReturnValue({ data: { me: { id: "user-2" } } });
+    me.mockReturnValue({ userId: "user-2", username: "grace" });
     knowledge.mockReturnValue({
       data: { structureByIdentifier: { metrics: [], informs: [instance("i1", "AIS")] } },
       loading: false,

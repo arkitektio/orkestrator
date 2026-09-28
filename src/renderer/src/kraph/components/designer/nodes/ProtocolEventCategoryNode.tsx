@@ -1,10 +1,10 @@
-import { Image } from "@/components/ui/image";
-import { KraphProtocolEventCategory } from "@/linkers";
+import { Image } from "@/core/ui/image";
+import { KraphProtocolEventCategory } from "@/core/linkers";
 import { NodeProps, NodeResizer } from "@xyflow/react";
 import { memo } from "react";
 import { Handles } from "../components/Handles";
 import { ProtocolEventNode } from "../types";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const ProtocolEventCategoryNode = memo(({ data, id, selected }: NodeProps<ProtocolEventNode>) => {
   return (

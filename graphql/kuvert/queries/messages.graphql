@@ -1,0 +1,15 @@
+query ListMessages(
+  $filters: MessageFilter
+  $ordering: [MessageOrder!]! = []
+  $pagination: OffsetPaginationInput
+) {
+  messages(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListMessage
+  }
+}
+
+query GetMessage($id: ID!, $allowRemote: Boolean! = false) {
+  message(id: $id) {
+    ...Message
+  }
+}

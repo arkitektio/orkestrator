@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { KraphGraphQuery } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { KraphGraphQuery } from "@/core/linkers";
 import {
   useGetGraphQuery,
   useGetGraphTableQueryQuery,

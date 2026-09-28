@@ -1,17 +1,17 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/core/ui/button";
+import { Card } from "@/core/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { RekuestAgent } from "@/linkers";
-import { useSmartDrop } from "@/providers/smart/hooks";
+} from "@/core/ui/dialog";
+import { Input } from "@/core/ui/input";
+import { RekuestAgent } from "@/core/linkers";
+import { useSmartDrop } from "@/core/smart/hooks";
 import MaterializedBlokRenderer from "@/rekuest/components/MaterializedBlokRenderer";
-import type { Structure } from "@/types";
+import type { Structure } from "@/core/types";
 import {
   Direction,
   DockviewApi,
@@ -34,7 +34,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   type DashboardFragment,
   MaterializedBlokFragment,
@@ -82,7 +82,7 @@ const isStructure = (value: unknown): value is Structure => {
 const isDroppedAgent = (
   structure: Structure,
 ): structure is Structure & { object: DroppedAgent } => {
-  return structure.identifier === RekuestAgent.identifier && typeof structure.object?.id === "string";
+  return structure.identifier === RekuestAgent.identifier && typeof structure.id === "string";
 };
 
 const parseStructureFromText = (value: string): Structure | null => {

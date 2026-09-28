@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { bindFields } from "@/lib/scene/stores/bindStore";
-import { createRafCoalescer } from "@/lib/scene/perf/rafCoalesce";
+import { bindFields } from "@/core/data/scene/stores/bindStore";
+import { createRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import { pixelAtTime } from "../../platform/camera/rangeToCamera";
 import { timeTicks } from "../../platform/camera/timeTicks";
 import { timeAxis } from "../../platform/coords/timeAxis";

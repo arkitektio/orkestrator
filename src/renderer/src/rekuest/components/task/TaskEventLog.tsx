@@ -1,8 +1,8 @@
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { ReturnsContainer } from "@/components/widgets/returns/ReturnsContainer";
-import { RekuestTask, RekuestImplementation, RekuestAgent } from "@/linkers";
+import { cn } from "@/core/util/utils";
+import { Badge } from "@/core/ui/badge";
+import { Progress } from "@/core/ui/progress";
+import { ReturnsContainer } from "@/core/ports/widgets/returns/ReturnsContainer";
+import { RekuestTask, RekuestImplementation, RekuestAgent } from "@/core/linkers";
 import {
   TaskEventFragment,
   TaskEventKind,
@@ -13,8 +13,8 @@ import {
 import { UnknownReturnWidget } from "@/app/shadCnWidgetRegistry";
 import { Clock } from "lucide-react";
 import { ReactNode, memo, useEffect, useMemo, useState } from "react";
-import Timestamp from "@/components/ui/timestamp";
-import { useWidgetRegistry } from "../../widgets/WidgetsContext";
+import Timestamp from "@/core/ui/timestamp";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { deriveLiveState } from "../../hooks/useTasks";
 import { isTerminalEvent } from "../../lib/taskTracker";
 import {

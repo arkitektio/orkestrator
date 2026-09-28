@@ -1,5 +1,5 @@
-import { TimeBucketChart } from "@/components/charts/TimeBucketChart";
-import { useNearViewport } from "@/lib/datalayer/useNearViewport";
+import { TimeBucketChart } from "@/rekuest/components/charts/TimeBucketChart";
+import { useNearViewport } from "@/core/data/s3/useNearViewport";
 import { Activity, Zap } from "lucide-react";
 import { useMemo, useRef } from "react";
 import {

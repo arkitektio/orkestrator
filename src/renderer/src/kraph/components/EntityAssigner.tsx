@@ -1,19 +1,19 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/hooks/use-debounce";
+} from "@/core/ui/command";
+import { Input } from "@/core/ui/input";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
 import {
   useSearchLinkableCategoriesQuery,
   useSearchLinkableEntitiesQuery,
 } from "@/kraph/api/graphql";
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/util/utils";
 import { ChevronLeft, X } from "lucide-react";
 import { useState } from "react";
 

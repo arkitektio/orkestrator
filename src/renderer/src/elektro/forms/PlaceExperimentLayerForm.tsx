@@ -1,12 +1,12 @@
-import { Guard } from "@/app/Arkitekt";
-import { useDialog } from "@/app/dialog";
-import { Button } from "@/components/ui/button";
-import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/hooks/use-debounce";
-import { cn } from "@/lib/utils";
+import { ElektroGuard } from "@/elektro/api/funcs";
+import { useDialog } from "@/core/dialogs/registry";
+import { Button } from "@/core/ui/button";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import { Input } from "@/core/ui/input";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
+import { cn } from "@/core/util/utils";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   useClockPickerQuery,
   useCreateClockOffsetMutation,
@@ -41,9 +41,9 @@ const hasTime = (system: { axes: { type?: string | null }[] }) => system.axes.so
  * guards Rekuest, and these queries run on mount.
  */
 export const PlaceExperimentLayerForm = (props: PlaceExperimentLayerFormProps) => (
-  <Guard.Elektro unavailable={<div className="p-4 text-sm">Elektro is not available.</div>}>
+  <ElektroGuard unavailable={<div className="p-4 text-sm">Elektro is not available.</div>}>
     <PlaceExperimentLayer {...props} />
-  </Guard.Elektro>
+  </ElektroGuard>
 );
 
 const PlaceExperimentLayer = ({ source, world, worldName, label }: PlaceExperimentLayerFormProps) => {

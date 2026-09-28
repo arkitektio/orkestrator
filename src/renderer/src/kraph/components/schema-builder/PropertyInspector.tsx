@@ -1,16 +1,16 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/core/ui/alert";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
+import { Label } from "@/core/ui/label";
+import { ScrollArea } from "@/core/ui/scroll-area";
+import { Switch } from "@/core/ui/switch";
+import { Textarea } from "@/core/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/core/ui/tooltip";
 import { AlertCircle, CircleHelp, InfoIcon, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { DataTypeSelector } from "./DataTypeSelector";

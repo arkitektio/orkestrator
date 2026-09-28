@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {normalizeBlokComponentTree, type BlokComponentTreeConversion} from '@/blok/renderer/runtime';
+import {normalizeBlokComponentTree, type BlokComponentTreeConversion} from '@/core/blok/renderer/runtime';
 
 /**
  * Bridges the typed `Blok.components` GraphQL tree to the blok runtime's

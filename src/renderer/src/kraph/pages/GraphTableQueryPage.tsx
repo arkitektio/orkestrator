@@ -1,13 +1,13 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageAction } from "@/components/ui/page-action";
-import { KraphGraph, KraphGraphQuery, KraphGraphView } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageAction } from "@/core/ui/page-action";
+import { KraphGraph, KraphGraphQuery, KraphGraphView } from "@/core/linkers";
 import {
   useGetGraphTableQueryQuery,
 } from "../api/graphql";
 
-import { FormDialog } from "@/components/dialog/FormDialog";
-import { Card } from "@/components/ui/card";
+import { FormDialog } from "@/core/dialogs/FormDialog";
+import { Card } from "@/core/ui/card";
 import { Plus } from "lucide-react";
 import ScatterPlotCard from "../components/cards/ScatterPlotCard";
 import { RenderGraphQueryTable } from "../components/renderers/table/GraphTable";

@@ -1,4 +1,4 @@
-import { RekuestToolbox } from "@/linkers";
+import { RekuestToolbox } from "@/core/linkers";
 import ToolboxList from "../components/lists/ToolboxList";
 
 const Page = () => {

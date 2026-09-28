@@ -1,0 +1,12 @@
+fragment Attachment on Attachment {
+  id
+  position
+  filename
+  contentType
+  size
+  contentId
+  inline
+  store {
+    id
+  }
+}

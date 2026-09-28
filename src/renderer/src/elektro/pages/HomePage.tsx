@@ -1,18 +1,18 @@
-import { asParamlessRoute, HookFunction } from "@/app/routes/ParamlessRoute";
+import { asParamlessRoute, HookFunction } from "@/core/layout/routes/ParamlessRoute";
 import { OperationVariables } from "@apollo/client";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { HelpSidebar } from "@/components/sidebars/help";
-import { Badge } from "@/components/ui/badge";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { HelpSidebar } from "@/core/layout/help";
+import { Badge } from "@/core/ui/badge";
 import {
   ActionLabel,
   ActionTrigger,
   PageAction,
-} from "@/components/ui/page-action";
-import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CollapsibleSearch } from "@/components/ui/collapsible-search";
-import { useDebounce } from "@/hooks/use-debounce";
-import { DateTimeRangePicker } from "@/components/ui/date-time-range-picker";
+} from "@/core/ui/page-action";
+import { CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
+import { CollapsibleSearch } from "@/core/ui/collapsible-search";
+import { useDebounce } from "@/core/util/hooks/use-debounce";
+import { DateTimeRangePicker } from "@/core/ui/date-time-range-picker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,8 +21,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
+} from "@/core/ui/dropdown-menu";
+import { Separator } from "@/core/ui/separator";
 import {
   ArrowDownWideNarrow,
   ArrowUpDown,
@@ -37,7 +37,7 @@ import {
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
-} from "@/hooks/use-search-param-state";
+} from "@/core/util/hooks/use-search-param-state";
 import { HomePageQuery, Ordering, useHomePageQuery } from "../api/graphql";
 import ExperimentList from "../components/lists/ExperimentList";
 import NeuronModelList from "../components/lists/NeuronModelList";

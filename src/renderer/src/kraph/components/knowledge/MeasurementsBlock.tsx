@@ -1,8 +1,8 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/ui/button";
 import type { KnowledgeStructureFragment } from "@/kraph/api/graphql";
 import { MetricsTable } from "@/kraph/components/tables/MetricsTable";
-import { ObjectButton } from "@/rekuest/buttons/ObjectButton";
-import type { Identifier, Object } from "@/types";
+import { ObjectButton } from "@/core/smart/ObjectButton";
+import type { Identifier, Object } from "@/core/types";
 import { Microscope } from "lucide-react";
 
 export type MeasurementsBlockProps = {
@@ -23,7 +23,7 @@ export const MeasurementsBlock = ({
     <div className="flex flex-row items-center justify-between gap-2">
       <div className="text-sm font-semibold">Measurements</div>
       <ObjectButton
-        objects={[{ identifier, object }]}
+        objects={[{ identifier, id: object.id }]}
         sections={{ exclude: ["kraph"] }}
         expect={["@mikro/metric"]}
         onDone={onChanged}

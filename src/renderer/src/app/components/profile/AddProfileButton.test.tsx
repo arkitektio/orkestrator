@@ -11,24 +11,25 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const URL = "https://go.arkitekt.live/configure/abc";
 const connect = vi.fn();
 
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: {
     useConnect: () => connect,
     useAutoLoginError: () => undefined,
   },
 }));
-vi.mock("@/lib/arkitekt/fakts/discover", () => ({
+vi.mock("@/core/connection/arkitekt/fakts/discover", () => ({
   discover: vi.fn(async () => ({ base_url: "https://go.arkitekt.live/lok/f/" })),
 }));
-vi.mock("@/lib/arkitekt/fakts/popout", () => ({
+vi.mock("@/core/connection/arkitekt/fakts/popout", () => ({
   popOutWindowOpen: vi.fn(async () => ({ close: async () => {} })),
 }));
-vi.mock("@/app/components/doctor/ConnectionDoctor", () => ({
+vi.mock("@/core/connection/ui/doctor/ConnectionDoctor", () => ({
   ConnectionDoctorSheet: () => <div>doctor</div>,
 }));
 
 const { AddProfileButton } = await import("./AddProfileButton");
-const { popOutWindowOpen } = await import("@/lib/arkitekt/fakts/popout");
+const { popOutWindowOpen } = await import("@/core/connection/arkitekt/fakts/popout");
 
 /** A grant that has opened the browser and waits until its controller is aborted. */
 const pendingGrant = () =>

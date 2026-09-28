@@ -1,18 +1,18 @@
-import { Arkitekt } from "@/app/Arkitekt";
-import { ArkitektLogo } from "@/app/components/logos/ArkitektLogo";
-import { Button } from "@/components/ui/button";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { ArkitektLogo } from "@/core/ui/logos/ArkitektLogo";
+import { Button } from "@/core/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@/core/ui/collapsible";
 import { ChevronDown, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { AddProfileButton } from "@/app/components/profile/AddProfileButton";
 import { ProfileCards } from "@/app/components/profile/ProfileCards";
-import { ConnectionDoctorSheet } from "@/app/components/doctor/ConnectionDoctor";
-import { DEFAULT_COORDINATION_SERVER_HOST, DEFAULT_COORDINATION_SERVER_URL } from "@/constants";
-import { endpointToProbeTargets } from "@/lib/arkitekt/doctor/targets";
+import { ConnectionDoctorSheet } from "@/core/connection/ui/doctor/ConnectionDoctor";
+import { DEFAULT_COORDINATION_SERVER_HOST, DEFAULT_COORDINATION_SERVER_URL } from "@/core/constants";
+import { endpointToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
 import { CustomEndpointSheet } from "./CustomEndpointSheet";
 
 /**

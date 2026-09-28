@@ -1,0 +1,18 @@
+query ListMailFolders($filters: MailFolderFilter, $pagination: OffsetPaginationInput) {
+  mailFolders(filters: $filters, pagination: $pagination) {
+    ...MailFolder
+  }
+}
+
+query GetMailFolder($id: ID!) {
+  mailFolder(id: $id) {
+    ...DetailMailFolder
+  }
+}
+
+query SearchMailFolders($account: ID, $search: String, $values: [ID!]) {
+  options: mailFolders(filters: { account: $account }, pagination: { limit: 200 }) {
+    value: id
+    label: path
+  }
+}

@@ -1,15 +1,15 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Timestamp from "@/components/ui/timestamp";
-import { KabinetApp, KabinetFlavour, KabinetRelease } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Badge } from "@/core/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
+import Timestamp from "@/core/ui/timestamp";
+import { KabinetApp, KabinetFlavour, KabinetRelease } from "@/core/linkers";
 import { Boxes, Container, GitBranch, KeyRound, Layers, Server } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";
 import { PodStatus, useGetFlavourQuery } from "../api/graphql";
 import { logoFor, releaseIdentity } from "../appIdentity";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import { AccessTab, ActionsTab, Fact } from "../components/AppTabs";
-import { InstallMenu, SelectorBadges } from "../components/store/StoreParts";
+import { InstallButton, SelectorBadges } from "../components/store/StoreParts";
 
 /**
  * The hero mark is the one live WebGL context on this page, and only for an app
@@ -192,7 +192,12 @@ export const FlavourPage = asDetailQueryRoute(useGetFlavourQuery, ({ data }) => 
                   </div>
                 </div>
               </div>
-              <InstallMenu flavours={[flavour]} size="lg" className="px-5" />
+              <InstallButton
+                release={flavour.release}
+                size="lg"
+                className="px-5"
+                label={`Install v${flavour.release.version}`}
+              />
             </div>
             <div className="flex flex-wrap items-center gap-y-3">
               <Fact label="Actions" value={flavour.definitions.length} />

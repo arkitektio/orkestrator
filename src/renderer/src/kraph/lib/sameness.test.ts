@@ -15,7 +15,7 @@ import {
 
 const datum = (id: string, identifier = "@mikro/file") => ({
   identifier,
-  object: { id },
+  id,
 });
 
 const instance = (

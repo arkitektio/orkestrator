@@ -8,10 +8,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+} from "@/core/ui/alert-dialog";
+import { Button } from "@/core/ui/button";
 import { Eraser } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useCleanupActionsMutation } from "../api/graphql";
 
 /**

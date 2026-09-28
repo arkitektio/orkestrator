@@ -1,4 +1,4 @@
-import { ListRender } from "@/components/layout/ListRender";
+import { ListRender } from "@/core/layout/ListRender";
 import {
   OffsetPaginationInput,
   ScatterPlotFilter,

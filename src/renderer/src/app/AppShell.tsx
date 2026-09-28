@@ -1,15 +1,15 @@
-import { LinkContextMenu } from "@/command/tabs/LinkContextMenu";
-import { TabOutlet } from "@/command/tabs/TabOutlet";
-import { PageCorner } from "./components/debug/PageCorner";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { WelcomeLayout } from "@/components/layout/WelcomeLayout";
+import { LinkContextMenu } from "@/core/tabs/LinkContextMenu";
+import { TabOutlet } from "@/core/tabs/TabOutlet";
+import { PageCorner } from "../core/debug/ui/PageCorner";
+import { AppLayout } from "@/app/layout/AppLayout";
+import { WelcomeLayout } from "@/app/layout/WelcomeLayout";
 
 import { Arkitekt } from "./Arkitekt";
 import { AppRoutes } from "./AppRoutes";
 import { NotConnected } from "./components/fallbacks/NotConnected";
-import { QuietPage } from "./components/fallbacks/QuietPage";
+import { QuietPage } from "../core/layout/fallbacks/QuietPage";
 import { PrivateNavigationBar } from "./components/navigation/PrivateNavigationBar";
-import { ShellSignInNotice } from "./components/shell/ShellSignInNotice";
+import { ShellSignInNotice } from "../core/connection/ui/ShellSignInNotice";
 
 /**
  * Which chrome the window wears, and what is inside it.

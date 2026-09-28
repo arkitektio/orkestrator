@@ -6,6 +6,7 @@
  *   renderer ──ipc invoke──► main : ProbeTarget[]      ("doctor:probeNetwork")
  *   renderer ──ipc invoke──► main : (nothing)          ("doctor:probeMesh")
  *   renderer ──ipc invoke──► main : RemedyId           ("doctor:runRemedy")
+ *   renderer ──ipc invoke──► main : (nothing)          ("doctor:probeInterfaces")
  *
  * Main answers with STAGE-SHAPED results and no opinions. Every judgement —
  * "this is a tailnet address", "you are signed out of Tailscale" — is made by
@@ -19,6 +20,7 @@
 export const DOCTOR_NETWORK_CHANNEL = "doctor:probeNetwork";
 export const DOCTOR_MESH_CHANNEL = "doctor:probeMesh";
 export const DOCTOR_REMEDY_CHANNEL = "doctor:runRemedy";
+export const DOCTOR_INTERFACES_CHANNEL = "doctor:probeInterfaces";
 
 /** Main refuses more than this per call; the renderer batches to match. */
 export const DOCTOR_MAX_TARGETS = 12;
@@ -162,6 +164,19 @@ export type MeshProbeResult =
       self?: MeshNode;
       peers: MeshNode[];
     };
+
+/**
+ * A tunnel interface that is up on this computer: a VPN, WireGuard, or a
+ * system Tailscale. Presence only — whether a given request travels through
+ * it is the OS's routing decision, which this does not ask.
+ */
+export type VpnInterface = {
+  /** The OS's name for it: `utun4`, `wg0`, "OpenVPN TAP-Windows6". */
+  name: string;
+  /** Its IPv4 addresses (link-local and loopback already dropped). */
+  addresses: string[];
+  kind: "tailscale" | "wireguard" | "vpn";
+};
 
 /**
  * The closed set of things the doctor may DO. A remedy is an id, never a

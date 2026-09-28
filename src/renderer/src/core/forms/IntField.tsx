@@ -1,0 +1,44 @@
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/core/ui/form";
+import { Input } from "@/core/ui/input";
+import { useFormContext } from "react-hook-form";
+import { FieldProps } from "./types";
+
+export const IntField = (props: FieldProps & { placeholder?: string }) => {
+  const form = useFormContext();
+
+  return (
+    <FormField
+      control={form.control}
+      name={props.name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>
+            {props.label != undefined ? props.label : props.name}
+          </FormLabel>
+          <FormControl>
+            <Input
+              placeholder={
+                props.placeholder ? props.placeholder : "Enter Number"
+              }
+              {...field}
+              onChange={(e) => {
+                field.onChange(e);
+              }}
+              type="string"
+              className="w-full text-foreground"
+            />
+          </FormControl>
+          <FormDescription>{props.description}</FormDescription>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+};

@@ -1,6 +1,6 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RekuestAction, RekuestImplementation } from "@/linkers";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
+import { RekuestAction, RekuestImplementation } from "@/core/linkers";
 import {
   ActionTestCaseFragment,
   DetailActionFragment,

@@ -1,0 +1,41 @@
+fragment Balance on BalanceSnapshot {
+  id
+  date
+  balanceType
+  amount
+  currency
+}
+
+fragment ListBankAccount on BankAccount {
+  id
+  iban
+  name
+  kind
+  currency
+  product
+  lastSyncedAt
+  lastError
+  lastErrorCode
+  isSyncing
+  nextSyncAllowedAt
+  syncsRemainingToday
+  latestBalance {
+    ...Balance
+  }
+  connection {
+    id
+    aspspName
+    aspspCountry
+    provider
+    status
+    needsReauth
+  }
+}
+
+fragment BankAccount on BankAccount {
+  ...ListBankAccount
+  createdAt
+  currentHoldings {
+    ...Holding
+  }
+}

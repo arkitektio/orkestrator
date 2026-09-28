@@ -1,14 +1,14 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageAction } from "@/components/ui/page-action";
-import { Card } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
-import { KraphTerm } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageAction } from "@/core/ui/page-action";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
+import { KraphTerm } from "@/core/linkers";
 import { useGetTermQuery } from "../api/graphql";
 import UpdateTermForm from "../forms/UpdateTermForm";
 import { termKindLabel, termTint } from "../lib/terms";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 const Page = asDetailQueryRoute(useGetTermQuery, ({ data, refetch }) => {
   const term = data.term;

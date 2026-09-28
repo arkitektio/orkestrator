@@ -241,6 +241,41 @@ input CreateInviteInput {
   roles: [String!] = null
 }
 
+"""
+Pre-authorize an agent app to provision clients of a subject app that act as you.
+"""
+input CreateMandateInput {
+  """Identifier of the app allowed to provision (e.g. a deployer)."""
+  agent: String!
+
+  """Only an agent running on this device may provision."""
+  agentDeviceId: String = null
+
+  """Only an agent acting as this user may provision."""
+  agentUser: ID = null
+
+  """Opaque binding for the approving service (e.g. a release digest)."""
+  attestation: String = null
+
+  """
+  Stop new provisioning after this many days (1–365). Null means until revoked.
+  """
+  expiresInDays: Int = null
+
+  """
+  The hub provisioned clients compose against. Defaults to the calling client's hub.
+  """
+  hub: ID = null
+
+  """
+  The subject app. Its scopes and requirements are the ceiling for every provisioned client; deviceId is ignored.
+  """
+  manifest: ManifestInput!
+
+  """How many clients may exist under the mandate at once."""
+  maxClients: Int = null
+}
+
 input CreateOrganizationInput {
   description: String = null
   name: String!
@@ -627,6 +662,51 @@ input LinkingRequestInput {
   port: String!
 }
 
+"""
+A standing authorization: the grantor lets an agent app provision clients of a subject app that act as the grantor.
+"""
+type Mandate {
+  """If set, only an agent running on this device may provision."""
+  agentDevice: Device
+
+  """The app allowed to provision under this mandate."""
+  agentIdentifier: String!
+
+  """If set, only an agent acting as this user may provision."""
+  agentUser: User
+
+  """Opaque binding set by the approving service (e.g. a release digest)."""
+  attestation: String!
+
+  """The clients currently provisioned under this mandate."""
+  clients(filters: ClientFilter, ordering: [ClientOrdering!]! = [], pagination: OffsetPaginationInput): [Client!]!
+  createdAt: DateTime!
+
+  """After this, no new clients may be provisioned."""
+  expiresAt: DateTime
+
+  """The user the provisioned clients act as."""
+  grantor: User!
+
+  """The hub provisioned clients compose against."""
+  hub: Hub!
+  id: ID!
+
+  """Whether the agent may still provision under this mandate."""
+  isLive: Boolean!
+
+  """How many clients may be provisioned at once. Null means unlimited."""
+  maxClients: Int
+
+  """When the grantor withdrew the mandate; its clients were deleted then."""
+  revokedAt: DateTime
+
+  """
+  The approved subject: identifier, version, and the scope/requirement ceilings.
+  """
+  subjectManifest: JSON!
+}
+
 input ManifestInput {
   authors: [String!]! = []
   description: String = null
@@ -702,6 +782,7 @@ type Mutation {
   createDevelopmentalClient(input: DevelopmentClientInput!): Client!
   createGroupProfile(input: CreateGroupProfileInput!): GroupProfile!
   createInvite(input: CreateInviteInput!): Invite!
+  createMandate(input: CreateMandateInput!): Mandate!
   createOrganization(input: CreateOrganizationInput!): Organization!
   createProfile(input: CreateProfileInput!): Profile!
   createRedeemToken(input: RedeemTokenInput!): RedeemToken!
@@ -709,9 +790,12 @@ type Mutation {
   declineInvite(input: DeclineInviteInput!): Invite!
   deleteRedeemToken(input: DeleteRedeemTokenInput!): ID!
   notifyUser(input: NotifyUserInput!): Boolean!
+  provision(input: ProvisionInput!): RedeemToken!
   registerComChannel(input: RegisterComChannelInput!): ComChannel!
+  releaseMandateClient(input: ReleaseMandateClientInput!): String!
   render(input: RenderInput!): Fakt!
   requestMediaUpload(input: RequestMediaUploadInput!): PresignedPostCredentials!
+  revokeMandate(input: RevokeMandateInput!): Mandate!
   updateDevice(input: UpdateDeviceInput!): Device!
   updateGroupProfile(input: UpdateGroupProfileInput!): GroupProfile!
   updateMembershipColors(input: UpdateMembershipColorsInput!): Membership!
@@ -846,6 +930,18 @@ type Profile {
   name: String
 }
 
+"""Mint a single-use credential for one instance of a mandate's subject."""
+input ProvisionInput {
+  """
+  Unique per provisioned instance: a client's identity includes its device, so instances sharing one would replace each other.
+  """
+  deviceId: String!
+  mandate: ID!
+
+  """How long the token stays redeemable (default 60, at most 1440)."""
+  ttlMinutes: Int = null
+}
+
 type PublicSource {
   """The kind of the public source. E.g. 'github'"""
   kind: String!
@@ -891,6 +987,13 @@ type Query {
   invites(filters: InviteFilter, ordering: [InviteOrdering!]! = [], pagination: OffsetPaginationInput): [Invite!]!
   layer(id: ID!): Layer!
   layers(filters: LayerFilter, ordering: [LayerOrdering!]! = [], pagination: OffsetPaginationInput): [Layer!]!
+  mandate(id: ID!): Mandate!
+  mandateToken(id: ID!): RedeemToken!
+
+  """
+  Mandates you granted, or (as an agent app) may provision under. Org admins see all.
+  """
+  mandates(pagination: OffsetPaginationInput): [Mandate!]!
   me: User!
   message(id: ID!): SystemMessage!
   myActiveMessages: [SystemMessage!]!
@@ -932,6 +1035,9 @@ type RedeemToken {
   """When this token stops being redeemable. Null means never."""
   expiresAt: DateTime
   id: ID!
+
+  """The mandate this token was provisioned under, if any."""
+  mandate: Mandate
 
   """How many times this token may be redeemed. Null means unlimited."""
   maxRedemptions: Int
@@ -1020,6 +1126,11 @@ type Release {
   version: Version!
 }
 
+input ReleaseMandateClientInput {
+  """The OAuth client id of a client provisioned under a mandate."""
+  clientId: String!
+}
+
 input ReleaseOrdering @oneOf {
   id: Ordering
   name: Ordering
@@ -1046,6 +1157,10 @@ input RequirementInput {
   key: String!
   optional: Boolean! = false
   service: String!
+}
+
+input RevokeMandateInput {
+  id: ID!
 }
 
 """

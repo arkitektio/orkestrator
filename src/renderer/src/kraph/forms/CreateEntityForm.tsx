@@ -1,11 +1,11 @@
-import { useDialog } from "@/app/dialog";
-import { GraphQLCreatableSearchField } from "@/components/fields/GraphQLCreateableSearchField";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import { useDialog } from "@/core/dialogs/registry";
+import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   AssertEntityExistsMutationVariables,
   GetEntityCategoryDocument,

@@ -1,0 +1,67 @@
+fragment ListTaskList on TaskList {
+  id
+  name
+  color
+  position
+  openCount
+  createdAt
+}
+
+# A task as a chip (on a conversation it belongs to).
+fragment TaskChip on Task {
+  id
+  title
+  status
+  list {
+    id
+    name
+    color
+  }
+}
+
+fragment ListTask on Task {
+  id
+  title
+  notes
+  status
+  pinned
+  dueAt
+  snoozed
+  snoozedUntil
+  completedAt
+  position
+  threadCount
+  unreadCount
+  createdAt
+  updatedAt
+  externalKey
+  appClientId
+  list {
+    ...ListTaskList
+  }
+  latestMessage {
+    ...ListMessage
+  }
+}
+
+# A conversation in a task: who put it there and why. `$inFolder` / `$inRole`
+# come from ListThread (null: the whole conversation).
+fragment TaskThread on TaskThread {
+  id
+  source
+  reason
+  confidence
+  position
+  createdAt
+  appClientId
+  thread {
+    ...ListThread
+  }
+}
+
+fragment Task on Task {
+  ...ListTask
+  links {
+    ...TaskThread
+  }
+}

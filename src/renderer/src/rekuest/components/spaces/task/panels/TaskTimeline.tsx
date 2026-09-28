@@ -1,9 +1,9 @@
 import { SpaceViewStoreContext, useSpaceViewStore } from '../store'
 import { TaskEventKind, useNoChildrenDetailTaskQuery } from '@/rekuest/api/graphql'
-import { ReturnsContainer } from '@/components/widgets/returns/ReturnsContainer'
-import { useWidgetRegistry } from '@/rekuest/widgets/WidgetsContext'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ReturnsContainer } from '@/core/ports/widgets/returns/ReturnsContainer'
+import { useWidgetRegistry } from '@/core/ports/engine/WidgetsContext'
+import { Popover, PopoverContent, PopoverTrigger } from '@/core/ui/popover'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/core/ui/tooltip'
 import {
   ChevronDown,
   ChevronRight,
@@ -21,8 +21,8 @@ import type {
   TimelineItem,
   TimelineMethodRow
 } from '../types'
-import { Button } from '@/components/ui/button'
-import { RekuestTask } from '@/linkers'
+import { Button } from '@/core/ui/button'
+import { RekuestTask } from '@/core/linkers'
 import { formatDuration } from '@/rekuest/lib/taskTimeline'
 import { getStatusColor } from './statusColors'
 

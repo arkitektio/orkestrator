@@ -1,9 +1,9 @@
-import { useGraphQlFormDialog } from "@/components/dialog/FormDialog";
-import { StringField } from "@/components/fields/StringField";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
+import { useGraphQlFormDialog } from "@/core/dialogs/FormDialog";
+import { StringField } from "@/core/forms/StringField";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
+import { Separator } from "@/core/ui/separator";
 import { useForm } from "react-hook-form";
 import {
   ProtocolEventCategoryFragment,

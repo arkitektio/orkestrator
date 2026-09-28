@@ -14,7 +14,8 @@ const { profilesRef, activeRef, switchProfile, connect, discover, navigated } = 
   }),
 );
 
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: {
     useProfiles: () => profilesRef.current,
     useActiveProfile: () => activeRef.current,
@@ -22,7 +23,7 @@ vi.mock("@/app/Arkitekt", () => ({
     useConnect: () => connect,
   },
 }));
-vi.mock("@/lib/arkitekt/fakts/discover", () => ({ discover }));
+vi.mock("@/core/connection/arkitekt/fakts/discover", () => ({ discover }));
 
 import { ShareGatePage } from "./ShareGatePage";
 

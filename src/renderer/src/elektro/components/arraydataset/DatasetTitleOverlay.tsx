@@ -1,13 +1,13 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { formatShape } from "@/lib/arrays/formatShape";
-import { ElektroArrayDataset, ElektroNeuronModel } from "@/linkers";
+} from "@/core/ui/select";
+import { formatShape } from "@/core/data/arrays/formatShape";
+import { ElektroArrayDataset, ElektroNeuronModel } from "@/core/linkers";
 import { GetArrayDatasetQuery } from "../../api/graphql";
 import { CreateExperimentControl } from "./DatasetBackdrop";
 

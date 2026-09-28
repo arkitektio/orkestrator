@@ -1,14 +1,14 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphMetric } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
+import { KraphMetric } from "@/core/linkers";
 import { useGetMetricQuery } from "../api/graphql";
 
 export const MetricDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetMetricQuery({
-    variables: { id: props.object },
+    variables: { id: props.id },
   });
 
   return (
-    <KraphMetric.DetailLink object={{ id: props.object }}>
+    <KraphMetric.DetailLink object={{ id: props.id }}>
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-light text-muted-foreground">{data?.metric.kind?.label || data?.metric.kind?.key || data?.metric.key}</h1>
         <p className="text-sm text-muted-foreground">{data?.metric.kind?.description}</p>

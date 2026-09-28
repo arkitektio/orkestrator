@@ -1,7 +1,7 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { ElektroExperiment } from "@/linkers";
+import { Card } from "@/core/ui/card";
+import { cn } from "@/core/util/utils";
+import { ElektroExperiment } from "@/core/linkers";
 import { ListExperimentFragment } from "../../api/graphql";
 
 

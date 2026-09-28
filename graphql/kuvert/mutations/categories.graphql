@@ -1,0 +1,21 @@
+mutation CreateCategory($input: CreateCategoryInput!) {
+  createCategory(input: $input) {
+    ...Category
+  }
+}
+
+mutation UpdateCategory($input: UpdateCategoryInput!) {
+  updateCategory(input: $input) {
+    ...Category
+  }
+}
+
+mutation DeleteCategory($id: ID!, $removeKeywords: Boolean! = false) {
+  deleteCategory(id: $id, removeKeywords: $removeKeywords)
+}
+
+mutation CategorizeMessages($input: CategorizeMessagesInput!) {
+  categorizeMessages(input: $input) {
+    ...MessageState
+  }
+}

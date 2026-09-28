@@ -1,0 +1,44 @@
+query ListBankAccounts(
+  $filters: BankAccountFilter
+  $ordering: [BankAccountOrder!]! = [{ kind: ASC }, { name: ASC }]
+  $pagination: OffsetPaginationInput
+) {
+  bankAccounts(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListBankAccount
+  }
+}
+
+query GetBankAccount($id: ID!) {
+  bankAccount(id: $id) {
+    ...BankAccount
+  }
+}
+
+query SearchBankAccounts($search: String, $values: [ID!]) {
+  options: bankAccounts(filters: { search: $search, ids: $values }, pagination: { limit: 10 }) {
+    value: id
+    label: name
+  }
+}
+
+query BalanceHistory($account: ID!, $dateFrom: Date!, $dateTo: Date) {
+  balanceHistory(account: $account, dateFrom: $dateFrom, dateTo: $dateTo) {
+    date
+    amount
+    currency
+    reported
+  }
+}
+
+query Forecast($account: ID!, $horizonDays: Int!, $includeDetected: Boolean!, $includeBudgets: Boolean!) {
+  forecast(
+    account: $account
+    horizonDays: $horizonDays
+    includeDetected: $includeDetected
+    includeBudgets: $includeBudgets
+  ) {
+    date
+    amount
+    currency
+  }
+}

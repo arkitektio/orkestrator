@@ -1,23 +1,23 @@
-import { FormDialog, useFormDialog } from "@/components/dialog/FormDialog";
-import { ChoicesField } from "@/components/fields/ChoicesField";
+import { FormDialog, useFormDialog } from "@/core/dialogs/FormDialog";
+import { ChoicesField } from "@/core/forms/ChoicesField";
 import {
   ListSearchField,
   SearchOptions,
-} from "@/components/fields/ListSearchField";
-import { ParagraphField } from "@/components/fields/ParagraphField";
-import { StringField } from "@/components/fields/StringField";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+} from "@/core/forms/ListSearchField";
+import { ParagraphField } from "@/core/forms/ParagraphField";
+import { StringField } from "@/core/forms/StringField";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
 import {
   CreateMeasurementCategoryMutationVariables,
   CreateRelationCategoryMutationVariables,
   GraphFragment,
   ValueKind,
 } from "@/kraph/api/graphql";
-import { cn } from "@/lib/utils";
-import { smartRegistry } from "@/providers/smart/registry";
-import { ContextualContainer } from "@/reaktion/edit/contextuals/ContextualContainer";
+import { cn } from "@/core/util/utils";
+import { smartRegistry } from "@/core/smart/registry";
+import { ContextualContainer } from "@/core/ui/contextual-container";
 import { useForm } from "react-hook-form";
 import { ConnectContextualParams, StagingEdgeParams } from "../types";
 import { labelToEdgeAgeName } from "../utils";

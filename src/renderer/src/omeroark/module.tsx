@@ -1,0 +1,15 @@
+import { defineModule } from "@/core/modules/host/define";
+import { OMEROARK_DIALOGS } from "./dialogRegistry";
+import { manifest } from "./manifest";
+import { service } from "./service";
+import { OMEROARK_NAV_LINKS } from "./navLinks";
+
+export const OMEROARK_MODULE = defineModule({
+  manifest,
+  serviceKey: service.key,
+  builtins: {
+    page: () => import("./OmeroArkModule"),
+    navLinks: OMEROARK_NAV_LINKS,
+    dialogs: OMEROARK_DIALOGS,
+  },
+});

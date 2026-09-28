@@ -1,0 +1,20 @@
+query ListReleaseApprovals(
+  $filters: ReleaseApprovalFilter
+  $pagination: OffsetPaginationInput
+) {
+  releaseApprovals(filters: $filters, pagination: $pagination) {
+    ...ListReleaseApproval
+  }
+}
+
+query GetReleaseApproval($id: ID!) {
+  releaseApproval(id: $id) {
+    ...ReleaseApproval
+  }
+}
+
+query GetApprovableRelease($id: ID!) {
+  release(id: $id) {
+    ...ApprovableRelease
+  }
+}

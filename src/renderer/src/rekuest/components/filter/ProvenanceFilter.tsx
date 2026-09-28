@@ -1,15 +1,15 @@
-import { SwitchField } from "@/components/fields/SwitchField";
-import { Option, SearchField } from "@/components/fields/SearchField";
-import { AutoSubmitter } from "@/components/form/AutoSubmitter";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
+import { SwitchField } from "@/core/forms/SwitchField";
+import { Option, SearchField } from "@/core/forms/SearchField";
+import { AutoSubmitter } from "@/core/forms/AutoSubmitter";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { Form } from "@/core/ui/form";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
+} from "@/core/ui/popover";
+import { Separator } from "@/core/ui/separator";
 import {
   Ordering,
   useClientsLazyQuery,

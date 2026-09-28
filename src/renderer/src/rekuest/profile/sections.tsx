@@ -1,9 +1,9 @@
-import { Guard } from "@/app/Arkitekt";
-import { ProfileSectionFrame } from "@/lib/profile/ProfileSections";
-import { ProfileRow, ProfileRows } from "@/lib/profile/rows";
-import type { ProfileContext, ProfileSection } from "@/lib/profile/section";
-import { cn } from "@/lib/utils";
-import { RekuestAgent } from "@/linkers";
+import { RekuestGuard } from "@/rekuest/api/hooks";
+import { ProfileSectionFrame } from "@/core/connection/profile/ProfileSections";
+import { ProfileRow, ProfileRows } from "@/core/connection/profile/rows";
+import type { ProfileContext, ProfileSection } from "@/core/connection/profile/section";
+import { cn } from "@/core/util/utils";
+import { RekuestAgent } from "@/core/linkers";
 import { formatDistanceToNow } from "date-fns";
 import { Bot } from "lucide-react";
 import { AgentOrder, Ordering, useAgentsQuery } from "../api/graphql";
@@ -63,7 +63,7 @@ export const REKUEST_PROFILE_SECTIONS: ProfileSection[] = [
     title: "Agents",
     icon: Bot,
     priority: 30,
-    Guard: Guard.Rekuest,
+    Guard: RekuestGuard,
     Component: Agents,
   },
 ];

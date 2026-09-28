@@ -1,7 +1,7 @@
-import { Arkitekt } from "@/app/Arkitekt";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import ProfileSwitcher from "@/app/components/profile/ProfileSwitcher";
-import { profileDetail, profileTitle } from "@/app/components/profile/profileLabels";
-import { ProfileBrandAvatar } from "@/app/components/profile/ProfileBrandAvatar";
+import { profileDetail, profileTitle } from "@/core/connection/profile/ui/profileLabels";
+import { ProfileBrandAvatar } from "@/core/connection/profile/ui/ProfileBrandAvatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,14 +9,74 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { DroppableNavLink } from "@/components/ui/link";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
-import { ChevronsUpDown, Settings, UsersRound } from "lucide-react";
+} from "@/core/ui/dropdown-menu";
+import { DroppableNavLink } from "@/core/ui/link";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
+import { cn } from "@/core/util/utils";
+import { ChevronsUpDown, Laptop, Network, Server, Settings, ShieldCheck, UsersRound, Waypoints } from "lucide-react";
 import React from "react";
 
+import type { ConnectionPath } from "@/core/connection/mesh/connectionPath";
+import { useConnectionPath } from "@/core/connection/mesh/useConnectionPath";
+
 import { useRailSwitcherRequests } from "./railSwitcher";
+
+type TunnelPath = Exclude<ConnectionPath, { kind: "direct" }>;
+
+/**
+ * How the org switcher marks a tunnel: a thin ring on the avatar and a small
+ * badge in its corner. Theme tokens only, so it follows light, dark and the
+ * brand colour: the app's own mesh takes `primary`, anything the OS runs
+ * (a system Tailscale, another VPN) stays in the muted foreground — the glyph
+ * tells them apart.
+ */
+const PATH_STYLE: Record<TunnelPath["kind"], { ring: string; glyph: string; Icon: typeof Network }> = {
+  "arkitekt-mesh": { ring: "ring-primary/60", glyph: "text-primary", Icon: Network },
+  "system-tailscale": { ring: "ring-muted-foreground/50", glyph: "text-muted-foreground", Icon: Waypoints },
+  vpn: { ring: "ring-muted-foreground/50", glyph: "text-muted-foreground", Icon: ShieldCheck },
+};
+
+/** One line naming the path: the note's caption, and the screen-reader text. */
+export const pathTitle = (path: TunnelPath): string => {
+  switch (path.kind) {
+    case "arkitekt-mesh":
+      return `Arkitekt mesh · ${path.meshLabel}`;
+    case "system-tailscale":
+      return path.tailnet ? `Tailscale · ${path.tailnet}` : "Tailscale";
+    case "vpn":
+      return `VPN · ${path.interfaces.join(", ")}`;
+  }
+};
+
+/** A dashed wire between two ends of the picture. */
+const Wire = () => <span className="h-px flex-1 border-t border-dashed border-muted-foreground/40" />;
+
+/**
+ * The note the switcher folds out on hover: this computer → the tunnel →
+ * the server, drawn, and a caption naming the tunnel. Nothing more.
+ */
+const PathNote = ({ path }: { path: TunnelPath }) => {
+  const { Icon, glyph } = PATH_STYLE[path.kind];
+  return (
+    <div className="flex flex-col items-center gap-1 px-2 pb-1 pt-2">
+      <div className="flex w-full max-w-40 items-center gap-1.5 text-muted-foreground [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:shrink-0">
+        <Laptop />
+        <Wire />
+        <span
+          className={cn(
+            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-popover",
+            glyph,
+          )}
+        >
+          <Icon className="h-3 w-3" />
+        </span>
+        <Wire />
+        <Server />
+      </div>
+      <span className="max-w-full truncate text-[11px] text-muted-foreground">{pathTitle(path)}</span>
+    </div>
+  );
+};
 
 /**
  * The foot of the rail: which organization you are in, and a way out of it.
@@ -36,6 +96,9 @@ export const RailFooter = () => {
   // there is no splash, no page skeleton and no island for it.
   const autoLoggingIn = Arkitekt.useIsAutoLoggingIn();
   const parkSession = Arkitekt.useDisconnect();
+  const path = useConnectionPath();
+  const tunnel = path.kind === "direct" ? undefined : path;
+  const style = tunnel && PATH_STYLE[tunnel.kind];
 
   // Controlled so other surfaces can point the user here — Settings → Account
   // has a "Switch account" button rather than a second copy of the list.
@@ -60,7 +123,25 @@ export const RailFooter = () => {
   return (
     // `app-no-drag`: the rail around it is a window-drag region, which would
     // otherwise swallow every click on the switcher and the settings link.
-    <div className="app-no-drag flex w-full min-w-0 shrink-0 items-center gap-1 px-2 pb-2">
+    <div className="app-no-drag flex w-full min-w-0 shrink-0 items-end gap-1 px-2 pb-2">
+      {/* When a tunnel carries the traffic the avatar wears its colour, and
+          hovering folds a note out above the switcher — in place, growing
+          upward, after a beat so a pointer passing by does not jolt the rail.
+          Not while the menu is open: the menu is the thing being looked at. */}
+      <div
+        data-path={path.kind}
+        className="group/path flex min-w-0 flex-1 flex-col rounded-lg"
+      >
+        {tunnel && !open && (
+          <div
+            data-testid="rail-footer-path-note"
+            className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 group-hover/path:grid-rows-[1fr] group-hover/path:delay-300"
+          >
+            <div className="min-h-0 overflow-hidden">
+              <PathNote path={tunnel} />
+            </div>
+          </div>
+        )}
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger
           className={cn(
@@ -73,7 +154,25 @@ export const RailFooter = () => {
             // the account is known from the cached label, only its session is
             // pending, and swapping in a spinner would hide what we do know.
             <span className="relative shrink-0">
-              <ProfileBrandAvatar profile={activeProfile} className="h-6 w-6 text-[9px]" />
+              <ProfileBrandAvatar
+                profile={activeProfile}
+                className={cn(
+                  "h-6 w-6 text-[9px]",
+                  style && ["ring-1 ring-offset-1 ring-offset-background", style.ring],
+                )}
+              />
+              {style && (
+                <span
+                  aria-hidden
+                  data-testid="rail-footer-path-badge"
+                  className={cn(
+                    "absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-border bg-popover shadow-sm",
+                    style.glyph,
+                  )}
+                >
+                  <style.Icon className="h-2 w-2" />
+                </span>
+              )}
               {autoLoggingIn && (
                 <span
                   data-testid="rail-footer-signing-in"
@@ -90,6 +189,7 @@ export const RailFooter = () => {
             <span className="truncate text-xs font-medium text-foreground">
               {name}
             </span>
+            {tunnel && <span className="sr-only">{`Connected through ${pathTitle(tunnel)}`}</span>}
             {detail && (
               <span
                 className={cn(
@@ -131,6 +231,7 @@ export const RailFooter = () => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
 
       {/* Settings is a destination, not a menu item — one gear, no nesting.
           Appearance (light / dark) lives there too, not here. */}

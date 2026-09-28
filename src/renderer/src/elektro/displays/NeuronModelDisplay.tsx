@@ -1,4 +1,4 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import React from "react";
 import { useDetailNeuronModelQuery } from "../api/graphql";
 
@@ -14,7 +14,7 @@ const EmbeddedMorphology = React.lazy(() =>
 export const NeuronModelDisplay = (props: DisplayWidgetProps) => {
   const { data } = useDetailNeuronModelQuery({
     variables: {
-      id: props.object,
+      id: props.id,
     },
   });
 

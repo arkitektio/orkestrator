@@ -1,7 +1,7 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { buttonVariants } from "@/components/ui/button";
-import { ElektroCell, ElektroSection } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { buttonVariants } from "@/core/ui/button";
+import { ElektroCell, ElektroSection } from "@/core/linkers";
 import { useMemo } from "react";
 import { useDetailSectionQuery } from "../api/graphql";
 import { MorphologyScene } from "../components/morphology/MorphologyScene";

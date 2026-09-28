@@ -6,7 +6,7 @@ import {
   type BlokCatalog,
   type BlokFunctionDefinition,
   type BlokFunctionReturnType,
-} from "@/blok/renderer/runtime";
+} from "@/core/blok/renderer/runtime";
 import {
   CatalogValueKind,
   type CatalogArgumentInput,

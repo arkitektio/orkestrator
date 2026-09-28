@@ -1,9 +1,9 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { ListNaturalEventCategoryFragment } from "@/kraph/api/graphql";
-import { KraphNaturalEventCategory } from "@/linkers";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { KraphNaturalEventCategory } from "@/core/linkers";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 interface Props {
   item: ListNaturalEventCategoryFragment;

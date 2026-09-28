@@ -1,4 +1,4 @@
-import { RekuestTask } from "@/linkers";
+import { RekuestTask } from "@/core/linkers";
 import { useNavigate } from "react-router-dom";
 import { DetailTaskFragment } from "../api/graphql";
 import { useReassignFromTask } from "./useAssign";

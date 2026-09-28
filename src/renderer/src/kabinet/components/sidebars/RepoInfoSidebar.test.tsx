@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 // The smart wrappers need the whole provider stack; the rail only needs them
 // to render their children.
-vi.mock("@/linkers", () => ({
+vi.mock("@/core/linkers", () => ({
   KabinetFlavour: {
     Smart: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     DetailLink: ({ children, className }: { children: React.ReactNode; className?: string }) => (

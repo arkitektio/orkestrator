@@ -1,8 +1,8 @@
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Explainer } from "@/components/explainer/Explainer";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { PageAction } from "@/components/ui/page-action";
-import { AlpakaProvider } from "@/linkers";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Explainer } from "@/core/layout/Explainer";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { PageAction } from "@/core/ui/page-action";
+import { AlpakaProvider } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import ProviderList from "../components/lists/ProviderList";

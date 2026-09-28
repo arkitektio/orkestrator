@@ -1,11 +1,11 @@
-import { FieldProps } from "@/components/fields/types";
+import { FieldProps } from "@/core/forms/types";
 import {
   FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@/core/ui/form";
 import { Editor, Monaco } from "@monaco-editor/react";
 import { useCallback } from "react";
 import { useFormContext } from "react-hook-form";

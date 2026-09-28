@@ -1,0 +1,34 @@
+query Cashflow(
+  $dateFrom: Date
+  $dateTo: Date
+  $granularity: Granularity! = MONTH
+  $accounts: [ID!]
+  $includeTransfers: Boolean! = false
+) {
+  cashflow(
+    dateFrom: $dateFrom
+    dateTo: $dateTo
+    granularity: $granularity
+    accounts: $accounts
+    includeTransfers: $includeTransfers
+  ) {
+    ...CashflowBucket
+  }
+}
+
+query SpendingByCategory($dateFrom: Date, $dateTo: Date, $accounts: [ID!], $includeTransfers: Boolean! = false) {
+  spendingByCategory(
+    dateFrom: $dateFrom
+    dateTo: $dateTo
+    accounts: $accounts
+    includeTransfers: $includeTransfers
+  ) {
+    ...CategoryTotal
+  }
+}
+
+query TopCounterparties($dateFrom: Date, $dateTo: Date, $direction: Direction! = OUT, $limit: Int! = 10, $accounts: [ID!]) {
+  topCounterparties(dateFrom: $dateFrom, dateTo: $dateTo, direction: $direction, limit: $limit, accounts: $accounts) {
+    ...CounterpartyTotal
+  }
+}

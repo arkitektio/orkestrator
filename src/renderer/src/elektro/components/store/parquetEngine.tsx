@@ -1,8 +1,9 @@
-import { useDatalayerEndpoint, useElektro } from "@/app/Arkitekt";
+import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
+import { useElektro } from "@/elektro/api/funcs";
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { ensureHttpfs, getDuckDb, resolveDuckDbEndpoint } from "@/lib/parquet/duckdb";
-import { ParquetQueryEngine } from "@/lib/parquet/parquetEngine";
+import { ensureHttpfs, getDuckDb, resolveDuckDbEndpoint } from "@/core/data/parquet/duckdb";
+import { ParquetQueryEngine } from "@/core/data/parquet/parquetEngine";
 import {
   RequestGeneralParquetAccessDocument,
   type RequestGeneralParquetAccessMutation,

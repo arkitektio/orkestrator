@@ -12,7 +12,7 @@ import { join, dirname, relative, resolve, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { destinationOf, SCENE } from "./scene-manifest.mjs";
 
-const ALIAS = "@/mikro-next/components/scene/";
+const ALIAS = "@/mikro/components/scene/";
 const walk = (d, out = []) => {
   for (const e of readdirSync(d)) {
     if (e === "node_modules" || e === "__fixtures__") continue;

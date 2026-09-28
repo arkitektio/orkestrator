@@ -13,7 +13,7 @@ import { Temperature } from '@/elektro/api/scalars';
 import { Unit } from '@/elektro/api/scalars';
 import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
-import * as ApolloReactHooks from '@/lib/elektro/funcs';
+import * as ApolloReactHooks from '@/elektro/api/funcs';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };

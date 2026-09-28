@@ -1,21 +1,20 @@
-import { EnhanceButton } from "@/alpaka/components/EnhanceButton";
-import { ImageCreator } from "@/alpaka/components/ImageCreator";
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageAction } from "@/components/ui/page-action";
-import { DragZone } from "@/components/upload/drag";
-import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
+import { PageSections } from "@/core/layout/PageSections";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageAction } from "@/core/ui/page-action";
+import { DragZone } from "@/core/datalayer/upload/drag";
+import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import {
   KraphProtocolEventCategory,
   KraphProtocolStepTemplate,
-} from "@/linkers";
+} from "@/core/linkers";
 import {
   useGetProtocolEventCategoryQuery,
   useUpdateProtocolEventCategoryMutation,
 } from "../api/graphql";
 import LoadingCreateProtocolEventForm from "../forms/LoadingCreateProtocolEventForm";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 const Page =  asDetailQueryRoute(
   useGetProtocolEventCategoryQuery,
@@ -59,7 +58,12 @@ const Page =  asDetailQueryRoute(
                 id={data.protocolEventCategory.id}
               />
             </FormSheet>
-            <EnhanceButton identifier="@kraph/protocoleventcategory" object={{ id: data.protocolEventCategory.id }} />
+            {/* Whatever other modules add here (rekuest: "Enhance"). */}
+            <PageSections
+              placement="actions"
+              identifier="@kraph/protocoleventcategory"
+              object={{ id: data.protocolEventCategory.id }}
+            />
           </>
         }
         sidebars={
@@ -85,14 +89,8 @@ const Page =  asDetailQueryRoute(
                 )}
               </WithKraphMediaUrl>
             ) : (
-              <ImageCreator
-                kind="Category"
-                prompt={
-                  data.protocolEventCategory.description ||
-                  "A scientific category"
-                }
-                onCreate={createFile}
-              />
+              // No image yet: drop one below, or let an "Enhance" action make one.
+              <div className="text-sm text-muted-foreground">No image yet</div>
             )}
           </div>
           <div>

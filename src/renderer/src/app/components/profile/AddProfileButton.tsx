@@ -1,14 +1,14 @@
-import { Arkitekt } from "@/app/Arkitekt";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { Button } from "@/core/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import {
   DEFAULT_COORDINATION_SERVER_HOST,
   DEFAULT_COORDINATION_SERVER_URL,
-} from "@/constants";
-import { ConnectionDoctorSheet } from "@/app/components/doctor/ConnectionDoctor";
-import { endpointToProbeTargets } from "@/lib/arkitekt/doctor/targets";
-import { discover } from "@/lib/arkitekt/fakts/discover";
-import { popOutWindowOpen } from "@/lib/arkitekt/fakts/popout";
+} from "@/core/constants";
+import { ConnectionDoctorSheet } from "@/core/connection/ui/doctor/ConnectionDoctor";
+import { endpointToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
+import { discover } from "@/core/connection/arkitekt/fakts/discover";
+import { popOutWindowOpen } from "@/core/connection/arkitekt/fakts/popout";
 import { AlertCircle, ExternalLink, Loader2, Plus, X } from "lucide-react";
 import React from "react";
 

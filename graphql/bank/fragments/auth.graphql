@@ -1,0 +1,12 @@
+fragment AuthSession on AuthSession {
+  state
+  openUrl
+  expiresAt
+  finish
+  interval
+  userCode
+  redirectUrl
+  connection {
+    ...ListBankConnection
+  }
+}

@@ -1,0 +1,15 @@
+query ListRecurringPayments(
+  $filters: RecurringPaymentFilter
+  $ordering: [RecurringPaymentOrder!]! = [{ nextExpected: ASC }]
+  $pagination: OffsetPaginationInput
+) {
+  recurringPayments(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListRecurringPayment
+  }
+}
+
+query GetRecurringPayment($id: ID!) {
+  recurringPayment(id: $id) {
+    ...RecurringPayment
+  }
+}

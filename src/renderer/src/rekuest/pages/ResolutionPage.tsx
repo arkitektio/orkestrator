@@ -1,22 +1,22 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { buildAssignInput } from "@/rekuest/assign";
-import { RekuestResolution, RekuestToolbox } from "@/linkers";
+import { RekuestResolution, RekuestToolbox } from "@/core/linkers";
 import {
   TaskEventKind,
   useGetResolutionQuery
 } from "@/rekuest/api/graphql";
 import { useImplementationAction } from "../hooks/useImplementationAction";
-import { usePortForm } from "../hooks/usePortForm";
-import { toast } from "sonner";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
-import { Form } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
-import { Button } from "@/components/ui/button";
+import { usePortForm } from "@/core/ports/engine/usePortForm";
+import { toast } from "@/core/notify";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { Form } from "@/core/ui/form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
+import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { Button } from "@/core/ui/button";
 import { ArrowRight } from "lucide-react";
-import { ReturnsContainer } from "@/components/widgets/returns/ReturnsContainer";
-import { portToLabel } from "../widgets/utils";
+import { ReturnsContainer } from "@/core/ports/widgets/returns/ReturnsContainer";
+import { portToLabel } from "@/core/ports/engine/utils";
 import { ResolutionGraph } from "../components/global/ResolutionGraph";
 
 export const DoForm = ({ id, resolution }: { id: string, resolution: string }) => {

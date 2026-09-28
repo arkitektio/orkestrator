@@ -1,0 +1,8 @@
+subscription AccountSyncs {
+  accountSyncs {
+    accountId
+    created
+    updated
+    pendingReplaced
+  }
+}

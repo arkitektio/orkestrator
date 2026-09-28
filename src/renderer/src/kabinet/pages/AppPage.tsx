@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { KabinetApp } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
+import { KabinetApp } from "@/core/linkers";
 import { Boxes, KeyRound, Layers, Tag } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";
 import { useGetAppQuery, useListAppsQuery } from "../api/graphql";
@@ -13,7 +13,7 @@ import {
   VersionsTab,
 } from "../components/AppTabs";
 import { AppShelfTile } from "../components/store/AppStoreCard";
-import { HardwareBadges, InstallMenu } from "../components/store/StoreParts";
+import { HardwareBadges, InstallButton } from "../components/store/StoreParts";
 import { groupApps, StoreApp } from "../components/store/storeModel";
 
 /**
@@ -126,8 +126,8 @@ export const AppPage = asDetailQueryRoute(useGetAppQuery, ({ data }) => {
                       </p>
                     </div>
                   </div>
-                  <InstallMenu
-                    flavours={app.latest.flavours}
+                  <InstallButton
+                    release={app.latest}
                     size="lg"
                     className="px-5"
                     label={`Install v${app.latest.version}`}

@@ -1,6 +1,7 @@
-import { Arkitekt, Guard, moduleRegistry } from "@/app/Arkitekt";
-import { DroppableNavLink } from "@/components/ui/link";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Arkitekt, serviceGuard } from "@/core/connection/arkitekt/host";
+import { moduleRegistry } from "@/app/Arkitekt";
+import { DroppableNavLink } from "@/core/ui/link";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -8,9 +9,9 @@ import {
   ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import { cn } from "@/lib/utils";
-import { aliasToHttpPath } from "@/lib/arkitekt/alias/helpers";
+} from "@/core/ui/context-menu";
+import { cn } from "@/core/util/utils";
+import { aliasToHttpPath } from "@/core/connection/arkitekt/alias/helpers";
 import {
   Home,
   RefreshCw,
@@ -19,19 +20,21 @@ import {
   Clock,
 } from "lucide-react";
 import React from "react";
-import { matchIcon } from "./moduleIcons";
+import { matchIcon } from "../../../core/modules/moduleIcons";
 import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHover";
 import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
-import { TaskNotificationStack } from "@/rekuest/components/global/TaskNotificationStack";
-import { UploadIsland } from "@/providers/upload/UploadProvider";
-import { DownloadIsland } from "@/providers/download/DownloadProvider";
-import { AgentIsland } from "@/app/agent/AgentIsland";
+import { ModuleRailIslands } from "@/core/modules/registries";
+import { UploadIsland } from "@/core/datalayer/UploadProvider";
+import { DownloadIsland } from "@/core/modules/download/DownloadProvider";
+import { AgentIsland } from "@/core/agent/AgentIsland";
 import { LocalActionIsland } from "@/app/components/rail/LocalActionIsland";
-import { RailIslandStack } from "@/app/components/rail/RailIsland";
-import { UpdateIsland } from "@/app/updates/UpdateIsland";
-import { VoiceIsland } from "@/voice";
-import { useSettings } from "@/providers/settings/SettingsContext";
+import { RailIslandStack } from "@/core/ui/rail/RailIsland";
+import { ToastIsland } from "@/core/notify";
+import { UpdateIsland } from "@/core/updates/UpdateIsland";
+import { VoiceIsland } from "@/core/voice";
+
+const RekuestGuard = serviceGuard("rekuest");
 
 
 export type INavigationBarProps = {
@@ -201,11 +204,11 @@ const tileClass = (active: boolean) =>
  * only renders inside a signed-in shell, where lok is by definition ready.
  */
 const TeamNavItem = () => (
-  <ModuleNavHover moduleKey="team" ready to="/team" label="Team" icon={matchIcon("team")}>
-    <DroppableNavLink to="/team" className="block" aria-label="Team">
+  <ModuleNavHover moduleKey="lok" ready to="/lok" label="Team" icon={matchIcon("lok")}>
+    <DroppableNavLink to="/lok" className="block" aria-label="Team">
       {({ isActive }) => (
         <span data-active={isActive} className={tileClass(isActive)}>
-          {matchIcon("team")}
+          {matchIcon("lok")}
         </span>
       )}
     </DroppableNavLink>
@@ -303,14 +306,11 @@ const ModuleNavItem = ({ moduleKey }: { moduleKey: string }) => {
 };
 
 const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
-  // Keys, not module objects. Both of these are string lists compared
-  // shallowly, so they hold their identity across a service health tick and the
+  // Keys, not module objects: a string list compared
+  // shallowly, so it holds its identity across a service health tick and the
   // grid redraws only when a module actually appears or becomes ready.
-  const { settings } = useSettings();
   const availableKeys = Arkitekt.useAvailableModuleKeys();
-  const readyModules = Arkitekt.useReadyModuleKeys();
   const moduleOrder = Object.keys(moduleRegistry).filter((key) => availableKeys.includes(key));
-  const preload = React.useMemo(() => ["team", ...readyModules], [readyModules]);
 
   return (
     <>
@@ -320,7 +320,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           to the open tabs below than to twelve stacked icons. `auto-fit` with a
           `1fr` max stretches the tiles across the full rail width and wraps to
           a new row only once a tile would drop below its minimum size. */}
-      <ModuleNavHoverGroup preload={preload}>
+      <ModuleNavHoverGroup>
       {/* `app-no-drag`: the rail's surface is a window-drag region, and a drag
           region eats the clicks of everything inside it that has not opted out.
           The gaps AROUND this grid still drag the window. */}
@@ -375,17 +375,15 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           Ordered by how often they appear, rarest at the top: what shows up
           constantly (transfers) sits nearest the footer and the pointer, so a
           rare arrival above does not shove it around. The agent sits beside the
-          task island to share the one rekuest guard. */}
+          modules' islands (rekuest: tasks). */}
       <RailIslandStack>
+        <ToastIsland />
         <UpdateIsland />
         <VoiceIsland />
-        <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
+        <RekuestGuard unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
           <AgentIsland />
-          {/* An experiment (Settings → General): gated from OUT here, not
-              inside the stack — the island runs the task query on mount, so
-              switching it off has to keep it from mounting at all. */}
-          {settings.experimentTaskIsland !== false && <TaskNotificationStack />}
-        </Guard.Rekuest>
+        </RekuestGuard>
+        <ModuleRailIslands />
         <LocalActionIsland />
         <DownloadIsland />
         <UploadIsland />

@@ -1,0 +1,29 @@
+# The ⌘K palette's slice of bank: one round trip per keystroke (debounced by
+# the palette), a few rows per model. Transactions rank by the server's own
+# search relevance (substring first, then semantic), so no ordering here.
+query BankPaletteSearch($search: String!, $limit: Int!) {
+  transactions(filters: { search: $search }, pagination: { limit: $limit }) {
+    id
+    counterparty
+    remittance
+    amount
+    currency
+    bookingDate
+  }
+  bankAccounts(filters: { search: $search }, pagination: { limit: $limit }) {
+    id
+    name
+    iban
+    currency
+  }
+  merchants(filters: { search: $search }, pagination: { limit: $limit }) {
+    id
+    name
+    description
+  }
+  categories(filters: { search: $search, hidden: false }, pagination: { limit: $limit }) {
+    id
+    name
+    description
+  }
+}

@@ -1,10 +1,10 @@
-import { useDialog } from "@/app/dialog";
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageAction } from "@/components/ui/page-action";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlpakaCollection, AlpakaLLMModel, AlpakaProvider } from "@/linkers";
+import { useDialog } from "@/core/dialogs/registry";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageAction } from "@/core/ui/page-action";
+import { Badge } from "@/core/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
+import { AlpakaCollection, AlpakaLLMModel, AlpakaProvider } from "@/core/linkers";
 import { MessageSquare } from "lucide-react";
 import {
   useGetLlmModelQuery

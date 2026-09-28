@@ -1,0 +1,46 @@
+mutation CreateMailAccount($input: CreateMailAccountInput!) {
+  createMailAccount(input: $input) {
+    ...MailAccount
+  }
+}
+
+mutation UpdateMailAccount($input: UpdateMailAccountInput!) {
+  updateMailAccount(input: $input) {
+    ...MailAccount
+  }
+}
+
+mutation TestMailAccount($id: ID!) {
+  testMailAccount(id: $id) {
+    ...ListMailAccount
+  }
+}
+
+mutation DeleteMailAccount($id: ID!) {
+  deleteMailAccount(id: $id)
+}
+
+mutation ShareMailAccount($input: ShareMailAccountInput!) {
+  shareMailAccount(input: $input) {
+    ...MailAccount
+  }
+}
+
+mutation UpdateMailFolder($input: UpdateMailFolderInput!) {
+  updateMailFolder(input: $input) {
+    ...MailFolder
+  }
+}
+
+mutation SyncMailAccount($id: ID!, $folders: [ID!]) {
+  syncMailAccount(id: $id, folders: $folders) {
+    created
+    updated
+    deleted
+    folders
+    more
+    account {
+      ...ListMailAccount
+    }
+  }
+}

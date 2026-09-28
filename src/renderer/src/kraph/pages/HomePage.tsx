@@ -1,15 +1,15 @@
-import { ResponsiveContainerGrid } from "@/components/layout/ContainerGrid";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { HelpSidebar } from "@/components/sidebars/help";
-import { Button } from "@/components/ui/button";
+import { ResponsiveContainerGrid } from "@/core/layout/ContainerGrid";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { HelpSidebar } from "@/core/layout/help";
+import { Button } from "@/core/ui/button";
 import {
   CardDescription,
   CardHeader,
   CardTitle
-} from "@/components/ui/card";
-import { DialogButton } from "@/components/ui/dialog-button";
-import { KraphGraph } from "@/linkers";
+} from "@/core/ui/card";
+import { DialogButton } from "@/core/ui/dialog-button";
+import { KraphGraph } from "@/core/linkers";
 import {
   BarChart3,
   Network,

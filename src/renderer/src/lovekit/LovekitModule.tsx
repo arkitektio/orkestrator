@@ -1,20 +1,19 @@
-import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/app/Arkitekt";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
+import { LovekitGuard } from "@/lovekit/api/funcs";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import StreamPage from "./pages/StreamPage";
-import StandardPane from "./panes/StandardPane";
 import SoloBroadcast from "./pages/SoloBroadcast";
 import SoloBroadcasts from "./pages/SoloBroadcasts";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 interface Props { }
 
 export const Module: React.FC<Props> = (_props) => {
   return (
-    <Guard.Lovekit fallback={<ServiceUnavailable serviceKey="lovekit" />}>
-      <ModuleLayout pane={<StandardPane />}>
+    <LovekitGuard fallback={<ServiceUnavailable serviceKey="lovekit" />}>
+      <ModuleLayout>
         <Routes>
           <Route path="streams/:id" element={<StreamPage />} />
           <Route path="solobroadcasts/:id" element={<SoloBroadcast />} />
@@ -23,7 +22,7 @@ export const Module: React.FC<Props> = (_props) => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>
-    </Guard.Lovekit>
+    </LovekitGuard>
   );
 };
 

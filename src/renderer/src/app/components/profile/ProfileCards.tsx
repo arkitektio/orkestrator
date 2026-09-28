@@ -1,18 +1,18 @@
-import { Arkitekt } from "@/app/Arkitekt";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { Button } from "@/core/ui/button";
+import { Checkbox } from "@/core/ui/checkbox";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { grantHintForProfile } from "@/lib/arkitekt/fakts/grantHint";
-import type { StoredProfile } from "@/lib/arkitekt/fakts/profileStorageSchema";
-import { describeRefreshFailure } from "@/lib/arkitekt/runtime/profileAuth";
-import { cn } from "@/lib/utils";
+} from "@/core/ui/popover";
+import { grantHintForProfile } from "@/core/connection/arkitekt/fakts/grantHint";
+import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
+import { describeRefreshFailure } from "@/core/connection/arkitekt/runtime/profileAuth";
+import { cn } from "@/core/util/utils";
 
-import { ProfileBrandAvatar } from "./ProfileBrandAvatar";
-import { profileDetail, profileShortDetail, profileTitle } from "./profileLabels";
+import { ProfileBrandAvatar } from "../../../core/connection/profile/ui/ProfileBrandAvatar";
+import { profileDetail, profileShortDetail, profileTitle } from "../../../core/connection/profile/ui/profileLabels";
 import { AlertTriangle, Loader2, LogOut, Trash2 } from "lucide-react";
 import React from "react";
 

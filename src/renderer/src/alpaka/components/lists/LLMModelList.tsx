@@ -1,8 +1,8 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { AlpakaLLMModel } from "@/linkers";
+import { ListRender } from "@/core/layout/ListRender";
+import { AlpakaLLMModel } from "@/core/linkers";
 
 import { LlmModelFilter, useListLlModelsQuery } from "@/alpaka/api/graphql";
-import { OffsetPaginationInput } from "@/lok-next/api/graphql";
+import type { OffsetPaginationInput } from "@/core/layout/pagination";
 import LLMModelCard from "../cards/LLMModelCard";
 
 export type Props = {

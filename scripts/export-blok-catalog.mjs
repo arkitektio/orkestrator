@@ -50,7 +50,7 @@ await build({
   // Bundle the dependencies too, so node never has to interop with their CJS.
   ssr: {noExternal: true},
   build: {
-    ssr: resolve(root, 'src/renderer/src/blok/renderer/catalogExport.ts'),
+    ssr: resolve(root, 'src/renderer/src/rekuest/catalog/catalogExport.ts'),
     outDir: bundleDir,
     emptyOutDir: true,
     minify: false,

@@ -1,5 +1,5 @@
-import { Slider } from '@/components/ui/slider'
-import { Button } from '@/components/ui/button'
+import { Slider } from '@/core/ui/slider'
+import { Button } from '@/core/ui/button'
 import { Radio } from 'lucide-react'
 import { useSpaceViewStore } from '../store'
 

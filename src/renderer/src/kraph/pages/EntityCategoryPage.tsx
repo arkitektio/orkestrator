@@ -1,12 +1,12 @@
-import { EnhanceButton } from "@/alpaka/components/EnhanceButton";
-import { useDialog } from "@/app/dialog";
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageAction } from "@/components/ui/page-action";
-import { DialogButton } from "@/components/ui/dialogbutton";
-import { DragZone } from "@/components/upload/drag";
-import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
-import { KraphEntityCategory } from "@/linkers";
+import { PageSections } from "@/core/layout/PageSections";
+import { useDialog } from "@/core/dialogs/registry";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageAction } from "@/core/ui/page-action";
+import { DialogButton } from "@/core/ui/dialogbutton";
+import { DragZone } from "@/core/datalayer/upload/drag";
+import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
+import { KraphEntityCategory } from "@/core/linkers";
 import { Plus, Settings2 } from "lucide-react";
 import { useNavigate as useNavigateRouter } from "react-router-dom";
 import {
@@ -17,7 +17,7 @@ import {
 } from "../api/graphql";
 import { EntityList } from "../components/renderers/lists/EntityList";
 import { EntityCategorySidebar } from "../sidebars/EntityCategorySidebar";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const Page = asDetailQueryRoute(
   useGetEntityCategoryQuery,
@@ -114,7 +114,13 @@ export const Page = asDetailQueryRoute(
             >
               Schema Builder
             </PageAction>
-            <EnhanceButton identifier="@kraph/entitycategory" object={data.entityCategory} refetch={refetch} />
+            {/* Whatever other modules add here (rekuest: "Enhance"). */}
+            <PageSections
+              placement="actions"
+              identifier="@kraph/entitycategory"
+              object={data.entityCategory}
+              onChanged={refetch}
+            />
 
             {/* Filling the category is what the page is for. */}
             <PageAction

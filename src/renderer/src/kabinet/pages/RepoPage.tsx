@@ -1,16 +1,16 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { ListRender } from "@/components/layout/ListRender";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Badge } from "@/components/ui/badge";
-import { PageAction, PageActionGroup } from "@/components/ui/page-action";
-import { KabinetFlavour, KabinetRepo } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { ListRender } from "@/core/layout/ListRender";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Badge } from "@/core/ui/badge";
+import { PageAction, PageActionGroup } from "@/core/ui/page-action";
+import { KabinetFlavour, KabinetRepo } from "@/core/linkers";
 import { Code2, GitBranch, Github, RefreshCw, Share2, ShieldAlert } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useGetRepoQuery, useScanRepoMutation } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";
 import { RepoInfoSidebar } from "../components/sidebars/RepoInfoSidebar";
 import { installBadgeMarkdown, installRepoLink } from "../repoLink";
-import { copyText } from "@/lib/universalLink";
+import { copyText } from "@/core/tabs/sharing/universalLink";
 
 /**
  * A repository is its flavours: the body lists them and nothing else. What

@@ -1,16 +1,16 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { AlertCircle, Sparkles, X } from "lucide-react";
 import {
   cancelLocalActionRun,
   dismissLocalActionRun,
   useLocalActionRuns,
-} from "../../localActionRuns";
+} from "../../../core/smart/localactions/localActionRuns";
 import {
   RailIsland,
   RailIslandName,
   RailIslandProgress,
   RailIslandRow,
-} from "./RailIsland";
+} from "../../../core/ui/rail/RailIsland";
 
 /**
  * Local actions still running, as an island in the rail.

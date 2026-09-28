@@ -1,7 +1,7 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphInstance } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
+import { KraphInstance } from "@/core/linkers";
 import { useGetInstanceQuery } from "../api/graphql";
-import Timestamp from "@/components/ui/timestamp";
+import Timestamp from "@/core/ui/timestamp";
 
 /**
  * Claim-grain, deliberately — see `EntityDisplay`. Displays render from outside
@@ -9,7 +9,7 @@ import Timestamp from "@/components/ui/timestamp";
  * and the view-grain read requires one.
  */
 export const NaturalEventDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetInstanceQuery({ variables: { id: props.object } });
+  const { data } = useGetInstanceQuery({ variables: { id: props.id } });
 
   if (!data?.instance) {
     return <div className="text-xs text-muted-foreground">Event not found</div>;

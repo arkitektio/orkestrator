@@ -305,6 +305,11 @@
   .rail-glass body {
     background: transparent;
   }
+  /* The floating quick bar's window is transparent; only its panel paints. */
+  .quick-window,
+  .quick-window body {
+    background: transparent;
+  }
   html {
     @apply font-sans;
   }

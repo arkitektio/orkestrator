@@ -1,0 +1,20 @@
+query Holdings($account: ID!, $date: Date) {
+  holdings(account: $account, date: $date) {
+    ...Holding
+  }
+}
+
+query Portfolio {
+  bankAccounts(filters: { kind: DEPOT }, ordering: [{ name: ASC }], pagination: { limit: 100 }) {
+    id
+    name
+    kind
+    currency
+    latestBalance {
+      ...Balance
+    }
+    currentHoldings {
+      ...Holding
+    }
+  }
+}

@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
-} from "@/components/ui/chart";
+} from "@/core/ui/chart";
 import {
   RenderGraphTableFilter,
   ScatterPlotFragment,

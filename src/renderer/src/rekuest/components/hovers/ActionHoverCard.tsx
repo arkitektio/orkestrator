@@ -1,14 +1,14 @@
-import { useDialog } from "@/app/dialog";
+import { useDialog } from "@/core/dialogs/registry";
 import {
   HoverRow,
   HoverSectionLabel,
   HoverShell,
   HoverSkeleton,
-} from "@/components/hover/HoverShell";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { RekuestImplementation } from "@/linkers";
-import { Object } from "@/types";
+} from "@/core/ui/HoverShell";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { RekuestImplementation } from "@/core/linkers";
+import { Object } from "@/core/types";
 import { Zap } from "lucide-react";
 import { TaskEventKind, useHoverActionQuery } from "../../api/graphql";
 import { deriveAvailability } from "../../lib/actionBrowse";

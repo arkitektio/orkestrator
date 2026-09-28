@@ -1,9 +1,9 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { DisplayWidget } from "@/command/Menu";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Card } from "@/components/ui/card";
-import { KraphStructure, KraphStructureKind } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { DisplayWidget } from "@/core/command/Menu";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Card } from "@/core/ui/card";
+import { KraphStructure, KraphStructureKind } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetStructureQuery } from "../api/graphql";
 import { MetricsForStructure } from "../components/MetricsForStructure";
@@ -44,7 +44,7 @@ const Page = asDetailQueryRoute(useGetStructureQuery, ({ data }) => {
         <Card className="flex flex-row gap-2 p-4">
           <DisplayWidget
             identifier={data.structure.identifier}
-            object={data.structure.object}
+            id={data.structure.object}
             link
           />
         </Card>

@@ -1,15 +1,16 @@
-import { Guard } from "@/app/Arkitekt";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { HelpSidebar } from "@/components/sidebars/help";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import Timestamp from "@/components/ui/timestamp";
-import { AlpakaRoom } from "@/linkers";
-import { cn } from "@/lib/utils";
-import { Username } from "@/lok-next/components/Me";
+import { Guard } from "@/core/connection/arkitekt/host";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { HelpSidebar } from "@/core/layout/help";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
+import { Skeleton } from "@/core/ui/skeleton";
+import { Textarea } from "@/core/ui/textarea";
+import Timestamp from "@/core/ui/timestamp";
+import { AlpakaRoom } from "@/core/linkers";
+import { cn } from "@/core/util/utils";
+import { useSelf } from "@/core/connection/useSelf";
+
 import {
   ArrowRight,
   ArrowUp,
@@ -23,7 +24,7 @@ import {
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import { useCreateRoomMutation, useRecentRoomsQuery } from "../api/graphql";
 import {
   greeting,
@@ -33,6 +34,9 @@ import {
   titleFromPrompt,
 } from "../recentRooms";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
+
+/** The signed-in user's name (host identity, not a lok query). */
+const Username = () => <>{useSelf().username}</>;
 
 const RECENT_LIMIT = 50;
 

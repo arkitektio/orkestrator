@@ -1,0 +1,70 @@
+fragment Address on Address {
+  name
+  address
+}
+
+fragment ListMessage on Message {
+  id
+  subject
+  senderName
+  senderAddress
+  date
+  snippet
+  isRead
+  isFlagged
+  isAnswered
+  hasAttachments
+  syncState
+  categories {
+    ...CategoryChip
+  }
+  account {
+    id
+    name
+    emailAddress
+    canSend
+  }
+  folder {
+    id
+    name
+    role
+  }
+  thread {
+    id
+    messageCount
+  }
+}
+
+fragment Message on Message {
+  ...ListMessage
+  messageId
+  receivedAt
+  textBody
+  hasRemoteImages
+  size
+  flags
+  serverFlags
+  changes {
+    ...MailChange
+  }
+  truncated
+  html(allowRemote: $allowRemote)
+  sender {
+    ...Address
+  }
+  replyTo {
+    ...Address
+  }
+  to {
+    ...Address
+  }
+  cc {
+    ...Address
+  }
+  bcc {
+    ...Address
+  }
+  attachments {
+    ...Attachment
+  }
+}

@@ -1,7 +1,7 @@
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Card } from "@/components/ui/card";
-import { DialogButton } from "@/components/ui/dialog-button";
-import { KraphGraph } from "@/linkers";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Card } from "@/core/ui/card";
+import { DialogButton } from "@/core/ui/dialog-button";
+import { KraphGraph } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";

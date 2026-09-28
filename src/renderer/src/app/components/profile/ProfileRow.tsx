@@ -3,14 +3,14 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-} from "@/components/ui/dropdown-menu";
-import type { StoredProfile } from "@/lib/arkitekt/fakts/profileStorageSchema";
-import { cn } from "@/lib/utils";
+} from "@/core/ui/dropdown-menu";
+import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
+import { cn } from "@/core/util/utils";
 import { AlertTriangle, Check, Loader2, LogOut, MoreHorizontal, Trash2 } from "lucide-react";
 import React from "react";
 
-import { ProfileBrandAvatar } from "./ProfileBrandAvatar";
-import { profileDetail, profileTitle } from "./profileLabels";
+import { ProfileBrandAvatar } from "../../../core/connection/profile/ui/ProfileBrandAvatar";
+import { profileDetail, profileTitle } from "../../../core/connection/profile/ui/profileLabels";
 
 export type ProfileRowProps = {
   profile: StoredProfile;

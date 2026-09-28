@@ -651,6 +651,44 @@ input AgentInput {
   name: String = null
 }
 
+"""
+One entry of an agent's journal: a frame the agent reported, at its position in the agent session.
+"""
+type AgentJournalEntry {
+  """The agent that reported the entry."""
+  agent: Agent!
+
+  """When the agent recorded the entry."""
+  agentTs: DateTime
+
+  """
+  The state revision the entry carries (patches and snapshots; 0 for the session init), null otherwise.
+  """
+  globalRev: Int
+  id: ID!
+
+  """The wire type of the frame (STARTED, YIELD, STATE_PATCH, LOCK, …)."""
+  kind: String!
+
+  """The frame's id, as it went on the wire."""
+  messageId: String!
+
+  """The frame as the agent sent it (without the stream-level seq)."""
+  payload: Args!
+
+  """The position in the agent session's journal (1, 2, 3, … no gaps)."""
+  pos: Int!
+
+  """When the server first received the entry."""
+  receivedAt: DateTime!
+
+  """The agent session identifier this entry belongs to."""
+  sessionId: String!
+
+  """The task the entry belongs to, if it names one of this agent's tasks."""
+  task: Task
+}
+
 enum AgentKind {
   WEBHOOK
   WEBSOCKET
@@ -872,6 +910,11 @@ input AssignInput {
   The interface of the implementation. Only ussable if you also set agent
   """
   interface: String = null
+
+  """
+  Hold the task back until then: it is persisted now but only dispatched once due. A time in the past (or none) dispatches immediately.
+  """
+  notBefore: DateTime = null
 
   """
   The reference of the task. This is used to identify the task in the system.
@@ -1606,6 +1649,22 @@ input CreateResolutionInput {
   resolvedDependencies: [ResolvedDependencyInput!] = null
 }
 
+"""
+Create a schedule. Give exactly one of intervalSeconds or cron; pin an agent with agent + interface, or leave both empty to resolve one per run.
+"""
+input CreateScheduleInput {
+  action: ID!
+  agent: ID = null
+  args: Args = null
+  cron: String = null
+  enabled: Boolean! = true
+  ephemeralRuns: Boolean! = false
+  interface: String = null
+  intervalSeconds: Int = null
+  name: String!
+  timezone: String! = "UTC"
+}
+
 """The input for creating a shortcut."""
 input CreateShortcutInput {
   """The action ID to create a shortcut for"""
@@ -1698,6 +1757,22 @@ input CreateToolboxInput {
   The name of the toolbox. This is used to identify the toolbox in the system.
   """
   name: String!
+}
+
+"""
+Create a trigger: on a signal of `kind` for `identifier` whose descriptors satisfy `conditions` (and the port's own requires), run `action` with the object in `port`.
+"""
+input CreateTriggerInput {
+  action: ID!
+  agent: ID = null
+  args: Args = null
+  conditions: AnyDefault = null
+  enabled: Boolean! = true
+  identifier: String!
+  interface: String = null
+  kind: SignalKind!
+  name: String!
+  port: String!
 }
 
 """A catalog component rendered as the port's widget."""
@@ -2829,6 +2904,11 @@ type Mutation {
   """Create a resolution for an implementation."""
   createResolution(input: CreateResolutionInput!): Resolution!
 
+  """
+  Create a recurring assignment of an action. Its next run is planned immediately.
+  """
+  createSchedule(input: CreateScheduleInput!): Schedule!
+
   """Create a shortcut to an action."""
   createShortcut(input: CreateShortcutInput!): Shortcut!
 
@@ -2846,6 +2926,11 @@ type Mutation {
 
   """Create a new toolbox with shortcuts."""
   createToolbox(input: CreateToolboxInput!): Toolbox!
+
+  """
+  Create a trigger: run an action when a service signals a matching object.
+  """
+  createTrigger(input: CreateTriggerInput!): Trigger!
 
   """Delete an agent record."""
   deleteAgent(input: DeleteAgentInput!): ID!
@@ -2868,6 +2953,9 @@ type Mutation {
   """Delete a resolution by ID."""
   deleteResolution(input: DeleteResolutionInput!): ID!
 
+  """Delete a schedule. Its waiting run is cancelled; history is kept."""
+  deleteSchedule(input: ScheduleIdInput!): ID!
+
   """Delete a shortcut."""
   deleteShortcut(input: DeleteShortcutInput!): ID!
 
@@ -2879,6 +2967,9 @@ type Mutation {
 
   """Delete a toolbox by ID."""
   deleteToolbox(input: DeleteToolboxInput!): ID!
+
+  """Delete a trigger; its runs are kept."""
+  deleteTrigger(input: TriggerIdInput!): ID!
 
   """Ensure agent record exists or is up to date."""
   ensureAgent(input: AgentInput!): Agent!
@@ -2946,6 +3037,11 @@ type Mutation {
   """Shelve data into a memory drawer."""
   shelveInMemoryDrawer(input: ShelveInMemoryDrawerInput!): MemoryDrawer!
 
+  """
+  Run a schedule now: its waiting run is moved to now. Refused while a run is executing.
+  """
+  triggerSchedule(input: ScheduleIdInput!): Task!
+
   """Unblock a previously blocked agent."""
   unblock(input: UnblockInput!): Agent!
 
@@ -2974,11 +3070,17 @@ type Mutation {
   """Update an existing resolution."""
   updateResolution(input: UpdateResolutionInput!): Resolution!
 
+  """Change a schedule; a waiting run is re-planned."""
+  updateSchedule(input: UpdateScheduleInput!): Schedule!
+
   """Update an existing space."""
   updateSpace(input: UpdateSpaceInput!): Space!
 
   """Update an existing 3D model."""
   updateThreedModel(input: UpdateThreeDModelInput!): ThreeDModel!
+
+  """Change a trigger."""
+  updateTrigger(input: UpdateTriggerInput!): Trigger!
 }
 
 input OffsetPaginationInput {
@@ -3510,6 +3612,11 @@ type Query {
   """Fetch a specific agent by ID or by app, version and device_id."""
   agent(app: String = null, deviceId: String = null, id: ID = null, version: String = null): Agent!
 
+  """
+  The journal of an agent session in position order: everything the agent reported (task events, locks, state patches, snapshots, the session init). `sessionId` defaults to the agent's newest journaled session; `afterPos` pages forward.
+  """
+  agentJournal(afterPos: Int = null, agent: ID!, kinds: [String!] = null, limit: Int! = 100, sessionId: String = null, task: ID = null): [AgentJournalEntry!]!
+
   """Retrieve all compute agents."""
   agents(filters: AgentFilter, ordering: [AgentOrder!]! = [], pagination: OffsetPaginationInput): [Agent!]!
 
@@ -3633,6 +3740,12 @@ type Query {
   """
   reusableTaskFor(actionHash: String!, args: Args!): Task
 
+  """Fetch a schedule by ID."""
+  schedule(id: ID!): Schedule!
+
+  """All schedules in the organization."""
+  schedules(pagination: OffsetPaginationInput): [Schedule!]!
+
   """Fetch a specific session by ID."""
   session(id: ID!): Session!
 
@@ -3647,6 +3760,16 @@ type Query {
 
   """List of shortcuts."""
   shortcuts(filters: ShortcutFilter, ordering: [ShortcutOrder!]! = [], pagination: OffsetPaginationInput): [Shortcut!]!
+
+  """
+  The signals this hub's services declare they emit — what triggers can wait for. Hub-wide.
+  """
+  signalDeclarations(identifier: String = null): [SignalDeclaration!]!
+
+  """
+  Signals services sent about the organization's objects, for inspection.
+  """
+  signals(pagination: OffsetPaginationInput): [Signal!]!
 
   """
   Actions whose name and description mean roughly what this action's do, nearest first: the org's other actions ranked by cosine distance between their embeddings. `filters` narrows the candidates like `actions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back. Empty while the action has no vector yet or embeddings are off.
@@ -3667,6 +3790,11 @@ type Query {
 
   """Get state at global revision."""
   stateAtGlobalRev(globalRevision: Int!, sessionId: String = null, stateId: ID = null): [Snapshot!]!
+
+  """
+  The agent's states as of a journal position: the revision the last state-carrying entry at or before `pos` reached, reconstructed like `stateAtGlobalRev`.
+  """
+  stateAtPos(agent: ID!, pos: Int!, sessionId: String = null, stateId: ID = null): [Snapshot!]!
 
   """Retrieve a state definition by ID."""
   stateDefinition(id: ID!): StateDefinition!
@@ -3733,6 +3861,12 @@ type Query {
 
   """List of toolboxes containing shortcuts."""
   toolboxes(filters: ToolboxFilter, ordering: [ToolboxOrder!]! = [], pagination: OffsetPaginationInput): [Toolbox!]!
+
+  """Fetch a trigger by ID."""
+  trigger(id: ID!): Trigger!
+
+  """All triggers in the organization."""
+  triggers(pagination: OffsetPaginationInput): [Trigger!]!
 
   """Get a UI catalog by ID."""
   uiCatalog(id: ID!): UICatalog!
@@ -4032,6 +4166,74 @@ enum ReturnWidgetKind {
   CUSTOM
 }
 
+"""
+A recurring assignment of one action. It owns at most one open run at a time: the next one, a delayed task created once the previous run finished.
+"""
+type Schedule {
+  """The action every run assigns."""
+  action: Action!
+
+  """The agent every run is pinned to, if any."""
+  agent: Agent
+
+  """The args every run is assigned with."""
+  args: AnyDefault!
+
+  """The identity every run is assigned as."""
+  caller: Caller!
+
+  """Runs in a row that ended FAILED or CRITICAL."""
+  consecutiveFailures: Int!
+
+  """Creation timestamp."""
+  createdAt: DateTime!
+
+  """
+  A five-field cron line, read in `timezone` (exclusive with intervalSeconds).
+  """
+  cron: String
+
+  """A disabled schedule creates no runs."""
+  enabled: Boolean!
+
+  """Whether runs are created as ephemeral tasks."""
+  ephemeralRuns: Boolean!
+
+  """Unique ID of the schedule."""
+  id: ID!
+
+  """The implementation interface on the pinned agent."""
+  interface: String
+
+  """Run every N seconds (exclusive with cron)."""
+  intervalSeconds: Int
+
+  """Why the last run failed, or why the next one could not be created."""
+  lastError: String
+
+  """Human-readable name."""
+  name: String!
+
+  """
+  The open run: waiting for its slot, or executing. Null while the next run is being planned, or when disabled.
+  """
+  nextRun: Task
+
+  """The most recent runs, newest first."""
+  runs(limit: Int! = 20): [Task!]!
+
+  """The IANA zone the cron line is read in."""
+  timezone: String!
+
+  """Last update timestamp."""
+  updatedAt: DateTime!
+}
+
+"""Identify a schedule."""
+input ScheduleIdInput {
+  id: ID!
+}
+
 type SearchAssignWidget implements AssignWidget {
   dependencies: [String!]
   filters: [ArgPort!]
@@ -4206,6 +4408,78 @@ input ShortcutFilter {
 
 input ShortcutOrder @oneOf {
   name: Ordering
+}
+
+"""
+Something a service announced: an object of a structure was created, updated or deleted.
+"""
+type Signal {
+  """
+  The task the object was created in, verified from its provenance token.
+  """
+  causingTask: Task
+
+  """The object's descriptors (flat key → value)."""
+  descriptors: AnyDefault!
+
+  """Unique ID of the signal."""
+  id: ID!
+
+  """The object's structure identifier, e.g. @mikro/arraydataset."""
+  identifier: String!
+
+  """What happened to the object."""
+  kind: SignalKind!
+
+  """The object's id within its structure."""
+  object: String!
+
+  """When it happened, per the service."""
+  occurredAt: DateTime
+
+  """When triggers were matched against it."""
+  processedAt: DateTime
+
+  """When rekuest received it."""
+  receivedAt: DateTime!
+
+  """The runs this signal fired."""
+  runs: [Task!]!
+
+  """The service that sent it."""
+  service: String!
+}
+
+"""
+A signal a service of this hub declares it emits (from its manifest). Hub-wide.
+"""
+type SignalDeclaration {
+  """What the service says about the signal."""
+  description: String
+
+  """
+  The descriptor keys each signal carries — what trigger conditions may test.
+  """
+  descriptorKeys: [String!]!
+
+  """Unique ID of the declaration."""
+  id: ID!
+
+  """The structure identifier of the objects signalled."""
+  identifier: String!
+
+  """What happens to them."""
+  kind: SignalKind!
+
+  """The service that emits it."""
+  service: String!
+}
+
+"""What happened to the object a service signalled."""
+enum SignalKind {
+  CREATED
+  DELETED
+  UPDATED
 }
 
 type SliderAssignWidget implements AssignWidget {
@@ -4745,6 +5019,11 @@ type Task {
   """Last instruction type."""
   latestInstructKind: TaskInstructKind!
 
+  """
+  The task is held back until then (a delayed task); null = dispatched on creation.
+  """
+  notBefore: DateTime
+
   """Parent task that triggered this one."""
   parent: Task
 
@@ -4764,6 +5043,12 @@ type Task {
 
   """Root task in the creation chain."""
   root: Task
+
+  """The signal that caused this task, if a trigger fired it."""
+  signal: Signal
+
+  """The trigger that fired this task, if any."""
+  trigger: Trigger
 
   """Last update timestamp."""
   updatedAt: DateTime!
@@ -4807,6 +5092,16 @@ type TaskChangeEvent {
 
 """An event that occurred during a task."""
 type TaskEvent {
+  """
+  The agent-journal position of the report that wrote this event; null for server-written events and agents without a journal.
+  """
+  agentPos: Int
+
+  """
+  When the agent recorded the report; null for server-written events and agents without a journal.
+  """
+  agentTs: DateTime
+
   """Time when event was created."""
   createdAt: DateTime!
 
@@ -4888,6 +5183,7 @@ enum TaskEventKind {
 }
 
 input TaskEventOrder @oneOf {
+  agentPos: Ordering
   createdAt: Ordering
 }
 
@@ -5208,6 +5504,67 @@ input TrackInput {
 }
 
 """
+A rule over signals: on a signal of this kind and structure whose descriptors match, run the action with the object in `port`.
+"""
+type Trigger {
+  """The action every run assigns."""
+  action: Action!
+
+  """The agent runs are pinned to, if any."""
+  agent: Agent
+
+  """The other args of every run."""
+  args: AnyDefault!
+
+  """The owner; runs are assigned as this identity."""
+  caller: Caller!
+
+  """Extra descriptor conditions (key, operator, value), requires-style."""
+  conditions: AnyDefault!
+
+  """Firings in a row that could not create a run."""
+  consecutiveFailures: Int!
+
+  """Creation timestamp."""
+  createdAt: DateTime!
+
+  """A disabled trigger fires nothing."""
+  enabled: Boolean!
+
+  """Unique ID of the trigger."""
+  id: ID!
+
+  """The structure identifier it reacts to."""
+  identifier: String!
+
+  """The implementation interface on the pinned agent."""
+  interface: String
+
+  """The signal kind it reacts to."""
+  kind: SignalKind!
+
+  """Why the last firing did not create a run."""
+  lastError: String
+
+  """Human-readable name."""
+  name: String!
+
+  """The STRUCTURE argument that receives the signalled object."""
+  port: String!
+
+  """The most recent runs, newest first."""
+  runs(limit: Int! = 20): [Task!]!
+
+  """Last update timestamp."""
+  updatedAt: DateTime!
+}
+
+"""Identify a trigger."""
+input TriggerIdInput {
+  id: ID!
+}
+
+"""
 A UI catalog: the components a UI app can render and the pure operations it can evaluate for UtilCalls, registered per organization.
 """
 type UICatalog {
@@ -5358,6 +5715,19 @@ input UpdateResolutionInput {
   resolvedDependencies: [ResolvedDependencyInput!] = null
 }
 
+"""
+Change a schedule. Giving intervalSeconds clears cron and vice versa. A waiting run is re-planned; an executing one finishes first.
+"""
+input UpdateScheduleInput {
+  args: Args = null
+  cron: String = null
+  enabled: Boolean = null
+  id: ID!
+  intervalSeconds: Int = null
+  name: String = null
+  timezone: String = null
+}
+
 """The input for updating a space."""
 input UpdateSpaceInput {
   """The new description of the space."""
@@ -5382,6 +5752,15 @@ input UpdateThreeDModelInput {
   media: ID = null
 
   """The new name of the 3D model."""
+  name: String = null
+}
+
+"""Change a trigger. Omitted fields stay as they are."""
+input UpdateTriggerInput {
+  args: Args = null
+  conditions: AnyDefault = null
+  enabled: Boolean = null
+  id: ID!
   name: String = null
 }
 

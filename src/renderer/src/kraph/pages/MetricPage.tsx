@@ -1,11 +1,11 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { Badge } from "@/components/ui/badge";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { Badge } from "@/core/ui/badge";
 import {
   KraphEntity,
   KraphMetric
-} from "@/linkers";
+} from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetMetricQuery } from "../api/graphql";
 

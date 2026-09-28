@@ -1,15 +1,15 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { registry } from "@/app/localactions";
-import { LocalActionButton } from "@/components/ui/localactionbutton";
-import { RekuestBlok, RekuestMaterializedBlok } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { registry } from "@/core/smart/localactions/registry";
+import { LocalActionButton } from "@/core/ui/localactionbutton";
+import { RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
 import DemoBlokRenderer from "@/rekuest/components/DemoBlokRenderer";
 import { useGetBlokQuery } from "../api/graphql";
-import { Button } from "@/components/ui/button";
-import { PageAction } from "@/components/ui/page-action";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/core/ui/button";
+import { PageAction } from "@/core/ui/page-action";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/core/ui/dialog";
 import { MaterializeBlokForm } from "../forms/MaterializeBlokForm";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
   const [open, setOpen] = useState(false);
@@ -27,7 +27,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                   left: [
                     {
                       identifier: '@rekuest/blok',
-                      object: { id: data.blok.id },
+                      id: data.blok.id,
                     },
                   ],
                   isCommand: false,

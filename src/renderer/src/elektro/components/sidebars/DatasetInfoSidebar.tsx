@@ -1,8 +1,8 @@
-import { formatShape } from "@/lib/arrays/formatShape";
-import { formatDisplay } from "@/lib/quantities";
+import { formatShape } from "@/core/data/arrays/formatShape";
+import { formatDisplay } from "@/core/util/quantities";
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import { ElektroExperiment, ElektroNeuronModel } from "@/linkers";
+import { Badge } from "@/core/ui/badge";
+import { ElektroExperiment, ElektroNeuronModel } from "@/core/linkers";
 import { arrayDatasetSpecLink, specsOf } from "../../specs";
 import { GetArrayDatasetQuery } from "../../api/graphql";
 import HistoryCard from "../cards/HistoryCard";

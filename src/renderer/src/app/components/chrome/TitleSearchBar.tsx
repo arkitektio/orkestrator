@@ -1,6 +1,6 @@
-import { useCommandPalette } from "@/command/CommandPaletteProvider";
-import { CyclingPlaceholder } from "@/command/CyclingPlaceholder";
-import { cn } from "@/lib/utils";
+import { useCommandPalette } from "@/core/command/CommandPaletteProvider";
+import { CyclingPlaceholder } from "@/core/command/CyclingPlaceholder";
+import { cn } from "@/core/util/utils";
 import { Search } from "lucide-react";
 import { useEffect, useRef } from "react";
 

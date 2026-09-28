@@ -1,19 +1,19 @@
-import { AsyncCombobox } from "@/components/fields/AsyncCombobox";
-import { SearchFunction } from "@/components/fields/SearchField";
+import { AsyncCombobox } from "@/core/forms/AsyncCombobox";
+import { SearchFunction } from "@/core/forms/SearchField";
 import {
   ActionLabel,
   PageActionPolicy,
   useActionSlotSize,
-} from "@/components/ui/page-action";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from "@/core/ui/page-action";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { useAppsQuery } from "@/lok-next/api/graphql";
+} from "@/core/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
+import { useStructureOptions } from "@/core/modules/hooks/useStructureOptions";
 import { ActionKind, useProtocolOptionsLazyQuery } from "@/rekuest/api/graphql";
 import { Filter, X } from "lucide-react";
 import { useCallback } from "react";
@@ -51,19 +51,15 @@ export const ActionFacetFilter = ({
   // Page chrome: in a narrow action row this keeps the glyph and the count
   // and drops the word. The policy props are read off the element by the row.
   const size = useActionSlotSize();
-  const { data: apps } = useAppsQuery();
+  // Lok's apps, answered by lok (its option sources).
+  const searchLokApps = useStructureOptions("@lok/app", "identifier");
   // Two instances: one lazy query cannot serve two concurrent calls.
   const [searchProtocols] = useProtocolOptionsLazyQuery();
   const [lookupProtocol] = useProtocolOptionsLazyQuery();
 
   const searchApps = useCallback<SearchFunction>(
-    async ({ search }) => {
-      const term = search?.trim().toLowerCase() ?? "";
-      return (apps?.apps ?? [])
-        .filter((a) => a.identifier.toLowerCase().includes(term))
-        .map((a) => ({ value: a.identifier, label: a.identifier }));
-    },
-    [apps],
+    async (args) => (searchLokApps ? searchLokApps({ search: args.search?.trim(), values: args.values }) : []),
+    [searchLokApps],
   );
 
   // The facet holds a protocol id. The combobox only searches by text, so the

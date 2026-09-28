@@ -1,4 +1,4 @@
-import { asGraphDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
+import { asGraphDetailQueryRoute } from "@/kraph/routes/graphRoutes";
 import { useGetNodeQuery } from "../api/graphql";
 
 import EntityPage from "./EntityPage";

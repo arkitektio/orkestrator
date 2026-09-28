@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { DoctorService, type DoctorServiceDeps } from "./DoctorService";
 import {
+  DOCTOR_INTERFACES_CHANNEL,
   DOCTOR_MAX_TARGETS,
   DOCTOR_MESH_CHANNEL,
   DOCTOR_NETWORK_CHANNEL,
@@ -65,11 +66,17 @@ const target = (host: string): ProbeTarget => ({
 });
 
 describe("DoctorService wiring", () => {
-  it("registers exactly the three channels", () => {
+  it("registers exactly the four channels", () => {
     const { transport } = setup();
     expect([...transport.handlers.keys()].sort()).toEqual(
-      [DOCTOR_MESH_CHANNEL, DOCTOR_NETWORK_CHANNEL, DOCTOR_REMEDY_CHANNEL].sort(),
+      [DOCTOR_INTERFACES_CHANNEL, DOCTOR_MESH_CHANNEL, DOCTOR_NETWORK_CHANNEL, DOCTOR_REMEDY_CHANNEL].sort(),
     );
+  });
+
+  it("answers the interface probe from its dependency", async () => {
+    const vpn = [{ name: "wg0", addresses: ["10.8.0.2"], kind: "wireguard" as const }];
+    const { transport } = setup({ probeInterfaces: () => vpn });
+    expect(await transport.invoke(DOCTOR_INTERFACES_CHANNEL)).toEqual(vpn);
   });
 
   it("probes every target it is given", async () => {

@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { KraphStructureRelationCategory } from "@/linkers";
+import { ListRender } from "@/core/layout/ListRender";
+import { KraphStructureRelationCategory } from "@/core/linkers";
 import {
   MetricKindFilter,
   OffsetPaginationInput,

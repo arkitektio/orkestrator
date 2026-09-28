@@ -1,16 +1,16 @@
-import { Arkitekt } from "@/app/Arkitekt";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
 import {
   DropdownMenuGroup,
   DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
+} from "@/core/ui/dropdown-menu";
 import {
   groupProfilesByDeployment,
   type StoredProfile,
-} from "@/lib/arkitekt/fakts/profileStorageSchema";
-import { describeRefreshFailure } from "@/lib/arkitekt/runtime/profileAuth";
+} from "@/core/connection/arkitekt/fakts/profileStorageSchema";
+import { useSwitchToProfile } from "@/core/connection/profile/ui/useSwitchToProfile";
 import { Building2 } from "lucide-react";
 import React from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 import ProfileRow from "./ProfileRow";
 
@@ -35,52 +35,15 @@ export const ProfileSwitcher = () => {
   const profiles = Arkitekt.useProfiles();
   const activeProfileId = Arkitekt.useActiveProfileId();
   const switchingProfileId = Arkitekt.useSwitchingProfileId();
-  const switchProfile = Arkitekt.useSwitchProfile();
   const signOutProfile = Arkitekt.useSignOutProfile();
   const removeProfile = Arkitekt.useRemoveProfile();
-  const connection = Arkitekt.useConnection();
-  const parkSession = Arkitekt.useDisconnect();
 
   const groups = React.useMemo(
     () => groupProfilesByDeployment(profiles),
     [profiles],
   );
 
-  const onSelect = React.useCallback(
-    (profile: StoredProfile) => {
-      if (profile.id === activeProfileId && connection) {
-        return;
-      }
-
-      // A stale profile's refresh chain is already known broken, and a re-grant
-      // hands off to an external browser for up to a minute — which a menu that
-      // closes on every click cannot host. Park the session instead: the
-      // sign-in screen appears with this account's card, and its "Sign in
-      // again" runs the grant somewhere that can wait for it.
-      if (profile.status === "stale") {
-        void parkSession();
-        return;
-      }
-
-      void switchProfile(profile.id).catch((error) => {
-        // `switchProfile` has already classified this and left the current
-        // profile running, so there is nothing to recover — the toast is the
-        // whole user-facing consequence.
-        const { kind, message } = describeRefreshFailure(error, profile);
-        if (kind === "expired") {
-          toast.error(message, {
-            action: {
-              label: "Sign in again",
-              onClick: () => void parkSession(),
-            },
-          });
-          return;
-        }
-        toast.error(message);
-      });
-    },
-    [activeProfileId, connection, parkSession, switchProfile],
-  );
+  const onSelect = useSwitchToProfile();
 
   const onSignOut = React.useCallback(
     (profile: StoredProfile) => {

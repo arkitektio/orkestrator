@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 // graphql.ts pulls in the Arkitekt app through its hooks; only enums/types are needed.
-vi.mock("@/lib/kabinet/hooks", () => ({}));
+vi.mock("@/kabinet/api/hooks", () => ({}));
 
 import {
   ActionKind,

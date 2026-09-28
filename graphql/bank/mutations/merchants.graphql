@@ -1,0 +1,75 @@
+mutation UpdateMerchant($input: UpdateMerchantInput!) {
+  updateMerchant(input: $input) {
+    ...Merchant
+  }
+}
+
+mutation DeleteMerchant($id: ID!) {
+  deleteMerchant(id: $id)
+}
+
+mutation AssignMerchant($input: AssignMerchantInput!) {
+  assignMerchant(input: $input) {
+    ...ListTransaction
+  }
+}
+
+mutation UpdateMerchantLocation($input: UpdateMerchantLocationInput!) {
+  updateMerchantLocation(input: $input) {
+    ...MerchantLocation
+  }
+}
+
+mutation GeocodeMerchantLocation($id: ID!, $query: String) {
+  geocodeMerchantLocation(id: $id, query: $query) {
+    ...MerchantLocation
+  }
+}
+
+mutation CreateMerchant($input: CreateMerchantInput!) {
+  createMerchant(input: $input) {
+    ...Merchant
+  }
+}
+
+mutation MergeMerchants($merchant: ID!, $into: ID!) {
+  mergeMerchants(merchant: $merchant, into: $into) {
+    ...Merchant
+  }
+}
+
+mutation AddMerchantAlias($merchant: ID!, $text: String!) {
+  addMerchantAlias(merchant: $merchant, text: $text) {
+    id
+    pattern
+    merchant {
+      id
+      aliases {
+        id
+        pattern
+      }
+    }
+  }
+}
+
+mutation RemoveMerchantAlias($id: ID!) {
+  removeMerchantAlias(id: $id)
+}
+
+mutation CreateMerchantLocation($input: MerchantLocationInput!) {
+  createMerchantLocation(input: $input) {
+    ...MerchantLocation
+  }
+}
+
+mutation DeleteMerchantLocation($id: ID!) {
+  deleteMerchantLocation(id: $id)
+}
+
+# For creatable pickers: the new merchant as an option.
+mutation CreateMerchantOption($name: String!, $fromTransactions: [ID!]) {
+  result: createMerchant(input: { name: $name, fromTransactions: $fromTransactions }) {
+    value: id
+    label: name
+  }
+}

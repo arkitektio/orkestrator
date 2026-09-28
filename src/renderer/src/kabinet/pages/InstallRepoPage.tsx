@@ -1,10 +1,10 @@
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Button } from "@/core/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
 import { ArrowRight, Github } from "lucide-react";
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   ListDefinitionsDocument,
   ListReleasesDocument,

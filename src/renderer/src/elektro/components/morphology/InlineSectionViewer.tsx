@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ElektroSection } from "@/linkers";
+import { ElektroSection } from "@/core/linkers";
 import { useDetailNeuronModelQuery } from "../../api/graphql";
 import { MorphologyScene } from "./MorphologyScene";
 

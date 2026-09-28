@@ -1,16 +1,16 @@
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import React from "react";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { RekuestTask } from "@/linkers";
-import { AppInfo } from "@/lok-next/components/protected/AppInfo";
-import { UserInfo } from "@/lok-next/components/protected/UserInfo";
-import Timestamp from "@/components/ui/timestamp";
+} from "@/core/ui/card";
+import { RekuestTask } from "@/core/linkers";
+
+import Timestamp from "@/core/ui/timestamp";
 import { HistoryKind, ProvenanceEntryFragment } from "../../api/graphql";
 
 interface HistoryCardProps {
@@ -22,7 +22,7 @@ const HistoryCard = ({ history }: HistoryCardProps) => {
     <Card key={history.id}>
       <CardHeader className="flex flex-row gap-1">
         <div className="my-auto">
-          <UserInfo sub={history.user?.sub} />
+          <StructureDisplay identifier="@lok/user" id={history.user?.sub} />
         </div>
         <div>
           <CardTitle>
@@ -35,7 +35,7 @@ const HistoryCard = ({ history }: HistoryCardProps) => {
             <div className="text-muted-xs w-auto text-sm">
               {history.client && (
                 <>
-                  utilizing <AppInfo clientId={history.client?.clientId} />
+                  utilizing <StructureDisplay identifier="@lok/client" by="clientId" id={history.client?.clientId} />
                 </>
               )}
             </div>
@@ -55,7 +55,7 @@ const HistoryCard = ({ history }: HistoryCardProps) => {
                     <span className="text-xs text-muted-foreground">
                       assigned by
                     </span>
-                    <UserInfo sub={history.task.assigner.sub} />
+                    <StructureDisplay identifier="@lok/user" id={history.task.assigner.sub} />
                   </>
                 )}
               </div>

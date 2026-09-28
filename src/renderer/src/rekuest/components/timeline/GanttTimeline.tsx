@@ -2,8 +2,8 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { ReturnsContainer } from "@/components/widgets/returns/ReturnsContainer";
+} from "@/core/ui/popover";
+import { ReturnsContainer } from "@/core/ports/widgets/returns/ReturnsContainer";
 import {
   TaskEventKind,
   DetailTaskFragment,
@@ -11,8 +11,8 @@ import {
 } from "@/rekuest/api/graphql";
 import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import Timestamp from "@/components/ui/timestamp";
-import { useWidgetRegistry } from "../../widgets/WidgetsContext";
+import Timestamp from "@/core/ui/timestamp";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { statusBarColor } from "../../lib/taskStatus";
 import {
   TimelineDependencyGroup,

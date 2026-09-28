@@ -3,6 +3,7 @@ import { AppContext, AvailableService } from "@/lib/arkitekt/provider";
 import { ImplementationInput } from "@/rekuest/api/graphql";
 import { ElectronAPI } from "@electron-toolkit/preload";
 import type { ChromeTheme, ChromeThemeSource, WindowChromeState } from "../main/modules/WindowManager";
+import type { DialogRequest as ForwardedDialog } from "../main/modules/QuickPaletteWindow";
 import type {
   VoiceCatalogEntry,
   VoiceEvent,
@@ -17,6 +18,7 @@ import type {
   ProbeNetworkRequest,
   RemedyId,
   RemedyResult,
+  VpnInterface,
 } from "../main/doctor/protocol";
 import type {
   MeshClaimRequest,
@@ -61,6 +63,8 @@ export type MeshApi = {
 export type DoctorApi = {
   probeNetwork: (request: ProbeNetworkRequest) => Promise<NetworkProbeResult[]>;
   probeMesh: () => Promise<MeshProbeResult>;
+  /** Tunnel interfaces (VPN, WireGuard, system Tailscale) that are up. */
+  probeInterfaces: () => Promise<VpnInterface[]>;
   runRemedy: (id: RemedyId) => Promise<RemedyResult>;
 };
 
@@ -121,6 +125,21 @@ declare global {
       };
       tabs: {
         onOpen: (cb: (payload: { path: string }) => void) => () => void;
+      };
+      dialogs: {
+        onOpen: (cb: (request: ForwardedDialog) => void) => () => void;
+        takePending: () => Promise<ForwardedDialog | null>;
+      };
+      palette: {
+        setGlobalShortcut: (
+          accelerator: string | null,
+        ) => Promise<{ status: "ok" | "off" | "taken" | "invalid"; accelerator: string | null }>;
+        onQuickShown: (cb: () => void) => () => void;
+        hideQuick: () => void;
+        keepQuickOpen: (keep: boolean) => void;
+        resizeQuick: (size: { height: number; expanded?: boolean }) => void;
+        openInMain: (path: string) => void;
+        openDialogInMain: (request: ForwardedDialog) => void;
       };
       openFilePicker: () => Promise<string | undefined>;
       uploadBigFile: (opts: { uploadId: string; path: string; grant: any; endpointUrl: string }) => Promise<string>;

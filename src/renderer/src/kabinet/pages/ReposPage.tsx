@@ -1,7 +1,7 @@
-import { PageLayout } from "@/components/layout/PageLayout";
-import { PageAction } from "@/components/ui/page-action";
-import { DialogButton } from "@/components/ui/dialog-button";
-import { Separator } from "@/components/ui/separator";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { PageAction } from "@/core/ui/page-action";
+import { DialogButton } from "@/core/ui/dialog-button";
+import { Separator } from "@/core/ui/separator";
 import { ListDefinitionsDocument, ListReleasesDocument, useRescanReposMutation } from "../api/graphql";
 import RepoList from "../components/lists/RepoList";
 

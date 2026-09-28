@@ -1,5 +1,5 @@
 import { ListTermFragment } from "@/kraph/api/graphql";
-import { KraphTerm } from "@/linkers";
+import { KraphTerm } from "@/core/linkers";
 import { termKindLabel, termTint } from "../lib/terms";
 
 /**

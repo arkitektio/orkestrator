@@ -1,0 +1,30 @@
+fragment ListBankConnection on BankConnection {
+  id
+  aspspName
+  aspspCountry
+  provider
+  status
+  linkStep
+  validUntil
+  needsReauth
+  lastError
+  lastErrorCode
+  pendingExpiresAt
+  isAbandoned
+  nextSyncAllowedAt
+  syncsRemainingToday
+}
+
+fragment BankConnection on BankConnection {
+  ...ListBankConnection
+  createdAt
+  linkedAt
+  creator {
+    id
+    sub
+    preferredUsername
+  }
+  accounts {
+    ...ListBankAccount
+  }
+}

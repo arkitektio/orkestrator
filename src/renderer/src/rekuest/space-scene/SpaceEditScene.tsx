@@ -1,5 +1,5 @@
 import CheckoutMaterializedBlokRenderer from "@/rekuest/components/CheckoutMaterializedBlokRenderer";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,12 +7,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { WithMediaUrl } from "@/lib/datalayer/rekuestAccess";
-import { useSmartDrop } from "@/providers/smart/hooks";
-import type { Structure } from "@/types";
+} from "@/core/ui/dialog";
+import { Input } from "@/core/ui/input";
+import { Label } from "@/core/ui/label";
+import { WithMediaUrl } from "@/rekuest/datalayer/rekuestAccess";
+import { useSmartDrop } from "@/core/smart/hooks";
+import type { Structure } from "@/core/types";
 import {
   Center,
   Environment,
@@ -96,7 +96,7 @@ type PlacementDialogOption = {
 const isDroppedAgent = (
   structure: Structure,
 ): structure is Structure & { object: DroppedAgent } => {
-  return structure.identifier === "@rekuest/agent" && typeof structure.object?.id === "string";
+  return structure.identifier === "@rekuest/agent" && typeof structure.id === "string";
 };
 
 const useDebouncedString = (value: string, delayMs = 250) => {

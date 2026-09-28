@@ -2,9 +2,9 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
-import { TabsProvider } from "@/command/tabs/TabsProvider";
-import { useActiveTabNavigation } from "@/command/tabs/useActiveTabNavigation";
+import { ActiveTabRouter } from "@/core/tabs/ActiveTabRouter";
+import { TabsProvider } from "@/core/tabs/TabsProvider";
+import { useActiveTabNavigation } from "@/core/tabs/useActiveTabNavigation";
 
 import { RailChrome } from "./RailChrome";
 
@@ -15,7 +15,8 @@ import { RailChrome } from "./RailChrome";
 const { profileRef } = vi.hoisted(() => ({
   profileRef: { current: null as unknown },
 }));
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: {
     useActiveProfileId: () => "org-a",
     useActiveProfile: () => profileRef.current,
@@ -30,7 +31,7 @@ const CONNECTED = {
   },
   label: {},
 };
-vi.mock("@/constants", () => ({ baseName: "" }));
+vi.mock("@/core/constants", () => ({ baseName: "" }));
 
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <TabsProvider>

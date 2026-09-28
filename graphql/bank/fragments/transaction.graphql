@@ -1,0 +1,55 @@
+fragment TransactionCategory on Category {
+  id
+  name
+  color
+  kind
+}
+
+fragment ListTransaction on Transaction {
+  id
+  bookingDate
+  valueDate
+  transactionDate
+  amount
+  currency
+  status
+  counterparty
+  remittance
+  isTransfer
+  note
+  kind
+  isin
+  quantity
+  categorySource
+  merchantSource
+  merchant {
+    id
+    name
+    logoUrl
+  }
+  category {
+    ...TransactionCategory
+  }
+  account {
+    id
+    name
+    iban
+  }
+}
+
+fragment Transaction on Transaction {
+  ...ListTransaction
+  counterpartyIban
+  entryReference
+  isTransferManual
+  merchantLocation {
+    id
+    name
+    street
+    city
+    latitude
+    longitude
+  }
+  createdAt
+  updatedAt
+}

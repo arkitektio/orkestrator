@@ -1,5 +1,5 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphInstance } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
+import { KraphInstance } from "@/core/linkers";
 import { useGetInstanceQuery } from "../api/graphql";
 import { termKindLabel } from "../lib/terms";
 
@@ -12,7 +12,7 @@ import { termKindLabel } from "../lib/terms";
  * `kind`, which is exactly what this shows.
  */
 export const InstanceDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetInstanceQuery({ variables: { id: props.object } });
+  const { data } = useGetInstanceQuery({ variables: { id: props.id } });
 
   if (!data?.instance) {
     return <div className="text-xs text-muted-foreground">Claim not found</div>;

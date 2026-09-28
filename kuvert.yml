@@ -1,0 +1,30 @@
+overwrite: true
+schema:
+  "http://jhnnsrs-lab/kuvert/schema":
+    handleAsSDL: true
+documents: "graphql/kuvert/**/*.graphql"
+generates:
+  src/renderer/src/kuvert/api/fragments.ts:
+    plugins:
+      - "fragment-matcher"
+  src/renderer/src/kuvert/api/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+    config:
+      withHooks: true
+      reactApolloVersion: 3
+      apolloReactHooksImportFrom: "@/kuvert/api/funcs"
+      # Reference fragment types by name instead of inlining them: deep fragments
+      # otherwise blow graphql.ts up to many MB and stall tsc.
+      inlineFragmentTypes: combine
+      scalars:
+        # Isoformat strings on the wire.
+        DateTime: "string"
+        # 64-bit byte counts, serialized as a JSON number.
+        ByteCount: "number"
+
+  graphql/schemas/kuvert.graphql:
+    plugins:
+      - schema-ast

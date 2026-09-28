@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createProfileFromSession } from "@/lib/arkitekt/fakts/profileStorageSchema";
+import { createProfileFromSession } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 
 const state = {
   profiles: [] as unknown[],
@@ -16,7 +16,8 @@ const state = {
   removeProfile: vi.fn(),
 };
 
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: {
     useProfiles: () => state.profiles,
     useSwitchingProfileId: () => state.switchingProfileId,

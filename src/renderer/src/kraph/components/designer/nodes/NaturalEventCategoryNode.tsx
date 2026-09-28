@@ -1,14 +1,14 @@
-import { Card } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import {
   KraphProtocolEventCategory
-} from "@/linkers";
+} from "@/core/linkers";
 import { NodeProps, NodeResizer } from "@xyflow/react";
 import { memo } from "react";
 import { Handles } from "../components/Handles";
 import { PathMarker } from "../components/PathMarker";
 import { NaturalEventNode } from "../types";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 export const NaturalEventCategoryNode = memo(({ data, id, selected }: NodeProps<NaturalEventNode>) => {
   return (

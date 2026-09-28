@@ -7,8 +7,8 @@ import {
   createBlokFunction,
   createVariadicBlokFunction,
   BlokPropSchemas,
-} from "@/blok/renderer/runtime";
-import { defaultBlokCatalog, UI_CATALOG_NAME } from "@/blok/renderer/catalog";
+} from "@/core/blok/renderer/runtime";
+import { defaultBlokCatalog, UI_CATALOG_NAME } from "@/core/blok/renderer/catalog";
 import { CatalogValueKind, type UiCatalogFragment } from "@/rekuest/api/graphql";
 import {
   buildRegisterUiCatalogInput,

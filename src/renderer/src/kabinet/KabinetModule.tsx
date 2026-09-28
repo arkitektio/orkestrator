@@ -1,9 +1,11 @@
-import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/app/Arkitekt";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
+import { KabinetGuard } from "@/kabinet/api/hooks";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import AppPage from "./pages/AppPage";
+import ApprovalPage from "./pages/ApprovalPage";
+import ApprovalsPage from "./pages/ApprovalsPage";
 import AppStoreRedirect from "./pages/AppStoreRedirect";
 import AppStorePage from "./pages/AppStorePage";
 import BackendPage from "./pages/BackendPage";
@@ -17,14 +19,13 @@ import RepoPage from "./pages/RepoPage";
 import ReposPage from "./pages/ReposPage";
 import ReleasePage from "./pages/ReleasePage";
 import ResourcePage from "./pages/ResourcePage";
-import StandardPane from "./panes/StandardPane";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 interface Props { }
 
 export const KabinetModule: React.FC<Props> = () => {
   return (
-    <Guard.Kabinet fallback={<ServiceUnavailable serviceKey="kabinet" />}>
-      <ModuleLayout pane={<StandardPane />}>
+    <KabinetGuard fallback={<ServiceUnavailable serviceKey="kabinet" />}>
+      <ModuleLayout>
         <Routes>
           <Route path="app-store" element={<AppStorePage />} />
           {/* The app page moved to the id-keyed model route; shared links to
@@ -35,6 +36,8 @@ export const KabinetModule: React.FC<Props> = () => {
           {/* Static before dynamic: where the install deeplink lands. */}
           <Route path="repos/install" element={<InstallRepoPage />} />
           <Route path="repos/:id" element={<RepoPage />} />
+          <Route path="approvals" element={<ApprovalsPage />} />
+          <Route path="approvals/:id" element={<ApprovalPage />} />
           <Route path="pods" element={<PodsPage />} />
           <Route path="pods/:id" element={<PodPage />} />
           <Route path="definitions/:id" element={<DefinitionPage />} />
@@ -47,7 +50,7 @@ export const KabinetModule: React.FC<Props> = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>
-    </Guard.Kabinet>
+    </KabinetGuard>
   );
 };
 

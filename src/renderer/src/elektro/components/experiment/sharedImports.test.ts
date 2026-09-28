@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
  * elektro importing mikro's guts.
  *
  * Without this test that distinction decays on the first hurried afternoon:
- * `@/mikro-next/components/scene/platform/...` resolves perfectly well, and
+ * `@/mikro/components/scene/platform/...` resolves perfectly well, and
  * mikro's own `architecture.test.ts` cannot see it — its `resolveTarget` returns
  * null for anything outside the scene directory, so it is structurally blind to
  * inbound edges. This is the other half of that fence.
@@ -54,10 +54,10 @@ describe("elektro module boundaries", () => {
 
     for (const file of sourceFiles(ELEKTRO_ROOT)) {
       for (const spec of specifiersIn(readFileSync(file, "utf8"))) {
-        const isAliased = spec.startsWith("@/mikro-next/");
+        const isAliased = spec.startsWith("@/mikro/");
         const isRelative =
           spec.startsWith(".") &&
-          resolve(file, "..", spec).startsWith(join(SRC_ROOT, "mikro-next"));
+          resolve(file, "..", spec).startsWith(join(SRC_ROOT, "mikro"));
         if (isAliased || isRelative) {
           offenders.push(`${relative(SRC_ROOT, file)} -> ${spec}`);
         }

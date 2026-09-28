@@ -1,6 +1,6 @@
-import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/app/Arkitekt";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
+import { ElektroGuard } from "@/elektro/api/funcs";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import ExperimentPage from "./pages/ExperimentPage";
@@ -21,20 +21,19 @@ import SectionPage from "./pages/SectionPage";
 import ArrayDatasetPage from "./pages/ArrayDatasetPage";
 import ArrayDatasetSpecPage from "./pages/ArrayDatasetSpecPage";
 import ArrayDatasetsPage from "./pages/ArrayDatasetsPage";
-import StandardPane from "./panes/StandardPane";
 import { MechanismPage } from "./pages/MechanismPage";
 import { EnvironmentPage } from "./pages/EnvironmentPage";
 import { ElektroZarrStoreProvider } from "./components/store/ElektroZarrStoreProvider";
 import { ElektroParquetProvider } from "./components/store/parquetEngine";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 interface Props { }
 
 export const ElektroModule: React.FC<Props> = () => {
   return (
-    <Guard.Elektro fallback={<ServiceUnavailable serviceKey="elektro" />}>
+    <ElektroGuard fallback={<ServiceUnavailable serviceKey="elektro" />}>
       <ElektroZarrStoreProvider>
         <ElektroParquetProvider>
-        <ModuleLayout pane={<StandardPane />}>
+        <ModuleLayout>
         <Routes>
           <Route path="files/:id" element={<FilePage />} />
           <Route path="files" element={<FilesPage />} />
@@ -67,7 +66,7 @@ export const ElektroModule: React.FC<Props> = () => {
         </ModuleLayout>
         </ElektroParquetProvider>
       </ElektroZarrStoreProvider>
-    </Guard.Elektro>
+    </ElektroGuard>
   );
 };
 

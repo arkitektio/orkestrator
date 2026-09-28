@@ -1,4 +1,4 @@
-import { useRekuest } from "@/app/Arkitekt";
+import { useRekuest } from "@/rekuest/api/hooks";
 import {
   WatchOrgTasksDocument,
   WatchOrgTasksSubscription,

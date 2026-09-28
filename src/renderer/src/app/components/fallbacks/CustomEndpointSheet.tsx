@@ -1,8 +1,8 @@
-import { Arkitekt } from "@/app/Arkitekt";
-import { StringField } from "@/components/fields/StringField";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { StringField } from "@/core/forms/StringField";
+import { Alert, AlertDescription } from "@/core/ui/alert";
+import { Button } from "@/core/ui/button";
+import { Form } from "@/core/ui/form";
 import {
   Sheet,
   SheetContent,
@@ -10,10 +10,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
-import { ConnectionDoctor } from "@/app/components/doctor/ConnectionDoctor";
-import { discover } from "@/lib/arkitekt/fakts/discover";
-import { endpointToProbeTargets } from "@/lib/arkitekt/doctor/targets";
+} from "@/core/ui/sheet";
+import { ConnectionDoctor } from "@/core/connection/ui/doctor/ConnectionDoctor";
+import { discover } from "@/core/connection/arkitekt/fakts/discover";
+import { endpointToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
 import { AlertCircle } from "lucide-react";
 import React from "react";
 import { useForm } from "react-hook-form";

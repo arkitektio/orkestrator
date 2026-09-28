@@ -1,10 +1,10 @@
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DialogButton } from "@/components/ui/dialog-button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { DialogButton } from "@/core/ui/dialog-button";
+import { Input } from "@/core/ui/input";
+import { Skeleton } from "@/core/ui/skeleton";
+import { cn } from "@/core/util/utils";
 import { useDebounce } from "@uidotdev/usehooks";
 import {
   ArrowRight,
@@ -25,7 +25,7 @@ import { AppShelfTile, AppStoreCard, appStorePath } from "../components/store/Ap
 import { AppIcon, appGradient } from "../components/AppIcon";
 import {
   HardwareBadges,
-  InstallMenu,
+  InstallButton,
   FeaturedBadge,
 } from "../components/store/StoreParts";
 import {
@@ -113,7 +113,7 @@ const FeaturedApp = ({ app }: { app: StoreApp }) => (
         </p>
         <HardwareBadges app={app} />
         <div className="flex items-center gap-2">
-          <InstallMenu flavours={app.latest.flavours} size="lg" className="px-4" />
+          <InstallButton release={app.latest} size="lg" className="px-4" />
           <Button variant="ghost" size="lg" className="rounded-full" asChild>
             <Link to={appStorePath(app)}>
               Explore <ArrowRight />

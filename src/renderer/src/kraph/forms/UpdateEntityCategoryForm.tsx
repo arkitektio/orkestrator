@@ -1,16 +1,16 @@
-import { useDialog } from "@/app/dialog";
-import { ChoicesField } from "@/components/fields/ChoicesField";
-import { ParagraphField } from "@/components/fields/ParagraphField";
-import { StringField } from "@/components/fields/StringField";
-import { SwitchField } from "@/components/fields/SwitchField";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import { useDialog } from "@/core/dialogs/registry";
+import { ChoicesField } from "@/core/forms/ChoicesField";
+import { ParagraphField } from "@/core/forms/ParagraphField";
+import { StringField } from "@/core/forms/StringField";
+import { SwitchField } from "@/core/forms/SwitchField";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/core/ui/accordion";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
 import { Trash2 } from "lucide-react";
 import { buildDerivationRule } from "../components/schema-builder/utils";
 import { useFieldArray, useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   DerivationType,
   EntityCategoryFragment,

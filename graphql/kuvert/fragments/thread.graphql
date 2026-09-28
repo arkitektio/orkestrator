@@ -1,0 +1,40 @@
+# A conversation as a list row. `$inFolder` / `$inRole` scope what the row
+# shows (the newest mail, the unread count) to the folder being listed.
+fragment ListThread on Thread {
+  id
+  subject
+  lastMessageAt
+  messageCount
+  unread
+  flagged
+  hasAttachments
+  unreadCount(folder: $inFolder, folderRole: $inRole)
+  participants {
+    ...Address
+  }
+  account {
+    id
+    name
+    emailAddress
+  }
+  latestMessage(folder: $inFolder, folderRole: $inRole) {
+    ...ListMessage
+  }
+}
+
+fragment Thread on Thread {
+  id
+  subject
+  lastMessageAt
+  messageCount
+  unread
+  tasks {
+    ...TaskChip
+  }
+  account {
+    ...SenderAccount
+  }
+  messages {
+    ...Message
+  }
+}

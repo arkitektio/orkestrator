@@ -1,0 +1,77 @@
+fragment ListCategory on Category {
+  id
+  name
+  color
+  kind
+  key
+  isBase
+  hidden
+  description
+  parent {
+    id
+    name
+  }
+}
+
+fragment CategoryRule on CategoryRule {
+  id
+  priority
+  field
+  match
+  pattern
+  direction
+  amountMin
+  amountMax
+  active
+  createdAt
+  category {
+    ...ListCategory
+  }
+}
+
+fragment Category on Category {
+  ...ListCategory
+  createdAt
+  terms
+  children(ordering: [{ name: ASC }]) {
+    ...ListCategory
+  }
+  rules {
+    ...CategoryRule
+  }
+}
+
+fragment CategoryDeletion on CategoryDeletion {
+  categories
+  transactions
+  rules
+  budgets
+  dismissedBaseKeys
+}
+
+fragment CategorySuggestion on CategorySuggestion {
+  score
+  reason
+  neighbours
+  category {
+    ...TransactionCategory
+  }
+  evidence {
+    id
+    counterparty
+    remittance
+    amount
+    currency
+    bookingDate
+    transactionDate
+  }
+}
+
+fragment SuggestionChip on CategorySuggestion {
+  score
+  reason
+  neighbours
+  category {
+    ...TransactionCategory
+  }
+}

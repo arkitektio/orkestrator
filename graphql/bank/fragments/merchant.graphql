@@ -1,0 +1,128 @@
+fragment ListMerchant on Merchant {
+  id
+  name
+  key
+  online
+  logoUrl
+  website
+  transactionCount
+  firstSeen
+  lastSeen
+  net {
+    amount
+    currency
+  }
+  category {
+    ...TransactionCategory
+  }
+}
+
+fragment MerchantLocation on MerchantLocation {
+  id
+  name
+  street
+  postalCode
+  city
+  region
+  country
+  latitude
+  longitude
+  source
+  storeCode
+  transactionCount
+  lastVisit
+  notes
+  geocodedAt
+  merchant {
+    id
+    name
+  }
+}
+
+fragment Merchant on Merchant {
+  ...ListMerchant
+  description
+  createdAt
+  aliases {
+    id
+    pattern
+  }
+  locations {
+    ...MerchantLocation
+  }
+  rules {
+    ...MerchantRule
+  }
+}
+
+fragment MerchantLocationFeature on MerchantLocationFeature {
+  type
+  id
+  geometry {
+    type
+    coordinates
+  }
+  properties {
+    id
+    name
+    merchantId
+    merchantName
+    categoryName
+    color
+    street
+    city
+    net
+    currency
+    transactionCount
+    lastVisit
+    source
+  }
+}
+
+fragment MerchantRule on MerchantRule {
+  id
+  priority
+  field
+  match
+  pattern
+  direction
+  amountMin
+  amountMax
+  active
+  transactionCount
+  location {
+    id
+    name
+  }
+}
+
+fragment MerchantCandidate on MerchantCandidate {
+  key
+  count
+  samples
+  storeCodes
+  transactionIds
+  totals {
+    amount
+    currency
+  }
+  suggestedCategory {
+    ...TransactionCategory
+  }
+}
+
+fragment MerchantTotal on MerchantTotal {
+  currency
+  income
+  expense
+  net
+  count
+  merchant {
+    id
+    name
+    logoUrl
+    category {
+      ...TransactionCategory
+    }
+  }
+}

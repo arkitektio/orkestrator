@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { RekuestSpace } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { RekuestSpace } from "@/core/linkers";
 import { useSpaceQuery } from "@/rekuest/api/graphql";
 import { SpaceViewScene, SpaceViewSceneProvider } from "../space-scene";
 

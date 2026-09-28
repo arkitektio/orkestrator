@@ -1,32 +1,35 @@
-import { Arkitekt, Guard } from "@/app/Arkitekt";
+import { Guard } from "@/core/connection/arkitekt/host";
+import { Arkitekt } from "@/app/Arkitekt";
+// Installs every module's builtins; must precede anything that reads a registry.
+import "@/app/modules/install";
+import { ModuleBackground } from "@/core/modules/registries";
 import "@/app/configureSmartBuilder";
-import { DialogProvider } from "@/app/dialog";
-import { LocalActionProvider } from "@/app/localactions";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
-import { Toaster } from "@/components/ui/sonner";
+// Hands the menu its sections (providers/smart/hostRegistries).
+import "@/core/smart/smartcontext";
+import { DialogProvider } from "@/core/dialogs/registry";
+import type { DialogRequest } from "@/core/dialogs/DialogProvider";
+import { LocalActionProvider } from "@/core/smart/localactions/registry";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Button } from "@/core/ui/button";
+import { ButtonGroup } from "@/core/ui/button-group";
+import { Toaster } from "@/core/ui/sonner";
 import { UpdateListener } from "@/app/updates/UpdateListener";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { useFatalReport } from "@/hooks/use-report";
-import { ThemeProvider } from "@/providers/ThemeProvider";
-import { DebugProvider } from "@/providers/debug/DebugProvider";
-import { SelectionProvider } from "@/providers/selection/SelectionProvider";
-import { SettingsProvider } from "@/providers/settings/SettingsProvider";
-import { SmartProvider } from "@/providers/smart/provider";
-import { SmartPrefetchProvider } from "@/providers/smart/SmartPrefetchProvider";
-import { SmartSurface } from "@/providers/smart/SmartSurface";
-import { TaskUpdater } from "@/rekuest/components/functional/TaskUpdater";
-import { TaskHookRunner } from "@/lib/taskhooks/TaskHookRunner";
-import { ExportHost } from "@/lib/export/ExportHost";
-import { AgentUpdater } from "@/rekuest/components/functional/AgentUpdater";
-import { UiCatalogRegistrar } from "@/rekuest/catalog/UiCatalogRegistrar";
-import { WidgetRegistryProvider } from "@/rekuest/widgets/WidgetsProvider";
+import { TooltipProvider } from "@/core/ui/tooltip";
+import { useFatalReport } from "@/core/debug/use-report";
+import { ThemeProvider } from "@/core/settings/theme/ThemeProvider";
+import { DebugProvider } from "@/core/debug/DebugProvider";
+import { SelectionProvider } from "@/core/dnd/selection/SelectionProvider";
+import { SettingsProvider } from "@/core/settings/store/SettingsProvider";
+import { SmartProvider } from "@/core/smart/provider";
+import { SmartPrefetchProvider } from "@/core/smart/SmartPrefetchProvider";
+import { SmartSurface } from "@/core/smart/SmartSurface";
+import { ExportHost } from "@/core/modules/export/ExportHost";
+import { WidgetRegistryProvider } from "@/core/ports/engine/WidgetsProvider";
 import React from "react";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { useNavigate } from "react-router-dom";
-import { DisplayProvider } from "./display";
+import { DisplayProvider } from "../core/smart/display/displays";
 import { THE_WIDGET_REGISTRY } from "./shadCnWidgetRegistry";
 
 
@@ -36,7 +39,7 @@ function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   const reportBug = useFatalReport();
 
   return (
-    <ModuleLayout pane={<div className="flex items-center justify-center h-full w-full"><div className="text-6xl text-muted-foreground mb-3">😬</div></div>}>
+    <ModuleLayout>
       <PageLayout title="Test">
         <div className="h-full w-full flex flex-col items-center justify-center">
           <div className="text-6xl text-muted-foreground mb-3">😬</div>
@@ -90,30 +93,31 @@ export const BackNavigationErrorCatcher = ({
   );
 };
 
-import { UploadProvider } from "@/providers/upload/UploadProvider";
-import { DownloadProvider } from "@/providers/download/DownloadProvider";
+import { UploadProvider } from "@/core/datalayer/UploadProvider";
+import { DownloadProvider } from "@/core/modules/download/DownloadProvider";
 
 // The AppProvider is the root component of the application.
 // It is responsible for providing all the context providers that are used in the application.
 // It wraps the Easy Provider, which allows for the configuration of an Easy App through Arkitekt,
 // Additionally, it wraps the DisplayProvider, which allows for the configuration of the display registry.
-import { AgentProvider } from "./agent/AgentProvider";
-import { WardRegistrar } from "@/lib/arkitekt/WardRegistrar";
-import { RefetchOnReactivate } from "@/hooks/use-refetch-on-reactivate";
-import { GcOnNavigate } from "@/hooks/use-gc-on-navigate";
-import { BuiltinDashboardWidgets } from "@/providers/dashboard/widgets/BuiltinDashboardWidgets";
-import { RekuestDashboardWidgets } from "@/providers/dashboard/widgets/RekuestDashboardWidgets";
-import { MikroDashboardWidgets } from "@/providers/dashboard/widgets/MikroDashboardWidgets";
-import { LatestTasksDashboardWidget } from "@/providers/dashboard/widgets/LatestTasksDashboardWidget";
-import { LatestArrayDatasetsDashboardWidget } from "@/providers/dashboard/widgets/LatestArrayDatasetsDashboardWidget";
-import { OrganizationBrandSync } from "@/lok-next/components/OrganizationBrandSync";
-import { ProfileIdentitySync } from "@/lok-next/components/ProfileIdentitySync";
-import { MeshSync } from "./components/mesh/MeshSync";
-import { CommandPaletteProvider } from "@/command/CommandPaletteProvider";
-import { CommandMenuHost } from "@/command/Host";
-import { ActiveTabRouter } from "@/command/tabs/ActiveTabRouter";
-import { TabsProvider } from "@/command/tabs/TabsProvider";
-import { VoiceInput } from "@/voice";
+import { AgentProvider } from "../core/agent/AgentProvider";
+import { WardRegistrar } from "@/core/connection/arkitekt/WardRegistrar";
+import { RefetchOnReactivate } from "@/app/hooks/use-refetch-on-reactivate";
+import { GcOnNavigate } from "@/app/hooks/use-gc-on-navigate";
+import { OrganizationBrandSync } from "@/lok/components/OrganizationBrandSync";
+import { ProfileIdentitySync } from "@/lok/components/ProfileIdentitySync";
+import { MeshSync } from "../core/connection/ui/mesh/MeshSync";
+import { CommandPaletteProvider } from "@/core/command/CommandPaletteProvider";
+import { CommandMenuHost } from "@/core/command/Host";
+import { ActiveTabRouter } from "@/core/tabs/ActiveTabRouter";
+import { TabsProvider } from "@/core/tabs/TabsProvider";
+import { VoiceInput } from "@/core/voice";
+import type { WindowRole } from "@/core/util/windowRole";
+
+/** The quick bar's navigation goes to the main window, as a tab. Module-level: stable. */
+const forwardToMain = (path: string) => window.api?.palette?.openInMain?.(path);
+/** …and so do the dialogs its actions open (a reply's compose sheet): shown in the main window. */
+const forwardDialogToMain = (request: DialogRequest) => window.api?.palette?.openDialogInMain?.(request);
 
 
 /**
@@ -133,7 +137,20 @@ const ProfileScope = ({ children }: { children: React.ReactNode }) => {
   return <React.Fragment key={activeProfileId ?? "guest"}>{children}</React.Fragment>;
 };
 
-export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+export const AppProvider = ({
+  children,
+  role = "app",
+}: {
+  children: React.ReactNode;
+  /**
+   * `quick`: the floating quick bar (`QuickShell`). Same providers, so every
+   * palette source and action works — but tabs FORWARD to the main window,
+   * the shell renders the palette itself, and the always-on background work
+   * (module pollers, updater, dictation) stays with the real windows.
+   */
+  role?: WindowRole;
+}) => {
+  const quick = role === "quick";
   return (
     <SettingsProvider>
       <UploadProvider>
@@ -147,7 +164,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                         switch) and the chrome router below them always reflects
                         the ACTIVE tab, so every useNavigate/useLocation in this
                         tree keeps working unchanged. */}
-                    <TabsProvider>
+                    <TabsProvider forward={quick ? forwardToMain : undefined}>
                     <ActiveTabRouter>
                     <LocalActionProvider>
                       <TooltipProvider>
@@ -155,7 +172,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                           <WidgetRegistryProvider registry={THE_WIDGET_REGISTRY}>
                             <ProfileScope>
                             <SmartProvider>
-                              <DialogProvider>
+                              <DialogProvider forward={quick ? forwardDialogToMain : undefined}>
                                 <SelectionProvider>
                                   <SmartPrefetchProvider>
                                   <AgentProvider disabled={false}>
@@ -170,36 +187,28 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                                         two pages nested. */}
                                     {/* No palette signed out: there is no pill for it to unfold
                                         from and nothing for it to open. Same guard as `AppShell`. */}
+                                    {!quick && (
                                     <Arkitekt.Guard notConnectedFallback={null} connectingFallback={null}>
                                       <CommandMenuHost />
                                       {/* Dictation into the palette and text fields.
                                           Renders nothing until Settings → Voice input is on. */}
                                       <VoiceInput />
                                     </Arkitekt.Guard>
+                                    )}
                                     <SmartSurface />
                                     <RefetchOnReactivate />
                                     <GcOnNavigate />
-                                    <BuiltinDashboardWidgets />
                                     <ExportHost />
-                                    <Guard.Rekuest unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
-                                      <TaskUpdater />
-                                      <AgentUpdater />
-                                      <UiCatalogRegistrar />
-                                      <RekuestDashboardWidgets />
-                                      <LatestTasksDashboardWidget />
-                                      <TaskHookRunner />
-                                    </Guard.Rekuest>
+                                    {/* Every module's always-on builtins (updaters,
+                                        dashboard widgets), each behind its guard. */}
+                                    {!quick && <ModuleBackground />}
                                     <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
                                       <ProfileIdentitySync />
                                     </Guard.Lok>
                                     <Toaster />
                                     {/* One subscription to the app updater, for
                                         the rail island and the settings card. */}
-                                    <UpdateListener />
-                                    <Guard.Mikro unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>
-                                      <MikroDashboardWidgets />
-                                      <LatestArrayDatasetsDashboardWidget />
-                                    </Guard.Mikro>
+                                    {!quick && <UpdateListener />}
                                     <BackNavigationErrorCatcher>
                                       {children}
                                     </BackNavigationErrorCatcher>

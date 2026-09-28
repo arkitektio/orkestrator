@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/util/utils";
 
 export type AgentStatus = "online" | "recent" | "offline" | "blocked";
 

@@ -1,0 +1,382 @@
+fragment WindowInfo on WindowInfo {
+  start
+  end
+  previousStart
+  previousEnd
+}
+
+fragment MoneyTotals on MoneyTotals {
+  currency
+  income
+  expense
+  net
+  count
+}
+
+fragment Change on Change {
+  metric
+  currency
+  current
+  previous
+  delta
+  ratio
+}
+
+fragment Share on Share {
+  currency
+  share
+}
+
+fragment TicketStats on TicketStats {
+  currency
+  average
+  median
+  smallest
+  largest
+}
+
+fragment VisitStats on VisitStats {
+  visits
+  firstVisit
+  lastVisit
+  daysSinceLastVisit
+  averageDaysBetweenVisits
+  visitsPerMonth
+}
+
+fragment WeekdayTotals on WeekdayTotals {
+  weekday
+  currency
+  income
+  expense
+  count
+}
+
+fragment RankedMerchant on RankedMerchant {
+  currency
+  income
+  expense
+  net
+  count
+  share
+  merchant {
+    id
+    name
+    logoUrl
+    category {
+      ...TransactionCategory
+    }
+  }
+}
+
+fragment RankedCategory on RankedCategory {
+  currency
+  income
+  expense
+  net
+  count
+  share
+  category {
+    ...TransactionCategory
+  }
+}
+
+fragment RankedLocation on RankedLocation {
+  currency
+  income
+  expense
+  net
+  count
+  share
+  location {
+    id
+    name
+    city
+    merchant {
+      id
+      name
+    }
+  }
+}
+
+fragment PeriodOverview on PeriodOverview {
+  window {
+    ...WindowInfo
+  }
+  totals {
+    ...MoneyTotals
+  }
+  previous {
+    ...MoneyTotals
+  }
+  changes {
+    ...Change
+  }
+  savingsRate {
+    ...Share
+  }
+  categoryMovers {
+    change {
+      ...Change
+    }
+    category {
+      ...TransactionCategory
+    }
+  }
+  merchantMovers {
+    change {
+      ...Change
+    }
+    merchant {
+      id
+      name
+      logoUrl
+    }
+  }
+  largestTransactions {
+    ...ListTransaction
+  }
+  newMerchants {
+    ...ListMerchant
+  }
+  daily {
+    date
+    currency
+    income
+    expense
+    count
+  }
+  weekdays {
+    ...WeekdayTotals
+  }
+  recurringDue {
+    ...ListRecurringPayment
+  }
+}
+
+fragment MerchantInsights on MerchantInsights {
+  window {
+    ...WindowInfo
+  }
+  totals {
+    ...MoneyTotals
+  }
+  previous {
+    ...MoneyTotals
+  }
+  changes {
+    ...Change
+  }
+  tickets {
+    ...TicketStats
+  }
+  visits {
+    ...VisitStats
+  }
+  monthly {
+    ...CashflowBucket
+  }
+  weekdays {
+    ...WeekdayTotals
+  }
+  locations {
+    ...RankedLocation
+  }
+  shareOfCategory {
+    ...Share
+  }
+}
+
+fragment CategoryInsights on CategoryInsights {
+  window {
+    ...WindowInfo
+  }
+  totals {
+    ...MoneyTotals
+  }
+  previous {
+    ...MoneyTotals
+  }
+  changes {
+    ...Change
+  }
+  monthly {
+    ...CashflowBucket
+  }
+  monthlyAverage {
+    ...MoneyTotals
+  }
+  shareOfSpending {
+    ...Share
+  }
+  children {
+    ...RankedCategory
+  }
+  topMerchants {
+    ...RankedMerchant
+  }
+  topCounterparties {
+    ...CounterpartyTotal
+  }
+  tickets {
+    ...TicketStats
+  }
+}
+
+fragment LocationInsights on LocationInsights {
+  window {
+    ...WindowInfo
+  }
+  totals {
+    ...MoneyTotals
+  }
+  tickets {
+    ...TicketStats
+  }
+  visits {
+    ...VisitStats
+  }
+  monthly {
+    ...CashflowBucket
+  }
+  weekdays {
+    ...WeekdayTotals
+  }
+}
+
+fragment AccountInsights on AccountInsights {
+  window {
+    ...WindowInfo
+  }
+  totals {
+    ...MoneyTotals
+  }
+  monthly {
+    ...CashflowBucket
+  }
+  averageBalance {
+    amount
+    currency
+  }
+  lowestBalance {
+    amount
+    currency
+    date
+  }
+  highestBalance {
+    amount
+    currency
+    date
+  }
+  largestIn {
+    ...ListTransaction
+  }
+  largestOut {
+    ...ListTransaction
+  }
+  topCategories {
+    ...RankedCategory
+  }
+  topMerchants {
+    ...RankedMerchant
+  }
+}
+
+fragment AreaInsights on AreaInsights {
+  window {
+    ...WindowInfo
+  }
+  totals {
+    ...MoneyTotals
+  }
+  merchants {
+    ...RankedMerchant
+  }
+  categories {
+    ...RankedCategory
+  }
+  locations {
+    ...RankedLocation
+  }
+}
+
+fragment GridCell on GridCell {
+  type
+  id
+  geometry {
+    type
+    coordinates
+  }
+  properties {
+    currency
+    income
+    expense
+    count
+    merchants
+    locations
+  }
+}
+
+fragment RecurringInsights on RecurringInsights {
+  monthlyCommitted {
+    ...MoneyTotals
+  }
+  byCategory {
+    currency
+    monthly
+    count
+    category {
+      ...TransactionCategory
+    }
+  }
+  dueSoon {
+    ...ListRecurringPayment
+  }
+  missed {
+    ...ListRecurringPayment
+  }
+  priceChanges {
+    currency
+    previous
+    current
+    delta
+    recurring {
+      ...ListRecurringPayment
+    }
+  }
+}
+
+fragment PortfolioInsights on PortfolioInsights {
+  valuation {
+    amount
+    currency
+  }
+  costBasis {
+    amount
+    currency
+  }
+  unrealizedGain {
+    amount
+    currency
+  }
+  valuationHistory {
+    date
+    currency
+    valuation
+    invested
+    gain
+  }
+  allocation {
+    securityType
+    currency
+    valuation
+    share
+  }
+  income {
+    year
+    kind
+    currency
+    amount
+    count
+  }
+}

@@ -1,0 +1,33 @@
+query ListThreads(
+  $filters: ThreadFilter
+  $ordering: [ThreadOrder!]! = [{ lastMessageAt: DESC }]
+  $pagination: OffsetPaginationInput
+  $inFolder: ID
+  $inRole: FolderRole
+) {
+  threads(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListThread
+  }
+}
+
+query GetThread($id: ID!, $allowRemote: Boolean! = false) {
+  thread(id: $id) {
+    ...Thread
+  }
+}
+
+query ThreadMessageIds($id: ID!) {
+  thread(id: $id) {
+    id
+    account {
+      id
+    }
+    messages {
+      id
+    }
+  }
+}
+
+query ThreadsCount($filters: ThreadFilter) {
+  threadsCount(filters: $filters)
+}

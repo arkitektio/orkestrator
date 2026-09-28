@@ -1,0 +1,63 @@
+import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
+import { StringField } from "@/core/forms/StringField";
+import { Button } from "@/core/ui/button";
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
+import { useForm } from "react-hook-form";
+import {
+  CreateFolderInput,
+  useCreateFolderMutation
+} from "../api/graphql";
+
+export const CreateFolderForm = (props: { parentFolderId?: string }) => {
+    const [createFolder] = useCreateFolderMutation({
+        refetchQueries: ["Children", "GetFolders"],
+    });
+
+    const submit = useGraphQLDialog(createFolder, { successMessage: "Folder created" });
+
+    const form = useForm<CreateFolderInput>({
+        defaultValues: {
+            name: "New Folder",
+        },
+    });
+
+    return (
+        <>
+            <Form {...form}>
+                <form
+                    onSubmit={form.handleSubmit(async (data) => {
+                        submit({
+                            variables: {
+                                input: {
+                                    name: data.name,
+                                    ...(props.parentFolderId && { parent: props.parentFolderId }),
+                                },
+                            },
+                        });
+                    })}
+                >
+                    <DialogHeader>
+                        <DialogTitle>Create New Folder</DialogTitle>
+                        <DialogDescription>
+                            Create a new folder {props.parentFolderId ? 'inside the current folder' : 'in the root level'}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid grid-cols-1 gap-4 py-4">
+                        <StringField
+                            label="Folder Name"
+                            name="name"
+                            description="Enter a name for the new folder"
+                            placeholder="My New Folder"
+                        />
+                    </div>
+
+                    <DialogFooter>
+                        <Button type="submit">Create Folder</Button>
+                    </DialogFooter>
+                </form>
+            </Form>
+        </>
+    );
+};

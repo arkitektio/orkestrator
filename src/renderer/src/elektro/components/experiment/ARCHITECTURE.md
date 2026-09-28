@@ -2,7 +2,7 @@
 
 Elektro's timeline renderer: an `Experiment` drawn as mikro's `Scene` is, over a
 time axis. It is built on the scene renderer's architecture on purpose
-(`mikro-next/components/scene/ARCHITECTURE.md`); read that first. This file
+(`mikro/components/scene/ARCHITECTURE.md`); read that first. This file
 records what is the same, what differs, and the rules the tests enforce.
 
 ## Three tiers
@@ -24,7 +24,7 @@ experiment/
 
 Only `features/traces` may be imported by other features (`FEATURE_ALLOWLIST`);
 `KNOWN_SIDEWAYS` is empty and stays empty — move a shared piece to `platform/`.
-elektro never imports `@/mikro-next/**` (`sharedImports.test.ts`): shared
+elektro never imports `@/mikro/**` (`sharedImports.test.ts`): shared
 infrastructure is PROMOTED to `@/lib/**`.
 
 ## Stores

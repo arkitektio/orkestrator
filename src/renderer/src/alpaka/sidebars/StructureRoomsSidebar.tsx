@@ -1,19 +1,19 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/core/ui/dropdown-menu";
 import {
   Empty,
   EmptyContent,
   EmptyDescription,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { Guard } from "@/app/Arkitekt";
-import { Identifier, Object } from "@/types";
+} from "@/core/ui/empty";
+import { RekuestGuard } from "@/rekuest/api/hooks";
+import { Identifier, Object } from "@/core/types";
 import { Check, Menu, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -25,7 +25,7 @@ import {
   WatchMessagesSubscription,
   WatchMessagesSubscriptionVariables,
 } from "../api/graphql";
-import { Chat } from "@/components/chat/chat";
+import { Chat } from "@/alpaka/chat/chat";
 import { storeRoomTalkingAbout, toStructureInput } from "../roomTalkingAbout";
 
 export type StructureRoomsSidebarProps = {
@@ -152,7 +152,7 @@ const StructureRoomView = ({
       {/* `Chat` talks to rekuest (and kabinet) for its action picker, so it
           must not mount at all without that service — guarded from out here,
           before its hooks can fire. */}
-      <Guard.Rekuest
+      <RekuestGuard
         unavailable={
           <div className="p-3 text-xs text-muted-foreground">
             Chat needs the rekuest service.
@@ -160,7 +160,7 @@ const StructureRoomView = ({
         }
       >
         <Chat isMobile={isMobile} room={data.room} talkingAbout={[talkingAbout]} />
-      </Guard.Rekuest>
+      </RekuestGuard>
     </div>
   );
 };
@@ -175,7 +175,7 @@ export const StructureRoomsSidebar = ({
   // Alpaka addresses foreign objects by a numeric id. A structure whose id
   // isn't one cannot be talked about, and asking anyway would have the server
   // reject the whole query.
-  const talkingAbout = toStructureInput({ identifier, object });
+  const talkingAbout = toStructureInput({ identifier, id: object.id });
   const { data, loading, error, refetch } = useListRoomsQuery({
     skip: !talkingAbout,
     variables: {

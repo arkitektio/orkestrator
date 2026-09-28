@@ -1,7 +1,7 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import Timestamp from "@/components/ui/timestamp";
-import { useActionDescription } from "@/lib/rekuest/ActionDescription";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import Timestamp from "@/core/ui/timestamp";
+import { useActionDescription } from "@/core/ports/engine/ActionDescription";
 import {
   ActionOverviewFragment,
   DetailActionFragment,

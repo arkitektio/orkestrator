@@ -76,7 +76,7 @@ vi.mock("@/rekuest/hooks/useTasks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/rekuest/hooks/useTasks")>()),
   useTasks: () => ({ data: { myTasks: myTasks() } }),
 }));
-vi.mock("@/linkers", () => ({
+vi.mock("@/core/linkers", () => ({
   RekuestTask: {
     DetailLink: ({
       children,

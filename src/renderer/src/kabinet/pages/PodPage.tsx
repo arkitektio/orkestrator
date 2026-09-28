@@ -1,144 +1,18 @@
-import { buildAssignInput } from "@/rekuest/assign";
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Badge } from "@/core/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { KabinetPod } from "@/linkers";
-import {
-  ListImplementationFragment,
-  useAgentsQuery,
-  useImplementationsQuery,
-} from "@/rekuest/api/graphql";
-import { useImplementationAction } from "@/rekuest/hooks/useImplementationAction";
-import {
-  DemandKind,
-  PodFragment,
-  PortKind,
-  useGetPodQuery,
-} from "../api/graphql";
+} from "@/core/ui/card";
+import { PageSections } from "@/core/layout/PageSections";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
+import { KabinetApproval, KabinetPod } from "@/core/linkers";
+import { useGetPodQuery } from "../api/graphql";
 import ResourceCard from "../components/cards/ResourceCard";
-
-export const AssignButton = (props: {
-  template: ListImplementationFragment;
-  pod: string;
-  refetch: () => void;
-}) => {
-  const { assign } = useImplementationAction({
-    id: props.template.id,
-  });
-
-  const doassign = async () => {
-    console.log(
-      await assign(
-        buildAssignInput({
-          args: {
-            pod: { __identifier: KabinetPod.identifier, object: props.pod },
-          },
-        }),
-      ),
-      props.refetch(),
-    );
-  };
-
-  return (
-    <Button onClick={doassign} variant="outline" size="sm">
-      {props.template.action.name}
-    </Button>
-  );
-};
-
-const RefreshLogsButton = (props: {
-  pod: PodFragment;
-  agentId: string;
-  refetch: () => void;
-}) => {
-  const { data } = useImplementationsQuery({
-    variables: {
-      filters: {
-        agent: {
-          ids: [props.agentId],
-        },
-        action: {
-          demands: [
-            {
-              kind: DemandKind.Args,
-              matches: [
-                {
-                  key: "pod",
-                  kind: PortKind.Structure,
-                  identifier: "@kabinet/pod",
-                },
-              ],
-            },
-          ],
-        },
-      },
-    },
-  });
-
-  return (
-    <div className="flex flex-row gap-2">
-      {data?.implementations.map((implementation) => (
-        <Tooltip key={implementation.id}>
-          <TooltipTrigger asChild>
-            <div>
-              <AssignButton
-                template={implementation}
-                pod={props.pod.id}
-                refetch={props.refetch}
-              />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="p-2 text-sm">
-              Refresh logs on {props.pod.backend.name}
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      ))}
-    </div>
-  );
-};
-
-export const AgentButtons = (props: {
-  pod: PodFragment;
-}) => {
-  const { data, error } = useAgentsQuery({
-    variables: {
-      filters: {
-        clientId: props.pod.backend.clientId,
-      },
-    },
-  });
-
-  if (error) {
-    return <div>Error loading agent {error.message}</div>;
-  }
-
-  return (
-    <>
-      {data?.agents.map((agent) => (
-        <RefreshLogsButton
-          key={agent.id}
-          pod={props.pod}
-          agentId={agent.id}
-          refetch={() => {}}
-        />
-      ))}
-    </>
-  );
-};
+import { APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
 
 const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
   const pod = data.pod;
@@ -147,7 +21,14 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
     <KabinetPod.ModelPage
       title={pod.backend.name}
       object={pod}
-      pageActions={<AgentButtons pod={pod} />}
+      pageActions={
+        // Other modules' actions on a pod (rekuest: its agents' pod actions).
+        <PageSections
+          placement="actions"
+          identifier="@kabinet/pod"
+          object={{ id: pod.id, clientId: pod.backend.clientId, backendName: pod.backend.name }}
+        />
+      }
     >
       <div className="space-y-6 p-6">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
@@ -203,6 +84,24 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
                   {pod.deployment.flavour.release.id}
                 </div>
               </div>
+              {pod.deployment.approval && (
+                <div>
+                  <div className="text-muted-foreground">Runs as</div>
+                  <div className="flex flex-wrap items-center gap-2 font-medium">
+                    <StructureDisplay
+                      identifier="@lok/user"
+                      id={pod.deployment.approval.approver.sub}
+                      variant="chip"
+                    />
+                    <KabinetApproval.DetailLink
+                      object={pod.deployment.approval}
+                      className="text-xs font-normal text-muted-foreground hover:text-primary"
+                    >
+                      approval {APPROVAL_STATUS_LABEL[approvalStatus(pod.deployment.approval)].toLowerCase()}
+                    </KabinetApproval.DetailLink>
+                  </div>
+                </div>
+              )}
               <div>
                 <div className="text-muted-foreground">Resource</div>
                 <div className="font-medium break-all">

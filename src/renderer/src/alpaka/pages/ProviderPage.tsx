@@ -1,10 +1,10 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sidebars } from "@/components/layout/Sidebars";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { AlpakaLLMModel, AlpakaProvider } from "@/linkers";
+import { AlpakaLLMModel, AlpakaProvider } from "@/core/linkers";
 import { useEffect, useMemo, useState } from "react";
 import {
   useGetProviderQuery

@@ -4,11 +4,21 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
+import type { ConnectionPath } from "@/core/connection/mesh/connectionPath";
+
 const activeProfile = vi.fn();
 const autoLoggingIn = vi.fn(() => false);
 const parkSession = vi.fn();
+const connectionPath = vi.fn((): ConnectionPath => ({ kind: "direct" }));
 
-vi.mock("@/app/Arkitekt", () => ({
+// The path hook reads live mesh status and asks main about the network; here
+// only what the footer makes of its answer matters.
+vi.mock("@/core/connection/mesh/useConnectionPath", () => ({
+  useConnectionPath: () => connectionPath(),
+}));
+
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: {
     useActiveProfile: () => activeProfile(),
     useIsAutoLoggingIn: () => autoLoggingIn(),
@@ -24,7 +34,7 @@ vi.mock("@/app/components/profile/ProfileSwitcher", () => ({
 
 // `DroppableNavLink` navigates, so it needs a router; this test is about the
 // footer, not navigation or drag-and-drop.
-vi.mock("@/components/ui/link", () => ({
+vi.mock("@/core/ui/link", () => ({
   DroppableNavLink: ({
     to,
     children,
@@ -59,6 +69,7 @@ describe("RailFooter", () => {
   beforeEach(() => {
     autoLoggingIn.mockReturnValue(false);
     parkSession.mockClear();
+    connectionPath.mockReturnValue({ kind: "direct" });
   });
 
   it("is the only sign that a launch is still proving its token", () => {
@@ -168,5 +179,56 @@ describe("RailFooter", () => {
     const gear = screen.getByLabelText("Settings");
     expect(gear).toBeInTheDocument();
     expect(gear).toHaveAttribute("href", "/settings");
+  });
+
+  describe("how services are reached", () => {
+    const frame = () => document.querySelector("[data-path]");
+
+    it("adds no frame and no note when everything is direct", () => {
+      activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
+      renderFooter();
+
+      expect(frame()).toHaveAttribute("data-path", "direct");
+      expect(screen.queryByTestId("rail-footer-path-note")).toBeNull();
+      expect(screen.queryByTestId("rail-footer-path-badge")).toBeNull();
+    });
+
+    it("marks the avatar, not the row, and explains the Arkitekt mesh", () => {
+      activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
+      connectionPath.mockReturnValue({
+        kind: "arkitekt-mesh",
+        meshLabel: "Lab",
+        viaMesh: 2,
+        total: 3,
+        relayed: 1,
+        offlinePeers: 0,
+      });
+      renderFooter();
+
+      expect(frame()).toHaveAttribute("data-path", "arkitekt-mesh");
+      expect(screen.getByTestId("rail-footer-path-badge").className).toContain("text-primary");
+      const note = screen.getByTestId("rail-footer-path-note");
+      expect(note).toHaveTextContent("Arkitekt mesh · Lab");
+      expect(screen.getByText("Connected through Arkitekt mesh · Lab")).toBeInTheDocument();
+    });
+
+    it("names a system Tailscale and its tailnet", () => {
+      activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
+      connectionPath.mockReturnValue({ kind: "system-tailscale", tailnet: "lab.example", viaMesh: 1, total: 1 });
+      renderFooter();
+
+      expect(frame()).toHaveAttribute("data-path", "system-tailscale");
+      const note = screen.getByTestId("rail-footer-path-note");
+      expect(note).toHaveTextContent("Tailscale · lab.example");
+    });
+
+    it("names another VPN by its interface", () => {
+      activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
+      connectionPath.mockReturnValue({ kind: "vpn", interfaces: ["wg0"] });
+      renderFooter();
+
+      expect(frame()).toHaveAttribute("data-path", "vpn");
+      expect(screen.getByTestId("rail-footer-path-note")).toHaveTextContent("VPN · wg0");
+    });
   });
 });

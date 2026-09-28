@@ -1,37 +1,21 @@
-import { Guard } from "@/app/Arkitekt";
-import { ListPageLayout } from "@/components/layout/ListPageLayout";
-import { ModelPageLayout } from "@/components/layout/ModelPageLayout";
-import { PageVariant } from "@/components/layout/PageLayout";
+import { ListPageLayout } from "@/core/layout/ListPageLayout";
+import { ModelPageLayout } from "@/core/layout/ModelPageLayout";
+import { PageVariant } from "@/core/layout/PageLayout";
 import {
   configureSmartBuilder,
   SmartListPageProps,
   SmartModelPage,
   SmartNewButtonProps,
   SmartObjectButtonProps,
-} from "@/providers/smart/buildSmartAdapters";
-import { ObjectButton } from "@/providers/smart/extensions/context";
-import { ComponentType, ReactNode } from "react";
-import { KnowledgeSidebar } from "@/kraph/components/sidebars/KnowledgeSidebar";
-import ArrayDatasetHoverCard from "@/mikro-next/components/hovers/ArrayDatasetHoverCard";
-import FileHoverCard from "@/mikro-next/components/hovers/FileHoverCard";
-import FolderHoverCard from "@/mikro-next/components/hovers/FolderHoverCard";
-import ActionHoverCard from "@/rekuest/components/hovers/ActionHoverCard";
-import AgentHoverCard from "@/rekuest/components/hovers/AgentHoverCard";
-import TaskHoverCard from "@/rekuest/components/hovers/TaskHoverCard";
-import ImplementationHoverCard from "@/rekuest/components/hovers/ImplementationHoverCard";
-import NeuronModelHoverCard from "@/elektro/components/hovers/NeuronModelHoverCard";
-import ElektroArrayDatasetHoverCard from "@/elektro/components/hovers/ArrayDatasetHoverCard";
-import ExperimentHoverCard from "@/elektro/components/hovers/ExperimentHoverCard";
+} from "@/core/smart/buildSmartAdapters";
+import { ObjectButton } from "@/core/smart/extensions/context";
+import { SlotSections } from "@/core/layout/PageSections";
+import { MODULE_HOVERS } from "../core/modules/registries";
 
-// Maps a smart model identifier to the component rendered inside its on-demand
-// hover card, together with the module guard that gates it. The hover cards run
-// module-specific GraphQL (e.g. the mikro / rekuest backends), so the guard must
-// wrap the component from the outside — that way its query hooks only mount once
-// the relevant backend is `ready`, and nothing fires when the module is absent.
-type HoverCardEntry = {
-  Component: ComponentType<{ object: any }>;
-  Guard: ComponentType<{ children: ReactNode }>;
-};
+// Hover cards are each module's `hovers` builtin, paired with its module guard
+// (app/modules/registries). They run module-specific GraphQL, so the guard wraps
+// the component from the outside: its query hooks only mount once the backend
+// is `ready`, and nothing fires when the module is absent.
 
 // `SmartModelPage`/`SmartListPageProps` type `variant` as `unknown` since the
 // smart-adapter layer is generic over any page layout; narrow it down to the
@@ -39,50 +23,15 @@ type HoverCardEntry = {
 const asPageVariant = (variant: unknown): PageVariant | undefined =>
   variant === "black" || variant === "default" ? variant : undefined;
 
-const hoverCards: Record<string, HoverCardEntry> = {
-  "@mikro/file": { Component: FileHoverCard, Guard: Guard.Mikro },
-  "@mikro/folder": { Component: FolderHoverCard, Guard: Guard.Mikro },
-  "@mikro/arraydataset": {
-    Component: ArrayDatasetHoverCard,
-    Guard: Guard.Mikro,
-  },
-  "@rekuest/action": { Component: ActionHoverCard, Guard: Guard.Rekuest },
-  "@rekuest/agent": { Component: AgentHoverCard, Guard: Guard.Rekuest },
-  "@rekuest/task": {
-    Component: TaskHoverCard,
-    Guard: Guard.Rekuest,
-  },
-  "@rekuest/implementation": {
-    Component: ImplementationHoverCard,
-    Guard: Guard.Rekuest,
-  },
-  "@elektro/neuronmodel": {
-    Component: NeuronModelHoverCard,
-    Guard: Guard.Elektro,
-  },
-  "@elektro/arraydataset": {
-    Component: ElektroArrayDatasetHoverCard,
-    Guard: Guard.Elektro,
-  },
-  "@elektro/experiment": {
-    Component: ExperimentHoverCard,
-    Guard: Guard.Elektro,
-  },
-};
 
 configureSmartBuilder({
-  renderKnowledge: ({ identifier, object }) => {
-    // Claims and comments both live in kraph, so this whole surface is
-    // module-specific: the guard has to sit outside, since the queries fire on
-    // mount.
-    return (
-      <Guard.Kraph>
-        <KnowledgeSidebar identifier={identifier} object={object} />
-      </Guard.Kraph>
-    );
-  },
+  // The host-drawn Knowledge surface, filled by whichever module contributes
+  // to the "knowledge" slot (kraph), behind that module's guard.
+  renderKnowledge: ({ identifier, object }) => (
+    <SlotSections slot="knowledge" identifier={identifier} object={object} />
+  ),
   renderHover: ({ identifier, object }) => {
-    const entry = hoverCards[identifier];
+    const entry = MODULE_HOVERS[identifier];
     if (!entry) {
       return null;
     }
@@ -125,7 +74,7 @@ configureSmartBuilder({
     );
   },
   renderObjectButton: ({ identifier, object, ...props }: SmartObjectButtonProps & { identifier: string }) => {
-    return <ObjectButton objects={[{ identifier, object }]} {...props} />;
+    return <ObjectButton objects={[{ identifier, id: object.id }]} {...props} />;
   },
   renderNewButton: ({ identifier, ...props }: SmartNewButtonProps & { identifier: string }) => {
     return <ObjectButton returns={[identifier]} objects={[]} {...props} />;

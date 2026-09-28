@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { SortableList } from "@/lib/dnd/SortableList";
+import { Button } from "@/core/ui/button";
+import { ScrollArea } from "@/core/ui/scroll-area";
+import { SortableList } from "@/core/dnd/SortableList";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { PropertyListItem } from "./PropertyListItem";

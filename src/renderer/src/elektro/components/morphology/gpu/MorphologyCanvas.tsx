@@ -2,24 +2,25 @@ import { OrbitControls } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { useTabVisible } from "@/command/tabs/TabVisibilityContext";
-import { isSceneNavigationTarget } from "@/lib/input/keyboardTarget";
-import { captureFrameBlob, type CaptureRenderer } from "@/lib/scene/capture/captureFrame";
-import { EXCLUDE_FROM_CAPTURE } from "@/lib/scene/capture/captureVisibility";
-import { computeSphereFitPose } from "@/lib/scene/camera/fitPose";
+import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
+import { isSceneNavigationTarget } from "@/core/dnd/keyboardTarget";
+import { captureFrameBlob, type CaptureRenderer } from "@/core/data/scene/capture/captureFrame";
+import { EXCLUDE_FROM_CAPTURE } from "@/core/data/scene/capture/captureVisibility";
+import { computeSphereFitPose } from "@/core/data/scene/camera/fitPose";
 import {
   asNavControls,
   orbitCamera,
   panCamera,
   zoomCamera,
-} from "@/lib/scene/camera/keyboardNavigation";
-import { NAVIGATE_BUTTONS_3D } from "@/lib/scene/camera/navigateButtons";
+} from "@/core/data/scene/camera/keyboardNavigation";
+import { NAVIGATE_BUTTONS_3D } from "@/core/data/scene/camera/navigateButtons";
 import {
   navigationActionForKey,
   worldUnitsPerPixelAt,
-} from "@/lib/scene/camera/sceneNavigation";
-import { getNiceNumber } from "@/lib/scene/chrome/ScaleBar";
-import { createWebGPURendererFactory } from "@/lib/scene/gpu/createWebGPURenderer";
+} from "@/core/data/scene/camera/sceneNavigation";
+import { getNiceNumber } from "@/core/data/scene/chrome/ScaleBar";
+import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
+import { RendererDisposer } from "@/core/data/scene/gpu/RendererDisposer";
 import type { Morphology } from "../model/buildMorphology";
 import { type Frame, wholeFrame } from "../model/focus";
 import { useMorphologyStore, useMorphologyStoreApi } from "../stores/morphologyStore";
@@ -250,6 +251,7 @@ export const MorphologyCanvas = ({
       camera={{ fov: FOV, position: [0, 0, 5] }}
       onPointerMissed={onPointerMissed}
     >
+      <RendererDisposer />
       <ambientLight intensity={0.6} />
       <directionalLight position={[10, 50, 20]} intensity={1.2} />
       <directionalLight position={[-20, -30, -10]} intensity={0.35} />

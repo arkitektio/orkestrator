@@ -1,8 +1,8 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { DisplayWidget } from "@/command/Menu";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Badge } from "@/components/ui/badge";
-import { KraphStructureRelation } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { DisplayWidget } from "@/core/command/Menu";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Badge } from "@/core/ui/badge";
+import { KraphStructureRelation } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetStructureRelationQuery } from "../api/graphql";
 
@@ -30,13 +30,13 @@ const Page = asDetailQueryRoute(useGetStructureRelationQuery, ({ data }) => {
           {data.structureRelation.source.__typename == "Structure" && (
             <DisplayWidget
               identifier={data.structureRelation.source.identifier}
-              object={data.structureRelation.source.object}
+              id={data.structureRelation.source.object}
             />
           )}
           {data.structureRelation.target.__typename == "Structure" && (
             <DisplayWidget
               identifier={data.structureRelation.target.identifier}
-              object={data.structureRelation.target.object}
+              id={data.structureRelation.target.object}
             />
           )}
         </div>

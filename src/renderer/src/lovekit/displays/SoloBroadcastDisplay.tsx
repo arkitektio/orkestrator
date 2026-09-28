@@ -1,5 +1,6 @@
-import { useLivekit } from "@/app/Arkitekt";
-import { DisplayWidgetProps } from "@/lib/display/registry";
+import { useLivekit } from "@/core/connection/arkitekt/host";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
+import { cn } from "@/core/util/utils";
 import {
   SoloBroadcastFragment,
   useGetSoloBroadcastQuery,
@@ -71,14 +72,14 @@ export const StreamJoiner = (props: { broadcast: SoloBroadcastFragment }) => {
 export const SoloBroadcastDisplay = (props: DisplayWidgetProps) => {
   const { data, error } = useGetSoloBroadcastQuery({
     variables: {
-      id: props.object,
+      id: props.id,
     },
   });
 
   const broadcast = data?.soloBroadcast?.id;
 
   return (
-    <div className="w-full h-full bg-black relative">
+    <div className={cn("w-full h-full bg-black relative", props.className)}>
       {broadcast && <StreamJoiner broadcast={data.soloBroadcast} />}
       {!broadcast && (
         <div className="flex items-center justify-center h-full">

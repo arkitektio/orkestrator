@@ -1,5 +1,5 @@
-import { getChromeMode, useWindowState } from "@/lib/platform";
-import { cn } from "@/lib/utils";
+import { getChromeMode, useWindowState } from "@/core/util/platform";
+import { cn } from "@/core/util/utils";
 import { useEffect, useRef, useState } from "react";
 
 import { WindowControls } from "./WindowControls";

@@ -8,12 +8,12 @@ import {
   PropertyDefinition,
   validateSchema,
 } from "../components/schema-builder/utils";
-import { PageAction } from "@/components/ui/page-action";
+import { PageAction } from "@/core/ui/page-action";
 import { Save } from "lucide-react";
 import { ValueKind } from "../api/graphql";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { PageLayout } from "@/components/layout/PageLayout";
+import { toast } from "@/core/notify";
+import { PageLayout } from "@/core/layout/PageLayout";
 
 interface SchemaBuilderPageProps {
   initialProperties?: PropertyDefinition[];

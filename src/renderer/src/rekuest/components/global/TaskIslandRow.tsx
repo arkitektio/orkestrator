@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { RekuestTask } from "@/linkers";
-import { cn } from "@/lib/utils";
+import { Button } from "@/core/ui/button";
+import { Progress } from "@/core/ui/progress";
+import { RekuestTask } from "@/core/linkers";
+import { cn } from "@/core/util/utils";
 import {
   LiveTaskFragment,
   TaskEventKind,

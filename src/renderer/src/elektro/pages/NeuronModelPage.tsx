@@ -1,7 +1,7 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { buttonVariants } from "@/components/ui/button";
-import { ElektroNeuronModel } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { buttonVariants } from "@/core/ui/button";
+import { ElektroNeuronModel } from "@/core/linkers";
 import { useDetailNeuronModelQuery } from "../api/graphql";
 import { NeuronModelTitleOverlay } from "../components/neuronmodel/NeuronModelTitleOverlay";
 import { MorphologyScene } from "../components/morphology/MorphologyScene";
@@ -11,7 +11,7 @@ import { ExportModelButton } from "../forms/ExportModelForm";
 export type IRepresentationScreenProps = {};
 
 /**
- * Laid out like `mikro-next`'s `ArrayDatasetPage`: the content area is the
+ * Laid out like `mikro`'s `ArrayDatasetPage`: the content area is the
  * viewport and nothing else, the name floats over it in the top-left, and the
  * facts (globals, ions, environment, comparisons, simulations, history) are
  * one Info tab in the rail.

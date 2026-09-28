@@ -3,10 +3,10 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { DropdownMenu, DropdownMenuContent } from "@/components/ui/dropdown-menu";
-import { createProfileFromSession } from "@/lib/arkitekt/fakts/profileStorageSchema";
+import { DropdownMenu, DropdownMenuContent } from "@/core/ui/dropdown-menu";
+import { createProfileFromSession } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import ProfileRow from "./ProfileRow";
-import { profileInitials } from "./ProfileBrandAvatar";
+import { profileInitials } from "../../../core/connection/profile/ui/ProfileBrandAvatar";
 
 const ALIAS = { id: "a1", host: "localhost", ssl: false, challenge: "ht" };
 

@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { KraphGraph } from "@/linkers";
+import { ListRender } from "@/core/layout/ListRender";
+import { KraphGraph } from "@/core/linkers";
 import {
   GraphFilter,
   OffsetPaginationInput,

@@ -1,23 +1,23 @@
-import { useDialog } from "@/app/dialog";
-import { GraphQLListSearchField } from "@/components/fields/GraphQLListSearchField";
-import { GraphQLSearchField } from "@/components/fields/GraphQLSearchField";
-import { StringField } from "@/components/fields/StringField";
-import { SwitchField } from "@/components/fields/SwitchField";
+import { useDialog } from "@/core/dialogs/registry";
+import { GraphQLListSearchField } from "@/core/forms/GraphQLListSearchField";
+import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
+import { StringField } from "@/core/forms/StringField";
+import { SwitchField } from "@/core/forms/SwitchField";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
+} from "@/core/ui/accordion";
+import { Button } from "@/core/ui/button";
+import { Card } from "@/core/ui/card";
+import { Form } from "@/core/ui/form";
 import {
   ResizablePanel,
   ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+} from "@/core/ui/resizable";
+import { ScrollArea } from "@/core/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import { useMemo } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import {

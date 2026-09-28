@@ -1,18 +1,11 @@
-import { Guard } from "@/app/Arkitekt";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { RekuestGuard } from "@/rekuest/api/hooks";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { useDialog } from "@/core/dialogs/registry";
+import { cn } from "@/core/util/utils";
 import { Cpu, Download, Sparkles, Zap } from "lucide-react";
 import React from "react";
 import { StoreFlavourFragment } from "../../api/graphql";
-import { FlavourInstallTargets } from "../cards/FlavourCard";
 import { selectorLabel, StoreApp } from "./storeModel";
 
 export const HardwareBadges = ({
@@ -63,54 +56,39 @@ export const SelectorBadges = ({ flavour }: { flavour: StoreFlavourFragment }) =
 );
 
 /**
- * Installs a flavour through any engine exposing a `@kabinet/flavour → @kabinet/pod`
- * implementation. Those implementations live in rekuest, hence the guard.
+ * Installs a release: opens the install dialog, which approves the release to
+ * run as you and hands the approval to a deployer's `install(approval)`.
+ * Approvals are per release; the deployer picks the flavour for its host.
+ * The deployers live in rekuest, hence the guard.
  */
-export const InstallMenu = ({
-  flavours,
+export const InstallButton = ({
+  release,
   size = "sm",
   className,
   label = "Install",
 }: {
-  flavours: StoreFlavourFragment[];
+  release: { id: string };
   size?: "sm" | "default" | "lg";
   className?: string;
   label?: React.ReactNode;
-}) => (
-  <Guard.Rekuest unavailable={<></>}>
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          size={size}
-          className={cn("rounded-full", className)}
-          disabled={flavours.length === 0}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Download />
-          {label}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="min-w-56"
-        onClick={(e) => e.stopPropagation()}
+}) => {
+  const { openDialog } = useDialog();
+  return (
+    <RekuestGuard unavailable={<></>}>
+      <Button
+        size={size}
+        className={cn("rounded-full", className)}
+        onClick={(e) => {
+          e.stopPropagation();
+          openDialog("installrelease", { release: release.id }, { className: "max-w-xl" });
+        }}
       >
-        {flavours.map((flavour, index) => (
-          <React.Fragment key={flavour.id}>
-            {index > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuLabel className="flex items-center justify-between gap-2 text-xs">
-              <span>{flavour.name}</span>
-              <span className="font-normal text-muted-foreground">
-                {flavour.selectors.map(selectorLabel).join(", ") || "any backend"}
-              </span>
-            </DropdownMenuLabel>
-            <FlavourInstallTargets flavour={flavour.id} />
-          </React.Fragment>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  </Guard.Rekuest>
-);
+        <Download />
+        {label}
+      </Button>
+    </RekuestGuard>
+  );
+};
 
 export const FeaturedBadge = () => (
   <Badge className="gap-1 rounded-full bg-primary/10 text-primary hover:bg-primary/10">

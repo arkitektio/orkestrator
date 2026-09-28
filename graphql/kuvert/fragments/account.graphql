@@ -1,0 +1,67 @@
+fragment ListMailAccount on MailAccount {
+  id
+  name
+  emailAddress
+  displayName
+  provider
+  status
+  protocol
+  visibility
+  authMethod
+  lastSyncedAt
+  lastError
+  lastErrorCode
+  syncing
+  canSend
+  isOwner
+  unreadCount
+  pendingChanges
+  failedChanges
+}
+
+fragment MailAccount on MailAccount {
+  ...ListMailAccount
+  incomingHost
+  incomingPort
+  incomingSecurity
+  smtpHost
+  smtpPort
+  smtpSecurity
+  username
+  saveSentCopy
+  popLeaveOnServer
+  pushSeen
+  pushFlagged
+  pushMoves
+  pushDeletes
+  pushKeywords
+  capabilities
+  backfillDone
+  serverSideFolders
+  createdAt
+  creator {
+    id
+    sub
+    preferredUsername
+  }
+  sharedWith {
+    id
+    sub
+    preferredUsername
+  }
+  folders {
+    ...MailFolder
+  }
+  categories {
+    ...Category
+  }
+}
+
+fragment SenderAccount on MailAccount {
+  id
+  name
+  emailAddress
+  displayName
+  canSend
+  status
+}

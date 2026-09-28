@@ -1,14 +1,18 @@
 import { useRoomsQuery } from "@/alpaka/api/graphql";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/core/ui/card";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "@/components/ui/carousel";
-import { AlpakaRoom } from "@/linkers";
-import { Username } from "@/lok-next/components/Me";
+} from "@/core/ui/carousel";
+import { AlpakaRoom } from "@/core/linkers";
+import { useSelf } from "@/core/connection/useSelf";
+
+/** The signed-in user's name (host identity, not a lok query). */
+const Username = () => <>{useSelf().username}</>;
+
 
 export const Test = () => {
   return <div>Hallo</div>;

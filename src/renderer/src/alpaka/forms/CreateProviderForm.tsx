@@ -1,10 +1,10 @@
-import { useGraphQlFormDialog } from "@/components/dialog/FormDialog";
-import { ChoicesField } from "@/components/fields/ChoicesField";
-import { StringField } from "@/components/fields/StringField";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { enumToOptions } from "@/lib/utils";
+import { useGraphQlFormDialog } from "@/core/dialogs/FormDialog";
+import { ChoicesField } from "@/core/forms/ChoicesField";
+import { StringField } from "@/core/forms/StringField";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
+import { enumToOptions } from "@/core/util/utils";
 import { useForm } from "react-hook-form";
 import {
   CreateProviderMutationVariables,

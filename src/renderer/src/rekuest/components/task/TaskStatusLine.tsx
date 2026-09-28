@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { RekuestTask } from "@/linkers";
+import { Button } from "@/core/ui/button";
+import { Progress } from "@/core/ui/progress";
+import { RekuestTask } from "@/core/linkers";
 import { useMemo } from "react";
 import {
   TaskEventKind,

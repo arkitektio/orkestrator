@@ -1,7 +1,7 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { LocalActionButton, type LocalActionButtonProps } from "@/components/ui/localactionbutton";
-import { RekuestDashboard } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { LocalActionButton, type LocalActionButtonProps } from "@/core/ui/localactionbutton";
+import { RekuestDashboard } from "@/core/linkers";
 import { useGetDashboardQuery } from "../api/graphql";
 import { DashboardBlokSidebar, DashboardScene, DashboardSceneProvider } from "../dashboard-scene";
 
@@ -18,7 +18,7 @@ export const DashboardPage = asDetailQueryRoute(useGetDashboardQuery, ({ data, r
             left: [
               {
                 identifier: '@rekuest/dashboard',
-                object: { id: data.dashboard.id },
+                id: data.dashboard.id,
               },
             ],
             isCommand: false,

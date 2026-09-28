@@ -1,0 +1,25 @@
+fragment ServerSettings on ServerSettings {
+  host
+  port
+  security
+}
+
+fragment MailPreset on MailPreset {
+  key
+  name
+  domains
+  provider
+  imap {
+    ...ServerSettings
+  }
+  pop3 {
+    ...ServerSettings
+  }
+  smtp {
+    ...ServerSettings
+  }
+  saveSentCopy
+  oauth
+  oauthConfigured
+  note
+}

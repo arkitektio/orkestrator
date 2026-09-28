@@ -1,9 +1,9 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { ListMeasurementCategoryFragment } from "@/kraph/api/graphql";
-import { KraphMeasurementCategory } from "@/linkers";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { KraphMeasurementCategory } from "@/core/linkers";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 interface Props {
   item: ListMeasurementCategoryFragment;

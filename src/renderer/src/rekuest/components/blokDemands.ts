@@ -1,4 +1,4 @@
-import {isRecord, splitPathSegments} from '@/blok/renderer/runtime';
+import {isRecord, splitPathSegments} from '@/core/blok/renderer/runtime';
 
 const collectArgumentDemandPaths = (
   argument: unknown,

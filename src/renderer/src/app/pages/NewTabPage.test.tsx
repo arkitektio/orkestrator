@@ -9,24 +9,25 @@ const modules = [
   { key: "rekuest", status: "checking", route: "/rekuest", definition: { key: "rekuest", label: "Rekuest" } },
   { key: "kraph", status: "invalid", route: "/kraph", definition: { key: "kraph", label: "Kraph" } },
 ];
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: { useAvailableModules: () => modules },
   moduleRegistry: { mikro: { label: "Mikro" }, rekuest: { label: "Rekuest" }, kraph: { label: "Kraph" } },
 }));
-vi.mock("@/app/components/navigation/moduleIcons", () => ({ matchIcon: (k: string) => <i>{k}</i> }));
+vi.mock("@/core/modules/moduleIcons", () => ({ matchIcon: (k: string) => <i>{k}</i> }));
 vi.mock("@uidotdev/usehooks", () => ({ useDebounce: (v: unknown) => v }));
 
 const title = vi.fn();
-vi.mock("@/command/tabs/useTabTitle", () => ({ useTabTitle: (t: string) => title(t) }));
+vi.mock("@/core/tabs/useTabTitle", () => ({ useTabTitle: (t: string) => title(t) }));
 
 // The palette's sources, reduced to what they were handed.
-vi.mock("@/command/sources/ApplicableRecents", () => ({
+vi.mock("@/core/command/sources/ApplicableRecents", () => ({
   ApplicableRecents: ({ filter }: { filter: string }) => <div data-testid="recents">{filter}</div>,
 }));
-vi.mock("@/command/sources/ApplicableNavigation", () => ({
+vi.mock("@/core/command/sources/ApplicableNavigation", () => ({
   ApplicableNavigation: ({ filter }: { filter: string }) => <div data-testid="navigation">{filter}</div>,
 }));
-vi.mock("@/command/sources/entity/ApplicableEntitySearch", () => ({
+vi.mock("@/core/command/sources/entity/ApplicableEntitySearch", () => ({
   ApplicableEntitySearch: ({ filter }: { filter: string }) => <div data-testid="entities">{filter}</div>,
 }));
 

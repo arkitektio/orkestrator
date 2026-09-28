@@ -1,20 +1,20 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { FormSheet } from "@/components/dialog/FormDialog";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { PageAction } from "@/components/ui/page-action";
-import { Image } from "@/components/ui/image";
-import { DragZone } from "@/components/upload/drag";
-import { useKraphMediaUpload } from "@/datalayer/hooks/useKraphMediaUpload";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { FormSheet } from "@/core/dialogs/FormDialog";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { PageAction } from "@/core/ui/page-action";
+import { Image } from "@/core/ui/image";
+import { DragZone } from "@/core/datalayer/upload/drag";
+import { useKraphMediaUpload } from "@/kraph/datalayer/useKraphMediaUpload";
 import {
   KraphStructureKind
-} from "@/linkers";
+} from "@/core/linkers";
 import {
   useGetStructureKindQuery,
   useUpdateStructureKindMutation,
 } from "../api/graphql";
 import UpdateStructureKindForm from "../forms/UpdateStructureKindForm";
 import StructureList from "../components/renderers/lists/StructureList";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 const Page =  asDetailQueryRoute(
   useGetStructureKindQuery,

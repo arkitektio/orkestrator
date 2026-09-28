@@ -1,3 +1,4 @@
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 "use client";
 
 import {
@@ -13,7 +14,7 @@ import {
 } from "@tanstack/react-table";
 import * as React from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/ui/button";
 import {
   Table,
   TableBody,
@@ -21,10 +22,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { LokUser, RekuestTask } from "@/linkers";
-import { JustClientName } from "@/lok-next/components/ClientAvatar";
-import { JustUsername } from "@/lok-next/components/UserAvatar";
+} from "@/core/ui/table";
+import { LokUser, RekuestTask } from "@/core/linkers";
+
 import { ArrowUpDown } from "lucide-react";
 
 export type MetricsTableItem = {
@@ -105,7 +105,7 @@ const columns: ColumnDef<MetricsTableItem>[] = [
     cell: ({ row }) =>
       row.original.createdBy ? (
         <LokUser.DetailLink object={{id: row.original.createdBy}}>
-          <JustUsername sub={row.original.createdBy} />
+          <StructureDisplay identifier="@lok/user" id={row.original.createdBy} variant="inline" />
         </LokUser.DetailLink>
       ) : (
         <div className="text-muted-foreground"></div>
@@ -117,7 +117,7 @@ const columns: ColumnDef<MetricsTableItem>[] = [
     header: () => <div>Creating App</div>,
     cell: ({ row }) =>
       row.original.createdApp ? (
-        <JustClientName clientId={row.original.createdApp} />
+        <StructureDisplay identifier="@lok/client" by="clientId" id={row.original.createdApp} variant="inline" />
       ) : (
         <div className="text-muted-foreground"></div>
       ),

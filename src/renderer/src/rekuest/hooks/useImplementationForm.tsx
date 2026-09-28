@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import Zod from "zod";
 import { DetailImplementationFragment, ListDependencyFragment, ResolvedDependencyInput } from "../api/graphql";
-import { createPortResolver } from "../widgets/portResolver";
+import { createPortResolver } from "@/core/ports/engine/portResolver";
 import {
   buildZodSchema,
   extractErrorMessages,
@@ -11,7 +11,7 @@ import {
   portToDefaults,
   pruneUnmountedPorts,
   submittedDataToRekuestFormat,
-} from "../widgets/utils";
+} from "@/core/ports/engine/utils";
 
 export { portHash };
 

@@ -1,13 +1,13 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { registry } from "@/app/localactions";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { LocalActionButton } from "@/components/ui/localactionbutton";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { registry } from "@/core/smart/localactions/registry";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { LocalActionButton } from "@/core/ui/localactionbutton";
 import {
   RekuestAgent,
   RekuestBlok,
   RekuestMaterializedBlok,
-} from "@/linkers";
-import { cn } from "@/lib/utils";
+} from "@/core/linkers";
+import { cn } from "@/core/util/utils";
 import MaterializedBlokRenderer from "@/rekuest/components/MaterializedBlokRenderer";
 import { MaterializedBlokFragment, useMaterializedBlokQuery } from "../api/graphql";
 
@@ -93,7 +93,7 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
             left: [
               {
                 identifier: '@rekuest/materialized_blok',
-                object: { id: materializedBlok.id },
+                id: materializedBlok.id,
               },
             ],
             isCommand: false,

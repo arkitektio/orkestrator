@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
-import * as ApolloReactHooks from '@/lib/rekuest/hooks';
+import * as ApolloReactHooks from '@/rekuest/api/hooks';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -618,6 +618,32 @@ export type AgentInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** One entry of an agent's journal: a frame the agent reported, at its position in the agent session. */
+export type AgentJournalEntry = {
+  __typename?: 'AgentJournalEntry';
+  /** The agent that reported the entry. */
+  agent: Agent;
+  /** When the agent recorded the entry. */
+  agentTs?: Maybe<Scalars['DateTime']['output']>;
+  /** The state revision the entry carries (patches and snapshots; 0 for the session init), null otherwise. */
+  globalRev?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  /** The wire type of the frame (STARTED, YIELD, STATE_PATCH, LOCK, …). */
+  kind: Scalars['String']['output'];
+  /** The frame's id, as it went on the wire. */
+  messageId: Scalars['String']['output'];
+  /** The frame as the agent sent it (without the stream-level seq). */
+  payload: Scalars['Args']['output'];
+  /** The position in the agent session's journal (1, 2, 3, … no gaps). */
+  pos: Scalars['Int']['output'];
+  /** When the server first received the entry. */
+  receivedAt: Scalars['DateTime']['output'];
+  /** The agent session identifier this entry belongs to. */
+  sessionId: Scalars['String']['output'];
+  /** The task the entry belongs to, if it names one of this agent's tasks. */
+  task?: Maybe<Task>;
+};
+
 export enum AgentKind {
   Webhook = 'WEBHOOK',
   Websocket = 'WEBSOCKET'
@@ -771,6 +797,8 @@ export type AssignInput = {
   implementation?: InputMaybe<Scalars['ID']['input']>;
   /** The interface of the implementation. Only ussable if you also set agent */
   interface?: InputMaybe<Scalars['String']['input']>;
+  /** Hold the task back until then: it is persisted now but only dispatched once due. A time in the past (or none) dispatches immediately. */
+  notBefore?: InputMaybe<Scalars['DateTime']['input']>;
   /** The reference of the task. This is used to identify the task in the system. */
   reference?: InputMaybe<Scalars['String']['input']>;
   /** The resolution ID to assign to when assining to a implementation with dependencies */
@@ -1330,6 +1358,20 @@ export type CreateResolutionInput = {
   resolvedDependencies?: InputMaybe<Array<ResolvedDependencyInput>>;
 };
 
+/** Create a schedule. Give exactly one of intervalSeconds or cron; pin an agent with agent + interface, or leave both empty to resolve one per run. */
+export type CreateScheduleInput = {
+  action: Scalars['ID']['input'];
+  agent?: InputMaybe<Scalars['ID']['input']>;
+  args?: InputMaybe<Scalars['Args']['input']>;
+  cron?: InputMaybe<Scalars['String']['input']>;
+  enabled?: Scalars['Boolean']['input'];
+  ephemeralRuns?: Scalars['Boolean']['input'];
+  interface?: InputMaybe<Scalars['String']['input']>;
+  intervalSeconds?: InputMaybe<Scalars['Int']['input']>;
+  name: Scalars['String']['input'];
+  timezone?: Scalars['String']['input'];
+};
+
 /** The input for creating a shortcut. */
 export type CreateShortcutInput = {
   /** The action ID to create a shortcut for */
@@ -1389,6 +1431,20 @@ export type CreateToolboxInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   /** The name of the toolbox. This is used to identify the toolbox in the system. */
   name: Scalars['String']['input'];
+};
+
+/** Create a trigger: on a signal of `kind` for `identifier` whose descriptors satisfy `conditions` (and the port's own requires), run `action` with the object in `port`. */
+export type CreateTriggerInput = {
+  action: Scalars['ID']['input'];
+  agent?: InputMaybe<Scalars['ID']['input']>;
+  args?: InputMaybe<Scalars['Args']['input']>;
+  conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+  enabled?: Scalars['Boolean']['input'];
+  identifier: Scalars['String']['input'];
+  interface?: InputMaybe<Scalars['String']['input']>;
+  kind: SignalKind;
+  name: Scalars['String']['input'];
+  port: Scalars['String']['input'];
 };
 
 /** A catalog component rendered as the port's widget. */
@@ -2294,6 +2350,8 @@ export type Mutation = {
   createPlacement: Placement;
   /** Create a resolution for an implementation. */
   createResolution: Resolution;
+  /** Create a recurring assignment of an action. Its next run is planned immediately. */
+  createSchedule: Schedule;
   /** Create a shortcut to an action. */
   createShortcut: Shortcut;
   /** Create a new space. */
@@ -2306,6 +2364,8 @@ export type Mutation = {
   createThreedModel: ThreeDModel;
   /** Create a new toolbox with shortcuts. */
   createToolbox: Toolbox;
+  /** Create a trigger: run an action when a service signals a matching object. */
+  createTrigger: Trigger;
   /** Delete an agent record. */
   deleteAgent: Scalars['ID']['output'];
   /** Delete a blok by ID. */
@@ -2320,6 +2380,8 @@ export type Mutation = {
   deletePlacement: Scalars['ID']['output'];
   /** Delete a resolution by ID. */
   deleteResolution: Scalars['ID']['output'];
+  /** Delete a schedule. Its waiting run is cancelled; history is kept. */
+  deleteSchedule: Scalars['ID']['output'];
   /** Delete a shortcut. */
   deleteShortcut: Scalars['ID']['output'];
   /** Delete a space. */
@@ -2328,6 +2390,8 @@ export type Mutation = {
   deleteThreedModel: Scalars['ID']['output'];
   /** Delete a toolbox by ID. */
   deleteToolbox: Scalars['ID']['output'];
+  /** Delete a trigger; its runs are kept. */
+  deleteTrigger: Scalars['ID']['output'];
   /** Ensure agent record exists or is up to date. */
   ensureAgent: Agent;
   /** Finalize a media upload after the client has written the object */
@@ -2364,6 +2428,8 @@ export type Mutation = {
   setHigherOrder: Implementation;
   /** Shelve data into a memory drawer. */
   shelveInMemoryDrawer: MemoryDrawer;
+  /** Run a schedule now: its waiting run is moved to now. Refused while a run is executing. */
+  triggerSchedule: Task;
   /** Unblock a previously blocked agent. */
   unblock: Agent;
   /** Unshelve data from a memory drawer. */
@@ -2380,10 +2446,14 @@ export type Mutation = {
   updatePlacement: Placement;
   /** Update an existing resolution. */
   updateResolution: Resolution;
+  /** Change a schedule; a waiting run is re-planned. */
+  updateSchedule: Schedule;
   /** Update an existing space. */
   updateSpace: Space;
   /** Update an existing 3D model. */
   updateThreedModel: ThreeDModel;
+  /** Change a trigger. */
+  updateTrigger: Trigger;
 };
 
 
@@ -2472,6 +2542,12 @@ export type MutationCreateResolutionArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationCreateScheduleArgs = {
+  input: CreateScheduleInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationCreateShortcutArgs = {
   input: CreateShortcutInput;
 };
@@ -2504,6 +2580,12 @@ export type MutationCreateThreedModelArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationCreateToolboxArgs = {
   input: CreateToolboxInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationCreateTriggerArgs = {
+  input: CreateTriggerInput;
 };
 
 
@@ -2550,6 +2632,12 @@ export type MutationDeleteResolutionArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationDeleteScheduleArgs = {
+  input: ScheduleIdInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationDeleteShortcutArgs = {
   input: DeleteShortcutInput;
 };
@@ -2570,6 +2658,12 @@ export type MutationDeleteThreedModelArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationDeleteToolboxArgs = {
   input: DeleteToolboxInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationDeleteTriggerArgs = {
+  input: TriggerIdInput;
 };
 
 
@@ -2682,6 +2776,12 @@ export type MutationShelveInMemoryDrawerArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationTriggerScheduleArgs = {
+  input: ScheduleIdInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationUnblockArgs = {
   input: UnblockInput;
 };
@@ -2730,6 +2830,12 @@ export type MutationUpdateResolutionArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationUpdateScheduleArgs = {
+  input: UpdateScheduleInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationUpdateSpaceArgs = {
   input: UpdateSpaceInput;
 };
@@ -2738,6 +2844,12 @@ export type MutationUpdateSpaceArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationUpdateThreedModelArgs = {
   input: UpdateThreeDModelInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationUpdateTriggerArgs = {
+  input: UpdateTriggerInput;
 };
 
 export type OffsetPaginationInput = {
@@ -3143,6 +3255,8 @@ export type Query = {
   actions: Array<Action>;
   /** Fetch a specific agent by ID or by app, version and device_id. */
   agent: Agent;
+  /** The journal of an agent session in position order: everything the agent reported (task events, locks, state patches, snapshots, the session init). `sessionId` defaults to the agent's newest journaled session; `afterPos` pages forward. */
+  agentJournal: Array<AgentJournalEntry>;
   /** Retrieve all compute agents. */
   agents: Array<Agent>;
   /** The built-in base catalog every definition and blok is validated against before any registered UI catalog (virtual: shipped with the server, not registered). */
@@ -3217,6 +3331,10 @@ export type Query = {
   resolvedImplementations: Array<Implementation>;
   /** The latest completed run of a PURE action with these exact args, or null — the replay primitive. Reuse decisions belong to the orchestrator. */
   reusableTaskFor?: Maybe<Task>;
+  /** Fetch a schedule by ID. */
+  schedule: Schedule;
+  /** All schedules in the organization. */
+  schedules: Array<Schedule>;
   /** Fetch a specific session by ID. */
   session: Session;
   /** Get session boundaries. */
@@ -3227,6 +3345,10 @@ export type Query = {
   shortcut: Shortcut;
   /** List of shortcuts. */
   shortcuts: Array<Shortcut>;
+  /** The signals this hub's services declare they emit — what triggers can wait for. Hub-wide. */
+  signalDeclarations: Array<SignalDeclaration>;
+  /** Signals services sent about the organization's objects, for inspection. */
+  signals: Array<Signal>;
   /** Actions whose name and description mean roughly what this action's do, nearest first: the org's other actions ranked by cosine distance between their embeddings. `filters` narrows the candidates like `actions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back. Empty while the action has no vector yet or embeddings are off. */
   similarActions: Array<Action>;
   /** Get snapshots around revision. */
@@ -3239,6 +3361,8 @@ export type Query = {
   state: State;
   /** Get state at global revision. */
   stateAtGlobalRev: Array<Snapshot>;
+  /** The agent's states as of a journal position: the revision the last state-carrying entry at or before `pos` reached, reconstructed like `stateAtGlobalRev`. */
+  stateAtPos: Array<Snapshot>;
   /** Retrieve a state definition by ID. */
   stateDefinition: StateDefinition;
   /** Available state schemas. */
@@ -3279,6 +3403,10 @@ export type Query = {
   toolbox: Toolbox;
   /** List of toolboxes containing shortcuts. */
   toolboxes: Array<Toolbox>;
+  /** Fetch a trigger by ID. */
+  trigger: Trigger;
+  /** All triggers in the organization. */
+  triggers: Array<Trigger>;
   /** Get a UI catalog by ID. */
   uiCatalog: UiCatalog;
   /** UI catalogs registered in the caller's organization: the components and operations UI apps can render and evaluate. */
@@ -3319,6 +3447,16 @@ export type QueryAgentArgs = {
   deviceId?: InputMaybe<Scalars['String']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   version?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryAgentJournalArgs = {
+  afterPos?: InputMaybe<Scalars['Int']['input']>;
+  agent: Scalars['ID']['input'];
+  kinds?: InputMaybe<Array<Scalars['String']['input']>>;
+  limit?: Scalars['Int']['input'];
+  sessionId?: InputMaybe<Scalars['String']['input']>;
+  task?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -3522,6 +3660,16 @@ export type QueryReusableTaskForArgs = {
 };
 
 
+export type QueryScheduleArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QuerySchedulesArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QuerySessionArgs = {
   id: Scalars['ID']['input'];
 };
@@ -3548,6 +3696,16 @@ export type QueryShortcutArgs = {
 export type QueryShortcutsArgs = {
   filters?: InputMaybe<ShortcutFilter>;
   ordering?: Array<ShortcutOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QuerySignalDeclarationsArgs = {
+  identifier?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QuerySignalsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -3588,6 +3746,14 @@ export type QueryStateArgs = {
 
 export type QueryStateAtGlobalRevArgs = {
   globalRevision: Scalars['Int']['input'];
+  sessionId?: InputMaybe<Scalars['String']['input']>;
+  stateId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryStateAtPosArgs = {
+  agent: Scalars['ID']['input'];
+  pos: Scalars['Int']['input'];
   sessionId?: InputMaybe<Scalars['String']['input']>;
   stateId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -3690,6 +3856,16 @@ export type QueryToolboxArgs = {
 export type QueryToolboxesArgs = {
   filters?: InputMaybe<ToolboxFilter>;
   ordering?: Array<ToolboxOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryTriggerArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryTriggersArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -3922,6 +4098,58 @@ export enum ReturnWidgetKind {
   Custom = 'CUSTOM'
 }
 
+/** A recurring assignment of one action. It owns at most one open run at a time: the next one, a delayed task created once the previous run finished. */
+export type Schedule = {
+  __typename?: 'Schedule';
+  /** The action every run assigns. */
+  action: Action;
+  /** The agent every run is pinned to, if any. */
+  agent?: Maybe<Agent>;
+  /** The args every run is assigned with. */
+  args: Scalars['AnyDefault']['output'];
+  /** The identity every run is assigned as. */
+  caller: Caller;
+  /** Runs in a row that ended FAILED or CRITICAL. */
+  consecutiveFailures: Scalars['Int']['output'];
+  /** Creation timestamp. */
+  createdAt: Scalars['DateTime']['output'];
+  /** A five-field cron line, read in `timezone` (exclusive with intervalSeconds). */
+  cron?: Maybe<Scalars['String']['output']>;
+  /** A disabled schedule creates no runs. */
+  enabled: Scalars['Boolean']['output'];
+  /** Whether runs are created as ephemeral tasks. */
+  ephemeralRuns: Scalars['Boolean']['output'];
+  /** Unique ID of the schedule. */
+  id: Scalars['ID']['output'];
+  /** The implementation interface on the pinned agent. */
+  interface?: Maybe<Scalars['String']['output']>;
+  /** Run every N seconds (exclusive with cron). */
+  intervalSeconds?: Maybe<Scalars['Int']['output']>;
+  /** Why the last run failed, or why the next one could not be created. */
+  lastError?: Maybe<Scalars['String']['output']>;
+  /** Human-readable name. */
+  name: Scalars['String']['output'];
+  /** The open run: waiting for its slot, or executing. Null while the next run is being planned, or when disabled. */
+  nextRun?: Maybe<Task>;
+  /** The most recent runs, newest first. */
+  runs: Array<Task>;
+  /** The IANA zone the cron line is read in. */
+  timezone: Scalars['String']['output'];
+  /** Last update timestamp. */
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+
+/** A recurring assignment of one action. It owns at most one open run at a time: the next one, a delayed task created once the previous run finished. */
+export type ScheduleRunsArgs = {
+  limit?: Scalars['Int']['input'];
+};
+
+/** Identify a schedule. */
+export type ScheduleIdInput = {
+  id: Scalars['ID']['input'];
+};
+
 export type SearchAssignWidget = AssignWidget & {
   __typename?: 'SearchAssignWidget';
   dependencies?: Maybe<Array<Scalars['String']['output']>>;
@@ -4058,6 +4286,57 @@ export type ShortcutFilter = {
 
 export type ShortcutOrder =
   { name: Ordering; };
+
+/** Something a service announced: an object of a structure was created, updated or deleted. */
+export type Signal = {
+  __typename?: 'Signal';
+  /** The task the object was created in, verified from its provenance token. */
+  causingTask?: Maybe<Task>;
+  /** The object's descriptors (flat key → value). */
+  descriptors: Scalars['AnyDefault']['output'];
+  /** Unique ID of the signal. */
+  id: Scalars['ID']['output'];
+  /** The object's structure identifier, e.g. @mikro/arraydataset. */
+  identifier: Scalars['String']['output'];
+  /** What happened to the object. */
+  kind: SignalKind;
+  /** The object's id within its structure. */
+  object: Scalars['String']['output'];
+  /** When it happened, per the service. */
+  occurredAt?: Maybe<Scalars['DateTime']['output']>;
+  /** When triggers were matched against it. */
+  processedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** When rekuest received it. */
+  receivedAt: Scalars['DateTime']['output'];
+  /** The runs this signal fired. */
+  runs: Array<Task>;
+  /** The service that sent it. */
+  service: Scalars['String']['output'];
+};
+
+/** A signal a service of this hub declares it emits (from its manifest). Hub-wide. */
+export type SignalDeclaration = {
+  __typename?: 'SignalDeclaration';
+  /** What the service says about the signal. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The descriptor keys each signal carries — what trigger conditions may test. */
+  descriptorKeys: Array<Scalars['String']['output']>;
+  /** Unique ID of the declaration. */
+  id: Scalars['ID']['output'];
+  /** The structure identifier of the objects signalled. */
+  identifier: Scalars['String']['output'];
+  /** What happens to them. */
+  kind: SignalKind;
+  /** The service that emits it. */
+  service: Scalars['String']['output'];
+};
+
+/** What happened to the object a service signalled. */
+export enum SignalKind {
+  Created = 'CREATED',
+  Deleted = 'DELETED',
+  Updated = 'UPDATED'
+}
 
 export type SliderAssignWidget = AssignWidget & {
   __typename?: 'SliderAssignWidget';
@@ -4527,6 +4806,8 @@ export type Task = {
   latestEventKind: TaskEventKind;
   /** Last instruction type. */
   latestInstructKind: TaskInstructKind;
+  /** The task is held back until then (a delayed task); null = dispatched on creation. */
+  notBefore?: Maybe<Scalars['DateTime']['output']>;
   /** Parent task that triggered this one. */
   parent?: Maybe<Task>;
   /** Optional external reference for tracking. */
@@ -4539,6 +4820,10 @@ export type Task = {
   revision: Scalars['Int']['output'];
   /** Root task in the creation chain. */
   root?: Maybe<Task>;
+  /** The signal that caused this task, if a trigger fired it. */
+  signal?: Maybe<Signal>;
+  /** The trigger that fired this task, if any. */
+  trigger?: Maybe<Trigger>;
   /** Last update timestamp. */
   updatedAt: Scalars['DateTime']['output'];
 };
@@ -4604,6 +4889,10 @@ export type TaskChangeEvent = {
 /** An event that occurred during a task. */
 export type TaskEvent = {
   __typename?: 'TaskEvent';
+  /** The agent-journal position of the report that wrote this event; null for server-written events and agents without a journal. */
+  agentPos?: Maybe<Scalars['Int']['output']>;
+  /** When the agent recorded the report; null for server-written events and agents without a journal. */
+  agentTs?: Maybe<Scalars['DateTime']['output']>;
   /** Time when event was created. */
   createdAt: Scalars['DateTime']['output'];
   /** If this event was delegated, the task it was delegated to. */
@@ -4675,7 +4964,8 @@ export enum TaskEventKind {
 }
 
 export type TaskEventOrder =
-  { createdAt: Ordering; };
+  { agentPos: Ordering; createdAt?: never; }
+  |  { agentPos?: never; createdAt: Ordering; };
 
 /** Numeric/aggregatable fields of Task */
 export enum TaskField {
@@ -4983,6 +5273,56 @@ export type TrackInput = {
   windows?: InputMaybe<Array<WindowInput>>;
 };
 
+/** A rule over signals: on a signal of this kind and structure whose descriptors match, run the action with the object in `port`. */
+export type Trigger = {
+  __typename?: 'Trigger';
+  /** The action every run assigns. */
+  action: Action;
+  /** The agent runs are pinned to, if any. */
+  agent?: Maybe<Agent>;
+  /** The other args of every run. */
+  args: Scalars['AnyDefault']['output'];
+  /** The owner; runs are assigned as this identity. */
+  caller: Caller;
+  /** Extra descriptor conditions (key, operator, value), requires-style. */
+  conditions: Scalars['AnyDefault']['output'];
+  /** Firings in a row that could not create a run. */
+  consecutiveFailures: Scalars['Int']['output'];
+  /** Creation timestamp. */
+  createdAt: Scalars['DateTime']['output'];
+  /** A disabled trigger fires nothing. */
+  enabled: Scalars['Boolean']['output'];
+  /** Unique ID of the trigger. */
+  id: Scalars['ID']['output'];
+  /** The structure identifier it reacts to. */
+  identifier: Scalars['String']['output'];
+  /** The implementation interface on the pinned agent. */
+  interface?: Maybe<Scalars['String']['output']>;
+  /** The signal kind it reacts to. */
+  kind: SignalKind;
+  /** Why the last firing did not create a run. */
+  lastError?: Maybe<Scalars['String']['output']>;
+  /** Human-readable name. */
+  name: Scalars['String']['output'];
+  /** The STRUCTURE argument that receives the signalled object. */
+  port: Scalars['String']['output'];
+  /** The most recent runs, newest first. */
+  runs: Array<Task>;
+  /** Last update timestamp. */
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+
+/** A rule over signals: on a signal of this kind and structure whose descriptors match, run the action with the object in `port`. */
+export type TriggerRunsArgs = {
+  limit?: Scalars['Int']['input'];
+};
+
+/** Identify a trigger. */
+export type TriggerIdInput = {
+  id: Scalars['ID']['input'];
+};
+
 /** A UI catalog: the components a UI app can render and the pure operations it can evaluate for UtilCalls, registered per organization. */
 export type UiCatalog = {
   __typename?: 'UICatalog';
@@ -5078,6 +5418,17 @@ export type UpdateResolutionInput = {
   resolvedDependencies?: InputMaybe<Array<ResolvedDependencyInput>>;
 };
 
+/** Change a schedule. Giving intervalSeconds clears cron and vice versa. A waiting run is re-planned; an executing one finishes first. */
+export type UpdateScheduleInput = {
+  args?: InputMaybe<Scalars['Args']['input']>;
+  cron?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  id: Scalars['ID']['input'];
+  intervalSeconds?: InputMaybe<Scalars['Int']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  timezone?: InputMaybe<Scalars['String']['input']>;
+};
+
 /** The input for updating a space. */
 export type UpdateSpaceInput = {
   /** The new description of the space. */
@@ -5097,6 +5448,15 @@ export type UpdateThreeDModelInput = {
   /** The new media store file ID for the 3D model. */
   media?: InputMaybe<Scalars['ID']['input']>;
   /** The new name of the 3D model. */
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Change a trigger. Omitted fields stay as they are. */
+export type UpdateTriggerInput = {
+  args?: InputMaybe<Scalars['Args']['input']>;
+  conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -5465,6 +5825,8 @@ export type ImplementationStatsQueryVariables = Exact<{
 export type ImplementationStatsQuery = { __typename?: 'Query', taskStats: { __typename?: 'TaskStats', count: number } };
 
 export type HoverImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, pinned: boolean, action: { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, kind: PortKind, nullable: boolean, default?: any | null }> }, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } };
+
+export type InstallerImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string, args: Array<{ __typename?: 'ArgPort', key: string, nullable: boolean }> }, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, app: { __typename?: 'App', identifier: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null, user: { __typename?: 'User', sub: string } } };
 
 export type MemoryShelveFragment = { __typename?: 'MemoryShelve', id: string, name: string, agent: { __typename?: 'Agent', name: string }, drawers: Array<{ __typename?: 'MemoryDrawer', id: string, label: string, description?: string | null, resourceId: string }> };
 
@@ -6990,6 +7352,14 @@ export type HoverImplementationQuery = { __typename?: 'Query', implementation: (
     { __typename?: 'Implementation' }
     & HoverImplementationFragment
   ) };
+
+export type ApprovalInstallersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ApprovalInstallersQuery = { __typename?: 'Query', implementations: Array<(
+    { __typename?: 'Implementation' }
+    & InstallerImplementationFragment
+  )> };
 
 export type GetInterfaceQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8837,6 +9207,36 @@ export const HoverImplementationFragmentDoc = gql`
     name
     active
     connected
+  }
+}
+    `;
+export const InstallerImplementationFragmentDoc = gql`
+    fragment InstallerImplementation on Implementation {
+  id
+  interface
+  action {
+    id
+    name
+    args {
+      key
+      nullable
+    }
+  }
+  agent {
+    id
+    name
+    active
+    connected
+    app {
+      identifier
+    }
+    device {
+      id
+      deviceId
+    }
+    user {
+      sub
+    }
   }
 }
     `;
@@ -12853,6 +13253,42 @@ export function useHoverImplementationLazyQuery(baseOptions?: ApolloReactHooks.L
 export type HoverImplementationQueryHookResult = ReturnType<typeof useHoverImplementationQuery>;
 export type HoverImplementationLazyQueryHookResult = ReturnType<typeof useHoverImplementationLazyQuery>;
 export type HoverImplementationQueryResult = Apollo.QueryResult<HoverImplementationQuery, HoverImplementationQueryVariables>;
+export const ApprovalInstallersDocument = gql`
+    query ApprovalInstallers {
+  implementations(
+    filters: {action: {demands: [{kind: ARGS, matches: [{at: 0, kind: STRUCTURE, identifier: "@kabinet/approval"}]}]}}
+  ) {
+    ...InstallerImplementation
+  }
+}
+    ${InstallerImplementationFragmentDoc}`;
+
+/**
+ * __useApprovalInstallersQuery__
+ *
+ * To run a query within a React component, call `useApprovalInstallersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useApprovalInstallersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useApprovalInstallersQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useApprovalInstallersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ApprovalInstallersQuery, ApprovalInstallersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ApprovalInstallersQuery, ApprovalInstallersQueryVariables>(ApprovalInstallersDocument, options);
+      }
+export function useApprovalInstallersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ApprovalInstallersQuery, ApprovalInstallersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ApprovalInstallersQuery, ApprovalInstallersQueryVariables>(ApprovalInstallersDocument, options);
+        }
+export type ApprovalInstallersQueryHookResult = ReturnType<typeof useApprovalInstallersQuery>;
+export type ApprovalInstallersLazyQueryHookResult = ReturnType<typeof useApprovalInstallersLazyQuery>;
+export type ApprovalInstallersQueryResult = Apollo.QueryResult<ApprovalInstallersQuery, ApprovalInstallersQueryVariables>;
 export const GetInterfaceDocument = gql`
     query GetInterface($id: ID!) {
   interface(identifier: $id) {

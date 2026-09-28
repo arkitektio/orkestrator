@@ -1,11 +1,11 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { Image } from "@/components/ui/image";
+import { Card } from "@/core/ui/card";
+import { Image } from "@/core/ui/image";
 import { ListStructureRelationCategoryFragment } from "@/kraph/api/graphql";
 import {
   KraphStructureRelationCategory
-} from "@/linkers";
-import { WithKraphMediaUrl } from "@/lib/datalayer/kraphAccess";
+} from "@/core/linkers";
+import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
 
 interface Props {
   item: ListStructureRelationCategoryFragment;

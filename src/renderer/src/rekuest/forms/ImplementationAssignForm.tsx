@@ -1,23 +1,23 @@
 import { buildAssignInput } from "@/rekuest/assign";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { useDialog } from "@/app/dialog";
+import { Button } from "@/core/ui/button";
+import { DialogFooter } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
+import { useDialog } from "@/core/dialogs/registry";
 import { useMemo, useRef } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
-import { useActionDescription } from "@/lib/rekuest/ActionDescription";
+import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { useActionDescription } from "@/core/ports/engine/ActionDescription";
 import { ApolloError } from "@apollo/client";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import {
   PostmanTaskFragment,
   ResolvedDependencyInput,
 } from "../api/graphql";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { useImplementationForm } from "../hooks/useImplementationForm";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
-import { DependenciesContainer } from "@/components/widgets/DepenciesContainer";
-import { DependencyDefinitionsProvider } from "../widgets/DependencyContext";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
+import { DependencyDefinitionsProvider } from "@/core/ports/engine/DependencyContext";
 
 export type ImplementationAssignFormProps = {
   id: string;

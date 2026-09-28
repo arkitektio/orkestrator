@@ -1,8 +1,8 @@
-import { Guard } from "@/app/Arkitekt";
-import { Separator } from "@/components/ui/separator";
-import { useMeQuery } from "@/lok-next/api/graphql";
-import { SmartDropZone } from "@/providers/smart/Drop";
-import { Identifier, Object } from "@/types";
+import { Guard } from "@/core/connection/arkitekt/host";
+import { Separator } from "@/core/ui/separator";
+import { useSelf } from "@/core/connection/useSelf";
+import { SmartDropZone } from "@/core/smart/Drop";
+import { Identifier, Object } from "@/core/types";
 import { Komments } from "../komments/Komments";
 import { LabelsBlock } from "../knowledge/LabelsBlock";
 import { MeasurementsBlock } from "../knowledge/MeasurementsBlock";
@@ -15,8 +15,9 @@ export type KnowledgeSidebarProps = {
 
 /** The labels block, with the signed-in user known so claims can read "by you". */
 const LabelsWithMe = (props: KnowledgeSidebarProps) => {
-  const { data } = useMeQuery();
-  return <LabelsBlock {...props} meId={data?.me.id} />;
+  // Who "me" is belongs to the session, not to lok: read it from the host.
+  const { userId } = useSelf();
+  return <LabelsBlock {...props} meId={userId ?? undefined} />;
 };
 
 /** Measurements need the same read as the labels; Apollo dedupes it from the cache. */

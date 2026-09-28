@@ -1,8 +1,8 @@
-import { Guard } from "@/app/Arkitekt";
-import { ProfileSectionFrame } from "@/lib/profile/ProfileSections";
-import { ProfileRow, ProfileRows } from "@/lib/profile/rows";
-import type { ProfileContext, ProfileSection } from "@/lib/profile/section";
-import { ElektroExperiment, ElektroNeuronModel } from "@/linkers";
+import { ElektroGuard } from "@/elektro/api/funcs";
+import { ProfileSectionFrame } from "@/core/connection/profile/ProfileSections";
+import { ProfileRow, ProfileRows } from "@/core/connection/profile/rows";
+import type { ProfileContext, ProfileSection } from "@/core/connection/profile/section";
+import { ElektroExperiment, ElektroNeuronModel } from "@/core/linkers";
 import { formatDistanceToNow } from "date-fns";
 import { BsLightning } from "react-icons/bs";
 import { Network } from "lucide-react";
@@ -81,7 +81,7 @@ export const ELEKTRO_PROFILE_SECTIONS: ProfileSection[] = [
     title: "Experiments",
     icon: ElektroIcon,
     priority: 40,
-    Guard: Guard.Elektro,
+    Guard: ElektroGuard,
     Component: Experiments,
   },
   {
@@ -90,7 +90,7 @@ export const ELEKTRO_PROFILE_SECTIONS: ProfileSection[] = [
     title: "Neuron models",
     icon: Network,
     priority: 50,
-    Guard: Guard.Elektro,
+    Guard: ElektroGuard,
     Component: NeuronModels,
   },
 ];

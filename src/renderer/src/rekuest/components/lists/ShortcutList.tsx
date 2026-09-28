@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { RekuestAction } from "@/linkers";
+import { ListRender } from "@/core/layout/ListRender";
+import { RekuestAction } from "@/core/linkers";
 import {
   OffsetPaginationInput,
   ShortcutFilter,

@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { KraphNaturalEventCategory } from "@/linkers";
+import { ListRender } from "@/core/layout/ListRender";
+import { KraphNaturalEventCategory } from "@/core/linkers";
 import {
   NaturalEventCategoryFilter,
   OffsetPaginationInput,

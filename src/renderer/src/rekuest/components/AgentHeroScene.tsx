@@ -1,4 +1,4 @@
-import { WithMediaUrl } from "@/lib/datalayer/rekuestAccess";
+import { WithMediaUrl } from "@/rekuest/datalayer/rekuestAccess";
 import { Center, Environment, Html, OrbitControls, Stage, useGLTF } from "@react-three/drei";
 import { Canvas, type ThreeElements } from "@react-three/fiber";
 import {

@@ -1,10 +1,8 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { AlpakaRoom } from "@/linkers";
+import { ListRender } from "@/core/layout/ListRender";
+import { AlpakaRoom } from "@/core/linkers";
 
 import { RoomFilter, useListRoomsQuery } from "@/alpaka/api/graphql";
-import {
-  OffsetPaginationInput
-} from "@/lok-next/api/graphql";
+import type { OffsetPaginationInput } from "@/core/layout/pagination";
 import RoomCard from "../cards/RoomCard";
 
 export type Props = {

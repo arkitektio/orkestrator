@@ -1,20 +1,19 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { AlpakaMessage, AlpakaRoom } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
+import { AlpakaMessage, AlpakaRoom } from "@/core/linkers";
 import { useGetMessageQuery } from "../api/graphql";
 import { agentDisplayName, displayInitials } from "../agentName";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/core/ui/card";
 import { MessageSquare, ArrowUpRight } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { DelegatingStructureWidget } from "@/components/widgets/returns/DelegatingStructureWidget";
-import { PortKind } from "@/rekuest/api/graphql";
-import { Markdown } from "@/components/ui/markdown";
+import { Avatar, AvatarFallback } from "@/core/ui/avatar";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
+import { Markdown } from "@/core/ui/markdown";
 
 export const MessageDisplay = (props: DisplayWidgetProps) => {
   const { data, loading } = useGetMessageQuery({
     variables: {
-      id: props.object,
+      id: props.id,
     },
-    skip: !props.object,
+    skip: !props.id,
   });
 
   const message = data?.message;
@@ -97,16 +96,7 @@ export const MessageDisplay = (props: DisplayWidgetProps) => {
                     key={`${message.id}-${s.identifier}-${s.object}-${index}`}
                     className="overflow-hidden rounded-lg shadow-sm border bg-background"
                   >
-                    <DelegatingStructureWidget
-                      port={{
-                        kind: PortKind.Structure,
-                        identifier: s.identifier,
-                        __typename: "ReturnPort",
-                        key: index.toString(),
-                        nullable: false,
-                      }}
-                      value={s}
-                    />
+                    <StructureDisplay identifier={s.identifier} id={String(s.object)} small />
                   </div>
                 ))}
               </div>

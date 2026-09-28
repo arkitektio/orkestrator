@@ -1,6 +1,6 @@
-import { Badge } from "@/components/ui/badge";
-import Timestamp from "@/components/ui/timestamp";
-import { KabinetFlavour } from "@/linkers";
+import { Badge } from "@/core/ui/badge";
+import Timestamp from "@/core/ui/timestamp";
+import { KabinetFlavour } from "@/core/linkers";
 import { ExternalLink, Github } from "lucide-react";
 import { GetRepoQuery } from "../../api/graphql";
 import { selectorLabel } from "../cards/FlavourCard";

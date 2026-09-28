@@ -5,13 +5,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
+} from "@/core/ui/command";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/core/ui/dialog";
 import { useImplementationOptionsQuery } from "@/rekuest/api/graphql";
 import { useEffect, useState } from "react";
 

@@ -1,0 +1,38 @@
+fragment CashflowBucket on CashflowBucket {
+  periodStart
+  currency
+  income
+  expense
+  net
+  count
+}
+
+fragment CategoryTotal on CategoryTotal {
+  currency
+  income
+  expense
+  net
+  count
+  category {
+    ...TransactionCategory
+  }
+}
+
+fragment CounterpartyTotal on CounterpartyTotal {
+  counterparty
+  currency
+  total
+  count
+}
+
+fragment SyncResult on SyncResult {
+  created
+  updated
+  pendingReplaced
+  balances
+  categorized
+  holdings
+  account {
+    ...ListBankAccount
+  }
+}

@@ -1,0 +1,94 @@
+query ListMerchants(
+  $filters: MerchantFilter
+  $ordering: [MerchantOrder!]! = [{ name: ASC }]
+  $pagination: OffsetPaginationInput
+) {
+  merchants(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListMerchant
+  }
+}
+
+query GetMerchant($id: ID!) {
+  merchant(id: $id) {
+    ...Merchant
+  }
+}
+
+query SimilarMerchants($id: ID!, $limit: Int! = 5) {
+  merchant(id: $id) {
+    id
+    similarMerchants(limit: $limit) {
+      ...ListMerchant
+    }
+  }
+}
+
+query SearchMerchants($search: String, $values: [ID!]) {
+  options: merchants(filters: { search: $search, ids: $values }, ordering: [{ name: ASC }], pagination: { limit: 20 }) {
+    value: id
+    label: name
+  }
+}
+
+query MerchantLocationsGeojson($filters: MerchantLocationFilter, $limit: Int! = 5000) {
+  merchantLocationsGeojson(filters: $filters, limit: $limit) {
+    type
+    bbox
+    features {
+      ...MerchantLocationFeature
+    }
+  }
+}
+
+query ListMerchantLocations($filters: MerchantLocationFilter, $pagination: OffsetPaginationInput) {
+  merchantLocations(filters: $filters, pagination: $pagination) {
+    ...MerchantLocation
+  }
+}
+
+query GetMerchantLocation($id: ID!) {
+  merchantLocation(id: $id) {
+    ...MerchantLocation
+    merchant {
+      id
+      name
+      logoUrl
+      category {
+        ...TransactionCategory
+      }
+    }
+  }
+}
+
+query SearchMerchantLocations($search: String, $values: [ID!], $merchant: ID) {
+  options: merchantLocations(filters: { ids: $values, merchant: $merchant }, pagination: { limit: 50 }) {
+    value: id
+    label: name
+  }
+}
+
+query MerchantCandidates($limit: Int! = 20, $minCount: Int! = 2) {
+  merchantCandidates(limit: $limit, minCount: $minCount) {
+    ...MerchantCandidate
+  }
+}
+
+query SpendingByMerchant($dateFrom: Date, $dateTo: Date, $accounts: [ID!], $limit: Int) {
+  spendingByMerchant(dateFrom: $dateFrom, dateTo: $dateTo, accounts: $accounts, limit: $limit) {
+    ...MerchantTotal
+  }
+}
+
+query GeocodeSearch($query: String!, $limit: Int! = 5) {
+  geocodeSearch(query: $query, limit: $limit) {
+    label
+    street
+    postalCode
+    city
+    region
+    country
+    latitude
+    longitude
+    osmId
+  }
+}

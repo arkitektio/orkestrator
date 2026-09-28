@@ -31,7 +31,7 @@ vi.mock("./Arkitekt", () => ({
   },
 }));
 // The app proper, reduced to landmarks.
-vi.mock("@/components/layout/AppLayout", () => ({
+vi.mock("@/app/layout/AppLayout", () => ({
   AppLayout: ({ navigationBar, children }: { navigationBar: React.ReactNode; children: React.ReactNode }) => (
     <div>
       <nav aria-label="Modules and pinned pages">{navigationBar}</nav>
@@ -42,14 +42,14 @@ vi.mock("@/components/layout/AppLayout", () => ({
 vi.mock("./components/navigation/PrivateNavigationBar", () => ({
   PrivateNavigationBar: () => <div>rail</div>,
 }));
-vi.mock("@/command/tabs/TabOutlet", () => ({ TabOutlet: () => <div>tabs</div> }));
-vi.mock("@/command/tabs/LinkContextMenu", () => ({ LinkContextMenu: () => null }));
+vi.mock("@/core/tabs/TabOutlet", () => ({ TabOutlet: () => <div>tabs</div> }));
+vi.mock("@/core/tabs/LinkContextMenu", () => ({ LinkContextMenu: () => null }));
 vi.mock("./AppRoutes", () => ({ AppRoutes: () => null }));
-vi.mock("./components/debug/PageCorner", () => ({ PageCorner: () => <div>corner</div> }));
+vi.mock("../core/debug/ui/PageCorner", () => ({ PageCorner: () => <div>corner</div> }));
 vi.mock("./components/fallbacks/NotConnected", () => ({
   NotConnected: () => <div>Welcome to Arkitekt</div>,
 }));
-vi.mock("./components/shell/ShellSignInNotice", () => ({
+vi.mock("../core/connection/ui/ShellSignInNotice", () => ({
   ShellSignInNotice: () => (phase === "failed" ? <div>Session expired</div> : null),
 }));
 

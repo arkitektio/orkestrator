@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/core/ui/button";
 import { useAssertInformsMutation } from "@/kraph/api/graphql";
 import { AssignedEntity, EntityAssigner } from "@/kraph/components/EntityAssigner";
-import type { Identifier, Object } from "@/types";
+import type { Identifier, Object } from "@/core/types";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 /**
  * The other way to relate a datum to something already known: not "this is the

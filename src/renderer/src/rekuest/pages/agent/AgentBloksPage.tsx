@@ -1,6 +1,6 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { ListRender } from "@/components/layout/ListRender";
-import { RekuestAgent, RekuestMaterializedBlok } from "@/linkers";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { ListRender } from "@/core/layout/ListRender";
+import { RekuestAgent, RekuestMaterializedBlok } from "@/core/linkers";
 import {
   Ordering,
   useAgentQuery,

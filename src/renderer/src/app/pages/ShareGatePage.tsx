@@ -1,15 +1,15 @@
-import { Arkitekt } from "@/app/Arkitekt";
-import { Button } from "@/components/ui/button";
-import { profileScope, useActiveScope } from "@/hooks/use-active-scope";
-import type { StoredProfile } from "@/lib/arkitekt/fakts/profileStorageSchema";
-import { rememberPendingShare } from "@/command/tabs/pendingShare";
+import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { Button } from "@/core/ui/button";
+import { profileScope, useActiveScope } from "@/core/tabs/sharing/use-active-scope";
+import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
+import { rememberPendingShare } from "@/core/tabs/pendingShare";
 import {
   decodeShareRequest,
   matchScope,
   scopeDigest,
   type ShareRequest,
-} from "@/lib/shareScope";
-import { discover } from "@/lib/arkitekt/fakts/discover";
+} from "@/core/tabs/sharing/shareScope";
+import { discover } from "@/core/connection/arkitekt/fakts/discover";
 import { AlertCircle, Loader2 } from "lucide-react";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";

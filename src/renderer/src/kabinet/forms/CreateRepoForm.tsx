@@ -1,8 +1,8 @@
-import { useGraphQLDialog } from "@/app/hooks/useGraphQLDialog";
-import { StringField } from "@/components/fields/StringField";
-import { Button } from "@/components/ui/button";
-import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
+import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
+import { StringField } from "@/core/forms/StringField";
+import { Button } from "@/core/ui/button";
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import { githubIdentifier, parseGithubIdentifier } from "../repoLink";
 import {

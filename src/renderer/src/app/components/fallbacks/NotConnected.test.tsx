@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = { profiles: [] as unknown[], autoLoginError: null as string | null };
 
-vi.mock("@/app/Arkitekt", () => ({
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
   Arkitekt: {
     useProfiles: () => state.profiles,
     useAutoLoginError: () => state.autoLoginError,
@@ -22,7 +23,7 @@ vi.mock("@/app/components/profile/AddProfileButton", () => ({
 vi.mock("./CustomEndpointSheet", () => ({
   CustomEndpointSheet: () => <div>custom endpoint</div>,
 }));
-vi.mock("@/app/components/doctor/ConnectionDoctor", () => ({
+vi.mock("@/core/connection/ui/doctor/ConnectionDoctor", () => ({
   ConnectionDoctorSheet: () => <div>connection doctor</div>,
 }));
 

@@ -1,0 +1,9 @@
+subscription MailboxSyncs {
+  mailboxSyncs {
+    accountId
+    created
+    updated
+    deleted
+    more
+  }
+}

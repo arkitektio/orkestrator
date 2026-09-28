@@ -1,7 +1,7 @@
-import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
-import { Guard } from "@/app/Arkitekt";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
+import { KraphGuard } from "@/kraph/api/funcs";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import EntityCategoriesPage from "./pages/EntityCategoriesPage";
@@ -41,7 +41,6 @@ import StuctureRelationCategoryPage from "./pages/StructureRelationCategoryPage"
 import StructureRelationPage from "./pages/StructureRelationPage";
 import BuilderPage from "./pages/graph/BuilderPage";
 import GraphGraphQueriesPage from "./pages/graph/GraphGraphQueriesPage";
-import StandardPane from "./panes/StandardPane";
 import { GraphScopeLayout } from "./providers/GraphScopeProvider";
 
 import { EntityCategorySchemaBuilderPage } from "./pages/EntityCategorySchemaBuilderPage";
@@ -49,8 +48,8 @@ interface Props { }
 
 export const KraphModule: React.FC<Props> = () => {
   return (
-    <Guard.Kraph fallback={<ServiceUnavailable serviceKey="kraph" />}>
-      <ModuleLayout pane={<StandardPane />}>
+    <KraphGuard fallback={<ServiceUnavailable serviceKey="kraph" />}>
+      <ModuleLayout>
         <Routes>
           <Route index element={<HomePage />} />
           <Route path="home" element={<HomePage />} />
@@ -152,7 +151,7 @@ export const KraphModule: React.FC<Props> = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ModuleLayout>
-    </Guard.Kraph>
+    </KraphGuard>
   );
 };
 

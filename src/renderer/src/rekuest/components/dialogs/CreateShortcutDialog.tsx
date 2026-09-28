@@ -1,37 +1,37 @@
-import { portHash } from "@/rekuest/widgets/utils";
-import { useDialog } from "@/app/dialog";
-import { IntField } from "@/components/fields/IntField";
-import { StringField } from "@/components/fields/StringField";
-import { SwitchField } from "@/components/fields/SwitchField";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { portHash } from "@/core/ports/engine/utils";
+import { useDialog } from "@/core/dialogs/registry";
+import { IntField } from "@/core/forms/IntField";
+import { StringField } from "@/core/forms/StringField";
+import { SwitchField } from "@/core/forms/SwitchField";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@/core/ui/collapsible";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
-import { FormActionDescription } from "@/lib/rekuest/ActionDescription";
-import { notEmpty } from "@/lib/utils";
-import { EffectWrapper } from "@/rekuest/widgets/EffectWrapper";
-import { ArgsContainerProps } from "@/rekuest/widgets/tailwind";
-import { Port, PortGroup } from "@/rekuest/widgets/types";
+} from "@/core/ui/dialog";
+import { Form } from "@/core/ui/form";
+import { ScrollArea } from "@/core/ui/scroll-area";
+import { Skeleton } from "@/core/ui/skeleton";
+import { FormActionDescription } from "@/core/ports/engine/ActionDescription";
+import { notEmpty } from "@/core/util/utils";
+import { EffectWrapper } from "@/core/ports/engine/EffectWrapper";
+import { ArgsContainerProps } from "@/core/ports/engine/tailwind";
+import { Port, PortGroup } from "@/core/ports/engine/types";
 import React, { useMemo } from "react";
 import * as z from "zod";
 import {
   useCreateShortcutMutation,
   useDetailActionQuery,
 } from "../../api/graphql";
-import { usePortForm } from "../../hooks/usePortForm";
-import { useWidgetRegistry } from "../../widgets/WidgetsContext";
+import { usePortForm } from "@/core/ports/engine/usePortForm";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 
 export type FilledGroup = PortGroup & {
   filledPorts: Port[];

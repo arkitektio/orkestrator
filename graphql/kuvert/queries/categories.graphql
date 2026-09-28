@@ -1,0 +1,11 @@
+query ListCategories($filters: CategoryFilter, $pagination: OffsetPaginationInput) {
+  categories(filters: $filters, pagination: $pagination) {
+    ...Category
+  }
+}
+
+query GetCategory($id: ID!) {
+  category(id: $id) {
+    ...Category
+  }
+}

@@ -1,13 +1,13 @@
-import { Guard } from "@/app/Arkitekt";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { ElektroGuard } from "@/elektro/api/funcs";
+import { Button } from "@/core/ui/button";
+import { Input } from "@/core/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/core/ui/select";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { useListMechanismsQuery } from "../../api/graphql";
@@ -116,7 +116,7 @@ const MechanismPickerInner = ({ value, onChange }: MechanismPickerProps) => {
  * mechanisms can still be typed.
  */
 export const MechanismPicker = (props: MechanismPickerProps) => (
-  <Guard.Elektro unavailable={<FreeTextMechanismPicker {...props} />}>
+  <ElektroGuard unavailable={<FreeTextMechanismPicker {...props} />}>
     <MechanismPickerInner {...props} />
-  </Guard.Elektro>
+  </ElektroGuard>
 );

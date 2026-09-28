@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 const togglePalette = vi.fn();
-vi.mock("@/command/CommandPaletteProvider", () => ({
+vi.mock("@/core/command/CommandPaletteProvider", () => ({
   useCommandPalette: () => ({ open: false, togglePalette }),
 }));
 

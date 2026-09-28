@@ -1,6 +1,6 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ScrollArea } from "@/core/ui/scroll-area";
+import { Separator } from "@/core/ui/separator";
+import { SheetDescription, SheetHeader, SheetTitle } from "@/core/ui/sheet";
 import { GitBranch, MousePointerClick, Move3d, Save } from "lucide-react";
 
 const Section = ({

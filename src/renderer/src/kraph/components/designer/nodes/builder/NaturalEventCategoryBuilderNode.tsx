@@ -1,6 +1,6 @@
 import {
   KraphProtocolEventCategory
-} from "@/linkers";
+} from "@/core/linkers";
 import { NodeProps, NodeResizer } from "@xyflow/react";
 import { memo } from "react";
 import { Handles } from "../../components/Handles";

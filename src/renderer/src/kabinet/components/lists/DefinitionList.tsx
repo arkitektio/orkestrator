@@ -1,5 +1,5 @@
-import { ListRender } from "@/components/layout/ListRender";
-import { KabinetDefinition } from "@/linkers";
+import { ListRender } from "@/core/layout/ListRender";
+import { KabinetDefinition } from "@/core/linkers";
 import {
   DefinitionFilter,
   OffsetPaginationInput,

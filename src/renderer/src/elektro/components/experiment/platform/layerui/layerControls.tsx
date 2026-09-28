@@ -1,8 +1,8 @@
 import { MoreHorizontal, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Color, SRGBColorSpace } from "three";
-import { SwatchColorPicker } from "@/components/color/SwatchColorPicker";
-import { toast } from "sonner";
+import { SwatchColorPicker } from "@/core/ui/SwatchColorPicker";
+import { toast } from "@/core/notify";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,15 +12,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+} from "@/core/ui/alert-dialog";
+import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/core/ui/dropdown-menu";
 import { useDeleteLayerMutation } from "@/elektro/api/graphql";
 
 /**

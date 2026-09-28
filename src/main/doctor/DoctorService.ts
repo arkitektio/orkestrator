@@ -4,6 +4,7 @@ import type { IpcTransport } from "../modules/IpcTransport";
 import { probeTarget } from "./networkProbe";
 import {
   DOCTOR_DEFAULT_TIMEOUT_MS,
+  DOCTOR_INTERFACES_CHANNEL,
   DOCTOR_MAX_TARGETS,
   DOCTOR_MAX_TIMEOUT_MS,
   DOCTOR_MESH_CHANNEL,
@@ -21,11 +22,13 @@ import type {
   ProbeTarget,
   RemedyId,
   RemedyResult,
+  VpnInterface,
 } from "./protocol";
+import { findVpnInterfaces } from "./interfaces";
 import { defaultTailscaleDeps, probeTailscale, runTailscaleRemedy } from "./tailscale";
 
 /**
- * The connection doctor's main-process half: three channels, no opinions.
+ * The connection doctor's main-process half: four channels, no opinions.
  *
  * Everything it can do is bounded before it does it — how many addresses, for
  * how long, and (above all) which remedies exist at all. `runRemedy` is the
@@ -41,6 +44,8 @@ export type DoctorServiceDeps = {
   probeNetwork: (target: ProbeTarget, timeoutMs: number, viaMeshProxy?: number) => Promise<NetworkProbeResult>;
   probeMesh: () => Promise<MeshProbeResult>;
   runRemedy: (id: RemedyId) => Promise<RemedyResult>;
+  /** Tunnel interfaces that are up. Absent = read from the OS. */
+  probeInterfaces?: () => VpnInterface[];
   /**
    * The built-in mesh's routing table (`MeshService.proxyPortForHost`): a
    * host it routes is probed through that proxy, as the app itself would
@@ -144,6 +149,11 @@ export class DoctorService implements AppModule {
     this.ipcTransport.handleChannel(
       DOCTOR_MESH_CHANNEL,
       async (): Promise<MeshProbeResult> => this.deps.probeMesh(),
+    );
+
+    this.ipcTransport.handleChannel(
+      DOCTOR_INTERFACES_CHANNEL,
+      async (): Promise<VpnInterface[]> => (this.deps.probeInterfaces ?? findVpnInterfaces)(),
     );
 
     this.ipcTransport.handleChannel(

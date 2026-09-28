@@ -1,0 +1,12 @@
+# The ⌘K palette's slice of kuvert: mail by subject, sender or text (substring
+# first, then semantic — the server's own ranking). Threads have no search
+# filter; a hit opens the message, whose page shows its conversation.
+query KuvertPaletteSearch($search: String!, $limit: Int!) {
+  messages(filters: { search: $search }, pagination: { limit: $limit }) {
+    id
+    subject
+    senderName
+    senderAddress
+    date
+  }
+}

@@ -1,0 +1,62 @@
+query PeriodOverview($window: StatsWindowInput, $compareTo: Comparison! = PREVIOUS_PERIOD, $limit: Int! = 10) {
+  periodOverview(window: $window, compareTo: $compareTo, limit: $limit) {
+    ...PeriodOverview
+  }
+}
+
+query MerchantInsights($merchant: MerchantRef!, $window: StatsWindowInput, $compareTo: Comparison! = PREVIOUS_PERIOD) {
+  merchantInsights(merchant: $merchant, window: $window, compareTo: $compareTo) {
+    ...MerchantInsights
+  }
+}
+
+query CategoryInsights(
+  $category: ID!
+  $window: StatsWindowInput
+  $compareTo: Comparison! = PREVIOUS_PERIOD
+  $includeChildren: Boolean! = true
+) {
+  categoryInsights(category: $category, window: $window, compareTo: $compareTo, includeChildren: $includeChildren) {
+    ...CategoryInsights
+  }
+}
+
+query LocationInsights($location: ID!, $window: StatsWindowInput) {
+  locationInsights(location: $location, window: $window) {
+    ...LocationInsights
+  }
+}
+
+query AccountInsights($account: ID!, $window: StatsWindowInput, $limit: Int! = 5) {
+  accountInsights(account: $account, window: $window, limit: $limit) {
+    ...AccountInsights
+  }
+}
+
+query AreaInsights($area: AreaInput!, $window: StatsWindowInput, $limit: Int! = 10) {
+  areaInsights(area: $area, window: $window, limit: $limit) {
+    ...AreaInsights
+  }
+}
+
+query SpendingGrid($within: BoundsInput!, $cellMeters: Float! = 500, $window: StatsWindowInput) {
+  spendingGrid(within: $within, cellMeters: $cellMeters, window: $window) {
+    bbox
+    cellMeters
+    features {
+      ...GridCell
+    }
+  }
+}
+
+query RecurringInsights($includeDetected: Boolean! = false) {
+  recurringInsights(includeDetected: $includeDetected) {
+    ...RecurringInsights
+  }
+}
+
+query PortfolioInsights($accounts: [ID!], $dateFrom: Date) {
+  portfolioInsights(accounts: $accounts, dateFrom: $dateFrom) {
+    ...PortfolioInsights
+  }
+}

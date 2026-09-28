@@ -1,14 +1,14 @@
-import { PageLayout } from "@/components/layout/PageLayout";
-import { Separator } from "@/components/ui/separator";
+import { PageLayout } from "@/core/layout/PageLayout";
+import { Separator } from "@/core/ui/separator";
 
-import { asParamlessRoute, HookFunction } from "@/app/routes/ParamlessRoute";
+import { asParamlessRoute, HookFunction } from "@/core/layout/routes/ParamlessRoute";
 import { OperationVariables } from "@apollo/client";
-import { Sidebars } from "@/components/layout/Sidebars";
-import { HelpSidebar } from "@/components/sidebars/help";
-import { Button } from "@/components/ui/button";
-import { PageAction } from "@/components/ui/page-action";
-import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DialogButton } from "@/components/ui/dialog-button";
+import { Sidebars } from "@/core/layout/Sidebars";
+import { HelpSidebar } from "@/core/layout/help";
+import { Button } from "@/core/ui/button";
+import { PageAction } from "@/core/ui/page-action";
+import { CardDescription, CardHeader, CardTitle } from "@/core/ui/card";
+import { DialogButton } from "@/core/ui/dialog-button";
 import {
   BarChart3,
   Network,

@@ -3,8 +3,8 @@ import {
   useSplit,
   useTabActions,
   useTabList,
-} from "@/command/tabs/TabsProvider";
-import { NEW_TAB_PATH, type TabRecord } from "@/command/tabs/tabs";
+} from "@/core/tabs/TabsProvider";
+import { NEW_TAB_PATH, type TabRecord } from "@/core/tabs/tabs";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -14,14 +14,14 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import { useSpringLoaded } from "@/lib/dnd/react";
-import { useLatestRef } from "@/hooks/useLatestRef";
-import type { DragEndInfo } from "@/lib/dnd/engine";
-import { endedOutsideApp } from "@/lib/dnd/outside";
-import { SortableList, type SortableRowProps } from "@/lib/dnd/SortableList";
-import { cn } from "@/lib/utils";
-import { acceptsSmartDrag } from "@/providers/smart/dragPayload";
+} from "@/core/ui/context-menu";
+import { useSpringLoaded } from "@/core/dnd/react";
+import { useLatestRef } from "@/core/util/hooks/useLatestRef";
+import type { DragEndInfo } from "@/core/dnd/engine";
+import { endedOutsideApp } from "@/core/dnd/outside";
+import { SortableList, type SortableRowProps } from "@/core/dnd/SortableList";
+import { cn } from "@/core/util/utils";
+import { acceptsSmartDrag } from "@/core/smart/dragPayload";
 import { motion, useReducedMotion } from "framer-motion";
 import { useCallback, useMemo, useState } from "react";
 import { Pin, Plus, X } from "lucide-react";

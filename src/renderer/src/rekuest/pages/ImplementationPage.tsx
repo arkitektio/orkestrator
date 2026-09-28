@@ -1,12 +1,12 @@
-import { asDetailQueryRoute } from "@/app/routes/DetailQueryRoute";
-import { Sidebars } from "@/components/layout/Sidebars";
+import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { buildAssignInput } from "@/rekuest/assign";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { PageAction } from "@/components/ui/page-action";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/core/ui/badge";
+import { Button } from "@/core/ui/button";
+import { PageAction } from "@/core/ui/page-action";
+import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
+import { Form } from "@/core/ui/form";
+import { Separator } from "@/core/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -14,9 +14,9 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
-import { ArgsContainer } from "@/components/widgets/ArgsContainer";
-import { DependenciesContainer } from "@/components/widgets/DepenciesContainer";
+} from "@/core/ui/sheet";
+import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
+import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
 import { ApolloError } from "@apollo/client";
 import {
   RekuestAction,
@@ -24,9 +24,8 @@ import {
   RekuestImplementation,
   RekuestResolution,
   RekuestState,
-} from "@/linkers";
-import { useFlowQuery } from "@/reaktion/api/graphql";
-import { ShowFlow } from "@/reaktion/show/ShowFlow";
+} from "@/core/linkers";
+import { PageSections } from "@/core/layout/PageSections";
 import {
   TaskEventKind,
   DetailImplementationFragment,
@@ -38,15 +37,15 @@ import {
 } from "@/rekuest/api/graphql";
 import { ArrowRight, SlidersHorizontal } from "lucide-react";
 import { ReactNode, useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 import TaskList from "../components/lists/TaskList";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { useImplementationForm } from "../hooks/useImplementationForm";
 import { ImplementationStatsSidebar } from "../sidebars/ImplementationStatistics";
-import { ReturnsContainer } from "../widgets/tailwind";
-import PortConstraintBadges from "../components/displays/PortConstraintBadges";
-import { portToLabel } from "../widgets/utils";
-import { useWidgetRegistry } from "../widgets/WidgetsContext";
+import { ReturnsContainer } from "@/core/ports/engine/tailwind";
+import PortConstraintBadges from "@/core/ports/widgets/PortConstraintBadges";
+import { portToLabel } from "@/core/ports/engine/utils";
+import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 
 
 export const DoForm = ({ id }: { id: string }) => {
@@ -189,20 +188,6 @@ export const DoForm = ({ id }: { id: string }) => {
           </div>
         </form>
       </Form>
-    </>
-  );
-};
-
-export const ImplementationFlow = (props: { implementation: DetailImplementationFragment }) => {
-  const { data } = useFlowQuery({
-    variables: {
-      id: props.implementation.params.flow,
-    },
-  });
-
-  return (
-    <>
-      {data?.flow && <ShowFlow flow={data?.flow} template={props.implementation} />}
     </>
   );
 };
@@ -589,7 +574,12 @@ export const DefaultRenderer = (props: {
 export const FlowRender = (props: { implementation: DetailImplementationFragment }) => {
   return (
     <div className="w-full h-full">
-      <ImplementationFlow implementation={props.implementation} />
+      {/* The flow it runs, drawn by fluss (a `main` section on implementations). */}
+      <PageSections
+        placement="main"
+        identifier="@rekuest/implementation"
+        object={{ id: props.implementation.id }}
+      />
     </div>
   );
 };

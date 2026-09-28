@@ -1,0 +1,21 @@
+fragment Holding on HoldingSnapshot {
+  id
+  date
+  isin
+  name
+  securityType
+  quantity
+  fifoPrice
+  price
+  valuation
+  currency
+  unrealizedGain
+}
+
+fragment PortfolioHolding on HoldingSnapshot {
+  ...Holding
+  account {
+    id
+    name
+  }
+}

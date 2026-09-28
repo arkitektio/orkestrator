@@ -6,9 +6,9 @@ import {
   type KnowledgeStructureFragment,
 } from "@/kraph/api/graphql";
 import { isNotKnownYet } from "@/kraph/lib/knowledgeErrors";
-import type { Identifier, Object } from "@/types";
+import type { Identifier, Object } from "@/core/types";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/core/notify";
 
 /** A label the person just typed, shown before the log has answered. */
 export type PendingLabel = { key: string; state: "pending" | "failed" };

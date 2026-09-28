@@ -1,9 +1,9 @@
 import { Grid3x3 } from "lucide-react";
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
+import { Button } from "@/core/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
+import { Slider } from "@/core/ui/slider";
+import { Switch } from "@/core/ui/switch";
 import {
   MAX_GRID_SPACING_PX,
   MIN_GRID_SPACING_PX,

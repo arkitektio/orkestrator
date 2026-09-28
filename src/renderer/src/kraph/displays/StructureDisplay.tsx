@@ -1,9 +1,9 @@
-import { DisplayWidgetProps } from "@/lib/display/registry";
-import { KraphStructure } from "@/linkers";
+import { DisplayWidgetProps } from "@/core/smart/display/registry";
+import { KraphStructure } from "@/core/linkers";
 import { useGetStructureQuery } from "../api/graphql";
 
 export const StructureDisplay = (props: DisplayWidgetProps) => {
-  const { data } = useGetStructureQuery({ variables: { id: props.object } });
+  const { data } = useGetStructureQuery({ variables: { id: props.id } });
 
   if (!data?.structure) {
     return <div className="text-xs text-muted-foreground">Structure not found</div>;

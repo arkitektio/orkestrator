@@ -3,7 +3,7 @@ import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const openBeside = vi.hoisted(() => vi.fn());
-vi.mock("@/command/tabs/TabsProvider", () => ({
+vi.mock("@/core/tabs/TabsProvider", () => ({
   useTabActions: () => ({ open: vi.fn(), openBeside }),
 }));
 
@@ -35,10 +35,10 @@ vi.mock("framer-motion", async () => {
   };
 });
 
-import { SMART_MODEL_DROP_TYPE } from "@/constants";
-import { createDragSource, installDndEngine } from "@/lib/dnd/engine";
-import { dragOnto, fireDrag } from "@/lib/dnd/testing";
-import { smartRegistry } from "@/providers/smart/registry";
+import { SMART_MODEL_DROP_TYPE } from "@/core/constants";
+import { createDragSource, installDndEngine } from "@/core/dnd/engine";
+import { dragOnto, fireDrag } from "@/core/dnd/testing";
+import { smartRegistry } from "@/core/smart/registry";
 
 import { RightEdge } from "./RightEdge";
 
@@ -54,7 +54,7 @@ const beginDrag = async () => {
   document.body.appendChild(card);
   createDragSource(() => ({
     kind: SMART_MODEL_DROP_TYPE,
-    getData: () => ({ structures: [{ identifier: "@x/thing", object: { id: "1" } }] }),
+    getData: () => ({ structures: [{ identifier: "@x/thing", id: "1" }] }),
   })).attach(card);
 
   await act(async () => {

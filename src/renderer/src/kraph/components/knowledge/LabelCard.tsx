@@ -1,14 +1,14 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/core/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import Timestamp from "@/components/ui/timestamp";
+} from "@/core/ui/collapsible";
+import Timestamp from "@/core/ui/timestamp";
 import type { KnowledgeInstanceFragment } from "@/kraph/api/graphql";
 import { AssertionEvidence } from "@/kraph/components/AssertionEvidence";
 import { TermBadge } from "@/kraph/components/TermBadge";
-import type { Structure } from "@/types";
+import type { Structure } from "@/core/types";
 import { ChevronRight } from "lucide-react";
 import { DrawnInList } from "./DrawnInList";
 import { EvidenceForEntity } from "./EvidenceForEntity";
@@ -69,7 +69,7 @@ export const LabelCard = ({ instance, self, meId, onChanged }: LabelCardProps) =
         <CollapsibleContent className="pt-2">
           <EvidenceForEntity
             identifier={self.identifier}
-            object={self.object}
+            object={{ id: self.id }}
             onDone={onChanged}
           />
         </CollapsibleContent>

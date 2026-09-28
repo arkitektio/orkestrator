@@ -1,6 +1,6 @@
-import { ServiceUnavailable } from "@/app/components/fallbacks/ServiceUnavailable";
-import { ModuleLayout } from "@/components/layout/ModuleLayout";
-import { Guard } from "@/app/Arkitekt";
+import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
+import { ModuleLayout } from "@/core/layout/ModuleLayout";
+import { RekuestGuard } from "@/rekuest/api/hooks";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import Action from "./pages/ActionPage";
@@ -22,7 +22,6 @@ import Shortcut from "./pages/Shortcut";
 import Shortcuts from "./pages/Shortcuts";
 import Toolbox from "./pages/Toolbox";
 import Toolboxes from "./pages/Toolboxes";
-import Standardpane from "./panes/StandardPane";
 import StructurePackages from "./pages/StructurePackages";
 import StructurePackage from "./pages/StructurePackage";
 import StructurePage from "./pages/StructurePage";
@@ -44,7 +43,7 @@ import StatePage from "./pages/StatePage";
 import SpaceEditPage from "./pages/SpaceEditPage";
 import SpacePage from "./pages/SpacePage";
 import SpacesPage from "./pages/SpacesPage";
-import { NotFound } from "@/app/components/fallbacks/NotFound";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 
 /**
  *
@@ -53,9 +52,9 @@ import { NotFound } from "@/app/components/fallbacks/NotFound";
  */
 const Module: React.FC = () => {
   return (
-      <ModuleLayout pane={<Guard.Rekuest fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}><Standardpane /></Guard.Rekuest>}>
+      <ModuleLayout>
 
-    <Guard.Rekuest fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}>
+    <RekuestGuard fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}>
         <Routes>
           <Route index element={<Home />} />
           <Route path="home" element={<Home />} />
@@ -102,7 +101,7 @@ const Module: React.FC = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
 
-      </Guard.Rekuest>
+      </RekuestGuard>
       </ModuleLayout>
   );
 };
