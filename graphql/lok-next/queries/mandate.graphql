@@ -1,0 +1,11 @@
+query Mandates($pagination: OffsetPaginationInput) {
+  mandates(pagination: $pagination) {
+    ...ListMandate
+  }
+}
+
+query GetMandate($id: ID!) {
+  mandate(id: $id) {
+    ...DetailMandate
+  }
+}

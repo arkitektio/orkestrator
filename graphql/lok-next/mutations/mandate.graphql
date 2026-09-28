@@ -1,0 +1,15 @@
+mutation CreateMandate($input: CreateMandateInput!) {
+  createMandate(input: $input) {
+    ...DetailMandate
+  }
+}
+
+mutation RevokeMandate($id: ID!) {
+  revokeMandate(input: { id: $id }) {
+    ...DetailMandate
+  }
+}
+
+mutation ReleaseMandateClient($clientId: String!) {
+  releaseMandateClient(input: { clientId: $clientId })
+}

@@ -1,0 +1,76 @@
+# A user's standing approval to run one release, backed by a lok mandate that
+# lets a deployer provision it as them. `mandateId` is lok's id: the approval
+# page shows the mandate through lok's `@lok/mandate` display.
+fragment ListReleaseApproval on ReleaseApproval {
+  id
+  name
+  agent
+  digest
+  mandateId
+  createdAt
+  revokedAt
+  isStale
+  isActive
+  approver {
+    sub
+  }
+  release {
+    id
+    name
+    version
+    logo
+    originalLogo
+    app {
+      id
+      identifier
+      embedding
+    }
+  }
+}
+
+fragment ReleaseApproval on ReleaseApproval {
+  ...ListReleaseApproval
+  backends {
+    id
+    name
+  }
+}
+
+# What the install dialog reviews before it asks lok for a mandate: the
+# release's reach (scopes, requirements, images), the digest the approval pins,
+# and the manifest lok takes verbatim. Its live approvals let the dialog reuse
+# one instead of approving again.
+fragment ApprovableRelease on Release {
+  id
+  name
+  version
+  logo
+  originalLogo
+  scopes
+  approvalDigest
+  digestPinned
+  mandateManifest
+  app {
+    id
+    identifier
+    embedding
+  }
+  flavours {
+    id
+    name
+    logo
+    originalLogo
+    image {
+      imageString
+    }
+    requirements {
+      key
+      service
+      optional
+      description
+    }
+  }
+  approvals(filters: { revoked: false }) {
+    ...ListReleaseApproval
+  }
+}

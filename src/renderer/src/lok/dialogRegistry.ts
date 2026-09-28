@@ -2,6 +2,7 @@ import { ReportClientBugDialog } from "./dialogs/ReportClientBugDialog";
 import { AddUserToOrganizationDialog } from "./dialogs/AddUserToOrganization";
 import { CreateOrganizationForm } from "./dialogs/CreateOrganization";
 import { NotifyDialog } from "./dialogs/NotifyDialog";
+import { RevokeMandateDialog } from "./dialogs/RevokeMandateDialog";
 import { CreateRedeemTokenForm } from "./forms/CreateRedeemTokenForm";
 import { CreateServiceInstanceForm } from "./forms/CreateServiceInstance";
 import { UpdateServiceInstanceForm } from "./forms/UpdateServiceInstanceForm";
@@ -19,4 +20,5 @@ export const LOK_DIALOGS = {
   updateserviceinstance: UpdateServiceInstanceForm,
   createredeemtoken: CreateRedeemTokenForm,
   reportclientbug: ReportClientBugDialog,
+  revokemandate: RevokeMandateDialog,
 };

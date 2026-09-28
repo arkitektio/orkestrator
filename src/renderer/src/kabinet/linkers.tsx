@@ -17,3 +17,4 @@ export const KabinetResource = smartOf(manifest, "@kabinet/resource");
 export const KabinetApp = smartOf(manifest, "@kabinet/app");
 export const KabinetRelease = smartOf(manifest, "@kabinet/release");
 export const KabinetFlavour = smartOf(manifest, "@kabinet/flavour");
+export const KabinetApproval = smartOf(manifest, "@kabinet/approval");

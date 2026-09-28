@@ -1,0 +1,44 @@
+# A standing authorization: the grantor lets an agent app (a deployer)
+# provision clients of one exact app version that act as the grantor.
+fragment ListMandate on Mandate {
+  id
+  agentIdentifier
+  subjectManifest
+  attestation
+  maxClients
+  createdAt
+  expiresAt
+  revokedAt
+  isLive
+  grantor {
+    id
+    username
+  }
+  agentDevice {
+    id
+    deviceId
+    name
+  }
+  agentUser {
+    id
+    username
+  }
+  clients {
+    id
+    clientId
+    name
+    node {
+      id
+      name
+    }
+  }
+}
+
+fragment DetailMandate on Mandate {
+  ...ListMandate
+  hub {
+    id
+    name
+    identifier
+  }
+}

@@ -25,7 +25,7 @@ import { AppShelfTile, AppStoreCard, appStorePath } from "../components/store/Ap
 import { AppIcon, appGradient } from "../components/AppIcon";
 import {
   HardwareBadges,
-  InstallMenu,
+  InstallButton,
   FeaturedBadge,
 } from "../components/store/StoreParts";
 import {
@@ -113,7 +113,7 @@ const FeaturedApp = ({ app }: { app: StoreApp }) => (
         </p>
         <HardwareBadges app={app} />
         <div className="flex items-center gap-2">
-          <InstallMenu flavours={app.latest.flavours} size="lg" className="px-4" />
+          <InstallButton release={app.latest} size="lg" className="px-4" />
           <Button variant="ghost" size="lg" className="rounded-full" asChild>
             <Link to={appStorePath(app)}>
               Explore <ArrowRight />

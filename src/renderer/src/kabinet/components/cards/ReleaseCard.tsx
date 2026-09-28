@@ -10,6 +10,7 @@ import { KabinetRelease } from "@/core/linkers";
 import { ListReleaseFragment } from "../../api/graphql";
 import { releaseIdentity } from "../../appIdentity";
 import { AppIcon } from "../AppIcon";
+import { InstallButton } from "../store/StoreParts";
 
 interface Props {
   item: ListReleaseFragment;
@@ -21,8 +22,7 @@ const TheCard = ({ item }: Props) => {
 
   return (
     <KabinetRelease.Smart object={item} >
-      {/* `relative isolate`: a card section may paint a fill behind the content
-          (rekuest: install progress). */}
+      {/* `relative isolate`: a card section may paint a fill behind the content. */}
       <Card className="group relative isolate aspect-square overflow-hidden transition-all duration-300 ease-in-out">
         <CardHeader className="flex flex-col justify-between h-full">
           <div className="flex-grow">
@@ -36,8 +36,9 @@ const TheCard = ({ item }: Props) => {
               {item.app?.identifier}:{item.version}
             </CardDescription>
           </div>
-          <div>
-            {/* Other modules on a release card (rekuest: Install). */}
+          <div className="flex flex-wrap items-center gap-2">
+            <InstallButton release={item} />
+            {/* Other modules on a release card. */}
             <PageSections placement="card" identifier="@kabinet/release" object={{ id: item.id }} />
           </div>
         </CardHeader>

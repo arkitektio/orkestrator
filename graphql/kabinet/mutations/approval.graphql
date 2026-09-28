@@ -1,0 +1,11 @@
+mutation ApproveRelease($input: ApproveReleaseInput!) {
+  approveRelease(input: $input) {
+    ...ReleaseApproval
+  }
+}
+
+mutation RevokeApproval($id: ID!) {
+  revokeApproval(input: { id: $id }) {
+    ...ReleaseApproval
+  }
+}

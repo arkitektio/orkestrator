@@ -8,9 +8,11 @@ import {
   CardTitle,
 } from "@/core/ui/card";
 import { PageSections } from "@/core/layout/PageSections";
-import { KabinetPod } from "@/core/linkers";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
+import { KabinetApproval, KabinetPod } from "@/core/linkers";
 import { useGetPodQuery } from "../api/graphql";
 import ResourceCard from "../components/cards/ResourceCard";
+import { APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
 
 const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
   const pod = data.pod;
@@ -82,6 +84,24 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
                   {pod.deployment.flavour.release.id}
                 </div>
               </div>
+              {pod.deployment.approval && (
+                <div>
+                  <div className="text-muted-foreground">Runs as</div>
+                  <div className="flex flex-wrap items-center gap-2 font-medium">
+                    <StructureDisplay
+                      identifier="@lok/user"
+                      id={pod.deployment.approval.approver.sub}
+                      variant="chip"
+                    />
+                    <KabinetApproval.DetailLink
+                      object={pod.deployment.approval}
+                      className="text-xs font-normal text-muted-foreground hover:text-primary"
+                    >
+                      approval {APPROVAL_STATUS_LABEL[approvalStatus(pod.deployment.approval)].toLowerCase()}
+                    </KabinetApproval.DetailLink>
+                  </div>
+                </div>
+              )}
               <div>
                 <div className="text-muted-foreground">Resource</div>
                 <div className="font-medium break-all">

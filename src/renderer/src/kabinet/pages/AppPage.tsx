@@ -13,7 +13,7 @@ import {
   VersionsTab,
 } from "../components/AppTabs";
 import { AppShelfTile } from "../components/store/AppStoreCard";
-import { HardwareBadges, InstallMenu } from "../components/store/StoreParts";
+import { HardwareBadges, InstallButton } from "../components/store/StoreParts";
 import { groupApps, StoreApp } from "../components/store/storeModel";
 
 /**
@@ -126,8 +126,8 @@ export const AppPage = asDetailQueryRoute(useGetAppQuery, ({ data }) => {
                       </p>
                     </div>
                   </div>
-                  <InstallMenu
-                    flavours={app.latest.flavours}
+                  <InstallButton
+                    release={app.latest}
                     size="lg"
                     className="px-5"
                     label={`Install v${app.latest.version}`}

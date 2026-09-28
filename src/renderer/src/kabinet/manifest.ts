@@ -12,7 +12,7 @@ export const manifest: ModuleManifest = {
   version: "0.0.0",
   label: "Kabinet",
   icon: "shopping-basket",
-  // Installing a definition runs one of rekuest's installer actions.
+  // Installing a release runs a deployer's `install(approval)` through rekuest.
   requires: { services: ["rekuest"] },
   models: [
     { identifier: "@kabinet/definition", name: "Definition (Kabinet)", datum: false, path: "definitions/:id" },
@@ -23,5 +23,6 @@ export const manifest: ModuleManifest = {
     { identifier: "@kabinet/app", name: "App", datum: false, path: "apps/:id" },
     { identifier: "@kabinet/release", name: "Release (Kabinet)", datum: false, path: "releases/:id" },
     { identifier: "@kabinet/flavour", name: "Flavour", datum: false, path: "flavours/:id" },
+    { identifier: "@kabinet/approval", name: "Release Approval", datum: false, path: "approvals/:id" },
   ],
 };

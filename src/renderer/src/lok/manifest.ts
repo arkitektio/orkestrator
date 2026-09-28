@@ -26,5 +26,6 @@ export const manifest: ModuleManifest = {
     { identifier: "@lok/layer", name: "Layer", datum: false, path: "layers/:id" },
     { identifier: "@lok/mapping", name: "Mapping", datum: false, path: "mappings/:id" },
     { identifier: "@lok/composition", name: "Composition", datum: false, path: "composition/:id" },
+    { identifier: "@lok/mandate", name: "Mandate", datum: false, path: "mandates/:id" },
   ],
 };

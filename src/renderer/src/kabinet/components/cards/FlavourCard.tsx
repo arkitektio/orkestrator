@@ -35,8 +35,7 @@ const TheCard = ({ item }: Props) => {
 
   return (
     <KabinetFlavour.Smart object={item} >
-      {/* `relative isolate`: a card section may paint a fill behind the content
-          (rekuest: install progress). */}
+      {/* `relative isolate`: a card section may paint a fill behind the content. */}
       <Card className="group relative isolate aspect-square overflow-hidden transition-all duration-300 ease-in-out">
         <CardHeader className="flex flex-col justify-between h-full">
           <div>
@@ -57,7 +56,7 @@ const TheCard = ({ item }: Props) => {
           </div>
 
           <CardTitle>
-            {/* Other modules on a flavour card (rekuest: Install). */}
+            {/* Other modules on a flavour card. */}
             <PageSections placement="card" identifier="@kabinet/flavour" object={{ id: item.id }} />
           </CardTitle>
         </CardHeader>

@@ -299,6 +299,30 @@ input AppOrder @oneOf {
   identifier: Ordering
 }
 
+"""
+Record that you pre-authorized a release (via a lok mandate) so deployers may install it.
+"""
+input ApproveReleaseInput {
+  """Identifier of the deployer app the mandate names."""
+  agent: String!
+
+  """Backends allowed to deploy under this approval. Omit for any."""
+  backends: [ID!] = null
+
+  """
+  The release's approvalDigest you reviewed; refused if the release changed since.
+  """
+  digest: String!
+
+  """
+  The lok mandate (createMandate) that lets the agent provision this release as you.
+  """
+  mandate: ID!
+
+  """The release to approve."""
+  release: ID!
+}
+
 """The `Arg` scalar type represents a an Argument in a Action assignment"""
 scalar Arg
 
@@ -840,6 +864,9 @@ input CpuSelectorInput {
 
 """Input for creating a deployment of a flavour on a backend."""
 input CreateDeploymentInput {
+  """The release approval this deployment is made under."""
+  approval: ID!
+
   """The ID of the flavour to deploy."""
   flavour: ID!
 
@@ -1283,6 +1310,9 @@ enum DemandKind {
 
 """A flavour scheduled to run on a particular backend."""
 type Deployment {
+  """The approval this deployment was made under."""
+  approval: ReleaseApproval
+
   """The backend this deployment runs on."""
   backend: Backend!
 
@@ -1854,6 +1884,11 @@ type MessageEffect implements Effect {
 
 type Mutation {
   """
+  Record a standing approval of a release (backed by a lok mandate) so deployers may install it.
+  """
+  approveRelease(input: ApproveReleaseInput!): ReleaseApproval!
+
+  """
   Register a built app image, creating its release and flavour as needed.
   """
   createAppImage(input: AppImageInput!): Release!
@@ -1886,6 +1921,9 @@ type Mutation {
   Rescan every tracked GitHub repository for new or updated app manifests.
   """
   rescanRepos: [GithubRepo!]!
+
+  """Withdraw a release approval."""
+  revokeApproval(input: RevokeApprovalInput!): ReleaseApproval!
 
   """
   Scan a tracked GitHub repository for app manifests and update its flavours.
@@ -2353,6 +2391,12 @@ type Query {
   """Return a single app release by its ID."""
   release(id: ID!): Release!
 
+  """Return a single release approval by its ID."""
+  releaseApproval(id: ID!): ReleaseApproval!
+
+  """List all release approvals of the current organization."""
+  releaseApprovals(filters: ReleaseApprovalFilter, pagination: OffsetPaginationInput): [ReleaseApproval!]!
+
   """List all app releases visible to the current organization."""
   releases(filters: ReleaseFilter, ordering: [ReleaseOrder!]! = [], pagination: OffsetPaginationInput): [Release!]!
 
@@ -2405,8 +2449,21 @@ type Release {
   """The app this release belongs to."""
   app: App!
 
+  """
+  The digest an approval of this release is pinned to (identity, scopes, requirements, images). Changes whenever the release is re-published differently.
+  """
+  approvalDigest: String!
+
+  """Standing approvals to run this release, newest first."""
+  approvals(filters: ReleaseApprovalFilter, pagination: OffsetPaginationInput): [ReleaseApproval!]!
+
   """The deployments that run a flavour of this release."""
   deployments(filters: DeploymentFilter, ordering: [DeploymentOrder!]! = [], pagination: OffsetPaginationInput): [Deployment!]!
+
+  """
+  Whether every flavour image is addressed by content digest. If not, a rebuild pushed under the same tag is not detected by the approval digest.
+  """
+  digestPinned: Boolean!
 
   """The entrypoint used to start the app."""
   entrypoint: String!
@@ -2420,6 +2477,11 @@ type Release {
   """
   logo: String
 
+  """
+  The subject manifest to pre-authorize in lok (createMandate): identifier, version, scopes and the union of flavour requirements.
+  """
+  mandateManifest: UntypedParams!
+
   """The display name of this release, in the form 'identifier:version'."""
   name: String!
 
@@ -2431,6 +2493,67 @@ type Release {
 
   """The semantic version of this release."""
   version: String!
+}
+
+"""
+A user's standing approval to run a release, backed by a lok mandate that lets a deployer provision it as them.
+"""
+type ReleaseApproval {
+  """The deployer app the mandate names."""
+  agent: String!
+
+  """The user the deployed release will act as."""
+  approver: User!
+
+  """Backends allowed to deploy under this approval. Empty means any."""
+  backends(filters: BackendFilter, ordering: [BackendOrder!]! = [], pagination: OffsetPaginationInput): [Backend!]!
+  createdAt: DateTime!
+
+  """The release digest at approval time."""
+  digest: String!
+  id: ID!
+
+  """Not revoked and not stale: deployable."""
+  isActive: Boolean!
+
+  """
+  The release changed since approval; nothing new may be deployed from this approval.
+  """
+  isStale: Boolean!
+
+  """The lok mandate backing this approval."""
+  mandateId: ID!
+
+  """A display name: the approved release and who approved it."""
+  name: String!
+
+  """The approved release."""
+  release: Release!
+
+  """When the approval was withdrawn."""
+  revokedAt: DateTime
+}
+
+"""Filter for release approvals."""
+input ReleaseApprovalFilter {
+  AND: ReleaseApprovalFilter
+  DISTINCT: Boolean
+  NOT: ReleaseApprovalFilter
+  OR: ReleaseApprovalFilter
+
+  """Keep only approvals whose ID is in this list."""
+  ids: [ID!]
+
+  """Keep only approvals of this release."""
+  release: ID
+
+  """
+  Keep only approvals that are not revoked. Staleness depends on the live release and is read from `isStale`.
+  """
+  revoked: Boolean
+
+  """Case-insensitive search on the approved app identifier or version."""
+  search: String
 }
 
 """Filter for app releases."""
@@ -2661,6 +2784,13 @@ input ReturnWidgetInput {
 enum ReturnWidgetKind {
   CHOICE
   CUSTOM
+}
+
+"""
+Withdraw a release approval. Revoke the lok mandate as well to stop running pods.
+"""
+input RevokeApprovalInput {
+  id: ID!
 }
 
 """Requires a ROCm-capable (AMD) GPU on the backend."""

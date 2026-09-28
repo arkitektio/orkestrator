@@ -4,7 +4,7 @@ import { ArrowUpRight, Boxes, Layers } from "lucide-react";
 import React from "react";
 import { Link } from "react-router-dom";
 import { AppIcon, appGradient } from "../AppIcon";
-import { HardwareBadges, InstallMenu } from "./StoreParts";
+import { HardwareBadges, InstallButton } from "./StoreParts";
 import { StoreApp } from "./storeModel";
 
 /**
@@ -80,7 +80,7 @@ export const AppStoreCard = React.memo(({ app }: { app: StoreApp }) => {
           </div>
         </div>
         <div onClick={(e) => e.preventDefault()}>
-          <InstallMenu flavours={app.latest.flavours} label="Get" />
+          <InstallButton release={app.latest} label="Get" />
         </div>
       </div>
     </Link>

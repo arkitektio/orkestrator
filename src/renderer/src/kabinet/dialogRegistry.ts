@@ -1,3 +1,5 @@
+import { InstallReleaseDialog } from "./dialogs/InstallReleaseDialog";
+import { RevokeApprovalDialog } from "./dialogs/RevokeApprovalDialog";
 import { CreateRepoForm } from "./forms/CreateRepoForm";
 
 /**
@@ -7,4 +9,6 @@ import { CreateRepoForm } from "./forms/CreateRepoForm";
  */
 export const KABINET_DIALOGS = {
   createrepo: CreateRepoForm,
+  installrelease: InstallReleaseDialog,
+  revokeapproval: RevokeApprovalDialog,
 };

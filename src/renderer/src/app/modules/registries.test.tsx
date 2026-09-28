@@ -66,6 +66,7 @@ describe("host registries", () => {
       "editentitycategory",
       "exporttofile",
       "implementationassign",
+      "installrelease",
       "kuvertaddtotask",
       "kuvertcategorize",
       "kuvertcategory",
@@ -84,6 +85,8 @@ describe("host registries", () => {
       "relatestructure",
       "reportbug",
       "reportclientbug",
+      "revokeapproval",
+      "revokemandate",
       "setasmeasurement",
       "updateagent",
       "updatefolder",
@@ -126,6 +129,7 @@ describe("host registries", () => {
       "@kuvert/thread",
       "@lok/client",
       "@lok/device",
+      "@lok/mandate",
       "@lok/user",
       "@lovekit/solo_broadcast",
       "@mikro/arraydataset",
@@ -139,6 +143,7 @@ describe("host registries", () => {
 
   it("hold every local action", () => {
     expect(Object.keys(ACTIONS).sort()).toEqual([
+    
       "add-layer-to-scene",
       "addElektroExperimentLayer",
       "add_user_to_organization",
@@ -198,6 +203,7 @@ describe("host registries", () => {
       "deleteElektroModelWorkspace",
       "deleteElektroNeuronModel",
       "exporttofile",
+      "install-release",
       "kuvert-archive",
       "kuvert-categorize",
       "kuvert-categorize-drop",
@@ -293,9 +299,11 @@ describe("host registries", () => {
       "rescan-repo",
       "retract-entity",
       "retract-links",
+      "revoke-approval",
+      "revoke_mandate",
       "same-datum",
       "update-mikro-folder",
-    ]);
+]);
   });
 
   it("hold every smart context section, in menu order", () => {

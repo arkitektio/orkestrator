@@ -230,6 +230,20 @@ export type AppOrder =
   { id: Ordering; identifier?: never; }
   |  { id?: never; identifier: Ordering; };
 
+/** Record that you pre-authorized a release (via a lok mandate) so deployers may install it. */
+export type ApproveReleaseInput = {
+  /** Identifier of the deployer app the mandate names. */
+  agent: Scalars['String']['input'];
+  /** Backends allowed to deploy under this approval. Omit for any. */
+  backends?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** The release's approvalDigest you reviewed; refused if the release changed since. */
+  digest: Scalars['String']['input'];
+  /** The lok mandate (createMandate) that lets the agent provision this release as you. */
+  mandate: Scalars['ID']['input'];
+  /** The release to approve. */
+  release: Scalars['ID']['input'];
+};
+
 export type ArgPort = {
   __typename?: 'ArgPort';
   children?: Maybe<Array<ArgPort>>;
@@ -630,6 +644,8 @@ export type CpuSelectorInput = {
 
 /** Input for creating a deployment of a flavour on a backend. */
 export type CreateDeploymentInput = {
+  /** The release approval this deployment is made under. */
+  approval: Scalars['ID']['input'];
   /** The ID of the flavour to deploy. */
   flavour: Scalars['ID']['input'];
   /** When the flavour's image was last pulled, if known. */
@@ -976,6 +992,8 @@ export enum DemandKind {
 /** A flavour scheduled to run on a particular backend. */
 export type Deployment = {
   __typename?: 'Deployment';
+  /** The approval this deployment was made under. */
+  approval?: Maybe<ReleaseApproval>;
   /** The backend this deployment runs on. */
   backend: Backend;
   /** The flavour that is deployed. */
@@ -1441,6 +1459,8 @@ export type MessageEffect = Effect & {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Record a standing approval of a release (backed by a lok mandate) so deployers may install it. */
+  approveRelease: ReleaseApproval;
   /** Register a built app image, creating its release and flavour as needed. */
   createAppImage: Release;
   /** Schedule a flavour onto a backend, creating a new deployment. */
@@ -1461,12 +1481,19 @@ export type Mutation = {
   dumpLogs: LogDump;
   /** Rescan every tracked GitHub repository for new or updated app manifests. */
   rescanRepos: Array<GithubRepo>;
+  /** Withdraw a release approval. */
+  revokeApproval: ReleaseApproval;
   /** Scan a tracked GitHub repository for app manifests and update its flavours. */
   scanRepo: GithubRepo;
   /** Update the status of an existing deployment. */
   updateDeployment: Deployment;
   /** Update the status of an existing pod. */
   updatePod: Pod;
+};
+
+
+export type MutationApproveReleaseArgs = {
+  input: ApproveReleaseInput;
 };
 
 
@@ -1512,6 +1539,11 @@ export type MutationDeletePodArgs = {
 
 export type MutationDumpLogsArgs = {
   input: DumpLogsInput;
+};
+
+
+export type MutationRevokeApprovalArgs = {
+  input: RevokeApprovalInput;
 };
 
 
@@ -1855,6 +1887,10 @@ export type Query = {
   pods: Array<Pod>;
   /** Return a single app release by its ID. */
   release: Release;
+  /** Return a single release approval by its ID. */
+  releaseApproval: ReleaseApproval;
+  /** List all release approvals of the current organization. */
+  releaseApprovals: Array<ReleaseApproval>;
   /** List all app releases visible to the current organization. */
   releases: Array<Release>;
   /** Return a single backend resource by its ID. */
@@ -1969,6 +2005,17 @@ export type QueryReleaseArgs = {
 };
 
 
+export type QueryReleaseApprovalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryReleaseApprovalsArgs = {
+  filters?: InputMaybe<ReleaseApprovalFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QueryReleasesArgs = {
   filters?: InputMaybe<ReleaseFilter>;
   ordering?: Array<ReleaseOrder>;
@@ -2014,8 +2061,14 @@ export type Release = {
   __typename?: 'Release';
   /** The app this release belongs to. */
   app: App;
+  /** The digest an approval of this release is pinned to (identity, scopes, requirements, images). Changes whenever the release is re-published differently. */
+  approvalDigest: Scalars['String']['output'];
+  /** Standing approvals to run this release, newest first. */
+  approvals: Array<ReleaseApproval>;
   /** The deployments that run a flavour of this release. */
   deployments: Array<Deployment>;
+  /** Whether every flavour image is addressed by content digest. If not, a rebuild pushed under the same tag is not detected by the approval digest. */
+  digestPinned: Scalars['Boolean']['output'];
   /** The entrypoint used to start the app. */
   entrypoint: Scalars['String']['output'];
   /** The flavours (buildable variants) available for this release. */
@@ -2023,6 +2076,8 @@ export type Release = {
   id: Scalars['ID']['output'];
   /** The stored logo of this release: the path of the ingested media, or null while none has been ingested. */
   logo?: Maybe<Scalars['String']['output']>;
+  /** The subject manifest to pre-authorize in lok (createMandate): identifier, version, scopes and the union of flavour requirements. */
+  mandateManifest: Scalars['UntypedParams']['output'];
   /** The display name of this release, in the form 'identifier:version'. */
   name: Scalars['String']['output'];
   /** The original (upstream) logo URL of this release. */
@@ -2031,6 +2086,13 @@ export type Release = {
   scopes: Array<Scalars['String']['output']>;
   /** The semantic version of this release. */
   version: Scalars['String']['output'];
+};
+
+
+/** A specific version of an app, bundling the flavours that can be deployed for it. */
+export type ReleaseApprovalsArgs = {
+  filters?: InputMaybe<ReleaseApprovalFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -2047,6 +2109,57 @@ export type ReleaseFlavoursArgs = {
   filters?: InputMaybe<FlavourFilter>;
   ordering?: Array<FlavourOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** A user's standing approval to run a release, backed by a lok mandate that lets a deployer provision it as them. */
+export type ReleaseApproval = {
+  __typename?: 'ReleaseApproval';
+  /** The deployer app the mandate names. */
+  agent: Scalars['String']['output'];
+  /** The user the deployed release will act as. */
+  approver: User;
+  /** Backends allowed to deploy under this approval. Empty means any. */
+  backends: Array<Backend>;
+  createdAt: Scalars['DateTime']['output'];
+  /** The release digest at approval time. */
+  digest: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  /** Not revoked and not stale: deployable. */
+  isActive: Scalars['Boolean']['output'];
+  /** The release changed since approval; nothing new may be deployed from this approval. */
+  isStale: Scalars['Boolean']['output'];
+  /** The lok mandate backing this approval. */
+  mandateId: Scalars['ID']['output'];
+  /** A display name: the approved release and who approved it. */
+  name: Scalars['String']['output'];
+  /** The approved release. */
+  release: Release;
+  /** When the approval was withdrawn. */
+  revokedAt?: Maybe<Scalars['DateTime']['output']>;
+};
+
+
+/** A user's standing approval to run a release, backed by a lok mandate that lets a deployer provision it as them. */
+export type ReleaseApprovalBackendsArgs = {
+  filters?: InputMaybe<BackendFilter>;
+  ordering?: Array<BackendOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** Filter for release approvals. */
+export type ReleaseApprovalFilter = {
+  AND?: InputMaybe<ReleaseApprovalFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<ReleaseApprovalFilter>;
+  OR?: InputMaybe<ReleaseApprovalFilter>;
+  /** Keep only approvals whose ID is in this list. */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Keep only approvals of this release. */
+  release?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep only approvals that are not revoked. Staleness depends on the live release and is read from `isStale`. */
+  revoked?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Case-insensitive search on the approved app identifier or version. */
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Filter for app releases. */
@@ -2227,6 +2340,11 @@ export enum ReturnWidgetKind {
   Choice = 'CHOICE',
   Custom = 'CUSTOM'
 }
+
+/** Withdraw a release approval. Revoke the lok mandate as well to stop running pods. */
+export type RevokeApprovalInput = {
+  id: Scalars['ID']['input'];
+};
 
 /** Requires a ROCm-capable (AMD) GPU on the backend. */
 export type RocmSelector = Selector & {
@@ -2633,6 +2751,18 @@ export type ShelfAppFragment = { __typename?: 'App', id: string, identifier: str
     & StoreReleaseFragment
   )> };
 
+export type ListReleaseApprovalFragment = { __typename?: 'ReleaseApproval', id: string, name: string, agent: string, digest: string, mandateId: string, createdAt: any, revokedAt?: any | null, isStale: boolean, isActive: boolean, approver: { __typename?: 'User', sub: string }, release: { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } } };
+
+export type ReleaseApprovalFragment = (
+  { __typename?: 'ReleaseApproval', backends: Array<{ __typename?: 'Backend', id: string, name: string }> }
+  & ListReleaseApprovalFragment
+);
+
+export type ApprovableReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, approvalDigest: string, digestPinned: boolean, mandateManifest: any, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null }, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, image: { __typename?: 'DockerImage', imageString: string }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }> }>, approvals: Array<(
+    { __typename?: 'ReleaseApproval' }
+    & ListReleaseApprovalFragment
+  )> };
+
 export type ListBackendFragment = { __typename?: 'Backend', id: string, name: string, kind: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } };
 
 export type BackendFragment = { __typename?: 'Backend', id: string, clientId: string, name: string, kind: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string }, pods: Array<(
@@ -2704,7 +2834,10 @@ export type PodFragment = { __typename?: 'Pod', id: string, podId: string, statu
   ), latestLogDump?: { __typename?: 'LogDump', logs: string, createdAt: any } | null, resource?: (
     { __typename?: 'Resource' }
     & ListResourceFragment
-  ) | null, deployment: { __typename?: 'Deployment', id: string, flavour: { __typename?: 'Flavour', release: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', identifier: string } } } } };
+  ) | null, deployment: { __typename?: 'Deployment', id: string, approval?: (
+      { __typename?: 'ReleaseApproval' }
+      & ListReleaseApprovalFragment
+    ) | null, flavour: { __typename?: 'Flavour', release: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', identifier: string } } } } };
 
 export type StringAssignWidgetFragment = { __typename: 'StringAssignWidget', kind: AssignWidgetKind, placeholder?: string | null, asParagraph?: boolean | null };
 
@@ -3245,6 +3378,26 @@ export type StoreReleaseFragment = { __typename?: 'Release', id: string, name: s
     & StoreFlavourFragment
   )> };
 
+export type ApproveReleaseMutationVariables = Exact<{
+  input: ApproveReleaseInput;
+}>;
+
+
+export type ApproveReleaseMutation = { __typename?: 'Mutation', approveRelease: (
+    { __typename?: 'ReleaseApproval' }
+    & ReleaseApprovalFragment
+  ) };
+
+export type RevokeApprovalMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RevokeApprovalMutation = { __typename?: 'Mutation', revokeApproval: (
+    { __typename?: 'ReleaseApproval' }
+    & ReleaseApprovalFragment
+  ) };
+
 export type DeleteBackendMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -3301,6 +3454,37 @@ export type ListAppsQuery = { __typename?: 'Query', apps: Array<(
     { __typename?: 'App' }
     & ShelfAppFragment
   )> };
+
+export type ListReleaseApprovalsQueryVariables = Exact<{
+  filters?: InputMaybe<ReleaseApprovalFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListReleaseApprovalsQuery = { __typename?: 'Query', releaseApprovals: Array<(
+    { __typename?: 'ReleaseApproval' }
+    & ListReleaseApprovalFragment
+  )> };
+
+export type GetReleaseApprovalQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetReleaseApprovalQuery = { __typename?: 'Query', releaseApproval: (
+    { __typename?: 'ReleaseApproval' }
+    & ReleaseApprovalFragment
+  ) };
+
+export type GetApprovableReleaseQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetApprovableReleaseQuery = { __typename?: 'Query', release: (
+    { __typename?: 'Release' }
+    & ApprovableReleaseFragment
+  ) };
 
 export type ListBackendsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3600,6 +3784,79 @@ export const ShelfAppFragmentDoc = gql`
   }
 }
     ${StoreReleaseFragmentDoc}`;
+export const ListReleaseApprovalFragmentDoc = gql`
+    fragment ListReleaseApproval on ReleaseApproval {
+  id
+  name
+  agent
+  digest
+  mandateId
+  createdAt
+  revokedAt
+  isStale
+  isActive
+  approver {
+    sub
+  }
+  release {
+    id
+    name
+    version
+    logo
+    originalLogo
+    app {
+      id
+      identifier
+      embedding
+    }
+  }
+}
+    `;
+export const ReleaseApprovalFragmentDoc = gql`
+    fragment ReleaseApproval on ReleaseApproval {
+  ...ListReleaseApproval
+  backends {
+    id
+    name
+  }
+}
+    ${ListReleaseApprovalFragmentDoc}`;
+export const ApprovableReleaseFragmentDoc = gql`
+    fragment ApprovableRelease on Release {
+  id
+  name
+  version
+  logo
+  originalLogo
+  scopes
+  approvalDigest
+  digestPinned
+  mandateManifest
+  app {
+    id
+    identifier
+    embedding
+  }
+  flavours {
+    id
+    name
+    logo
+    originalLogo
+    image {
+      imageString
+    }
+    requirements {
+      key
+      service
+      optional
+      description
+    }
+  }
+  approvals(filters: {revoked: false}) {
+    ...ListReleaseApproval
+  }
+}
+    ${ListReleaseApprovalFragmentDoc}`;
 export const ListBackendFragmentDoc = gql`
     fragment ListBackend on Backend {
   id
@@ -4431,6 +4688,9 @@ export const PodFragmentDoc = gql`
   }
   deployment {
     id
+    approval {
+      ...ListReleaseApproval
+    }
     flavour {
       release {
         id
@@ -4443,7 +4703,8 @@ export const PodFragmentDoc = gql`
   }
 }
     ${BackendFragmentDoc}
-${ListResourceFragmentDoc}`;
+${ListResourceFragmentDoc}
+${ListReleaseApprovalFragmentDoc}`;
 export const ReleaseFragmentDoc = gql`
     fragment Release on Release {
   id
@@ -4538,6 +4799,72 @@ export const ResourceFragmentDoc = gql`
   }
 }
     ${ListPodFragmentDoc}`;
+export const ApproveReleaseDocument = gql`
+    mutation ApproveRelease($input: ApproveReleaseInput!) {
+  approveRelease(input: $input) {
+    ...ReleaseApproval
+  }
+}
+    ${ReleaseApprovalFragmentDoc}`;
+export type ApproveReleaseMutationFn = Apollo.MutationFunction<ApproveReleaseMutation, ApproveReleaseMutationVariables>;
+
+/**
+ * __useApproveReleaseMutation__
+ *
+ * To run a mutation, you first call `useApproveReleaseMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useApproveReleaseMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [approveReleaseMutation, { data, loading, error }] = useApproveReleaseMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useApproveReleaseMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ApproveReleaseMutation, ApproveReleaseMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ApproveReleaseMutation, ApproveReleaseMutationVariables>(ApproveReleaseDocument, options);
+      }
+export type ApproveReleaseMutationHookResult = ReturnType<typeof useApproveReleaseMutation>;
+export type ApproveReleaseMutationResult = Apollo.MutationResult<ApproveReleaseMutation>;
+export type ApproveReleaseMutationOptions = Apollo.BaseMutationOptions<ApproveReleaseMutation, ApproveReleaseMutationVariables>;
+export const RevokeApprovalDocument = gql`
+    mutation RevokeApproval($id: ID!) {
+  revokeApproval(input: {id: $id}) {
+    ...ReleaseApproval
+  }
+}
+    ${ReleaseApprovalFragmentDoc}`;
+export type RevokeApprovalMutationFn = Apollo.MutationFunction<RevokeApprovalMutation, RevokeApprovalMutationVariables>;
+
+/**
+ * __useRevokeApprovalMutation__
+ *
+ * To run a mutation, you first call `useRevokeApprovalMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRevokeApprovalMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [revokeApprovalMutation, { data, loading, error }] = useRevokeApprovalMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRevokeApprovalMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RevokeApprovalMutation, RevokeApprovalMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RevokeApprovalMutation, RevokeApprovalMutationVariables>(RevokeApprovalDocument, options);
+      }
+export type RevokeApprovalMutationHookResult = ReturnType<typeof useRevokeApprovalMutation>;
+export type RevokeApprovalMutationResult = Apollo.MutationResult<RevokeApprovalMutation>;
+export type RevokeApprovalMutationOptions = Apollo.BaseMutationOptions<RevokeApprovalMutation, RevokeApprovalMutationVariables>;
 export const DeleteBackendDocument = gql`
     mutation DeleteBackend($id: ID!) {
   deleteBackend(id: $id)
@@ -4769,6 +5096,112 @@ export function useListAppsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type ListAppsQueryHookResult = ReturnType<typeof useListAppsQuery>;
 export type ListAppsLazyQueryHookResult = ReturnType<typeof useListAppsLazyQuery>;
 export type ListAppsQueryResult = Apollo.QueryResult<ListAppsQuery, ListAppsQueryVariables>;
+export const ListReleaseApprovalsDocument = gql`
+    query ListReleaseApprovals($filters: ReleaseApprovalFilter, $pagination: OffsetPaginationInput) {
+  releaseApprovals(filters: $filters, pagination: $pagination) {
+    ...ListReleaseApproval
+  }
+}
+    ${ListReleaseApprovalFragmentDoc}`;
+
+/**
+ * __useListReleaseApprovalsQuery__
+ *
+ * To run a query within a React component, call `useListReleaseApprovalsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListReleaseApprovalsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListReleaseApprovalsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListReleaseApprovalsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListReleaseApprovalsQuery, ListReleaseApprovalsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListReleaseApprovalsQuery, ListReleaseApprovalsQueryVariables>(ListReleaseApprovalsDocument, options);
+      }
+export function useListReleaseApprovalsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListReleaseApprovalsQuery, ListReleaseApprovalsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListReleaseApprovalsQuery, ListReleaseApprovalsQueryVariables>(ListReleaseApprovalsDocument, options);
+        }
+export type ListReleaseApprovalsQueryHookResult = ReturnType<typeof useListReleaseApprovalsQuery>;
+export type ListReleaseApprovalsLazyQueryHookResult = ReturnType<typeof useListReleaseApprovalsLazyQuery>;
+export type ListReleaseApprovalsQueryResult = Apollo.QueryResult<ListReleaseApprovalsQuery, ListReleaseApprovalsQueryVariables>;
+export const GetReleaseApprovalDocument = gql`
+    query GetReleaseApproval($id: ID!) {
+  releaseApproval(id: $id) {
+    ...ReleaseApproval
+  }
+}
+    ${ReleaseApprovalFragmentDoc}`;
+
+/**
+ * __useGetReleaseApprovalQuery__
+ *
+ * To run a query within a React component, call `useGetReleaseApprovalQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetReleaseApprovalQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetReleaseApprovalQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetReleaseApprovalQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetReleaseApprovalQuery, GetReleaseApprovalQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetReleaseApprovalQuery, GetReleaseApprovalQueryVariables>(GetReleaseApprovalDocument, options);
+      }
+export function useGetReleaseApprovalLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetReleaseApprovalQuery, GetReleaseApprovalQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetReleaseApprovalQuery, GetReleaseApprovalQueryVariables>(GetReleaseApprovalDocument, options);
+        }
+export type GetReleaseApprovalQueryHookResult = ReturnType<typeof useGetReleaseApprovalQuery>;
+export type GetReleaseApprovalLazyQueryHookResult = ReturnType<typeof useGetReleaseApprovalLazyQuery>;
+export type GetReleaseApprovalQueryResult = Apollo.QueryResult<GetReleaseApprovalQuery, GetReleaseApprovalQueryVariables>;
+export const GetApprovableReleaseDocument = gql`
+    query GetApprovableRelease($id: ID!) {
+  release(id: $id) {
+    ...ApprovableRelease
+  }
+}
+    ${ApprovableReleaseFragmentDoc}`;
+
+/**
+ * __useGetApprovableReleaseQuery__
+ *
+ * To run a query within a React component, call `useGetApprovableReleaseQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetApprovableReleaseQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetApprovableReleaseQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetApprovableReleaseQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetApprovableReleaseQuery, GetApprovableReleaseQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetApprovableReleaseQuery, GetApprovableReleaseQueryVariables>(GetApprovableReleaseDocument, options);
+      }
+export function useGetApprovableReleaseLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetApprovableReleaseQuery, GetApprovableReleaseQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetApprovableReleaseQuery, GetApprovableReleaseQueryVariables>(GetApprovableReleaseDocument, options);
+        }
+export type GetApprovableReleaseQueryHookResult = ReturnType<typeof useGetApprovableReleaseQuery>;
+export type GetApprovableReleaseLazyQueryHookResult = ReturnType<typeof useGetApprovableReleaseLazyQuery>;
+export type GetApprovableReleaseQueryResult = Apollo.QueryResult<GetApprovableReleaseQuery, GetApprovableReleaseQueryVariables>;
 export const ListBackendsDocument = gql`
     query ListBackends {
   backends {

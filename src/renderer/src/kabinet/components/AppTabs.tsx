@@ -5,7 +5,7 @@ import { KabinetDefinition, KabinetFlavour, KabinetRelease } from "@/core/linker
 import { Boxes, Container, GitBranch, KeyRound, Plug, Tag } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { appGradient } from "./AppIcon";
-import { InstallMenu, SelectorBadges } from "./store/StoreParts";
+import { SelectorBadges } from "./store/StoreParts";
 import { StoreDefinition } from "./store/storeModel";
 import { StoreFlavourFragment } from "../api/graphql";
 
@@ -109,7 +109,6 @@ export const FlavoursTab = ({ flavours }: { flavours: readonly StoreFlavourFragm
               deployments
             </p>
           </div>
-          <InstallMenu flavours={[flavour]} />
         </div>
         <SelectorBadges flavour={flavour} />
         <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">

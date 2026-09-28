@@ -70,3 +70,25 @@ query HoverImplementation($id: ID!) {
     ...HoverImplementation
   }
 }
+
+# The installers of a kabinet release approval: actions whose first argument
+# is a `@kabinet/approval` (a deployer's `install(approval)`). Actions that
+# need more than the approval are dropped client-side (`isApprovalInstaller`):
+# the server's `forceNonNullableLength` reads a `nullable` key ports need not
+# store, and so matched nothing.
+query ApprovalInstallers {
+  implementations(
+    filters: {
+      action: {
+        demands: [
+          {
+            kind: ARGS
+            matches: [{ at: 0, kind: STRUCTURE, identifier: "@kabinet/approval" }]
+          }
+        ]
+      }
+    }
+  ) {
+    ...InstallerImplementation
+  }
+}

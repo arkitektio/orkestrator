@@ -4,6 +4,8 @@ import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import AppPage from "./pages/AppPage";
+import ApprovalPage from "./pages/ApprovalPage";
+import ApprovalsPage from "./pages/ApprovalsPage";
 import AppStoreRedirect from "./pages/AppStoreRedirect";
 import AppStorePage from "./pages/AppStorePage";
 import BackendPage from "./pages/BackendPage";
@@ -34,6 +36,8 @@ export const KabinetModule: React.FC<Props> = () => {
           {/* Static before dynamic: where the install deeplink lands. */}
           <Route path="repos/install" element={<InstallRepoPage />} />
           <Route path="repos/:id" element={<RepoPage />} />
+          <Route path="approvals" element={<ApprovalsPage />} />
+          <Route path="approvals/:id" element={<ApprovalPage />} />
           <Route path="pods" element={<PodsPage />} />
           <Route path="pods/:id" element={<PodPage />} />
           <Route path="definitions/:id" element={<DefinitionPage />} />

@@ -17,3 +17,4 @@ export const LokServiceInstance = smartOf(manifest, "@lok/serviceinstance");
 export const LokLayer = smartOf(manifest, "@lok/layer");
 export const LokMapping = smartOf(manifest, "@lok/mapping");
 export const LokComposition = smartOf(manifest, "@lok/composition");
+export const LokMandate = smartOf(manifest, "@lok/mandate");

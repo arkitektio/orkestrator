@@ -6,14 +6,47 @@ import {
   ScanRepoMutationVariables,
 } from '@/kabinet/api/graphql'
 import { ApolloClient, NormalizedCache } from '@apollo/client'
-import { RefreshCw } from 'lucide-react'
+import { Download, RefreshCw, ShieldOff } from 'lucide-react'
 import type { Service } from '@/core/connection/arkitekt/types'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
 
 const REPO_IDENTIFIER = '@kabinet/repo'
+const RELEASE_IDENTIFIER = '@kabinet/release'
+const APPROVAL_IDENTIFIER = '@kabinet/approval'
 
 export const KABINET_ACTIONS: Record<string, Action> = {
+  'install-release': {
+    title: 'Install…',
+    description: 'Approve the release to run as you and install it on a deployer',
+    icon: Download,
+    conditions: [
+      { type: 'identifier', identifier: RELEASE_IDENTIFIER },
+      { type: 'nopartner' }
+    ],
+    execute: async ({ state, dialog }) => {
+      const release = state.left.find((structure) => structure.identifier === RELEASE_IDENTIFIER)
+      if (!release) {
+        throw new Error('No release selected')
+      }
+      dialog.openDialog('installrelease', { release: String(release.id) }, { className: 'max-w-xl' })
+    }
+  },
+  'revoke-approval': {
+    title: 'Revoke approval',
+    description: 'Stop installs under it and sign its pods out',
+    icon: ShieldOff,
+    conditions: [
+      { type: 'identifier', identifier: APPROVAL_IDENTIFIER },
+      { type: 'nopartner' }
+    ],
+    execute: async ({ state, dialog }) => {
+      const ids = state.left
+        .filter((structure) => structure.identifier === APPROVAL_IDENTIFIER)
+        .map((structure) => String(structure.id))
+      dialog.openDialog('revokeapproval', { ids }, { size: 'small' })
+    }
+  },
   'delete-pod': buildDeleteAction({
     title: 'Delete Agent',
     identifier: '@kabinet/pod',

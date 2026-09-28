@@ -235,6 +235,26 @@ export type CreateInviteInput = {
   roles?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+/** Pre-authorize an agent app to provision clients of a subject app that act as you. */
+export type CreateMandateInput = {
+  /** Identifier of the app allowed to provision (e.g. a deployer). */
+  agent: Scalars['String']['input'];
+  /** Only an agent running on this device may provision. */
+  agentDeviceId?: InputMaybe<Scalars['String']['input']>;
+  /** Only an agent acting as this user may provision. */
+  agentUser?: InputMaybe<Scalars['ID']['input']>;
+  /** Opaque binding for the approving service (e.g. a release digest). */
+  attestation?: InputMaybe<Scalars['String']['input']>;
+  /** Stop new provisioning after this many days (1–365). Null means until revoked. */
+  expiresInDays?: InputMaybe<Scalars['Int']['input']>;
+  /** The hub provisioned clients compose against. Defaults to the calling client's hub. */
+  hub?: InputMaybe<Scalars['ID']['input']>;
+  /** The subject app. Its scopes and requirements are the ceiling for every provisioned client; deviceId is ignored. */
+  manifest: ManifestInput;
+  /** How many clients may exist under the mandate at once. */
+  maxClients?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type CreateOrganizationInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
@@ -581,6 +601,45 @@ export type LinkingRequestInput = {
   port: Scalars['String']['input'];
 };
 
+/** A standing authorization: the grantor lets an agent app provision clients of a subject app that act as the grantor. */
+export type Mandate = {
+  __typename?: 'Mandate';
+  /** If set, only an agent running on this device may provision. */
+  agentDevice?: Maybe<Device>;
+  /** The app allowed to provision under this mandate. */
+  agentIdentifier: Scalars['String']['output'];
+  /** If set, only an agent acting as this user may provision. */
+  agentUser?: Maybe<User>;
+  /** Opaque binding set by the approving service (e.g. a release digest). */
+  attestation: Scalars['String']['output'];
+  /** The clients currently provisioned under this mandate. */
+  clients: Array<Client>;
+  createdAt: Scalars['DateTime']['output'];
+  /** After this, no new clients may be provisioned. */
+  expiresAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The user the provisioned clients act as. */
+  grantor: User;
+  /** The hub provisioned clients compose against. */
+  hub: Hub;
+  id: Scalars['ID']['output'];
+  /** Whether the agent may still provision under this mandate. */
+  isLive: Scalars['Boolean']['output'];
+  /** How many clients may be provisioned at once. Null means unlimited. */
+  maxClients?: Maybe<Scalars['Int']['output']>;
+  /** When the grantor withdrew the mandate; its clients were deleted then. */
+  revokedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The approved subject: identifier, version, and the scope/requirement ceilings. */
+  subjectManifest: Scalars['JSON']['output'];
+};
+
+
+/** A standing authorization: the grantor lets an agent app provision clients of a subject app that act as the grantor. */
+export type MandateClientsArgs = {
+  filters?: InputMaybe<ClientFilter>;
+  ordering?: Array<ClientOrdering>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
 export type ManifestInput = {
   authors?: Array<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
@@ -679,6 +738,7 @@ export type Mutation = {
   createDevelopmentalClient: Client;
   createGroupProfile: GroupProfile;
   createInvite: Invite;
+  createMandate: Mandate;
   createOrganization: Organization;
   createProfile: Profile;
   createRedeemToken: RedeemToken;
@@ -686,9 +746,12 @@ export type Mutation = {
   declineInvite: Invite;
   deleteRedeemToken: Scalars['ID']['output'];
   notifyUser: Scalars['Boolean']['output'];
+  provision: RedeemToken;
   registerComChannel: ComChannel;
+  releaseMandateClient: Scalars['String']['output'];
   render: Scalars['Fakt']['output'];
   requestMediaUpload: PresignedPostCredentials;
+  revokeMandate: Mandate;
   updateDevice: Device;
   updateGroupProfile: GroupProfile;
   updateMembershipColors: Membership;
@@ -733,6 +796,11 @@ export type MutationCreateInviteArgs = {
 };
 
 
+export type MutationCreateMandateArgs = {
+  input: CreateMandateInput;
+};
+
+
 export type MutationCreateOrganizationArgs = {
   input: CreateOrganizationInput;
 };
@@ -768,8 +836,18 @@ export type MutationNotifyUserArgs = {
 };
 
 
+export type MutationProvisionArgs = {
+  input: ProvisionInput;
+};
+
+
 export type MutationRegisterComChannelArgs = {
   input: RegisterComChannelInput;
+};
+
+
+export type MutationReleaseMandateClientArgs = {
+  input: ReleaseMandateClientInput;
 };
 
 
@@ -780,6 +858,11 @@ export type MutationRenderArgs = {
 
 export type MutationRequestMediaUploadArgs = {
   input: RequestMediaUploadInput;
+};
+
+
+export type MutationRevokeMandateArgs = {
+  input: RevokeMandateInput;
 };
 
 
@@ -949,6 +1032,15 @@ export type Profile = {
   name?: Maybe<Scalars['String']['output']>;
 };
 
+/** Mint a single-use credential for one instance of a mandate's subject. */
+export type ProvisionInput = {
+  /** Unique per provisioned instance: a client's identity includes its device, so instances sharing one would replace each other. */
+  deviceId: Scalars['String']['input'];
+  mandate: Scalars['ID']['input'];
+  /** How long the token stays redeemable (default 60, at most 1440). */
+  ttlMinutes?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type PublicSource = {
   __typename?: 'PublicSource';
   /** The kind of the public source. E.g. 'github' */
@@ -989,6 +1081,10 @@ export type Query = {
   invites: Array<Invite>;
   layer: Layer;
   layers: Array<Layer>;
+  mandate: Mandate;
+  mandateToken: RedeemToken;
+  /** Mandates you granted, or (as an agent app) may provision under. Org admins see all. */
+  mandates: Array<Mandate>;
   me: User;
   message: SystemMessage;
   myActiveMessages: Array<SystemMessage>;
@@ -1112,6 +1208,21 @@ export type QueryLayerArgs = {
 export type QueryLayersArgs = {
   filters?: InputMaybe<LayerFilter>;
   ordering?: Array<LayerOrdering>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMandateArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryMandateTokenArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryMandatesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -1241,6 +1352,8 @@ export type RedeemToken = {
   /** When this token stops being redeemable. Null means never. */
   expiresAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
+  /** The mandate this token was provisioned under, if any. */
+  mandate?: Maybe<Mandate>;
   /** How many times this token may be redeemed. Null means unlimited. */
   maxRedemptions?: Maybe<Scalars['Int']['output']>;
   /** The manifest this token was pre-authorized for at mint time, or null for an unpinned token. A redeem must match its identifier, version and device_id exactly and may only request a subset of its scopes and requirements. */
@@ -1312,6 +1425,11 @@ export type ReleaseClientsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
+export type ReleaseMandateClientInput = {
+  /** The OAuth client id of a client provisioned under a mandate. */
+  clientId: Scalars['String']['input'];
+};
+
 export type ReleaseOrdering =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
@@ -1335,6 +1453,10 @@ export type RequirementInput = {
   key: Scalars['String']['input'];
   optional?: Scalars['Boolean']['input'];
   service: Scalars['String']['input'];
+};
+
+export type RevokeMandateInput = {
+  id: Scalars['ID']['input'];
 };
 
 /** A Role is a set of permissions that can be assigned to a user. It is used to define what a user can do in the system. */
@@ -1886,6 +2008,13 @@ export type LayerFragment = { __typename?: 'Layer', id: string, name: string, id
 
 export type ListLayerFragment = { __typename?: 'Layer', id: string, name: string, identifier: any, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
+export type ListMandateFragment = { __typename?: 'Mandate', id: string, agentIdentifier: string, subjectManifest: any, attestation: string, maxClients?: number | null, createdAt: any, expiresAt?: any | null, revokedAt?: any | null, isLive: boolean, grantor: { __typename?: 'User', id: string, username: string }, agentDevice?: { __typename?: 'Device', id: string, deviceId: string, name?: string | null } | null, agentUser?: { __typename?: 'User', id: string, username: string } | null, clients: Array<{ __typename?: 'Client', id: string, clientId: string, name: string, node?: { __typename?: 'Device', id: string, name?: string | null } | null }> };
+
+export type DetailMandateFragment = (
+  { __typename?: 'Mandate', hub: { __typename?: 'Hub', id: string, name: string, identifier: any } }
+  & ListMandateFragment
+);
+
 export type MembershipFragment = { __typename?: 'Membership', id: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', identifier: string, id: string }>, organization: (
     { __typename?: 'Organization' }
     & ListOrganizationFragment
@@ -2045,6 +2174,33 @@ export type CreateInviteMutation = { __typename?: 'Mutation', createInvite: (
     { __typename?: 'Invite' }
     & InviteFragment
   ) };
+
+export type CreateMandateMutationVariables = Exact<{
+  input: CreateMandateInput;
+}>;
+
+
+export type CreateMandateMutation = { __typename?: 'Mutation', createMandate: (
+    { __typename?: 'Mandate' }
+    & DetailMandateFragment
+  ) };
+
+export type RevokeMandateMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RevokeMandateMutation = { __typename?: 'Mutation', revokeMandate: (
+    { __typename?: 'Mandate' }
+    & DetailMandateFragment
+  ) };
+
+export type ReleaseMandateClientMutationVariables = Exact<{
+  clientId: Scalars['String']['input'];
+}>;
+
+
+export type ReleaseMandateClientMutation = { __typename?: 'Mutation', releaseMandateClient: string };
 
 export type UpdateMembershipColorsMutationVariables = Exact<{
   input: UpdateMembershipColorsInput;
@@ -2324,6 +2480,26 @@ export type DetailLayerQueryVariables = Exact<{
 export type DetailLayerQuery = { __typename?: 'Query', layer: (
     { __typename?: 'Layer' }
     & LayerFragment
+  ) };
+
+export type MandatesQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type MandatesQuery = { __typename?: 'Query', mandates: Array<(
+    { __typename?: 'Mandate' }
+    & ListMandateFragment
+  )> };
+
+export type GetMandateQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetMandateQuery = { __typename?: 'Query', mandate: (
+    { __typename?: 'Mandate' }
+    & DetailMandateFragment
   ) };
 
 export type MyActiveMessagesQueryVariables = Exact<{ [key: string]: never; }>;
@@ -2928,6 +3104,51 @@ export const ListLayerFragmentDoc = gql`
   }
 }
     `;
+export const ListMandateFragmentDoc = gql`
+    fragment ListMandate on Mandate {
+  id
+  agentIdentifier
+  subjectManifest
+  attestation
+  maxClients
+  createdAt
+  expiresAt
+  revokedAt
+  isLive
+  grantor {
+    id
+    username
+  }
+  agentDevice {
+    id
+    deviceId
+    name
+  }
+  agentUser {
+    id
+    username
+  }
+  clients {
+    id
+    clientId
+    name
+    node {
+      id
+      name
+    }
+  }
+}
+    `;
+export const DetailMandateFragmentDoc = gql`
+    fragment DetailMandate on Mandate {
+  ...ListMandate
+  hub {
+    id
+    name
+    identifier
+  }
+}
+    ${ListMandateFragmentDoc}`;
 export const ListRedeemTokenFragmentDoc = gql`
     fragment ListRedeemToken on RedeemToken {
   id
@@ -3411,6 +3632,103 @@ export function useCreateInviteMutation(baseOptions?: ApolloReactHooks.MutationH
 export type CreateInviteMutationHookResult = ReturnType<typeof useCreateInviteMutation>;
 export type CreateInviteMutationResult = Apollo.MutationResult<CreateInviteMutation>;
 export type CreateInviteMutationOptions = Apollo.BaseMutationOptions<CreateInviteMutation, CreateInviteMutationVariables>;
+export const CreateMandateDocument = gql`
+    mutation CreateMandate($input: CreateMandateInput!) {
+  createMandate(input: $input) {
+    ...DetailMandate
+  }
+}
+    ${DetailMandateFragmentDoc}`;
+export type CreateMandateMutationFn = Apollo.MutationFunction<CreateMandateMutation, CreateMandateMutationVariables>;
+
+/**
+ * __useCreateMandateMutation__
+ *
+ * To run a mutation, you first call `useCreateMandateMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateMandateMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createMandateMutation, { data, loading, error }] = useCreateMandateMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateMandateMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateMandateMutation, CreateMandateMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateMandateMutation, CreateMandateMutationVariables>(CreateMandateDocument, options);
+      }
+export type CreateMandateMutationHookResult = ReturnType<typeof useCreateMandateMutation>;
+export type CreateMandateMutationResult = Apollo.MutationResult<CreateMandateMutation>;
+export type CreateMandateMutationOptions = Apollo.BaseMutationOptions<CreateMandateMutation, CreateMandateMutationVariables>;
+export const RevokeMandateDocument = gql`
+    mutation RevokeMandate($id: ID!) {
+  revokeMandate(input: {id: $id}) {
+    ...DetailMandate
+  }
+}
+    ${DetailMandateFragmentDoc}`;
+export type RevokeMandateMutationFn = Apollo.MutationFunction<RevokeMandateMutation, RevokeMandateMutationVariables>;
+
+/**
+ * __useRevokeMandateMutation__
+ *
+ * To run a mutation, you first call `useRevokeMandateMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRevokeMandateMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [revokeMandateMutation, { data, loading, error }] = useRevokeMandateMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRevokeMandateMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RevokeMandateMutation, RevokeMandateMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RevokeMandateMutation, RevokeMandateMutationVariables>(RevokeMandateDocument, options);
+      }
+export type RevokeMandateMutationHookResult = ReturnType<typeof useRevokeMandateMutation>;
+export type RevokeMandateMutationResult = Apollo.MutationResult<RevokeMandateMutation>;
+export type RevokeMandateMutationOptions = Apollo.BaseMutationOptions<RevokeMandateMutation, RevokeMandateMutationVariables>;
+export const ReleaseMandateClientDocument = gql`
+    mutation ReleaseMandateClient($clientId: String!) {
+  releaseMandateClient(input: {clientId: $clientId})
+}
+    `;
+export type ReleaseMandateClientMutationFn = Apollo.MutationFunction<ReleaseMandateClientMutation, ReleaseMandateClientMutationVariables>;
+
+/**
+ * __useReleaseMandateClientMutation__
+ *
+ * To run a mutation, you first call `useReleaseMandateClientMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useReleaseMandateClientMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [releaseMandateClientMutation, { data, loading, error }] = useReleaseMandateClientMutation({
+ *   variables: {
+ *      clientId: // value for 'clientId'
+ *   },
+ * });
+ */
+export function useReleaseMandateClientMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ReleaseMandateClientMutation, ReleaseMandateClientMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ReleaseMandateClientMutation, ReleaseMandateClientMutationVariables>(ReleaseMandateClientDocument, options);
+      }
+export type ReleaseMandateClientMutationHookResult = ReturnType<typeof useReleaseMandateClientMutation>;
+export type ReleaseMandateClientMutationResult = Apollo.MutationResult<ReleaseMandateClientMutation>;
+export type ReleaseMandateClientMutationOptions = Apollo.BaseMutationOptions<ReleaseMandateClientMutation, ReleaseMandateClientMutationVariables>;
 export const UpdateMembershipColorsDocument = gql`
     mutation UpdateMembershipColors($input: UpdateMembershipColorsInput!) {
   updateMembershipColors(input: $input) {
@@ -4420,6 +4738,76 @@ export function useDetailLayerLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type DetailLayerQueryHookResult = ReturnType<typeof useDetailLayerQuery>;
 export type DetailLayerLazyQueryHookResult = ReturnType<typeof useDetailLayerLazyQuery>;
 export type DetailLayerQueryResult = Apollo.QueryResult<DetailLayerQuery, DetailLayerQueryVariables>;
+export const MandatesDocument = gql`
+    query Mandates($pagination: OffsetPaginationInput) {
+  mandates(pagination: $pagination) {
+    ...ListMandate
+  }
+}
+    ${ListMandateFragmentDoc}`;
+
+/**
+ * __useMandatesQuery__
+ *
+ * To run a query within a React component, call `useMandatesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMandatesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMandatesQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useMandatesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MandatesQuery, MandatesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MandatesQuery, MandatesQueryVariables>(MandatesDocument, options);
+      }
+export function useMandatesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MandatesQuery, MandatesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MandatesQuery, MandatesQueryVariables>(MandatesDocument, options);
+        }
+export type MandatesQueryHookResult = ReturnType<typeof useMandatesQuery>;
+export type MandatesLazyQueryHookResult = ReturnType<typeof useMandatesLazyQuery>;
+export type MandatesQueryResult = Apollo.QueryResult<MandatesQuery, MandatesQueryVariables>;
+export const GetMandateDocument = gql`
+    query GetMandate($id: ID!) {
+  mandate(id: $id) {
+    ...DetailMandate
+  }
+}
+    ${DetailMandateFragmentDoc}`;
+
+/**
+ * __useGetMandateQuery__
+ *
+ * To run a query within a React component, call `useGetMandateQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMandateQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetMandateQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetMandateQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetMandateQuery, GetMandateQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetMandateQuery, GetMandateQueryVariables>(GetMandateDocument, options);
+      }
+export function useGetMandateLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMandateQuery, GetMandateQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetMandateQuery, GetMandateQueryVariables>(GetMandateDocument, options);
+        }
+export type GetMandateQueryHookResult = ReturnType<typeof useGetMandateQuery>;
+export type GetMandateLazyQueryHookResult = ReturnType<typeof useGetMandateLazyQuery>;
+export type GetMandateQueryResult = Apollo.QueryResult<GetMandateQuery, GetMandateQueryVariables>;
 export const MyActiveMessagesDocument = gql`
     query MyActiveMessages {
   myActiveMessages {

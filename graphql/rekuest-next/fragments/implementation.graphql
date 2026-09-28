@@ -131,3 +131,34 @@ fragment HoverImplementation on Implementation {
     connected
   }
 }
+
+# A deployer's installer: what the kabinet install dialog needs to name the
+# agent in a lok mandate (its app identifier, device and user).
+fragment InstallerImplementation on Implementation {
+  id
+  interface
+  action {
+    id
+    name
+    args {
+      key
+      nullable
+    }
+  }
+  agent {
+    id
+    name
+    active
+    connected
+    app {
+      identifier
+    }
+    device {
+      id
+      deviceId
+    }
+    user {
+      sub
+    }
+  }
+}

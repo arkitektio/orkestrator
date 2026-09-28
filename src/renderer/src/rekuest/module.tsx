@@ -21,7 +21,6 @@ import { RekuestEntitySearch } from "./search";
 import { ClientFailedTasks } from "./sections/ClientFailedTasks";
 import { DeviceAgents } from "./sections/DeviceAgents";
 import { BackendAgents, PodActions } from "./sections/KabinetAgents";
-import { KabinetInstallCard, KabinetInstallMenu } from "./sections/KabinetInstall";
 import { RunOnSubmenu } from "./smart/RunOnSubmenu";
 import { REKUEST_SECTIONS } from "./smart/sections";
 
@@ -62,21 +61,6 @@ export const REKUEST_MODULE = defineModule({
         placement: "main",
         match: { identifiers: ["@lok/device"] },
         Component: DeviceAgents,
-      },
-      {
-        // kabinet: install a flavour/release through an installer agent.
-        id: "rekuest.kabinetinstall",
-        title: "Install",
-        placement: "card",
-        match: { identifiers: ["@kabinet/flavour", "@kabinet/release"] },
-        Component: KabinetInstallCard,
-      },
-      {
-        id: "rekuest.kabinetinstallmenu",
-        title: "Install",
-        placement: "menu",
-        match: { identifiers: ["@kabinet/flavour"] },
-        Component: KabinetInstallMenu,
       },
       {
         id: "rekuest.backendagents",

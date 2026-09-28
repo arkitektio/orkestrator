@@ -2,14 +2,15 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Badge } from "@/core/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import { KabinetApp, KabinetRelease } from "@/core/linkers";
-import { Boxes, KeyRound, Layers } from "lucide-react";
+import { Boxes, KeyRound, Layers, ShieldCheck } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";
-import { useGetReleaseQuery } from "../api/graphql";
+import { useGetReleaseQuery, useListReleaseApprovalsQuery } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import { AccessTab, ActionsTab, Fact, FlavoursTab } from "../components/AppTabs";
+import ApprovalCard from "../components/cards/ApprovalCard";
 import { groupApps } from "../components/store/storeModel";
-import { HardwareBadges, InstallMenu } from "../components/store/StoreParts";
+import { HardwareBadges, InstallButton } from "../components/store/StoreParts";
 
 /**
  * The hero mark is the one live WebGL context on this page, and only for an app
@@ -53,6 +54,27 @@ const OtherVersions = ({
         )}
       </div>
     </section>
+  );
+};
+
+/**
+ * Who allowed this release to run as them. Mounted only while its tab is
+ * open, so the query runs only when someone looks.
+ */
+const ApprovalsTab = ({ release }: { release: string }) => {
+  const { data, error } = useListReleaseApprovalsQuery({ variables: { filters: { release } } });
+  if (error) return <p className="text-sm text-destructive">{error.message}</p>;
+  if (data?.releaseApprovals.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Nobody has approved this release yet. Installing it asks for an approval.
+      </p>
+    );
+  }
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {data?.releaseApprovals.map((approval) => <ApprovalCard key={approval.id} item={approval} />)}
+    </div>
   );
 };
 
@@ -124,8 +146,8 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
                   )}
                 </div>
               </div>
-              <InstallMenu
-                flavours={release.flavours}
+              <InstallButton
+                release={release}
                 size="lg"
                 className="px-5"
                 label={`Install v${release.version}`}
@@ -161,6 +183,9 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
               <TabsTrigger value="access">
                 <KeyRound /> Access
               </TabsTrigger>
+              <TabsTrigger value="approvals">
+                <ShieldCheck /> Approvals
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="flavours">
               <FlavoursTab flavours={release.flavours} />
@@ -173,6 +198,9 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
             </TabsContent>
             <TabsContent value="access">
               <AccessTab flavours={release.flavours} scopes={release.scopes} />
+            </TabsContent>
+            <TabsContent value="approvals">
+              <ApprovalsTab release={release.id} />
             </TabsContent>
           </Tabs>
         )}

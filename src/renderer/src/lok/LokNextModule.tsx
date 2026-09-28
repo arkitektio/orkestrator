@@ -14,6 +14,8 @@ import HomePage from "./pages/HomePage";
 import InstancesPage from "./pages/InstancesPage";
 import LayerPage from "./pages/LayerPage";
 import LayersPage from "./pages/LayersPage";
+import MandatePage from "./pages/MandatePage";
+import MandatesPage from "./pages/MandatesPage";
 import MePage from "./pages/MePage";
 import RecordPage from "./pages/RecordPage";
 import RedeemTokenPage from "./pages/RedeemTokenPage";
@@ -61,6 +63,8 @@ export const LokNextModule: React.FC<Props> = () => {
               page IS it — there is no other organization to list or open. */}
           <Route path="organizations/*" element={<Navigate replace to="/lok" />} />
           <Route path="services/:id" element={<ServicePage />} />
+          <Route path="mandates" element={<MandatesPage />} />
+          <Route path="mandates/:id" element={<MandatePage />} />
           <Route path="redeemtokens" element={<RedeemTokensPage />} />
           <Route path="redeemtokens/:id" element={<RedeemTokenPage />} />
           <Route
