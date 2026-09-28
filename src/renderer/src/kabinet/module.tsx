@@ -12,7 +12,6 @@ export const KABINET_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./KabinetModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: KABINET_NAV_LINKS,
     displays: {
       "@kabinet/pod": PodDisplay,

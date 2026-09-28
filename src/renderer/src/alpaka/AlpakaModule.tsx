@@ -12,14 +12,13 @@ import ProviderPage from "./pages/ProviderPage";
 import ProvidersPage from "./pages/ProvidersPage";
 import RoomPage from "./pages/RoomPage";
 import RoomsPage from "./pages/RoomsPage";
-import StandardPane from "./panes/StandardPane";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 interface Props { }
 
 export const AlpakaModule: React.FC<Props> = () => {
   return (
     <AlpakaGuard fallback={<ServiceUnavailable serviceKey="alpaka" />}>
-      <ModuleLayout pane={<StandardPane />}>
+      <ModuleLayout>
         <Routes>
           <Route path="rooms/:id" element={<RoomPage />} />
           <Route path="rooms" element={<RoomsPage />} />

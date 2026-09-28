@@ -14,7 +14,7 @@ export type PaneLinkProps = {
   className?: string;
 };
 
-/** The row every module-nav link uses; linker `PaneLink`s go through here too. */
+/** The row every pane link uses (settings, linker `PaneLink`s). */
 export const paneLinkClass =
   "flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-xs transition-colors [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:shrink-0";
 
@@ -49,36 +49,9 @@ export const PaneLink = (props: PaneLinkProps) => {
 };
 
 /**
- * A module's navigation, laid out as columns of `SidePaneGroup` sections.
- *
- * CSS columns rather than a grid: groups differ a lot in height, and columns
- * pack them without the row gaps a grid would leave. The width is fixed per
- * column count because a hover card has no width of its own to fill.
- */
-export const SidePaneNav = ({
-  columns = 2,
-  children,
-}: {
-  columns?: number;
-  children: React.ReactNode;
-}) => (
-  <nav
-    className="text-xs"
-    style={{
-      columnCount: columns,
-      columnGap: "1rem",
-      width: `calc(${columns} * 12rem + ${columns - 1} * 1rem)`,
-      maxWidth: "100%",
-    }}
-  >
-    {children}
-  </nav>
-);
-
-/**
- * One titled group of links — a plain section, never a card: the hover card
- * around it is already the card. Empty groups render nothing (unless they carry an action,
- * e.g. "create"); long ones show `limit` rows and a link to the full list.
+ * One titled group of links — a plain section, never a card. Empty groups
+ * render nothing (unless they carry an action, e.g. "create"); long ones show
+ * `limit` rows and a link to the full list.
  */
 export const SidePaneGroup: React.FunctionComponent<{
   title: React.ReactNode;

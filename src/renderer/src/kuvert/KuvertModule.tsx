@@ -15,13 +15,12 @@ import OutgoingPage from "./pages/OutgoingPage";
 import SearchPage from "./pages/SearchPage";
 import SmartMailboxPage from "./pages/SmartMailboxPage";
 import ThreadPage from "./pages/ThreadPage";
-import StandardPane from "./panes/StandardPane";
 import { SMART_MAILBOXES } from "./smartMailboxes";
 
 export const KuvertModule: React.FC = () => (
   <KuvertGuard fallback={<ServiceUnavailable serviceKey="kuvert" />}>
     <MailboxSyncs />
-    <ModuleLayout pane={<StandardPane />}>
+    <ModuleLayout>
       <Routes>
         {/* Where `orkestrator://kuvert/auth/callback?code&state` lands (coord relay). */}
         <Route path="auth/callback" element={<AuthCallbackPage />} />

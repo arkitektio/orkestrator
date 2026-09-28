@@ -9,7 +9,6 @@ import Run from "./pages/Run";
 import Runs from "./pages/Runs";
 import Workspace from "./pages/Workspace";
 import Workspaces from "./pages/Workspaces";
-import SearchPane from "./panes/SearchPane";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 
 interface Props { }
@@ -25,13 +24,7 @@ interface Props { }
 const Module: React.FC<Props> = () => {
   return (
     <FlussGuard fallback={<ServiceUnavailable serviceKey="fluss" />}>
-      <ModuleLayout
-        pane={
-          <>
-            <SearchPane />
-          </>
-        }
-      >
+      <ModuleLayout>
         <Routes>
           <Route index element={<Home />} />
           <Route path="runs" element={<Runs />} />

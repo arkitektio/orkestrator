@@ -33,7 +33,6 @@ export const KRAPH_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./KraphModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: KRAPH_NAV_LINKS,
     displays: {
       // claims (organization grain, a bare uuid)

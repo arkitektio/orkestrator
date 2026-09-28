@@ -9,7 +9,6 @@ export const OMEROARK_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./OmeroArkModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: OMEROARK_NAV_LINKS,
     dialogs: OMEROARK_DIALOGS,
   },

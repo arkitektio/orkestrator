@@ -175,8 +175,8 @@ else from it:
   (`smartOf(manifest, "@kraph/graph")`). The root `@/core/linkers` is a barrel.
 - `service.ts` — its client binding (fakts requirement key + Apollo builder).
 - `module.tsx` — its **builtins**: `defineModule({ manifest, serviceKey, builtins })`
-  with `page`, `nav`, `navLinks`, `displays`, `hovers`, `dialogs`, `actions`,
-  `pageSections`, `sections`, `menuWrappers`, `profileSections`,
+  with `page`, `navLinks` (palette rows + the rail popout), `displays`,
+  `hovers`, `dialogs`, `actions`, `pageSections`, `sections`, `menuWrappers`, `profileSections`,
   `background`, `railIslands`, `search`, `paletteSources`,
   `paletteHitActions`, `optionSources`, `operations`, `taskHooks`,
   `fileDownloaders` (see `core/modules/host/define.ts`).

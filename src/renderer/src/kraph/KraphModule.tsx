@@ -41,7 +41,6 @@ import StuctureRelationCategoryPage from "./pages/StructureRelationCategoryPage"
 import StructureRelationPage from "./pages/StructureRelationPage";
 import BuilderPage from "./pages/graph/BuilderPage";
 import GraphGraphQueriesPage from "./pages/graph/GraphGraphQueriesPage";
-import StandardPane from "./panes/StandardPane";
 import { GraphScopeLayout } from "./providers/GraphScopeProvider";
 
 import { EntityCategorySchemaBuilderPage } from "./pages/EntityCategorySchemaBuilderPage";
@@ -50,7 +49,7 @@ interface Props { }
 export const KraphModule: React.FC<Props> = () => {
   return (
     <KraphGuard fallback={<ServiceUnavailable serviceKey="kraph" />}>
-      <ModuleLayout pane={<StandardPane />}>
+      <ModuleLayout>
         <Routes>
           <Route index element={<HomePage />} />
           <Route path="home" element={<HomePage />} />

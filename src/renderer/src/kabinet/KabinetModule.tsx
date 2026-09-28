@@ -17,14 +17,13 @@ import RepoPage from "./pages/RepoPage";
 import ReposPage from "./pages/ReposPage";
 import ReleasePage from "./pages/ReleasePage";
 import ResourcePage from "./pages/ResourcePage";
-import StandardPane from "./panes/StandardPane";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 interface Props { }
 
 export const KabinetModule: React.FC<Props> = () => {
   return (
     <KabinetGuard fallback={<ServiceUnavailable serviceKey="kabinet" />}>
-      <ModuleLayout pane={<StandardPane />}>
+      <ModuleLayout>
         <Routes>
           <Route path="app-store" element={<AppStorePage />} />
           {/* The app page moved to the id-keyed model route; shared links to

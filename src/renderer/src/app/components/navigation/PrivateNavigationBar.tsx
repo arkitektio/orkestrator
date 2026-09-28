@@ -306,13 +306,11 @@ const ModuleNavItem = ({ moduleKey }: { moduleKey: string }) => {
 };
 
 const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
-  // Keys, not module objects. Both of these are string lists compared
-  // shallowly, so they hold their identity across a service health tick and the
+  // Keys, not module objects: a string list compared
+  // shallowly, so it holds its identity across a service health tick and the
   // grid redraws only when a module actually appears or becomes ready.
   const availableKeys = Arkitekt.useAvailableModuleKeys();
-  const readyModules = Arkitekt.useReadyModuleKeys();
   const moduleOrder = Object.keys(moduleRegistry).filter((key) => availableKeys.includes(key));
-  const preload = React.useMemo(() => ["lok", ...readyModules], [readyModules]);
 
   return (
     <>
@@ -322,7 +320,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           to the open tabs below than to twelve stacked icons. `auto-fit` with a
           `1fr` max stretches the tiles across the full rail width and wraps to
           a new row only once a tile would drop below its minimum size. */}
-      <ModuleNavHoverGroup preload={preload}>
+      <ModuleNavHoverGroup>
       {/* `app-no-drag`: the rail's surface is a window-drag region, and a drag
           region eats the clicks of everything inside it that has not opted out.
           The gaps AROUND this grid still drag the window. */}

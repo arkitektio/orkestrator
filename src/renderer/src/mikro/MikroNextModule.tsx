@@ -24,12 +24,11 @@ import ScenesPage from "./pages/ScenesPage";
 import ScenePage from "./pages/ScenePage";
 import SceneRegistrationPage from "./pages/SceneRegistrationPage";
 import { LensPage } from "./pages/LensPage";
-import StandardPane from "./panes/StandardPane";
 
 export const MikroNextModule = () => {
   return (
     <MikroGuard fallback={<ServiceUnavailable serviceKey="mikro" />}>
-      <ModuleLayout pane={<StandardPane />}>
+      <ModuleLayout>
         <Routes>
           <Route index element={<HomePage />} />
           <Route path="home" element={<HomePage />} />

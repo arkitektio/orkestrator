@@ -39,7 +39,7 @@ function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   const reportBug = useFatalReport();
 
   return (
-    <ModuleLayout pane={<div className="flex items-center justify-center h-full w-full"><div className="text-6xl text-muted-foreground mb-3">😬</div></div>}>
+    <ModuleLayout>
       <PageLayout title="Test">
         <div className="h-full w-full flex flex-col items-center justify-center">
           <div className="text-6xl text-muted-foreground mb-3">😬</div>

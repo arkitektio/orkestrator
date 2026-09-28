@@ -16,7 +16,6 @@ export const ALPAKA_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./AlpakaModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: ALPAKA_NAV_LINKS,
     displays: {
       "@alpaka/message": MessageDisplay,

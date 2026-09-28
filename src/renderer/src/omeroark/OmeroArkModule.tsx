@@ -9,14 +9,13 @@ import HomePage from "./pages/HomePage";
 import OmeroImagePage from "./pages/OmeroImagePage";
 import ProjectPage from "./pages/ProjectPage";
 import ProjectsPage from "./pages/ProjectsPage";
-import StandardPane from "./panes/StandardPane";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 
 
 export const OmeroArkModule = () => {
   return (
     <OmeroArkGuard fallback={<ServiceUnavailable serviceKey="omero_ark" />}>
-      <ModuleLayout pane={<StandardPane />}>
+      <ModuleLayout>
         <ConnectedGuard>
           <Routes>
             <Route index element={<HomePage />} />

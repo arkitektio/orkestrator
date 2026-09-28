@@ -22,7 +22,6 @@ import Shortcut from "./pages/Shortcut";
 import Shortcuts from "./pages/Shortcuts";
 import Toolbox from "./pages/Toolbox";
 import Toolboxes from "./pages/Toolboxes";
-import Standardpane from "./panes/StandardPane";
 import StructurePackages from "./pages/StructurePackages";
 import StructurePackage from "./pages/StructurePackage";
 import StructurePage from "./pages/StructurePage";
@@ -53,7 +52,7 @@ import { NotFound } from "@/core/layout/fallbacks/NotFound";
  */
 const Module: React.FC = () => {
   return (
-      <ModuleLayout pane={<RekuestGuard fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}><Standardpane /></RekuestGuard>}>
+      <ModuleLayout>
 
     <RekuestGuard fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}>
         <Routes>

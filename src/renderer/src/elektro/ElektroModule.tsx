@@ -21,7 +21,6 @@ import SectionPage from "./pages/SectionPage";
 import ArrayDatasetPage from "./pages/ArrayDatasetPage";
 import ArrayDatasetSpecPage from "./pages/ArrayDatasetSpecPage";
 import ArrayDatasetsPage from "./pages/ArrayDatasetsPage";
-import StandardPane from "./panes/StandardPane";
 import { MechanismPage } from "./pages/MechanismPage";
 import { EnvironmentPage } from "./pages/EnvironmentPage";
 import { ElektroZarrStoreProvider } from "./components/store/ElektroZarrStoreProvider";
@@ -34,7 +33,7 @@ export const ElektroModule: React.FC<Props> = () => {
     <ElektroGuard fallback={<ServiceUnavailable serviceKey="elektro" />}>
       <ElektroZarrStoreProvider>
         <ElektroParquetProvider>
-        <ModuleLayout pane={<StandardPane />}>
+        <ModuleLayout>
         <Routes>
           <Route path="files/:id" element={<FilePage />} />
           <Route path="files" element={<FilesPage />} />

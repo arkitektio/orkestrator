@@ -15,7 +15,6 @@ export const LOK_MODULE = defineModule({
   serviceKey: "self",
   builtins: {
     page: () => import("./LokNextModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: LOK_NAV_LINKS,
     displays: {
       "@lok/user": UserDisplay,

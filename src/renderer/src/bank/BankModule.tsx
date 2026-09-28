@@ -28,11 +28,10 @@ import RulesPage from "./pages/RulesPage";
 import TopMerchantsPage from "./pages/TopMerchantsPage";
 import TransactionPage from "./pages/TransactionPage";
 import TransactionsPage from "./pages/TransactionsPage";
-import StandardPane from "./panes/StandardPane";
 
 export const BankModule: React.FC = () => (
   <BankGuard fallback={<ServiceUnavailable serviceKey="bank" />}>
-    <ModuleLayout pane={<StandardPane />}>
+    <ModuleLayout>
       <Routes>
         {/* Where `orkestrator://bank/auth/callback?code&state` lands (coord relay). */}
         <Route path="auth/callback" element={<AuthCallbackPage />} />

@@ -24,7 +24,6 @@ export const MIKRO_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./MikroNextModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: MIKRO_NAV_LINKS,
     displays: {
       "@mikro/file": FileDisplay,

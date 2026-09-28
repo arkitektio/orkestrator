@@ -9,7 +9,6 @@ export const LOVEKIT_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./LovekitModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: LOVEKIT_NAV_LINKS,
     displays: {
       "@lovekit/solo_broadcast": SoloBroadcastDisplay,

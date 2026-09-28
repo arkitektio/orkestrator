@@ -5,7 +5,6 @@ import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { Dashboards } from "./pages/Dashboards";
 import { Home } from "./pages/Home";
-import StandardPane from "./panes/StandardPane";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 
 const RekuestGuard = serviceGuard("rekuest");
@@ -18,7 +17,7 @@ interface Props { }
 const Module: React.FC<Props> = () => {
   return (
     <RekuestGuard fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}>
-      <ModuleLayout pane={<StandardPane />}>
+      <ModuleLayout>
         <Routes>
           <Route index element={<Home />} />
           <Route path="dashboards" element={<Dashboards />} />

@@ -7,6 +7,5 @@ export const DOKUMENTS_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./DokumentsModule"),
-    nav: () => import("./panes/StandardPane"),
   },
 });

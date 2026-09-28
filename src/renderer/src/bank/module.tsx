@@ -15,7 +15,6 @@ export const BANK_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./BankModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: BANK_NAV_LINKS,
     displays: {
       "@bank/account": AccountDisplay,

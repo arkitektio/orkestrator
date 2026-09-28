@@ -15,7 +15,6 @@ export const KUVERT_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./KuvertModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: KUVERT_NAV_LINKS,
     displays: {
       "@kuvert/account": MailAccountDisplay,

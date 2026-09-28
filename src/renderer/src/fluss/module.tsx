@@ -11,7 +11,6 @@ export const FLUSS_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./ReaktionModule"),
-    nav: () => import("./panes/SearchPane"),
     navLinks: FLUSS_NAV_LINKS,
     dialogs: FLUSS_DIALOGS,
     pageSections: [

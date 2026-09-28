@@ -1,89 +1,28 @@
 // @vitest-environment jsdom
-// jsdom, not node: the catalog derives Mikro's spec pages from `@/mikro/specs`,
-// which reaches the generated GraphQL module and, through it, `constants.tsx`'s
-// `window` read at import time. `node:fs` still works under jsdom.
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+// jsdom: the catalog derives Mikro's spec pages from `@/mikro/specs`, which
+// reaches the generated GraphQL module and, through it, `constants.tsx`'s
+// `window` read at import time.
 import { describe, expect, it } from "vitest";
 
 import { ADATASET_SPECS, arrayDatasetSpecLink } from "@/mikro/specs";
-import {
-  ARRAY_DATASET_SPECS as ELEKTRO_ARRAY_DATASET_SPECS,
-  arrayDatasetSpecLink as elektroArrayDatasetSpecLink,
-} from "@/elektro/specs";
 
 import "@/app/modules/install";
-import { routeCatalog, searchRoutes } from "./routeCatalog";
+import { routeCatalog, routesOfModule, searchRoutes } from "./routeCatalog";
 
 const ROUTE_CATALOG = routeCatalog();
 
-/**
- * Where each module's pane lives. `dokuments` is left out on purpose: its pane
- * links to `/lovekit/*` (a copy of lovekit's), which is a bug in that pane,
- * not a set of pages to offer.
- */
-const PANES: Record<string, string> = {
-  mikro: "mikro/panes/StandardPane.tsx",
-  rekuest: "rekuest/panes/StandardPane.tsx",
-  kraph: "kraph/panes/StandardPane.tsx",
-  elektro: "elektro/panes/StandardPane.tsx",
-  kabinet: "kabinet/panes/StandardPane.tsx",
-  alpaka: "alpaka/panes/StandardPane.tsx",
-  bank: "bank/panes/StandardPane.tsx",
-  kuvert: "kuvert/panes/StandardPane.tsx",
-  lok: "lok/panes/StandardPane.tsx",
-  lovekit: "lovekit/panes/StandardPane.tsx",
-  omeroark: "omeroark/panes/StandardPane.tsx",
-  blok: "core/blok/panes/StandardPane.tsx",
-  fluss: "fluss/panes/SearchPane.tsx",
-};
-
-const LINK = /<(PaneLink|DroppableNavLink|NavLink|Link)\b[^>]*?to="(\/[^"]*)"[^>]*>(.*?)<\/\1>/gs;
-
-/**
- * Links a pane renders FROM DATA rather than writing out — invisible to the
- * regex above, so they are reproduced here from the same data the pane maps.
- */
-const GENERATED: Record<string, () => [route: string, label: string][]> = {
-  mikro: () => ADATASET_SPECS.map((spec) => [arrayDatasetSpecLink(spec.slug), spec.label]),
-  elektro: () =>
-    ELEKTRO_ARRAY_DATASET_SPECS.map((spec) => [elektroArrayDatasetSpecLink(spec.slug), spec.label]),
-};
-
-/**
- * The static links a pane's source declares, as `route → label`. First
- * occurrence wins: a pane may point at a page twice — mikro's "By kind" group
- * heading links to `/mikro/arraydatasets`, the page its own nav entry above
- * already names — and a group heading does not rename the page.
- */
-const linksInPane = (file: string): Map<string, string> => {
-  const src = readFileSync(resolve(__dirname, "../../..", file), "utf8");
-  const links = new Map<string, string>();
-  for (const m of src.matchAll(LINK)) {
-    if (links.has(m[2])) continue;
-    const label = m[3].replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).join(" ");
-    links.set(m[2], label);
-  }
-  return links;
-};
-
-const linksOfModule = (module: string, file: string): Map<string, string> => {
-  const links = linksInPane(file);
-  for (const [route, label] of GENERATED[module]?.() ?? []) links.set(route, label);
-  return links;
-};
-
 describe("ROUTE_CATALOG", () => {
-  it("mirrors every module pane's links exactly — no drift either way", () => {
-    // If this fails, a pane gained, lost or renamed a link: update the catalog.
-    for (const [module, file] of Object.entries(PANES)) {
-      const inPane = linksOfModule(module, file);
-      const inCatalog = new Map(
-        ROUTE_CATALOG.filter((r) => r.module === module).map((r) => [r.route, r.label]),
-      );
-      expect(Object.fromEntries(inCatalog), `${module}: catalog vs ${file}`).toEqual(
-        Object.fromEntries(inPane),
-      );
+  it("gives every page a group and an icon, for the rail popout", () => {
+    for (const r of ROUTE_CATALOG) {
+      expect(r.group, `${r.module}: ${r.label}`).toBeTruthy();
+      expect(r.icon, `${r.module}: ${r.label}`).toBeTruthy();
+    }
+  });
+
+  it("marks at most one home page per module", () => {
+    for (const module of new Set(ROUTE_CATALOG.map((r) => r.module))) {
+      const homes = routesOfModule(ROUTE_CATALOG, module).filter((r) => r.home);
+      expect(homes.length, module).toBeLessThanOrEqual(1);
     }
   });
 
@@ -140,7 +79,7 @@ describe("searchRoutes", () => {
     expect(searchRoutes(ROUTE_CATALOG, ready, "home")[0]?.route).toBe("/rekuest/home");
   });
 
-  it("offers every array-dataset spec page, from the same data as the pane", () => {
+  it("offers every array-dataset spec page, from the same data as the pages", () => {
     expect(searchRoutes(ROUTE_CATALOG, ready, "images")[0]?.route).toBe("/mikro/arraydatasets/spec/image");
     expect(searchRoutes(ROUTE_CATALOG, ready, "volumes")[0]?.route).toBe("/mikro/arraydatasets/spec/volume");
     expect(searchRoutes(ROUTE_CATALOG, ready, "flim")[0]?.route).toBe("/mikro/arraydatasets/spec/flim");

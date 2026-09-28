@@ -1,9 +1,12 @@
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/core/ui/hover-card";
-import React, { Suspense, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-
+import { ArrowRight } from "lucide-react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 
-import { MODULE_NAV, preloadModuleNav } from "./moduleNavRegistry";
+import { type CatalogRoute, routeCatalog, routesOfModule } from "@/core/command/sources/routeCatalog";
+import { useModuleHostVersion } from "@/core/modules/host/host";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/core/ui/hover-card";
+import { DroppableNavLink } from "@/core/ui/link";
+import { cn } from "@/core/util/utils";
 
 /** Delay before the first card of a hover run opens. */
 const OPEN_DELAY = 200;
@@ -32,14 +35,7 @@ const HoverGroupContext = createContext<HoverGroup | null>(null);
  * built around a single shared viewport for a horizontal bar, which does not
  * fit a wrapping grid of icons), so the cards are controlled from here.
  */
-export const ModuleNavHoverGroup = ({
-  preload = [],
-  children,
-}: {
-  /** Module keys whose pane chunks are fetched once the browser is idle. */
-  preload?: string[];
-  children: React.ReactNode;
-}) => {
+export const ModuleNavHoverGroup = ({ children }: { children: React.ReactNode }) => {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [unfolded, setUnfolded] = useState(false);
   const foldTimer = useRef<number | undefined>(undefined);
@@ -59,37 +55,187 @@ export const ModuleNavHoverGroup = ({
 
   useEffect(() => () => window.clearTimeout(foldTimer.current), []);
 
-  // Warm the pane chunks before anyone hovers, so the first card opens with
-  // its links rather than an empty box waiting on a network round trip.
-  const preloadKey = preload.join(",");
-  useEffect(() => {
-    if (!preloadKey) return;
-    const run = () => preloadKey.split(",").forEach(preloadModuleNav);
-    if ("requestIdleCallback" in window) {
-      const handle = window.requestIdleCallback(run, { timeout: 2000 });
-      return () => window.cancelIdleCallback(handle);
-    }
-    const handle = setTimeout(run, 500);
-    return () => clearTimeout(handle);
-  }, [preloadKey]);
-
   const value = useMemo(() => ({ openKey, unfolded, setOpen }), [openKey, unfolded, setOpen]);
 
   return <HoverGroupContext.Provider value={value}>{children}</HoverGroupContext.Provider>;
 };
 
+/** A module's pages, as its popout lays them out. */
+type ModuleNavLayout = {
+  home?: CatalogRoute;
+  groups: { title: string; links: CatalogRoute[] }[];
+};
+
+/** The group a link without one falls into. */
+const DEFAULT_GROUP = "Pages";
+
+/** A module with this few tiles gets one narrow column: two would look empty. */
+const NARROW_MAX_TILES = 3;
+
+export const layoutModuleNav = (links: readonly CatalogRoute[]): ModuleNavLayout => {
+  const home = links.find((link) => link.home);
+  const groups = new Map<string, CatalogRoute[]>();
+  for (const link of links) {
+    if (link === home) continue;
+    const title = link.group ?? DEFAULT_GROUP;
+    const group = groups.get(title);
+    if (group) group.push(link);
+    else groups.set(title, [link]);
+  }
+  return { home, groups: [...groups].map(([title, links]) => ({ title, links })) };
+};
+
+/** One module's pages, re-read when a module arrives or leaves. */
+const useModuleNav = (moduleKey: string): ModuleNavLayout => {
+  const version = useModuleHostVersion();
+  return useMemo(
+    () => layoutModuleNav(routesOfModule(routeCatalog(), moduleKey)),
+    // `version` is the dependency: the catalog is rebuilt when it moves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [moduleKey, version],
+  );
+};
+
+const Tile = ({ link }: { link: CatalogRoute }) => {
+  const Icon = link.icon;
+  return (
+    <DroppableNavLink to={link.route}>
+      {({ isActive }) => (
+        <span
+          data-active={isActive}
+          className={cn(
+            "group/tile flex min-w-0 items-center gap-2.5 rounded-md p-1.5 transition-colors",
+            isActive ? "bg-muted" : "hover:bg-muted/60",
+          )}
+        >
+          <span
+            className={cn(
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
+              isActive
+                ? "bg-background text-foreground"
+                : "text-muted-foreground group-hover/tile:bg-background group-hover/tile:text-foreground",
+            )}
+          >
+            {Icon && <Icon />}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-xs font-medium leading-tight text-foreground">
+              {link.label}
+            </span>
+            {link.description && (
+              <span className="block truncate text-[11px] leading-tight text-muted-foreground">
+                {link.description}
+              </span>
+            )}
+          </span>
+        </span>
+      )}
+    </DroppableNavLink>
+  );
+};
+
+const Chip = ({ link }: { link: CatalogRoute }) => {
+  const Icon = link.icon;
+  return (
+    <DroppableNavLink to={link.route}>
+      {({ isActive }) => (
+        <span
+          data-active={isActive}
+          className={cn(
+            "inline-flex h-6 items-center gap-1.5 rounded-md px-2 text-[11px] transition-colors [&_svg]:h-3 [&_svg]:w-3",
+            isActive
+              ? "bg-muted font-medium text-foreground"
+              : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          {Icon && <Icon />}
+          {link.label}
+        </span>
+      )}
+    </DroppableNavLink>
+  );
+};
+
 /**
- * A module's own navigation, on hover over its icon.
+ * The card's content: a header that opens the module, then its pages in
+ * groups — tiles with a line of description, or chips for a group that has
+ * none (the per-kind dataset pages, which the label already says enough about).
+ *
+ * Pages only, from the module's `navLinks`: no lists of recent or pinned
+ * objects. Those ran the module's queries on every hover and duplicated what
+ * the module's own home page and ⌘K already show; a card you pass over on the
+ * way to a tile should open at once and cost nothing.
+ */
+export const ModuleNavCard = ({
+  nav,
+  to,
+  label,
+  icon,
+}: {
+  nav: ModuleNavLayout;
+  to: string;
+  label: string;
+  icon?: React.ReactNode;
+}) => {
+  const tileCount = nav.groups.reduce(
+    (n, group) => n + group.links.filter((link) => link.description).length,
+    0,
+  );
+  const narrow = tileCount <= NARROW_MAX_TILES;
+
+  return (
+    <div className={cn("flex flex-col", narrow ? "w-64" : "w-[30rem]")}>
+      <NavLink
+        to={nav.home?.route ?? to}
+        className="group/head flex items-center gap-2.5 rounded-md p-1.5 transition-colors hover:bg-muted/60"
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary [&_svg]:h-4 [&_svg]:w-4">
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{label}</span>
+        <span className="flex items-center gap-1 pr-1 text-[11px] text-muted-foreground transition-colors group-hover/head:text-foreground">
+          {nav.home?.label ?? "Open"}
+          <ArrowRight className="h-3 w-3 transition-transform group-hover/head:translate-x-0.5" />
+        </span>
+      </NavLink>
+
+      {nav.groups.map(({ title, links }) => {
+        const chips = links.every((link) => !link.description);
+        return (
+          <section key={title} className="mt-2">
+            <h3 className="px-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+              {title}
+            </h3>
+            {chips ? (
+              <div className="flex flex-wrap gap-1 px-1.5">
+                {links.map((link) => (
+                  <Chip key={link.route} link={link} />
+                ))}
+              </div>
+            ) : (
+              <div className={cn("grid gap-0.5", narrow ? "grid-cols-1" : "grid-cols-2")}>
+                {links.map((link) => (
+                  <Tile key={link.route} link={link} />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+};
+
+/**
+ * A module's pages, on hover over its icon.
  *
  * These links used to sit permanently in the rail (and before that, in a
  * resizable pane of their own beside the page). Both were a standing cost for
  * something you need for a moment: the rail's vertical run is worth more to the
- * pinned routes below, and the links you actually revisit end up pinned anyway.
+ * open tabs below, and the pages you actually revisit end up pinned anyway.
  *
- * The pane is mounted only while the card is open — `HoverCardContent` does not
- * render its children until then — which matters because a module's pane runs
- * that module's queries on mount. `ready` gates it further: the Apollo client
- * for a service only exists once that service is ready.
+ * `ready` gates it: a page in a module whose service is down is a dead end —
+ * the tile itself leads to the page that explains why.
  */
 export const ModuleNavHover = ({
   moduleKey,
@@ -101,7 +247,7 @@ export const ModuleNavHover = ({
 }: {
   moduleKey: string;
   ready: boolean;
-  /** The module's home, which the card's header links to. */
+  /** The module's route, which the header links to when no page is marked `home`. */
   to: string;
   label: string;
   icon?: React.ReactNode;
@@ -110,10 +256,9 @@ export const ModuleNavHover = ({
   const group = useContext(HoverGroupContext);
   // Outside a group each card manages itself, with the plain delay.
   const [localOpen, setLocalOpen] = useState(false);
+  const nav = useModuleNav(moduleKey);
 
-  const Nav = ready ? MODULE_NAV[moduleKey] : undefined;
-
-  if (!Nav) {
+  if (!ready || nav.groups.length === 0) {
     return <>{children}</>;
   }
 
@@ -128,38 +273,19 @@ export const ModuleNavHover = ({
       openDelay={group?.unfolded ? 0 : OPEN_DELAY}
       closeDelay={CLOSE_DELAY}
     >
-      {/* Start fetching the chunk the moment the pointer arrives, not when the
-          delay has run out. */}
-      <HoverCardTrigger asChild onPointerEnter={() => preloadModuleNav(moduleKey)}>
-        {children}
-      </HoverCardTrigger>
+      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
       <HoverCardContent
         side="right"
         align="start"
         sideOffset={8}
-        className="w-auto max-w-[calc(100vw-6rem)] max-h-[75vh] overflow-y-auto bg-popover p-0"
+        className="w-auto max-w-[calc(100vw-6rem)] max-h-[75vh] overflow-y-auto bg-popover p-1.5"
         // Following a link is the end of the visit; the card should not stay
         // hanging over the page it just opened.
         onClickCapture={(event) => {
           if ((event.target as HTMLElement).closest("a")) setOpen(false);
         }}
       >
-        <NavLink
-          to={to}
-          className="mb-1 flex items-center gap-2 border-b border-border/50 px-3 py-2.5 text-foreground hover:text-primary"
-        >
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-muted-foreground [&_svg]:h-3.5 [&_svg]:w-3.5">
-            {icon}
-          </span>
-          <span className="text-sm font-medium">{label}</span>
-        </NavLink>
-        <div className="px-2 pt-1">
-          {/* Null while the module's chunk loads, so the card does not flash an
-              empty box at its full height and then reflow. */}
-          <Suspense fallback={null}>
-            <Nav />
-          </Suspense>
-        </div>
+        <ModuleNavCard nav={nav} to={to} label={label} icon={icon} />
       </HoverCardContent>
     </HoverCard>
   );
@@ -167,6 +293,6 @@ export const ModuleNavHover = ({
 
 /** Whether hovering this module's tile opens a navigation card. */
 export const hasModuleNav = (moduleKey: string, ready: boolean) =>
-  ready && moduleKey in MODULE_NAV;
+  ready && routesOfModule(routeCatalog(), moduleKey).some((link) => !link.home);
 
 export default ModuleNavHover;

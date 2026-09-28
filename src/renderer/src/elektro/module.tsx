@@ -18,7 +18,6 @@ export const ELEKTRO_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./ElektroModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: ELEKTRO_NAV_LINKS,
     displays: {
       "@elektro/neuronmodel": NeuronModelDisplay,

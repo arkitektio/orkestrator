@@ -17,12 +17,26 @@ import type { SmartContextSection, SmartMenuWrapperProps } from "@/core/smart/ex
 import type { PassDownProps } from "@/core/smart/extensions/types";
 import type { Object } from "@/core/types";
 
-/** A page of the module, for the ⌘K palette's navigation rows. */
+/**
+ * A page of the module: a ⌘K palette row, and a tile in the module's popout
+ * on the rail. The one list both read — there is no hand-written pane to drift
+ * from it.
+ */
 export type NavLinkDecl = {
   label: string;
   route: string;
   /** Extra words that should find the page but need not be shown. */
   keywords?: string[];
+  /** The popout's group heading ("Data", "Admin"); first appearance sets the order. */
+  group?: string;
+  /**
+   * One short line under the label in the popout. A group whose links have
+   * none renders them as compact chips instead of tiles.
+   */
+  description?: string;
+  icon?: ComponentType<{ className?: string }>;
+  /** The module's landing page: the popout's header links here instead of a tile. */
+  home?: boolean;
 };
 
 /**
@@ -76,10 +90,8 @@ export type PageSection = {
 export type ModuleBuiltins = {
   /** The module's routes, mounted under `/<namespace>/*`. */
   page: () => Promise<{ default: ComponentType }>;
-  /** EXTENSION: its pages, for the palette (spec: could come from `surfaces` of kind page). */
+  /** EXTENSION: its pages, for the palette and the rail popout (spec: could come from `surfaces` of kind page). */
   navLinks?: readonly NavLinkDecl[];
-  /** EXTENSION: its section of the rail. */
-  nav?: () => Promise<{ NavigationPane: ComponentType<Record<string, never>> }>;
   /** `display` surfaces, by the identifier they render. */
   displays?: Record<string, ComponentType<DisplayWidgetProps>>;
   /** EXTENSION: hover cards, by identifier (the spec renders hovers from `describe`). */

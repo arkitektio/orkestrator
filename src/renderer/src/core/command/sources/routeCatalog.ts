@@ -1,36 +1,36 @@
+import { Blocks, Home, LayoutDashboard } from "lucide-react";
+
+import type { NavLinkDecl } from "@/core/modules/host/define";
 import { moduleNavLinks } from "@/core/modules/registries";
 import { derived } from "@/core/modules/host/lazy";
 import { rankByFilter } from "../filter";
 
-/** A page inside a module, as its rail pane links to it. */
-export type CatalogRoute = {
+/** A page inside a module: a palette row, and a tile in the module's rail popout. */
+export type CatalogRoute = NavLinkDecl & {
   /** The module's key in `moduleRegistry` — gates the row on the service being up. */
   module: string;
-  label: string;
-  route: string;
-  /** Extra words that should find the page but need not be shown. */
-  keywords?: string[];
 };
 
 /** The host's own pages (blok is the host's renderer, not a module). */
 const HOST_ROUTES: CatalogRoute[] = [
-  { module: "blok", label: "Dashboard", route: "/blok" },
-  { module: "blok", label: "Dashboards", route: "/blok/dashboards" },
-  { module: "blok", label: "Bloks", route: "/blok/bloks" },
+  { module: "blok", label: "Dashboard", route: "/blok", group: "Bloks", icon: Home, home: true },
+  { module: "blok", label: "Dashboards", route: "/blok/dashboards", group: "Bloks", icon: LayoutDashboard, description: "Composed blok dashboards" },
+  { module: "blok", label: "Bloks", route: "/blok/bloks", group: "Bloks", icon: Blocks, description: "Reusable UI bloks" },
 ];
 
 /**
- * Every static page each module's pane links to, as data: each module's
- * `navLinks` builtin plus the host's own pages. Derived, so a module arriving
- * brings its pages.
+ * Every page of every module, as data: each module's `navLinks` builtin plus
+ * the host's own pages. Derived, so a module arriving brings its pages.
  *
- * The panes themselves are bespoke JSX (icons, groups, live sections), so the
- * palette cannot read them; each module writes the same list down, so "tasks"
- * finds Rekuest › Tasks without opening a module first. `routeCatalog.test.ts`
- * parses the panes' source and fails the moment one of them adds, renames or
- * drops a link that is not mirrored — the two cannot drift silently.
+ * The one list behind both the palette's navigation rows ("tasks" finds
+ * Rekuest › Tasks without opening a module first) and the popout on a module's
+ * rail tile — neither has a hand-written copy to drift from it.
  */
 export const routeCatalog = derived((): CatalogRoute[] => [...moduleNavLinks(), ...HOST_ROUTES]);
+
+/** One module's pages, in declaration order. */
+export const routesOfModule = (catalog: readonly CatalogRoute[], module: string): CatalogRoute[] =>
+  catalog.filter((r) => r.module === module);
 
 /**
  * The pages worth offering for what was typed.

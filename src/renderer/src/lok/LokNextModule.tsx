@@ -24,7 +24,6 @@ import ServicePage from "./pages/ServicePage";
 import ServicesPage from "./pages/ServicesPage";
 import UserPage from "./pages/UserPage";
 import UsersPage from "./pages/UsersPage";
-import StandardPane from "./panes/StandardPane";
 import TeamHomePage from "./pages/TeamHomePage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 interface Props { }
@@ -40,7 +39,7 @@ export const LokNextModule: React.FC<Props> = () => {
       bootingFallback={<QuietPage />}
       connectingFallback={<ConnectingFallback />}
     >
-      <ModuleLayout pane={<StandardPane />}>
+      <ModuleLayout>
         <Routes>
           <Route path="me" element={<MePage />} />
           <Route path="record" element={<RecordPage />} />

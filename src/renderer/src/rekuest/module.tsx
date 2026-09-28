@@ -30,7 +30,6 @@ export const REKUEST_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./RekuestNextModule"),
-    nav: () => import("./panes/StandardPane"),
     navLinks: REKUEST_NAV_LINKS,
     hovers: {
       "@rekuest/action": ActionHoverCard,

@@ -17,8 +17,8 @@ import { useAgentState } from "./store";
  * This app as a worker: what it is running for other people, and when it has
  * stopped being reachable.
  *
- * Both were previously visible only inside `AgentController`, which is mounted
- * in one pane of one module (`rekuest/panes/StandardPane`). Anywhere else in the
+ * Both were previously visible only inside `AgentController`, which was mounted
+ * in one pane of one module (rekuest's old side pane). Anywhere else in the
  * app a dropped agent socket was silent, and so was an assignment running in the
  * background — while the whole point of the agent is that it works when the user
  * is looking at something else.

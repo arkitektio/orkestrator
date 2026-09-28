@@ -229,7 +229,7 @@ export const moduleOptionSources = derived(() => concat((builtins) => builtins.o
 export const findOptionSource = (identifier: string, by?: string) =>
   moduleOptionSources().find((source) => source.identifier === identifier && source.by === by);
 
-/** Every module's palette pages, tagged with the module they belong to. */
+/** Every module's pages (palette rows, popout tiles), tagged with the module they belong to. */
 export const moduleNavLinks = derived(() =>
   (moduleDefinitions() as readonly ModuleDefinition[]).flatMap((definition) =>
     (definition.builtins.navLinks ?? []).map((link) => ({ ...link, module: namespaceOf(definition) })),
@@ -305,14 +305,6 @@ export const modulePages = derived(() =>
     }
     return { namespace: namespaceOf(definition), Page };
   }),
-);
-
-export const moduleNavLoaders = derived(() =>
-  Object.fromEntries(
-    (moduleDefinitions() as readonly ModuleDefinition[]).flatMap((definition) =>
-      definition.builtins.nav ? [[namespaceOf(definition), definition.builtins.nav] as const] : [],
-    ),
-  ),
 );
 
 /** Renders `pick`'s components from every module, each module's behind its guard. */

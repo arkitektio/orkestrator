@@ -7,14 +7,13 @@ import DocumentPage from "./pages/DocumentPage";
 import FilePage from "./pages/FilePage";
 import HomePage from "./pages/HomePage";
 import PagePage from "./pages/PagePage";
-import StandardPane from "./panes/StandardPane";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 interface Props { }
 
 export const Module: React.FC<Props> = (_props) => {
   return (
     <DokumentsGuard fallback={<ServiceUnavailable serviceKey="dokuments" />}>
-      <ModuleLayout pane={<StandardPane />}>
+      <ModuleLayout>
         <Routes>
           <Route path="files/:id" element={<FilePage />} />
           <Route path="pages/:id" element={<PagePage />} />
