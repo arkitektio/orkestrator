@@ -4,6 +4,7 @@ import { Assign } from "../main/message";
 import type { ChromeTheme, ChromeThemeSource, WindowChromeState } from "../main/modules/WindowManager";
 import type { DialogRequest as ForwardedDialog } from "../main/modules/QuickPaletteWindow";
 import {
+  DOCTOR_INTERFACES_CHANNEL,
   DOCTOR_MESH_CHANNEL,
   DOCTOR_NETWORK_CHANNEL,
   DOCTOR_REMEDY_CHANNEL,
@@ -14,6 +15,7 @@ import type {
   ProbeNetworkRequest,
   RemedyId,
   RemedyResult,
+  VpnInterface,
 } from "../main/doctor/protocol";
 import type {
   VoiceCatalogEntry,
@@ -223,6 +225,7 @@ const api = {
     probeNetwork: (request: ProbeNetworkRequest): Promise<NetworkProbeResult[]> =>
       ipcRenderer.invoke(DOCTOR_NETWORK_CHANNEL, request),
     probeMesh: (): Promise<MeshProbeResult> => ipcRenderer.invoke(DOCTOR_MESH_CHANNEL),
+    probeInterfaces: (): Promise<VpnInterface[]> => ipcRenderer.invoke(DOCTOR_INTERFACES_CHANNEL),
     runRemedy: (id: RemedyId): Promise<RemedyResult> =>
       ipcRenderer.invoke(DOCTOR_REMEDY_CHANNEL, { id }),
   },

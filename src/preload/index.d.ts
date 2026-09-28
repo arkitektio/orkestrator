@@ -18,6 +18,7 @@ import type {
   ProbeNetworkRequest,
   RemedyId,
   RemedyResult,
+  VpnInterface,
 } from "../main/doctor/protocol";
 import type {
   MeshClaimRequest,
@@ -62,6 +63,8 @@ export type MeshApi = {
 export type DoctorApi = {
   probeNetwork: (request: ProbeNetworkRequest) => Promise<NetworkProbeResult[]>;
   probeMesh: () => Promise<MeshProbeResult>;
+  /** Tunnel interfaces (VPN, WireGuard, system Tailscale) that are up. */
+  probeInterfaces: () => Promise<VpnInterface[]>;
   runRemedy: (id: RemedyId) => Promise<RemedyResult>;
 };
 
