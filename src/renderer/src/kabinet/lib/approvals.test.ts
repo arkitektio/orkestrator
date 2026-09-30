@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { approvalStatus, releaseRequirements, reusableApproval } from "./approvals";
+import {
+  approvalStatus,
+  deployableApprovals,
+  deployerApps,
+  hostsOf,
+  releaseRequirements,
+  reusableApproval,
+} from "./approvals";
 
 const approval = (over: Partial<Parameters<typeof reusableApproval>[0][number]> & { id: string }) => ({
   agent: "live.arkitekt.deployer",
@@ -54,5 +61,40 @@ describe("releaseRequirements", () => {
       ["kraph", true],
     ]);
     expect(result[0].description).toBe("Images");
+  });
+});
+
+describe("deployableApprovals", () => {
+  it("keeps every active approval of mine, whatever the deployer", () => {
+    const approvals = [
+      approval({ id: "a" }),
+      approval({ id: "b", agent: "org.other.deployer" }),
+      approval({ id: "theirs", approver: { sub: "other" } }),
+      approval({ id: "revoked", revokedAt: "2026-09-01" }),
+      approval({ id: "stale", isActive: false, isStale: true }),
+    ];
+    expect(deployableApprovals(approvals, "me").map((a) => a.id)).toEqual(["a", "b"]);
+    expect(deployableApprovals(approvals, null)).toEqual([]);
+  });
+});
+
+describe("deployer apps and hosts", () => {
+  const host = (id: string, app: string, name: string, connected: boolean) => ({
+    id,
+    agent: { name, connected, app: { identifier: app } },
+  });
+  const installers = [
+    host("1", "b.deployer", "zeta", false),
+    host("2", "a.deployer", "alpha", false),
+    host("3", "b.deployer", "beta", true),
+  ];
+
+  it("lists each deployer app once, ones with a connected host first", () => {
+    expect(deployerApps(installers)).toEqual(["b.deployer", "a.deployer"]);
+  });
+
+  it("lists an app's hosts, connected first", () => {
+    expect(hostsOf(installers, "b.deployer").map((h) => h.id)).toEqual(["3", "1"]);
+    expect(hostsOf(installers, "c.deployer")).toEqual([]);
   });
 });

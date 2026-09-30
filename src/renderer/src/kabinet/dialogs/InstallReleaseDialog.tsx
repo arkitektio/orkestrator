@@ -10,13 +10,10 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/co
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
-import { Switch } from "@/core/ui/switch";
 import Timestamp from "@/core/ui/timestamp";
 import { cn } from "@/core/util/utils";
-import { buildAssignInput } from "@/rekuest/assign";
 import { type InstallerImplementationFragment, useApprovalInstallersQuery } from "@/rekuest/api/graphql";
-import { useAssign } from "@/rekuest/hooks/useAssign";
-import { CheckCircle2, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Rocket, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   type ApprovableReleaseFragment,
@@ -27,17 +24,19 @@ import {
 } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
-import { EXPIRY_CHOICES, releaseRequirements, reusableApproval } from "../lib/approvals";
-
-const APPROVAL_IDENTIFIER = "@kabinet/approval";
-
-type Phase = "idle" | "approving" | "installing";
+import {
+  deployerApps,
+  EXPIRY_CHOICES,
+  hostsOf,
+  releaseRequirements,
+  reusableApproval,
+} from "../lib/approvals";
 
 /** Takes the approval and nothing else it cannot do without. */
-const isApprovalInstaller = (installer: InstallerImplementationFragment) =>
+export const isApprovalInstaller = (installer: InstallerImplementationFragment) =>
   installer.action.args.slice(1).every((arg) => arg.nullable);
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+export const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="flex min-w-0 flex-col gap-1.5">
     <h4 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</h4>
     {children}
@@ -45,38 +44,30 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 );
 
 /**
- * The deployers that can install an approval. One is a line; several are a
- * choice, the connected ones first.
+ * Which deployer app may start the release as you. One is a line; several
+ * are a choice, the ones with a connected host first.
  */
-const InstallerChoice = ({
-  installers,
+const DeployerChoice = ({
+  apps,
   selected,
   onSelect,
 }: {
-  installers: InstallerImplementationFragment[];
-  selected?: InstallerImplementationFragment;
-  onSelect: (id: string) => void;
+  apps: string[];
+  selected?: string;
+  onSelect: (app: string) => void;
 }) => {
-  if (installers.length === 1 && selected) {
-    return (
-      <p className="text-sm">
-        On <span className="font-medium">{selected.agent.name}</span>
-        <span className="text-muted-foreground"> · {selected.agent.app.identifier}</span>
-      </p>
-    );
+  if (apps.length === 1 && selected) {
+    return <p className="font-mono text-sm">{selected}</p>;
   }
   return (
-    <Select value={selected?.id} onValueChange={onSelect}>
+    <Select value={selected} onValueChange={onSelect}>
       <SelectTrigger className="w-full">
-        <SelectValue placeholder="Choose where to install" />
+        <SelectValue placeholder="Choose a deployer" />
       </SelectTrigger>
       <SelectContent>
-        {installers.map((installer) => (
-          <SelectItem key={installer.id} value={installer.id}>
-            <span className={cn(!installer.agent.connected && "text-muted-foreground")}>
-              {installer.agent.name}
-              {!installer.agent.connected && " (offline)"}
-            </span>
+        {apps.map((app) => (
+          <SelectItem key={app} value={app}>
+            <span className="font-mono text-xs">{app}</span>
           </SelectItem>
         ))}
       </SelectContent>
@@ -153,17 +144,20 @@ const Review = ({ release }: { release: ApprovableReleaseFragment }) => {
   );
 };
 
+const ANY_HOST = "__any__";
+
 /**
- * Install a release: approve it (a lok mandate letting the chosen deployer
- * start it signed in as you, recorded as a kabinet approval pinned to the
- * release's digest), then run the deployer's `install(approval)`.
+ * Install a release: authorize it, nothing more. A lok mandate lets the
+ * chosen deployer app start it signed in as you, recorded as a kabinet
+ * approval pinned to the release's digest. Nothing runs yet: deploying it to
+ * a backend is its own step (`deployrelease`), offered once this is done.
  *
- * An active approval of yours for the same deployer is reused, so installing
- * again (another host of the same deployer app, a pod that was removed) does
- * not ask twice. A new version always needs a new approval: the digest moves.
+ * An active approval of yours for the same deployer app is reused, so the
+ * dialog goes straight to deploying. A new version always needs a new
+ * approval: the digest moves.
  */
-export const InstallReleaseDialog = (props: { release: string; implementation?: string }) => {
-  const { closeDialog } = useDialog();
+export const InstallReleaseDialog = (props: { release: string; agent?: string }) => {
+  const { closeDialog, openDialog } = useDialog();
   const self = useSelf();
   const { data, error } = useGetApprovableReleaseQuery({ variables: { id: props.release } });
   const installersQuery = useApprovalInstallersQuery();
@@ -175,29 +169,28 @@ export const InstallReleaseDialog = (props: { release: string; implementation?: 
       ListReleaseApprovalsDocument,
     ],
   });
-  const { assign } = useAssign();
 
   const installers = useMemo(
-    () =>
-      (installersQuery.data?.implementations ?? []).filter(isApprovalInstaller).sort(
-        (a, b) => Number(b.agent.connected) - Number(a.agent.connected),
-      ),
+    () => (installersQuery.data?.implementations ?? []).filter(isApprovalInstaller),
     [installersQuery.data],
   );
+  const apps = useMemo(() => deployerApps(installers), [installers]);
 
-  const [chosen, setChosen] = useState<string | undefined>(props.implementation);
-  const installer = installers.find((candidate) => candidate.id === chosen) ?? installers.at(0);
+  const [chosenApp, setChosenApp] = useState<string | undefined>(props.agent);
+  const agent = chosenApp && apps.includes(chosenApp) ? chosenApp : apps.at(0);
+  const hosts = useMemo(() => (agent ? hostsOf(installers, agent) : []), [installers, agent]);
 
-  const [onlyThisDevice, setOnlyThisDevice] = useState(true);
+  // Optional: pin the mandate to one host's device. Default is any host of
+  // the deployer app; the host is chosen when deploying.
+  const [onlyHost, setOnlyHost] = useState<string>(ANY_HOST);
+  const lockedHost = hosts.find((host) => host.id === onlyHost && host.agent.device);
   const [expiresInDays, setExpiresInDays] = useState<number | null>(null);
   const [maxClients, setMaxClients] = useState("");
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [busy, setBusy] = useState(false);
+  const [installed, setInstalled] = useState(false);
 
   const release = data?.release;
-  const agent = installer?.agent.app.identifier;
   const existing = release && agent ? reusableApproval(release.approvals, agent, self.userId) : undefined;
-  const device = installer?.agent.device;
-  const argKey = installer?.action.args.at(0)?.key;
 
   const maxClientsValue = maxClients.trim() === "" ? null : Number(maxClients);
   const maxClientsInvalid = maxClientsValue !== null && (!Number.isInteger(maxClientsValue) || maxClientsValue < 1);
@@ -207,7 +200,7 @@ export const InstallReleaseDialog = (props: { release: string; implementation?: 
       agent: agentIdentifier,
       manifest: target.mandateManifest as JSONObject,
       attestation: target.approvalDigest,
-      agentDeviceId: onlyThisDevice && device ? device.deviceId : null,
+      agentDeviceId: lockedHost?.agent.device?.deviceId ?? null,
       maxClients: maxClientsValue,
       expiresInDays,
     });
@@ -234,31 +227,20 @@ export const InstallReleaseDialog = (props: { release: string; implementation?: 
   };
 
   const submit = async () => {
-    if (!release || !installer || !agent || !argKey) return;
-    let approvalId = existing?.id;
+    if (!release || !agent) return;
+    setBusy(true);
     try {
-      if (!approvalId) {
-        setPhase("approving");
-        approvalId = await newApproval(release, agent);
-      }
-      setPhase("installing");
-      await assign({
-        ...buildAssignInput({
-          args: { [argKey]: { object: approvalId, __identifier: APPROVAL_IDENTIFIER } },
-        }),
-        implementation: installer.id,
-      });
-      toast.success(`Installing ${release.name} on ${installer.agent.name}`);
-      closeDialog();
+      await newApproval(release, agent);
+      setInstalled(true);
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : String(cause);
-      // Past the approval, the next try reuses it (the refetch above makes it
-      // `existing`), so say which half failed.
-      toast.error(approvalId ? `Approved, but the install did not start: ${message}` : message);
+      toast.error(cause instanceof Error ? cause.message : String(cause));
     } finally {
-      setPhase("idle");
+      setBusy(false);
     }
   };
+
+  const deploy = () =>
+    openDialog("deployrelease", { release: props.release, agent }, { className: "max-w-xl" });
 
   if (error) {
     return <p className="text-sm text-destructive">Could not load the release: {error.message}</p>;
@@ -268,8 +250,9 @@ export const InstallReleaseDialog = (props: { release: string; implementation?: 
   }
 
   const identity = releaseIdentity(release);
-  const noInstallers = installersQuery.data && installers.length === 0;
-  const busy = phase !== "idle";
+  const noDeployers = installersQuery.data && apps.length === 0;
+  // After installing, the refetched release makes the new approval `existing`.
+  const done = installed || existing;
 
   return (
     // `min-w-0`: DialogContent is a grid, whose items otherwise grow to their
@@ -283,47 +266,66 @@ export const InstallReleaseDialog = (props: { release: string; implementation?: 
               Install {identity.name} <span className="font-mono text-base text-muted-foreground">v{release.version}</span>
             </DialogTitle>
             <DialogDescription className="mt-1 text-sm font-light">
-              It runs signed in as you, limited to what is listed here. Revoke the approval to sign it
-              out.
+              Installing authorizes it to run signed in as you, limited to what is listed here. It
+              runs once you deploy it to a backend. Revoke the approval to sign it out.
             </DialogDescription>
           </div>
         </div>
       </DialogHeader>
 
-      <Section title="Where">
+      <Section title="Deployed by">
         {installersQuery.error ? (
           <p className="text-sm text-destructive">{installersQuery.error.message}</p>
-        ) : noInstallers ? (
+        ) : noDeployers ? (
           <p className="text-sm text-muted-foreground">
             No deployer offers to install approved releases. Start a deployer that provides{" "}
             <span className="font-mono">install(approval)</span> first.
           </p>
         ) : (
-          <InstallerChoice installers={installers} selected={installer} onSelect={setChosen} />
+          <DeployerChoice apps={apps} selected={agent} onSelect={setChosenApp} />
         )}
       </Section>
 
-      {existing ? (
+      {done ? (
         <p className="flex items-start gap-2 text-sm">
           <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span>
-            You approved this release for {existing.agent} <Timestamp date={existing.createdAt} relative />.
-            Installing reuses that approval.
+            {installed ? (
+              <>Installed. {agent} may now start it as you.</>
+            ) : (
+              <>
+                You installed this release for {existing?.agent}{" "}
+                {existing && <Timestamp date={existing.createdAt} relative />}.
+              </>
+            )}{" "}
+            Deploy it to a backend to run it.
           </span>
         </p>
       ) : (
         <>
           <Review release={release} />
 
-          {installer && (
+          {agent && (
             <Section title="Limits">
               <div className="flex flex-col gap-3">
-                {device && (
+                {hosts.some((host) => host.agent.device) && (
                   <div className="flex items-center justify-between gap-3">
-                    <Label htmlFor="install-only-device" className="font-normal">
-                      Only {installer.agent.name} may start it
-                    </Label>
-                    <Switch id="install-only-device" checked={onlyThisDevice} onCheckedChange={setOnlyThisDevice} />
+                    <Label className="font-normal">May be started on</Label>
+                    <Select value={onlyHost} onValueChange={setOnlyHost}>
+                      <SelectTrigger className="h-8 w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ANY_HOST}>Any host</SelectItem>
+                        {hosts
+                          .filter((host) => host.agent.device)
+                          .map((host) => (
+                            <SelectItem key={host.id} value={host.id}>
+                              Only {host.agent.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
                 <div className="flex items-center justify-between gap-3">
@@ -364,18 +366,26 @@ export const InstallReleaseDialog = (props: { release: string; implementation?: 
       )}
 
       <DialogFooter>
-        <Button variant="outline" onClick={() => closeDialog()} disabled={busy}>
-          Cancel
-        </Button>
-        <Button onClick={submit} disabled={busy || !installer || !argKey || maxClientsInvalid}>
-          {phase === "approving"
-            ? "Approving…"
-            : phase === "installing"
-              ? "Starting install…"
-              : existing
-                ? "Install"
-                : "Approve and install"}
-        </Button>
+        {done ? (
+          <>
+            <Button variant="outline" onClick={() => closeDialog()}>
+              Done
+            </Button>
+            <Button onClick={deploy}>
+              <Rocket />
+              Deploy…
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" onClick={() => closeDialog()} disabled={busy}>
+              Cancel
+            </Button>
+            <Button onClick={submit} disabled={busy || !agent || maxClientsInvalid}>
+              {busy ? "Installing…" : "Install"}
+            </Button>
+          </>
+        )}
       </DialogFooter>
     </div>
   );

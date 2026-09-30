@@ -79,3 +79,47 @@ export const EXPIRY_CHOICES: { label: string; days: number | null }[] = [
   { label: "90 days", days: 90 },
   { label: "1 year", days: 365 },
 ];
+
+/**
+ * Every active approval of the signed-in user's, one per deployer app: what
+ * a deploy can run under. Someone else's is not ours to deploy with (the pod
+ * acts as its approver).
+ */
+export const deployableApprovals = <T extends ApprovalLike>(
+  approvals: readonly T[],
+  approverSub: string | null,
+): T[] =>
+  approverSub
+    ? approvals.filter(
+        (approval) => approval.isActive && !approval.revokedAt && approval.approver.sub === approverSub,
+      )
+    : [];
+
+export type InstallerLike = {
+  id: string;
+  agent: { name: string; connected: boolean; app: { identifier: string } };
+};
+
+/**
+ * The deployer apps that offer `install(approval)`, the ones with a
+ * connected host first. Installing approves one of these apps, not a host.
+ */
+export const deployerApps = (installers: readonly InstallerLike[]): string[] => {
+  const connected = new Map<string, boolean>();
+  for (const installer of installers) {
+    const app = installer.agent.app.identifier;
+    connected.set(app, (connected.get(app) ?? false) || installer.agent.connected);
+  }
+  return [...connected.entries()]
+    .sort(([a, aOn], [b, bOn]) => Number(bOn) - Number(aOn) || a.localeCompare(b))
+    .map(([app]) => app);
+};
+
+/** The hosts of one deployer app a deploy can go to, connected ones first. */
+export const hostsOf = <T extends InstallerLike>(installers: readonly T[], app: string): T[] =>
+  installers
+    .filter((installer) => installer.agent.app.identifier === app)
+    .sort(
+      (a, b) =>
+        Number(b.agent.connected) - Number(a.agent.connected) || a.agent.name.localeCompare(b.agent.name),
+    );

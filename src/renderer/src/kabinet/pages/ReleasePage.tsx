@@ -10,7 +10,7 @@ import { AppIcon, appGradient } from "../components/AppIcon";
 import { AccessTab, ActionsTab, Fact, FlavoursTab } from "../components/AppTabs";
 import ApprovalCard from "../components/cards/ApprovalCard";
 import { groupApps } from "../components/store/storeModel";
-import { HardwareBadges, InstallButton } from "../components/store/StoreParts";
+import { HardwareBadges, ReleaseInstallActions } from "../components/store/StoreParts";
 
 /**
  * The hero mark is the one live WebGL context on this page, and only for an app
@@ -146,12 +146,7 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
                   )}
                 </div>
               </div>
-              <InstallButton
-                release={release}
-                size="lg"
-                className="px-5"
-                label={`Install v${release.version}`}
-              />
+              <ReleaseInstallActions release={release} />
             </div>
             {summary && (
               <>

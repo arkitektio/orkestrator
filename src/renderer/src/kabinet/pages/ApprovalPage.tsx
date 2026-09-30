@@ -1,3 +1,4 @@
+import { useSelf } from "@/core/connection/useSelf";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Alert, AlertDescription } from "@/core/ui/alert";
@@ -10,6 +11,7 @@ import React from "react";
 import { useGetReleaseApprovalQuery } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
+import { DeployButton } from "../components/store/StoreParts";
 import { APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
 
 const Fact = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -27,9 +29,20 @@ export const ApprovalPage = asDetailQueryRoute(useGetReleaseApprovalQuery, ({ da
   const approval = data.releaseApproval;
   const app = releaseIdentity(approval.release);
   const status = approvalStatus(approval);
+  // Deploying acts as the approver: only your own approval is yours to use.
+  const { userId } = useSelf();
+  const deployable = status === "active" && approval.approver.sub === userId;
 
   return (
-    <KabinetApproval.ModelPage object={approval} title={approval.name}>
+    <KabinetApproval.ModelPage
+      object={approval}
+      title={approval.name}
+      pageActions={
+        deployable ? (
+          <DeployButton release={approval.release} approval={approval.id} size="default" />
+        ) : undefined
+      }
+    >
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 md:p-6">
         <header className="flex items-center gap-4">
           <AppIcon app={app} size={56} className="size-14 rounded-2xl" />

@@ -1,12 +1,15 @@
 import {
   DeleteBackendDocument,
+  GetReleaseApprovalDocument,
+  GetReleaseApprovalQuery,
+  GetReleaseApprovalQueryVariables,
   DeletePodDocument,
   ScanRepoDocument,
   ScanRepoMutation,
   ScanRepoMutationVariables,
 } from '@/kabinet/api/graphql'
 import { ApolloClient, NormalizedCache } from '@apollo/client'
-import { Download, RefreshCw, ShieldOff } from 'lucide-react'
+import { Download, RefreshCw, Rocket, ShieldOff } from 'lucide-react'
 import type { Service } from '@/core/connection/arkitekt/types'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
@@ -18,7 +21,7 @@ const APPROVAL_IDENTIFIER = '@kabinet/approval'
 export const KABINET_ACTIONS: Record<string, Action> = {
   'install-release': {
     title: 'Install…',
-    description: 'Approve the release to run as you and install it on a deployer',
+    description: 'Authorize a deployer to run the release as you (deploy it afterwards)',
     icon: Download,
     conditions: [
       { type: 'identifier', identifier: RELEASE_IDENTIFIER },
@@ -30,6 +33,53 @@ export const KABINET_ACTIONS: Record<string, Action> = {
         throw new Error('No release selected')
       }
       dialog.openDialog('installrelease', { release: String(release.id) }, { className: 'max-w-xl' })
+    }
+  },
+  'deploy-release': {
+    title: 'Deploy…',
+    description: 'Start an installed release on a backend',
+    icon: Rocket,
+    conditions: [
+      { type: 'identifier', identifier: RELEASE_IDENTIFIER },
+      { type: 'nopartner' }
+    ],
+    execute: async ({ state, dialog }) => {
+      const release = state.left.find((structure) => structure.identifier === RELEASE_IDENTIFIER)
+      if (!release) {
+        throw new Error('No release selected')
+      }
+      dialog.openDialog('deployrelease', { release: String(release.id) }, { className: 'max-w-xl' })
+    }
+  },
+  'deploy-approval': {
+    title: 'Deploy…',
+    description: 'Start the approved release on a backend',
+    icon: Rocket,
+    conditions: [
+      { type: 'identifier', identifier: APPROVAL_IDENTIFIER },
+      { type: 'nopartner' }
+    ],
+    execute: async ({ state, dialog, services }) => {
+      const approval = state.left.find((structure) => structure.identifier === APPROVAL_IDENTIFIER)
+      if (!approval) {
+        throw new Error('No approval selected')
+      }
+      const client = (services.kabinet as unknown as Service | undefined)
+        ?.client as ApolloClient<NormalizedCache> | undefined
+      if (!client) {
+        throw new Error('Kabinet service not available')
+      }
+      // A structure carries only the approval's id; the dialog is per release.
+      const { data } = await client.query<GetReleaseApprovalQuery, GetReleaseApprovalQueryVariables>({
+        query: GetReleaseApprovalDocument,
+        variables: { id: String(approval.id) },
+        fetchPolicy: 'cache-first',
+      })
+      dialog.openDialog(
+        'deployrelease',
+        { release: data.releaseApproval.release.id, approval: String(approval.id) },
+        { className: 'max-w-xl' },
+      )
     }
   },
   'revoke-approval': {
