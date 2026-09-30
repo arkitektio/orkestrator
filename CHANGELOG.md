@@ -1,3 +1,17 @@
+# [2.17.0](https://github.com/arkitektio/orkestrator/compare/v2.16.0...v2.17.0) (2026-09-30)
+
+
+### Features
+
+* **core:** declarative role gates and per-dialog service needs ([da78127](https://github.com/arkitektio/orkestrator/commit/da78127de142aea9a3c57d42cfbdaca0755261b6))
+* **displays:** compact display line for every model, InfoList in core ([59b8f20](https://github.com/arkitektio/orkestrator/commit/59b8f203552079600e34e7f1fb44a49d5edb86ed))
+* **kabinet:** deploy an installed release separately from installing it ([8611da8](https://github.com/arkitektio/orkestrator/commit/8611da88451fda3126fdd0ac5ea36fab3b1ffe22))
+* **lokate:** location history module, with maps promoted to core/map ([da7d554](https://github.com/arkitektio/orkestrator/commit/da7d5547710b8de52fc4b5e7682315deab11238d))
+* **lokate:** timeline, places, trips and insights pages ([a3f1516](https://github.com/arkitektio/orkestrator/commit/a3f1516348ff02da68f32428d758b178374fb695))
+* **rekuest:** follow the temporal task model (LOST, workflows, journal) ([42f9a14](https://github.com/arkitektio/orkestrator/commit/42f9a142bf570740adc40347454c6ded0e4e8a6b))
+* **rekuest:** schedules, triggers and signals ([e8613a8](https://github.com/arkitektio/orkestrator/commit/e8613a895c21f360fc9faf8965e3ca64a09addeb))
+* **rekuest:** task page as a stage over a time-scaled lane ([1dec70f](https://github.com/arkitektio/orkestrator/commit/1dec70f26c896c9fb68bf8c83e3d3ce0cb0cdf92))
+
 # [2.16.0](https://github.com/arkitektio/orkestrator/compare/v2.15.0...v2.16.0) (2026-09-28)
 
 
