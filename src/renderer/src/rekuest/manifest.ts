@@ -21,7 +21,6 @@ export const manifest: ModuleManifest = {
     { identifier: "@rekuest/materialized_blok", name: "Materialized Blok", datum: false, path: "materialized_bloks/:id" },
     { identifier: "@rekuest/dependency", name: "Dependency", datum: false, path: "dependencies/:id" },
     { identifier: "@rekuest/resolution", name: "Resolution", datum: false, path: "resolutions/:id" },
-    { identifier: "@rekuest/reservation", name: "Provision", datum: false, path: "provisions/:id" },
     { identifier: "@rekuest/agent", name: "Agent", datum: false, path: "agents/:id" },
     { identifier: "@rekuest/memoryshelve", name: "Memory Shelve", datum: false, path: "memoryshelves/:id" },
     { identifier: "@rekuest/shortcut", name: "Shortcut", datum: false, path: "shortcuts/:id" },

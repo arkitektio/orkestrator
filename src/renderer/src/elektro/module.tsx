@@ -3,6 +3,9 @@ import { ELEKTRO_ACTIONS } from "./actions";
 import ElektroArrayDatasetHoverCard from "./components/hovers/ArrayDatasetHoverCard";
 import ExperimentHoverCard from "./components/hovers/ExperimentHoverCard";
 import NeuronModelHoverCard from "./components/hovers/NeuronModelHoverCard";
+import { ArrayDatasetDisplay } from "./displays/ArrayDatasetDisplay";
+import { ExperimentDisplay } from "./displays/ExperimentDisplay";
+import { FileDisplay } from "./displays/FileDisplay";
 import { ModelWorkspaceDisplay } from "./displays/ModelWorkspaceDisplay";
 import { NeuronModelDisplay } from "./displays/NeuronModelDisplay";
 import { ELEKTRO_FILE_DOWNLOADERS } from "./downloads";
@@ -22,6 +25,9 @@ export const ELEKTRO_MODULE = defineModule({
     displays: {
       "@elektro/neuronmodel": NeuronModelDisplay,
       "@elektro/modelworkspace": ModelWorkspaceDisplay,
+      "@elektro/arraydataset": ArrayDatasetDisplay,
+      "@elektro/experiment": ExperimentDisplay,
+      "@elektro/file": FileDisplay,
     },
     hovers: {
       "@elektro/neuronmodel": NeuronModelHoverCard,

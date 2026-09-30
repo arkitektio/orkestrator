@@ -5,9 +5,11 @@ import FileHoverCard from "./components/hovers/FileHoverCard";
 import FolderHoverCard from "./components/hovers/FolderHoverCard";
 import { LatestArrayDatasetsDashboardWidget } from "./dashboard/LatestArrayDatasetsDashboardWidget";
 import { MikroDashboardWidgets } from "./dashboard/MikroDashboardWidgets";
+import { AnnotationDisplay } from "./displays/AnnotationDisplay";
 import { ArrayDatasetDisplay } from "./displays/ArrayDatasetDisplay";
 import { FileDisplay } from "./displays/FileDisplay";
 import { FolderDisplay } from "./displays/FolderDisplay";
+import { LensDisplay } from "./displays/LensDisplay";
 import { SceneDisplay } from "./displays/SceneDisplay";
 import { SparseDatasetDisplay } from "./displays/SparseDatasetDisplay";
 import { TableDatasetDisplay } from "./displays/TableDatasetDisplay";
@@ -32,6 +34,8 @@ export const MIKRO_MODULE = defineModule({
       "@mikro/folder": FolderDisplay,
       "@mikro/tabledataset": TableDatasetDisplay,
       "@mikro/sparsedataset": SparseDatasetDisplay,
+      "@mikro/annotation": AnnotationDisplay,
+      "@mikro/lens": LensDisplay,
     },
     hovers: {
       "@mikro/file": FileHoverCard,

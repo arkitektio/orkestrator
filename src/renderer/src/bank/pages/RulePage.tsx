@@ -6,7 +6,7 @@ import { toast } from "@/core/notify";
 import { ListTransactionsDocument, useGetCategoryRuleQuery, useUpdateCategoryRuleMutation } from "../api/graphql";
 import { ruleSentence } from "../components/cards/RuleCard";
 import { CategoryBadge } from "../components/CategoryBadge";
-import { InfoList } from "../components/InfoList";
+import { InfoList } from "@/core/ui/info-list";
 import { toNumber } from "../format";
 
 const RulePage = asDetailQueryRoute(useGetCategoryRuleQuery, ({ data }) => {

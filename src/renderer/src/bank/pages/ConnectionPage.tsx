@@ -18,7 +18,7 @@ import {
 } from "../api/graphql";
 import AccountCard from "../components/cards/AccountCard";
 import { ConnectionStatusBadge } from "../components/ConnectionStatus";
-import { InfoList } from "../components/InfoList";
+import { InfoList } from "@/core/ui/info-list";
 import { ProblemBanner, useRelink } from "../components/ProblemBanner";
 import { toastText } from "../errors";
 import { formatDay } from "../format";

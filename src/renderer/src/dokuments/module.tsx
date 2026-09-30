@@ -1,4 +1,7 @@
 import { defineModule } from "@/core/modules/host/define";
+import { DocumentDisplay } from "./displays/DocumentDisplay";
+import { FileDisplay } from "./displays/FileDisplay";
+import { PageDisplay } from "./displays/PageDisplay";
 import { manifest } from "./manifest";
 import { service } from "./service";
 
@@ -7,5 +10,10 @@ export const DOKUMENTS_MODULE = defineModule({
   serviceKey: service.key,
   builtins: {
     page: () => import("./DokumentsModule"),
+    displays: {
+      "@dokuments/file": FileDisplay,
+      "@dokuments/document": DocumentDisplay,
+      "@dokuments/page": PageDisplay,
+    },
   },
 });

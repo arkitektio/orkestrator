@@ -10,7 +10,7 @@ import { useGeocodeMerchantLocationMutation, useGetMerchantLocationQuery } from 
 import { isLocated, placeAddress, SOURCE_LABEL } from "../components/cards/PlaceCard";
 import { CategoryBadge } from "../components/CategoryBadge";
 import { useTransactionFilterBar } from "../components/filter/TransactionFilterBar";
-import { InfoList } from "../components/InfoList";
+import { InfoList } from "@/core/ui/info-list";
 import { LocationInsightsTab } from "../components/insights/tabs/LocationInsightsTab";
 import ReviewTransactionList from "../components/lists/ReviewTransactionList";
 import { LocationsMap } from "../components/map/LocationsMap";

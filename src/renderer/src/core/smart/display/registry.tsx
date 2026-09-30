@@ -1,5 +1,6 @@
 import { Identifier } from "@/core/types";
 import React, { createContext, useContext } from "react";
+import { DisplayLinePlaceholder } from "./DisplayLine";
 
 /**
  * What a display surface is handed (module spec: `display` gets
@@ -49,10 +50,9 @@ export function createDisplayProvider<
 
   const useDisplayComponent = (identifier: DisplayId) => {
     const { registry } = useDisplay();
-    return (
-      registry[identifier] ||
-      (() => <div>Display not found for {String(identifier)}</div>)
-    );
+    // No module displays it (or none is installed): its model's name and id
+    // rather than a "not found" in a task result or the Knowledge sidebar.
+    return registry[identifier] || DisplayLinePlaceholder;
   };
 
   // The registry is a module constant, so the context value can be too.

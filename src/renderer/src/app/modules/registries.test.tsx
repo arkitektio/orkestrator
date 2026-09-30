@@ -109,6 +109,12 @@ describe("host registries", () => {
       "@bank/merchant",
       "@bank/place",
       "@bank/transaction",
+      "@dokuments/document",
+      "@dokuments/file",
+      "@dokuments/page",
+      "@elektro/arraydataset",
+      "@elektro/experiment",
+      "@elektro/file",
       "@elektro/modelworkspace",
       "@elektro/neuronmodel",
       "@kabinet/pod",
@@ -139,18 +145,41 @@ describe("host registries", () => {
       "@lok/mandate",
       "@lok/user",
       "@lovekit/solo_broadcast",
+      "@mikro/annotation",
       "@mikro/arraydataset",
       "@mikro/file",
       "@mikro/folder",
+      "@mikro/lens",
       "@mikro/scene",
       "@mikro/sparsedataset",
       "@mikro/tabledataset",
+      "@omeroark/dataset",
+      "@omeroark/image",
+      "@omeroark/project",
+      "@rekuest/action",
+      "@rekuest/agent",
+      "@rekuest/blok",
+      "@rekuest/dashboard",
+      "@rekuest/dependency",
+      "@rekuest/implementation",
+      "@rekuest/interface",
+      "@rekuest/materialized_blok",
+      "@rekuest/memoryshelve",
+      "@rekuest/resolution",
+      "@rekuest/schedule",
+      "@rekuest/shortcut",
+      "@rekuest/space",
+      "@rekuest/state",
+      "@rekuest/structure",
+      "@rekuest/structurepackage",
+      "@rekuest/task",
+      "@rekuest/toolbox",
+      "@rekuest/trigger",
     ]);
   });
 
   it("hold every local action", () => {
     expect(Object.keys(ACTIONS).sort()).toEqual([
-    
       "add-layer-to-scene",
       "addElektroExperimentLayer",
       "add_user_to_organization",
@@ -322,7 +351,7 @@ describe("host registries", () => {
       "revoke_mandate",
       "same-datum",
       "update-mikro-folder",
-]);
+    ]);
   });
 
   it("hold every smart context section, in menu order", () => {

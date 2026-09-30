@@ -23,7 +23,7 @@ import { toastText } from "../errors";
 import { syncBudget } from "../sync";
 import { BalanceChart } from "../components/charts/BalanceChart";
 import { useTransactionFilterBar } from "../components/filter/TransactionFilterBar";
-import { InfoList } from "../components/InfoList";
+import { InfoList } from "@/core/ui/info-list";
 import { AccountInsightsTab } from "../components/insights/tabs/AccountInsightsTab";
 import ReviewTransactionList from "../components/lists/ReviewTransactionList";
 import { Money } from "../components/Money";

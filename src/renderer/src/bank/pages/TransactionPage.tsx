@@ -23,7 +23,7 @@ import { CategoryBadge } from "../components/CategoryBadge";
 import { CategorySuggestions } from "../components/CategorySuggestions";
 import { SimilarTransactions } from "../components/SimilarTransactions";
 import { TradeBadge } from "../components/TradeBadge";
-import { InfoList } from "../components/InfoList";
+import { InfoList } from "@/core/ui/info-list";
 import { MerchantLogo } from "../components/MerchantLogo";
 import { Money } from "../components/Money";
 import { toastText } from "../errors";

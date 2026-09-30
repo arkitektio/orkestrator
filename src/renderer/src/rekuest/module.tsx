@@ -13,6 +13,25 @@ import TaskHoverCard from "./components/hovers/TaskHoverCard";
 import { LatestTasksDashboardWidget } from "./dashboard/LatestTasksDashboardWidget";
 import { RekuestDashboardWidgets } from "./dashboard/RekuestDashboardWidgets";
 import { REKUEST_DIALOGS } from "./dialogRegistry";
+import { ActionDisplay } from "./displays/ActionDisplay";
+import { AgentDisplay } from "./displays/AgentDisplay";
+import { BlokDisplay } from "./displays/BlokDisplay";
+import { DashboardDisplay } from "./displays/DashboardDisplay";
+import { DependencyDisplay } from "./displays/DependencyDisplay";
+import { ImplementationDisplay } from "./displays/ImplementationDisplay";
+import { InterfaceDisplay } from "./displays/InterfaceDisplay";
+import { MaterializedBlokDisplay } from "./displays/MaterializedBlokDisplay";
+import { MemoryShelveDisplay } from "./displays/MemoryShelveDisplay";
+import { ResolutionDisplay } from "./displays/ResolutionDisplay";
+import { ScheduleDisplay } from "./displays/ScheduleDisplay";
+import { ShortcutDisplay } from "./displays/ShortcutDisplay";
+import { SpaceDisplay } from "./displays/SpaceDisplay";
+import { StateDisplay } from "./displays/StateDisplay";
+import { StructureDisplay } from "./displays/StructureDisplay";
+import { StructurePackageDisplay } from "./displays/StructurePackageDisplay";
+import { TaskDisplay } from "./displays/TaskDisplay";
+import { ToolboxDisplay } from "./displays/ToolboxDisplay";
+import { TriggerDisplay } from "./displays/TriggerDisplay";
 import { manifest } from "./manifest";
 import { service } from "./service";
 import { REKUEST_NAV_LINKS } from "./navLinks";
@@ -30,6 +49,27 @@ export const REKUEST_MODULE = defineModule({
   builtins: {
     page: () => import("./RekuestNextModule"),
     navLinks: REKUEST_NAV_LINKS,
+    displays: {
+      "@rekuest/task": TaskDisplay,
+      "@rekuest/action": ActionDisplay,
+      "@rekuest/agent": AgentDisplay,
+      "@rekuest/implementation": ImplementationDisplay,
+      "@rekuest/schedule": ScheduleDisplay,
+      "@rekuest/trigger": TriggerDisplay,
+      "@rekuest/shortcut": ShortcutDisplay,
+      "@rekuest/state": StateDisplay,
+      "@rekuest/dependency": DependencyDisplay,
+      "@rekuest/resolution": ResolutionDisplay,
+      "@rekuest/memoryshelve": MemoryShelveDisplay,
+      "@rekuest/toolbox": ToolboxDisplay,
+      "@rekuest/blok": BlokDisplay,
+      "@rekuest/materialized_blok": MaterializedBlokDisplay,
+      "@rekuest/dashboard": DashboardDisplay,
+      "@rekuest/space": SpaceDisplay,
+      "@rekuest/structure": StructureDisplay,
+      "@rekuest/interface": InterfaceDisplay,
+      "@rekuest/structurepackage": StructurePackageDisplay,
+    },
     hovers: {
       "@rekuest/action": ActionHoverCard,
       "@rekuest/agent": AgentHoverCard,

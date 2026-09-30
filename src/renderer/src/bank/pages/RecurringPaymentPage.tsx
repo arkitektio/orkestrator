@@ -6,7 +6,7 @@ import { Check, EyeOff } from "lucide-react";
 import { toast } from "@/core/notify";
 import { RecurringStatus, useGetRecurringPaymentQuery, useSetRecurringStatusMutation } from "../api/graphql";
 import TransactionCard from "../components/cards/TransactionCard";
-import { InfoList } from "../components/InfoList";
+import { InfoList } from "@/core/ui/info-list";
 import { Money } from "../components/Money";
 import { formatDay, formatIban, intervalLabel } from "../format";
 

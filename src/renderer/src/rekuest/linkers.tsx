@@ -12,7 +12,6 @@ export const RekuestBlok = smartOf(manifest, "@rekuest/blok");
 export const RekuestMaterializedBlok = smartOf(manifest, "@rekuest/materialized_blok");
 export const RekuestDependency = smartOf(manifest, "@rekuest/dependency");
 export const RekuestResolution = smartOf(manifest, "@rekuest/resolution");
-export const RekuestProvision = smartOf(manifest, "@rekuest/reservation");
 export const RekuestAgent = smartOf(manifest, "@rekuest/agent");
 export const RekuestMemoryShelve = smartOf(manifest, "@rekuest/memoryshelve");
 export const RekuestShortcut = smartOf(manifest, "@rekuest/shortcut");

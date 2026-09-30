@@ -5,7 +5,7 @@ import { useBudgetStatusQuery, useGetBudgetQuery } from "../api/graphql";
 import BudgetStatusCard from "../components/cards/BudgetStatusCard";
 import { CategoryBadge } from "../components/CategoryBadge";
 import { useTransactionFilterBar } from "../components/filter/TransactionFilterBar";
-import { InfoList } from "../components/InfoList";
+import { InfoList } from "@/core/ui/info-list";
 import TransactionList from "../components/lists/TransactionList";
 import { firstOfMonth, formatMoney, formatMonth, isoDay } from "../format";
 

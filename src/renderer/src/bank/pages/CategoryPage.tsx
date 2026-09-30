@@ -13,7 +13,7 @@ import { CategoryCandidates } from "../components/CategoryCandidates";
 import { CategoryMerchants } from "../components/merchants/CategoryMerchants";
 import RuleCard from "../components/cards/RuleCard";
 import { useTransactionFilterBar } from "../components/filter/TransactionFilterBar";
-import { InfoList } from "../components/InfoList";
+import { InfoList } from "@/core/ui/info-list";
 import { CategoryInsightsTab } from "../components/insights/tabs/CategoryInsightsTab";
 import TransactionList from "../components/lists/TransactionList";
 
