@@ -25,8 +25,10 @@ import {
   DeleteMaterializedBlokMutation,
   DeleteMaterializedBlokMutationVariables,
   DeletePlacementDocument,
+  DeleteScheduleDocument,
   DeleteShortcutDocument,
   DeleteSpaceDocument,
+  DeleteTriggerDocument,
   ImplementationDocument,
   ImplementationQuery,
   ImplementationQueryVariables,
@@ -36,14 +38,29 @@ import {
   PinAgentDocument,
   PinAgentMutation,
   PinAgentMutationVariables,
+  ScheduleDocument,
+  ScheduleQuery,
+  ScheduleQueryVariables,
+  TriggerDocument,
+  TriggerQuery,
+  TriggerQueryVariables,
+  TriggerScheduleDocument,
+  TriggerScheduleMutation,
+  TriggerScheduleMutationVariables,
   UnblockDocument,
   UnblockMutation,
-  UnblockMutationVariables
+  UnblockMutationVariables,
+  UpdateScheduleDocument,
+  UpdateScheduleMutation,
+  UpdateScheduleMutationVariables,
+  UpdateTriggerDocument,
+  UpdateTriggerMutation,
+  UpdateTriggerMutationVariables
 } from '@/rekuest/api/graphql'
 import type { ModuleServices } from '@/core/connection/arkitekt/host'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { Ban, Bookmark, Eraser, Hash, LogOut, Pencil, Pin, Play, RotateCcw, ShieldCheck, Trash2 } from 'lucide-react'
+import { AlarmClock, Ban, Bookmark, Eraser, FastForward, Hash, LogOut, Pencil, Pin, Play, RotateCcw, ShieldCheck, ToggleLeft, Trash2, Zap } from 'lucide-react'
 import { toast } from "@/core/notify";
 
 type RekuestAction = Action<ModuleServices<"rekuest">>
@@ -59,6 +76,23 @@ const ACTION_CONDITIONS = [
     type: 'nopartner',
   },
 ] as const
+
+const selected = (
+  state: { left: { identifier: string; id: string }[] },
+  identifier: string,
+) => {
+  const structure = state.left.find((item) => item.identifier === identifier)
+  if (!structure?.id) {
+    throw new Error(`No ${identifier} selected`)
+  }
+  return structure.id
+}
+
+const only = (identifier: string) =>
+  [
+    { type: 'identifier', identifier },
+    { type: 'nopartner' },
+  ] as const
 
 export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
   'rekuest-update-agent': {
@@ -510,6 +544,129 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     },
     collections: ['io'],
   },
+  'rekuest-schedule-action': {
+    title: 'Schedule…',
+    description: 'Run this action on a clock: every few minutes, or on a calendar',
+    icon: AlarmClock,
+    conditions: ACTION_CONDITIONS,
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('createschedule', { action: selected(state, ACTION_IDENTIFIER) }, { size: 'medium' })
+    },
+    collections: ['io'],
+  },
+  'rekuest-trigger-action': {
+    title: 'Run on Signal…',
+    description: 'Run this action whenever a service signals a matching object',
+    icon: Zap,
+    conditions: ACTION_CONDITIONS,
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('createtrigger', { action: selected(state, ACTION_IDENTIFIER) }, { size: 'medium' })
+    },
+    collections: ['io'],
+  },
+  'rekuest-run-schedule-now': {
+    title: 'Run Now',
+    description: 'Start the next run of this schedule right away',
+    icon: FastForward,
+    pinned: true,
+    conditions: only('@rekuest/schedule'),
+    execute: async ({ services, state }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      await services.rekuest.client.mutate<TriggerScheduleMutation, TriggerScheduleMutationVariables>({
+        mutation: TriggerScheduleDocument,
+        variables: { id: selected(state, '@rekuest/schedule') },
+        refetchQueries: ['Schedule'],
+      })
+      toast.success('Schedule started')
+    },
+    collections: ['io'],
+  },
+  'rekuest-toggle-schedule': {
+    title: 'Pause / Resume',
+    description: 'A paused schedule creates no runs',
+    icon: ToggleLeft,
+    conditions: only('@rekuest/schedule'),
+    execute: async ({ services, state }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const id = selected(state, '@rekuest/schedule')
+      const { data } = await services.rekuest.client.query<ScheduleQuery, ScheduleQueryVariables>({
+        query: ScheduleDocument,
+        variables: { id },
+        fetchPolicy: 'network-only',
+      })
+      const enabled = !data.schedule.enabled
+      await services.rekuest.client.mutate<UpdateScheduleMutation, UpdateScheduleMutationVariables>({
+        mutation: UpdateScheduleDocument,
+        variables: { input: { id, enabled } },
+      })
+      toast.success(enabled ? 'Schedule resumed' : 'Schedule paused')
+    },
+    collections: ['io'],
+  },
+  'rekuest-edit-schedule': {
+    title: 'Edit Schedule',
+    description: 'Change when it runs and with what',
+    icon: Pencil,
+    conditions: only('@rekuest/schedule'),
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('editschedule', { id: selected(state, '@rekuest/schedule') }, { size: 'medium' })
+    },
+    collections: ['io'],
+  },
+  'rekuest-delete-schedule': buildDeleteAction({
+    title: 'Delete Schedule',
+    identifier: '@rekuest/schedule',
+    description: 'Delete the schedule; its waiting run is cancelled, past runs are kept',
+    service: 'rekuest',
+    typename: 'Schedule',
+    mutation: DeleteScheduleDocument
+  }),
+  'rekuest-toggle-trigger': {
+    title: 'Enable / Disable',
+    description: 'A disabled trigger fires nothing',
+    icon: ToggleLeft,
+    conditions: only('@rekuest/trigger'),
+    execute: async ({ services, state }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const id = selected(state, '@rekuest/trigger')
+      const { data } = await services.rekuest.client.query<TriggerQuery, TriggerQueryVariables>({
+        query: TriggerDocument,
+        variables: { id },
+        fetchPolicy: 'network-only',
+      })
+      const enabled = !data.trigger.enabled
+      await services.rekuest.client.mutate<UpdateTriggerMutation, UpdateTriggerMutationVariables>({
+        mutation: UpdateTriggerDocument,
+        variables: { input: { id, enabled } },
+      })
+      toast.success(enabled ? 'Trigger enabled' : 'Trigger disabled')
+    },
+    collections: ['io'],
+  },
+  'rekuest-edit-trigger': {
+    title: 'Edit Trigger',
+    description: 'Change its conditions and arguments',
+    icon: Pencil,
+    conditions: only('@rekuest/trigger'),
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('edittrigger', { id: selected(state, '@rekuest/trigger') }, { size: 'medium' })
+    },
+    collections: ['io'],
+  },
+  'rekuest-delete-trigger': buildDeleteAction({
+    title: 'Delete Trigger',
+    identifier: '@rekuest/trigger',
+    description: 'Delete the trigger; its runs are kept',
+    service: 'rekuest',
+    typename: 'Trigger',
+    mutation: DeleteTriggerDocument
+  }),
   'rekuest-copy-action-hash': {
     title: 'Copy Hash',
     description: 'Copy the hash that identifies this action definition',

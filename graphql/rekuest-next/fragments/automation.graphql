@@ -1,0 +1,105 @@
+# Schedules ("cron jobs"), triggers (signal → action) and the signals
+# services send. A run of either is an ordinary Task.
+
+fragment ListSchedule on Schedule {
+  id
+  name
+  enabled
+  cron
+  intervalSeconds
+  timezone
+  consecutiveFailures
+  lastError
+  action {
+    id
+    name
+  }
+  agent {
+    id
+    name
+  }
+  nextRun {
+    id
+    notBefore
+    latestEventKind
+    isDone
+  }
+}
+
+fragment DetailSchedule on Schedule {
+  ...ListSchedule
+  args
+  interface
+  ephemeralRuns
+  createdAt
+  updatedAt
+  runs(limit: 24) {
+    ...ListTask
+  }
+}
+
+fragment ListTrigger on Trigger {
+  id
+  name
+  enabled
+  identifier
+  kind
+  port
+  conditions
+  consecutiveFailures
+  lastError
+  action {
+    id
+    name
+  }
+  agent {
+    id
+    name
+  }
+}
+
+fragment DetailTrigger on Trigger {
+  ...ListTrigger
+  args
+  interface
+  createdAt
+  updatedAt
+  runs(limit: 24) {
+    ...ListTask
+  }
+}
+
+fragment ListSignal on Signal {
+  id
+  identifier
+  kind
+  object
+  service
+  descriptors
+  occurredAt
+  receivedAt
+  processedAt
+  causingTask {
+    id
+    action {
+      id
+      name
+    }
+  }
+  runs {
+    id
+    action {
+      id
+      name
+    }
+  }
+}
+
+fragment SignalDeclaration on SignalDeclaration {
+  id
+  identifier
+  kind
+  service
+  description
+  descriptorKeys
+}

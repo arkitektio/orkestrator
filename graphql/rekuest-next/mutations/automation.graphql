@@ -1,0 +1,37 @@
+mutation CreateSchedule($input: CreateScheduleInput!) {
+  createSchedule(input: $input) {
+    ...DetailSchedule
+  }
+}
+
+mutation UpdateSchedule($input: UpdateScheduleInput!) {
+  updateSchedule(input: $input) {
+    ...DetailSchedule
+  }
+}
+
+mutation DeleteSchedule($id: ID!) {
+  deleteSchedule(input: { id: $id })
+}
+
+mutation TriggerSchedule($id: ID!) {
+  triggerSchedule(input: { id: $id }) {
+    ...ListTask
+  }
+}
+
+mutation CreateTrigger($input: CreateTriggerInput!) {
+  createTrigger(input: $input) {
+    ...DetailTrigger
+  }
+}
+
+mutation UpdateTrigger($input: UpdateTriggerInput!) {
+  updateTrigger(input: $input) {
+    ...DetailTrigger
+  }
+}
+
+mutation DeleteTrigger($id: ID!) {
+  deleteTrigger(input: { id: $id })
+}

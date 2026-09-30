@@ -1,0 +1,86 @@
+query ListSchedules($pagination: OffsetPaginationInput) {
+  schedules(pagination: $pagination) {
+    ...ListSchedule
+  }
+}
+
+query Schedule($id: ID!) {
+  schedule(id: $id) {
+    ...DetailSchedule
+  }
+}
+
+query ListTriggers($pagination: OffsetPaginationInput) {
+  triggers(pagination: $pagination) {
+    ...ListTrigger
+  }
+}
+
+query Trigger($id: ID!) {
+  trigger(id: $id) {
+    ...DetailTrigger
+  }
+}
+
+query ListSignals($pagination: OffsetPaginationInput) {
+  signals(pagination: $pagination) {
+    ...ListSignal
+  }
+}
+
+query SignalDeclarations($identifier: String) {
+  signalDeclarations(identifier: $identifier) {
+    ...SignalDeclaration
+  }
+}
+
+# Any action, for the "New schedule" picker.
+query ScheduleActionOptions($search: String, $values: [ID!]) {
+  options: actions(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 30 }
+  ) {
+    value: id
+    label: name
+    description
+  }
+}
+
+# Actions with a STRUCTURE argument of this identifier: what a trigger on
+# that structure's signals can run.
+query TriggerActionOptions(
+  $identifier: String!
+  $search: String
+  $values: [ID!]
+) {
+  options: actions(
+    filters: {
+      search: $search
+      ids: $values
+      demands: [
+        { kind: ARGS, matches: [{ kind: STRUCTURE, identifier: $identifier }] }
+      ]
+    }
+    pagination: { limit: 30 }
+  ) {
+    value: id
+    label: name
+    description
+  }
+}
+
+# Where a schedule or trigger can be pinned: every app implementing the action.
+query AutomationPinOptions($action: ID!) {
+  implementations(
+    filters: { action: { ids: [$action] } }
+    pagination: { limit: 50 }
+  ) {
+    id
+    interface
+    agent {
+      id
+      name
+      connected
+    }
+  }
+}

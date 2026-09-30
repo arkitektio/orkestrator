@@ -618,32 +618,6 @@ export type AgentInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** One entry of an agent's journal: a frame the agent reported, at its position in the agent session. */
-export type AgentJournalEntry = {
-  __typename?: 'AgentJournalEntry';
-  /** The agent that reported the entry. */
-  agent: Agent;
-  /** When the agent recorded the entry. */
-  agentTs?: Maybe<Scalars['DateTime']['output']>;
-  /** The state revision the entry carries (patches and snapshots; 0 for the session init), null otherwise. */
-  globalRev?: Maybe<Scalars['Int']['output']>;
-  id: Scalars['ID']['output'];
-  /** The wire type of the frame (STARTED, YIELD, STATE_PATCH, LOCK, …). */
-  kind: Scalars['String']['output'];
-  /** The frame's id, as it went on the wire. */
-  messageId: Scalars['String']['output'];
-  /** The frame as the agent sent it (without the stream-level seq). */
-  payload: Scalars['Args']['output'];
-  /** The position in the agent session's journal (1, 2, 3, … no gaps). */
-  pos: Scalars['Int']['output'];
-  /** When the server first received the entry. */
-  receivedAt: Scalars['DateTime']['output'];
-  /** The agent session identifier this entry belongs to. */
-  sessionId: Scalars['String']['output'];
-  /** The task the entry belongs to, if it names one of this agent's tasks. */
-  task?: Maybe<Task>;
-};
-
 export enum AgentKind {
   Webhook = 'WEBHOOK',
   Websocket = 'WEBSOCKET'
@@ -1229,7 +1203,7 @@ export type ClientOrder =
 
 /** The input for collecting a shelved item in a drawer. */
 export type CollectInput = {
-  /** The drawer ID to collect */
+  /** The drawers to collect: each an ID or a resource ID (as agent-minted drawers are referenced), within the caller's organization */
   drawers: Array<Scalars['ID']['input']>;
 };
 
@@ -1583,7 +1557,7 @@ export type DefinitionInput = {
   name: Scalars['String']['input'];
   /** The port groups of the definition. This is used to group ports together in the UI */
   portGroups?: Array<PortGroupInput>;
-  /** Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with a PHYSICAL effect class. */
+  /** Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with IRREVERSIBLE effects. */
   pure?: Scalars['Boolean']['input'];
   /** The returns of the definition. This is the output ports of the definition */
   returns?: Array<ReturnPortInput>;
@@ -1770,12 +1744,6 @@ export type Effect = {
   source?: Maybe<Scalars['String']['output']>;
 };
 
-/** The effect class of an implementation — declared by the implementation, never the caller. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world (no UPSERT), so an ambiguous failure is terminal and must not be retried. */
-export enum EffectClass {
-  None = 'NONE',
-  Physical = 'PHYSICAL'
-}
-
 /**
  *
  *     An effect is a way to modify a port based on a condition. For example,
@@ -1808,6 +1776,20 @@ export enum EffectKind {
   Custom = 'CUSTOM',
   Hide = 'HIDE',
   Message = 'MESSAGE'
+}
+
+/** What running an implementation again would do to the world. Purely informational: shown to whoever decides about a lost task. */
+export enum Effects {
+  Irreversible = 'IRREVERSIBLE',
+  None = 'NONE',
+  Repeatable = 'REPEATABLE',
+  Unknown = 'UNKNOWN'
+}
+
+/** How an implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies; a PLAIN one's task ends LOST. */
+export enum Execution {
+  Plain = 'PLAIN',
+  Workflow = 'WORKFLOW'
 }
 
 export type FinishMediaUploadInput = {
@@ -1899,10 +1881,16 @@ export type Implementation = {
   action: Action;
   /** Agent running this implementation. */
   agent: Agent;
+  /** A hash of the implementation's code; a workflow is only resumed by an implementation with the same hash. */
+  codeHash?: Maybe<Scalars['String']['output']>;
   /** Dependencies required by this action. */
   dependencies: Array<Dependency>;
   /** Non-fatal registration findings, e.g. validator/effect calls naming operations that neither the base catalog nor the definition's catalog provides. */
   diagnostics: Array<Diagnostic>;
+  /** What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task. */
+  effects: Effects;
+  /** How this implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies. */
+  execution: Execution;
   /** Projection config (bound params, arg/dependency/return maps) when this is a higher-order implementation. */
   higherOrderConfig: Scalars['AnyDefault']['output'];
   /** If this is a higher-order (wrapper) implementation, the lower implementation it wraps. */
@@ -2000,12 +1988,16 @@ export type ImplementationFilter = {
 
 /** A implementation is a blueprint for a action. It is composed of a definition, a list of dependencies, and a list of params. */
 export type ImplementationInput = {
+  /** A hash of the implementation's code. A workflow is only resumed by an implementation with the same hash. */
+  codeHash?: InputMaybe<Scalars['String']['input']>;
   /** The definition of the implementation. This is used to uniquely identify the implementation */
   definition: DefinitionInput;
   /** The agent dependencies required by this implementation. */
   dependencies?: Array<AgentDependencyInput>;
-  /** The effect class of this implementation. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world and an ambiguous failure is terminal (never retried). Declared by the implementation here — never by the caller. */
-  effect?: EffectClass;
+  /** What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task. */
+  effects?: Effects;
+  /** How this implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies. */
+  execution?: Execution;
   /** The instance id of the agent this implementation is bound to. */
   instanceId?: InputMaybe<Scalars['String']['input']>;
   /** The interface of the implementation. This is used to group implementations together in the UI */
@@ -2249,6 +2241,8 @@ export type MediaUploadGrant = {
 
 export type MemoryDrawer = {
   __typename?: 'MemoryDrawer';
+  /** Whether the agent minted this drawer's reference: it is addressed by resourceId rather than by id. */
+  agentMinted: Scalars['Boolean']['output'];
   createdAt: Scalars['DateTime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
@@ -3255,8 +3249,6 @@ export type Query = {
   actions: Array<Action>;
   /** Fetch a specific agent by ID or by app, version and device_id. */
   agent: Agent;
-  /** The journal of an agent session in position order: everything the agent reported (task events, locks, state patches, snapshots, the session init). `sessionId` defaults to the agent's newest journaled session; `afterPos` pages forward. */
-  agentJournal: Array<AgentJournalEntry>;
   /** Retrieve all compute agents. */
   agents: Array<Agent>;
   /** The built-in base catalog every definition and blok is validated against before any registered UI catalog (virtual: shipped with the server, not registered). */
@@ -3361,8 +3353,6 @@ export type Query = {
   state: State;
   /** Get state at global revision. */
   stateAtGlobalRev: Array<Snapshot>;
-  /** The agent's states as of a journal position: the revision the last state-carrying entry at or before `pos` reached, reconstructed like `stateAtGlobalRev`. */
-  stateAtPos: Array<Snapshot>;
   /** Retrieve a state definition by ID. */
   stateDefinition: StateDefinition;
   /** Available state schemas. */
@@ -3447,16 +3437,6 @@ export type QueryAgentArgs = {
   deviceId?: InputMaybe<Scalars['String']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   version?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QueryAgentJournalArgs = {
-  afterPos?: InputMaybe<Scalars['Int']['input']>;
-  agent: Scalars['ID']['input'];
-  kinds?: InputMaybe<Array<Scalars['String']['input']>>;
-  limit?: Scalars['Int']['input'];
-  sessionId?: InputMaybe<Scalars['String']['input']>;
-  task?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -3746,14 +3726,6 @@ export type QueryStateArgs = {
 
 export type QueryStateAtGlobalRevArgs = {
   globalRevision: Scalars['Int']['input'];
-  sessionId?: InputMaybe<Scalars['String']['input']>;
-  stateId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type QueryStateAtPosArgs = {
-  agent: Scalars['ID']['input'];
-  pos: Scalars['Int']['input'];
   sessionId?: InputMaybe<Scalars['String']['input']>;
   stateId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -4776,6 +4748,8 @@ export type Task = {
   args: Scalars['AnyDefault']['output'];
   /** Canonical sha256 of the assign args — the replay-discovery key. */
   argsHash?: Maybe<Scalars['String']['output']>;
+  /** What the parent calls this child; null for roots and for keyless agents. */
+  callKey?: Maybe<Scalars['String']['output']>;
   /** Caller that created this task. */
   caller?: Maybe<Caller>;
   /** Indicates if the task is being captured for logging or debugging. */
@@ -4810,6 +4784,8 @@ export type Task = {
   notBefore?: Maybe<Scalars['DateTime']['output']>;
   /** Parent task that triggered this one. */
   parent?: Maybe<Task>;
+  /** The parent's step this child took; null for roots and for children of agents without numbering. */
+  parentStep?: Maybe<Scalars['Int']['output']>;
   /** Optional external reference for tracking. */
   reference?: Maybe<Scalars['String']['output']>;
   /** Resolution used to resolve dependencies for this task. */
@@ -4889,16 +4865,20 @@ export type TaskChangeEvent = {
 /** An event that occurred during a task. */
 export type TaskEvent = {
   __typename?: 'TaskEvent';
-  /** The agent-journal position of the report that wrote this event; null for server-written events and agents without a journal. */
+  /** The session position (pos) of the report that wrote this event; null for server-written events and agents without numbering. */
   agentPos?: Maybe<Scalars['Int']['output']>;
-  /** When the agent recorded the report; null for server-written events and agents without a journal. */
+  /** When the agent recorded the report; null for server-written events and agents without numbering. */
   agentTs?: Maybe<Scalars['DateTime']['output']>;
   /** Time when event was created. */
   createdAt: Scalars['DateTime']['output'];
   /** If this event was delegated, the task it was delegated to. */
   delegatedTo?: Maybe<Task>;
+  /** EFFECT events: NOW, RANDOM, SLEEP or RECORD. */
+  effect?: Maybe<Scalars['String']['output']>;
   /** Unique ID of the event. */
   id: Scalars['ID']['output'];
+  /** EFFECT events: what the task calls this value; a replay matches values by key. */
+  key?: Maybe<Scalars['String']['output']>;
   /** Kind of task event. */
   kind: TaskEventKind;
   /** Log level of the event (LOG events; INFO when unset). */
@@ -4911,8 +4891,12 @@ export type TaskEvent = {
   reference: Scalars['String']['output'];
   /** Optional return values. */
   returns?: Maybe<Scalars['AnyDefault']['output']>;
+  /** The report's step within its task; a task's history in step order. Null for server-written events. */
+  step?: Maybe<Scalars['Int']['output']>;
   /** Associated task. */
   task: Task;
+  /** EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline). */
+  value?: Maybe<Scalars['AnyDefault']['output']>;
 };
 
 /** Slim, non-traversable task event for change feeds. */
@@ -4925,6 +4909,8 @@ export type TaskEventChange = {
   progress?: Maybe<Scalars['Int']['output']>;
   returns?: Maybe<Scalars['AnyDefault']['output']>;
   task: Scalars['ID']['output'];
+  /** EFFECT: the value taken. LOST: what is known (started, last_progress, effects, reason). */
+  value?: Maybe<Scalars['AnyDefault']['output']>;
 };
 
 /** A way to filter task events */
@@ -4947,11 +4933,13 @@ export enum TaskEventKind {
   Completed = 'COMPLETED',
   Critical = 'CRITICAL',
   Delegate = 'DELEGATE',
-  Disconnected = 'DISCONNECTED',
+  Effect = 'EFFECT',
   Failed = 'FAILED',
   Interrupted = 'INTERRUPTED',
   Interrupting = 'INTERRUPTING',
+  LateReport = 'LATE_REPORT',
   Log = 'LOG',
+  Lost = 'LOST',
   Paused = 'PAUSED',
   Pausing = 'PAUSING',
   Progress = 'PROGRESS',
@@ -4964,8 +4952,9 @@ export enum TaskEventKind {
 }
 
 export type TaskEventOrder =
-  { agentPos: Ordering; createdAt?: never; }
-  |  { agentPos?: never; createdAt: Ordering; };
+  { agentPos: Ordering; createdAt?: never; step?: never; }
+  |  { agentPos?: never; createdAt: Ordering; step?: never; }
+  |  { agentPos?: never; createdAt?: never; step: Ordering; };
 
 /** Numeric/aggregatable fields of Task */
 export enum TaskField {
@@ -5348,7 +5337,7 @@ export type UnblockInput = {
 };
 
 export type UnshelveMemoryDrawerInput = {
-  /** The resource ID of the drawer. */
+  /** The drawer: its resource ID (as agent-minted drawers are referenced) or its ID. */
   id: Scalars['String']['input'];
 };
 
@@ -5649,6 +5638,30 @@ export type AgentChangeEventFragment = { __typename?: 'AgentChangeEvent', delete
   ) | null };
 
 export type HoverAgentFragment = { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, latestHardwareRecord?: { __typename?: 'HardwareRecord', cpuCount: number, cpuVendorName: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> };
+
+export type ListScheduleFragment = { __typename?: 'Schedule', id: string, name: string, enabled: boolean, cron?: string | null, intervalSeconds?: number | null, timezone: string, consecutiveFailures: number, lastError?: string | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null, nextRun?: { __typename?: 'Task', id: string, notBefore?: any | null, latestEventKind: TaskEventKind, isDone: boolean } | null };
+
+export type DetailScheduleFragment = (
+  { __typename?: 'Schedule', args: any, interface?: string | null, ephemeralRuns: boolean, createdAt: any, updatedAt: any, runs: Array<(
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  )> }
+  & ListScheduleFragment
+);
+
+export type ListTriggerFragment = { __typename?: 'Trigger', id: string, name: string, enabled: boolean, identifier: string, kind: SignalKind, port: string, conditions: any, consecutiveFailures: number, lastError?: string | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null };
+
+export type DetailTriggerFragment = (
+  { __typename?: 'Trigger', args: any, interface?: string | null, createdAt: any, updatedAt: any, runs: Array<(
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  )> }
+  & ListTriggerFragment
+);
+
+export type ListSignalFragment = { __typename?: 'Signal', id: string, identifier: string, kind: SignalKind, object: string, service: string, descriptors: any, occurredAt?: any | null, receivedAt: any, processedAt?: any | null, causingTask?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } } | null, runs: Array<{ __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } }> };
+
+export type SignalDeclarationFragment = { __typename?: 'SignalDeclaration', id: string, identifier: string, kind: SignalKind, service: string, description?: string | null, descriptorKeys: Array<string> };
 
 export type BlokAgentCallLeafFragment = { __typename?: 'AgentCall', dependency: string, operation: string, arguments?: Array<(
     { __typename?: 'ActionArgument' }
@@ -6651,6 +6664,70 @@ export type InterruptMutation = { __typename?: 'Mutation', interrupt: (
     & PostmanTaskFragment
   ) };
 
+export type CreateScheduleMutationVariables = Exact<{
+  input: CreateScheduleInput;
+}>;
+
+
+export type CreateScheduleMutation = { __typename?: 'Mutation', createSchedule: (
+    { __typename?: 'Schedule' }
+    & DetailScheduleFragment
+  ) };
+
+export type UpdateScheduleMutationVariables = Exact<{
+  input: UpdateScheduleInput;
+}>;
+
+
+export type UpdateScheduleMutation = { __typename?: 'Mutation', updateSchedule: (
+    { __typename?: 'Schedule' }
+    & DetailScheduleFragment
+  ) };
+
+export type DeleteScheduleMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteScheduleMutation = { __typename?: 'Mutation', deleteSchedule: string };
+
+export type TriggerScheduleMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TriggerScheduleMutation = { __typename?: 'Mutation', triggerSchedule: (
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  ) };
+
+export type CreateTriggerMutationVariables = Exact<{
+  input: CreateTriggerInput;
+}>;
+
+
+export type CreateTriggerMutation = { __typename?: 'Mutation', createTrigger: (
+    { __typename?: 'Trigger' }
+    & DetailTriggerFragment
+  ) };
+
+export type UpdateTriggerMutationVariables = Exact<{
+  input: UpdateTriggerInput;
+}>;
+
+
+export type UpdateTriggerMutation = { __typename?: 'Mutation', updateTrigger: (
+    { __typename?: 'Trigger' }
+    & DetailTriggerFragment
+  ) };
+
+export type DeleteTriggerMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteTriggerMutation = { __typename?: 'Mutation', deleteTrigger: string };
+
 export type CreateBlokMutationVariables = Exact<{
   input: CreateBlokInput;
 }>;
@@ -7142,6 +7219,90 @@ export type HoverAgentQuery = { __typename?: 'Query', agent: (
     { __typename?: 'Agent' }
     & HoverAgentFragment
   ) };
+
+export type ListSchedulesQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListSchedulesQuery = { __typename?: 'Query', schedules: Array<(
+    { __typename?: 'Schedule' }
+    & ListScheduleFragment
+  )> };
+
+export type ScheduleQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ScheduleQuery = { __typename?: 'Query', schedule: (
+    { __typename?: 'Schedule' }
+    & DetailScheduleFragment
+  ) };
+
+export type ListTriggersQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListTriggersQuery = { __typename?: 'Query', triggers: Array<(
+    { __typename?: 'Trigger' }
+    & ListTriggerFragment
+  )> };
+
+export type TriggerQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TriggerQuery = { __typename?: 'Query', trigger: (
+    { __typename?: 'Trigger' }
+    & DetailTriggerFragment
+  ) };
+
+export type ListSignalsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListSignalsQuery = { __typename?: 'Query', signals: Array<(
+    { __typename?: 'Signal' }
+    & ListSignalFragment
+  )> };
+
+export type SignalDeclarationsQueryVariables = Exact<{
+  identifier?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type SignalDeclarationsQuery = { __typename?: 'Query', signalDeclarations: Array<(
+    { __typename?: 'SignalDeclaration' }
+    & SignalDeclarationFragment
+  )> };
+
+export type ScheduleActionOptionsQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']['input']>;
+  values?: InputMaybe<Array<Scalars['ID']['input']>>;
+}>;
+
+
+export type ScheduleActionOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Action', description?: string | null, value: string, label: string }> };
+
+export type TriggerActionOptionsQueryVariables = Exact<{
+  identifier: Scalars['String']['input'];
+  search?: InputMaybe<Scalars['String']['input']>;
+  values?: InputMaybe<Array<Scalars['ID']['input']>>;
+}>;
+
+
+export type TriggerActionOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Action', description?: string | null, value: string, label: string }> };
+
+export type AutomationPinOptionsQueryVariables = Exact<{
+  action: Scalars['ID']['input'];
+}>;
+
+
+export type AutomationPinOptionsQuery = { __typename?: 'Query', implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type GetBlokQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8954,6 +9115,117 @@ export const HoverAgentFragmentDoc = gql`
   }
 }
     `;
+export const ListScheduleFragmentDoc = gql`
+    fragment ListSchedule on Schedule {
+  id
+  name
+  enabled
+  cron
+  intervalSeconds
+  timezone
+  consecutiveFailures
+  lastError
+  action {
+    id
+    name
+  }
+  agent {
+    id
+    name
+  }
+  nextRun {
+    id
+    notBefore
+    latestEventKind
+    isDone
+  }
+}
+    `;
+export const DetailScheduleFragmentDoc = gql`
+    fragment DetailSchedule on Schedule {
+  ...ListSchedule
+  args
+  interface
+  ephemeralRuns
+  createdAt
+  updatedAt
+  runs(limit: 24) {
+    ...ListTask
+  }
+}
+    ${ListScheduleFragmentDoc}
+${ListTaskFragmentDoc}`;
+export const ListTriggerFragmentDoc = gql`
+    fragment ListTrigger on Trigger {
+  id
+  name
+  enabled
+  identifier
+  kind
+  port
+  conditions
+  consecutiveFailures
+  lastError
+  action {
+    id
+    name
+  }
+  agent {
+    id
+    name
+  }
+}
+    `;
+export const DetailTriggerFragmentDoc = gql`
+    fragment DetailTrigger on Trigger {
+  ...ListTrigger
+  args
+  interface
+  createdAt
+  updatedAt
+  runs(limit: 24) {
+    ...ListTask
+  }
+}
+    ${ListTriggerFragmentDoc}
+${ListTaskFragmentDoc}`;
+export const ListSignalFragmentDoc = gql`
+    fragment ListSignal on Signal {
+  id
+  identifier
+  kind
+  object
+  service
+  descriptors
+  occurredAt
+  receivedAt
+  processedAt
+  causingTask {
+    id
+    action {
+      id
+      name
+    }
+  }
+  runs {
+    id
+    action {
+      id
+      name
+    }
+  }
+}
+    `;
+export const SignalDeclarationFragmentDoc = gql`
+    fragment SignalDeclaration on SignalDeclaration {
+  id
+  identifier
+  kind
+  service
+  description
+  descriptorKeys
+}
+    `;
 export const ListBlokFragmentDoc = gql`
     fragment ListBlok on Blok {
   id
@@ -10708,6 +10980,233 @@ export function useInterruptMutation(baseOptions?: ApolloReactHooks.MutationHook
 export type InterruptMutationHookResult = ReturnType<typeof useInterruptMutation>;
 export type InterruptMutationResult = Apollo.MutationResult<InterruptMutation>;
 export type InterruptMutationOptions = Apollo.BaseMutationOptions<InterruptMutation, InterruptMutationVariables>;
+export const CreateScheduleDocument = gql`
+    mutation CreateSchedule($input: CreateScheduleInput!) {
+  createSchedule(input: $input) {
+    ...DetailSchedule
+  }
+}
+    ${DetailScheduleFragmentDoc}`;
+export type CreateScheduleMutationFn = Apollo.MutationFunction<CreateScheduleMutation, CreateScheduleMutationVariables>;
+
+/**
+ * __useCreateScheduleMutation__
+ *
+ * To run a mutation, you first call `useCreateScheduleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateScheduleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createScheduleMutation, { data, loading, error }] = useCreateScheduleMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateScheduleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateScheduleMutation, CreateScheduleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateScheduleMutation, CreateScheduleMutationVariables>(CreateScheduleDocument, options);
+      }
+export type CreateScheduleMutationHookResult = ReturnType<typeof useCreateScheduleMutation>;
+export type CreateScheduleMutationResult = Apollo.MutationResult<CreateScheduleMutation>;
+export type CreateScheduleMutationOptions = Apollo.BaseMutationOptions<CreateScheduleMutation, CreateScheduleMutationVariables>;
+export const UpdateScheduleDocument = gql`
+    mutation UpdateSchedule($input: UpdateScheduleInput!) {
+  updateSchedule(input: $input) {
+    ...DetailSchedule
+  }
+}
+    ${DetailScheduleFragmentDoc}`;
+export type UpdateScheduleMutationFn = Apollo.MutationFunction<UpdateScheduleMutation, UpdateScheduleMutationVariables>;
+
+/**
+ * __useUpdateScheduleMutation__
+ *
+ * To run a mutation, you first call `useUpdateScheduleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateScheduleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateScheduleMutation, { data, loading, error }] = useUpdateScheduleMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateScheduleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateScheduleMutation, UpdateScheduleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateScheduleMutation, UpdateScheduleMutationVariables>(UpdateScheduleDocument, options);
+      }
+export type UpdateScheduleMutationHookResult = ReturnType<typeof useUpdateScheduleMutation>;
+export type UpdateScheduleMutationResult = Apollo.MutationResult<UpdateScheduleMutation>;
+export type UpdateScheduleMutationOptions = Apollo.BaseMutationOptions<UpdateScheduleMutation, UpdateScheduleMutationVariables>;
+export const DeleteScheduleDocument = gql`
+    mutation DeleteSchedule($id: ID!) {
+  deleteSchedule(input: {id: $id})
+}
+    `;
+export type DeleteScheduleMutationFn = Apollo.MutationFunction<DeleteScheduleMutation, DeleteScheduleMutationVariables>;
+
+/**
+ * __useDeleteScheduleMutation__
+ *
+ * To run a mutation, you first call `useDeleteScheduleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteScheduleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteScheduleMutation, { data, loading, error }] = useDeleteScheduleMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteScheduleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteScheduleMutation, DeleteScheduleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteScheduleMutation, DeleteScheduleMutationVariables>(DeleteScheduleDocument, options);
+      }
+export type DeleteScheduleMutationHookResult = ReturnType<typeof useDeleteScheduleMutation>;
+export type DeleteScheduleMutationResult = Apollo.MutationResult<DeleteScheduleMutation>;
+export type DeleteScheduleMutationOptions = Apollo.BaseMutationOptions<DeleteScheduleMutation, DeleteScheduleMutationVariables>;
+export const TriggerScheduleDocument = gql`
+    mutation TriggerSchedule($id: ID!) {
+  triggerSchedule(input: {id: $id}) {
+    ...ListTask
+  }
+}
+    ${ListTaskFragmentDoc}`;
+export type TriggerScheduleMutationFn = Apollo.MutationFunction<TriggerScheduleMutation, TriggerScheduleMutationVariables>;
+
+/**
+ * __useTriggerScheduleMutation__
+ *
+ * To run a mutation, you first call `useTriggerScheduleMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useTriggerScheduleMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [triggerScheduleMutation, { data, loading, error }] = useTriggerScheduleMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTriggerScheduleMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<TriggerScheduleMutation, TriggerScheduleMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<TriggerScheduleMutation, TriggerScheduleMutationVariables>(TriggerScheduleDocument, options);
+      }
+export type TriggerScheduleMutationHookResult = ReturnType<typeof useTriggerScheduleMutation>;
+export type TriggerScheduleMutationResult = Apollo.MutationResult<TriggerScheduleMutation>;
+export type TriggerScheduleMutationOptions = Apollo.BaseMutationOptions<TriggerScheduleMutation, TriggerScheduleMutationVariables>;
+export const CreateTriggerDocument = gql`
+    mutation CreateTrigger($input: CreateTriggerInput!) {
+  createTrigger(input: $input) {
+    ...DetailTrigger
+  }
+}
+    ${DetailTriggerFragmentDoc}`;
+export type CreateTriggerMutationFn = Apollo.MutationFunction<CreateTriggerMutation, CreateTriggerMutationVariables>;
+
+/**
+ * __useCreateTriggerMutation__
+ *
+ * To run a mutation, you first call `useCreateTriggerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateTriggerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createTriggerMutation, { data, loading, error }] = useCreateTriggerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateTriggerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateTriggerMutation, CreateTriggerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateTriggerMutation, CreateTriggerMutationVariables>(CreateTriggerDocument, options);
+      }
+export type CreateTriggerMutationHookResult = ReturnType<typeof useCreateTriggerMutation>;
+export type CreateTriggerMutationResult = Apollo.MutationResult<CreateTriggerMutation>;
+export type CreateTriggerMutationOptions = Apollo.BaseMutationOptions<CreateTriggerMutation, CreateTriggerMutationVariables>;
+export const UpdateTriggerDocument = gql`
+    mutation UpdateTrigger($input: UpdateTriggerInput!) {
+  updateTrigger(input: $input) {
+    ...DetailTrigger
+  }
+}
+    ${DetailTriggerFragmentDoc}`;
+export type UpdateTriggerMutationFn = Apollo.MutationFunction<UpdateTriggerMutation, UpdateTriggerMutationVariables>;
+
+/**
+ * __useUpdateTriggerMutation__
+ *
+ * To run a mutation, you first call `useUpdateTriggerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateTriggerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateTriggerMutation, { data, loading, error }] = useUpdateTriggerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateTriggerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateTriggerMutation, UpdateTriggerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateTriggerMutation, UpdateTriggerMutationVariables>(UpdateTriggerDocument, options);
+      }
+export type UpdateTriggerMutationHookResult = ReturnType<typeof useUpdateTriggerMutation>;
+export type UpdateTriggerMutationResult = Apollo.MutationResult<UpdateTriggerMutation>;
+export type UpdateTriggerMutationOptions = Apollo.BaseMutationOptions<UpdateTriggerMutation, UpdateTriggerMutationVariables>;
+export const DeleteTriggerDocument = gql`
+    mutation DeleteTrigger($id: ID!) {
+  deleteTrigger(input: {id: $id})
+}
+    `;
+export type DeleteTriggerMutationFn = Apollo.MutationFunction<DeleteTriggerMutation, DeleteTriggerMutationVariables>;
+
+/**
+ * __useDeleteTriggerMutation__
+ *
+ * To run a mutation, you first call `useDeleteTriggerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteTriggerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteTriggerMutation, { data, loading, error }] = useDeleteTriggerMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteTriggerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteTriggerMutation, DeleteTriggerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteTriggerMutation, DeleteTriggerMutationVariables>(DeleteTriggerDocument, options);
+      }
+export type DeleteTriggerMutationHookResult = ReturnType<typeof useDeleteTriggerMutation>;
+export type DeleteTriggerMutationResult = Apollo.MutationResult<DeleteTriggerMutation>;
+export type DeleteTriggerMutationOptions = Apollo.BaseMutationOptions<DeleteTriggerMutation, DeleteTriggerMutationVariables>;
 export const CreateBlokDocument = gql`
     mutation CreateBlok($input: CreateBlokInput!) {
   createBlok(input: $input) {
@@ -12451,6 +12950,340 @@ export function useHoverAgentLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type HoverAgentQueryHookResult = ReturnType<typeof useHoverAgentQuery>;
 export type HoverAgentLazyQueryHookResult = ReturnType<typeof useHoverAgentLazyQuery>;
 export type HoverAgentQueryResult = Apollo.QueryResult<HoverAgentQuery, HoverAgentQueryVariables>;
+export const ListSchedulesDocument = gql`
+    query ListSchedules($pagination: OffsetPaginationInput) {
+  schedules(pagination: $pagination) {
+    ...ListSchedule
+  }
+}
+    ${ListScheduleFragmentDoc}`;
+
+/**
+ * __useListSchedulesQuery__
+ *
+ * To run a query within a React component, call `useListSchedulesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListSchedulesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListSchedulesQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListSchedulesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListSchedulesQuery, ListSchedulesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListSchedulesQuery, ListSchedulesQueryVariables>(ListSchedulesDocument, options);
+      }
+export function useListSchedulesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListSchedulesQuery, ListSchedulesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListSchedulesQuery, ListSchedulesQueryVariables>(ListSchedulesDocument, options);
+        }
+export type ListSchedulesQueryHookResult = ReturnType<typeof useListSchedulesQuery>;
+export type ListSchedulesLazyQueryHookResult = ReturnType<typeof useListSchedulesLazyQuery>;
+export type ListSchedulesQueryResult = Apollo.QueryResult<ListSchedulesQuery, ListSchedulesQueryVariables>;
+export const ScheduleDocument = gql`
+    query Schedule($id: ID!) {
+  schedule(id: $id) {
+    ...DetailSchedule
+  }
+}
+    ${DetailScheduleFragmentDoc}`;
+
+/**
+ * __useScheduleQuery__
+ *
+ * To run a query within a React component, call `useScheduleQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScheduleQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useScheduleQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useScheduleQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ScheduleQuery, ScheduleQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ScheduleQuery, ScheduleQueryVariables>(ScheduleDocument, options);
+      }
+export function useScheduleLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ScheduleQuery, ScheduleQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ScheduleQuery, ScheduleQueryVariables>(ScheduleDocument, options);
+        }
+export type ScheduleQueryHookResult = ReturnType<typeof useScheduleQuery>;
+export type ScheduleLazyQueryHookResult = ReturnType<typeof useScheduleLazyQuery>;
+export type ScheduleQueryResult = Apollo.QueryResult<ScheduleQuery, ScheduleQueryVariables>;
+export const ListTriggersDocument = gql`
+    query ListTriggers($pagination: OffsetPaginationInput) {
+  triggers(pagination: $pagination) {
+    ...ListTrigger
+  }
+}
+    ${ListTriggerFragmentDoc}`;
+
+/**
+ * __useListTriggersQuery__
+ *
+ * To run a query within a React component, call `useListTriggersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListTriggersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListTriggersQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListTriggersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListTriggersQuery, ListTriggersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListTriggersQuery, ListTriggersQueryVariables>(ListTriggersDocument, options);
+      }
+export function useListTriggersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListTriggersQuery, ListTriggersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListTriggersQuery, ListTriggersQueryVariables>(ListTriggersDocument, options);
+        }
+export type ListTriggersQueryHookResult = ReturnType<typeof useListTriggersQuery>;
+export type ListTriggersLazyQueryHookResult = ReturnType<typeof useListTriggersLazyQuery>;
+export type ListTriggersQueryResult = Apollo.QueryResult<ListTriggersQuery, ListTriggersQueryVariables>;
+export const TriggerDocument = gql`
+    query Trigger($id: ID!) {
+  trigger(id: $id) {
+    ...DetailTrigger
+  }
+}
+    ${DetailTriggerFragmentDoc}`;
+
+/**
+ * __useTriggerQuery__
+ *
+ * To run a query within a React component, call `useTriggerQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTriggerQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTriggerQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTriggerQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TriggerQuery, TriggerQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TriggerQuery, TriggerQueryVariables>(TriggerDocument, options);
+      }
+export function useTriggerLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TriggerQuery, TriggerQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TriggerQuery, TriggerQueryVariables>(TriggerDocument, options);
+        }
+export type TriggerQueryHookResult = ReturnType<typeof useTriggerQuery>;
+export type TriggerLazyQueryHookResult = ReturnType<typeof useTriggerLazyQuery>;
+export type TriggerQueryResult = Apollo.QueryResult<TriggerQuery, TriggerQueryVariables>;
+export const ListSignalsDocument = gql`
+    query ListSignals($pagination: OffsetPaginationInput) {
+  signals(pagination: $pagination) {
+    ...ListSignal
+  }
+}
+    ${ListSignalFragmentDoc}`;
+
+/**
+ * __useListSignalsQuery__
+ *
+ * To run a query within a React component, call `useListSignalsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListSignalsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListSignalsQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListSignalsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListSignalsQuery, ListSignalsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListSignalsQuery, ListSignalsQueryVariables>(ListSignalsDocument, options);
+      }
+export function useListSignalsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListSignalsQuery, ListSignalsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListSignalsQuery, ListSignalsQueryVariables>(ListSignalsDocument, options);
+        }
+export type ListSignalsQueryHookResult = ReturnType<typeof useListSignalsQuery>;
+export type ListSignalsLazyQueryHookResult = ReturnType<typeof useListSignalsLazyQuery>;
+export type ListSignalsQueryResult = Apollo.QueryResult<ListSignalsQuery, ListSignalsQueryVariables>;
+export const SignalDeclarationsDocument = gql`
+    query SignalDeclarations($identifier: String) {
+  signalDeclarations(identifier: $identifier) {
+    ...SignalDeclaration
+  }
+}
+    ${SignalDeclarationFragmentDoc}`;
+
+/**
+ * __useSignalDeclarationsQuery__
+ *
+ * To run a query within a React component, call `useSignalDeclarationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSignalDeclarationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSignalDeclarationsQuery({
+ *   variables: {
+ *      identifier: // value for 'identifier'
+ *   },
+ * });
+ */
+export function useSignalDeclarationsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SignalDeclarationsQuery, SignalDeclarationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SignalDeclarationsQuery, SignalDeclarationsQueryVariables>(SignalDeclarationsDocument, options);
+      }
+export function useSignalDeclarationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SignalDeclarationsQuery, SignalDeclarationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SignalDeclarationsQuery, SignalDeclarationsQueryVariables>(SignalDeclarationsDocument, options);
+        }
+export type SignalDeclarationsQueryHookResult = ReturnType<typeof useSignalDeclarationsQuery>;
+export type SignalDeclarationsLazyQueryHookResult = ReturnType<typeof useSignalDeclarationsLazyQuery>;
+export type SignalDeclarationsQueryResult = Apollo.QueryResult<SignalDeclarationsQuery, SignalDeclarationsQueryVariables>;
+export const ScheduleActionOptionsDocument = gql`
+    query ScheduleActionOptions($search: String, $values: [ID!]) {
+  options: actions(
+    filters: {search: $search, ids: $values}
+    pagination: {limit: 30}
+  ) {
+    value: id
+    label: name
+    description
+  }
+}
+    `;
+
+/**
+ * __useScheduleActionOptionsQuery__
+ *
+ * To run a query within a React component, call `useScheduleActionOptionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useScheduleActionOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useScheduleActionOptionsQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *      values: // value for 'values'
+ *   },
+ * });
+ */
+export function useScheduleActionOptionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ScheduleActionOptionsQuery, ScheduleActionOptionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ScheduleActionOptionsQuery, ScheduleActionOptionsQueryVariables>(ScheduleActionOptionsDocument, options);
+      }
+export function useScheduleActionOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ScheduleActionOptionsQuery, ScheduleActionOptionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ScheduleActionOptionsQuery, ScheduleActionOptionsQueryVariables>(ScheduleActionOptionsDocument, options);
+        }
+export type ScheduleActionOptionsQueryHookResult = ReturnType<typeof useScheduleActionOptionsQuery>;
+export type ScheduleActionOptionsLazyQueryHookResult = ReturnType<typeof useScheduleActionOptionsLazyQuery>;
+export type ScheduleActionOptionsQueryResult = Apollo.QueryResult<ScheduleActionOptionsQuery, ScheduleActionOptionsQueryVariables>;
+export const TriggerActionOptionsDocument = gql`
+    query TriggerActionOptions($identifier: String!, $search: String, $values: [ID!]) {
+  options: actions(
+    filters: {search: $search, ids: $values, demands: [{kind: ARGS, matches: [{kind: STRUCTURE, identifier: $identifier}]}]}
+    pagination: {limit: 30}
+  ) {
+    value: id
+    label: name
+    description
+  }
+}
+    `;
+
+/**
+ * __useTriggerActionOptionsQuery__
+ *
+ * To run a query within a React component, call `useTriggerActionOptionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTriggerActionOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTriggerActionOptionsQuery({
+ *   variables: {
+ *      identifier: // value for 'identifier'
+ *      search: // value for 'search'
+ *      values: // value for 'values'
+ *   },
+ * });
+ */
+export function useTriggerActionOptionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TriggerActionOptionsQuery, TriggerActionOptionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TriggerActionOptionsQuery, TriggerActionOptionsQueryVariables>(TriggerActionOptionsDocument, options);
+      }
+export function useTriggerActionOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TriggerActionOptionsQuery, TriggerActionOptionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TriggerActionOptionsQuery, TriggerActionOptionsQueryVariables>(TriggerActionOptionsDocument, options);
+        }
+export type TriggerActionOptionsQueryHookResult = ReturnType<typeof useTriggerActionOptionsQuery>;
+export type TriggerActionOptionsLazyQueryHookResult = ReturnType<typeof useTriggerActionOptionsLazyQuery>;
+export type TriggerActionOptionsQueryResult = Apollo.QueryResult<TriggerActionOptionsQuery, TriggerActionOptionsQueryVariables>;
+export const AutomationPinOptionsDocument = gql`
+    query AutomationPinOptions($action: ID!) {
+  implementations(filters: {action: {ids: [$action]}}, pagination: {limit: 50}) {
+    id
+    interface
+    agent {
+      id
+      name
+      connected
+    }
+  }
+}
+    `;
+
+/**
+ * __useAutomationPinOptionsQuery__
+ *
+ * To run a query within a React component, call `useAutomationPinOptionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAutomationPinOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAutomationPinOptionsQuery({
+ *   variables: {
+ *      action: // value for 'action'
+ *   },
+ * });
+ */
+export function useAutomationPinOptionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<AutomationPinOptionsQuery, AutomationPinOptionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<AutomationPinOptionsQuery, AutomationPinOptionsQueryVariables>(AutomationPinOptionsDocument, options);
+      }
+export function useAutomationPinOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<AutomationPinOptionsQuery, AutomationPinOptionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<AutomationPinOptionsQuery, AutomationPinOptionsQueryVariables>(AutomationPinOptionsDocument, options);
+        }
+export type AutomationPinOptionsQueryHookResult = ReturnType<typeof useAutomationPinOptionsQuery>;
+export type AutomationPinOptionsLazyQueryHookResult = ReturnType<typeof useAutomationPinOptionsLazyQuery>;
+export type AutomationPinOptionsQueryResult = Apollo.QueryResult<AutomationPinOptionsQuery, AutomationPinOptionsQueryVariables>;
 export const GetBlokDocument = gql`
     query GetBlok($id: ID!) {
   blok(id: $id) {

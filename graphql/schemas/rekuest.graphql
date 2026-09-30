@@ -651,44 +651,6 @@ input AgentInput {
   name: String = null
 }
 
-"""
-One entry of an agent's journal: a frame the agent reported, at its position in the agent session.
-"""
-type AgentJournalEntry {
-  """The agent that reported the entry."""
-  agent: Agent!
-
-  """When the agent recorded the entry."""
-  agentTs: DateTime
-
-  """
-  The state revision the entry carries (patches and snapshots; 0 for the session init), null otherwise.
-  """
-  globalRev: Int
-  id: ID!
-
-  """The wire type of the frame (STARTED, YIELD, STATE_PATCH, LOCK, …)."""
-  kind: String!
-
-  """The frame's id, as it went on the wire."""
-  messageId: String!
-
-  """The frame as the agent sent it (without the stream-level seq)."""
-  payload: Args!
-
-  """The position in the agent session's journal (1, 2, 3, … no gaps)."""
-  pos: Int!
-
-  """When the server first received the entry."""
-  receivedAt: DateTime!
-
-  """The agent session identifier this entry belongs to."""
-  sessionId: String!
-
-  """The task the entry belongs to, if it names one of this agent's tasks."""
-  task: Task
-}
-
 enum AgentKind {
   WEBHOOK
   WEBSOCKET
@@ -1457,7 +1419,9 @@ input ClientOrder @oneOf {
 
 """The input for collecting a shelved item in a drawer."""
 input CollectInput {
-  """The drawer ID to collect"""
+  """
+  The drawers to collect: each an ID or a resource ID (as agent-minted drawers are referenced), within the caller's organization
+  """
   drawers: [ID!]!
 }
 
@@ -1950,7 +1914,7 @@ input DefinitionInput {
   portGroups: [PortGroupInput!]! = []
 
   """
-  Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with a PHYSICAL effect class.
+  Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with IRREVERSIBLE effects.
   """
   pure: Boolean! = false
 
@@ -2201,14 +2165,6 @@ interface Effect {
   source: String
 }
 
-"""
-The effect class of an implementation — declared by the implementation, never the caller. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world (no UPSERT), so an ambiguous failure is terminal and must not be retried.
-"""
-enum EffectClass {
-  NONE
-  PHYSICAL
-}
-
 "\n    An effect is a way to modify a port based on a condition. For example,\n    you could have an effect that hides the port if another port meets a condition,\n    e.g. when the user selects a certain option in a dropdown, another port is hidden.\n\n    The condition is a pure blok UtilCall (`call`) evaluated client-side against the\n    catalog; it must return a boolean deciding whether the effect applies. `dependencies`\n    is the authoritative list of other ports the call may reference (plus `value` for the\n    port's own value).\n    "
 input EffectInput {
   """
@@ -2248,9 +2204,27 @@ enum EffectKind {
 }
 
 """
+What running an implementation again would do to the world. Purely informational: shown to whoever decides about a lost task.
+"""
+enum Effects {
+  IRREVERSIBLE
+  NONE
+  REPEATABLE
+  UNKNOWN
+}
+
+"""
 A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it).
 """
 scalar Embedding
+
+"""
+How an implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies; a PLAIN one's task ends LOST.
+"""
+enum Execution {
+  PLAIN
+  WORKFLOW
+}
 
 input FinishMediaUploadInput {
   storeId: String!
@@ -2378,6 +2352,11 @@ type Implementation {
   """Agent running this implementation."""
   agent: Agent!
 
+  """
+  A hash of the implementation's code; a workflow is only resumed by an implementation with the same hash.
+  """
+  codeHash: String
+
   """Dependencies required by this action."""
   dependencies(filters: DependencyFilter, pagination: OffsetPaginationInput): [Dependency!]!
 
@@ -2385,6 +2364,16 @@ type Implementation {
   Non-fatal registration findings, e.g. validator/effect calls naming operations that neither the base catalog nor the definition's catalog provides.
   """
   diagnostics: [Diagnostic!]!
+
+  """
+  What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task.
+  """
+  effects: Effects!
+
+  """
+  How this implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies.
+  """
+  execution: Execution!
 
   """
   Projection config (bound params, arg/dependency/return maps) when this is a higher-order implementation.
@@ -2488,6 +2477,11 @@ A implementation is a blueprint for a action. It is composed of a definition, a 
 """
 input ImplementationInput {
   """
+  A hash of the implementation's code. A workflow is only resumed by an implementation with the same hash.
+  """
+  codeHash: String = null
+
+  """
   The definition of the implementation. This is used to uniquely identify the implementation
   """
   definition: DefinitionInput!
@@ -2496,9 +2490,14 @@ input ImplementationInput {
   dependencies: [AgentDependencyInput!]! = []
 
   """
-  The effect class of this implementation. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world and an ambiguous failure is terminal (never retried). Declared by the implementation here — never by the caller.
+  What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task.
   """
-  effect: EffectClass! = NONE
+  effects: Effects! = UNKNOWN
+
+  """
+  How this implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies.
+  """
+  execution: Execution! = PLAIN
 
   """The instance id of the agent this implementation is bound to."""
   instanceId: String = null
@@ -2788,6 +2787,10 @@ type MediaUploadGrant {
 }
 
 type MemoryDrawer {
+  """
+  Whether the agent minted this drawer's reference: it is addressed by resourceId rather than by id.
+  """
+  agentMinted: Boolean!
   createdAt: DateTime!
   description: String
   id: ID!
@@ -3612,11 +3615,6 @@ type Query {
   """Fetch a specific agent by ID or by app, version and device_id."""
   agent(app: String = null, deviceId: String = null, id: ID = null, version: String = null): Agent!
 
-  """
-  The journal of an agent session in position order: everything the agent reported (task events, locks, state patches, snapshots, the session init). `sessionId` defaults to the agent's newest journaled session; `afterPos` pages forward.
-  """
-  agentJournal(afterPos: Int = null, agent: ID!, kinds: [String!] = null, limit: Int! = 100, sessionId: String = null, task: ID = null): [AgentJournalEntry!]!
-
   """Retrieve all compute agents."""
   agents(filters: AgentFilter, ordering: [AgentOrder!]! = [], pagination: OffsetPaginationInput): [Agent!]!
 
@@ -3790,11 +3788,6 @@ type Query {
 
   """Get state at global revision."""
   stateAtGlobalRev(globalRevision: Int!, sessionId: String = null, stateId: ID = null): [Snapshot!]!
-
-  """
-  The agent's states as of a journal position: the revision the last state-carrying entry at or before `pos` reached, reconstructed like `stateAtGlobalRev`.
-  """
-  stateAtPos(agent: ID!, pos: Int!, sessionId: String = null, stateId: ID = null): [Snapshot!]!
 
   """Retrieve a state definition by ID."""
   stateDefinition(id: ID!): StateDefinition!
@@ -4972,6 +4965,11 @@ type Task {
   """Canonical sha256 of the assign args — the replay-discovery key."""
   argsHash: String
 
+  """
+  What the parent calls this child; null for roots and for keyless agents.
+  """
+  callKey: String
+
   """Caller that created this task."""
   caller: Caller
 
@@ -5026,6 +5024,11 @@ type Task {
 
   """Parent task that triggered this one."""
   parent: Task
+
+  """
+  The parent's step this child took; null for roots and for children of agents without numbering.
+  """
+  parentStep: Int
 
   """Optional external reference for tracking."""
   reference: String
@@ -5093,12 +5096,12 @@ type TaskChangeEvent {
 """An event that occurred during a task."""
 type TaskEvent {
   """
-  The agent-journal position of the report that wrote this event; null for server-written events and agents without a journal.
+  The session position (pos) of the report that wrote this event; null for server-written events and agents without numbering.
   """
   agentPos: Int
 
   """
-  When the agent recorded the report; null for server-written events and agents without a journal.
+  When the agent recorded the report; null for server-written events and agents without numbering.
   """
   agentTs: DateTime
 
@@ -5108,8 +5111,16 @@ type TaskEvent {
   """If this event was delegated, the task it was delegated to."""
   delegatedTo: Task
 
+  """EFFECT events: NOW, RANDOM, SLEEP or RECORD."""
+  effect: String
+
   """Unique ID of the event."""
   id: ID!
+
+  """
+  EFFECT events: what the task calls this value; a replay matches values by key.
+  """
+  key: String
 
   """Kind of task event."""
   kind: TaskEventKind!
@@ -5129,8 +5140,18 @@ type TaskEvent {
   """Optional return values."""
   returns: AnyDefault
 
+  """
+  The report's step within its task; a task's history in step order. Null for server-written events.
+  """
+  step: Int
+
   """Associated task."""
   task: Task!
+
+  """
+  EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline).
+  """
+  value: AnyDefault
 }
 
 """Slim, non-traversable task event for change feeds."""
@@ -5142,6 +5163,11 @@ type TaskEventChange {
   progress: Int
   returns: AnyDefault
   task: ID!
+
+  """
+  EFFECT: the value taken. LOST: what is known (started, last_progress, effects, reason).
+  """
+  value: AnyDefault
 }
 
 """A way to filter task events"""
@@ -5166,11 +5192,13 @@ enum TaskEventKind {
   COMPLETED
   CRITICAL
   DELEGATE
-  DISCONNECTED
+  EFFECT
   FAILED
   INTERRUPTED
   INTERRUPTING
+  LATE_REPORT
   LOG
+  LOST
   PAUSED
   PAUSING
   PROGRESS
@@ -5185,6 +5213,7 @@ enum TaskEventKind {
 input TaskEventOrder @oneOf {
   agentPos: Ordering
   createdAt: Ordering
+  step: Ordering
 }
 
 """Numeric/aggregatable fields of Task"""
@@ -5600,7 +5629,9 @@ input UnblockInput {
 }
 
 input UnshelveMemoryDrawerInput {
-  """The resource ID of the drawer."""
+  """
+  The drawer: its resource ID (as agent-minted drawers are referenced) or its ID.
+  """
   id: String!
 }
 

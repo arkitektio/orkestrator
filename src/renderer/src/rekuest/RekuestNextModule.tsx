@@ -20,6 +20,11 @@ import MaterializedBlokPage from "./pages/MaterializedBlok";
 import MaterializedBloks from "./pages/MaterializedBloks";
 import Shortcut from "./pages/Shortcut";
 import Shortcuts from "./pages/Shortcuts";
+import SchedulePage from "./pages/SchedulePage";
+import SchedulesPage from "./pages/SchedulesPage";
+import SignalsPage from "./pages/SignalsPage";
+import TriggerPage from "./pages/TriggerPage";
+import TriggersPage from "./pages/TriggersPage";
 import Toolbox from "./pages/Toolbox";
 import Toolboxes from "./pages/Toolboxes";
 import StructurePackages from "./pages/StructurePackages";
@@ -62,6 +67,11 @@ const Module: React.FC = () => {
           <Route path="agents" element={<AgentsPage />} />
           <Route path="shortcuts/:id" element={<Shortcut />} />
           <Route path="shortcuts" element={<Shortcuts />} />
+          <Route path="schedules" element={<SchedulesPage />} />
+          <Route path="schedules/:id" element={<SchedulePage />} />
+          <Route path="triggers" element={<TriggersPage />} />
+          <Route path="triggers/:id" element={<TriggerPage />} />
+          <Route path="signals" element={<SignalsPage />} />
           <Route path="toolboxes" element={<Toolboxes />} />
           <Route path="toolboxes/:id" element={<Toolbox />} />
           <Route path="actions" element={<Actions />} />

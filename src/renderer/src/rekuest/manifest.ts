@@ -25,6 +25,8 @@ export const manifest: ModuleManifest = {
     { identifier: "@rekuest/agent", name: "Agent", datum: false, path: "agents/:id" },
     { identifier: "@rekuest/memoryshelve", name: "Memory Shelve", datum: false, path: "memoryshelves/:id" },
     { identifier: "@rekuest/shortcut", name: "Shortcut", datum: false, path: "shortcuts/:id" },
+    { identifier: "@rekuest/schedule", name: "Schedule", datum: false, path: "schedules/:id" },
+    { identifier: "@rekuest/trigger", name: "Trigger", datum: false, path: "triggers/:id" },
     { identifier: "@rekuest/toolbox", name: "Toolbox", datum: false, path: "toolboxes/:id" },
     { identifier: "@rekuest/inputstructureusage", name: "Input Structure Usage", datum: false, path: "inputstructureusages/:id" },
     { identifier: "@rekuest/outputstructureusage", name: "Output Structure Usage", datum: false, path: "outputstructureusages/:id" },
