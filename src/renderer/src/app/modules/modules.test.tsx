@@ -13,6 +13,7 @@ const MODULE_FILES = [
   "@/kraph/module",
   "@/kuvert/module",
   "@/lok/module",
+  "@/lokate/module",
   "@/lovekit/module",
   "@/mikro/module",
   "@/omeroark/module",

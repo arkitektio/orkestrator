@@ -10,6 +10,7 @@ export * from "@/fluss/linkers";
 export * from "@/kabinet/linkers";
 export * from "@/kraph/linkers";
 export * from "@/kuvert/linkers";
+export * from "@/lokate/linkers";
 export * from "@/lok/linkers";
 export * from "@/lovekit/linkers";
 export * from "@/mikro/linkers";

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Layer, Source } from "react-map-gl/maplibre";
 import { useSpendingGridQuery } from "../../api/graphql";
 import { toNumber } from "../../format";
-import { MapThemeColors } from "./theme";
+import { MapThemeColors } from "@/core/map/theme";
 import { Viewport } from "./viewport";
 
 /** Grid cells: coarse zoomed out, ~50 m on a street. */

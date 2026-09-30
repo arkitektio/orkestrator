@@ -30,3 +30,7 @@ projects:
   kuvert:
     schema: "graphql/schemas/kuvert.graphql"
     documents: "graphql/kuvert/**/*.graphql"
+
+  lokate:
+    schema: "graphql/schemas/lokate.graphql"
+    documents: "graphql/lokate/**/*.graphql"

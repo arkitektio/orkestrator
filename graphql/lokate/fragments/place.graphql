@@ -1,0 +1,9 @@
+fragment Place on Place {
+  clientId
+  name
+  lat
+  lon
+  radius
+  updatedAt
+  deletedAt
+}

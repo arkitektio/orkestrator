@@ -1,0 +1,8 @@
+mutation SyncPlaces($places: [PlaceInput!]!, $deleted: [DeletedInput!]!) {
+  syncPlaces(places: $places, deleted: $deleted) {
+    applied
+    stale {
+      ...Place
+    }
+  }
+}

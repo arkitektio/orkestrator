@@ -1,12 +1,12 @@
 import { MapPin } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { MapRef, Marker } from "react-map-gl/maplibre";
-import { BankMap, Bbox, toBounds } from "./BankMap";
+import { BaseMap, Bbox, toBounds } from "./BaseMap";
 import { MapMarker, MARKER_OFFSET } from "./MapMarker";
 
 export type Point = { latitude: number; longitude: number };
 
-// Nothing to frame yet: central Europe, where the bank's data lives.
+// Nothing to frame yet: central Europe.
 const FALLBACK_VIEW = { longitude: 10, latitude: 50, zoom: 3.5 };
 
 /**
@@ -45,7 +45,7 @@ export const PointPicker = ({
       : FALLBACK_VIEW;
 
   return (
-    <BankMap
+    <BaseMap
       ref={mapRef}
       className={className}
       initialViewState={initialViewState}
@@ -64,7 +64,7 @@ export const PointPicker = ({
           <MapMarker color={color} icon={MapPin} selected />
         </Marker>
       )}
-    </BankMap>
+    </BaseMap>
   );
 };
 

@@ -1,0 +1,11 @@
+query GetRetention {
+  retention {
+    ...Retention
+  }
+}
+
+query ListAccessLog($limit: Int = 50, $offset: Int = 0) {
+  accessLog(limit: $limit, offset: $offset) {
+    ...AccessLogEntry
+  }
+}

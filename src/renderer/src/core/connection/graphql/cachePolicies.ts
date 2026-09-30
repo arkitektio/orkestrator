@@ -216,6 +216,18 @@ export const ALPAKA_TYPE_POLICIES = buildOffsetPaginationPolicies(ALPAKA_PAGINAT
 export const BANK_TYPE_POLICIES = buildOffsetPaginationPolicies(BANK_PAGINATED_FIELDS);
 export const KUVERT_TYPE_POLICIES = buildOffsetPaginationPolicies(KUVERT_PAGINATED_FIELDS);
 /**
+ * lokate's records are keyed by the id the phone minted (`clientId`); they
+ * have no `id`. Sync state and retention are one per user: singletons, so a
+ * `setRetention` result lands on the `retention` the page reads.
+ */
+export const LOKATE_TYPE_POLICIES: TypePolicies = {
+  Place: { keyFields: ["clientId"] },
+  Visit: { keyFields: ["clientId"] },
+  Trip: { keyFields: ["clientId"] },
+  Point: { keyFields: ["clientId"] },
+  Retention: { keyFields: [] },
+};
+/**
  * A neuron model's cells and sections carry the id from the model's config,
  * which is unique only WITHIN a model — every model has a `soma`. Keyed on
  * that, Apollo merged one model's sections into another's. `compoundId`

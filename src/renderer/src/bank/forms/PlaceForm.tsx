@@ -20,12 +20,12 @@ import {
 } from "../api/graphql";
 import { isLocated } from "../components/cards/PlaceCard";
 import { AddressSearch, GeocodeResult } from "../components/map/AddressSearch";
-import type { Bbox } from "../components/map/BankMap";
-import type { Point } from "../components/map/PointPicker";
+import type { Bbox } from "@/core/map/BaseMap";
+import type { Point } from "@/core/map/PointPicker";
 import { toastText } from "../errors";
 
 // maplibre loads with the map, not with the dialog registry.
-const PointPicker = lazy(() => import("../components/map/PointPicker"));
+const PointPicker = lazy(() => import("@/core/map/PointPicker"));
 
 type Values = {
   name: string;

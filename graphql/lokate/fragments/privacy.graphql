@@ -1,0 +1,13 @@
+fragment AccessLogEntry on AccessLogEntry {
+  id
+  operation
+  range
+  rows
+  at
+  deviceId
+  clientId
+}
+
+fragment Retention on Retention {
+  days
+}

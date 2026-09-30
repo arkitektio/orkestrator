@@ -1,0 +1,9 @@
+mutation SetRetention($days: Int) {
+  setRetention(days: $days) {
+    ...Retention
+  }
+}
+
+mutation DeleteServerCopy($confirm: String!) {
+  deleteServerCopy(confirm: $confirm)
+}

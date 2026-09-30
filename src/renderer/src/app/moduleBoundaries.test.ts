@@ -26,6 +26,7 @@ export const MODULE_ROOTS: Record<string, readonly string[]> = {
   kraph: ["kraph"],
   kuvert: ["kuvert"],
   lok: ["lok"],
+  lokate: ["lokate"],
   lovekit: ["lovekit"],
   mikro: ["mikro"],
   omeroark: ["omeroark"],

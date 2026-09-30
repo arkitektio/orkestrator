@@ -78,6 +78,7 @@ describe("host registries", () => {
       "kuvertsnooze",
       "kuverttask",
       "kuverttasklist",
+      "lokatedeleteservercopy",
       "movetofolder",
       "neuroneditorhelp",
       "notifyusers",

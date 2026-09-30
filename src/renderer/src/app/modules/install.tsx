@@ -9,6 +9,7 @@ import { KUVERT_MODULE } from "@/kuvert/module";
 import type { ModuleBuiltins } from "@/core/modules/host/define";
 import { registerModules } from "@/core/modules/host/host";
 import { LOK_MODULE } from "@/lok/module";
+import { LOKATE_MODULE } from "@/lokate/module";
 import { LOVEKIT_MODULE } from "@/lovekit/module";
 import { MIKRO_MODULE } from "@/mikro/module";
 import { OMEROARK_MODULE } from "@/omeroark/module";
@@ -36,6 +37,7 @@ export const MODULE_DEFINITIONS = [
   DOKUMENTS_MODULE,
   BANK_MODULE,
   KUVERT_MODULE,
+  LOKATE_MODULE,
   LOK_MODULE,
 ] as const;
 

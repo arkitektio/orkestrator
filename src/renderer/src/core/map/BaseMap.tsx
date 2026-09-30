@@ -34,14 +34,14 @@ export const toBounds = (bbox: readonly number[]): [[number, number], [number, n
  * HUD bottom-right. `fit` adds a show-everything button; `settings` goes in
  * the HUD's gear. Sources, layers, markers and popups come in as children.
  */
-export const BankMap = forwardRef<
+export const BaseMap = forwardRef<
   MapRef,
   Omit<MapProps, "mapStyle"> & { className?: string; fit?: Bbox | null; settings?: ReactNode }
 >(({ className, children, fit, settings, ...props }, ref) => {
   const { resolvedTheme } = useTheme();
   const styleId = useMapStyleId();
   return (
-    <div className={cn("bank-map relative overflow-hidden rounded-md border", className)}>
+    <div className={cn("app-map relative overflow-hidden rounded-md border", className)}>
       <Map ref={ref} mapStyle={mapStyleFor(styleId, resolvedTheme)} attributionControl={false} {...props}>
         <AttributionControl position="bottom-left" compact />
         <MapControls fit={fit ? toBounds(fit) : null} settings={settings} />
@@ -50,4 +50,4 @@ export const BankMap = forwardRef<
     </div>
   );
 });
-BankMap.displayName = "BankMap";
+BaseMap.displayName = "BaseMap";

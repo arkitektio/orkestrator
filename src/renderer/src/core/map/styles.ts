@@ -52,12 +52,14 @@ export const mapStyleFor = (id: MapStyleId, theme: ResolvedTheme): string | Styl
 
 // One choice for every map, remembered per device (a convenience: losing it
 // just means "Match theme" again).
-const KEY = "orkestrator.bank.mapStyle";
+const KEY = "orkestrator.map.style";
+// Where the choice lived while only bank had maps; read once as a fallback.
+const LEGACY_KEY = "orkestrator.bank.mapStyle";
 const listeners = new Set<() => void>();
 
 const read = (): MapStyleId => {
   try {
-    const value = localStorage.getItem(KEY);
+    const value = localStorage.getItem(KEY) ?? localStorage.getItem(LEGACY_KEY);
     return value && value in MAP_STYLES ? (value as MapStyleId) : "auto";
   } catch {
     return "auto";

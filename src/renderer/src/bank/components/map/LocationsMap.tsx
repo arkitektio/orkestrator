@@ -3,8 +3,8 @@ import { Marker } from "react-map-gl/maplibre";
 import { toast } from "@/core/notify";
 import { MerchantLocationFragment, useUpdateMerchantLocationMutation } from "../../api/graphql";
 import { toastText } from "../../errors";
-import { BankMap, Bbox, toBounds } from "./BankMap";
-import { MapMarker, MARKER_OFFSET } from "./MapMarker";
+import { BaseMap, Bbox, toBounds } from "@/core/map/BaseMap";
+import { MapMarker, MARKER_OFFSET } from "@/core/map/MapMarker";
 
 type Located = MerchantLocationFragment & { latitude: string; longitude: string };
 
@@ -41,7 +41,7 @@ export const LocationsMap = ({
   if (!bbox) return null;
 
   return (
-    <BankMap
+    <BaseMap
       className={className}
       fit={located.length > 1 ? bbox : null}
       initialViewState={{ bounds: toBounds(bbox), fitBoundsOptions: { padding: 48, maxZoom: 15 } }}
@@ -71,6 +71,6 @@ export const LocationsMap = ({
           <MapMarker color={color} selected={location.id === selected} title={location.name} />
         </Marker>
       ))}
-    </BankMap>
+    </BaseMap>
   );
 };

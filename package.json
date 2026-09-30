@@ -36,6 +36,7 @@
     "elektro": "graphql-codegen --config elektro.yml",
     "bank": "graphql-codegen --config bank.yml",
     "kuvert": "graphql-codegen --config kuvert.yml",
+    "lokate": "graphql-codegen --config lokate.yml",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",

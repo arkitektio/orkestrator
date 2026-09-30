@@ -1,0 +1,28 @@
+overwrite: true
+schema:
+  "http://jhnnsrs-lab/lokate/schema":
+    handleAsSDL: true
+documents: "graphql/lokate/**/*.graphql"
+generates:
+  src/renderer/src/lokate/api/fragments.ts:
+    plugins:
+      - "fragment-matcher"
+  src/renderer/src/lokate/api/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-react-apollo"
+    config:
+      withHooks: true
+      reactApolloVersion: 3
+      apolloReactHooksImportFrom: "@/lokate/api/funcs"
+      # Reference fragment types by name instead of inlining them: deep fragments
+      # otherwise blow graphql.ts up to many MB and stall tsc.
+      inlineFragmentTypes: combine
+      scalars:
+        # Isoformat strings on the wire.
+        DateTime: "string"
+
+  graphql/schemas/lokate.graphql:
+    plugins:
+      - schema-ast

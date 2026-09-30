@@ -1,0 +1,224 @@
+"""One read of your data."""
+type AccessLogEntry {
+  at: DateTime!
+
+  """The reading token's OAuth client."""
+  clientId: String
+
+  """The reading token's client_device claim."""
+  deviceId: String
+  id: ID!
+  operation: String!
+  range: String!
+  rows: Int!
+}
+
+"""
+One page of everything the user has, from all their devices, in change order.
+"""
+type ChangeSet {
+  deletedPlaces: [ID!]!
+  hasMore: Boolean!
+  nextCursor: String
+  places: [Place!]!
+  points: [Point!]!
+  trips: [Trip!]!
+  visits: [Visit!]!
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+input DeletedInput {
+  clientId: ID!
+  deletedAt: DateTime!
+}
+
+type Mutation {
+  """
+  Delete all of your data on this server (confirm = "DELETE"). Returns how many points, visits, trips and places were deleted.
+  """
+  deleteServerCopy(confirm: String!): Int!
+
+  """
+  In one transaction, make this device's visits and trips starting at or after `from` exactly the ones sent.
+  """
+  replaceSegments(from: DateTime!, trips: [TripInput!]!, visits: [VisitInput!]!): ReplaceResult!
+
+  """
+  Keep your points and segments this many days (null: forever). Older ones are deleted now and on every later upload.
+  """
+  setRetention(days: Int = null): Retention!
+
+  """
+  Merge places and tombstones, last write wins on updatedAt; newer server copies come back in `stale`.
+  """
+  syncPlaces(deleted: [DeletedInput!]!, places: [PlaceInput!]!): PlaceSyncResult!
+
+  """
+  Store points (at most 1000 per call). Safe to repeat: a point already stored counts as a duplicate.
+  """
+  uploadPoints(points: [PointInput!]!): UploadResult!
+}
+
+"""
+A named place, shared by all of a user's phones. A tombstone has deletedAt set and nothing else but its key.
+"""
+type Place {
+  clientId: ID!
+  deletedAt: DateTime
+  lat: Float
+  lon: Float
+  name: String
+  radius: Float
+  updatedAt: DateTime!
+}
+
+input PlaceInput {
+  clientId: ID!
+  lat: Float!
+  lon: Float!
+  name: String!
+  radius: Float!
+  updatedAt: DateTime!
+}
+
+type PlaceSyncResult {
+  applied: Int!
+
+  """
+  Places whose server copy is newer; the phone takes them (deletedAt set: delete it).
+  """
+  stale: [Place!]!
+}
+
+"""One location fix."""
+type Point {
+  acc: Float
+  alt: Float
+  clientId: ID!
+
+  """The device (token client_device) that recorded it."""
+  deviceId: ID!
+  heading: Float
+  lat: Float!
+  lon: Float!
+  speed: Float
+  ts: DateTime!
+}
+
+input PointInput {
+  acc: Float = null
+  alt: Float = null
+  clientId: ID!
+  heading: Float = null
+  lat: Float!
+  lon: Float!
+  speed: Float = null
+  ts: DateTime!
+}
+
+type Query {
+  _service: _Service!
+
+  """Every read of your data, newest first."""
+  accessLog(limit: Int = 100, offset: Int = 0): [AccessLogEntry!]!
+
+  """
+  Everything of the user's, from all their devices, changed after `cursor`, oldest first (limit at most 1000). Page until hasMore is false; used to restore.
+  """
+  changes(cursor: String = null, limit: Int = 1000): ChangeSet!
+
+  """How long the server keeps your points and segments."""
+  retention: Retention!
+
+  """The calling device's watermarks."""
+  syncState: SyncState!
+}
+
+type ReplaceResult {
+  deletedTrips: Int!
+  deletedVisits: Int!
+  trips: Int!
+  visits: Int!
+}
+
+"""How long the server keeps your points and segments."""
+type Retention {
+  """Null: forever."""
+  days: Int
+}
+
+"""The calling device's watermarks."""
+type SyncState {
+  lastPointTs: DateTime
+  pointCount: Int!
+
+  """The `from` of this device's last replaceSegments."""
+  segmentsFrom: DateTime
+}
+
+"""A movement between two visits."""
+type Trip {
+  clientId: ID!
+  deviceId: ID!
+  distance: Float!
+  end: DateTime!
+  fromVisit: ID
+  mode: TripMode!
+  start: DateTime!
+  toVisit: ID
+}
+
+input TripInput {
+  clientId: ID!
+  distance: Float!
+  end: DateTime!
+  fromVisit: ID = null
+  mode: TripMode!
+  start: DateTime!
+  toVisit: ID = null
+}
+
+"""How a trip was travelled, as the phone classified it."""
+enum TripMode {
+  BIKE
+  UNKNOWN
+  VEHICLE
+  WALK
+}
+
+type UploadResult {
+  accepted: Int!
+  duplicates: Int!
+}
+
+"""A stay at one spot."""
+type Visit {
+  clientId: ID!
+  deviceId: ID!
+  end: DateTime!
+  lat: Float!
+  lon: Float!
+  placeClientId: ID
+  pointCount: Int!
+  radius: Float!
+  start: DateTime!
+}
+
+input VisitInput {
+  clientId: ID!
+  end: DateTime!
+  lat: Float!
+  lon: Float!
+  placeClientId: ID = null
+  pointCount: Int!
+  radius: Float!
+  start: DateTime!
+}
+
+scalar _Any
+
+type _Service {
+  sdl: String!
+}

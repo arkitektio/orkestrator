@@ -1,0 +1,41 @@
+/* MapLibre's own chrome in the app's tokens. */
+.app-map .maplibregl-popup-content {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  padding: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.25);
+}
+.app-map .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.app-map .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.app-map .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--popover);
+}
+.app-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.app-map .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.app-map .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--popover);
+}
+.app-map .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--popover);
+}
+.app-map .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--popover);
+}
+.app-map .maplibregl-ctrl-attrib {
+  background: rgb(0 0 0 / 0.4);
+  color: rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(12px);
+  font-size: 10px;
+}
+.app-map .maplibregl-ctrl-attrib a {
+  color: inherit;
+}
+.app-map .maplibregl-ctrl-attrib.maplibregl-compact {
+  border-radius: 0.5rem;
+}
+.app-map .maplibregl-ctrl-attrib-button {
+  filter: invert(1);
+  background-color: transparent;
+}

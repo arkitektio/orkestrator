@@ -7,10 +7,10 @@ import { MerchantLocationFeatureFragment, MerchantLocationFilter, useMerchantLoc
 import { formatDay } from "../../format";
 import { Money } from "../Money";
 import { AreaStatsPanel } from "./AreaStatsPanel";
-import { BankMap, Bbox, MAP_FONT, toBounds } from "./BankMap";
-import { MapSettingRow } from "./MapControls";
+import { BaseMap, Bbox, MAP_FONT, toBounds } from "@/core/map/BaseMap";
+import { MapSettingRow } from "@/core/map/MapControls";
 import { SpendingHeatmap } from "./SpendingHeatmap";
-import { useMapThemeColors } from "./theme";
+import { useMapThemeColors } from "@/core/map/theme";
 import { useViewport } from "./viewport";
 
 type Properties = MerchantLocationFeatureFragment["properties"];
@@ -109,7 +109,7 @@ export const MerchantMap = ({ filters, className }: { filters?: MerchantLocation
     );
 
   return (
-    <BankMap
+    <BaseMap
       ref={mapRef}
       className={className}
       fit={collection.bbox as Bbox | null | undefined}
@@ -185,6 +185,6 @@ export const MerchantMap = ({ filters, className }: { filters?: MerchantLocation
       </Source>
       {place && <PlacePopup place={place} onClose={() => setPlace(null)} />}
       {areaStats && viewport && <AreaStatsPanel viewport={viewport} />}
-    </BankMap>
+    </BaseMap>
   );
 };
