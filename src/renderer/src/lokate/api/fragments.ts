@@ -5,7 +5,15 @@
         }
       }
       const result: PossibleTypesResultData = {
-  "possibleTypes": {}
+  "possibleTypes": {
+    "_Entity": [
+      "Device",
+      "Place",
+      "Point",
+      "Trip",
+      "Visit"
+    ]
+  }
 };
       export default result;
     

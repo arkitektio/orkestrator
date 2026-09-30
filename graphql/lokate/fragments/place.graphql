@@ -1,9 +1,16 @@
-fragment Place on Place {
+fragment ListPlace on Place {
+  id
   clientId
   name
   lat
   lon
   radius
+  visitCount
+  lastVisitAt
+}
+
+fragment Place on Place {
+  ...ListPlace
   updatedAt
   deletedAt
 }

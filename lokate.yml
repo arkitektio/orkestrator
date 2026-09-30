@@ -22,6 +22,7 @@ generates:
       scalars:
         # Isoformat strings on the wire.
         DateTime: "string"
+        Date: "string"
 
   graphql/schemas/lokate.graphql:
     plugins:

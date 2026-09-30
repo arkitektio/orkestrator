@@ -1,13 +1,8 @@
-fragment AccessLogEntry on AccessLogEntry {
+fragment Device on Device {
   id
-  operation
-  range
-  rows
-  at
   deviceId
-  clientId
-}
-
-fragment Retention on Retention {
-  days
+  firstSeenAt
+  lastUploadAt
+  segmentsFrom
+  pointCount
 }

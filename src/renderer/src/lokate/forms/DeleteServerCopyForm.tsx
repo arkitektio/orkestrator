@@ -4,7 +4,7 @@ import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import { useState } from "react";
-import { ListAccessLogDocument, useDeleteServerCopyMutation } from "../api/graphql";
+import { useDeleteServerCopyMutation } from "../api/graphql";
 import { DELETE_CONFIRM } from "../format";
 
 /**
@@ -16,7 +16,7 @@ import { DELETE_CONFIRM } from "../format";
 export const DeleteServerCopyForm = () => {
   const { closeDialog } = useDialog();
   const [typed, setTyped] = useState("");
-  const [deleteServerCopy, { loading }] = useDeleteServerCopyMutation({ refetchQueries: [ListAccessLogDocument] });
+  const [deleteServerCopy, { loading }] = useDeleteServerCopyMutation({ refetchQueries: "active" });
   const confirmed = typed === DELETE_CONFIRM;
 
   const submit = async (e: React.FormEvent) => {

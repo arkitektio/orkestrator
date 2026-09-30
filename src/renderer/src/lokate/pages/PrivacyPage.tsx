@@ -1,115 +1,36 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { PageLayout } from "@/core/layout/PageLayout";
-import { toast } from "@/core/notify";
-import { Button } from "@/core/ui/button";
 import { PageAction } from "@/core/ui/page-action";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
-import { Trash2 } from "lucide-react";
-import { ReactNode, useState } from "react";
-import {
-  AccessLogEntryFragment,
-  useGetRetentionQuery,
-  useListAccessLogQuery,
-  useSetRetentionMutation,
-} from "../api/graphql";
-import { formatAt, retentionChoices, retentionFromValue, retentionLabel, retentionValue } from "../format";
+import { Smartphone, Trash2 } from "lucide-react";
+import { DeviceFragment, useListDevicesQuery } from "../api/graphql";
+import { DeviceLabel } from "../components/DeviceLabel";
+import { formatAt, formatDay } from "../format";
 
-const PAGE = 50;
-
-const Section = ({ title, description, children }: { title: string; description?: string; children: ReactNode }) => (
-  <section className="flex flex-col gap-3">
-    <div className="flex flex-col gap-0.5">
-      <h2 className="text-sm font-semibold text-muted-foreground">{title}</h2>
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
-    </div>
-    {children}
-  </section>
-);
-
-/** How long the server keeps points and segments; changing it deletes older ones right away. */
-const RetentionPicker = () => {
-  const { data } = useGetRetentionQuery();
-  const [setRetention, { loading }] = useSetRetentionMutation();
-  if (!data) return null;
-  const current = data.retention.days;
-
-  const change = async (value: string) => {
-    const days = retentionFromValue(value);
-    try {
-      await setRetention({ variables: { days } });
-      toast.success(days == null ? "Keeping everything" : `Keeping the last ${retentionLabel(days)}`);
-    } catch (error) {
-      toast.error("Could not change retention: " + (error instanceof Error ? error.message : String(error)));
-    }
-  };
-
-  return (
-    <Section
-      title="Keep points and segments"
-      description="Older points, visits and trips are deleted when you shorten this, and on every later upload. Places are kept."
-    >
-      <Select value={retentionValue(current)} onValueChange={change} disabled={loading}>
-        <SelectTrigger className="w-56">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {retentionChoices(current).map((days) => (
-            <SelectItem key={retentionValue(days)} value={retentionValue(days)}>
-              {retentionLabel(days)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </Section>
-  );
-};
-
-const AccessRow = ({ entry }: { entry: AccessLogEntryFragment }) => (
-  <div className="grid grid-cols-[7rem_1fr_auto] items-baseline gap-3 py-1.5 text-sm">
-    <span className="tabular-nums text-muted-foreground">{formatAt(entry.at)}</span>
-    <span className="flex min-w-0 flex-col">
-      <span className="truncate">
-        {entry.operation}
-        <span className="ml-2 text-xs text-muted-foreground">{entry.range}</span>
+const DeviceRow = ({ device }: { device: DeviceFragment }) => (
+  <div className="flex items-center gap-3 py-2 text-sm">
+    <Smartphone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+    <span className="flex min-w-0 flex-1 flex-col">
+      <DeviceLabel deviceId={device.deviceId} />
+      <span className="text-xs text-muted-foreground">
+        since {formatDay(device.firstSeenAt)}
+        {device.lastUploadAt && <> · last upload {formatAt(device.lastUploadAt)}</>}
       </span>
-      {(entry.clientId || entry.deviceId) && (
-        <span className="truncate font-mono text-[11px] text-muted-foreground">
-          {[entry.clientId, entry.deviceId].filter(Boolean).join(" · ")}
-        </span>
-      )}
     </span>
-    <span className="tabular-nums text-xs text-muted-foreground">
-      {entry.rows === 1 ? "1 row" : `${entry.rows} rows`}
+    <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
+      {device.pointCount === 1 ? "1 point" : `${device.pointCount.toLocaleString()} points`}
     </span>
   </div>
 );
 
-/** Every read of the user's data, newest first; grows a page at a time. */
-const AccessLog = () => {
-  const [limit, setLimit] = useState(PAGE);
-  const { data, previousData, loading } = useListAccessLogQuery({ variables: { limit, offset: 0 } });
-  const entries = (data ?? previousData)?.accessLog ?? [];
-  if (entries.length === 0) return null;
-
-  return (
-    <Section title="Reads" description="Every time an app read your location data: what, which range, and who asked.">
-      <div className="flex flex-col divide-y">
-        {entries.map((entry) => (
-          <AccessRow key={entry.id} entry={entry} />
-        ))}
-      </div>
-      {entries.length >= limit && (
-        <Button variant="ghost" size="sm" className="self-start" disabled={loading} onClick={() => setLimit(limit + PAGE)}>
-          {loading ? "Loading…" : "Show more"}
-        </Button>
-      )}
-    </Section>
-  );
-};
-
-/** What lokate keeps about you and who read it: retention, the access log, and deleting the server copy. */
+/**
+ * What lokate holds about you: the phones that upload here, and deleting the
+ * server copy. The phones keep their own history either way.
+ */
 const PrivacyPage = () => {
   const { openDialog } = useDialog();
+  const { data } = useListDevicesQuery({ variables: { pagination: { limit: 50 } } });
+  const devices = data?.devices ?? [];
+
   return (
     <PageLayout
       title="Privacy"
@@ -125,9 +46,20 @@ const PrivacyPage = () => {
         </PageAction>
       }
     >
-      <div className="flex max-w-3xl flex-col gap-8 p-6">
-        <RetentionPicker />
-        <AccessLog />
+      <div className="flex max-w-3xl flex-col gap-3 p-6">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-sm font-semibold text-muted-foreground">Phones</h2>
+          <p className="text-xs text-muted-foreground">Every install that has backed up its location history here.</p>
+        </div>
+        {devices.length > 0 ? (
+          <div className="flex flex-col divide-y">
+            {devices.map((device) => (
+              <DeviceRow key={device.id} device={device} />
+            ))}
+          </div>
+        ) : (
+          data && <p className="text-sm text-muted-foreground">No phone has uploaded yet.</p>
+        )}
       </div>
     </PageLayout>
   );

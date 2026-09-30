@@ -49,6 +49,15 @@ export const BANK_PAGINATED_FIELDS: PaginatedFieldMap = {
   transactions: ["filters", "ordering"],
 };
 
+/** `lokate.graphql` */
+export const LOKATE_PAGINATED_FIELDS: PaginatedFieldMap = {
+  devices: ["filters", "ordering"],
+  places: ["filters", "ordering"],
+  points: ["filters", "ordering"],
+  trips: ["filters", "ordering"],
+  visits: ["filters", "ordering"],
+};
+
 /** `kuvert.graphql` */
 export const KUVERT_PAGINATED_FIELDS: PaginatedFieldMap = {
   mailAccounts: ["filters"],
@@ -215,18 +224,7 @@ export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
 export const ALPAKA_TYPE_POLICIES = buildOffsetPaginationPolicies(ALPAKA_PAGINATED_FIELDS);
 export const BANK_TYPE_POLICIES = buildOffsetPaginationPolicies(BANK_PAGINATED_FIELDS);
 export const KUVERT_TYPE_POLICIES = buildOffsetPaginationPolicies(KUVERT_PAGINATED_FIELDS);
-/**
- * lokate's records are keyed by the id the phone minted (`clientId`); they
- * have no `id`. Sync state and retention are one per user: singletons, so a
- * `setRetention` result lands on the `retention` the page reads.
- */
-export const LOKATE_TYPE_POLICIES: TypePolicies = {
-  Place: { keyFields: ["clientId"] },
-  Visit: { keyFields: ["clientId"] },
-  Trip: { keyFields: ["clientId"] },
-  Point: { keyFields: ["clientId"] },
-  Retention: { keyFields: [] },
-};
+export const LOKATE_TYPE_POLICIES = buildOffsetPaginationPolicies(LOKATE_PAGINATED_FIELDS);
 /**
  * A neuron model's cells and sections carry the id from the model's config,
  * which is unique only WITHIN a model — every model has a `soma`. Keyed on

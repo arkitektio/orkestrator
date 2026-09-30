@@ -1,11 +1,5 @@
-query GetRetention {
-  retention {
-    ...Retention
-  }
-}
-
-query ListAccessLog($limit: Int = 50, $offset: Int = 0) {
-  accessLog(limit: $limit, offset: $offset) {
-    ...AccessLogEntry
+query ListDevices($pagination: OffsetPaginationInput) {
+  devices(ordering: [{ lastUploadAt: DESC_NULLS_LAST }], pagination: $pagination) {
+    ...Device
   }
 }

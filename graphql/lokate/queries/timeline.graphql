@@ -1,0 +1,41 @@
+query GetDay($date: Date!, $timezone: String) {
+  day(date: $date, timezone: $timezone) {
+    ...Day
+  }
+}
+
+query GetRoute($since: DateTime!, $until: DateTime!, $devices: [ID!], $simplify: Float, $maxAccuracy: Float) {
+  route(since: $since, until: $until, devices: $devices, simplify: $simplify, maxAccuracy: $maxAccuracy) {
+    ...Track
+  }
+}
+
+query ListVisits($filters: VisitFilter, $ordering: [VisitOrder!], $pagination: OffsetPaginationInput) {
+  visits(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListVisit
+  }
+}
+
+query GetVisit($id: ID!) {
+  visit(id: $id) {
+    ...Visit
+  }
+}
+
+query ListTrips($filters: TripFilter, $ordering: [TripOrder!], $pagination: OffsetPaginationInput) {
+  trips(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListTrip
+  }
+}
+
+query GetTrip($id: ID!) {
+  trip(id: $id) {
+    ...Trip
+  }
+}
+
+query GetStats($since: DateTime!, $until: DateTime!, $granularity: Granularity, $timezone: String) {
+  stats(since: $since, until: $until, granularity: $granularity, timezone: $timezone) {
+    ...StatsBucket
+  }
+}

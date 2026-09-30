@@ -1,0 +1,99 @@
+fragment ListVisit on Visit {
+  id
+  clientId
+  start
+  end
+  lat
+  lon
+  radius
+  pointCount
+  duration
+  deviceId
+  place {
+    id
+    clientId
+    name
+  }
+}
+
+fragment Visit on Visit {
+  ...ListVisit
+  device {
+    ...Device
+  }
+}
+
+fragment ListTrip on Trip {
+  id
+  clientId
+  start
+  end
+  distance
+  duration
+  mode
+  deviceId
+  fromVisit
+  toVisit
+}
+
+fragment Trip on Trip {
+  ...ListTrip
+  device {
+    ...Device
+  }
+}
+
+fragment Track on Track {
+  device {
+    id
+    deviceId
+  }
+  start
+  end
+  pointCount
+  distance
+  geojson
+}
+
+fragment Day on Day {
+  date
+  start
+  end
+  pointCount
+  distance
+  visits {
+    ...ListVisit
+  }
+  trips {
+    ...ListTrip
+  }
+}
+
+fragment ModeStat on ModeStat {
+  mode
+  trips
+  distance
+  seconds
+}
+
+fragment StatsBucket on StatsBucket {
+  start
+  pointCount
+  visitCount
+  tripCount
+  distance
+  byMode {
+    ...ModeStat
+  }
+}
+
+fragment PlaceStat on PlaceStat {
+  placeClientId
+  place {
+    ...ListPlace
+  }
+  visitCount
+  seconds
+  firstVisitAt
+  lastVisitAt
+}
