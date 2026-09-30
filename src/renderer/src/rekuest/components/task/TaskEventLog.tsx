@@ -29,7 +29,6 @@ import {
   findLostEvent,
   orderTaskHistory,
   readLostDetails,
-  sortChildrenByCall,
 } from "../../lib/taskHistory";
 import { TaskStatusLine } from "./TaskStatusLine";
 
@@ -281,40 +280,6 @@ const TaskLogEntry = memo(function TaskLogEntry(props: {
   }
 });
 
-export const ChildTasksSection = (props: {
-  task: DetailTaskFragment;
-}) => {
-  // Sorted once per `children` identity (this section rerenders on every task
-  // event), in the order the parent called them.
-  const rawChildren = props.task.children;
-  const children = useMemo(
-    () => sortChildrenByCall(rawChildren ?? []),
-    [rawChildren],
-  );
-
-  if (children.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-        Child Tasks ({children.length})
-      </h3>
-      <div className="flex flex-col gap-2">
-        {children.map((child) => (
-          <div
-            key={child.id}
-            className="rounded-md border border-muted-foreground/10 p-2"
-          >
-            <TaskStatusLine task={child} compact showLink />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 const EFFECTS_TEXT: Record<string, string> = {
   NONE: "running it again changes nothing",
   REPEATABLE: "it is safe to run again",
@@ -341,7 +306,7 @@ const LostSummary = (props: { value: unknown }) => {
   ].filter(Boolean);
   if (parts.length === 0) return null;
   return (
-    <p className="mt-3 text-sm text-muted-foreground">{parts.join(" ")}</p>
+    <p className="mt-1.5 text-sm text-muted-foreground">{parts.join(" ")}</p>
   );
 };
 
@@ -379,9 +344,9 @@ const ElapsedTime = ({ since }: { since: string }) => {
 };
 
 /**
- * At-a-glance status panel: status icon + label, reference, live progress,
- * latest message / error, timing, and the implementation / agent / lineage
- * context — everything you'd otherwise have to hunt for in the event log.
+ * The task's status as one compact band above the lane: status, reference and
+ * lineage on the left, timing on the right, a thin progress bar while it runs,
+ * and one line for whatever needs a person (LOST, a hold, an error).
  */
 export const TaskStatusHero = (props: { task: DetailTaskFragment }) => {
   const { task } = props;
@@ -400,104 +365,97 @@ export const TaskStatusHero = (props: { task: DetailTaskFragment }) => {
       : null;
 
   return (
-    <div className={cn("rounded-xl border p-5 ring-1", theme.ring, theme.bg)}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <TaskStatusIcon
-            kind={task.latestEventKind}
-            isDone={task.isDone}
-            className="h-8 w-8 shrink-0"
-          />
-          <div className="min-w-0">
-            <div className={cn("text-lg font-semibold leading-tight", theme.text)}>
-              {theme.label}
-            </div>
-            {task.reference && (
-              <div className="truncate font-mono text-xs text-muted-foreground">
-                {task.reference}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <Clock className="h-3 w-3" />
-            Started&nbsp;<Timestamp date={task.createdAt} relative />
-          </div>
-          {task.finishedAt && (
-            <div>
-              Finished&nbsp;<Timestamp date={task.finishedAt} relative />
-            </div>
+    <div className={cn("rounded-lg px-3 py-2 ring-1", theme.ring, theme.bg)}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <TaskStatusIcon
+          kind={task.latestEventKind}
+          isDone={task.isDone}
+          className="h-5 w-5 shrink-0"
+        />
+        <span className={cn("text-sm font-semibold", theme.text)}>
+          {theme.label}
+        </span>
+        {task.reference && (
+          <span className="max-w-48 truncate font-mono text-[11px] text-muted-foreground">
+            {task.reference}
+          </span>
+        )}
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          {task.implementation ? (
+            <RekuestImplementation.DetailLink object={task.implementation}>
+              <Badge variant="outline" className="cursor-pointer font-mono">
+                {task.implementation.interface}
+              </Badge>
+            </RekuestImplementation.DetailLink>
+          ) : (
+            <Badge variant="outline" className="font-mono text-muted-foreground">
+              Unassigned
+            </Badge>
           )}
+          {agent && (
+            <RekuestAgent.DetailLink object={agent}>
+              <Badge variant="secondary" className="cursor-pointer">
+                {agent.name}
+              </Badge>
+            </RekuestAgent.DetailLink>
+          )}
+          {task.implementation?.execution === Execution.Workflow && (
+            <Badge variant="outline">Workflow</Badge>
+          )}
+          {task.parent && (
+            <RekuestTask.DetailLink object={task.parent}>
+              <Badge variant="outline" className="cursor-pointer">
+                ← Parent task
+              </Badge>
+            </RekuestTask.DetailLink>
+          )}
+        </div>
+        <div className="ml-auto flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <Clock className="h-3 w-3" />
+            <Timestamp date={task.createdAt} relative />
+          </span>
           {walltime && (
-            <div className="text-sm font-semibold text-foreground">{walltime}</div>
+            <span className="text-sm font-semibold tabular-nums text-foreground">
+              {walltime}
+            </span>
           )}
           {running && <ElapsedTime since={task.createdAt} />}
         </div>
       </div>
 
       {running && (
-        <div className="mt-4">
+        <div className="mt-2">
           {live.progress != null ? (
             <div className="flex items-center gap-2">
-              <Progress value={live.progress} className="h-1.5 flex-1" />
-              <span className="w-9 text-right text-xs text-muted-foreground">
+              <Progress value={live.progress} className="h-1 flex-1" />
+              <span className="w-9 text-right text-[11px] text-muted-foreground">
                 {live.progress}%
               </span>
             </div>
           ) : (
-            <div className="h-1.5 w-full animate-pulse rounded-full bg-primary/30" />
+            <div className="h-1 w-full animate-pulse rounded-full bg-primary/30" />
           )}
         </div>
       )}
 
       {lostEvent && <LostSummary value={lostEvent.value} />}
       {holdMessage && (
-        <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">
+        <p className="mt-1.5 text-sm text-amber-700 dark:text-amber-300">
           {holdMessage}
         </p>
       )}
-
       {live.error ? (
-        <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+        <p className="mt-1.5 truncate text-sm text-destructive" title={live.error}>
           {live.error}
-        </div>
+        </p>
       ) : (
         live.message && (
-          <p className="mt-3 text-sm text-muted-foreground">{live.message}</p>
+          <p className="mt-1.5 truncate text-sm text-muted-foreground" title={live.message}>
+            {live.message}
+          </p>
         )
       )}
-
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-3 text-xs">
-        {task.implementation ? (
-          <RekuestImplementation.DetailLink object={task.implementation}>
-            <Badge variant="outline" className="cursor-pointer font-mono">
-              {task.implementation.interface}
-            </Badge>
-          </RekuestImplementation.DetailLink>
-        ) : (
-          <Badge variant="outline" className="font-mono text-muted-foreground">
-            Unassigned
-          </Badge>
-        )}
-        {agent && (
-          <RekuestAgent.DetailLink object={agent}>
-            <Badge variant="secondary" className="cursor-pointer">
-              {agent.name}
-            </Badge>
-          </RekuestAgent.DetailLink>
-        )}
-        {task.implementation?.execution === Execution.Workflow && (
-          <Badge variant="outline">Workflow</Badge>
-        )}
-        {task.parent && (
-          <RekuestTask.DetailLink object={task.parent}>
-            <Badge variant="outline" className="cursor-pointer">
-              ← Parent task
-            </Badge>
-          </RekuestTask.DetailLink>
-        )}
-      </div>
     </div>
   );
 };
@@ -616,29 +574,45 @@ export const TaskArgsSection = (props: { task: DetailTaskFragment }) => {
 };
 
 /**
- * The task's most recent yielded result, surfaced above the event log so the
- * output is visible without scrolling through progress/log noise.
+ * A yielded result: the given `event`'s returns, else the task's latest yield
+ * (the cache stores events newest-first). A LATE_REPORT is labelled as one:
+ * it arrived after the task was marked lost and was never applied.
  */
-export const TaskResultSection = (props: { task: DetailTaskFragment }) => {
+export const TaskResultSection = (props: {
+  task: DetailTaskFragment;
+  event?: TaskEventFragment | null;
+  className?: string;
+}) => {
   const { registry } = useWidgetRegistry();
-  const latestYield = props.task.events
-    .filter((e) => e.kind === TaskEventKind.Yield)
-    .at(0);
+  const shown =
+    props.event?.returns != null
+      ? props.event
+      : props.task.events.find(
+          (e) => e.kind === TaskEventKind.Yield && e.returns != null,
+        );
 
-  if (!latestYield?.returns || props.task.action.returns.length === 0) {
+  if (!shown?.returns || props.task.action.returns.length === 0) {
     return null;
   }
 
+  const latest =
+    shown.id ===
+    props.task.events.find((e) => e.kind === TaskEventKind.Yield)?.id;
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex min-w-0 flex-col gap-2", props.className)}>
       <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-        Latest Result
+        {shown.kind === TaskEventKind.LateReport
+          ? "Late report"
+          : latest
+            ? "Latest Result"
+            : `Result · ${formatLogTime(shown.createdAt)}`}
       </h3>
-      <div className="rounded-md border bg-muted/40 p-3">
+      <div className="min-h-0 flex-1 overflow-auto rounded-md border bg-muted/40 p-3">
         <ReturnsContainer
           registry={registry}
           ports={props.task.action.returns}
-          values={latestYield.returns}
+          values={shown.returns}
           options={{ labels: true }}
         />
       </div>
@@ -728,45 +702,5 @@ export const TaskTimeLine = (props: {
         ),
       )}
     </ol>
-  );
-};
-
-export const DefaultRenderer = (props: {
-  task: DetailTaskFragment;
-}) => {
-  const { task } = props;
-  const hasResult =
-    task.action.returns.length > 0 &&
-    task.events.some(
-      (e) => e.kind === TaskEventKind.Yield && e.returns != null,
-    );
-  const hasArgs = task.action.args.length > 0;
-
-  return (
-    <div className="h-full w-full overflow-y-auto @container">
-      <div className="flex w-full flex-col gap-6 p-4">
-        <TaskStatusHero task={task} />
-        {(hasResult || hasArgs) && (
-          <div
-            className={cn(
-              "grid gap-6",
-              hasResult && hasArgs && "@4xl:grid-cols-2",
-            )}
-          >
-            <TaskResultSection task={task} />
-            <TaskArgsSection task={task} />
-          </div>
-        )}
-        <ChildTasksSection task={task} />
-        {task.events.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Event Log
-            </h3>
-            <TaskTimeLine task={task} />
-          </div>
-        )}
-      </div>
-    </div>
   );
 };

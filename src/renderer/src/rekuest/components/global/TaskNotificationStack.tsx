@@ -37,8 +37,10 @@ const SETTLE_MS = 250
  * persist until dismissed, so the result stays inspectable.
  *
  * Rendered for EVERY active id, including the ones behind the peek — a task
- * nobody is looking at still has to clear. Paused while its row is open, so a
- * row is never pulled out from under the pointer reading it.
+ * nobody is looking at still has to clear. Paused while its row is open AND
+ * while the pointer is on it (open or not: a row resting under the pointer
+ * during the open delay or the settle pause is being read too), so a row is
+ * never pulled out from under the pointer reading it.
  */
 const TaskAutoDismiss = memo(function TaskAutoDismiss({
   id,
@@ -124,6 +126,8 @@ export const TaskNotificationStack = () => {
 
   const [hovered, setHovered] = useState(false)
   const [hoverId, setHoverId] = useState<string | null>(null)
+  // The row under the pointer, whether or not it has opened yet.
+  const [pointedId, setPointedId] = useState<string | null>(null)
   const [pinnedId, setPinnedId] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
   const [frozenOrder, setFrozenOrder] = useState<string[] | null>(null)
@@ -146,7 +150,7 @@ export const TaskNotificationStack = () => {
 
   // What the stable row callbacks below need to read without being rebuilt
   // (which would re-render every memoized row) each time it changes.
-  const latest = useLatestRef({ expandedId, engaged, hovered, displayIds, pinned })
+  const latest = useLatestRef({ expandedId, engaged, hovered, displayIds, pinned, pointedId })
 
   useEffect(() => {
     const timers = intent.current
@@ -164,6 +168,7 @@ export const TaskNotificationStack = () => {
     (id: string) => {
       const state = intent.current
       clearTimeout(state.close)
+      if (id !== latest.current.pointedId) setPointedId(id)
       if (id === latest.current.expandedId) {
         cancelOpen(state)
         return
@@ -229,6 +234,7 @@ export const TaskNotificationStack = () => {
   }
 
   const onPointerLeave = () => {
+    setPointedId(null)
     cancelOpen(intent.current)
     clearTimeout(intent.current.close)
     // Only leaving the WHOLE island closes a row. Moving between rows, or
@@ -245,7 +251,7 @@ export const TaskNotificationStack = () => {
   return (
     <>
       {ids.map((id) => (
-        <TaskAutoDismiss key={id} id={id} task={tasksById.get(id)} paused={id === expandedId} />
+        <TaskAutoDismiss key={id} id={id} task={tasksById.get(id)} paused={id === expandedId || id === pointedId} />
       ))}
       <AnimatePresence>
         {displayIds.length > 0 && (

@@ -1,3 +1,4 @@
+import { isTaskLive } from '@/rekuest/lib/taskTracker'
 // ── Task Space Store (single source of truth) ───────────────────────
 
 import { useContext } from 'react'
@@ -270,7 +271,7 @@ export const createSpaceViewStore = (task: DetailTaskFragment) => {
 
   // A running task opens at the live frontier and follows "now"; a finished
   // task opens at its start for replay (follow disabled).
-  const taskDone = task.isDone === true
+  const taskDone = !isTaskLive(task)
   const liveNow = Date.now()
   const initialTimepoint = taskDone ? startTime : liveNow
   const initialActive = computeActiveAtTimepoint(initialTimepoint, children, agentToTaskIds)
@@ -371,7 +372,7 @@ export const createSpaceViewStore = (task: DetailTaskFragment) => {
     refreshTimeline: (updatedTask) => {
       const { isLive: wasLive, liveNow: currentNow, selectedTimepoint: currentTimepoint } = get()
       // Live stops cleanly the moment the task completes, so the final frame stays put.
-      const stillLive = wasLive && updatedTask.isDone !== true
+      const stillLive = wasLive && isTaskLive(updatedTask)
       const computeAt = stillLive ? currentNow : currentTimepoint
 
       const updatedChildren = (updatedTask.children || []).filter(notEmpty)

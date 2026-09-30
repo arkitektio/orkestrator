@@ -61,8 +61,16 @@ export const writeTaskEventToCache = (
         );
         return ref ? [ref, ...list] : list;
       },
-      latestEventKind: () => event.kind,
-      isDone: (prev: boolean) => prev || event.kind === TaskEventKind.Completed,
+      // An ended task stays ended: what arrives after it (a LATE_REPORT) is
+      // an annotation, never a new state.
+      latestEventKind: (prev: TaskEventKind) =>
+        prev && isTerminalEvent(prev) && !isTerminalEvent(event.kind)
+          ? prev
+          : event.kind,
+      // The server sets isDone on EVERY terminal kind, not just COMPLETED;
+      // mirror it, or a failed / cancelled / lost task reads as running (and
+      // every clock keyed on isDone ticks on forever).
+      isDone: (prev: boolean) => prev || isTerminalEvent(event.kind),
       finishedAt: (prev: string | null) =>
         isTerminalEvent(event.kind) ? event.createdAt : prev,
     },

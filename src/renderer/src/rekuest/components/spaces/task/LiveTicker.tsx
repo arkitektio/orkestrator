@@ -1,3 +1,4 @@
+import { isTaskLive } from '@/rekuest/lib/taskTracker'
 import { useEffect } from 'react'
 import { useSpaceViewStore } from './store'
 
@@ -12,7 +13,7 @@ import { useSpaceViewStore } from './store'
  * fine a few times a second but wasteful at 60 fps.
  */
 export const LiveTicker = () => {
-  const taskDone = useSpaceViewStore((s) => s.task.isDone === true)
+  const taskDone = useSpaceViewStore((s) => !isTaskLive(s.task))
   const finishedAt = useSpaceViewStore((s) => s.task.finishedAt)
   const setLiveNow = useSpaceViewStore((s) => s.setLiveNow)
 

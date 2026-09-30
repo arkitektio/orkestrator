@@ -483,6 +483,21 @@ describe("clearing on its own", () => {
     expect(dismiss).toHaveBeenCalledWith("t1");
   });
 
+  it("holds a finished row under the pointer even before it opens", () => {
+    show([makeTask("a"), doneTask("t1")]);
+    render(<TaskNotificationStack />);
+    // Open another row, then land on the finished one inside the settle
+    // pause: it does not open, but it is being read all the same.
+    hover(/action a/);
+    fireEvent.pointerMove(header(/action t1/));
+    tick(20_000);
+    expect(dismiss).not.toHaveBeenCalled();
+
+    leave();
+    tick(8000);
+    expect(dismiss).toHaveBeenCalledWith("t1");
+  });
+
   it("clears tasks hidden behind the stacked edge too", () => {
     show([
       makeTask("a"),

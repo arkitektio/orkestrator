@@ -1,3 +1,4 @@
+import { isTaskLive } from '@/rekuest/lib/taskTracker'
 import { Button } from '@/core/ui/button'
 import { useSpaceViewStore } from '../store'
 import { classifyChild, type ChildStatusBucket } from './statusColors'
@@ -46,7 +47,7 @@ const CountChip = ({
  */
 export const LiveStatusStrip = () => {
   const children = useSpaceViewStore((s) => s.task.children)
-  const taskDone = useSpaceViewStore((s) => s.task.isDone === true)
+  const taskDone = useSpaceViewStore((s) => !isTaskLive(s.task))
   const isLive = useSpaceViewStore((s) => s.isLive)
   const enableLive = useSpaceViewStore((s) => s.enableLive)
   const startTime = useSpaceViewStore((s) => new Date(s.task.createdAt).getTime())

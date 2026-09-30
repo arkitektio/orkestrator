@@ -91,6 +91,17 @@
   animation: task-pulse 700ms ease-out both;
 }
 
+/* A mark that just arrived on the task page's lane: a ring that widens and
+ * fades twice, then is gone (the ring unmounts once the mark is old). */
+@keyframes mark-ping {
+  from { transform: scale(1); opacity: 0.8; }
+  to { transform: scale(2.6); opacity: 0; }
+}
+
+@utility animate-mark-ping {
+  animation: mark-ping 1.1s ease-out 2 both;
+}
+
 /* Honour a stated preference for less motion: the palette still appears, it
  * just does not travel — and the task island holds still, its state carried by
  * the ring and the label alone. */
@@ -99,6 +110,9 @@
     from, to { transform: translateX(-100%); }
   }
   @keyframes task-pulse {
+    from, to { opacity: 0; }
+  }
+  @keyframes mark-ping {
     from, to { opacity: 0; }
   }
 }

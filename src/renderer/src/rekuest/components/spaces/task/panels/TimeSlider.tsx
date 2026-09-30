@@ -1,3 +1,4 @@
+import { isTaskLive } from '@/rekuest/lib/taskTracker'
 import { Slider } from '@/core/ui/slider'
 import { Button } from '@/core/ui/button'
 import { Radio } from 'lucide-react'
@@ -15,7 +16,7 @@ export const TimeSlider = () => {
   const selectedTimepoint = useSpaceViewStore((s) => s.selectedTimepoint)
   const isLive = useSpaceViewStore((s) => s.isLive)
   const enableLive = useSpaceViewStore((s) => s.enableLive)
-  const taskDone = useSpaceViewStore((s) => s.task.isDone === true)
+  const taskDone = useSpaceViewStore((s) => !isTaskLive(s.task))
 
   const span = endTime - startTime
   const fraction = span > 0 ? (selectedTimepoint - startTime) / span : 0

@@ -2,7 +2,7 @@ import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import { RekuestGuard } from "@/rekuest/api/hooks";
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import Action from "./pages/ActionPage";
 import Actions from "./pages/ActionsPage";
 import AgentPage from "./pages/AgentPage";
@@ -34,11 +34,9 @@ import InterfacePage from "./pages/InterfacePage";
 import InterfacesPage from "./pages/InterfacesPage";
 import StructuresPage from "./pages/StructuresPage";
 import TaskLogPage from "./pages/task/TaskLogPage";
-import TaskSpacePage from "./pages/task/TaskSpacePage";
 import TasksPage from "./pages/TasksPage";
 import OrgTasksPage from "./pages/OrgTasksPage";
 import ImplementationsPage from "./pages/ImplementationsPage";
-import TaskTimelinePage from "./pages/task/TaskTimelinePage";
 import { ResolutionPage } from "./pages/ResolutionPage";
 import AgentSpacePage from "./pages/agent/AgentSpacePage";
 import AgentStatesPage from "./pages/agent/AgentStatesPage";
@@ -55,6 +53,11 @@ import { NotFound } from "@/core/layout/fallbacks/NotFound";
  * The Rekuest Module is the entrypoint to all specfic rekuest functionality.
  * It provides the routes for the rekuest module.
  */
+/** `tasks/:id/space` and `tasks/:id/timeline` → the task page, stage on Space. */
+const ToTaskStage = () => (
+  <Navigate to={{ pathname: "..", search: "?stage=space" }} relative="path" replace />
+);
+
 const Module: React.FC = () => {
   return (
       <ModuleLayout>
@@ -106,8 +109,9 @@ const Module: React.FC = () => {
           <Route path="org-tasks" element={<OrgTasksPage />} />
           <Route path="tasks/:id" element={<TaskPage />} />
           <Route path="tasks/:id/log" element={<TaskLogPage />} />
-          <Route path="tasks/:id/space" element={<TaskSpacePage />} />
-          <Route path="tasks/:id/timeline" element={<TaskTimelinePage />} />
+          {/* Folded into the task page's stage; old links open it there. */}
+          <Route path="tasks/:id/space" element={<ToTaskStage />} />
+          <Route path="tasks/:id/timeline" element={<ToTaskStage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
 

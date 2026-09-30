@@ -9,7 +9,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/core/ui/resizable";
 import { RekuestTask } from "@/core/linkers";
 import {
   DetailTaskFragment,
@@ -18,13 +22,27 @@ import {
   usePauseMutation,
   useResumeMutation,
 } from "@/rekuest/api/graphql";
-import { ChevronDown, Clock, ListChecks } from "lucide-react";
+import { ChevronDown, Clock, ListChecks, PanelTop } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ChildTaskUpdater } from "../components/updaters/ChildTaskUpdater";
 import {
-  DefaultRenderer,
+  TaskStatusHero,
   TaskTimeLine,
 } from "../components/task/TaskEventLog";
-import { PageSections } from "@/core/layout/PageSections";
+import { TaskLane } from "../components/task/lane/TaskLane";
+import {
+  isYieldLike,
+  LaneSelection,
+  resolveSelection,
+  selectionTime,
+} from "../components/task/lane/selection";
+import { TaskDetailStrip } from "../components/task/TaskDetailStrip";
+import {
+  StageTab,
+  stageTabs,
+  TaskStage,
+} from "../components/task/TaskStage";
 import { useCancelTask } from "../hooks/useAssign";
 import { useReassign } from "../hooks/useReassign";
 import {
@@ -90,6 +108,54 @@ export const TaskStatsSidebar = (props: { task: DetailTaskFragment }) => {
   );
 };
 
+const STAGE_OPEN_KEY = "rekuest.task.stage.open";
+const STAGE_TAB_KEY = "rekuest.task.stage.tab";
+
+const readPref = (key: string): string | null => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const writePref = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Storage blocked: the choice just isn't remembered.
+  }
+};
+
+const isStageTab = (v: string | null): v is StageTab =>
+  v === "flow" || v === "space" || v === "result";
+
+/**
+ * Whether the stage is open and which view it shows, remembered per viewer.
+ * `?stage=space` (the old /space and /timeline routes) opens it on that view.
+ */
+const useStagePrefs = () => {
+  const [params] = useSearchParams();
+  const asked = params.get("stage");
+  const [open, setOpenState] = useState(
+    () => isStageTab(asked) || readPref(STAGE_OPEN_KEY) !== "false",
+  );
+  const [tab, setTabState] = useState<StageTab | null>(() => {
+    if (isStageTab(asked)) return asked;
+    const stored = readPref(STAGE_TAB_KEY);
+    return isStageTab(stored) ? stored : null;
+  });
+  const setOpen = (next: boolean) => {
+    setOpenState(next);
+    writePref(STAGE_OPEN_KEY, String(next));
+  };
+  const setTab = (next: StageTab) => {
+    setTabState(next);
+    writePref(STAGE_TAB_KEY, next);
+  };
+  return { open, setOpen, tab, setTab };
+};
+
 export const TPage = asDetailQueryRoute(
   useDetailTaskQuery,
   ({ data }) => {
@@ -100,16 +166,51 @@ export const TPage = asDetailQueryRoute(
     const [pause] = usePauseMutation();
     const [resume] = useResumeMutation();
 
-    // The Timeline and Space views visualize delegations to other apps —
-    // they're only offered when this task actually fanned out.
-    const hasDelegations =
-      (data.task.children?.length ?? 0) > 0 ||
-      (data.task.resolvedDependencies?.length ?? 0) > 0;
+    const [selection, setSelection] = useState<LaneSelection>(null);
+    const resolved = useMemo(
+      () => resolveSelection(data.task, selection),
+      [data.task, selection],
+    );
+
+    const stage = useStagePrefs();
+    const tabs = stageTabs(data.task);
+    const stageTab =
+      stage.tab && tabs.includes(stage.tab) ? stage.tab : tabs[0];
+    const stageOpen = stage.open && stageTab != null;
+
+    const body = (
+      <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-y-auto p-4">
+        <TaskLane
+          task={data.task}
+          selection={
+            resolved?.kind === "event"
+              ? { kind: "event", id: resolved.event.id }
+              : resolved?.kind === "child"
+                ? { kind: "child", id: resolved.child.id }
+                : null
+          }
+          onSelect={setSelection}
+        />
+        <TaskDetailStrip task={data.task} resolved={resolved} />
+      </div>
+    );
 
     return (
       <RekuestTask.ModelPage
         title={data?.task?.action.name}
-        additionalSidebars={<Sidebars.Tab label="Stats"><TaskStatsSidebar task={data.task} /></Sidebars.Tab>}
+        additionalSidebars={
+          <>
+            {/* The complete record, line by line: the lane's marks, in full. */}
+            <Sidebars.Tab label="Log">
+              <div className="p-2">
+                <TaskTimeLine task={data.task} />
+              </div>
+            </Sidebars.Tab>
+            <Sidebars.Tab label="Stats">
+              <TaskStatsSidebar task={data.task} />
+            </Sidebars.Tab>
+          </>
+        }
         object={data.task}
         pageActions={
           <>
@@ -123,24 +224,6 @@ export const TPage = asDetailQueryRoute(
               >
                 <PageAction size="sm">Logs</PageAction>
               </RekuestTask.DetailLink>
-              {hasDelegations && (
-                <RekuestTask.DetailLink
-                  object={data?.task}
-                  subroute="timeline"
-                  className="font-semibold"
-                >
-                  <PageAction size="sm">Timeline</PageAction>
-                </RekuestTask.DetailLink>
-              )}
-              {hasDelegations && (
-                <RekuestTask.DetailLink
-                  object={data?.task}
-                  subroute="space"
-                  className="font-semibold"
-                >
-                  <PageAction size="sm">Space</PageAction>
-                </RekuestTask.DetailLink>
-              )}
               {data.task.parent && (
                 <RekuestTask.DetailLink
                   object={data?.task?.parent}
@@ -151,6 +234,18 @@ export const TPage = asDetailQueryRoute(
                 </RekuestTask.DetailLink>
               )}
             </PageActionGroup>
+            {tabs.length > 0 && (
+              <PageAction
+                priority={-5}
+                size="sm"
+                variant={stageOpen ? "secondary" : "outline"}
+                onClick={() => stage.setOpen(!stageOpen)}
+                title={stageOpen ? "Hide the stage" : "Show the stage"}
+              >
+                <PanelTop className="h-4 w-4" />
+                Stage
+              </PageAction>
+            )}
             {/* `gap-0`: the split button is one shape, not two buttons. */}
             <PageActionGroup priority={10} className="gap-0">
               <PageAction
@@ -275,32 +370,38 @@ export const TPage = asDetailQueryRoute(
           </>
         }
       >
-        <div className="flex h-full w-full relative">
+        <div className="flex h-full w-full flex-col">
           <ChildTaskUpdater taskId={data.task.id} />
-          {data?.task?.implementation?.higherOrderFor?.action?.key ===
-          "run_flow" ? (
-            <>
-              <Tabs className="flex-grow flex flex-col " defaultValue="flow">
-                <TabsList className="h-8 flex-initial">
-                  <TabsTrigger value="flow">Flow</TabsTrigger>
-                  <TabsTrigger value="logs">Logs</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="flow" className="flex-grow">
-                  {/* The live run, drawn by fluss (a `main` section on tasks). */}
-                  <PageSections
-                    placement="main"
-                    identifier="@rekuest/task"
-                    object={{ id: data.task.id }}
-                  />
-                </TabsContent>
-                <TabsContent value="logs" className="h-full w-full">
-                  <TaskTimeLine task={data?.task} />
-                </TabsContent>
-              </Tabs>
-            </>
+          <div className="shrink-0 px-4 pt-3">
+            <TaskStatusHero task={data.task} />
+          </div>
+          {stageOpen ? (
+            <ResizablePanelGroup
+              direction="vertical"
+              autoSaveId="rekuest:task-stage"
+              className="min-h-0 flex-1"
+            >
+              <ResizablePanel defaultSize={50} minSize={15}>
+                <TaskStage
+                  task={data.task}
+                  tabs={tabs}
+                  tab={stageTab}
+                  onTab={stage.setTab}
+                  focusTime={selection ? selectionTime(resolved) : null}
+                  selectedYield={
+                    resolved?.kind === "event" && isYieldLike(resolved.event)
+                      ? resolved.event
+                      : null
+                  }
+                />
+              </ResizablePanel>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={50} minSize={20}>
+                {body}
+              </ResizablePanel>
+            </ResizablePanelGroup>
           ) : (
-            <DefaultRenderer task={data?.task} />
+            <div className="min-h-0 flex-1">{body}</div>
           )}
         </div>
       </RekuestTask.ModelPage>
