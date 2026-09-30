@@ -1170,8 +1170,13 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         // `refreshedAt` stamp alone is not one.
         const { refreshedAt: _stamp, ...incoming } = patch.label;
         const { refreshedAt: _held, ...held } = profile.label;
-        const unchanged = Object.entries(incoming).every(
-          ([key, value]) => (held as Record<string, unknown>)[key] === value,
+        // Arrays (roles, scope) arrive as fresh instances on every answer.
+        const same = (a: unknown, b: unknown) =>
+          Array.isArray(a) && Array.isArray(b)
+            ? a.length === b.length && a.every((item, index) => item === b[index])
+            : a === b;
+        const unchanged = Object.entries(incoming).every(([key, value]) =>
+          same((held as Record<string, unknown>)[key], value),
         );
         return unchanged ? book : updateProfileLabel(book, profileId, patch.label);
       });

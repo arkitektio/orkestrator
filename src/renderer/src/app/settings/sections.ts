@@ -11,6 +11,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import type { RoleRequirement } from "@/core/connection/roles";
+
 /**
  * The settings, as sections: one route each, grouped in the left column.
  *
@@ -28,6 +30,8 @@ export type SettingsSection = {
   description: string;
   icon: LucideIcon;
   group: SettingsGroupKey;
+  /** Only for users with these roles: missing from the nav, "not permitted" by link. */
+  roles?: RoleRequirement;
 };
 
 export const SETTINGS_GROUPS: { key: SettingsGroupKey; title: string }[] = [

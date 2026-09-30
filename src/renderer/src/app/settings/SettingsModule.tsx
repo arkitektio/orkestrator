@@ -1,4 +1,5 @@
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import { RoleRoute } from "@/core/layout/fallbacks/NotPermitted";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
@@ -32,9 +33,15 @@ export const SettingsModule: React.FC = () => (
     <Routes>
       <Route element={<SettingsLayout />}>
         <Route index element={<Navigate to={DEFAULT_SECTION} replace />} />
-        {SETTINGS_SECTIONS.map(({ slug }) => {
+        {SETTINGS_SECTIONS.map(({ slug, roles }) => {
           const Page = PAGES[slug];
-          return <Route key={slug} path={slug} element={Page ? <Page /> : <NotFound />} />;
+          return (
+            <Route
+              key={slug}
+              path={slug}
+              element={Page ? <RoleRoute roles={roles}><Page /></RoleRoute> : <NotFound />}
+            />
+          );
         })}
         <Route path="*" element={<NotFound />} />
       </Route>

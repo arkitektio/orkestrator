@@ -29,6 +29,7 @@ export type {
   PartnerMixtureActive,
 } from "@/core/modules/spec";
 import type { Condition } from "@/core/modules/spec";
+import { currentRoles, satisfiesRoles, useRoles, type RoleRequirement } from "@/core/connection/roles";
 
 export type Structure = AppStructure;
 
@@ -84,6 +85,11 @@ export type Action<TAppOrServices = ServiceMap> = {
   icon?: LucideIcon;
   pinned?: boolean;
   conditions: readonly Condition[];
+  /**
+   * Only for users with these roles. Not a `Condition`: conditions describe
+   * the selection, this the user; the menu and `ObjectButton` both honour it.
+   */
+  roles?: RoleRequirement;
   collections?: readonly string[];
   execute: (action: ActionParams<TAppOrServices>) => Promise<ActionState | void>;
 };
@@ -92,7 +98,7 @@ export type ActionRegistry<TAppOrServices = ServiceMap> = Record<string, Action<
 
 type ActionMetadata = Pick<
   Action,
-  "title" | "description" | "icon" | "pinned" | "conditions" | "collections"
+  "title" | "description" | "icon" | "pinned" | "conditions" | "roles" | "collections"
 >;
 
 type RegistryActionId<TRegistry extends Record<string, unknown>> = Extract<
@@ -237,21 +243,31 @@ const matchesConditionsForState = (
   });
 };
 
+/**
+ * The actions that apply to `state`, for a user with `roles`. Without
+ * `roles` it reads the effective roles outside React (`currentRoles`), so
+ * a drop target never offers an action the menu would hide.
+ */
 export const getActionsForState = <TAppOrServices = ServiceMap>(
   registry: ActionRegistry<TAppOrServices>,
   state: ActionState,
+  roles: readonly string[] = currentRoles(),
 ): Action<TAppOrServices>[] => {
-  return Object.values(registry).filter((action) =>
-    matchesConditionsForState(action.conditions, state),
+  return Object.values(registry).filter(
+    (action) =>
+      satisfiesRoles(roles, action.roles) && matchesConditionsForState(action.conditions, state),
   );
 };
 
 export const getActionEntriesForState = <TRegistry extends Record<string, ActionMetadata>>(
   registry: TRegistry,
   state: ActionState,
+  roles: readonly string[] = currentRoles(),
 ): ActionEntry<TRegistry>[] => {
-  return getRegistryEntries(registry).filter((entry) =>
-    matchesConditionsForState(entry.action.conditions, state),
+  return getRegistryEntries(registry).filter(
+    (entry) =>
+      satisfiesRoles(roles, entry.action.roles) &&
+      matchesConditionsForState(entry.action.conditions, state),
   );
 };
 
@@ -407,6 +423,8 @@ export const  createLocalActionProvider = <TAppOrServices = ServiceMap, TRegistr
     search?: string;
   }): ActionEntry<TRegistry>[] => {
     const actionRegistry = useLocalActions((state) => state.registry);
+    // Unknown roles meet no requirement: a gated action waits for `mycontext`.
+    const { roles } = useRoles();
     // Keyed on the state's fields, not the object: callers build `state`
     // inline, and the scan (conditions + fuzzy score over the whole registry)
     // is what the menu must not repeat on every render.
@@ -415,10 +433,10 @@ export const  createLocalActionProvider = <TAppOrServices = ServiceMap, TRegistr
 
     return useMemo(
       () =>
-        getActionEntriesForState(actionRegistry, { left, right, isCommand }).filter(
+        getActionEntriesForState(actionRegistry, { left, right, isCommand }, roles).filter(
           (entry) => matchesActionSearch(entry.action, search),
         ),
-      [actionRegistry, left, right, isCommand, search],
+      [actionRegistry, left, right, isCommand, search, roles],
     );
   };
 

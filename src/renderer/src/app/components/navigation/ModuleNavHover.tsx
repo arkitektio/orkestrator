@@ -3,6 +3,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { NavLink } from "react-router-dom";
 
 import { type CatalogRoute, routeCatalog, routesOfModule } from "@/core/command/sources/routeCatalog";
+import { useRoles } from "@/core/connection/roles";
 import { useModuleHostVersion } from "@/core/modules/host/host";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/core/ui/hover-card";
 import { DroppableNavLink } from "@/core/ui/link";
@@ -88,11 +89,12 @@ export const layoutModuleNav = (links: readonly CatalogRoute[]): ModuleNavLayout
 /** One module's pages, re-read when a module arrives or leaves. */
 const useModuleNav = (moduleKey: string): ModuleNavLayout => {
   const version = useModuleHostVersion();
+  const { roles } = useRoles();
   return useMemo(
-    () => layoutModuleNav(routesOfModule(routeCatalog(), moduleKey)),
+    () => layoutModuleNav(routesOfModule(routeCatalog(), moduleKey, roles)),
     // `version` is the dependency: the catalog is rebuilt when it moves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [moduleKey, version],
+    [moduleKey, version, roles],
   );
 };
 

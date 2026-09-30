@@ -2,6 +2,7 @@ import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
 import { validateManifest, type ManifestIssue } from "@/core/modules/spec";
+import { dialogNeeds } from "./dialogNeeds";
 import type { ModuleBuiltins, ModuleDefinition } from "./define";
 
 /**
@@ -58,6 +59,20 @@ export const registrationIssues = (
   const issues: ManifestIssue[] = [];
   if (installed.some((other) => other.manifest.namespace === namespace)) {
     issues.push({ path: "namespace", message: `namespace ${namespace} is already registered` });
+  }
+
+  // A dialog may only need services the manifest declares: that list is
+  // the module-boundary edge (CLAUDE.md §5), and the guard trusts it.
+  const declared = new Set(definition.manifest.requires?.services ?? []);
+  for (const [id, Dialog] of Object.entries(definition.builtins.dialogs ?? {})) {
+    for (const service of dialogNeeds(Dialog)) {
+      if (service !== namespace && !declared.has(service)) {
+        issues.push({
+          path: `builtins.dialogs.${id}`,
+          message: `dialog "${id}" needs ${service}, which manifest.requires.services does not declare`,
+        });
+      }
+    }
   }
 
   const mine = claims(definition.builtins);
@@ -128,5 +143,10 @@ export const subscribeModuleHost = (listener: () => void) => store.subscribe(lis
 /** Re-renders when a module is registered or unregistered. */
 export const useModuleHostVersion = (): number => useStore(store, (state) => state.version);
 
-/** Test support: back to no modules. */
-export const resetModuleHost = () => store.setState({ modules: [], version: 0 });
+/**
+ * Test support: back to no modules. The version moves on rather than back
+ * to 0, or a registry derived in an earlier test at the same version would
+ * be served again (`derived` memoises on the version).
+ */
+export const resetModuleHost = () =>
+  store.setState((state) => ({ modules: [], version: state.version + 1 }));

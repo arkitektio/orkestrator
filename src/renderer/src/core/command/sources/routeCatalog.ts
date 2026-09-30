@@ -1,7 +1,8 @@
 import { Blocks, Home, LayoutDashboard } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
-import { moduleNavLinks } from "@/core/modules/registries";
+import { currentRoles, satisfiesRoles } from "@/core/connection/roles";
+import { isModuleAllowed, moduleNavLinks } from "@/core/modules/registries";
 import { derived } from "@/core/modules/host/lazy";
 import { rankByFilter } from "../filter";
 
@@ -28,9 +29,19 @@ const HOST_ROUTES: CatalogRoute[] = [
  */
 export const routeCatalog = derived((): CatalogRoute[] => [...moduleNavLinks(), ...HOST_ROUTES]);
 
-/** One module's pages, in declaration order. */
-export const routesOfModule = (catalog: readonly CatalogRoute[], module: string): CatalogRoute[] =>
-  catalog.filter((r) => r.module === module);
+/** The pages a user with `roles` may be offered: the link's own `roles` and its module's. */
+export const allowedRoutes = (
+  catalog: readonly CatalogRoute[],
+  roles: readonly string[] = currentRoles(),
+): CatalogRoute[] =>
+  catalog.filter((r) => satisfiesRoles(roles, r.roles) && isModuleAllowed(r.module, roles));
+
+/** One module's pages, in declaration order, for a user with `roles`. */
+export const routesOfModule = (
+  catalog: readonly CatalogRoute[],
+  module: string,
+  roles: readonly string[] = currentRoles(),
+): CatalogRoute[] => allowedRoutes(catalog, roles).filter((r) => r.module === module);
 
 /**
  * The pages worth offering for what was typed.
@@ -46,12 +57,13 @@ export const searchRoutes = (
   readyModules: readonly { key: string; label?: string }[],
   filter: string | undefined,
   limit = 10,
+  roles: readonly string[] = currentRoles(),
 ): CatalogRoute[] => {
   const term = filter?.trim();
   if (!term) return [];
   const ready = new Map(readyModules.map((m) => [m.key, m.label ?? m.key]));
   return rankByFilter(
-    catalog.filter((r) => ready.has(r.module)),
+    allowedRoutes(catalog, roles).filter((r) => ready.has(r.module)),
     (r) => [r.label, r.route, ready.get(r.module), ...(r.keywords ?? [])],
     term,
     limit,

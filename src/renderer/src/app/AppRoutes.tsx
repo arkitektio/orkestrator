@@ -9,6 +9,7 @@ import { ModuleLoadingFallback } from "./components/fallbacks/ModuleLoading";
 import { QuietPage } from "../core/layout/fallbacks/QuietPage";
 import { ShellSignInNotice } from "../core/connection/ui/ShellSignInNotice";
 import { NotFound } from "../core/layout/fallbacks/NotFound";
+import { RoleRoute } from "../core/layout/fallbacks/NotPermitted";
 import { MODULE_ALIASES, ModuleRedirect } from "./components/navigation/ModuleRedirect";
 import { useModuleHostVersion } from "@/core/modules/host/host";
 import { modulePages } from "../core/modules/registries";
@@ -74,8 +75,17 @@ export const AppRoutes = () => {
               the wrong connection, or none. */}
           <Route path="open" element={<ShareGatePage />} />
           {/* Every module under its namespace (lok too: labelled "Team", routed as lok). */}
-          {modulePages().map(({ namespace, Page }) => (
-            <Route key={namespace} path={`${namespace}/*`} element={protectModule(<Page />)} />
+          {/* A module with `roles` shows "not permitted" to anyone else. */}
+          {modulePages().map(({ namespace, roles, Page }) => (
+            <Route
+              key={namespace}
+              path={`${namespace}/*`}
+              element={protectModule(
+                <RoleRoute roles={roles}>
+                  <Page />
+                </RoleRoute>,
+              )}
+            />
           ))}
           <Route path="settings/*" element={protectModule(<SettingsModule />)} />
           <Route path="blok/*" element={protectModule(<BlokModule />)} />

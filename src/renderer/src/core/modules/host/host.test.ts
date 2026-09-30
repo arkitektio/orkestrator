@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { defineModule, type ModuleBuiltins } from "./define";
+import { needsServices } from "./dialogNeeds";
 import {
   installedModules,
   moduleHostVersion,
@@ -65,6 +66,24 @@ describe("registerModule", () => {
       issues: [{ path: "builtins.dialog", message: 'dialog "creatething" is already claimed by alpha' }],
     });
     expect(installedModules()).toHaveLength(1);
+  });
+
+  it("refuses a dialog needing a service the manifest does not require", () => {
+    const Dialog = needsServices(["rekuest"], () => null);
+    const result = registerModule(module("store", { dialogs: { storeinstall: Dialog } }));
+    expect(result).toMatchObject({
+      ok: false,
+      issues: [
+        {
+          path: "builtins.dialogs.storeinstall",
+          message: 'dialog "storeinstall" needs rekuest, which manifest.requires.services does not declare',
+        },
+      ],
+    });
+
+    const declared = module("store", { dialogs: { storeinstall: Dialog } });
+    declared.manifest.requires = { services: ["rekuest"] };
+    expect(registerModule(declared).ok).toBe(true);
   });
 });
 

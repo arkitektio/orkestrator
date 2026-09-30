@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 
+import type { RoleRequirement } from "@/core/connection/roles";
 import type { FileDownloader } from "@/core/modules/export/fileDownloaders";
 import type { DisplayWidgetProps } from "@/core/smart/display/registry";
 import type { Action } from "@/core/smart/localactions/LocalActionProvider";
@@ -37,6 +38,11 @@ export type NavLinkDecl = {
   icon?: ComponentType<{ className?: string }>;
   /** The module's landing page: the popout's header links here instead of a tile. */
   home?: boolean;
+  /**
+   * Only offered (popout tile, palette row) to users with these roles. Hides
+   * the link, not the route: guard the route itself with `RoleRoute`.
+   */
+  roles?: RoleRequirement;
 };
 
 /**
@@ -73,6 +79,8 @@ export type PageSection = {
   slot?: "knowledge" | "chat" | "home" | "notifications";
   /** Which pages: by identifier(s), and/or every datum. Empty = every model page. */
   match: { identifiers?: readonly string[]; datum?: boolean };
+  /** Only for users with these roles in the organization (`core/connection/roles`). */
+  roles?: RoleRequirement;
   /** `onChanged`: the section changed the object; the page should refetch. */
   Component: ComponentType<{ identifier: string; object: Object; onChanged?: () => unknown }>;
 };
@@ -136,6 +144,12 @@ export type ModuleDefinition<B extends ModuleBuiltins = ModuleBuiltins> = {
    * host guards the module's builtins on it.
    */
   serviceKey: string;
+  /**
+   * The whole module only for users with these roles: its rail tile, palette
+   * rows and routes (a deep link shows "not permitted"). Its other builtins
+   * each gate on their own `roles`.
+   */
+  roles?: RoleRequirement;
   builtins: B;
 };
 
@@ -205,9 +219,11 @@ export const describeBuiltins = (manifest: ModuleManifest, builtins: ModuleBuilt
 export const defineModule = <const B extends ModuleBuiltins>(definition: {
   manifest: ModuleManifest;
   serviceKey: string;
+  roles?: RoleRequirement;
   builtins: B;
 }): ModuleDefinition<B> => ({
   manifest: describeBuiltins(definition.manifest, definition.builtins),
   serviceKey: definition.serviceKey,
+  ...(definition.roles !== undefined ? { roles: definition.roles } : {}),
   builtins: definition.builtins,
 });

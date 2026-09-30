@@ -12,6 +12,8 @@ import { Command as CommandPrimitive } from "cmdk";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useRoles } from "@/core/connection/roles";
+import { isModuleAllowed } from "@/core/modules/registries";
 
 /**
  * A fresh tab: the search, and the modules.
@@ -30,13 +32,15 @@ export const NewTabPage = () => {
   const filter = useDebounce(query, 100);
 
   const availableModules = Arkitekt.useAvailableModules();
+  const { roles } = useRoles();
   const modules = useMemo(
     () =>
       Object.keys(moduleRegistry)
+        .filter((key) => isModuleAllowed(key, roles))
         .map((key) => availableModules.find((entry) => entry.key === key))
         .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
         .filter((entry) => entry.status === "ready" || entry.status === "checking"),
-    [availableModules],
+    [availableModules, roles],
   );
 
   return (

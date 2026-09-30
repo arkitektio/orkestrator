@@ -12,6 +12,8 @@ import type {
   PaletteHitActionProps,
 } from "@/core/modules/host/define";
 import type { PassDownProps } from "@/core/smart/extensions/types";
+import { dialogNeeds, dialogRoles } from "@/core/modules/host/dialogNeeds";
+import { currentRoles, describeRoles, RoleGuard, satisfiesRoles, type RoleRequirement } from "@/core/connection/roles";
 import { installedModules, useModuleHostVersion } from "@/core/modules/host/host";
 import { derived, derivedRecord } from "@/core/modules/host/lazy";
 import type { ProfileSection } from "@/core/connection/profile/section";
@@ -150,15 +152,30 @@ const DialogUnavailable = ({ label }: { label: string }) => (
   </div>
 );
 
+/** What a dialog shows to a user without the roles it declared with `needsRoles`. */
+const DialogNotPermitted = ({ roles }: { roles: RoleRequirement }) => (
+  <div className="flex flex-col gap-1.5">
+    <DialogTitle>Not permitted</DialogTitle>
+    <DialogDescription>
+      This needs the {describeRoles(roles)} role in the organization. Ask an administrator for it.
+    </DialogDescription>
+  </div>
+);
+
 /**
  * A dialog, mounted only once every service it needs is ready: its own
- * module's and each one the module declares in `manifest.requires.services`
- * (CLAUDE.md §1). Another module being down does not blank it.
+ * module's and each one the dialog itself declares with `needsServices`
+ * (CLAUDE.md §1). Not the whole manifest's `requires`: kabinet needs rekuest
+ * to install a release, not to add a repo. Another module being down does
+ * not blank it.
  */
 const guardedDialog = <P extends object>(definition: ModuleDefinition, Dialog: ComponentType<P>): ComponentType<P> => {
-  const needs = [namespaceOf(definition), ...(definition.manifest.requires?.services ?? [])];
-  const Guarded = (props: P) =>
-    needs.reduceRight<ReactNode>((inner, namespace) => {
+  const needs = [namespaceOf(definition), ...dialogNeeds(Dialog)];
+  const roles = dialogRoles(Dialog);
+  // Roles outermost: the services' guards (and the dialog's queries) never
+  // mount for a user who may not open it.
+  const Guarded = (props: P) => {
+    const guarded = needs.reduceRight<ReactNode>((inner, namespace) => {
       const Guard = moduleGuard(namespace);
       const label =
         (moduleDefinitions() as readonly ModuleDefinition[]).find((d) => namespaceOf(d) === namespace)?.manifest
@@ -169,6 +186,13 @@ const guardedDialog = <P extends object>(definition: ModuleDefinition, Dialog: C
         </Guard>
       );
     }, <Dialog {...props} />);
+    if (roles === undefined) return guarded;
+    return (
+      <RoleGuard require={roles} fallback={<DialogNotPermitted roles={roles} />}>
+        {guarded}
+      </RoleGuard>
+    );
+  };
   Guarded.displayName = `GuardedDialog(${Dialog.displayName ?? Dialog.name ?? namespaceOf(definition)})`;
   return Guarded;
 };
@@ -229,6 +253,18 @@ export const moduleOptionSources = derived(() => concat((builtins) => builtins.o
 export const findOptionSource = (identifier: string, by?: string) =>
   moduleOptionSources().find((source) => source.identifier === identifier && source.by === by);
 
+/** The roles a whole module declared (`ModuleDefinition.roles`), if any. */
+export const moduleRoles = (namespace: string): RoleRequirement | undefined =>
+  (moduleDefinitions() as readonly ModuleDefinition[]).find((d) => namespaceOf(d) === namespace)?.roles;
+
+/**
+ * Whether a user with `roles` may see the module `namespace` (its rail tile,
+ * routes, pages in the palette, rail islands). Not installed = no module
+ * requirement: the host's own entries ("blok") and runtime-only keys pass.
+ */
+export const isModuleAllowed = (namespace: string, roles: readonly string[] = currentRoles()): boolean =>
+  satisfiesRoles(roles, moduleRoles(namespace));
+
 /** Every module's pages (palette rows, popout tiles), tagged with the module they belong to. */
 export const moduleNavLinks = derived(() =>
   (moduleDefinitions() as readonly ModuleDefinition[]).flatMap((definition) =>
@@ -265,8 +301,10 @@ export const pageSectionsFor = (
   identifier: string,
   where: { placement?: PageSection["placement"]; slot?: PageSection["slot"] | null },
   isDatum: boolean,
+  roles: readonly string[] = currentRoles(),
 ): HostPageSection[] =>
   modulePageSections().filter((section) => {
+    if (!satisfiesRoles(roles, section.roles)) return false;
     if (where.placement && section.placement !== where.placement) return false;
     if (where.slot !== undefined && (section.slot ?? null) !== where.slot) return false;
     const { identifiers, datum } = section.match;
@@ -303,7 +341,7 @@ export const modulePages = derived(() =>
       Page = React.lazy(definition.builtins.page);
       pageCache.set(definition, Page);
     }
-    return { namespace: namespaceOf(definition), Page };
+    return { namespace: namespaceOf(definition), roles: definition.roles, Page };
   }),
 );
 
@@ -354,11 +392,13 @@ export const ModuleRailIslands = () => {
         if (!islands?.length) return null;
         const Guard = moduleGuard(namespaceOf(definition));
         return (
-          <Guard key={namespaceOf(definition)}>
-            {islands.map((Island, index) => (
-              <Island key={index} />
-            ))}
-          </Guard>
+          <RoleGuard key={namespaceOf(definition)} require={definition.roles}>
+            <Guard>
+              {islands.map((Island, index) => (
+                <Island key={index} />
+              ))}
+            </Guard>
+          </RoleGuard>
         );
       })}
     </>

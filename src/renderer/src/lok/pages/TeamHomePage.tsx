@@ -5,6 +5,7 @@ import { HelpSidebar } from "@/core/layout/help";
 import { PageAction } from "@/core/ui/page-action";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { useState } from "react";
+import { ADMIN_ROLE, useHasRoles } from "@/core/connection/roles";
 import { toast } from "@/core/notify";
 import {
   OrganizationFragment,
@@ -69,6 +70,8 @@ const TeamHomePage = () => {
     fetchPolicy: "cache-and-network",
   });
   const [inviteOpen, setInviteOpen] = useState(false);
+  // Inviting (and the invite links themselves) is for the organization's admins.
+  const isAdmin = useHasRoles(ADMIN_ROLE);
   const resolve = useLokResolve();
   const [updateOrganization] = useUpdateOrganizationMutation();
   // Lands on `OrganizationProfile.avatar`, the one logo field lok keeps; lok
@@ -97,26 +100,30 @@ const TeamHomePage = () => {
     <PageLayout
       title={organization.name}
       pageActions={
-        <>
-          <PageAction alwaysShow onClick={() => setInviteOpen(true)}>
-            Invite
-          </PageAction>
-          {/* Not an action: the dialog the action opens. */}
-          <PageAction.Slot collapse="hide">
-            <CreateInviteDialog
-              open={inviteOpen}
-              onOpenChange={setInviteOpen}
-              organizationId={organization.id}
-              availableRoles={organization.roles}
-            />
-          </PageAction.Slot>
-        </>
+        isAdmin && (
+          <>
+            <PageAction alwaysShow onClick={() => setInviteOpen(true)}>
+              Invite
+            </PageAction>
+            {/* Not an action: the dialog the action opens. */}
+            <PageAction.Slot collapse="hide">
+              <CreateInviteDialog
+                open={inviteOpen}
+                onOpenChange={setInviteOpen}
+                organizationId={organization.id}
+                availableRoles={organization.roles}
+              />
+            </PageAction.Slot>
+          </>
+        )
       }
       sidebars={
         <Sidebars>
-          <Sidebars.Tab label="Invites">
-            <Invites invites={organization.invites} />
-          </Sidebars.Tab>
+          {isAdmin && (
+            <Sidebars.Tab label="Invites">
+              <Invites invites={organization.invites} />
+            </Sidebars.Tab>
+          )}
           <Sidebars.Tab label="Statistics">
             <HomePageStatisticsSidebar />
           </Sidebars.Tab>

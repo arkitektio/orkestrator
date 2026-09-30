@@ -1,4 +1,5 @@
 import { PaneLink, SidePaneGroup } from "@/core/ui/sidepane";
+import { satisfiesRoles, useRoles } from "@/core/connection/roles";
 import { Outlet } from "react-router-dom";
 import { SETTINGS_GROUPS, SETTINGS_SECTIONS, settingsLink } from "../sections";
 
@@ -7,7 +8,9 @@ import { SETTINGS_GROUPS, SETTINGS_SECTIONS, settingsLink } from "../sections";
  * left, the chosen section on the right. The column is the same nav the rail's
  * module cards use, laid out vertically, so it reads as the same chrome.
  */
-export const SettingsNav = () => (
+export const SettingsNav = () => {
+  const { roles } = useRoles();
+  return (
   <nav
     aria-label="Settings sections"
     className="flex w-52 shrink-0 flex-col overflow-y-auto border-r border-border bg-sidebar/40 p-3 text-xs"
@@ -15,7 +18,9 @@ export const SettingsNav = () => (
     <div className="px-2 pb-3 text-sm font-semibold">Settings</div>
     {SETTINGS_GROUPS.map((group) => (
       <SidePaneGroup key={group.key} title={group.title}>
-        {SETTINGS_SECTIONS.filter((section) => section.group === group.key).map(
+        {SETTINGS_SECTIONS.filter(
+          (section) => section.group === group.key && satisfiesRoles(roles, section.roles),
+        ).map(
           ({ slug, label, icon: Icon }) => (
             <PaneLink key={slug} to={settingsLink(slug)}>
               <Icon />
@@ -26,7 +31,8 @@ export const SettingsNav = () => (
       </SidePaneGroup>
     ))}
   </nav>
-);
+  );
+};
 
 export const SettingsLayout = () => (
   <div className="flex h-full min-h-0 w-full flex-row">

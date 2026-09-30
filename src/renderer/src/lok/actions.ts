@@ -1,5 +1,6 @@
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
 import { BellRing, Building2, ShieldOff } from 'lucide-react'
+import { ADMIN_ROLE } from '@/core/connection/roles'
 
 export const LOK_ACTIONS = {
   notify_user: {
@@ -21,6 +22,7 @@ export const LOK_ACTIONS = {
     description: 'Add the user to the organization this profile acts in',
     icon: Building2,
     conditions: [{ type: 'identifier', identifier: '@lok/user' }, { type: 'nopartner' }],
+    roles: ADMIN_ROLE,
     collections: ['notify'],
     execute: async ({ state, dialog }) => {
       const users = state.left

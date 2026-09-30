@@ -33,13 +33,21 @@ describe("ROUTE_CATALOG", () => {
 
   it("finds every page by its own name", () => {
     const all = ROUTE_CATALOG.map((r) => ({ key: r.module }));
+    // As an admin, who is offered every page (role-gated ones included).
     for (const r of ROUTE_CATALOG) {
-      expect(searchRoutes(ROUTE_CATALOG, all, r.label, 500).map((x) => x.route), r.label).toContain(r.route);
+      expect(searchRoutes(ROUTE_CATALOG, all, r.label, 500, ["admin"]).map((x) => x.route), r.label).toContain(r.route);
     }
   });
 });
 
 describe("searchRoutes", () => {
+  it("offers role-gated pages only to users with the role", () => {
+    const lok = [{ key: "lok", label: "Team" }];
+    const routes = (roles: string[]) => searchRoutes(ROUTE_CATALOG, lok, "Redeem Tokens", 500, roles).map((r) => r.route);
+    expect(routes([])).not.toContain("/lok/redeemtokens");
+    expect(routes(["admin"])).toContain("/lok/redeemtokens");
+  });
+
   const ready = [{ key: "rekuest", label: "Rekuest" }, { key: "mikro", label: "Mikro" }];
 
   it("offers nothing until something is typed", () => {

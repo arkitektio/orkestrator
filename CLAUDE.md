@@ -38,8 +38,12 @@ Examples in-tree:
 - `core/smart/extensions/SectionHost.tsx` wraps each menu section's query
   in the section's `Guard` (declared on its descriptor, see §4).
 - Each dialog is wrapped in its own module's guard plus the guard of every
-  service its manifest `requires` (`guardedDialog` in `core/modules/registries.tsx`);
-  while one is not ready the dialog says which service is missing.
+  service that dialog declares with `needsServices(["rekuest"], Dialog)`
+  (`core/modules/host/dialogNeeds.tsx`, read by `guardedDialog` in
+  `core/modules/registries.tsx`); while one is not ready the dialog says which
+  service is missing. Declare it per dialog, not per module: kabinet needs
+  rekuest to install a release, not to add a repo. A declared service must
+  also be in `manifest.requires.services`, or registration refuses the module.
 
 ## 2. The dialog system
 
@@ -64,7 +68,7 @@ Dialogs are a central **id registry**, not ad-hoc `<Dialog>` instances.
   `Sheet`. `closeDialog()` dismisses.
 - **Rendering:** the provider renders the matched component inside one shared
   `DialogContent` / `SheetContent`; the registry has already wrapped it in its
-  module's guard (and those of `manifest.requires.services`). Default dialog
+  module's guard (and those of the services it declares with `needsServices`). Default dialog
   is wide (`min-w-[80vw]` when no `size`/`className` given) — pass `size` /
   `className` to shrink. The component receives its props directly and calls
   `closeDialog()` itself (e.g. after a successful mutation).
@@ -235,3 +239,30 @@ Rules:
     edge is then "kept" in the allowlist, never silently tolerated.
 - `core/smart` reads the menu registries through
   `core/smart/hostRegistries.ts` (provided by `core/smart/smartcontext.tsx`).
+
+## 6. Role gates
+
+UI that only some users should see (by their roles in the active
+organization, lok `mycontext.roles`) is **declared**, never checked by hand.
+`core/connection/roles.tsx` owns it: `RoleRequirement` (`"admin"`, a list =
+any of, `{ allOf }` / `{ anyOf }`), `useRoles()` / `useHasRoles(req)`,
+`<RoleGuard require fallback pending>`, and the session-only developer
+"view as" override (Settings → Developer, shown as a rail island).
+
+- **Declare `roles` on the builtin** and the host filters it:
+  `defineModule({ roles })` (rail tile, routes → "not permitted", palette
+  pages, rail islands), `NavLinkDecl.roles`, `PageSection.roles`,
+  `Action.roles` (not a `Condition`: conditions are about the selection),
+  `SmartContextSection.roles`, `SettingsSection.roles`, and
+  `needsRoles("admin", Dialog)` in `dialogRegistry.ts` (composes with
+  `needsServices`).
+- A module's own sub-route: `<RoleRoute roles="admin">` from
+  `core/layout/fallbacks/NotPermitted`. Give its nav link the same `roles`.
+- Like service guards, `RoleGuard` wraps a component **from the outside**, so
+  its queries never run for someone who may not see it.
+- **`admin` passes every requirement** (`ADMIN_ROLE`); gate admin-only UI
+  with `roles: ADMIN_ROLE`. The "view as" override can drop it to preview.
+- Roles are cached on the profile label (warm boot gates without lok) and
+  unknown roles meet no requirement (gated UI stays hidden until known).
+- **Cosmetic only.** The backend enforces permissions; a hidden page must
+  never be the only protection.

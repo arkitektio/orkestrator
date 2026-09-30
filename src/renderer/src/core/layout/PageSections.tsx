@@ -1,3 +1,4 @@
+import { useRoles } from "@/core/connection/roles";
 import { pageSectionsFor } from "@/core/modules/registries";
 import type { PageSection } from "@/core/modules/host/define";
 import { useModuleHostVersion } from "@/core/modules/host/host";
@@ -24,9 +25,10 @@ export const PageSections = ({
   onChanged,
 }: SectionsProps & { placement: PageSection["placement"] }) => {
   useModuleHostVersion();
+  const { roles } = useRoles();
   return (
     <>
-      {pageSectionsFor(identifier, { placement, slot: null }, smartRegistry.isDatum(identifier)).map(
+      {pageSectionsFor(identifier, { placement, slot: null }, smartRegistry.isDatum(identifier), roles).map(
         ({ id, Component }) => (
           <Component key={id} identifier={identifier} object={object} onChanged={onChanged} />
         ),
@@ -35,7 +37,7 @@ export const PageSections = ({
   );
 };
 
-/** Whether anything fills a host-drawn sidebar for this model. */
+/** Whether anything fills a host-drawn sidebar for this model (for the effective roles, read outside React). */
 export const hasSlotSections = (identifier: Identifier, slot: NonNullable<PageSection["slot"]>) =>
   pageSectionsFor(identifier, { slot }, smartRegistry.isDatum(identifier)).length > 0;
 
@@ -46,9 +48,10 @@ export const SlotSections = ({
   slot,
 }: SectionsProps & { slot: NonNullable<PageSection["slot"]> }) => {
   useModuleHostVersion();
+  const { roles } = useRoles();
   return (
     <>
-      {pageSectionsFor(identifier, { slot }, smartRegistry.isDatum(identifier)).map(({ id, Component }) => (
+      {pageSectionsFor(identifier, { slot }, smartRegistry.isDatum(identifier), roles).map(({ id, Component }) => (
         <Component key={id} identifier={identifier} object={object} />
       ))}
     </>

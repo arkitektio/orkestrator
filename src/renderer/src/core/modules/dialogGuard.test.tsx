@@ -15,6 +15,7 @@ vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
 }));
 
 import { defineModule } from "@/core/modules/host/define";
+import { needsServices } from "@/core/modules/host/dialogNeeds";
 import { registerModule, resetModuleHost } from "@/core/modules/host/host";
 import { Dialog, DialogContent } from "@/core/ui/dialog";
 import { MODULE_DIALOGS } from "./registries";
@@ -70,9 +71,11 @@ describe("dialog guards", () => {
     expect(screen.getByText("Ledger is not available")).toBeTruthy();
   });
 
-  it("also waits for the services a module declares it requires", () => {
+  it("also waits for the services a dialog declares it needs", () => {
     registerModule(module("engine", "Engine", {}));
-    registerModule(module("store", "Store", { storeinstall: () => <span>install</span> }, ["engine"]));
+    registerModule(
+      module("store", "Store", { storeinstall: needsServices(["engine"], () => <span>install</span>) }, ["engine"]),
+    );
     ready.add("store");
     open("storeinstall");
     expect(screen.getByText("Engine is not available")).toBeTruthy();
@@ -80,5 +83,24 @@ describe("dialog guards", () => {
     ready.add("engine");
     open("storeinstall");
     expect(screen.getByText("install")).toBeTruthy();
+  });
+
+  it("does not hold a module's other dialogs for a service only one of them needs", () => {
+    // kabinet requires rekuest to install a release, not to add a repo.
+    registerModule(module("engine", "Engine", {}));
+    registerModule(
+      module(
+        "store",
+        "Store",
+        {
+          storeinstall: needsServices(["engine"], () => <span>install</span>),
+          storeaddrepo: () => <span>add repo</span>,
+        },
+        ["engine"],
+      ),
+    );
+    ready.add("store"); // engine is not
+    open("storeaddrepo");
+    expect(screen.getByText("add repo")).toBeTruthy();
   });
 });

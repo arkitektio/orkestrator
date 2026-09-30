@@ -78,6 +78,14 @@ export const ProfileLabelSchema = z.object({
    */
   brandHue: z.number().nullish(),
   brandChroma: z.number().nullish(),
+  /**
+   * `mycontext.roles`: the user's roles in this organization, for the role
+   * gates (`core/connection/roles`). Cached so a warm boot gates without
+   * waiting for lok; `undefined` until the first `mycontext`.
+   */
+  roles: z.array(z.string()).optional(),
+  /** `mycontext.scope`: what this app was granted within the organization. */
+  scope: z.array(z.string()).optional(),
   refreshedAt: z.number().optional(),
 });
 

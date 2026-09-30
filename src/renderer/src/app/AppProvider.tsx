@@ -113,6 +113,7 @@ import { ActiveTabRouter } from "@/core/tabs/ActiveTabRouter";
 import { TabsProvider } from "@/core/tabs/TabsProvider";
 import { VoiceInput } from "@/core/voice";
 import type { WindowRole } from "@/core/util/windowRole";
+import { RolesBridge } from "@/core/connection/roles";
 
 /** The quick bar's navigation goes to the main window, as a tab. Module-level: stable. */
 const forwardToMain = (path: string) => window.api?.palette?.openInMain?.(path);
@@ -205,6 +206,8 @@ export const AppProvider = ({
                                     <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
                                       <ProfileIdentitySync />
                                     </Guard.Lok>
+                                    {/* The roles, for readers outside React (drop targets). */}
+                                    <RolesBridge />
                                     <Toaster />
                                     {/* One subscription to the app updater, for
                                         the rail island and the settings card. */}

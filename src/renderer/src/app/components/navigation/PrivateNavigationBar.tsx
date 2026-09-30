@@ -24,7 +24,7 @@ import { matchIcon } from "../../../core/modules/moduleIcons";
 import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHover";
 import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
-import { ModuleRailIslands } from "@/core/modules/registries";
+import { isModuleAllowed, ModuleRailIslands } from "@/core/modules/registries";
 import { UploadIsland } from "@/core/datalayer/UploadProvider";
 import { DownloadIsland } from "@/core/modules/download/DownloadProvider";
 import { AgentIsland } from "@/core/agent/AgentIsland";
@@ -33,6 +33,8 @@ import { RailIslandStack } from "@/core/ui/rail/RailIsland";
 import { ToastIsland } from "@/core/notify";
 import { UpdateIsland } from "@/core/updates/UpdateIsland";
 import { VoiceIsland } from "@/core/voice";
+import { useRoles } from "@/core/connection/roles";
+import { RoleOverrideIsland } from "@/core/connection/ui/RoleOverrideIsland";
 
 const RekuestGuard = serviceGuard("rekuest");
 
@@ -310,7 +312,11 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
   // shallowly, so it holds its identity across a service health tick and the
   // grid redraws only when a module actually appears or becomes ready.
   const availableKeys = Arkitekt.useAvailableModuleKeys();
-  const moduleOrder = Object.keys(moduleRegistry).filter((key) => availableKeys.includes(key));
+  // A module declaring `roles` has no tile for anyone without them.
+  const { roles } = useRoles();
+  const moduleOrder = Object.keys(moduleRegistry).filter(
+    (key) => availableKeys.includes(key) && isModuleAllowed(key, roles),
+  );
 
   return (
     <>
@@ -378,6 +384,7 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           modules' islands (rekuest: tasks). */}
       <RailIslandStack>
         <ToastIsland />
+        <RoleOverrideIsland />
         <UpdateIsland />
         <VoiceIsland />
         <RekuestGuard unavailable={<></>} unconfigured={<></>} configuring={<></>} challenging={<></>}>

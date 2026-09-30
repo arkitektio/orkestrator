@@ -10,6 +10,7 @@ import { UpdateChecker } from "@/app/settings/components/UpdateChecker";
 import { useDebug } from "@/core/debug/DebugContext";
 import { Bug } from "lucide-react";
 import { SettingsPage } from "../components/SettingsPage";
+import { ViewAsRolesCard } from "../components/ViewAsRolesCard";
 
 export const DeveloperPage = () => {
   const { debug, setDebug } = useDebug();
@@ -55,6 +56,8 @@ export const DeveloperPage = () => {
           </Button>
         </CardContent>
       </Card>
+
+      <ViewAsRolesCard />
     </SettingsPage>
   );
 };

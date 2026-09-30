@@ -1,3 +1,4 @@
+import type { RoleRequirement } from "@/core/connection/roles";
 import type { FilterParts } from "@/core/command/filter";
 import type { ServiceGuardProps } from "@/core/connection/arkitekt";
 import type { DocumentNode } from "@apollo/client";
@@ -74,6 +75,8 @@ export type SmartContextSection<T = unknown> = {
    * query never mounts while the backend is not ready (CLAUDE.md §1).
    */
   Guard?: React.ComponentType<ServiceGuardProps>;
+  /** Only for users with these roles; checked with the guard, outside `useItems`. */
+  roles?: RoleRequirement;
   /** Cheap, synchronous, hook-free. False = the section never mounts at all. */
   applies: (props: SmartContextProps) => boolean;
   /** The leaf: query + shaping. One instance per mounted section. */

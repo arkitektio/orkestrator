@@ -1,5 +1,6 @@
 import { CommandGroup } from "cmdk";
 import React from "react";
+import { RoleGuard } from "@/core/connection/roles";
 import type { SmartContextSection, SmartSectionContext, SmartSectionId } from "./section";
 import { useReportSectionStatus } from "./sectionStatusContext";
 import { useNarrowedRows } from "./useNarrowedRows";
@@ -21,10 +22,14 @@ export const SectionHost = <T,>({
   section: SmartContextSection<T>;
   context: SmartSectionContext;
 }) => {
+  const skipped = <SectionSkipped id={section.id} />;
   const body = <SectionBody section={section} context={context} />;
-  if (!section.Guard) return body;
+  const guarded = section.Guard ? <section.Guard fallback={skipped}>{body}</section.Guard> : body;
+  if (section.roles === undefined) return guarded;
   return (
-    <section.Guard fallback={<SectionSkipped id={section.id} />}>{body}</section.Guard>
+    <RoleGuard require={section.roles} fallback={skipped}>
+      {guarded}
+    </RoleGuard>
   );
 };
 

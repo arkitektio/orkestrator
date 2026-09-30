@@ -46,6 +46,14 @@ export const ProfileIdentitySync = () => {
   // field by field — reusing the one function that already knows that rule.
   const brand = resolveContextBrand(context);
 
+  // The user's roles in this organization (the role gates) and the app's
+  // granted scope. Joined into a key so the effect below runs on a change,
+  // not on every refetch's fresh array.
+  const roles = context?.roles;
+  const scope = context?.scope;
+  const rolesKey = roles?.join("\u0000");
+  const scopeKey = scope?.join("\u0000");
+
   // Depending on the resolved scalars rather than on `data` keeps this to one
   // write per actual change: the query is `cache-and-network` and refetches on
   // reactivate, which would otherwise re-persist an identical identity (and
@@ -70,9 +78,13 @@ export const ProfileIdentitySync = () => {
         hubSlug,
         brandHue: brand.hue ?? null,
         brandChroma: brand.chroma ?? null,
+        roles: roles ? [...roles] : undefined,
+        scope: scope ? [...scope] : undefined,
         refreshedAt: Date.now(),
       },
     });
+    // `rolesKey` / `scopeKey` stand in for the arrays they are joined from.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeProfileId,
     baseUrl,
@@ -86,6 +98,8 @@ export const ProfileIdentitySync = () => {
     hubSlug,
     brand.hue,
     brand.chroma,
+    rolesKey,
+    scopeKey,
     setProfileIdentity,
   ]);
 

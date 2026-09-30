@@ -37,6 +37,8 @@ import { routeCatalog, searchRoutes } from "./routeCatalog";
 import { breadcrumbText } from "@/core/command/breadcrumbText";
 import { isElectron } from "@/core/util/platform";
 import { windowRole } from "@/core/util/windowRole";
+import { useRoles } from "@/core/connection/roles";
+import { isModuleAllowed } from "@/core/modules/registries";
 
 /**
  * Where you can go, and what the app itself can do.
@@ -54,6 +56,7 @@ import { windowRole } from "@/core/util/windowRole";
 export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
   const navigate = useNavigate();
   const modules = Arkitekt.useAvailableModules();
+  const { roles } = useRoles();
   const { openDialog } = useDialog();
   const breadcrumbs = useReactRouterBreadcrumbs();
   const { debug, setDebug } = useDebug();
@@ -74,11 +77,11 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
       rankByFilter(
         // A module whose service is not ready routes to a fallback screen;
         // offering it as a destination is offering a dead end.
-        modules.filter((m) => m.status === "ready"),
+        modules.filter((m) => m.status === "ready" && isModuleAllowed(m.key, roles)),
         (m) => [m.definition.label, m.key],
         filter,
       ),
-    [modules, filter],
+    [modules, filter, roles],
   );
 
   const pageRows = useMemo(
@@ -91,8 +94,10 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
           ...modules.filter((m) => m.status === "ready").map((m) => ({ key: m.key, label: m.definition.label })),
         ],
         filter,
+        10,
+        roles,
       ),
-    [modules, filter],
+    [modules, filter, roles],
   );
 
   const listRows = useMemo(() => {
