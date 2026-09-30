@@ -8,7 +8,11 @@ import {
   TaskEventKind,
   useActionIdByHashQuery,
 } from "../api/graphql";
-import { isTerminalEvent, trackTask } from "../lib/taskTracker";
+import {
+  failureFallback,
+  isTerminalEvent,
+  trackTask,
+} from "../lib/taskTracker";
 import { useAssign } from "./useAssign";
 
 export type useActionOptions = {
@@ -57,10 +61,12 @@ export const useHashActionWithProgress = (
 
       if (
         event.kind == TaskEventKind.Failed ||
-        event.kind == TaskEventKind.Critical
+        event.kind == TaskEventKind.Critical ||
+        event.kind == TaskEventKind.Lost
       ) {
-        setError(event.message || "Unknown error");
-        options.onError?.(event.message || "Unknown error");
+        const message = event.message || failureFallback(event.kind);
+        setError(message);
+        options.onError?.(message);
         return;
       }
 

@@ -29,6 +29,8 @@ import { PageSections } from "@/core/layout/PageSections";
 import {
   TaskEventKind,
   DetailImplementationFragment,
+  Effects,
+  Execution,
   ResolvedDependencyInput,
   WatchImplementationDocument,
   WatchImplementationSubscription,
@@ -201,6 +203,14 @@ const Field = ({ label, children }: { label: string; children: ReactNode }) => (
   </div>
 );
 
+/** What running the implementation again would do to the world. */
+const EFFECTS_LABEL: Record<Effects, string> = {
+  [Effects.None]: "None — safe to run again",
+  [Effects.Repeatable]: "Repeatable — safe to run again",
+  [Effects.Unknown]: "Unknown",
+  [Effects.Irreversible]: "Irreversible — cannot be undone",
+};
+
 const BoolBadge = ({ value, label }: { value: boolean; label: string }) => (
   <Badge variant={value ? "default" : "outline"}>{label}</Badge>
 );
@@ -284,6 +294,24 @@ const ImplementationDetailSheet = ({
             </Field>
             <Field label="Needs token">{i.needsToken ? "Yes" : "No"}</Field>
             <Field label="Pinned">{i.pinned ? "Yes" : "No"}</Field>
+            <Field label="Execution">
+              {i.execution === Execution.Workflow
+                ? "Workflow — resumed from its journal if its agent dies"
+                : "Plain — its task ends lost if its agent dies"}
+            </Field>
+            <Field label="Effects">
+              {EFFECTS_LABEL[i.effects] ?? i.effects}
+            </Field>
+            {i.codeHash && (
+              <Field label="Code hash">
+                <span
+                  className="block select-all truncate font-mono text-xs"
+                  title={i.codeHash}
+                >
+                  {i.codeHash}
+                </span>
+              </Field>
+            )}
             <Field label="Provenance audience">
               {i.provenanceAudience && i.provenanceAudience.length > 0 ? (
                 <div className="flex flex-wrap gap-1">
@@ -545,6 +573,14 @@ export const DefaultRenderer = (props: {
           <div className="mt-4 flex flex-wrap gap-2 items-center text-sm text-muted-foreground">
             <Badge variant="secondary">{i.action.kind}</Badge>
             {i.action.stateful && <Badge variant="outline">Stateful</Badge>}
+            {i.execution === Execution.Workflow && (
+              <Badge
+                variant="outline"
+                title="Resumed from its journal when its agent dies"
+              >
+                Workflow
+              </Badge>
+            )}
             <span
               className={
                 i.agent.connected ? "text-emerald-500" : "text-muted-foreground"

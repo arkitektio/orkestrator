@@ -10,7 +10,11 @@ import { Button } from "@/core/ui/button";
 import { cn } from "@/core/util/utils";
 import { Object } from "@/core/types";
 import { Zap } from "lucide-react";
-import { PortKind, useHoverImplementationQuery } from "../../api/graphql";
+import {
+  Execution,
+  PortKind,
+  useHoverImplementationQuery,
+} from "../../api/graphql";
 
 const portKindLabel: Record<PortKind, string> = {
   [PortKind.String]: "str",
@@ -72,6 +76,11 @@ export const ImplementationHoverCard = ({ object }: { object: Object }) => {
         {action.stateful && (
           <Badge variant="secondary" className="text-[10px]">
             stateful
+          </Badge>
+        )}
+        {impl.execution === Execution.Workflow && (
+          <Badge variant="secondary" className="text-[10px]">
+            workflow
           </Badge>
         )}
         {impl.pinned && (

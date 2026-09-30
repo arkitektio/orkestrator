@@ -15,3 +15,15 @@ mutation interrupt($input: InterruptInput!) {
     ...PostmanTask
   }
 }
+
+mutation pause($input: PauseInput!) {
+  pause(input: $input) {
+    ...PostmanTask
+  }
+}
+
+mutation resume($input: ResumeInput!) {
+  resume(input: $input) {
+    ...PostmanTask
+  }
+}

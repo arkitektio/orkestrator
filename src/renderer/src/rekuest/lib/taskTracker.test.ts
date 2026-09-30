@@ -6,6 +6,8 @@ import {
   deliverHeldEvents,
   deliverToCallback,
   holdForCallback,
+  isTaskLive,
+  isTerminalEvent,
   mapReference,
   referenceForId,
   registeredCallbacks,
@@ -27,6 +29,30 @@ const change = (task: string, kind: TaskEventKind): TaskEventChangeFragment => (
 
 beforeEach(() => {
   registeredCallbacks.clear();
+});
+
+describe("LOST", () => {
+  it("ends a task: its agent died and nothing re-runs it", () => {
+    expect(isTerminalEvent(TaskEventKind.Lost)).toBe(true);
+    expect(
+      isTaskLive({ isDone: false, latestEventKind: TaskEventKind.Lost }),
+    ).toBe(false);
+  });
+
+  it("but a late report after it is only an annotation", () => {
+    expect(isTerminalEvent(TaskEventKind.LateReport)).toBe(false);
+  });
+
+  it("ends the local tracking like any other terminal event", () => {
+    const callback = vi.fn();
+    trackTask("ref-lost", callback);
+    deliverToCallback(
+      "ref-lost",
+      taskEventChangeToEvent(change("l", TaskEventKind.Lost), "ref-lost"),
+    );
+    expect(callback).toHaveBeenCalledOnce();
+    expect(registeredCallbacks.has("ref-lost")).toBe(false);
+  });
 });
 
 describe("delivering task events to a local tracker", () => {

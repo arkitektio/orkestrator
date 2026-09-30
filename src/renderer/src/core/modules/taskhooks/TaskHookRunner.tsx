@@ -14,6 +14,7 @@ const TERMINAL_FAILURE_KINDS: TaskEventKind[] = [
   TaskEventKind.Failed,
   TaskEventKind.Cancelled,
   TaskEventKind.Interrupted,
+  TaskEventKind.Lost,
 ];
 
 /**

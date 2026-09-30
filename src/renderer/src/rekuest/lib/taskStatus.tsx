@@ -1,4 +1,11 @@
-import { CheckCircle, Clock, Loader, XCircle } from "lucide-react";
+import {
+  CheckCircle,
+  CircleHelp,
+  Clock,
+  Loader,
+  PauseCircle,
+  XCircle,
+} from "lucide-react";
 import { TaskEventKind } from "../api/graphql";
 
 /**
@@ -13,33 +20,53 @@ export type TaskStatusBucket =
   | "done"
   | "error"
   | "cancelled"
+  | "lost"
+  | "paused"
   | "queued"
   | "running";
 
-/** Coarse lifecycle bucket for a task, from its latest event + done flag. */
+/**
+ * Coarse lifecycle bucket for a task, from its latest event + done flag.
+ *
+ * The kind decides first: the server sets `isDone` on EVERY terminal kind, so
+ * checking the flag first would file a failed or lost task under "done".
+ * `isDone` only settles the kinds that say nothing about the outcome.
+ *
+ * `lost` is its own bucket, not an error: the agent died while the task ran,
+ * so how it ended is unknown (it may even have finished — a later report is
+ * kept as `LATE_REPORT`, never replacing the LOST).
+ */
 export const statusBucket = (
   kind: TaskEventKind | null | undefined,
   isDone?: boolean | null,
 ): TaskStatusBucket => {
-  if (isDone || kind === TaskEventKind.Completed) return "done";
   switch (kind) {
+    case TaskEventKind.Completed:
+      return "done";
     case TaskEventKind.Failed:
     case TaskEventKind.Critical:
       return "error";
+    case TaskEventKind.Lost:
+      return "lost";
     case TaskEventKind.Cancelled:
     case TaskEventKind.Cancelling:
     case TaskEventKind.Interrupted:
     case TaskEventKind.Interrupting:
       return "cancelled";
+  }
+  if (isDone) return "done";
+  switch (kind) {
     case TaskEventKind.Queued:
       return "queued";
+    case TaskEventKind.Paused:
+      return "paused";
     default:
       return "running";
   }
 };
 
 export const formatEventKind = (kind: TaskEventKind) =>
-  kind.charAt(0) + kind.slice(1).toLowerCase();
+  kind.charAt(0) + kind.slice(1).toLowerCase().replace(/_/g, " ");
 
 /** Small status icon (check / cross / clock / spinner) for a task. */
 export const TaskStatusIcon = ({
@@ -58,6 +85,10 @@ export const TaskStatusIcon = ({
       return <XCircle className={`${className} text-destructive`} />;
     case "cancelled":
       return <XCircle className={`${className} text-muted-foreground`} />;
+    case "lost":
+      return <CircleHelp className={`${className} text-amber-500`} />;
+    case "paused":
+      return <PauseCircle className={`${className} text-amber-500`} />;
     case "queued":
       return <Clock className={`${className} text-muted-foreground`} />;
     default:
@@ -79,6 +110,9 @@ export const statusTextColor = (
       return "text-green-500";
     case "error":
       return "text-red-500";
+    case "lost":
+    case "paused":
+      return "text-amber-500";
     default:
       return "text-muted-foreground";
   }
@@ -105,6 +139,9 @@ export const eventKindColor = (kind: TaskEventKind): string => {
       return "text-blue-400";
     case TaskEventKind.Progress:
       return "text-yellow-500";
+    case TaskEventKind.Lost:
+    case TaskEventKind.Paused:
+      return "text-amber-500";
     default:
       return "text-muted-foreground";
   }
@@ -137,6 +174,12 @@ export const eventKindTint = (
       return "bg-blue-500/25";
     case TaskEventKind.Progress:
       return "bg-yellow-500/20";
+    case TaskEventKind.Lost:
+    case TaskEventKind.Paused:
+      return "bg-amber-500/25";
+    case TaskEventKind.Effect:
+    case TaskEventKind.LateReport:
+      return "bg-muted";
     default:
       return "bg-primary/15";
   }
@@ -158,6 +201,9 @@ export const statusBarColor = (
       return "bg-gray-500 border-gray-600";
     case TaskEventKind.Bound:
       return "bg-blue-500 border-blue-600";
+    case TaskEventKind.Lost:
+    case TaskEventKind.Paused:
+      return "bg-amber-500 border-amber-600";
     default:
       return "bg-slate-500 border-slate-600";
   }
@@ -194,6 +240,14 @@ export const statusTheme = (task: {
         text: "text-muted-foreground",
         label: formatEventKind(kind),
       };
+    case "lost":
+    case "paused":
+      return {
+        ring: "ring-amber-500/20",
+        bg: "bg-amber-500/5",
+        text: "text-amber-600 dark:text-amber-400",
+        label: formatEventKind(kind),
+      };
     default:
       return {
         ring: "ring-primary/20",
@@ -210,6 +264,25 @@ export const isCancelable = (task: { isDone?: boolean | null }) =>
 
 export const isInterruptable = (task: { isDone?: boolean | null }) =>
   task.isDone !== true;
+
+/**
+ * A paused task waits for a person: either a pause someone asked for, or a
+ * workflow that held itself (`task.hold`) with a message for whoever decides.
+ * Either way `resume` (or cancel) is the answer.
+ */
+export const isResumable = (task: {
+  isDone?: boolean | null;
+  latestEventKind: TaskEventKind;
+}) => task.isDone !== true && task.latestEventKind === TaskEventKind.Paused;
+
+/** Pausing is offered while the task runs and is not already pausing/paused. */
+export const isPausable = (task: {
+  isDone?: boolean | null;
+  latestEventKind: TaskEventKind;
+}) =>
+  task.isDone !== true &&
+  statusBucket(task.latestEventKind, task.isDone) === "running" &&
+  task.latestEventKind !== TaskEventKind.Pausing;
 
 /**
  * Coarse lifecycle filter-chip options shared by the org-wide and per-agent
@@ -236,4 +309,6 @@ export const TASK_STATE_FILTER_OPTIONS: {
   { label: "Error", value: TaskEventKind.Failed },
   { label: "Cancelled", value: TaskEventKind.Cancelled },
   { label: "Critical", value: TaskEventKind.Critical },
+  { label: "Lost", value: TaskEventKind.Lost },
+  { label: "Paused", value: TaskEventKind.Paused },
 ];

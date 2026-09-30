@@ -38,9 +38,18 @@ import {
   PinAgentDocument,
   PinAgentMutation,
   PinAgentMutationVariables,
+  PauseDocument,
+  PauseMutation,
+  PauseMutationVariables,
+  ResumeDocument,
+  ResumeMutation,
+  ResumeMutationVariables,
   ScheduleDocument,
   ScheduleQuery,
   ScheduleQueryVariables,
+  TaskDocument,
+  TaskQuery,
+  TaskQueryVariables,
   TriggerDocument,
   TriggerQuery,
   TriggerQueryVariables,
@@ -60,8 +69,9 @@ import {
 import type { ModuleServices } from '@/core/connection/arkitekt/host'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { AlarmClock, Ban, Bookmark, Eraser, FastForward, Hash, LogOut, Pencil, Pin, Play, RotateCcw, ShieldCheck, ToggleLeft, Trash2, Zap } from 'lucide-react'
+import { AlarmClock, Ban, Bookmark, Eraser, FastForward, Hash, LogOut, PauseCircle, Pencil, Pin, Play, RotateCcw, ShieldCheck, ToggleLeft, Trash2, Zap } from 'lucide-react'
 import { toast } from "@/core/notify";
+import { isPausable, isResumable } from '@/rekuest/lib/taskStatus'
 
 type RekuestAction = Action<ModuleServices<"rekuest">>
 
@@ -625,6 +635,40 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     typename: 'Schedule',
     mutation: DeleteScheduleDocument
   }),
+  'rekuest-pause-resume-task': {
+    title: 'Pause / Resume',
+    description:
+      'Pause a running task, or resume a paused one — including a workflow that held itself for a decision',
+    icon: PauseCircle,
+    conditions: only('@rekuest/task'),
+    execute: async ({ services, state }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const id = selected(state, '@rekuest/task')
+      const { data } = await services.rekuest.client.query<TaskQuery, TaskQueryVariables>({
+        query: TaskDocument,
+        variables: { id },
+        fetchPolicy: 'network-only',
+      })
+      if (isResumable(data.task)) {
+        await services.rekuest.client.mutate<ResumeMutation, ResumeMutationVariables>({
+          mutation: ResumeDocument,
+          variables: { input: { task: id, step: false } },
+        })
+        toast.success('Resuming task')
+      } else if (isPausable(data.task)) {
+        await services.rekuest.client.mutate<PauseMutation, PauseMutationVariables>({
+          mutation: PauseDocument,
+          variables: { input: { task: id } },
+        })
+        toast.success('Pausing task')
+      } else {
+        toast.info('This task is not running, so it cannot be paused')
+      }
+    },
+    collections: ['io'],
+  },
   'rekuest-toggle-trigger': {
     title: 'Enable / Disable',
     description: 'A disabled trigger fires nothing',

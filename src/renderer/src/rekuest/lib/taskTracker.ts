@@ -20,12 +20,17 @@ export const registeredCallbacks = new Map<
  * Kinds that end a task. Drives the callback teardown in `TaskUpdater`, the
  * `finishedAt` write in `taskCache`, and the stream teardown in `useProbe`.
  *
- * `UNASSIGN` (added to `TaskEventKind` in the probe-path API update) is
- * deliberately NOT here: the schema declares the enum in lifecycle order and
- * places it mid-flight, next to `DISCONNECTED`, which this client also treats
- * as non-terminal — an unassigned task can be re-bound and keep streaming.
- * The schema carries no per-member docstring, so this is an inference; if the
- * backend confirms a task can *end* in UNASSIGN, add it here.
+ * `LOST` is terminal and final: the task's agent died while it ran and the
+ * server re-runs nothing on its own. A report the agent sends afterwards is
+ * kept as a `LATE_REPORT` event beside it and never replaces it — so it is
+ * NOT terminal, just an annotation on a task that already ended.
+ *
+ * A workflow whose agent dies is not lost but resumed: the server puts it back
+ * to `QUEUED` and resends it with its journal. That is a non-terminal kind
+ * again, so the task simply reads as live until the resumed run ends it.
+ *
+ * `UNASSIGN` is retained by the server for historical rows only and never
+ * written for new tasks; it is left out.
  */
 export const TERMINAL_EVENT_KINDS = [
   TaskEventKind.Completed,
@@ -33,10 +38,21 @@ export const TERMINAL_EVENT_KINDS = [
   TaskEventKind.Critical,
   TaskEventKind.Failed,
   TaskEventKind.Interrupted,
+  TaskEventKind.Lost,
 ] as const;
 
 export const isTerminalEvent = (kind: TaskEventKind) =>
   (TERMINAL_EVENT_KINDS as readonly TaskEventKind[]).includes(kind);
+
+/**
+ * What to say for a failed ending that came without a message. A LOST task
+ * did not fail — its agent died and the outcome is unknown — so it must not
+ * read as "Unknown error".
+ */
+export const failureFallback = (kind: TaskEventKind | string) =>
+  kind === TaskEventKind.Lost
+    ? "The agent was lost while the task ran; its outcome is unknown"
+    : "Unknown error";
 
 /**
  * A task that can still produce events: not flagged done and not ended by a
@@ -168,6 +184,13 @@ export const taskEventChangeToEvent = (
   reference: reference ?? "",
   createdAt: change.createdAt,
   message: change.message,
+  // The journal fields the delta does not carry. `value` it does: a LOST
+  // event's `{started, last_progress, effects, reason}` rides on it.
+  step: null,
+  agentTs: null,
+  effect: null,
+  key: null,
+  value: change.value,
   task: { __typename: "Task", id: change.task, reference: reference ?? null },
   delegatedTo: null,
 });

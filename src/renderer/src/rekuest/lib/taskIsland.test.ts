@@ -15,6 +15,10 @@ vi.mock("../api/graphql", () => ({
     Interrupted: "INTERRUPTED",
     Failed: "FAILED",
     Critical: "CRITICAL",
+    Lost: "LOST",
+    LateReport: "LATE_REPORT",
+    Effect: "EFFECT",
+    Paused: "PAUSED",
   },
   LogLevel: { Info: "INFO" },
 }));
@@ -197,6 +201,8 @@ describe("shouldAutoDismiss", () => {
 
   it("keeps failures, results, and anything still working", () => {
     expect(shouldAutoDismiss(failed, false)).toBe(false);
+    // A lost task needs a person to decide whether to run it again.
+    expect(shouldAutoDismiss(task(TaskEventKind.Lost), false)).toBe(false);
     expect(shouldAutoDismiss(done, true)).toBe(false);
     expect(shouldAutoDismiss(running, false)).toBe(false);
     expect(shouldAutoDismiss(undefined, false)).toBe(false);

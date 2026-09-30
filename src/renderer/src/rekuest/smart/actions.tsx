@@ -13,7 +13,7 @@ import {
   useImplementationsQuery,
 } from "@/rekuest/api/graphql";
 import { buildAssignInput } from "@/rekuest/assign";
-import { trackTask } from "@/rekuest/lib/taskTracker";
+import { failureFallback, trackTask } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Boxes, PlayCircle } from "lucide-react";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
@@ -242,8 +242,14 @@ const useAssignActionProgress = (props: SmartContextProps) => {
         setError(null);
         props.onDone?.({ event, kind: "action" });
       }
-      if (event.kind === "FAILED" || event.kind === "CRITICAL") {
-        const message = event.message || "Unknown error";
+      if (
+        event.kind === "FAILED" ||
+        event.kind === "CRITICAL" ||
+        event.kind === "LOST"
+      ) {
+        const message = event.message || failureFallback(event.kind);
+        setDoing(false);
+        setProgress(null);
         triggerErrorFeedback(message);
       }
       if (event.kind === "PROGRESS") {

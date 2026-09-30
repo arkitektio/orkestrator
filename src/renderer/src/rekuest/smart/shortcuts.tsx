@@ -7,7 +7,7 @@ import React from "react";
 import { toast } from "@/core/notify";
 import { v4 as uuidv4 } from "uuid";
 import { TaskEventFragment, ListShortcutFragment, PortKind } from "@/rekuest/api/graphql";
-import { trackTask } from "@/rekuest/lib/taskTracker";
+import { failureFallback, trackTask } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Zap } from "lucide-react";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
@@ -92,8 +92,12 @@ export const ShortcutButton = (
         setProgress(null);
         onDone?.({ event, kind: "shortcut" });
       }
-      if (event.kind === "FAILED" || event.kind === "CRITICAL") {
-        const message = event.message || "Unknown error";
+      if (
+        event.kind === "FAILED" ||
+        event.kind === "CRITICAL" ||
+        event.kind === "LOST"
+      ) {
+        const message = event.message || failureFallback(event.kind);
         setDoing(false);
         setProgress(null);
         setError(message);

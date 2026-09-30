@@ -17,6 +17,9 @@ export const getStatusColor = (status: TaskEventKind | undefined | string) => {
       return 'bg-rose-400/90 border-rose-500'
     case 'cancelled':
       return 'bg-zinc-500/80 border-zinc-600'
+    case 'lost':
+    case 'paused':
+      return 'bg-amber-400/90 border-amber-500'
     default:
       return 'bg-primary/70 border-primary'
   }
@@ -34,6 +37,7 @@ export const classifyChild = (child: {
 }): ChildStatusBucket => {
   switch (statusBucket(child.latestEventKind, child.isDone)) {
     case 'error':
+    case 'lost':
       return 'errored'
     case 'cancelled':
       return 'cancelled'

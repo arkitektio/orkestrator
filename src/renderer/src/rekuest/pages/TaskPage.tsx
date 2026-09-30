@@ -15,6 +15,8 @@ import {
   DetailTaskFragment,
   useDetailTaskQuery,
   useInterruptMutation,
+  usePauseMutation,
+  useResumeMutation,
 } from "@/rekuest/api/graphql";
 import { ChevronDown, Clock, ListChecks } from "lucide-react";
 import { ChildTaskUpdater } from "../components/updaters/ChildTaskUpdater";
@@ -25,7 +27,12 @@ import {
 import { PageSections } from "@/core/layout/PageSections";
 import { useCancelTask } from "../hooks/useAssign";
 import { useReassign } from "../hooks/useReassign";
-import { isCancelable, isInterruptable } from "../lib/taskStatus";
+import {
+  isCancelable,
+  isInterruptable,
+  isPausable,
+  isResumable,
+} from "../lib/taskStatus";
 
 // Only stats the main column doesn't already show — status, progress and
 // delegations live in the hero / Delegations section.
@@ -90,6 +97,8 @@ export const TPage = asDetailQueryRoute(
 
     const { cancel } = useCancelTask();
     const [interrupt] = useInterruptMutation();
+    const [pause] = usePauseMutation();
+    const [resume] = useResumeMutation();
 
     // The Timeline and Space views visualize delegations to other apps —
     // they're only offered when this task actually fanned out.
@@ -174,6 +183,59 @@ export const TPage = asDetailQueryRoute(
                 </DropdownMenuContent>
               </DropdownMenu>
             </PageActionGroup>
+            {/* A paused task waits for a person — a pause someone asked for,
+                or a workflow that held itself for a decision. */}
+            {isResumable(data.task) && (
+              <PageActionGroup priority={25} className="gap-0">
+                <PageAction
+                  size="sm"
+                  onClick={() =>
+                    resume({
+                      variables: { input: { task: data.task.id, step: false } },
+                    })
+                  }
+                  className="rounded-r-none"
+                >
+                  Resume
+                </PageAction>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      size={"sm"}
+                      className="rounded-l-none border-l-0 px-2"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() =>
+                        resume({
+                          variables: {
+                            input: { task: data.task.id, step: true },
+                          },
+                        })
+                      }
+                    >
+                      Step to next breakpoint
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </PageActionGroup>
+            )}
+            {isPausable(data.task) && (
+              <PageAction
+                priority={15}
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  pause({ variables: { input: { task: data.task.id } } })
+                }
+              >
+                Pause
+              </PageAction>
+            )}
             {/* Only offered while the task can still be stopped, so while it
                 is offered it is the most urgent thing on the row. */}
             {isCancelable(data.task) && (

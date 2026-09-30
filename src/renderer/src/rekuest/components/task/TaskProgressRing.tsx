@@ -14,6 +14,7 @@ export type TaskRingState =
   | "stopping"
   | "done"
   | "error"
+  | "lost"
   | "cancelled";
 
 export const taskRingState = (task: {
@@ -36,6 +37,8 @@ export const taskRingState = (task: {
       return "done";
     case "error":
       return "error";
+    case "lost":
+      return "lost";
     default:
       return "cancelled";
   }
@@ -47,6 +50,7 @@ const COLOR: Record<TaskRingState, string> = {
   stopping: "text-orange-400",
   done: "text-green-500",
   error: "text-destructive",
+  lost: "text-amber-500",
   cancelled: "text-muted-foreground",
 };
 
@@ -102,7 +106,9 @@ export const TaskProgressRing = ({
       ? "M5.1 8.3 7.1 10.3 10.9 5.9"
       : state === "error" || state === "cancelled"
         ? "M5.7 5.7 10.3 10.3 M10.3 5.7 5.7 10.3"
-        : null;
+        : state === "lost"
+          ? "M6.3 6.4a1.8 1.8 0 1 1 2.5 1.6c-.5.3-.8.7-.8 1.2 M8 11v.2"
+          : null;
 
   const transition = reduceMotion
     ? { duration: 0 }

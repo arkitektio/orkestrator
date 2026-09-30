@@ -5815,7 +5815,7 @@ export type DetailDependencyFragment = { __typename?: 'Dependency', id: string, 
 
 export type ListDependencyFragment = { __typename?: 'Dependency', id: string, key: string, description?: string | null, appFilter?: string | null, versionFilter?: string | null, autoResolvable: boolean, minViableInstances?: number | null, maxViableInstances?: number | null, singular: boolean };
 
-export type DetailImplementationFragment = { __typename?: 'Implementation', id: string, name: string, interface: string, pinned: boolean, needsToken: boolean, provenanceAudience?: Array<string> | null, params: any, higherOrderConfig: any, action: (
+export type DetailImplementationFragment = { __typename?: 'Implementation', id: string, name: string, interface: string, execution: Execution, effects: Effects, codeHash?: string | null, pinned: boolean, needsToken: boolean, provenanceAudience?: Array<string> | null, params: any, higherOrderConfig: any, action: (
     { __typename?: 'Action' }
     & DetailActionFragment
   ), agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, kind: AgentKind, lastSeen?: any | null, hash: string, app: { __typename?: 'App', identifier: string }, client: { __typename?: 'Client', id: string } }, dependencies: Array<(
@@ -5826,7 +5826,7 @@ export type DetailImplementationFragment = { __typename?: 'Implementation', id: 
     & PostmanTaskFragment
   ) | null };
 
-export type ListImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, description?: string | null, name: string, stateful: boolean }, agent: { __typename?: 'Agent', name: string, active: boolean } };
+export type ListImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, execution: Execution, action: { __typename?: 'Action', id: string, description?: string | null, name: string, stateful: boolean }, agent: { __typename?: 'Agent', name: string, active: boolean } };
 
 export type MinimalImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', name: string } };
 
@@ -5837,7 +5837,7 @@ export type ImplementationStatsQueryVariables = Exact<{
 
 export type ImplementationStatsQuery = { __typename?: 'Query', taskStats: { __typename?: 'TaskStats', count: number } };
 
-export type HoverImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, pinned: boolean, action: { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, kind: PortKind, nullable: boolean, default?: any | null }> }, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } };
+export type HoverImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, pinned: boolean, execution: Execution, effects: Effects, action: { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, kind: PortKind, nullable: boolean, default?: any | null }> }, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } };
 
 export type InstallerImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string, args: Array<{ __typename?: 'ArgPort', key: string, nullable: boolean }> }, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, app: { __typename?: 'App', identifier: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null, user: { __typename?: 'User', sub: string } } };
 
@@ -6447,9 +6447,9 @@ export type NoChildrenDetailTaskFragment = (
 
 export type DetailTaskFragment = (
   { __typename?: 'Task', finishedAt?: any | null, children: Array<(
-    { __typename?: 'Task' }
+    { __typename?: 'Task', parentStep?: number | null, callKey?: string | null }
     & PostmanTaskFragment
-  )>, parent?: { __typename?: 'Task', id: string } | null, implementation?: { __typename?: 'Implementation', agent: { __typename?: 'Agent', id: string, name: string, client: { __typename?: 'Client', clientId: string, device?: { __typename?: 'Device', deviceId: string } | null }, placements: Array<(
+  )>, parent?: { __typename?: 'Task', id: string } | null, implementation?: { __typename?: 'Implementation', execution: Execution, effects: Effects, agent: { __typename?: 'Agent', id: string, name: string, client: { __typename?: 'Client', clientId: string, device?: { __typename?: 'Device', deviceId: string } | null }, placements: Array<(
         { __typename?: 'Placement' }
         & AgentPlacementFragment
       )> }, dependencies: Array<{ __typename?: 'Dependency', id: string, key: string, appFilter?: string | null, versionFilter?: string | null, autoResolvable: boolean, actionDependencies: Array<{ __typename?: 'ActionDependency', key: string }> }> } | null, resolvedDependencies: Array<{ __typename?: 'ResolvedAgentDependency', key: string, values?: string | null, mappedAgents: Array<{ __typename?: 'AgentMapping', agent: { __typename?: 'Agent', id: string, name: string, placements: Array<(
@@ -6459,11 +6459,11 @@ export type DetailTaskFragment = (
   & PostmanTaskFragment
 );
 
-export type TaskEventFragment = { __typename?: 'TaskEvent', id: string, kind: TaskEventKind, level: LogLevel, returns?: any | null, progress?: number | null, reference: string, createdAt: any, message?: string | null, task: { __typename?: 'Task', id: string, reference?: string | null }, delegatedTo?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', name: string } } | null } | null };
+export type TaskEventFragment = { __typename?: 'TaskEvent', id: string, kind: TaskEventKind, level: LogLevel, returns?: any | null, progress?: number | null, reference: string, createdAt: any, message?: string | null, step?: number | null, agentTs?: any | null, effect?: string | null, key?: string | null, value?: any | null, task: { __typename?: 'Task', id: string, reference?: string | null }, delegatedTo?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', name: string } } | null } | null };
 
 export type TaskChangeFragment = { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, statusMessage?: string | null, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null };
 
-export type TaskEventChangeFragment = { __typename?: 'TaskEventChange', id: string, task: string, kind: TaskEventKind, message?: string | null, progress?: number | null, returns?: any | null, createdAt: any };
+export type TaskEventChangeFragment = { __typename?: 'TaskEventChange', id: string, task: string, kind: TaskEventKind, message?: string | null, progress?: number | null, returns?: any | null, value?: any | null, createdAt: any };
 
 export type TaskChangeEventFragment = { __typename?: 'TaskChangeEvent', create?: (
     { __typename?: 'TaskChange' }
@@ -6660,6 +6660,26 @@ export type InterruptMutationVariables = Exact<{
 
 
 export type InterruptMutation = { __typename?: 'Mutation', interrupt: (
+    { __typename?: 'Task' }
+    & PostmanTaskFragment
+  ) };
+
+export type PauseMutationVariables = Exact<{
+  input: PauseInput;
+}>;
+
+
+export type PauseMutation = { __typename?: 'Mutation', pause: (
+    { __typename?: 'Task' }
+    & PostmanTaskFragment
+  ) };
+
+export type ResumeMutationVariables = Exact<{
+  input: ResumeInput;
+}>;
+
+
+export type ResumeMutation = { __typename?: 'Mutation', resume: (
     { __typename?: 'Task' }
     & PostmanTaskFragment
   ) };
@@ -8902,6 +8922,7 @@ export const ListImplementationFragmentDoc = gql`
     fragment ListImplementation on Implementation {
   id
   interface
+  execution
   action {
     id
     description
@@ -9457,6 +9478,8 @@ export const HoverImplementationFragmentDoc = gql`
   id
   interface
   pinned
+  execution
+  effects
   action {
     id
     name
@@ -9702,6 +9725,11 @@ export const TaskEventFragmentDoc = gql`
   reference
   createdAt
   message
+  step
+  agentTs
+  effect
+  key
+  value
   delegatedTo {
     id
     action {
@@ -9757,6 +9785,9 @@ export const DetailImplementationFragmentDoc = gql`
   id
   name
   interface
+  execution
+  effects
+  codeHash
   pinned
   needsToken
   provenanceAudience
@@ -10238,12 +10269,16 @@ export const DetailTaskFragmentDoc = gql`
   ...PostmanTask
   children {
     ...PostmanTask
+    parentStep
+    callKey
   }
   parent {
     id
   }
   finishedAt
   implementation {
+    execution
+    effects
     agent {
       id
       client {
@@ -10316,6 +10351,7 @@ export const TaskEventChangeFragmentDoc = gql`
   message
   progress
   returns
+  value
   createdAt
 }
     `;
@@ -10980,6 +11016,72 @@ export function useInterruptMutation(baseOptions?: ApolloReactHooks.MutationHook
 export type InterruptMutationHookResult = ReturnType<typeof useInterruptMutation>;
 export type InterruptMutationResult = Apollo.MutationResult<InterruptMutation>;
 export type InterruptMutationOptions = Apollo.BaseMutationOptions<InterruptMutation, InterruptMutationVariables>;
+export const PauseDocument = gql`
+    mutation pause($input: PauseInput!) {
+  pause(input: $input) {
+    ...PostmanTask
+  }
+}
+    ${PostmanTaskFragmentDoc}`;
+export type PauseMutationFn = Apollo.MutationFunction<PauseMutation, PauseMutationVariables>;
+
+/**
+ * __usePauseMutation__
+ *
+ * To run a mutation, you first call `usePauseMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePauseMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pauseMutation, { data, loading, error }] = usePauseMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function usePauseMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<PauseMutation, PauseMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<PauseMutation, PauseMutationVariables>(PauseDocument, options);
+      }
+export type PauseMutationHookResult = ReturnType<typeof usePauseMutation>;
+export type PauseMutationResult = Apollo.MutationResult<PauseMutation>;
+export type PauseMutationOptions = Apollo.BaseMutationOptions<PauseMutation, PauseMutationVariables>;
+export const ResumeDocument = gql`
+    mutation resume($input: ResumeInput!) {
+  resume(input: $input) {
+    ...PostmanTask
+  }
+}
+    ${PostmanTaskFragmentDoc}`;
+export type ResumeMutationFn = Apollo.MutationFunction<ResumeMutation, ResumeMutationVariables>;
+
+/**
+ * __useResumeMutation__
+ *
+ * To run a mutation, you first call `useResumeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useResumeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [resumeMutation, { data, loading, error }] = useResumeMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useResumeMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ResumeMutation, ResumeMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ResumeMutation, ResumeMutationVariables>(ResumeDocument, options);
+      }
+export type ResumeMutationHookResult = ReturnType<typeof useResumeMutation>;
+export type ResumeMutationResult = Apollo.MutationResult<ResumeMutation>;
+export type ResumeMutationOptions = Apollo.BaseMutationOptions<ResumeMutation, ResumeMutationVariables>;
 export const CreateScheduleDocument = gql`
     mutation CreateSchedule($input: CreateScheduleInput!) {
   createSchedule(input: $input) {

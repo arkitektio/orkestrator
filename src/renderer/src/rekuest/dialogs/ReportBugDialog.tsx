@@ -19,7 +19,7 @@ async function formatTaskInfo(
   descriptions?: Record<string, Array<{ key: string; value: string }>>
 ): Promise<string> {
   const errorEvent = task.events.find(
-    (e) => e.kind === "CRITICAL" || e.kind === "FAILED"
+    (e) => e.kind === "CRITICAL" || e.kind === "FAILED" || e.kind === "LOST"
   );
 
   let info = `## Task Information\n\n`;

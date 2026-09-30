@@ -7,6 +7,7 @@ import {
   TaskEventFragment,
   TaskEventKind,
   DetailTaskFragment,
+  Execution,
   PortKind,
   ReturnPortFragment,
 } from "@/rekuest/api/graphql";
@@ -23,6 +24,13 @@ import {
   formatEventKind,
   statusTheme,
 } from "../../lib/taskStatus";
+import {
+  describeEffect,
+  findLostEvent,
+  orderTaskHistory,
+  readLostDetails,
+  sortChildrenByCall,
+} from "../../lib/taskHistory";
 import { TaskStatusLine } from "./TaskStatusLine";
 
 // Module-level formatter: `toLocaleTimeString` constructs a fresh Intl
@@ -44,28 +52,84 @@ const formatLogTime = (iso: string) => {
  * One line of the log: fixed-width time and kind columns, free-form body.
  * Deliberately terminal-flavored — the log is the raw, complete record.
  */
+const LogLine = (props: {
+  time: string;
+  label: string;
+  labelClassName: string;
+  children?: ReactNode;
+}) => (
+  <li className="flex items-baseline gap-3 px-3 py-0.5 hover:bg-muted/40">
+    <span className="shrink-0 tabular-nums text-[11px] text-muted-foreground/70">
+      {formatLogTime(props.time)}
+    </span>
+    <span
+      className={cn(
+        "w-24 shrink-0 text-[11px] font-semibold uppercase tracking-wide",
+        props.labelClassName,
+      )}
+    >
+      {props.label}
+    </span>
+    <div className="min-w-0 flex-1 text-xs">{props.children}</div>
+  </li>
+);
+
 const LogRow = memo(function LogRow(props: {
   event: TaskEventFragment;
   children?: ReactNode;
 }) {
   const { event, children } = props;
   return (
-    <li className="flex items-baseline gap-3 px-3 py-0.5 hover:bg-muted/40">
-      <span className="shrink-0 tabular-nums text-[11px] text-muted-foreground/70">
-        {formatLogTime(event.createdAt)}
-      </span>
-      <span
-        className={cn(
-          "w-24 shrink-0 text-[11px] font-semibold uppercase tracking-wide",
-          eventKindColor(event.kind),
-        )}
-      >
-        {formatEventKind(event.kind)}
-      </span>
-      <div className="min-w-0 flex-1 text-xs">{children}</div>
-    </li>
+    <LogLine
+      time={event.createdAt}
+      label={formatEventKind(event.kind)}
+      labelClassName={eventKindColor(event.kind)}
+    >
+      {children}
+    </LogLine>
   );
 });
+
+type ChildTask = DetailTaskFragment["children"][number];
+
+/**
+ * A child call, at the step its parent took for it. The child has no event of
+ * its own in the parent's history: the child task is the record. `callKey` is
+ * what the parent calls it — the key a resumed workflow finds it again by.
+ */
+const ChildLogRow = memo(function ChildLogRow(props: { child: ChildTask }) {
+  const { child } = props;
+  return (
+    <LogLine
+      time={child.createdAt}
+      label="Call"
+      labelClassName="text-blue-400"
+    >
+      <div className="flex min-w-0 items-baseline gap-2 font-sans">
+        <div className="min-w-0 flex-1">
+          <TaskStatusLine task={child} compact showLink />
+        </div>
+        {child.callKey && (
+          <span
+            className="max-w-[40%] shrink-0 truncate font-mono text-[10px] text-muted-foreground/60"
+            title={child.callKey}
+          >
+            {child.callKey}
+          </span>
+        )}
+      </div>
+    </LogLine>
+  );
+});
+
+/** Between two runs of a workflow: its agent died, the server resent it. */
+const ResumeDivider = (props: { attempt: number }) => (
+  <li className="flex items-center gap-2 px-3 py-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+    <span className="h-px flex-1 bg-amber-500/30" />
+    Resumed from journal · run {props.attempt + 1}
+    <span className="h-px flex-1 bg-amber-500/30" />
+  </li>
+);
 
 /** A yield line: result rendered inline, collapsible for chatty generators. */
 const YieldLogRow = (props: {
@@ -154,6 +218,41 @@ const TaskLogEntry = memo(function TaskLogEntry(props: {
           <span className="text-destructive">{e.message}</span>
         </LogRow>
       );
+    case TaskEventKind.Effect:
+      return (
+        <LogRow event={e}>
+          <span className="text-muted-foreground/80" title={e.key ?? undefined}>
+            {describeEffect(e)}
+          </span>
+        </LogRow>
+      );
+    case TaskEventKind.Lost:
+      return (
+        <LogRow event={e}>
+          <span className="text-amber-600 dark:text-amber-400">
+            {readLostDetails(e.value).reason ??
+              e.message ??
+              "its agent was lost while it ran"}
+          </span>
+        </LogRow>
+      );
+    case TaskEventKind.LateReport:
+      // An outcome that arrived after the task was marked LOST. Kept, never
+      // applied: whoever called may already have acted on the LOST.
+      return e.returns != null && returnPorts.length > 0 ? (
+        <YieldLogRow
+          returnPorts={returnPorts}
+          event={e}
+          defaultExpanded={false}
+        />
+      ) : (
+        <LogRow event={e}>
+          <span className="text-muted-foreground/70">
+            arrived after the task was marked lost
+            {e.message ? `: ${e.message}` : ""}
+          </span>
+        </LogRow>
+      );
     case TaskEventKind.Progress:
       return (
         <LogRow event={e}>
@@ -185,15 +284,11 @@ const TaskLogEntry = memo(function TaskLogEntry(props: {
 export const ChildTasksSection = (props: {
   task: DetailTaskFragment;
 }) => {
-  // Sorted once per `children` identity; this section rerenders on every
-  // task event, and `createdAt` is ISO-8601 so the strings sort correctly
-  // without allocating Dates per comparison.
+  // Sorted once per `children` identity (this section rerenders on every task
+  // event), in the order the parent called them.
   const rawChildren = props.task.children;
   const children = useMemo(
-    () =>
-      (rawChildren ?? [])
-        .slice()
-        .sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0)),
+    () => sortChildrenByCall(rawChildren ?? []),
     [rawChildren],
   );
 
@@ -217,6 +312,36 @@ export const ChildTasksSection = (props: {
         ))}
       </div>
     </div>
+  );
+};
+
+const EFFECTS_TEXT: Record<string, string> = {
+  NONE: "running it again changes nothing",
+  REPEATABLE: "it is safe to run again",
+  UNKNOWN: "it does not say whether it is safe to run again",
+  IRREVERSIBLE: "its effects cannot be undone",
+};
+
+/**
+ * What is known about a LOST task, for whoever decides whether to run it
+ * again. One line: the server re-runs nothing on its own.
+ */
+const LostSummary = (props: { value: unknown }) => {
+  const lost = readLostDetails(props.value);
+  const parts = [
+    lost.started === false
+      ? "It never started, so nothing ran."
+      : lost.started
+        ? `It started${lost.lastProgress != null ? ` and reported ${lost.lastProgress}%` : ""} before its agent was lost.`
+        : null,
+    lost.effects && EFFECTS_TEXT[lost.effects]
+      ? `Its implementation declares ${lost.effects.toLowerCase()} effects: ${EFFECTS_TEXT[lost.effects]}.`
+      : null,
+    lost.reason ? `(${lost.reason})` : null,
+  ].filter(Boolean);
+  if (parts.length === 0) return null;
+  return (
+    <p className="mt-3 text-sm text-muted-foreground">{parts.join(" ")}</p>
   );
 };
 
@@ -265,6 +390,14 @@ export const TaskStatusHero = (props: { task: DetailTaskFragment }) => {
   const running = !task.isDone && !isTerminalEvent(task.latestEventKind);
   const walltime = formatWalltime(task);
   const agent = task.implementation?.agent;
+  const lostEvent =
+    task.latestEventKind === TaskEventKind.Lost
+      ? findLostEvent(task.events)
+      : undefined;
+  const holdMessage =
+    task.latestEventKind === TaskEventKind.Paused
+      ? task.events.find((e) => e.kind === TaskEventKind.Paused)?.message
+      : null;
 
   return (
     <div className={cn("rounded-xl border p-5 ring-1", theme.ring, theme.bg)}>
@@ -318,6 +451,13 @@ export const TaskStatusHero = (props: { task: DetailTaskFragment }) => {
         </div>
       )}
 
+      {lostEvent && <LostSummary value={lostEvent.value} />}
+      {holdMessage && (
+        <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">
+          {holdMessage}
+        </p>
+      )}
+
       {live.error ? (
         <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {live.error}
@@ -346,6 +486,9 @@ export const TaskStatusHero = (props: { task: DetailTaskFragment }) => {
               {agent.name}
             </Badge>
           </RekuestAgent.DetailLink>
+        )}
+        {task.implementation?.execution === Execution.Workflow && (
+          <Badge variant="outline">Workflow</Badge>
         )}
         {task.parent && (
           <RekuestTask.DetailLink object={task.parent}>
@@ -511,10 +654,17 @@ const MAX_EXPANDED_YIELDS = 3;
 // can accumulate thousands of progress lines, and each row is a DOM subtree.
 const LOG_WINDOW = 200;
 
+type LogItem =
+  | { type: "event"; event: TaskEventFragment }
+  | { type: "child"; child: ChildTask }
+  | { type: "resume"; attempt: number };
+
 /**
- * The task's complete event record, oldest → newest, as dense log lines.
- * Every event kind is shown — nothing is filtered out — but only the newest
- * `LOG_WINDOW` are mounted until the reader asks for earlier ones.
+ * The task's complete record, oldest → newest, as dense log lines: its events
+ * in step order, each child call at the step that made it, and a divider where
+ * a workflow was resumed from its journal. Every event kind is shown — nothing
+ * is filtered out — but only the newest `LOG_WINDOW` lines are mounted until
+ * the reader asks for earlier ones.
  */
 export const TaskTimeLine = (props: {
   task: DetailTaskFragment;
@@ -522,20 +672,29 @@ export const TaskTimeLine = (props: {
   const { task } = props;
   const [visibleLimit, setVisibleLimit] = useState(LOG_WINDOW);
 
-  // The cache stores events newest-first; a log reads top-to-bottom.
-  const { events, expandAllYields, latestYieldId } = useMemo(() => {
+  const { items, expandAllYields, latestYieldId } = useMemo(() => {
     const yieldsWithReturns = task.events.filter(
       (e) => e.kind === TaskEventKind.Yield && e.returns != null,
     );
+    const items: LogItem[] = orderTaskHistory(
+      task.events,
+      task.children ?? [],
+    ).flatMap((attempt) => [
+      ...(attempt.index > 0
+        ? [{ type: "resume", attempt: attempt.index } as const]
+        : []),
+      ...attempt.rows,
+    ]);
     return {
-      events: [...task.events].reverse(),
+      items,
       expandAllYields: yieldsWithReturns.length <= MAX_EXPANDED_YIELDS,
+      // The cache stores events newest-first.
       latestYieldId: yieldsWithReturns.at(0)?.id,
     };
-  }, [task.events]);
+  }, [task.events, task.children]);
 
-  const hiddenCount = Math.max(0, events.length - visibleLimit);
-  const visible = hiddenCount > 0 ? events.slice(hiddenCount) : events;
+  const hiddenCount = Math.max(0, items.length - visibleLimit);
+  const visible = hiddenCount > 0 ? items.slice(hiddenCount) : items;
   const returnPorts = task.action.returns;
 
   return (
@@ -552,14 +711,22 @@ export const TaskTimeLine = (props: {
           </button>
         </li>
       )}
-      {visible.map((e) => (
-        <TaskLogEntry
-          key={e.id}
-          event={e}
-          returnPorts={returnPorts}
-          defaultExpanded={expandAllYields || e.id === latestYieldId}
-        />
-      ))}
+      {visible.map((item) =>
+        item.type === "event" ? (
+          <TaskLogEntry
+            key={item.event.id}
+            event={item.event}
+            returnPorts={returnPorts}
+            defaultExpanded={
+              expandAllYields || item.event.id === latestYieldId
+            }
+          />
+        ) : item.type === "child" ? (
+          <ChildLogRow key={`child-${item.child.id}`} child={item.child} />
+        ) : (
+          <ResumeDivider key={`resume-${item.attempt}`} attempt={item.attempt} />
+        ),
+      )}
     </ol>
   );
 };

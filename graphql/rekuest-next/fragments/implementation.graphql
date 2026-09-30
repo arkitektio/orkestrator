@@ -2,6 +2,9 @@ fragment DetailImplementation on Implementation {
   id
   name
   interface
+  execution
+  effects
+  codeHash
   pinned
   needsToken
   provenanceAudience
@@ -77,6 +80,7 @@ fragment DetailImplementation on Implementation {
 fragment ListImplementation on Implementation {
   id
   interface
+  execution
   action {
     id
     description
@@ -107,6 +111,8 @@ fragment HoverImplementation on Implementation {
   id
   interface
   pinned
+  execution
+  effects
   action {
     id
     name

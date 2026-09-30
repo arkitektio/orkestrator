@@ -17,7 +17,9 @@ export type RankableTask = {
 };
 
 /**
- * Sort rank of a row: `0` still working, `1` failed, `2` finished quietly.
+ * Sort rank of a row: `0` still working, `1` failed or lost, `2` finished
+ * quietly. A LOST task ranks with the failures: its outcome is unknown and
+ * someone has to decide whether to run it again, so it must not auto-dismiss.
  *
  * Ranked on {@link isTaskLive} rather than `statusBucket`: the bucket files
  * `CANCELLING` / `INTERRUPTING` under "cancelled", but such a task is still
@@ -30,7 +32,8 @@ export const taskRank = (task: RankableTask | undefined): TaskRank => {
   if (!task || isTaskLive(task)) return 0;
   if (
     task.latestEventKind === TaskEventKind.Failed ||
-    task.latestEventKind === TaskEventKind.Critical
+    task.latestEventKind === TaskEventKind.Critical ||
+    task.latestEventKind === TaskEventKind.Lost
   ) {
     return 1;
   }

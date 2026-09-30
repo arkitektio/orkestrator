@@ -17,7 +17,7 @@ import {
   statusTextColor,
 } from "../../lib/taskStatus";
 import { formatDuration } from "../../lib/taskTimeline";
-import { isTaskLive } from "../../lib/taskTracker";
+import { failureFallback, isTaskLive } from "../../lib/taskTracker";
 import { TaskProgressRing } from "../task/TaskProgressRing";
 import { DynamicYieldDisplay } from "../task/YieldDisplay";
 
@@ -113,6 +113,8 @@ const RowDetail = ({
 }) => {
   const working = isTaskLive(task);
   const failed = !working && live.error != undefined;
+  const lost = task.latestEventKind === TaskEventKind.Lost;
+  const held = task.latestEventKind === TaskEventKind.Paused;
   const yieldEventId = task.events.find(
     (event) => event.kind === TaskEventKind.Yield,
   )?.id;
@@ -127,10 +129,17 @@ const RowDetail = ({
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5 px-2.5 pb-2">
-      {live.message && !failed && (
-        <p className="line-clamp-2 min-w-0 break-words text-[11px] leading-snug text-muted-foreground">
-          {live.message}
+      {lost ? (
+        <p className="line-clamp-2 min-w-0 break-words text-[11px] leading-snug text-amber-600 dark:text-amber-400">
+          {failureFallback(TaskEventKind.Lost)}
         </p>
+      ) : (
+        live.message &&
+        !failed && (
+          <p className="line-clamp-2 min-w-0 break-words text-[11px] leading-snug text-muted-foreground">
+            {held ? `Held: ${live.message}` : live.message}
+          </p>
+        )
       )}
 
       {failed && (

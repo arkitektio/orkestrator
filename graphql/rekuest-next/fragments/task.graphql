@@ -117,12 +117,16 @@ fragment DetailTask on Task {
   ...PostmanTask
   children {
     ...PostmanTask
+    parentStep
+    callKey
   }
   parent {
     id
   }
   finishedAt
   implementation {
+    execution
+    effects
     agent {
       id
       client {
@@ -185,6 +189,11 @@ fragment TaskEvent on TaskEvent {
   reference
   createdAt
   message
+  step
+  agentTs
+  effect
+  key
+  value
   delegatedTo {
     id
     action {
@@ -227,6 +236,7 @@ fragment TaskEventChange on TaskEventChange {
   message
   progress
   returns
+  value
   createdAt
 }
 
