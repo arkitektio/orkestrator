@@ -32,8 +32,11 @@ export const DOCTOR_DEFAULT_TIMEOUT_MS = 4000;
  * Which hop of the connection a target stands for. The coordination server
  * and the mesh control server are probed alongside the services so "is it the
  * hub, or is it everything?" is answered by a check instead of inferred.
+ * `internet` is this computer's own side: a well-known public address, asked
+ * only to learn whether anything gets out at all (a firewall, a captive
+ * portal, no network).
  */
-export const PROBE_ROLES = ["service", "coordination", "mesh-control"] as const;
+export const PROBE_ROLES = ["service", "coordination", "mesh-control", "internet"] as const;
 export type ProbeRole = (typeof PROBE_ROLES)[number];
 
 /**
@@ -140,6 +143,12 @@ export type MeshNode = {
   keyExpiry?: string;
   os?: string;
   lastSeen?: string;
+  /** The DERP region its traffic is relayed through, when it is not direct. */
+  relay?: string;
+  /** Its endpoint when the tunnel runs straight to it; absent while relayed. */
+  curAddr?: string;
+  /** Whether there is a live session with it right now; false is "idle". */
+  active?: boolean;
 };
 
 export type MeshUnavailableReason =

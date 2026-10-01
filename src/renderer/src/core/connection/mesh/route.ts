@@ -41,10 +41,14 @@ export const serviceRoute = (host: string, mesh: MeshStatusPayload | undefined):
             peer: {
               name: peer.dnsName?.replace(/\.$/, "") ?? peer.hostName ?? peer.ips[0] ?? host,
               online: peer.online,
-              ...(peer.relay
-                ? { path: { kind: "relay" as const, region: peer.relay } }
-                : peer.curAddr
-                  ? { path: { kind: "direct" as const, address: peer.curAddr } }
+              // Direct first: the node names its home DERP region in `relay`
+              // even while the tunnel runs straight to the peer, so a relay
+              // is only what is left when there is no direct endpoint. The
+              // same order the Mesh page reads them in (`pathOf`).
+              ...(peer.curAddr
+                ? { path: { kind: "direct" as const, address: peer.curAddr } }
+                : peer.relay
+                  ? { path: { kind: "relay" as const, region: peer.relay } }
                   : {}),
             },
           }

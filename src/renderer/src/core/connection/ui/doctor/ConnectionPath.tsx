@@ -11,14 +11,14 @@ import { useState } from "react";
  * that everything before it worked.
  */
 
-const STATE_ICON: Record<HopState, ReactNode> = {
+export const STATE_ICON: Record<HopState, ReactNode> = {
   ok: <CheckCircle2 className="size-3.5 shrink-0 text-emerald-500" aria-hidden />,
   warning: <AlertTriangle className="size-3.5 shrink-0 text-amber-500" aria-hidden />,
   failed: <XCircle className="size-3.5 shrink-0 text-destructive" aria-hidden />,
   unknown: <CircleDashed className="size-3.5 shrink-0 text-muted-foreground/60" aria-hidden />,
 };
 
-const STATE_LABEL: Record<HopState, string> = {
+export const STATE_LABEL: Record<HopState, string> = {
   ok: "working",
   warning: "working, with a warning",
   failed: "broken",

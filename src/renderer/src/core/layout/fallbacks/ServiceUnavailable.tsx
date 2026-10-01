@@ -1,8 +1,16 @@
+import { ConnectionDiagram } from "@/core/connection/ui/doctor/ConnectionDiagram";
+import {
+  CopyReportButton,
+  FindingList,
+  type ConnectionDoctorPanelProps,
+} from "@/core/connection/ui/doctor/ConnectionDoctorPanel";
 import { HubAwareConnectionDoctor } from "@/core/connection/ui/doctor/HubAwareConnectionDoctor";
 import { Button } from "@/core/ui/button";
-import { cn } from "@/core/util/utils";
-import { aliasToHttpPath } from "@/core/connection/arkitekt/alias/helpers";
+import { coordinationBase } from "@/core/connection/arkitekt/coordination";
+import { buildConnectionDiagram } from "@/core/connection/arkitekt/doctor/diagram";
+import { primaryFinding, type DoctorReport, type Finding } from "@/core/connection/arkitekt/doctor/findings";
 import { instanceToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
+import type { DoctorStatus } from "@/core/connection/arkitekt/doctor/useConnectionDoctor";
 import {
   useArkitektStore,
   useAvailableServices,
@@ -11,8 +19,19 @@ import {
 import { useActiveProfile } from "@/core/connection/arkitekt/hooks";
 import { useArkitektActions } from "@/core/connection/arkitekt/provider";
 import type { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
-import { Loader2, RefreshCw, Stethoscope, Unplug, WifiOff } from "lucide-react";
-import { useMemo, useState } from "react";
+import { pathTitle } from "@/core/connection/mesh/connectionPath";
+import { useConnectionPath } from "@/core/connection/mesh/useConnectionPath";
+import { useMeshes } from "@/core/connection/mesh/useMeshes";
+import { anyMeshHost } from "@/core/connection/arkitekt/doctor/classify";
+import {
+  useSystemTailscale,
+  useTailscaleConsent,
+  type TailscaleConsent,
+} from "@/core/connection/mesh/useSystemTailscale";
+import type { MeshProbeResult } from "../../../../../main/doctor/protocol";
+import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
+import { Loader2, RefreshCw, Unplug } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * What a module page shows when its backend service is not ready.
@@ -20,23 +39,18 @@ import { useMemo, useState } from "react";
  * Every module used to hand its guard `<>Loading</>` for all four non-ready
  * states, so a server that was DOWN — health check refused, service marked
  * `invalid` — looked exactly like one that was still being checked, forever.
- * This reads the service's own runtime state and says which it is: still
- * checking, unreachable (with the URL that was tried, the error, and a retry),
- * or simply not part of this deployment. When every configured service is
- * down it says so once, because that is a different problem (server, VPN)
- * than one module being off.
+ * This reads the service's own runtime state and says which it is:
+ *
+ * - still trying its addresses: just "Connecting". No diagram, no alarm; most
+ *   of the time this is on screen for a moment and then gone.
+ * - every address failed: "Couldn't reach …", and now the picture — the
+ *   coordination server, this computer and the hub, with what is broken red
+ *   where it is broken (`ConnectionDiagram`). The connection doctor starts by
+ *   itself ("Diagnosing…") and what it finds lands in the picture: on the
+ *   part it is about, on hover, and in the copied report. Nothing is listed
+ *   underneath; the one line under the heading is the likeliest reason.
+ * - not part of this deployment: says so.
  */
-
-/** Turn the browser's terse network errors into a sentence. */
-const describeError = (error: string): string => {
-  if (/failed to fetch|networkerror|network request failed|ERR_CONNECTION|ECONNREFUSED/i.test(error)) {
-    return "No response from the server: the connection was refused or there is no network route to it.";
-  }
-  if (/timed? ?out|aborted/i.test(error)) {
-    return "The server did not answer within the health-check timeout.";
-  }
-  return error;
-};
 
 const timeOf = (ms: number | undefined): string | null =>
   ms ? new Date(ms).toLocaleTimeString() : null;
@@ -54,32 +68,37 @@ export type ServiceStatusPanelProps = {
    * working fine.
    */
   deployment?: { name?: string };
-  /**
-   * The host(s) the failing services actually live on, taken from the aliases
-   * that were tried.
-   *
-   * It has to come from the aliases and nothing else. `fakts.self.alias` is
-   * the app's OWN registration — it points at lok on the coordination server
-   * — so using it printed "they run on go.arkitekt.live/lok, which is not the
-   * server you signed in through", which is both wrong and self-contradictory.
-   */
-  hosts?: string[];
   /** Every configured service failed its health check, not just this one. */
   allDown: boolean;
   onRetry: () => Promise<void> | void;
   onRetryAll: () => Promise<void> | void;
   /**
-   * Rendered beside Retry when the service is unreachable. A slot rather than
-   * a prop of its own so this panel stays pure — retrying is something it can
-   * do, diagnosing is something its caller wires up.
+   * The coordination server, for the diagram's top corner ONLY. It is where
+   * the login was granted and it is working, which is exactly why it is drawn
+   * green and never named in the heading or the explanation.
    */
-  diagnoseAction?: React.ReactNode;
+  coordination?: { name?: string; host?: string };
+  /** The hub's name, for the diagram's right corner. */
+  hubName?: string;
+  /** "Arkitekt mesh · lab": the tunnel the services are reached through. */
+  tunnel?: string;
+  /** The live mesh status: how each address travels (relayed, direct tunnel). */
+  mesh?: MeshStatusPayload;
   /**
-   * The diagnosis itself, once it has been asked for — rendered in place,
-   * under the actions. It belongs on this page rather than in a sheet: the
-   * user is already looking at the thing that failed.
+   * The Tailscale the system runs (not the built-in mesh), once the user has
+   * allowed asking it; `tailscaleConsent` says whether that is still an open
+   * question, and `onTailscaleAnswer` takes the answer.
    */
-  diagnostics?: React.ReactNode;
+  tailscale?: MeshProbeResult;
+  tailscaleConsent?: TailscaleConsent;
+  onTailscaleAnswer?: (allow: boolean, remember: boolean) => void;
+  /**
+   * The doctor's run, when there is one: it moves the break in the diagram
+   * from "somewhere on the way" to the part that is actually at fault.
+   */
+  doctor?: { status: DoctorStatus; report?: DoctorReport; error?: string };
+  /** Rows for a diagram part's findings; without it the parts do not expand. */
+  renderFindings?: (findings: Finding[]) => React.ReactNode;
 };
 
 /**
@@ -90,16 +109,21 @@ export const ServiceStatusPanel = ({
   serviceKey,
   state,
   deployment,
-  hosts,
   allDown,
   onRetry,
   onRetryAll,
-  diagnoseAction,
-  diagnostics,
+  coordination,
+  hubName,
+  tunnel,
+  mesh,
+  tailscale,
+  tailscaleConsent,
+  onTailscaleAnswer,
+  doctor,
+  renderFindings,
 }: ServiceStatusPanelProps) => {
   const [retrying, setRetrying] = useState(false);
   const name = state?.definition.name ?? serviceKey;
-  const url = state?.alias ? aliasToHttpPath(state.alias, "") : null;
   const checkedAt = timeOf(state?.lastCheckedAt);
 
   const retry = async (all: boolean) => {
@@ -111,128 +135,182 @@ export const ServiceStatusPanel = ({
     }
   };
 
-  let icon: React.ReactNode;
-  let title: string;
-  let body: React.ReactNode;
-  let actions: React.ReactNode = null;
-  let busy = false;
+  const page = (busy: boolean, children: React.ReactNode) => (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy={busy}
+      // Centred while it fits; once the diagram outgrows the tab it scrolls
+      // from the top instead of being cut off at both ends (`my-auto` on the
+      // column, rather than `justify-center` here).
+      className="flex h-full w-full flex-col items-center overflow-y-auto bg-radial-[at_100%_100%] from-background to-backgroundpaired px-4"
+    >
+      <div className="my-auto flex w-full max-w-3xl flex-col items-center gap-4 py-6 text-center">{children}</div>
+    </div>
+  );
 
   if (!state || state.status === "unconfigured") {
-    icon = <Unplug className="size-8 text-muted-foreground" aria-hidden />;
-    title = `${name} is not part of this deployment`;
-    body = (
-      <p>
-        {deployment?.name ? (
-          <>The deployment <span className="font-medium">{deployment.name}</span> </>
-        ) : (
-          <>This deployment </>
-        )}
-        does not offer the <span className="font-mono">{serviceKey}</span> service, so this
-        module has nothing to talk to.
-      </p>
-    );
-  } else if (state.status === "configured" || state.status === "checking") {
-    busy = true;
-    icon = <Loader2 className="size-8 animate-spin text-primary motion-reduce:animate-none" aria-hidden />;
-    title = state.status === "checking" ? `Checking ${name}` : `Connecting to ${name}`;
-    body = url ? (
-      <p>
-        Waiting for <span className="font-mono">{url}</span> to answer.
-      </p>
-    ) : (
-      <p>Waiting for the first health check.</p>
-    );
-  } else {
-    // invalid
-    icon = <WifiOff className="size-8 text-destructive" aria-hidden />;
-    title = allDown
-      ? deployment?.name
-        ? `${deployment.name} is not reachable`
-        : "This deployment is not reachable"
-      : `${name} is not reachable`;
-    body = (
-      <div className="space-y-2">
-        {allDown ? (
-          <p>
-            None of the services
-            {deployment?.name ? (
-              <> on <span className="font-medium">{deployment.name}</span></>
-            ) : null}{" "}
-            answered their health check.
-            {hosts?.length === 1 ? (
-              <>
-                {" "}
-                They run on <span className="font-mono">{hosts[0]}</span>.
-              </>
-            ) : null}{" "}
-            That machine may be down, or this computer may need a VPN or mesh network to reach
-            it.
-          </p>
-        ) : (
-          <p>
-            The {name} service failed its health check while the rest of this deployment
-            answered, so this is about that one service rather than the network.
-          </p>
-        )}
-        {state.errors.length > 0 && (
-          <ul className="space-y-1">
-            {[...new Set(state.errors)].map((error) => (
-              <li key={error}>
-                {describeError(error)}
-                {describeError(error) !== error && (
-                  <span className="ml-1 font-mono text-[11px] text-muted-foreground/70">({error})</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="text-xs text-muted-foreground/70">
-          {url && (
-            <>
-              Tried <span className="font-mono">{url}</span>
-            </>
+    return page(
+      false,
+      <>
+        <Unplug className="size-8 text-muted-foreground" aria-hidden />
+        <h1 className="text-lg font-semibold">{name} is not part of this deployment</h1>
+        <p className="max-w-md text-sm text-muted-foreground">
+          {deployment?.name ? (
+            <>The deployment <span className="font-medium">{deployment.name}</span> </>
+          ) : (
+            <>This deployment </>
           )}
-          {url && checkedAt && " · "}
-          {checkedAt && <>last checked {checkedAt}</>}
+          does not offer the <span className="font-mono">{serviceKey}</span> service, so this
+          module has nothing to talk to.
         </p>
-      </div>
+      </>,
     );
-    actions = (
+  }
+
+  if (state.status !== "invalid") {
+    // Still trying its addresses. Nothing has failed, so there is nothing to
+    // draw and nothing to explain: this is usually gone in a moment.
+    return page(
+      true,
+      <>
+        <Loader2 className="size-6 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden />
+        <h1 className="text-lg font-semibold">Connecting to {name}</h1>
+      </>,
+    );
+  }
+
+  // Every address failed. Only now the picture, and the doctor behind it.
+  const diagram = buildConnectionDiagram({
+    serviceKey,
+    serviceName: name,
+    status: state.status,
+    errors: state.errors,
+    aliases: state.instance?.aliases,
+    chosenAlias: state.alias,
+    coordination,
+    hubName,
+    tunnel,
+    mesh,
+    tailscale,
+    tailscaleConsent,
+    doctor,
+  });
+  const subject = allDown ? (deployment?.name ?? "this deployment") : name;
+  const verdict = doctor?.report ? primaryFinding(doctor.report.findings) : undefined;
+  // Until the doctor has looked, there is only half a picture — and one that
+  // would change under the reader. So it waits ("Diagnosing…", in the room
+  // the picture will take) and shows the tested one. Without a doctor at all
+  // the live state is all there is, and that is drawn as it is.
+  const diagnosing = !!doctor && (doctor.status === "idle" || doctor.status === "running");
+
+  return page(
+    diagnosing,
+    <>
+      {/* What happened first, then the looking into it, in the order they
+          occur: the heading stays put while the picture arrives under it. */}
+      <h1 className="text-lg font-semibold">Couldn&apos;t reach {subject}</h1>
+      <ConnectionDiagram
+        diagram={diagram}
+        pending={diagnosing}
+        renderFindings={renderFindings}
+        onTailscaleAnswer={onTailscaleAnswer}
+      />
+      <div className="max-w-md space-y-1 text-sm text-muted-foreground">
+        {diagnosing ? null : doctor?.status === "error" ? (
+          <p>The diagnosis itself failed{doctor.error ? `: ${doctor.error}` : "."}</p>
+        ) : verdict ? (
+          // The likeliest reason, as one line. Everything else the check saw
+          // is on the part it is about: hover it, or open the red one.
+          <p>{verdict.title}</p>
+        ) : null}
+        {checkedAt && <p className="text-xs text-muted-foreground/70">Last checked {checkedAt}</p>}
+      </div>
       <div className="flex flex-wrap justify-center gap-2">
         <Button size="sm" disabled={retrying} onClick={() => void retry(allDown)}>
           <RefreshCw className={retrying ? "mr-2 size-3.5 animate-spin" : "mr-2 size-3.5"} />
           {allDown ? "Retry all services" : `Retry ${name}`}
         </Button>
-        {diagnoseAction}
+        {doctor?.report && !diagnosing && <CopyReportButton report={doctor.report} />}
       </div>
-    );
+    </>,
+  );
+};
+
+const hostOf = (endpointBaseUrl: string | undefined): string | undefined => {
+  if (!endpointBaseUrl) return undefined;
+  try {
+    return new URL(coordinationBase(endpointBaseUrl)).host;
+  } catch {
+    return undefined;
   }
+};
+
+/** The page with a doctor's run in hand; everything the store knows is read here. */
+const ConnectedPanel = ({ serviceKey, doctor }: { serviceKey: string; doctor: ConnectionDoctorPanelProps }) => {
+  const state = useServiceState(serviceKey);
+  // Only the deployment's NAME comes from `self`. Its `alias` is the app's own
+  // registration (lok on the coordination server), not where these services
+  // run — see the `hosts` prop.
+  const deploymentName = useArkitektStore(
+    (state) => state.storedSession?.fakts.self?.deployment_name,
+  );
+  const endpoint = useArkitektStore((state) => state.connection?.endpoint);
+  // Already only the configured ones: what this deployment actually offers.
+  const configured = useAvailableServices();
+  const { retryService } = useArkitektActions();
+  const activeProfile = useActiveProfile();
+  const path = useConnectionPath();
+  const { sidecar, meshes } = useMeshes();
+  const mesh = useMemo(() => ({ sidecar, meshes }), [sidecar, meshes]);
+  const tailscale = useSystemTailscale(
+    anyMeshHost((state?.instance?.aliases ?? []).map((alias) => alias.host)),
+  );
+
+  const allDown =
+    state?.status === "invalid" &&
+    configured.length > 1 &&
+    configured.every((service) => service.status === "invalid");
+
+  // A health check that failed AGAIN (a retry, the mesh coming up) makes the
+  // last report stale, so the doctor looks again. Only once a report exists:
+  // the first failure is `autoRun`'s, and must not be probed twice. Probes
+  // never write the store, so this cannot feed itself.
+  const run = useRef(doctor.onRun);
+  run.current = doctor.onRun;
+  const hasReport = useRef(false);
+  hasReport.current = !!doctor.report;
+  const status = state?.status;
+  const lastCheckedAt = state?.lastCheckedAt;
+  // Being allowed to ask the system Tailscale is the same: what the last run
+  // could not look at, the next one can.
+  const consent = tailscale.consent;
+  useEffect(() => {
+    if (status === "invalid" && hasReport.current) run.current();
+  }, [status, lastCheckedAt, consent]);
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-busy={busy}
-      className="flex h-full w-full flex-col items-center justify-center bg-radial-[at_100%_100%] from-background to-backgroundpaired px-4"
-    >
-      <div
-        className={cn(
-          "flex w-full flex-col items-center gap-4 text-center",
-          diagnostics ? "max-w-2xl" : "max-w-md",
-        )}
-      >
-        {icon}
-        <h1 className="text-lg font-semibold">{title}</h1>
-        <div className="text-sm text-muted-foreground">{body}</div>
-        {actions}
-        {/* The report keeps its own left-aligned text — findings are prose and
-            read badly centred — but the block itself stays in the middle of
-            the page with the rest of the message, not flush to one edge. */}
-        {diagnostics && (
-          <div className="mx-auto w-full max-w-xl pt-2 text-left">{diagnostics}</div>
-        )}
-      </div>
-    </div>
+    <ServiceStatusPanel
+      serviceKey={serviceKey}
+      state={state}
+      deployment={{ name: deploymentName }}
+      allDown={allDown}
+      onRetry={() => retryService(serviceKey)}
+      onRetryAll={async () => {
+        await Promise.all(configured.map((service) => retryService(service.key)));
+      }}
+      coordination={{ name: endpoint?.name, host: hostOf(endpoint?.base_url) }}
+      hubName={activeProfile?.label.hubName || deploymentName}
+      tunnel={path.kind === "direct" ? undefined : pathTitle(path)}
+      mesh={mesh}
+      tailscale={tailscale.status}
+      tailscaleConsent={tailscale.consent}
+      onTailscaleAnswer={tailscale.answer}
+      doctor={{ status: doctor.status, report: doctor.report, error: doctor.error }}
+      // What the doctor found about a part opens under the diagram when that
+      // part is clicked, with whatever can be done about it.
+      renderFindings={(findings) => <FindingList findings={findings} onRemedy={doctor.onRemedy} />}
+    />
   );
 };
 
@@ -240,86 +318,34 @@ export const ServiceStatusPanel = ({
 export const ServiceUnavailable = ({ serviceKey }: { serviceKey: string }) => {
   const state = useServiceState(serviceKey);
   const instance = useArkitektStore((state) => state.storedSession?.fakts.instances[serviceKey]);
-  // Only the deployment's NAME comes from `self`. Its `alias` is the app's own
-  // registration (lok on the coordination server), not where these services
-  // run — see the `hosts` prop.
-  const deploymentName = useArkitektStore(
-    (state) => state.storedSession?.fakts.self?.deployment_name,
-  );
-  // Already only the configured ones: what this deployment actually offers.
-  const configured = useAvailableServices();
-  const { retryService } = useArkitektActions();
   const activeProfile = useActiveProfile();
-  const [diagnosing, setDiagnosing] = useState(false);
-
-  /**
-   * The distinct hosts behind the services that are down — the addresses the
-   * health checks actually went to. `instance.aliases` rather than
-   * `state.alias`, because a service that never resolved has no chosen alias,
-   * and that is exactly the case this message is for.
-   */
-  const hosts = useMemo(() => {
-    const failing = configured.filter((service) => service.status === "invalid");
-    return [
-      ...new Set(
-        failing.flatMap((service) =>
-          (service.instance?.aliases ?? []).map((alias) => alias.host),
-        ),
-      ),
-    ];
-  }, [configured]);
-
-  const allDown =
-    state?.status === "invalid" &&
-    configured.length > 1 &&
-    configured.every((service) => service.status === "invalid");
+  const { consent } = useTailscaleConsent();
 
   return (
-    <ServiceStatusPanel
-      serviceKey={serviceKey}
-      state={state}
-      deployment={{ name: deploymentName }}
-      hosts={hosts}
-      allDown={allDown}
-      onRetry={() => retryService(serviceKey)}
-      onRetryAll={async () => {
-        await Promise.all(configured.map((service) => retryService(service.key)));
+    // This is where "No working alias found" actually lands, so the doctor
+    // starts by itself the moment the service is known to be unreachable —
+    // and not before: a service still being checked is not a failure yet.
+    <HubAwareConnectionDoctor
+      autoRun={state?.status === "invalid"}
+      // Nobody asked for this run, so it does not read the system Tailscale
+      // until the user has said it may (the diagram asks, once).
+      systemMesh={consent === "allowed"}
+      centered
+      context={{
+        kind: "service",
+        serviceKey,
+        endpointUrl: activeProfile?.session.endpoint.base_url,
+        // null = "the deployment names no mesh", a different verdict
+        // from "unknown" — see DoctorContext.
+        meshCoordUrl: activeProfile ? (activeProfile.session.endpoint.mesh_coord_url ?? null) : undefined,
+        profileMesh: activeProfile?.mesh,
+        coordinationAlias: activeProfile?.session.fakts.self.alias,
       }}
-      diagnoseAction={
-        // This is where "No working alias found" actually lands, so it is the
-        // most useful place in the app to offer the doctor.
-        state?.status === "invalid" && !diagnosing ? (
-          <Button size="sm" variant="outline" onClick={() => setDiagnosing(true)}>
-            <Stethoscope className="mr-2 size-3.5" />
-            Run diagnostics
-          </Button>
-        ) : null
-      }
-      diagnostics={
-        // Asked for, so it starts immediately and stays on this page: the
-        // thing that failed is already on screen, and a sheet would cover it.
-        diagnosing ? (
-          <HubAwareConnectionDoctor
-            autoRun
-            centered
-            context={{
-              kind: "service",
-              serviceKey,
-              endpointUrl: activeProfile?.session.endpoint.base_url,
-              // null = "the deployment names no mesh", a different verdict
-              // from "unknown" — see DoctorContext.
-              meshCoordUrl: activeProfile ? (activeProfile.session.endpoint.mesh_coord_url ?? null) : undefined,
-              profileMesh: activeProfile?.mesh,
-              coordinationAlias: activeProfile?.session.fakts.self.alias,
-            }}
-            buildTargets={() =>
-              instance ? instanceToProbeTargets(serviceKey, instance) : []
-            }
-            originalError={state?.errors[0]}
-            subject={state?.definition.name ?? serviceKey}
-          />
-        ) : null
-      }
-    />
+      buildTargets={() => (instance ? instanceToProbeTargets(serviceKey, instance) : [])}
+      originalError={state?.errors[0]}
+      subject={state?.definition.name ?? serviceKey}
+    >
+      {(doctor) => <ConnectedPanel serviceKey={serviceKey} doctor={doctor} />}
+    </HubAwareConnectionDoctor>
   );
 };

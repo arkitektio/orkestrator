@@ -16,12 +16,10 @@ import { cn } from "@/core/util/utils";
 import { ChevronsUpDown, Laptop, Network, Server, Settings, ShieldCheck, UsersRound, Waypoints } from "lucide-react";
 import React from "react";
 
-import type { ConnectionPath } from "@/core/connection/mesh/connectionPath";
+import { pathTitle, type TunnelPath } from "@/core/connection/mesh/connectionPath";
 import { useConnectionPath } from "@/core/connection/mesh/useConnectionPath";
 
 import { useRailSwitcherRequests } from "./railSwitcher";
-
-type TunnelPath = Exclude<ConnectionPath, { kind: "direct" }>;
 
 /**
  * How the org switcher marks a tunnel: a thin ring on the avatar and a small
@@ -34,18 +32,6 @@ const PATH_STYLE: Record<TunnelPath["kind"], { ring: string; glyph: string; Icon
   "arkitekt-mesh": { ring: "ring-primary/60", glyph: "text-primary", Icon: Network },
   "system-tailscale": { ring: "ring-muted-foreground/50", glyph: "text-muted-foreground", Icon: Waypoints },
   vpn: { ring: "ring-muted-foreground/50", glyph: "text-muted-foreground", Icon: ShieldCheck },
-};
-
-/** One line naming the path: the note's caption, and the screen-reader text. */
-export const pathTitle = (path: TunnelPath): string => {
-  switch (path.kind) {
-    case "arkitekt-mesh":
-      return `Arkitekt mesh · ${path.meshLabel}`;
-    case "system-tailscale":
-      return path.tailnet ? `Tailscale · ${path.tailnet}` : "Tailscale";
-    case "vpn":
-      return `VPN · ${path.interfaces.join(", ")}`;
-  }
 };
 
 /** A dashed wire between two ends of the picture. */

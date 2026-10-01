@@ -37,6 +37,11 @@ const toNode = (raw: unknown): MeshNode | undefined => {
     keyExpiry: asString(node.KeyExpiry),
     os: asString(node.OS),
     lastSeen: asString(node.LastSeen),
+    // `CurAddr` is "" while the tunnel is relayed, and `Relay` names the DERP
+    // region either way (it is the fallback), so direct wins when both are set.
+    relay: asString(node.Relay),
+    curAddr: asString(node.CurAddr),
+    active: asBoolean(node.Active),
   };
 };
 
