@@ -8,7 +8,7 @@ import { useSyncExternalStore } from "react";
  * sites (`window.electron`, `window.api?.`). The title bar needs a sharper
  * answer than a boolean — macOS keeps its real traffic lights and we only draw
  * around them, Windows and Linux have no buttons of their own so we draw those
- * (in different places), and the browser has no frame of ours at all.
+ * (in the same auto-hiding bar), and the browser has no frame of ours at all.
  */
 
 export type Platform = "darwin" | "win32" | "linux" | "web";
@@ -16,14 +16,13 @@ export type Platform = "darwin" | "win32" | "linux" | "web";
 /**
  * `"mac"`     — real traffic lights (`hiddenInset`); reserve a left gutter, draw
  *               no buttons of our own.
- * `"autohide"` — Windows: no caption, no Controls Overlay. The page fills the
- *               window and our own buttons live in a bar that slides down when
- *               the pointer touches the top edge (`AutoHideTitleBar`).
- * `"buttons"` — frameless (Linux); we draw minimise/maximise/close ourselves,
- *               inline in the rail, since there is no top bar to put them in.
+ * `"autohide"` — Windows (no caption, no Controls Overlay) and Linux
+ *               (frameless). The page fills the window and our own buttons live
+ *               in a bar that slides down when the pointer touches the top edge
+ *               (`AutoHideTitleBar`).
  * `"none"`    — a browser tab; there is no frame of ours to draw.
  */
-export type ChromeMode = "mac" | "autohide" | "buttons" | "none";
+export type ChromeMode = "mac" | "autohide" | "none";
 
 /**
  * `window.electron` is injected by @electron-toolkit's preload, and is the check
@@ -52,8 +51,7 @@ export const getChromeMode = (): ChromeMode => {
   const platform = getPlatform();
   if (platform === "web") return "none";
   if (platform === "darwin") return "mac";
-  if (platform === "win32") return "autohide";
-  return "buttons";
+  return "autohide";
 };
 
 export type WindowChromeState = {
@@ -143,14 +141,16 @@ export const useWindowState = (): WindowChromeState =>
  * only the frameless platform (Linux) loses along with its frame, so only there
  * do we supply it. macOS and Windows keep their own handling of the drag zone.
  *
+ * Asked of the PLATFORM, not the chrome mode: Windows shares Linux's
+ * `autohide` chrome but still has a frame that zooms on a caption double-click,
+ * and a handler of ours on top of that would maximise and restore in one go.
+ *
  * Returns a handler for the `app-drag` zone, or nothing where the frame already
  * does this. Double-clicks that land on a control (`app-no-drag`) are the
  * control's, not the bar's.
  */
-export const dragZoneDoubleClick = (
-  mode: ChromeMode,
-): ((event: { target: EventTarget | null }) => void) | undefined => {
-  if (mode !== "buttons") return undefined;
+export const dragZoneDoubleClick = (): ((event: { target: EventTarget | null }) => void) | undefined => {
+  if (getPlatform() !== "linux") return undefined;
   return (event) => {
     const target = event.target;
     if (target instanceof Element && target.closest(".app-no-drag")) return;

@@ -37,8 +37,8 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
     // desktop seen through the OS blur, with the sidebar colour laid back over
     // it at the share the transparency setting leaves (`index.css`).
     <div className="rail-glass-surface flex flex-col bg-sidebar text-foreground h-screen">
-      {/* Windows only, and 0px tall until the pointer touches the top edge;
-          nothing at all on macOS, Linux or the web. */}
+      {/* Windows and Linux only, and 0px tall until the pointer touches the
+          top edge; nothing at all on macOS or the web. */}
       <ChromeSurfaceProvider>
         <div className="chrome-zoom shrink-0">
           <AutoHideTitleBar />
@@ -71,7 +71,7 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
           mode !== "none" && !railDrop.dragging && "app-drag",
           railDrop.dragging && "app-no-drag",
         )}
-        onDoubleClick={dragZoneDoubleClick(mode)}
+        onDoubleClick={dragZoneDoubleClick()}
       >
         <RailChrome />
         {/* A plain `nav`, deliberately NOT shadcn's `NavigationMenu`. That

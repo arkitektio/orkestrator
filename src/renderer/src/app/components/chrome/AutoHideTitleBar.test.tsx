@@ -39,8 +39,8 @@ const bar = () => screen.getByTestId("autohide-titlebar");
 const zone = () => bar().parentElement!;
 
 describe("the auto-hiding title bar", () => {
-  it("is nowhere but Windows", () => {
-    for (const platform of ["darwin", "linux", undefined]) {
+  it("is nowhere but Windows and Linux", () => {
+    for (const platform of ["darwin", undefined]) {
       setElectron(platform);
       const { unmount } = render(<AutoHideTitleBar />);
       expect(screen.queryByTestId("autohide-titlebar")).not.toBeInTheDocument();
@@ -55,8 +55,8 @@ describe("the auto-hiding title bar", () => {
     expect(bar().dataset.state).toBe("hidden");
   });
 
-  it("slides down when the pointer reaches the top edge", () => {
-    setElectron("win32");
+  it.each(["win32", "linux"])("slides down when the pointer reaches the top edge on %s", (platform) => {
+    setElectron(platform);
     render(<AutoHideTitleBar />);
 
     fireEvent.mouseEnter(screen.getByTestId("titlebar-hover-sentinel"));
@@ -127,6 +127,22 @@ describe("the auto-hiding title bar", () => {
     setElectron("win32");
     render(<AutoHideTitleBar />);
     expect(screen.getByTestId("titlebar-hover-sentinel").className).toContain("app-no-drag");
+  });
+
+  it("maximises on a double-click on Linux, whose frameless window has nobody else to do it", () => {
+    setElectron("linux");
+    render(<AutoHideTitleBar />);
+    fireEvent.doubleClick(bar());
+    expect(window.api.windowControls.toggleMaximize).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the double-click to the real frame on Windows", () => {
+    // Windows zooms on a caption double-click by itself; ours on top of that
+    // would maximise and restore in one gesture.
+    setElectron("win32");
+    render(<AutoHideTitleBar />);
+    fireEvent.doubleClick(bar());
+    expect(window.api.windowControls.toggleMaximize).not.toHaveBeenCalled();
   });
 
   it("opens on focus, so the buttons are reachable by keyboard", () => {

@@ -36,7 +36,7 @@ describe("platform detection", () => {
     // definitely has no traffic lights.
     setElectron("freebsd");
     expect(getPlatform()).toBe("linux");
-    expect(getChromeMode()).toBe("buttons");
+    expect(getChromeMode()).toBe("autohide");
   });
 });
 
@@ -59,9 +59,9 @@ describe("getChromeMode", () => {
     expect(getChromeMode()).toBe("autohide");
   });
 
-  it("draws its own buttons on Linux, which is frameless", () => {
+  it("gives frameless Linux the same auto-hiding bar as Windows", () => {
     setElectron("linux");
-    expect(getChromeMode()).toBe("buttons");
+    expect(getChromeMode()).toBe("autohide");
   });
 });
 
@@ -69,7 +69,6 @@ describe("trafficLightGutter", () => {
   it("reserves room only for real traffic lights", () => {
     expect(trafficLightGutter("mac", false)).toBeGreaterThan(0);
     expect(trafficLightGutter("autohide", false)).toBe(0);
-    expect(trafficLightGutter("buttons", false)).toBe(0);
     expect(trafficLightGutter("none", false)).toBe(0);
   });
 
@@ -92,21 +91,27 @@ describe("dragZoneDoubleClick", () => {
   });
 
   it("only exists where the frame is ours to replace (Linux)", () => {
-    // macOS and Windows keep a real frame that already handles the bar.
-    expect(dragZoneDoubleClick("mac")).toBeUndefined();
-    expect(dragZoneDoubleClick("autohide")).toBeUndefined();
-    expect(dragZoneDoubleClick("none")).toBeUndefined();
-    expect(dragZoneDoubleClick("buttons")).toBeTypeOf("function");
+    // macOS and Windows keep a real frame that already handles the bar. It is
+    // the platform that decides, not the chrome mode: Windows shares Linux's
+    // auto-hiding bar, and a second handler there would maximise AND restore.
+    for (const platform of ["darwin", "win32", undefined]) {
+      setElectron(platform);
+      expect(dragZoneDoubleClick()).toBeUndefined();
+    }
+    setElectron("linux");
+    expect(dragZoneDoubleClick()).toBeTypeOf("function");
   });
 
   it("toggles maximise from the bar itself", () => {
+    setElectron("linux");
     const toggleMaximize = withBridge();
     const zone = document.createElement("div");
-    dragZoneDoubleClick("buttons")!({ target: zone });
+    dragZoneDoubleClick()!({ target: zone });
     expect(toggleMaximize).toHaveBeenCalledTimes(1);
   });
 
   it("leaves a double-click on a control to the control", () => {
+    setElectron("linux");
     // A double-clicked search pill or nav button must not fling the window
     // into maximise as a side effect.
     const toggleMaximize = withBridge();
@@ -114,11 +119,12 @@ describe("dragZoneDoubleClick", () => {
     const control = document.createElement("button");
     control.className = "app-no-drag";
     zone.appendChild(control);
-    dragZoneDoubleClick("buttons")!({ target: control });
+    dragZoneDoubleClick()!({ target: control });
     expect(toggleMaximize).not.toHaveBeenCalled();
   });
 
   it("is inert without the bridge", () => {
-    expect(() => dragZoneDoubleClick("buttons")!({ target: null })).not.toThrow();
+    setElectron("linux");
+    expect(() => dragZoneDoubleClick()!({ target: null })).not.toThrow();
   });
 });

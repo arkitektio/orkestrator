@@ -1,7 +1,6 @@
 import { AutoHideTitleBar } from "@/app/components/chrome/AutoHideTitleBar";
-import { WindowControls } from "@/app/components/chrome/WindowControls";
 import { UpdateIsland } from "@/core/updates/UpdateIsland";
-import { dragZoneDoubleClick, getChromeMode, useWindowState } from "@/core/util/platform";
+import { dragZoneDoubleClick, getChromeMode } from "@/core/util/platform";
 import { cn } from "@/core/util/utils";
 import { useEffect } from "react";
 
@@ -16,13 +15,12 @@ export type WelcomeLayoutProps = {
  * switcher — and every one of those is membership-scoped, so signed out it
  * would be a column of empty lists around a login form. This shell keeps only
  * what the WINDOW needs: the drag strip (the rail normally provides it, and
- * with no title bar there is no other way to move the window) and, on Linux,
- * our own window buttons. The card is the same inset card the app uses, so
+ * with no title bar there is no other way to move the window) and, on Windows
+ * and Linux, the auto-hiding bar with our own window buttons. The card is the same inset card the app uses, so
  * signing in reads as the rail arriving, not as a different app.
  */
 export const WelcomeLayout = ({ children }: WelcomeLayoutProps) => {
   const mode = getChromeMode();
-  const { maximized } = useWindowState();
 
   // No pill to unfold from and nowhere to go: the palette's hotkeys are off
   // for the whole document while this is up. Uses the palette's own opt-out
@@ -39,20 +37,17 @@ export const WelcomeLayout = ({ children }: WelcomeLayoutProps) => {
 
   return (
     <div data-testid="welcome-layout" className="flex h-screen flex-col bg-sidebar text-foreground">
-      {/* Windows only, and 0px tall until the pointer touches the top edge;
-          nothing at all on macOS, Linux or the web. */}
+      {/* Windows and Linux only, and 0px tall until the pointer touches the
+          top edge; nothing at all on macOS or the web. */}
       <AutoHideTitleBar />
 
       {/* The one strip of window surface: draggable, and on macOS wide
           enough for the traffic lights the system draws over it. */}
       <div
         data-testid="welcome-drag-strip"
-        className={cn("flex h-10 shrink-0 items-center px-2", mode !== "none" && "app-drag")}
-        onDoubleClick={dragZoneDoubleClick(mode)}
-      >
-        <div className="flex-1" />
-        {mode === "buttons" && <WindowControls maximized={maximized} compact />}
-      </div>
+        className={cn("h-10 shrink-0", mode !== "none" && "app-drag")}
+        onDoubleClick={dragZoneDoubleClick()}
+      />
 
       <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background mx-2 mb-2 rounded-xl border border-border/60 shadow-sm">
         {children}

@@ -1,24 +1,25 @@
-import { getChromeMode, useWindowState } from "@/core/util/platform";
+import { dragZoneDoubleClick, getChromeMode, useWindowState } from "@/core/util/platform";
 import { cn } from "@/core/util/utils";
 import { useEffect, useRef, useState } from "react";
 
 import { WindowControls } from "./WindowControls";
 
 /**
- * The title bar that isn't there until you reach for it — Windows only.
+ * The title bar that isn't there until you reach for it — Windows and Linux.
  *
- * On Windows the page now fills the window to its very top edge: there is no
- * reserved strip and no system caption. Push the pointer against the top edge
+ * On both the page fills the window to its very top edge: there is no reserved
+ * strip and no system caption (Windows hides it, Linux is frameless). Push the pointer against the top edge
  * and this bar slides down, nudging everything below it, with the window buttons
  * in it and the whole strip draggable; move down past it and it collapses again.
  *
- * This is what replaced the Windows Controls Overlay. WCO's buttons are drawn
+ * On Windows this is what replaced the Windows Controls Overlay. WCO's buttons are drawn
  * by the OS and cannot be hidden — `setTitleBarOverlay({ height: 0 })` clamps to
  * 30px — so keeping it meant either a permanent 32px strip across the top (what
  * this app had) or system buttons floating over the page's top-right corner with
  * that strip click-dead. Drawing our own is the only way the page gets the whole
  * window. See `WindowManager.chromeOptions` for what it costs: the Snap Layouts
- * flyout.
+ * flyout. On Linux it replaced buttons that sat inline in the rail's chrome
+ * row, so both platforms now wear the same chrome.
  *
  * ## Why the open/close state is not plain hover
  *
@@ -151,9 +152,11 @@ export const AutoHideTitleBar = () => {
         data-testid="autohide-titlebar"
         data-state={revealed ? "revealed" : "hidden"}
         // A real title bar: drag it and the window moves, double-click it and
-        // Windows zooms it. The buttons inside carry `app-no-drag`, without
-        // which the drag region swallows their clicks in silence.
+        // Windows zooms it — on frameless Linux that last part is ours to
+        // supply. The buttons inside carry `app-no-drag`, without which the
+        // drag region swallows their clicks in silence.
         className="app-drag flex items-center justify-end overflow-hidden px-1 transition-[height] duration-200 ease-out"
+        onDoubleClick={dragZoneDoubleClick()}
         style={{ height: revealed ? AUTO_HIDE_BAR_HEIGHT : 0 }}
       >
         <WindowControls maximized={maximized} compact />
