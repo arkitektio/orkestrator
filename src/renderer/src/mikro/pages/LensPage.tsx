@@ -3,6 +3,7 @@ import { MikroArrayDataset, MikroCoordinateSystem, MikroLens } from "@/core/link
 
 import { useGetLensQuery } from "../api/graphql";
 import { lensLabel } from "../lenses";
+import { MIKRO_HELP } from "../help";
 
 /**
  * One lens: what it selects out of its dataset, and where that selection lives.
@@ -32,6 +33,7 @@ export const LensPage = asDetailQueryRoute(useGetLensQuery, ({ data }) => {
   return (
     <MikroLens.ModelPage
       object={lens}
+      help={MIKRO_HELP.lens}
       title={lens.dataset.name}
       actions={<MikroLens.Actions object={lens} />}
     >

@@ -10,6 +10,7 @@ import Timestamp from "@/core/ui/timestamp";
 import { useCancelTask } from "../../hooks/useAssign";
 import { useReassign } from "../../hooks/useReassign";
 import { isCancelable, isInterruptable } from "../../lib/taskStatus";
+import { REKUEST_HELP } from "../../help";
 
 /** Raw, copy-friendly event log of a task (`tasks/:id/log`). */
 export const TPage = asDetailQueryRoute(
@@ -23,6 +24,7 @@ export const TPage = asDetailQueryRoute(
     return (
       <RekuestTask.ModelPage
         title={`${data?.task?.action.name} — Log`}
+        help={REKUEST_HELP.taskLog}
         object={data.task}
         pageActions={
           <>

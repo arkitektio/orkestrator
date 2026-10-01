@@ -2,6 +2,7 @@ import { RekuestSpace } from "@/core/linkers";
 import SpacesList from "../components/lists/SpacesList";
 import { useCreateSpaceMutation } from "../api/graphql";
 import { PageAction } from "@/core/ui/page-action";
+import { REKUEST_HELP } from "../help";
 
 const Page = () => {
 
@@ -12,7 +13,7 @@ const Page = () => {
 
 
   return (
-    <RekuestSpace.ListPage title={"Spaces"} pageActions={
+    <RekuestSpace.ListPage help={REKUEST_HELP.spaces} title={"Spaces"} pageActions={
       <PageAction
         alwaysShow
         onClick={() => create({ variables: { input: { name: "New Space " + Date.now() } } })}

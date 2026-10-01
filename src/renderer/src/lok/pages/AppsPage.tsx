@@ -1,4 +1,5 @@
 import { Explainer } from "@/core/layout/Explainer";
+import { LOK_HELP } from "../help";
 import { LokApp } from "@/core/linkers";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import React from "react";
@@ -8,6 +9,7 @@ export type IRepresentationScreenProps = {};
 const Page: React.FC<IRepresentationScreenProps> = () => {
   return (
     <LokApp.ListPage
+      help={LOK_HELP.apps}
       title="Applications"
     >
       <Explainer

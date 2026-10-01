@@ -90,6 +90,8 @@ export type ModelPageLayoutProps = {
    * whose label matches a default replaces that default's content in place.
    */
   additionalSidebars?: React.ReactNode;
+  /** Page-specific help, shown as the rail's last "Help" tab — see PageLayout. */
+  help?: React.ReactNode;
   actions?: React.ReactNode;
   pageActions?: React.ReactNode;
   variant?: PageVariant;
@@ -115,6 +117,7 @@ export type ModelPageLayoutProps = {
 export const ModelPageLayout = ({
   sidebars,
   additionalSidebars,
+  help,
   title,
   children,
   identifier,
@@ -161,6 +164,7 @@ export const ModelPageLayout = ({
           {chat && chatTab}
         </Sidebars>
       )}
+      help={help}
       variant={variant}
       overlay={overlay}
       actions={actions}

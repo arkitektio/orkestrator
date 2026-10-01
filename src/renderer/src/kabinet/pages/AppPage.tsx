@@ -15,6 +15,7 @@ import {
 import { AppShelfTile } from "../components/store/AppStoreCard";
 import { HardwareBadges, InstallButton } from "../components/store/StoreParts";
 import { groupApps, StoreApp } from "../components/store/storeModel";
+import { KABINET_HELP } from "../help";
 
 /**
  * The hero mark is the one live WebGL context on this page, and only for an app
@@ -76,6 +77,7 @@ export const AppPage = asDetailQueryRoute(useGetAppQuery, ({ data }) => {
     <KabinetApp.ModelPage
       title={app?.name ?? data.app.identifier}
       object={data.app}
+      help={KABINET_HELP.app}
       // No Knowledge sidebar: an app is infrastructure, not a datum, so
       // `KabinetApp.Knowledge` renders nothing and the tab would be an empty
       // panel. What there is to say about an app is in the tabs below.

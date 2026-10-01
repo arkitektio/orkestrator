@@ -2,6 +2,7 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Card } from "@/core/ui/card";
 import { ElektroMechanism } from "@/core/linkers";
 import { useDetailMechanismQuery } from "../api/graphql";
+import { ELEKTRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -13,6 +14,7 @@ export const MechanismPage = asDetailQueryRoute(
       <ElektroMechanism.ModelPage
         variant="black"
         title={data?.mechanism?.name}
+        help={ELEKTRO_HELP.mechanism}
         object={data.mechanism}
       >
         <div className="h-full w-full grid grid-cols-12 grid-reverse gap-4 pointers-events-none p-4 ">

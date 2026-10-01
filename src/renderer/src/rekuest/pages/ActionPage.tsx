@@ -12,6 +12,7 @@ import { ProvidedByPanel } from "../components/action/ProvidedByPanel";
 import { SimilarActions } from "../components/action/SimilarActions";
 import { LegacyActionTests, TestMatrix } from "../components/action/TestMatrix";
 import { ActionUsageSidebar } from "../sidebars/ActionUsageSidebar";
+import { REKUEST_HELP } from "../help";
 
 export const ActionPage = asDetailQueryRoute(useDetailActionQuery, ({ data }) => {
   // The page describes the action; it does not run it (that is the "Run
@@ -26,6 +27,7 @@ export const ActionPage = asDetailQueryRoute(useDetailActionQuery, ({ data }) =>
   return (
     <RekuestAction.ModelPage
       title={data.action.name}
+      help={REKUEST_HELP.action}
       object={data.action}
       sidebars={
         <Sidebars>

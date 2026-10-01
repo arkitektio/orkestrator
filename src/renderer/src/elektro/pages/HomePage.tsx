@@ -42,6 +42,7 @@ import { HomePageQuery, Ordering, useHomePageQuery } from "../api/graphql";
 import ExperimentList from "../components/lists/ExperimentList";
 import NeuronModelList from "../components/lists/NeuronModelList";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
+import { ELEKTRO_HELP } from "../help";
 
 export interface IRepresentationScreenProps {}
 
@@ -107,6 +108,7 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }) => {
   return (
     <PageLayout
       title="Elektro"
+      help={ELEKTRO_HELP.home}
       pageActions={
         <>
           {/* Collapsible search drives the `search` filter on every list */}

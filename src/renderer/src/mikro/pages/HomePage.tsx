@@ -64,6 +64,7 @@ import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { StatisticsSidebar } from "../components/sidebars/StatisticsSidebar";
 import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
 import { parseAsIsoDateTime, parseAsString, parseAsStringLiteral, useQueryState } from "@/core/util/hooks/use-search-param-state";
+import { MIKRO_HELP } from "../help";
 
 
 export interface IRepresentationScreenProps { }
@@ -235,6 +236,7 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
         </Sidebars>
       }
       title="Home"
+      help={MIKRO_HELP.home}
     >
 
 

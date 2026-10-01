@@ -4,6 +4,7 @@ import { ReplyButtons } from "../components/MessageView";
 import { InlineReply } from "../components/split/InlineReply";
 import { ThreadMessages, useMarkThreadRead } from "../components/split/ThreadReader";
 import { ThreadTasks } from "../components/tasks/ThreadTasks";
+import { KUVERT_HELP } from "../help";
 import { MailThread } from "../linkers";
 
 /** A conversation as a page of its own (double-click in a list, or a link). */
@@ -16,6 +17,7 @@ const ThreadPage = asDetailQueryRoute(useGetThreadQuery, ({ data }) => {
     <MailThread.ModelPage
       title={thread.subject || "(no subject)"}
       object={thread}
+      help={KUVERT_HELP.thread}
       pageActions={last && thread.account.canSend && <ReplyButtons message={last} />}
     >
       <div className="-m-3 min-h-full bg-muted/40">

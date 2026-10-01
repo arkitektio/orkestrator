@@ -19,6 +19,7 @@ import { isReferenceFrame, residentLabel } from "../components/coordinates/resid
 import { AnyTransformation } from "../components/coordinates/types";
 import { CoordinateSystemInfoSidebar } from "../components/sidebars/CoordinateSystemInfoSidebar";
 import { CoordinateSystemProvenanceSidebar } from "../components/sidebars/CoordinateSystemProvenanceSidebar";
+import { MIKRO_HELP } from "../help";
 
 /**
  * A coordinate system's page, laid out like `ArrayDatasetPage`: the picture fills
@@ -105,6 +106,7 @@ export const CoordinateSystemPage = asDetailQueryRoute(
     return (
       <MikroCoordinateSystem.ModelPage
         object={system}
+        help={MIKRO_HELP.coordinateSystem}
         title={system.name}
         variant="black"
         overlay

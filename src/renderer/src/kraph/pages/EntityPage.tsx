@@ -10,6 +10,7 @@ import { InformingStructures } from "../components/InformingStructures";
 import { EntityStandings } from "../components/EntityStandings";
 import { PropertyEditor } from "../components/PropertyEditor";
 import { PropertyRenderer } from "../components/PropertyRenderer";
+import { KRAPH_HELP } from "../help";
 
 /**
  * How a connection's kind reads. `Edge` is one graph's drawing of a `Link`, and
@@ -73,6 +74,7 @@ const Page = asGraphDetailQueryRoute(useGetEntityQuery, ({ data }) => {
 
   return (
     <KraphEntity.ModelPage
+      help={KRAPH_HELP.entity}
       variant="black"
       object={{ id: data.entity.id }}
       title={data.entity.label || categoryTitle}

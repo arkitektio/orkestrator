@@ -16,6 +16,7 @@ import { FastForward, Pause, Pencil, Play } from "lucide-react";
 import { AutomationStatus } from "../components/automation/AutomationStatus";
 import { RunsGrid } from "../components/automation/RunsGrid";
 import { SavedArgs } from "../components/automation/SavedArgs";
+import { REKUEST_HELP } from "../help";
 
 export const SchedulePage = asDetailQueryRoute(useScheduleQuery, ({ data, refetch }) => {
   const schedule = data.schedule;
@@ -44,6 +45,7 @@ export const SchedulePage = asDetailQueryRoute(useScheduleQuery, ({ data, refetc
   return (
     <RekuestSchedule.ModelPage
       title={schedule.name}
+      help={REKUEST_HELP.schedule}
       object={schedule}
       pageActions={
         <>

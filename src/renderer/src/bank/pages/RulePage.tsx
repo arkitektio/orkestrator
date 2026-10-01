@@ -8,13 +8,14 @@ import { ruleSentence } from "../components/cards/RuleCard";
 import { CategoryBadge } from "../components/CategoryBadge";
 import { InfoList } from "@/core/ui/info-list";
 import { toNumber } from "../format";
+import { BANK_HELP } from "../help";
 
 const RulePage = asDetailQueryRoute(useGetCategoryRuleQuery, ({ data }) => {
   const rule = data.categoryRule;
   const [update, { loading }] = useUpdateCategoryRuleMutation({ refetchQueries: [ListTransactionsDocument] });
 
   return (
-    <BankRule.ModelPage title="Rule" object={rule}>
+    <BankRule.ModelPage help={BANK_HELP.rule} title="Rule" object={rule}>
       <div className="p-6 flex max-w-2xl flex-col gap-6">
         <div className="flex flex-col gap-2">
           <p className="text-lg">When {ruleSentence(rule)}</p>

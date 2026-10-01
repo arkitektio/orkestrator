@@ -4,6 +4,7 @@ import { DialogButton } from "@/core/ui/dialog-button";
 import { Separator } from "@/core/ui/separator";
 import { ListDefinitionsDocument, ListReleasesDocument, useRescanReposMutation } from "../api/graphql";
 import RepoList from "../components/lists/RepoList";
+import { KABINET_HELP } from "../help";
 
 const ReposPage = () => {
   const [rescan, { loading }] = useRescanReposMutation({
@@ -13,6 +14,7 @@ const ReposPage = () => {
   return (
     <PageLayout
       title="Repos"
+      help={KABINET_HELP.repos}
       pageActions={
         <>
           <DialogButton alwaysShow name="createrepo" variant="outline" size="sm" dialogProps={{}}>

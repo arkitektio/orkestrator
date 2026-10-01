@@ -1,5 +1,6 @@
 import { RekuestBlok } from "@/core/linkers";
 import BlokList from "../components/lists/BlokList";
+import { REKUEST_HELP } from "../help";
 
 const Page = () => {
 
@@ -7,6 +8,7 @@ const Page = () => {
   return (
     <RekuestBlok.ListPage
       title={"Bloks"}
+      help={REKUEST_HELP.bloks}
     >
       <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">
         <div>

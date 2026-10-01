@@ -4,6 +4,7 @@ import { ElektroModelCollection } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import ModelCollectionList from "../components/lists/ModelCollectionList";
+import { ELEKTRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -11,6 +12,7 @@ const ImagesPage: React.FC<IRepresentationScreenProps> = () => {
   return (
     <ElektroModelCollection.ListPage
       title="Model Collection"
+      help={ELEKTRO_HELP.modelCollections}
       pageActions={
         <>
           <ElektroModelCollection.NewButton alwaysShow collapse="icon">

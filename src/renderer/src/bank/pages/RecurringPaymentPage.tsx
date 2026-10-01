@@ -9,6 +9,7 @@ import TransactionCard from "../components/cards/TransactionCard";
 import { InfoList } from "@/core/ui/info-list";
 import { Money } from "../components/Money";
 import { formatDay, formatIban, intervalLabel } from "../format";
+import { BANK_HELP } from "../help";
 
 const RecurringPaymentPage = asDetailQueryRoute(useGetRecurringPaymentQuery, ({ data }) => {
   const payment = data.recurringPayment;
@@ -18,6 +19,7 @@ const RecurringPaymentPage = asDetailQueryRoute(useGetRecurringPaymentQuery, ({ 
 
   return (
     <BankRecurring.ModelPage
+      help={BANK_HELP.recurringPayment}
       title={payment.label}
       object={payment}
       pageActions={

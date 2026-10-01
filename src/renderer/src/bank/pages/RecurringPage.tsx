@@ -4,6 +4,7 @@ import { toast } from "@/core/notify";
 import { ListRecurringPaymentsDocument, RecurringStatus, useDetectRecurringMutation } from "../api/graphql";
 import { RecurringSummary } from "../components/insights/recurring/RecurringSummary";
 import RecurringList from "../components/lists/RecurringList";
+import { BANK_HELP } from "../help";
 
 const DETECTED = { status: RecurringStatus.Detected };
 const CONFIRMED = { status: RecurringStatus.Confirmed };
@@ -12,6 +13,7 @@ const RecurringPage = () => {
   const [detect, { loading }] = useDetectRecurringMutation({ refetchQueries: [ListRecurringPaymentsDocument] });
   return (
     <BankRecurring.ListPage
+      help={BANK_HELP.recurring}
       title="Recurring"
       pageActions={
         <PageAction

@@ -1,4 +1,5 @@
 import { PageLayout } from "@/core/layout/PageLayout";
+import { LOK_HELP } from "../help";
 import { ListRender } from "@/core/layout/ListRender";
 import { Label } from "@/core/ui/label";
 import { Switch } from "@/core/ui/switch";
@@ -22,6 +23,7 @@ const MandatesPage: React.FC = () => {
 
   return (
     <PageLayout
+      help={LOK_HELP.mandates}
       title="Mandates"
       pageActions={
         <div className="flex items-center gap-2">

@@ -1,4 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { LOK_HELP } from "../help";
 import { toast } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
@@ -88,7 +89,7 @@ export const MandatePage = asDetailQueryRoute(useGetMandateQuery, ({ data }) => 
   const scopes = mandateScopes(mandate);
 
   return (
-    <LokMandate.ModelPage object={mandate} title={subject.identifier}>
+    <LokMandate.ModelPage help={LOK_HELP.mandate} object={mandate} title={subject.identifier}>
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 md:p-6">
         <header className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">

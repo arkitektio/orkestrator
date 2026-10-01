@@ -4,6 +4,7 @@ import { parseAsIsoDateTime, useQueryState } from "@/core/util/hooks/use-search-
 import { Ordering } from "../api/graphql";
 import TaskList from "../components/lists/TaskList";
 import { OrgTasksUpdater } from "../components/updaters/OrgTasksUpdater";
+import { REKUEST_HELP } from "../help";
 const Page = () => {
 
   const [createdAfter, setCreatedAfter] = useQueryState(
@@ -24,7 +25,7 @@ const Page = () => {
 
 
   return (
-    <RekuestTask.ListPage title={"Tasks"}
+    <RekuestTask.ListPage help={REKUEST_HELP.tasks} title={"Tasks"}
       pageActions={
         <>
           {/* 3. Picker updates the URL params */}

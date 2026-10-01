@@ -9,6 +9,7 @@ import { MoveToFolderButton } from '../components/folder/MoveToFolderButton'
 import { DatasetTitleOverlay } from '../components/arraydataset/DatasetTitleOverlay'
 import { Scene } from '../components/scene/Scene'
 import { DatasetInfoSidebar } from '../components/sidebars/DatasetInfoSidebar'
+import { MIKRO_HELP } from "../help";
 
 export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ data }) => {
   const dataset = data.arrayDataset
@@ -55,6 +56,7 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
     <Scene.Provider scene={sceneData?.scene ?? null}>
     <MikroArrayDataset.ModelPage
       object={dataset}
+      help={MIKRO_HELP.arrayDataset}
       title={dataset.name}
       variant="black"
       overlay

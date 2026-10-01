@@ -42,6 +42,7 @@ import { Filter, Loader2, Podcast, Wifi, X } from "lucide-react";
 import { useMemo } from "react";
 import { OrgTasksUpdater } from "../components/updaters/OrgTasksUpdater";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
+import { REKUEST_HELP } from "../help";
 
 const ALL = "__all__";
 
@@ -222,6 +223,7 @@ const Page = () => {
   return (
     <PageLayout
       title="Home"
+      help={REKUEST_HELP.home}
       pageActions={
         <>
           <CollapsibleSearch

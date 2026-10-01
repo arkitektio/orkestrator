@@ -13,6 +13,7 @@ import { SuggestionChip } from "../components/CategorySuggestions";
 import { toastText } from "../errors";
 import { MerchantSectionNav } from "../components/merchants/MerchantSectionNav";
 import { Money } from "../components/Money";
+import { BANK_HELP } from "../help";
 
 /** "SPAR DANKT 3418" → "Spar Dankt 3418": a starting name, edited in the dialog. */
 const titleCase = (text: string) => text.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
@@ -89,7 +90,7 @@ const DiscoverMerchantsPage = () => {
   const candidates = data?.merchantCandidates ?? [];
 
   return (
-    <PageLayout title="Discover merchants">
+    <PageLayout help={BANK_HELP.discoverMerchants} title="Discover merchants">
       <MerchantSectionNav className="mb-3" />
       {candidates.length > 0 ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-2 p-3">

@@ -3,6 +3,7 @@ import { Explainer } from "@/core/layout/Explainer";
 import { ElektroArrayDataset } from "@/core/linkers";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { ARRAY_DATASET_SPEC_BY_SLUG } from "../specs";
+import { ELEKTRO_HELP } from "../help";
 
 /**
  * One array-dataset list per spec, filtered server-side — mikro's
@@ -15,7 +16,7 @@ const ArrayDatasetSpecPage = () => {
 
   if (!entry) {
     return (
-      <ElektroArrayDataset.ListPage title="Unknown spec">
+      <ElektroArrayDataset.ListPage title="Unknown spec" help={ELEKTRO_HELP.arrayDatasetSpec}>
         <div className="p-3 text-sm text-muted-foreground">
           No array dataset spec named “{slug}”.
         </div>
@@ -24,7 +25,7 @@ const ArrayDatasetSpecPage = () => {
   }
 
   return (
-    <ElektroArrayDataset.ListPage title={entry.label}>
+    <ElektroArrayDataset.ListPage title={entry.label} help={ELEKTRO_HELP.arrayDatasetSpec}>
       <div className="flex flex-col gap-3 p-3">
         <Explainer title={entry.label} description={entry.description} />
         {/* Keyed on the spec: the list's pagination belongs to one filter. */}

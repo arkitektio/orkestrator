@@ -8,6 +8,7 @@ import { useSearchParams } from "react-router-dom";
 import MerchantList from "../components/lists/MerchantList";
 import { MerchantMap } from "../components/map/MerchantMap";
 import { MerchantSectionNav } from "../components/merchants/MerchantSectionNav";
+import { BANK_HELP } from "../help";
 
 /**
  * Merchants: on a map of their places (default), or as a searchable list —
@@ -22,6 +23,7 @@ const MerchantsPage = () => {
 
   return (
     <BankMerchant.ListPage
+      help={BANK_HELP.merchants}
       title="Merchants"
       pageActions={
         <>

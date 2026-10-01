@@ -3,6 +3,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { OmeroArkDataset } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import DatasetList from "../components/lists/DatasetList";
+import { OMEROARK_HELP } from "../help";
 
 
 
@@ -10,6 +11,7 @@ const Page = () => {
 
   return (
     <OmeroArkDataset.ListPage
+      help={OMEROARK_HELP.datasets}
       title="Datasets"
       pageActions={
         <>

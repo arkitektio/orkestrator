@@ -7,6 +7,7 @@ import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
 import { AttributeServiceProvider } from "../lib/attributes/AttributeServiceProvider";
 import { TableDatasetInfoSidebar } from "../components/sidebars/TableDatasetInfoSidebar";
 import { TableDatasetTable } from "../components/tables/TableDatasetTable";
+import { MIKRO_HELP } from "../help";
 
 /**
  * Laid out like `ArrayDatasetPage`: the data fills the middle and everything *about*
@@ -37,6 +38,7 @@ export const TableDatasetPage = asDetailQueryRoute(
       <AttributeServiceProvider>
         <MikroTableDataset.ModelPage
           object={dataset}
+          help={MIKRO_HELP.tableDataset}
           title={dataset.name}
           variant={"black"}
           overlay

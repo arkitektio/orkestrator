@@ -14,6 +14,7 @@ import {
 } from "../api/graphql";
 import UpdateStructureRelationCategoryForm from "../forms/UpdateStructureRelationCategoryForm";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
+import { KRAPH_HELP } from "../help";
 
 const Page = asDetailQueryRoute(
   useGetStructureRelationCategoryQuery,
@@ -38,6 +39,7 @@ const Page = asDetailQueryRoute(
 
     return (
       <KraphStructureRelationCategory.ModelPage
+        help={KRAPH_HELP.structureRelationCategory}
         object={{ id: data.structureRelationCategory.id }}
         title={data?.structureRelationCategory.label}
         sidebars={

@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useDetailModelWorkspaceQuery, useDetailNeuronModelQuery } from "../api/graphql";
 import { MorphologyScene } from "../components/morphology/MorphologyScene";
 import { useActiveWorkspaceStore } from "../lib/activeWorkspaceStore";
+import { ELEKTRO_HELP } from "../help";
 
 export const ModelWorkspacePage = asDetailQueryRoute(
   useDetailModelWorkspaceQuery,
@@ -47,6 +48,7 @@ export const ModelWorkspacePage = asDetailQueryRoute(
       <ElektroModelWorkspace.ModelPage
         variant="black"
         title={workspace.name}
+        help={ELEKTRO_HELP.modelWorkspace}
         object={workspace}
         pageActions={
           <>

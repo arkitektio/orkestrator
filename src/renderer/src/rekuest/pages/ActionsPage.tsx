@@ -48,6 +48,7 @@ import {
 } from "../lib/actionBrowse";
 import { ActionsManageSidebar } from "../sidebars/ActionsManageSidebar";
 import { ActionsStatisticsSidebar } from "../sidebars/ActionsStatisticsSidebar";
+import { REKUEST_HELP } from "../help";
 
 const SORT_KEYS = ["default", ...ACTION_SORTS] as const;
 type SortKey = (typeof SORT_KEYS)[number];
@@ -142,6 +143,7 @@ const Page = () => {
   return (
     <RekuestAction.ListPage
       title={"Actions"}
+      help={REKUEST_HELP.actions}
       pageActions={
         <>
           {/* The search is what this page is for: it is pinned, and until it

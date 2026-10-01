@@ -1,4 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { LOK_HELP } from "../help";
 import { ListRender } from "@/core/layout/ListRender";
 import { Card, CardContent } from "@/core/ui/card";
 import { Image } from "@/core/ui/image";
@@ -12,6 +13,7 @@ export const AppPage = asDetailQueryRoute(useDetailAppQuery, ({ data }) => {
 
   return (
     <LokApp.ModelPage
+      help={LOK_HELP.app}
       object={data.app}
       pageActions={<LokApp.Actions object={data?.app} />}
       title={data?.app?.identifier}

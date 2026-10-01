@@ -48,6 +48,7 @@ import { ReturnsContainer } from "@/core/ports/engine/tailwind";
 import PortConstraintBadges from "@/core/ports/widgets/PortConstraintBadges";
 import { portToLabel } from "@/core/ports/engine/utils";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { REKUEST_HELP } from "../help";
 
 
 export const DoForm = ({ id }: { id: string }) => {
@@ -641,6 +642,7 @@ const TPage = asDetailQueryRoute(
     return (
       <RekuestImplementation.ModelPage
         title={`${data.implementation.action.name} @ ${data.implementation.interface}`}
+        help={REKUEST_HELP.implementation}
         object={data.implementation}
         additionalSidebars={
           <Sidebars.Tab label="Stats">

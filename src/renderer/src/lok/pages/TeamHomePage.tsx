@@ -1,4 +1,5 @@
 import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
+import { LOK_HELP } from "../help";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { HelpSidebar } from "@/core/layout/help";
@@ -98,6 +99,7 @@ const TeamHomePage = () => {
 
   return (
     <PageLayout
+      help={LOK_HELP.teamHome}
       title={organization.name}
       pageActions={
         isAdmin && (

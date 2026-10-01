@@ -2,6 +2,7 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Badge } from "@/core/ui/badge";
 import { ElektroEnvironment, ElektroMechanism } from "@/core/linkers";
 import { useDetailModEnvironmentQuery } from "../api/graphql";
+import { ELEKTRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -19,6 +20,7 @@ export const EnvironmentPage = asDetailQueryRoute(
       <ElektroEnvironment.ModelPage
         variant="black"
         title={env?.name}
+        help={ELEKTRO_HELP.environment}
         object={env}
       >
         <div className="h-full w-full grid grid-cols-12 gap-4 pointer-events-none p-4">

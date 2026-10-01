@@ -2,6 +2,7 @@ import { Card } from "@/core/ui/card";
 import { KraphProtocolEventCategory } from "@/core/linkers";
 import React from "react";
 import ProtocolEventCategoryList from "../components/lists/ProtocolEventCategoryList";
+import { KRAPH_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -9,6 +10,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
 
   return (
     <KraphProtocolEventCategory.ListPage
+      help={KRAPH_HELP.protocolEventCategories}
       title="Protocol Event Categories"
       pageActions={
         <>

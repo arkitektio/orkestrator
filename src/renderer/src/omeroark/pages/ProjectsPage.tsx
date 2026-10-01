@@ -3,6 +3,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { OmeroArkProject } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import ProjectList from "../components/lists/ProjectList";
+import { OMEROARK_HELP } from "../help";
 
 
 
@@ -10,6 +11,7 @@ const Page = () => {
 
   return (
     <OmeroArkProject.ListPage
+      help={OMEROARK_HELP.projects}
       title="Projects"
       pageActions={
         <>

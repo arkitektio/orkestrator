@@ -17,6 +17,7 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from "@/core/util/hooks/use-search-param-state";
+import { REKUEST_HELP } from "../help";
 
 /**
  * Org-wide tasks view: every root task across the organization (the `tasks`
@@ -64,6 +65,7 @@ const OrgTasksPage = () => {
   return (
     <RekuestTask.ListPage
       title={"Org Tasks"}
+      help={REKUEST_HELP.orgTasks}
       pageActions={
         <DateTimeRangePicker
           initialDateFrom={createdAfter ?? undefined}

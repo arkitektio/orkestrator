@@ -12,6 +12,7 @@ import {
   useGetChromaCollectionQuery,
   useQueryDocumentsLazyQuery,
 } from "../api/graphql";
+import { ALPAKA_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -112,6 +113,7 @@ const TPage = asDetailQueryRoute(
   ({ data }) => {
     return (
       <AlpakaCollection.ModelPage
+        help={ALPAKA_HELP.collection}
         title={data?.chromaCollection?.name}
         object={data.chromaCollection}
         pageActions={

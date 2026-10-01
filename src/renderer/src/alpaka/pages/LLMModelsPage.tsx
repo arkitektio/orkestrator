@@ -5,12 +5,14 @@ import { AlpakaLLMModel } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import LLMModelList from "../components/lists/LLMModelList";
+import { ALPAKA_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
 const LLMModelsPage: React.FC<IRepresentationScreenProps> = () => {
   return (
     <PageLayout
+      help={ALPAKA_HELP.llmModels}
       title="LLM Models"
       pageActions={
         <>

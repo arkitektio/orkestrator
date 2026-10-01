@@ -8,6 +8,7 @@ import { useTransactionFilterBar } from "../components/filter/TransactionFilterB
 import { InfoList } from "@/core/ui/info-list";
 import TransactionList from "../components/lists/TransactionList";
 import { firstOfMonth, formatMoney, formatMonth, isoDay } from "../format";
+import { BANK_HELP } from "../help";
 
 const BudgetPage = asDetailQueryRoute(useGetBudgetQuery, ({ data }) => {
   const budget = data.budget;
@@ -21,7 +22,7 @@ const BudgetPage = asDetailQueryRoute(useGetBudgetQuery, ({ data }) => {
   const { filters, ordering, actions } = useTransactionFilterBar(base);
 
   return (
-    <BankBudget.ModelPage title={`Budget · ${budget.category.name}`} object={budget} pageActions={actions}>
+    <BankBudget.ModelPage help={BANK_HELP.budget} title={`Budget · ${budget.category.name}`} object={budget} pageActions={actions}>
       <div className="p-6 flex flex-col gap-6">
         <div className="flex flex-wrap gap-6">
           {current && (

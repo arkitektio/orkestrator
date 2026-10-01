@@ -7,6 +7,7 @@ import { NeuronModelTitleOverlay } from "../components/neuronmodel/NeuronModelTi
 import { MorphologyScene } from "../components/morphology/MorphologyScene";
 import { NeuronModelInfoSidebar } from "../components/sidebars/NeuronModelInfoSidebar";
 import { ExportModelButton } from "../forms/ExportModelForm";
+import { ELEKTRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -30,6 +31,7 @@ export const NeuronModelPage = asDetailQueryRoute(
         <ElektroNeuronModel.ModelPage
           object={model}
           title={model.name}
+          help={ELEKTRO_HELP.neuronModel}
           variant="black"
           overlay
           actions={<ElektroNeuronModel.Actions object={model} />}

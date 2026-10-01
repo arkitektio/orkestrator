@@ -6,6 +6,7 @@ import { useDetailModelCollectionQuery, useDetailNeuronModelQuery } from "../api
 // NeuronModelCard import removed; inline expandable cards are used instead
 import { useState } from "react";
 import { MorphologyScene } from "../components/morphology/MorphologyScene";
+import { ELEKTRO_HELP } from "../help";
 
 
 export const ModelCollectionPage = asDetailQueryRoute(
@@ -30,6 +31,7 @@ export const ModelCollectionPage = asDetailQueryRoute(
       <ElektroModelCollection.ModelPage
         variant="black"
         title={data?.modelCollection?.name}
+        help={ELEKTRO_HELP.modelCollection}
         object={data?.modelCollection}
         pageActions={
           <>

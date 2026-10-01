@@ -5,6 +5,7 @@ import { Smartphone, Trash2 } from "lucide-react";
 import { DeviceFragment, useListDevicesQuery } from "../api/graphql";
 import { DeviceLabel } from "../components/DeviceLabel";
 import { formatAt, formatDay } from "../format";
+import { LOKATE_HELP } from "../help";
 
 const DeviceRow = ({ device }: { device: DeviceFragment }) => (
   <div className="flex items-center gap-3 py-2 text-sm">
@@ -33,6 +34,7 @@ const PrivacyPage = () => {
 
   return (
     <PageLayout
+      help={LOKATE_HELP.privacy}
       title="Privacy"
       pageActions={
         <PageAction

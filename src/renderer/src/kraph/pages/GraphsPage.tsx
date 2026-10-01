@@ -6,6 +6,7 @@ import { PlusIcon } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import GraphList from "../components/lists/GraphList";
+import { KRAPH_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -14,6 +15,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
 
   return (
     <PageLayout
+      help={KRAPH_HELP.graphs}
       title="Graphs"
       pageActions={
         <>

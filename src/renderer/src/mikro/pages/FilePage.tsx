@@ -11,6 +11,7 @@ import { MoveToFolderButton } from "../components/folder/MoveToFolderButton";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { FileInfoSidebar } from "../components/sidebars/FileInfoSidebar";
 import { formatBytes } from "../specs";
+import { MIKRO_HELP } from "../help";
 
 // The shared `specs.formatBytes` does the arithmetic — identical 1024 steps and
 // units to the copy that used to live here — so the body and the Info rail
@@ -71,6 +72,7 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
     <MikroFile.ModelPage
       actions={<MikroFile.Actions object={file} />}
       object={file}
+      help={MIKRO_HELP.file}
       title={file.name}
       pageActions={
         <>

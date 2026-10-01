@@ -10,10 +10,12 @@ import { OmeroArkImage } from "@/core/linkers";
 import { SlotSections } from "@/core/layout/PageSections";
 import { useGetOmeroImageQuery } from "../api/graphql";
 import AuthorizedImage from "../components/Thumbnail";
+import { OMEROARK_HELP } from "../help";
 
 const Page = asDetailQueryRoute(useGetOmeroImageQuery, ({ data, id }) => {
   return (
     <PageLayout
+      help={OMEROARK_HELP.image}
       title={data?.image?.name || "Image"}
       pageActions={<OmeroArkImage.Actions object={data?.image} />}
       sidebars={

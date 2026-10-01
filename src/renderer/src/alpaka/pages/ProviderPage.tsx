@@ -13,6 +13,7 @@ import {
   getProviderKindDisplayName,
   ProviderKindIcon,
 } from "../components/cards/ProviderCard";
+import { ALPAKA_HELP } from "../help";
 
 const MODELS_PER_PAGE = 8;
 
@@ -36,6 +37,7 @@ export const TPage = asDetailQueryRoute(
 
     return (
       <AlpakaProvider.ModelPage
+        help={ALPAKA_HELP.provider}
         title={provider.name}
         object={provider}
         pageActions={

@@ -9,12 +9,14 @@ import { useGetTermQuery } from "../api/graphql";
 import UpdateTermForm from "../forms/UpdateTermForm";
 import { termKindLabel, termTint } from "../lib/terms";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
+import { KRAPH_HELP } from "../help";
 
 const Page = asDetailQueryRoute(useGetTermQuery, ({ data, refetch }) => {
   const term = data.term;
 
   return (
     <KraphTerm.ModelPage
+      help={KRAPH_HELP.term}
       object={{ id: term.id }}
       title={term.key}
       sidebars={

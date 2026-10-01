@@ -22,6 +22,7 @@ import { useNavigate } from "react-router-dom";
 import { useHomePageQuery } from "../api/graphql";
 import GraphCard from "../components/cards/GraphCard";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
+import { KRAPH_HELP } from "../help";
 
 export type IRepresentationScreenProps = Record<string, never>;
 
@@ -32,6 +33,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
 
   return (
     <PageLayout
+      help={KRAPH_HELP.home}
       title="Home"
       sidebars={
         <Sidebars>

@@ -7,6 +7,7 @@ import {
 } from "../../api/graphql";
 
 import QueryBuilderGraph from "@/kraph/components/designer/QueryBuilderGraph";
+import { KRAPH_HELP } from "../../help";
 
 // Note: the backend no longer exposes a `pinned` field on `GraphTableQuery`
 // (the pin/unpin concept has been removed from that type), so the pin button
@@ -24,6 +25,7 @@ const Page = asDetailQueryRoute(useGetGraphTableQueryQuery, ({ data }) => {
 
   return (
     <KraphGraphQuery.ModelPage
+      help={KRAPH_HELP.queryBuilder}
       object={{ id: data.graphTableQuery.id }}
       title={data.graphTableQuery.label}
       pageActions={

@@ -11,6 +11,7 @@ import { DayLink } from "../components/DayLink";
 import { DeviceLabel } from "../components/DeviceLabel";
 import LokateMap from "../components/LokateMap";
 import { formatAt, formatDistance, formatDuration, formatTime } from "../format";
+import { LOKATE_HELP } from "../help";
 
 /** A stay: where and how long, on a map; an unmatched one can become a place. */
 const VisitPage = asDetailQueryRoute(useGetVisitQuery, ({ data }) => {
@@ -20,6 +21,7 @@ const VisitPage = asDetailQueryRoute(useGetVisitQuery, ({ data }) => {
 
   return (
     <LokateVisit.ModelPage
+      help={LOKATE_HELP.visit}
       title={
         <span className="flex items-center gap-2">
           <MapPin className="h-5 w-5" />

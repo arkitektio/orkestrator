@@ -7,10 +7,12 @@ import { KraphStructure, KraphStructureKind } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetStructureQuery } from "../api/graphql";
 import { MetricsForStructure } from "../components/MetricsForStructure";
+import { KRAPH_HELP } from "../help";
 
 const Page = asDetailQueryRoute(useGetStructureQuery, ({ data }) => {
   return (
     <KraphStructure.ModelPage
+      help={KRAPH_HELP.structure}
       object={{ id: data.structure.id }}
       title={data?.structure.identifier}
       sidebars={

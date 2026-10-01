@@ -9,6 +9,7 @@ import {
   WorkspacesDocument,
 } from "@/fluss/api/graphql";
 import { EditFlow } from "@/fluss/edit/EditFlow";
+import { FLUSS_HELP } from "../help";
 
 export const Page = asDetailQueryRoute(useWorkspaceQuery, ({ data }) => {
   const [saveFlow] = useUpdateWorkspaceMutation({
@@ -19,6 +20,7 @@ export const Page = asDetailQueryRoute(useWorkspaceQuery, ({ data }) => {
     <FlussWorkspace.ModelPage
       title={data?.workspace?.title}
       object={data.workspace}
+      help={FLUSS_HELP.workspace}
       sidebars={
         <Sidebars>
           <Sidebars.Tab label="Knowledge">

@@ -33,6 +33,7 @@ import TransactionList from "../components/lists/TransactionList";
 import { MerchantMap } from "../components/map/MerchantMap";
 import { MerchantSpending } from "../components/merchants/MerchantSpending";
 import { daysAgo, firstOfMonth, formatMoney, toNumber } from "../format";
+import { BANK_HELP } from "../help";
 
 const Section = ({
   title,
@@ -315,6 +316,7 @@ const HomePage = () => {
 
   return (
     <PageLayout
+      help={BANK_HELP.home}
       title="Bank"
       pageActions={
         <DialogButton name="banklink" size="sm" variant="outline" dialogProps={{}} options={{ size: "medium" }}>

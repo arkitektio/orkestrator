@@ -6,6 +6,7 @@ import { KraphLink } from "@/core/linkers";
 import Timestamp from "@/core/ui/timestamp";
 import { useGetDetailLinkQuery } from "../api/graphql";
 import { StandingsPanel } from "../components/StandingsPanel";
+import { KRAPH_HELP } from "../help";
 
 /**
  * A claim relating two things.
@@ -48,6 +49,7 @@ const Page = asDetailQueryRoute(useGetDetailLinkQuery, ({ data }) => {
 
   return (
     <KraphLink.ModelPage
+      help={KRAPH_HELP.link}
       object={{ id: link.id }}
       title={link.term?.label ?? link.term?.key ?? link.kind}
       sidebars={

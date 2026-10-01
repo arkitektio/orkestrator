@@ -4,6 +4,7 @@ import { ElektroExperiment } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import ExperimentList from "../components/lists/ExperimentList";
+import { ELEKTRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -11,6 +12,7 @@ const ImagesPage: React.FC<IRepresentationScreenProps> = () => {
   return (
     <ElektroExperiment.ListPage
       title="Images"
+      help={ELEKTRO_HELP.experiments}
       pageActions={
         <>
           <ElektroExperiment.NewButton alwaysShow collapse="icon">

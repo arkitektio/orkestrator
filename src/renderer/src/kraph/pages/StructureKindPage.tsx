@@ -15,6 +15,7 @@ import {
 import UpdateStructureKindForm from "../forms/UpdateStructureKindForm";
 import StructureList from "../components/renderers/lists/StructureList";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
+import { KRAPH_HELP } from "../help";
 
 const Page =  asDetailQueryRoute(
   useGetStructureKindQuery,
@@ -39,6 +40,7 @@ const Page =  asDetailQueryRoute(
 
     return (
       <KraphStructureKind.ModelPage
+        help={KRAPH_HELP.structureKind}
         object={{ id: data.structureKind.id }}
         title={data?.structureKind.identifier}
         sidebars={

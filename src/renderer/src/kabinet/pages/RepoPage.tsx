@@ -10,6 +10,7 @@ import { useGetRepoQuery, useScanRepoMutation } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";
 import { RepoInfoSidebar } from "../components/sidebars/RepoInfoSidebar";
 import { installBadgeMarkdown, installRepoLink } from "../repoLink";
+import { KABINET_HELP } from "../help";
 import { copyText } from "@/core/tabs/sharing/universalLink";
 
 /**
@@ -43,6 +44,7 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
     <KabinetRepo.ModelPage
       title={repo.name}
       object={repo}
+      help={KABINET_HELP.repo}
       additionalSidebars={
         <Sidebars.Tab label="Info">
           <RepoInfoSidebar repo={repo} />

@@ -1,4 +1,5 @@
 import { PROFILE_SECTIONS } from "@/core/connection/profile/registry";
+import { LOK_HELP } from "../help";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
@@ -58,6 +59,7 @@ const Page = asDetailQueryRoute(useUserQuery, ({ data }) => {
 
   return (
     <LokUser.ModelPage
+      help={LOK_HELP.user}
       object={user}
       actions={<LokUser.Actions object={user} />}
       pageActions={<LokUser.ObjectButton alwaysShow object={user} />}

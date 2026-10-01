@@ -16,6 +16,7 @@ import FolderList from "../components/lists/FolderList";
 import FileList from "../components/lists/FileList";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { PeerStatisticsSidebar } from "../components/sidebars/PeerStatisticsSidebar";
+import { MIKRO_HELP } from "../help";
 
 export interface IRepresentationScreenProps { }
 
@@ -69,6 +70,7 @@ const Page = asDetailQueryRoute(usePeerHomePageQuery, ({ id }) => {
         <Sidebars.Tab label="Help"><HelpSidebar /></Sidebars.Tab>
       </Sidebars>}
       title="Peer Home"
+      help={MIKRO_HELP.peerHome}
     >
       <div className="space-y-8 p-3">
         {/* Welcome Header */}

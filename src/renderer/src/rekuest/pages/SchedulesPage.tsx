@@ -3,6 +3,7 @@ import { RekuestSchedule } from "@/core/linkers";
 import { PageAction } from "@/core/ui/page-action";
 import { Plus } from "lucide-react";
 import ScheduleList from "../components/lists/ScheduleList";
+import { REKUEST_HELP } from "../help";
 
 const Page = () => {
   const { openDialog } = useDialog();
@@ -10,6 +11,7 @@ const Page = () => {
   return (
     <RekuestSchedule.ListPage
       title="Schedules"
+      help={REKUEST_HELP.schedules}
       pageActions={
         <PageAction
           alwaysShow

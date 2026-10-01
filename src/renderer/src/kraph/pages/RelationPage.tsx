@@ -4,10 +4,12 @@ import { Badge } from "@/core/ui/badge";
 import { KraphReagent, KraphRelation } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetRelationQuery } from "../api/graphql";
+import { KRAPH_HELP } from "../help";
 
 export default asDetailQueryRoute(useGetRelationQuery, ({ data }) => {
   return (
     <KraphRelation.ModelPage
+      help={KRAPH_HELP.relation}
       object={{ id: data.relation.id }}
       title={data?.relation.category?.label ?? data?.relation.label}
       sidebars={<KraphReagent.Knowledge object={{ id: data.relation.id }} />}

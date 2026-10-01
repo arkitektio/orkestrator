@@ -18,6 +18,7 @@ import {
 import { EntityList } from "../components/renderers/lists/EntityList";
 import { EntityCategorySidebar } from "../sidebars/EntityCategorySidebar";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
+import { KRAPH_HELP } from "../help";
 
 export const Page = asDetailQueryRoute(
   useGetEntityCategoryQuery,
@@ -67,6 +68,7 @@ export const Page = asDetailQueryRoute(
 
     return (
       <KraphEntityCategory.ModelPage
+        help={KRAPH_HELP.entityCategory}
         object={data.entityCategory}
         title={data?.entityCategory.label}
         sidebars={

@@ -4,6 +4,7 @@ import { BankCategory } from "@/bank/linkers";
 import { toast } from "@/core/notify";
 import { ListCategoriesDocument, useSyncBaseCategoriesMutation } from "../api/graphql";
 import CategoryList from "../components/lists/CategoryList";
+import { BANK_HELP } from "../help";
 
 const ROOTS = { roots: true };
 
@@ -11,6 +12,7 @@ const CategoriesPage = () => {
   const [sync, { loading }] = useSyncBaseCategoriesMutation({ refetchQueries: [ListCategoriesDocument] });
   return (
     <BankCategory.ListPage
+      help={BANK_HELP.categories}
       title="Categories"
       pageActions={
         <>

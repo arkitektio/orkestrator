@@ -14,6 +14,7 @@ import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
 import { Scene } from "../components/scene/Scene";
 import { FocusAnnotationOnMount } from "../components/scene/features/annotations/FocusAnnotationOnMount";
 import { AnnotationInfoSidebar } from "../components/sidebars/AnnotationInfoSidebar";
+import { MIKRO_HELP } from "../help";
 
 type PageAnnotation = GetAnnotationQuery["annotation"];
 
@@ -57,6 +58,7 @@ const Page = asDetailQueryRoute(useGetAnnotationQuery, ({ data }) => {
         variant="black"
         overlay
         object={annotation}
+        help={MIKRO_HELP.annotation}
         title={annotation.name}
         actions={<MikroAnnotation.Actions object={annotation} />}
         additionalSidebars={

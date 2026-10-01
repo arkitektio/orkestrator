@@ -4,6 +4,7 @@ import { ElektroNeuronModel } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import NeuronModelList from "../components/lists/NeuronModelList";
+import { ELEKTRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -11,6 +12,7 @@ const ImagesPage: React.FC<IRepresentationScreenProps> = () => {
   return (
     <ElektroNeuronModel.ListPage
       title="Neuron models"
+      help={ELEKTRO_HELP.neuronModels}
       pageActions={
         <>
           <ElektroNeuronModel.NewButton alwaysShow collapse="icon">

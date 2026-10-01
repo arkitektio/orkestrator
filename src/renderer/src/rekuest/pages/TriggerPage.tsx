@@ -15,6 +15,7 @@ import { Pause, Pencil, Play } from "lucide-react";
 import { AutomationStatus } from "../components/automation/AutomationStatus";
 import { RunsGrid } from "../components/automation/RunsGrid";
 import { SavedArgs } from "../components/automation/SavedArgs";
+import { REKUEST_HELP } from "../help";
 
 export const TriggerPage = asDetailQueryRoute(useTriggerQuery, ({ data }) => {
   const trigger = data.trigger;
@@ -31,6 +32,7 @@ export const TriggerPage = asDetailQueryRoute(useTriggerQuery, ({ data }) => {
   return (
     <RekuestTrigger.ModelPage
       title={trigger.name}
+      help={REKUEST_HELP.trigger}
       object={trigger}
       pageActions={
         <>

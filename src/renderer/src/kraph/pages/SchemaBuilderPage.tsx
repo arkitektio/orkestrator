@@ -14,6 +14,7 @@ import { ValueKind } from "../api/graphql";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/core/notify";
 import { PageLayout } from "@/core/layout/PageLayout";
+import { KRAPH_HELP } from "../help";
 
 interface SchemaBuilderPageProps {
   initialProperties?: PropertyDefinition[];
@@ -153,6 +154,7 @@ export function SchemaBuilderPage({
 
   return (
     <PageLayout
+      help={KRAPH_HELP.schemaBuilder}
       title={title}
       pageActions={
         <>

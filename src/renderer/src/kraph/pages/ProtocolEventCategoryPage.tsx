@@ -15,6 +15,7 @@ import {
 } from "../api/graphql";
 import LoadingCreateProtocolEventForm from "../forms/LoadingCreateProtocolEventForm";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
+import { KRAPH_HELP } from "../help";
 
 const Page =  asDetailQueryRoute(
   useGetProtocolEventCategoryQuery,
@@ -36,6 +37,7 @@ const Page =  asDetailQueryRoute(
 
     return (
       <KraphProtocolEventCategory.ModelPage
+        help={KRAPH_HELP.protocolEventCategory}
         title={data?.protocolEventCategory?.label}
         object={{ id: data.protocolEventCategory.id }}
         actions={

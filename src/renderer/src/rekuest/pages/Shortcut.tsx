@@ -19,6 +19,7 @@ import { usePortForm } from "@/core/ports/engine/usePortForm";
 import { ReturnsContainer } from "@/core/ports/engine/tailwind";
 import { portToLabel } from "@/core/ports/engine/utils";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { REKUEST_HELP } from "../help";
 
 export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
   const { assign, latestTask } = useAction({
@@ -161,6 +162,7 @@ export const TPage = asDetailQueryRoute(useShortcutQuery, ({ data }) => {
   return (
     <RekuestShortcut.ModelPage
       title={data.shortcut.name}
+      help={REKUEST_HELP.shortcut}
       object={data.shortcut}
       sidebars={
         <Sidebars>

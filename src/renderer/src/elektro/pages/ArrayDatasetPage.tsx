@@ -8,6 +8,7 @@ import { DatasetBackdrop } from "../components/arraydataset/DatasetBackdrop";
 import { DatasetTitleOverlay } from "../components/arraydataset/DatasetTitleOverlay";
 import { ExperimentScene } from "../components/experiment/ExperimentScene";
 import { DatasetInfoSidebar } from "../components/sidebars/DatasetInfoSidebar";
+import { ELEKTRO_HELP } from "../help";
 
 /**
  * An array dataset, drawn — mikro's `ArrayDatasetPage` with the timeline where
@@ -71,6 +72,7 @@ export const ArrayDatasetPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ d
       <ElektroArrayDataset.ModelPage
         object={dataset}
         title={dataset.name}
+        help={ELEKTRO_HELP.arrayDataset}
         variant="black"
         overlay
         actions={<ElektroArrayDataset.Actions object={dataset} />}

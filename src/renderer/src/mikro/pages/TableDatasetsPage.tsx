@@ -2,12 +2,13 @@ import { Explainer } from "@/core/layout/Explainer";
 import { MikroTableDataset } from "@/core/linkers";
 import React from "react";
 import TableDatasetList from "../components/lists/TableDatasetList";
+import { MIKRO_HELP } from "../help";
 
 export type ITableDatasetsScreenProps = {};
 
 const Page: React.FC<ITableDatasetsScreenProps> = () => {
   return (
-    <MikroTableDataset.ListPage title="Table Datasets">
+    <MikroTableDataset.ListPage title="Table Datasets" help={MIKRO_HELP.tableDatasets}>
       <div className="p-3">
         <Explainer
           title="Table Datasets"

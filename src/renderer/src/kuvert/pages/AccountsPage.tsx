@@ -1,10 +1,12 @@
 import { DialogButton } from "@/core/ui/dialog-button";
 import MailAccountList, { AddMailboxButton } from "../components/lists/MailAccountList";
+import { KUVERT_HELP } from "../help";
 import { MailAccount } from "../linkers";
 
 const AccountsPage = () => (
   <MailAccount.ListPage
     title="Mailboxes"
+    help={KUVERT_HELP.accounts}
     pageActions={
       <DialogButton name="kuvertlink" size="sm" variant="outline" dialogProps={{}} options={{ size: "medium" }}>
         Add mailbox

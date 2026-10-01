@@ -2,6 +2,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { RekuestDashboard } from "@/core/linkers";
 import { useCreateDashboardMutation } from "../api/graphql";
 import DashboardList from "../components/lists/DashboardList";
+import { REKUEST_HELP } from "../help";
 
 
 const Page = () => {
@@ -12,6 +13,7 @@ const Page = () => {
   return (
     <RekuestDashboard.ListPage
       title={"Dashboards"}
+      help={REKUEST_HELP.dashboards}
       pageActions={
         <PageAction
           alwaysShow

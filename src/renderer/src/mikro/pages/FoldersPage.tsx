@@ -5,6 +5,7 @@ import { PlusIcon } from "lucide-react";
 import React from "react";
 import { GetFoldersDocument, useCreateFolderMutation } from "../api/graphql";
 import FolderList from "../components/lists/FolderList";
+import { MIKRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -19,6 +20,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
   return (
     <MikroFolder.ListPage
       title="Folders"
+      help={MIKRO_HELP.folders}
       pageActions={
         <>
           <PageAction

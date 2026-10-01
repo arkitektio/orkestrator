@@ -4,11 +4,13 @@ import { BankRule } from "@/bank/linkers";
 import { toast } from "@/core/notify";
 import { ListTransactionsDocument, useReapplyRulesMutation } from "../api/graphql";
 import RuleList from "../components/lists/RuleList";
+import { BANK_HELP } from "../help";
 
 const RulesPage = () => {
   const [reapply, { loading }] = useReapplyRulesMutation({ refetchQueries: [ListTransactionsDocument] });
   return (
     <BankRule.ListPage
+      help={BANK_HELP.rules}
       title="Rules"
       pageActions={
         <>

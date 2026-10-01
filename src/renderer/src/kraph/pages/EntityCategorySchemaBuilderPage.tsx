@@ -7,6 +7,7 @@ import {
   DEFAULT_DERIVATION,
   PropertyDefinition,
 } from "../components/schema-builder/utils";
+import { KRAPH_HELP } from "../help";
 
 export function EntityCategorySchemaBuilderPage() {
   const { id } = useParams<{ id: string }>();
@@ -31,7 +32,7 @@ export function EntityCategorySchemaBuilderPage() {
 
   if (loading) {
     return (
-      <PageLayout title="Loading...">
+      <PageLayout help={KRAPH_HELP.schemaBuilder} title="Loading...">
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
@@ -44,7 +45,7 @@ export function EntityCategorySchemaBuilderPage() {
 
   if (!data?.entityCategory) {
     return (
-      <PageLayout title="Not Found">
+      <PageLayout help={KRAPH_HELP.schemaBuilder} title="Not Found">
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <p className="text-lg font-semibold mb-2">Entity Category not found</p>

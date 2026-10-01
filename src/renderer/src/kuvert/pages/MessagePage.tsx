@@ -8,6 +8,7 @@ import { MailboxTreeDocument, useGetMessageQuery, useMarkMessagesReadMutation } 
 import { InfoList } from "../components/InfoList";
 import { MessageView } from "../components/MessageView";
 import { formatBytes, formatMailDateTime } from "../format";
+import { KUVERT_HELP } from "../help";
 import { MailAccount, MailFolder, MailMessage, MailThread } from "../linkers";
 
 /** One mail on its own (from search, a link elsewhere), with the way into its conversation. */
@@ -26,6 +27,7 @@ const MessagePage = asDetailQueryRoute(useGetMessageQuery, ({ data }) => {
     <MailMessage.ModelPage
       title={message.subject || "(no subject)"}
       object={message}
+      help={KUVERT_HELP.message}
       pageActions={
         message.thread && (
           <Button size="sm" variant="ghost" asChild>

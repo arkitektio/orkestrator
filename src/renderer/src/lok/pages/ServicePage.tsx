@@ -1,4 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { LOK_HELP } from "../help";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { Card, CardContent } from "@/core/ui/card";
 import { DialogButton } from "@/core/ui/dialog-button";
@@ -15,6 +16,7 @@ const Page = asDetailQueryRoute(useGetServiceQuery, ({ data }) => {
 
   return (
     <PageLayout
+      help={LOK_HELP.service}
       title="Lok"
       pageActions={
         <>

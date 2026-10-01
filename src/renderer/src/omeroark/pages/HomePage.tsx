@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import ProjectList from "../components/lists/ProjectList";
 import { DeleteMeButton } from "../ConnectedGuard";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
+import { OMEROARK_HELP } from "../help";
 
 
 
@@ -20,7 +21,7 @@ const Page = () => {
   const navigate = useNavigate();
 
   return (
-    <PageLayout title="Projects" pageActions={<> <DeleteMeButton />
+    <PageLayout help={OMEROARK_HELP.home} title="Projects" pageActions={<> <DeleteMeButton />
 
 
       <DialogButton

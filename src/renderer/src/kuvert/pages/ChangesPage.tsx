@@ -15,6 +15,7 @@ import { useKuvert } from "../api/funcs";
 import { MailChangeFragment, MailChangeState, useListMailAccountsQuery, useListMailChangesQuery } from "../api/graphql";
 import { changeStatus, describeChange } from "../components/changes/describe";
 import { describeError } from "../errors";
+import { KUVERT_HELP } from "../help";
 import { MailAccount, MailMessage } from "../linkers";
 import { pushChanges, retryChanges, undoChanges } from "../mailOps";
 
@@ -156,6 +157,7 @@ const ChangesPage = () => {
   return (
     <PageLayout
       title="Unsynced changes"
+      help={KUVERT_HELP.changes}
       pageActions={
         <>
           <PageAction.Slot collapse="hide">

@@ -23,6 +23,7 @@ import { ProblemBanner, useRelink } from "../components/ProblemBanner";
 import { toastText } from "../errors";
 import { formatDay } from "../format";
 import { syncBudget } from "../sync";
+import { BANK_HELP } from "../help";
 
 /**
  * A login that was started but never finished: continue it (the server keeps
@@ -91,6 +92,7 @@ const ConnectionPage = asDetailQueryRoute(useGetBankConnectionQuery, ({ data }) 
 
   return (
     <BankConnection.ModelPage
+      help={BANK_HELP.connection}
       title={connection.aspspName}
       object={connection}
       pageActions={

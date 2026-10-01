@@ -6,6 +6,7 @@ import { KabinetDefinition } from "@/core/linkers";
 import { useCallback } from "react";
 import { useGetDefinitionQuery } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";
+import { KABINET_HELP } from "../help";
 
 export const DefinitionPage = asDetailQueryRoute(
   useGetDefinitionQuery,
@@ -22,6 +23,7 @@ export const DefinitionPage = asDetailQueryRoute(
       <KabinetDefinition.ModelPage
         title={data?.definition?.name}
         object={data?.definition}
+        help={KABINET_HELP.definition}
         sidebars={
           <Sidebars>
             <Sidebars.Tab label="Knowledge">

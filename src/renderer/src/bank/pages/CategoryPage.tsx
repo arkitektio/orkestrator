@@ -16,6 +16,7 @@ import { useTransactionFilterBar } from "../components/filter/TransactionFilterB
 import { InfoList } from "@/core/ui/info-list";
 import { CategoryInsightsTab } from "../components/insights/tabs/CategoryInsightsTab";
 import TransactionList from "../components/lists/TransactionList";
+import { BANK_HELP } from "../help";
 
 const CategoryPage = asDetailQueryRoute(useGetCategoryQuery, ({ data }) => {
   const category = data.category;
@@ -28,6 +29,7 @@ const CategoryPage = asDetailQueryRoute(useGetCategoryQuery, ({ data }) => {
 
   return (
     <BankCategory.ModelPage
+      help={BANK_HELP.category}
       title={
         <span className="flex items-center gap-2">
           <span

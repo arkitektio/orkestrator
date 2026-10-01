@@ -9,6 +9,7 @@ import { Eye, FileTextIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { PageFragment, useGetDocumentQuery } from "../api/graphql";
 import { OcrOverlay } from "../components/OcrOverlay";
+import { DOKUMENTS_HELP } from "../help";
 
 export const DocumentPage = asDetailQueryRoute(
   useGetDocumentQuery,
@@ -32,6 +33,7 @@ export const DocumentPage = asDetailQueryRoute(
       <DokumentsDocument.ModelPage
         title={document.title || `Document ${document.id}`}
         object={document}
+        help={DOKUMENTS_HELP.document}
         pageActions={
           <>
             <DokumentsDocument.ObjectButton alwaysShow object={document} />

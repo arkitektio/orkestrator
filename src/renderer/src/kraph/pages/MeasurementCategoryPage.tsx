@@ -15,6 +15,7 @@ import {
 } from "../api/graphql";
 import UpdateMeasurementCategoryForm from "../forms/UpdateMeasurementCategoryForm";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
+import { KRAPH_HELP } from "../help";
 
 const Page = asDetailQueryRoute(
   useGetMeasurmentCategoryQuery,
@@ -39,6 +40,7 @@ const Page = asDetailQueryRoute(
 
     return (
       <KraphMeasurementCategory.ModelPage
+        help={KRAPH_HELP.measurementCategory}
         object={{ id: data.measurementCategory.id }}
         title={data?.measurementCategory.label}
         sidebars={

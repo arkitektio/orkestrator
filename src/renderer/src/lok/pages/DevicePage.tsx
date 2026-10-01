@@ -1,4 +1,5 @@
 import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { LOK_HELP } from "../help";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FormSheet } from "@/core/dialogs/FormDialog";
 import { LokDevice } from "@/core/linkers";
@@ -13,6 +14,7 @@ export const ComputeNodePage = asDetailQueryRoute(useGetDeviceQuery, ({ data }) 
 
   return (
     <LokDevice.ModelPage
+      help={LOK_HELP.device}
       object={data.device }
       actions={<LokDevice.Actions object={data?.device} />}
       title={data?.device?.name || "Untitled Compute Node"}

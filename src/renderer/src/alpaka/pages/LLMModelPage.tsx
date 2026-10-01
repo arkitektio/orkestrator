@@ -14,6 +14,7 @@ import {
   getProviderKindDisplayName,
   ProviderKindIcon,
 } from "../components/cards/ProviderCard";
+import { ALPAKA_HELP } from "../help";
 
 export const TPage =  asDetailQueryRoute(
   useGetLlmModelQuery,
@@ -23,6 +24,7 @@ export const TPage =  asDetailQueryRoute(
 
     return (
       <AlpakaLLMModel.ModelPage
+        help={ALPAKA_HELP.llmModel}
         title={model.llmString}
         object={model}
         pageActions={

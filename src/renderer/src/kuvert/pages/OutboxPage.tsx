@@ -3,6 +3,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { useState } from "react";
 import { OutgoingStatus } from "../api/graphql";
 import OutboxList from "../components/lists/OutboxList";
+import { KUVERT_HELP } from "../help";
 import { OutgoingMail } from "../linkers";
 
 /** Mail sent from here, newest first; the failed ones on their own. */
@@ -11,6 +12,7 @@ const OutboxPage = () => {
   return (
     <OutgoingMail.ListPage
       title={failed ? "Failed to send" : "Outbox"}
+      help={KUVERT_HELP.outbox}
       pageActions={
         <PageAction.Slot collapse="hide">
           <ToggleGroup type="single" size="sm" value={failed ? "failed" : "all"} onValueChange={(v) => v && setFailed(v === "failed")}>

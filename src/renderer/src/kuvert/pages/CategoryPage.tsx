@@ -5,6 +5,7 @@ import { Pencil } from "lucide-react";
 import { CategorySync, useGetCategoryQuery } from "../api/graphql";
 import { MailList } from "../components/list/MailList";
 import { MailSplit } from "../components/split/MailSplit";
+import { KUVERT_HELP } from "../help";
 import { MailCategory } from "../linkers";
 
 /** A category's conversations across its mailbox's folders, newest first. */
@@ -16,6 +17,7 @@ const CategoryPage = asDetailQueryRoute(useGetCategoryQuery, ({ data }) => {
     <MailCategory.ModelPage
       title={category.name}
       object={category}
+      help={KUVERT_HELP.category}
       pageActions={
         <>
           <PageAction

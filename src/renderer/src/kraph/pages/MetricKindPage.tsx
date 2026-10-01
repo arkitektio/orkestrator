@@ -10,6 +10,7 @@ import {
   useUpdateMetricKindMutation
 } from "../api/graphql";
 import UpdateMetricKindForm from "../forms/UpdateMetricKindForm";
+import { KRAPH_HELP } from "../help";
 
 const Page = asDetailQueryRoute(
   useGetMetricKindQuery,
@@ -35,6 +36,7 @@ const Page = asDetailQueryRoute(
 
     return (
       <KraphMetricKind.ModelPage
+        help={KRAPH_HELP.metricKind}
         object={{ id: data.metricKind.id }}
         title={data?.metricKind.label}
         sidebars={

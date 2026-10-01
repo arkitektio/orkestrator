@@ -4,6 +4,7 @@ import { MapPinOff } from "lucide-react";
 import { useMemo, useState } from "react";
 import PlaceList from "../components/lists/PlaceList";
 import { MerchantSectionNav } from "../components/merchants/MerchantSectionNav";
+import { BANK_HELP } from "../help";
 
 /** Every merchant's places; "Not on map" narrows to the ones still missing coordinates. */
 const PlacesPage = () => {
@@ -12,6 +13,7 @@ const PlacesPage = () => {
 
   return (
     <BankPlace.ListPage
+      help={BANK_HELP.places}
       title="Places"
       pageActions={
         <PageAction

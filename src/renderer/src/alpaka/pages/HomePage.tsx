@@ -34,6 +34,7 @@ import {
   titleFromPrompt,
 } from "../recentRooms";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
+import { ALPAKA_HELP } from "../help";
 
 /** The signed-in user's name (host identity, not a lok query). */
 const Username = () => <>{useSelf().username}</>;
@@ -299,6 +300,7 @@ const SETUP_LINKS = [
 
 const Page: React.FC = () => (
   <PageLayout
+    help={ALPAKA_HELP.home}
     title="Alpaka"
     sidebars={
       <Sidebars>
