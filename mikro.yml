@@ -31,6 +31,8 @@ generates:
         # bin width is a time, a SPECTRUM one a length). Parse with the
         # dimension resolved from the phasor's axisType.
         GenericQuantity: "@/mikro/api/scalars#GenericQuantity"
+        # 64-bit byte counts (store sizes, upload limits): a JSON number.
+        ByteCount: "number"
   src/main/schemas/mikro.ts:
     plugins:
       - "typescript"

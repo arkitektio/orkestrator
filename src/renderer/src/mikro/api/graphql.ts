@@ -25,7 +25,7 @@ export type Scalars = {
   /** The `ArrayLike` scalar type represents a reference to a store previously created by the user n a datalayer */
   ArrayLike: { input: any; output: any; }
   /** A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string. */
-  ByteCount: { input: any; output: any; }
+  ByteCount: { input: number; output: number; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
   /** A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it). */
@@ -9689,11 +9689,11 @@ export type TransformationFragment = Transformation_AffineTransformation_Fragmen
 
 export type BigFileUploadGrantFragment = { __typename?: 'BigFileUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, store: string };
 
-export type MediaUploadGrantFragment = { __typename?: 'MediaUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: any, store: string };
+export type MediaUploadGrantFragment = { __typename?: 'MediaUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: number, store: string };
 
-export type ZarrUploadGrantFragment = { __typename?: 'ZarrUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: any, store: string };
+export type ZarrUploadGrantFragment = { __typename?: 'ZarrUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: number, store: string };
 
-export type ParquetUploadGrantFragment = { __typename?: 'ParquetUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: any, store: string };
+export type ParquetUploadGrantFragment = { __typename?: 'ParquetUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: number, store: string };
 
 export type BigFileAccessGrantFragment = { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string };
 
@@ -9711,7 +9711,7 @@ export type GeneralParquetAccessGrantFragment = { __typename?: 'GeneralParquetAc
 
 export type GeneralFabriksAccessGrantFragment = { __typename?: 'GeneralFabriksAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
-export type FabriksUploadGrantFragment = { __typename?: 'FabriksUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: any, store: string };
+export type FabriksUploadGrantFragment = { __typename?: 'FabriksUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: number, store: string };
 
 export type GeneralKonnektionAccessGrantFragment = { __typename?: 'GeneralKonnektionAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
@@ -10408,9 +10408,9 @@ export type SparseDatasetFragment = { __typename?: 'SparseDataset', id: string, 
       & SparseStoreReadFragment
     ) }>, axisReferences: Array<{ __typename?: 'SparseAxisReference', id: string, axis: string, references: { __typename?: 'TableDataset', id: string, name: string, axisNames: Array<string> } }> };
 
-export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null };
+export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: number | null };
 
-export type ParquetStoreFragment = { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null };
+export type ParquetStoreFragment = { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: number | null };
 
 export type BigFileStoreFragment = { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: (
     { __typename?: 'BigFileAccessGrant' }
@@ -12018,7 +12018,7 @@ export type ChildrenQueryVariables = Exact<{
 
 
 export type ChildrenQuery = { __typename?: 'Query', children: Array<{ __typename?: 'AnnotationCollection', id: string, name: string } | (
-    { __typename?: 'ArrayDataset', dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, store: { __typename?: 'ZarrStore', id: string, sizeBytes?: any | null } }> }
+    { __typename?: 'ArrayDataset', dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, store: { __typename?: 'ZarrStore', id: string, sizeBytes?: number | null } }> }
     & ListArrayDatasetFragment
   ) | (
     { __typename?: 'File' }

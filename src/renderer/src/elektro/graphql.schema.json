@@ -3637,7 +3637,7 @@
           },
           {
             "name": "search",
-            "description": "Search by name (case-insensitive substring)",
+            "description": "Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking",
             "type": {
               "kind": "SCALAR",
               "name": "String",
@@ -4728,6 +4728,18 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "sizeBytes",
+            "description": "How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "ByteCount",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -4813,7 +4825,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "name": "Int",
+                "name": "ByteCount",
                 "kind": "SCALAR",
                 "ofType": null
               }
@@ -5653,6 +5665,17 @@
       },
       {
         "kind": "SCALAR",
+        "name": "ByteCount",
+        "description": "A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string.",
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "SCALAR",
         "name": "Capacitance",
         "description": "A capacitance (``\"5 pF\"``, ``\"100 nF\"``).",
         "isOneOf": null,
@@ -6253,22 +6276,6 @@
               "name": null,
               "ofType": {
                 "name": "ID",
-                "kind": "SCALAR",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "name",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "String",
                 "kind": "SCALAR",
                 "ofType": null
               }
@@ -7660,7 +7667,7 @@
       {
         "kind": "OBJECT",
         "name": "CoordinateAnchor",
-        "description": "The axis-agnostic hub that pins metadata spokes (a value unit, a channel label, the rig state, a value histogram, acquisition metadata) to specific coordinates of a dataset",
+        "description": "The axis-agnostic hub that pins metadata spokes (a value unit, a channel label, the rig state, a value histogram, acquisition metadata) to specific coordinates of an array, table or sparse dataset. Exactly one of `dataset`, `table` and `sparse` is set",
         "isOneOf": null,
         "fields": [
           {
@@ -7689,7 +7696,7 @@
           },
           {
             "name": "coordinates",
-            "description": "The coordinates this anchor is pinned to, e.g. {'c': 0, 'sweep': 5}. Level-0 sample indices, i.e. coordinates of the dataset's INTRINSIC system. An anchor that omits an axis is global along it; an empty object is the whole dataset",
+            "description": "The coordinates this anchor is pinned to, e.g. {'c': 0, 'sweep': 5}. For an array dataset these are level-0 sample indices, i.e. coordinates of its INTRINSIC system; for a table dataset they are values of its coordinate columns, keyed by column name; for a sparse dataset they are positions along its enumerated axes. An anchor that omits an axis is global along it; an empty object is the whole container",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -7705,16 +7712,12 @@
           },
           {
             "name": "dataset",
-            "description": null,
+            "description": "The array dataset this anchor pins into, or null otherwise",
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "name": "ArrayDataset",
-                "kind": "OBJECT",
-                "ofType": null
-              }
+              "kind": "OBJECT",
+              "name": "ArrayDataset",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -7772,12 +7775,36 @@
             "deprecationReason": null
           },
           {
+            "name": "sparse",
+            "description": "The sparse dataset this anchor pins into, or null otherwise",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "SparseDataset",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "stimulusSite",
             "description": "(simulation) Where on the model the values at this coordinate were injected",
             "args": [],
             "type": {
               "kind": "OBJECT",
               "name": "StimulusSite",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "table",
+            "description": "The table dataset this anchor pins into, or null otherwise",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "TableDataset",
               "ofType": null
             },
             "isDeprecated": false,
@@ -7907,6 +7934,30 @@
                   "ofType": null
                 }
               }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "sparse",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "IDFilterLookup",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "table",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "IDFilterLookup",
+              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -9601,6 +9652,70 @@
       },
       {
         "kind": "INPUT_OBJECT",
+        "name": "CreateCoordinateAnchorInput",
+        "description": "Attach metadata spokes to an array, table or sparse dataset after ingest. Exactly one of `dataset`, `table` and `sparse` names the container; `anchor` carries the coordinates and the spokes. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "anchor",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "CoordinateAnchorInput",
+                "kind": "INPUT_OBJECT",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "dataset",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "sparse",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "table",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
         "name": "CreateCoordinateSystemInput",
         "description": "Create a SHARED coordinate system -- a reference space nothing lives in, e.g. a clock or a world -- and, in the same call, author the edges registering any number of sources (datasets, lenses, coordinate systems) into it. A dataset's sample grid is created with the dataset, so a shared space is the only system created directly. createExperiment can later adopt it as its world",
         "isOneOf": false,
@@ -10711,6 +10826,26 @@
             "deprecationReason": null
           },
           {
+            "name": "derivedFrom",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "DerivedFromInput",
+                  "kind": "INPUT_OBJECT",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "description",
             "description": null,
             "type": {
@@ -11499,6 +11634,26 @@
         "fields": null,
         "inputFields": [
           {
+            "name": "anchors",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CoordinateAnchorInput",
+                  "kind": "INPUT_OBJECT",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "axes",
             "description": null,
             "type": {
@@ -11910,6 +12065,26 @@
         "isOneOf": false,
         "fields": null,
         "inputFields": [
+          {
+            "name": "anchors",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "CoordinateAnchorInput",
+                  "kind": "INPUT_OBJECT",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "columns",
             "description": null,
@@ -13624,6 +13799,12 @@
             "deprecationReason": null
           },
           {
+            "name": "NEURON_MODEL",
+            "description": "A neuron model, through the space it owns: the direction a retuned model is derived from the one it was edited out of, and the direction a simulated trace is derived from the model that was integrated to compute it. A model's space carries one INDEX axis and nothing placeable, so this edge is always UNMAPPABLE -- it records where the data came from and claims no geometry. It names the *whole* model; which cell and section were recorded stays on the dataset's recording or stimulus site.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "TABLE_DATASET",
             "description": "A table dataset, through the space its coordinate columns declare -- the direction an image reconstructed from a table of SMLM localizations is derived. A table with no coordinate columns enumerates objects rather than places them, and its only honest edge is UNMAPPABLE.",
             "isDeprecated": false,
@@ -13694,6 +13875,18 @@
           {
             "name": "lens",
             "description": "(LENS) The lens this data was computed from",
+            "type": {
+              "kind": "SCALAR",
+              "name": "ID",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "neuronModel",
+            "description": "(NEURON_MODEL) The neuron model this data was computed from -- the model a trace was simulated from, or the model another model was edited out of",
             "type": {
               "kind": "SCALAR",
               "name": "ID",
@@ -23781,6 +23974,18 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "sizeBytes",
+            "description": "How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "ByteCount",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -23866,7 +24071,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "name": "Int",
+                "name": "ByteCount",
                 "kind": "SCALAR",
                 "ofType": null
               }
@@ -25791,6 +25996,39 @@
               "ofType": {
                 "name": "Transformation",
                 "kind": "INTERFACE",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createCoordinateAnchor",
+            "description": "Attach metadata spokes to an array, table or sparse dataset after ingest: the rig state, acquisition metadata, a value histogram, a channel label, a recording or stimulus site, or the simulation state, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced. A value unit is array-only: a table's units are its columns'",
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "CreateCoordinateAnchorInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "CoordinateAnchor",
+                "kind": "OBJECT",
                 "ofType": null
               }
             },
@@ -29775,6 +30013,18 @@
             "deprecationReason": null
           },
           {
+            "name": "coordinateSystem",
+            "description": "The coordinate system this model owns. It carries one INDEX axis and nothing placeable; its derivation edges are the model's lineage",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "CoordinateSystem",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "creator",
             "description": null,
             "args": [],
@@ -29782,6 +30032,54 @@
               "kind": "OBJECT",
               "name": "User",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "derivedFrom",
+            "description": "Every edge from this model's space back into what it was computed from, in declared order -- the first is the primary parent, the model it was edited out of. Always UNMAPPABLE: a model's space carries one INDEX axis and nothing placeable, so the edge records the lineage and claims no geometry. Empty for a model written from scratch. This replaces the old `parent` field, which recorded no validity, no value relation and no provenance, and which `lineageGraph` could not see",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "Transformation",
+                    "kind": "INTERFACE",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "derivedInto",
+            "description": "Everything computed from this model, whatever kind of container it is: the models edited out of it, and the datasets whose `derivedFrom` names it -- a simulated trace that stated where it came from. Derived from the same edges as `derivedFrom`, never a stored back-reference that could disagree with them. **Not the same question as `simulatedDatasets`**, which reads the `simulation` spoke and answers for every run of this model whether or not anyone authored a derivation",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "Resident",
+                    "kind": "UNION",
+                    "ofType": null
+                  }
+                }
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -30209,6 +30507,74 @@
         ],
         "inputFields": null,
         "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "NeuronModelDerivedFromInput",
+        "description": "The fields a NEURON_MODEL derivation reads. Published for codegen; the wire type is the flat DerivedFromInput",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "kind",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "DerivationSourceKind",
+                "kind": "ENUM",
+                "ofType": null
+              }
+            },
+            "defaultValue": "NEURON_MODEL",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "neuronModel",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "transform",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "TransformInput",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "valueRelation",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "ValueRelation",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
         "enumValues": null,
         "possibleTypes": null
       },
@@ -31286,6 +31652,18 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "sizeBytes",
+            "description": "How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "ByteCount",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -31387,7 +31765,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "name": "Int",
+                "name": "ByteCount",
                 "kind": "SCALAR",
                 "ofType": null
               }
@@ -33106,7 +33484,7 @@
           },
           {
             "name": "coordinateAnchors",
-            "description": "List coordinate anchors: the hubs pinning a value unit, a channel label or the rig state to coordinates of a dataset",
+            "description": "List coordinate anchors: the hubs pinning a value unit, a channel label or the rig state to coordinates of an array, table or sparse dataset",
             "args": [
               {
                 "name": "filters",
@@ -35820,7 +36198,7 @@
             "description": null,
             "type": {
               "kind": "SCALAR",
-              "name": "Int",
+              "name": "ByteCount",
               "ofType": null
             },
             "defaultValue": "null",
@@ -36020,7 +36398,7 @@
             "description": null,
             "type": {
               "kind": "SCALAR",
-              "name": "Int",
+              "name": "ByteCount",
               "ofType": null
             },
             "defaultValue": "null",
@@ -36332,6 +36710,11 @@
           {
             "kind": "OBJECT",
             "name": "Lens",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "NeuronModel",
             "ofType": null
           },
           {
@@ -40278,6 +40661,55 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "anchors",
+            "description": "The coordinate anchors of this matrix, each pinning metadata spokes to positions along its enumerated axes, keyed by axis name, or to the whole matrix when its coordinates are empty. The same hub an array dataset uses, so a per-object matrix carries the acquisition facts of the recording it was computed from",
+            "args": [
+              {
+                "name": "filters",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "CoordinateAnchorFilter",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "OffsetPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "CoordinateAnchor",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "arrays",
             "description": "The stored layouts, one per axis a store's `indptr` indexes. One is legal and offers one capability",
             "args": [],
@@ -40914,7 +41346,7 @@
           },
           {
             "name": "search",
-            "description": "Search by name (case-insensitive substring)",
+            "description": "Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking",
             "type": {
               "kind": "SCALAR",
               "name": "String",
@@ -41289,6 +41721,18 @@
             "deprecationReason": null
           },
           {
+            "name": "sizeBytes",
+            "description": "How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "ByteCount",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "spec",
             "description": "The version of the `sporadik` block this store was accepted under. A spec selects how every byte in the prefix is read, so an unknown one is refused rather than guessed at",
             "args": [],
@@ -41384,7 +41828,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "name": "Int",
+                "name": "ByteCount",
                 "kind": "SCALAR",
                 "ofType": null
               }
@@ -42831,6 +43275,55 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "anchors",
+            "description": "The coordinate anchors of this table, each pinning metadata spokes -- the rig state, acquisition metadata, a channel label, a recording site -- to values of its coordinate columns keyed by column name, or to the whole table when its coordinates are empty. The same hub an array dataset uses, so a per-unit table carries the acquisition facts of the recording it was computed from",
+            "args": [
+              {
+                "name": "filters",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "CoordinateAnchorFilter",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "OffsetPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "CoordinateAnchor",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "axisNames",
             "description": "The table's axis names, in order. Derived from the coordinate columns",
             "args": [],
@@ -43504,7 +43997,7 @@
           },
           {
             "name": "search",
-            "description": "Search by name (case-insensitive substring)",
+            "description": "Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking",
             "type": {
               "kind": "SCALAR",
               "name": "String",
@@ -49684,6 +50177,18 @@
             "deprecationReason": null
           },
           {
+            "name": "sizeBytes",
+            "description": "How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "ByteCount",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "storageTransformers",
             "description": null,
             "args": [],
@@ -49807,7 +50312,7 @@
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "name": "Int",
+                "name": "ByteCount",
                 "kind": "SCALAR",
                 "ofType": null
               }
@@ -51253,6 +51758,78 @@
       }
     ],
     "directives": [
+      {
+        "name": "auth",
+        "description": null,
+        "isRepeatable": false,
+        "isDeprecated": false,
+        "deprecationReason": null,
+        "locations": [
+          "FIELD_DEFINITION"
+        ],
+        "args": [
+          {
+            "name": "required_org_roles",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "required_roles",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "required_scopes",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "String",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ]
+      },
       {
         "name": "deprecated",
         "description": "Marks an element of a GraphQL schema as no longer supported.",

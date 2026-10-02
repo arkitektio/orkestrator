@@ -35,6 +35,8 @@ export type Scalars = {
   ArrayLike: { input: any; output: any; }
   /** A type representing a big file store reference, which can be either a string ID or a more complex object. */
   BigFileLike: { input: any; output: any; }
+  /** A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string. */
+  ByteCount: { input: number; output: number; }
   /** A capacitance (``"5 pF"``, ``"100 nF"``). */
   Capacitance: { input: any; output: any; }
   /** A molar concentration (``"5 nM"``, ``"2 µM"``, ``"1 mM"``). */
@@ -584,7 +586,7 @@ export type ArrayDatasetFilter = {
   owner?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to datasets placeable into a coordinate system: those with a lens whose space reaches it across steps that compose into one affine map, walking the transformation edges. A route crossing a FIELD is not one -- it relates the two spaces by the values of an array -- so a spike train or a variable-step run is not offered here, though `inView` reports it. Takes a *space*: pass an experiment's `world.id` to ask it of an experiment */
   placeableIn?: InputMaybe<PlaceableFilter>;
-  /** Search by name (case-insensitive substring) */
+  /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter to the datasets converted from this file -- every series of it, unless `sourceSeriesIdentifier` narrows that. A file link, not a derivation: this asks which bytes the arrays were read out of, where `derivedFrom` asks which data they were computed from. A dataset can honestly answer both */
   sourceFile?: InputMaybe<Scalars['ID']['input']>;
@@ -735,6 +737,8 @@ export type BigFileStore = {
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   presignedUrl: Scalars['String']['output'];
+  /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
 
 
@@ -750,7 +754,7 @@ export type BigFileUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -940,7 +944,6 @@ export type Client = {
   __typename?: 'Client';
   clientId: Scalars['String']['output'];
   id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
   release?: Maybe<Release>;
 };
 
@@ -1166,14 +1169,15 @@ export type Coordinate = {
   value: Scalars['Int']['output'];
 };
 
-/** The axis-agnostic hub that pins metadata spokes (a value unit, a channel label, the rig state, a value histogram, acquisition metadata) to specific coordinates of a dataset */
+/** The axis-agnostic hub that pins metadata spokes (a value unit, a channel label, the rig state, a value histogram, acquisition metadata) to specific coordinates of an array, table or sparse dataset. Exactly one of `dataset`, `table` and `sparse` is set */
 export type CoordinateAnchor = {
   __typename?: 'CoordinateAnchor';
   acquisitionMetadata?: Maybe<AcquisitionMetadata>;
   channelLabel?: Maybe<ChannelLabel>;
-  /** The coordinates this anchor is pinned to, e.g. {'c': 0, 'sweep': 5}. Level-0 sample indices, i.e. coordinates of the dataset's INTRINSIC system. An anchor that omits an axis is global along it; an empty object is the whole dataset */
+  /** The coordinates this anchor is pinned to, e.g. {'c': 0, 'sweep': 5}. For an array dataset these are level-0 sample indices, i.e. coordinates of its INTRINSIC system; for a table dataset they are values of its coordinate columns, keyed by column name; for a sparse dataset they are positions along its enumerated axes. An anchor that omits an axis is global along it; an empty object is the whole container */
   coordinates: Scalars['Any']['output'];
-  dataset: ArrayDataset;
+  /** The array dataset this anchor pins into, or null otherwise */
+  dataset?: Maybe<ArrayDataset>;
   id: Scalars['ID']['output'];
   /** (simulation) Where on the model the values at this coordinate were recorded */
   recordingSite?: Maybe<RecordingSite>;
@@ -1181,8 +1185,12 @@ export type CoordinateAnchor = {
   rig?: Maybe<RigState>;
   /** (simulation) The model and integrator parameters that computed the values at this coordinate */
   simulation?: Maybe<SimulationState>;
+  /** The sparse dataset this anchor pins into, or null otherwise */
+  sparse?: Maybe<SparseDataset>;
   /** (simulation) Where on the model the values at this coordinate were injected */
   stimulusSite?: Maybe<StimulusSite>;
+  /** The table dataset this anchor pins into, or null otherwise */
+  table?: Maybe<TableDataset>;
   valueHistogram?: Maybe<ValueHistogram>;
   valueUnit?: Maybe<ValueUnit>;
 };
@@ -1196,6 +1204,8 @@ export type CoordinateAnchorFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  sparse?: InputMaybe<IdFilterLookup>;
+  table?: InputMaybe<IdFilterLookup>;
 };
 
 /** Input type for a coordinate anchor, which specifies a list of dimension anchors to anchor to */
@@ -1404,6 +1414,14 @@ export type CreateClockOffsetInput = {
   validity?: InputMaybe<PlacementValidity>;
 };
 
+/** Attach metadata spokes to an array, table or sparse dataset after ingest. Exactly one of `dataset`, `table` and `sparse` names the container; `anchor` carries the coordinates and the spokes. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced */
+export type CreateCoordinateAnchorInput = {
+  anchor: CoordinateAnchorInput;
+  dataset?: InputMaybe<Scalars['ID']['input']>;
+  sparse?: InputMaybe<Scalars['ID']['input']>;
+  table?: InputMaybe<Scalars['ID']['input']>;
+};
+
 /** Create a SHARED coordinate system -- a reference space nothing lives in, e.g. a clock or a world -- and, in the same call, author the edges registering any number of sources (datasets, lenses, coordinate systems) into it. A dataset's sample grid is created with the dataset, so a shared space is the only system created directly. createExperiment can later adopt it as its world */
 export type CreateCoordinateSystemInput = {
   axes: Array<PhysicalAxisInput>;
@@ -1525,6 +1543,7 @@ export type CreateModelWorkspaceInput = {
 
 export type CreateNeuronModelInput = {
   config: ModelConfigInput;
+  derivedFrom?: InputMaybe<Array<DerivedFromInput>>;
   description?: InputMaybe<Scalars['String']['input']>;
   environment?: InputMaybe<Scalars['ID']['input']>;
   name: Scalars['String']['input'];
@@ -1615,6 +1634,7 @@ export type CreateSessionInput = {
 
 /** Create a sparse dataset from one uploaded sparse store, which holds the matrix in one or more layouts. A sparse matrix is a grid of numbers with no row labels and no column labels, so **every axis says what its positions are** through its own `identifiedBy` -- a source whose contents are the ids, or the table whose rows they are. Carried on the axis, identified-exactly-once is a property of this input rather than a rule the server enforces. Nothing about the matrix itself is declared: the spec, shape, each layout's encoding and its chunking were read from the store when its upload was finished, and are checked against these axes rather than taken from them */
 export type CreateSparseDatasetInput = {
+  anchors?: InputMaybe<Array<CoordinateAnchorInput>>;
   axes?: Array<SparseAxisInput>;
   derivedFrom?: InputMaybe<Array<DerivedFromInput>>;
   description?: InputMaybe<Scalars['String']['input']>;
@@ -1658,6 +1678,7 @@ export type CreateSpikesLayerInput = {
 
 /** Input for creating a table dataset from a Parquet store. A column is declared ONCE, in `columns`: a non-null `axisType` makes it an axis of the coordinate system the table owns, and the axis-typed columns, in list (= file) order, are the space -- there is no separate axes list, because a table's axes are named columns and every consumer addresses them by name. Declare no axis-typed columns for a pure measurement table (its rows enumerate objects, its space is a synthetic `object` axis, and its lineage edge is UNMAPPABLE) */
 export type CreateTableDatasetInput = {
+  anchors?: InputMaybe<Array<CoordinateAnchorInput>>;
   columns?: Array<ColumnInput>;
   data: Scalars['ParquetLike']['input'];
   derivedFrom?: InputMaybe<Array<DerivedFromInput>>;
@@ -1883,6 +1904,8 @@ export enum DerivationSourceKind {
   Dataset = 'DATASET',
   /** A selection over an array dataset, and the preferred way to name one: a lens' own edge back to its dataset already carries the crop, so pointing at it gets the rest of the chain for free. */
   Lens = 'LENS',
+  /** A neuron model, through the space it owns: the direction a retuned model is derived from the one it was edited out of, and the direction a simulated trace is derived from the model that was integrated to compute it. A model's space carries one INDEX axis and nothing placeable, so this edge is always UNMAPPABLE -- it records where the data came from and claims no geometry. It names the *whole* model; which cell and section were recorded stays on the dataset's recording or stimulus site. */
+  NeuronModel = 'NEURON_MODEL',
   /** A table dataset, through the space its coordinate columns declare -- the direction an image reconstructed from a table of SMLM localizations is derived. A table with no coordinate columns enumerates objects rather than places them, and its only honest edge is UNMAPPABLE. */
   TableDataset = 'TABLE_DATASET'
 }
@@ -1899,6 +1922,8 @@ export type DerivedFromInput = {
   kind: DerivationSourceKind;
   /** (LENS) The lens this data was computed from */
   lens?: InputMaybe<Scalars['ID']['input']>;
+  /** (NEURON_MODEL) The neuron model this data was computed from -- the model a trace was simulated from, or the model another model was edited out of */
+  neuronModel?: InputMaybe<Scalars['ID']['input']>;
   /** How this data's own space maps back into the source's -- any creatable kind; the rank check holds you to it. **Omit it and the edge is UNMAPPABLE**: naming a source records the lineage and claims no correspondence, which is the truth for a per-unit summary whose values are not at any sample. State IDENTITY for an in-place operation (a zero-phase filter), TRANSLATION for a window or for a causal filter's group delay, SCALE for a decimation, BY_DIMENSION for a reduction that drops an axis (a mean over channels). Only a mappable edge carries placement: derived data sits where its source sits exactly when it says how */
   transform?: InputMaybe<TransformInput>;
   /** What the derivation did to the *values* -- orthogonal to the transform's `kind`, which only says where the data sits: IDENTICAL for a window or a stride decimation (statistics transfer), TRANSFORMED for a filter, a baseline subtraction or an anti-aliased decimation, CATEGORIZED for a threshold crossing or a spike sorting (values became labels). Omit when unstated; the algorithm itself belongs to task provenance */
@@ -3220,6 +3245,8 @@ export type MediaStore = {
   path: Scalars['String']['output'];
   /** Compatibility field returning the canonical S3 object path. */
   presignedUrl: Scalars['String']['output'];
+  /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
 
 
@@ -3239,7 +3266,7 @@ export type MediaUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -3438,6 +3465,8 @@ export type Mutation = {
   createArrayDataset: ArrayDataset;
   /** Place one clock on another -- a segment in its session, a session or a run in an experiment's world -- with one offset edge shared by everything timed on it. Refused when the two are already related */
   createClockOffset: Transformation;
+  /** Attach metadata spokes to an array, table or sparse dataset after ingest: the rig state, acquisition metadata, a value histogram, a channel label, a recording or stimulus site, or the simulation state, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced. A value unit is array-only: a table's units are its columns' */
+  createCoordinateAnchor: CoordinateAnchor;
   /** Create a SHARED coordinate system (a space nothing lives in: a clock, a world) and, in one call, author the edges registering any number of sources (datasets, lenses, coordinate systems) into it */
   createCoordinateSystem: CoordinateSystem;
   /** Draw an event table: a mark per row at its TIME column, or an interval with `stopColumn` */
@@ -3680,6 +3709,11 @@ export type MutationCreateArrayDatasetArgs = {
 
 export type MutationCreateClockOffsetArgs = {
   input: CreateClockOffsetInput;
+};
+
+
+export type MutationCreateCoordinateAnchorArgs = {
+  input: CreateCoordinateAnchorInput;
 };
 
 
@@ -4274,7 +4308,13 @@ export type NeuronModel = {
   changes: Array<Change>;
   comparisons: Array<Comparison>;
   config: ModelConfig;
+  /** The coordinate system this model owns. It carries one INDEX axis and nothing placeable; its derivation edges are the model's lineage */
+  coordinateSystem?: Maybe<CoordinateSystem>;
   creator?: Maybe<User>;
+  /** Every edge from this model's space back into what it was computed from, in declared order -- the first is the primary parent, the model it was edited out of. Always UNMAPPABLE: a model's space carries one INDEX axis and nothing placeable, so the edge records the lineage and claims no geometry. Empty for a model written from scratch. This replaces the old `parent` field, which recorded no validity, no value relation and no provenance, and which `lineageGraph` could not see */
+  derivedFrom: Array<Transformation>;
+  /** Everything computed from this model, whatever kind of container it is: the models edited out of it, and the datasets whose `derivedFrom` names it -- a simulated trace that stated where it came from. Derived from the same edges as `derivedFrom`, never a stored back-reference that could disagree with them. **Not the same question as `simulatedDatasets`**, which reads the `simulation` spoke and answers for every run of this model whether or not anyone authored a derivation */
+  derivedInto: Array<Resident>;
   description?: Maybe<Scalars['String']['output']>;
   environment: ModEnvironment;
   id: Scalars['ID']['output'];
@@ -4324,6 +4364,14 @@ export type NeuronModelSectionDominanceArgs = {
   weightAxial?: InputMaybe<Scalars['Float']['input']>;
   weightCapacitance?: InputMaybe<Scalars['Float']['input']>;
   weightConductance?: InputMaybe<Scalars['Float']['input']>;
+};
+
+/** The fields a NEURON_MODEL derivation reads. Published for codegen; the wire type is the flat DerivedFromInput */
+export type NeuronModelDerivedFromInput = {
+  kind?: DerivationSourceKind;
+  neuronModel: Scalars['ID']['input'];
+  transform?: InputMaybe<TransformInput>;
+  valueRelation?: InputMaybe<ValueRelation>;
 };
 
 export type NeuronModelFilter = {
@@ -4440,6 +4488,8 @@ export type ParquetStore = {
   path: Scalars['String']['output'];
   /** Compatibility field returning the canonical S3 object path. */
   presignedUrl: Scalars['String']['output'];
+  /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
 };
 
 
@@ -4460,7 +4510,7 @@ export type ParquetUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];
@@ -4657,7 +4707,7 @@ export type Query = {
   cells: Array<Cell>;
   /** List everything filed in a folder: its sub-folders, files, array, table and sparse datasets and annotation collections */
   children: Array<FolderChild>;
-  /** List coordinate anchors: the hubs pinning a value unit, a channel label or the rig state to coordinates of a dataset */
+  /** List coordinate anchors: the hubs pinning a value unit, a channel label or the rig state to coordinates of an array, table or sparse dataset */
   coordinateAnchors: Array<CoordinateAnchor>;
   /** Walk the coordinate graph out from one system: every coordinate system it reaches and every top-level edge between them. Reachability is undirected (an edge pointing into the system relates to it as much as one pointing out), the edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not */
   coordinateGraph: CoordinateGraph;
@@ -5099,7 +5149,7 @@ export type RequestBigFileAccessInput = {
 
 export type RequestBigFileUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['Int']['input']>;
+  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
   host?: InputMaybe<Scalars['String']['input']>;
   originalFileName: Scalars['String']['input'];
   port?: InputMaybe<Scalars['Int']['input']>;
@@ -5127,7 +5177,7 @@ export type RequestMediaAccessInput = {
 
 export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
-  fileSize?: InputMaybe<Scalars['Int']['input']>;
+  fileSize?: InputMaybe<Scalars['ByteCount']['input']>;
   originalFileName: Scalars['String']['input'];
 };
 
@@ -5163,7 +5213,7 @@ export type RequestZarrUploadInput = {
 };
 
 /** A piece of data living in a coordinate system. Data belongs to a space; the space belongs to nobody */
-export type Resident = AnnotationCollection | ArrayDataset | DataArray | Lens | SparseDataset | TableDataset;
+export type Resident = AnnotationCollection | ArrayDataset | DataArray | Lens | NeuronModel | SparseDataset | TableDataset;
 
 /** Input for reverting a folder to a previous history revision */
 export type RevertInput = {
@@ -5703,6 +5753,8 @@ export type SparseAxisReference = {
 /** A sparse matrix over two enumerated axes -- objects on one, features on the other -- stored as anndata-spelled zarr groups. It exists because a colouring names one *column*, so a colourable measurement is a column of a table: right for a few hundred features and impossible for a transcriptome, where a feature stops being a schema fact and becomes a data one. **Each axis is identified exactly once**, by its own `identifiedBy` -- a source whose contents are the ids, or the table whose rows the positions are. Its stores, axes and coordinate system are fixed at creation; a recomputation is a new dataset */
 export type SparseDataset = {
   __typename?: 'SparseDataset';
+  /** The coordinate anchors of this matrix, each pinning metadata spokes to positions along its enumerated axes, keyed by axis name, or to the whole matrix when its coordinates are empty. The same hub an array dataset uses, so a per-object matrix carries the acquisition facts of the recording it was computed from */
+  anchors: Array<CoordinateAnchor>;
   /** The stored layouts, one per axis a store's `indptr` indexes. One is legal and offers one capability */
   arrays: Array<SparseArray>;
   /** The matrix's axis names, in the order its stores' `shape` is written */
@@ -5732,6 +5784,13 @@ export type SparseDataset = {
   shape: Array<Scalars['Int']['output']>;
   /** The files this dataset was converted from */
   sourceFiles: Array<FileLink>;
+};
+
+
+/** A sparse matrix over two enumerated axes -- objects on one, features on the other -- stored as anndata-spelled zarr groups. It exists because a colouring names one *column*, so a colourable measurement is a column of a table: right for a few hundred features and impossible for a transcriptome, where a feature stops being a schema fact and becomes a data one. **Each axis is identified exactly once**, by its own `identifiedBy` -- a source whose contents are the ids, or the table whose rows the positions are. Its stores, axes and coordinate system are fixed at creation; a recomputation is a new dataset */
+export type SparseDatasetAnchorsArgs = {
+  filters?: InputMaybe<CoordinateAnchorFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -5784,7 +5843,7 @@ export type SparseDatasetFilter = {
   owner?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to sparse datasets placeable into a coordinate system across steps that compose into one affine map -- a raster's sampling law onto a clock is one */
   placeableIn?: InputMaybe<PlaceableFilter>;
-  /** Search by name (case-insensitive substring) */
+  /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter by whether the matrix has a TIME axis -- a spike raster, placed on a clock by a sampling law -- or only enumerations. elektro's own */
   timed?: InputMaybe<Scalars['Boolean']['input']>;
@@ -5831,6 +5890,8 @@ export type SparseStore = {
   path: Scalars['String']['output'];
   /** The shape of the matrix, as the root block declares it and every layout agrees. Two axes */
   shape?: Maybe<Array<Scalars['Int']['output']>>;
+  /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
   /** The version of the `sporadik` block this store was accepted under. A spec selects how every byte in the prefix is read, so an unknown one is refused rather than guessed at */
   spec?: Maybe<Scalars['String']['output']>;
 };
@@ -5848,7 +5909,7 @@ export type SparseUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   region: Scalars['String']['output'];
@@ -6047,6 +6108,8 @@ export type SynapticConnection = NetConnection & {
 /** A parquet-backed table whose rows are scientific records (segmented objects, localizations, cells). It owns a coordinate system whose axes are its coordinate columns, which is what makes a localization table placeable; a table with no coordinate columns enumerates its rows and its lineage edge is UNMAPPABLE. Its store, its columns and that coordinate system are fixed at creation -- only `name` and `description` can be updated, and a recomputation is a new table rather than an edit of this one. Read the rows directly from the Parquet store with a datalayer access grant rather than paginating through GraphQL */
 export type TableDataset = {
   __typename?: 'TableDataset';
+  /** The coordinate anchors of this table, each pinning metadata spokes -- the rig state, acquisition metadata, a channel label, a recording site -- to values of its coordinate columns keyed by column name, or to the whole table when its coordinates are empty. The same hub an array dataset uses, so a per-unit table carries the acquisition facts of the recording it was computed from */
+  anchors: Array<CoordinateAnchor>;
   /** The table's axis names, in order. Derived from the coordinate columns */
   axisNames: Array<Scalars['String']['output']>;
   /** The declared column schema, in order. The COORDINATE columns are the axes of this table's coordinate system */
@@ -6076,6 +6139,13 @@ export type TableDataset = {
   sourceFiles: Array<FileLink>;
   /** The Parquet store holding the rows. Request an access grant from it and read the Parquet directly */
   store: ParquetStore;
+};
+
+
+/** A parquet-backed table whose rows are scientific records (segmented objects, localizations, cells). It owns a coordinate system whose axes are its coordinate columns, which is what makes a localization table placeable; a table with no coordinate columns enumerates its rows and its lineage edge is UNMAPPABLE. Its store, its columns and that coordinate system are fixed at creation -- only `name` and `description` can be updated, and a recomputation is a new table rather than an edit of this one. Read the rows directly from the Parquet store with a datalayer access grant rather than paginating through GraphQL */
+export type TableDatasetAnchorsArgs = {
+  filters?: InputMaybe<CoordinateAnchorFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -6138,7 +6208,7 @@ export type TableDatasetFilter = {
   owner?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to table datasets placeable into this coordinate system: those whose own coordinate system reaches it across steps that compose into one affine map, walking the transformation edges */
   placeableIn?: InputMaybe<PlaceableFilter>;
-  /** Search by name (case-insensitive substring) */
+  /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter by whether the table has a TIME coordinate column -- an event or epoch list, placeable on a clock -- or none (a unit table, a measurement table). elektro's own */
   timed?: InputMaybe<Scalars['Boolean']['input']>;
@@ -6881,6 +6951,8 @@ export type ZarrStore = {
   shape: Array<Scalars['Int']['output']>;
   /** Shard (outer storage object) shape for zarr v3 sharding_indexed arrays; null when unsharded. Shards exist to cut object count — readers should still treat `chunks` as the brick unit. */
   shards?: Maybe<Array<Scalars['Int']['output']>>;
+  /** How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded */
+  sizeBytes?: Maybe<Scalars['ByteCount']['output']>;
   storageTransformers?: Maybe<Scalars['JSON']['output']>;
   version?: Maybe<Scalars['String']['output']>;
 };
@@ -6898,7 +6970,7 @@ export type ZarrUploadGrant = {
   bucket: Scalars['String']['output'];
   expiresIn: Scalars['Int']['output'];
   key: Scalars['String']['output'];
-  maxBytes: Scalars['Int']['output'];
+  maxBytes: Scalars['ByteCount']['output'];
   originalFileName?: Maybe<Scalars['String']['output']>;
   path: Scalars['String']['output'];
   secretKey: Scalars['String']['output'];

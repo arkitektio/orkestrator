@@ -15,6 +15,7 @@ const USE_CASE_OPTIONS: { label: string; value: DefaultKind }[] = [
   { label: "Image Generation", value: DefaultKind.ImageGeneration },
   { label: "Text Generation", value: DefaultKind.TextGeneration },
   { label: "Embeddings", value: DefaultKind.Embedding },
+  { label: "Decisions", value: DefaultKind.Decision },
 ];
 
 export const UseModelForDialog = (props: { model: string }) => {

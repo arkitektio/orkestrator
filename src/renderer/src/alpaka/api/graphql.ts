@@ -184,6 +184,36 @@ export type Choice = {
   thinkingBlocks?: Maybe<Array<ThinkingBlock>>;
 };
 
+/** The answer to a choice question */
+export type ChoiceAnswer = {
+  __typename?: 'ChoiceAnswer';
+  /** The most probable option */
+  choice: Scalars['String']['output'];
+  /** Certainty in the choice, from 0 to 1; flag low values for review */
+  confidence: Scalars['Float']['output'];
+  key: Scalars['String']['output'];
+  /** Every option with its probability, in the order the model reported them */
+  probabilities: Array<OptionProbability>;
+};
+
+/** One option a choice question can pick */
+export type ChoiceOptionInput = {
+  /** When this option applies; without one the option is read by its name alone */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The option's name; the answer picks one of these */
+  key: Scalars['String']['input'];
+};
+
+/** A question that picks one of several named options */
+export type ChoiceQuestionInput = {
+  /** What to decide when picking an option */
+  instructions: Scalars['String']['input'];
+  /** Your name for this question; the answer carries it back */
+  key: Scalars['String']['input'];
+  /** The options to choose from */
+  options: Array<ChoiceOptionInput>;
+};
+
 /** A collection of documents searchable by string */
 export type ChromaCollection = {
   __typename?: 'ChromaCollection';
@@ -254,8 +284,32 @@ export type CreateRoomInput = {
   title?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Typed questions to put to a decision model about one state */
+export type DecideInput = {
+  /** The decision model to ask; defaults to the caller's default for `decision` */
+  model?: InputMaybe<Scalars['ID']['input']>;
+  /** The questions to answer; their keys must be unique */
+  questions: Array<QuestionInput>;
+  /** The content the questions refer to: a string, a JSON object or an array */
+  state: Scalars['JSON']['input'];
+};
+
+/** The answers of a decision model */
+export type Decision = {
+  __typename?: 'Decision';
+  /** One answer per question, in the order the questions were asked */
+  answers: Array<DecisionAnswer>;
+  /** The model that answered; may differ from an alias that was asked for */
+  model: Scalars['String']['output'];
+  usage?: Maybe<Usage>;
+};
+
+/** An answer; its type matches the question's */
+export type DecisionAnswer = ChoiceAnswer | NoulAnswer | ScoreAnswer;
+
 /** A task a model can be made the default for */
 export enum DefaultKind {
+  Decision = 'DECISION',
   Embedding = 'EMBEDDING',
   ImageGeneration = 'IMAGE_GENERATION',
   TextGeneration = 'TEXT_GENERATION'
@@ -325,6 +379,7 @@ export type DocumentInput = {
 /** A capability a model supports */
 export enum FeatureType {
   Chat = 'CHAT',
+  Decision = 'DECISION',
   Embedding = 'EMBEDDING',
   Vision = 'VISION'
 }
@@ -510,6 +565,8 @@ export type Mutation = {
   createProvider: Provider;
   /** Open a new room */
   createRoom: Room;
+  /** Ask a decision model typed questions (noul, choice, score) about one state, and get calibrated answers */
+  decide: Decision;
   /** Remove a budget */
   deleteBudget: Scalars['ID']['output'];
   /** Delete a collection and its documents */
@@ -524,7 +581,7 @@ export type Mutation = {
   finishMessage: Message;
   /** Generate an image from a text description */
   generateImage: ImageResponse;
-  /** Pull a model into an Ollama provider */
+  /** Pull a model into an Ollama provider, or a decision model into an Ollaya provider */
   pull: OllamaPullResult;
   /** Re-list the models a provider offers */
   refreshProvider: Provider;
@@ -580,6 +637,12 @@ export type MutationCreateProviderArgs = {
 /** The root mutation type */
 export type MutationCreateRoomArgs = {
   input: CreateRoomInput;
+};
+
+
+/** The root mutation type */
+export type MutationDecideArgs = {
+  input: DecideInput;
 };
 
 
@@ -666,6 +729,26 @@ export type MutationUseModelForArgs = {
   input: UseModelForInput;
 };
 
+/** The answer to a yes/no question */
+export type NoulAnswer = {
+  __typename?: 'NoulAnswer';
+  key: Scalars['String']['output'];
+  /** Probability of yes, from 0 to 1; near 0.5 means uncertain */
+  noul: Scalars['Float']['output'];
+};
+
+/** A yes/no question or statement about the state */
+export type NoulQuestionInput = {
+  /** What counts as a no */
+  ifFalse?: InputMaybe<Scalars['String']['input']>;
+  /** What counts as a yes */
+  ifTrue?: InputMaybe<Scalars['String']['input']>;
+  /** The yes/no question or statement to evaluate */
+  instructions: Scalars['String']['input'];
+  /** Your name for this question; the answer carries it back */
+  key: Scalars['String']['input'];
+};
+
 export type OffsetPaginationInput = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: Scalars['Int']['input'];
@@ -676,6 +759,13 @@ export type OllamaPullResult = {
   __typename?: 'OllamaPullResult';
   detail?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
+};
+
+/** The probability of one option */
+export type OptionProbability = {
+  __typename?: 'OptionProbability';
+  key: Scalars['String']['output'];
+  probability: Scalars['Float']['output'];
 };
 
 export enum Ordering {
@@ -752,12 +842,14 @@ export enum ProviderKind {
   Huggingface = 'HUGGINGFACE',
   Mistral = 'MISTRAL',
   Ollama = 'OLLAMA',
+  Ollaya = 'OLLAYA',
   Openai = 'OPENAI',
   Openrouter = 'OPENROUTER',
   Palm = 'PALM',
   Perplexity = 'PERPLEXITY',
   Replicate = 'REPLICATE',
   TogetherAi = 'TOGETHER_AI',
+  Typesafe = 'TYPESAFE',
   Unknown = 'UNKNOWN',
   VertexAi = 'VERTEX_AI'
 }
@@ -943,6 +1035,12 @@ export type QueryInput = {
   where?: InputMaybe<Scalars['JSON']['input']>;
 };
 
+/** A typed question: exactly one of noul, choice or score */
+export type QuestionInput =
+  { choice: ChoiceQuestionInput; noul?: never; score?: never; }
+  |  { choice?: never; noul: NoulQuestionInput; score?: never; }
+  |  { choice?: never; noul?: never; score: ScoreQuestionInput; };
+
 /** The provider whose model list should be re-synced */
 export type RefreshProviderInput = {
   id: Scalars['ID']['input'];
@@ -1095,6 +1193,36 @@ export enum RoomTimestampField {
   CreatedAt = 'CREATED_AT'
 }
 
+/** The answer to a score question */
+export type ScoreAnswer = {
+  __typename?: 'ScoreAnswer';
+  /** Certainty in the score, from 0 to 1; flag low values for review */
+  confidence: Scalars['Float']['output'];
+  key: Scalars['String']['output'];
+  /** Every rubric level, lowest first, with its probability */
+  levels: Array<ScoreLevel>;
+  /** Expected score: the probability-weighted mean of the levels, so it may fall between them */
+  score: Scalars['Float']['output'];
+};
+
+/** One level of a score rubric */
+export type ScoreLevel = {
+  __typename?: 'ScoreLevel';
+  description: Scalars['String']['output'];
+  level: Scalars['Int']['output'];
+  probability: Scalars['Float']['output'];
+};
+
+/** A question that rates the state on an ordered rubric */
+export type ScoreQuestionInput = {
+  /** What to rate */
+  instructions: Scalars['String']['input'];
+  /** Your name for this question; the answer carries it back */
+  key: Scalars['String']['input'];
+  /** Descriptions of the rubric levels, lowest first; a level's position is its score, starting at zero */
+  levels: Array<Scalars['String']['input']>;
+};
+
 /** The message to send */
 export type SendMessageInput = {
   agentId: Scalars['String']['input'];
@@ -1220,9 +1348,11 @@ export type Usage = {
 /** The entry point an LLM call came through */
 export enum UsageEndpoint {
   GraphqlChat = 'GRAPHQL_CHAT',
+  GraphqlDecide = 'GRAPHQL_DECIDE',
   GraphqlImage = 'GRAPHQL_IMAGE',
   RestChat = 'REST_CHAT',
   RestCompletion = 'REST_COMPLETION',
+  RestDecide = 'REST_DECIDE',
   RestEmbedding = 'REST_EMBEDDING',
   VectorEmbedding = 'VECTOR_EMBEDDING'
 }

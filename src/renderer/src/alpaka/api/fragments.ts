@@ -6,6 +6,11 @@
       }
       const result: PossibleTypesResultData = {
   "possibleTypes": {
+    "DecisionAnswer": [
+      "ChoiceAnswer",
+      "NoulAnswer",
+      "ScoreAnswer"
+    ],
     "_Entity": [
       "Agent",
       "App",

@@ -353,6 +353,12 @@ export type ChoiceReturnWidgetInput = {
   kind: ReturnWidgetKind;
 };
 
+/** Finish a PythonRun. */
+export type ClosePythonRunInput = {
+  run: Scalars['ID']['input'];
+  status?: PythonRunStatus;
+};
+
 export type CloseRunInput = {
   run: Scalars['ID']['input'];
 };
@@ -382,6 +388,25 @@ export type ComponentPropInput = {
   staticValue?: InputMaybe<Scalars['JSONSerializable']['input']>;
   /** Defines an imperative interactive network action callback loop if this prop should trigger a system utility interaction. */
   utilCall?: InputMaybe<UtilCallInput>;
+};
+
+/** A new PythonFlow version, carrying the report the executor's validation produced for its source. */
+export type CreatePythonFlowInput = {
+  args?: Array<ArgPortInput>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  entrypoint?: Scalars['String']['input'];
+  manifest?: Array<ManifestEntryInput>;
+  previous?: InputMaybe<Scalars['ID']['input']>;
+  returns?: Array<ReturnPortInput>;
+  runtime: Scalars['String']['input'];
+  source: Scalars['String']['input'];
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Start (or reuse) the run of a published PythonFlow for a task. */
+export type CreatePythonRunInput = {
+  flow: Scalars['ID']['input'];
+  taskId: Scalars['ID']['input'];
 };
 
 export type CreateRunInput = {
@@ -498,6 +523,12 @@ export type Effect = {
   source?: Maybe<Scalars['String']['output']>;
 };
 
+/** The effect class of an implementation — declared by the implementation, never the caller. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world (no UPSERT), so an ambiguous failure is terminal and must not be retried. */
+export enum EffectClass {
+  None = 'NONE',
+  Physical = 'PHYSICAL'
+}
+
 /**
  *
  *     An effect is a way to modify a port based on a condition. For example,
@@ -564,7 +595,7 @@ export type FlowFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Search by title (case-insensitive substring) */
+  /** Search by title (case-insensitive substring) or by the meaning of the query against title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -750,6 +781,34 @@ export type LoggingEdge = GraphEdge & {
   targetHandle: Scalars['String']['output'];
 };
 
+/** One action a Python flow may call. The manifest is the flow's permission boundary: the executor injects only these. */
+export type ManifestEntry = {
+  __typename?: 'ManifestEntry';
+  /** The hash of the action definition that is called. */
+  actionHash: Scalars['String']['output'];
+  /** The name the action is injected under in the source. */
+  alias: Scalars['String']['output'];
+  /** The app that provides the action, if pinned. */
+  app?: Maybe<Scalars['String']['output']>;
+  /** Whether calling the action touches the real world (PHYSICAL). */
+  effect: EffectClass;
+  /** The key of the action within its app, if pinned. */
+  key?: Maybe<Scalars['String']['output']>;
+  /** The version of the app, if pinned. */
+  version?: Maybe<Scalars['String']['output']>;
+};
+
+/** One action a Python flow may call, as the executor's validation resolved it. */
+export type ManifestEntryInput = {
+  actionHash: Scalars['String']['input'];
+  /** The name the action is injected under in the source */
+  alias: Scalars['String']['input'];
+  app?: InputMaybe<Scalars['String']['input']>;
+  effect?: EffectClass;
+  key?: InputMaybe<Scalars['String']['input']>;
+  version?: InputMaybe<Scalars['String']['input']>;
+};
+
 export enum MapStrategy {
   Map = 'MAP',
   MapFrom = 'MAP_FROM',
@@ -769,27 +828,61 @@ export type MessageEffect = Effect & {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Archive a PUBLISHED Python flow version, so it is no longer registered. */
+  archivePythonFlow: PythonFlow;
+  /** Finish a Python flow run as COMPLETED or FAILED. */
+  closePythonRun: PythonRun;
   /** Mark a run as COMPLETED. */
   closeRun: Run;
+  /** Store a new DRAFT Python flow version (or return the existing one with the same content in its lineage). */
+  createPythonFlow: PythonFlow;
+  /** Start (or reuse) the run of a published Python flow version for a task. */
+  createPythonRun: PythonRun;
   /** Start (or reuse) a run of a flow for a given task. */
   createRun: Run;
   /** Create a new workspace, seeded with an initial flow. */
   createWorkspace: Workspace;
+  /** Delete a DRAFT Python flow version. */
+  deletePythonFlow: Scalars['ID']['output'];
   /** Delete a run and its events and snapshots. */
   deleteRun: Scalars['ID']['output'];
   /** Delete a run snapshot. */
   deleteSnapshot: Scalars['ID']['output'];
+  /** Publish a DRAFT (or re-publish an ARCHIVED) Python flow version, so it is registered as an action. */
+  publishPythonFlow: PythonFlow;
   /** Capture a state snapshot of a run at a logical time. */
   snapshot: Snapshot;
   /** Record a single run event (a value, error or completion) for a run. */
   track: RunEvent;
+  /** Change a Python flow version's title or description. */
+  updatePythonFlow: PythonFlow;
   /** Update a workspace's metadata and upsert the flow for the posted graph. */
   updateWorkspace: Workspace;
 };
 
 
+export type MutationArchivePythonFlowArgs = {
+  input: PythonFlowRefInput;
+};
+
+
+export type MutationClosePythonRunArgs = {
+  input: ClosePythonRunInput;
+};
+
+
 export type MutationCloseRunArgs = {
   input: CloseRunInput;
+};
+
+
+export type MutationCreatePythonFlowArgs = {
+  input: CreatePythonFlowInput;
+};
+
+
+export type MutationCreatePythonRunArgs = {
+  input: CreatePythonRunInput;
 };
 
 
@@ -803,6 +896,11 @@ export type MutationCreateWorkspaceArgs = {
 };
 
 
+export type MutationDeletePythonFlowArgs = {
+  input: PythonFlowRefInput;
+};
+
+
 export type MutationDeleteRunArgs = {
   input: DeleteRunInput;
 };
@@ -813,6 +911,11 @@ export type MutationDeleteSnapshotArgs = {
 };
 
 
+export type MutationPublishPythonFlowArgs = {
+  input: PythonFlowRefInput;
+};
+
+
 export type MutationSnapshotArgs = {
   input: SnapshotRunInput;
 };
@@ -820,6 +923,11 @@ export type MutationSnapshotArgs = {
 
 export type MutationTrackArgs = {
   input: TrackInput;
+};
+
+
+export type MutationUpdatePythonFlowArgs = {
+  input: UpdatePythonFlowInput;
 };
 
 
@@ -933,6 +1041,150 @@ export type ProxyWidget = AssignWidget & {
   targetPort: Scalars['String']['output'];
 };
 
+/** A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions are registered as actions. */
+export type PythonFlow = {
+  __typename?: 'PythonFlow';
+  /** The arguments of the entrypoint, as rekuest ports. */
+  args: Array<ArgPort>;
+  /** The time at which this version was created. */
+  createdAt: Scalars['DateTime']['output'];
+  /** An optional longer description of what the flow does. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The function in the source that is called. */
+  entrypoint: Scalars['String']['output'];
+  /** A content hash over source, entrypoint, manifest and runtime. */
+  hash: Scalars['String']['output'];
+  /** The unique identifier of this version. */
+  id: Scalars['ID']['output'];
+  /** Shared by every version of the same flow. */
+  lineage: Scalars['ID']['output'];
+  /** Every action the source may call, under the name it is injected as. */
+  manifest: Array<ManifestEntry>;
+  /** The versions derived from this one. */
+  nextVersions: Array<PythonFlow>;
+  /** Whether any action in the manifest has a PHYSICAL effect. */
+  physical: Scalars['Boolean']['output'];
+  /** The version this one was derived from, if any. */
+  previous?: Maybe<PythonFlow>;
+  /** The return values of the entrypoint, as rekuest ports. */
+  returns: Array<ReturnPort>;
+  /** The runs of this version. */
+  runs: Array<PythonRun>;
+  /** The executor runtime (interpreter + helpers) the source was validated against. */
+  runtime: Scalars['String']['output'];
+  /** The Python source of the flow. */
+  source: Scalars['String']['output'];
+  /** DRAFT, PUBLISHED (registered as an action) or ARCHIVED. */
+  status: PythonFlowStatus;
+  /** A human-readable title for the flow. */
+  title: Scalars['String']['output'];
+  /** Every version in this flow's lineage, oldest first. */
+  versions: Array<PythonFlow>;
+};
+
+
+/** A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions are registered as actions. */
+export type PythonFlowNextVersionsArgs = {
+  filters?: InputMaybe<PythonFlowFilter>;
+  ordering?: Array<PythonFlowOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions are registered as actions. */
+export type PythonFlowRunsArgs = {
+  filters?: InputMaybe<PythonRunFilter>;
+  ordering?: Array<PythonRunOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+export type PythonFlowFilter = {
+  AND?: InputMaybe<PythonFlowFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<PythonFlowFilter>;
+  OR?: InputMaybe<PythonFlowFilter>;
+  /** Filter for items created after this datetime */
+  createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter for items created before this datetime */
+  createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter by a list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the versions of one flow */
+  lineage?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by whether the current user has pinned the item */
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Search by title (case-insensitive substring) or by the meaning of the query against title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by lifecycle status */
+  status?: InputMaybe<Array<PythonFlowStatus>>;
+};
+
+export type PythonFlowOrder =
+  { createdAt: Ordering; id?: never; title?: never; }
+  |  { createdAt?: never; id: Ordering; title?: never; }
+  |  { createdAt?: never; id?: never; title: Ordering; };
+
+/** Refers to one PythonFlow version. */
+export type PythonFlowRefInput = {
+  id: Scalars['ID']['input'];
+};
+
+/** The lifecycle of a PythonFlow version: only PUBLISHED versions are registered as actions. */
+export enum PythonFlowStatus {
+  Archived = 'ARCHIVED',
+  Draft = 'DRAFT',
+  Published = 'PUBLISHED'
+}
+
+/** A PythonRun is one execution of a published PythonFlow for a task; its step-by-step history is that task's child tasks in rekuest. */
+export type PythonRun = {
+  __typename?: 'PythonRun';
+  /** The time at which the run started. */
+  createdAt: Scalars['DateTime']['output'];
+  /** The time at which the run finished, if it has. */
+  finishedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The version that is executed. */
+  flow: PythonFlow;
+  /** The unique identifier of the run. */
+  id: Scalars['ID']['output'];
+  /** RUNNING, COMPLETED or FAILED. */
+  status: PythonRunStatus;
+  /** The id of the rekuest task that runs the flow. */
+  taskId: Scalars['ID']['output'];
+};
+
+export type PythonRunFilter = {
+  AND?: InputMaybe<PythonRunFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<PythonRunFilter>;
+  OR?: InputMaybe<PythonRunFilter>;
+  /** Filter for items created after this datetime */
+  createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter for items created before this datetime */
+  createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter to the runs of these PythonFlow versions */
+  flows?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter by a list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter by whether the current user has pinned the item */
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Search by task id (case-insensitive substring) */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by run status */
+  status?: InputMaybe<Array<PythonRunStatus>>;
+};
+
+export type PythonRunOrder =
+  { createdAt: Ordering; id?: never; }
+  |  { createdAt?: never; id: Ordering; };
+
+/** The status of a PythonRun. */
+export enum PythonRunStatus {
+  Completed = 'COMPLETED',
+  Failed = 'FAILED',
+  Running = 'RUNNING'
+}
+
 export type Query = {
   __typename?: 'Query';
   _entities: Array<Maybe<_Entity>>;
@@ -943,6 +1195,14 @@ export type Query = {
   flow: Flow;
   /** List all flows in your organization. */
   flows: Array<Flow>;
+  /** Fetch a single Python flow version by id. */
+  pythonFlow: PythonFlow;
+  /** List all Python flow versions in your organization. */
+  pythonFlows: Array<PythonFlow>;
+  /** Fetch a single Python flow run by id. */
+  pythonRun: PythonRun;
+  /** List all Python flow runs in your organization. */
+  pythonRuns: Array<PythonRun>;
   /** Fetch a single reactive template by id. */
   reactiveTemplate: ReactiveTemplate;
   /** List all reactive operator templates (a shared, global catalog). */
@@ -986,6 +1246,30 @@ export type QueryFlowArgs = {
 export type QueryFlowsArgs = {
   filters?: InputMaybe<FlowFilter>;
   ordering?: Array<FlowOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryPythonFlowArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPythonFlowsArgs = {
+  filters?: InputMaybe<PythonFlowFilter>;
+  ordering?: Array<PythonFlowOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryPythonRunArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPythonRunsArgs = {
+  filters?: InputMaybe<PythonRunFilter>;
+  ordering?: Array<PythonRunOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -1713,6 +1997,13 @@ export type TrackInput = {
   value?: InputMaybe<Scalars['EventValue']['input']>;
 };
 
+/** Change a PythonFlow's title or description; its source, manifest and runtime are immutable. */
+export type UpdatePythonFlowInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateWorkspaceInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   graph: GraphInput;
@@ -1831,7 +2122,7 @@ export type WorkspaceFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Search by title (case-insensitive substring) */
+  /** Search by title (case-insensitive substring) or by the meaning of the query against title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -1895,7 +2186,7 @@ export enum WorkspaceTimestampField {
   CreatedAt = 'CREATED_AT'
 }
 
-export type _Entity = Flow | ReactiveTemplate | Run | RunEvent | Snapshot | Workspace;
+export type _Entity = Flow | PythonFlow | PythonRun | ReactiveTemplate | Run | RunEvent | Snapshot | Workspace;
 
 export type _Service = {
   __typename?: '_Service';

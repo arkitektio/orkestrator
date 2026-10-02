@@ -45,6 +45,8 @@ generates:
         # Left unmapped they generate as `any`, which quietly defeats every
         # id-keyed lookup the annotation layer does.
         UUID: "string"
+        # 64-bit byte counts (store sizes, upload limits): a JSON number.
+        ByteCount: "number"
 
   src/renderer/src/elektro/graphql.schema.json:
     plugins:

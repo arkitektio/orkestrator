@@ -117,6 +117,8 @@ export const getProviderGradient = (kind: ProviderKind): string => {
       return "bg-gradient-to-br from-red-500 to-red-700";
     case ProviderKind.Ollama:
       return "bg-gradient-to-br from-slate-600 to-slate-800";
+    case ProviderKind.Ollaya:
+      return "bg-gradient-to-br from-slate-600 to-slate-800";
     case ProviderKind.Openai:
       return "bg-gradient-to-br from-green-400 to-blue-500";
     case ProviderKind.Palm:
@@ -127,6 +129,8 @@ export const getProviderGradient = (kind: ProviderKind): string => {
       return "bg-gradient-to-br from-yellow-400 to-orange-500";
     case ProviderKind.TogetherAi:
       return "bg-gradient-to-br from-teal-500 to-cyan-600";
+    case ProviderKind.Typesafe:
+      return "bg-gradient-to-br from-sky-500 to-indigo-700";
     case ProviderKind.Unknown:
       return "bg-gradient-to-br from-gray-400 to-gray-600";
     case ProviderKind.VertexAi:
@@ -164,6 +168,8 @@ export const getProviderKindDisplayName = (kind: ProviderKind): string => {
       return "Mistral";
     case ProviderKind.Ollama:
       return "Ollama";
+    case ProviderKind.Ollaya:
+      return "Ollaya";
     case ProviderKind.Openai:
       return "OpenAI";
     case ProviderKind.Palm:
@@ -174,6 +180,8 @@ export const getProviderKindDisplayName = (kind: ProviderKind): string => {
       return "Replicate";
     case ProviderKind.TogetherAi:
       return "Together AI";
+    case ProviderKind.Typesafe:
+      return "Typesafe";
     case ProviderKind.Unknown:
       return "Unknown";
     case ProviderKind.VertexAi:

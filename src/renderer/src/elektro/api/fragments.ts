@@ -49,6 +49,7 @@
       "ArrayDataset",
       "DataArray",
       "Lens",
+      "NeuronModel",
       "SparseDataset",
       "TableDataset"
     ],
