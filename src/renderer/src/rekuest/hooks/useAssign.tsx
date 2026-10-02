@@ -36,13 +36,16 @@ export const useAssign = (): useActionReturn => {
 
   const assign = useCallback(
     async (vars: ActionAssignVariables) => {
+      // A reference is what makes two sends the same assign. Sent only when the
+      // caller has one: an empty string is not "none" to every server.
+      const { reference, ...rest } = vars;
       const mutation = await postAssign({
         variables: {
           input: {
-            ...vars,
+            ...rest,
             args: vars.args,
             hooks: [],
-            reference: vars.reference || "",
+            ...(reference ? { reference } : {}),
           },
         },
       });
