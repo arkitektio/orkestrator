@@ -58,11 +58,12 @@ export const SelectorBadges = ({ flavour }: { flavour: StoreFlavourFragment }) =
 );
 
 /**
- * Installs a release: opens the install dialog, which only authorizes it
- * (approves a deployer app to run it as you). Running it is the separate
- * Deploy step, offered once installed. Approvals are per release; the
- * deployer picks the flavour for its host. The deployers live in rekuest,
- * hence the guard.
+ * Installs a release: opens the install dialog, which first has you
+ * authorize it (approve a deployer app to run it as you) and only then asks
+ * where to deploy it. A release you already authorized goes straight to the
+ * deploy question; `authorize` asks for the approval anyway, for another
+ * deployer app. Approvals are per release; the deployer picks the flavour
+ * for its host. The deployers live in rekuest, hence the guard.
  */
 export const InstallButton = ({
   release,
@@ -70,12 +71,14 @@ export const InstallButton = ({
   className,
   label = "Install",
   variant,
+  authorize,
 }: {
   release: { id: string };
   size?: "sm" | "default" | "lg";
   className?: string;
   label?: React.ReactNode;
   variant?: React.ComponentProps<typeof Button>["variant"];
+  authorize?: boolean;
 }) => {
   const { openDialog } = useDialog();
   return (
@@ -86,7 +89,7 @@ export const InstallButton = ({
         className={cn("rounded-full", className)}
         onClick={(e) => {
           e.stopPropagation();
-          openDialog("installrelease", { release: release.id }, { className: "max-w-xl" });
+          openDialog("installrelease", { release: release.id, authorize }, { className: "max-w-xl" });
         }}
       >
         <Download />
@@ -154,7 +157,7 @@ export const ReleaseInstallActions = ({
   }
   return (
     <div className="flex items-center gap-2">
-      <InstallButton release={release} size={size} variant="outline" className="px-4" label="Installed" />
+      <InstallButton release={release} size={size} variant="outline" className="px-4" label="Installed" authorize />
       <DeployButton release={release} size={size} className="px-5" label={`Deploy v${release.version}`} />
     </div>
   );

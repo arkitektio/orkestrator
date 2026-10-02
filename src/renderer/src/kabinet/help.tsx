@@ -29,12 +29,12 @@ export const KABINET_HELP = {
         <>Type into the search field to find an app by its name, its identifier or one of its actions.</>,
         <>Narrow the list with the chips <b>GPU accelerated</b>, <b>Runs on CPU</b> or <b>Deployed</b>, and reorder it with <b>Newest</b>, <b>Most actions</b> or <b>A–Z</b>.</>,
         <>Click an app tile to open its page with its actions, builds and versions.</>,
-        <>Press <b>Get</b> on a tile to install the app’s latest release. The dialog lists what the app may do as you; confirm with <b>Install</b>.</>,
-        <>Press <b>Deploy…</b> at the end of the install dialog, choose a backend and press <b>Deploy</b> to actually start the app.</>,
+        <>Press <b>Get</b> on a tile to install the app’s latest release. The dialog lists what the app may do as you; confirm with <b>Authorize</b>.</>,
+        <>The dialog then asks where to run it: choose a backend and press <b>Deploy</b> to actually start the app. An app you already authorized opens on this step.</>,
         <>Press <b>Add Repo</b> if the app you are looking for is not listed yet.</>,
       ]}
       tips={[
-        <>Installing only gives permission. Nothing runs until you deploy the release to a backend.</>,
+        <>Authorizing only gives permission. Nothing runs until you deploy the release to a backend.</>,
         <>A green “running” count on a tile means the app is already deployed somewhere.</>,
         <>If nothing matches, press <b>Reset filters</b> to see all apps again.</>,
       ]}
@@ -99,7 +99,7 @@ export const KABINET_HELP = {
       intro="One version of an app. Installing a release gives it permission to run as you; deploying it starts it on a backend."
       steps={[
         <>Open <b>Access</b> first to see the services and permissions this version asks for.</>,
-        <>Press the <b>Install</b> button in the header (it names the version), review the dialog and confirm with <b>Install</b>.</>,
+        <>Press the <b>Install</b> button in the header (it names the version), review the dialog and confirm with <b>Authorize</b>. The dialog then asks where to deploy it.</>,
         <>Press the <b>Deploy</b> button that appears next to it once the release is installed, choose a backend and confirm with <b>Deploy</b>.</>,
         <>Open <b>Approvals</b> to see who has allowed this release to run as them.</>,
         <>Click another version under <b>Versions</b> at the bottom to compare releases.</>,
