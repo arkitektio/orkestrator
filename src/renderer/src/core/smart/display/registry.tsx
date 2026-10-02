@@ -32,6 +32,21 @@ export type DisplayWidgetProps = {
 
 export type DisplayVariant = "inline" | "avatar" | "chip" | "card";
 
+/**
+ * What a viewer surface is handed: like a display, but the object itself to
+ * look at and move around in (an image, a scene), not a card that names it.
+ * It fills the box it is mounted in, so the caller gives that box a height.
+ */
+export type ViewerWidgetProps = {
+  identifier: Identifier;
+  id: string;
+  /** The viewer's own panels and tools; `false` leaves only the object. */
+  controls?: boolean;
+  className?: string;
+  /** Shown instead while the owning module's service is not ready. */
+  fallback?: React.ReactNode;
+};
+
 export type HookWidget = (props: { value: string }) => React.ReactNode;
 
 // --- Factory Function Following Dialog Provider Pattern ---

@@ -2,7 +2,7 @@ import type { ComponentType } from "react";
 
 import type { RoleRequirement } from "@/core/connection/roles";
 import type { FileDownloader } from "@/core/modules/export/fileDownloaders";
-import type { DisplayWidgetProps } from "@/core/smart/display/registry";
+import type { DisplayWidgetProps, ViewerWidgetProps } from "@/core/smart/display/registry";
 import type { Action } from "@/core/smart/localactions/LocalActionProvider";
 import type {
   ActionDecl,
@@ -102,6 +102,8 @@ export type ModuleBuiltins = {
   navLinks?: readonly NavLinkDecl[];
   /** `display` surfaces, by the identifier they render. */
   displays?: Record<string, ComponentType<DisplayWidgetProps>>;
+  /** EXTENSION: interactive viewers, by the identifier they open (a scene, an image). */
+  viewers?: Record<string, ComponentType<ViewerWidgetProps>>;
   /** EXTENSION: hover cards, by identifier (the spec renders hovers from `describe`). */
   hovers?: Record<string, ComponentType<{ object: any }>>;
   /** `dialog` surfaces, by dialog id. */

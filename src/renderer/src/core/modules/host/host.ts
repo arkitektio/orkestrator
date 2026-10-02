@@ -38,6 +38,7 @@ const claims = (builtins: ModuleBuiltins): Record<string, string[]> => ({
   dialog: Object.keys(builtins.dialogs ?? {}),
   action: Object.keys(builtins.actions ?? {}),
   display: Object.keys(builtins.displays ?? {}),
+  viewer: Object.keys(builtins.viewers ?? {}),
   hover: Object.keys(builtins.hovers ?? {}),
   "file downloader": Object.keys(builtins.fileDownloaders ?? {}),
   "task hook": (builtins.taskHooks ?? []).map((hook) => hook.type),
