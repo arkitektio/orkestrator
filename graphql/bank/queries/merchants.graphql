@@ -60,7 +60,9 @@ query GetMerchantLocation($id: ID!) {
   }
 }
 
-query SearchMerchantLocations($search: String, $values: [ID!], $merchant: ID) {
+# No `$search`: `MerchantLocationFilter` has no text filter, and a declared but
+# unused variable fails validation. The picker lists the merchant's places.
+query SearchMerchantLocations($values: [ID!], $merchant: ID) {
   options: merchantLocations(filters: { ids: $values, merchant: $merchant }, pagination: { limit: 50 }) {
     value: id
     label: name

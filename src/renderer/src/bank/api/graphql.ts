@@ -4158,7 +4158,6 @@ export type GetMerchantLocationQuery = { __typename?: 'Query', merchantLocation:
   ) };
 
 export type SearchMerchantLocationsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
   merchant?: InputMaybe<Scalars['ID']['input']>;
 }>;
@@ -7978,7 +7977,7 @@ export type GetMerchantLocationQueryHookResult = ReturnType<typeof useGetMerchan
 export type GetMerchantLocationLazyQueryHookResult = ReturnType<typeof useGetMerchantLocationLazyQuery>;
 export type GetMerchantLocationQueryResult = Apollo.QueryResult<GetMerchantLocationQuery, GetMerchantLocationQueryVariables>;
 export const SearchMerchantLocationsDocument = gql`
-    query SearchMerchantLocations($search: String, $values: [ID!], $merchant: ID) {
+    query SearchMerchantLocations($values: [ID!], $merchant: ID) {
   options: merchantLocations(
     filters: {ids: $values, merchant: $merchant}
     pagination: {limit: 50}
@@ -8001,7 +8000,6 @@ export const SearchMerchantLocationsDocument = gql`
  * @example
  * const { data, loading, error } = useSearchMerchantLocationsQuery({
  *   variables: {
- *      search: // value for 'search'
  *      values: // value for 'values'
  *      merchant: // value for 'merchant'
  *   },
