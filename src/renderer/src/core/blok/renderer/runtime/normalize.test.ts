@@ -125,3 +125,30 @@ describe('normalizeBlokCall', () => {
     });
   });
 });
+
+describe('a call bound to a name', () => {
+  it('keeps the name through normalisation and the schema', () => {
+    const {roots} = normalizeBlokComponentTree([
+      {
+        __typename: 'ComponentNode',
+        id: 'run',
+        component: 'Button',
+        props: [
+          {
+            __typename: 'ComponentProp',
+            key: 'onClick',
+            declaresValue: 'job',
+            agentCall: {__typename: 'AgentCall', dependency: 'self', operation: 'blur', arguments: null},
+          },
+        ],
+      },
+    ]);
+
+    const parsed = BlokSchemas.ComponentNode.parse(roots[0]);
+
+    expect(parsed.props?.[0]).toMatchObject({
+      declares_value: 'job',
+      agent_call: {dependency: 'self', operation: 'blur'},
+    });
+  });
+});

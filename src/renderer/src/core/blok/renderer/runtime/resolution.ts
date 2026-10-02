@@ -288,14 +288,15 @@ const resolvePropValue = (
 /* -------------------------------------------------------------------------- */
 
 export type BlokActionCall =
-  | {type: 'agent'; call: BlokAgentCall}
+  /** `into`: the name the call's task is bound to, if the prop declares one. */
+  | {type: 'agent'; call: BlokAgentCall; into?: string}
   | {type: 'util'; call: BlokUtilCall};
 
 const getPropActionCall = (
   prop: BlokComponentProp | undefined,
 ): BlokActionCall | undefined => {
   if (prop?.agent_call) {
-    return {type: 'agent', call: prop.agent_call};
+    return {type: 'agent', call: prop.agent_call, into: prop.declares_value || undefined};
   }
 
   if (prop?.util_call) {
@@ -321,15 +322,21 @@ const runActionCall = (
   }
 
   if (actionCall.type === 'agent') {
+    // A bound call's record starts over before the host is asked, so no step
+    // the host reports can arrive ahead of it.
+    const binding = actionCall.into ? context.bindTask?.(actionCall.into) : undefined;
     // The value is the host's pending handle (a promise), if it returned one.
-    const pending = context.dispatchAction(
-      {
-        dependency: actionCall.call.dependency,
-        operation: actionCall.call.operation,
-        arguments: resolvedArguments.value,
-      },
-      component,
-    );
+    const action = {
+      dependency: actionCall.call.dependency,
+      operation: actionCall.call.operation,
+      arguments: resolvedArguments.value,
+    };
+    const pending = binding
+      ? context.dispatchAction(action, component, binding.observe)
+      : context.dispatchAction(action, component);
+    if (!(pending instanceof Promise)) {
+      binding?.release();
+    }
     return {ok: true, value: pending};
   }
 

@@ -169,6 +169,47 @@ describe("runActionCall", () => {
     );
   });
 
+  it("binds a call that declares a name, and hands the host its observer", () => {
+    const observe = vi.fn();
+    const bindTask = vi.fn(() => ({observe, release: vi.fn()}));
+    const dispatchAction = vi.fn(() => Promise.resolve());
+    const actionCall = getPropActionCall({
+      key: "onClick",
+      agent_call: {dependency: "self", operation: "blur"},
+      declares_value: "job",
+    })!;
+
+    runActionCall(actionCall, createContext({}, {dispatchAction, bindTask}), {id: "btn", component: "Button"});
+
+    expect(bindTask).toHaveBeenCalledWith("job");
+    expect(dispatchAction.mock.calls[0][2]).toBe(observe);
+  });
+
+  it("releases the name when the host follows no task", () => {
+    const release = vi.fn();
+    const bindTask = vi.fn(() => ({observe: vi.fn(), release}));
+    const actionCall = getPropActionCall({
+      key: "onClick",
+      agent_call: {dependency: "self", operation: "blur"},
+      declares_value: "job",
+    })!;
+
+    runActionCall(actionCall, createContext({}, {bindTask}), {id: "btn", component: "Button"});
+
+    expect(release).toHaveBeenCalled();
+  });
+
+  it("binds nothing for a call that declares no name", () => {
+    const bindTask = vi.fn();
+    const dispatchAction = vi.fn();
+    const actionCall = getPropActionCall({key: "onClick", agent_call: {dependency: "self", operation: "blur"}})!;
+
+    runActionCall(actionCall, createContext({}, {dispatchAction, bindTask}), {id: "btn", component: "Button"});
+
+    expect(bindTask).not.toHaveBeenCalled();
+    expect(dispatchAction.mock.calls[0]).toHaveLength(2);
+  });
+
   it("allows an effectful util call in action position", () => {
     const invokeFunction = vi.fn(() => ({ok: true as const, value: "logged"}));
 

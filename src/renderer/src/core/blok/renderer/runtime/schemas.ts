@@ -42,6 +42,7 @@ const componentPropInputSchema: z.ZodType<BlokComponentProp> = z.object({
   dynamic_value: dynamicValueInputSchema.nullish(),
   agent_call: agentCallInputSchema.nullish(),
   util_call: utilCallInputSchema.nullish(),
+  declares_value: z.string().nullish(),
 });
 
 const componentNodeInputSchema: z.ZodType<BlokComponentNode> = z.lazy(() =>

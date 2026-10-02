@@ -7,6 +7,7 @@ export * from './normalize';
 export * from './preflight';
 export * from './schemas';
 export * from './scope';
+export * from './task';
 export * from './tree';
 export * from './types';
 // `utils` is exported because entry points outside the runtime (the rekuest

@@ -7,6 +7,7 @@ import {v4 as uuidv4} from 'uuid';
 import {useAssign} from '@/rekuest/hooks/useAssign';
 import {useAgentLiveState} from '@/rekuest/hooks/useLiveState';
 import {isTerminalEvent, silenceTask, trackTask} from '@/rekuest/lib/taskTracker';
+import {taskUpdateFromEvent} from './blokTaskUpdates';
 import {collectDemandedStateInterfaces} from './blokDemands';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
 
@@ -133,11 +134,13 @@ const useMaterializedDispatchAction = (
   );
 
   return React.useCallback<BlokDispatchActionHandler>(
-    (action) => {
+    (action, _component, observe) => {
       const agentId = agentIdByDependency.get(action.dependency);
 
       if (!agentId) {
-        console.error(`Blok dependency "${action.dependency}" is not bound to an agent.`);
+        const error = `Blok dependency "${action.dependency}" is not bound to an agent.`;
+        console.error(error);
+        observe?.({end: 'failed', error});
         return;
       }
 
@@ -148,6 +151,9 @@ const useMaterializedDispatchAction = (
         // Registered before the assign so no early event is missed; the
         // tracker unregisters itself on the terminal event.
         const untrack = trackTask(reference, event => {
+          // A call bound to a name (`.into(job)`) shows these in the blok.
+          const update = observe && taskUpdateFromEvent(event);
+          if (update) observe(update);
           if (isTerminalEvent(event.kind)) resolve();
         });
 
@@ -159,11 +165,11 @@ const useMaterializedDispatchAction = (
             reference,
           }),
         ).catch((error: unknown) => {
+          const reason = formatApolloError(error, 'rekuest');
           untrack();
+          observe?.({end: 'failed', error: reason});
           resolve();
-          console.error(
-            `Blok action ${action.operation} failed: ${formatApolloError(error, 'rekuest')}`,
-          );
+          console.error(`Blok action ${action.operation} failed: ${reason}`);
         });
       });
     },
