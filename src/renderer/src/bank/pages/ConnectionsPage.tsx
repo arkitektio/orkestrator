@@ -1,9 +1,11 @@
 import { DialogButton } from "@/core/ui/dialog-button";
 import { BankConnection } from "@/bank/linkers";
 import ConnectionList from "../components/lists/ConnectionList";
+import { BANK_HELP } from "../help";
 
 const ConnectionsPage = () => (
   <BankConnection.ListPage
+    help={BANK_HELP.connections}
     title="Connections"
     pageActions={
       <DialogButton name="banklink" size="sm" variant="outline" dialogProps={{}} options={{ size: "medium" }}>

@@ -7,12 +7,14 @@ import { UploadIcon } from "lucide-react";
 import React from "react";
 import ProviderList from "../components/lists/ProviderList";
 import CreateProviderForm from "../forms/CreateProviderForm";
+import { ALPAKA_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
 const ImagesPage: React.FC<IRepresentationScreenProps> = () => {
   return (
     <PageLayout
+      help={ALPAKA_HELP.providers}
       title="Providers"
       pageActions={
         <>

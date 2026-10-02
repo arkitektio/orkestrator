@@ -11,6 +11,7 @@ import { AccessTab, ActionsTab, Fact, FlavoursTab } from "../components/AppTabs"
 import ApprovalCard from "../components/cards/ApprovalCard";
 import { groupApps } from "../components/store/storeModel";
 import { HardwareBadges, ReleaseInstallActions } from "../components/store/StoreParts";
+import { KABINET_HELP } from "../help";
 
 /**
  * The hero mark is the one live WebGL context on this page, and only for an app
@@ -91,7 +92,7 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
   const summary = useMemo(() => groupApps([release])[0], [release]);
 
   return (
-    <KabinetRelease.ModelPage title={release.name} object={release}>
+    <KabinetRelease.ModelPage title={release.name} object={release} help={KABINET_HELP.release}>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6">
         <header className="relative overflow-hidden rounded-3xl border">
           <div

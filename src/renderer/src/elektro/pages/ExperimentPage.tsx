@@ -7,6 +7,7 @@ import { ElektroExperiment } from "@/core/linkers";
 import { useGetExperimentSceneQuery } from "../api/graphql";
 import { ExperimentScene } from "../components/experiment/ExperimentScene";
 import { parseBrushRange } from "../components/experiment/platform/coords/brushRange";
+import { ELEKTRO_HELP } from "../help";
 
 /**
  * An experiment: its layers — traces, spike rasters, event tables, annotations —
@@ -57,6 +58,7 @@ export const ExperimentPage = asDetailQueryRoute(
         <ElektroExperiment.ModelPage
           object={experiment}
           title={experiment.name}
+          help={ELEKTRO_HELP.experiment}
           variant="black"
           overlay
           pageActions={

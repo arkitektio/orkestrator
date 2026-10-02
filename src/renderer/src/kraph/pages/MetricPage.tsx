@@ -8,10 +8,12 @@ import {
 } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetMetricQuery } from "../api/graphql";
+import { KRAPH_HELP } from "../help";
 
 export default asDetailQueryRoute(useGetMetricQuery, ({ data }) => {
   return (
     <KraphMetric.ModelPage
+      help={KRAPH_HELP.metric}
       object={{ id: data.metric.id }}
       title={data?.metric.kind?.label || data?.metric.kind?.key || data?.metric.key || "Metric"}
       sidebars={

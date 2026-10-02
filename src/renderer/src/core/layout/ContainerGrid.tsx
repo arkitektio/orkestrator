@@ -1,6 +1,6 @@
 import { cn } from "@/core/util/utils";
-import { useAutoAnimate } from "@formkit/auto-animate/react";
 import React from "react";
+import { useGridMotion } from "./useGridMotion";
 
 export type FittingResponsiveGridProps = {
   children?: React.ReactNode;
@@ -58,26 +58,21 @@ export const ContainerGrid: React.FC<FittingResponsiveGridProps> = ({
   minItemWidth,
   className,
 }) => {
-  // Attach auto-animate exactly once per grid element. It observes child
-  // mutations itself; re-calling `autoAnimate()` on every render (the previous
-  // `[children]` effect) re-walked every child and stacked observers/intervals.
-  const [parent] = useAutoAnimate<HTMLDivElement>({
-    // Animation duration in milliseconds (default: 250)
-    duration: 240,
-    // Easing for motion (default: 'ease-in-out')
-    easing: "ease-in-out",
-    // When true, this will enable animations even if the user has indicated
-    // they don’t want them via prefers-reduced-motion.
-    disrespectUserMotionPreference: false,
-  });
-
+  // Cards enter with `grid-enter` (index.css, CSS only), and slide or fade out
+  // through `useGridMotion`, which measures on render and holds nothing else.
+  // Deliberately not `@formkit/auto-animate`, which used to do all three here
+  // and leaked every page that held a grid: it gives the grid and each card a
+  // 2s poll and an IntersectionObserver that capture the element, and its
+  // teardown misses the ones started after unmount, so a page left within ~2s
+  // stayed in memory, detached, for the life of the window.
+  const grid = useGridMotion<HTMLDivElement>();
   if (minItemWidth) {
     return (
       <div className="@container w-full">
         <div
-          className={cn("grid grid-cols-1 gap-4", ladderFor(minItemWidth), className)}
+          className={cn("grid-enter relative grid grid-cols-1 gap-4", ladderFor(minItemWidth), className)}
           data-enableselect="true"
-          ref={parent}
+          ref={grid}
         >
           {children}
         </div>
@@ -87,9 +82,9 @@ export const ContainerGrid: React.FC<FittingResponsiveGridProps> = ({
 
   return (
     <div
-      className={cn(`grid @lg:grid-cols-2 @xl:grid-cols-2 @2xl:grid-cols-4  @3xl:grid-cols-6  @5xl:grid-cols-6 @6xl:grid-cols-8 @7xl:grid-cols-10 @7xl:grid-cols-10 gap-4 `, className)}
+      className={cn(`grid-enter relative grid @lg:grid-cols-2 @xl:grid-cols-2 @2xl:grid-cols-4  @3xl:grid-cols-6  @5xl:grid-cols-6 @6xl:grid-cols-8 @7xl:grid-cols-10 @7xl:grid-cols-10 gap-4 `, className)}
       data-enableselect="true"
-      ref={parent}
+      ref={grid}
     >
       {children}
     </div>

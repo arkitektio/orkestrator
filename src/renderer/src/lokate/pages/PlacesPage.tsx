@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { ListPlaceFragment, Ordering, useListPlacesQuery } from "../api/graphql";
 import LokateMap from "../components/LokateMap";
 import { formatDay } from "../format";
+import { LOKATE_HELP } from "../help";
 
 /** Enough for anyone's named places; the map shows them all at once. */
 const LIMIT = 500;
@@ -57,6 +58,7 @@ const PlacesPage = () => {
 
   return (
     <LokatePlace.ListPage
+      help={LOKATE_HELP.places}
       title="Places"
       pageActions={
         <>

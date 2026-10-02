@@ -10,6 +10,7 @@ import { logoFor, releaseIdentity } from "../appIdentity";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import { AccessTab, ActionsTab, Fact } from "../components/AppTabs";
 import { InstallButton, SelectorBadges } from "../components/store/StoreParts";
+import { KABINET_HELP } from "../help";
 
 /**
  * The hero mark is the one live WebGL context on this page, and only for an app
@@ -141,7 +142,7 @@ export const FlavourPage = asDetailQueryRoute(useGetFlavourQuery, ({ data }) => 
   ).length;
 
   return (
-    <KabinetFlavour.ModelPage title={flavour.name} object={flavour}>
+    <KabinetFlavour.ModelPage title={flavour.name} object={flavour} help={KABINET_HELP.flavour}>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6">
         <header className="relative overflow-hidden rounded-3xl border">
           <div

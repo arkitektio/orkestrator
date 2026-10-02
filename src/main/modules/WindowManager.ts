@@ -121,7 +121,8 @@ const systemChromeTheme = (): ChromeTheme =>
  * three ways to snap.
  *
  * **Linux** goes frameless: `titleBarOverlay` is inconsistent across
- * GNOME/KDE/tiling WMs and there is no Snap-Layouts equivalent to lose. Note
+ * GNOME/KDE/tiling WMs and there is no Snap-Layouts equivalent to lose. The
+ * renderer draws the same auto-hiding bar there as on Windows. Note
  * this also removes the application menu entirely — see `setupApplicationMenu`
  * — so Reload / Force Reload / DevTools MUST stay reachable from the command
  * palette's app commands, which is where they now live.

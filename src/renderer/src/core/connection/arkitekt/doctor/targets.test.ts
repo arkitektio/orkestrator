@@ -108,7 +108,7 @@ describe("upstreamTargets", () => {
       endpointUrl: "https://go.arkitekt.live/lok/f/",
       coordinationAlias: { id: "self", host: "go.arkitekt.live", ssl: true, path: "lok", challenge: "ht" },
     });
-    expect(targets).toHaveLength(1);
+    expect(targets.filter((target) => target.role === "coordination")).toHaveLength(1);
     expect(targets[0]).toMatchObject({ role: "coordination", host: "go.arkitekt.live", path: "lok", probePath: "ht" });
     expect(probeTargetUrl(targets[0])).toBe("https://go.arkitekt.live/lok/ht");
   });
@@ -129,6 +129,7 @@ describe("upstreamTargets", () => {
     expect(targets.map((target) => [target.role, target.host, target.probePath])).toEqual([
       ["coordination", "go.arkitekt.live", ".well-known/fakts"],
       ["mesh-control", "mesh.arkitekt.live", null],
+      ["internet", "www.google.com", "generate_204"],
     ]);
     expect(targets.every(isUpstream)).toBe(true);
   });
@@ -136,8 +137,15 @@ describe("upstreamTargets", () => {
   it("adds no mesh control when the deployment names none or it is unknown", () => {
     for (const meshCoordUrl of [null, undefined]) {
       const targets = upstreamTargets({ kind: "service", serviceKey: "x", endpointUrl: "https://go.arkitekt.live", meshCoordUrl });
-      expect(targets.map((target) => target.role)).toEqual(["coordination"]);
+      expect(targets.map((target) => target.role)).toEqual(["coordination", "internet"]);
     }
+  });
+
+  it("always asks one public address, to tell a firewall on this side from a hub that is down", () => {
+    const targets = upstreamTargets({ kind: "service", serviceKey: "x" });
+    expect(targets).toHaveLength(1);
+    expect(probeTargetUrl(targets[0])).toBe("https://www.google.com/generate_204");
+    expect(isUpstream(targets[0])).toBe(true);
   });
 
   it("adds nothing in discovery mode, whose targets already are the coordination server", () => {

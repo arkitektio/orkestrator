@@ -2362,8 +2362,6 @@ export type GetMailFolderQuery = { __typename?: 'Query', mailFolder: (
 
 export type SearchMailFoldersQueryVariables = Exact<{
   account?: InputMaybe<Scalars['ID']['input']>;
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
 }>;
 
 
@@ -4410,7 +4408,10 @@ export type SenderAccountsLazyQueryHookResult = ReturnType<typeof useSenderAccou
 export type SenderAccountsQueryResult = Apollo.QueryResult<SenderAccountsQuery, SenderAccountsQueryVariables>;
 export const SearchMailAccountsDocument = gql`
     query SearchMailAccounts($search: String, $values: [ID!]) {
-  options: mailAccounts(filters: {ids: $values}, pagination: {limit: 20}) {
+  options: mailAccounts(
+    filters: {search: $search, ids: $values}
+    pagination: {limit: 20}
+  ) {
     value: id
     label: emailAddress
   }
@@ -4738,7 +4739,7 @@ export type GetMailFolderQueryHookResult = ReturnType<typeof useGetMailFolderQue
 export type GetMailFolderLazyQueryHookResult = ReturnType<typeof useGetMailFolderLazyQuery>;
 export type GetMailFolderQueryResult = Apollo.QueryResult<GetMailFolderQuery, GetMailFolderQueryVariables>;
 export const SearchMailFoldersDocument = gql`
-    query SearchMailFolders($account: ID, $search: String, $values: [ID!]) {
+    query SearchMailFolders($account: ID) {
   options: mailFolders(filters: {account: $account}, pagination: {limit: 200}) {
     value: id
     label: path
@@ -4759,8 +4760,6 @@ export const SearchMailFoldersDocument = gql`
  * const { data, loading, error } = useSearchMailFoldersQuery({
  *   variables: {
  *      account: // value for 'account'
- *      search: // value for 'search'
- *      values: // value for 'values'
  *   },
  * });
  */

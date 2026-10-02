@@ -10,6 +10,7 @@ import {
 import { cn } from "@/core/util/utils";
 import MaterializedBlokRenderer from "@/rekuest/components/MaterializedBlokRenderer";
 import { MaterializedBlokFragment, useMaterializedBlokQuery } from "../api/graphql";
+import { REKUEST_HELP } from "../help";
 
 /**
  * Only what stops the blok from working: a declared dependency nobody is
@@ -85,6 +86,7 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
   return (
     <RekuestMaterializedBlok.ModelPage
       title={materializedBlok.name || materializedBlok.blok.name || materializedBlok.id}
+      help={REKUEST_HELP.materializedBlok}
       object={materializedBlok}
       pageActions={(
         <LocalActionButton

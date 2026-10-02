@@ -22,6 +22,7 @@ import { Loader2 } from "lucide-react";
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
 import ScatterPlot from "../components/charts/scatterplot/ScatterPlot";
+import { KRAPH_HELP } from "../help";
 
 const Page = asDetailQueryRoute(useGetScatterPlotQuery, ({ data }) => {
   const navigate = useNavigate();
@@ -145,6 +146,7 @@ const Page = asDetailQueryRoute(useGetScatterPlotQuery, ({ data }) => {
 
   return (
     <KraphScatterPlot.ModelPage
+      help={KRAPH_HELP.scatterPlot}
       object={data.scatterPlot}
       title={data.scatterPlot.label}
       pageActions={

@@ -13,6 +13,7 @@ import {
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { useRef, useState } from "react";
 import { applyPatch } from "fast-json-patch";
+import { REKUEST_HELP } from "../help";
 
 
 /** Display state value through the port widgets */
@@ -195,6 +196,7 @@ export const StatePage = asDetailQueryRoute(
     return (
       <RekuestState.ModelPage
         title={data.state.definition.name}
+        help={REKUEST_HELP.state}
         object={data.state}
       >
         <div className="p-6">

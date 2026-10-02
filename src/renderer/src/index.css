@@ -102,6 +102,34 @@
   animation: mark-ping 1.1s ease-out 2 both;
 }
 
+/* Cards entering a `ContainerGrid`: each fades in and rises a few pixels, the
+ * first ones a beat apart so a page of cards arrives as a wave rather than a
+ * flash. CSS on purpose — it plays once when the node is inserted and then
+ * costs nothing: no observer, no timer, nothing holding the element (the JS
+ * library that used to animate these grids kept every page it touched alive).
+ * A card added later (a new row from a subscription) enters the same way; a
+ * refetch that keeps its keys replays nothing. Sliding and leaving are
+ * `core/layout/useGridMotion.ts`, which needs positions CSS cannot know. */
+@keyframes grid-item-enter {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+}
+
+/* In the components layer, so a card that carries its own `animate-*` utility
+ * (a pulsing skeleton, say) keeps it. */
+@layer components {
+  .grid-enter > * {
+    animation: grid-item-enter 240ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+  .grid-enter > :nth-child(2) { animation-delay: 25ms; }
+  .grid-enter > :nth-child(3) { animation-delay: 50ms; }
+  .grid-enter > :nth-child(4) { animation-delay: 75ms; }
+  .grid-enter > :nth-child(5) { animation-delay: 100ms; }
+  .grid-enter > :nth-child(6) { animation-delay: 125ms; }
+  .grid-enter > :nth-child(7) { animation-delay: 150ms; }
+  .grid-enter > :nth-child(8) { animation-delay: 175ms; }
+  .grid-enter > :nth-child(n + 9) { animation-delay: 200ms; }
+}
+
 /* Honour a stated preference for less motion: the palette still appears, it
  * just does not travel — and the task island holds still, its state carried by
  * the ring and the label alone. */
@@ -114,6 +142,9 @@
   }
   @keyframes mark-ping {
     from, to { opacity: 0; }
+  }
+  @keyframes grid-item-enter {
+    from, to { opacity: 1; transform: none; }
   }
 }
 

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Granularity, useGetStatsQuery, usePlaceStatsQuery } from "../api/graphql";
 import { StatsChart } from "../components/StatsChart";
 import { formatDistance, formatDuration, localTimeZone } from "../format";
+import { LOKATE_HELP } from "../help";
 
 type Period = "30d" | "12w" | "12m";
 
@@ -55,6 +56,7 @@ const InsightsPage = () => {
 
   return (
     <PageLayout
+      help={LOKATE_HELP.insights}
       title="Insights"
       pageActions={
         <PageAction.Slot alwaysShow>

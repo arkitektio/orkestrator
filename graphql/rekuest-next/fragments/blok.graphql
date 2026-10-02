@@ -154,6 +154,7 @@ fragment Blok on Blok {
   dependencies {
     id
     key
+    description
   }
   catalog {
     id

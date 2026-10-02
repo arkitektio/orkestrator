@@ -10,6 +10,7 @@ import { Ordering, useGetPlaceQuery, useListVisitsQuery } from "../api/graphql";
 import LokateMap from "../components/LokateMap";
 import { VisitRow } from "../components/TimelineRows";
 import { formatAt, formatDay, formatDistance } from "../format";
+import { LOKATE_HELP } from "../help";
 
 const VISITS = 50;
 
@@ -25,6 +26,7 @@ const PlacePage = asDetailQueryRoute(useGetPlaceQuery, ({ data }) => {
 
   return (
     <LokatePlace.ModelPage
+      help={LOKATE_HELP.place}
       title={
         <span className="flex items-center gap-2">
           <MapPin className="h-5 w-5" />

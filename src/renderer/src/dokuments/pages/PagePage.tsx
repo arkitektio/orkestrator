@@ -4,6 +4,7 @@ import { Image } from "@/core/ui/image";
 import { useResolve } from "@/core/datalayer/hooks/useResolve";
 import { DokumentsPage } from "@/core/linkers";
 import { useGetPageQuery } from "../api/graphql";
+import { DOKUMENTS_HELP } from "../help";
 
 export const PagePage = asDetailQueryRoute(
   useGetPageQuery,
@@ -16,6 +17,7 @@ export const PagePage = asDetailQueryRoute(
       <DokumentsPage.ModelPage
         title={data?.page && `Page ${data.page.index + 1}`}
         object={data?.page}
+        help={DOKUMENTS_HELP.page}
         pageActions={
           <>
             <DokumentsPage.ObjectButton alwaysShow object={data.page} />

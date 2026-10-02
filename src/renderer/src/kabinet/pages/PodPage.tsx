@@ -13,6 +13,7 @@ import { KabinetApproval, KabinetPod } from "@/core/linkers";
 import { useGetPodQuery } from "../api/graphql";
 import ResourceCard from "../components/cards/ResourceCard";
 import { APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
+import { KABINET_HELP } from "../help";
 
 const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
   const pod = data.pod;
@@ -21,6 +22,7 @@ const PodPage = asDetailQueryRoute(useGetPodQuery, ({ data }) => {
     <KabinetPod.ModelPage
       title={pod.backend.name}
       object={pod}
+      help={KABINET_HELP.pod}
       pageActions={
         // Other modules' actions on a pod (rekuest: its agents' pod actions).
         <PageSections

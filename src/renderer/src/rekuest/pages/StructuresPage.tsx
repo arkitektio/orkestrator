@@ -1,8 +1,9 @@
 import { RekuestStructure } from "@/core/linkers";
 import StructureList from "../components/lists/StructureList";
+import { REKUEST_HELP } from "../help";
 const Page = () => {
   return (
-    <RekuestStructure.ListPage title={"Structures"}>
+    <RekuestStructure.ListPage help={REKUEST_HELP.structures} title={"Structures"}>
       <div className="p-6">
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center mb-3">
           <div>

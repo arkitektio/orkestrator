@@ -13,6 +13,7 @@ import OntologyGraph from "../components/designer/OntologyGraph";
 import { ProjectionBadge } from "../components/ProjectionBadge";
 import ScatterPlotList from "../components/lists/ScatterPlotList";
 import { UpdateGraphForm } from "../forms/UpdateGraphForm";
+import { KRAPH_HELP } from "../help";
 
 // The index of `graphs/:graph`: the graph comes from scope, not from a `:id`
 // segment this route does not have.
@@ -37,6 +38,7 @@ export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data, refetch })
 
   return (
     <KraphGraph.ModelPage
+      help={KRAPH_HELP.graph}
       object={data.graph}
       title={data.graph.name}
       pageActions={

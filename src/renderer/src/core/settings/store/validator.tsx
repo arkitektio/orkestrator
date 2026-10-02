@@ -58,6 +58,13 @@ export const settingsValidator = zod.object({
   /** Running tasks as live rows in the rail, rather than only on their page. */
   experimentTaskIsland: zod.boolean(),
 
+  /**
+   * May the app run `tailscale status` to see how an address on a Tailscale
+   * network it does not run itself is routed (direct, or through a DERP
+   * relay)? `ask` asks once per session where the answer would be shown.
+   */
+  systemTailscale: zod.enum(["ask", "always", "never"]),
+
   // ── Voice input (see `src/renderer/src/voice`) ──
   /** Master switch. Off means nothing voice-related is loaded or run. */
   voiceControl: zod.boolean(),
@@ -101,6 +108,7 @@ export const defaultSettings: Settings = {
   experimentMenuPrefetch: true,
   experimentAnnotationHover: true,
   experimentTaskIsland: true,
+  systemTailscale: "ask",
   voiceControl: false,
   voiceEngine: "native",
   voiceLanguage: "auto",

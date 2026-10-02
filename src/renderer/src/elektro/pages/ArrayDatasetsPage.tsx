@@ -2,10 +2,11 @@ import { Explainer } from "@/core/layout/Explainer";
 import { ElektroArrayDataset } from "@/core/linkers";
 import React from "react";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
+import { ELEKTRO_HELP } from "../help";
 
 const ArrayDatasetsPage: React.FC = () => {
   return (
-    <ElektroArrayDataset.ListPage title="Datasets">
+    <ElektroArrayDataset.ListPage title="Datasets" help={ELEKTRO_HELP.arrayDatasets}>
       <div className="p-3">
         <Explainer
           title="Datasets"

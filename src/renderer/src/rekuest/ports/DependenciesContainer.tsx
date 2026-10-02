@@ -1,6 +1,7 @@
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { portHash } from "@/core/ports/engine/utils";
 import { ListAgentFragment, ListDependencyFragment, ResolvedDependencyInput, useAgentForDependencyLazyQuery } from "@/rekuest/api/graphql";
+import { DependencyNode, levelBelow, withLevelBelow, withPin } from "@/rekuest/lib/dependencyTree";
 import { ArgPort, PortGroup } from "@/core/ports/engine/types";
 
 import {
@@ -14,8 +15,9 @@ import { Command as CommandPrimitive } from "cmdk"
 import { cn, notEmpty } from "@/core/util/utils";
 
 import { CheckIcon } from "@radix-ui/react-icons";
-import { Bot, Circle, SearchIcon, X, Zap } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Bot, ChevronRight, Circle, SearchIcon, X, Zap } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/ui/collapsible";
 import { useDebouncedCallback } from "@/core/util/hooks/useDebouncedCallback";
 import { useFormContext, useWatch } from "react-hook-form";
 import { Badge } from "@/core/ui/badge";
@@ -66,15 +68,29 @@ function CommandInputWithBadges({
   )
 }
 
+/** Whose dependency the id names: an implementation's, or a blok's. */
+export type DependencyOwner = "implementation" | "blok";
+
 export type DependencyFieldProps = {
   dependency: ListDependencyFragment;
+  owner?: DependencyOwner;
+  /** This dependency's pin at its level, if it has one. */
+  pin: ResolvedDependencyInput | undefined;
+  onPin: (pin: ResolvedDependencyInput | undefined) => void;
+  /** What the dry run resolved for it: the agents bound, and what they need below. */
+  node?: DependencyNode;
+  /** The form's own complaint about this pin. */
+  error?: string;
 };
 
 export const DependencySearchField = ({
   dependency,
+  owner = "implementation",
+  pin,
+  onPin,
+  node,
+  error: fieldError,
 }: DependencyFieldProps) => {
-  const form = useFormContext();
-
   const [agents, setAgents] = useState<ListAgentFragment[]>([]);
   const [agentCache, setAgentCache] = useState<Record<string, ListAgentFragment>>({});
   const [error, setError] = useState<string | null>(null);
@@ -83,75 +99,45 @@ export const DependencySearchField = ({
   const [inputValue, setInputValue] = useState("");
 
   const [search] = useAgentForDependencyLazyQuery();
+  const dependencyFilter =
+    owner === "blok" ? { blokDependency: dependency.id } : { dependency: dependency.id };
 
-  // Read the current entry for this dependency from the form
-  const getEntry = (): ResolvedDependencyInput | undefined => {
-    const deps = (form.getValues("dependencies") as ResolvedDependencyInput[] | undefined) || [];
-    return deps.find((d) => d.key === dependency.key);
+  // The pin is the selection: it lives in the form, at this level.
+  const selectedIds = useMemo(() => pin?.mappedAgents.map((mapped) => mapped.agent) ?? [], [pin]);
+  const autoResolve = pin?.autoResolve ?? false;
+
+  const remember = (found: ListAgentFragment[]) => {
+    const newCache: Record<string, ListAgentFragment> = {};
+    found.forEach((a) => { newCache[a.id] = a; });
+    setAgentCache((prev) => ({ ...prev, ...newCache }));
   };
 
-  const getSelectedAgentIds = (): string[] => {
-    return getEntry()?.mappedAgents?.map((ma) => ma.agent) || [];
-  };
-
-  // Write the full entry back to the form's dependencies array
-  const setDependencyEntry = (entry: ResolvedDependencyInput) => {
-    const deps = [...((form.getValues("dependencies") as ResolvedDependencyInput[] | undefined) || [])];
-    const existingIndex = deps.findIndex((d) => d.key === dependency.key);
-    if (existingIndex >= 0) {
-      deps[existingIndex] = entry;
-    } else {
-      deps.push(entry);
-    }
-    // Remove entries with no agents and not auto-resolving
-    const filtered = deps.filter((d) => d.mappedAgents.length > 0 || d.autoResolve);
-    form.setValue("dependencies", filtered, { shouldValidate: true });
-  };
-
-  const setSelectedAgentIds = (agentIds: string[]) => {
-    setDependencyEntry({
+  const updateSelection = (agentIds: string[]) => {
+    onPin({
       key: dependency.key,
       autoResolve: autoResolve,
-      mappedAgents: agentIds.map((id) => ({
-        agent: id,
-        key: dependency.key,
-        mappedActions: [],
-      })),
+      // An agent that stays keeps what is pinned below it.
+      mappedAgents: agentIds.map(
+        (id) => pin?.mappedAgents.find((mapped) => mapped.agent === id) ?? { agent: id, key: dependency.key },
+      ),
     });
   };
 
-  // Derive autoResolve from form state (reactive via useWatch)
-  const watchedDeps = useWatch({ control: form.control, name: "dependencies" }) as ResolvedDependencyInput[] | undefined;
-  const autoResolve = watchedDeps?.find((d) => d.key === dependency.key)?.autoResolve ?? false;
-
-  const [selectedIds, setSelectedIds] = useState<string[]>(() => getSelectedAgentIds());
-
-  const updateSelection = (agentIds: string[]) => {
-    setSelectedIds(agentIds);
-    setSelectedAgentIds(agentIds);
-  };
-
   const toggleAutoResolve = () => {
-    const newVal = !autoResolve;
-    setDependencyEntry({
+    onPin({
       key: dependency.key,
-      autoResolve: newVal,
-      mappedAgents: selectedIds.map((id) => ({
-        agent: id,
-        key: dependency.key,
-        mappedActions: [],
-      })),
+      autoResolve: !autoResolve,
+      mappedAgents: pin?.mappedAgents ?? [],
     });
   };
 
   const queryAgents = useDebouncedCallback((searchStr: string) => {
-    search({ variables: { search: searchStr, dependency: dependency.id } })
+    if (!dependency.id) return;
+    search({ variables: { search: searchStr, ...dependencyFilter } })
       .then((res) => {
         const found = res.data?.agents?.filter(notEmpty) || [];
         setAgents(found);
-        const newCache: Record<string, ListAgentFragment> = {};
-        found.forEach((a) => { newCache[a.id] = a; });
-        setAgentCache((prev) => ({ ...prev, ...newCache }));
+        remember(found);
         setOpen(true);
         setError(null);
       })
@@ -161,35 +147,41 @@ export const DependencySearchField = ({
       });
   });
 
-  // Load initial options + resolve data for pre-selected agents
+  // Load initial options
   useEffect(() => {
-    search({ variables: { search: "", dependency: dependency.id } })
+    if (!dependency.id) return;
+    search({ variables: { search: "", ...dependencyFilter } })
       .then((res) => {
         const found = res.data?.agents?.filter(notEmpty) || [];
         setAgents(found);
-        const newCache: Record<string, ListAgentFragment> = {};
-        found.forEach((a) => { newCache[a.id] = a; });
-        setAgentCache((prev) => ({ ...prev, ...newCache }));
+        remember(found);
         setError(null);
       })
       .catch((err) => {
         setError(err.message);
         setAgents([]);
       });
-
-    const preSelected = getSelectedAgentIds();
-    if (preSelected.length > 0) {
-      search({ variables: { values: preSelected } })
-        .then((res) => {
-          const found = res.data?.agents?.filter(notEmpty) || [];
-          const newCache: Record<string, ListAgentFragment> = {};
-          found.forEach((a) => { newCache[a.id] = a; });
-          setAgentCache((prev) => ({ ...prev, ...newCache }));
-        })
-        .catch(() => {});
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dependency.id]);
+
+  // The agents the dry run bound are known without asking.
+  const boundAgents = useMemo(() => {
+    const bound: Record<string, ListAgentFragment> = {};
+    for (const binding of node?.mappedAgents ?? []) {
+      if (binding.agent) bound[binding.agentId] = binding.agent;
+    }
+    return bound;
+  }, [node]);
+
+  // Resolve data for selected agents nothing has told us about yet
+  const unknown = selectedIds.filter((id) => !agentCache[id] && !boundAgents[id]).join(",");
+  useEffect(() => {
+    if (!unknown) return;
+    search({ variables: { values: unknown.split(",") } })
+      .then((res) => remember(res.data?.agents?.filter(notEmpty) || []))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unknown]);
 
   const maxAgents = dependency.singular ? 1 : (dependency.maxViableInstances ?? Infinity);
 
@@ -212,10 +204,6 @@ export const DependencySearchField = ({
     updateSelection(selectedIds.filter((id) => id !== agentId));
   };
 
-  // Read per-dependency form error (path: dependencies.{dep.key})
-  const depErrors = form.formState.errors?.dependencies as Record<string, { message?: string }> | undefined;
-  const fieldError = depErrors?.[dependency.key]?.message;
-
   // Build count hint string
   const countHint = (() => {
     const min = dependency.minViableInstances;
@@ -227,12 +215,18 @@ export const DependencySearchField = ({
     return null;
   })();
 
+  // What resolved without a pin: shown, so it is clear what an assign reaches.
+  const resolvedByItself = selectedIds.length === 0 ? (node?.mappedAgents ?? []) : [];
+
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {dependency.key != null && (
             <FormLabel className="text-sm">{dependency.key}</FormLabel>
+          )}
+          {dependency.optional && (
+            <span className="text-[10px] text-muted-foreground">optional</span>
           )}
           {countHint && (
             <span className="text-[10px] text-muted-foreground">
@@ -282,7 +276,7 @@ export const DependencySearchField = ({
           >
             <>
               {selectedIds.map((id) => {
-                const agent = agentCache[id];
+                const agent = agentCache[id] ?? boundAgents[id];
                 return (
                   <Badge
                     key={id}
@@ -370,25 +364,106 @@ export const DependencySearchField = ({
         </div>
       </Command>
       )}
-      {fieldError && (
-        <p className="text-destructive text-xs">{fieldError}</p>
+      {resolvedByItself.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground">
+          resolves to
+          {resolvedByItself.map((binding) => (
+            <Badge key={binding.agentId} variant="outline" className="text-[10px] px-1.5 py-0 h-5 gap-1 font-normal">
+              <Circle className={cn("h-2 w-2 fill-current", binding.agent?.connected ? "text-green-500" : "text-muted-foreground/40")} />
+              {binding.agent?.app.identifier ?? binding.agentId}
+            </Badge>
+          ))}
+        </div>
+      )}
+      {(fieldError || node?.unmet) && (
+        <p className="text-destructive text-xs">{fieldError || node?.unmet}</p>
       )}
       {dependency.description && (
         <FormDescription>{dependency.description}</FormDescription>
       )}
+      {node?.mappedAgents.map((binding) => {
+        const below = levelBelow(binding);
+        if (below.length === 0) return null;
+        const pinned = pin?.mappedAgents.find((mapped) => mapped.agent === binding.agentId);
+        return (
+          <Collapsible key={binding.agentId} defaultOpen className="ml-1 border-l pl-3">
+            <CollapsibleTrigger className="group flex items-center gap-1 py-1 text-xs text-muted-foreground">
+              <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
+              {binding.agent?.app.identifier ?? binding.agentId} depends on
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-1 pb-2">
+              <DependencyLevel
+                dependencies={below.map((inner) => inner.dependency ?? undeclared(inner.key))}
+                nodes={below}
+                value={pinned?.dependencies ?? []}
+                onChange={(next) => onPin(withLevelBelow(pin, node, binding.agentId, next))}
+              />
+            </CollapsibleContent>
+          </Collapsible>
+        );
+      })}
     </div>
   );
 };
 
+/** A dependency a task still carries although its implementation no longer declares it. */
+const undeclared = (key: string): ListDependencyFragment => ({
+  id: "",
+  key,
+  description: null,
+  appFilter: null,
+  versionFilter: null,
+  autoResolvable: false,
+  optional: false,
+  minViableInstances: null,
+  maxViableInstances: null,
+  singular: false,
+});
+
+type DependencyLevelProps = {
+  dependencies: ListDependencyFragment[];
+  /** The dry run's nodes of this level, by key. */
+  nodes?: DependencyNode[] | null;
+  /** The pins of this level. */
+  value: ResolvedDependencyInput[];
+  onChange: (pins: ResolvedDependencyInput[]) => void;
+  owner?: DependencyOwner;
+  errors?: Record<string, { message?: string }>;
+};
+
+/** One level of the dependency tree: its dependencies, each with the levels below what it binds. */
+const DependencyLevel = ({ dependencies, nodes, value, onChange, owner, errors }: DependencyLevelProps) => (
+  <div className="grid overflow-visible gap-4">
+    {dependencies.map((dep) => (
+      <DependencySearchField
+        dependency={dep}
+        owner={owner}
+        pin={value.find((pin) => pin.key === dep.key)}
+        onPin={(pin) => onChange(withPin(value, dep.key, pin))}
+        node={nodes?.find((node) => node.key === dep.key)}
+        error={errors?.[dep.key]?.message}
+        key={dep.key}
+      />
+    ))}
+  </div>
+);
+
 export type DependencyContainerProps = {
   dependencies: ListDependencyFragment[];
   bound: string;
+  owner?: DependencyOwner;
+  /** The assign's dry run (`useDependencyTree`): without it only the root level shows. */
+  tree?: DependencyNode[] | null;
 };
 
 export const DependenciesContainer = ({
   dependencies,
+  owner,
+  tree,
 }: DependencyContainerProps) => {
   const form = useFormContext();
+  const watched = useWatch({ control: form.control, name: "dependencies" }) as ResolvedDependencyInput[] | undefined;
+  const value = useMemo(() => watched ?? [], [watched]);
 
   // Seed auto-resolve entries for auto-resolvable deps that have no form entry yet
   useEffect(() => {
@@ -411,10 +486,14 @@ export const DependenciesContainer = ({
   }, []);
 
   return (
-    <div className="grid overflow-visible gap-4">
-      {dependencies.map((dep) => (
-        <DependencySearchField dependency={dep} key={dep.key} />
-      ))}
-    </div>
+    <DependencyLevel
+      dependencies={dependencies}
+      nodes={tree}
+      value={value}
+      onChange={(next) => form.setValue("dependencies", next, { shouldValidate: true })}
+      owner={owner}
+      // Per-dependency form errors (path: dependencies.{dep.key})
+      errors={form.formState.errors?.dependencies as Record<string, { message?: string }> | undefined}
+    />
   );
 };

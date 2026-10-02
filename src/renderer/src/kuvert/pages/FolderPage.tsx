@@ -10,6 +10,7 @@ import { MailSplit } from "../components/split/MailSplit";
 import { MailList } from "../components/list/MailList";
 import { ProblemBanner } from "../components/ProblemBanner";
 import { toastText } from "../errors";
+import { KUVERT_HELP } from "../help";
 import { MailFolder } from "../linkers";
 
 /** A folder's conversations, newest first. */
@@ -26,6 +27,7 @@ const FolderPage = asDetailQueryRoute(useGetMailFolderQuery, ({ data, refetch })
     <MailFolder.ModelPage
       title={folder.name}
       object={folder}
+      help={KUVERT_HELP.folder}
       pageActions={
         <>
           <PageAction.Slot collapse="hide">

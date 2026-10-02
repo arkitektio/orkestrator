@@ -6,6 +6,7 @@ import { ElektroFile } from "@/core/linkers";
 import { useDownload } from "@/core/modules/download/DownloadProvider";
 import { DownloadIcon, FileIcon } from "lucide-react";
 import { useGetFileQuery } from "../api/graphql";
+import { ELEKTRO_HELP } from "../help";
 
 // Helper for formatting file size
 const formatBytes = (bytes: number | null | undefined): string => {
@@ -29,6 +30,7 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
       actions={<ElektroFile.Actions object={file} />}
       object={file}
       title={file.name}
+      help={ELEKTRO_HELP.file}
       pageActions={
         <>
           <PageAction

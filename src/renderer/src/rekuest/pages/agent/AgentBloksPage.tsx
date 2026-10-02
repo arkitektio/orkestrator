@@ -7,6 +7,7 @@ import {
   useListMaterializedBloksQuery,
 } from "@/rekuest/api/graphql";
 import MaterializedBlokCard from "@/rekuest/components/cards/MaterializedBlokCard";
+import { REKUEST_HELP } from "../../help";
 
 export const AgentBloksPage = asDetailQueryRoute(useAgentQuery, ({ data, id }) => {
   const { data: blokData, loading, error, refetch } = useListMaterializedBloksQuery({
@@ -20,6 +21,7 @@ export const AgentBloksPage = asDetailQueryRoute(useAgentQuery, ({ data, id }) =
   return (
     <RekuestAgent.ModelPage
       title={`${data.agent.name} — Bloks`}
+      help={REKUEST_HELP.agentBloks}
       object={data.agent}
     >
       <div className="p-6">

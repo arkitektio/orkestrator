@@ -32,6 +32,7 @@ import { MerchantLogo } from "../components/MerchantLogo";
 import { Money } from "../components/Money";
 import { toastText } from "../errors";
 import { formatDay } from "../format";
+import { BANK_HELP } from "../help";
 
 /** One place of the merchant; unlocated ones can be looked up on OpenStreetMap. */
 const PlaceRow = ({
@@ -209,6 +210,7 @@ const MerchantPage = asDetailQueryRoute(useGetMerchantQuery, ({ data }) => {
 
   return (
     <BankMerchant.ModelPage
+      help={BANK_HELP.merchant}
       title={
         <span className="flex items-center gap-2">
           <MerchantLogo merchant={merchant} className="h-6 w-6" />

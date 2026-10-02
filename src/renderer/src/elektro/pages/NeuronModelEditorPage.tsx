@@ -14,6 +14,7 @@ import {
   serializeModelConfig,
   validateModelConfig,
 } from "../lib/modelSerialization";
+import { ELEKTRO_HELP } from "../help";
 
 export const NeuronModelEditorPage = asDetailQueryRoute(
   useDetailNeuronModelQuery,
@@ -81,6 +82,7 @@ export const NeuronModelEditorPage = asDetailQueryRoute(
       <ElektroNeuronModel.ModelPage
         variant="black"
         title={`Edit: ${data.neuronModel.name}`}
+        help={ELEKTRO_HELP.neuronModelEditor}
         object={data.neuronModel}
       >
         <div className="h-full w-full">

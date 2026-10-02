@@ -7,6 +7,7 @@ import { useDetailSectionQuery } from "../api/graphql";
 import { MorphologyScene } from "../components/morphology/MorphologyScene";
 import { FocusTitleOverlay } from "../components/neuronmodel/FocusTitleOverlay";
 import { SectionInfoSidebar } from "../components/sidebars/SectionInfoSidebar";
+import { ELEKTRO_HELP } from "../help";
 
 /**
  * One section, zoomed in: the model's renderer framing and orbiting just this
@@ -23,6 +24,7 @@ export const SectionPage = asDetailQueryRoute(useDetailSectionQuery, ({ data }) 
     <ElektroSection.ModelPage
       object={{ id: pageId }}
       title={section.id}
+      help={ELEKTRO_HELP.section}
       variant="black"
       overlay
       pageActions={

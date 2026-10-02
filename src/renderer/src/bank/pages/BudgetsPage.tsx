@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useBudgetStatusQuery } from "../api/graphql";
 import BudgetStatusCard from "../components/cards/BudgetStatusCard";
 import { firstOfMonth, formatMonth } from "../format";
+import { BANK_HELP } from "../help";
 
 /** This month's budgets, spent against limit; step back through earlier months. */
 const BudgetsPage = () => {
@@ -16,6 +17,7 @@ const BudgetsPage = () => {
 
   return (
     <BankBudget.ListPage
+      help={BANK_HELP.budgets}
       title={`Budgets · ${formatMonth(month, true)}`}
       pageActions={
         <>

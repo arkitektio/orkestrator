@@ -25,7 +25,7 @@ export type Scalars = {
   /** The `ArrayLike` scalar type represents a reference to a store previously created by the user n a datalayer */
   ArrayLike: { input: any; output: any; }
   /** A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string. */
-  ByteCount: { input: any; output: any; }
+  ByteCount: { input: number; output: number; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
   /** A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it). */
@@ -231,6 +231,8 @@ export type Annotation = {
   /** The discrete coordinates this annotation is pinned to. A coordinate the annotation does not pin is one it spans */
   coordinates: Array<Coordinate>;
   createdWithTransforms: Scalars['Int']['output'];
+  /** The user that drew this annotation, or null when that user is gone or a client created it without one */
+  creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
   /** The fill color of the geometry, as RGBA, or null for no fill */
   fillColor?: Maybe<Array<Scalars['Int']['output']>>;
@@ -9307,7 +9309,7 @@ export type DetailAnnotationFragment = (
   { __typename?: 'Annotation', coordinateSystem?: { __typename?: 'CoordinateSystem', transformVersion: number } | null, collection: { __typename?: 'AnnotationCollection', description?: string | null, scene?: (
       { __typename?: 'Scene' }
       & ListSceneFragment
-    ) | null } }
+    ) | null }, creator?: { __typename?: 'User', sub: string } | null }
   & AnnotationFragment
 );
 
@@ -9687,11 +9689,11 @@ export type TransformationFragment = Transformation_AffineTransformation_Fragmen
 
 export type BigFileUploadGrantFragment = { __typename?: 'BigFileUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, store: string };
 
-export type MediaUploadGrantFragment = { __typename?: 'MediaUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: any, store: string };
+export type MediaUploadGrantFragment = { __typename?: 'MediaUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: number, store: string };
 
-export type ZarrUploadGrantFragment = { __typename?: 'ZarrUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: any, store: string };
+export type ZarrUploadGrantFragment = { __typename?: 'ZarrUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: number, store: string };
 
-export type ParquetUploadGrantFragment = { __typename?: 'ParquetUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: any, store: string };
+export type ParquetUploadGrantFragment = { __typename?: 'ParquetUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: number, store: string };
 
 export type BigFileAccessGrantFragment = { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string };
 
@@ -9709,7 +9711,7 @@ export type GeneralParquetAccessGrantFragment = { __typename?: 'GeneralParquetAc
 
 export type GeneralFabriksAccessGrantFragment = { __typename?: 'GeneralFabriksAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
-export type FabriksUploadGrantFragment = { __typename?: 'FabriksUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: any, store: string };
+export type FabriksUploadGrantFragment = { __typename?: 'FabriksUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, region: string, expiresIn: number, maxBytes: number, store: string };
 
 export type GeneralKonnektionAccessGrantFragment = { __typename?: 'GeneralKonnektionAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
@@ -10406,9 +10408,9 @@ export type SparseDatasetFragment = { __typename?: 'SparseDataset', id: string, 
       & SparseStoreReadFragment
     ) }>, axisReferences: Array<{ __typename?: 'SparseAxisReference', id: string, axis: string, references: { __typename?: 'TableDataset', id: string, name: string, axisNames: Array<string> } }> };
 
-export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: any | null };
+export type ZarrStoreFragment = { __typename?: 'ZarrStore', id: string, key: string, bucket: string, path: string, shape: Array<number>, dtype?: string | null, chunks: Array<number>, shards?: Array<number> | null, version?: string | null, sizeBytes?: number | null };
 
-export type ParquetStoreFragment = { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null };
+export type ParquetStoreFragment = { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: number | null };
 
 export type BigFileStoreFragment = { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: (
     { __typename?: 'BigFileAccessGrant' }
@@ -11878,6 +11880,13 @@ export type GetAnnotationQuery = { __typename?: 'Query', annotation: (
     & DetailAnnotationFragment
   ) };
 
+export type GetAnnotationCreatorQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetAnnotationCreatorQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, creator?: { __typename?: 'User', sub: string } | null } };
+
 export type GetSceneAnnotationsQueryVariables = Exact<{
   filters?: InputMaybe<AnnotationFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -12009,7 +12018,7 @@ export type ChildrenQueryVariables = Exact<{
 
 
 export type ChildrenQuery = { __typename?: 'Query', children: Array<{ __typename?: 'AnnotationCollection', id: string, name: string } | (
-    { __typename?: 'ArrayDataset', dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, store: { __typename?: 'ZarrStore', id: string, sizeBytes?: any | null } }> }
+    { __typename?: 'ArrayDataset', dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, store: { __typename?: 'ZarrStore', id: string, sizeBytes?: number | null } }> }
     & ListArrayDatasetFragment
   ) | (
     { __typename?: 'File' }
@@ -13440,6 +13449,9 @@ export const DetailAnnotationFragmentDoc = gql`
     scene {
       ...ListScene
     }
+  }
+  creator {
+    sub
   }
 }
     ${AnnotationFragmentDoc}
@@ -17762,6 +17774,44 @@ export function useGetAnnotationLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type GetAnnotationQueryHookResult = ReturnType<typeof useGetAnnotationQuery>;
 export type GetAnnotationLazyQueryHookResult = ReturnType<typeof useGetAnnotationLazyQuery>;
 export type GetAnnotationQueryResult = Apollo.QueryResult<GetAnnotationQuery, GetAnnotationQueryVariables>;
+export const GetAnnotationCreatorDocument = gql`
+    query GetAnnotationCreator($id: ID!) {
+  annotation(id: $id) {
+    id
+    creator {
+      sub
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetAnnotationCreatorQuery__
+ *
+ * To run a query within a React component, call `useGetAnnotationCreatorQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAnnotationCreatorQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAnnotationCreatorQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetAnnotationCreatorQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetAnnotationCreatorQuery, GetAnnotationCreatorQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAnnotationCreatorQuery, GetAnnotationCreatorQueryVariables>(GetAnnotationCreatorDocument, options);
+      }
+export function useGetAnnotationCreatorLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAnnotationCreatorQuery, GetAnnotationCreatorQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAnnotationCreatorQuery, GetAnnotationCreatorQueryVariables>(GetAnnotationCreatorDocument, options);
+        }
+export type GetAnnotationCreatorQueryHookResult = ReturnType<typeof useGetAnnotationCreatorQuery>;
+export type GetAnnotationCreatorLazyQueryHookResult = ReturnType<typeof useGetAnnotationCreatorLazyQuery>;
+export type GetAnnotationCreatorQueryResult = Apollo.QueryResult<GetAnnotationCreatorQuery, GetAnnotationCreatorQueryVariables>;
 export const GetSceneAnnotationsDocument = gql`
     query GetSceneAnnotations($filters: AnnotationFilter, $pagination: OffsetPaginationInput) {
   annotations(filters: $filters, pagination: $pagination) {

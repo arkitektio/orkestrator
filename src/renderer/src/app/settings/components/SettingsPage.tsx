@@ -1,4 +1,5 @@
 import { PageLayout } from "@/core/layout/PageLayout";
+import { SETTINGS_HELP } from "../help";
 import { sectionBySlug } from "../sections";
 
 /**
@@ -17,7 +18,7 @@ export const SettingsPage = ({
 }) => {
   const section = sectionBySlug(slug);
   return (
-    <PageLayout title={section?.label ?? "Settings"} pageActions={pageActions}>
+    <PageLayout title={section?.label ?? "Settings"} pageActions={pageActions} help={SETTINGS_HELP[slug]}>
       <div className="mx-auto w-full max-w-3xl space-y-6 p-3">
         {section && (
           <div>

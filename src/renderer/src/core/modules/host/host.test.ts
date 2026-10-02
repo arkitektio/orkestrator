@@ -68,6 +68,16 @@ describe("registerModule", () => {
     expect(installedModules()).toHaveLength(1);
   });
 
+  it("refuses a viewer for an identifier another module already opens", () => {
+    const Viewer = () => null;
+    registerModule(module("alpha", { viewers: { "@alpha/thing": Viewer } }));
+    const result = registerModule(module("beta", { viewers: { "@alpha/thing": Viewer } }));
+    expect(result).toMatchObject({
+      ok: false,
+      issues: [{ path: "builtins.viewer", message: 'viewer "@alpha/thing" is already claimed by alpha' }],
+    });
+  });
+
   it("refuses a dialog needing a service the manifest does not require", () => {
     const Dialog = needsServices(["rekuest"], () => null);
     const result = registerModule(module("store", { dialogs: { storeinstall: Dialog } }));

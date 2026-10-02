@@ -23,6 +23,7 @@ import { Link } from "react-router-dom";
 import { useAppStoreQuery } from "../api/graphql";
 import { AppShelfTile, AppStoreCard, appStorePath } from "../components/store/AppStoreCard";
 import { AppIcon, appGradient } from "../components/AppIcon";
+import { KABINET_HELP } from "../help";
 import {
   HardwareBadges,
   InstallButton,
@@ -232,6 +233,7 @@ export const AppStorePage = () => {
   return (
     <PageLayout
       title="App Store"
+      help={KABINET_HELP.appStore}
       pageActions={
         <DialogButton alwaysShow name="createrepo" variant="outline" size="sm" dialogProps={{}}>
           Add Repo

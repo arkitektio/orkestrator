@@ -12,8 +12,9 @@ import type { HubHealthFacts } from "@/core/connection/arkitekt/doctor/hubHealth
 import type { ProbeTarget } from "../../../../../../main/doctor/protocol";
 import { useConnectionDoctor } from "@/core/connection/arkitekt/doctor/useConnectionDoctor";
 import { Stethoscope } from "lucide-react";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ConnectionDoctorPanel } from "./ConnectionDoctorPanel";
+import { ConnectionDoctorPanel, type ConnectionDoctorPanelProps } from "./ConnectionDoctorPanel";
 
 /**
  * The doctor, wired to the bridge.
@@ -42,6 +43,15 @@ export type ConnectionDoctorProps = {
   centered?: boolean;
   /** The hub's own report — only where a lok client exists; see `HubAwareConnectionDoctor`. */
   fetchHub?: () => Promise<HubHealthFacts | undefined>;
+  /** False keeps the run from asking the system Tailscale CLI; see `RunDoctorInput.systemMesh`. */
+  systemMesh?: boolean;
+  /**
+   * Draw the run yourself instead of getting the panel. For a page that shows
+   * the report as something else too (the unreachable page's diagram) and so
+   * needs the report, not just a place to put it. The argument is exactly the
+   * panel's props, so the panel can still be one of the things it renders.
+   */
+  children?: (doctor: ConnectionDoctorPanelProps) => ReactNode;
 };
 
 /** The report on its own, for a page that already has a heading. */
@@ -54,12 +64,14 @@ export const ConnectionDoctor = ({
   autoRun,
   centered,
   fetchHub,
+  systemMesh,
+  children,
 }: ConnectionDoctorProps) => {
   const { run, runRemedy, status, report, error, remedyResult } = useConnectionDoctor();
 
   const handleRun = useCallback(() => {
-    void run({ context, targets: buildTargets(), originalError, rendererReachable, fetchHub });
-  }, [run, context, buildTargets, originalError, rendererReachable, fetchHub]);
+    void run({ context, targets: buildTargets(), originalError, rendererReachable, fetchHub, systemMesh });
+  }, [run, context, buildTargets, originalError, rendererReachable, fetchHub, systemMesh]);
 
   // Once, on mount. `handleRun` changes identity whenever a caller rebuilds
   // `buildTargets` inline, and this must not turn into a probe loop.
@@ -70,18 +82,18 @@ export const ConnectionDoctor = ({
     handleRun();
   }, [autoRun, handleRun]);
 
-  return (
-    <ConnectionDoctorPanel
-      report={report}
-      status={status}
-      error={error}
-      remedyResult={remedyResult}
-      onRun={handleRun}
-      onRemedy={(id) => void runRemedy(id)}
-      subject={subject}
-      centered={centered}
-    />
-  );
+  const panel: ConnectionDoctorPanelProps = {
+    report,
+    status,
+    error,
+    remedyResult,
+    onRun: handleRun,
+    onRemedy: (id) => void runRemedy(id),
+    subject,
+    centered,
+  };
+
+  return children ? <>{children(panel)}</> : <ConnectionDoctorPanel {...panel} />;
 };
 
 export type ConnectionDoctorSheetProps = ConnectionDoctorProps & {

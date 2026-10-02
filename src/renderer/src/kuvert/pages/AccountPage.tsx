@@ -13,6 +13,7 @@ import { InfoList } from "../components/InfoList";
 import { ProblemBanner } from "../components/ProblemBanner";
 import { AccountSettings } from "../components/settings/AccountSettings";
 import { toastText } from "../errors";
+import { KUVERT_HELP } from "../help";
 import { MailAccount } from "../linkers";
 
 /** A mailbox: what is wrong with it (if anything), and its settings: names, what goes to the server, folders, categories, sign-in. */
@@ -27,6 +28,7 @@ const AccountPage = asDetailQueryRoute(useGetMailAccountQuery, ({ data, refetch 
     <MailAccount.ModelPage
       title={account.name || account.emailAddress}
       object={account}
+      help={KUVERT_HELP.account}
       pageActions={
         <>
           <PageAction

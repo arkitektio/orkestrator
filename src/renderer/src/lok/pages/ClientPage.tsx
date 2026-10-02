@@ -1,4 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
+import { LOK_HELP } from "../help";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Badge } from "@/core/ui/badge";
 import { PageAction } from "@/core/ui/page-action";
@@ -33,6 +34,7 @@ export default asDetailQueryRoute(useDetailClientQuery, ({ data }) => {
 
   return (
     <LokClient.ModelPage
+      help={LOK_HELP.client}
       object={data.client}
       pageActions={
         <>

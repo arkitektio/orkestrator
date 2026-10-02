@@ -32,6 +32,21 @@ export type ConnectionPath =
   | { kind: "vpn"; interfaces: string[] }
   | { kind: "direct" };
 
+/** A path that goes through a tunnel of some kind. */
+export type TunnelPath = Exclude<ConnectionPath, { kind: "direct" }>;
+
+/** One line naming the tunnel: a caption, and the screen-reader text. */
+export const pathTitle = (path: TunnelPath): string => {
+  switch (path.kind) {
+    case "arkitekt-mesh":
+      return `Arkitekt mesh · ${path.meshLabel}`;
+    case "system-tailscale":
+      return path.tailnet ? `Tailscale · ${path.tailnet}` : "Tailscale";
+    case "vpn":
+      return `VPN · ${path.interfaces.join(", ")}`;
+  }
+};
+
 export type ConnectionPathInput = {
   /** The active organization's service hosts. */
   hosts: readonly string[];

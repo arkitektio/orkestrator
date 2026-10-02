@@ -310,6 +310,7 @@ const DashboardBlokMaterializeSelector = (props: {
       dependencies={data.blok.dependencies.map((dependency) => ({
         id: dependency.id,
         key: dependency.key,
+        description: dependency.description,
       }))}
       onMaterialized={onMaterialized}
     />

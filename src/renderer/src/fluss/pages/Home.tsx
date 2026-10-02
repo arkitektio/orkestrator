@@ -55,6 +55,7 @@ import RunList from "../components/lists/RunList";
 import WorkspaceList from "../components/lists/WorkspaceList";
 import WorkspaceCarousel from "../edit/carousels/WorkspaceCarousel";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
+import { FLUSS_HELP } from "../help";
 import { ListRender } from "@/core/layout/ListRender";
 
 const ACTIVE_RUNS_WINDOW = 30;
@@ -201,6 +202,7 @@ const Page = () => {
   return (
     <PageLayout
       title="Fluss"
+      help={FLUSS_HELP.home}
       pageActions={
         <>
           <CreateWorkspaceButton variant="outline" />

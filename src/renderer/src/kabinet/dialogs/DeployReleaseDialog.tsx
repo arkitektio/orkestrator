@@ -9,24 +9,34 @@ import { cn } from "@/core/util/utils";
 import { buildAssignInput } from "@/rekuest/assign";
 import { useApprovalInstallersQuery } from "@/rekuest/api/graphql";
 import { useAssign } from "@/rekuest/hooks/useAssign";
-import { Download, Rocket } from "lucide-react";
+import { CheckCircle2, Rocket, ShieldCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useGetApprovableReleaseQuery } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
-import { deployableApprovals, hostsOf } from "../lib/approvals";
-import { isApprovalInstaller, Section } from "./InstallReleaseDialog";
+import { deployableApprovals, hostsOf, isApprovalInstaller } from "../lib/approvals";
+import { NoPluginEngine, Section } from "./parts";
 
 const APPROVAL_IDENTIFIER = "@kabinet/approval";
 
 /**
  * Deploy an installed release: hand one of your approvals of it to a host of
  * the deployer it names, which runs its `install(approval)` and starts the
- * release there, signed in as you. Installing (`installrelease`) only
- * authorizes; this is the step that sends it to a backend. Without an
- * approval there is nothing to deploy under, so it offers to install first.
+ * release there, signed in as you. Authorizing (the first step of
+ * `installrelease`, which shows this dialog as its second) only approves;
+ * this is the step that sends it to a backend. Without an approval there is
+ * nothing to deploy under, so it offers to authorize first; without any
+ * deployer there is nowhere to send it, which is the admin's to fix.
  */
-export const DeployReleaseDialog = (props: { release: string; approval?: string; agent?: string }) => {
+export const DeployReleaseDialog = (props: {
+  release: string;
+  approval?: string;
+  agent?: string;
+  /** Set by the install dialog showing this as its second step: back to its first. */
+  onAuthorize?: () => void;
+  /** The approval was made a moment ago in that first step, not found. */
+  justAuthorized?: boolean;
+}) => {
   const { closeDialog, openDialog } = useDialog();
   const self = useSelf();
   const { data, error } = useGetApprovableReleaseQuery({ variables: { id: props.release } });
@@ -45,13 +55,15 @@ export const DeployReleaseDialog = (props: { release: string; approval?: string;
     approvals.find((candidate) => candidate.agent === props.agent) ??
     approvals.at(0);
 
-  const hosts = useMemo(
-    () =>
-      approval
-        ? hostsOf((installersQuery.data?.implementations ?? []).filter(isApprovalInstaller), approval.agent)
-        : [],
-    [installersQuery.data, approval],
+  const installers = useMemo(
+    () => (installersQuery.data?.implementations ?? []).filter(isApprovalInstaller),
+    [installersQuery.data],
   );
+  const noDeployers = installersQuery.data && installers.length === 0;
+  const hosts = useMemo(() => (approval ? hostsOf(installers, approval.agent) : []), [installers, approval]);
+  // Your approval names a deployer app that has no host (any more), while
+  // others do: authorizing one of those is the way on.
+  const stranded = approval && installersQuery.data && !noDeployers && hosts.length === 0;
   const [chosenHost, setChosenHost] = useState<string | undefined>();
   const host = hosts.find((candidate) => candidate.id === chosenHost) ?? hosts.at(0);
   const argKey = host?.action.args.at(0)?.key;
@@ -85,6 +97,14 @@ export const DeployReleaseDialog = (props: { release: string; approval?: string;
   }
 
   const identity = releaseIdentity(release);
+  const authorize =
+    props.onAuthorize ??
+    (() =>
+      openDialog(
+        "installrelease",
+        { release: props.release, agent: props.agent, authorize: true },
+        { className: "max-w-xl" },
+      ));
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -102,9 +122,29 @@ export const DeployReleaseDialog = (props: { release: string; approval?: string;
         </div>
       </DialogHeader>
 
-      {approvals.length === 0 ? (
+      {approval && (
+        <p className="flex items-start gap-2 text-sm">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <span>
+            {props.justAuthorized ? (
+              <>
+                Authorized. <span className="font-mono">{approval.agent}</span> may now start it as you.
+              </>
+            ) : (
+              <>
+                Already authorized for <span className="font-mono">{approval.agent}</span>{" "}
+                <Timestamp date={approval.createdAt} relative />.
+              </>
+            )}
+          </span>
+        </p>
+      )}
+
+      {noDeployers ? (
+        <NoPluginEngine />
+      ) : approvals.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Install this release first: installing authorizes a deployer to start it as you.
+          Authorize this release first: that lets a deployer start it as you.
         </p>
       ) : (
         <>
@@ -124,20 +164,14 @@ export const DeployReleaseDialog = (props: { release: string; approval?: string;
               </Select>
             </Section>
           )}
-          {approvals.length === 1 && approval && (
-            <p className="text-sm text-muted-foreground">
-              Installed for <span className="font-mono text-foreground">{approval.agent}</span>{" "}
-              <Timestamp date={approval.createdAt} relative />.
-            </p>
-          )}
 
           <Section title="Backend">
             {installersQuery.error ? (
               <p className="text-sm text-destructive">{installersQuery.error.message}</p>
             ) : installersQuery.data && hosts.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No host of <span className="font-mono">{approval?.agent}</span> is registered. Start one to
-                deploy to it.
+                No host of <span className="font-mono">{approval?.agent}</span> is registered. Authorize
+                another deployer to deploy with that one.
               </p>
             ) : hosts.length === 1 && host ? (
               <p className="text-sm">
@@ -169,16 +203,17 @@ export const DeployReleaseDialog = (props: { release: string; approval?: string;
 
       <DialogFooter>
         <Button variant="outline" onClick={() => closeDialog()} disabled={busy}>
-          Cancel
+          {noDeployers ? "Close" : "Cancel"}
         </Button>
-        {approvals.length === 0 ? (
-          <Button
-            onClick={() =>
-              openDialog("installrelease", { release: props.release, agent: props.agent }, { className: "max-w-xl" })
-            }
-          >
-            <Download />
-            Install…
+        {noDeployers ? null : approvals.length === 0 ? (
+          <Button onClick={authorize}>
+            <ShieldCheck />
+            Authorize…
+          </Button>
+        ) : stranded ? (
+          <Button onClick={authorize}>
+            <ShieldCheck />
+            Authorize another deployer…
           </Button>
         ) : (
           <Button onClick={deploy} disabled={busy || !host || !argKey}>

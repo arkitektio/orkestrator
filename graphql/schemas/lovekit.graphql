@@ -6,7 +6,6 @@ type App {
 type Client {
   clientId: String!
   id: ID!
-  name: String!
   release: Release
 }
 

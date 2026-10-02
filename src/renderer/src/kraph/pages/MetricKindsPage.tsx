@@ -5,6 +5,7 @@ import { PlusIcon } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import MetricKindList from "../components/lists/MetricKindList";
+import { KRAPH_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -13,6 +14,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
 
   return (
     <KraphMetricKind.ListPage
+      help={KRAPH_HELP.metricKinds}
       title="Metric Categories"
       pageActions={
         <>

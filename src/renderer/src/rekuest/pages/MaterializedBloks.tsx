@@ -1,9 +1,10 @@
 import { RekuestMaterializedBlok } from "@/core/linkers";
 import MaterializedBlokList from "../components/lists/MaterializedBlokList";
+import { REKUEST_HELP } from "../help";
 
 const Page = () => {
   return (
-    <RekuestMaterializedBlok.ListPage title={"Materialized Bloks"}>
+    <RekuestMaterializedBlok.ListPage help={REKUEST_HELP.materializedBloks} title={"Materialized Bloks"}>
       <div className="p-6">
         <div className="col-span-4 mb-3 grid gap-4 md:grid-cols-2 md:items-center md:gap-8 xl:gap-20">
           <div>

@@ -8,6 +8,7 @@ import { DeviceLabel } from "../components/DeviceLabel";
 import LokateMap from "../components/LokateMap";
 import { ModeIcon } from "../components/ModeIcon";
 import { MODE_LABELS, formatAt, formatDistance, formatDuration, formatTime } from "../format";
+import { LOKATE_HELP } from "../help";
 
 /** A movement: the path its phone recorded while it lasted, and how fast. */
 const TripPage = asDetailQueryRoute(useGetTripQuery, ({ data }) => {
@@ -19,6 +20,7 @@ const TripPage = asDetailQueryRoute(useGetTripQuery, ({ data }) => {
 
   return (
     <LokateTrip.ModelPage
+      help={LOKATE_HELP.trip}
       title={
         <span className="flex items-center gap-2">
           <ModeIcon mode={trip.mode} className="h-5 w-5" />

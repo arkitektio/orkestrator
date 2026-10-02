@@ -40,9 +40,9 @@ query AgentOptions($search: String, $values: [ID!], $dependency: ID) {
 }
 
 
-query AgentForDependency($search: String, $values: [ID!], $dependency: ID) {
+query AgentForDependency($search: String, $values: [ID!], $dependency: ID, $blokDependency: ID) {
   agents: agents(
-    filters: { search: $search, ids: $values, dependency: $dependency }
+    filters: { search: $search, ids: $values, dependency: $dependency, blokDependency: $blokDependency }
     pagination: { limit: 10 }
   ) {
    ...ListAgent

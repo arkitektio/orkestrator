@@ -4,6 +4,7 @@ import {
   deployableApprovals,
   deployerApps,
   hostsOf,
+  isApprovalInstaller,
   releaseRequirements,
   reusableApproval,
 } from "./approvals";
@@ -96,5 +97,18 @@ describe("deployer apps and hosts", () => {
   it("lists an app's hosts, connected first", () => {
     expect(hostsOf(installers, "b.deployer").map((h) => h.id)).toEqual(["3", "1"]);
     expect(hostsOf(installers, "c.deployer")).toEqual([]);
+  });
+});
+
+describe("isApprovalInstaller", () => {
+  const args = (...nullable: boolean[]) => ({ action: { args: nullable.map((n) => ({ nullable: n })) } });
+
+  it("accepts an action that needs only the approval", () => {
+    expect(isApprovalInstaller(args(false))).toBe(true);
+    expect(isApprovalInstaller(args(false, true, true))).toBe(true);
+  });
+
+  it("rejects one that needs more than the approval", () => {
+    expect(isApprovalInstaller(args(false, false))).toBe(false);
   });
 });

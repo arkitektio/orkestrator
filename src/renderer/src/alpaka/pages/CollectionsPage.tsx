@@ -5,12 +5,14 @@ import { AlpakaCollection } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import CollectionList from "../components/lists/CollectionList";
+import { ALPAKA_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
 const CollectionsPage: React.FC<IRepresentationScreenProps> = () => {
   return (
     <PageLayout
+      help={ALPAKA_HELP.collections}
       title="Collections"
       pageActions={
         <>

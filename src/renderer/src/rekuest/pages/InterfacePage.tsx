@@ -4,11 +4,13 @@ import { RekuestInterface, RekuestToolbox } from "@/core/linkers";
 import {
   useGetInterfaceQuery
 } from "@/rekuest/api/graphql";
+import { REKUEST_HELP } from "../help";
 
 export const InterfacePage = asDetailQueryRoute(useGetInterfaceQuery, ({ data }) => {
   return (
     <RekuestInterface.ModelPage
       title={data.interface.key}
+      help={REKUEST_HELP.interface}
       object={data.interface}
       sidebars={
         <Sidebars>

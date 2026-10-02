@@ -1,0 +1,115 @@
+# A dependency tree is recursive and GraphQL selections are not: the levels are
+# spelled out, four below the root. The server resolves deeper trees (up to its
+# dependency_max_depth); what lies below the last level here is not shown.
+
+fragment DependencyTreeNode on ResolvedAgentDependency {
+  key
+  unmet
+  dependency {
+    ...ListDependency
+  }
+}
+
+fragment DependencyTreeBinding on ImplementationMapping {
+  key
+  implementation {
+    id
+    interface
+    action {
+      id
+      name
+    }
+  }
+}
+
+fragment DependencyTreeLevel4 on ResolvedAgentDependency {
+  ...DependencyTreeNode
+  mappedAgents {
+    agentId
+    agent {
+      ...ListAgent
+    }
+    mappedImplementations {
+      ...DependencyTreeBinding
+    }
+  }
+}
+
+fragment DependencyTreeLevel3 on ResolvedAgentDependency {
+  ...DependencyTreeNode
+  mappedAgents {
+    agentId
+    agent {
+      ...ListAgent
+    }
+    mappedImplementations {
+      ...DependencyTreeBinding
+      resolvedDependencies {
+        ...DependencyTreeLevel4
+      }
+    }
+  }
+}
+
+fragment DependencyTreeLevel2 on ResolvedAgentDependency {
+  ...DependencyTreeNode
+  mappedAgents {
+    agentId
+    agent {
+      ...ListAgent
+    }
+    mappedImplementations {
+      ...DependencyTreeBinding
+      resolvedDependencies {
+        ...DependencyTreeLevel3
+      }
+    }
+  }
+}
+
+fragment DependencyTreeLevel1 on ResolvedAgentDependency {
+  ...DependencyTreeNode
+  mappedAgents {
+    agentId
+    agent {
+      ...ListAgent
+    }
+    mappedImplementations {
+      ...DependencyTreeBinding
+      resolvedDependencies {
+        ...DependencyTreeLevel2
+      }
+    }
+  }
+}
+
+fragment DependencyTreeRoot on ResolvedAgentDependency {
+  ...DependencyTreeNode
+  mappedAgents {
+    agentId
+    agent {
+      ...ListAgent
+    }
+    mappedImplementations {
+      ...DependencyTreeBinding
+      resolvedDependencies {
+        ...DependencyTreeLevel1
+      }
+    }
+  }
+}
+
+# A task's frozen bindings, as far down as a rerun pins them again.
+fragment FrozenBinding on ResolvedAgentDependency {
+  key
+  mappedAgents {
+    agentId
+    agent {
+      id
+      name
+      placements(pagination: { limit: 1 }, ordering: { createdAt: DESC }) {
+        ...AgentPlacement
+      }
+    }
+  }
+}

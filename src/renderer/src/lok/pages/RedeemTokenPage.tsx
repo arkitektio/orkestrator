@@ -1,10 +1,12 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { LOK_HELP } from "../help";
 import { LokRedeemToken } from "@/core/linkers";
 import { useGetRedeemTokenQuery } from "../api/graphql";
 
 export const RedeemTokenPage = asDetailQueryRoute(useGetRedeemTokenQuery, ({ data }) => {
   return (
     <LokRedeemToken.ModelPage
+      help={LOK_HELP.redeemToken}
       object={data.redeemToken}
       actions={<LokRedeemToken.Actions object={data?.redeemToken} />}
       title="Redeem Token"

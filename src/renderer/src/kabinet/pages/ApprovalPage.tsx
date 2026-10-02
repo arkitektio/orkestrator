@@ -13,6 +13,7 @@ import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
 import { DeployButton } from "../components/store/StoreParts";
 import { APPROVAL_STATUS_LABEL, approvalStatus } from "../lib/approvals";
+import { KABINET_HELP } from "../help";
 
 const Fact = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="flex min-w-0 flex-col gap-0.5">
@@ -37,6 +38,7 @@ export const ApprovalPage = asDetailQueryRoute(useGetReleaseApprovalQuery, ({ da
     <KabinetApproval.ModelPage
       object={approval}
       title={approval.name}
+      help={KABINET_HELP.approval}
       pageActions={
         deployable ? (
           <DeployButton release={approval.release} approval={approval.id} size="default" />

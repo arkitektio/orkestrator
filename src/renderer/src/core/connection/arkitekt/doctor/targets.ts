@@ -110,7 +110,22 @@ export const upstreamTargets = (context: DoctorContext): ProbeTarget[] => {
         )
       : [];
 
-  return [...coordination, ...meshControl];
+  return [...coordination, ...meshControl, INTERNET_CHECK];
+};
+
+/**
+ * The firewall check: one request to an address that is always up and has
+ * nothing to do with this deployment. If even this gets no answer, the
+ * problem is on this computer's side of the picture — no network, a firewall
+ * or proxy, a captive portal — and no amount of looking at the hub will help.
+ * Google's `generate_204` is what operating systems use for the same question.
+ */
+export const INTERNET_CHECK: ProbeTarget = {
+  host: "www.google.com",
+  ssl: true,
+  probePath: "generate_204",
+  label: "internet check",
+  role: "internet",
 };
 
 /** `https://go.arkitekt.live/lok/f/` → `https://go.arkitekt.live`: where discovery lives. */
@@ -124,7 +139,7 @@ const originOf = (url: string): string[] => {
 
 /** Upstream hops are about the route, not about a service. */
 export const isUpstream = (target: ProbeTarget): boolean =>
-  target.role === "coordination" || target.role === "mesh-control";
+  target.role === "coordination" || target.role === "mesh-control" || target.role === "internet";
 
 /** The url a target resolves to — the same string main will request. */
 export const probeTargetUrl = (target: ProbeTarget): string =>

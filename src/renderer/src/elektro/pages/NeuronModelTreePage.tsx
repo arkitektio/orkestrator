@@ -3,6 +3,7 @@ import { buttonVariants } from "@/core/ui/button";
 import { ElektroNeuronModel } from "@/core/linkers";
 import { useDetailNeuronModelQuery } from "../api/graphql";
 import { NeuronModelTree } from "../components/tree/NeuronModelTree";
+import { ELEKTRO_HELP } from "../help";
 
 export const NeuronModelTreePage = asDetailQueryRoute(
   useDetailNeuronModelQuery,
@@ -10,6 +11,7 @@ export const NeuronModelTreePage = asDetailQueryRoute(
     return (
       <ElektroNeuronModel.ModelPage
         title={data?.neuronModel?.name}
+        help={ELEKTRO_HELP.neuronModelTree}
         object={data.neuronModel}
         pageActions={
           <>

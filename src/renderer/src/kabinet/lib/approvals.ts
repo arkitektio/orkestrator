@@ -95,6 +95,10 @@ export const deployableApprovals = <T extends ApprovalLike>(
       )
     : [];
 
+/** Takes the approval and nothing else it cannot do without. */
+export const isApprovalInstaller = (installer: { action: { args: readonly { nullable: boolean }[] } }) =>
+  installer.action.args.slice(1).every((arg) => arg.nullable);
+
 export type InstallerLike = {
   id: string;
   agent: { name: string; connected: boolean; app: { identifier: string } };

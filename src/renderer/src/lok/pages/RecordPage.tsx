@@ -1,4 +1,5 @@
 import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
+import { LOK_HELP } from "../help";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { LokUser } from "@/core/linkers";
 import { useMeQuery } from "../api/graphql";
@@ -15,6 +16,7 @@ const Page = () => {
 
   return (
     <LokUser.ModelPage
+      help={LOK_HELP.record}
       object={data.me}
       actions={<LokUser.Actions object={data.me} />}
       pageActions={<LokUser.ObjectButton alwaysShow object={data.me} />}

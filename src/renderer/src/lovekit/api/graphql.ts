@@ -31,7 +31,6 @@ export type Client = {
   __typename?: 'Client';
   clientId: Scalars['String']['output'];
   id: Scalars['ID']['output'];
-  name: Scalars['String']['output'];
   release?: Maybe<Release>;
 };
 

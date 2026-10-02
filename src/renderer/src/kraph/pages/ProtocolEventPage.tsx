@@ -8,6 +8,7 @@ import {
 } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetProtocolEventQuery } from "../api/graphql";
+import { KRAPH_HELP } from "../help";
 
 // Note: the backend no longer exposes `sourceParticipants` / `targetParticipants`
 // / `variables` on `ProtocolEvent`, nor `plateChildren` on `ProtocolEventCategory`
@@ -19,6 +20,7 @@ const Page = asGraphDetailQueryRoute(
   ({ data }) => {
     return (
       <KraphProtocolEvent.ModelPage
+        help={KRAPH_HELP.protocolEvent}
         object={{ id: data.protocolEvent.id }}
         title={data?.protocolEvent.label}
         sidebars={

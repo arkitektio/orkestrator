@@ -3,11 +3,13 @@ import { Sidebars } from "@/core/layout/Sidebars";
 import { RekuestSpace } from "@/core/linkers";
 import { useSpaceQuery } from "@/rekuest/api/graphql";
 import { SpaceViewScene, SpaceViewSceneProvider } from "../space-scene";
+import { REKUEST_HELP } from "../help";
 
 export const SpacePage = asDetailQueryRoute(useSpaceQuery, ({ data }) => {
   return (
     <RekuestSpace.ModelPage
       title={data.space.name}
+      help={REKUEST_HELP.space}
       object={data.space}
       pageActions={
         <>

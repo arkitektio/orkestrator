@@ -1,8 +1,9 @@
 import { RekuestInterface } from "@/core/linkers";
 import InterfaceList from "../components/lists/InterfaceList";
+import { REKUEST_HELP } from "../help";
 const Page = () => {
   return (
-    <RekuestInterface.ListPage title={"Interfaces"}>
+    <RekuestInterface.ListPage help={REKUEST_HELP.interfaces} title={"Interfaces"}>
       <div className="p-6">
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center mb-3">
           <div>

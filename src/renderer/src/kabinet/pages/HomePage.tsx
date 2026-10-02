@@ -29,6 +29,7 @@ import DefinitionList from "../components/lists/DefinitionList";
 import RepoList from "../components/lists/RepoList";
 import ReleasesList from "../components/lists/ReleasesList";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
+import { KABINET_HELP } from "../help";
 
 // The generated `useHomePageQuery` takes no variables at all (`Exact<{}>`),
 // which is too narrow for `asParamlessRoute`'s generic `HookFunction` (it is
@@ -46,6 +47,7 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data:
   });
   return (
     <PageLayout
+      help={KABINET_HELP.home}
       sidebars={
         <Sidebars>
           <Sidebars.Tab label="Statistics">

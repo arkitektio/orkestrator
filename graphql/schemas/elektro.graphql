@@ -1,3 +1,5 @@
+directive @auth(required_org_roles: [String!] = null, required_roles: [String!] = null, required_scopes: [String!] = null) on FIELD_DEFINITION
+
 directive @unionElementOf(discriminator: String!, key: String!, union: String!) repeatable on INPUT_OBJECT
 
 """
@@ -631,7 +633,9 @@ input ArrayDatasetFilter {
   """
   placeableIn: PlaceableFilter
 
-  """Search by name (case-insensitive substring)"""
+  """
+  Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking
+  """
   search: String
 
   """
@@ -859,6 +863,11 @@ type BigFileStore {
   originalFileName: String
   path: String!
   presignedUrl: String!
+
+  """
+  How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
+  """
+  sizeBytes: ByteCount
 }
 
 """Temporary S3 credentials for uploading a big file."""
@@ -867,7 +876,7 @@ type BigFileUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   region: String!
@@ -1001,6 +1010,11 @@ type ByDimensionTransformation implements Transformation {
   version: Int!
 }
 
+"""
+A number of bytes. 64-bit, unlike Int: serialized as a JSON number, and accepted as a number or a numeric string.
+"""
+scalar ByteCount
+
 """A capacitance (``"5 pF"``, ``"100 nF"``)."""
 scalar Capacitance
 
@@ -1128,7 +1142,6 @@ input ClearCoordinateSystemInput {
 type Client {
   clientId: String!
   id: ID!
-  name: String!
   release: Release
 }
 
@@ -1467,17 +1480,19 @@ type Coordinate {
 }
 
 """
-The axis-agnostic hub that pins metadata spokes (a value unit, a channel label, the rig state, a value histogram, acquisition metadata) to specific coordinates of a dataset
+The axis-agnostic hub that pins metadata spokes (a value unit, a channel label, the rig state, a value histogram, acquisition metadata) to specific coordinates of an array, table or sparse dataset. Exactly one of `dataset`, `table` and `sparse` is set
 """
 type CoordinateAnchor {
   acquisitionMetadata: AcquisitionMetadata
   channelLabel: ChannelLabel
 
   """
-  The coordinates this anchor is pinned to, e.g. {'c': 0, 'sweep': 5}. Level-0 sample indices, i.e. coordinates of the dataset's INTRINSIC system. An anchor that omits an axis is global along it; an empty object is the whole dataset
+  The coordinates this anchor is pinned to, e.g. {'c': 0, 'sweep': 5}. For an array dataset these are level-0 sample indices, i.e. coordinates of its INTRINSIC system; for a table dataset they are values of its coordinate columns, keyed by column name; for a sparse dataset they are positions along its enumerated axes. An anchor that omits an axis is global along it; an empty object is the whole container
   """
   coordinates: Any!
-  dataset: ArrayDataset!
+
+  """The array dataset this anchor pins into, or null otherwise"""
+  dataset: ArrayDataset
   id: ID!
 
   """
@@ -1493,10 +1508,16 @@ type CoordinateAnchor {
   """
   simulation: SimulationState
 
+  """The sparse dataset this anchor pins into, or null otherwise"""
+  sparse: SparseDataset
+
   """
   (simulation) Where on the model the values at this coordinate were injected
   """
   stimulusSite: StimulusSite
+
+  """The table dataset this anchor pins into, or null otherwise"""
+  table: TableDataset
   valueHistogram: ValueHistogram
   valueUnit: ValueUnit
 }
@@ -1511,6 +1532,8 @@ input CoordinateAnchorFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+  sparse: IDFilterLookup
+  table: IDFilterLookup
 }
 
 """
@@ -1785,6 +1808,16 @@ input CreateClockOffsetInput {
 }
 
 """
+Attach metadata spokes to an array, table or sparse dataset after ingest. Exactly one of `dataset`, `table` and `sparse` names the container; `anchor` carries the coordinates and the spokes. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced
+"""
+input CreateCoordinateAnchorInput {
+  anchor: CoordinateAnchorInput!
+  dataset: ID = null
+  sparse: ID = null
+  table: ID = null
+}
+
+"""
 Create a SHARED coordinate system -- a reference space nothing lives in, e.g. a clock or a world -- and, in the same call, author the edges registering any number of sources (datasets, lenses, coordinate systems) into it. A dataset's sample grid is created with the dataset, so a shared space is the only system created directly. createExperiment can later adopt it as its world
 """
 input CreateCoordinateSystemInput {
@@ -1936,6 +1969,7 @@ input CreateModelWorkspaceInput {
 
 input CreateNeuronModelInput {
   config: ModelConfigInput!
+  derivedFrom: [DerivedFromInput!] = null
   description: String = null
   environment: ID = null
   name: String!
@@ -2071,6 +2105,7 @@ input CreateSessionInput {
 Create a sparse dataset from one uploaded sparse store, which holds the matrix in one or more layouts. A sparse matrix is a grid of numbers with no row labels and no column labels, so **every axis says what its positions are** through its own `identifiedBy` -- a source whose contents are the ids, or the table whose rows they are. Carried on the axis, identified-exactly-once is a property of this input rather than a rule the server enforces. Nothing about the matrix itself is declared: the spec, shape, each layout's encoding and its chunking were read from the store when its upload was finished, and are checked against these axes rather than taken from them
 """
 input CreateSparseDatasetInput {
+  anchors: [CoordinateAnchorInput!] = null
   axes: [SparseAxisInput!]! = []
   derivedFrom: [DerivedFromInput!] = null
   description: String = null
@@ -2135,6 +2170,7 @@ input CreateSpikesLayerInput {
 Input for creating a table dataset from a Parquet store. A column is declared ONCE, in `columns`: a non-null `axisType` makes it an axis of the coordinate system the table owns, and the axis-typed columns, in list (= file) order, are the space -- there is no separate axes list, because a table's axes are named columns and every consumer addresses them by name. Declare no axis-typed columns for a pure measurement table (its rows enumerate objects, its space is a synthetic `object` axis, and its lineage edge is UNMAPPABLE)
 """
 input CreateTableDatasetInput {
+  anchors: [CoordinateAnchorInput!] = null
   columns: [ColumnInput!]! = []
   data: ParquetLike!
   derivedFrom: [DerivedFromInput!] = null
@@ -2421,6 +2457,11 @@ enum DerivationSourceKind {
   LENS
 
   """
+  A neuron model, through the space it owns: the direction a retuned model is derived from the one it was edited out of, and the direction a simulated trace is derived from the model that was integrated to compute it. A model's space carries one INDEX axis and nothing placeable, so this edge is always UNMAPPABLE -- it records where the data came from and claims no geometry. It names the *whole* model; which cell and section were recorded stays on the dataset's recording or stimulus site.
+  """
+  NEURON_MODEL
+
+  """
   A table dataset, through the space its coordinate columns declare -- the direction an image reconstructed from a table of SMLM localizations is derived. A table with no coordinate columns enumerates objects rather than places them, and its only honest edge is UNMAPPABLE.
   """
   TABLE_DATASET
@@ -2452,6 +2493,11 @@ input DerivedFromInput {
 
   """(LENS) The lens this data was computed from"""
   lens: ID = null
+
+  """
+  (NEURON_MODEL) The neuron model this data was computed from -- the model a trace was simulated from, or the model another model was edited out of
+  """
+  neuronModel: ID = null
 
   """
   How this data's own space maps back into the source's -- any creatable kind; the rank check holds you to it. **Omit it and the edge is UNMAPPABLE**: naming a source records the lineage and claims no correspondence, which is the truth for a per-unit summary whose values are not at any sample. State IDENTITY for an in-place operation (a zero-phase filter), TRANSLATION for a window or for a causal filter's group delay, SCALE for a decimation, BY_DIMENSION for a reduction that drops an axis (a mean over channels). Only a mappable edge carries placement: derived data sits where its source sits exactly when it says how
@@ -4193,6 +4239,11 @@ type MediaStore {
 
   """Compatibility field returning the canonical S3 object path."""
   presignedUrl(host: String = null): String!
+
+  """
+  How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
+  """
+  sizeBytes: ByteCount
 }
 
 """A presigned PUT grant for uploading a media object."""
@@ -4201,7 +4252,7 @@ type MediaUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   region: String!
@@ -4434,6 +4485,11 @@ type Mutation {
   Place one clock on another -- a segment in its session, a session or a run in an experiment's world -- with one offset edge shared by everything timed on it. Refused when the two are already related
   """
   createClockOffset(input: CreateClockOffsetInput!): Transformation!
+
+  """
+  Attach metadata spokes to an array, table or sparse dataset after ingest: the rig state, acquisition metadata, a value histogram, a channel label, a recording or stimulus site, or the simulation state, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced. A value unit is array-only: a table's units are its columns'
+  """
+  createCoordinateAnchor(input: CreateCoordinateAnchorInput!): CoordinateAnchor!
 
   """
   Create a SHARED coordinate system (a space nothing lives in: a clock, a world) and, in one call, author the edges registering any number of sources (datasets, lenses, coordinate systems) into it
@@ -4970,7 +5026,22 @@ type NeuronModel {
   changes(to: ID = null): [Change!]!
   comparisons: [Comparison!]!
   config: ModelConfig!
+
+  """
+  The coordinate system this model owns. It carries one INDEX axis and nothing placeable; its derivation edges are the model's lineage
+  """
+  coordinateSystem: CoordinateSystem
   creator: User
+
+  """
+  Every edge from this model's space back into what it was computed from, in declared order -- the first is the primary parent, the model it was edited out of. Always UNMAPPABLE: a model's space carries one INDEX axis and nothing placeable, so the edge records the lineage and claims no geometry. Empty for a model written from scratch. This replaces the old `parent` field, which recorded no validity, no value relation and no provenance, and which `lineageGraph` could not see
+  """
+  derivedFrom: [Transformation!]!
+
+  """
+  Everything computed from this model, whatever kind of container it is: the models edited out of it, and the datasets whose `derivedFrom` names it -- a simulated trace that stated where it came from. Derived from the same edges as `derivedFrom`, never a stored back-reference that could disagree with them. **Not the same question as `simulatedDatasets`**, which reads the `simulation` spoke and answers for every run of this model whether or not anyone authored a derivation
+  """
+  derivedInto: [Resident!]!
   description: String
   environment: ModEnvironment!
   id: ID!
@@ -5017,6 +5088,16 @@ type NeuronModel {
   The stimulus sites that are part of this model: every place on it some dataset's values were injected at, in the viewer's organization
   """
   stimulusSites: [StimulusSite!]!
+}
+
+"""
+The fields a NEURON_MODEL derivation reads. Published for codegen; the wire type is the flat DerivedFromInput
+"""
+input NeuronModelDerivedFromInput {
+  kind: DerivationSourceKind! = NEURON_MODEL
+  neuronModel: ID!
+  transform: TransformInput = null
+  valueRelation: ValueRelation = null
 }
 
 input NeuronModelFilter {
@@ -5140,6 +5221,11 @@ type ParquetStore {
 
   """Compatibility field returning the canonical S3 object path."""
   presignedUrl(host: String = null): String!
+
+  """
+  How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
+  """
+  sizeBytes: ByteCount
 }
 
 """Temporary S3 credentials for uploading a parquet store."""
@@ -5149,7 +5235,7 @@ type ParquetUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   secretKey: String!
@@ -5437,7 +5523,7 @@ type Query {
   children(filters: FolderChildrenFilter = null, order: ChildrenOrder = null, pagination: ChildrenPaginationInput = null, parent: ID!): [FolderChild!]!
 
   """
-  List coordinate anchors: the hubs pinning a value unit, a channel label or the rig state to coordinates of a dataset
+  List coordinate anchors: the hubs pinning a value unit, a channel label or the rig state to coordinates of an array, table or sparse dataset
   """
   coordinateAnchors(filters: CoordinateAnchorFilter, pagination: OffsetPaginationInput): [CoordinateAnchor!]!
 
@@ -5689,7 +5775,7 @@ input RequestBigFileAccessInput {
 
 input RequestBigFileUploadInput {
   contentType: String = null
-  fileSize: Int = null
+  fileSize: ByteCount = null
   host: String = null
   originalFileName: String!
   port: Int = null
@@ -5717,7 +5803,7 @@ input RequestMediaAccessInput {
 
 input RequestMediaUploadInput {
   contentType: String = null
-  fileSize: Int = null
+  fileSize: ByteCount = null
   originalFileName: String!
 }
 
@@ -5755,7 +5841,7 @@ input RequestZarrUploadInput {
 """
 A piece of data living in a coordinate system. Data belongs to a space; the space belongs to nobody
 """
-union Resident = AnnotationCollection | ArrayDataset | DataArray | Lens | SparseDataset | TableDataset
+union Resident = AnnotationCollection | ArrayDataset | DataArray | Lens | NeuronModel | SparseDataset | TableDataset
 
 """
 An axial resistivity (NEURON ``Ra``; ``"35.4 ohm*cm"``, ``"100 ohm*cm"``).
@@ -6549,6 +6635,11 @@ A sparse matrix over two enumerated axes -- objects on one, features on the othe
 """
 type SparseDataset {
   """
+  The coordinate anchors of this matrix, each pinning metadata spokes to positions along its enumerated axes, keyed by axis name, or to the whole matrix when its coordinates are empty. The same hub an array dataset uses, so a per-object matrix carries the acquisition facts of the recording it was computed from
+  """
+  anchors(filters: CoordinateAnchorFilter, pagination: OffsetPaginationInput): [CoordinateAnchor!]!
+
+  """
   The stored layouts, one per axis a store's `indptr` indexes. One is legal and offers one capability
   """
   arrays: [SparseArray!]!
@@ -6663,7 +6754,9 @@ input SparseDatasetFilter {
   """
   placeableIn: PlaceableFilter
 
-  """Search by name (case-insensitive substring)"""
+  """
+  Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking
+  """
   search: String
 
   """
@@ -6746,6 +6839,11 @@ type SparseStore {
   shape: [Int!]
 
   """
+  How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
+  """
+  sizeBytes: ByteCount
+
+  """
   The version of the `sporadik` block this store was accepted under. A spec selects how every byte in the prefix is read, so an unknown one is refused rather than guessed at
   """
   spec: String
@@ -6759,7 +6857,7 @@ type SparseUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   region: String!
@@ -6997,6 +7095,11 @@ type SynapticConnection implements NetConnection {
 A parquet-backed table whose rows are scientific records (segmented objects, localizations, cells). It owns a coordinate system whose axes are its coordinate columns, which is what makes a localization table placeable; a table with no coordinate columns enumerates its rows and its lineage edge is UNMAPPABLE. Its store, its columns and that coordinate system are fixed at creation -- only `name` and `description` can be updated, and a recomputation is a new table rather than an edit of this one. Read the rows directly from the Parquet store with a datalayer access grant rather than paginating through GraphQL
 """
 type TableDataset {
+  """
+  The coordinate anchors of this table, each pinning metadata spokes -- the rig state, acquisition metadata, a channel label, a recording site -- to values of its coordinate columns keyed by column name, or to the whole table when its coordinates are empty. The same hub an array dataset uses, so a per-unit table carries the acquisition facts of the recording it was computed from
+  """
+  anchors(filters: CoordinateAnchorFilter, pagination: OffsetPaginationInput): [CoordinateAnchor!]!
+
   """The table's axis names, in order. Derived from the coordinate columns"""
   axisNames: [String!]!
 
@@ -7124,7 +7227,9 @@ input TableDatasetFilter {
   """
   placeableIn: PlaceableFilter
 
-  """Search by name (case-insensitive substring)"""
+  """
+  Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking
+  """
   search: String
 
   """
@@ -8108,6 +8213,11 @@ type ZarrStore {
   Shard (outer storage object) shape for zarr v3 sharding_indexed arrays; null when unsharded. Shards exist to cut object count — readers should still treat `chunks` as the brick unit.
   """
   shards: [Int!]
+
+  """
+  How many bytes this store actually holds, measured when its upload was finished. Null while unfinished, or for stores written before this was recorded
+  """
+  sizeBytes: ByteCount
   storageTransformers: JSON
   version: String
 }
@@ -8119,7 +8229,7 @@ type ZarrUploadGrant {
   bucket: String!
   expiresIn: Int!
   key: String!
-  maxBytes: Int!
+  maxBytes: ByteCount!
   originalFileName: String
   path: String!
   secretKey: String!

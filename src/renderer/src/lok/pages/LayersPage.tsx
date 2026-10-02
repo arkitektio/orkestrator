@@ -1,4 +1,5 @@
 import { Explainer } from "@/core/layout/Explainer";
+import { LOK_HELP } from "../help";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { Separator } from "@radix-ui/react-dropdown-menu";
@@ -11,6 +12,7 @@ export type IRepresentationScreenProps = {};
 const Page: React.FC<IRepresentationScreenProps> = () => {
   return (
     <PageLayout
+      help={LOK_HELP.layers}
       title="Layers"
       pageActions={
         <>

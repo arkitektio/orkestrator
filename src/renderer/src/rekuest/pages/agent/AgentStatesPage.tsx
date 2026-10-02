@@ -13,6 +13,7 @@ import {
 import { useAgentStates } from "@/rekuest/hooks/useLiveState";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { useMemo, useState } from "react";
+import { REKUEST_HELP } from "../../help";
 
 const AgentStateValueDisplay = ({
   state,
@@ -158,6 +159,7 @@ export const AgentStatesPage = asDetailQueryRoute(useAgentQuery, ({ data, id }) 
   return (
     <RekuestAgent.ModelPage
       title={`${data?.agent?.name} — States`}
+      help={REKUEST_HELP.agentStates}
       object={data.agent}
     >
       <div className="flex h-full flex-col gap-4 p-6">

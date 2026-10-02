@@ -10,6 +10,7 @@ import {
   WatchMessagesSubscriptionVariables,
   useGetRoomQuery,
 } from "../api/graphql";
+import { ALPAKA_HELP } from "../help";
 
 
 export const RoomPage =  asDetailQueryRoute(
@@ -46,6 +47,7 @@ export const RoomPage =  asDetailQueryRoute(
 
     return (
       <AlpakaRoom.ModelPage
+        help={ALPAKA_HELP.room}
         title={data?.room?.title}
         object={data.room}
         pageActions={

@@ -43,11 +43,14 @@ import { toast } from "@/core/notify";
 import TaskList from "../components/lists/TaskList";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { useImplementationForm } from "../hooks/useImplementationForm";
+import { useDependencyTree } from "../hooks/useDependencyTree";
+import { DependencyTreeNotice } from "../components/dependencies/DependencyTreeNotice";
 import { ImplementationStatsSidebar } from "../sidebars/ImplementationStatistics";
 import { ReturnsContainer } from "@/core/ports/engine/tailwind";
 import PortConstraintBadges from "@/core/ports/widgets/PortConstraintBadges";
 import { portToLabel } from "@/core/ports/engine/utils";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { REKUEST_HELP } from "../help";
 
 
 export const DoForm = ({ id }: { id: string }) => {
@@ -61,16 +64,17 @@ export const DoForm = ({ id }: { id: string }) => {
      reValidateMode: "onChange",
    });
 
+   const tree = useDependencyTree(implementation, form.control);
+
    const onSubmit = async (data: {
      args: Record<string, unknown>;
-     dependencies: Record<string, ResolvedDependencyInput>;
+     dependencies: ResolvedDependencyInput[];
    }) => {
-     console.log("Submitting");
      try {
        await assign(buildAssignInput({
          implementation: id,
          args: data.args,
-         dependencies: Object.values(data.dependencies),
+         dependencies: data.dependencies,
          hooks: [],
        }));
 
@@ -115,8 +119,9 @@ export const DoForm = ({ id }: { id: string }) => {
                     path={[]}
                   />
                    {implementation?.dependencies && (
-            <DependenciesContainer dependencies={implementation?.dependencies} bound={implementation.agent.id} />
+            <DependenciesContainer dependencies={implementation?.dependencies} bound={implementation.agent.id} tree={tree.nodes} />
           )}
+                  <DependencyTreeNotice tree={tree} />
                 </div>
               </CardContent>
             </Card>
@@ -293,7 +298,6 @@ const ImplementationDetailSheet = ({
               <span className="font-mono text-xs">{i.id}</span>
             </Field>
             <Field label="Needs token">{i.needsToken ? "Yes" : "No"}</Field>
-            <Field label="Pinned">{i.pinned ? "Yes" : "No"}</Field>
             <Field label="Execution">
               {i.execution === Execution.Workflow
                 ? "Workflow — resumed from its journal if its agent dies"
@@ -641,6 +645,7 @@ const TPage = asDetailQueryRoute(
     return (
       <RekuestImplementation.ModelPage
         title={`${data.implementation.action.name} @ ${data.implementation.interface}`}
+        help={REKUEST_HELP.implementation}
         object={data.implementation}
         additionalSidebars={
           <Sidebars.Tab label="Stats">

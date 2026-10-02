@@ -13,6 +13,7 @@ import {
   useListReposQuery,
 } from "../api/graphql";
 import { githubIdentifier, parseGithubIdentifier } from "../repoLink";
+import { KABINET_HELP } from "../help";
 
 /**
  * Where an install deeplink lands: "someone wants you to add this repo".
@@ -60,7 +61,7 @@ const InstallRepoPage = () => {
   };
 
   return (
-    <PageLayout title="Install a repo">
+    <PageLayout title="Install a repo" help={KABINET_HELP.installRepo}>
       <div className="p-6">
         {!coordinates ? (
           <Card className="max-w-xl">

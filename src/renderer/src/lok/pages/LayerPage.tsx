@@ -1,4 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { LOK_HELP } from "../help";
 import { Card, CardContent } from "@/core/ui/card";
 import { Image } from "@/core/ui/image";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
@@ -12,6 +13,7 @@ export const LayerPage = asDetailQueryRoute(useDetailLayerQuery, ({ data }) => {
 
   return (
     <LokLayer.ModelPage
+      help={LOK_HELP.layer}
       object={data.layer}
       actions={<LokLayer.Actions object={data?.layer} />}
       title={data?.layer?.name}

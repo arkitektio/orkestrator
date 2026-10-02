@@ -5,6 +5,7 @@ import { useGetSoloBroadcastQuery } from "../api/graphql";
 
 import { cn } from "@/core/util/utils";
 import { StreamJoiner } from "../components/StreamJoiner";
+import { LOVEKIT_HELP } from "../help";
 
 export default asDetailQueryRoute(
   useGetSoloBroadcastQuery,
@@ -14,6 +15,7 @@ export default asDetailQueryRoute(
     const broadcast = data?.soloBroadcast?.id;
     return (
       <LovekitSoloBroadcast.ModelPage
+        help={LOVEKIT_HELP.soloBroadcast}
         title={data?.soloBroadcast.title || "Broadcast"}
         object={data.soloBroadcast}
         pageActions={

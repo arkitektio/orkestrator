@@ -260,21 +260,12 @@ describe("overflow", () => {
 });
 
 describe("window controls", () => {
-  it.each(["darwin", "win32"])("draws none of its own on %s", (platform) => {
-    // macOS has real traffic lights; on Windows they live in the bar that
-    // slides down from the top edge (`AutoHideTitleBar`), not in the rail.
+  it.each(["darwin", "win32", "linux"])("draws none of its own on %s", (platform) => {
+    // macOS has real traffic lights; on Windows and Linux they live in the bar
+    // that slides down from the top edge (`AutoHideTitleBar`), not in the rail.
     setElectron(platform);
     render(<Shell><RailChrome /></Shell>);
     expect(screen.queryByLabelText("Close")).not.toBeInTheDocument();
-  });
-
-  it("puts them inline with the nav controls on Linux", () => {
-    // The one genuinely frameless platform, and with no title bar there is no
-    // top-right corner to put them in.
-    setElectron("linux");
-    render(<Shell><RailChrome /></Shell>);
-    expect(screen.getByLabelText("Minimize")).toBeInTheDocument();
-    expect(screen.getByLabelText("Close")).toBeInTheDocument();
   });
 
   it("draws none in a browser", () => {

@@ -234,6 +234,11 @@ type Annotation {
   """
   coordinates: [Coordinate!]!
   createdWithTransforms: Int!
+
+  """
+  The user that drew this annotation, or null when that user is gone or a client created it without one
+  """
+  creator: User
   description: String
 
   """The fill color of the geometry, as RGBA, or null for no fill"""

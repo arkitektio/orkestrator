@@ -19,6 +19,7 @@ import {
 } from "../components/insights/parts";
 import { MerchantLogo } from "../components/MerchantLogo";
 import { formatDay, formatMoney, toNumber } from "../format";
+import { BANK_HELP } from "../help";
 
 const Section = ({ title, link, children }: { title: string; link?: ReactNode; children: ReactNode }) => (
   <section className="flex flex-col gap-3">
@@ -221,6 +222,7 @@ const InsightsPage = () => {
 
   return (
     <PageLayout
+      help={BANK_HELP.insights}
       title="Insights"
       pageActions={
         <PeriodPicker period={period} onPeriod={setPeriod} compareTo={compareTo} onCompareTo={setCompareTo} />

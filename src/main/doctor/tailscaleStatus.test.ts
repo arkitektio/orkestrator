@@ -50,6 +50,25 @@ describe("parseTailscaleStatus", () => {
     expect(result.peers).toHaveLength(2);
   });
 
+  it("reads how each peer is reached: a direct endpoint, or the DERP region relaying it", () => {
+    const result = parseTailscaleStatus(
+      JSON.stringify({
+        BackendState: "Running",
+        Peer: {
+          a: { HostName: "direct", TailscaleIPs: ["100.64.0.2"], Relay: "fra", CurAddr: "203.0.113.7:41641" },
+          b: { HostName: "relayed", TailscaleIPs: ["100.64.0.3"], Relay: "fra", CurAddr: "" },
+        },
+      }),
+    );
+    if (!result.available) throw new Error("expected available");
+
+    const byName = Object.fromEntries(result.peers.map((peer) => [peer.hostName, peer]));
+    expect(byName.direct).toMatchObject({ relay: "fra", curAddr: "203.0.113.7:41641" });
+    // An empty endpoint is "no direct path", not an address.
+    expect(byName.relayed.relay).toBe("fra");
+    expect(byName.relayed.curAddr).toBeUndefined();
+  });
+
   it("keeps each peer's online and expiry state apart", () => {
     const result = parseTailscaleStatus(RUNNING);
     if (!result.available) throw new Error("expected available");

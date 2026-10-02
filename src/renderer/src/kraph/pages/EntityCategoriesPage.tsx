@@ -5,6 +5,7 @@ import { PlusIcon } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import EntityCategoryList from "../components/lists/EntityCategoryList";
+import { KRAPH_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -13,6 +14,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
 
   return (
     <KraphEntityCategory.ListPage
+      help={KRAPH_HELP.entityCategories}
       title="Entity Categories"
       pageActions={
         <>

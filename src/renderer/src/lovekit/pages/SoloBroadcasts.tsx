@@ -4,12 +4,14 @@ import { AlpakaCollection, LovekitSoloBroadcast } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import SoloBroadcastList from "../components/lists/SoloBroadcastList";
+import { LOVEKIT_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
 const ImagesPage: React.FC<IRepresentationScreenProps> = () => {
   return (
     <LovekitSoloBroadcast.ListPage
+      help={LOVEKIT_HELP.soloBroadcasts}
       title="Images"
       pageActions={
         <>

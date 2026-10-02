@@ -1,4 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { LOK_HELP } from "../help";
 import { ListRender } from "@/core/layout/ListRender";
 import { Image } from "@/core/ui/image";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
@@ -11,6 +12,7 @@ export const ReleasePage = asDetailQueryRoute(useDetailReleaseQuery, ({ data }) 
 
   return (
     <LokApp.ModelPage
+      help={LOK_HELP.release}
       object={data.release}
       actions={<LokApp.Actions object={data?.release} />}
       title={data?.release && `${data.release.app?.identifier} ${data.release.version}`}

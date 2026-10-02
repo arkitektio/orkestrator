@@ -14,6 +14,7 @@ import {
 } from "../components/explorer/FolderListExplorer";
 import { FolderTableExplorer } from "../components/explorer/FolderTableExplorer";
 import { FolderInfoSidebar } from "../components/sidebars/FolderInfoSidebar";
+import { MIKRO_HELP } from "../help";
 
 export type ViewType = "list" | "icons";
  const TPage = asDetailQueryRoute(useGetFolderQuery, ({ data }) => {
@@ -38,6 +39,7 @@ export type ViewType = "list" | "icons";
     <MikroFolder.ModelPage
       title={folder?.name}
       object={folder}
+      help={MIKRO_HELP.folder}
       // The contents fill the middle, everything *about* the folder lives in the
       // rail — the same split as the dataset pages. Only the icons view gets it:
       // the `list` branch above returns `FolderTableExplorer` without a

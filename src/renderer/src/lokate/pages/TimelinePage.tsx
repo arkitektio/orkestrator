@@ -10,6 +10,7 @@ import { useGetDayQuery, useGetRouteQuery } from "../api/graphql";
 import LokateMap from "../components/LokateMap";
 import { TimelineList, timelineOf } from "../components/TimelineRows";
 import { formatDayTitle, formatDistance, isoDate, localTimeZone, parseIsoDate, shiftDay } from "../format";
+import { LOKATE_HELP } from "../help";
 
 /** Tolerance for thinning a day's path, meters: invisible at street zoom, far fewer vertices. */
 const SIMPLIFY = 5;
@@ -55,6 +56,7 @@ const TimelinePage = () => {
 
   return (
     <PageLayout
+      help={LOKATE_HELP.timeline}
       title={formatDayTitle(day, today)}
       pageActions={
         <>

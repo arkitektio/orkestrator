@@ -2,12 +2,13 @@ import { Card } from "@/core/ui/card";
 import { KraphTerm } from "@/core/linkers";
 import React from "react";
 import TermList from "../components/lists/TermList";
+import { KRAPH_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
 const Page: React.FC<IRepresentationScreenProps> = () => {
   return (
-    <KraphTerm.ListPage title="Terms">
+    <KraphTerm.ListPage help={KRAPH_HELP.terms} title="Terms">
       <div className="p-6">
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center mb-4">
           <div>

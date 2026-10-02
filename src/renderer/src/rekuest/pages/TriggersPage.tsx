@@ -3,6 +3,7 @@ import { RekuestTrigger } from "@/core/linkers";
 import { PageAction } from "@/core/ui/page-action";
 import { Plus } from "lucide-react";
 import TriggerList from "../components/lists/TriggerList";
+import { REKUEST_HELP } from "../help";
 
 const Page = () => {
   const { openDialog } = useDialog();
@@ -10,6 +11,7 @@ const Page = () => {
   return (
     <RekuestTrigger.ListPage
       title="Triggers"
+      help={REKUEST_HELP.triggers}
       pageActions={
         <PageAction
           alwaysShow

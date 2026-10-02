@@ -4,12 +4,14 @@ import { AlpakaRoom } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import RoomList from "../components/lists/RoomList";
+import { ALPAKA_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
 const ImagesPage: React.FC<IRepresentationScreenProps> = () => {
   return (
     <AlpakaRoom.ListPage
+      help={ALPAKA_HELP.rooms}
       title="Rooms"
       pageActions={
         <>

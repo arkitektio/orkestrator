@@ -13,6 +13,8 @@ export type SmartModelPage<T extends Object = Object> = {
   sidebars?: React.ReactNode;
   /** Extra `<Sidebars.Tab>` elements appended after the default rail tabs. */
   additionalSidebars?: React.ReactNode;
+  /** Page-specific help, shown as the rail's last "Help" tab. */
+  help?: React.ReactNode;
   actions?: React.ReactNode;
   pageActions?: React.ReactNode;
   variant?: unknown;

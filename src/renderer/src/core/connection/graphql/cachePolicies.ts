@@ -203,7 +203,6 @@ export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
   actions: ["filters", "ordering"],
   agents: ["filters", "ordering"],
   clients: ["filters", "ordering"],
-  hardwareRecords: ["filters"],
   implementations: ["filters", "ordering"],
   materializedBloks: ["filters", "ordering"],
   memoryDrawers: ["filters"],

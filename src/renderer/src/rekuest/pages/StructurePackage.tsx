@@ -6,6 +6,7 @@ import {
 } from "@/rekuest/api/graphql";
 import InterfaceCard from "../components/cards/InterfaceCard";
 import StructureCard from "../components/cards/StructureCard";
+import { REKUEST_HELP } from "../help";
 
 export const TPage = asDetailQueryRoute(
   useGetStructurePackageQuery,
@@ -13,6 +14,7 @@ export const TPage = asDetailQueryRoute(
     return (
       <RekuestStructurePackage.ModelPage
         title={data.structurePackage.id}
+        help={REKUEST_HELP.structurePackage}
         object={data.structurePackage}
         sidebars={
           <Sidebars>

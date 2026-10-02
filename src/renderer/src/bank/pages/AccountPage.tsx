@@ -30,6 +30,7 @@ import { Money } from "../components/Money";
 import { daysAgo, formatDay, formatIban, isoDay } from "../format";
 import { PortfolioOverview } from "../components/holdings/PortfolioOverview";
 import { Input } from "@/core/ui/input";
+import { BANK_HELP } from "../help";
 
 const RANGES = { "30": 30, "90": 90, "365": 365 } as const;
 type Range = keyof typeof RANGES;
@@ -81,6 +82,7 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
 
   return (
     <BankAccount.ModelPage
+      help={BANK_HELP.account}
       title={name}
       object={account}
       pageActions={

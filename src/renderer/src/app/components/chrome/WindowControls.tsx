@@ -5,9 +5,8 @@ import { Copy, Minus, Square, X } from "lucide-react";
  * Minimise / maximise / close — Windows and Linux.
  *
  * Both platforms run without a caption of their own, so these are the only
- * window buttons there are. They sit in different places: Linux has no top bar
- * at all, so the rail's chrome row carries them (`RailChrome`); Windows puts
- * them in the bar that slides down from the top edge (`AutoHideTitleBar`).
+ * window buttons there are. They live in the bar that slides down from the top
+ * edge (`AutoHideTitleBar`), the same on both.
  * macOS draws neither — it keeps its real traffic lights (`hiddenInset`) — and a
  * browser tab has no frame of ours at all.
  */
@@ -16,7 +15,7 @@ export const WindowControls = ({
   compact = false,
 }: {
   maximized: boolean;
-  /** Foot-of-the-rail placement: smaller, stacked in a 64px column. */
+  /** The auto-hiding bar's size: small enough for its 32px strip. */
   compact?: boolean;
 }) => {
   const controls = window.api?.windowControls;

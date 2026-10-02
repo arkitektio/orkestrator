@@ -13,6 +13,7 @@ import {
   FileTextIcon,
 } from "lucide-react";
 import { useGetFileQuery } from "../api/graphql";
+import { DOKUMENTS_HELP } from "../help";
 import { Separator } from "@/core/ui/separator";
 
 // Helper for getting clean file extension
@@ -62,6 +63,7 @@ export const FilePage = asDetailQueryRoute(
       <DokumentsFile.ModelPage
         title={file?.name || 'Untitled File'}
         object={file}
+        help={DOKUMENTS_HELP.file}
         pageActions={
           <>
             <PageAction

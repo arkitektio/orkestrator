@@ -52,9 +52,10 @@ const fromFindings = (state: HopState, findings: Finding[]): HopState => {
 
 /* ────────────────────── which hop a finding is about ───────────────────── */
 
-const serviceKeyOf = (target: ProbeTarget): string => target.serviceKey ?? target.label ?? target.host;
+export const serviceKeyOf = (target: ProbeTarget): string => target.serviceKey ?? target.label ?? target.host;
 
 const hopIdForTarget = (report: DoctorReport, target: ProbeTarget): string => {
+  if (target.role === "internet") return "computer";
   if (report.context.kind === "discovery" || target.role === "coordination") return "coordination";
   if (target.role === "mesh-control") return "mesh";
   return `service:${serviceKeyOf(target)}`;
@@ -63,7 +64,7 @@ const hopIdForTarget = (report: DoctorReport, target: ProbeTarget): string => {
 export const hopIdForFinding = (report: DoctorReport, finding: Finding): string | undefined => {
   const { id, targetLabel } = finding;
   if (id === "net.all-clear") return undefined;
-  if (id === "doctor.unavailable" || id === "net.ok.renderer-failed") return "computer";
+  if (id === "doctor.unavailable" || id === "net.ok.renderer-failed" || id.startsWith("net.internet.")) return "computer";
   if (id.startsWith("upstream.coordination") || id.startsWith("discovery.")) return "coordination";
   if (id.startsWith("upstream.mesh-control") || id.startsWith("mesh.") || id.startsWith("tailscale.")) return "mesh";
   if (id.startsWith("hub.")) return targetLabel ? `service:${targetLabel}` : "hub";
@@ -79,11 +80,20 @@ export const hopIdForFinding = (report: DoctorReport, finding: Finding): string 
 
 const computerHop = (report: DoctorReport): PathHop => {
   const noProbes = report.findings.some((finding) => finding.id === "doctor.unavailable");
+  // The firewall check: did a well-known public address answer from here?
+  const internet = report.network.filter((probe) => probe.target.role === "internet");
+  const out = internet.some((probe) => probe.http.status !== undefined);
+  const internetLine =
+    internet.length === 0
+      ? ""
+      : out
+        ? "reaches the internet"
+        : `does not reach the internet (${failureLine(internet[0]) ?? "no answer"})`;
   return {
     id: "computer",
     label: "This computer",
     state: noProbes ? "unknown" : "ok",
-    summary: noProbes ? "detailed checks need the desktop app" : "",
+    summary: noProbes ? "detailed checks need the desktop app" : internetLine,
     findings: [],
   };
 };
@@ -192,7 +202,8 @@ const hubHop = (report: DoctorReport, now: number): PathHop => {
 
   const peerMesh = hub.meshHost ? coveringMesh(report.sidecar, hub.meshHost) : undefined;
   const peer = peerMesh && hub.meshHost ? peerFor(peerMesh, hub.meshHost) : undefined;
-  const route = peer?.relay ? `relayed via ${peer.relay}` : peer?.curAddr ? "direct" : undefined;
+  // Direct first: `relay` names the home DERP region even on a direct tunnel.
+  const route = peer?.curAddr ? "direct" : peer?.relay ? `relayed via ${peer.relay}` : undefined;
 
   const state: HopState = !hub.lastSeenAt ? "unknown" : !hub.online ? "failed" : hub.lastHealthy === false ? "warning" : "ok";
   const lastSeen = hub.lastSeenAt

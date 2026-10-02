@@ -15,6 +15,7 @@ import {
 } from "@/rekuest/lib/taskStatus";
 import { parseAsBoolean, parseAsIsoDateTime, parseAsStringLiteral, useQueryState, parseAsArrayOf } from "@/core/util/hooks/use-search-param-state";
 import { X } from "lucide-react";
+import { REKUEST_HELP } from "../../help";
 
 export const AgentTasksPage = asDetailQueryRoute(
   useAgentQuery,
@@ -54,6 +55,7 @@ export const AgentTasksPage = asDetailQueryRoute(
     return (
       <RekuestAgent.ModelPage
         title={`${data?.agent?.name} — Tasks`}
+        help={REKUEST_HELP.agentTasks}
         object={data.agent}
         pageActions={
           <DateTimeRangePicker

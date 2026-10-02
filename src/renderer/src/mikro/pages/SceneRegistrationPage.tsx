@@ -6,6 +6,7 @@ import { useGetSceneQuery } from "../api/graphql";
 import { Registration } from "../components/registration/Registration";
 import { Scene } from "../components/scene/Scene";
 import { useSceneOpen } from "../lib/zarr/useDatalayerWarmup";
+import { MIKRO_HELP } from "../help";
 
 /**
  * Align the layers of a scene — `/mikro/scenes/:id/register`.
@@ -35,6 +36,7 @@ const DetailPage = asDetailQueryRoute(
           overlay
           actions={<MikroScene.Actions object={id} />}
           object={data.scene}
+          help={MIKRO_HELP.sceneRegistration}
           title={`Align · ${data.scene.name}`}
           additionalSidebars={
             <>

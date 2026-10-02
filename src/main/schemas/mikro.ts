@@ -226,6 +226,8 @@ export type Annotation = {
   /** The discrete coordinates this annotation is pinned to. A coordinate the annotation does not pin is one it spans */
   coordinates: Array<Coordinate>;
   createdWithTransforms: Scalars['Int']['output'];
+  /** The user that drew this annotation, or null when that user is gone or a client created it without one */
+  creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
   /** The fill color of the geometry, as RGBA, or null for no fill */
   fillColor?: Maybe<Array<Scalars['Int']['output']>>;
@@ -9076,7 +9078,7 @@ export type SceneAnnotationFragment = { __typename?: 'Annotation', id: any, name
 
 export type ListAnnotationFragment = { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, collection: { __typename?: 'AnnotationCollection', id: string, name: string, scene?: { __typename?: 'Scene', id: string, name: string } | null } };
 
-export type DetailAnnotationFragment = { __typename?: 'Annotation', id: any, name: string, description?: string | null, kind: AnnotationKind, vectors: Array<Array<number>>, createdWithTransforms: number, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, coordinateSystem?: { __typename?: 'CoordinateSystem', transformVersion: number, id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection', id: string, version: string } | { __typename: 'NetworkCollection', id: string, version: string } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'TableDataset', id: string, name: string }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } | null, collection: { __typename?: 'AnnotationCollection', description?: string | null, id: string, name: string, scene?: { __typename?: 'Scene', id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, intrinsicBbox?: { __typename?: 'BoundingBox', min: Array<number>, max: Array<number> } | null };
+export type DetailAnnotationFragment = { __typename?: 'Annotation', id: any, name: string, description?: string | null, kind: AnnotationKind, vectors: Array<Array<number>>, createdWithTransforms: number, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, coordinateSystem?: { __typename?: 'CoordinateSystem', transformVersion: number, id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection', id: string, version: string } | { __typename: 'NetworkCollection', id: string, version: string } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'TableDataset', id: string, name: string }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } | null, collection: { __typename?: 'AnnotationCollection', description?: string | null, id: string, name: string, scene?: { __typename?: 'Scene', id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null }, creator?: { __typename?: 'User', sub: string } | null, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, intrinsicBbox?: { __typename?: 'BoundingBox', min: Array<number>, max: Array<number> } | null };
 
 export type AnnotationCollectionFragment = { __typename?: 'AnnotationCollection', id: string, name: string, description?: string | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection', id: string, version: string } | { __typename: 'NetworkCollection', id: string, version: string } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'TableDataset', id: string, name: string }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } };
 
@@ -9976,7 +9978,14 @@ export type GetAnnotationQueryVariables = Exact<{
 }>;
 
 
-export type GetAnnotationQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, name: string, description?: string | null, kind: AnnotationKind, vectors: Array<Array<number>>, createdWithTransforms: number, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, coordinateSystem?: { __typename?: 'CoordinateSystem', transformVersion: number, id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection', id: string, version: string } | { __typename: 'NetworkCollection', id: string, version: string } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'TableDataset', id: string, name: string }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } | null, collection: { __typename?: 'AnnotationCollection', description?: string | null, id: string, name: string, scene?: { __typename?: 'Scene', id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, intrinsicBbox?: { __typename?: 'BoundingBox', min: Array<number>, max: Array<number> } | null } };
+export type GetAnnotationQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, name: string, description?: string | null, kind: AnnotationKind, vectors: Array<Array<number>>, createdWithTransforms: number, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, coordinateSystem?: { __typename?: 'CoordinateSystem', transformVersion: number, id: string, name: string, epoch?: any | null, residents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray', id: string, level: number } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection', id: string, version: string } | { __typename: 'NetworkCollection', id: string, version: string } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'TableDataset', id: string, name: string }>, axes: Array<{ __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null }> } | null, collection: { __typename?: 'AnnotationCollection', description?: string | null, id: string, name: string, scene?: { __typename?: 'Scene', id: string, name: string, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null } | null }, creator?: { __typename?: 'User', sub: string } | null, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, intrinsicBbox?: { __typename?: 'BoundingBox', min: Array<number>, max: Array<number> } | null } };
+
+export type GetAnnotationCreatorQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetAnnotationCreatorQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, creator?: { __typename?: 'User', sub: string } | null } };
 
 export type GetSceneAnnotationsQueryVariables = Exact<{
   filters?: InputMaybe<AnnotationFilter>;
@@ -11177,6 +11186,9 @@ export const DetailAnnotationFragmentDoc = gql`
     scene {
       ...ListScene
     }
+  }
+  creator {
+    sub
   }
 }
     ${AnnotationFragmentDoc}
@@ -13329,6 +13341,16 @@ export const GetAnnotationDocument = gql`
   }
 }
     ${DetailAnnotationFragmentDoc}`;
+export const GetAnnotationCreatorDocument = gql`
+    query GetAnnotationCreator($id: ID!) {
+  annotation(id: $id) {
+    id
+    creator {
+      sub
+    }
+  }
+}
+    `;
 export const GetSceneAnnotationsDocument = gql`
     query GetSceneAnnotations($filters: AnnotationFilter, $pagination: OffsetPaginationInput) {
   annotations(filters: $filters, pagination: $pagination) {
@@ -14327,6 +14349,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetAnnotation(variables: GetAnnotationQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetAnnotationQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetAnnotationQuery>({ document: GetAnnotationDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetAnnotation', 'query', variables);
+    },
+    GetAnnotationCreator(variables: GetAnnotationCreatorQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetAnnotationCreatorQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetAnnotationCreatorQuery>({ document: GetAnnotationCreatorDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetAnnotationCreator', 'query', variables);
     },
     GetSceneAnnotations(variables?: GetSceneAnnotationsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetSceneAnnotationsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetSceneAnnotationsQuery>({ document: GetSceneAnnotationsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetSceneAnnotations', 'query', variables);

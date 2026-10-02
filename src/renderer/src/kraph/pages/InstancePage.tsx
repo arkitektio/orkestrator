@@ -6,6 +6,7 @@ import { KraphGraph, KraphInstance, KraphNode, KraphTerm } from "@/core/linkers"
 import Timestamp from "@/core/ui/timestamp";
 import { useGetDetailInstanceQuery } from "../api/graphql";
 import { StandingsPanel } from "../components/StandingsPanel";
+import { KRAPH_HELP } from "../help";
 
 /**
  * The claim, at organization grain.
@@ -27,6 +28,7 @@ const Page = asDetailQueryRoute(useGetDetailInstanceQuery, ({ data }) => {
 
   return (
     <KraphInstance.ModelPage
+      help={KRAPH_HELP.instance}
       object={{ id: instance.id }}
       title={instance.term.label ?? instance.term.key}
       sidebars={

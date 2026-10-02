@@ -83,11 +83,6 @@ export const ImplementationHoverCard = ({ object }: { object: Object }) => {
             workflow
           </Badge>
         )}
-        {impl.pinned && (
-          <Badge variant="secondary" className="text-[10px]">
-            pinned
-          </Badge>
-        )}
       </div>
 
       <div className="flex flex-col gap-1">

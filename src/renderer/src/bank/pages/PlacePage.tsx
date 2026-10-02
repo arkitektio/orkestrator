@@ -17,6 +17,7 @@ import { LocationsMap } from "../components/map/LocationsMap";
 import { MerchantLogo } from "../components/MerchantLogo";
 import { toastText } from "../errors";
 import { formatDay } from "../format";
+import { BANK_HELP } from "../help";
 
 const PlacePage = asDetailQueryRoute(useGetMerchantLocationQuery, ({ data }) => {
   const place = data.merchantLocation;
@@ -35,6 +36,7 @@ const PlacePage = asDetailQueryRoute(useGetMerchantLocationQuery, ({ data }) => 
 
   return (
     <BankPlace.ModelPage
+      help={BANK_HELP.place}
       title={
         <span className="flex items-center gap-2">
           <MapPin className="h-5 w-5" />

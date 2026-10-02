@@ -27,7 +27,7 @@ query SenderAccounts {
 }
 
 query SearchMailAccounts($search: String, $values: [ID!]) {
-  options: mailAccounts(filters: { ids: $values }, pagination: { limit: 20 }) {
+  options: mailAccounts(filters: { search: $search, ids: $values }, pagination: { limit: 20 }) {
     value: id
     label: emailAddress
   }

@@ -51,6 +51,7 @@ import {
   isPausable,
   isResumable,
 } from "../lib/taskStatus";
+import { REKUEST_HELP } from "../help";
 
 // Only stats the main column doesn't already show — status, progress and
 // delegations live in the hero / Delegations section.
@@ -198,6 +199,7 @@ export const TPage = asDetailQueryRoute(
     return (
       <RekuestTask.ModelPage
         title={data?.task?.action.name}
+        help={REKUEST_HELP.task}
         additionalSidebars={
           <>
             {/* The complete record, line by line: the lane's marks, in full. */}

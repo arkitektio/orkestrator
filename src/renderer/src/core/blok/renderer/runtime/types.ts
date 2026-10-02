@@ -1,5 +1,6 @@
 import type {StoreApi} from 'zustand/vanilla';
 import {z} from 'zod';
+import type {BlokTaskBinding} from './task';
 
 export type ChildDescriptor = string | {id: string; basePath?: string};
 
@@ -35,6 +36,11 @@ export type BlokComponentProp = {
   dynamic_value?: BlokDynamicValue | null;
   agent_call?: BlokAgentCall | null;
   util_call?: BlokUtilCall | null;
+  /**
+   * A name this prop declares in the data model. On an agent call it is the
+   * name the call's task is bound to (see `runtime/task.ts`).
+   */
+  declares_value?: string | null;
 };
 
 export type BlokComponentNode = {
@@ -98,14 +104,32 @@ export type BlokInvokeFunctionHandler = (
 ) => BlokInvokeResult;
 
 /**
+ * One step of a task, as a host reports it: what it knows changed. `end`
+ * closes the task; nothing is reported after it.
+ */
+export type BlokTaskUpdate = {
+  progress?: number;
+  message?: string;
+  /** The task's returns so far, by port key. */
+  returns?: unknown;
+  end?: 'done' | 'failed' | 'cancelled';
+  /** Why, with `end: "failed"`. */
+  error?: string;
+};
+
+export type BlokTaskObserver = (update: BlokTaskUpdate) => void;
+
+/**
  * Dispatches an agent call. A host that can follow the resulting task returns
  * a promise that settles when the task ends (either way) — components use it
- * to show that their action is still running (`usePendingAction`). Hosts that
- * cannot (the preview) return nothing.
+ * to show that their action is still running (`usePendingAction`) — and
+ * reports the task's steps to `observe`, when the call is bound to a name.
+ * Hosts that cannot (the preview) return nothing and report nothing.
  */
 export type BlokDispatchActionHandler = (
   action: BlokResolvedAgentCall,
   component: BlokComponentNode,
+  observe?: BlokTaskObserver,
 ) => void | Promise<unknown>;
 
 /**
@@ -141,6 +165,11 @@ export type BlokResolutionContext = {
   resolvePath: (path: string) => string;
   invokeFunction: BlokInvokeFunctionHandler;
   dispatchAction: BlokDispatchActionHandler;
+  /**
+   * Starts a run under a name a call is bound to. Only the live context of an
+   * event handler has one: nothing is dispatched while rendering.
+   */
+  bindTask?: (name: string) => BlokTaskBinding;
 };
 
 export type BlokRuntimeContext = {

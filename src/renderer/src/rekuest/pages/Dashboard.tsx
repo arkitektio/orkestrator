@@ -4,11 +4,13 @@ import { LocalActionButton, type LocalActionButtonProps } from "@/core/ui/locala
 import { RekuestDashboard } from "@/core/linkers";
 import { useGetDashboardQuery } from "../api/graphql";
 import { DashboardBlokSidebar, DashboardScene, DashboardSceneProvider } from "../dashboard-scene";
+import { REKUEST_HELP } from "../help";
 
 export const DashboardPage = asDetailQueryRoute(useGetDashboardQuery, ({ data, refetch }) => {
   return (
     <RekuestDashboard.ModelPage
       title={data.dashboard.name || "New Dashboard"}
+      help={REKUEST_HELP.dashboard}
       object={data.dashboard}
       pageActions={(
         <LocalActionButton

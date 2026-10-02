@@ -17,6 +17,7 @@ import { fileIcon, fileKind } from "../components/fileIcon";
 import { InfoList } from "../components/InfoList";
 import { describeError } from "../errors";
 import { formatBytes } from "../format";
+import { KUVERT_HELP } from "../help";
 import { MailAccount, MailThread, OutgoingMail } from "../linkers";
 
 /** A mail sent from here: what went out, to whom, and what the server said. */
@@ -28,6 +29,7 @@ const OutgoingPage = asDetailQueryRoute(useGetOutgoingMessageQuery, ({ data }) =
     <OutgoingMail.ModelPage
       title={mail.subject || "(no subject)"}
       object={mail}
+      help={KUVERT_HELP.outgoing}
       additionalSidebars={
         <Sidebars.Tab label="Info">
           <InfoList

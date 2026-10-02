@@ -4,6 +4,7 @@ import { KraphStructureRelationCategory } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import StructureRelationCategoryList from "../components/lists/StructureRelationCategoryList";
+import { KRAPH_HELP } from "../help";
 
 
 const Page = () => {
@@ -11,6 +12,7 @@ const Page = () => {
 
   return (
     <KraphStructureRelationCategory.ListPage
+      help={KRAPH_HELP.structureRelationCategories}
       title="Structure Relations"
       pageActions={
         <>

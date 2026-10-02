@@ -3,11 +3,13 @@ import { Sidebars } from "@/core/layout/Sidebars";
 import { RekuestToolbox } from "@/core/linkers";
 import { useToolboxQuery } from "@/rekuest/api/graphql";
 import ShortcutList from "../components/lists/ShortcutList";
+import { REKUEST_HELP } from "../help";
 
 export const ToolboxPage = asDetailQueryRoute(useToolboxQuery, ({ data }) => {
   return (
     <RekuestToolbox.ModelPage
       title={data.toolbox.name}
+      help={REKUEST_HELP.toolbox}
       object={data.toolbox}
       sidebars={
         <Sidebars>

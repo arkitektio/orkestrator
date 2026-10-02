@@ -6,7 +6,13 @@ import { useCopyUniversalLink } from "@/core/tabs/sharing/use-copy-universal-lin
 import { useReport } from "@/core/debug/use-report";
 import { cn } from "@/core/util/utils";
 import { ChevronDownIcon, PanelRight } from "lucide-react";
-import { useCallback } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useCallback,
+  type ComponentProps,
+  type ReactElement,
+} from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import BreadCrumbs from "./BreadCrumbs";
 import { Button } from "../ui/button";
@@ -35,7 +41,11 @@ export type PageLayoutProps = {
    * so the right-hand panel is never an empty column.
    */
   sidebars?: React.ReactNode;
-  /** Page-specific help shown in the fallback Help tab. */
+  /**
+   * Page-specific help (a `<PageHelp>` from the module's `help.tsx`). Shown in
+   * the fallback Help tab, or folded into the page's own `<Sidebars>` rail as
+   * a last "Help" tab.
+   */
   help?: React.ReactNode;
   actions?: React.ReactNode;
   pageActions?: React.ReactNode;
@@ -47,6 +57,33 @@ export type PageLayoutProps = {
    * pages whose sidebar hosts scene chrome (the Layers tab).
    */
   overlay?: boolean;
+};
+
+/** Label of the rail tab holding the page's instructions. */
+const HELP_TAB_LABEL = "Help";
+
+/**
+ * A page with a rail of its own still gets its instructions: the Help tab is
+ * appended to a `<Sidebars>` rail. `collectTabs` dedups by label, so a rail
+ * that already places a "Help" tab keeps the tab where it put it and only its
+ * content is replaced. A bare component as the rail has no tab bar to add to
+ * and is left alone.
+ */
+const withHelpTab = (rail: React.ReactNode, help: React.ReactNode) => {
+  if (!help || !isValidElement(rail) || rail.type !== Sidebars) {
+    return rail;
+  }
+  const element = rail as ReactElement<ComponentProps<typeof Sidebars>>;
+  return cloneElement(
+    element,
+    {},
+    <>
+      {element.props.children}
+      <Sidebars.Tab label={HELP_TAB_LABEL} key={HELP_TAB_LABEL}>
+        <HelpSidebar help={help} />
+      </Sidebars.Tab>
+    </>,
+  );
 };
 
 export const PageLayout = ({
@@ -232,9 +269,9 @@ export const PageLayout = ({
             id="sidebar"
 
           >
-            {sidebars || (
+            {withHelpTab(sidebars, help) || (
               <Sidebars sidebarKey="HelpSidebar">
-                <Sidebars.Tab label="Help">
+                <Sidebars.Tab label={HELP_TAB_LABEL}>
                   <HelpSidebar help={help} />
                 </Sidebars.Tab>
               </Sidebars>

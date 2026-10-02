@@ -2,11 +2,13 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { RekuestSpace } from "@/core/linkers";
 import { useSpaceQuery } from "@/rekuest/api/graphql";
 import { SpaceEditScene, SpaceEditSceneProvider } from "../space-scene";
+import { REKUEST_HELP } from "../help";
 
 export const SpaceEditPage = asDetailQueryRoute(useSpaceQuery, ({ data }) => {
   return (
     <RekuestSpace.ModelPage
       title={`Edit ${data.space.name}`}
+      help={REKUEST_HELP.spaceEdit}
       object={data.space}
       pageActions={
         <>

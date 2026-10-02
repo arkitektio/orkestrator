@@ -31,6 +31,7 @@ import { CopyAgentPythonButton } from "../components/copy-agent-python";
 import AgentImplementationCard from "../components/cards/AgentImplementationCard";
 import AgentTaskCard from "../components/cards/AgentTaskCard";
 import { AgentTasksSidebar } from "../sidebars/AgentTasksSidebar";
+import { REKUEST_HELP } from "../help";
 
 export const PinAgent = (props: { agent: AgentFragment }) => {
   const [pin] = usePinAgentMutation();
@@ -172,6 +173,7 @@ export const AgentPage = asDetailQueryRoute(
     return (
       <RekuestAgent.ModelPage
         title={data.agent.name}
+        help={REKUEST_HELP.agent}
         object={data.agent}
         variant={"black"}
         sidebars={

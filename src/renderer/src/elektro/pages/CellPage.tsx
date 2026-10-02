@@ -7,6 +7,7 @@ import { useDetailCellQuery } from "../api/graphql";
 import { MorphologyScene } from "../components/morphology/MorphologyScene";
 import { FocusTitleOverlay } from "../components/neuronmodel/FocusTitleOverlay";
 import { CellInfoSidebar } from "../components/sidebars/CellInfoSidebar";
+import { ELEKTRO_HELP } from "../help";
 
 /**
  * One cell of a neuron model, zoomed in: the model's own renderer, framing and
@@ -23,6 +24,7 @@ export const CellPage = asDetailQueryRoute(useDetailCellQuery, ({ data }) => {
     <ElektroCell.ModelPage
       object={{ id: pageId }}
       title={cell.id}
+      help={ELEKTRO_HELP.cell}
       variant="black"
       overlay
       pageActions={

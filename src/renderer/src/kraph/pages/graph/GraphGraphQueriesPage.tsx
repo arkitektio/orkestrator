@@ -4,6 +4,7 @@ import { Card } from "@/core/ui/card";
 import { KraphGraphQuery } from "@/core/linkers";
 import { useGetGraphQuery } from "../../api/graphql";
 import { useRequiredGraphScope } from "../../providers/GraphScopeProvider";
+import { KRAPH_HELP } from "../../help";
 
 /**
  * The graph's saved table queries.
@@ -28,7 +29,7 @@ const Page = () => {
   const queries = data.graph.queries;
 
   return (
-    <PageLayout title="Graph Queries">
+    <PageLayout help={KRAPH_HELP.graphQueries} title="Graph Queries">
       <div className="p-6 flex flex-col gap-4">
         <div>
           <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">

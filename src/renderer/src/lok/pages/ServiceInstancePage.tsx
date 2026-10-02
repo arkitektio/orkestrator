@@ -1,4 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { LOK_HELP } from "../help";
 import { ListRender } from "@/core/layout/ListRender";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { Card, CardContent } from "@/core/ui/card";
@@ -19,6 +20,7 @@ const Page = asDetailQueryRoute(useGetServiceInstanceQuery, ({ data }) => {
   const resolve = useLokResolve();
   return (
     <PageLayout
+      help={LOK_HELP.serviceInstance}
       title="Lok"
       pageActions={
         <>

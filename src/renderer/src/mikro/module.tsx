@@ -16,10 +16,12 @@ import { TableDatasetDisplay } from "./displays/TableDatasetDisplay";
 import { MIKRO_FILE_DOWNLOADERS } from "./downloads";
 import { MIKRO_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
+import { MIKRO_OPTION_SOURCES } from "./options";
 import { service } from "./service";
 import { MIKRO_NAV_LINKS } from "./navLinks";
 import { MIKRO_PROFILE_SECTIONS } from "./profile/sections";
 import { MikroEntitySearch } from "./search";
+import { ArrayDatasetViewer, SceneViewer } from "./viewers";
 
 export const MIKRO_MODULE = defineModule({
   manifest,
@@ -37,6 +39,10 @@ export const MIKRO_MODULE = defineModule({
       "@mikro/annotation": AnnotationDisplay,
       "@mikro/lens": LensDisplay,
     },
+    viewers: {
+      "@mikro/scene": SceneViewer,
+      "@mikro/arraydataset": ArrayDatasetViewer,
+    },
     hovers: {
       "@mikro/file": FileHoverCard,
       "@mikro/folder": FolderHoverCard,
@@ -44,6 +50,7 @@ export const MIKRO_MODULE = defineModule({
     },
     dialogs: MIKRO_DIALOGS,
     actions: MIKRO_ACTIONS,
+    optionSources: MIKRO_OPTION_SOURCES,
     profileSections: MIKRO_PROFILE_SECTIONS,
     background: [MikroDashboardWidgets, LatestArrayDatasetsDashboardWidget],
     search: MikroEntitySearch,

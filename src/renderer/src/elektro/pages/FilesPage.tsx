@@ -4,6 +4,7 @@ import { ElektroFile } from "@/core/linkers";
 import { UploadIcon } from "lucide-react";
 import React from "react";
 import FileList from "../components/lists/FileList";
+import { ELEKTRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -11,6 +12,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
   return (
     <ElektroFile.ListPage
       title="Files"
+      help={ELEKTRO_HELP.files}
       pageActions={
         <>
           <ElektroFile.NewButton alwaysShow collapse="icon">

@@ -1,3 +1,4 @@
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Badge } from "@/core/ui/badge";
 import { MikroAnnotation, MikroCoordinateSystem, MikroScene } from "@/core/linkers";
 
@@ -51,6 +52,16 @@ export const AnnotationInfoSidebar = ({
           )}
         </div>
       </div>
+
+      {/* Absent rather than "unknown": the FK is SET_NULL, so a shape whose
+          author is gone (or that a client created without one) has no name
+          to show. */}
+      {annotation.creator && (
+        <div className="flex flex-col gap-1">
+          <div className="text-xs font-semibold">Drawn by</div>
+          <StructureDisplay identifier="@lok/user" id={annotation.creator.sub} />
+        </div>
+      )}
 
       <div className="flex flex-col gap-1">
         <div className="text-xs font-semibold">Collection</div>

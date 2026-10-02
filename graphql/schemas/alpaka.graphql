@@ -165,6 +165,44 @@ type Choice {
   thinkingBlocks: [ThinkingBlock!]
 }
 
+"""The answer to a choice question"""
+type ChoiceAnswer {
+  """The most probable option"""
+  choice: String!
+
+  """Certainty in the choice, from 0 to 1; flag low values for review"""
+  confidence: Float!
+  key: String!
+
+  """
+  Every option with its probability, in the order the model reported them
+  """
+  probabilities: [OptionProbability!]!
+}
+
+"""One option a choice question can pick"""
+input ChoiceOptionInput {
+  """
+  When this option applies; without one the option is read by its name alone
+  """
+  description: String = null
+
+  """The option's name; the answer picks one of these"""
+  key: String!
+}
+
+"""A question that picks one of several named options"""
+input ChoiceQuestionInput {
+  """What to decide when picking an option"""
+  instructions: String!
+
+  """Your name for this question; the answer carries it back"""
+  key: String!
+
+  """The options to choose from"""
+  options: [ChoiceOptionInput!]!
+}
+
 """A collection of documents searchable by string"""
 type ChromaCollection {
   """
@@ -246,11 +284,41 @@ input CreateRoomInput {
 """Date with time (isoformat)"""
 scalar DateTime
 
+"""Typed questions to put to a decision model about one state"""
+input DecideInput {
+  """
+  The decision model to ask; defaults to the caller's default for `decision`
+  """
+  model: ID = null
+
+  """The questions to answer; their keys must be unique"""
+  questions: [QuestionInput!]!
+
+  """
+  The content the questions refer to: a string, a JSON object or an array
+  """
+  state: JSON!
+}
+
 """Decimal (fixed-point)"""
 scalar Decimal
 
+"""The answers of a decision model"""
+type Decision {
+  """One answer per question, in the order the questions were asked"""
+  answers: [DecisionAnswer!]!
+
+  """The model that answered; may differ from an alias that was asked for"""
+  model: String!
+  usage: Usage
+}
+
+"""An answer; its type matches the question's"""
+union DecisionAnswer = ChoiceAnswer | NoulAnswer | ScoreAnswer
+
 """A task a model can be made the default for"""
 enum DefaultKind {
+  DECISION
   EMBEDDING
   IMAGE_GENERATION
   TEXT_GENERATION
@@ -321,6 +389,7 @@ input DocumentInput {
 """A capability a model supports"""
 enum FeatureType {
   CHAT
+  DECISION
   EMBEDDING
   VISION
 }
@@ -500,6 +569,11 @@ type Mutation {
   """Open a new room"""
   createRoom(input: CreateRoomInput!): Room!
 
+  """
+  Ask a decision model typed questions (noul, choice, score) about one state, and get calibrated answers
+  """
+  decide(input: DecideInput!): Decision!
+
   """Remove a budget"""
   deleteBudget(input: DeleteBudgetInput!): ID!
 
@@ -523,7 +597,9 @@ type Mutation {
   """Generate an image from a text description"""
   generateImage(input: ImageInput!): ImageResponse!
 
-  """Pull a model into an Ollama provider"""
+  """
+  Pull a model into an Ollama provider, or a decision model into an Ollaya provider
+  """
   pull(input: PullInput!): OllamaPullResult!
 
   """Re-list the models a provider offers"""
@@ -547,6 +623,29 @@ type Mutation {
   useModelFor(input: UseModelForInput!): DefaultUse!
 }
 
+"""The answer to a yes/no question"""
+type NoulAnswer {
+  key: String!
+
+  """Probability of yes, from 0 to 1; near 0.5 means uncertain"""
+  noul: Float!
+}
+
+"""A yes/no question or statement about the state"""
+input NoulQuestionInput {
+  """What counts as a no"""
+  ifFalse: String = null
+
+  """What counts as a yes"""
+  ifTrue: String = null
+
+  """The yes/no question or statement to evaluate"""
+  instructions: String!
+
+  """Your name for this question; the answer carries it back"""
+  key: String!
+}
+
 input OffsetPaginationInput {
   limit: Int
   offset: Int! = 0
@@ -556,6 +655,12 @@ input OffsetPaginationInput {
 type OllamaPullResult {
   detail: String
   status: String!
+}
+
+"""The probability of one option"""
+type OptionProbability {
+  key: String!
+  probability: Float!
 }
 
 enum Ordering {
@@ -626,12 +731,14 @@ enum ProviderKind {
   HUGGINGFACE
   MISTRAL
   OLLAMA
+  OLLAYA
   OPENAI
   OPENROUTER
   PALM
   PERPLEXITY
   REPLICATE
   TOGETHER_AI
+  TYPESAFE
   UNKNOWN
   VERTEX_AI
 }
@@ -725,6 +832,13 @@ input QueryInput {
 
   """Chroma metadata filter applied to every query"""
   where: JSON = null
+}
+
+"""A typed question: exactly one of noul, choice or score"""
+input QuestionInput @oneOf {
+  choice: ChoiceQuestionInput
+  noul: NoulQuestionInput
+  score: ScoreQuestionInput
 }
 
 """The provider whose model list should be re-synced"""
@@ -844,6 +958,42 @@ enum RoomTimestampField {
   CREATED_AT
 }
 
+"""The answer to a score question"""
+type ScoreAnswer {
+  """Certainty in the score, from 0 to 1; flag low values for review"""
+  confidence: Float!
+  key: String!
+
+  """Every rubric level, lowest first, with its probability"""
+  levels: [ScoreLevel!]!
+
+  """
+  Expected score: the probability-weighted mean of the levels, so it may fall between them
+  """
+  score: Float!
+}
+
+"""One level of a score rubric"""
+type ScoreLevel {
+  description: String!
+  level: Int!
+  probability: Float!
+}
+
+"""A question that rates the state on an ordered rubric"""
+input ScoreQuestionInput {
+  """What to rate"""
+  instructions: String!
+
+  """Your name for this question; the answer carries it back"""
+  key: String!
+
+  """
+  Descriptions of the rubric levels, lowest first; a level's position is its score, starting at zero
+  """
+  levels: [String!]!
+}
+
 """The message to send"""
 input SendMessageInput {
   agentId: String!
@@ -959,9 +1109,11 @@ type Usage {
 """The entry point an LLM call came through"""
 enum UsageEndpoint {
   GRAPHQL_CHAT
+  GRAPHQL_DECIDE
   GRAPHQL_IMAGE
   REST_CHAT
   REST_COMPLETION
+  REST_DECIDE
   REST_EMBEDDING
   VECTOR_EMBEDDING
 }

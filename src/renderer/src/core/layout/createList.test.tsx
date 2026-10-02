@@ -4,10 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 
 // The refetch button needs a query client; it is not what is under test.
 vi.mock("../ui/refetcher", () => ({ Refetcher: () => null }));
-// jsdom has no Web Animations API for the grid's auto-animate to call.
-vi.mock("@formkit/auto-animate/react", () => ({
-  useAutoAnimate: () => [() => {}],
-}));
 
 import { createList } from "./createList";
 

@@ -10,6 +10,7 @@ import {
   useUpdateNaturalEventCategoryMutation,
 } from "../api/graphql";
 import { WithKraphMediaUrl } from "@/kraph/datalayer/kraphAccess";
+import { KRAPH_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -78,6 +79,7 @@ export default asDetailQueryRoute(
 
     return (
       <KraphNaturalEventCategory.ModelPage
+        help={KRAPH_HELP.naturalEventCategory}
         title={data?.naturalEventCategory?.label}
         object={{ id: data.naturalEventCategory.id }}
         actions={

@@ -1221,6 +1221,30 @@ const upstreamFindings = (
     );
   }
 
+  // The firewall check. ANY answer counts — a captive portal's redirect is
+  // still a way out — so only silence is a finding. It blocks only when
+  // nothing else answered either: a lab on its own network with no internet
+  // is a perfectly working deployment.
+  const internet = upstream.filter((probe) => probe.target.role === "internet");
+  if (internet.length > 0 && !internet.some((probe) => probe.http.status !== undefined)) {
+    const nothingElse = !anyServiceAnswered && !coordination.some((probe) => probe.http.ok);
+    findings.push({
+      id: "net.internet.unreachable",
+      severity: nothingElse ? "blocker" : "info",
+      title: nothingElse
+        ? "This computer is not getting out to the internet at all"
+        : "This computer cannot reach the public internet",
+      detail: nothingElse
+        ? "Not even a well-known public address answers, so the problem is on this " +
+          "computer's side: no network connection, a firewall or proxy blocking outbound " +
+          "traffic, or a sign-in page (captive portal) that has not been passed yet."
+        : "A well-known public address does not answer from here, although the deployment " +
+          "does. That is fine for a deployment on its own network; it matters only if " +
+          "something it needs lives on the internet.",
+      evidence: failures(internet),
+    });
+  }
+
   const control = upstream.filter((probe) => probe.target.role === "mesh-control");
   // Any HTTP answer at all proves the server is there; its root has no contract.
   if (control.length > 0 && !control.some((probe) => probe.http.status !== undefined)) {

@@ -28,6 +28,7 @@ import { MerchantLogo } from "../components/MerchantLogo";
 import { Money } from "../components/Money";
 import { toastText } from "../errors";
 import { formatDay, formatIban, formatMoney, toNumber } from "../format";
+import { BANK_HELP } from "../help";
 
 const TransactionPage = asDetailQueryRoute(useGetTransactionQuery, ({ data }) => {
   const tx = data.transaction;
@@ -59,6 +60,7 @@ const TransactionPage = asDetailQueryRoute(useGetTransactionQuery, ({ data }) =>
 
   return (
     <BankTransaction.ModelPage
+      help={BANK_HELP.transaction}
       title={tx.counterparty || tx.remittance || "Transaction"}
       object={tx}
       pageActions={

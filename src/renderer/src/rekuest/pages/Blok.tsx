@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { MaterializeBlokForm } from "../forms/MaterializeBlokForm";
 import { useState } from "react";
 import { toast } from "@/core/notify";
+import { REKUEST_HELP } from "../help";
 
 export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
   const [open, setOpen] = useState(false);
@@ -17,6 +18,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
   return (
     <RekuestBlok.ModelPage
       title={data.blok.name || "New Blok"}
+      help={REKUEST_HELP.blok}
       object={data.blok}
       pageActions={(
         <>
@@ -49,6 +51,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                             dependencies={data.blok.dependencies.map((dependency) => ({
                               id: dependency.id,
                               key: dependency.key,
+                              description: dependency.description,
                             }))}
                           onMaterialized={(_materializedBlok) => {
                                 setOpen(false);

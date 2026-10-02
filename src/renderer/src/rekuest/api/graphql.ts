@@ -43,10 +43,6 @@ export type Scalars = {
   _Any: { input: any; output: any; }
 };
 
-export type AckInput = {
-  task: Scalars['ID']['input'];
-};
-
 /** Represents an executable action in the system. */
 export type Action = {
   __typename?: 'Action';
@@ -86,8 +82,6 @@ export type Action = {
   name: Scalars['String']['output'];
   /** The organization that owns this action. */
   organization: Organization;
-  /** Check if the current user has pinned this action. */
-  pinned: Scalars['Boolean']['output'];
   /** Port groups used in the action for organizing ports. */
   portGroups: Array<PortGroup>;
   /** Protocols associated with the action. */
@@ -407,12 +401,12 @@ export type Agent = {
   client: Client;
   /** Is the agent currently connected. */
   connected: Scalars['Boolean']['output'];
+  /** The name the agent declares for itself, whatever a user calls it. */
+  declaredName: Scalars['String']['output'];
   /** What this agent is, in a sentence. Client-declared at registration; null for an agent that never declared one. */
   description?: Maybe<Scalars['String']['output']>;
   /** Device associated with the agent, via its client (if any). */
   device?: Maybe<Device>;
-  /** Historical records of agent's hardware. */
-  hardwareRecords: Array<HardwareRecord>;
   /** Hash representing the agent's definition for change detection. */
   hash: Scalars['String']['output'];
   /** Webhook URL for this Agent (only if webhook) */
@@ -425,15 +419,17 @@ export type Agent = {
   implementation?: Maybe<Implementation>;
   /** Implementations the agent can run. */
   implementations: Array<Implementation>;
+  /** When this agent first registered. */
+  installedAt: Scalars['DateTime']['output'];
   /** Kind of the agent. */
   kind: AgentKind;
   /** Last timestamp this agent was seen. */
   lastSeen?: Maybe<Scalars['DateTime']['output']>;
-  /** Retrieve the latest hardware record for this agent. */
-  latestHardwareRecord?: Maybe<HardwareRecord>;
+  /** The agent's locks, and which task holds each. */
+  locks: Array<Lock>;
   /** Agent's associated memory shelve. */
   memoryShelve?: Maybe<MemoryShelve>;
-  /** Agent name. */
+  /** Agent name: the one a user gave it (updateAgent), else the one it declares. */
   name: Scalars['String']['output'];
   /** The organization this agent belongs to. */
   organization: Organization;
@@ -451,13 +447,6 @@ export type Agent = {
   tasks: Array<Task>;
   /** The user this agent belongs to. */
   user: User;
-};
-
-
-/** Represents a compute agent that can execute implementations. */
-export type AgentHardwareRecordsArgs = {
-  filters?: InputMaybe<HardwareRecordFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -516,7 +505,6 @@ export type AgentChange = {
   id: Scalars['ID']['output'];
   kind: AgentKind;
   lastSeen?: Maybe<Scalars['DateTime']['output']>;
-  latestEvent: AgentEventKind;
   name: Scalars['String']['output'];
   organization: Scalars['ID']['output'];
   release: Scalars['ID']['output'];
@@ -539,8 +527,6 @@ export type AgentDependencyInput = {
   actionDependencies?: InputMaybe<Array<ActionDependencyInput>>;
   /** Which app this dependency corresponds to (i.e. do you want to use a stardist agent for that or imagej agents needs to be a world unique classsifier (reverse domain notation) that identifies the type of agent you want to use, and then we can have multiple agents of the same type running in the system, e.g. startdist could be the app for all agents that correpsond to a startdist instance) */
   app?: InputMaybe<Scalars['String']['input']>;
-  /** The policy used to pick which instance of the agent to assign to. */
-  assignPolicy?: AssignPolicy;
   /** Whether this dependency is auto resolvable or not. If so we will try to automatically resolve it based on the demands specified in the dependency and the capabilities of the available agents in the system. This is used to identify the demand in the system. Attention if any of the dependencies of this agent dependency is not auto resolvable, this dependency will also not be auto resolvable */
   autoResolvable?: Scalars['Boolean']['input'];
   /** A description of the dependency, why it is needed and what it is used for. This can be used to provide more context to users when assigning dependencies. */
@@ -564,12 +550,6 @@ export type AgentDependencyInput = {
   /** The version of the app this dependency corresponds to. */
   version?: InputMaybe<Scalars['String']['input']>;
 };
-
-/** The event kind of the agentevent */
-export enum AgentEventKind {
-  Connect = 'CONNECT',
-  Disconnect = 'DISCONNECT'
-}
 
 /** A way to filter agents */
 export type AgentFilter = {
@@ -780,14 +760,6 @@ export type AssignInput = {
   /** Whether the task should step. Ie. go to the next breakpoint */
   step?: InputMaybe<Scalars['Boolean']['input']>;
 };
-
-export enum AssignPolicy {
-  Automatic = 'AUTOMATIC',
-  Balanced = 'BALANCED',
-  FastestResponse = 'FASTEST_RESPONSE',
-  LeastBusy = 'LEAST_BUSY',
-  RoundRobin = 'ROUND_ROBIN'
-}
 
 export type AssignWidget = {
   followValue?: Maybe<Scalars['String']['output']>;
@@ -1298,10 +1270,18 @@ export type CreateDashboardInput = {
   name: Scalars['String']['input'];
 };
 
-/** The input for creating a implementation. */
-export type CreateImplementationInput = {
-  /** The implementation to create. This is used to identify the implementation in the system. */
-  implementation: ImplementationInput;
+/** Deploy a higher-order implementation: a wrapper onto the agent of the implementation it wraps. */
+export type CreateHigherOrderImplementationInput = {
+  /** Projection config: bound params + arg/dependency/return maps (see Implementation.higher_order_config). */
+  config?: InputMaybe<Scalars['AnyDefault']['input']>;
+  /** The wrapper's typed contract, derived by the caller. */
+  definition: DefinitionInput;
+  /** Dependencies the wrapper declares, for a dependency_map sourcing 'from: caller'. */
+  dependencies?: InputMaybe<Array<AgentDependencyInput>>;
+  /** The wrapper's interface, unique on that agent (e.g. 'flow:123'). */
+  interface: Scalars['String']['input'];
+  /** The implementation to wrap; its agent hosts the wrapper. */
+  lower: Scalars['ID']['input'];
 };
 
 /** The input for creating a placement. */
@@ -1318,18 +1298,6 @@ export type CreatePlacementInput = {
   role?: InputMaybe<Scalars['String']['input']>;
   /** The ID of the space to create the placement in. */
   space: Scalars['String']['input'];
-};
-
-/** The input for creating a resolution. */
-export type CreateResolutionInput = {
-  /** The implementation ID of the resolution. This is used to identify the resolution in the system. */
-  implementation: Scalars['ID']['input'];
-  /** The key of the resolution. This is used to identify the resolution in the system. */
-  key: Scalars['String']['input'];
-  /** The name of the resolution. This is used to identify the resolution in the system. */
-  name: Scalars['String']['input'];
-  /** The resolved dependencies of the resolution. This is used to identify the resolution in the system. */
-  resolvedDependencies?: InputMaybe<Array<ResolvedDependencyInput>>;
 };
 
 /** Create a schedule. Give exactly one of intervalSeconds or cron; pin an agent with agent + interface, or leave both empty to resolve one per run. */
@@ -1374,37 +1342,42 @@ export type CreateSpaceInput = {
   placements?: InputMaybe<Array<PlacementInput>>;
 };
 
+/** Declare that one action tests another. */
 export type CreateTestCaseInput = {
+  /** The action under test. */
   action: Scalars['ID']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
+  /** Measures performance rather than correctness. */
+  isBenchmark?: Scalars['Boolean']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
+  /** The action that performs the test. */
   tester: Scalars['ID']['input'];
 };
 
+/** Record one run of a test case. */
 export type CreateTestResultInput = {
   case: Scalars['ID']['input'];
+  /** The implementation under test. */
   implementation: Scalars['ID']['input'];
   passed: Scalars['Boolean']['input'];
-  result?: InputMaybe<Scalars['String']['input']>;
+  /** What the test produced, as JSON. */
+  result?: InputMaybe<Scalars['AnyDefault']['input']>;
+  /** The implementation that ran the test. */
   tester: Scalars['ID']['input'];
 };
 
 /** The input for creating a 3D model. */
 export type CreateThreeDModelInput = {
+  /** The agent this model shows: whose state the transfer function reads. */
+  dependency?: InputMaybe<AgentDependencyInput>;
   /** A description of the 3D model. */
   description?: InputMaybe<Scalars['String']['input']>;
   /** The media store file for the 3D model. */
   media: Scalars['MediaLike']['input'];
   /** The name of the 3D model. */
   name: Scalars['String']['input'];
-};
-
-/** The input for creating a toolbox. */
-export type CreateToolboxInput = {
-  /** The description of the toolbox. This can described the toolbox and its purpose. */
-  description?: InputMaybe<Scalars['String']['input']>;
-  /** The name of the toolbox. This is used to identify the toolbox in the system. */
-  name: Scalars['String']['input'];
+  /** How the agent's state maps onto the model's properties. */
+  transferFunction?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Create a trigger: on a signal of `kind` for `identifier` whose descriptors satisfy `conditions` (and the port's own requires), run `action` with the object in `port`. */
@@ -1602,12 +1575,6 @@ export type DeletePlacementInput = {
   id: Scalars['ID']['input'];
 };
 
-/** The input for deleting a resolution. */
-export type DeleteResolutionInput = {
-  /** The ID of the resolution to delete. */
-  id: Scalars['ID']['input'];
-};
-
 /** The input for deleting a shortcut. */
 export type DeleteShortcutInput = {
   /** The shortcut ID to delete. This is used to identify the shortcut in the system. */
@@ -1623,12 +1590,6 @@ export type DeleteSpaceInput = {
 /** The input for deleting a 3D model. */
 export type DeleteThreeDModelInput = {
   /** The ID of the 3D model to delete. */
-  id: Scalars['ID']['input'];
-};
-
-/** The input for deleting a toolbox. */
-export type DeleteToolboxInput = {
-  /** The toolbox ID to delete. This is used to identify the toolbox in the system. */
   id: Scalars['ID']['input'];
 };
 
@@ -1674,6 +1635,23 @@ export type DependencyFilter = {
   NOT?: InputMaybe<DependencyFilter>;
   OR?: InputMaybe<DependencyFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+/** What assigning an implementation would bind: its dependency tree, resolved without assigning. */
+export type DependencyTree = {
+  __typename?: 'DependencyTree';
+  /** The implementation's dependencies, each with the agents it would bind and, below those, their own. */
+  dependencies: Array<ResolvedAgentDependency>;
+  /** Whether an assign with these overwrites would go through: nothing in the tree is unmet. */
+  satisfied: Scalars['Boolean']['output'];
+};
+
+/** An assign's dependencies, to resolve without assigning. */
+export type DependencyTreeInput = {
+  /** The overwrites the assign would carry. */
+  dependencies?: InputMaybe<Array<ResolvedDependencyInput>>;
+  /** The implementation an assign would target. */
+  implementation: Scalars['ID']['input'];
 };
 
 /** A single runtime descriptor key/value pair carried by a candidate object. */
@@ -1806,32 +1784,6 @@ export enum Granularity {
   Year = 'YEAR'
 }
 
-/** Represents a record of an agent's hardware configuration. */
-export type HardwareRecord = {
-  __typename?: 'HardwareRecord';
-  /** The agent to which this hardware belongs. */
-  agent: Agent;
-  /** Number of CPU cores available. */
-  cpuCount: Scalars['Int']['output'];
-  /** Clock speed of the CPU in GHz. */
-  cpuFrequency: Scalars['Float']['output'];
-  /** Vendor of the CPU. */
-  cpuVendorName: Scalars['String']['output'];
-  /** Timestamp when this record was created. */
-  createdAt: Scalars['DateTime']['output'];
-  /** Unique ID of the hardware record. */
-  id: Scalars['ID']['output'];
-};
-
-export type HardwareRecordFilter = {
-  AND?: InputMaybe<HardwareRecordFilter>;
-  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
-  NOT?: InputMaybe<HardwareRecordFilter>;
-  OR?: InputMaybe<HardwareRecordFilter>;
-  cpuVendorName?: InputMaybe<Scalars['String']['input']>;
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
 export type HideEffect = Effect & {
   __typename?: 'HideEffect';
   call: UtilCall;
@@ -1899,6 +1851,8 @@ export type Implementation = {
   id: Scalars['ID']['output'];
   /** Interface string representing the implementation entrypoint. */
   interface: Scalars['String']['output'];
+  /** The agent's locks this implementation takes while it runs. */
+  locks: Array<Lock>;
   /** The higher-order implementations that wrap this implementation. */
   lowerOrderImplementations: Array<Implementation>;
   /** States that this implementation manipulates. */
@@ -1911,8 +1865,6 @@ export type Implementation = {
   needsToken: Scalars['Boolean']['output'];
   /** Arbitrary parameters for the implementation. */
   params: Scalars['AnyDefault']['output'];
-  /** Check if this implementation is pinned by the current user. */
-  pinned: Scalars['Boolean']['output'];
   /** Declared audience for the provenance token's `aud`, or null to derive it at dispatch. */
   provenanceAudience?: Maybe<Array<Scalars['String']['output']>>;
   /** The resolved dependencies */
@@ -2024,7 +1976,7 @@ export type ImplementationMapping = {
   implementation: Implementation;
   /** Get the key of the implementation mapping. */
   key: Scalars['String']['output'];
-  /** Get the key of the implementation mapping. */
+  /** What the bound implementation's own dependencies resolve to: the level below. */
   resolvedDependencies: Array<ResolvedAgentDependency>;
 };
 
@@ -2085,6 +2037,33 @@ export type KickInput = {
   reason?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** A resource of an agent that one of its tasks holds at a time: the agent takes it while an implementation that requires it runs. */
+export type Lock = {
+  __typename?: 'Lock';
+  /** The agent the lock belongs to. */
+  agent: Agent;
+  /** What the lock guards. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The task holding the lock right now, if any. */
+  heldBy?: Maybe<Task>;
+  /** Unique ID of the lock. */
+  id: Scalars['ID']['output'];
+  /** The lock's key, unique within its agent. */
+  key: Scalars['String']['output'];
+  /** The implementations that take this lock while they run. */
+  requiredBy: Array<Implementation>;
+  /** When the lock was last taken, released or redeclared. */
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+
+/** A resource of an agent that one of its tasks holds at a time: the agent takes it while an implementation that requires it runs. */
+export type LockRequiredByArgs = {
+  filters?: InputMaybe<ImplementationFilter>;
+  ordering?: Array<ImplementationOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
 /** Which locks does the agent provide in general */
 export type LockDefinitionInput = {
   /** Describe the lock a bit */
@@ -2113,6 +2092,8 @@ export enum LogLevel {
 export type MappedAgentInput = {
   /** The agent ID to map the actions to. This is used to identify the agent in the system. */
   agent: Scalars['ID']['input'];
+  /** Overwrites one level down: for the dependencies of the implementations bound on this agent. A dependency key repeats across levels, so an overwrite only ever applies at the level it is given. */
+  dependencies?: InputMaybe<Array<ResolvedDependencyInput>>;
   /** The key of the agent to map. This is used to identify the agent in the system. */
   key: Scalars['String']['input'];
 };
@@ -2316,8 +2297,6 @@ export type MessageEffect = Effect & {
 /** Root mutation type for executing write operations on the API. */
 export type Mutation = {
   __typename?: 'Mutation';
-  /** Acknowledge a task. */
-  ack: Task;
   /** Assign a task to an agent. */
   assign: Task;
   /** Automatically resolve dependencies for an implementation. */
@@ -2338,12 +2317,10 @@ export type Mutation = {
   createBlok: Blok;
   /** Create a dashboard layout. */
   createDashboard: Dashboard;
-  /** Create a new implementation entry. */
-  createImplementation: Implementation;
+  /** Deploy a higher-order implementation: a wrapper onto the agent of the implementation it wraps, linked to it. */
+  createHigherOrderImplementation: Implementation;
   /** Create a new placement for an agent in a space. */
   createPlacement: Placement;
-  /** Create a resolution for an implementation. */
-  createResolution: Resolution;
   /** Create a recurring assignment of an action. Its next run is planned immediately. */
   createSchedule: Schedule;
   /** Create a shortcut to an action. */
@@ -2356,8 +2333,6 @@ export type Mutation = {
   createTestResult: TestResult;
   /** Create a new 3D model. */
   createThreedModel: ThreeDModel;
-  /** Create a new toolbox with shortcuts. */
-  createToolbox: Toolbox;
   /** Create a trigger: run an action when a service signals a matching object. */
   createTrigger: Trigger;
   /** Delete an agent record. */
@@ -2372,8 +2347,6 @@ export type Mutation = {
   deleteMaterializedBlok: Scalars['Boolean']['output'];
   /** Delete a placement. */
   deletePlacement: Scalars['ID']['output'];
-  /** Delete a resolution by ID. */
-  deleteResolution: Scalars['ID']['output'];
   /** Delete a schedule. Its waiting run is cancelled; history is kept. */
   deleteSchedule: Scalars['ID']['output'];
   /** Delete a shortcut. */
@@ -2382,8 +2355,6 @@ export type Mutation = {
   deleteSpace: Scalars['ID']['output'];
   /** Delete a 3D model. */
   deleteThreedModel: Scalars['ID']['output'];
-  /** Delete a toolbox by ID. */
-  deleteToolbox: Scalars['ID']['output'];
   /** Delete a trigger; its runs are kept. */
   deleteTrigger: Scalars['ID']['output'];
   /** Ensure agent record exists or is up to date. */
@@ -2404,8 +2375,6 @@ export type Mutation = {
   pauseProbe: Probe;
   /** Pin an agent to the user. */
   pinAgent: Agent;
-  /** Pin an implementation to the user. */
-  pinImplementation: Implementation;
   /** Fire a probe at an agent — zero persistence, redis-held state under a TTL, never appears in task history. For high-frequency interactive work (previews, live parameter tweaks). */
   probe: Probe;
   /** Register the components and operations a UI app can render and evaluate (upsert by name in the caller's organization). Bloks and definitions that name the catalog are validated against it. */
@@ -2418,8 +2387,6 @@ export type Mutation = {
   resume: Task;
   /** Resume a paused probe. Idempotent on finished probes; the agent's Resumed report settles the state. */
   resumeProbe: Probe;
-  /** Mark an implementation as a higher-order wrapper of a lower implementation, with a projection config. */
-  setHigherOrder: Implementation;
   /** Shelve data into a memory drawer. */
   shelveInMemoryDrawer: MemoryDrawer;
   /** Run a schedule now: its waiting run is moved to now. Refused while a run is executing. */
@@ -2438,8 +2405,6 @@ export type Mutation = {
   updateMaterializedBlok: MaterializedBlok;
   /** Update an existing placement. */
   updatePlacement: Placement;
-  /** Update an existing resolution. */
-  updateResolution: Resolution;
   /** Change a schedule; a waiting run is re-planned. */
   updateSchedule: Schedule;
   /** Update an existing space. */
@@ -2448,12 +2413,6 @@ export type Mutation = {
   updateThreedModel: ThreeDModel;
   /** Change a trigger. */
   updateTrigger: Trigger;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationAckArgs = {
-  input: AckInput;
 };
 
 
@@ -2518,20 +2477,14 @@ export type MutationCreateDashboardArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
-export type MutationCreateImplementationArgs = {
-  input: CreateImplementationInput;
+export type MutationCreateHigherOrderImplementationArgs = {
+  input: CreateHigherOrderImplementationInput;
 };
 
 
 /** Root mutation type for executing write operations on the API. */
 export type MutationCreatePlacementArgs = {
   input: CreatePlacementInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationCreateResolutionArgs = {
-  input: CreateResolutionInput;
 };
 
 
@@ -2568,12 +2521,6 @@ export type MutationCreateTestResultArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationCreateThreedModelArgs = {
   input: CreateThreeDModelInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationCreateToolboxArgs = {
-  input: CreateToolboxInput;
 };
 
 
@@ -2620,12 +2567,6 @@ export type MutationDeletePlacementArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
-export type MutationDeleteResolutionArgs = {
-  input: DeleteResolutionInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
 export type MutationDeleteScheduleArgs = {
   input: ScheduleIdInput;
 };
@@ -2646,12 +2587,6 @@ export type MutationDeleteSpaceArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationDeleteThreedModelArgs = {
   input: DeleteThreeDModelInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationDeleteToolboxArgs = {
-  input: DeleteToolboxInput;
 };
 
 
@@ -2716,12 +2651,6 @@ export type MutationPinAgentArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
-export type MutationPinImplementationArgs = {
-  input: PinInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
 export type MutationProbeArgs = {
   input: ProbeInput;
 };
@@ -2754,12 +2683,6 @@ export type MutationResumeArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationResumeProbeArgs = {
   input: ResumeProbeInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationSetHigherOrderArgs = {
-  input: SetHigherOrderInput;
 };
 
 
@@ -2814,12 +2737,6 @@ export type MutationUpdateMaterializedBlokArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationUpdatePlacementArgs = {
   input: UpdatePlacementInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationUpdateResolutionArgs = {
-  input: UpdateResolutionInput;
 };
 
 
@@ -2903,6 +2820,8 @@ export type Patch = {
   globalFutureRevision: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
   interface: Scalars['String']['output'];
+  /** The value the patch replaced, when the agent reported it. */
+  oldValue?: Maybe<Scalars['Args']['output']>;
   op: Scalars['String']['output'];
   patch: JsonPatch;
   path: Scalars['String']['output'];
@@ -3269,14 +3188,12 @@ export type Query = {
   dashboards: Array<Dashboard>;
   /** Fetch a dependency by ID. */
   dependency: Dependency;
+  /** What assigning an implementation with these overwrites would bind, level by level, and what is unmet: a dry run of the assign's dependency resolution. */
+  dependencyTree: DependencyTree;
   /** Fetch a specific event. */
   event: TaskEvent;
   /** Get forward events after revision. */
   forwardEventsAfterRev: Array<Patch>;
-  /** Get hardware record by ID. */
-  hardwareRecord: HardwareRecord;
-  /** List of all hardware records. */
-  hardwareRecords: Array<HardwareRecord>;
   /** Get implementation by ID. */
   implementation: Implementation;
   /** Find implementation at given interface. */
@@ -3353,14 +3270,8 @@ export type Query = {
   state: State;
   /** Get state at global revision. */
   stateAtGlobalRev: Array<Snapshot>;
-  /** Retrieve a state definition by ID. */
-  stateDefinition: StateDefinition;
-  /** Available state schemas. */
-  stateDefinitions: Array<StateDefinition>;
   /** Retrieve state for a specific context. */
   stateFor: State;
-  /** All states from agents. */
-  states: Array<State>;
   /** Fetch a structure by its '@package/key' identifier (derived from port identifiers). */
   structure: Structure;
   /** Fetch a structure package by its key (derived from port identifiers). */
@@ -3489,6 +3400,11 @@ export type QueryDependencyArgs = {
 };
 
 
+export type QueryDependencyTreeArgs = {
+  input: DependencyTreeInput;
+};
+
+
 export type QueryEventArgs = {
   id: Scalars['ID']['input'];
 };
@@ -3499,17 +3415,6 @@ export type QueryForwardEventsAfterRevArgs = {
   globalRevision: Scalars['Int']['input'];
   sessionId?: InputMaybe<Scalars['String']['input']>;
   stateId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-
-export type QueryHardwareRecordArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QueryHardwareRecordsArgs = {
-  filters?: InputMaybe<HardwareRecordFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -3731,11 +3636,6 @@ export type QueryStateAtGlobalRevArgs = {
 };
 
 
-export type QueryStateDefinitionArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
 export type QueryStateForArgs = {
   agent: Scalars['ID']['input'];
   demand?: InputMaybe<StateDemandInput>;
@@ -3934,10 +3834,14 @@ export type ResolutionFilter = {
 
 export type ResolvedAgentDependency = {
   __typename?: 'ResolvedAgentDependency';
+  /** The dependency as its implementation declares it, while it still declares it. */
+  dependency?: Maybe<Dependency>;
   /** Get the key of the resolved dependency. */
   key: Scalars['String']['output'];
   /** Get a specific argument by key. */
   mappedAgents: Array<AgentMapping>;
+  /** Why an assign would refuse this dependency as it is bound here. Only a dry run (dependencyTree) says so; null when it is met. */
+  unmet?: Maybe<Scalars['String']['output']>;
   /** Get a specific argument by key. */
   values?: Maybe<Scalars['String']['output']>;
 };
@@ -4155,10 +4059,10 @@ export type SearchAssignWidgetInput = {
 export type Session = {
   __typename?: 'Session';
   agent: Agent;
-  endedAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   patches: Array<Patch>;
   snapshots: Array<Snapshot>;
+  /** When the session started. */
   startedAt: Scalars['DateTime']['output'];
 };
 
@@ -4184,18 +4088,8 @@ export type SessionFilter = {
 };
 
 export type SessionOrder =
-  { endedAt: Ordering; startedAt?: never; }
-  |  { endedAt?: never; startedAt: Ordering; };
-
-/** Mark an existing implementation as a higher-order wrapper of a lower implementation. */
-export type SetHigherOrderInput = {
-  /** Projection config: bound params + arg/dependency/return maps (see Implementation.higher_order_config). */
-  config?: InputMaybe<Scalars['AnyDefault']['input']>;
-  /** The wrapper implementation to mark as higher-order. */
-  implementation: Scalars['ID']['input'];
-  /** The lower implementation it wraps. */
-  lowerImplementation: Scalars['ID']['input'];
-};
+  /** When the session started. */
+  { startedAt: Ordering; };
 
 export type ShelveInMemoryDrawerInput = {
   /** The description of the drawer. This is used to identify the drawer in the system. */
@@ -4231,18 +4125,10 @@ export type Shortcut = {
   returns: Array<ReturnPort>;
   /** Saved arguments for the shortcut. */
   savedArgs: Scalars['AnyDefault']['output'];
-  /** Toolboxes that contain this shortcut. */
-  toolboxes: Array<Toolbox>;
+  /** The toolbox this shortcut belongs to. */
+  toolbox: Toolbox;
   /** If true, shortcut uses return values. */
   useReturns: Scalars['Boolean']['output'];
-};
-
-
-/** Shortcut to an action with preset arguments. */
-export type ShortcutToolboxesArgs = {
-  filters?: InputMaybe<ToolboxFilter>;
-  ordering?: Array<ToolboxOrder>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 export type ShortcutFilter = {
@@ -4658,12 +4544,8 @@ export type Subscription = {
   implementationChange: Implementation;
   /** Subscribe to creation or updates of implementations. */
   implementations: ImplementationUpdate;
-  /** Subscribe to latest patches for specific agents or states. */
-  latestPatches: Patch;
   /** Subscribe to root tasks created by this client (caller-scoped). */
   mytasks: TaskChangeEvent;
-  /** Subscribe to notifications when new actions are created. */
-  newActions: Action;
   /** Stream the events of one probe (caller-scoped, payload-carrying). Emits a state snapshot first when events already happened. */
   probeEvents: ProbeEvent;
   /** Subscribe to updates of state values and patches. */
@@ -4698,13 +4580,6 @@ export type SubscriptionImplementationChangeArgs = {
 /** Root subscription type for real-time event streams from the system. */
 export type SubscriptionImplementationsArgs = {
   agent: Scalars['ID']['input'];
-};
-
-
-/** Root subscription type for real-time event streams from the system. */
-export type SubscriptionLatestPatchesArgs = {
-  agent?: InputMaybe<Scalars['ID']['input']>;
-  state?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -4768,6 +4643,8 @@ export type Task = {
   events: Array<TaskEvent>;
   /** Timestamp when the task was finished. */
   finishedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The locks this task holds right now. */
+  heldLocks: Array<Lock>;
   /** Unique ID of the task. */
   id: Scalars['ID']['output'];
   /** Implementation assigned to execute. Null until the task is mapped to one. */
@@ -4852,7 +4729,6 @@ export type TaskChange = {
   /** Monotonic per-task version. Changes are produced by several backends and may arrive out of order: apply one only if its revision is greater than the last you applied. */
   revision: Scalars['Int']['output'];
   root?: Maybe<Scalars['ID']['output']>;
-  statusMessage?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
 };
 
@@ -5132,10 +5008,10 @@ export type TestResult = {
   implementation: Implementation;
   /** True if test passed. */
   passed: Scalars['Boolean']['output'];
+  /** What the test produced, as JSON. */
+  result?: Maybe<Scalars['AnyDefault']['output']>;
   /** Implementation running the test. */
   tester: Implementation;
-  /** When the test result was last updated. */
-  updatedAt: Scalars['DateTime']['output'];
 };
 
 /** A way to filter test results */
@@ -5144,8 +5020,16 @@ export type TestResultFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<TestResultFilter>;
   OR?: InputMaybe<TestResultFilter>;
+  /** Results of the test cases of this action */
+  action?: InputMaybe<Scalars['ID']['input']>;
+  /** Results of this test case */
+  case?: InputMaybe<Scalars['ID']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  name?: InputMaybe<StrFilterLookup>;
+  /** Results for this implementation under test */
+  implementation?: InputMaybe<Scalars['ID']['input']>;
+  passed?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Results whose test case's name contains this */
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** A test target: the action a test action tests, identified by exact hash or by an (app, key, version) coordinate. app defaults to the registering agent's app; omitting version matches every version. */
@@ -5164,7 +5048,8 @@ export type TestTargetInput = {
 export type ThreeDModel = {
   __typename?: 'ThreeDModel';
   createdAt: Scalars['DateTime']['output'];
-  dependency: Agent;
+  /** The agent this model shows (an agent-dependency declaration), as stored. */
+  dependency?: Maybe<Scalars['AnyDefault']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   file: MediaStore;
   id: Scalars['ID']['output'];
@@ -5397,16 +5282,6 @@ export type UpdatePlacementInput = {
   role?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** The input for creating a resolution. */
-export type UpdateResolutionInput = {
-  /** The ID of the resolution. This is used to identify the resolution in the system. */
-  id: Scalars['ID']['input'];
-  /** The name of the resolution. This is used to identify the resolution in the system. */
-  name: Scalars['String']['input'];
-  /** The resolved dependencies of the resolution. All other fields will be replaced. */
-  resolvedDependencies?: InputMaybe<Array<ResolvedDependencyInput>>;
-};
-
 /** Change a schedule. Giving intervalSeconds clears cron and vice versa. A waiting run is re-planned; an executing one finishes first. */
 export type UpdateScheduleInput = {
   args?: InputMaybe<Scalars['Args']['input']>;
@@ -5430,6 +5305,8 @@ export type UpdateSpaceInput = {
 
 /** The input for updating a 3D model. */
 export type UpdateThreeDModelInput = {
+  /** The agent this model shows. */
+  dependency?: InputMaybe<AgentDependencyInput>;
   /** The new description of the 3D model. */
   description?: InputMaybe<Scalars['String']['input']>;
   /** The ID of the 3D model to update. */
@@ -5438,6 +5315,8 @@ export type UpdateThreeDModelInput = {
   media?: InputMaybe<Scalars['ID']['input']>;
   /** The new name of the 3D model. */
   name?: InputMaybe<Scalars['String']['input']>;
+  /** How the agent's state maps onto the model's properties. */
+  transferFunction?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Change a trigger. Omitted fields stay as they are. */
@@ -5563,15 +5442,15 @@ export type _Service = {
 export type ListActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
 
 export type BrowseActionFragment = (
-  { __typename?: 'Action', definedAt: any, isDev: boolean, pinned: boolean, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }> }
+  { __typename?: 'Action', definedAt: any, isDev: boolean, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }> }
   & ListActionFragment
 );
 
-export type ProvidingImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, pinned: boolean, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, lastSeen?: any | null } };
+export type ProvidingImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, lastSeen?: any | null } };
 
 export type ActionTestCaseFragment = { __typename?: 'TestCase', id: string, name: string, description: string, isBenchmark: boolean, tester: { __typename?: 'Action', id: string, name: string, hash: any }, results: Array<{ __typename?: 'TestResult', id: string, passed: boolean, createdAt: any, implementation: { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string } }, tester: { __typename?: 'Implementation', id: string, interface: string } }> };
 
-export type ActionOverviewFragment = { __typename?: 'Action', id: string, name: string, hash: any, key: string, version: string, kind: ActionKind, stateful: boolean, pure: boolean, idempotent: boolean, isDev: boolean, pinned: boolean, scope: ActionScope, definedAt: any, app: { __typename?: 'App', identifier: string }, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }>, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, implementations: Array<(
+export type ActionOverviewFragment = { __typename?: 'Action', id: string, name: string, hash: any, key: string, version: string, kind: ActionKind, stateful: boolean, pure: boolean, idempotent: boolean, isDev: boolean, scope: ActionScope, definedAt: any, app: { __typename?: 'App', identifier: string }, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }>, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, implementations: Array<(
     { __typename?: 'Implementation' }
     & ProvidingImplementationFragment
   )>, testCases?: Array<(
@@ -5627,7 +5506,7 @@ export type ListAgentFragment = { __typename?: 'Agent', id: string, active: bool
 
 export type SearchAgentFragment = { __typename?: 'Agent', id: string, name: string, connected: boolean, blocked: boolean, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string } };
 
-export type AgentChangeFragment = { __typename?: 'AgentChange', id: string, name: string, kind: AgentKind, latestEvent: AgentEventKind, connected: boolean, blocked: boolean, lastSeen?: any | null, client: string, user: string, organization: string, app: string, release: string };
+export type AgentChangeFragment = { __typename?: 'AgentChange', id: string, name: string, kind: AgentKind, connected: boolean, blocked: boolean, lastSeen?: any | null, client: string, user: string, organization: string, app: string, release: string };
 
 export type AgentChangeEventFragment = { __typename?: 'AgentChangeEvent', delete?: string | null, create?: (
     { __typename?: 'AgentChange' }
@@ -5637,7 +5516,7 @@ export type AgentChangeEventFragment = { __typename?: 'AgentChangeEvent', delete
     & AgentChangeFragment
   ) | null };
 
-export type HoverAgentFragment = { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, latestHardwareRecord?: { __typename?: 'HardwareRecord', cpuCount: number, cpuVendorName: string } | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> };
+export type HoverAgentFragment = { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> };
 
 export type ListScheduleFragment = { __typename?: 'Schedule', id: string, name: string, enabled: boolean, cron?: string | null, intervalSeconds?: number | null, timezone: string, consecutiveFailures: number, lastError?: string | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null, nextRun?: { __typename?: 'Task', id: string, notBefore?: any | null, latestEventKind: TaskEventKind, isDone: boolean } | null };
 
@@ -5777,7 +5656,7 @@ export type BlokDiagnosticFragment = { __typename?: 'Diagnostic', level: Diagnos
 export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, demoState: any, materializedBloks: Array<(
     { __typename?: 'MaterializedBlok' }
     & ListMaterializedBlokFragment
-  )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, components: Array<(
+  )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, components: Array<(
     { __typename?: 'ComponentNode' }
     & BlokComponentTreeFragment
   )>, diagnostics: Array<(
@@ -5813,9 +5692,88 @@ export type MediaStoreFragment = { __typename?: 'MediaStore', id: string, key: s
 
 export type DetailDependencyFragment = { __typename?: 'Dependency', id: string, key: string, appFilter?: string | null, versionFilter?: string | null, autoResolvable: boolean };
 
-export type ListDependencyFragment = { __typename?: 'Dependency', id: string, key: string, description?: string | null, appFilter?: string | null, versionFilter?: string | null, autoResolvable: boolean, minViableInstances?: number | null, maxViableInstances?: number | null, singular: boolean };
+export type ListDependencyFragment = { __typename?: 'Dependency', id: string, key: string, description?: string | null, appFilter?: string | null, versionFilter?: string | null, autoResolvable: boolean, optional: boolean, minViableInstances?: number | null, maxViableInstances?: number | null, singular: boolean };
 
-export type DetailImplementationFragment = { __typename?: 'Implementation', id: string, name: string, interface: string, execution: Execution, effects: Effects, codeHash?: string | null, pinned: boolean, needsToken: boolean, provenanceAudience?: Array<string> | null, params: any, higherOrderConfig: any, action: (
+export type DependencyTreeNodeFragment = { __typename?: 'ResolvedAgentDependency', key: string, unmet?: string | null, dependency?: (
+    { __typename?: 'Dependency' }
+    & ListDependencyFragment
+  ) | null };
+
+export type DependencyTreeBindingFragment = { __typename?: 'ImplementationMapping', key: string, implementation: { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } } };
+
+export type DependencyTreeLevel4Fragment = (
+  { __typename?: 'ResolvedAgentDependency', mappedAgents: Array<{ __typename?: 'AgentMapping', agentId: string, agent: (
+      { __typename?: 'Agent' }
+      & ListAgentFragment
+    ), mappedImplementations: Array<(
+      { __typename?: 'ImplementationMapping' }
+      & DependencyTreeBindingFragment
+    )> }> }
+  & DependencyTreeNodeFragment
+);
+
+export type DependencyTreeLevel3Fragment = (
+  { __typename?: 'ResolvedAgentDependency', mappedAgents: Array<{ __typename?: 'AgentMapping', agentId: string, agent: (
+      { __typename?: 'Agent' }
+      & ListAgentFragment
+    ), mappedImplementations: Array<(
+      { __typename?: 'ImplementationMapping', resolvedDependencies: Array<(
+        { __typename?: 'ResolvedAgentDependency' }
+        & DependencyTreeLevel4Fragment
+      )> }
+      & DependencyTreeBindingFragment
+    )> }> }
+  & DependencyTreeNodeFragment
+);
+
+export type DependencyTreeLevel2Fragment = (
+  { __typename?: 'ResolvedAgentDependency', mappedAgents: Array<{ __typename?: 'AgentMapping', agentId: string, agent: (
+      { __typename?: 'Agent' }
+      & ListAgentFragment
+    ), mappedImplementations: Array<(
+      { __typename?: 'ImplementationMapping', resolvedDependencies: Array<(
+        { __typename?: 'ResolvedAgentDependency' }
+        & DependencyTreeLevel3Fragment
+      )> }
+      & DependencyTreeBindingFragment
+    )> }> }
+  & DependencyTreeNodeFragment
+);
+
+export type DependencyTreeLevel1Fragment = (
+  { __typename?: 'ResolvedAgentDependency', mappedAgents: Array<{ __typename?: 'AgentMapping', agentId: string, agent: (
+      { __typename?: 'Agent' }
+      & ListAgentFragment
+    ), mappedImplementations: Array<(
+      { __typename?: 'ImplementationMapping', resolvedDependencies: Array<(
+        { __typename?: 'ResolvedAgentDependency' }
+        & DependencyTreeLevel2Fragment
+      )> }
+      & DependencyTreeBindingFragment
+    )> }> }
+  & DependencyTreeNodeFragment
+);
+
+export type DependencyTreeRootFragment = (
+  { __typename?: 'ResolvedAgentDependency', mappedAgents: Array<{ __typename?: 'AgentMapping', agentId: string, agent: (
+      { __typename?: 'Agent' }
+      & ListAgentFragment
+    ), mappedImplementations: Array<(
+      { __typename?: 'ImplementationMapping', resolvedDependencies: Array<(
+        { __typename?: 'ResolvedAgentDependency' }
+        & DependencyTreeLevel1Fragment
+      )> }
+      & DependencyTreeBindingFragment
+    )> }> }
+  & DependencyTreeNodeFragment
+);
+
+export type FrozenBindingFragment = { __typename?: 'ResolvedAgentDependency', key: string, mappedAgents: Array<{ __typename?: 'AgentMapping', agentId: string, agent: { __typename?: 'Agent', id: string, name: string, placements: Array<(
+        { __typename?: 'Placement' }
+        & AgentPlacementFragment
+      )> } }> };
+
+export type DetailImplementationFragment = { __typename?: 'Implementation', id: string, name: string, interface: string, execution: Execution, effects: Effects, codeHash?: string | null, needsToken: boolean, provenanceAudience?: Array<string> | null, params: any, higherOrderConfig: any, action: (
     { __typename?: 'Action' }
     & DetailActionFragment
   ), agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, kind: AgentKind, lastSeen?: any | null, hash: string, app: { __typename?: 'App', identifier: string }, client: { __typename?: 'Client', id: string } }, dependencies: Array<(
@@ -5837,7 +5795,7 @@ export type ImplementationStatsQueryVariables = Exact<{
 
 export type ImplementationStatsQuery = { __typename?: 'Query', taskStats: { __typename?: 'TaskStats', count: number } };
 
-export type HoverImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, pinned: boolean, execution: Execution, effects: Effects, action: { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, kind: PortKind, nullable: boolean, default?: any | null }> }, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } };
+export type HoverImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, execution: Execution, effects: Effects, action: { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, args: Array<{ __typename?: 'ArgPort', key: string, label?: string | null, kind: PortKind, nullable: boolean, default?: any | null }> }, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } };
 
 export type InstallerImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string, args: Array<{ __typename?: 'ArgPort', key: string, nullable: boolean }> }, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, app: { __typename?: 'App', identifier: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null, user: { __typename?: 'User', sub: string } } };
 
@@ -6455,13 +6413,22 @@ export type DetailTaskFragment = (
       )> }, dependencies: Array<{ __typename?: 'Dependency', id: string, key: string, appFilter?: string | null, versionFilter?: string | null, autoResolvable: boolean, actionDependencies: Array<{ __typename?: 'ActionDependency', key: string }> }> } | null, resolvedDependencies: Array<{ __typename?: 'ResolvedAgentDependency', key: string, values?: string | null, mappedAgents: Array<{ __typename?: 'AgentMapping', agent: { __typename?: 'Agent', id: string, name: string, placements: Array<(
           { __typename?: 'Placement' }
           & AgentPlacementFragment
-        )> }, mappedImplementations: Array<{ __typename?: 'ImplementationMapping', key: string, implementation: { __typename?: 'Implementation', id: string } }> }> }> }
+        )> }, mappedImplementations: Array<{ __typename?: 'ImplementationMapping', key: string, implementation: { __typename?: 'Implementation', id: string }, resolvedDependencies: Array<(
+          { __typename?: 'ResolvedAgentDependency', mappedAgents: Array<{ __typename?: 'AgentMapping', mappedImplementations: Array<{ __typename?: 'ImplementationMapping', key: string, resolvedDependencies: Array<(
+                { __typename?: 'ResolvedAgentDependency', mappedAgents: Array<{ __typename?: 'AgentMapping', mappedImplementations: Array<{ __typename?: 'ImplementationMapping', key: string, resolvedDependencies: Array<(
+                      { __typename?: 'ResolvedAgentDependency' }
+                      & FrozenBindingFragment
+                    )> }> }> }
+                & FrozenBindingFragment
+              )> }> }> }
+          & FrozenBindingFragment
+        )> }> }> }> }
   & PostmanTaskFragment
 );
 
 export type TaskEventFragment = { __typename?: 'TaskEvent', id: string, kind: TaskEventKind, level: LogLevel, returns?: any | null, progress?: number | null, reference: string, createdAt: any, message?: string | null, step?: number | null, agentTs?: any | null, effect?: string | null, key?: string | null, value?: any | null, task: { __typename?: 'Task', id: string, reference?: string | null }, delegatedTo?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', name: string } } | null } | null };
 
-export type TaskChangeFragment = { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, statusMessage?: string | null, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null };
+export type TaskChangeFragment = { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null };
 
 export type TaskEventChangeFragment = { __typename?: 'TaskEventChange', id: string, task: string, kind: TaskEventKind, message?: string | null, progress?: number | null, returns?: any | null, value?: any | null, createdAt: any };
 
@@ -6529,16 +6496,6 @@ export type UiCatalogFragment = { __typename?: 'UICatalog', id: string, name: st
   )> };
 
 export type ListUiCatalogFragment = { __typename?: 'UICatalog', id: string, name: string, isRegistered: boolean };
-
-export type AcknowledgeMutationVariables = Exact<{
-  task: Scalars['ID']['input'];
-}>;
-
-
-export type AcknowledgeMutation = { __typename?: 'Mutation', ack: (
-    { __typename?: 'Task' }
-    & PostmanTaskFragment
-  ) };
 
 export type CleanupActionsMutationVariables = Exact<{
   actionIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -7222,6 +7179,7 @@ export type AgentForDependencyQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['ID']['input']>>;
   dependency?: InputMaybe<Scalars['ID']['input']>;
+  blokDependency?: InputMaybe<Scalars['ID']['input']>;
 }>;
 
 
@@ -7381,6 +7339,16 @@ export type DependencyQuery = { __typename?: 'Query', dependency: (
     { __typename?: 'Dependency' }
     & DetailDependencyFragment
   ) };
+
+export type DependencyTreeQueryVariables = Exact<{
+  input: DependencyTreeInput;
+}>;
+
+
+export type DependencyTreeQuery = { __typename?: 'Query', dependencyTree: { __typename?: 'DependencyTree', satisfied: boolean, dependencies: Array<(
+      { __typename?: 'ResolvedAgentDependency' }
+      & DependencyTreeRootFragment
+    )> } };
 
 export type SearchMemoryDrawerQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -8120,7 +8088,6 @@ export const BrowseActionFragmentDoc = gql`
   ...ListAction
   definedAt
   isDev
-  pinned
   collections {
     id
     name
@@ -8135,7 +8102,6 @@ export const ProvidingImplementationFragmentDoc = gql`
     fragment ProvidingImplementation on Implementation {
   id
   interface
-  pinned
   agent {
     id
     name
@@ -8188,7 +8154,6 @@ export const ActionOverviewFragmentDoc = gql`
   pure
   idempotent
   isDev
-  pinned
   scope
   definedAt
   app {
@@ -9033,36 +8998,6 @@ export const AgentFragmentDoc = gql`
 ${StateFragmentDoc}
 ${ListTaskFragmentDoc}
 ${AgentPlacementFragmentDoc}`;
-export const ListAgentFragmentDoc = gql`
-    fragment ListAgent on Agent {
-  id
-  active
-  connected
-  name
-  lastSeen
-  pinned
-  blocked
-  client {
-    clientId
-  }
-  user {
-    sub
-  }
-  app {
-    identifier
-  }
-  release {
-    version
-  }
-  device {
-    id
-    deviceId
-  }
-  user {
-    sub
-  }
-}
-    `;
 export const SearchAgentFragmentDoc = gql`
     fragment SearchAgent on Agent {
   id
@@ -9082,7 +9017,6 @@ export const AgentChangeFragmentDoc = gql`
   id
   name
   kind
-  latestEvent
   connected
   blocked
   lastSeen
@@ -9121,10 +9055,6 @@ export const HoverAgentFragmentDoc = gql`
   }
   user {
     sub
-  }
-  latestHardwareRecord {
-    cpuCount
-    cpuVendorName
   }
   implementations(pagination: {limit: 6}) {
     id
@@ -9386,6 +9316,7 @@ export const BlokFragmentDoc = gql`
   dependencies {
     id
     key
+    description
   }
   catalog {
     id
@@ -9473,11 +9404,172 @@ export const DetailDependencyFragmentDoc = gql`
   autoResolvable
 }
     `;
+export const ListDependencyFragmentDoc = gql`
+    fragment ListDependency on Dependency {
+  id
+  key
+  description
+  appFilter
+  versionFilter
+  autoResolvable
+  optional
+  minViableInstances
+  maxViableInstances
+  singular
+}
+    `;
+export const DependencyTreeNodeFragmentDoc = gql`
+    fragment DependencyTreeNode on ResolvedAgentDependency {
+  key
+  unmet
+  dependency {
+    ...ListDependency
+  }
+}
+    ${ListDependencyFragmentDoc}`;
+export const ListAgentFragmentDoc = gql`
+    fragment ListAgent on Agent {
+  id
+  active
+  connected
+  name
+  lastSeen
+  pinned
+  blocked
+  client {
+    clientId
+  }
+  user {
+    sub
+  }
+  app {
+    identifier
+  }
+  release {
+    version
+  }
+  device {
+    id
+    deviceId
+  }
+  user {
+    sub
+  }
+}
+    `;
+export const DependencyTreeBindingFragmentDoc = gql`
+    fragment DependencyTreeBinding on ImplementationMapping {
+  key
+  implementation {
+    id
+    interface
+    action {
+      id
+      name
+    }
+  }
+}
+    `;
+export const DependencyTreeLevel4FragmentDoc = gql`
+    fragment DependencyTreeLevel4 on ResolvedAgentDependency {
+  ...DependencyTreeNode
+  mappedAgents {
+    agentId
+    agent {
+      ...ListAgent
+    }
+    mappedImplementations {
+      ...DependencyTreeBinding
+    }
+  }
+}
+    ${DependencyTreeNodeFragmentDoc}
+${ListAgentFragmentDoc}
+${DependencyTreeBindingFragmentDoc}`;
+export const DependencyTreeLevel3FragmentDoc = gql`
+    fragment DependencyTreeLevel3 on ResolvedAgentDependency {
+  ...DependencyTreeNode
+  mappedAgents {
+    agentId
+    agent {
+      ...ListAgent
+    }
+    mappedImplementations {
+      ...DependencyTreeBinding
+      resolvedDependencies {
+        ...DependencyTreeLevel4
+      }
+    }
+  }
+}
+    ${DependencyTreeNodeFragmentDoc}
+${ListAgentFragmentDoc}
+${DependencyTreeBindingFragmentDoc}
+${DependencyTreeLevel4FragmentDoc}`;
+export const DependencyTreeLevel2FragmentDoc = gql`
+    fragment DependencyTreeLevel2 on ResolvedAgentDependency {
+  ...DependencyTreeNode
+  mappedAgents {
+    agentId
+    agent {
+      ...ListAgent
+    }
+    mappedImplementations {
+      ...DependencyTreeBinding
+      resolvedDependencies {
+        ...DependencyTreeLevel3
+      }
+    }
+  }
+}
+    ${DependencyTreeNodeFragmentDoc}
+${ListAgentFragmentDoc}
+${DependencyTreeBindingFragmentDoc}
+${DependencyTreeLevel3FragmentDoc}`;
+export const DependencyTreeLevel1FragmentDoc = gql`
+    fragment DependencyTreeLevel1 on ResolvedAgentDependency {
+  ...DependencyTreeNode
+  mappedAgents {
+    agentId
+    agent {
+      ...ListAgent
+    }
+    mappedImplementations {
+      ...DependencyTreeBinding
+      resolvedDependencies {
+        ...DependencyTreeLevel2
+      }
+    }
+  }
+}
+    ${DependencyTreeNodeFragmentDoc}
+${ListAgentFragmentDoc}
+${DependencyTreeBindingFragmentDoc}
+${DependencyTreeLevel2FragmentDoc}`;
+export const DependencyTreeRootFragmentDoc = gql`
+    fragment DependencyTreeRoot on ResolvedAgentDependency {
+  ...DependencyTreeNode
+  mappedAgents {
+    agentId
+    agent {
+      ...ListAgent
+    }
+    mappedImplementations {
+      ...DependencyTreeBinding
+      resolvedDependencies {
+        ...DependencyTreeLevel1
+      }
+    }
+  }
+}
+    ${DependencyTreeNodeFragmentDoc}
+${ListAgentFragmentDoc}
+${DependencyTreeBindingFragmentDoc}
+${DependencyTreeLevel1FragmentDoc}`;
 export const HoverImplementationFragmentDoc = gql`
     fragment HoverImplementation on Implementation {
   id
   interface
-  pinned
   execution
   effects
   action {
@@ -9698,19 +9790,6 @@ export const DetailActionFragmentDoc = gql`
 }
     ${GraphNodeActionFragmentDoc}
 ${MinimalImplementationFragmentDoc}`;
-export const ListDependencyFragmentDoc = gql`
-    fragment ListDependency on Dependency {
-  id
-  key
-  description
-  appFilter
-  versionFilter
-  autoResolvable
-  minViableInstances
-  maxViableInstances
-  singular
-}
-    `;
 export const TaskEventFragmentDoc = gql`
     fragment TaskEvent on TaskEvent {
   id
@@ -9788,7 +9867,6 @@ export const DetailImplementationFragmentDoc = gql`
   execution
   effects
   codeHash
-  pinned
   needsToken
   provenanceAudience
   params
@@ -10264,6 +10342,21 @@ export const NoChildrenDetailTaskFragmentDoc = gql`
   }
 }
     ${PostmanTaskFragmentDoc}`;
+export const FrozenBindingFragmentDoc = gql`
+    fragment FrozenBinding on ResolvedAgentDependency {
+  key
+  mappedAgents {
+    agentId
+    agent {
+      id
+      name
+      placements(pagination: {limit: 1}, ordering: {createdAt: DESC}) {
+        ...AgentPlacement
+      }
+    }
+  }
+}
+    ${AgentPlacementFragmentDoc}`;
 export const DetailTaskFragmentDoc = gql`
     fragment DetailTask on Task {
   ...PostmanTask
@@ -10319,12 +10412,32 @@ export const DetailTaskFragmentDoc = gql`
         implementation {
           id
         }
+        resolvedDependencies {
+          ...FrozenBinding
+          mappedAgents {
+            mappedImplementations {
+              key
+              resolvedDependencies {
+                ...FrozenBinding
+                mappedAgents {
+                  mappedImplementations {
+                    key
+                    resolvedDependencies {
+                      ...FrozenBinding
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
 }
     ${PostmanTaskFragmentDoc}
-${AgentPlacementFragmentDoc}`;
+${AgentPlacementFragmentDoc}
+${FrozenBindingFragmentDoc}`;
 export const TaskChangeFragmentDoc = gql`
     fragment TaskChange on TaskChange {
   id
@@ -10332,7 +10445,6 @@ export const TaskChangeFragmentDoc = gql`
   isDone
   latestEventKind
   latestInstructKind
-  statusMessage
   action
   implementation
   agent
@@ -10558,39 +10670,6 @@ export function useImplementationStatsLazyQuery(baseOptions?: ApolloReactHooks.L
 export type ImplementationStatsQueryHookResult = ReturnType<typeof useImplementationStatsQuery>;
 export type ImplementationStatsLazyQueryHookResult = ReturnType<typeof useImplementationStatsLazyQuery>;
 export type ImplementationStatsQueryResult = Apollo.QueryResult<ImplementationStatsQuery, ImplementationStatsQueryVariables>;
-export const AcknowledgeDocument = gql`
-    mutation Acknowledge($task: ID!) {
-  ack(input: {task: $task}) {
-    ...PostmanTask
-  }
-}
-    ${PostmanTaskFragmentDoc}`;
-export type AcknowledgeMutationFn = Apollo.MutationFunction<AcknowledgeMutation, AcknowledgeMutationVariables>;
-
-/**
- * __useAcknowledgeMutation__
- *
- * To run a mutation, you first call `useAcknowledgeMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useAcknowledgeMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [acknowledgeMutation, { data, loading, error }] = useAcknowledgeMutation({
- *   variables: {
- *      task: // value for 'task'
- *   },
- * });
- */
-export function useAcknowledgeMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AcknowledgeMutation, AcknowledgeMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<AcknowledgeMutation, AcknowledgeMutationVariables>(AcknowledgeDocument, options);
-      }
-export type AcknowledgeMutationHookResult = ReturnType<typeof useAcknowledgeMutation>;
-export type AcknowledgeMutationResult = Apollo.MutationResult<AcknowledgeMutation>;
-export type AcknowledgeMutationOptions = Apollo.BaseMutationOptions<AcknowledgeMutation, AcknowledgeMutationVariables>;
 export const CleanupActionsDocument = gql`
     mutation CleanupActions($actionIds: [ID!]) {
   cleanupActions(actionIds: $actionIds)
@@ -12978,9 +13057,9 @@ export type AgentOptionsQueryHookResult = ReturnType<typeof useAgentOptionsQuery
 export type AgentOptionsLazyQueryHookResult = ReturnType<typeof useAgentOptionsLazyQuery>;
 export type AgentOptionsQueryResult = Apollo.QueryResult<AgentOptionsQuery, AgentOptionsQueryVariables>;
 export const AgentForDependencyDocument = gql`
-    query AgentForDependency($search: String, $values: [ID!], $dependency: ID) {
+    query AgentForDependency($search: String, $values: [ID!], $dependency: ID, $blokDependency: ID) {
   agents: agents(
-    filters: {search: $search, ids: $values, dependency: $dependency}
+    filters: {search: $search, ids: $values, dependency: $dependency, blokDependency: $blokDependency}
     pagination: {limit: 10}
   ) {
     ...ListAgent
@@ -13003,6 +13082,7 @@ export const AgentForDependencyDocument = gql`
  *      search: // value for 'search'
  *      values: // value for 'values'
  *      dependency: // value for 'dependency'
+ *      blokDependency: // value for 'blokDependency'
  *   },
  * });
  */
@@ -13596,6 +13676,44 @@ export function useDependencyLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type DependencyQueryHookResult = ReturnType<typeof useDependencyQuery>;
 export type DependencyLazyQueryHookResult = ReturnType<typeof useDependencyLazyQuery>;
 export type DependencyQueryResult = Apollo.QueryResult<DependencyQuery, DependencyQueryVariables>;
+export const DependencyTreeDocument = gql`
+    query DependencyTree($input: DependencyTreeInput!) {
+  dependencyTree(input: $input) {
+    satisfied
+    dependencies {
+      ...DependencyTreeRoot
+    }
+  }
+}
+    ${DependencyTreeRootFragmentDoc}`;
+
+/**
+ * __useDependencyTreeQuery__
+ *
+ * To run a query within a React component, call `useDependencyTreeQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDependencyTreeQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDependencyTreeQuery({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useDependencyTreeQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DependencyTreeQuery, DependencyTreeQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DependencyTreeQuery, DependencyTreeQueryVariables>(DependencyTreeDocument, options);
+      }
+export function useDependencyTreeLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DependencyTreeQuery, DependencyTreeQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DependencyTreeQuery, DependencyTreeQueryVariables>(DependencyTreeDocument, options);
+        }
+export type DependencyTreeQueryHookResult = ReturnType<typeof useDependencyTreeQuery>;
+export type DependencyTreeLazyQueryHookResult = ReturnType<typeof useDependencyTreeLazyQuery>;
+export type DependencyTreeQueryResult = Apollo.QueryResult<DependencyTreeQuery, DependencyTreeQueryVariables>;
 export const SearchMemoryDrawerDocument = gql`
     query SearchMemoryDrawer($search: String, $implementation: ID, $values: [ID!], $identifier: String, $pagination: OffsetPaginationInput) {
   options: memoryDrawers(

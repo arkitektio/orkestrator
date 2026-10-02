@@ -20,7 +20,6 @@ import {
 import { useCopyUniversalLink } from "@/core/tabs/sharing/use-copy-universal-link";
 import { useMeasuredWidth, visibleNavCount } from "./navOverflow";
 import { TitleSearchBar } from "./TitleSearchBar";
-import { WindowControls } from "./WindowControls";
 
 /**
  * The window's chrome, with no title bar.
@@ -210,16 +209,16 @@ const AppMenuButton = () => (
 
 export const RailChrome = () => {
   const mode = getChromeMode();
-  // `autohide` is Windows, `buttons` Linux: the two with no menu bar.
-  const appMenu = mode === "autohide" || mode === "buttons";
-  const { fullscreen, maximized } = useWindowState();
+  // `autohide` is Windows and Linux: the two with no menu bar.
+  const appMenu = mode === "autohide";
+  const { fullscreen } = useWindowState();
 
   const gutter = trafficLightGutter(mode, fullscreen);
 
   return (
     <div
       className={cn("flex shrink-0 flex-col gap-1.5 px-2 pb-2 pt-2", mode !== "none" && "app-drag")}
-      onDoubleClick={dragZoneDoubleClick(mode)}
+      onDoubleClick={dragZoneDoubleClick()}
     >
       <div className="flex h-7 items-center gap-0.5">
         {/* Horizontal room for the real traffic lights, which macOS draws over
@@ -237,11 +236,6 @@ export const RailChrome = () => {
         <NavButtons appMenu={appMenu} />
 
         {appMenu && <AppMenuButton />}
-
-        {/* Linux is the one genuinely frameless platform, so it is the one that
-            needs us to supply these — inline here rather than stranded at the
-            foot of the rail. */}
-        {mode === "buttons" && <WindowControls maximized={maximized} compact />}
       </div>
 
       <TitleSearchBar />

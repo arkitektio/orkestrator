@@ -2,7 +2,7 @@ import React, { type ComponentType, type ReactNode } from "react";
 
 import { Arkitekt, serviceGuard } from "@/core/connection/arkitekt/host";
 import { DialogDescription, DialogTitle } from "@/core/ui/dialog";
-import type { DisplayWidgetProps } from "@/core/smart/display/registry";
+import type { DisplayWidgetProps, ViewerWidgetProps } from "@/core/smart/display/registry";
 import type { FileDownloader } from "@/core/modules/export/fileDownloaders";
 import type { Action } from "@/core/smart/localactions/LocalActionProvider";
 import type {
@@ -220,6 +220,17 @@ export const MODULE_DISPLAYS = derivedRecord(() => {
     }
   }
   return displays;
+});
+
+/** Viewers, each behind its module's guard: a viewer runs its module's queries. */
+export const MODULE_VIEWERS = derivedRecord(() => {
+  const viewers: Record<string, ComponentType<ViewerWidgetProps>> = {};
+  for (const definition of moduleDefinitions() as readonly ModuleDefinition[]) {
+    for (const [identifier, Viewer] of Object.entries(definition.builtins.viewers ?? {})) {
+      viewers[identifier] = guarded(namespaceOf(definition), Viewer);
+    }
+  }
+  return viewers;
 });
 
 export type HoverCardEntry = {

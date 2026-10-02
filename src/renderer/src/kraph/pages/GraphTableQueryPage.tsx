@@ -12,12 +12,14 @@ import { Plus } from "lucide-react";
 import ScatterPlotCard from "../components/cards/ScatterPlotCard";
 import { RenderGraphQueryTable } from "../components/renderers/table/GraphTable";
 import CreateScatterPlotForm from "../forms/CreateScatterPlotForm";
+import { KRAPH_HELP } from "../help";
 
 const Page = asDetailQueryRoute(
   useGetGraphTableQueryQuery,
   ({ data }) => {
     return (
       <KraphGraphQuery.ModelPage
+        help={KRAPH_HELP.graphQuery}
         object={{ id: data.graphTableQuery.id }}
         title={data.graphTableQuery.label}
         pageActions={

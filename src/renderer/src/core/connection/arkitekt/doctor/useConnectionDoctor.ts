@@ -35,6 +35,12 @@ export type RunDoctorInput = {
    * this (see `HubAwareConnectionDoctor`); the signed-out surfaces do not.
    */
   fetchHub?: () => Promise<HubHealthFacts | undefined>;
+  /**
+   * False skips the system Tailscale CLI. A run nobody asked for (the
+   * unreachable page starts one by itself) must not read software the app
+   * does not own until the user has allowed it; see `useSystemTailscale`.
+   */
+  systemMesh?: boolean;
 };
 
 /** Lok is a witness, not a stage: slow or failing, it must not hold up the run. */
@@ -153,7 +159,7 @@ export const useConnectionDoctor = () => {
     }
 
     try {
-      const wantsMesh = anyMeshHost(targets.map((target) => target.host));
+      const wantsMesh = input.systemMesh !== false && anyMeshHost(targets.map((target) => target.host));
       // The built-in mesh's state is cheap and local; a failure there must
       // not sink the whole run, so it degrades to "unknown".
       const sidecarStatus = meshBridge()?.status().catch(() => undefined) ?? Promise.resolve(undefined);

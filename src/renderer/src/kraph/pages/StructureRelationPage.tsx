@@ -5,10 +5,12 @@ import { Badge } from "@/core/ui/badge";
 import { KraphStructureRelation } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
 import { useGetStructureRelationQuery } from "../api/graphql";
+import { KRAPH_HELP } from "../help";
 
 const Page = asDetailQueryRoute(useGetStructureRelationQuery, ({ data }) => {
   return (
     <KraphStructureRelation.ModelPage
+      help={KRAPH_HELP.structureRelation}
       object={{ id: data?.structureRelation.id }}
       title={data?.structureRelation.category?.label ?? data?.structureRelation.label}
       sidebars={<KraphStructureRelation.Knowledge object={{ id: data.structureRelation.id }} />}

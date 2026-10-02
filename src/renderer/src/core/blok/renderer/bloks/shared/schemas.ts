@@ -159,6 +159,18 @@ export const bindSchema = z
   .optional()
   .describe('Data-model path this control reads from and writes back to.');
 
+/**
+ * A reference to one object of some module, the shape structure ports carry.
+ * Nullish: an unset state field or form value is `null`, not absent.
+ */
+export const structureValueSchema = z
+  .object({
+    object: z.union([z.string(), z.number()]),
+    __identifier: z.string(),
+  })
+  .nullish()
+  .describe('A structure reference: {"object": "<id>", "__identifier": "@mikro/arraydataset"}.');
+
 export const disabledSchema = BlokPropSchemas.DynamicBoolean.optional().describe(
   'Disables the control.',
 );

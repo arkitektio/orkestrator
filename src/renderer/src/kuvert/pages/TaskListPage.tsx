@@ -7,6 +7,7 @@ import { TaskRows } from "../components/tasks/TaskRows";
 import { TaskSplit } from "../components/tasks/TaskSplit";
 import { TaskViewToggle, useTaskView } from "../components/tasks/TaskViewToggle";
 import { TASK_VIEW_FILTERS } from "../components/tasks/taskOps";
+import { KUVERT_HELP } from "../help";
 import { MailTaskList } from "../linkers";
 
 /** One task list: its tasks (active, snoozed or done), and the list's own menu. */
@@ -19,6 +20,7 @@ const TaskListPage = asDetailQueryRoute(useGetTaskListQuery, ({ data }) => {
     <MailTaskList.ModelPage
       title={list.name}
       object={list}
+      help={KUVERT_HELP.taskList}
       pageActions={
         <>
           <TaskViewToggle view={view} onChange={setView} />

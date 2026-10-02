@@ -10,12 +10,14 @@ import { OmeroArkProject } from "@/core/linkers";
 import { PlusIcon } from "lucide-react";
 import { useGetProjectQuery } from "../api/graphql";
 import DatasetCard from "../components/cards/DatasetCard";
+import { OMEROARK_HELP } from "../help";
 
 
 const Page = asDetailQueryRoute(useGetProjectQuery, ({ data, refetch }) => {
 
   return (
     <OmeroArkProject.ModelPage
+      help={OMEROARK_HELP.project}
       object={data?.project}
       title={data?.project?.name}
       pageActions={<>

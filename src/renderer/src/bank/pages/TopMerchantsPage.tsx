@@ -3,6 +3,7 @@ import { useSpendingByMerchantQuery } from "../api/graphql";
 import { PeriodPicker, usePeriod } from "../components/insights/period";
 import { MerchantSectionNav } from "../components/merchants/MerchantSectionNav";
 import { MerchantSpending } from "../components/merchants/MerchantSpending";
+import { BANK_HELP } from "../help";
 
 /** Where the money goes, ranked by merchant, over a chosen period. */
 const TopMerchantsPage = () => {
@@ -13,7 +14,7 @@ const TopMerchantsPage = () => {
   const totals = data?.spendingByMerchant ?? [];
 
   return (
-    <PageLayout title="Top merchants" pageActions={<PeriodPicker period={period} onPeriod={setPeriod} />}>
+    <PageLayout help={BANK_HELP.topMerchants} title="Top merchants" pageActions={<PeriodPicker period={period} onPeriod={setPeriod} />}>
       <MerchantSectionNav className="mb-3" />
       <div className="max-w-2xl p-3">
         {totals.length > 0 ? (

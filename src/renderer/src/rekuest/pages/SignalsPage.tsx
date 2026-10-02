@@ -2,6 +2,7 @@ import { PageLayout } from "@/core/layout/PageLayout";
 import { Sidebars } from "@/core/layout/Sidebars";
 import SignalList from "../components/lists/SignalList";
 import { SignalDeclarationsSidebar } from "../sidebars/SignalDeclarationsSidebar";
+import { REKUEST_HELP } from "../help";
 
 /**
  * What services announced about the organization's objects, newest first:
@@ -11,6 +12,7 @@ import { SignalDeclarationsSidebar } from "../sidebars/SignalDeclarationsSidebar
 const Page = () => (
   <PageLayout
     title="Signals"
+    help={REKUEST_HELP.signals}
     sidebars={
       <Sidebars>
         <Sidebars.Tab label="Declared">

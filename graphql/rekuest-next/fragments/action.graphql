@@ -33,7 +33,6 @@ fragment BrowseAction on Action {
   ...ListAction
   definedAt
   isDev
-  pinned
   collections {
     id
     name
@@ -47,7 +46,6 @@ fragment BrowseAction on Action {
 fragment ProvidingImplementation on Implementation {
   id
   interface
-  pinned
   agent {
     id
     name
@@ -101,7 +99,6 @@ fragment ActionOverview on Action {
   pure
   idempotent
   isDev
-  pinned
   scope
   definedAt
   app {

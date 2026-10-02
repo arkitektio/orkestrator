@@ -6,6 +6,7 @@ import { sparseDatasetTitle } from "../components/sparse/sparseFacts";
 import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
 import { SparseDatasetInfoSidebar } from "../components/sidebars/SparseDatasetInfoSidebar";
 import { SparseDatasetOverview } from "../components/sparse/SparseDatasetOverview";
+import { MIKRO_HELP } from "../help";
 
 /**
  * Laid out like `ArrayDatasetPage` and `TableDatasetPage`: the data fills the
@@ -27,6 +28,7 @@ export const SparseDatasetPage = asDetailQueryRoute(
     return (
       <MikroSparseDataset.ModelPage
         object={dataset}
+        help={MIKRO_HELP.sparseDataset}
         title={sparseDatasetTitle(dataset.name)}
         variant="black"
         overlay

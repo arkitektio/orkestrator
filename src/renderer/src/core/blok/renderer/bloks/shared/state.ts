@@ -71,6 +71,22 @@ export const asNumber = (raw: unknown): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+export type StructureValue = {object: string; __identifier: string};
+
+/** A structure reference, or `null` for anything that is not one. */
+export const asStructure = (raw: unknown): StructureValue | null => {
+  if (raw == null || typeof raw !== 'object') {
+    return null;
+  }
+
+  const {object, __identifier} = raw as {object?: unknown; __identifier?: unknown};
+  if ((typeof object !== 'string' && typeof object !== 'number') || object === '') {
+    return null;
+  }
+
+  return typeof __identifier === 'string' && __identifier ? {object: String(object), __identifier} : null;
+};
+
 export const asStringList = (raw: unknown): string[] => {
   if (Array.isArray(raw)) {
     return raw.map(asString);

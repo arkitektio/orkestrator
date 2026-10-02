@@ -1,4 +1,5 @@
 import { Sidebars } from "@/core/layout/Sidebars";
+import { LOK_HELP } from "../help";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { HelpSidebar } from "@/core/layout/help";
 import { Link } from "@/core/ui/link";
@@ -10,7 +11,7 @@ export type IRepresentationScreenProps = Record<string, never>;
 
 const Page: React.FC<IRepresentationScreenProps> = () => {
   return (
-    <PageLayout title="Lok" sidebars={
+    <PageLayout help={LOK_HELP.overview} title="Lok" sidebars={
       <Sidebars>
         <Sidebars.Tab label="Statistics">
           <HomePageStatisticsSidebar />

@@ -10,6 +10,7 @@ import { TaskRows } from "../components/tasks/TaskRows";
 import { TaskSplit } from "../components/tasks/TaskSplit";
 import { TaskViewToggle, useTaskView, VIEW_LABEL } from "../components/tasks/TaskViewToggle";
 import { listFilter, ListScope, TASK_VIEW_FILTERS } from "../components/tasks/taskOps";
+import { KUVERT_HELP } from "../help";
 import { MailTask } from "../linkers";
 
 const NEW_LIST = "__new";
@@ -59,6 +60,7 @@ const TasksPage = () => {
   return (
     <MailTask.ListPage
       title="Tasks"
+      help={KUVERT_HELP.tasks}
       pageActions={
         <>
           <TaskViewToggle view={view} onChange={setView} />

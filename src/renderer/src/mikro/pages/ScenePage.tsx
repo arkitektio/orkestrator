@@ -9,6 +9,7 @@ import { Scene } from "../components/scene/Scene";
 import { SceneTitleOverlay } from "../components/scene/SceneTitleOverlay";
 import { coldOpenTimeline } from "../components/scene/platform/perf/coldOpenTimeline";
 import { useSceneOpen } from "../lib/zarr/useDatalayerWarmup";
+import { MIKRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -29,6 +30,7 @@ const DetailPage = asDetailQueryRoute(
           overlay
           actions={<MikroScene.Actions object={id} />}
           object={data.scene}
+          help={MIKRO_HELP.scene}
           title={data?.scene?.name}
           additionalSidebars={
             <>

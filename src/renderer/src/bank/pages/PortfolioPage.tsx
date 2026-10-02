@@ -7,6 +7,7 @@ import { Provider, usePortfolioQuery } from "../api/graphql";
 import { PortfolioOverview } from "../components/holdings/PortfolioOverview";
 import { PortfolioInsights } from "../components/insights/portfolio/PortfolioInsights";
 import { formatMoney } from "../format";
+import { BANK_HELP } from "../help";
 
 /**
  * Every depot's positions as one portfolio. A security held in two depots is
@@ -20,6 +21,7 @@ const PortfolioPage = () => {
 
   return (
     <PageLayout
+      help={BANK_HELP.portfolio}
       title="Portfolio"
       pageActions={
         <DialogButton

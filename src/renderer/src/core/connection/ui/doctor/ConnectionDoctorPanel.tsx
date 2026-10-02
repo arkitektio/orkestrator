@@ -311,7 +311,7 @@ const FindingRow = ({
 };
 
 /** Puts the plain-text report on the clipboard — the one hand-off to an admin. */
-const CopyReportButton = ({ report }: { report: DoctorReport }) => {
+export const CopyReportButton = ({ report }: { report: DoctorReport }) => {
   const [copied, setCopied] = useState(false);
   return (
     <Button
@@ -327,7 +327,7 @@ const CopyReportButton = ({ report }: { report: DoctorReport }) => {
   );
 };
 
-const FindingList = ({ findings, onRemedy }: { findings: Finding[]; onRemedy: (id: RemedyId) => void }) => (
+export const FindingList = ({ findings, onRemedy }: { findings: Finding[]; onRemedy: (id: RemedyId) => void }) => (
   <ul role="list">
     {findings.map((finding) => (
       <FindingRow key={`${finding.id}-${finding.targetLabel ?? ""}`} finding={finding} onRemedy={onRemedy} />

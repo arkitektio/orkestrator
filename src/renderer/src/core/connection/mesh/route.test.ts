@@ -24,6 +24,28 @@ const payload = (status: Record<string, unknown> = {}, config: Record<string, un
     ],
   }) as MeshStatusPayload;
 
+describe("serviceRoute, direct against relayed", () => {
+  it("reads a tunnel as direct when the node has an endpoint, whatever relay region it names", () => {
+    const route = serviceRoute("hub.lab.mesh.arkitekt.live", {
+      sidecar: { state: "ready", version: "t" },
+      meshes: [
+        {
+          config: { id: "lab", label: "Lab mesh", controlUrl: "https://mesh.arkitekt.live", hosts: [], hasNodeState: true },
+          status: {
+            id: "lab",
+            state: "running",
+            magicDnsSuffix: "lab.mesh.arkitekt.live",
+            peers: [
+              { dnsName: "hub.lab.mesh.arkitekt.live.", ips: ["100.64.0.9"], online: true, relay: "fra", curAddr: "203.0.113.7:41641" },
+            ],
+          },
+        },
+      ],
+    });
+    expect(route).toMatchObject({ kind: "mesh", peer: { path: { kind: "direct", address: "203.0.113.7:41641" } } });
+  });
+});
+
 describe("serviceRoute", () => {
   it("names the mesh, the machine and how the tunnel runs", () => {
     expect(serviceRoute("hub.lab.mesh.arkitekt.live", payload())).toEqual({

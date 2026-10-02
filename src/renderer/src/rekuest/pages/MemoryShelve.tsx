@@ -6,6 +6,7 @@ import {
   useMemoryShelveQuery
 } from "@/rekuest/api/graphql";
 import { BellIcon } from "lucide-react";
+import { REKUEST_HELP } from "../help";
 
 
 export const MemoryShelvePage = asDetailQueryRoute(
@@ -15,6 +16,7 @@ export const MemoryShelvePage = asDetailQueryRoute(
     return (
       <RekuestMemoryShelve.ModelPage
         title={data.memoryShelve.name}
+        help={REKUEST_HELP.memoryShelve}
         object={data.memoryShelve}
         sidebars={
           <Sidebars>

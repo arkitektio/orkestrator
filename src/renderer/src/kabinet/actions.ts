@@ -21,7 +21,7 @@ const APPROVAL_IDENTIFIER = '@kabinet/approval'
 export const KABINET_ACTIONS: Record<string, Action> = {
   'install-release': {
     title: 'Install…',
-    description: 'Authorize a deployer to run the release as you (deploy it afterwards)',
+    description: 'Authorize the release to run as you, then deploy it to a backend',
     icon: Download,
     conditions: [
       { type: 'identifier', identifier: RELEASE_IDENTIFIER },

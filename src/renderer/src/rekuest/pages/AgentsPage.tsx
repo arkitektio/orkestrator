@@ -1,8 +1,9 @@
 import { RekuestAgent } from "@/core/linkers";
 import AgentList from "@/rekuest/components/lists/AgentList";
+import { REKUEST_HELP } from "../help";
 const Page = () => {
   return (
-    <RekuestAgent.ListPage title={"Agents"}>
+    <RekuestAgent.ListPage help={REKUEST_HELP.agents} title={"Agents"}>
       <div className="p-6">
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center mb-3">
           <div>

@@ -5,6 +5,7 @@ import { Switch } from "@/core/ui/switch";
 import React, { useState } from "react";
 import { useListReleaseApprovalsQuery } from "../api/graphql";
 import ApprovalCard from "../components/cards/ApprovalCard";
+import { KABINET_HELP } from "../help";
 
 /**
  * The releases people in the organization allowed to run as them. Installing
@@ -20,6 +21,7 @@ const ApprovalsPage: React.FC = () => {
   return (
     <PageLayout
       title="Approvals"
+      help={KABINET_HELP.approvals}
       pageActions={
         <div className="flex items-center gap-2">
           <Switch id="approvals-revoked" checked={showRevoked} onCheckedChange={setShowRevoked} />

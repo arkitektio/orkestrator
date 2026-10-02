@@ -3,6 +3,7 @@ import { FlussRun } from "@/core/linkers";
 import { useFlowQuery, useGetRunQuery } from "@/fluss/api/graphql";
 import { EditFlow } from "@/fluss/edit/EditFlow";
 import { TrackFlow } from "../track/TrackFlow";
+import { FLUSS_HELP } from "../help";
 
 export const FlowDetail = (props: { id: string }) => {
   const { data, error } = useFlowQuery({
@@ -21,6 +22,7 @@ export const Page = asDetailQueryRoute(useGetRunQuery, ({ data }) => {
     <FlussRun.ModelPage
       object={data.run}
       title={"Run for " + data.run.flow.title}
+      help={FLUSS_HELP.run}
     >
       <TrackFlow run={data.run} />
     </FlussRun.ModelPage>

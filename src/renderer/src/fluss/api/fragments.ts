@@ -50,6 +50,8 @@
     ],
     "_Entity": [
       "Flow",
+      "PythonFlow",
+      "PythonRun",
       "ReactiveTemplate",
       "Run",
       "RunEvent",

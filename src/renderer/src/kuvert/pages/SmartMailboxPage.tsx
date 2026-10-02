@@ -5,6 +5,7 @@ import { FolderRole, useMailboxTreeQuery } from "../api/graphql";
 import { MailList } from "../components/list/MailList";
 import { AddMailboxButton } from "../components/lists/MailAccountList";
 import { MailSplit } from "../components/split/MailSplit";
+import { KUVERT_HELP } from "../help";
 import { MailMessage } from "../linkers";
 import { SmartMailbox } from "../smartMailboxes";
 
@@ -21,6 +22,7 @@ const SmartMailboxPage = ({ mailbox }: { mailbox: SmartMailbox }) => {
   return (
     <MailMessage.ListPage
       title={mailbox.label}
+      help={KUVERT_HELP.smartMailbox}
       pageActions={
         <PageAction
           size="sm"

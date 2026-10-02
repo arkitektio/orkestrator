@@ -7,6 +7,7 @@ import { useGetBackendQuery } from "../api/graphql";
 import PodCard from "../components/cards/PodCard";
 import ResourceCard from "../components/cards/ResourceCard";
 import { IconForBackendKind } from "../components/IconForBackendKind";
+import { KABINET_HELP } from "../help";
 
 
 export default asDetailQueryRoute(useGetBackendQuery, ({ data }) => {
@@ -14,6 +15,7 @@ export default asDetailQueryRoute(useGetBackendQuery, ({ data }) => {
     <KabinetBackend.ModelPage
       title={data?.backend?.name}
       object={data?.backend}
+      help={KABINET_HELP.backend}
       pageActions={
         <>
           {/* Other modules' actions on a backend (rekuest: its agents). */}

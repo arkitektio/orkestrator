@@ -5,6 +5,7 @@ import { useArrayDatasetFilterBar } from "../components/filter/ArrayDatasetFilte
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { ArrayDatasetSpec } from "../api/graphql";
 import { ADATASET_SPEC_BY_SLUG, xyAspectOf } from "../specs";
+import { MIKRO_HELP } from "../help";
 
 /**
  * One array-dataset list per spec, filtered server-side. A route per spec rather
@@ -31,7 +32,7 @@ const Page = () => {
   }
 
   return (
-    <MikroArrayDataset.ListPage title={entry.label} pageActions={actions}>
+    <MikroArrayDataset.ListPage title={entry.label} pageActions={actions} help={MIKRO_HELP.arrayDatasetSpec}>
       <div className="p-3 flex flex-col gap-3">
         <Explainer title={entry.label} description={entry.description} />
         {/* Planes, and only planes, get laid out at their own shape: the tiles

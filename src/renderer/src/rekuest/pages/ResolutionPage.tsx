@@ -18,6 +18,7 @@ import { ArrowRight } from "lucide-react";
 import { ReturnsContainer } from "@/core/ports/widgets/returns/ReturnsContainer";
 import { portToLabel } from "@/core/ports/engine/utils";
 import { ResolutionGraph } from "../components/global/ResolutionGraph";
+import { REKUEST_HELP } from "../help";
 
 export const DoForm = ({ id, resolution }: { id: string, resolution: string }) => {
   const { assign, latestTask, implementation } = useImplementationAction({
@@ -150,6 +151,7 @@ export const ResolutionPage = asDetailQueryRoute(useGetResolutionQuery, ({ data 
   return (
     <RekuestResolution.ModelPage
       title={data.resolution.name}
+      help={REKUEST_HELP.resolution}
       object={data.resolution}
       sidebars={
         <Sidebars>

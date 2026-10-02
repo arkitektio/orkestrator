@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { MailSplit } from "../components/split/MailSplit";
 import { MailList } from "../components/list/MailList";
+import { KUVERT_HELP } from "../help";
 import { MailMessage } from "../linkers";
 
 /**
@@ -38,6 +39,7 @@ const SearchPage = () => {
   return (
     <MailMessage.ListPage
       title={similar ? "Similar mail" : "Search mail"}
+      help={KUVERT_HELP.search}
       pageActions={
         <PageAction.Slot alwaysShow>
           <Input

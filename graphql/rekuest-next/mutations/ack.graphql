@@ -1,5 +1,0 @@
-mutation Acknowledge($task: ID!) {
-  ack(input: { task: $task }) {
-    ...PostmanTask
-  }
-}

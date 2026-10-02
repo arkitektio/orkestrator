@@ -4,6 +4,7 @@ import { Card } from "@/core/ui/card";
 import { KabinetResource } from "@/core/linkers";
 import { useGetResourceQuery } from "../api/graphql";
 import PodCard from "../components/cards/PodCard";
+import { KABINET_HELP } from "../help";
 
 export const ResourcePage =  asDetailQueryRoute(
   useGetResourceQuery,
@@ -12,6 +13,7 @@ export const ResourcePage =  asDetailQueryRoute(
       <KabinetResource.ModelPage
         title={data?.resource?.name}
         object={data?.resource}
+        help={KABINET_HELP.resource}
       >
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">
           <div>

@@ -12,6 +12,7 @@ import {
 } from './resolution';
 import {isActionSchema} from './schemas';
 import {readScopedPath, resolveScopedPath, useBlokScope} from './scope';
+import {bindTask} from './task';
 import type {
   BlokComponentNode,
   BlokComponentProp,
@@ -173,7 +174,11 @@ const createLiveResolutionContext = (
   readPath: path => readScopedPath(store.getState().dataModel, path, scope),
   resolvePath: path => resolveScopedPath(path, scope),
   invokeFunction: (name, args, options) => store.getState().invokeFunction(name, args, options),
-  dispatchAction: (action, component) => store.getState().dispatchAction(action, component),
+  dispatchAction: (action, component, observe) =>
+    observe
+      ? store.getState().dispatchAction(action, component, observe)
+      : store.getState().dispatchAction(action, component),
+  bindTask: name => bindTask(store, name),
 });
 
 const usePathSnapshot = (paths: ReadonlyArray<string>): ReadonlyMap<string, unknown> => {

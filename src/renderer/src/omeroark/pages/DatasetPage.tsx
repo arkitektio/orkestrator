@@ -8,6 +8,7 @@ import {
 import { OmeroArkDataset } from "@/core/linkers";
 import { useGetDatasetQuery } from "../api/graphql";
 import ImageCard from "../components/cards/ImageCard";
+import { OMEROARK_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
@@ -16,6 +17,7 @@ const Page = asDetailQueryRoute(useGetDatasetQuery, ({ data }) => {
 
   return (
     <OmeroArkDataset.ModelPage
+      help={OMEROARK_HELP.dataset}
       object={data.dataset}
       title={data?.dataset?.name}
     >

@@ -2,12 +2,13 @@ import { Explainer } from "@/core/layout/Explainer";
 import { ElektroModelWorkspace } from "@/core/linkers";
 import React from "react";
 import ModelWorkspaceList from "../components/lists/ModelWorkspaceList";
+import { ELEKTRO_HELP } from "../help";
 
 export type IRepresentationScreenProps = {};
 
 const ModelWorkspacesPage: React.FC<IRepresentationScreenProps> = () => {
   return (
-    <ElektroModelWorkspace.ListPage title="Workspaces">
+    <ElektroModelWorkspace.ListPage title="Workspaces" help={ELEKTRO_HELP.modelWorkspaces}>
       <div className="p-3">
         <Explainer
           title="Model Workspaces"

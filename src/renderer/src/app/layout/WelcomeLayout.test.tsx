@@ -14,7 +14,7 @@ const setElectron = (platform?: string) => {
   window.electron = { process: { platform } };
 };
 
-/** The preload's window bridge, which the Linux buttons need to render. */
+/** The preload's window bridge, which the window buttons need to render. */
 const setWindowBridge = () => {
   // @ts-expect-error - stand in for the preload injection
   window.api = {
@@ -54,11 +54,13 @@ describe("the signed-out window", () => {
     expect(screen.getByTestId("welcome-drag-strip").className).toContain("app-drag");
   });
 
-  it("draws its own window buttons where the platform has none", () => {
-    setElectron("linux");
+  it.each(["win32", "linux"])("keeps its window buttons in the auto-hiding bar on %s", (platform) => {
+    // Not in the drag strip: the bar is the one place they live, on both.
+    setElectron(platform);
     setWindowBridge();
     render(<WelcomeLayout>x</WelcomeLayout>);
-    expect(screen.getByLabelText("Close")).toBeInTheDocument();
+    expect(screen.getByTestId("autohide-titlebar")).toContainElement(screen.getByLabelText("Close"));
+    expect(screen.getByTestId("welcome-drag-strip")).toBeEmptyDOMElement();
   });
 
   it("has no drag region and no buttons in a browser tab", () => {

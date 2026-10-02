@@ -7,6 +7,7 @@ import { Environment, Float, OrbitControls, useGLTF } from "@react-three/drei";
 import type { } from "@react-three/fiber";
 import { Canvas } from "@react-three/fiber";
 import { createElement, Suspense } from "react";
+import { REKUEST_HELP } from "../../help";
 
 const toyCarUrl = new URL(
   "../../../../../../resources/Box.glb",
@@ -93,6 +94,7 @@ export const AgentSpacePage = asDetailQueryRoute(
     return (
       <RekuestAgent.ModelPage
         title={`${data?.agent?.name} — Space`}
+        help={REKUEST_HELP.agentSpace}
         object={data.agent}
         pageActions={<> </>
         }

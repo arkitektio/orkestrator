@@ -1,0 +1,8 @@
+query DependencyTree($input: DependencyTreeInput!) {
+  dependencyTree(input: $input) {
+    satisfied
+    dependencies {
+      ...DependencyTreeRoot
+    }
+  }
+}
