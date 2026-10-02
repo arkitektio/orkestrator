@@ -40,13 +40,22 @@ export const AsyncCombobox = (props: {
   emptyPlaceholder?: string;
   disabled?: boolean;
   className?: string;
+  /**
+   * Ask `search` for the label of a `value` that is not among the loaded
+   * options (`{ values: [value] }`), for pickers whose value is an id rather
+   * than a string that reads as its own label. Also searches again each time
+   * the list opens, so what was made since shows up.
+   */
+  resolveSelectedLabel?: boolean;
 }) => {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<Option[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [resolved, setResolved] = useState<Option | null>(null);
 
-  const { search: searchFn } = props;
+  const { search: searchFn, value, resolveSelectedLabel } = props;
+  const refetchKey = resolveSelectedLabel ? open : false;
 
   useEffect(() => {
     let cancelled = false;
@@ -63,9 +72,27 @@ export const AsyncCombobox = (props: {
     return () => {
       cancelled = true;
     };
-  }, [searchFn, search]);
+  }, [searchFn, search, refetchKey]);
 
-  const selected = options.find((o) => o.value === props.value);
+  const listed = options.find((o) => o.value === props.value);
+
+  useEffect(() => {
+    if (!resolveSelectedLabel || !value || listed) return;
+    let cancelled = false;
+    searchFn({ values: [value] })
+      .then((res) => {
+        if (cancelled) return;
+        setResolved(res.filter(notEmpty).find((o) => o.value === value) ?? null);
+      })
+      .catch(() => {
+        // The id is shown instead; the list itself reports search errors.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [searchFn, value, resolveSelectedLabel, listed]);
+
+  const selected = listed ?? (resolved?.value === props.value ? resolved : undefined);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
