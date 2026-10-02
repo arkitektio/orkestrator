@@ -71,12 +71,6 @@ export const AgentHoverCard = ({ object }: { object: Object }) => {
             })}
           />
         )}
-        {agent.latestHardwareRecord && (
-          <HoverRow
-            label="CPU"
-            value={`${agent.latestHardwareRecord.cpuCount}× ${agent.latestHardwareRecord.cpuVendorName}`}
-          />
-        )}
       </div>
 
       {agent.implementations.length > 0 && (

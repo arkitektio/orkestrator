@@ -171,6 +171,26 @@ fragment DetailTask on Task {
         implementation {
           id
         }
+        # The levels below, for a rerun to pin the whole tree again.
+        resolvedDependencies {
+          ...FrozenBinding
+          mappedAgents {
+            mappedImplementations {
+              key
+              resolvedDependencies {
+                ...FrozenBinding
+                mappedAgents {
+                  mappedImplementations {
+                    key
+                    resolvedDependencies {
+                      ...FrozenBinding
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -218,7 +238,6 @@ fragment TaskChange on TaskChange {
   isDone
   latestEventKind
   latestInstructKind
-  statusMessage
   action
   implementation
   agent

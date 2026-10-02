@@ -169,6 +169,12 @@ const pruneErrors = (
 export type PortResolverOptions = {
   /** RHF path of the object that holds the top-level ports (`[]` or `["args"]`). */
   portsPath?: string[];
+  /**
+   * Names that count as mounted although nothing registers them: values a
+   * component writes with `setValue` (a form's `dependencies`). Their errors
+   * would otherwise be dropped as "not shown" and never block a submit.
+   */
+  alwaysMounted?: string[];
 };
 
 export type PortResolver<TValues extends FieldValues = FieldValues> =
@@ -191,9 +197,10 @@ export const createPortResolver = <TValues extends FieldValues = FieldValues>(
     context: unknown,
     resolverOptions: ResolverOptions<TValues>,
   ): Promise<ResolverResult<TValues>> => {
-    const mounted = new Set<string>(
-      (resolverOptions.names ?? []) as readonly string[],
-    );
+    const mounted = new Set<string>([
+      ...((resolverOptions.names ?? []) as readonly string[]),
+      ...(options.alwaysMounted ?? []),
+    ]);
     lastMounted = mounted;
 
     const zodResult = await zod(values, context, resolverOptions);

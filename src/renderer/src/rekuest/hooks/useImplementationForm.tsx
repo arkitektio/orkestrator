@@ -4,6 +4,7 @@ import { toast } from "@/core/notify";
 import Zod from "zod";
 import { DetailImplementationFragment, ListDependencyFragment, ResolvedDependencyInput } from "../api/graphql";
 import { createPortResolver } from "@/core/ports/engine/portResolver";
+import { toPins } from "../lib/dependencyTree";
 import {
   buildZodSchema,
   extractErrorMessages,
@@ -15,19 +16,24 @@ import {
 
 export { portHash };
 
-const buildDependenciesSchema = (
+export const buildDependenciesSchema = (
   dependencies: ListDependencyFragment[],
 ) => {
-  const resolvedDepSchema = Zod.object({
-    autoResolve: Zod.boolean().optional(),
-    key: Zod.string(),
-    mappedAgents: Zod.array(
-      Zod.object({
-        agent: Zod.string(),
-        key: Zod.string(),
-      }),
-    ),
-  });
+  // Recursive: a mapped agent carries the pins of the level below it. Only the
+  // root level is counted here; the levels below are the dry run's to judge.
+  const resolvedDepSchema: Zod.ZodType<ResolvedDependencyInput> = Zod.lazy(() =>
+    Zod.object({
+      autoResolve: Zod.boolean().optional(),
+      key: Zod.string(),
+      mappedAgents: Zod.array(
+        Zod.object({
+          agent: Zod.string(),
+          key: Zod.string(),
+          dependencies: Zod.array(resolvedDepSchema).nullish(),
+        }),
+      ),
+    }),
+  );
 
   // No dependencies defined — allow anything
   if (dependencies.length === 0) {
@@ -48,6 +54,9 @@ const buildDependenciesSchema = (
         if (dep.autoResolvable && isAutoResolving) continue;
         // If auto-resolvable and no entry at all, also skip (backend can handle)
         if (dep.autoResolvable && !entry) continue;
+
+        // An optional dependency may stay unbound; once bound, the counts below apply
+        if (dep.optional && agentCount === 0 && !isAutoResolving) continue;
 
         // Must be set (either agents or autoResolve)
         if (agentCount === 0 && !isAutoResolving) {
@@ -120,6 +129,8 @@ export const useImplementationForm = (props: {
     });
     return createPortResolver(zodSchema, args || [], {
       portsPath: ["args"],
+      // Written by the dependency picker with setValue, never registered.
+      alwaysMounted: ["dependencies"],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hash, props.implementation?.dependencies]);
@@ -142,7 +153,7 @@ export const useImplementationForm = (props: {
               resolver.mountedNames(),
               ["args"],
             ),
-            dependencies: data.dependencies,
+            dependencies: toPins(data.dependencies),
           });
         },
         (errors) => {

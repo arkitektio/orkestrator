@@ -1,3 +1,4 @@
+import { FrozenDependency, pinsFromFrozen } from "../lib/dependencyTree";
 import { buildAssignInput } from "@/rekuest/assign";
 import { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -139,11 +140,14 @@ export type ReassignableTask = {
   args: AssignInput["args"];
   action: { id: string };
   implementation?: { id: string } | null;
+  resolvedDependencies?: readonly FrozenDependency[] | null;
 };
 
 /**
  * Re-run a task with its original args: pinned to the same implementation
- * when the task has one, otherwise re-resolved via the action.
+ * when the task has one, otherwise re-resolved via the action. A pinned
+ * rerun binds its dependencies to the same agents again, level by level, as
+ * far as the task's fragment selects them.
  */
 export const useReassignFromTask = () => {
   const { assign } = useAssign();
@@ -157,9 +161,13 @@ export const useReassignFromTask = () => {
             ? { implementation: task.implementation.id }
             : { action: task.action.id }),
           // A task's `dependencies` field is the raw resolution JSON map, NOT
-          // the [ResolvedDependencyInput!] list AssignInput expects — sending
-          // it fails server validation ("mappedAgents was not provided").
-          // Omit it and let the server re-resolve on the rerun.
+          // the [ResolvedDependencyInput!] list AssignInput expects; its
+          // `resolvedDependencies` are the same bindings, read back as pins.
+          // Another implementation may declare other dependencies: only a
+          // rerun on the same one carries them.
+          ...(task.implementation && task.resolvedDependencies?.length
+            ? { dependencies: pinsFromFrozen(task.resolvedDependencies) }
+            : {}),
           hooks: [],
           capture: opts?.capture ?? false,
         }),

@@ -21,7 +21,6 @@ const dependencySelectionSchema = z.object({
     z.object({
       agent: z.string(),
       key: z.string(),
-      mappedActions: z.array(z.string()),
     }),
   ),
 });
@@ -41,6 +40,7 @@ export type MaterializeBlokFormProps = {
     appFilter?: string | null;
     versionFilter?: string | null;
     autoResolvable?: boolean;
+    optional?: boolean;
     minViableInstances?: number | null;
     maxViableInstances?: number | null;
     singular?: boolean;
@@ -64,6 +64,7 @@ export const MaterializeBlokForm = (
       appFilter: dependency.appFilter ?? null,
       versionFilter: dependency.versionFilter ?? null,
       autoResolvable: dependency.autoResolvable ?? false,
+      optional: dependency.optional ?? false,
       minViableInstances: dependency.minViableInstances ?? null,
       maxViableInstances: dependency.maxViableInstances ?? null,
       singular: dependency.singular ?? true,
@@ -81,7 +82,6 @@ export const MaterializeBlokForm = (
               {
                 agent: props.prefilledAgentId,
                 key: dependency.key,
-                mappedActions: [],
               },
             ],
           }))
@@ -127,7 +127,7 @@ export const MaterializeBlokForm = (
         <div className="flex flex-col sm:justify-between mb-2 h-full min-h-0">
           <div className="flex-grow mb-4 @container">
             {props.dependencies && (
-              <DependenciesContainer dependencies={normalizedDependencies} bound={"blok"} />
+              <DependenciesContainer dependencies={normalizedDependencies} bound={"blok"} owner="blok" />
             )}
           </div>
           <DialogFooter className="flex-initial">

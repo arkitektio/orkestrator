@@ -182,6 +182,29 @@ describe("createPortResolver", () => {
     expect(result.errors).toMatchObject({ args: { max: { message: "max must exceed min" } } });
   });
 
+  it("keeps errors on values nothing registers when they are named always mounted", async () => {
+    // A form's `dependencies` are written with setValue: never registered, so never "mounted".
+    const schema = z.object({
+      args: buildZodSchema(minMax),
+      dependencies: z.array(z.object({ key: z.string() })).superRefine((_, ctx) => {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Requires at least one agent.", path: ["stage"] });
+      }),
+    });
+    const options = {
+      names: ["args.min", "args.max"],
+      fields: {},
+      criteriaMode: "firstError",
+      shouldUseNativeValidation: false,
+    } as unknown as ResolverOptions<FieldValues>;
+    const values = { args: { min: 1, max: 2 }, dependencies: [] };
+
+    const dropped = await createPortResolver(schema, minMax, { portsPath: ["args"] })(values, undefined, options);
+    expect(dropped.errors).toEqual({});
+
+    const kept = await createPortResolver(schema, minMax, { portsPath: ["args"], alwaysMounted: ["dependencies"] })(values, undefined, options);
+    expect(kept.errors).toMatchObject({ dependencies: { stage: { message: "Requires at least one agent." } } });
+  });
+
   it("composes with an additional schema via extend", async () => {
     const schema = buildZodSchema(minMax).extend({ name: z.string().min(1) });
     const result = await run(minMax, { min: 1, max: 2, name: "" }, ["min", "max", "name"], { schema });

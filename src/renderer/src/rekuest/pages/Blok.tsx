@@ -51,6 +51,7 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                             dependencies={data.blok.dependencies.map((dependency) => ({
                               id: dependency.id,
                               key: dependency.key,
+                              description: dependency.description,
                             }))}
                           onMaterialized={(_materializedBlok) => {
                                 setOpen(false);

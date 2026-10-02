@@ -21,6 +21,24 @@ import { SpaceGroup, SpaceGroupPlacement } from './types'
 
 // ── derived data builders ────────────────────────────────────────────
 
+type TreeAgent = DetailTaskQuery['task']['resolvedDependencies'][0]['mappedAgents'][0]['agent']
+type TreeLevel = readonly {
+  mappedAgents: readonly {
+    agent?: TreeAgent | null
+    mappedImplementations?: readonly { resolvedDependencies?: TreeLevel | null }[] | null
+  }[]
+}[]
+
+/** The agents a task's dependencies bind, down the levels its fragment selects. */
+function treeAgents(level: TreeLevel | null | undefined): TreeAgent[] {
+  return (level ?? []).flatMap((dependency) =>
+    dependency.mappedAgents.flatMap((mapping) => [
+      ...(mapping.agent ? [mapping.agent] : []),
+      ...(mapping.mappedImplementations ?? []).flatMap((bound) => treeAgents(bound.resolvedDependencies))
+    ])
+  )
+}
+
 function buildSpaceGroups(
   resolvedDependencies: DetailTaskQuery['task']['resolvedDependencies'],
   rootAgent?: {
@@ -50,22 +68,24 @@ function buildSpaceGroups(
     }
   }
 
-  for (const dep of resolvedDependencies) {
-    for (const mapping of dep.mappedAgents) {
-      for (const placement of mapping.agent.placements) {
-        const spaceId = placement.space.id
-        if (!groupMap.has(spaceId)) {
-          groupMap.set(spaceId, { spaceId, placements: [] })
-        }
-        groupMap.get(spaceId)!.placements.push({
-          id: placement.id,
-          name: placement.name,
-          agentName: mapping.agent.name,
-          agentId: mapping.agent.id,
-          model: placement.model ?? null,
-          affineMatrix: placement.affineMatrix
-        })
+  // Every agent of the tree, whatever level binds it: once per space.
+  const placed = new Set<string>()
+  for (const agent of treeAgents(resolvedDependencies)) {
+    for (const placement of agent.placements) {
+      if (placed.has(placement.id)) continue
+      placed.add(placement.id)
+      const spaceId = placement.space.id
+      if (!groupMap.has(spaceId)) {
+        groupMap.set(spaceId, { spaceId, placements: [] })
       }
+      groupMap.get(spaceId)!.placements.push({
+        id: placement.id,
+        name: placement.name,
+        agentName: agent.name,
+        agentId: agent.id,
+        model: placement.model ?? null,
+        affineMatrix: placement.affineMatrix
+      })
     }
   }
 

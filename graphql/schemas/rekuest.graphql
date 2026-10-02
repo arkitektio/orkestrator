@@ -2,10 +2,6 @@ directive @auth(required_org_roles: [String!] = null, required_roles: [String!] 
 
 directive @unionElementOf(discriminator: String!, key: String!, union: String!) repeatable on INPUT_OBJECT
 
-input AckInput {
-  task: ID!
-}
-
 """Represents an executable action in the system."""
 type Action {
   """
@@ -67,9 +63,6 @@ type Action {
 
   """The organization that owns this action."""
   organization: Organization!
-
-  """Check if the current user has pinned this action."""
-  pinned: Boolean!
 
   """Port groups used in the action for organizing ports."""
   portGroups: [PortGroup!]!
@@ -402,6 +395,9 @@ type Agent {
   """Is the agent currently connected."""
   connected: Boolean!
 
+  """The name the agent declares for itself, whatever a user calls it."""
+  declaredName: String!
+
   """
   What this agent is, in a sentence. Client-declared at registration; null for an agent that never declared one.
   """
@@ -409,9 +405,6 @@ type Agent {
 
   """Device associated with the agent, via its client (if any)."""
   device: Device
-
-  """Historical records of agent's hardware."""
-  hardwareRecords(filters: HardwareRecordFilter, pagination: OffsetPaginationInput): [HardwareRecord!]!
 
   """Hash representing the agent's definition for change detection."""
   hash: String!
@@ -431,19 +424,24 @@ type Agent {
   """Implementations the agent can run."""
   implementations(filters: ImplementationFilter, ordering: [ImplementationOrder!]! = [], pagination: OffsetPaginationInput): [Implementation!]!
 
+  """When this agent first registered."""
+  installedAt: DateTime!
+
   """Kind of the agent."""
   kind: AgentKind!
 
   """Last timestamp this agent was seen."""
   lastSeen: DateTime
 
-  """Retrieve the latest hardware record for this agent."""
-  latestHardwareRecord: HardwareRecord
+  """The agent's locks, and which task holds each."""
+  locks: [Lock!]!
 
   """Agent's associated memory shelve."""
   memoryShelve: MemoryShelve
 
-  """Agent name."""
+  """
+  Agent name: the one a user gave it (updateAgent), else the one it declares.
+  """
   name: String!
 
   """The organization this agent belongs to."""
@@ -489,7 +487,6 @@ type AgentChange {
   id: ID!
   kind: AgentKind!
   lastSeen: DateTime
-  latestEvent: AgentEventKind!
   name: String!
   organization: ID!
   release: ID!
@@ -516,9 +513,6 @@ input AgentDependencyInput {
   Which app this dependency corresponds to (i.e. do you want to use a stardist agent for that or imagej agents needs to be a world unique classsifier (reverse domain notation) that identifies the type of agent you want to use, and then we can have multiple agents of the same type running in the system, e.g. startdist could be the app for all agents that correpsond to a startdist instance)
   """
   app: String = null
-
-  """The policy used to pick which instance of the agent to assign to."""
-  assignPolicy: AssignPolicy! = BALANCED
 
   """
   Whether this dependency is auto resolvable or not. If so we will try to automatically resolve it based on the demands specified in the dependency and the capabilities of the available agents in the system. This is used to identify the demand in the system. Attention if any of the dependencies of this agent dependency is not auto resolvable, this dependency will also not be auto resolvable
@@ -572,12 +566,6 @@ input AgentDependencyInput {
 
   """The version of the app this dependency corresponds to."""
   version: String = null
-}
-
-"""The event kind of the agentevent"""
-enum AgentEventKind {
-  CONNECT
-  DISCONNECT
 }
 
 """A way to filter agents"""
@@ -890,14 +878,6 @@ input AssignInput {
 
   """Whether the task should step. Ie. go to the next breakpoint"""
   step: Boolean = null
-}
-
-enum AssignPolicy {
-  AUTOMATIC
-  BALANCED
-  FASTEST_RESPONSE
-  LEAST_BUSY
-  ROUND_ROBIN
 }
 
 interface AssignWidget {
@@ -1551,12 +1531,28 @@ input CreateDashboardInput {
   name: String!
 }
 
-"""The input for creating a implementation."""
-input CreateImplementationInput {
+"""
+Deploy a higher-order implementation: a wrapper onto the agent of the implementation it wraps.
+"""
+input CreateHigherOrderImplementationInput {
   """
-  The implementation to create. This is used to identify the implementation in the system.
+  Projection config: bound params + arg/dependency/return maps (see Implementation.higher_order_config).
   """
-  implementation: ImplementationInput!
+  config: AnyDefault = null
+
+  """The wrapper's typed contract, derived by the caller."""
+  definition: DefinitionInput!
+
+  """
+  Dependencies the wrapper declares, for a dependency_map sourcing 'from: caller'.
+  """
+  dependencies: [AgentDependencyInput!] = null
+
+  """The wrapper's interface, unique on that agent (e.g. 'flow:123')."""
+  interface: String!
+
+  """The implementation to wrap; its agent hosts the wrapper."""
+  lower: ID!
 }
 
 """The input for creating a placement."""
@@ -1588,29 +1584,6 @@ input CreatePlacementInput {
 
   """The ID of the space to create the placement in."""
   space: String!
-}
-
-"""The input for creating a resolution."""
-input CreateResolutionInput {
-  """
-  The implementation ID of the resolution. This is used to identify the resolution in the system.
-  """
-  implementation: ID!
-
-  """
-  The key of the resolution. This is used to identify the resolution in the system.
-  """
-  key: String!
-
-  """
-  The name of the resolution. This is used to identify the resolution in the system.
-  """
-  name: String!
-
-  """
-  The resolved dependencies of the resolution. This is used to identify the resolution in the system.
-  """
-  resolvedDependencies: [ResolvedDependencyInput!] = null
 }
 
 """
@@ -1683,23 +1656,40 @@ input CreateSpaceInput {
   placements: [PlacementInput!] = null
 }
 
+"""Declare that one action tests another."""
 input CreateTestCaseInput {
+  """The action under test."""
   action: ID!
   description: String = null
+
+  """Measures performance rather than correctness."""
+  isBenchmark: Boolean! = false
   name: String = null
+
+  """The action that performs the test."""
   tester: ID!
 }
 
+"""Record one run of a test case."""
 input CreateTestResultInput {
   case: ID!
+
+  """The implementation under test."""
   implementation: ID!
   passed: Boolean!
-  result: String = null
+
+  """What the test produced, as JSON."""
+  result: AnyDefault = null
+
+  """The implementation that ran the test."""
   tester: ID!
 }
 
 """The input for creating a 3D model."""
 input CreateThreeDModelInput {
+  """The agent this model shows: whose state the transfer function reads."""
+  dependency: AgentDependencyInput = null
+
   """A description of the 3D model."""
   description: String = null
 
@@ -1708,19 +1698,9 @@ input CreateThreeDModelInput {
 
   """The name of the 3D model."""
   name: String!
-}
 
-"""The input for creating a toolbox."""
-input CreateToolboxInput {
-  """
-  The description of the toolbox. This can described the toolbox and its purpose.
-  """
-  description: String
-
-  """
-  The name of the toolbox. This is used to identify the toolbox in the system.
-  """
-  name: String!
+  """How the agent's state maps onto the model's properties."""
+  transferFunction: String = null
 }
 
 """
@@ -1979,12 +1959,6 @@ input DeletePlacementInput {
   id: ID!
 }
 
-"""The input for deleting a resolution."""
-input DeleteResolutionInput {
-  """The ID of the resolution to delete."""
-  id: ID!
-}
-
 """The input for deleting a shortcut."""
 input DeleteShortcutInput {
   """
@@ -2002,14 +1976,6 @@ input DeleteSpaceInput {
 """The input for deleting a 3D model."""
 input DeleteThreeDModelInput {
   """The ID of the 3D model to delete."""
-  id: ID!
-}
-
-"""The input for deleting a toolbox."""
-input DeleteToolboxInput {
-  """
-  The toolbox ID to delete. This is used to identify the toolbox in the system.
-  """
   id: ID!
 }
 
@@ -2076,6 +2042,30 @@ input DependencyFilter {
   NOT: DependencyFilter
   OR: DependencyFilter
   ids: [ID!]
+}
+
+"""
+What assigning an implementation would bind: its dependency tree, resolved without assigning.
+"""
+type DependencyTree {
+  """
+  The implementation's dependencies, each with the agents it would bind and, below those, their own.
+  """
+  dependencies: [ResolvedAgentDependency!]!
+
+  """
+  Whether an assign with these overwrites would go through: nothing in the tree is unmet.
+  """
+  satisfied: Boolean!
+}
+
+"""An assign's dependencies, to resolve without assigning."""
+input DependencyTreeInput {
+  """The overwrites the assign would carry."""
+  dependencies: [ResolvedDependencyInput!] = null
+
+  """The implementation an assign would target."""
+  implementation: ID!
 }
 
 """
@@ -2240,36 +2230,6 @@ enum Granularity {
   YEAR
 }
 
-"""Represents a record of an agent's hardware configuration."""
-type HardwareRecord {
-  """The agent to which this hardware belongs."""
-  agent: Agent!
-
-  """Number of CPU cores available."""
-  cpuCount: Int!
-
-  """Clock speed of the CPU in GHz."""
-  cpuFrequency: Float!
-
-  """Vendor of the CPU."""
-  cpuVendorName: String!
-
-  """Timestamp when this record was created."""
-  createdAt: DateTime!
-
-  """Unique ID of the hardware record."""
-  id: ID!
-}
-
-input HardwareRecordFilter {
-  AND: HardwareRecordFilter
-  DISTINCT: Boolean
-  NOT: HardwareRecordFilter
-  OR: HardwareRecordFilter
-  cpuVendorName: String
-  ids: [ID!]
-}
-
 type HideEffect implements Effect {
   call: UtilCall!
 
@@ -2391,6 +2351,9 @@ type Implementation {
   """Interface string representing the implementation entrypoint."""
   interface: String!
 
+  """The agent's locks this implementation takes while it runs."""
+  locks: [Lock!]!
+
   """The higher-order implementations that wrap this implementation."""
   lowerOrderImplementations(filters: ImplementationFilter, ordering: [ImplementationOrder!]! = [], pagination: OffsetPaginationInput): [Implementation!]!
 
@@ -2410,9 +2373,6 @@ type Implementation {
 
   """Arbitrary parameters for the implementation."""
   params: AnyDefault!
-
-  """Check if this implementation is pinned by the current user."""
-  pinned: Boolean!
 
   """
   Declared audience for the provenance token's `aud`, or null to derive it at dispatch.
@@ -2550,7 +2510,9 @@ type ImplementationMapping {
   """Get the key of the implementation mapping."""
   key: String!
 
-  """Get the key of the implementation mapping."""
+  """
+  What the bound implementation's own dependencies resolve to: the level below.
+  """
   resolvedDependencies: [ResolvedAgentDependency!]!
 }
 
@@ -2632,6 +2594,32 @@ input KickInput {
   reason: String = null
 }
 
+"""
+A resource of an agent that one of its tasks holds at a time: the agent takes it while an implementation that requires it runs.
+"""
+type Lock {
+  """The agent the lock belongs to."""
+  agent: Agent!
+
+  """What the lock guards."""
+  description: String
+
+  """The task holding the lock right now, if any."""
+  heldBy: Task
+
+  """Unique ID of the lock."""
+  id: ID!
+
+  """The lock's key, unique within its agent."""
+  key: String!
+
+  """The implementations that take this lock while they run."""
+  requiredBy(filters: ImplementationFilter, ordering: [ImplementationOrder!]! = [], pagination: OffsetPaginationInput): [Implementation!]!
+
+  """When the lock was last taken, released or redeclared."""
+  updatedAt: DateTime!
+}
+
 """Which locks does the agent provide in general"""
 input LockDefinitionInput {
   """Describe the lock a bit"""
@@ -2664,6 +2652,11 @@ input MappedAgentInput {
   The agent ID to map the actions to. This is used to identify the agent in the system.
   """
   agent: ID!
+
+  """
+  Overwrites one level down: for the dependencies of the implementations bound on this agent. A dependency key repeats across levels, so an overwrite only ever applies at the level it is given.
+  """
+  dependencies: [ResolvedDependencyInput!] = null
 
   """
   The key of the agent to map. This is used to identify the agent in the system.
@@ -2863,9 +2856,6 @@ type MessageEffect implements Effect {
 
 """Root mutation type for executing write operations on the API."""
 type Mutation {
-  """Acknowledge a task."""
-  ack(input: AckInput!): Task!
-
   """Assign a task to an agent."""
   assign(input: AssignInput!): Task!
 
@@ -2898,14 +2888,13 @@ type Mutation {
   """Create a dashboard layout."""
   createDashboard(input: CreateDashboardInput!): Dashboard!
 
-  """Create a new implementation entry."""
-  createImplementation(input: CreateImplementationInput!): Implementation!
+  """
+  Deploy a higher-order implementation: a wrapper onto the agent of the implementation it wraps, linked to it.
+  """
+  createHigherOrderImplementation(input: CreateHigherOrderImplementationInput!): Implementation!
 
   """Create a new placement for an agent in a space."""
   createPlacement(input: CreatePlacementInput!): Placement!
-
-  """Create a resolution for an implementation."""
-  createResolution(input: CreateResolutionInput!): Resolution!
 
   """
   Create a recurring assignment of an action. Its next run is planned immediately.
@@ -2926,9 +2915,6 @@ type Mutation {
 
   """Create a new 3D model."""
   createThreedModel(input: CreateThreeDModelInput!): ThreeDModel!
-
-  """Create a new toolbox with shortcuts."""
-  createToolbox(input: CreateToolboxInput!): Toolbox!
 
   """
   Create a trigger: run an action when a service signals a matching object.
@@ -2953,9 +2939,6 @@ type Mutation {
   """Delete a placement."""
   deletePlacement(input: DeletePlacementInput!): ID!
 
-  """Delete a resolution by ID."""
-  deleteResolution(input: DeleteResolutionInput!): ID!
-
   """Delete a schedule. Its waiting run is cancelled; history is kept."""
   deleteSchedule(input: ScheduleIdInput!): ID!
 
@@ -2967,9 +2950,6 @@ type Mutation {
 
   """Delete a 3D model."""
   deleteThreedModel(input: DeleteThreeDModelInput!): ID!
-
-  """Delete a toolbox by ID."""
-  deleteToolbox(input: DeleteToolboxInput!): ID!
 
   """Delete a trigger; its runs are kept."""
   deleteTrigger(input: TriggerIdInput!): ID!
@@ -3005,9 +2985,6 @@ type Mutation {
   """Pin an agent to the user."""
   pinAgent(input: PinInput!): Agent!
 
-  """Pin an implementation to the user."""
-  pinImplementation(input: PinInput!): Implementation!
-
   """
   Fire a probe at an agent — zero persistence, redis-held state under a TTL, never appears in task history. For high-frequency interactive work (previews, live parameter tweaks).
   """
@@ -3031,11 +3008,6 @@ type Mutation {
   Resume a paused probe. Idempotent on finished probes; the agent's Resumed report settles the state.
   """
   resumeProbe(input: ResumeProbeInput!): Probe!
-
-  """
-  Mark an implementation as a higher-order wrapper of a lower implementation, with a projection config.
-  """
-  setHigherOrder(input: SetHigherOrderInput!): Implementation!
 
   """Shelve data into a memory drawer."""
   shelveInMemoryDrawer(input: ShelveInMemoryDrawerInput!): MemoryDrawer!
@@ -3069,9 +3041,6 @@ type Mutation {
 
   """Update an existing placement."""
   updatePlacement(input: UpdatePlacementInput!): Placement!
-
-  """Update an existing resolution."""
-  updateResolution(input: UpdateResolutionInput!): Resolution!
 
   """Change a schedule; a waiting run is re-planned."""
   updateSchedule(input: UpdateScheduleInput!): Schedule!
@@ -3147,6 +3116,9 @@ type Patch {
   globalFutureRevision: Int!
   id: ID!
   interface: String!
+
+  """The value the patch replaced, when the agent reported it."""
+  oldValue: Args
   op: String!
   patch: JSONPatch!
   path: String!
@@ -3647,17 +3619,16 @@ type Query {
   """Fetch a dependency by ID."""
   dependency(id: ID!): Dependency!
 
+  """
+  What assigning an implementation with these overwrites would bind, level by level, and what is unmet: a dry run of the assign's dependency resolution.
+  """
+  dependencyTree(input: DependencyTreeInput!): DependencyTree!
+
   """Fetch a specific event."""
   event(id: ID!): TaskEvent!
 
   """Get forward events after revision."""
   forwardEventsAfterRev(count: Int! = 100, globalRevision: Int!, sessionId: String = null, stateId: ID = null): [Patch!]!
-
-  """Get hardware record by ID."""
-  hardwareRecord(id: ID!): HardwareRecord!
-
-  """List of all hardware records."""
-  hardwareRecords(filters: HardwareRecordFilter, pagination: OffsetPaginationInput): [HardwareRecord!]!
 
   """Get implementation by ID."""
   implementation(id: ID!): Implementation!
@@ -3789,17 +3760,8 @@ type Query {
   """Get state at global revision."""
   stateAtGlobalRev(globalRevision: Int!, sessionId: String = null, stateId: ID = null): [Snapshot!]!
 
-  """Retrieve a state definition by ID."""
-  stateDefinition(id: ID!): StateDefinition!
-
-  """Available state schemas."""
-  stateDefinitions: [StateDefinition!]!
-
   """Retrieve state for a specific context."""
   stateFor(agent: ID!, demand: StateDemandInput = null, stateHash: String = null): State!
-
-  """All states from agents."""
-  states: [State!]!
 
   """
   Fetch a structure by its '@package/key' identifier (derived from port identifiers).
@@ -3970,11 +3932,21 @@ input ResolutionFilter {
 }
 
 type ResolvedAgentDependency {
+  """
+  The dependency as its implementation declares it, while it still declares it.
+  """
+  dependency: Dependency
+
   """Get the key of the resolved dependency."""
   key: String!
 
   """Get a specific argument by key."""
   mappedAgents: [AgentMapping!]!
+
+  """
+  Why an assign would refuse this dependency as it is bound here. Only a dry run (dependencyTree) says so; null when it is met.
+  """
+  unmet: String
 
   """Get a specific argument by key."""
   values: String
@@ -4277,10 +4249,11 @@ A session representing a continuous interaction of an agent with the system.
 """
 type Session {
   agent: Agent!
-  endedAt: DateTime
   id: ID!
   patches: [Patch!]!
   snapshots: [Snapshot!]!
+
+  """When the session started."""
   startedAt: DateTime!
 }
 
@@ -4307,24 +4280,8 @@ input SessionFilter {
 }
 
 input SessionOrder @oneOf {
-  endedAt: Ordering
+  """When the session started."""
   startedAt: Ordering
-}
-
-"""
-Mark an existing implementation as a higher-order wrapper of a lower implementation.
-"""
-input SetHigherOrderInput {
-  """
-  Projection config: bound params + arg/dependency/return maps (see Implementation.higher_order_config).
-  """
-  config: AnyDefault = null
-
-  """The wrapper implementation to mark as higher-order."""
-  implementation: ID!
-
-  """The lower implementation it wraps."""
-  lowerImplementation: ID!
 }
 
 input ShelveInMemoryDrawerInput {
@@ -4381,8 +4338,8 @@ type Shortcut {
   """Saved arguments for the shortcut."""
   savedArgs: AnyDefault!
 
-  """Toolboxes that contain this shortcut."""
-  toolboxes(filters: ToolboxFilter, ordering: [ToolboxOrder!]! = [], pagination: OffsetPaginationInput): [Toolbox!]!
+  """The toolbox this shortcut belongs to."""
+  toolbox: Toolbox!
 
   """If true, shortcut uses return values."""
   useReturns: Boolean!
@@ -4918,14 +4875,8 @@ type Subscription {
   """Subscribe to creation or updates of implementations."""
   implementations(agent: ID!): ImplementationUpdate!
 
-  """Subscribe to latest patches for specific agents or states."""
-  latestPatches(agent: ID = null, state: ID = null): Patch!
-
   """Subscribe to root tasks created by this client (caller-scoped)."""
   mytasks: TaskChangeEvent!
-
-  """Subscribe to notifications when new actions are created."""
-  newActions: Action!
 
   """
   Stream the events of one probe (caller-scoped, payload-carrying). Emits a state snapshot first when events already happened.
@@ -4996,6 +4947,9 @@ type Task {
 
   """Timestamp when the task was finished."""
   finishedAt: DateTime
+
+  """The locks this task holds right now."""
+  heldLocks: [Lock!]!
 
   """Unique ID of the task."""
   id: ID!
@@ -5084,7 +5038,6 @@ type TaskChange {
   """
   revision: Int!
   root: ID
-  statusMessage: String
   updatedAt: DateTime!
 }
 
@@ -5388,11 +5341,11 @@ type TestResult {
   """True if test passed."""
   passed: Boolean!
 
+  """What the test produced, as JSON."""
+  result: AnyDefault
+
   """Implementation running the test."""
   tester: Implementation!
-
-  """When the test result was last updated."""
-  updatedAt: DateTime!
 }
 
 """A way to filter test results"""
@@ -5401,8 +5354,20 @@ input TestResultFilter {
   DISTINCT: Boolean
   NOT: TestResultFilter
   OR: TestResultFilter
+
+  """Results of the test cases of this action"""
+  action: ID
+
+  """Results of this test case"""
+  case: ID
   ids: [ID!]
-  name: StrFilterLookup
+
+  """Results for this implementation under test"""
+  implementation: ID
+  passed: Boolean
+
+  """Results whose test case's name contains this"""
+  search: String
 }
 
 """
@@ -5429,7 +5394,11 @@ input TestTargetInput {
 """A 3D model file."""
 type ThreeDModel {
   createdAt: DateTime!
-  dependency: Agent!
+
+  """
+  The agent this model shows (an agent-dependency declaration), as stored.
+  """
+  dependency: AnyDefault
   description: String
   file: MediaStore!
   id: ID!
@@ -5728,24 +5697,6 @@ input UpdatePlacementInput {
   role: String = null
 }
 
-"""The input for creating a resolution."""
-input UpdateResolutionInput {
-  """
-  The ID of the resolution. This is used to identify the resolution in the system.
-  """
-  id: ID!
-
-  """
-  The name of the resolution. This is used to identify the resolution in the system.
-  """
-  name: String!
-
-  """
-  The resolved dependencies of the resolution. All other fields will be replaced.
-  """
-  resolvedDependencies: [ResolvedDependencyInput!] = null
-}
-
 """
 Change a schedule. Giving intervalSeconds clears cron and vice versa. A waiting run is re-planned; an executing one finishes first.
 """
@@ -5773,6 +5724,9 @@ input UpdateSpaceInput {
 
 """The input for updating a 3D model."""
 input UpdateThreeDModelInput {
+  """The agent this model shows."""
+  dependency: AgentDependencyInput = null
+
   """The new description of the 3D model."""
   description: String = null
 
@@ -5784,6 +5738,9 @@ input UpdateThreeDModelInput {
 
   """The new name of the 3D model."""
   name: String = null
+
+  """How the agent's state maps onto the model's properties."""
+  transferFunction: String = null
 }
 
 """Change a trigger. Omitted fields stay as they are."""

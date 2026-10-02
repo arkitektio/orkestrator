@@ -15,6 +15,8 @@ import {
 } from "../api/graphql";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { useImplementationForm } from "../hooks/useImplementationForm";
+import { useDependencyTree } from "../hooks/useDependencyTree";
+import { DependencyTreeNotice } from "../components/dependencies/DependencyTreeNotice";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
 import { DependencyDefinitionsProvider } from "@/core/ports/engine/DependencyContext";
@@ -52,6 +54,8 @@ export const ImplementationAssignForm = (
     reValidateMode: "onChange",
   });
 
+  const tree = useDependencyTree(implementation, form.control);
+
   const { closeDialog } = useDialog();
 
   // Holding Ctrl/⌘ while submitting keeps the dialog open (assign repeatedly).
@@ -59,7 +63,7 @@ export const ImplementationAssignForm = (
 
   const onSubmit = async (data: {
     args: Record<string, unknown>;
-    dependencies: Record<string, ResolvedDependencyInput>;
+    dependencies: ResolvedDependencyInput[];
   }) => {
     const keepOpen = keepOpenRef.current;
     keepOpenRef.current = false;
@@ -67,7 +71,7 @@ export const ImplementationAssignForm = (
       const task = await assign(buildAssignInput({
         implementation: props.id,
         args: data.args,
-        dependencies: Object.values(data.dependencies),
+        dependencies: data.dependencies,
         hooks: [],
       }));
 
@@ -135,15 +139,16 @@ export const ImplementationAssignForm = (
 
 
               {implementation?.dependencies && (
-                <DependenciesContainer dependencies={implementation?.dependencies} bound={implementation?.agent.id} />
+                <DependenciesContainer dependencies={implementation?.dependencies} bound={implementation?.agent.id} tree={tree.nodes} />
               )}
             </DependencyDefinitionsProvider>
 
           </div>
+          <DependencyTreeNotice tree={tree} />
           <DialogFooter className="flex-initial">
             <Button
               type="submit"
-              disabled={form.formState.isSubmitting}
+              disabled={form.formState.isSubmitting || tree.satisfied === false}
               onClick={(e) => {
                 keepOpenRef.current = e.ctrlKey || e.metaKey;
               }}

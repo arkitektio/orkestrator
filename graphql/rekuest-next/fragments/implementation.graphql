@@ -5,7 +5,6 @@ fragment DetailImplementation on Implementation {
   execution
   effects
   codeHash
-  pinned
   needsToken
   provenanceAudience
   params
@@ -110,7 +109,6 @@ query ImplementationStats($id: ID!) {
 fragment HoverImplementation on Implementation {
   id
   interface
-  pinned
   execution
   effects
   action {
