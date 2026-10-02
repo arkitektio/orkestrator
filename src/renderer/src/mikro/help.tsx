@@ -169,12 +169,11 @@ export const MIKRO_HELP = {
       intro="One annotation, opened in the scene it was drawn in. The viewer selects the shape and moves to it, so you see it in context."
       steps={[
         <>Drag the sliders at the right and bottom edge to move through Z and the other dimensions around the shape.</>,
-        <>Open the <b>Info</b> tab of the sidebar for the facts about the shape.</>,
-        <>Open the <b>Space</b> tab to see the coordinate system the shape is written in and what places it.</>,
+        <>Open the <b>Info</b> tab of the sidebar for the facts about the shape: who drew it, its collection and the space it is written in.</>,
         <>Open the <b>Annotations</b> tab to see the other shapes of the same scene.</>,
       ]}
       tips={[
-        <>An annotation whose collection was not made for a scene shows only its outline. Its space is still in the <b>Space</b> tab.</>,
+        <>An annotation whose collection was not made for a scene shows only its outline. Its drawing space is named in the <b>Info</b> tab.</>,
       ]}
     />
   ),

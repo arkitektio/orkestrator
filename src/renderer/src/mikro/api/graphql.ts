@@ -231,6 +231,8 @@ export type Annotation = {
   /** The discrete coordinates this annotation is pinned to. A coordinate the annotation does not pin is one it spans */
   coordinates: Array<Coordinate>;
   createdWithTransforms: Scalars['Int']['output'];
+  /** The user that drew this annotation, or null when that user is gone or a client created it without one */
+  creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
   /** The fill color of the geometry, as RGBA, or null for no fill */
   fillColor?: Maybe<Array<Scalars['Int']['output']>>;
@@ -9307,7 +9309,7 @@ export type DetailAnnotationFragment = (
   { __typename?: 'Annotation', coordinateSystem?: { __typename?: 'CoordinateSystem', transformVersion: number } | null, collection: { __typename?: 'AnnotationCollection', description?: string | null, scene?: (
       { __typename?: 'Scene' }
       & ListSceneFragment
-    ) | null } }
+    ) | null }, creator?: { __typename?: 'User', sub: string } | null }
   & AnnotationFragment
 );
 
@@ -11878,6 +11880,13 @@ export type GetAnnotationQuery = { __typename?: 'Query', annotation: (
     & DetailAnnotationFragment
   ) };
 
+export type GetAnnotationCreatorQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetAnnotationCreatorQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, creator?: { __typename?: 'User', sub: string } | null } };
+
 export type GetSceneAnnotationsQueryVariables = Exact<{
   filters?: InputMaybe<AnnotationFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -13440,6 +13449,9 @@ export const DetailAnnotationFragmentDoc = gql`
     scene {
       ...ListScene
     }
+  }
+  creator {
+    sub
   }
 }
     ${AnnotationFragmentDoc}
@@ -17762,6 +17774,44 @@ export function useGetAnnotationLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type GetAnnotationQueryHookResult = ReturnType<typeof useGetAnnotationQuery>;
 export type GetAnnotationLazyQueryHookResult = ReturnType<typeof useGetAnnotationLazyQuery>;
 export type GetAnnotationQueryResult = Apollo.QueryResult<GetAnnotationQuery, GetAnnotationQueryVariables>;
+export const GetAnnotationCreatorDocument = gql`
+    query GetAnnotationCreator($id: ID!) {
+  annotation(id: $id) {
+    id
+    creator {
+      sub
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetAnnotationCreatorQuery__
+ *
+ * To run a query within a React component, call `useGetAnnotationCreatorQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAnnotationCreatorQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAnnotationCreatorQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetAnnotationCreatorQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetAnnotationCreatorQuery, GetAnnotationCreatorQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAnnotationCreatorQuery, GetAnnotationCreatorQueryVariables>(GetAnnotationCreatorDocument, options);
+      }
+export function useGetAnnotationCreatorLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAnnotationCreatorQuery, GetAnnotationCreatorQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAnnotationCreatorQuery, GetAnnotationCreatorQueryVariables>(GetAnnotationCreatorDocument, options);
+        }
+export type GetAnnotationCreatorQueryHookResult = ReturnType<typeof useGetAnnotationCreatorQuery>;
+export type GetAnnotationCreatorLazyQueryHookResult = ReturnType<typeof useGetAnnotationCreatorLazyQuery>;
+export type GetAnnotationCreatorQueryResult = Apollo.QueryResult<GetAnnotationCreatorQuery, GetAnnotationCreatorQueryVariables>;
 export const GetSceneAnnotationsDocument = gql`
     query GetSceneAnnotations($filters: AnnotationFilter, $pagination: OffsetPaginationInput) {
   annotations(filters: $filters, pagination: $pagination) {

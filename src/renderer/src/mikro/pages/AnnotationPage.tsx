@@ -10,7 +10,6 @@ import {
   useGetSceneQuery,
 } from "../api/graphql";
 import { AnnotationGlyph } from "../components/annotations/AnnotationGlyph";
-import CoordinateGraphView from "../components/coordinates/CoordinateGraphView";
 import { Scene } from "../components/scene/Scene";
 import { FocusAnnotationOnMount } from "../components/scene/features/annotations/FocusAnnotationOnMount";
 import { AnnotationInfoSidebar } from "../components/sidebars/AnnotationInfoSidebar";
@@ -25,9 +24,9 @@ type PageAnnotation = GetAnnotationQuery["annotation"];
  * system, which means it is unreadable on its own — a list of numbers in a
  * space nothing on the page names. So the page opens the collection's scene,
  * selects the shape and flies to it: the composition around it IS the context
- * that makes the numbers mean something. The rail then carries the space
- * itself, the registration graph that places it, and whether that placement
- * still matches the one the shape was drawn under.
+ * that makes the numbers mean something. The rail then names who drew it, the
+ * space it is written in, and whether that placement still matches the one the shape was
+ * drawn under.
  */
 const Page = asDetailQueryRoute(useGetAnnotationQuery, ({ data }) => {
   const annotation = data.annotation;
@@ -66,21 +65,6 @@ const Page = asDetailQueryRoute(useGetAnnotationQuery, ({ data }) => {
             <Sidebars.Tab label="Info">
               <AnnotationInfoSidebar annotation={annotation} />
             </Sidebars.Tab>
-            {/* The space the vectors are written in, and every edge that
-                places it — the same tab the table dataset page carries. */}
-            <Sidebars.Tab label="Space">
-              {annotation.coordinateSystem ? (
-                <div className="h-full w-full">
-                  <CoordinateGraphView
-                    coordinateSystem={annotation.coordinateSystem.id}
-                  />
-                </div>
-              ) : (
-                <div className="p-4 text-sm text-muted-foreground">
-                  This annotation names no coordinate system.
-                </div>
-              )}
-            </Sidebars.Tab>
             <Sidebars.Tab label="Layers">
               <Scene.LayersSidebar />
             </Sidebars.Tab>
@@ -96,6 +80,7 @@ const Page = asDetailQueryRoute(useGetAnnotationQuery, ({ data }) => {
           </>
         }
         defaultSidebar="Info"
+        chat={false}
         sidebarKey="AnnotationDetail"
       >
         <div className="relative h-full w-full">
@@ -150,8 +135,8 @@ const AnnotationWithoutScene = ({
         <span className="text-sm font-medium">{annotation.kind}</span>
         <span className="text-xs text-muted-foreground">
           Drawn in {annotation.collection.name}, which was not minted for a
-          scene — there is no composition to open it in. Its space and the edges
-          that place it are in the Space tab.
+          scene — there is no composition to open it in. Its drawing space is
+          named in the Info tab.
         </span>
       </div>
     </Card>

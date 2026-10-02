@@ -4,6 +4,19 @@ query GetAnnotation($id: ID!) {
   }
 }
 
+# Who drew one shape, for the scene's hover button. Its own lean document:
+# the button mounts per hovered shape and must not drag `GetAnnotation`'s
+# vectors and scene along, and `SceneAnnotation` is polled per layer per
+# mounted scene, so the author does not ride there.
+query GetAnnotationCreator($id: ID!) {
+  annotation(id: $id) {
+    id
+    creator {
+      sub
+    }
+  }
+}
+
 # The renderer's list: one entry per collection, polled by every mounted
 # AnnotationLayer and ridden along by the annotations panel (same variables, so
 # Apollo serves both from one cache entry). Keep its selection lean — see

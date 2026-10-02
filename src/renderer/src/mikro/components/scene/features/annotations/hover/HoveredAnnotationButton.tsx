@@ -3,6 +3,8 @@ import { EllipsisIcon } from "lucide-react";
 
 import { Button } from "@/core/ui/button";
 import { MikroAnnotation } from "@/core/linkers";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
+import { useGetAnnotationCreatorQuery } from "@/mikro/api/graphql";
 import { useSettings } from "@/core/settings/store/SettingsContext";
 
 import { useViewStoreApi } from "../../../platform/stores/viewStore";
@@ -30,6 +32,12 @@ import { buttonOriginFor, projectTopRightCorner } from "./projectRoiBox";
  * The hover is HELD (`holdHover`) while the pointer is on the button or its
  * popover is open, so travelling from the shape to the button — or picking a
  * menu entry — never loses the target.
+ *
+ * The button wears the avatar of whoever drew the shape, so a hover already
+ * says whose it is; the ellipsis stands in until that is known, and for a
+ * shape with no recorded author. The author is asked for per hovered shape
+ * (`GetAnnotationCreator`, one row by id), never selected on the polled scene
+ * list.
  *
  * An experiment (Settings → General): with `experimentAnnotationHover` off the
  * button never appears and annotations are reached from the sidebar row and
@@ -62,6 +70,10 @@ const AttachedButton = ({ roi }: { roi: VisibleRoi }) => {
   // word for.
   const { bounds: _bounds, zSpan: _zSpan, ...selected } = roi;
   const object = { ...selected, name: selected.name ?? null };
+  const { data: creatorData } = useGetAnnotationCreatorQuery({
+    variables: { id: roi.id },
+  });
+  const creator = creatorData?.annotation.creator?.sub;
 
   // Placement: imperative, off the published view matrix.
   useEffect(() => {
@@ -135,10 +147,20 @@ const AttachedButton = ({ roi }: { roi: VisibleRoi }) => {
         <Button
           variant="outline"
           size="icon"
-          className="h-6 w-6 rounded-full bg-background/80 shadow-sm backdrop-blur"
+          className="h-6 w-6 overflow-hidden rounded-full bg-background/80 p-0 shadow-sm backdrop-blur"
           aria-label="Annotation actions"
         >
-          <EllipsisIcon className="h-3.5 w-3.5" />
+          {creator ? (
+            <StructureDisplay
+              identifier="@lok/user"
+              id={creator}
+              variant="avatar"
+              className="h-6 w-6"
+              fallback={<EllipsisIcon className="h-3.5 w-3.5" />}
+            />
+          ) : (
+            <EllipsisIcon className="h-3.5 w-3.5" />
+          )}
         </Button>
       </MikroAnnotation.ObjectButton>
     </div>

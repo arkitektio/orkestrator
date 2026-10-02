@@ -105,6 +105,12 @@ fragment DetailAnnotation on Annotation {
       ...ListScene
     }
   }
+  # Who drew it. Null when that user is gone, or a client created the shape
+  # without one. The collection's `creator` is a different person: whoever
+  # minted the collection.
+  creator {
+    sub
+  }
 }
 
 # The collection is the unit an AnnotationLayer renders, and it owns the space
