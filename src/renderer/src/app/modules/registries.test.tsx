@@ -9,7 +9,7 @@ import { DISPLAY_REGISTRY } from "@/core/smart/display/displays";
 import { registry as ACTIONS } from "@/core/smart/localactions/registry";
 import { PROFILE_SECTIONS } from "@/core/connection/profile/registry";
 import { SMART_SECTIONS } from "@/core/smart/smartcontext";
-import { FILE_DOWNLOADERS } from "@/core/modules/registries";
+import { FILE_DOWNLOADERS, MODULE_VIEWERS } from "@/core/modules/registries";
 import { TASK_HOOKS } from "@/core/modules/taskhooks/registry";
 
 /**
@@ -102,6 +102,10 @@ describe("host registries", () => {
       "updateserviceinstance",
       "usemodelfor",
     ]);
+  });
+
+  it("hold every viewer", () => {
+    expect(Object.keys(MODULE_VIEWERS).sort()).toEqual(["@mikro/arraydataset", "@mikro/scene"]);
   });
 
   it("hold every display", () => {

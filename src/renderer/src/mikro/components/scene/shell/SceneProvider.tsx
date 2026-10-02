@@ -129,6 +129,11 @@ export type SceneScope = {
 export const SceneProvider = (props: {
   scene: SceneFragment | null | undefined;
   children: ReactNode;
+  /**
+   * Whether the app's hue follows this scene (the default). `false` for a
+   * scene embedded beside others: the override is one per document.
+   */
+  brandTheme?: boolean;
 }) => {
   const client = useMikro();
   const datalayer = useDatalayerEndpoint();
@@ -396,7 +401,7 @@ export const SceneProvider = (props: {
                             the scope exists — and unmounting it when the scope
                             goes is exactly what eases the app back to the
                             user's own brand color. */}
-                        {scope && <SceneBrandTheme />}
+                        {scope && props.brandTheme !== false && <SceneBrandTheme />}
                         {/* Shared (client, datalayer) attribute service: the
                             probe tracker holds the same refcounted instance, so
                             ROI lookups reuse its plan cache and DuckDB engine.
