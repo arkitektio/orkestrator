@@ -55,9 +55,9 @@ type Group<T> = { id: string; title: React.ReactNode; items: T[] };
  * them to fill), the tiles flow down one column before starting the next, and
  * `break-inside-avoid` keeps a card from being sliced across a column boundary.
  *
- * No `autoAnimate` here, unlike `ContainerGrid`: a multi-column container
- * reflows every tile after it whenever one changes, so FLIP-animating that
- * means watching half the page slide between columns on a filter change.
+ * Not animated: a multi-column container reflows every tile after it whenever
+ * one changes, so FLIP-animating that means watching half the page slide
+ * between columns on a filter change.
  */
 function MasonryGrid<T extends { id?: string | number }>({
   items,
