@@ -27,9 +27,49 @@ fragment ListOutputInterfaceUsage on PortUsage {
 }
 
 fragment StructureDescriptor on StructureDescriptor {
+  id
   key
   type
   description
+}
+
+# A descriptor as a thing of its own: where it is declared, and who else carries its key.
+fragment ListDescriptor on StructureDescriptor {
+  ...StructureDescriptor
+  structure {
+    id: identifier
+    identifier
+    label
+  }
+  service {
+    id
+    name
+  }
+}
+
+fragment Descriptor on StructureDescriptor {
+  ...ListDescriptor
+  sharedWith {
+    id
+    identifier
+    label
+  }
+}
+
+# A structure a service hosts, as a row: searchable, with its descriptors.
+fragment ListHostedStructure on HostedStructure {
+  id
+  identifier
+  key
+  label
+  description
+  service {
+    id
+    name
+  }
+  descriptors {
+    ...StructureDescriptor
+  }
 }
 
 fragment Structure on Structure {

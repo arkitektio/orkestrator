@@ -81,6 +81,9 @@ type Action {
   """Retrieve tasks where this action has run."""
   runs: [Task!]
 
+  """The schedules that run this action."""
+  schedules(filters: ScheduleFilter, ordering: [ScheduleOrder!]! = [], pagination: OffsetPaginationInput): [Schedule!]!
+
   """Scope of the action, e.g., user or system."""
   scope: ActionScope!
 
@@ -100,6 +103,9 @@ type Action {
 
   """List of tests associated with the action."""
   tests(filters: ActionFilter, ordering: [ActionOrder!]! = [], pagination: OffsetPaginationInput): [Action!]!
+
+  """The triggers that run this action."""
+  triggers(filters: TriggerFilter, ordering: [TriggerOrder!]! = [], pagination: OffsetPaginationInput): [Trigger!]!
 
   """Version string of the action."""
   version: String!
@@ -456,6 +462,9 @@ type Agent {
   """The release this agent belongs to."""
   release: Release!
 
+  """The schedules whose runs are pinned to this agent."""
+  schedules(filters: ScheduleFilter, ordering: [ScheduleOrder!]! = [], pagination: OffsetPaginationInput): [Schedule!]!
+
   """Sessions associated with this agent."""
   sessions(filters: SessionFilter, ordering: [SessionOrder!]! = [], pagination: OffsetPaginationInput): [Session!]!
 
@@ -464,6 +473,9 @@ type Agent {
 
   """Tasks executed by this agent."""
   tasks(filters: TaskFilter, ordering: [TaskOrder!]! = [], pagination: OffsetPaginationInput): [Task!]!
+
+  """The triggers whose runs are pinned to this agent."""
+  triggers(filters: TriggerFilter, ordering: [TriggerOrder!]! = [], pagination: OffsetPaginationInput): [Trigger!]!
 
   """The user this agent belongs to."""
   user: User!
@@ -1593,12 +1605,27 @@ input CreateScheduleInput {
   action: ID!
   agent: ID = null
   args: Args = null
+
+  """
+  Run slots missed while takt was down or a run was open, late and in order, instead of skipping them.
+  """
+  catchUp: Boolean! = false
   cron: String = null
+  description: String = null
   enabled: Boolean! = true
+
+  """No run is planned after this moment."""
+  endsAt: DateTime = null
   ephemeralRuns: Boolean! = false
   interface: String = null
   intervalSeconds: Int = null
+
+  """No run is planned once it created this many."""
+  maxRuns: Int = null
   name: String!
+
+  """Whether a run may start while the previous one is open."""
+  overlap: ScheduleOverlap! = SKIP
   timezone: String! = "UTC"
 }
 
@@ -1711,10 +1738,22 @@ input CreateTriggerInput {
   agent: ID = null
   args: Args = null
   conditions: AnyDefault = null
+
+  """
+  Fire at most once per object within this many seconds: the first signal fires, later ones are rejected.
+  """
+  debounceSeconds: Int = null
+  description: String = null
   enabled: Boolean! = true
+
+  """Nothing fires after this moment."""
+  endsAt: DateTime = null
   identifier: String!
   interface: String = null
   kind: SignalKind!
+
+  """Nothing fires once it created this many runs."""
+  maxRuns: Int = null
   name: String!
   port: String!
 }
@@ -2216,9 +2255,90 @@ enum Execution {
   WORKFLOW
 }
 
+"""The existing rules to write down as a wiregram document."""
+input ExportWiregramInput {
+  description: String = null
+  key: String!
+  name: String!
+  schedules: [ID!] = null
+  triggers: [ID!] = null
+}
+
 input FinishMediaUploadInput {
   storeId: String!
   valid: Boolean! = true
+}
+
+"""
+Fire a trigger on a stored signal by hand (a replay): the run is created whether or not the signal satisfies the trigger.
+"""
+input FireTriggerInput {
+  signal: ID!
+  trigger: ID!
+}
+
+"""
+What became of one trigger for one signal: it fired a run, was rejected, or failed. Kept as long as the signal.
+"""
+type Firing {
+  """When the trigger was tried."""
+  createdAt: DateTime!
+
+  """Unique ID of the firing."""
+  id: ID!
+
+  """What became of it."""
+  outcome: FiringOutcome!
+
+  """Why it was rejected or failed; for a replay, that it was one."""
+  reason: String
+
+  """Fired by hand on a stored signal, not by the signal arriving."""
+  replay: Boolean!
+
+  """The signal."""
+  signal: Signal!
+
+  """The run it created, while that run exists."""
+  task: Task
+
+  """The trigger that was tried on it."""
+  trigger: Trigger!
+}
+
+"""A way to filter the firing log"""
+input FiringFilter {
+  AND: FiringFilter
+  DISTINCT: Boolean
+  NOT: FiringFilter
+  OR: FiringFilter
+
+  """Filter by what became of the trigger"""
+  outcome: [FiringOutcome!]
+
+  """
+  Keep only replays (true) or only firings caused by a signal arriving (false)
+  """
+  replay: Boolean
+
+  """Keep the firings for this signal"""
+  signal: ID
+
+  """Keep the firings of this trigger"""
+  trigger: ID
+}
+
+input FiringOrder @oneOf {
+  createdAt: Ordering
+}
+
+"""
+What became of one trigger for one signal: it fired a run, it was rejected (the signal did not satisfy it, or a policy held it back), or creating the run failed.
+"""
+enum FiringOutcome {
+  FAILED
+  FIRED
+  REJECTED
 }
 
 enum Granularity {
@@ -2257,6 +2377,78 @@ input HookInput {
 enum HookKind {
   CLEANUP
   INIT
+}
+
+"""
+A structure a service of this hub hosts, as that service declares it: a row, with its descriptors. Hub-wide. (`Structure` is the wider notion: it also covers identifiers only action ports reference.)
+"""
+type HostedStructure {
+  """What the hosting service says about the structure."""
+  description: String
+
+  """The descriptors of its objects."""
+  descriptors(filters: StructureDescriptorFilter, ordering: [StructureDescriptorOrder!]! = [], pagination: OffsetPaginationInput): [StructureDescriptor!]!
+
+  """Unique ID of the hosted structure."""
+  id: ID!
+
+  """The full identifier, e.g. '@mikro/arraydataset'."""
+  identifier: String!
+
+  """The local key (the part after '/')."""
+  key: String!
+
+  """What the hosting service calls one such object."""
+  label: String
+
+  """The package it belongs to."""
+  package: StructurePackage!
+
+  """The service that hosts it."""
+  service: Service!
+
+  """The signals services declare they emit about it."""
+  signals: [SignalDeclaration!]!
+
+  """
+  The same structure with what your organization's action ports say about it (usages).
+  """
+  structure: Structure!
+}
+
+"""A way to filter hosted structures"""
+input HostedStructureFilter {
+  AND: HostedStructureFilter
+  DISTINCT: Boolean
+  NOT: HostedStructureFilter
+  OR: HostedStructureFilter
+
+  """
+  Keep the structures that declare descriptors (true), or those that declare none (false)
+  """
+  described: Boolean
+
+  """Keep the structures whose objects carry this descriptor key"""
+  descriptor: String
+
+  """Filter by IDs"""
+  ids: [ID!]
+
+  """Keep the structures of this package, e.g. 'mikro'"""
+  package: String
+
+  """
+  Keep structures whose identifier, label or description contains this text
+  """
+  search: String
+
+  """Keep the structures this service hosts, by its name"""
+  service: String
+}
+
+input HostedStructureOrder @oneOf {
+  identifier: Ordering
+  label: Ordering
 }
 
 """
@@ -2954,16 +3146,34 @@ type Mutation {
   """Delete a trigger; its runs are kept."""
   deleteTrigger(input: TriggerIdInput!): ID!
 
+  """Delete a wiregram and the rules it owns."""
+  deleteWiregram(input: WiregramIdInput!): ID!
+
   """Ensure agent record exists or is up to date."""
   ensureAgent(input: AgentInput!): Agent!
+
+  """
+  Write existing schedules and triggers down as a wiregram document, to import elsewhere. Changes nothing.
+  """
+  exportWiregram(input: ExportWiregramInput!): AnyDefault!
 
   """Finalize a media upload after the client has written the object"""
   finishMediaUpload(input: FinishMediaUploadInput!): MediaStore!
 
   """
+  Fire a trigger on a stored signal by hand (a replay). The run is created whether or not the signal satisfies the trigger, and logged as a firing of its own.
+  """
+  fireTrigger(input: FireTriggerInput!): Firing!
+
+  """
   Implement an agent with given states and implementations. This is used to set up an agent with its initial configuration and capabilities.
   """
   implementAgent(input: ImplementAgentInput!): Agent!
+
+  """
+  Import a wiregram: one document of schedules and triggers. All or nothing; importing the same key again updates what it created and removes what it no longer lists.
+  """
+  importWiregram(input: WiregramInput!): Wiregram!
 
   """Interrupt the execution of a task."""
   interrupt(input: InterruptInput!): Task!
@@ -3624,11 +3834,32 @@ type Query {
   """
   dependencyTree(input: DependencyTreeInput!): DependencyTree!
 
+  """Fetch a descriptor by ID."""
+  descriptor(id: ID!): StructureDescriptor!
+
+  """
+  The descriptors the hub's services declare for the objects of the structures they host: searchable by key and description. Hub-wide.
+  """
+  descriptors(filters: StructureDescriptorFilter, ordering: [StructureDescriptorOrder!]! = [], pagination: OffsetPaginationInput): [StructureDescriptor!]!
+
   """Fetch a specific event."""
   event(id: ID!): TaskEvent!
 
+  """
+  The firing log: what became of each trigger for each signal it listened for.
+  """
+  firings(filters: FiringFilter, ordering: [FiringOrder!]! = [], pagination: OffsetPaginationInput): [Firing!]!
+
   """Get forward events after revision."""
   forwardEventsAfterRev(count: Int! = 100, globalRevision: Int!, sessionId: String = null, stateId: ID = null): [Patch!]!
+
+  """Fetch a hosted structure by ID."""
+  hostedStructure(id: ID!): HostedStructure!
+
+  """
+  The structures the hub's services host, as rows: searchable, with their descriptors. Hub-wide.
+  """
+  hostedStructures(filters: HostedStructureFilter, ordering: [HostedStructureOrder!]! = [], pagination: OffsetPaginationInput): [HostedStructure!]!
 
   """Get implementation by ID."""
   implementation(id: ID!): Implementation!
@@ -3648,6 +3879,11 @@ type Query {
   All interfaces referenced by the org's action ports (derived, not registered).
   """
   interfaces(search: String = null): [Interface!]!
+
+  """
+  A dry run for a trigger not written yet: the organization's stored signals of this kind and structure whose descriptors satisfy the conditions, newest first. Fires nothing.
+  """
+  matchingSignals(conditions: AnyDefault = null, identifier: String!, kind: SignalKind!, limit: Int! = 20): [Signal!]!
 
   """Get a materialized blok by ID."""
   materializedBlok(id: ID!): MaterializedBlok!
@@ -3713,7 +3949,7 @@ type Query {
   schedule(id: ID!): Schedule!
 
   """All schedules in the organization."""
-  schedules(pagination: OffsetPaginationInput): [Schedule!]!
+  schedules(filters: ScheduleFilter, ordering: [ScheduleOrder!]! = [], pagination: OffsetPaginationInput): [Schedule!]!
 
   """
   The services of this hub: what each hosts and emits. Hub-wide; a service is not an agent.
@@ -3735,6 +3971,9 @@ type Query {
   """List of shortcuts."""
   shortcuts(filters: ShortcutFilter, ordering: [ShortcutOrder!]! = [], pagination: OffsetPaginationInput): [Shortcut!]!
 
+  """Fetch a signal by ID."""
+  signal(id: ID!): Signal!
+
   """
   The signals this hub's services declare they emit — what triggers can wait for. Hub-wide.
   """
@@ -3743,7 +3982,7 @@ type Query {
   """
   Signals services sent about the organization's objects, for inspection.
   """
-  signals(pagination: OffsetPaginationInput): [Signal!]!
+  signals(filters: SignalFilter, ordering: [SignalOrder!]! = [], pagination: OffsetPaginationInput): [Signal!]!
 
   """
   Actions whose name and description mean roughly what this action's do, nearest first: the org's other actions ranked by cosine distance between their embeddings. `filters` narrows the candidates like `actions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back. Empty while the action has no vector yet or embeddings are off.
@@ -3826,7 +4065,7 @@ type Query {
   trigger(id: ID!): Trigger!
 
   """All triggers in the organization."""
-  triggers(pagination: OffsetPaginationInput): [Trigger!]!
+  triggers(filters: TriggerFilter, ordering: [TriggerOrder!]! = [], pagination: OffsetPaginationInput): [Trigger!]!
 
   """Get a UI catalog by ID."""
   uiCatalog(id: ID!): UICatalog!
@@ -3835,6 +4074,12 @@ type Query {
   UI catalogs registered in the caller's organization: the components and operations UI apps can render and evaluate.
   """
   uiCatalogs: [UICatalog!]!
+
+  """Fetch a wiregram by ID."""
+  wiregram(id: ID!): Wiregram!
+
+  """The automation documents the organization imported."""
+  wiregrams(pagination: OffsetPaginationInput): [Wiregram!]!
 }
 
 """
@@ -4136,8 +4381,29 @@ enum ReturnWidgetKind {
   CUSTOM
 }
 
+"""Slim snapshot of a schedule or trigger for the change feeds."""
+type RuleChange {
+  consecutiveFailures: Int!
+  enabled: Boolean!
+  id: ID!
+  lastError: String
+  lastFiredAt: DateTime
+  name: String!
+  runCount: Int!
+  updatedAt: DateTime!
+}
+
 """
-A recurring assignment of one action. It owns at most one open run at a time: the next one, a delayed task created once the previous run finished.
+A schedule or trigger was created, changed (by a user, or by its runs) or deleted.
+"""
+type RuleChangeEvent {
+  create: RuleChange
+  delete: ID
+  update: RuleChange
+}
+
+"""
+A recurring assignment of one action. It owns at most one waiting run at a time: the next one, a delayed task.
 """
 type Schedule {
   """The action every run assigns."""
@@ -4152,6 +4418,11 @@ type Schedule {
   """The identity every run is assigned as."""
   caller: Caller!
 
+  """
+  Whether slots missed during downtime are run late, in order, instead of skipped.
+  """
+  catchUp: Boolean!
+
   """Runs in a row that ended FAILED or CRITICAL."""
   consecutiveFailures: Int!
 
@@ -4163,11 +4434,22 @@ type Schedule {
   """
   cron: String
 
+  """What the schedule is for."""
+  description: String
+
   """A disabled schedule creates no runs."""
   enabled: Boolean!
 
+  """No run is planned after this moment."""
+  endsAt: DateTime
+
   """Whether runs are created as ephemeral tasks."""
   ephemeralRuns: Boolean!
+
+  """
+  Whether it stopped by itself: its end passed, or its last allowed run is over.
+  """
+  exhausted: Boolean!
 
   """Unique ID of the schedule."""
   id: ID!
@@ -4181,13 +4463,33 @@ type Schedule {
   """Why the last run failed, or why the next one could not be created."""
   lastError: String
 
+  """When `lastError` was written."""
+  lastErrorAt: DateTime
+
+  """When it last created a run."""
+  lastFiredAt: DateTime
+
+  """
+  When its newest run was created; null when it never ran (or its runs were since deleted by retention).
+  """
+  lastRunAt: DateTime
+
+  """No run is planned once it created this many."""
+  maxRuns: Int
+
   """Human-readable name."""
   name: String!
 
   """
-  The open run: waiting for its slot, or executing. Null while the next run is being planned, or when disabled.
+  The next run: the one waiting for its slot, else the newest one still executing. Null while the next run is being planned, or when disabled or ended.
   """
   nextRun: Task
+
+  """Whether a run may start while the previous one is open."""
+  overlap: ScheduleOverlap!
+
+  """Runs it created so far."""
+  runCount: Int!
 
   """The most recent runs, newest first."""
   runs(limit: Int! = 20): [Task!]!
@@ -4195,13 +4497,66 @@ type Schedule {
   """The IANA zone the cron line is read in."""
   timezone: String!
 
+  """
+  The next slots of its timing after now. What the timing says, not a promise: a disabled or ended schedule runs none, and without overlap a slot that passes while a run is open is skipped.
+  """
+  upcoming(count: Int! = 5): [DateTime!]!
+
   """Last update timestamp."""
   updatedAt: DateTime!
+
+  """What the wiregram's document calls this schedule."""
+  wireKey: String
+
+  """The wiregram that owns this schedule, if it was imported with one."""
+  wiregram: Wiregram
+}
+
+"""A way to filter schedules"""
+input ScheduleFilter {
+  AND: ScheduleFilter
+  DISTINCT: Boolean
+  NOT: ScheduleFilter
+  OR: ScheduleFilter
+
+  """Filter by the action the rule runs"""
+  action: ID
+
+  """Filter by the agent the rule's runs are pinned to"""
+  agent: ID
+
+  """Keep only enabled (true) or only disabled (false) rules"""
+  enabled: Boolean
+
+  """
+  Keep only rules whose last run or firing failed (true), or only those in good standing (false)
+  """
+  failing: Boolean
+
+  """Filter by IDs"""
+  ids: [ID!]
+
+  """Keep schedules whose name contains this text"""
+  search: String
 }
 
 """Identify a schedule."""
 input ScheduleIdInput {
   id: ID!
+}
+
+input ScheduleOrder @oneOf {
+  createdAt: Ordering
+  name: Ordering
+  updatedAt: Ordering
+}
+
+"""
+Whether a schedule's run may start while its previous one is still open. SKIP: the next run is planned once the previous finished. ALLOW: it is planned as soon as the previous was handed over, so runs may overlap.
+"""
+enum ScheduleOverlap {
+  ALLOW
+  SKIP
 }
 
 type SearchAssignWidget implements AssignWidget {
@@ -4400,6 +4755,11 @@ type Signal {
   """The object's descriptors (flat key → value)."""
   descriptors: AnyDefault!
 
+  """
+  What became of every trigger that listened for it. Empty once processed: nobody listened.
+  """
+  firings: [Firing!]!
+
   """Unique ID of the signal."""
   id: ID!
 
@@ -4428,6 +4788,29 @@ type Signal {
   service: String!
 }
 
+"""Slim snapshot of a signal for the change feed."""
+type SignalChange {
+  """How many triggers fired a run for it so far."""
+  fired: Int!
+  id: ID!
+  identifier: String!
+  kind: SignalKind!
+  object: String!
+
+  """When triggers were matched against it; null = not yet."""
+  processedAt: DateTime
+  receivedAt: DateTime!
+  service: String!
+}
+
+"""
+A signal arrived (create), or triggers were matched against it (update).
+"""
+type SignalChangeEvent {
+  create: SignalChange
+  update: SignalChange
+}
+
 """
 A signal a service of this hub declares it emits (from its manifest). Hub-wide.
 """
@@ -4451,6 +4834,48 @@ type SignalDeclaration {
 
   """The service that emits it."""
   service: Service!
+
+  """Your organization's triggers that wait for this signal."""
+  triggers: [Trigger!]!
+}
+
+"""A way to filter signals"""
+input SignalFilter {
+  AND: SignalFilter
+  DISTINCT: Boolean
+  NOT: SignalFilter
+  OR: SignalFilter
+
+  """Filter by the object's structure identifier"""
+  identifier: String
+
+  """Filter by IDs"""
+  ids: [ID!]
+
+  """Filter by what happened to the object"""
+  kind: [SignalKind!]
+
+  """
+  Keep only signals that caused at least one run (true), or only those that caused none (false)
+  """
+  matched: Boolean
+
+  """Filter by the object's id within its structure"""
+  object: String
+
+  """
+  Keep only signals triggers were already matched against (true), or only those still waiting (false)
+  """
+  processed: Boolean
+
+  """Only signals received after this timestamp"""
+  receivedAfter: DateTime
+
+  """Only signals received before this timestamp"""
+  receivedBefore: DateTime
+
+  """Filter by the service that sent the signal"""
+  service: String
 }
 
 """What happened to the object a service signalled."""
@@ -4458,6 +4883,11 @@ enum SignalKind {
   CREATED
   DELETED
   UPDATED
+}
+
+input SignalOrder @oneOf {
+  occurredAt: Ordering
+  receivedAt: Ordering
 }
 
 type SliderAssignWidget implements AssignWidget {
@@ -4860,6 +5290,11 @@ type Structure {
   """
   descriptors: [StructureDescriptor!]!
 
+  """
+  The hosted structure itself, as its service declares it; null when no service of this hub hosts it.
+  """
+  hosted: HostedStructure
+
   """The full identifier, e.g. '@mikro/arraydataset'."""
   identifier: ID!
 
@@ -4892,19 +5327,70 @@ type Structure {
 }
 
 """
-A descriptor of a hosted structure's objects: a key action ports can require or provide, and triggers can test.
+A descriptor of a hosted structure's objects: a key action ports can require or provide, and triggers can test. Hub-wide.
 """
 type StructureDescriptor {
   """What the service says the descriptor means."""
   description: String
 
+  """The hosted structure whose objects carry it."""
+  hostedStructure: HostedStructure!
+
+  """Unique ID of the descriptor."""
+  id: ID!
+
   """The descriptor key, e.g. '@mikro/n_channels'."""
   key: String!
+
+  """The service that declares it."""
+  service: Service!
+
+  """Other structures whose objects carry a descriptor of the same key."""
+  sharedWith: [HostedStructure!]!
+
+  """The structure whose objects carry it."""
+  structure: Structure!
 
   """
   What its value is: INT, FLOAT, STRING, BOOL, LIST, or ANY when the service does not say.
   """
   type: String!
+}
+
+"""A way to filter descriptors"""
+input StructureDescriptorFilter {
+  AND: StructureDescriptorFilter
+  DISTINCT: Boolean
+  NOT: StructureDescriptorFilter
+  OR: StructureDescriptorFilter
+
+  """Filter by IDs"""
+  ids: [ID!]
+
+  """Filter by the exact descriptor key, e.g. '@mikro/n_channels'"""
+  key: String
+
+  """Keep the descriptors of structures in this package, e.g. 'mikro'"""
+  package: String
+
+  """Keep descriptors whose key or description contains this text"""
+  search: String
+
+  """Keep the descriptors declared by this service, by its name"""
+  service: String
+
+  """
+  Keep the descriptors of this structure, by its identifier, e.g. '@mikro/arraydataset'
+  """
+  structure: String
+
+  """Filter by what the value is: INT, FLOAT, STRING, BOOL, LIST or ANY"""
+  type: [String!]
+}
+
+input StructureDescriptorOrder @oneOf {
+  key: Ordering
+  type: Ordering
 }
 
 """
@@ -4953,11 +5439,26 @@ type Subscription {
   """
   probeEvents(probe: ID!): ProbeEvent!
 
+  """
+  Subscribe to the organization's schedules being created, changed (by a user or by their runs) or deleted.
+  """
+  schedules: RuleChangeEvent!
+
+  """
+  Subscribe to the signals services send about the organization's objects: one arrived, or triggers were matched against it.
+  """
+  signals: SignalChangeEvent!
+
   """Subscribe to updates of state values and patches."""
   stateUpdateEvents(stateId: ID!): State!
 
   """Subscribe to root task changes across the whole organization."""
   tasks: TaskChangeEvent!
+
+  """
+  Subscribe to the organization's triggers being created, changed (by a user or by their firings) or deleted.
+  """
+  triggers: RuleChangeEvent!
 
   """Watch an agent: yields snapshots for all states then streams patches."""
   watchAgent(agentId: ID!): AgentSnapshotEventStatePatchEvent!
@@ -5070,6 +5571,9 @@ type Task {
 
   """Root task in the creation chain."""
   root: Task
+
+  """The schedule this task is a run of, if any."""
+  schedule: Schedule
 
   """The signal that caused this task, if a trigger fired it."""
   signal: Signal
@@ -5298,8 +5802,17 @@ input TaskFilter {
   """Keep only root tasks (true) or only descendants of a root (false)"""
   rootIsnull: Boolean
 
+  """Keep the runs of this schedule"""
+  schedule: ID
+
+  """Keep the runs this signal caused"""
+  signal: ID
+
   """Filter by the latest lifecycle event of the task"""
   state: [TaskEventKind!]
+
+  """Keep the runs this trigger fired"""
+  trigger: ID
 }
 
 """An instruct event for a specific task."""
@@ -5596,8 +6109,27 @@ type Trigger {
   """Creation timestamp."""
   createdAt: DateTime!
 
+  """Fires at most once per object within this many seconds."""
+  debounceSeconds: Int
+
+  """What the trigger is for."""
+  description: String
+
   """A disabled trigger fires nothing."""
   enabled: Boolean!
+
+  """Nothing fires after this moment."""
+  endsAt: DateTime
+
+  """
+  Whether it stopped by itself: its end passed, or it created its last allowed run.
+  """
+  exhausted: Boolean!
+
+  """
+  What became of it for the most recent signals it listened for, newest first.
+  """
+  firings(limit: Int! = 20): [Firing!]!
 
   """Unique ID of the trigger."""
   id: ID!
@@ -5614,22 +6146,90 @@ type Trigger {
   """Why the last firing did not create a run."""
   lastError: String
 
+  """When `lastError` was written."""
+  lastErrorAt: DateTime
+
+  """When it last created a run."""
+  lastFiredAt: DateTime
+
+  """
+  When its newest run was created; null when it never fired (or its runs were since deleted by retention).
+  """
+  lastRunAt: DateTime
+
+  """
+  A dry run: the stored signals this trigger would fire on as it is now, newest first. Applies its conditions and its port's requires, like a real firing; fires nothing.
+  """
+  matchingSignals(limit: Int! = 20): [Signal!]!
+
+  """Nothing fires once it created this many runs."""
+  maxRuns: Int
+
   """Human-readable name."""
   name: String!
 
   """The STRUCTURE argument that receives the signalled object."""
   port: String!
 
+  """Runs it created so far."""
+  runCount: Int!
+
   """The most recent runs, newest first."""
   runs(limit: Int! = 20): [Task!]!
 
   """Last update timestamp."""
   updatedAt: DateTime!
+
+  """What the wiregram's document calls this trigger."""
+  wireKey: String
+
+  """The wiregram that owns this trigger, if it was imported with one."""
+  wiregram: Wiregram
+}
+
+"""A way to filter triggers"""
+input TriggerFilter {
+  AND: TriggerFilter
+  DISTINCT: Boolean
+  NOT: TriggerFilter
+  OR: TriggerFilter
+
+  """Filter by the action the rule runs"""
+  action: ID
+
+  """Filter by the agent the rule's runs are pinned to"""
+  agent: ID
+
+  """Keep only enabled (true) or only disabled (false) rules"""
+  enabled: Boolean
+
+  """
+  Keep only rules whose last run or firing failed (true), or only those in good standing (false)
+  """
+  failing: Boolean
+
+  """Filter by the structure identifier the trigger reacts to"""
+  identifier: String
+
+  """Filter by IDs"""
+  ids: [ID!]
+
+  """Filter by the signal kind the trigger reacts to"""
+  kind: SignalKind
+
+  """Keep triggers whose name contains this text"""
+  search: String
 }
 
 """Identify a trigger."""
 input TriggerIdInput {
   id: ID!
+}
+
+input TriggerOrder @oneOf {
+  createdAt: Ordering
+  name: Ordering
+  updatedAt: Ordering
 }
 
 """
@@ -5768,15 +6368,24 @@ input UpdatePlacementInput {
 }
 
 """
-Change a schedule. Giving intervalSeconds clears cron and vice versa. A waiting run is re-planned; an executing one finishes first.
+Change a schedule. Giving intervalSeconds clears cron and vice versa. Give `agent: null` (with `interface: null`) to unpin it; give `endsAt` or `maxRuns` as null to lift it. A waiting run is re-planned; an executing one finishes first.
 """
 input UpdateScheduleInput {
+  action: ID = null
+  agent: ID
   args: Args = null
+  catchUp: Boolean = null
   cron: String = null
+  description: String
   enabled: Boolean = null
+  endsAt: DateTime
+  ephemeralRuns: Boolean = null
   id: ID!
+  interface: String
   intervalSeconds: Int = null
+  maxRuns: Int
   name: String = null
+  overlap: ScheduleOverlap = null
   timezone: String = null
 }
 
@@ -5813,13 +6422,25 @@ input UpdateThreeDModelInput {
   transferFunction: String = null
 }
 
-"""Change a trigger. Omitted fields stay as they are."""
+"""
+Change a trigger. Omitted fields stay as they are; the result is checked as a whole, like a new trigger. Give `agent: null` (with `interface: null`) to unpin it; give a policy as null to lift it.
+"""
 input UpdateTriggerInput {
+  action: ID = null
+  agent: ID
   args: Args = null
   conditions: AnyDefault = null
+  debounceSeconds: Int
+  description: String
   enabled: Boolean = null
+  endsAt: DateTime
   id: ID!
+  identifier: String = null
+  interface: String
+  kind: SignalKind = null
+  maxRuns: Int
   name: String = null
+  port: String = null
 }
 
 """Represents an authenticated user."""
@@ -5939,6 +6560,187 @@ input WindowInput {
 
   """The aggregation to compute over the tracked value within the window."""
   windowFunction: WindowFunction!
+}
+
+"""
+A schedule of a wiregram: run an agent's interface on an interval or a cron line.
+"""
+input WireScheduleInput {
+  """
+  The name of the agent whose action runs, as the importing organization sees it (e.g. 'kuvert').
+  """
+  agent: String!
+
+  """The args every run is assigned with."""
+  args: Args = null
+
+  """
+  Run slots missed during downtime late, in order, instead of skipping them.
+  """
+  catchUp: Boolean! = false
+
+  """
+  A five-field cron line, read in `timezone` (exclusive with interval_seconds).
+  """
+  cron: String = null
+
+  """What the rule is for."""
+  description: String = null
+
+  """
+  Whether the rule starts out enabled. An organization's own later switch is kept on re-import.
+  """
+  enabled: Boolean! = true
+
+  """The rule stops after this moment."""
+  endsAt: DateTime = null
+
+  """
+  Create the runs as ephemeral tasks (housekeeping: retention may drop them early).
+  """
+  ephemeralRuns: Boolean! = false
+
+  """The interface of that agent to run (e.g. 'sync_all_mailboxes')."""
+  interface: String!
+
+  """Run every N seconds (exclusive with cron)."""
+  intervalSeconds: Int = null
+
+  """
+  What the document calls this rule. Unique among the document's rules of its kind; importing again updates the rule with this key.
+  """
+  key: String!
+
+  """The rule stops once it created this many runs."""
+  maxRuns: Int = null
+
+  """A human-readable name."""
+  name: String!
+
+  """Whether a run may start while the previous one is open."""
+  overlap: ScheduleOverlap! = SKIP
+
+  """The IANA zone the cron line is read in."""
+  timezone: String! = "UTC"
+}
+
+"""
+A trigger of a wiregram: run an agent's interface when a service signals a matching object.
+"""
+input WireTriggerInput {
+  """
+  The name of the agent whose action runs, as the importing organization sees it (e.g. 'kuvert').
+  """
+  agent: String!
+
+  """The args every run is assigned with."""
+  args: Args = null
+
+  """Extra descriptor conditions the signal must satisfy."""
+  conditions: [RequiresInput!] = []
+
+  """Fire at most once per object within this many seconds."""
+  debounceSeconds: Int = null
+
+  """What the rule is for."""
+  description: String = null
+
+  """
+  Whether the rule starts out enabled. An organization's own later switch is kept on re-import.
+  """
+  enabled: Boolean! = true
+
+  """The rule stops after this moment."""
+  endsAt: DateTime = null
+
+  """The structure identifier it reacts to, e.g. @mikro/arraydataset."""
+  identifier: String!
+
+  """The interface of that agent to run (e.g. 'sync_all_mailboxes')."""
+  interface: String!
+
+  """
+  What the document calls this rule. Unique among the document's rules of its kind; importing again updates the rule with this key.
+  """
+  key: String!
+
+  """The signal kind it reacts to."""
+  kind: SignalKind!
+
+  """The rule stops once it created this many runs."""
+  maxRuns: Int = null
+
+  """A human-readable name."""
+  name: String!
+
+  """The STRUCTURE argument that receives the signalled object."""
+  port: String!
+}
+
+"""
+An automation document an organization imported, and the owner of the schedules and triggers it created.
+"""
+type Wiregram {
+  """
+  Who imported it last; the runs of its rules are assigned as this identity.
+  """
+  caller: Caller!
+
+  """When it was first imported."""
+  createdAt: DateTime!
+
+  """What the document says it is for."""
+  description: String
+
+  """The document as it was last imported: importable as it is."""
+  document: AnyDefault!
+
+  """Unique ID of the wiregram."""
+  id: ID!
+
+  """
+  What the document calls itself; importing the same key again updates this wiregram.
+  """
+  key: String!
+
+  """Human-readable name."""
+  name: String!
+
+  """The schedules it owns."""
+  schedules(filters: ScheduleFilter, ordering: [ScheduleOrder!]! = [], pagination: OffsetPaginationInput): [Schedule!]!
+
+  """The triggers it owns."""
+  triggers(filters: TriggerFilter, ordering: [TriggerOrder!]! = [], pagination: OffsetPaginationInput): [Trigger!]!
+
+  """When it was last imported."""
+  updatedAt: DateTime!
+}
+
+"""Identify a wiregram."""
+input WiregramIdInput {
+  id: ID!
+}
+
+"""
+A wiregram: one document of automation. Importing it creates its schedules and triggers; importing the same key again brings them in line with the new document.
+"""
+input WiregramInput {
+  """What the document is for."""
+  description: String = null
+
+  """
+  What the document calls itself. Importing the same key again updates what the earlier import created.
+  """
+  key: String!
+
+  """A human-readable name."""
+  name: String!
+
+  """The schedules it wants."""
+  schedules: [WireScheduleInput!] = []
+
+  """The triggers it wants."""
+  triggers: [WireTriggerInput!] = []
 }
 
 scalar _Any
