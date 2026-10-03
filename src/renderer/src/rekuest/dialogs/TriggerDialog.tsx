@@ -322,7 +322,7 @@ const WhenSelect = ({
             <span className="flex items-baseline gap-2">
               <span className="font-mono text-xs">{declaration.identifier}</span>
               <span>is {KIND_LABELS[declaration.kind]}</span>
-              <span className="text-xs text-muted-foreground">{declaration.service}</span>
+              <span className="text-xs text-muted-foreground">{declaration.service.name}</span>
             </span>
           </SelectItem>
         ))}

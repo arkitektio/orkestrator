@@ -111,6 +111,11 @@ type Animation {
   createdThroughBy: User
   creator: User
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
   name: String!
 
@@ -287,6 +292,11 @@ type AnnotationCollection {
   """
   derivedFrom: [Transformation!]!
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   The files written out of this annotation collection: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles`
@@ -643,6 +653,11 @@ type ArrayDataset {
   """
   derivedResidents: [Resident!]!
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   This dataset's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
@@ -2844,15 +2859,6 @@ input DerivedFromInput {
 }
 
 """
-A generic key-value descriptor attached to an object. Clients use descriptors to read arbitrary structured metadata without a dedicated field.
-"""
-type Descriptor {
-  description: String
-  key: String!
-  value: Any!
-}
-
-"""
 An input for releasing a set of items from another item, e.g. removing images from a dataset
 """
 input DesociateInput {
@@ -3219,6 +3225,11 @@ type File {
   The containers converted out of this file: the datasets a converter wrote from it, one per series. **Not a derivation** -- a file has no coordinate system, so these links claim no geometry and place nothing; they say only that this file's bytes and that data are the same thing
   """
   derivedContainers(filters: FileLinkFilter): [FileLink!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   The containers this file was written from: the dataset exported to OME-TIFF, the mesh collection written to STL. The mirror of `derivedContainers`
@@ -3684,6 +3695,11 @@ type Folder {
   createdThroughBy: User
   creator: User
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   This folder's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
@@ -4895,6 +4911,11 @@ type Lens {
   The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived
   """
   derivedDatasets: [ArrayDataset!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
 
   """
@@ -5384,6 +5405,11 @@ type MeshCollection {
   Every edge from this collection's space back into data the meshes were extracted from, in declared order -- the first is the primary parent, the one that places it. An identity when the meshes are in that grid as-is, a scale when they came off a downsampled one, UNMAPPABLE where the lineage is recorded but no geometry is claimed. Empty for a mesh derived from no data at all. The same relation a derived dataset's `derivedFrom` records
   """
   derivedFrom: [Transformation!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   The geometry encoding: how positions, normals and indices are quantized and compressed
@@ -7730,11 +7756,6 @@ type Query {
   """List data arrays (the multiscale zarr arrays backing array datasets)"""
   dataArrays(filters: DataArrayFilter, ordering: [DataArrayOrder!]! = [], pagination: OffsetPaginationInput): [DataArray!]!
 
-  """
-  Get generic key-value descriptors for an object identified by identifier and ID
-  """
-  describe(id: ID!, identifier: String!): [Descriptor!]!
-
   """Get a single file by ID"""
   file(
     """The unique identifier of an object"""
@@ -8366,6 +8387,11 @@ type Scene {
   The datasets that nominate this scene as the one to open for them, and take their thumbnail from it. Several may: a scene staging a plate is a reasonable landing place for every dataset in it. Not the datasets this scene *shows* -- for that, ask each dataset's `scenes`, which the coordinate graph derives
   """
   defaultFor(filters: ArrayDatasetFilter, ordering: [ArrayDatasetOrder!]! = [], pagination: OffsetPaginationInput): [ArrayDataset!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
 
   """
@@ -8443,6 +8469,11 @@ type SceneSnapshot {
   """The assigner of the creating task, if any"""
   createdThroughBy: User
   creator: User
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
   name: String!
 
@@ -8874,6 +8905,11 @@ type SparseDataset {
   derivedFrom: [Transformation!]!
   description: String
 
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
   """The folder it is filed in. Organisational only"""
   folder: Folder
   id: ID!
@@ -9149,6 +9185,11 @@ type TableDataset {
   """
   derivedFrom: [Transformation!]!
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   This table's stored vector, as `<model id>:<floats>`. Null until it has been indexed.

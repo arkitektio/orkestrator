@@ -26,10 +26,29 @@ fragment ListOutputInterfaceUsage on PortUsage {
   ...ListPortUsage
 }
 
+fragment StructureDescriptor on StructureDescriptor {
+  key
+  type
+  description
+}
+
 fragment Structure on Structure {
   id: identifier
   identifier
   key
+  label
+  description
+  service {
+    id
+    name
+    description
+  }
+  descriptors {
+    ...StructureDescriptor
+  }
+  signals {
+    ...SignalDeclaration
+  }
   package {
     key
   }
@@ -45,6 +64,14 @@ fragment ListStructure on Structure {
   id: identifier
   identifier
   key
+  label
+  service {
+    id
+    name
+  }
+  descriptors {
+    key
+  }
   package {
     key
   }
@@ -77,6 +104,11 @@ fragment Interface on Interface {
 fragment StructurePackage on StructurePackage {
   id: key
   key
+  service {
+    id
+    name
+    description
+  }
   structures {
     ...ListStructure
   }
@@ -88,4 +120,23 @@ fragment StructurePackage on StructurePackage {
 fragment ListStructurePackage on StructurePackage {
   id: key
   key
+}
+
+# A service of the hub: what exists (structures, signals). Not an agent; the work it
+# can be asked to do is its HookAgent's.
+fragment Service on Service {
+  id
+  name
+  identifier
+  description
+  structures {
+    ...ListStructure
+  }
+  signals {
+    ...SignalDeclaration
+  }
+  agent {
+    id
+    name
+  }
 }

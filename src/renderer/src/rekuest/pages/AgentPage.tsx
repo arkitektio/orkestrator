@@ -6,7 +6,7 @@ import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { PageAction, PageActionGroup } from "@/core/ui/page-action";
 import { cn } from "@/core/util/utils";
-import { RekuestAgent, RekuestState } from "@/core/linkers";
+import { RekuestAgent, RekuestState, RekuestStructure } from "@/core/linkers";
 import {
   AgentFragment,
   useAgentQuery,
@@ -298,6 +298,24 @@ export const AgentPage = asDetailQueryRoute(
                 </div>
               </div>
 
+
+        {data.agent.service && (
+          <div className="mt-4 rounded-md border p-3 text-sm">
+            <p className="text-muted-foreground">
+              This is the HookAgent of the <span className="font-medium text-foreground">{data.agent.service.name}</span> service: the work
+              that service can be asked to do in your organization. What the service hosts is the same for every organization.
+            </p>
+            {data.agent.service.structures.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {data.agent.service.structures.map((hosted) => (
+                  <RekuestStructure.DetailLink key={hosted.identifier} object={{ id: hosted.identifier }} className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs hover:underline">
+                    {hosted.identifier}
+                  </RekuestStructure.DetailLink>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-4 flex flex-col gap-4 min-h-0 flex-1">
           <div className="flex-1 min-h-0 overflow-y-auto">

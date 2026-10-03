@@ -25,6 +25,9 @@ fragment ProtocolAgent on Agent {
 fragment Agent on Agent {
   id
   hash
+  service {
+    ...Service
+  }
   implementations {
     ...ListImplementation
   }

@@ -143,6 +143,8 @@ export type Animation = {
   createdThroughBy?: Maybe<User>;
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   /** The scene this tour flies through */
@@ -270,6 +272,8 @@ export type AnnotationCollection = {
   /** Every edge from this collection's space back into data the shapes are drawn over, in declared order -- the first is the primary parent, the one that places it. An identity into a scene's world for a scene-minted collection, an identity into a dataset's system for one drawn over an image. Empty for a freestanding collection */
   derivedFrom: Array<Transformation>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The files written out of this annotation collection: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
   exports: Array<FileLink>;
   /** The folder this annotation collection is filed in. Organisational only: distinct from `scene`, which says which drawing surface minted it, and from `coordinateSystem`, which says where its shapes are drawn */
@@ -553,6 +557,8 @@ export type ArrayDataset = {
   /** Everything computed from this dataset, whatever kind of container it is: the derived datasets `derivedDatasets` lists, and also the measurement tables, mesh collections and annotation collections that named this dataset as their source. A separate field rather than a widening of that one, which stays honestly about *datasets*. Same edges, same kind-blindness: an UNMAPPABLE child came from here even though its geometry did not survive */
   derivedResidents: Array<Resident>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** This dataset's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The files written out of this dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
@@ -2216,14 +2222,6 @@ export type DerivedFromInput = {
   valueRelation?: InputMaybe<ValueRelation>;
 };
 
-/** A generic key-value descriptor attached to an object. Clients use descriptors to read arbitrary structured metadata without a dedicated field. */
-export type Descriptor = {
-  __typename?: 'Descriptor';
-  description?: Maybe<Scalars['String']['output']>;
-  key: Scalars['String']['output'];
-  value: Scalars['Any']['output'];
-};
-
 /** An input for releasing a set of items from another item, e.g. removing images from a dataset */
 export type DesociateInput = {
   /** The ID of the target item */
@@ -2486,6 +2484,8 @@ export type File = {
   creator: User;
   /** The containers converted out of this file: the datasets a converter wrote from it, one per series. **Not a derivation** -- a file has no coordinate system, so these links claim no geometry and place nothing; they say only that this file's bytes and that data are the same thing */
   derivedContainers: Array<FileLink>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The containers this file was written from: the dataset exported to OME-TIFF, the mesh collection written to STL. The mirror of `derivedContainers` */
   exportedFrom: Array<FileLink>;
   /** The folder this file is filed in, or null once its folder was deleted (deleting a folder unfiles what is in it and destroys nothing). Organisational only: it says where a user keeps the file, nothing about its contents */
@@ -2814,6 +2814,8 @@ export type Folder = {
   createdThroughBy?: Maybe<User>;
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** This folder's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   files: Array<File>;
@@ -3832,6 +3834,8 @@ export type Lens = {
   dataset: ArrayDataset;
   /** The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived */
   derivedDatasets: Array<ArrayDataset>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   /** The most recent picture of this lens' dataset's `defaultScene` -- the tile to put on this lens. The same picture the dataset itself reports: the nomination is a fact about the dataset, so every lens over one dataset answers alike. Null when the dataset nominates no scene */
   latestSnapshot?: Maybe<SceneSnapshot>;
@@ -4214,6 +4218,8 @@ export type MeshCollection = {
   coordinateSystem: CoordinateSystem;
   /** Every edge from this collection's space back into data the meshes were extracted from, in declared order -- the first is the primary parent, the one that places it. An identity when the meshes are in that grid as-is, a scale when they came off a downsampled one, UNMAPPABLE where the lineage is recorded but no geometry is claimed. Empty for a mesh derived from no data at all. The same relation a derived dataset's `derivedFrom` records */
   derivedFrom: Array<Transformation>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The geometry encoding: how positions, normals and indices are quantized and compressed */
   encoding: Scalars['Any']['output'];
   /** The files written out of this mesh collection: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
@@ -6533,8 +6539,6 @@ export type Query = {
   dataArray: DataArray;
   /** List data arrays (the multiscale zarr arrays backing array datasets) */
   dataArrays: Array<DataArray>;
-  /** Get generic key-value descriptors for an object identified by identifier and ID */
-  describe: Array<Descriptor>;
   /** Get a single file by ID */
   file: File;
   /** List files (raw microscopy files such as .czi or .ome.tiff) */
@@ -6729,12 +6733,6 @@ export type QueryDataArraysArgs = {
   filters?: InputMaybe<DataArrayFilter>;
   ordering?: Array<DataArrayOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-export type QueryDescribeArgs = {
-  id: Scalars['ID']['input'];
-  identifier: Scalars['String']['input'];
 };
 
 
@@ -7329,6 +7327,8 @@ export type Scene = {
   backgroundColor?: Maybe<Array<Scalars['Float']['output']>>;
   /** The datasets that nominate this scene as the one to open for them, and take their thumbnail from it. Several may: a scene staging a plate is a reasonable landing place for every dataset in it. Not the datasets this scene *shows* -- for that, ask each dataset's `scenes`, which the coordinate graph derives */
   defaultFor: Array<ArrayDataset>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   /** The most recent picture of this composition -- the tile to put on the scene. Null until something snapshots it */
   latestSnapshot?: Maybe<SceneSnapshot>;
@@ -7414,6 +7414,8 @@ export type SceneSnapshot = {
   /** The assigner of the creating task, if any */
   createdThroughBy?: Maybe<User>;
   creator?: Maybe<User>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   /** The composition this is a picture of */
@@ -7712,6 +7714,8 @@ export type SparseDataset = {
   /** Every edge from this matrix's space back into the data it was computed from, in declared order */
   derivedFrom: Array<Transformation>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The folder it is filed in. Organisational only */
   folder?: Maybe<Folder>;
   id: Scalars['ID']['output'];
@@ -7931,6 +7935,8 @@ export type TableDataset = {
   /** Every edge from this table's space back into data it was computed from, in declared order -- the first is the primary parent, the one that places it. UNMAPPABLE where the lineage is recorded but no geometry is claimed; empty for a freestanding table. The same relation a derived dataset's `derivedFrom` records */
   derivedFrom: Array<Transformation>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** This table's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The files written out of this table dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
@@ -9356,12 +9362,12 @@ export type DataArrayFragment = { __typename?: 'DataArray', id: string, level: n
     & ZarrStoreFragment
   ) };
 
-export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: (
+export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: (
     { __typename?: 'SceneSnapshot' }
     & SceneSnapshotFragment
   ) | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null };
 
-export type ArrayDatasetFragment = { __typename?: 'ArrayDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, folder?: { __typename?: 'Folder', id: string, name: string } | null, intrinsicSystem?: (
+export type ArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, folder?: { __typename?: 'Folder', id: string, name: string } | null, intrinsicSystem?: (
     { __typename?: 'CoordinateSystem' }
     & CoordinateSystemFragment
   ) | null, dataArrays: Array<(
@@ -9715,7 +9721,7 @@ export type FabriksUploadGrantFragment = { __typename?: 'FabriksUploadGrant', ac
 
 export type GeneralKonnektionAccessGrantFragment = { __typename?: 'GeneralKonnektionAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
-export type FileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, store: (
+export type FileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, store: (
     { __typename?: 'BigFileStore' }
     & BigFileStoreFragment
   ), provenanceEntries: Array<(
@@ -9723,7 +9729,7 @@ export type FileFragment = { __typename?: 'File', id: string, name: string, size
     & ProvenanceEntryFragment
   )>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
-export type ListFileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
+export type ListFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
 
 export type FileLinkFragment = { __typename?: 'FileLink', id: string, direction: FileLinkDirection, seriesIdentifier?: string | null, valueRelation?: ValueRelation | null, createdAt: any, container: { __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'MeshCollection', id: string, version: string } | { __typename: 'TableDataset', id: string, name: string } };
 
@@ -10016,7 +10022,7 @@ export type DimSliceFragment = { __typename?: 'Slice', axis: string, start?: num
 
 export type PhasorContextFragment = { __typename?: 'PhasorContext', axis: string, axisType: AxisType, bins: number, binWidth?: GenericQuantity | null, harmonic: number, laserFrequency?: Frequency | null, window?: GenericQuantity | null, calibration?: { __typename?: 'PhasorCalibration', id: string, harmonic: number, phaseOffset?: number | null, modulationFactor?: number | null, reference?: string | null } | null, phasorHistogram?: { __typename?: 'PhasorHistogram', id: string, bins: number, counts: Array<number>, gMin: number, gMax: number, sMin: number, sMax: number, profile: Array<number>, total?: number | null, calibrated: boolean } | null };
 
-export type SceneLensFragment = { __typename?: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, renderAxes: { __typename?: 'RenderAxes', x: string, y: string, z?: string | null, t?: string | null, intensity?: string | null, phasor?: string | null }, phasor?: (
+export type SceneLensFragment = { __typename?: 'Lens', descriptors: any, id: string, shape: Array<number>, axisNames: Array<string>, renderAxes: { __typename?: 'RenderAxes', x: string, y: string, z?: string | null, t?: string | null, intensity?: string | null, phasor?: string | null }, phasor?: (
     { __typename?: 'PhasorContext' }
     & PhasorContextFragment
   ) | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
@@ -10090,7 +10096,7 @@ export type SceneLensFragment = { __typename?: 'Lens', id: string, shape: Array<
         & LightpathGraphFragment
       ) } | null }> };
 
-export type DetailLensFragment = { __typename?: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
+export type DetailLensFragment = { __typename?: 'Lens', descriptors: any, id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
   )>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
@@ -10316,7 +10322,7 @@ export type NetworkCollectionFragment = { __typename?: 'NetworkCollection', id: 
 
 export type ProvenanceEntryFragment = { __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> };
 
-export type SceneFragment = { __typename?: 'Scene', id: string, name: string, preferredView: PreferredView, backgroundColor?: Array<number> | null, animations: Array<(
+export type SceneFragment = { __typename?: 'Scene', descriptors: any, id: string, name: string, preferredView: PreferredView, backgroundColor?: Array<number> | null, animations: Array<(
     { __typename?: 'Animation' }
     & AnimationFragment
   )>, latestSnapshot?: (
@@ -10360,7 +10366,7 @@ export type SceneFragment = { __typename?: 'Scene', id: string, name: string, pr
     & SceneLayer_VectorLayer_Fragment
   )> };
 
-export type ListSceneFragment = { __typename?: 'Scene', id: string, name: string, latestSnapshot?: (
+export type ListSceneFragment = { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: (
     { __typename?: 'SceneSnapshot' }
     & SceneSnapshotFragment
   ) | null };
@@ -13431,6 +13437,7 @@ export const SceneSnapshotFragmentDoc = gql`
     ${MediaStoreFragmentDoc}`;
 export const ListSceneFragmentDoc = gql`
     fragment ListScene on Scene {
+  descriptors
   id
   name
   latestSnapshot {
@@ -13458,6 +13465,7 @@ export const DetailAnnotationFragmentDoc = gql`
 ${ListSceneFragmentDoc}`;
 export const ListArrayDatasetFragmentDoc = gql`
     fragment ListArrayDataset on ArrayDataset {
+  descriptors
   id
   name
   description
@@ -13577,6 +13585,7 @@ ${TransformationFragmentDoc}
 ${ZarrStoreFragmentDoc}`;
 export const ArrayDatasetFragmentDoc = gql`
     fragment ArrayDataset on ArrayDataset {
+  descriptors
   id
   name
   description
@@ -14011,6 +14020,7 @@ export const ProvenanceEntryFragmentDoc = gql`
     `;
 export const FileFragmentDoc = gql`
     fragment File on File {
+  descriptors
   id
   name
   store {
@@ -14061,6 +14071,7 @@ export const FileLinkFragmentDoc = gql`
     `;
 export const ListFileFragmentDoc = gql`
     fragment ListFile on File {
+  descriptors
   id
   name
   creator {
@@ -14108,6 +14119,7 @@ ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}`;
 export const DetailLensFragmentDoc = gql`
     fragment DetailLens on Lens {
+  descriptors
   id
   shape
   axisNames
@@ -14209,6 +14221,7 @@ export const PhasorContextFragmentDoc = gql`
     `;
 export const SceneLensFragmentDoc = gql`
     fragment SceneLens on Lens {
+  descriptors
   id
   shape
   axisNames
@@ -14811,6 +14824,7 @@ ${NetworkColorByFragmentDoc}
 ${NetworkFilterByFragmentDoc}`;
 export const SceneFragmentDoc = gql`
     fragment Scene on Scene {
+  descriptors
   id
   name
   preferredView

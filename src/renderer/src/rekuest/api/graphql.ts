@@ -439,6 +439,8 @@ export type Agent = {
   placements: Array<Placement>;
   /** The release this agent belongs to. */
   release: Release;
+  /** The service this agent belongs to, when it is a HookAgent of one of this hub's services: the service says what exists, this agent what can be done with it. */
+  service?: Maybe<Service>;
   /** Sessions associated with this agent. */
   sessions: Array<Session>;
   /** Current and historical states associated with the agent. */
@@ -3244,6 +3246,8 @@ export type Query = {
   schedule: Schedule;
   /** All schedules in the organization. */
   schedules: Array<Schedule>;
+  /** The services of this hub: what each hosts and emits. Hub-wide; a service is not an agent. */
+  services: Array<Service>;
   /** Fetch a specific session by ID. */
   session: Session;
   /** Get session boundaries. */
@@ -3272,13 +3276,13 @@ export type Query = {
   stateAtGlobalRev: Array<Snapshot>;
   /** Retrieve state for a specific context. */
   stateFor: State;
-  /** Fetch a structure by its '@package/key' identifier (derived from port identifiers). */
+  /** Fetch a structure by its '@package/key' identifier: one a port references or a service hosts. */
   structure: Structure;
   /** Fetch a structure package by its key (derived from port identifiers). */
   structurePackage: StructurePackage;
   /** All structure packages referenced by the org's action ports (derived, not registered). */
   structurePackages: Array<StructurePackage>;
-  /** All structures referenced by the org's action ports (derived, not registered). */
+  /** All structures: those the org's action ports reference, and those a service of this hub hosts. */
   structures: Array<Structure>;
   /** Fetch task by ID. */
   task: Task;
@@ -3552,6 +3556,11 @@ export type QueryScheduleArgs = {
 
 export type QuerySchedulesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryServicesArgs = {
+  name?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -4055,6 +4064,25 @@ export type SearchAssignWidgetInput = {
   ward: Scalars['String']['input'];
 };
 
+/** A service of this hub (mikro, kabinet, …): the structures it hosts and the signals it emits, the same for every organization. Not an agent — the work a service can be asked to do is offered by its HookAgent. */
+export type Service = {
+  __typename?: 'Service';
+  /** Its HookAgent in your organization, when the service offers actions. */
+  agent?: Maybe<Agent>;
+  /** What the service says it is. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** Unique ID of the service. */
+  id: Scalars['ID']['output'];
+  /** The identity the service signs as, e.g. live.arkitekt.mikro. */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The name the service is known by on this hub. */
+  name: Scalars['String']['output'];
+  /** The signals it declares it emits. */
+  signals: Array<SignalDeclaration>;
+  /** The structures it hosts. */
+  structures: Array<Structure>;
+};
+
 /** A session representing a continuous interaction of an agent with the system. */
 export type Session = {
   __typename?: 'Session';
@@ -4186,7 +4214,7 @@ export type SignalDeclaration = {
   /** What happens to them. */
   kind: SignalKind;
   /** The service that emits it. */
-  service: Scalars['String']['output'];
+  service: Service;
 };
 
 /** What happened to the object a service signalled. */
@@ -4505,19 +4533,40 @@ export type StringAssignWidgetInput = {
   placeholder?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** A structure (data type) referenced by an action's port, derived from the relational port rows. */
+/** A structure (data type): referenced by an action's port, hosted by a service of this hub, or both. */
 export type Structure = {
   __typename?: 'Structure';
-  /** The full identifier, e.g. '@mikro/image'. */
+  /** What the hosting service says about the structure. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The descriptors of its objects, as the hosting service declares them. Empty when nobody hosts it. */
+  descriptors: Array<StructureDescriptor>;
+  /** The full identifier, e.g. '@mikro/arraydataset'. */
   identifier: Scalars['ID']['output'];
   /** Usages of this structure as an input in actions (derived from the relational arg ports). */
   inputUsages: Array<PortUsage>;
   /** The local key (the part after '/'). */
   key: Scalars['String']['output'];
+  /** What the hosting service calls one such object. */
+  label?: Maybe<Scalars['String']['output']>;
   /** Usages of this structure as an output in actions (derived from the relational return ports). */
   outputUsages: Array<PortUsage>;
   /** The package this structure belongs to. */
   package: StructurePackage;
+  /** The service of this hub that hosts the structure; null when none declares it. */
+  service?: Maybe<Service>;
+  /** The signals services declare they emit about this structure. */
+  signals: Array<SignalDeclaration>;
+};
+
+/** A descriptor of a hosted structure's objects: a key action ports can require or provide, and triggers can test. */
+export type StructureDescriptor = {
+  __typename?: 'StructureDescriptor';
+  /** What the service says the descriptor means. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The descriptor key, e.g. '@mikro/n_channels'. */
+  key: Scalars['String']['output'];
+  /** What its value is: INT, FLOAT, STRING, BOOL, LIST, or ANY when the service does not say. */
+  type: Scalars['String']['output'];
 };
 
 /** A package of structures/interfaces, derived from the '@package/' prefix of port identifiers. */
@@ -4527,7 +4576,9 @@ export type StructurePackage = {
   interfaces: Array<Interface>;
   /** The package key (the part between '@' and '/'). */
   key: Scalars['ID']['output'];
-  /** Structures of this package referenced by the org's ports. */
+  /** The service of this hub that hosts this package's structures, if one declares any. */
+  service?: Maybe<Service>;
+  /** Structures of this package: those the org's ports reference and those a service hosts. */
   structures: Array<Structure>;
 };
 
@@ -5488,7 +5539,10 @@ export type ProtocolAgentFragment = { __typename?: 'Agent', id: string, name: st
         & ReturnPortFragment
       )> } }> };
 
-export type AgentFragment = { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, implementations: Array<(
+export type AgentFragment = { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, service?: (
+    { __typename?: 'Service' }
+    & ServiceFragment
+  ) | null, implementations: Array<(
     { __typename?: 'Implementation' }
     & ListImplementationFragment
   )>, memoryShelve?: { __typename?: 'MemoryShelve', id: string } | null, states: Array<(
@@ -5540,7 +5594,7 @@ export type DetailTriggerFragment = (
 
 export type ListSignalFragment = { __typename?: 'Signal', id: string, identifier: string, kind: SignalKind, object: string, service: string, descriptors: any, occurredAt?: any | null, receivedAt: any, processedAt?: any | null, causingTask?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } } | null, runs: Array<{ __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } }> };
 
-export type SignalDeclarationFragment = { __typename?: 'SignalDeclaration', id: string, identifier: string, kind: SignalKind, service: string, description?: string | null, descriptorKeys: Array<string> };
+export type SignalDeclarationFragment = { __typename?: 'SignalDeclaration', id: string, identifier: string, kind: SignalKind, description?: string | null, descriptorKeys: Array<string>, service: { __typename?: 'Service', id: string, name: string } };
 
 export type BlokAgentCallLeafFragment = { __typename?: 'AgentCall', dependency: string, operation: string, arguments?: Array<(
     { __typename?: 'ActionArgument' }
@@ -6353,7 +6407,15 @@ export type ListOutputInterfaceUsageFragment = (
   & ListPortUsageFragment
 );
 
-export type StructureFragment = { __typename?: 'Structure', identifier: string, key: string, id: string, package: { __typename?: 'StructurePackage', key: string }, outputUsages: Array<(
+export type StructureDescriptorFragment = { __typename?: 'StructureDescriptor', key: string, type: string, description?: string | null };
+
+export type StructureFragment = { __typename?: 'Structure', identifier: string, key: string, label?: string | null, description?: string | null, id: string, service?: { __typename?: 'Service', id: string, name: string, description?: string | null } | null, descriptors: Array<(
+    { __typename?: 'StructureDescriptor' }
+    & StructureDescriptorFragment
+  )>, signals: Array<(
+    { __typename?: 'SignalDeclaration' }
+    & SignalDeclarationFragment
+  )>, package: { __typename?: 'StructurePackage', key: string }, outputUsages: Array<(
     { __typename?: 'PortUsage' }
     & ListOutputStructureUsageFragment
   )>, inputUsages: Array<(
@@ -6361,7 +6423,7 @@ export type StructureFragment = { __typename?: 'Structure', identifier: string, 
     & ListInputStructureUsageFragment
   )> };
 
-export type ListStructureFragment = { __typename?: 'Structure', identifier: string, key: string, id: string, package: { __typename?: 'StructurePackage', key: string } };
+export type ListStructureFragment = { __typename?: 'Structure', identifier: string, key: string, label?: string | null, id: string, service?: { __typename?: 'Service', id: string, name: string } | null, descriptors: Array<{ __typename?: 'StructureDescriptor', key: string }>, package: { __typename?: 'StructurePackage', key: string } };
 
 export type ListInterfaceFragment = { __typename?: 'Interface', identifier: string, key: string, id: string, package: { __typename?: 'StructurePackage', key: string } };
 
@@ -6373,7 +6435,7 @@ export type InterfaceFragment = { __typename?: 'Interface', identifier: string, 
     & ListInputInterfaceUsageFragment
   )> };
 
-export type StructurePackageFragment = { __typename?: 'StructurePackage', key: string, id: string, structures: Array<(
+export type StructurePackageFragment = { __typename?: 'StructurePackage', key: string, id: string, service?: { __typename?: 'Service', id: string, name: string, description?: string | null } | null, structures: Array<(
     { __typename?: 'Structure' }
     & ListStructureFragment
   )>, interfaces: Array<(
@@ -6382,6 +6444,14 @@ export type StructurePackageFragment = { __typename?: 'StructurePackage', key: s
   )> };
 
 export type ListStructurePackageFragment = { __typename?: 'StructurePackage', key: string, id: string };
+
+export type ServiceFragment = { __typename?: 'Service', id: string, name: string, identifier?: string | null, description?: string | null, structures: Array<(
+    { __typename?: 'Structure' }
+    & ListStructureFragment
+  )>, signals: Array<(
+    { __typename?: 'SignalDeclaration' }
+    & SignalDeclarationFragment
+  )>, agent?: { __typename?: 'Agent', id: string, name: string } | null };
 
 export type PostmanTaskFragment = { __typename?: 'Task', id: string, latestEventKind: TaskEventKind, args: any, reference?: string | null, isDone: boolean, dependencyMethod?: string | null, dependency?: string | null, dependencies: any, createdAt: any, finishedAt?: any | null, events: Array<(
     { __typename?: 'TaskEvent' }
@@ -7648,6 +7718,16 @@ export type ListResolutionsQuery = { __typename?: 'Query', resolutions: Array<(
     & ResolutionFragment
   )> };
 
+export type ServicesQueryVariables = Exact<{
+  name?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type ServicesQuery = { __typename?: 'Query', services: Array<(
+    { __typename?: 'Service' }
+    & ServiceFragment
+  )> };
+
 export type ShortcutsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<ShortcutFilter>;
@@ -8883,6 +8963,56 @@ export const ProtocolAgentFragmentDoc = gql`
     ${StateFragmentDoc}
 ${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}`;
+export const ListStructureFragmentDoc = gql`
+    fragment ListStructure on Structure {
+  id: identifier
+  identifier
+  key
+  label
+  service {
+    id
+    name
+  }
+  descriptors {
+    key
+  }
+  package {
+    key
+  }
+}
+    `;
+export const SignalDeclarationFragmentDoc = gql`
+    fragment SignalDeclaration on SignalDeclaration {
+  id
+  identifier
+  kind
+  service {
+    id
+    name
+  }
+  description
+  descriptorKeys
+}
+    `;
+export const ServiceFragmentDoc = gql`
+    fragment Service on Service {
+  id
+  name
+  identifier
+  description
+  structures {
+    ...ListStructure
+  }
+  signals {
+    ...SignalDeclaration
+  }
+  agent {
+    id
+    name
+  }
+}
+    ${ListStructureFragmentDoc}
+${SignalDeclarationFragmentDoc}`;
 export const ListImplementationFragmentDoc = gql`
     fragment ListImplementation on Implementation {
   id
@@ -8957,6 +9087,9 @@ export const AgentFragmentDoc = gql`
     fragment Agent on Agent {
   id
   hash
+  service {
+    ...Service
+  }
   implementations {
     ...ListImplementation
   }
@@ -8994,7 +9127,8 @@ export const AgentFragmentDoc = gql`
     ...AgentPlacement
   }
 }
-    ${ListImplementationFragmentDoc}
+    ${ServiceFragmentDoc}
+${ListImplementationFragmentDoc}
 ${StateFragmentDoc}
 ${ListTaskFragmentDoc}
 ${AgentPlacementFragmentDoc}`;
@@ -9165,16 +9299,6 @@ export const ListSignalFragmentDoc = gql`
       name
     }
   }
-}
-    `;
-export const SignalDeclarationFragmentDoc = gql`
-    fragment SignalDeclaration on SignalDeclaration {
-  id
-  identifier
-  kind
-  service
-  description
-  descriptorKeys
 }
     `;
 export const ListBlokFragmentDoc = gql`
@@ -10158,6 +10282,13 @@ export const AgentSnapshotEventFragmentDoc = gql`
   timestamp
 }
     `;
+export const StructureDescriptorFragmentDoc = gql`
+    fragment StructureDescriptor on StructureDescriptor {
+  key
+  type
+  description
+}
+    `;
 export const ListPortUsageFragmentDoc = gql`
     fragment ListPortUsage on PortUsage {
   portKey
@@ -10186,6 +10317,19 @@ export const StructureFragmentDoc = gql`
   id: identifier
   identifier
   key
+  label
+  description
+  service {
+    id
+    name
+    description
+  }
+  descriptors {
+    ...StructureDescriptor
+  }
+  signals {
+    ...SignalDeclaration
+  }
   package {
     key
   }
@@ -10196,7 +10340,9 @@ export const StructureFragmentDoc = gql`
     ...ListInputStructureUsage
   }
 }
-    ${ListOutputStructureUsageFragmentDoc}
+    ${StructureDescriptorFragmentDoc}
+${SignalDeclarationFragmentDoc}
+${ListOutputStructureUsageFragmentDoc}
 ${ListInputStructureUsageFragmentDoc}`;
 export const ListOutputInterfaceUsageFragmentDoc = gql`
     fragment ListOutputInterfaceUsage on PortUsage {
@@ -10225,16 +10371,6 @@ export const InterfaceFragmentDoc = gql`
 }
     ${ListOutputInterfaceUsageFragmentDoc}
 ${ListInputInterfaceUsageFragmentDoc}`;
-export const ListStructureFragmentDoc = gql`
-    fragment ListStructure on Structure {
-  id: identifier
-  identifier
-  key
-  package {
-    key
-  }
-}
-    `;
 export const ListInterfaceFragmentDoc = gql`
     fragment ListInterface on Interface {
   id: identifier
@@ -10249,6 +10385,11 @@ export const StructurePackageFragmentDoc = gql`
     fragment StructurePackage on StructurePackage {
   id: key
   key
+  service {
+    id
+    name
+    description
+  }
   structures {
     ...ListStructure
   }
@@ -14850,6 +14991,41 @@ export function useListResolutionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
 export type ListResolutionsQueryHookResult = ReturnType<typeof useListResolutionsQuery>;
 export type ListResolutionsLazyQueryHookResult = ReturnType<typeof useListResolutionsLazyQuery>;
 export type ListResolutionsQueryResult = Apollo.QueryResult<ListResolutionsQuery, ListResolutionsQueryVariables>;
+export const ServicesDocument = gql`
+    query Services($name: String) {
+  services(name: $name) {
+    ...Service
+  }
+}
+    ${ServiceFragmentDoc}`;
+
+/**
+ * __useServicesQuery__
+ *
+ * To run a query within a React component, call `useServicesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useServicesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useServicesQuery({
+ *   variables: {
+ *      name: // value for 'name'
+ *   },
+ * });
+ */
+export function useServicesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ServicesQuery, ServicesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ServicesQuery, ServicesQueryVariables>(ServicesDocument, options);
+      }
+export function useServicesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ServicesQuery, ServicesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ServicesQuery, ServicesQueryVariables>(ServicesDocument, options);
+        }
+export type ServicesQueryHookResult = ReturnType<typeof useServicesQuery>;
+export type ServicesLazyQueryHookResult = ReturnType<typeof useServicesLazyQuery>;
+export type ServicesQueryResult = Apollo.QueryResult<ServicesQuery, ServicesQueryVariables>;
 export const ShortcutsDocument = gql`
     query Shortcuts($pagination: OffsetPaginationInput, $filters: ShortcutFilter, $ordering: [ShortcutOrder!]) {
   shortcuts(ordering: $ordering, pagination: $pagination, filters: $filters) {

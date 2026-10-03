@@ -1,4 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
+import { RekuestStructure } from "@/core/linkers";
 import { Button } from "@/core/ui/button";
 import { useSignalDeclarationsQuery } from "@/rekuest/api/graphql";
 import { KIND_LABELS } from "@/rekuest/lib/triggerConditions";
@@ -16,7 +17,7 @@ export const SignalDeclarationsSidebar = () => {
   const byService = useMemo(() => {
     const groups = new Map<string, NonNullable<typeof data>["signalDeclarations"]>();
     for (const declaration of data?.signalDeclarations ?? []) {
-      groups.set(declaration.service, [...(groups.get(declaration.service) ?? []), declaration]);
+      groups.set(declaration.service.name, [...(groups.get(declaration.service.name) ?? []), declaration]);
     }
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [data]);
@@ -40,7 +41,9 @@ export const SignalDeclarationsSidebar = () => {
               >
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm">
-                    <span className="font-mono text-xs">{declaration.identifier}</span>{" "}
+                    <RekuestStructure.DetailLink object={{ id: declaration.identifier }} className="font-mono text-xs hover:underline">
+                      {declaration.identifier}
+                    </RekuestStructure.DetailLink>{" "}
                     <span className="text-muted-foreground">{KIND_LABELS[declaration.kind]}</span>
                   </div>
                   {declaration.descriptorKeys.length > 0 && (

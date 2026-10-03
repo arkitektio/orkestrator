@@ -99,7 +99,10 @@ fragment SignalDeclaration on SignalDeclaration {
   id
   identifier
   kind
-  service
+  service {
+    id
+    name
+  }
   description
   descriptorKeys
 }

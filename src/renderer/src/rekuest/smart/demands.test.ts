@@ -4,7 +4,7 @@ import { DemandKind, PortKind } from "@/rekuest/api/graphql";
 import { buildDemands, buildImplementationDemand, demandKey } from "./demands";
 
 const image = (id: string) => ({ identifier: "@mikro/image", id });
-const dataset = (id: string) => ({ identifier: "@mikro/dataset", id });
+const dataset = (id: string) => ({ identifier: "@mikro/folder", id });
 
 const hasUndefined = (value: unknown): boolean =>
   value === undefined ||
@@ -58,7 +58,7 @@ describe("buildDemands", () => {
     expect(demands.single[1]).toEqual({
       kind: DemandKind.Args,
       matches: [
-        { at: 1, kind: PortKind.List, children: [{ at: 0, kind: PortKind.Structure, identifier: "@mikro/dataset" }] },
+        { at: 1, kind: PortKind.List, children: [{ at: 0, kind: PortKind.Structure, identifier: "@mikro/folder" }] },
       ],
     });
   });
@@ -72,7 +72,7 @@ describe("buildDemands", () => {
     expect(demands.implementation).toEqual({
       argMatches: [
         { at: 0, kind: PortKind.Structure, identifier: "@mikro/image" },
-        { at: 1, kind: PortKind.Structure, identifier: "@mikro/dataset" },
+        { at: 1, kind: PortKind.Structure, identifier: "@mikro/folder" },
       ],
       forceArgLength: 2,
       returnMatches: [{ at: 0, kind: PortKind.Structure, identifier: "@mikro/metric" }],

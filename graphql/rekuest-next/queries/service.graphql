@@ -1,0 +1,5 @@
+query Services($name: String) {
+  services(name: $name) {
+    ...Service
+  }
+}
