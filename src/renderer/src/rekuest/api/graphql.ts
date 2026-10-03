@@ -439,8 +439,6 @@ export type Agent = {
   placements: Array<Placement>;
   /** The release this agent belongs to. */
   release: Release;
-  /** The service this agent belongs to, when it is a HookAgent of one of this hub's services: the service says what exists, this agent what can be done with it. */
-  service?: Maybe<Service>;
   /** Sessions associated with this agent. */
   sessions: Array<Session>;
   /** Current and historical states associated with the agent. */
@@ -4064,11 +4062,9 @@ export type SearchAssignWidgetInput = {
   ward: Scalars['String']['input'];
 };
 
-/** A service of this hub (mikro, kabinet, …): the structures it hosts and the signals it emits, the same for every organization. Not an agent — the work a service can be asked to do is offered by its HookAgent. */
+/** A service of this hub (mikro, kabinet, …): the structures it hosts and the signals it emits, the same for every organization. Not an agent, and it has none: a service says what exists, agents say what can be done. */
 export type Service = {
   __typename?: 'Service';
-  /** Its HookAgent in your organization, when the service offers actions. */
-  agent?: Maybe<Agent>;
   /** What the service says it is. */
   description?: Maybe<Scalars['String']['output']>;
   /** Unique ID of the service. */
@@ -5539,10 +5535,7 @@ export type ProtocolAgentFragment = { __typename?: 'Agent', id: string, name: st
         & ReturnPortFragment
       )> } }> };
 
-export type AgentFragment = { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, service?: (
-    { __typename?: 'Service' }
-    & ServiceFragment
-  ) | null, implementations: Array<(
+export type AgentFragment = { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, implementations: Array<(
     { __typename?: 'Implementation' }
     & ListImplementationFragment
   )>, memoryShelve?: { __typename?: 'MemoryShelve', id: string } | null, states: Array<(
@@ -6451,7 +6444,7 @@ export type ServiceFragment = { __typename?: 'Service', id: string, name: string
   )>, signals: Array<(
     { __typename?: 'SignalDeclaration' }
     & SignalDeclarationFragment
-  )>, agent?: { __typename?: 'Agent', id: string, name: string } | null };
+  )> };
 
 export type PostmanTaskFragment = { __typename?: 'Task', id: string, latestEventKind: TaskEventKind, args: any, reference?: string | null, isDone: boolean, dependencyMethod?: string | null, dependency?: string | null, dependencies: any, createdAt: any, finishedAt?: any | null, events: Array<(
     { __typename?: 'TaskEvent' }
@@ -8963,56 +8956,6 @@ export const ProtocolAgentFragmentDoc = gql`
     ${StateFragmentDoc}
 ${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}`;
-export const ListStructureFragmentDoc = gql`
-    fragment ListStructure on Structure {
-  id: identifier
-  identifier
-  key
-  label
-  service {
-    id
-    name
-  }
-  descriptors {
-    key
-  }
-  package {
-    key
-  }
-}
-    `;
-export const SignalDeclarationFragmentDoc = gql`
-    fragment SignalDeclaration on SignalDeclaration {
-  id
-  identifier
-  kind
-  service {
-    id
-    name
-  }
-  description
-  descriptorKeys
-}
-    `;
-export const ServiceFragmentDoc = gql`
-    fragment Service on Service {
-  id
-  name
-  identifier
-  description
-  structures {
-    ...ListStructure
-  }
-  signals {
-    ...SignalDeclaration
-  }
-  agent {
-    id
-    name
-  }
-}
-    ${ListStructureFragmentDoc}
-${SignalDeclarationFragmentDoc}`;
 export const ListImplementationFragmentDoc = gql`
     fragment ListImplementation on Implementation {
   id
@@ -9087,9 +9030,6 @@ export const AgentFragmentDoc = gql`
     fragment Agent on Agent {
   id
   hash
-  service {
-    ...Service
-  }
   implementations {
     ...ListImplementation
   }
@@ -9127,8 +9067,7 @@ export const AgentFragmentDoc = gql`
     ...AgentPlacement
   }
 }
-    ${ServiceFragmentDoc}
-${ListImplementationFragmentDoc}
+    ${ListImplementationFragmentDoc}
 ${StateFragmentDoc}
 ${ListTaskFragmentDoc}
 ${AgentPlacementFragmentDoc}`;
@@ -10289,6 +10228,19 @@ export const StructureDescriptorFragmentDoc = gql`
   description
 }
     `;
+export const SignalDeclarationFragmentDoc = gql`
+    fragment SignalDeclaration on SignalDeclaration {
+  id
+  identifier
+  kind
+  service {
+    id
+    name
+  }
+  description
+  descriptorKeys
+}
+    `;
 export const ListPortUsageFragmentDoc = gql`
     fragment ListPortUsage on PortUsage {
   portKey
@@ -10371,6 +10323,24 @@ export const InterfaceFragmentDoc = gql`
 }
     ${ListOutputInterfaceUsageFragmentDoc}
 ${ListInputInterfaceUsageFragmentDoc}`;
+export const ListStructureFragmentDoc = gql`
+    fragment ListStructure on Structure {
+  id: identifier
+  identifier
+  key
+  label
+  service {
+    id
+    name
+  }
+  descriptors {
+    key
+  }
+  package {
+    key
+  }
+}
+    `;
 export const ListInterfaceFragmentDoc = gql`
     fragment ListInterface on Interface {
   id: identifier
@@ -10405,6 +10375,21 @@ export const ListStructurePackageFragmentDoc = gql`
   key
 }
     `;
+export const ServiceFragmentDoc = gql`
+    fragment Service on Service {
+  id
+  name
+  identifier
+  description
+  structures {
+    ...ListStructure
+  }
+  signals {
+    ...SignalDeclaration
+  }
+}
+    ${ListStructureFragmentDoc}
+${SignalDeclarationFragmentDoc}`;
 export const LiveTaskFragmentDoc = gql`
     fragment LiveTask on Task {
   id

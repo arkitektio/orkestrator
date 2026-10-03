@@ -456,11 +456,6 @@ type Agent {
   """The release this agent belongs to."""
   release: Release!
 
-  """
-  The service this agent belongs to, when it is a HookAgent of one of this hub's services: the service says what exists, this agent what can be done with it.
-  """
-  service: Service
-
   """Sessions associated with this agent."""
   sessions(filters: SessionFilter, ordering: [SessionOrder!]! = [], pagination: OffsetPaginationInput): [Session!]!
 
@@ -4255,12 +4250,9 @@ The `SearchQuery` scalar is a GraphQL query string a search widget executes agai
 scalar SearchQuery
 
 """
-A service of this hub (mikro, kabinet, …): the structures it hosts and the signals it emits, the same for every organization. Not an agent — the work a service can be asked to do is offered by its HookAgent.
+A service of this hub (mikro, kabinet, …): the structures it hosts and the signals it emits, the same for every organization. Not an agent, and it has none: a service says what exists, agents say what can be done.
 """
 type Service {
-  """Its HookAgent in your organization, when the service offers actions."""
-  agent: Agent
-
   """What the service says it is."""
   description: String
 

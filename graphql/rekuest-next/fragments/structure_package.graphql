@@ -122,8 +122,8 @@ fragment ListStructurePackage on StructurePackage {
   key
 }
 
-# A service of the hub: what exists (structures, signals). Not an agent; the work it
-# can be asked to do is its HookAgent's.
+# A service of the hub: what exists (structures, signals). Not an agent and it has none:
+# agents are a separate thing and say what can be done.
 fragment Service on Service {
   id
   name
@@ -134,9 +134,5 @@ fragment Service on Service {
   }
   signals {
     ...SignalDeclaration
-  }
-  agent {
-    id
-    name
   }
 }
