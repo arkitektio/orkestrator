@@ -1,3 +1,4 @@
+import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
 import {
   PAGE_SIZE,
   queryDeclaresPagination,
@@ -295,7 +296,7 @@ export const ListSearchWidget = (
       render={({ field }) => (
         <>
           <FormItem className={cn("flex flex-col text-foreground")}>
-            <FormLabel>{props.port.label || props.port.key}</FormLabel>
+            <FormLabel>{portLabel(props.port)}</FormLabel>
             <Command
               shouldFilter={false}
               className="overflow-visible bg-transparent"
@@ -432,7 +433,7 @@ export const ListSearchWidget = (
                 </PopoverContent>
               </Popover>
             </Command>
-            <FormDescription>{props.port.description}</FormDescription>
+            <FormDescription>{portDescription(props.port, props.widget)}</FormDescription>
             <FormMessage />
           </FormItem>
         </>

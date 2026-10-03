@@ -1,7 +1,7 @@
 import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { ProfileBrandAvatar } from "@/core/connection/profile/ui/ProfileBrandAvatar";
 import { profileDetail, profileTitle } from "@/core/connection/profile/ui/profileLabels";
-import { openRailSwitcher } from "@/app/components/navigation/railSwitcher";
+import { openRailSwitcher } from "@/core/connection/profile/ui/railSwitcher";
 import { Button } from "@/core/ui/button";
 import {
   Card,

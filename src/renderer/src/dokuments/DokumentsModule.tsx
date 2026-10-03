@@ -1,5 +1,3 @@
-import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
-import { DokumentsGuard } from "./api/funcs";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -12,17 +10,15 @@ interface Props { }
 
 export const Module: React.FC<Props> = (_props) => {
   return (
-    <DokumentsGuard fallback={<ServiceUnavailable serviceKey="dokuments" />}>
-      <ModuleLayout>
-        <Routes>
-          <Route path="files/:id" element={<FilePage />} />
-          <Route path="pages/:id" element={<PagePage />} />
-          <Route path="documents/:id" element={<DocumentPage />} />
-          <Route index element={<HomePage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </ModuleLayout>
-    </DokumentsGuard>
+    <ModuleLayout>
+      <Routes>
+        <Route path="files/:id" element={<FilePage />} />
+        <Route path="pages/:id" element={<PagePage />} />
+        <Route path="documents/:id" element={<DocumentPage />} />
+        <Route index element={<HomePage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ModuleLayout>
   );
 };
 

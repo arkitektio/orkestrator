@@ -40,6 +40,19 @@ export const settingsValidator = zod.object({
    */
   railGlassTransparency: zod.number().min(0).max(1),
   /**
+   * What is painted behind the rail: nothing, one of the built-in backdrops,
+   * or the user's own image (`custom`). The image itself is NOT in here: it
+   * lives in IndexedDB (`backdropStore`), since this object is one JSON string
+   * rewritten on every change.
+   */
+  railBackdrop: zod.enum(["none", "aurora", "grid", "custom"]),
+  /** Bumped on every upload, so every window re-reads the stored image. */
+  railBackdropVersion: zod.number(),
+  /** How strongly the backdrop shows, 0.1 to 1. */
+  railBackdropOpacity: zod.number().min(0.1).max(1),
+  /** `fill` covers the rail; `bottom` keeps the image whole at its foot. */
+  railBackdropFit: zod.enum(["fill", "bottom"]),
+  /**
    * The SYSTEM-WIDE shortcut that brings Orkestrator forward with the palette
    * open, as an Electron accelerator; null turns it off. Registered by main
    * (`GlobalShortcutService`); ⌘K stays the in-app shortcut.
@@ -104,6 +117,10 @@ export const defaultSettings: Settings = {
   autoSceneSnapshot: true,
   railGlass: false,
   railGlassTransparency: 0.7,
+  railBackdrop: "none",
+  railBackdropVersion: 0,
+  railBackdropOpacity: 1,
+  railBackdropFit: "fill",
   globalPaletteShortcut: "CommandOrControl+Shift+Space",
   experimentMenuPrefetch: true,
   experimentAnnotationHover: true,

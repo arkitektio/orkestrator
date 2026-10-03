@@ -1,3 +1,4 @@
+import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
 import { Badge } from "@/core/ui/badge";
 import { SearchAssignWidgetFragment } from "@/rekuest/api/graphql";
 import useWidgetDependencies from "@/core/ports/engine/useWidgetDependencies";
@@ -302,7 +303,7 @@ export const SearchWidget = (
       render={({ field }) => (
         <>
           <FormItem className="flex flex-col">
-            {props.port.label != undefined && <FormLabel>{props.port.label}</FormLabel>}
+            <FormLabel>{portLabel(props.port)}</FormLabel>
             <Command
               shouldFilter={false}
               className="overflow-visible bg-transparent"
@@ -415,7 +416,7 @@ export const SearchWidget = (
                 </PopoverContent>
               </Popover>
             </Command>
-            {props.port.description && <FormDescription>{props.port.description}</FormDescription>}
+            {props.port.description && <FormDescription>{portDescription(props.port, props.widget)}</FormDescription>}
             <FormMessage />
           </FormItem>
         </>

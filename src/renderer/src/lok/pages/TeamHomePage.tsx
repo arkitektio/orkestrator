@@ -1,3 +1,4 @@
+import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
 import { LOK_HELP } from "../help";
 import { PageLayout } from "@/core/layout/PageLayout";
@@ -65,7 +66,7 @@ const Invites = ({ invites }: { invites: OrganizationFragment["invites"] }) => {
 const TeamHomePage = () => {
   const { data: context } = useMyContextQuery();
   const organizationId = context?.mycontext.organization.id;
-  const { data } = useOrganizationQuery({
+  const { data, error, refetch } = useOrganizationQuery({
     variables: { id: organizationId ?? "" },
     skip: !organizationId,
     fetchPolicy: "cache-and-network",
@@ -84,6 +85,9 @@ const TeamHomePage = () => {
   );
 
   const organization = data?.organization;
+  if (error && !organization) {
+    return <QueryError error={error} onRetry={() => refetch()} resource="organization" id={organizationId} />;
+  }
   if (!organization) return <LoadingPage />;
 
   const me = context?.mycontext.user.id;

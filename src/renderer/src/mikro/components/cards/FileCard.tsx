@@ -1,7 +1,7 @@
 import React from "react";
-import { Card, CardContent, CardTitle } from "@/core/ui/card";
+import { HomeCard, HomeCardMeta, HomeCardTitle } from "@/core/ui/home-card";
 import { MikroFile } from "@/core/linkers";
-import { cn } from "@/core/util/utils";
+import { File } from "lucide-react";
 import { ListFileFragment } from "../../api/graphql";
 
 interface Props {
@@ -27,24 +27,14 @@ function getReadableFileSizeString(fileSizeInBytes) {
 const TheCard = ({ item, className }: Props) => {
   return (
     <MikroFile.Smart object={item} key={item.id} hover>
-      <Card
-        className={cn(
-          "px-2 py-2  max-h-40 min-h-10 justify-left flex items-center ",
-          className,
-        )}
-      >
-        <CardTitle className="line-clamp-2 break-words flex-wrap">
-          <MikroFile.DetailLink object={item}>
-            {item.name}
-          </MikroFile.DetailLink>
-        </CardTitle>
-        <CardContent className="text-sm text-muted-foreground">
-          <div className="flex flex-row gap-2">
-            <div className="font-light">Size:</div>
-            <div>{getReadableFileSizeString(item.size)}</div>
-          </div>
-        </CardContent>
-      </Card>
+      <HomeCard className={className}>
+        <HomeCardTitle icon={<File />}>
+          <MikroFile.DetailLink object={item}>{item.name}</MikroFile.DetailLink>
+        </HomeCardTitle>
+        <HomeCardMeta className="tabular-nums">
+          {getReadableFileSizeString(item.size)}
+        </HomeCardMeta>
+      </HomeCard>
     </MikroFile.Smart>
   );
 };

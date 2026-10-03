@@ -135,6 +135,7 @@ export const ImplementationAssignForm = (
                 bound={implementation?.agent.id}
                 groups={implementation?.action.portGroups}
                 hidden={props.hidden}
+                options={{ layout: "stack" }}
               />
 
 

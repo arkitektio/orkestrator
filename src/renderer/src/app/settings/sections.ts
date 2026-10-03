@@ -58,7 +58,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
   {
     slug: "appearance",
     label: "Appearance",
-    description: "Colour mode, brand colours, page zoom and the sidebar's glass.",
+    description: "Colour mode, brand colours, page zoom and the sidebar's glass and backdrop.",
     icon: Sparkles,
     group: "app",
   },

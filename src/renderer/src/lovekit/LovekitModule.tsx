@@ -1,5 +1,3 @@
-import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
-import { LovekitGuard } from "@/lovekit/api/funcs";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -12,17 +10,15 @@ interface Props { }
 
 export const Module: React.FC<Props> = (_props) => {
   return (
-    <LovekitGuard fallback={<ServiceUnavailable serviceKey="lovekit" />}>
-      <ModuleLayout>
-        <Routes>
-          <Route path="streams/:id" element={<StreamPage />} />
-          <Route path="solobroadcasts/:id" element={<SoloBroadcast />} />
-          <Route path="solobroadcasts" element={<SoloBroadcasts />} />
-          <Route index element={<HomePage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </ModuleLayout>
-    </LovekitGuard>
+    <ModuleLayout>
+      <Routes>
+        <Route path="streams/:id" element={<StreamPage />} />
+        <Route path="solobroadcasts/:id" element={<SoloBroadcast />} />
+        <Route path="solobroadcasts" element={<SoloBroadcasts />} />
+        <Route index element={<HomePage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ModuleLayout>
   );
 };
 

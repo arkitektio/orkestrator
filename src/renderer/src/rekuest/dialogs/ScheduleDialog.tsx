@@ -32,8 +32,9 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ActionPicker } from "../components/automation/ActionPicker";
-import { CadenceEditor, FieldBlock } from "../components/automation/CadenceEditor";
+import { FieldBlock } from "../components/automation/FieldBlock";
 import { Pin, PinSelect } from "../components/automation/PinSelect";
+import { SchedulePanel } from "../components/automation/SchedulePanel";
 
 const LoadingBody = ({ title }: { title: string }) => (
   <div className="space-y-4">
@@ -52,6 +53,29 @@ const LoadingBody = ({ title }: { title: string }) => (
 const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
+/** A query the dialog stands on failed: say so, rather than load forever. */
+const ErrorBody = ({
+  title,
+  error,
+  onRetry,
+}: {
+  title: string;
+  error: unknown;
+  onRetry: () => void;
+}) => (
+  <div className="flex flex-col gap-4">
+    <DialogHeader>
+      <DialogTitle>{title}</DialogTitle>
+      <DialogDescription>Could not load it: {errorMessage(error)}</DialogDescription>
+    </DialogHeader>
+    <DialogFooter>
+      <Button type="button" variant="outline" onClick={onRetry}>
+        Try again
+      </Button>
+    </DialogFooter>
+  </div>
+);
+
 /**
  * Save a recurring run of an action: its arguments, when it runs, and
  * optionally the app it always runs on. Editing keeps the action and the
@@ -64,7 +88,7 @@ const ScheduleForm = ({
   action: string;
   schedule?: DetailScheduleFragment;
 }) => {
-  const { data } = useDetailActionQuery({ variables: { id: action } });
+  const { data, error, refetch } = useDetailActionQuery({ variables: { id: action } });
   const detail = data?.action;
   const { closeDialog } = useDialog();
   const navigate = useNavigate();
@@ -86,7 +110,9 @@ const ScheduleForm = ({
   const [create] = useCreateScheduleMutation({ refetchQueries: ["ListSchedules"] });
   const [update] = useUpdateScheduleMutation();
 
-  if (!detail) return <LoadingBody title={schedule ? "Edit schedule" : "New schedule"} />;
+  const title = schedule ? "Edit schedule" : "New schedule";
+  if (!detail && error) return <ErrorBody title={title} error={error} onRetry={() => refetch()} />;
+  if (!detail) return <LoadingBody title={title} />;
 
   const onSubmit = async (args: Record<string, unknown>) => {
     const checked = cadenceToInput(cadence);
@@ -140,12 +166,12 @@ const ScheduleForm = ({
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-          <ScrollArea className="-mr-3 max-h-[60vh] pr-3">
+          {/* What runs on the left, when on the right; one column when narrow. */}
+          <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_22rem]">
+          {/* max-h on the viewport: on the root it constrains nothing and the
+              fields spill over the footer buttons */}
+          <ScrollArea className="-mr-3 pr-3 [&>[data-slot=scroll-area-viewport]]:max-h-[62vh]">
             <div className="flex flex-col gap-6">
-              <FieldBlock label="When">
-                <CadenceEditor value={cadence} onChange={setCadence} />
-              </FieldBlock>
-
               {detail.args.length > 0 && (
                 <FieldBlock
                   label="Arguments"
@@ -211,6 +237,8 @@ const ScheduleForm = ({
               </div>
             </div>
           </ScrollArea>
+          <SchedulePanel value={cadence} onChange={setCadence} />
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={closeDialog} disabled={isSubmitting}>
@@ -244,7 +272,10 @@ export const CreateScheduleDialog = (props: { action?: string }) => {
 };
 
 export const EditScheduleDialog = ({ id }: { id: string }) => {
-  const { data } = useScheduleQuery({ variables: { id } });
+  const { data, error, refetch } = useScheduleQuery({ variables: { id } });
+  if (!data && error) {
+    return <ErrorBody title="Edit schedule" error={error} onRetry={() => refetch()} />;
+  }
   if (!data) return <LoadingBody title="Edit schedule" />;
   return <ScheduleForm action={data.schedule.action.id} schedule={data.schedule} />;
 };

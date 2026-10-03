@@ -33,42 +33,15 @@ import { UnionReturnWidget } from "@/core/ports/widgets/returns/fallbacks/UnionR
 import { PortKind } from "@/rekuest/api/graphql";
 import { WidgetRegistry } from "@/core/ports/engine/Registry";
 import {
+  UnknownEffectWidget,
+  UnknownInputWidget,
+  UnknownReturnWidget,
+} from "@/core/ports/engine/WidgetsProvider";
+import {
   EffectWidgetProps,
-  InputWidgetProps,
   ReturnWidgetProps,
   WidgetRegistryType,
 } from "@/core/ports/engine/types";
-
-export const UnknownInputWidget = ({ port }: InputWidgetProps) => {
-  return (
-    <div className="text-xl bg-red-200">
-      Registry error! No assign Widget registered for: {port.kind} and{" "}
-      {port?.widget?.__typename || "unset widget"}
-    </div>
-  );
-};
-
-export const UnknownReturnWidget = ({ port }: ReturnWidgetProps) => {
-  return (
-    <div className="text-xl bg-red-200">
-      Registry error! No assign Widget registered for: {port.kind} and{" "}
-      {port?.widget?.__typename || "unset widget"}
-    </div>
-
-  );
-};
-
-export const UnknownEffectWidget = ({
-  children,
-  effect,
-}: EffectWidgetProps) => {
-  return (
-    <div className="text-xl bg-red-200">
-      Registry error! No effect registered for: {effect.kind}
-      {children}
-    </div>
-  );
-};
 
 // HideEffect only knows how to render the "HideEffect" variant of the
 // PortEffectFragment union, so narrow to that variant before delegating.

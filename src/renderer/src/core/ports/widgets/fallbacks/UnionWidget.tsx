@@ -1,4 +1,5 @@
-import { FormField, FormItem, FormLabel, FormMessage } from "@/core/ui/form";
+import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
+import { FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/core/ui/form";
 import { notEmpty } from "@/core/util/utils";
 import { ArgChildPortFragment, PortKind } from "@/rekuest/api/graphql";
 import { InputWidgetProps, PortOptions } from "@/core/ports/engine/types";
@@ -82,7 +83,8 @@ const UnionWidget: React.FC<InputWidgetProps> = ({ port, path, bound, options })
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{port.label || port.key}</FormLabel>
+          <FormLabel>{portLabel(port)}</FormLabel>
+          <FormDescription>{portDescription(port)}</FormDescription>
           <SubForm
             variants={variants}
             field={field}

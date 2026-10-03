@@ -1,3 +1,4 @@
+import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
 import { ParagraphField } from "@/core/forms/ParagraphField";
 import { StringField } from "@/core/forms/StringField";
 import { AssignWidgetFragment, StringAssignWidgetFragment } from "@/rekuest/api/graphql";
@@ -17,8 +18,8 @@ export const StringWidget = (props: InputWidgetProps) => {
   return (
     <Field
       name={pathToName(props.path)}
-      label={props.port.label || props.port.key}
-      description={props.port.description || undefined}
+      label={portLabel(props.port)}
+      description={portDescription(props.port, props.widget)}
       placeholder={widget?.placeholder || undefined}
     />
   );

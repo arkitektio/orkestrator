@@ -1,9 +1,7 @@
-import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
-import { KuvertGuard } from "./api/funcs";
 import { MailboxSyncs } from "./components/useMailboxSyncs";
 import AccountPage from "./pages/AccountPage";
 import AccountsPage from "./pages/AccountsPage";
@@ -23,7 +21,7 @@ import ThreadPage from "./pages/ThreadPage";
 import { SMART_MAILBOXES } from "./smartMailboxes";
 
 export const KuvertModule: React.FC = () => (
-  <KuvertGuard fallback={<ServiceUnavailable serviceKey="kuvert" />}>
+  <>
     <MailboxSyncs />
     <ModuleLayout>
       <Routes>
@@ -52,7 +50,7 @@ export const KuvertModule: React.FC = () => (
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>
-  </KuvertGuard>
+  </>
 );
 
 export default KuvertModule;

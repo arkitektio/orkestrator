@@ -1,6 +1,4 @@
-import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
-import { RekuestGuard } from "@/rekuest/api/hooks";
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import Action from "./pages/ActionPage";
@@ -60,63 +58,58 @@ const ToTaskStage = () => (
 
 const Module: React.FC = () => {
   return (
-      <ModuleLayout>
-
-    <RekuestGuard fallback={<ServiceUnavailable serviceKey="rekuest" />} key={"rekuest"}>
-        <Routes>
-          <Route index element={<Home />} />
-          <Route path="home" element={<Home />} />
-          <Route path="actions/:id" element={<Action />} />
-          <Route path="agents" element={<AgentsPage />} />
-          <Route path="shortcuts/:id" element={<Shortcut />} />
-          <Route path="shortcuts" element={<Shortcuts />} />
-          <Route path="schedules" element={<SchedulesPage />} />
-          <Route path="schedules/:id" element={<SchedulePage />} />
-          <Route path="triggers" element={<TriggersPage />} />
-          <Route path="triggers/:id" element={<TriggerPage />} />
-          <Route path="signals" element={<SignalsPage />} />
-          <Route path="toolboxes" element={<Toolboxes />} />
-          <Route path="toolboxes/:id" element={<Toolbox />} />
-          <Route path="actions" element={<Actions />} />
-          <Route path="dashboards" element={<Dashboards />} />
-          <Route path="dashboards/:id" element={<Dashboard />} />
-          <Route path="structurepackages" element={<StructurePackages />} />
-          <Route path="structurepackages/:id" element={<StructurePackage />} />
-          <Route path="resolutions/:id" element={<ResolutionPage />} />
-          <Route path="structures/:id" element={<StructurePage />} />
-          <Route path="structures" element={<StructuresPage />} />
-          <Route path="interfaces/:id" element={<InterfacePage />} />
-          <Route path="interfaces" element={<InterfacesPage />} />
-          <Route path="memoryshelves/:id" element={<MemoryShelve />} />
-          <Route path="bloks/:id" element={<Blok />} />
-          <Route path="bloks" element={<Bloks />} />
-          <Route path="materialized_bloks" element={<MaterializedBloks />} />
-          <Route path="materialized_bloks/:id" element={<MaterializedBlokPage />} />
-          <Route path="dependencies/:id" element={<Dependency />} />
-          <Route path="implementations" element={<ImplementationsPage />} />
-          <Route path="implementations/:id" element={<Implementation />} />
-          <Route path="agents/:id" element={<AgentPage />} />
-          <Route path="agents/:id/space" element={<AgentSpacePage />} />
-          <Route path="agents/:id/states" element={<AgentStatesPage />} />
-          <Route path="agents/:id/tasks" element={<AgentTasksPage />} />
-          <Route path="agents/:id/bloks" element={<AgentBloksPage />} />
-          <Route path="spaces" element={<SpacesPage />} />
-          <Route path="spaces/:id/edit" element={<SpaceEditPage />} />
-          <Route path="spaces/:id" element={<SpacePage />} />
-
-          <Route path="states/:id" element={<StatePage />} />
-          <Route path="tasks" element={<TasksPage />} />
-          <Route path="org-tasks" element={<OrgTasksPage />} />
-          <Route path="tasks/:id" element={<TaskPage />} />
-          <Route path="tasks/:id/log" element={<TaskLogPage />} />
-          {/* Folded into the task page's stage; old links open it there. */}
-          <Route path="tasks/:id/space" element={<ToTaskStage />} />
-          <Route path="tasks/:id/timeline" element={<ToTaskStage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-
-      </RekuestGuard>
-      </ModuleLayout>
+    <ModuleLayout>
+      <Routes>
+        <Route index element={<Home />} />
+        <Route path="home" element={<Home />} />
+        <Route path="actions/:id" element={<Action />} />
+        <Route path="agents" element={<AgentsPage />} />
+        <Route path="shortcuts/:id" element={<Shortcut />} />
+        <Route path="shortcuts" element={<Shortcuts />} />
+        <Route path="schedules" element={<SchedulesPage />} />
+        <Route path="schedules/:id" element={<SchedulePage />} />
+        <Route path="triggers" element={<TriggersPage />} />
+        <Route path="triggers/:id" element={<TriggerPage />} />
+        <Route path="signals" element={<SignalsPage />} />
+        <Route path="toolboxes" element={<Toolboxes />} />
+        <Route path="toolboxes/:id" element={<Toolbox />} />
+        <Route path="actions" element={<Actions />} />
+        <Route path="dashboards" element={<Dashboards />} />
+        <Route path="dashboards/:id" element={<Dashboard />} />
+        <Route path="structurepackages" element={<StructurePackages />} />
+        <Route path="structurepackages/:id" element={<StructurePackage />} />
+        <Route path="resolutions/:id" element={<ResolutionPage />} />
+        <Route path="structures/:id" element={<StructurePage />} />
+        <Route path="structures" element={<StructuresPage />} />
+        <Route path="interfaces/:id" element={<InterfacePage />} />
+        <Route path="interfaces" element={<InterfacesPage />} />
+        <Route path="memoryshelves/:id" element={<MemoryShelve />} />
+        <Route path="bloks/:id" element={<Blok />} />
+        <Route path="bloks" element={<Bloks />} />
+        <Route path="materialized_bloks" element={<MaterializedBloks />} />
+        <Route path="materialized_bloks/:id" element={<MaterializedBlokPage />} />
+        <Route path="dependencies/:id" element={<Dependency />} />
+        <Route path="implementations" element={<ImplementationsPage />} />
+        <Route path="implementations/:id" element={<Implementation />} />
+        <Route path="agents/:id" element={<AgentPage />} />
+        <Route path="agents/:id/space" element={<AgentSpacePage />} />
+        <Route path="agents/:id/states" element={<AgentStatesPage />} />
+        <Route path="agents/:id/tasks" element={<AgentTasksPage />} />
+        <Route path="agents/:id/bloks" element={<AgentBloksPage />} />
+        <Route path="spaces" element={<SpacesPage />} />
+        <Route path="spaces/:id/edit" element={<SpaceEditPage />} />
+        <Route path="spaces/:id" element={<SpacePage />} />
+        <Route path="states/:id" element={<StatePage />} />
+        <Route path="tasks" element={<TasksPage />} />
+        <Route path="org-tasks" element={<OrgTasksPage />} />
+        <Route path="tasks/:id" element={<TaskPage />} />
+        <Route path="tasks/:id/log" element={<TaskLogPage />} />
+        {/* Folded into the task page's stage; old links open it there. */}
+        <Route path="tasks/:id/space" element={<ToTaskStage />} />
+        <Route path="tasks/:id/timeline" element={<ToTaskStage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ModuleLayout>
   );
 };
 

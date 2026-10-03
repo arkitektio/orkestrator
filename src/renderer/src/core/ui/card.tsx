@@ -11,7 +11,7 @@ function Card({
     <div
       data-slot="card"
       data-size={size}
-      className={cn(" hover:ring-1 hover:ring-secondary/40 transition-all hover:bg-muted/90 ring-foreground/10 bg-card text-card-foreground gap-4 overflow-hidden rounded-lg py-4 text-xs/relaxed ring-1 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg group/card flex flex-col", className)}
+      className={cn(" hover:ring-1 hover:ring-primary/25 dark:hover:ring-secondary/40 transition-all hover:bg-muted/90 ring-foreground/10 bg-card text-card-foreground gap-4 overflow-hidden rounded-lg py-4 text-xs/relaxed ring-1 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg group/card flex flex-col", className)}
       {...props}
     />
   )

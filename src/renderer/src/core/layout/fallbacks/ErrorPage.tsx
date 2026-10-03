@@ -1,105 +1,176 @@
-import { isInstalledModule } from "@/core/modules/registries";
-import { ApolloError } from "@apollo/client/errors";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useArkitektActions } from "@/core/connection/arkitekt/hooks";
+import { useReport } from "@/core/debug/use-report";
+import { KeyRound, ShieldOff, Unplug } from "lucide-react";
+import { classifyError } from "./classifyError";
+import { StatusPage, type StatusDetail } from "./StatusPage";
+import {
+  BackButton,
+  HomeButton,
+  ModuleHomeButton,
+  ReportButton,
+  RetryButton,
+  SwitchAccountButton,
+  useStatusContext,
+} from "./statusActions";
+import { UnexpectedError } from "./UnexpectedError";
 
-type ErrorEntry = { message: string; details?: string };
-
-const graphQLEntries = (error: ApolloError): ErrorEntry[] =>
-  error.graphQLErrors.map((e) => {
-    const code =
-      typeof e.extensions?.code === "string" ? e.extensions.code : undefined;
-    const path = e.path?.length ? `path: ${e.path.join(".")}` : undefined;
-    const details = [code, path].filter(Boolean).join(" | ");
-    return { message: e.message, details: details || undefined };
-  });
-
-const networkEntry = (error: ApolloError): ErrorEntry | undefined => {
-  const networkError = error.networkError;
-  if (!networkError) return undefined;
-  const statusCode =
-    "statusCode" in networkError ? networkError.statusCode : undefined;
-  return {
-    message: networkError.message || error.message,
-    details: statusCode ? `status: ${String(statusCode)}` : undefined,
-  };
+export type QueryErrorProps = {
+  /** What the query failed with (an `ApolloError`, usually). */
+  error: unknown;
+  /** Re-run the query (Apollo's `refetch`). */
+  onRetry?: () => unknown;
+  /** What was being loaded ("dataset", "graph"); improves the copy. */
+  resource?: string;
+  /** The id that was asked for, shown in the details. */
+  id?: string | null;
 };
 
-export const ErrorPage = (props: { error: ApolloError }) => {
-  const location = useLocation();
-  const navigate = useNavigate();
+/**
+ * The object exists or it does not, and the signed-in account may not see it
+ * either way. The services answer both the same on purpose, and so does this.
+ */
+export const AccessDenied = ({
+  resource,
+  id,
+  message,
+  onRetry,
+}: {
+  resource?: string;
+  id?: string | null;
+  /** The server's own words, for the technical block. */
+  message?: string | null;
+  onRetry?: () => unknown;
+}) => {
+  const { organization, who } = useStatusContext();
+  const thing = resource ?? "page";
 
-  const segment = location.pathname.split("/").filter(Boolean)[0];
-  const module = isInstalledModule(segment) ? segment : undefined;
-
-  const gqlEntries = graphQLEntries(props.error);
-  const netEntry = networkEntry(props.error);
-  const isNetwork = gqlEntries.length === 0 && !!netEntry;
-  const entries: ErrorEntry[] =
-    gqlEntries.length > 0
-      ? gqlEntries
-      : [netEntry ?? { message: props.error.message }];
+  const details: StatusDetail[] = [];
+  if (id) details.push({ label: "Id", value: id, mono: true });
+  details.push(...who);
 
   return (
-    <div className="flex flex-col w-full h-full items-center justify-center p-6">
-      <div className="flex flex-col gap-6 max-w-[720px] w-full">
-        <div className="space-y-3">
-          <div className="text-sm uppercase tracking-widest text-muted-foreground">
-            {isNetwork ? "Network error" : "GraphQL error"}
-          </div>
-          <h1 className="text-2xl font-light tracking-tighter sm:text-3xl md:text-4xl text-foreground">
-            {module
-              ? `The ${module} module could not load`
-              : "This page could not load"}
-          </h1>
-          <div className="rounded-md border border-border bg-muted/40 px-4 py-3 space-y-3">
-            <div className="text-xs text-muted-foreground font-mono break-all">
-              {location.pathname}
-              {location.search}
-              {location.hash}
-            </div>
-            {entries.map((entry, i) => (
-              <div key={i}>
-                <div className="font-mono text-lg break-words text-foreground">
-                  {entry.message}
-                </div>
-                {entry.details && (
-                  <div className="mt-1 text-xs text-muted-foreground font-mono break-all">
-                    {entry.details}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="text-muted-foreground">
-            {isNetwork
-              ? "The server could not be reached, or it rejected the request. Check that the service is running and try again."
-              : "The server returned an error for this request. The object may have been deleted, or you may not have access to it."}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2 min-[400px]:flex-row">
-          <button
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 rounded-md border border-border text-foreground hover:bg-muted"
-          >
-            Go back
-          </button>
-          {module && (
-            <NavLink
-              to={`/${module}`}
-              className="px-4 py-2 rounded-md border border-border text-foreground hover:bg-muted"
-            >
-              {module} home
-            </NavLink>
-          )}
-          <NavLink
-            to="/"
-            className="px-4 py-2 text-primary-foreground bg-primary rounded-md hover:bg-primary-dark"
-          >
-            Go Home
-          </NavLink>
-        </div>
-      </div>
-    </div>
+    <StatusPage
+      tone="warning"
+      code={403}
+      icon={ShieldOff}
+      title={`You can't access this ${thing}`}
+      description={
+        <>
+          Either this {thing} doesn&apos;t exist, or the account you&apos;re signed in with isn&apos;t allowed to see
+          it. For safety the server doesn&apos;t say which.
+        </>
+      }
+      hints={[
+        <>
+          Access is granted per organization and role. If this belongs to another organization than{" "}
+          {organization ?? "the one you are in"}, switch to it from the account menu in the sidebar.
+        </>,
+        <>If you should have access, ask whoever owns it to share it, or an administrator for the right role.</>,
+        <>It may have been deleted: check the list it belongs to.</>,
+      ]}
+      actions={
+        <>
+          <BackButton />
+          <ModuleHomeButton />
+          <SwitchAccountButton />
+          {onRetry ? <RetryButton onRetry={onRetry} /> : null}
+        </>
+      }
+      details={details}
+      technical={message ?? null}
+    />
   );
 };
+
+/**
+ * The right page for a failed page query: denied, signed out, unreachable, or
+ * something we cannot name. Every query-backed route ends here (see
+ * `routes/queryState.tsx`); a page that runs its own query uses it directly.
+ */
+export const QueryError = ({ error, onRetry, resource, id }: QueryErrorProps) => {
+  const classified = classifyError(error);
+  const { module, who } = useStatusContext();
+  const { reconnect } = useArkitektActions();
+  const report = useReport();
+
+  switch (classified.kind) {
+    case "denied":
+      return <AccessDenied resource={resource} id={id} message={classified.technical} onRetry={onRetry} />;
+    case "unauthenticated":
+      return (
+        <StatusPage
+          code={401}
+          icon={KeyRound}
+          title="Your session ended"
+          description="The server no longer accepts this session, so it would not answer for this page."
+          hints={[<>Signing in again brings you straight back here.</>]}
+          actions={
+            <>
+              <RetryButton onRetry={reconnect} label="Sign in again" />
+              <SwitchAccountButton />
+            </>
+          }
+          details={who}
+          technical={classified.technical}
+        />
+      );
+    case "network": {
+      const subject = module?.label ?? "the server";
+      const serverSide = classified.statusCode != null && classified.statusCode >= 500;
+      const details: StatusDetail[] = [];
+      if (classified.statusCode != null) {
+        details.push({ label: "HTTP status", value: String(classified.statusCode), mono: true });
+      }
+      details.push(...who);
+      return (
+        <StatusPage
+          tone="destructive"
+          code={classified.statusCode ?? undefined}
+          eyebrow={classified.statusCode != null ? undefined : "Unreachable"}
+          icon={Unplug}
+          title={serverSide ? `${subject} hit an error` : `Can't reach ${subject}`}
+          description={
+            serverSide
+              ? "The request arrived, but the service failed while answering it. This is on the server's side."
+              : "The request for this page didn't complete. The service may be restarting, or something between you and it is in the way."
+          }
+          hints={[
+            <>Try again in a few seconds; restarts are brief.</>,
+            <>If it keeps failing, Settings → Services shows which services answer.</>,
+          ]}
+          actions={
+            <>
+              {onRetry ? <RetryButton onRetry={onRetry} /> : null}
+              <BackButton />
+              <HomeButton />
+            </>
+          }
+          details={details}
+          technical={classified.technical}
+        />
+      );
+    }
+    default:
+      return (
+        <UnexpectedError
+          error={classified.message}
+          title={resource ? `Couldn't load this ${resource}` : module ? `${module.label} could not load this page` : "This page could not load"}
+          description="The server returned an error for this page. The message below comes straight from it."
+          technical={classified.technical}
+          actions={
+            <>
+              {onRetry ? <RetryButton onRetry={onRetry} /> : null}
+              <BackButton />
+              <ModuleHomeButton />
+              <ReportButton onReport={report} />
+            </>
+          }
+        />
+      );
+  }
+};
+
+/** The older name of `QueryError`. */
+export const ErrorPage = QueryError;
+
+export default QueryError;

@@ -67,7 +67,7 @@ export const SchedulePage = asDetailQueryRoute(useScheduleQuery, ({ data, refetc
           </PageAction>
           <PageAction
             icon={<Pencil className="h-4 w-4" />}
-            onClick={() => openDialog("editschedule", { id: schedule.id }, { size: "medium" })}
+            onClick={() => openDialog("editschedule", { id: schedule.id }, { size: "large" })}
             collapse="icon"
             priority={-10}
           >

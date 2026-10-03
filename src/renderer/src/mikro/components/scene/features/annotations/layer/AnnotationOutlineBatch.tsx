@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import type { InterleavedBufferAttribute } from "three";
 import type { ThreeEvent } from "@react-three/fiber";
 import { LineSegments2 } from "three/examples/jsm/lines/webgpu/LineSegments2.js";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import { Line2NodeMaterial } from "three/webgpu";
 
+import { swapGeometry } from "@/core/data/scene/gpu/swapGeometry";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { batchColors, roiForSegment, type OutlineBatch } from "../annotationBatch";
 import type { SelectedRoi } from "../roiSelectionStore";
@@ -15,9 +17,11 @@ import type { SelectedRoi } from "../roiSelectionStore";
  * per-shape path (P20).
  *
  * GEOMETRY uploads only when the batch itself changes (data, plane-independent
- * by construction — sectioned ellipsoids are excluded); a SELECTION change is
- * genuinely a color-only pass (`batchColors` → `setColors`), which is the
- * perf property the batching was built for.
+ * by construction — sectioned ellipsoids are excluded), as a NEW geometry
+ * (`swapGeometry`: re-uploading into the drawn one froze the canvas as soon as
+ * a batch grew); a SELECTION change is genuinely a color-only pass
+ * (`batchColors`, written in place), which is the perf property the batching
+ * was built for.
  */
 export const AnnotationOutlineBatch = ({
   batch,
@@ -52,33 +56,48 @@ export const AnnotationOutlineBatch = ({
       onUnhoverRoi(id);
     };
   }, [hoverable, onUnhoverRoi]);
-  const geometry = useMemo(() => new LineSegmentsGeometry(), []);
   const material = useMemo(() => {
     const created = new Line2NodeMaterial();
     created.vertexColors = true;
     return created;
   }, []);
-  const line = useMemo(() => new LineSegments2(geometry, material), [geometry, material]);
+  const line = useMemo(() => new LineSegments2(new LineSegmentsGeometry(), material), [material]);
 
+  // `line.geometry`, not a mount-time one: every batch is a new geometry.
   useEffect(
     () => () => {
-      geometry.dispose();
+      line.geometry.dispose();
       material.dispose();
     },
-    [geometry, material],
+    [line, material],
   );
 
   // Layout effect for the same reason as `Line`: the WGSL vertex layout is
   // derived from the geometry's attributes, so positions must exist before
   // the first frame draws.
   useLayoutEffect(() => {
+    const geometry = new LineSegmentsGeometry();
     geometry.setPositions(batch.positions);
+    swapGeometry(line, geometry);
     line.computeLineDistances();
-  }, [batch, geometry, line]);
+  }, [batch, line]);
 
+  // Declared AFTER the upload above, so on a new batch it runs against that
+  // batch's geometry: the first pass creates the color attributes (nothing has
+  // drawn them yet), every later one — a selection change — rewrites them in
+  // place, the one kind of update the renderer picks up on a drawn geometry.
   useLayoutEffect(() => {
-    geometry.setColors(batchColors(batch, (id) => selectedIds.has(id)));
-  }, [batch, selectedIds, geometry]);
+    const colors = batchColors(batch, (id) => selectedIds.has(id));
+    const attribute = line.geometry.attributes.instanceColorStart as
+      | InterleavedBufferAttribute
+      | undefined;
+    if (attribute && attribute.data.array.length === colors.length) {
+      (attribute.data.array as Float32Array).set(colors);
+      attribute.data.needsUpdate = true;
+      return;
+    }
+    line.geometry.setColors(colors);
+  }, [batch, selectedIds, line]);
 
   useEffect(() => {
     material.linewidth = batch.lineWidth;

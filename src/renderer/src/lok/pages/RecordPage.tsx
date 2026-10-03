@@ -1,3 +1,4 @@
+import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
 import { LOK_HELP } from "../help";
 import { Sidebars } from "@/core/layout/Sidebars";
@@ -8,8 +9,9 @@ import { MorseCodeRecorder } from "../components/MorseCodeRecorder";
 // (legacy) export type removed – not used
 
 const Page = () => {
-  const { data } = useMeQuery();
+  const { data, error, refetch } = useMeQuery();
 
+  if (error && !data) return <QueryError error={error} onRetry={() => refetch()} />;
   if (!data) {
     return <LoadingPage />;
   }

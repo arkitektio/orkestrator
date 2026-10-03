@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   cadenceFromSchedule,
   cadenceToInput,
+  cronFiresOnDay,
+  cronFromSimple,
   describeCadence,
   describeCron,
   describeInterval,
   nextCronFires,
   parseCron,
+  simpleFromCron,
   type ParsedCron,
 } from "./cron";
 
@@ -141,5 +144,56 @@ describe("cadence drafts", () => {
     expect(cadenceToInput({ ...base, cron: "nope" }).ok).toBe(false);
     expect(cadenceToInput({ ...base, mode: "interval", every: 0 }).ok).toBe(false);
     expect(cadenceToInput({ ...base, timezone: "Mars/Olympus" }).ok).toBe(false);
+  });
+});
+
+describe("simple cadences", () => {
+  it("reads a time of day, on weekdays or on days of the month", () => {
+    expect(simpleFromCron("30 7 * * *")).toEqual({ kind: "daily", hour: 7, minute: 30 });
+    expect(simpleFromCron("0 9 * * 1-5")).toEqual({
+      kind: "weekly",
+      hour: 9,
+      minute: 0,
+      weekdays: [1, 2, 3, 4, 5],
+    });
+    expect(simpleFromCron("0 0 1,15 * *")).toEqual({
+      kind: "monthly",
+      hour: 0,
+      minute: 0,
+      days: [1, 15],
+    });
+  });
+
+  it("gives up on anything a simple cadence cannot say", () => {
+    expect(simpleFromCron("*/15 * * * *")).toBeNull();
+    expect(simpleFromCron("0 9,17 * * *")).toBeNull();
+    expect(simpleFromCron("0 9 1 * 1")).toBeNull();
+    expect(simpleFromCron("0 9 * 6 *")).toBeNull();
+    expect(simpleFromCron("nonsense")).toBeNull();
+  });
+
+  it("round-trips through the line", () => {
+    for (const line of ["30 7 * * *", "0 9 * * 1,3,5", "15 18 1,31 * *"]) {
+      const simple = simpleFromCron(line);
+      expect(simple).not.toBeNull();
+      expect(cronFromSimple(simple!)).toBe(line);
+    }
+    expect(cronFromSimple({ kind: "weekly", hour: 9, minute: 0, weekdays: [5, 1, 1] })).toBe(
+      "0 9 * * 1,5",
+    );
+  });
+
+  it("marks the days a line fires on", () => {
+    const of = (line: string) => {
+      const parsed = parseCron(line);
+      if (!parsed.ok) throw new Error(parsed.error);
+      return parsed.cron;
+    };
+    // 2026-10-05 is a Monday.
+    expect(cronFiresOnDay(of("0 9 * * 1-5"), new Date(2026, 9, 5))).toBe(true);
+    expect(cronFiresOnDay(of("0 9 * * 1-5"), new Date(2026, 9, 4))).toBe(false);
+    expect(cronFiresOnDay(of("0 0 31 * *"), new Date(2026, 9, 31))).toBe(true);
+    expect(cronFiresOnDay(of("0 0 31 * *"), new Date(2026, 10, 30))).toBe(false);
+    expect(cronFiresOnDay(of("0 0 * 6 *"), new Date(2026, 9, 5))).toBe(false);
   });
 });

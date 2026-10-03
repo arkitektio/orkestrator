@@ -1,3 +1,4 @@
+import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
 import { SearchField, SearchOptions } from "@/core/forms/SearchField";
 import { FormLabel } from "@/core/ui/form";
 import {
@@ -146,7 +147,7 @@ export const StateChoiceWidget = (
     return (
       <div className="flex flex-col gap-1">
         <FormLabel className="text-sm">
-          {props.port.label || props.port.key}
+          {portLabel(props.port)}
         </FormLabel>
         <div className="rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
           {dependency
@@ -161,9 +162,9 @@ export const StateChoiceWidget = (
     <>
       <SearchField
         name={pathToName(props.path)}
-        label={props.port.label || props.port.key}
+        label={portLabel(props.port)}
         search={search}
-        description={props.port.description || undefined}
+        description={portDescription(props.port, props.widget)}
         noOptionFoundPlaceholder="No options found"
         commandPlaceholder="Search..."
         searchKey={revision ?? undefined}

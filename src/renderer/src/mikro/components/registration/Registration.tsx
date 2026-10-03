@@ -70,7 +70,7 @@ const SidebarBody = () => {
  */
 const Sidebar = () => (
   <SceneHostGuard fallback={<div className="p-4 text-center text-xs text-muted-foreground">Loading scene…</div>}>
-    <MikroGuard unavailable={<></>}>
+    <MikroGuard fallback={<></>}>
       <SidebarBody />
     </MikroGuard>
   </SceneHostGuard>

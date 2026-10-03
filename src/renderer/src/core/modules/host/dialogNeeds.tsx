@@ -1,11 +1,13 @@
 import type { ComponentProps, ComponentType } from "react";
 
 import type { RoleRequirement } from "@/core/connection/roles";
+import type { DialogSize } from "@/core/dialogs/DialogProvider";
 
 const NEEDS = Symbol.for("orkestrator.dialogNeeds");
 const ROLES = Symbol.for("orkestrator.dialogRoles");
+const SIZE = Symbol.for("orkestrator.dialogSize");
 
-type Tagged = { [NEEDS]?: readonly string[]; [ROLES]?: RoleRequirement };
+type Tagged = { [NEEDS]?: readonly string[]; [ROLES]?: RoleRequirement; [SIZE]?: DialogSize };
 
 /**
  * Wraps `Dialog` in a pass-through carrying `tag`. The tags of an already
@@ -16,7 +18,7 @@ const tagged = <C extends ComponentType<any>>(Dialog: C, name: string, tag: Tagg
   const Needing = (props: ComponentProps<C>) => <Dialog {...props} />;
   Needing.displayName = `${name}(${Dialog.displayName ?? Dialog.name ?? "Dialog"})`;
   const inner = Dialog as unknown as Tagged;
-  Object.assign(Needing, { [NEEDS]: inner[NEEDS], [ROLES]: inner[ROLES] }, tag);
+  Object.assign(Needing, { [NEEDS]: inner[NEEDS], [ROLES]: inner[ROLES], [SIZE]: inner[SIZE] }, tag);
   return Needing as unknown as C;
 };
 
@@ -57,3 +59,26 @@ export const needsRoles = <C extends ComponentType<any>>(roles: RoleRequirement,
 /** The roles `Dialog` declared with `needsRoles`, if any. */
 export const dialogRoles = (Dialog: unknown): RoleRequirement | undefined =>
   (Dialog as Tagged | null)?.[ROLES];
+
+/**
+ * The size a dialog opens at when its caller names none: the dialog knows
+ * what it holds (a stacked form, a workspace), its many callers should not
+ * each have to.
+ *
+ * ```ts
+ * actionassign: prefersSize("medium", ActionAssignForm),
+ * ```
+ */
+export const prefersSize = <C extends ComponentType<any>>(size: DialogSize, Dialog: C): C =>
+  tagged(Dialog, "Sized", { [SIZE]: size });
+
+/** The size `Dialog` declared with `prefersSize`, if any. */
+export const dialogPreferredSize = (Dialog: unknown): DialogSize | undefined =>
+  (Dialog as Tagged | null)?.[SIZE];
+
+/** Carries a dialog's declared size onto the component the host wraps it in. */
+export const keepPreferredSize = <C,>(from: unknown, to: C): C => {
+  const size = dialogPreferredSize(from);
+  if (size) Object.assign(to as object, { [SIZE]: size });
+  return to;
+};

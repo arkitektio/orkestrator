@@ -10,6 +10,10 @@ vi.mock("@/core/tabs/TabsProvider", () => ({
 vi.mock("@/app/components/chrome/RailChrome", () => ({
   RailChrome: () => <div>chrome</div>,
 }));
+// Reads the settings store; it has its own test.
+vi.mock("@/app/components/chrome/RailBackdrop", () => ({
+  RailBackdrop: () => null,
+}));
 vi.mock("@/app/components/chrome/AutoHideTitleBar", () => ({
   AutoHideTitleBar: () => null,
 }));

@@ -1,6 +1,6 @@
 import React from "react";
-import { Card } from "@/core/ui/card";
-import { cn } from "@/core/util/utils";
+import { HomeCard, HomeCardMeta, HomeCardTitle } from "@/core/ui/home-card";
+import { Folder } from "lucide-react";
 import { MikroFolder } from "@/core/linkers";
 import { ListFolderFragment } from "../../api/graphql";
 
@@ -12,22 +12,12 @@ interface Props {
 const TheCard = ({ item, className }: Props) => {
   return (
     <MikroFolder.Smart object={item} hover>
-      <Card
-        className={cn(
-          "px-2 py-2 h-20 flex transition-all ease-in-out duration-200 truncate items-center justify-center group hover:bg-back-800 hover:shadow-xl",
-          className,
-        )}
-      >
-        <MikroFolder.DetailLink
-          className={({ isActive } /*  */) =>
-            "z-10 font-bold text-md mb-2 cursor-pointer " +
-            (isActive ? "text-primary-300" : "")
-          }
-          object={item}
-        >
-          {item?.name}
-        </MikroFolder.DetailLink>
-      </Card>
+      <HomeCard className={className}>
+        <HomeCardTitle icon={<Folder />}>
+          <MikroFolder.DetailLink object={item}>{item.name}</MikroFolder.DetailLink>
+        </HomeCardTitle>
+        <HomeCardMeta>Folder</HomeCardMeta>
+      </HomeCard>
     </MikroFolder.Smart>
   );
 };

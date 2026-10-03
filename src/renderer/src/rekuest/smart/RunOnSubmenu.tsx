@@ -77,7 +77,7 @@ export const RunOnSubmenu = ({
           }}
         >
           {target ? (
-            <RekuestGuard unavailable={<></>}>
+            <RekuestGuard fallback={<></>}>
               <DirectImplementationAssignment {...context} action={target.action} />
             </RekuestGuard>
           ) : null}

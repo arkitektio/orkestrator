@@ -88,6 +88,7 @@ export const ActionAssignForm = (props: {
               groups={action?.portGroups || []}
               ports={action?.args || []}
               hidden={props.args}
+              options={{ layout: "stack" }}
               path={[]}
             />
 

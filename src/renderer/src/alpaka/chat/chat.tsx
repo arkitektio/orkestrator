@@ -329,7 +329,7 @@ const ReplyerControl = (props: {
                   </CommandItem>
                 ))}
               </CommandGroup>
-              <KabinetGuard unavailable={<></>}>
+              <KabinetGuard fallback={<></>}>
                 <CommandSeparator />
                 <InstallReplyerSection
                   search={search}

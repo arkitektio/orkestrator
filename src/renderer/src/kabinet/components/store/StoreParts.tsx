@@ -82,7 +82,7 @@ export const InstallButton = ({
 }) => {
   const { openDialog } = useDialog();
   return (
-    <RekuestGuard unavailable={<></>}>
+    <RekuestGuard fallback={<></>}>
       <Button
         size={size}
         variant={variant}
@@ -120,7 +120,7 @@ export const DeployButton = ({
 }) => {
   const { openDialog } = useDialog();
   return (
-    <RekuestGuard unavailable={<></>}>
+    <RekuestGuard fallback={<></>}>
       <Button
         size={size}
         variant={variant}

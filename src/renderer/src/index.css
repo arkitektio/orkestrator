@@ -10,6 +10,9 @@
    the rail is for that to show. Components opt out of their fill with `glass:`
    the way they opt into dark colours with `dark:`. */
 @custom-variant glass (&:is(.rail-glass *));
+/* A backdrop is painted behind the rail (`RailBackdrop`): what would cover it
+   with an opaque fill steps aside with `railbg:`. */
+@custom-variant railbg (&:is(.rail-backdrop *));
 @custom-variant selected (&[data-selected="true"]);
 @custom-variant b-selected (&[data-bselected="true"]);
 @custom-variant over (&[data-over="true"]);
@@ -186,14 +189,18 @@
   --brand-chroma: 0.20962;
 
   /* Base Neutrals */
-  --background: oklch(1 0 0);
-  --backgroundpaired: oklch(26.448% 0.005 var(--brand-hue));
+  /* Off-white, not white: the page is the quiet surface, and what sits on it
+     (cards, menus) is the brighter one. `backgroundpaired` is where the page
+     gradient ends, a faint tint toward the corner; it must stay LIGHT here
+     (a dark one made every light page fade to charcoal). */
+  --background: oklch(0.972 0.004 var(--brand-hue));
+  --backgroundpaired: oklch(0.93 0.012 var(--brand-hue));
   --foreground: oklch(0.145 0.005 var(--brand-hue));
 
   /* Surfaces */
-  --card: var(--background);
+  --card: oklch(0.993 0.002 var(--brand-hue));
   --card-foreground: var(--foreground);
-  --popover: var(--background);
+  --popover: var(--card);
   --popover-foreground: var(--foreground);
 
   /* Primary Colors */
@@ -202,17 +209,17 @@
   --primary-foreground: oklch(0.98 0.02 var(--brand-hue));
 
   /* Secondary & Accents */
-  --secondary: oklch(0.967 0.005 var(--brand-hue));
+  --secondary: oklch(0.935 0.006 var(--brand-hue));
   --secondary-foreground: oklch(0.21 0.006 var(--brand-hue));
-  --muted: oklch(0.97 0.002 var(--brand-hue));
-  --muted-foreground: oklch(0.556 0.01 var(--brand-hue));
-  --accent: oklch(0.97 0.01 var(--brand-hue));
+  --muted: oklch(0.94 0.004 var(--brand-hue));
+  --muted-foreground: oklch(0.5 0.01 var(--brand-hue));
+  --accent: oklch(0.93 0.012 var(--brand-hue));
   --accent-foreground: oklch(0.205 0.01 var(--brand-hue));
 
   /* Interactive & Status */
   --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.922 0.005 var(--brand-hue));
-  --input: oklch(0.922 0.005 var(--brand-hue));
+  --border: oklch(0.885 0.006 var(--brand-hue));
+  --input: oklch(0.885 0.006 var(--brand-hue));
   --ring: oklch(from var(--primary) 0.708 calc(c * 0.5) h);
 
   /* Charts */
@@ -225,7 +232,7 @@
   --radius: 0.625rem;
 
   /* Sidebar */
-  --sidebar: oklch(0.985 0.002 var(--brand-hue));
+  --sidebar: oklch(0.948 0.006 var(--brand-hue));
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);

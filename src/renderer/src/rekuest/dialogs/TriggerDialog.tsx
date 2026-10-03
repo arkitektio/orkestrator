@@ -43,7 +43,7 @@ import {
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ActionPicker } from "../components/automation/ActionPicker";
-import { FieldBlock } from "../components/automation/CadenceEditor";
+import { FieldBlock } from "../components/automation/FieldBlock";
 import { ConditionsEditor } from "../components/automation/ConditionsEditor";
 import { Pin, PinSelect } from "../components/automation/PinSelect";
 
@@ -201,7 +201,7 @@ const TriggerForm = ({
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-          <ScrollArea className="-mr-3 max-h-[60vh] pr-3">
+          <ScrollArea className="-mr-3 pr-3 [&>[data-slot=scroll-area-viewport]]:max-h-[60vh]">
             <div className="flex flex-col gap-6">
               {structurePorts.length > 1 && !trigger && (
                 <FieldBlock label="Hand it in as">

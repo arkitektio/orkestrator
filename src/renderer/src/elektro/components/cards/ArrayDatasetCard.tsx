@@ -1,8 +1,7 @@
 import React from "react";
 import { Badge } from "@/core/ui/badge";
-import { Card } from "@/core/ui/card";
+import { HomeCard, HomeCardMeta, HomeCardTitle } from "@/core/ui/home-card";
 import { formatShape } from "@/core/data/arrays/formatShape";
-import { cn } from "@/core/util/utils";
 import { ElektroArrayDataset } from "@/core/linkers";
 import { ListArrayDatasetFragment } from "../../api/graphql";
 import { specsOf } from "../../specs";
@@ -19,14 +18,13 @@ interface Props {
 const TheCard = ({ item, className }: Props) => {
   return (
     <ElektroArrayDataset.Smart object={item} hover>
-      <Card className={cn("relative flex h-20 flex-col justify-between px-3 py-2", className)}>
-        <ElektroArrayDataset.DetailLink
-          object={item}
-          className="truncate text-sm font-medium after:absolute after:inset-0"
-        >
-          {item.name}
-        </ElektroArrayDataset.DetailLink>
-        <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+      <HomeCard className={className}>
+        <HomeCardTitle>
+          <ElektroArrayDataset.DetailLink object={item}>
+            {item.name}
+          </ElektroArrayDataset.DetailLink>
+        </HomeCardTitle>
+        <HomeCardMeta>
           {/* What it IS, as icons — the names are one hover away. */}
           {specsOf(item.spec).map((entry) => (
             <span key={entry.spec} title={entry.label} className="shrink-0">
@@ -40,8 +38,8 @@ const TheCard = ({ item, className }: Props) => {
               simulated · {item.simulation.model.name}
             </Badge>
           )}
-        </div>
-      </Card>
+        </HomeCardMeta>
+      </HomeCard>
     </ElektroArrayDataset.Smart>
   );
 };

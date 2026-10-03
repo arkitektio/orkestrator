@@ -1,5 +1,3 @@
-import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
-import { AlpakaGuard } from "@/alpaka/api/funcs";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -17,22 +15,20 @@ interface Props { }
 
 export const AlpakaModule: React.FC<Props> = () => {
   return (
-    <AlpakaGuard fallback={<ServiceUnavailable serviceKey="alpaka" />}>
-      <ModuleLayout>
-        <Routes>
-          <Route path="rooms/:id" element={<RoomPage />} />
-          <Route path="rooms" element={<RoomsPage />} />
-          <Route path="providers/:id" element={<ProviderPage />} />
-          <Route path="providers" element={<ProvidersPage />} />
-          <Route path="collections/:id" element={<CollectionPage />} />
-          <Route path="collections" element={<CollectionsPage />} />
-          <Route path="llmmodels/:id" element={<LLMModelPage />} />
-          <Route path="llmmodels" element={<LLMModelsPage />} />
-          <Route index element={<HomePage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </ModuleLayout>
-    </AlpakaGuard>
+    <ModuleLayout>
+      <Routes>
+        <Route path="rooms/:id" element={<RoomPage />} />
+        <Route path="rooms" element={<RoomsPage />} />
+        <Route path="providers/:id" element={<ProviderPage />} />
+        <Route path="providers" element={<ProvidersPage />} />
+        <Route path="collections/:id" element={<CollectionPage />} />
+        <Route path="collections" element={<CollectionsPage />} />
+        <Route path="llmmodels/:id" element={<LLMModelPage />} />
+        <Route path="llmmodels" element={<LLMModelsPage />} />
+        <Route index element={<HomePage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ModuleLayout>
   );
 };
 

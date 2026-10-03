@@ -125,6 +125,9 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
 function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
   const { formDescriptionId } = useFormField()
 
+  // Nothing to say: no empty line under the field.
+  if (props.children == null || props.children === "") return null
+
   return (
     <p
       data-slot="form-description"

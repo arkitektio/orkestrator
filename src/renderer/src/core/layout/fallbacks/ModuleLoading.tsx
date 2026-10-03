@@ -1,11 +1,10 @@
-import { ArkitektLogo } from "../../../core/ui/logos/ArkitektLogo";
+import { ArkitektLogo } from "@/core/ui/logos/ArkitektLogo";
 
 /**
  * What a lazy route shows while its chunk is fetched.
  *
- * Not `ConnectingFallback`: the session is already proven by the time a module
- * suspends, so "Authenticate to continue" with a cancel button is a lie about
- * what the app is waiting for.
+ * Nothing about signing in: the session is already proven by the time a
+ * module suspends, so this only ever waits for code.
  *
  * The backdrop paints at once — it is the page's own gradient, so there is no
  * white flash — while the glow and the logo fade in after a beat. A chunk that

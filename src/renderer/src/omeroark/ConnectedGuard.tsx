@@ -3,7 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
 import { useForm } from "react-hook-form";
-import { TbPlugConnected } from "react-icons/tb";
+import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
+import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
+import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
+import { PlugZap } from "lucide-react";
 import { MeDocument, useDeleteMeMutation, useEnsureOmeroUserMutation, useMeQuery } from "./api/graphql";
 
 interface OmeroConnectionForm {
@@ -132,23 +135,23 @@ export const EnsureMeForm = () => {
 };
 
 export const ConnectedGuard = ({ children }: { children: React.ReactNode }) => {
-  const { data, errors } = useMeQuery();
+  const { data, error, refetch } = useMeQuery();
 
-  if (errors) {
-    return <> Couldn&apos;t request user data. </>;
-  }
-
-  if (!data) {
-    return <> Checking Connection.</>;
-  }
+  if (error && !data) return <QueryError error={error} onRetry={() => refetch()} />;
+  if (!data) return <LoadingPage />;
 
   if (!data.me.omeroUser) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center space-y-4 p-4 md:flex">
-        <TbPlugConnected size={48} />
-        <p>You are not yet associated with an account on omero do this now :)</p>
-        <EnsureMeForm />
-      </div>
+      <StatusPage
+        icon={PlugZap}
+        eyebrow="Not linked"
+        title="Connect your OMERO account"
+        description="You are not yet associated with an account on this OMERO server. Sign in to it once and the pages here open."
+      >
+        <div className="w-full text-left">
+          <EnsureMeForm />
+        </div>
+      </StatusPage>
     );
   }
 

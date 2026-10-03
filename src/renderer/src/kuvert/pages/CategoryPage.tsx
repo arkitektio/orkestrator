@@ -24,7 +24,7 @@ const CategoryPage = asDetailQueryRoute(useGetCategoryQuery, ({ data }) => {
             size="sm"
             collapse="icon"
             icon={<Pencil className="h-4 w-4" />}
-            onClick={() => openDialog("kuvertcategory", { id: category.id }, { size: "small" })}
+            onClick={() => openDialog("kuvertcategory", { id: category.id }, { size: "medium" })}
           >
             Edit
           </PageAction>

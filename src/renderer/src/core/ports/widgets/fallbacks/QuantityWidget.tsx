@@ -1,3 +1,4 @@
+import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
 import { QuantityField } from "@/core/forms/QuantityField";
 import { InputWidgetProps } from "@/core/ports/engine/types";
 import { pathToName } from "@/core/ports/engine/utils";
@@ -20,8 +21,8 @@ export const QuantityWidget = (props: InputWidgetProps) => {
   return (
     <QuantityField
       name={pathToName(props.path)}
-      label={props.port.label || props.port.key}
-      description={props.port.description || undefined}
+      label={portLabel(props.port)}
+      description={portDescription(props.port, props.widget)}
       units={units}
       defaultUnit={reference}
     />

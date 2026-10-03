@@ -560,7 +560,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     icon: AlarmClock,
     conditions: ACTION_CONDITIONS,
     execute: async ({ state, dialog }) => {
-      dialog.openDialog('createschedule', { action: selected(state, ACTION_IDENTIFIER) }, { size: 'medium' })
+      dialog.openDialog('createschedule', { action: selected(state, ACTION_IDENTIFIER) }, { size: 'large' })
     },
     collections: ['io'],
   },
@@ -623,7 +623,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     icon: Pencil,
     conditions: only('@rekuest/schedule'),
     execute: async ({ state, dialog }) => {
-      dialog.openDialog('editschedule', { id: selected(state, '@rekuest/schedule') }, { size: 'medium' })
+      dialog.openDialog('editschedule', { id: selected(state, '@rekuest/schedule') }, { size: 'large' })
     },
     collections: ['io'],
   },

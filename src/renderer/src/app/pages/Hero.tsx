@@ -1,7 +1,4 @@
 import { Arkitekt } from "@/core/connection/arkitekt/host";
-import { ConnectingFallback } from "@/core/layout/fallbacks/Connecting";
-import { QuietPage } from "@/core/layout/fallbacks/QuietPage";
-import { ShellSignInNotice } from "@/core/connection/ui/ShellSignInNotice";
 import { Button } from "@/core/ui/button";
 import { ServiceRuntimeState } from "@/core/connection/arkitekt/types";
 import { useMyContextQuery } from "@/lok/api/graphql";
@@ -503,13 +500,7 @@ export const Home = () => {
 function Page() {
   return (
     <div className="h-full w-full">
-      <Arkitekt.Guard
-        notConnectedFallback={<ShellSignInNotice />}
-        bootingFallback={<QuietPage />}
-        connectingFallback={<ConnectingFallback />}
-      >
-        <Home />
-      </Arkitekt.Guard>
+      <Home />
     </div>
   );
 }

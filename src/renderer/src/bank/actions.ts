@@ -289,7 +289,7 @@ export const BANK_ACTIONS: Record<string, Action> = {
     icon: Store,
     conditions: [{ type: "identifier", identifier: TRANSACTION }, { type: "nopartner" }],
     execute: async ({ dialog, state }) => {
-      dialog.openDialog("bankassignmerchant", { ids: idsOf(state, TRANSACTION) }, { size: "small" });
+      dialog.openDialog("bankassignmerchant", { ids: idsOf(state, TRANSACTION) }, { size: "medium" });
     },
   },
   "bank-merge-merchant-into": {
@@ -363,7 +363,7 @@ export const BANK_ACTIONS: Record<string, Action> = {
     icon: PiggyBank,
     conditions: [{ type: "identifier", identifier: CATEGORY }, { type: "nopartner" }],
     execute: async ({ dialog, state }) => {
-      dialog.openDialog("bankcreatebudget", { category: idsOf(state, CATEGORY)[0] }, { size: "small" });
+      dialog.openDialog("bankcreatebudget", { category: idsOf(state, CATEGORY)[0] }, { size: "medium" });
     },
   },
   "bank-confirm-recurring": setRecurring(

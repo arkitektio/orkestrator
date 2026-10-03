@@ -1,6 +1,7 @@
 import React from "react";
 import { Badge } from '@/core/ui/badge'
-import { Card, CardTitle } from '@/core/ui/card'
+import { CardTitle } from '@/core/ui/card'
+import { HomeCard } from '@/core/ui/home-card'
 import { MikroArrayDataset, MikroScene } from '@/core/linkers'
 import { cn } from '@/core/util/utils'
 import { Clapperboard, Grid3x3 } from 'lucide-react'
@@ -66,7 +67,7 @@ const TheCard = ({ item: arrayDataset, fill }: Props) => {
   // of the square its shape asked for.
   return (
     <MikroArrayDataset.Smart object={arrayDataset} className={fill ? 'h-full' : undefined}>
-      <Card className={cn('overflow-hidden p-0', fill ? 'h-full w-full' : 'aspect-square')}>
+      <HomeCard className={cn('p-0', fill ? 'h-full w-full' : 'h-auto aspect-square')}>
         <SnapshotBackdrop snapshot={arrayDataset.latestSnapshot} className="h-full w-full">
           <div className="flex h-full flex-col justify-between gap-2 px-3 py-2">
             <div className="flex min-w-0 flex-row items-start gap-2">
@@ -137,7 +138,7 @@ const TheCard = ({ item: arrayDataset, fill }: Props) => {
             </div>
           </div>
         </SnapshotBackdrop>
-      </Card>
+      </HomeCard>
     </MikroArrayDataset.Smart>
   )
 }

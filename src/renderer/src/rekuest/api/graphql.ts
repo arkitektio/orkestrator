@@ -5820,9 +5820,9 @@ export type AgentPlacementFragment = { __typename?: 'Placement', id: string, nam
 
 export type ListPlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null };
 
-export type StringAssignWidgetFragment = { __typename: 'StringAssignWidget', kind: AssignWidgetKind, placeholder?: string | null, asParagraph?: boolean | null };
+export type StringAssignWidgetFragment = { __typename: 'StringAssignWidget', kind: AssignWidgetKind, followValue?: string | null, placeholder?: string | null, asParagraph?: boolean | null };
 
-export type SliderAssignWidgetFragment = { __typename: 'SliderAssignWidget', kind: AssignWidgetKind, min?: number | null, max?: number | null, step?: number | null };
+export type SliderAssignWidgetFragment = { __typename: 'SliderAssignWidget', kind: AssignWidgetKind, followValue?: string | null, min?: number | null, max?: number | null, step?: number | null };
 
 export type StateChoiceAssignWidgetFragment = { __typename: 'StateChoiceAssignWidget', kind: AssignWidgetKind, followValue?: string | null, statePath?: string | null, dependency?: string | null, dependencies?: Array<string> | null, stateCall?: (
     { __typename?: 'UtilCall' }
@@ -5832,11 +5832,11 @@ export type StateChoiceAssignWidgetFragment = { __typename: 'StateChoiceAssignWi
       & PortCallFragment
     ) | null }> | null };
 
-export type ProxyWidgetFragment = { __typename: 'ProxyWidget', kind: AssignWidgetKind, targetPort: string, targetAction: string, targetDependency?: string | null };
+export type ProxyWidgetFragment = { __typename: 'ProxyWidget', kind: AssignWidgetKind, followValue?: string | null, targetPort: string, targetAction: string, targetDependency?: string | null };
 
 export type FilterPortFragment = { __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ChoiceAssignWidget' } | { __typename?: 'CustomAssignWidget' } | { __typename?: 'ProxyWidget' } | { __typename?: 'SearchAssignWidget', query: string } | { __typename?: 'SliderAssignWidget' } | { __typename?: 'StateChoiceAssignWidget' } | { __typename?: 'StringAssignWidget' } | null };
 
-export type SearchAssignWidgetFragment = { __typename: 'SearchAssignWidget', kind: AssignWidgetKind, query: string, ward: string, dependencies?: Array<string> | null, filters?: Array<(
+export type SearchAssignWidgetFragment = { __typename: 'SearchAssignWidget', kind: AssignWidgetKind, followValue?: string | null, query: string, ward: string, dependencies?: Array<string> | null, filters?: Array<(
     { __typename?: 'ArgPort' }
     & FilterPortFragment
   )> | null };
@@ -8576,6 +8576,7 @@ export const StringAssignWidgetFragmentDoc = gql`
     fragment StringAssignWidget on StringAssignWidget {
   __typename
   kind
+  followValue
   placeholder
   asParagraph
 }
@@ -8599,6 +8600,7 @@ export const SearchAssignWidgetFragmentDoc = gql`
     fragment SearchAssignWidget on SearchAssignWidget {
   __typename
   kind
+  followValue
   query
   ward
   filters {
@@ -8611,6 +8613,7 @@ export const SliderAssignWidgetFragmentDoc = gql`
     fragment SliderAssignWidget on SliderAssignWidget {
   __typename
   kind
+  followValue
   min
   max
   step
@@ -8628,6 +8631,7 @@ export const ProxyWidgetFragmentDoc = gql`
     fragment ProxyWidget on ProxyWidget {
   __typename
   kind
+  followValue
   targetPort
   targetAction
   targetDependency

@@ -1,6 +1,7 @@
 // typed-dialog-provider.tsx
 
 import { usePageDialogHost } from "@/core/dialogs/PageDialogHost";
+import { dialogPreferredSize } from "@/core/modules/host/dialogNeeds";
 import { Dialog, DialogContent } from "@/core/ui/dialog";
 import { Sheet, SheetContent } from "@/core/ui/sheet";
 import { cn } from "@/core/util/utils";
@@ -54,6 +55,20 @@ import React, {
 type ExtractProps<T> =
   T extends React.ComponentType<infer P> ? Omit<P, "onClose"> : never;
 
+/**
+ * How much of the page a dialog takes. `small` is for confirmations and
+ * one-field prompts only; a form is `medium`, a form with a side panel
+ * `large`, a workspace `full`. Never wider than the page it covers.
+ */
+export type DialogSize = "small" | "medium" | "large" | "full";
+
+export const DIALOG_SIZES: Record<DialogSize, string> = {
+  small: "w-[min(96cqw,28rem)] max-w-[min(96cqw,28rem)]",
+  medium: "w-[min(96cqw,44rem)] max-w-[min(96cqw,44rem)]",
+  large: "w-[min(96cqw,64rem)] max-w-[min(96cqw,64rem)]",
+  full: "w-[96cqw] max-w-[96cqw] min-h-[80cqh]",
+};
+
 // Dialog/Sheet state type
 type ModalState = {
   id: string | null;
@@ -61,7 +76,7 @@ type ModalState = {
   type: "dialog" | "sheet";
   className?: string;
   side?: "top" | "bottom" | "left" | "right";
-  size?: "small" | "medium" | "large";
+  size?: DialogSize;
   /**
    * The page host of whoever opened it (see `PageDialogHost`): a dialog opened
    * from a page covers that page, not the rail. Null means the whole window.
@@ -107,7 +122,7 @@ export const forwardableRequest = (
 type OpenOptions = {
   className?: string;
   side?: "top" | "bottom" | "left" | "right";
-  size?: "small" | "medium" | "large";
+  size?: DialogSize;
   /** Override where it renders; defaults to the caller's page, if any. */
   container?: HTMLElement | null;
 };
@@ -252,6 +267,9 @@ export function createDialogProvider<
     }, []);
 
     const Component = modalState.id ? registry[modalState.id] : null;
+    // The caller's size, else the one the dialog declared (`prefersSize`).
+    const dialogSize =
+      modalState.size ?? (modalState.className ? undefined : dialogPreferredSize(Component));
 
     // The three callbacks are stable, so the context value must be too:
     // otherwise every dialog open/close republishes and rerenders all
@@ -271,12 +289,12 @@ export function createDialogProvider<
           {Component && (
             <DialogContent container={modalState.container} className={cn(
               "text-foreground",
-              "w-[min(96cqw,1200px)] max-w-[min(96cqw,1200px)] max-h-[90cqh]", // Default sizes
+              // A tall dialog scrolls inside the page instead of leaving it.
+              "w-[min(96cqw,1200px)] max-w-[min(96cqw,1200px)] max-h-[90cqh] overflow-y-auto",
+              dialogSize && DIALOG_SIZES[dialogSize],
+              !modalState.className && dialogSize === undefined && "min-w-[80cqw]",
+              // Last: a caller's own width wins over the size.
               modalState.className,
-              modalState.size === "small" && "max-w-sm",
-              modalState.size === "medium" && "max-w-md",
-              modalState.size === "large" && "w-screen !min-w-[90cqw] !max-w-[90cqw] !min-h-[80cqh] !max-h-[80cqh]",
-              !modalState.className && modalState.size === undefined && "min-w-[80cqw]",
             )}>
               {/* Guarded per dialog by the services it needs (MODULE_DIALOGS). */}
               <Component {...modalState.props} />
@@ -293,7 +311,9 @@ export function createDialogProvider<
               container={modalState.container}
               side={modalState.side}
               className={cn(
-                "text-foreground",
+                // Padded by default; a sheet that lays out its own edges
+                // (its own SheetHeader) opens with `className: "p-0"`.
+                "text-foreground p-6 overflow-y-auto",
                 // Reset default width/height classes when custom dimensions are provided
                 modalState.className &&
                 (modalState.className.includes("w-") ||

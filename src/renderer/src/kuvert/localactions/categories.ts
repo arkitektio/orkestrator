@@ -91,7 +91,7 @@ export const CATEGORY_ACTIONS: Record<string, Action> = {
     conditions: [{ type: "identifier", identifier: ACCOUNT }, { type: "nopartner" }],
     execute: async ({ dialog, state }) => {
       const [account] = need(idsOf(state, ACCOUNT), "mailbox");
-      dialog.openDialog("kuvertcategory", { account }, { size: "small" });
+      dialog.openDialog("kuvertcategory", { account }, { size: "medium" });
     },
   },
   "kuvert-edit-category": {
@@ -102,7 +102,7 @@ export const CATEGORY_ACTIONS: Record<string, Action> = {
     conditions: [{ type: "identifier", identifier: CATEGORY }, { type: "nopartner" }],
     execute: async ({ dialog, state }) => {
       const [id] = need(idsOf(state, CATEGORY), "category");
-      dialog.openDialog("kuvertcategory", { id }, { size: "small" });
+      dialog.openDialog("kuvertcategory", { id }, { size: "medium" });
     },
   },
   "kuvert-delete-category": {

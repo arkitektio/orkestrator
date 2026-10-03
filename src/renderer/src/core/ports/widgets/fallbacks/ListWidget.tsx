@@ -1,3 +1,4 @@
+import { PORT_HINT } from "../gridColumns";
 import { ContainerGrid } from "@/core/layout/ContainerGrid";
 import { Button } from "@/core/ui/button";
 import { Card } from "@/core/ui/card";
@@ -14,9 +15,12 @@ import { useFieldArray, useFormContext } from "react-hook-form";
 import { ChildWidget } from "../ChildWidget";
 import { ListChoicesWidget } from "../custom/ListChoicesWidget";
 import { ListSearchWidget } from "../custom/ListSearchWidget";
+import { isTagListPort, portDescription, portLabel } from "@/core/ports/engine/portPresentation";
+import { TagListWidget } from "./TagListWidget";
 
 export const SideBySideWidget = ({
   port,
+  widget,
   valuetype,
   path,
   bound,
@@ -32,7 +36,10 @@ export const SideBySideWidget = ({
 
   return (
     <div className="@container">
-      <div>{port.label || port.key}</div>
+      <div className="mb-2">
+        <div className="text-sm font-medium">{portLabel(port)}</div>
+        <p className={PORT_HINT}>{portDescription(port, widget)}</p>
+      </div>
       <div>
         <ContainerGrid minItemWidth={portToMinItemWidth(valuetype)}>
           {fields.map((item, index) => (
@@ -97,6 +104,10 @@ export const ListWidget = (props: InputWidgetProps) => {
 
   if (child?.widget?.__typename == "ChoiceAssignWidget") {
     return <ListChoicesWidget {...props} widget={child.widget} />;
+  }
+
+  if (isTagListPort(props.port)) {
+    return <TagListWidget {...props} />;
   }
 
   return <SideBySideWidget {...props} valuetype={child} />;

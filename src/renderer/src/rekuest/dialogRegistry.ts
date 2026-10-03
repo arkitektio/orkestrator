@@ -1,3 +1,4 @@
+import { prefersSize } from "@/core/modules/host/dialogNeeds";
 import { CreateShortcutDialog } from "./components/dialogs/CreateShortcutDialog";
 import { ActionAssignForm } from "./forms/ActionAssignForm";
 import { ImplementationAssignForm } from "./forms/ImplementationAssignForm";
@@ -15,8 +16,9 @@ import { UpdateAgentForm } from "./forms/UpdateAgentForm";
  * the module's actions (whose type refers back to `useDialog`).
  */
 export const REKUEST_DIALOGS = {
-  actionassign: ActionAssignForm,
-  implementationassign: ImplementationAssignForm,
+  // a stacked form: one argument per row reads better than a page-wide strip
+  actionassign: prefersSize("medium", ActionAssignForm),
+  implementationassign: prefersSize("medium", ImplementationAssignForm),
   createshortcut: CreateShortcutDialog,
   // an action on a clock ("cron job"), and an action on a signal
   createschedule: CreateScheduleDialog,

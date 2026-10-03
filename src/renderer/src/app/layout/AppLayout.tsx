@@ -1,5 +1,6 @@
 import { AutoHideTitleBar } from "@/app/components/chrome/AutoHideTitleBar";
 import { RailChrome } from "@/app/components/chrome/RailChrome";
+import { RailBackdrop } from "@/app/components/chrome/RailBackdrop";
 import { RailResizer } from "@/app/components/chrome/RailResizer";
 import { RailDropOverlay, useRailDrop } from "@/app/components/navigation/RailDrop";
 import { RightEdge } from "@/app/components/navigation/RightEdge";
@@ -65,7 +66,9 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
         // a drag region swallows clicks in silence, so that opt-out is
         // load-bearing, and `RailChrome.test.tsx` asserts it.
         className={cn(
-          "chrome-zoom relative flex-initial flex flex-col w-(--rail-width) shrink-0",
+          // `isolate`: the backdrop sits at -z-10 INSIDE the rail, under its
+          // children and over the window surface.
+          "chrome-zoom relative isolate flex-initial flex flex-col w-(--rail-width) shrink-0",
           // ...except while a card is in the air, when the rail is a drop
           // target instead and the OS must stop swallowing the pointer.
           mode !== "none" && !railDrop.dragging && "app-drag",
@@ -73,6 +76,7 @@ export const AppLayout = ({ children, navigationBar }: AppLayoutProps) => {
         )}
         onDoubleClick={dragZoneDoubleClick()}
       >
+        <RailBackdrop />
         <RailChrome />
         {/* A plain `nav`, deliberately NOT shadcn's `NavigationMenu`. That
             primitive's root is `max-w-max … items-center justify-center`: it
