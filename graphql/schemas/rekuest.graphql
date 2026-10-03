@@ -3845,6 +3845,9 @@ type Query {
   """Fetch a specific event."""
   event(id: ID!): TaskEvent!
 
+  """Fetch a firing by ID."""
+  firing(id: ID!): Firing!
+
   """
   The firing log: what became of each trigger for each signal it listened for.
   """
@@ -3950,6 +3953,9 @@ type Query {
 
   """All schedules in the organization."""
   schedules(filters: ScheduleFilter, ordering: [ScheduleOrder!]! = [], pagination: OffsetPaginationInput): [Schedule!]!
+
+  """Fetch a service of this hub by ID. Hub-wide."""
+  service(id: ID!): Service!
 
   """
   The services of this hub: what each hosts and emits. Hub-wide; a service is not an agent.
@@ -4536,7 +4542,9 @@ input ScheduleFilter {
   """Filter by IDs"""
   ids: [ID!]
 
-  """Keep schedules whose name contains this text"""
+  """
+  Keep schedules that mention this text: in their name or description, in the action or agent they run, its interface, their cron line, or the wiregram they came from
+  """
   search: String
 }
 
@@ -4784,8 +4792,13 @@ type Signal {
   """The runs this signal fired."""
   runs: [Task!]!
 
-  """The service that sent it."""
-  service: String!
+  """
+  The service that sent it, as the hub catalogues it; null when it is no longer catalogued.
+  """
+  service: Service
+
+  """The name of the service that sent it."""
+  serviceName: String!
 }
 
 """Slim snapshot of a signal for the change feed."""
@@ -4873,6 +4886,11 @@ input SignalFilter {
 
   """Only signals received before this timestamp"""
   receivedBefore: DateTime
+
+  """
+  Keep signals that mention this text: in the structure identifier, the object's id, the sending service, or anywhere in the descriptors (keys and values)
+  """
+  search: String
 
   """Filter by the service that sent the signal"""
   service: String
@@ -6217,7 +6235,9 @@ input TriggerFilter {
   """Filter by the signal kind the trigger reacts to"""
   kind: SignalKind
 
-  """Keep triggers whose name contains this text"""
+  """
+  Keep triggers that mention this text: in their name or description, in the action or agent they run, its interface, the structure they listen for, its port, or the wiregram they came from
+  """
   search: String
 }
 

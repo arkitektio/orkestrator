@@ -41,7 +41,7 @@ const SignalCard = ({ item }: { item: ListSignalFragment }) => {
       </div>
 
       <p className="truncate text-xs text-muted-foreground" title={descriptors.map(([k, v]) => `${k} = ${shortValue(v)}`).join("\n")}>
-        {item.service}
+        {item.serviceName}
         {descriptors.length > 0 && (
           <> · {descriptors.slice(0, 3).map(([k, v]) => `${k}=${shortValue(v)}`).join(" ")}</>
         )}

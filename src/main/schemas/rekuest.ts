@@ -3402,6 +3402,8 @@ export type Query = {
   descriptors: Array<StructureDescriptor>;
   /** Fetch a specific event. */
   event: TaskEvent;
+  /** Fetch a firing by ID. */
+  firing: Firing;
   /** The firing log: what became of each trigger for each signal it listened for. */
   firings: Array<Firing>;
   /** Get forward events after revision. */
@@ -3462,6 +3464,8 @@ export type Query = {
   schedule: Schedule;
   /** All schedules in the organization. */
   schedules: Array<Schedule>;
+  /** Fetch a service of this hub by ID. Hub-wide. */
+  service: Service;
   /** The services of this hub: what each hosts and emits. Hub-wide; a service is not an agent. */
   services: Array<Service>;
   /** Fetch a specific session by ID. */
@@ -3648,6 +3652,11 @@ export type QueryEventArgs = {
 };
 
 
+export type QueryFiringArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QueryFiringsArgs = {
   filters?: InputMaybe<FiringFilter>;
   ordering?: Array<FiringOrder>;
@@ -3819,6 +3828,11 @@ export type QuerySchedulesArgs = {
   filters?: InputMaybe<ScheduleFilter>;
   ordering?: Array<ScheduleOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryServiceArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -4381,7 +4395,7 @@ export type ScheduleFilter = {
   failing?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter by IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Keep schedules whose name contains this text */
+  /** Keep schedules that mention this text: in their name or description, in the action or agent they run, its interface, their cron line, or the wiregram they came from */
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -4562,8 +4576,10 @@ export type Signal = {
   receivedAt: Scalars['DateTime']['output'];
   /** The runs this signal fired. */
   runs: Array<Task>;
-  /** The service that sent it. */
-  service: Scalars['String']['output'];
+  /** The service that sent it, as the hub catalogues it; null when it is no longer catalogued. */
+  service?: Maybe<Service>;
+  /** The name of the service that sent it. */
+  serviceName: Scalars['String']['output'];
 };
 
 /** Slim snapshot of a signal for the change feed. */
@@ -4629,6 +4645,8 @@ export type SignalFilter = {
   receivedAfter?: InputMaybe<Scalars['DateTime']['input']>;
   /** Only signals received before this timestamp */
   receivedBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Keep signals that mention this text: in the structure identifier, the object's id, the sending service, or anywhere in the descriptors (keys and values) */
+  search?: InputMaybe<Scalars['String']['input']>;
   /** Filter by the service that sent the signal */
   service?: InputMaybe<Scalars['String']['input']>;
 };
@@ -5773,7 +5791,7 @@ export type TriggerFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by the signal kind the trigger reacts to */
   kind?: InputMaybe<SignalKind>;
-  /** Keep triggers whose name contains this text */
+  /** Keep triggers that mention this text: in their name or description, in the action or agent they run, its interface, the structure they listen for, its port, or the wiregram they came from */
   search?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -6216,7 +6234,7 @@ export type ListTriggerFragment = { __typename?: 'Trigger', id: string, name: st
 
 export type DetailTriggerFragment = { __typename?: 'Trigger', args: any, interface?: string | null, createdAt: any, updatedAt: any, id: string, name: string, enabled: boolean, identifier: string, kind: SignalKind, port: string, conditions: any, consecutiveFailures: number, lastError?: string | null, runs: Array<{ __typename?: 'Task', id: string, reference?: string | null, latestEventKind: TaskEventKind, isDone: boolean, finishedAt?: any | null, createdAt: any, action: { __typename?: 'Action', id: string, name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string } | null, agent?: { __typename?: 'Agent', id: string, name: string } | null, events: Array<{ __typename?: 'TaskEvent', id: string, kind: TaskEventKind, progress?: number | null, message?: string | null, createdAt: any }> }>, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null };
 
-export type ListSignalFragment = { __typename?: 'Signal', id: string, identifier: string, kind: SignalKind, object: string, service: string, descriptors: any, occurredAt?: any | null, receivedAt: any, processedAt?: any | null, causingTask?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } } | null, runs: Array<{ __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } }> };
+export type ListSignalFragment = { __typename?: 'Signal', id: string, identifier: string, kind: SignalKind, object: string, serviceName: string, descriptors: any, occurredAt?: any | null, receivedAt: any, processedAt?: any | null, service?: { __typename?: 'Service', id: string, name: string } | null, causingTask?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } } | null, runs: Array<{ __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } }> };
 
 export type SignalDeclarationFragment = { __typename?: 'SignalDeclaration', id: string, identifier: string, kind: SignalKind, description?: string | null, descriptorKeys: Array<string>, service: { __typename?: 'Service', id: string, name: string } };
 
@@ -7091,7 +7109,7 @@ export type ListSignalsQueryVariables = Exact<{
 }>;
 
 
-export type ListSignalsQuery = { __typename?: 'Query', signals: Array<{ __typename?: 'Signal', id: string, identifier: string, kind: SignalKind, object: string, service: string, descriptors: any, occurredAt?: any | null, receivedAt: any, processedAt?: any | null, causingTask?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } } | null, runs: Array<{ __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } }> }> };
+export type ListSignalsQuery = { __typename?: 'Query', signals: Array<{ __typename?: 'Signal', id: string, identifier: string, kind: SignalKind, object: string, serviceName: string, descriptors: any, occurredAt?: any | null, receivedAt: any, processedAt?: any | null, service?: { __typename?: 'Service', id: string, name: string } | null, causingTask?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } } | null, runs: Array<{ __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } }> }> };
 
 export type SignalDeclarationsQueryVariables = Exact<{
   identifier?: InputMaybe<Scalars['String']['input']>;
@@ -7441,6 +7459,13 @@ export type ServicesQueryVariables = Exact<{
 
 
 export type ServicesQuery = { __typename?: 'Query', services: Array<{ __typename?: 'Service', id: string, name: string, identifier?: string | null, description?: string | null, structures: Array<{ __typename?: 'Structure', identifier: string, key: string, label?: string | null, id: string, service?: { __typename?: 'Service', id: string, name: string } | null, descriptors: Array<{ __typename?: 'StructureDescriptor', key: string }>, package: { __typename?: 'StructurePackage', key: string } }>, signals: Array<{ __typename?: 'SignalDeclaration', id: string, identifier: string, kind: SignalKind, description?: string | null, descriptorKeys: Array<string>, service: { __typename?: 'Service', id: string, name: string } }> }> };
+
+export type GetServiceQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetServiceQuery = { __typename?: 'Query', service: { __typename?: 'Service', id: string, name: string, identifier?: string | null, description?: string | null, structures: Array<{ __typename?: 'Structure', identifier: string, key: string, label?: string | null, id: string, service?: { __typename?: 'Service', id: string, name: string } | null, descriptors: Array<{ __typename?: 'StructureDescriptor', key: string }>, package: { __typename?: 'StructurePackage', key: string } }>, signals: Array<{ __typename?: 'SignalDeclaration', id: string, identifier: string, kind: SignalKind, description?: string | null, descriptorKeys: Array<string>, service: { __typename?: 'Service', id: string, name: string } }> } };
 
 export type ShortcutsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -8814,7 +8839,11 @@ export const ListSignalFragmentDoc = gql`
   identifier
   kind
   object
-  service
+  serviceName
+  service {
+    id
+    name
+  }
   descriptors
   occurredAt
   receivedAt
@@ -11369,6 +11398,13 @@ export const ServicesDocument = gql`
   }
 }
     ${ServiceFragmentDoc}`;
+export const GetServiceDocument = gql`
+    query GetService($id: ID!) {
+  service(id: $id) {
+    ...Service
+  }
+}
+    ${ServiceFragmentDoc}`;
 export const ShortcutsDocument = gql`
     query Shortcuts($pagination: OffsetPaginationInput, $filters: ShortcutFilter, $ordering: [ShortcutOrder!]) {
   shortcuts(ordering: $ordering, pagination: $pagination, filters: $filters) {
@@ -12072,6 +12108,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     Services(variables?: ServicesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ServicesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<ServicesQuery>({ document: ServicesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'Services', 'query', variables);
+    },
+    GetService(variables: GetServiceQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetServiceQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetServiceQuery>({ document: GetServiceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetService', 'query', variables);
     },
     Shortcuts(variables?: ShortcutsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ShortcutsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<ShortcutsQuery>({ document: ShortcutsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'Shortcuts', 'query', variables);

@@ -74,7 +74,11 @@ fragment ListSignal on Signal {
   identifier
   kind
   object
-  service
+  serviceName
+  service {
+    id
+    name
+  }
   descriptors
   occurredAt
   receivedAt
