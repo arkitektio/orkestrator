@@ -11,6 +11,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ReassignableTask, useReassignFromTask } from "../hooks/useAssign";
 import { LostDetails } from "../lib/taskHistory";
+import { AssignErrorNote } from "../components/AssignErrorNote";
 
 const EFFECTS_WARNING: Record<string, string> = {
   IRREVERSIBLE:
@@ -34,6 +35,7 @@ export const RerunLostDialog = (props: {
   const { reassign } = useReassignFromTask();
   const navigate = useNavigate();
   const [running, setRunning] = useState(false);
+  const [failure, setFailure] = useState<unknown>(null);
 
   const warning =
     EFFECTS_WARNING[props.lost.effects ?? "UNKNOWN"] ?? EFFECTS_WARNING.UNKNOWN;
@@ -50,6 +52,7 @@ export const RerunLostDialog = (props: {
           , so how far it got is unknown. {warning}
         </DialogDescription>
       </DialogHeader>
+      <AssignErrorNote error={failure} className="my-3" />
       <DialogFooter>
         <Button variant="outline" onClick={() => closeDialog()}>
           Keep it lost
@@ -59,10 +62,13 @@ export const RerunLostDialog = (props: {
           disabled={running}
           onClick={async () => {
             setRunning(true);
+            setFailure(null);
             try {
               const x = await reassign(props.task, { capture: props.capture });
               closeDialog();
               navigate(RekuestTask.linkBuilder(x.id));
+            } catch (error) {
+              setFailure(error);
             } finally {
               setRunning(false);
             }

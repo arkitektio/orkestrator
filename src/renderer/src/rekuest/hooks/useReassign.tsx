@@ -3,6 +3,7 @@ import { RekuestTask } from "@/core/linkers";
 import { useNavigate } from "react-router-dom";
 import { DetailTaskFragment, TaskEventKind } from "../api/graphql";
 import { findLostEvent, isRiskyRerun, readLostDetails } from "../lib/taskHistory";
+import { notifyAssignError } from "../lib/assignError";
 import { useReassignFromTask } from "./useAssign";
 
 /**
@@ -27,8 +28,13 @@ export const useReassign = ({ task }: { task: DetailTaskFragment }) => {
         return;
       }
     }
-    const x = await reassignTask(task, { capture });
-    navigate(RekuestTask.linkBuilder(x.id));
+    try {
+      const x = await reassignTask(task, { capture });
+      navigate(RekuestTask.linkBuilder(x.id));
+    } catch (error) {
+      // Its callers are page actions, with nowhere to show it inline.
+      notifyAssignError(error, { id: `rerun:${task.id}`, title: "Couldn't rerun the task" });
+    }
   };
 
   return reassign;

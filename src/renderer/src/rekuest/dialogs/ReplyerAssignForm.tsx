@@ -19,6 +19,8 @@ import { smartRegistry } from "@/core/smart/registry";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/core/notify";
 import { useMemo, useState } from "react";
+import { AssignErrorNote } from "@/rekuest/components/AssignErrorNote";
+import { assignErrorMessage } from "@/rekuest/lib/assignError";
 
 /**
  * Start a "replyer": a rekuest action that answers an alpaka message. Alpaka
@@ -46,6 +48,7 @@ export const ReplyerAssignForm = (props: {
   const { registry } = useWidgetRegistry();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [failure, setFailure] = useState<unknown>(null);
 
   const messageArg = useMemo(() => {
     return action?.args.find(
@@ -123,11 +126,11 @@ export const ReplyerAssignForm = (props: {
       dialog.closeDialog();
       const roomPath = smartRegistry.buildModelPath("@alpaka/room", roomId);
       if (roomPath) navigate(roomPath.startsWith("/") ? roomPath : `/${roomPath}`);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      const msg = err.message || "An error occurred";
-      toast.error(msg);
-      props.onError?.(msg);
+      // Shown above the buttons; the dialog stays open on it.
+      setFailure(err);
+      props.onError?.(assignErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -155,6 +158,7 @@ export const ReplyerAssignForm = (props: {
               path={[]}
             />
 
+            <AssignErrorNote error={failure} className="mt-4" />
             <DialogFooter className="mt-6 flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={dialog.closeDialog} disabled={isSubmitting}>
                 Cancel

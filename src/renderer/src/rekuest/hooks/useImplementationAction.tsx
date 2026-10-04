@@ -1,4 +1,3 @@
-import { formatApolloError } from "@/core/connection/graphql/errorHandler";
 import type { ApolloError } from "@apollo/client";
 import { useCallback } from "react";
 import {
@@ -53,13 +52,7 @@ export const useImplementationAction = (
   const { reassign: reassignTask } = useReassignFromTask();
 
   const assign = useCallback(
-    async (vars: ActionAssignVariables) => {
-      try {
-        return await rawAssign({ ...vars, implementation: options.id });
-      } catch (error: unknown) {
-        throw Error(`Couldn't assign: ${formatApolloError(error, "rekuest")}`);
-      }
-    },
+    (vars: ActionAssignVariables) => rawAssign({ ...vars, implementation: options.id }),
     [rawAssign, options.id],
   );
 

@@ -17,7 +17,6 @@ import {
 } from "@/core/ui/sheet";
 import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
 import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
-import { ApolloError } from "@apollo/client";
 import {
   RekuestAction,
   RekuestAgent,
@@ -39,7 +38,6 @@ import {
 } from "@/rekuest/api/graphql";
 import { ArrowRight, SlidersHorizontal } from "lucide-react";
 import { ReactNode, useEffect } from "react";
-import { toast } from "@/core/notify";
 import TaskList from "../components/lists/TaskList";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { useImplementationForm } from "../hooks/useImplementationForm";
@@ -51,6 +49,7 @@ import PortConstraintBadges from "@/core/ports/widgets/PortConstraintBadges";
 import { portToLabel } from "@/core/ports/engine/utils";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { REKUEST_HELP } from "../help";
+import { notifyAssignError } from "../lib/assignError";
 
 
 export const DoForm = ({ id }: { id: string }) => {
@@ -79,12 +78,7 @@ export const DoForm = ({ id }: { id: string }) => {
        }));
 
      } catch (e) {
-       const message = (e as ApolloError).message;
-         if (!message) {
-           toast.error("No key found");
-           return;
-         }
-         toast.error(message);
+       notifyAssignError(e, { id: `assign:${id}` });
      }
    };
 

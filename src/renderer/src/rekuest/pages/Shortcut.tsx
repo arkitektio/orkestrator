@@ -20,6 +20,7 @@ import { ReturnsContainer } from "@/core/ports/engine/tailwind";
 import { portToLabel } from "@/core/ports/engine/utils";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { REKUEST_HELP } from "../help";
+import { notifyAssignError } from "../lib/assignError";
 
 export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
   const { assign, latestTask } = useAction({
@@ -41,7 +42,7 @@ export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
         console.log("Result", v);
       },
       (error) => {
-        console.log("Error", error);
+        notifyAssignError(error, { id: `assign:${shortcut.id}` });
       },
     );
   };

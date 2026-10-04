@@ -5,6 +5,7 @@ import { Badge } from "@/core/ui/badge";
 import { LightningBoltIcon } from "@radix-ui/react-icons";
 import React from "react";
 import { toast } from "@/core/notify";
+import { assignErrorMessage } from "../lib/assignError";
 import { v4 as uuidv4 } from "uuid";
 import { TaskEventFragment, ListShortcutFragment, PortKind } from "@/rekuest/api/graphql";
 import { failureFallback, trackTask } from "@/rekuest/lib/taskTracker";
@@ -16,8 +17,7 @@ import { bindShortcutKey } from "./shortcutKeybinds";
 
 /** The Shortcuts row; the section is a descriptor in `./sections.tsx`. */
 
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Unknown error";
+const getErrorMessage = assignErrorMessage;
 
 const buildShortcutArgs = (
   shortcut: ListShortcutFragment,
@@ -146,7 +146,8 @@ export const ShortcutButton = (
       } catch (error) {
         untrack();
         const message = getErrorMessage(error);
-        toast.error(message);
+        // Inline on the row, like a task that fails after it started.
+        setError(message);
         onError?.(message);
       }
     },

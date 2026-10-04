@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "@/core/notify";
 import { v4 as uuidv4 } from "uuid";
 
 import { buildAssignInput } from "@/rekuest/assign";
@@ -14,6 +13,7 @@ import {
   trackTask,
 } from "../lib/taskTracker";
 import { useAssign } from "./useAssign";
+import { assignErrorMessage, notifyAssignError } from "../lib/assignError";
 
 export type useActionOptions = {
   hash?: string;
@@ -106,8 +106,9 @@ export const useHashActionWithProgress = (
     } catch (e) {
       untrack();
       untrackRef.current = null;
-      const message = e instanceof Error ? e.message : "Unknown error";
-      toast.error(message);
+      const message = assignErrorMessage(e);
+      // Its callers are command rows that close on select: nowhere inline.
+      notifyAssignError(e, { id: `assign:${options.hash}` });
       setDoing(false);
       setError(message);
     }

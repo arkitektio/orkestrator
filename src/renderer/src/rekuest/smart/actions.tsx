@@ -3,6 +3,7 @@ import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import { cn } from "@/core/util/utils";
 import { toast } from "@/core/notify";
+import { assignErrorMessage, notifyAssignError } from "../lib/assignError";
 import { v4 as uuidv4 } from "uuid";
 import React from "react";
 import {
@@ -31,8 +32,7 @@ import { useRunOnSubmenu } from "./runOnContext";
  * `../demands.ts`.
  */
 
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Unknown error";
+const getErrorMessage = assignErrorMessage;
 
 const formatAssignErrorToast = (message: string) => ({
   title: "Assignment failed",
@@ -153,7 +153,8 @@ export const DirectImplementationAssignment = (
       }));
     } catch (error) {
       untrack();
-      toast.error(getErrorMessage(error));
+      // The picker closes as the run starts: there is no row left to mark.
+      notifyAssignError(error, { id: `assign:${implementation.id}` });
     }
   };
 

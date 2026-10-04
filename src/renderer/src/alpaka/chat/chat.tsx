@@ -81,6 +81,7 @@ import {
 } from "./pendingMessages";
 import { toast } from "@/core/notify";
 import { v4 as uuidv4 } from "uuid";
+import { assignErrorMessage } from "@/rekuest/lib/assignError";
 
 /** How long after a message lands a still-spinning pill re-checks its task. */
 const RECHECK_AFTER_MESSAGE_MS = 5000;
@@ -640,12 +641,10 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
       }));
 
       setActiveTasks((prev) => bindTask(prev, reference, task));
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(`Replyer failed: ${err.message || err}`);
-      setActiveTasks((prev) =>
-        failTask(prev, reference, err.message || "Failed to trigger"),
-      );
+      // The failed task row in the chat says why; no toast on top of it.
+      setActiveTasks((prev) => failTask(prev, reference, assignErrorMessage(err)));
     }
   };
 

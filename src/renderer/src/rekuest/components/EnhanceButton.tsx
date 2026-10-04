@@ -13,6 +13,7 @@ import { Identifier, Object } from "@/core/types";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/core/notify";
+import { notifyAssignError } from "../lib/assignError";
 
 
 
@@ -80,8 +81,7 @@ export const EnhanceButton = (props: EnhanceButtonProps) => {
       }))
       toast.success("Enhancement started");
     } catch (e) {
-      console.error(e);
-      toast.error("Failed to start enhancement");
+      notifyAssignError(e, { id: `assign:${action.id}`, title: "Couldn't start the enhancement" });
     } finally {
       setLoading(false);
     }

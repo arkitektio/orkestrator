@@ -29,6 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 import { FILE_DOWNLOADERS } from "@/core/modules/registries";
 import { structureLabel } from "@/core/modules/export/structureLabel";
 import { FILE_DOWNLOAD_HOOK } from "@/core/modules/export/taskHooks";
+import { AssignErrorNote } from "../components/AssignErrorNote";
 
 export type ExportToFileDialogProps = {
   structure: Structure;
@@ -185,8 +186,12 @@ const ExporterRunForm = (props: {
     overwrites: preset,
   });
 
+  // Why the last submit did not start; the dialog stays open on it.
+  const [failure, setFailure] = useState<unknown>(null);
+
   const onSubmit = async (data: any) => {
     const reference = uuidv4();
+    setFailure(null);
     try {
       const task = await assign(
         buildAssignInput({
@@ -208,8 +213,8 @@ const ExporterRunForm = (props: {
 
       toast.info(`Export started — “${props.exporterName}” is running.`);
       closeDialog();
-    } catch (e: any) {
-      toast.error(`Couldn't start export: ${e?.message ?? e}`);
+    } catch (e) {
+      setFailure(e);
     }
   };
 
@@ -239,6 +244,7 @@ const ExporterRunForm = (props: {
                 hidden={hidden}
                 path={[]}
               />
+              <AssignErrorNote error={failure} />
               <div className="flex justify-end">
                 <Button type="submit" variant="outline" disabled={isSubmitting}>
                   <Download className="h-4 w-4 mr-2" />

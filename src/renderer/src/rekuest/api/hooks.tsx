@@ -37,7 +37,9 @@ export const useMutation: MutationFuncType = (doc, options) => {
   return useApolloMutation(doc, {
     ...options,
     client: rekuest,
-    onError: onApolloError("rekuest"),
+    // A hook that reports its own failure (`useAssign`) passes an `onError`;
+    // every other mutation keeps the service-wide toast.
+    onError: options?.onError ?? onApolloError("rekuest"),
   });
 };
 

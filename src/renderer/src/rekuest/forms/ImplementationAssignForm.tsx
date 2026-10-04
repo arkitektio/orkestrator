@@ -3,12 +3,10 @@ import { Button } from "@/core/ui/button";
 import { DialogFooter } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useDialog } from "@/core/dialogs/registry";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
 import { useActionDescription } from "@/core/ports/engine/ActionDescription";
-import { ApolloError } from "@apollo/client";
-import { toast } from "@/core/notify";
 import {
   PostmanTaskFragment,
   ResolvedDependencyInput,
@@ -20,6 +18,7 @@ import { DependencyTreeNotice } from "../components/dependencies/DependencyTreeN
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
 import { DependencyDefinitionsProvider } from "@/core/ports/engine/DependencyContext";
+import { AssignErrorNote } from "../components/AssignErrorNote";
 
 export type ImplementationAssignFormProps = {
   id: string;
@@ -60,6 +59,7 @@ export const ImplementationAssignForm = (
 
   // Holding Ctrl/⌘ while submitting keeps the dialog open (assign repeatedly).
   const keepOpenRef = useRef(false);
+  const [failure, setFailure] = useState<unknown>(null);
 
   const onSubmit = async (data: {
     args: Record<string, unknown>;
@@ -67,6 +67,7 @@ export const ImplementationAssignForm = (
   }) => {
     const keepOpen = keepOpenRef.current;
     keepOpenRef.current = false;
+    setFailure(null);
     try {
       const task = await assign(buildAssignInput({
         implementation: props.id,
@@ -80,16 +81,9 @@ export const ImplementationAssignForm = (
         closeDialog();
       }
     } catch (e) {
-      const message = (e as ApolloError).message;
-      if (props.onError) {
-        props.onError?.(e);
-      } else {
-        if (!message) {
-          toast.error("No key found");
-          return;
-        }
-        toast.error(message);
-      }
+      // Shown above the submit button; the dialog stays open on it.
+      setFailure(e);
+      props.onError?.(e);
     }
   };
 
@@ -146,6 +140,7 @@ export const ImplementationAssignForm = (
 
           </div>
           <DependencyTreeNotice tree={tree} />
+          <AssignErrorNote error={failure} className="mb-2 flex-initial" />
           <DialogFooter className="flex-initial">
             <Button
               type="submit"

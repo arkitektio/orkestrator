@@ -14,6 +14,14 @@ import {
   mapReference,
   trackTask,
 } from "../lib/taskTracker";
+import { toAssignError } from "../lib/assignError";
+
+/**
+ * Passed as the mutation's `onError` so the service-wide toast stays quiet:
+ * the caller shows the failure once, where the run was started. With an
+ * `onError` present Apollo resolves with `errors` instead of rejecting.
+ */
+const reportedByCaller = () => {};
 
 /**
  * Canonical alias for the assign-mutation input. Import it from here — do not
@@ -32,7 +40,7 @@ export type useActionOptions = {
 };
 
 export const useAssign = (): useActionReturn => {
-  const [postAssign] = useAssignMutation({});
+  const [postAssign] = useAssignMutation({ onError: reportedByCaller });
 
   const assign = useCallback(
     async (vars: ActionAssignVariables) => {
@@ -53,9 +61,8 @@ export const useAssign = (): useActionReturn => {
       const task = mutation.data?.assign;
 
       if (!task) {
-        console.error(mutation);
-        const errorMessages = mutation.errors || "Unknown error";
-        throw Error(`Couldn't assign: ${errorMessages}`);
+        console.error("Assign refused", mutation.errors);
+        throw toAssignError(mutation.errors);
       }
 
       // The subscription's `create` payload usually names the reference first,
@@ -123,11 +130,8 @@ export const useCancelTask = () => {
       const task = mutation.data?.cancel;
 
       if (!task) {
-        console.error(mutation);
-        const errorMessages =
-          mutation.errors?.map((error) => error.message).join(", ") ||
-          "Unknown error";
-        throw Error(`Couldn't cancel task: ${errorMessages}`);
+        console.error("Cancel refused", mutation.errors);
+        throw toAssignError(mutation.errors);
       }
 
       return task;

@@ -11,6 +11,7 @@ import {
   useImplementationsQuery,
 } from "../api/graphql";
 import { useImplementationAction } from "../hooks/useImplementationAction";
+import { notifyAssignError } from "../lib/assignError";
 
 /**
  * The agents a kabinet backend or pod runs as (rekuest records them by the
@@ -52,7 +53,11 @@ const PodActionButton = (props: { implementation: ListImplementationFragment; po
   const { assign } = useImplementationAction({ id: props.implementation.id });
   return (
     <Button
-      onClick={() => void assign(buildAssignInput({ args: { pod: { __identifier: "@kabinet/pod", object: props.pod } } }))}
+      onClick={() =>
+        void assign(buildAssignInput({ args: { pod: { __identifier: "@kabinet/pod", object: props.pod } } })).catch((error) =>
+          notifyAssignError(error, { id: `assign:${props.implementation.id}` }),
+        )
+      }
       variant="outline"
       size="sm"
     >

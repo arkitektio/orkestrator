@@ -16,6 +16,7 @@ import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
 import { deployableApprovals, hostsOf, isApprovalInstaller } from "../lib/approvals";
 import { NoPluginEngine, Section } from "./parts";
+import { AssignErrorNote } from "@/rekuest/components/AssignErrorNote";
 
 const APPROVAL_IDENTIFIER = "@kabinet/approval";
 
@@ -69,10 +70,12 @@ export const DeployReleaseDialog = (props: {
   const argKey = host?.action.args.at(0)?.key;
 
   const [busy, setBusy] = useState(false);
+  const [failure, setFailure] = useState<unknown>(null);
 
   const deploy = async () => {
     if (!release || !approval || !host || !argKey) return;
     setBusy(true);
+    setFailure(null);
     try {
       await assign({
         ...buildAssignInput({
@@ -83,7 +86,8 @@ export const DeployReleaseDialog = (props: {
       toast.success(`Deploying ${release.name} on ${host.agent.name}`);
       closeDialog();
     } catch (cause) {
-      toast.error(`The deploy did not start: ${cause instanceof Error ? cause.message : String(cause)}`);
+      // Shown above the buttons; the dialog stays open on it.
+      setFailure(cause);
     } finally {
       setBusy(false);
     }
@@ -201,6 +205,7 @@ export const DeployReleaseDialog = (props: {
         </>
       )}
 
+      <AssignErrorNote error={failure} className="mt-3" />
       <DialogFooter>
         <Button variant="outline" onClick={() => closeDialog()} disabled={busy}>
           {noDeployers ? "Close" : "Cancel"}
