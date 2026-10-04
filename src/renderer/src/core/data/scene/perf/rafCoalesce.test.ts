@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRafCoalescer } from "./rafCoalesce";
+import { createLeadingRafCoalescer, createRafCoalescer } from "./rafCoalesce";
 
 /** Manual rAF: collects callbacks; flush() runs one frame. */
 const makeFakeRaf = () => {
@@ -63,5 +63,63 @@ describe("createRafCoalescer", () => {
     coalescer.schedule(4);
     fake.flush();
     expect(runs).toEqual([4]);
+  });
+});
+
+describe("createLeadingRafCoalescer", () => {
+  it("runs the first call of a frame synchronously", () => {
+    const fake = makeFakeRaf();
+    const runs: number[] = [];
+    const coalescer = createLeadingRafCoalescer<number>((n) => runs.push(n), fake.raf, fake.caf);
+
+    coalescer.schedule(1);
+    expect(runs).toEqual([1]);
+  });
+
+  it("coalesces the rest of the frame to one trailing run with the latest arguments", () => {
+    const fake = makeFakeRaf();
+    const runs: number[] = [];
+    const coalescer = createLeadingRafCoalescer<number>((n) => runs.push(n), fake.raf, fake.caf);
+
+    coalescer.schedule(1);
+    coalescer.schedule(2);
+    coalescer.schedule(3);
+    expect(runs).toEqual([1]);
+    fake.flush();
+    expect(runs).toEqual([1, 3]);
+
+    // The trailing run spent its frame: the next call waits for the one after.
+    coalescer.schedule(4);
+    expect(runs).toEqual([1, 3]);
+    fake.flush();
+    expect(runs).toEqual([1, 3, 4]);
+  });
+
+  it("is synchronous again once a frame passed with nothing pending", () => {
+    const fake = makeFakeRaf();
+    const runs: number[] = [];
+    const coalescer = createLeadingRafCoalescer<number>((n) => runs.push(n), fake.raf, fake.caf);
+
+    coalescer.schedule(1);
+    fake.flush();
+    expect(fake.pendingCount()).toBe(0);
+    coalescer.schedule(2);
+    expect(runs).toEqual([1, 2]);
+  });
+
+  it("cancel drops the trailing run", () => {
+    const fake = makeFakeRaf();
+    const runs: number[] = [];
+    const coalescer = createLeadingRafCoalescer<number>((n) => runs.push(n), fake.raf, fake.caf);
+
+    coalescer.schedule(1);
+    coalescer.schedule(2);
+    coalescer.cancel();
+    fake.flush();
+    expect(runs).toEqual([1]);
+
+    // And the coalescer still works afterwards.
+    coalescer.schedule(5);
+    expect(runs).toEqual([1, 5]);
   });
 });

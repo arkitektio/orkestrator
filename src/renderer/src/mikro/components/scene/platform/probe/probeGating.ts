@@ -46,10 +46,10 @@ export interface ProbeGateInput {
   /**
    * Whether this layer answers ANNOTATE-mode probing at all. True for the 3D
    * volume and the mesh collection — there the probe IS the placement, since a
-   * volume has no draw plane. False for the 2D plane layer, where the
-   * `RoiDrawer`'s own interaction plane drives the rubber band and a second
-   * hover probe would only fight it for the event. The asymmetry is
-   * deliberate — see COORDINATE_SYSTEMS.md.
+   * volume has no draw plane. The 2D plane layer passes true for HOVER only
+   * (the cross follows the pointer as a placement cursor) and false for the
+   * click: there the `RoiDrawer`'s own interaction plane drives the rubber
+   * band and places every point — see COORDINATE_SYSTEMS.md.
    */
   annotateProbes: boolean;
 }

@@ -4,6 +4,7 @@ import type * as THREE from "three";
 
 import { resolveProbeMarkerGeometry } from "../../platform/probe/probeWorld";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
+import { liveProbeWorld } from "../../platform/stores/viewer/probeSlice";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { bindAll } from "@/core/data/scene/stores/bindStore";
 
@@ -56,7 +57,12 @@ export function useProbeMarkerBinding() {
       const inner = innerRef.current;
       if (!outer || !inner) return;
 
-      const probe = viewerStoreApi.getState().probedCoordinate;
+      const state = viewerStoreApi.getState();
+      const held = state.probedCoordinate;
+      // The marker sits on the sub-voxel cursor, not on where the pointer
+      // entered the voxel (`probeCursorWorld`).
+      const world = liveProbeWorld(state);
+      const probe = held && world && world !== held.worldPos ? { ...held, worldPos: world } : held;
       const layer = probe
         ? sceneStoreApi.getState().layers.find((candidate) => candidate.id === probe.layerId)
         : null;

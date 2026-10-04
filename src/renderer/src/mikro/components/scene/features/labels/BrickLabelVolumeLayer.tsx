@@ -23,7 +23,7 @@ import {
 } from "../../platform/probe/probeGating";
 import { effectiveProbeLayerId, layerAnswersProbe } from "../../platform/probe/probeTargeting";
 import type { ProbeOrigin, ProbeResult } from "../../platform/probe/probeTypes";
-import { createRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
+import { createLeadingRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useBrickMaterialBundle } from "../bricks/layers/useBrickMaterialBundle";
 import {
@@ -118,7 +118,7 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
 
   // Pointermove storms coalesce to ≤1 march per frame (the BrickVolumeLayer
   // idiom): thunks close over a CLONED ray, only the newest runs.
-  const probeCoalescer = useMemo(() => createRafCoalescer<() => void>((run) => run()), []);
+  const probeCoalescer = useMemo(() => createLeadingRafCoalescer<() => void>((run) => run()), []);
   useEffect(() => () => probeCoalescer.cancel(), [probeCoalescer]);
 
   const affineMatrix = useMemo(
@@ -249,6 +249,7 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
       cur?.layerId === probe.layerId &&
       cur.voxelIndex.every((v, i) => v === probe.voxelIndex[i])
     ) {
+      if (probe.worldPos) state.setProbeCursorWorld(probe.worldPos);
       return;
     }
     state.setProbedCoordinate(probe);

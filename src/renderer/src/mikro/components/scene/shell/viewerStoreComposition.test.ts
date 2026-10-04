@@ -35,6 +35,7 @@ const EXPECTED_KEYS = [
   "markProbedInstances", "mergeAttributeRows", "mergeExactProbeValues", "meshSelection",
   "meshSystems", "meshVersion", "nodePlans", "poolsVersion",
   "probeLayerId", "probeMode", "probeReadout", "probeThreshold",
+  "probeCursorWorld", "setProbeCursorWorld",
   "probedAttributes", "probedCoordinate", "register", "registerArrays",
   "registerBrickSystem", "registerCanvas", "registerCapture", "registerFollowAttributeReference",
   "registerMeshSystem", "registerVolumeCompositor", "renderBudget", "residencyVersion",

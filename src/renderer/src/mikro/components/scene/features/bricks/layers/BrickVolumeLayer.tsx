@@ -17,7 +17,7 @@ import {
   hoverProbeEnabled,
   type ProbeGateInput,
 } from "../../../platform/probe/probeGating";
-import { createRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
+import { createLeadingRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import {
   effectiveProbeLayerId,
   layerAnswersProbe,
@@ -746,6 +746,8 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
       cur.strategy === probe.strategy &&
       cur.voxelIndex.every((v, i) => v === probe.voxelIndex[i])
     ) {
+      // Same voxel, but the hit still moved inside it: the marker follows.
+      if (probe.worldPos) state.setProbeCursorWorld(probe.worldPos);
       return;
     }
     state.setProbedCoordinate(probe);
@@ -754,10 +756,12 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
     if (save && probe.worldPos) createPointAnnotation(probe.worldPos);
   };
 
-  // Pointermove storms coalesce to ≤1 march per frame: the handler schedules
-  // a thunk (built at event time, so it closes over fresh props and a cloned
-  // ray — R3F mutates the event's ray in place) and only the newest runs.
-  const probeCoalescer = useMemo(() => createRafCoalescer<() => void>((run) => run()), []);
+  // Pointermove storms coalesce to ≤1 march per frame, LEADING: the first move
+  // of a frame marches inside the event, so the marker's invalidate() renders
+  // in that same frame. Any further move that frame is a thunk (built at event
+  // time, so it closes over fresh props and a cloned ray — R3F mutates the
+  // event's ray in place) and only the newest runs.
+  const probeCoalescer = useMemo(() => createLeadingRafCoalescer<() => void>((run) => run()), []);
   useEffect(() => () => probeCoalescer.cancel(), [probeCoalescer]);
 
   if (layer?.visible === false) return null;
@@ -823,7 +827,7 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
         // target layer behind this one instead of being swallowed here.
         if (!answersProbe()) return;
         // The event already raycast this volume's box, so the front-most
-        // volume claims the hover; the march itself is deferred to the frame.
+        // volume claims the hover; the march runs at most once per frame.
         e.stopPropagation();
         const ray = e.ray.clone();
         probeCoalescer.schedule(() => updateProbe(probeFromRay(ray, "hover"), false));
