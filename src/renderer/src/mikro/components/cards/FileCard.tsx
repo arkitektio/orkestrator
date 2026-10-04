@@ -26,7 +26,7 @@ function getReadableFileSizeString(fileSizeInBytes) {
 
 const TheCard = ({ item, className }: Props) => {
   return (
-    <MikroFile.Smart object={item} key={item.id} hover>
+    <MikroFile.Smart object={item} menuButton key={item.id} hover>
       <HomeCard className={className}>
         <HomeCardTitle icon={<File />}>
           <MikroFile.DetailLink object={item}>{item.name}</MikroFile.DetailLink>

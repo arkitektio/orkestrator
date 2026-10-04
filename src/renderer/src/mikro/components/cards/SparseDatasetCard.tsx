@@ -24,7 +24,7 @@ interface Props {
  */
 const TheCard = ({ item }: Props) => {
   return (
-    <MikroSparseDataset.Smart object={item}>
+    <MikroSparseDataset.Smart object={item} menuButton>
       <Card className="aspect-[5/3]">
         <MikroSparseDataset.DetailLink
           object={item}

@@ -66,7 +66,7 @@ const TheCard = ({ item: arrayDataset, fill }: Props) => {
   // the height of its text and a 512x512 dataset comes out a letterbox instead
   // of the square its shape asked for.
   return (
-    <MikroArrayDataset.Smart object={arrayDataset} className={fill ? 'h-full' : undefined}>
+    <MikroArrayDataset.Smart object={arrayDataset} menuButton className={fill ? 'h-full' : undefined}>
       <HomeCard className={cn('p-0', fill ? 'h-full w-full' : 'h-auto aspect-square')}>
         <SnapshotBackdrop snapshot={arrayDataset.latestSnapshot} className="h-full w-full">
           <div className="flex h-full flex-col justify-between gap-2 px-3 py-2">

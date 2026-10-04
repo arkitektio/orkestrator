@@ -17,7 +17,7 @@ interface Props {
  */
 const TheCard = ({ scene }: Props) => {
   return (
-    <MikroScene.Smart object={scene}>
+    <MikroScene.Smart object={scene} menuButton>
       <Card className={cn("aspect-square overflow-hidden p-0")}>
         <SnapshotBackdrop snapshot={scene.latestSnapshot} className="h-full w-full">
           <CardHeader className="h-full">

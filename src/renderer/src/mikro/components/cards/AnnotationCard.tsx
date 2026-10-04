@@ -30,7 +30,7 @@ const TheCard = ({ item: annotation }: Props) => {
   const scene = annotation.collection.scene;
 
   return (
-    <MikroAnnotation.Smart object={annotation}>
+    <MikroAnnotation.Smart object={annotation} menuButton>
       {/* Wider than tall, like the other text-only cards: with no picture
           to carry, a square would be mostly empty. */}
       <Card className="aspect-[5/3] overflow-hidden p-0">

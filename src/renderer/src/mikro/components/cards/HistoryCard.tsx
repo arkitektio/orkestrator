@@ -19,7 +19,7 @@ interface HistoryCardProps {
  */
 const TheCard = ({ history }: HistoryCardProps) => {
   return (
-    <MikroHistory.Smart object={history}>
+    <MikroHistory.Smart object={history} menuButton>
       <Card className="transition-colors hover:bg-accent/50">
         <CardContent className="p-3">
           <ProvenanceEntryBody entry={history} />

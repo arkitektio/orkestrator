@@ -10,7 +10,7 @@ interface Props {
 
 const TheCard = ({ item }: Props) => {
   return (
-    <MikroLens.Smart object={item}>
+    <MikroLens.Smart object={item} menuButton>
       <Card className="flex h-full flex-col gap-1.5 p-3">
         {/* A lens has no name of its own: it borrows its dataset's. */}
         <MikroLens.DetailLink object={item} className="truncate text-sm font-medium hover:underline">
