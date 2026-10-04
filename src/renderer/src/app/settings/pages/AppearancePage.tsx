@@ -163,7 +163,7 @@ export const AppearancePage = () => (
       <Card>
         <CardHeader>
           <CardTitle>Sidebar</CardTitle>
-          <CardDescription>What is behind the rail: your desktop, a backdrop, or both.</CardDescription>
+          <CardDescription>What is behind the rail and around the page: your desktop, a backdrop, or both.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {canDrawGlass() && <GlassFields />}

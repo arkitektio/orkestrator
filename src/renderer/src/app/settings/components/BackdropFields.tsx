@@ -187,7 +187,7 @@ export const BackdropFields = () => {
         <div className="flex flex-row items-center justify-between gap-4">
           <div className="space-y-1">
             <FormLabel>Placement</FormLabel>
-            <FormDescription>Fill covers the sidebar; Bottom keeps the image whole at its foot.</FormDescription>
+            <FormDescription>Fill covers the window behind the sidebar and around the page; Bottom keeps the image whole along its foot.</FormDescription>
           </div>
           <ToggleGroup
             type="single"

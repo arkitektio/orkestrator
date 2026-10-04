@@ -20,7 +20,7 @@ export const RAIL_BACKDROPS: Record<BuiltinBackdropId, { label: string; style: C
       ].join(", "),
     },
   },
-  // A faint dot grid, with the brand colour rising from the foot of the rail.
+  // A faint dot grid, with the brand colour rising from the foot of the window.
   grid: {
     label: "Grid",
     style: {
@@ -33,12 +33,12 @@ export const RAIL_BACKDROPS: Record<BuiltinBackdropId, { label: string; style: C
   },
 };
 
-/** How the user's own image sits in the rail (or in a preview of it). */
+/** How the user's own image sits on the window surface (or in a preview of it). */
 export const customBackdropStyle = (url: string, fit: Settings["railBackdropFit"]): CSSProperties => ({
   backgroundImage: `url("${url}")`,
   backgroundRepeat: "no-repeat",
   ...(fit === "bottom"
-    ? // Whole and as wide as the rail, standing on its foot.
+    ? // Whole and as wide as the window, standing on its foot.
       { backgroundSize: "100% auto", backgroundPosition: "center bottom" }
     : { backgroundSize: "cover", backgroundPosition: "center" }),
 });

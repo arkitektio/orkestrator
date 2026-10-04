@@ -40,12 +40,14 @@ export const useStoredBackdropUrl = (enabled: boolean, version: number): string 
 };
 
 /**
- * What is painted behind the rail (Settings → Appearance → Sidebar): one of
- * the built-in backdrops or the user's own image.
+ * What is painted on the window surface (Settings → Appearance → Sidebar):
+ * one of the built-in backdrops or the user's own image. It spans the whole
+ * chrome, not just the rail: `AppLayout` mounts it on the window surface, so
+ * it also shows in the frame around the page card.
  *
- * It lies UNDER everything in the rail and over the window surface, so the
+ * It lies UNDER everything on that surface and over its colour, so the
  * transparent parts of an image show the sidebar colour, or the blurred
- * desktop when the rail is glass. It takes no pointer events and does not opt
+ * desktop when the window is glass. It takes no pointer events and does not opt
  * out of the rail's drag region: it is the surface, not a thing on it.
  */
 export const RailBackdrop = () => {
