@@ -8,6 +8,7 @@ import Runs from "./pages/Runs";
 import Workspace from "./pages/Workspace";
 import Workspaces from "./pages/Workspaces";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import Flows from "./pages/Flows";
 
 interface Props { }
 
@@ -30,6 +31,7 @@ const Module: React.FC<Props> = () => {
         <Route path="flows/:id" element={<Flow />} />
         <Route path="runs/:id" element={<Run />} />
         <Route path="home" element={<Home />} />
+        <Route path="flows" element={<Flows />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

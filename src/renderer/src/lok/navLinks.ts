@@ -1,4 +1,4 @@
-import { AppWindow, Boxes, Cpu, KeyRound, Server, Ticket, User, UserCircle, Users, LayoutGrid } from "lucide-react";
+import { AppWindow, Boxes, Cpu, KeyRound, LayoutGrid, Plug, Server, Tag, Ticket, User, UserCircle, Users } from "lucide-react";
 
 import { ADMIN_ROLE } from "@/core/connection/roles";
 import type { NavLinkDecl } from "@/core/modules/host/define";
@@ -15,4 +15,6 @@ export const LOK_NAV_LINKS: NavLinkDecl[] = [
   { label: "Instances", route: "/lok/instances", group: "Admin", icon: Boxes, description: "Deployed services", roles: ADMIN_ROLE },
   { label: "Redeem Tokens", route: "/lok/redeemtokens", group: "Admin", icon: Ticket, description: "App registration tokens", roles: ADMIN_ROLE },
   { label: "Devices", route: "/lok/devices", keywords: ["compute", "nodes"], group: "Admin", icon: Cpu, description: "Compute nodes", roles: ADMIN_ROLE },
+  { label: "Clients", route: "/lok/clients", keywords: ["apps", "oauth"], group: "Admin", icon: Plug, description: "Every registered client", roles: ADMIN_ROLE },
+  { label: "Releases", route: "/lok/releases", keywords: ["apps", "versions"], group: "Admin", icon: Tag, description: "App versions", roles: ADMIN_ROLE },
 ];

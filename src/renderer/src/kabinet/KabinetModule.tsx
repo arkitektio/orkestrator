@@ -18,6 +18,11 @@ import ReposPage from "./pages/ReposPage";
 import ReleasePage from "./pages/ReleasePage";
 import ResourcePage from "./pages/ResourcePage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import BackendsPage from "./pages/BackendsPage";
+import DefinitionsPage from "./pages/DefinitionsPage";
+import FlavoursPage from "./pages/FlavoursPage";
+import ReleasesPage from "./pages/ReleasesPage";
+import ResourcesPage from "./pages/ResourcesPage";
 interface Props { }
 
 export const KabinetModule: React.FC<Props> = () => {
@@ -44,6 +49,11 @@ export const KabinetModule: React.FC<Props> = () => {
         <Route path="flavours/:id" element={<FlavourPage />} />
         <Route index element={<HomePage />} />
         <Route path="home" element={<HomePage />} />
+        <Route path="backends" element={<BackendsPage />} />
+        <Route path="definitions" element={<DefinitionsPage />} />
+        <Route path="flavours" element={<FlavoursPage />} />
+        <Route path="releases" element={<ReleasesPage />} />
+        <Route path="resources" element={<ResourcesPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

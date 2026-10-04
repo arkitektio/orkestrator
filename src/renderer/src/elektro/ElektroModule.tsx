@@ -24,6 +24,8 @@ import { EnvironmentPage } from "./pages/EnvironmentPage";
 import { ElektroZarrStoreProvider } from "./components/store/ElektroZarrStoreProvider";
 import { ElektroParquetProvider } from "./components/store/parquetEngine";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import MechanismsPage from "./pages/MechanismsPage";
+import EnvironmentsPage from "./pages/EnvironmentsPage";
 interface Props { }
 
 export const ElektroModule: React.FC<Props> = () => {
@@ -58,6 +60,8 @@ export const ElektroModule: React.FC<Props> = () => {
         <Route path="environments/:id" element={<EnvironmentPage />} />
         <Route path="modelcollections" element={<ModelCollectionsPage />} />
         <Route index element={<HomePage />} />
+        <Route path="mechanisms" element={<MechanismsPage />} />
+        <Route path="environments" element={<EnvironmentsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       </ModuleLayout>

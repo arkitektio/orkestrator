@@ -1,4 +1,4 @@
-import { Axis3d, Clapperboard, File, Folder, Grid2x2, Grid3x3, Home, PenTool, Table2 } from "lucide-react";
+import { Axis3d, Clapperboard, File, Folder, Grid2x2, Grid3x3, Home, PenTool, ScanSearch, Table2 } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
 import { ADATASET_SPECS, arrayDatasetSpecLink } from "./specs";
@@ -18,6 +18,7 @@ export const MIKRO_NAV_LINKS: NavLinkDecl[] = [
   { label: "Coordinate Systems", route: "/mikro/coordinatesystems", group: "Data", icon: Axis3d, description: "Frames and transforms" },
   { label: "Table Datasets", route: "/mikro/tabledatasets", keywords: ["tables"], group: "Data", icon: Table2, description: "Measurements as tables" },
   { label: "Sparse Datasets", route: "/mikro/sparsedatasets", keywords: ["matrices", "sparse", "csr", "anndata"], group: "Data", icon: Grid2x2, description: "Sparse matrices" },
+  { label: "Lenses", route: "/mikro/lenses", keywords: ["slices", "crops", "views"], group: "Data", icon: ScanSearch, description: "Selections over array datasets" },
   { label: "Annotations", route: "/mikro/annotations", keywords: ["rois", "labels"], group: "Data", icon: PenTool, description: "ROIs and labels" },
   { label: "Folders", route: "/mikro/folders", group: "Files", icon: Folder, description: "How data is organized" },
   { label: "Files", route: "/mikro/files", group: "Files", icon: File, description: "Uploaded raw files" },

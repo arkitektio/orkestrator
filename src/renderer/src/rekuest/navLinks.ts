@@ -1,4 +1,5 @@
 import {
+  Archive,
   Blocks,
   Building2,
   FileJson,
@@ -6,6 +7,7 @@ import {
   Home,
   Keyboard,
   LayoutDashboard,
+  Link2,
   ListChecks,
   Orbit,
   Puzzle,
@@ -35,4 +37,6 @@ export const REKUEST_NAV_LINKS: NavLinkDecl[] = [
   { label: "Dashboards", route: "/rekuest/dashboards", group: "Interfaces", icon: LayoutDashboard, description: "Agent dashboards" },
   { label: "Bloks", route: "/rekuest/bloks", group: "Interfaces", icon: Blocks, description: "App-provided UI" },
   { label: "Shortcuts", route: "/rekuest/shortcuts", keywords: ["keyboard"], group: "Interfaces", icon: Keyboard, description: "Saved one-click runs" },
+  { label: "Memory Shelves", route: "/rekuest/memoryshelves", keywords: ["memory", "drawers"], group: "Apps", icon: Archive, description: "What agents keep in memory" },
+  { label: "Resolutions", route: "/rekuest/resolutions", keywords: ["dependencies", "resolved"], group: "Apps", icon: Link2, description: "Resolved dependencies" },
 ];

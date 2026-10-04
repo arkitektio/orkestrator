@@ -42,6 +42,8 @@ import GraphGraphQueriesPage from "./pages/graph/GraphGraphQueriesPage";
 import { GraphScopeLayout } from "./providers/GraphScopeProvider";
 
 import { EntityCategorySchemaBuilderPage } from "./pages/EntityCategorySchemaBuilderPage";
+import ScatterPlotsPage from "./pages/ScatterPlotsPage";
+import StructuresPage from "./pages/StructuresPage";
 interface Props { }
 
 export const KraphModule: React.FC<Props> = () => {
@@ -145,6 +147,8 @@ export const KraphModule: React.FC<Props> = () => {
           path="measurementcategories/:id"
           element={<MeasurementCategoryPage />}
         />
+        <Route path="scatterplots" element={<ScatterPlotsPage />} />
+        <Route path="structures" element={<StructuresPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

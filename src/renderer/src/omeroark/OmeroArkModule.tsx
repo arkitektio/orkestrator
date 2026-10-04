@@ -8,6 +8,7 @@ import OmeroImagePage from "./pages/OmeroImagePage";
 import ProjectPage from "./pages/ProjectPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import ImagesPage from "./pages/ImagesPage";
 
 
 export const OmeroArkModule = () => {
@@ -21,6 +22,7 @@ export const OmeroArkModule = () => {
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="datasets" element={<DatasetsPage />} />
           <Route path="images/:id" element={<OmeroImagePage />} />
+          <Route path="images" element={<ImagesPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ConnectedGuard>

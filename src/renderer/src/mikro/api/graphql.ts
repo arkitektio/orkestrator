@@ -143,6 +143,8 @@ export type Animation = {
   createdThroughBy?: Maybe<User>;
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   /** The scene this tour flies through */
@@ -270,6 +272,8 @@ export type AnnotationCollection = {
   /** Every edge from this collection's space back into data the shapes are drawn over, in declared order -- the first is the primary parent, the one that places it. An identity into a scene's world for a scene-minted collection, an identity into a dataset's system for one drawn over an image. Empty for a freestanding collection */
   derivedFrom: Array<Transformation>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The files written out of this annotation collection: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
   exports: Array<FileLink>;
   /** The folder this annotation collection is filed in. Organisational only: distinct from `scene`, which says which drawing surface minted it, and from `coordinateSystem`, which says where its shapes are drawn */
@@ -553,6 +557,8 @@ export type ArrayDataset = {
   /** Everything computed from this dataset, whatever kind of container it is: the derived datasets `derivedDatasets` lists, and also the measurement tables, mesh collections and annotation collections that named this dataset as their source. A separate field rather than a widening of that one, which stays honestly about *datasets*. Same edges, same kind-blindness: an UNMAPPABLE child came from here even though its geometry did not survive */
   derivedResidents: Array<Resident>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** This dataset's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The files written out of this dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
@@ -2216,14 +2222,6 @@ export type DerivedFromInput = {
   valueRelation?: InputMaybe<ValueRelation>;
 };
 
-/** A generic key-value descriptor attached to an object. Clients use descriptors to read arbitrary structured metadata without a dedicated field. */
-export type Descriptor = {
-  __typename?: 'Descriptor';
-  description?: Maybe<Scalars['String']['output']>;
-  key: Scalars['String']['output'];
-  value: Scalars['Any']['output'];
-};
-
 /** An input for releasing a set of items from another item, e.g. removing images from a dataset */
 export type DesociateInput = {
   /** The ID of the target item */
@@ -2486,6 +2484,8 @@ export type File = {
   creator: User;
   /** The containers converted out of this file: the datasets a converter wrote from it, one per series. **Not a derivation** -- a file has no coordinate system, so these links claim no geometry and place nothing; they say only that this file's bytes and that data are the same thing */
   derivedContainers: Array<FileLink>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The containers this file was written from: the dataset exported to OME-TIFF, the mesh collection written to STL. The mirror of `derivedContainers` */
   exportedFrom: Array<FileLink>;
   /** The folder this file is filed in, or null once its folder was deleted (deleting a folder unfiles what is in it and destroys nothing). Organisational only: it says where a user keeps the file, nothing about its contents */
@@ -2814,6 +2814,8 @@ export type Folder = {
   createdThroughBy?: Maybe<User>;
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** This folder's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   files: Array<File>;
@@ -3832,6 +3834,8 @@ export type Lens = {
   dataset: ArrayDataset;
   /** The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived */
   derivedDatasets: Array<ArrayDataset>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   /** The most recent picture of this lens' dataset's `defaultScene` -- the tile to put on this lens. The same picture the dataset itself reports: the nomination is a fact about the dataset, so every lens over one dataset answers alike. Null when the dataset nominates no scene */
   latestSnapshot?: Maybe<SceneSnapshot>;
@@ -4214,6 +4218,8 @@ export type MeshCollection = {
   coordinateSystem: CoordinateSystem;
   /** Every edge from this collection's space back into data the meshes were extracted from, in declared order -- the first is the primary parent, the one that places it. An identity when the meshes are in that grid as-is, a scale when they came off a downsampled one, UNMAPPABLE where the lineage is recorded but no geometry is claimed. Empty for a mesh derived from no data at all. The same relation a derived dataset's `derivedFrom` records */
   derivedFrom: Array<Transformation>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The geometry encoding: how positions, normals and indices are quantized and compressed */
   encoding: Scalars['Any']['output'];
   /** The files written out of this mesh collection: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
@@ -6533,8 +6539,6 @@ export type Query = {
   dataArray: DataArray;
   /** List data arrays (the multiscale zarr arrays backing array datasets) */
   dataArrays: Array<DataArray>;
-  /** Get generic key-value descriptors for an object identified by identifier and ID */
-  describe: Array<Descriptor>;
   /** Get a single file by ID */
   file: File;
   /** List files (raw microscopy files such as .czi or .ome.tiff) */
@@ -6729,12 +6733,6 @@ export type QueryDataArraysArgs = {
   filters?: InputMaybe<DataArrayFilter>;
   ordering?: Array<DataArrayOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-export type QueryDescribeArgs = {
-  id: Scalars['ID']['input'];
-  identifier: Scalars['String']['input'];
 };
 
 
@@ -7329,6 +7327,8 @@ export type Scene = {
   backgroundColor?: Maybe<Array<Scalars['Float']['output']>>;
   /** The datasets that nominate this scene as the one to open for them, and take their thumbnail from it. Several may: a scene staging a plate is a reasonable landing place for every dataset in it. Not the datasets this scene *shows* -- for that, ask each dataset's `scenes`, which the coordinate graph derives */
   defaultFor: Array<ArrayDataset>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   /** The most recent picture of this composition -- the tile to put on the scene. Null until something snapshots it */
   latestSnapshot?: Maybe<SceneSnapshot>;
@@ -7414,6 +7414,8 @@ export type SceneSnapshot = {
   /** The assigner of the creating task, if any */
   createdThroughBy?: Maybe<User>;
   creator?: Maybe<User>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   /** The composition this is a picture of */
@@ -7712,6 +7714,8 @@ export type SparseDataset = {
   /** Every edge from this matrix's space back into the data it was computed from, in declared order */
   derivedFrom: Array<Transformation>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The folder it is filed in. Organisational only */
   folder?: Maybe<Folder>;
   id: Scalars['ID']['output'];
@@ -7931,6 +7935,8 @@ export type TableDataset = {
   /** Every edge from this table's space back into data it was computed from, in declared order -- the first is the primary parent, the one that places it. UNMAPPABLE where the lineage is recorded but no geometry is claimed; empty for a freestanding table. The same relation a derived dataset's `derivedFrom` records */
   derivedFrom: Array<Transformation>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** This table's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The files written out of this table dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
@@ -10124,6 +10130,11 @@ export type DetailLensFragment = { __typename?: 'Lens', id: string, shape: Array
     { __typename?: 'UnmappableTransformation' }
     & Transformation_UnmappableTransformation_Fragment
   ) | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
+
+export type ListLensFragment = { __typename?: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
+    { __typename?: 'Slice' }
+    & DimSliceFragment
+  )>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
 
 type OpticalElement_ApertureElement_Fragment = { __typename?: 'ApertureElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
 
@@ -12537,6 +12548,18 @@ export type GetLensQuery = { __typename?: 'Query', lens: (
     & DetailLensFragment
   ) };
 
+export type ListLensesQueryVariables = Exact<{
+  filters?: InputMaybe<LensFilter>;
+  ordering?: InputMaybe<Array<LensOrder> | LensOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListLensesQuery = { __typename?: 'Query', lenses: Array<(
+    { __typename?: 'Lens' }
+    & ListLensFragment
+  )> };
+
 export type MembersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -14130,6 +14153,22 @@ export const DetailLensFragmentDoc = gql`
 }
     ${DimSliceFragmentDoc}
 ${TransformationFragmentDoc}`;
+export const ListLensFragmentDoc = gql`
+    fragment ListLens on Lens {
+  id
+  shape
+  axisNames
+  slices {
+    ...DimSlice
+  }
+  dataset {
+    id
+    name
+    axisNames
+    shape
+  }
+}
+    ${DimSliceFragmentDoc}`;
 export const CcdElementFragmentDoc = gql`
     fragment CCDElement on CCDElement {
   ...OpticalElement
@@ -19529,6 +19568,43 @@ export function useGetLensLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type GetLensQueryHookResult = ReturnType<typeof useGetLensQuery>;
 export type GetLensLazyQueryHookResult = ReturnType<typeof useGetLensLazyQuery>;
 export type GetLensQueryResult = Apollo.QueryResult<GetLensQuery, GetLensQueryVariables>;
+export const ListLensesDocument = gql`
+    query ListLenses($filters: LensFilter, $ordering: [LensOrder!], $pagination: OffsetPaginationInput) {
+  lenses(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListLens
+  }
+}
+    ${ListLensFragmentDoc}`;
+
+/**
+ * __useListLensesQuery__
+ *
+ * To run a query within a React component, call `useListLensesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListLensesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListLensesQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListLensesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListLensesQuery, ListLensesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListLensesQuery, ListLensesQueryVariables>(ListLensesDocument, options);
+      }
+export function useListLensesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListLensesQuery, ListLensesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListLensesQuery, ListLensesQueryVariables>(ListLensesDocument, options);
+        }
+export type ListLensesQueryHookResult = ReturnType<typeof useListLensesQuery>;
+export type ListLensesLazyQueryHookResult = ReturnType<typeof useListLensesLazyQuery>;
+export type ListLensesQueryResult = Apollo.QueryResult<ListLensesQuery, ListLensesQueryVariables>;
 export const MembersDocument = gql`
     query Members {
   members {

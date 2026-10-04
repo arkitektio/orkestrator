@@ -19,6 +19,8 @@ import TaskPage from "./pages/TaskPage";
 import TasksPage from "./pages/TasksPage";
 import ThreadPage from "./pages/ThreadPage";
 import { SMART_MAILBOXES } from "./smartMailboxes";
+import CategoriesPage from "./pages/CategoriesPage";
+import TaskListsPage from "./pages/TaskListsPage";
 
 export const KuvertModule: React.FC = () => (
   <>
@@ -47,6 +49,8 @@ export const KuvertModule: React.FC = () => (
             <Route key={mailbox.key} index element={<SmartMailboxPage key={mailbox.key} mailbox={mailbox} />} />
           ),
         )}
+        <Route path="categories" element={<CategoriesPage />} />
+        <Route path="tasklists" element={<TaskListsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

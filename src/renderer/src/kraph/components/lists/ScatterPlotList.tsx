@@ -1,3 +1,4 @@
+import { KraphScatterPlot } from "@/core/linkers";
 import { ListRender } from "@/core/layout/ListRender";
 import {
   OffsetPaginationInput,
@@ -20,9 +21,7 @@ const List = ({ filters, pagination }: Props) => {
     <ListRender
       error={error}
       array={data?.scatterPlots}
-      // Plain text: `/kraph/graphqueries` is not a route, and a plot's list is
-      // scoped to the query or graph showing it rather than being global.
-      title={<span className="flex-0">Scatter Plots</span>}
+      title={<KraphScatterPlot.ListLink className="flex-0">Scatter Plots</KraphScatterPlot.ListLink>}
       refetch={refetch}
     >
       {(ex) => <ScatterPlotCard key={ex.id} item={ex} />}

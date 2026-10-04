@@ -6,6 +6,7 @@ import StreamPage from "./pages/StreamPage";
 import SoloBroadcast from "./pages/SoloBroadcast";
 import SoloBroadcasts from "./pages/SoloBroadcasts";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import Streams from "./pages/Streams";
 interface Props { }
 
 export const Module: React.FC<Props> = (_props) => {
@@ -16,6 +17,7 @@ export const Module: React.FC<Props> = (_props) => {
         <Route path="solobroadcasts/:id" element={<SoloBroadcast />} />
         <Route path="solobroadcasts" element={<SoloBroadcasts />} />
         <Route index element={<HomePage />} />
+        <Route path="streams" element={<Streams />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

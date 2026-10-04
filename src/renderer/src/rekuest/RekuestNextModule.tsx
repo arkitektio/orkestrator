@@ -51,6 +51,8 @@ import SpaceEditPage from "./pages/SpaceEditPage";
 import SpacePage from "./pages/SpacePage";
 import SpacesPage from "./pages/SpacesPage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import MemoryShelves from "./pages/MemoryShelves";
+import ResolutionsPage from "./pages/ResolutionsPage";
 
 /**
  *
@@ -122,6 +124,8 @@ const Module: React.FC = () => {
         {/* Folded into the task page's stage; old links open it there. */}
         <Route path="tasks/:id/space" element={<ToTaskStage />} />
         <Route path="tasks/:id/timeline" element={<ToTaskStage />} />
+        <Route path="memoryshelves" element={<MemoryShelves />} />
+        <Route path="resolutions" element={<ResolutionsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

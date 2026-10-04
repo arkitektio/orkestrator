@@ -6,6 +6,8 @@ import FilePage from "./pages/FilePage";
 import HomePage from "./pages/HomePage";
 import PagePage from "./pages/PagePage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import DocumentsPage from "./pages/DocumentsPage";
+import FilesPage from "./pages/FilesPage";
 interface Props { }
 
 export const Module: React.FC<Props> = (_props) => {
@@ -16,6 +18,8 @@ export const Module: React.FC<Props> = (_props) => {
         <Route path="pages/:id" element={<PagePage />} />
         <Route path="documents/:id" element={<DocumentPage />} />
         <Route index element={<HomePage />} />
+        <Route path="documents" element={<DocumentsPage />} />
+        <Route path="files" element={<FilesPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

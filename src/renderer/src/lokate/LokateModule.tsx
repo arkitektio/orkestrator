@@ -9,6 +9,8 @@ import PrivacyPage from "./pages/PrivacyPage";
 import TimelinePage from "./pages/TimelinePage";
 import TripPage from "./pages/TripPage";
 import VisitPage from "./pages/VisitPage";
+import VisitsPage from "./pages/VisitsPage";
+import TripsPage from "./pages/TripsPage";
 
 export const LokateModule: React.FC = () => (
   <ModuleLayout>
@@ -20,6 +22,8 @@ export const LokateModule: React.FC = () => (
       <Route path="trips/:id" element={<TripPage />} />
       <Route path="insights" element={<InsightsPage />} />
       <Route path="privacy" element={<PrivacyPage />} />
+      <Route path="visits" element={<VisitsPage />} />
+      <Route path="trips" element={<TripsPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </ModuleLayout>
