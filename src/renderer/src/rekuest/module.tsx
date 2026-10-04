@@ -18,13 +18,16 @@ import { AgentDisplay } from "./displays/AgentDisplay";
 import { BlokDisplay } from "./displays/BlokDisplay";
 import { DashboardDisplay } from "./displays/DashboardDisplay";
 import { DependencyDisplay } from "./displays/DependencyDisplay";
+import { FiringDisplay } from "./displays/FiringDisplay";
 import { ImplementationDisplay } from "./displays/ImplementationDisplay";
 import { InterfaceDisplay } from "./displays/InterfaceDisplay";
 import { MaterializedBlokDisplay } from "./displays/MaterializedBlokDisplay";
 import { MemoryShelveDisplay } from "./displays/MemoryShelveDisplay";
 import { ResolutionDisplay } from "./displays/ResolutionDisplay";
 import { ScheduleDisplay } from "./displays/ScheduleDisplay";
+import { ServiceDisplay } from "./displays/ServiceDisplay";
 import { ShortcutDisplay } from "./displays/ShortcutDisplay";
+import { SignalDisplay } from "./displays/SignalDisplay";
 import { SpaceDisplay } from "./displays/SpaceDisplay";
 import { StateDisplay } from "./displays/StateDisplay";
 import { StructureDisplay } from "./displays/StructureDisplay";
@@ -32,6 +35,7 @@ import { StructurePackageDisplay } from "./displays/StructurePackageDisplay";
 import { TaskDisplay } from "./displays/TaskDisplay";
 import { ToolboxDisplay } from "./displays/ToolboxDisplay";
 import { TriggerDisplay } from "./displays/TriggerDisplay";
+import { WiregramDisplay } from "./displays/WiregramDisplay";
 import { manifest } from "./manifest";
 import { service } from "./service";
 import { REKUEST_NAV_LINKS } from "./navLinks";
@@ -56,6 +60,10 @@ export const REKUEST_MODULE = defineModule({
       "@rekuest/implementation": ImplementationDisplay,
       "@rekuest/schedule": ScheduleDisplay,
       "@rekuest/trigger": TriggerDisplay,
+      "@rekuest/signal": SignalDisplay,
+      "@rekuest/wiregram": WiregramDisplay,
+      "@rekuest/firing": FiringDisplay,
+      "@rekuest/service": ServiceDisplay,
       "@rekuest/shortcut": ShortcutDisplay,
       "@rekuest/state": StateDisplay,
       "@rekuest/dependency": DependencyDisplay,

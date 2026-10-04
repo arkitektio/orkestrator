@@ -4,6 +4,7 @@ import { RekuestStructure } from "@/core/linkers";
 import {
   useGetStructureQuery
 } from "@/rekuest/api/graphql";
+import { DeclarationRow } from "../components/automation/DeclarationRow";
 import InputStructureUsageCard from "../components/cards/InputStructureUsageCard";
 import OutputStructureUsageCard from "../components/cards/OutputStructureUsageCard";
 import { REKUEST_HELP } from "../help";
@@ -11,7 +12,7 @@ import { REKUEST_HELP } from "../help";
 export const StructurePage = asDetailQueryRoute(useGetStructureQuery, ({ data }) => {
   return (
     <RekuestStructure.ModelPage
-      title={data.structure.key}
+      title={data.structure.label || data.structure.key}
       help={REKUEST_HELP.structure}
       object={data.structure}
       sidebars={
@@ -25,13 +26,49 @@ export const StructurePage = asDetailQueryRoute(useGetStructureQuery, ({ data })
       <div className=" p-6">
         <div className="mb-3">
           <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl cursor-pointer">
-            {data?.structure?.key}
+            {data.structure.label || data.structure.key}
           </h1>
           <p className="mt-3 text-xl text-muted-foreground max-w-[80%]">
             {data.structure.identifier}
+            {data.structure.service && (
+              <span className="ml-3 text-base">from {data.structure.service.name}</span>
+            )}
           </p>
+          {data.structure.description && (
+            <p className="mt-3 max-w-3xl text-sm text-muted-foreground">
+              {data.structure.description}
+            </p>
+          )}
         </div>
       </div>
+
+      {data.structure.descriptors.length > 0 && (
+        <div className="p-6 pt-0">
+          <h2 className="mb-2 text-sm font-medium">Descriptors</h2>
+          <dl className="grid max-w-3xl grid-cols-[max-content_max-content_minmax(0,1fr)] gap-x-6 gap-y-1.5 text-sm">
+            {data.structure.descriptors.map((descriptor) => (
+              <div key={descriptor.key} className="contents">
+                <dt className="font-mono text-xs leading-5">{descriptor.key}</dt>
+                <dd className="text-xs leading-5 text-muted-foreground">
+                  {descriptor.type.toLowerCase()}
+                </dd>
+                <dd className="min-w-0 text-muted-foreground">{descriptor.description}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
+      {data.structure.signals.length > 0 && (
+        <div className="p-6 pt-0">
+          <h2 className="mb-2 text-sm font-medium">Signals</h2>
+          <ul className="-mx-1.5 flex max-w-3xl flex-col">
+            {data.structure.signals.map((declaration) => (
+              <DeclarationRow key={declaration.id} declaration={declaration} />
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="p-6 pt-0">
         {data.structure.outputUsages.length > 0 && (

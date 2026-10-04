@@ -30,8 +30,23 @@ fragment Structure on Structure {
   id: identifier
   identifier
   key
+  label
+  description
   package {
     key
+  }
+  service {
+    id
+    name
+  }
+  descriptors {
+    id
+    key
+    type
+    description
+  }
+  signals {
+    ...SignalDeclaration
   }
   outputUsages {
     ...ListOutputStructureUsage

@@ -3,11 +3,16 @@ import { CreateShortcutDialog } from "./components/dialogs/CreateShortcutDialog"
 import { ActionAssignForm } from "./forms/ActionAssignForm";
 import { ImplementationAssignForm } from "./forms/ImplementationAssignForm";
 import { ExportToFileDialog } from "./dialogs/ExportToFileDialog";
+import { FireTriggerDialog } from "./dialogs/FireTriggerDialog";
 import { ReplyerAssignForm } from "./dialogs/ReplyerAssignForm";
 import { ReportBugDialog } from "./dialogs/ReportBugDialog";
 import { RerunLostDialog } from "./dialogs/RerunLostDialog";
-import { CreateScheduleDialog, EditScheduleDialog } from "./dialogs/ScheduleDialog";
-import { CreateTriggerDialog, EditTriggerDialog } from "./dialogs/TriggerDialog";
+import {
+  CreateAutomationDialog,
+  EditScheduleDialog,
+  EditTriggerDialog,
+} from "./dialogs/AutomationDialog";
+import { ExportWiregramDialog, ImportWiregramDialog } from "./dialogs/WiregramDialogs";
 import { UpdateAgentForm } from "./forms/UpdateAgentForm";
 
 /**
@@ -20,11 +25,15 @@ export const REKUEST_DIALOGS = {
   actionassign: prefersSize("medium", ActionAssignForm),
   implementationassign: prefersSize("medium", ImplementationAssignForm),
   createshortcut: CreateShortcutDialog,
-  // an action on a clock ("cron job"), and an action on a signal
-  createschedule: CreateScheduleDialog,
-  editschedule: EditScheduleDialog,
-  createtrigger: CreateTriggerDialog,
-  edittrigger: EditTriggerDialog,
+  // an action on a clock ("cron job") or on a signal: one builder for both
+  createautomation: prefersSize("medium", CreateAutomationDialog),
+  editschedule: prefersSize("medium", EditScheduleDialog),
+  edittrigger: prefersSize("medium", EditTriggerDialog),
+  // a trigger on a stored signal, by hand (a replay)
+  firetrigger: prefersSize("medium", FireTriggerDialog),
+  // automations as a document: in from a file, out of existing rules
+  importwiregram: prefersSize("medium", ImportWiregramDialog),
+  exportwiregram: prefersSize("medium", ExportWiregramDialog),
   updateagent: UpdateAgentForm,
   // a failed task → lok's report form, prefilled
   reportbug: ReportBugDialog,

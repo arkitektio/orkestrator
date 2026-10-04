@@ -18,11 +18,17 @@ import MaterializedBlokPage from "./pages/MaterializedBlok";
 import MaterializedBloks from "./pages/MaterializedBloks";
 import Shortcut from "./pages/Shortcut";
 import Shortcuts from "./pages/Shortcuts";
+import AutomationsPage from "./pages/AutomationsPage";
 import SchedulePage from "./pages/SchedulePage";
-import SchedulesPage from "./pages/SchedulesPage";
+import SignalPage from "./pages/SignalPage";
 import SignalsPage from "./pages/SignalsPage";
+import FiringPage from "./pages/FiringPage";
+import FiringsPage from "./pages/FiringsPage";
+import ServicePage from "./pages/ServicePage";
+import ServicesPage from "./pages/ServicesPage";
+import WiregramPage from "./pages/WiregramPage";
+import WiregramsPage from "./pages/WiregramsPage";
 import TriggerPage from "./pages/TriggerPage";
-import TriggersPage from "./pages/TriggersPage";
 import Toolbox from "./pages/Toolbox";
 import Toolboxes from "./pages/Toolboxes";
 import StructurePackages from "./pages/StructurePackages";
@@ -66,11 +72,20 @@ const Module: React.FC = () => {
         <Route path="agents" element={<AgentsPage />} />
         <Route path="shortcuts/:id" element={<Shortcut />} />
         <Route path="shortcuts" element={<Shortcuts />} />
-        <Route path="schedules" element={<SchedulesPage />} />
+        <Route path="automations" element={<AutomationsPage />} />
+        {/* the two lists are one page now; their old addresses keep working */}
+        <Route path="schedules" element={<Navigate to={{ pathname: "../automations", search: "?kind=clock" }} relative="path" replace />} />
         <Route path="schedules/:id" element={<SchedulePage />} />
-        <Route path="triggers" element={<TriggersPage />} />
+        <Route path="triggers" element={<Navigate to={{ pathname: "../automations", search: "?kind=signal" }} relative="path" replace />} />
         <Route path="triggers/:id" element={<TriggerPage />} />
         <Route path="signals" element={<SignalsPage />} />
+        <Route path="signals/:id" element={<SignalPage />} />
+        <Route path="firings" element={<FiringsPage />} />
+        <Route path="firings/:id" element={<FiringPage />} />
+        <Route path="wiregrams" element={<WiregramsPage />} />
+        <Route path="wiregrams/:id" element={<WiregramPage />} />
+        <Route path="services" element={<ServicesPage />} />
+        <Route path="services/:id" element={<ServicePage />} />
         <Route path="toolboxes" element={<Toolboxes />} />
         <Route path="toolboxes/:id" element={<Toolbox />} />
         <Route path="actions" element={<Actions />} />

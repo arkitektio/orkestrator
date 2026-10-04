@@ -359,81 +359,172 @@ export const REKUEST_HELP = {
       ]}
     />
   ),
-  schedules: (
+  automations: (
     <PageHelp
-      intro="A schedule runs an action on a clock: every few minutes, or at fixed times on a calendar. This page lists your schedules and where each one stands."
+      intro="An automation runs an action by itself: on a clock (every few minutes, or at fixed times), or on a signal (whenever a service reports that an object was created, updated or deleted). This page lists them all, with what needs a look first."
       steps={[
-        <>Press <b>New schedule</b> and choose the action that should run.</>,
-        <>Under <b>When</b>, pick <b>Every …</b> for a fixed interval or <b>On a calendar</b> for a cron line. The dialog says the timing back in words and previews the next runs.</>,
-        <>Fill in <b>Arguments</b>, give it a <b>Name</b> and press <b>Create schedule</b>.</>,
-        <>Right-click a schedule and choose <b>Run Now</b> to start its next run right away.</>,
-        <>Right-click a schedule and choose <b>Pause / Resume</b>, <b>Edit Schedule</b> or <b>Delete Schedule</b>.</>,
+        <>Read a row like a search result: its name, what sets it off underneath, and at the end where it stands (next run, last firing, paused or failed). The dot on its icon is its state.</>,
+        <>Press <b>New automation</b>. Under <b>When</b>, choose <b>On a clock</b> and set the rhythm, or <b>On a signal</b> and pick the signal to wait for.</>,
+        <>For a signal, press <b>Add condition</b> under <b>Only if</b> to react only to objects that match.</>,
+        <>Under <b>Do</b>, choose the action and fill in its arguments. On a signal, one argument is filled with the signalled object.</>,
+        <>Under <b>Where</b>, pin it to one app or leave it to any, then press <b>Create automation</b>.</>,
+        <>Hover a row to pause or resume it, run a clock automation now, or open it to the side.</>,
       ]}
       tips={[
-        <><b>Active</b> means it is waiting for its next run, <b>Paused</b> that it creates no runs, <b>Failing</b> that its last runs failed.</>,
-        <>A schedule can also be made from an action: right-click the action and choose <b>Schedule…</b>.</>,
+        <>Every choice in the dialog has a <b>Change</b> button, so the signal and the action can be picked again at any point.</>,
+        <>Use <b>Clock</b> and <b>Signal</b> in the header to see one kind only, <b>Failing</b> to see what needs a look, and the search to find a rule by its words: its name, action, app, signal or wiregram.</>,
+        <>Open <b>Limits</b> in the dialog to end a rule on a date or after a number of runs. A rule that reached its limit reads <b>ended</b>.</>,
+        <>Press <b>Export…</b> to write rules down as a wiregram, a document another organization can import.</>,
+        <>An automation can also be made from an action: right-click it and choose <b>Schedule…</b> or <b>Run on Signal…</b>.</>,
       ]}
     />
   ),
   schedule: (
     <PageHelp
-      intro="One schedule: the action it runs, how often, with which arguments, and the runs it has produced so far."
+      intro="One automation on a clock. The list under its name is the rule: when it runs, the action, its arguments and where. Below are the runs it has produced so far."
       steps={[
+        <>Read <b>When</b> for the rhythm and <b>Next</b> for the coming times it will run.</>,
         <>Press <b>Run now</b> to start the next run right away instead of waiting for its time.</>,
         <>Press <b>Pause</b> to stop it from creating runs, and <b>Resume</b> to start it again.</>,
         <>Press <b>Edit</b> to change when it runs and with which arguments.</>,
-        <>Click a card under <b>Runs</b> to open that task and see how it went.</>,
-        <>Click the action name above the title to open the action.</>,
+        <>Under <b>Runs</b>, each row is one run: how it went, when and how long it took. Click the status to open the task.</>,
       ]}
       tips={[
-        <>A red line under the title is the error of the last failed run, with the number of failures in a row.</>,
-        <>Editing keeps the action and the app it is pinned to. To change those, make a new schedule.</>,
-      ]}
-    />
-  ),
-  triggers: (
-    <PageHelp
-      intro="A trigger runs an action whenever a service signals that an object was created, updated or deleted, for example every time a new image arrives."
-      steps={[
-        <>Press <b>New trigger</b>, choose the signal to wait for under <b>When</b>, then pick the action to run.</>,
-        <>Under <b>Hand it in as</b>, choose which argument of the action receives the signalled object.</>,
-        <>Press <b>Add condition</b> under <b>Only if</b> to react only to objects that match, then press <b>Create trigger</b>.</>,
-        <>Right-click a trigger and choose <b>Enable / Disable</b> to switch it on or off without deleting it.</>,
-        <>Right-click a trigger and choose <b>Edit Trigger</b> or <b>Delete Trigger</b>.</>,
-      ]}
-      tips={[
-        <>A trigger can also be made from an action (right-click it and choose <b>Run on Signal…</b>) or from a signal on the <b>Signals</b> page.</>,
-        <>Deleting a trigger keeps the runs it already made.</>,
+        <>A red line under the name is the error of the last failed run, with the number of failures in a row.</>,
+        <>Editing can change everything about it, the action and the app it is pinned to included. Press <b>Duplicate</b> to start a second rule from this one.</>,
+        <><b>Until</b> appears when it has an end: a date, or a number of runs. Past it, the schedule reads <b>Ended</b> and runs no more.</>,
       ]}
     />
   ),
   trigger: (
     <PageHelp
-      intro="One trigger. The sentence under the title spells out the rule: which signal it waits for, which conditions must hold, and which action it then runs."
+      intro="One automation on a signal. The list under its name is the rule: the signal it waits for, the conditions that must hold, the action it then runs, with which arguments and where."
       steps={[
+        <>Read <b>When</b> and <b>Only if</b> for what sets it off, <b>Do</b> and <b>With</b> for what it runs.</>,
         <>Press <b>Disable</b> to stop it from firing, and <b>Enable</b> to switch it back on.</>,
         <>Press <b>Edit</b> to change its conditions and the other arguments.</>,
-        <>Click a card under <b>Runs</b> to open a task this trigger started.</>,
-        <>Click the action name in the sentence to open the action.</>,
+        <>Under <b>Firings</b>, each row is a signal this trigger listened for: the object, whether it started a run, was rejected or failed, and why. Click a status to open the task.</>,
+        <>Hover a firing and press <b>Fire again</b>, or press <b>Fire on a signal…</b> in the header, to run it on a stored signal by hand.</>,
       ]}
       tips={[
         <><b>Failing</b> means the last firings created no run; the red line gives the reason.</>,
-        <>Editing keeps the signal, the action and the argument that receives the object. To change those, make a new trigger.</>,
+        <>Editing can change everything about it, the signal and the action included. Press <b>Duplicate</b> to start a second rule from this one.</>,
       ]}
     />
   ),
   signals: (
     <PageHelp
-      intro="Signals are the announcements services make when an object is created, updated or deleted. This page shows them newest first, with the runs each one started. It is the feed triggers react to."
+      intro="Signals are the announcements services make when an object is created, updated or deleted. This page shows them newest first, with the runs each one started. It is the feed automations on a signal react to."
       steps={[
-        <>Read a card to see which object changed, what happened to it and which service reported it.</>,
-        <>Click the arrow link at the bottom of a card to open the task the signal started.</>,
-        <>Hover a card and press the lightning button to make a trigger for signals like it.</>,
-        <>Open the <b>Declared</b> tab of the sidebar to see every signal the services can send. Hover one and press its lightning button to make a trigger on it.</>,
+        <>Read a row to see which object changed, what happened to it, which service reported it and what it carried.</>,
+        <>Follow an arrow to open a task the signal started; the name in brackets is the trigger that started it.</>,
+        <>Hover a row and press <b>Run something on this</b> to make an automation for signals like it. Its values are offered as conditions.</>,
+        <>Press <b>Fired something</b> to keep only signals that started a run, and <b>created</b>, <b>updated</b> or <b>deleted</b> to keep one kind. New signals appear by themselves.</>,
+        <>Click a row's time to open the signal: everything it carried, and what each trigger did with it.</>,
+        <>Open the <b>Declared</b> tab of the sidebar to see every signal the services can send. Hover one and press its lightning button to make an automation on it.</>,
       ]}
       tips={[
-        <>A “from …” line on a card names the task that caused the change.</>,
-        <>Nothing can be edited here; the page is for inspection.</>,
+        <>A “from …” note names the task that caused the change.</>,
+        <>The search looks at the structure, the object's id, the service and every value the signal carried.</>,
+      ]}
+    />
+  ),
+  signal: (
+    <PageHelp
+      intro="One signal: the object a service announced, what happened to it, when, and the values it carried. Below is what every trigger that listened for it did."
+      steps={[
+        <>Read the list for the structure, the service that sent it, and the task that caused the change, if one did.</>,
+        <>Under <b>Firings</b>, each row is a trigger that met this signal: it fired a run, rejected the signal, or failed, with the reason.</>,
+        <>Press <b>Run something on this</b> to make an automation for signals like it.</>,
+        <>Press <b>Fire a trigger…</b> to run one of the triggers listening for it on this signal now.</>,
+      ]}
+      tips={[
+        <><b>Matched</b> is when triggers were checked against it. Until then it is waiting.</>,
+        <>No firings and a matched time means no trigger was listening.</>,
+      ]}
+    />
+  ),
+  firings: (
+    <PageHelp
+      intro="A firing is one trigger meeting one signal. This page is the log of all of them, newest first: which signals started a run, which were rejected, and which failed."
+      steps={[
+        <>Read a row for the object, the trigger, what became of it and why.</>,
+        <>Use <b>Fired</b>, <b>Rejected</b> and <b>Failed</b> to keep one outcome, and <b>Fired by hand</b> to keep only replays.</>,
+        <>Click a status to open the task a firing started, the trigger's name to open the trigger, or the time to open the firing itself.</>,
+        <>Hover a row and press <b>Fire again</b> to run the same trigger on the same signal once more.</>,
+      ]}
+      tips={[
+        <><b>Rejected</b> is not an error: the signal did not meet the conditions, came too soon after the last one for that object, or the trigger had reached its limit.</>,
+        <><b>All firings</b> on a trigger's page opens this page narrowed to that trigger.</>,
+      ]}
+    />
+  ),
+  wiregrams: (
+    <PageHelp
+      intro="A wiregram is one document of automations: schedules and triggers, each naming the app and interface it runs. Importing it creates those rules here; this page lists what was imported."
+      steps={[
+        <>Press <b>Import…</b>, choose the file or paste the document, check the summary, and press <b>Import</b>.</>,
+        <>Click a wiregram to see the rules it owns and the document itself.</>,
+        <>To make one from your own rules, open <b>Automations</b> and press <b>Export…</b>.</>,
+      ]}
+      tips={[
+        <>Importing a document whose key was imported before updates the rules of that import, and removes the ones it no longer lists.</>,
+        <>An import is all or nothing: if one rule cannot be created, none are.</>,
+      ]}
+    />
+  ),
+  wiregram: (
+    <PageHelp
+      intro="One imported document and the automations it owns. The rules are ordinary schedules and triggers: open one to see its runs."
+      steps={[
+        <>Read <b>Automations</b> for the rules it created, each with where it stands.</>,
+        <>Open the <b>Document</b> tab of the sidebar to read the document as it was imported.</>,
+        <>Press <b>Download</b> to save the document as a file.</>,
+        <>Press <b>Import again…</b> to change the document and bring its rules in line.</>,
+      ]}
+      tips={[
+        <>Deleting a wiregram (right-click it) also deletes the schedules and triggers it owns.</>,
+        <>Whether a rule is enabled is yours to decide: importing again keeps your switch.</>,
+      ]}
+    />
+  ),
+  services: (
+    <PageHelp
+      intro="The services of this server as the automation system knows them: which one sends which signals, and which structures it hosts."
+      steps={[
+        <>Read a row for the service's name, what it says it is, and how much it declares.</>,
+        <>Use the search to find a service by its name or description.</>,
+        <>Click a service to open what it declares.</>,
+      ]}
+      tips={[
+        <>A service appears once it has declared a signal or a structure.</>,
+      ]}
+    />
+  ),
+  service: (
+    <PageHelp
+      intro="One service and what it declares: the signals it sends when its objects change, and the structures it hosts, each with the descriptors its objects carry."
+      steps={[
+        <>Under <b>Signals</b>, hover one and press its lightning button to make an automation on it. The names after the arrow are your triggers already waiting for it.</>,
+        <>Under <b>Structures</b>, click one to see the actions that take or return it.</>,
+        <>Read a structure's descriptors for what a trigger's conditions can test: the key, and what kind of value it holds.</>,
+        <>Press <b>What it sent</b> to open the signal feed narrowed to this service.</>,
+      ]}
+      tips={[
+        <>The search narrows both lists by identifier, label, description and descriptor key.</>,
+      ]}
+    />
+  ),
+  firing: (
+    <PageHelp
+      intro="One firing: one trigger meeting one signal. It says what became of it (a run, a rejection, a failure) and why."
+      steps={[
+        <>Read <b>Trigger</b> and <b>Signal</b> for the two sides, and <b>Run</b> for the task it started, if it did.</>,
+        <>Press <b>Fire again</b> to run the same trigger on the same signal once more.</>,
+      ]}
+      tips={[
+        <><b>By hand</b> marks a replay: someone fired it, rather than the signal arriving.</>,
+        <>A fired firing without a run means the run is no longer kept.</>,
       ]}
     />
   ),

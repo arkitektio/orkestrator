@@ -203,6 +203,7 @@ export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
   actions: ["filters", "ordering"],
   agents: ["filters", "ordering"],
   clients: ["filters", "ordering"],
+  firings: ["filters", "ordering"],
   implementations: ["filters", "ordering"],
   materializedBloks: ["filters", "ordering"],
   memoryDrawers: ["filters"],
@@ -210,14 +211,18 @@ export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
   placements: ["filters", "ordering"],
   protocols: ["filters", "ordering"],
   resolutions: ["filters"],
+  schedules: ["filters", "ordering"],
   sessions: ["filters", "ordering"],
   shortcuts: ["filters", "ordering"],
+  signals: ["filters", "ordering"],
   spaces: ["filters", "ordering"],
   tasks: ["filters", "ordering"],
   testCases: ["filters"],
   testResults: ["filters"],
   threedModels: ["filters", "ordering"],
   toolboxes: ["filters", "ordering"],
+  triggers: ["filters", "ordering"],
+  wiregrams: [],
 };
 
 export const ALPAKA_TYPE_POLICIES = buildOffsetPaginationPolicies(ALPAKA_PAGINATED_FIELDS);

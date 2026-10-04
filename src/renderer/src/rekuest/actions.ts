@@ -29,6 +29,7 @@ import {
   DeleteShortcutDocument,
   DeleteSpaceDocument,
   DeleteTriggerDocument,
+  DeleteWiregramDocument,
   ImplementationDocument,
   ImplementationQuery,
   ImplementationQueryVariables,
@@ -47,6 +48,9 @@ import {
   ScheduleDocument,
   ScheduleQuery,
   ScheduleQueryVariables,
+  SignalDocument,
+  SignalQuery,
+  SignalQueryVariables,
   TaskDocument,
   TaskQuery,
   TaskQueryVariables,
@@ -64,14 +68,18 @@ import {
   UpdateScheduleMutationVariables,
   UpdateTriggerDocument,
   UpdateTriggerMutation,
-  UpdateTriggerMutationVariables
+  UpdateTriggerMutationVariables,
+  WiregramDocument,
+  WiregramQuery,
+  WiregramQueryVariables
 } from '@/rekuest/api/graphql'
 import type { ModuleServices } from '@/core/connection/arkitekt/host'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { AlarmClock, Ban, Bookmark, Eraser, FastForward, Hash, LogOut, PauseCircle, Pencil, Pin, Play, RotateCcw, ShieldCheck, ToggleLeft, Trash2, Zap } from 'lucide-react'
+import { AlarmClock, Ban, Bookmark, Copy, Eraser, FastForward, Hash, LogOut, PauseCircle, Pencil, Pin, Play, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
 import { toast } from "@/core/notify";
 import { isPausable, isResumable } from '@/rekuest/lib/taskStatus'
+import { initialFromSchedule, initialFromTrigger } from './components/automation/builder/initial'
 
 type RekuestAction = Action<ModuleServices<"rekuest">>
 
@@ -560,7 +568,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     icon: AlarmClock,
     conditions: ACTION_CONDITIONS,
     execute: async ({ state, dialog }) => {
-      dialog.openDialog('createschedule', { action: selected(state, ACTION_IDENTIFIER) }, { size: 'large' })
+      dialog.openDialog('createautomation', { kind: 'clock', action: selected(state, ACTION_IDENTIFIER) })
     },
     collections: ['io'],
   },
@@ -570,7 +578,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     icon: Zap,
     conditions: ACTION_CONDITIONS,
     execute: async ({ state, dialog }) => {
-      dialog.openDialog('createtrigger', { action: selected(state, ACTION_IDENTIFIER) }, { size: 'medium' })
+      dialog.openDialog('createautomation', { kind: 'signal', action: selected(state, ACTION_IDENTIFIER) })
     },
     collections: ['io'],
   },
@@ -623,7 +631,26 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     icon: Pencil,
     conditions: only('@rekuest/schedule'),
     execute: async ({ state, dialog }) => {
-      dialog.openDialog('editschedule', { id: selected(state, '@rekuest/schedule') }, { size: 'large' })
+      dialog.openDialog('editschedule', { id: selected(state, '@rekuest/schedule') })
+    },
+    collections: ['io'],
+  },
+  'rekuest-duplicate-schedule': {
+    title: 'Duplicate Schedule',
+    description: 'Start a new automation from a copy of this one',
+    icon: Copy,
+    conditions: only('@rekuest/schedule'),
+    execute: async ({ services, state, dialog }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const { data } = await services.rekuest.client.query<ScheduleQuery, ScheduleQueryVariables>({
+        query: ScheduleDocument,
+        variables: { id: selected(state, '@rekuest/schedule') },
+      })
+      dialog.openDialog('createautomation', {
+        initial: { ...initialFromSchedule(data.schedule), name: `${data.schedule.name} copy` },
+      })
     },
     collections: ['io'],
   },
@@ -699,7 +726,26 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     icon: Pencil,
     conditions: only('@rekuest/trigger'),
     execute: async ({ state, dialog }) => {
-      dialog.openDialog('edittrigger', { id: selected(state, '@rekuest/trigger') }, { size: 'medium' })
+      dialog.openDialog('edittrigger', { id: selected(state, '@rekuest/trigger') })
+    },
+    collections: ['io'],
+  },
+  'rekuest-duplicate-trigger': {
+    title: 'Duplicate Trigger',
+    description: 'Start a new automation from a copy of this one',
+    icon: Copy,
+    conditions: only('@rekuest/trigger'),
+    execute: async ({ services, state, dialog }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const { data } = await services.rekuest.client.query<TriggerQuery, TriggerQueryVariables>({
+        query: TriggerDocument,
+        variables: { id: selected(state, '@rekuest/trigger') },
+      })
+      dialog.openDialog('createautomation', {
+        initial: { ...initialFromTrigger(data.trigger), name: `${data.trigger.name} copy` },
+      })
     },
     collections: ['io'],
   },
@@ -710,6 +756,99 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     service: 'rekuest',
     typename: 'Trigger',
     mutation: DeleteTriggerDocument
+  }),
+  'rekuest-automate-signal': {
+    title: 'Run Something on This…',
+    description: 'Make an automation for signals like this one; its values are offered as conditions',
+    icon: Zap,
+    conditions: only('@rekuest/signal'),
+    execute: async ({ services, state, dialog }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const { data } = await services.rekuest.client.query<SignalQuery, SignalQueryVariables>({
+        query: SignalDocument,
+        variables: { id: selected(state, '@rekuest/signal') },
+      })
+      const { identifier, kind, descriptors } = data.signal
+      dialog.openDialog('createautomation', {
+        kind: 'signal',
+        identifier,
+        signalKind: kind,
+        sample: descriptors && typeof descriptors === 'object' ? descriptors : undefined,
+      })
+    },
+    collections: ['io'],
+  },
+  'rekuest-fire-trigger-on-signal': {
+    title: 'Fire a Trigger…',
+    description: 'Run one of the triggers listening for this signal on it now',
+    icon: RotateCcw,
+    conditions: only('@rekuest/signal'),
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('firetrigger', { signal: selected(state, '@rekuest/signal') })
+    },
+    collections: ['io'],
+  },
+  'rekuest-fire-trigger-with-signal': {
+    title: 'Fire on This Signal',
+    description: 'Run the trigger on the signal now, whether or not the signal satisfies it',
+    icon: RotateCcw,
+    conditions: [
+      { type: 'identifier', identifier: '@rekuest/signal' },
+      { type: 'pidentifier', identifier: '@rekuest/trigger' },
+    ],
+    execute: async ({ state, dialog }) => {
+      const trigger = state.right?.[0]
+      if (!trigger?.id) {
+        throw new Error('Drop the signal onto a trigger')
+      }
+      dialog.openDialog('firetrigger', { signal: selected(state, '@rekuest/signal'), trigger: trigger.id })
+    },
+    collections: ['io'],
+  },
+  'rekuest-export-automations': {
+    title: 'Export as Wiregram…',
+    description: 'Write the selected schedules and triggers down as a document to import elsewhere',
+    icon: Share,
+    conditions: [
+      { type: 'mixture', identifiers: ['@rekuest/schedule', '@rekuest/trigger'] },
+      { type: 'nopartner' },
+    ],
+    execute: async ({ state, dialog }) => {
+      const ids = (identifier: string) =>
+        state.left.filter((item) => item.identifier === identifier).map((item) => item.id)
+      dialog.openDialog('exportwiregram', {
+        schedules: ids('@rekuest/schedule'),
+        triggers: ids('@rekuest/trigger'),
+      })
+    },
+    collections: ['io'],
+  },
+  'rekuest-reimport-wiregram': {
+    title: 'Import Again…',
+    description: 'Import its document again, edited or as it is, to bring its rules in line',
+    icon: Upload,
+    conditions: only('@rekuest/wiregram'),
+    execute: async ({ services, state, dialog }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const { data } = await services.rekuest.client.query<WiregramQuery, WiregramQueryVariables>({
+        query: WiregramDocument,
+        variables: { id: selected(state, '@rekuest/wiregram') },
+      })
+      dialog.openDialog('importwiregram', { document: data.wiregram.document })
+    },
+    collections: ['io'],
+  },
+  'rekuest-delete-wiregram': buildDeleteAction({
+    title: 'Delete Wiregram',
+    identifier: '@rekuest/wiregram',
+    description: 'Delete the wiregram and the schedules and triggers it owns; their past runs are kept',
+    service: 'rekuest',
+    typename: 'Wiregram',
+    mutation: DeleteWiregramDocument
   }),
   'rekuest-copy-action-hash': {
     title: 'Copy Hash',

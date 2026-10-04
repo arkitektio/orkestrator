@@ -1,0 +1,34 @@
+subscription WatchSchedules {
+  schedules {
+    create {
+      ...RuleChange
+    }
+    update {
+      ...RuleChange
+    }
+    delete
+  }
+}
+
+subscription WatchTriggers {
+  triggers {
+    create {
+      ...RuleChange
+    }
+    update {
+      ...RuleChange
+    }
+    delete
+  }
+}
+
+subscription WatchSignals {
+  signals {
+    create {
+      ...SignalChange
+    }
+    update {
+      ...SignalChange
+    }
+  }
+}

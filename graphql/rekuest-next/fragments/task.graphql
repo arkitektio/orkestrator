@@ -115,6 +115,21 @@ fragment NoChildrenDetailTask on Task {
 
 fragment DetailTask on Task {
   ...PostmanTask
+  # what started it, when nobody did by hand: a schedule, or a trigger
+  schedule {
+    id
+    name
+  }
+  trigger {
+    id
+    name
+  }
+  signal {
+    id
+    identifier
+    object
+    kind
+  }
   children {
     ...PostmanTask
     parentStep

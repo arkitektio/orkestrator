@@ -92,6 +92,8 @@ export type Action = {
   returns: Array<ReturnPort>;
   /** Retrieve tasks where this action has run. */
   runs?: Maybe<Array<Task>>;
+  /** The schedules that run this action. */
+  schedules: Array<Schedule>;
   /** Scope of the action, e.g., user or system. */
   scope: ActionScope;
   /** Actions whose name and description mean roughly what this one's do, nearest first (cosine distance between embeddings, this action excluded). `filters` narrows the candidates like `actions` does; `maxDistance` (0 identical, 1 unrelated) cuts the tail, otherwise the nearest `limit` come back. Empty while this action has no vector yet or embeddings are off. */
@@ -104,6 +106,8 @@ export type Action = {
   testCases?: Maybe<Array<TestCase>>;
   /** List of tests associated with the action. */
   tests: Array<Action>;
+  /** The triggers that run this action. */
+  triggers: Array<Trigger>;
   /** Version string of the action. */
   version: Scalars['String']['output'];
 };
@@ -129,6 +133,14 @@ export type ActionIsTestForArgs = {
 export type ActionProtocolsArgs = {
   filters?: InputMaybe<ProtocolFilter>;
   ordering?: Array<ProtocolOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** Represents an executable action in the system. */
+export type ActionSchedulesArgs = {
+  filters?: InputMaybe<ScheduleFilter>;
+  ordering?: Array<ScheduleOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -160,6 +172,14 @@ export type ActionTestCasesArgs = {
 export type ActionTestsArgs = {
   filters?: InputMaybe<ActionFilter>;
   ordering?: Array<ActionOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** Represents an executable action in the system. */
+export type ActionTriggersArgs = {
+  filters?: InputMaybe<TriggerFilter>;
+  ordering?: Array<TriggerOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -439,12 +459,16 @@ export type Agent = {
   placements: Array<Placement>;
   /** The release this agent belongs to. */
   release: Release;
+  /** The schedules whose runs are pinned to this agent. */
+  schedules: Array<Schedule>;
   /** Sessions associated with this agent. */
   sessions: Array<Session>;
   /** Current and historical states associated with the agent. */
   states: Array<State>;
   /** Tasks executed by this agent. */
   tasks: Array<Task>;
+  /** The triggers whose runs are pinned to this agent. */
+  triggers: Array<Trigger>;
   /** The user this agent belongs to. */
   user: User;
 };
@@ -473,6 +497,14 @@ export type AgentPlacementsArgs = {
 
 
 /** Represents a compute agent that can execute implementations. */
+export type AgentSchedulesArgs = {
+  filters?: InputMaybe<ScheduleFilter>;
+  ordering?: Array<ScheduleOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** Represents a compute agent that can execute implementations. */
 export type AgentSessionsArgs = {
   filters?: InputMaybe<SessionFilter>;
   ordering?: Array<SessionOrder>;
@@ -484,6 +516,14 @@ export type AgentSessionsArgs = {
 export type AgentTasksArgs = {
   filters?: InputMaybe<TaskFilter>;
   ordering?: Array<TaskOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** Represents a compute agent that can execute implementations. */
+export type AgentTriggersArgs = {
+  filters?: InputMaybe<TriggerFilter>;
+  ordering?: Array<TriggerOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -1305,12 +1345,21 @@ export type CreateScheduleInput = {
   action: Scalars['ID']['input'];
   agent?: InputMaybe<Scalars['ID']['input']>;
   args?: InputMaybe<Scalars['Args']['input']>;
+  /** Run slots missed while takt was down or a run was open, late and in order, instead of skipping them. */
+  catchUp?: Scalars['Boolean']['input'];
   cron?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
   enabled?: Scalars['Boolean']['input'];
+  /** No run is planned after this moment. */
+  endsAt?: InputMaybe<Scalars['DateTime']['input']>;
   ephemeralRuns?: Scalars['Boolean']['input'];
   interface?: InputMaybe<Scalars['String']['input']>;
   intervalSeconds?: InputMaybe<Scalars['Int']['input']>;
+  /** No run is planned once it created this many. */
+  maxRuns?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
+  /** Whether a run may start while the previous one is open. */
+  overlap?: ScheduleOverlap;
   timezone?: Scalars['String']['input'];
 };
 
@@ -1386,10 +1435,17 @@ export type CreateTriggerInput = {
   agent?: InputMaybe<Scalars['ID']['input']>;
   args?: InputMaybe<Scalars['Args']['input']>;
   conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+  /** Fire at most once per object within this many seconds: the first signal fires, later ones are rejected. */
+  debounceSeconds?: InputMaybe<Scalars['Int']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
   enabled?: Scalars['Boolean']['input'];
+  /** Nothing fires after this moment. */
+  endsAt?: InputMaybe<Scalars['DateTime']['input']>;
   identifier: Scalars['String']['input'];
   interface?: InputMaybe<Scalars['String']['input']>;
   kind: SignalKind;
+  /** Nothing fires once it created this many runs. */
+  maxRuns?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
   port: Scalars['String']['input'];
 };
@@ -1770,10 +1826,72 @@ export enum Execution {
   Workflow = 'WORKFLOW'
 }
 
+/** The existing rules to write down as a wiregram document. */
+export type ExportWiregramInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  key: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  schedules?: InputMaybe<Array<Scalars['ID']['input']>>;
+  triggers?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
 export type FinishMediaUploadInput = {
   storeId: Scalars['String']['input'];
   valid?: Scalars['Boolean']['input'];
 };
+
+/** Fire a trigger on a stored signal by hand (a replay): the run is created whether or not the signal satisfies the trigger. */
+export type FireTriggerInput = {
+  signal: Scalars['ID']['input'];
+  trigger: Scalars['ID']['input'];
+};
+
+/** What became of one trigger for one signal: it fired a run, was rejected, or failed. Kept as long as the signal. */
+export type Firing = {
+  __typename?: 'Firing';
+  /** When the trigger was tried. */
+  createdAt: Scalars['DateTime']['output'];
+  /** Unique ID of the firing. */
+  id: Scalars['ID']['output'];
+  /** What became of it. */
+  outcome: FiringOutcome;
+  /** Why it was rejected or failed; for a replay, that it was one. */
+  reason?: Maybe<Scalars['String']['output']>;
+  /** Fired by hand on a stored signal, not by the signal arriving. */
+  replay: Scalars['Boolean']['output'];
+  /** The signal. */
+  signal: Signal;
+  /** The run it created, while that run exists. */
+  task?: Maybe<Task>;
+  /** The trigger that was tried on it. */
+  trigger: Trigger;
+};
+
+/** A way to filter the firing log */
+export type FiringFilter = {
+  AND?: InputMaybe<FiringFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<FiringFilter>;
+  OR?: InputMaybe<FiringFilter>;
+  /** Filter by what became of the trigger */
+  outcome?: InputMaybe<Array<FiringOutcome>>;
+  /** Keep only replays (true) or only firings caused by a signal arriving (false) */
+  replay?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Keep the firings for this signal */
+  signal?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep the firings of this trigger */
+  trigger?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type FiringOrder =
+  { createdAt: Ordering; };
+
+/** What became of one trigger for one signal: it fired a run, it was rejected (the signal did not satisfy it, or a policy held it back), or creating the run failed. */
+export enum FiringOutcome {
+  Failed = 'FAILED',
+  Fired = 'FIRED',
+  Rejected = 'REJECTED'
+}
 
 export enum Granularity {
   Day = 'DAY',
@@ -1807,6 +1925,63 @@ export enum HookKind {
   Cleanup = 'CLEANUP',
   Init = 'INIT'
 }
+
+/** A structure a service of this hub hosts, as that service declares it: a row, with its descriptors. Hub-wide. (`Structure` is the wider notion: it also covers identifiers only action ports reference.) */
+export type HostedStructure = {
+  __typename?: 'HostedStructure';
+  /** What the hosting service says about the structure. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The descriptors of its objects. */
+  descriptors: Array<StructureDescriptor>;
+  /** Unique ID of the hosted structure. */
+  id: Scalars['ID']['output'];
+  /** The full identifier, e.g. '@mikro/arraydataset'. */
+  identifier: Scalars['String']['output'];
+  /** The local key (the part after '/'). */
+  key: Scalars['String']['output'];
+  /** What the hosting service calls one such object. */
+  label?: Maybe<Scalars['String']['output']>;
+  /** The package it belongs to. */
+  package: StructurePackage;
+  /** The service that hosts it. */
+  service: Service;
+  /** The signals services declare they emit about it. */
+  signals: Array<SignalDeclaration>;
+  /** The same structure with what your organization's action ports say about it (usages). */
+  structure: Structure;
+};
+
+
+/** A structure a service of this hub hosts, as that service declares it: a row, with its descriptors. Hub-wide. (`Structure` is the wider notion: it also covers identifiers only action ports reference.) */
+export type HostedStructureDescriptorsArgs = {
+  filters?: InputMaybe<StructureDescriptorFilter>;
+  ordering?: Array<StructureDescriptorOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** A way to filter hosted structures */
+export type HostedStructureFilter = {
+  AND?: InputMaybe<HostedStructureFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<HostedStructureFilter>;
+  OR?: InputMaybe<HostedStructureFilter>;
+  /** Keep the structures that declare descriptors (true), or those that declare none (false) */
+  described?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Keep the structures whose objects carry this descriptor key */
+  descriptor?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Keep the structures of this package, e.g. 'mikro' */
+  package?: InputMaybe<Scalars['String']['input']>;
+  /** Keep structures whose identifier, label or description contains this text */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Keep the structures this service hosts, by its name */
+  service?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type HostedStructureOrder =
+  { identifier: Ordering; label?: never; }
+  |  { identifier?: never; label: Ordering; };
 
 /** Implement an agent with the given implementations, states and locks. This will create the agent if it doesn't exist and update it if it does exist. */
 export type ImplementAgentInput = {
@@ -2357,12 +2532,20 @@ export type Mutation = {
   deleteThreedModel: Scalars['ID']['output'];
   /** Delete a trigger; its runs are kept. */
   deleteTrigger: Scalars['ID']['output'];
+  /** Delete a wiregram and the rules it owns. */
+  deleteWiregram: Scalars['ID']['output'];
   /** Ensure agent record exists or is up to date. */
   ensureAgent: Agent;
+  /** Write existing schedules and triggers down as a wiregram document, to import elsewhere. Changes nothing. */
+  exportWiregram: Scalars['AnyDefault']['output'];
   /** Finalize a media upload after the client has written the object */
   finishMediaUpload: MediaStore;
+  /** Fire a trigger on a stored signal by hand (a replay). The run is created whether or not the signal satisfies the trigger, and logged as a firing of its own. */
+  fireTrigger: Firing;
   /** Implement an agent with given states and implementations. This is used to set up an agent with its initial configuration and capabilities. */
   implementAgent: Agent;
+  /** Import a wiregram: one document of schedules and triggers. All or nothing; importing the same key again updates what it created and removes what it no longer lists. */
+  importWiregram: Wiregram;
   /** Interrupt the execution of a task. */
   interrupt: Task;
   /** Kick an agent to force disconnect. It will fail and not reconnect. */
@@ -2597,8 +2780,20 @@ export type MutationDeleteTriggerArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationDeleteWiregramArgs = {
+  input: WiregramIdInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationEnsureAgentArgs = {
   input: AgentInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationExportWiregramArgs = {
+  input: ExportWiregramInput;
 };
 
 
@@ -2609,8 +2804,20 @@ export type MutationFinishMediaUploadArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationFireTriggerArgs = {
+  input: FireTriggerInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationImplementAgentArgs = {
   input: ImplementAgentInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationImportWiregramArgs = {
+  input: WiregramInput;
 };
 
 
@@ -3190,10 +3397,22 @@ export type Query = {
   dependency: Dependency;
   /** What assigning an implementation with these overwrites would bind, level by level, and what is unmet: a dry run of the assign's dependency resolution. */
   dependencyTree: DependencyTree;
+  /** Fetch a descriptor by ID. */
+  descriptor: StructureDescriptor;
+  /** The descriptors the hub's services declare for the objects of the structures they host: searchable by key and description. Hub-wide. */
+  descriptors: Array<StructureDescriptor>;
   /** Fetch a specific event. */
   event: TaskEvent;
+  /** Fetch a firing by ID. */
+  firing: Firing;
+  /** The firing log: what became of each trigger for each signal it listened for. */
+  firings: Array<Firing>;
   /** Get forward events after revision. */
   forwardEventsAfterRev: Array<Patch>;
+  /** Fetch a hosted structure by ID. */
+  hostedStructure: HostedStructure;
+  /** The structures the hub's services host, as rows: searchable, with their descriptors. Hub-wide. */
+  hostedStructures: Array<HostedStructure>;
   /** Get implementation by ID. */
   implementation: Implementation;
   /** Find implementation at given interface. */
@@ -3204,6 +3423,8 @@ export type Query = {
   interface: Interface;
   /** All interfaces referenced by the org's action ports (derived, not registered). */
   interfaces: Array<Interface>;
+  /** A dry run for a trigger not written yet: the organization's stored signals of this kind and structure whose descriptors satisfy the conditions, newest first. Fires nothing. */
+  matchingSignals: Array<Signal>;
   /** Get a materialized blok by ID. */
   materializedBlok: MaterializedBlok;
   /** List of UI Blok. */
@@ -3244,6 +3465,10 @@ export type Query = {
   schedule: Schedule;
   /** All schedules in the organization. */
   schedules: Array<Schedule>;
+  /** Fetch a service of this hub by ID. Hub-wide. */
+  service: Service;
+  /** The services of this hub: what each hosts and emits. Hub-wide; a service is not an agent. */
+  services: Array<Service>;
   /** Fetch a specific session by ID. */
   session: Session;
   /** Get session boundaries. */
@@ -3254,6 +3479,8 @@ export type Query = {
   shortcut: Shortcut;
   /** List of shortcuts. */
   shortcuts: Array<Shortcut>;
+  /** Fetch a signal by ID. */
+  signal: Signal;
   /** The signals this hub's services declare they emit — what triggers can wait for. Hub-wide. */
   signalDeclarations: Array<SignalDeclaration>;
   /** Signals services sent about the organization's objects, for inspection. */
@@ -3272,13 +3499,13 @@ export type Query = {
   stateAtGlobalRev: Array<Snapshot>;
   /** Retrieve state for a specific context. */
   stateFor: State;
-  /** Fetch a structure by its '@package/key' identifier (derived from port identifiers). */
+  /** Fetch a structure by its '@package/key' identifier: one a port references or a service hosts. */
   structure: Structure;
   /** Fetch a structure package by its key (derived from port identifiers). */
   structurePackage: StructurePackage;
   /** All structure packages referenced by the org's action ports (derived, not registered). */
   structurePackages: Array<StructurePackage>;
-  /** All structures referenced by the org's action ports (derived, not registered). */
+  /** All structures: those the org's action ports reference, and those a service of this hub hosts. */
   structures: Array<Structure>;
   /** Fetch task by ID. */
   task: Task;
@@ -3312,6 +3539,10 @@ export type Query = {
   uiCatalog: UiCatalog;
   /** UI catalogs registered in the caller's organization: the components and operations UI apps can render and evaluate. */
   uiCatalogs: Array<UiCatalog>;
+  /** Fetch a wiregram by ID. */
+  wiregram: Wiregram;
+  /** The automation documents the organization imported. */
+  wiregrams: Array<Wiregram>;
 };
 
 
@@ -3405,8 +3636,32 @@ export type QueryDependencyTreeArgs = {
 };
 
 
+export type QueryDescriptorArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryDescriptorsArgs = {
+  filters?: InputMaybe<StructureDescriptorFilter>;
+  ordering?: Array<StructureDescriptorOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QueryEventArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryFiringArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryFiringsArgs = {
+  filters?: InputMaybe<FiringFilter>;
+  ordering?: Array<FiringOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -3415,6 +3670,18 @@ export type QueryForwardEventsAfterRevArgs = {
   globalRevision: Scalars['Int']['input'];
   sessionId?: InputMaybe<Scalars['String']['input']>;
   stateId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+export type QueryHostedStructureArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryHostedStructuresArgs = {
+  filters?: InputMaybe<HostedStructureFilter>;
+  ordering?: Array<HostedStructureOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -3445,6 +3712,14 @@ export type QueryInterfaceArgs = {
 
 export type QueryInterfacesArgs = {
   search?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryMatchingSignalsArgs = {
+  conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+  identifier: Scalars['String']['input'];
+  kind: SignalKind;
+  limit?: Scalars['Int']['input'];
 };
 
 
@@ -3551,7 +3826,19 @@ export type QueryScheduleArgs = {
 
 
 export type QuerySchedulesArgs = {
+  filters?: InputMaybe<ScheduleFilter>;
+  ordering?: Array<ScheduleOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryServiceArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryServicesArgs = {
+  name?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -3585,12 +3872,19 @@ export type QueryShortcutsArgs = {
 };
 
 
+export type QuerySignalArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QuerySignalDeclarationsArgs = {
   identifier?: InputMaybe<Scalars['String']['input']>;
 };
 
 
 export type QuerySignalsArgs = {
+  filters?: InputMaybe<SignalFilter>;
+  ordering?: Array<SignalOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -3738,12 +4032,24 @@ export type QueryTriggerArgs = {
 
 
 export type QueryTriggersArgs = {
+  filters?: InputMaybe<TriggerFilter>;
+  ordering?: Array<TriggerOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
 export type QueryUiCatalogArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryWiregramArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryWiregramsArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 /** Register (upsert by name, scoped to the caller's organization) the components and operations a UI app can render and evaluate. */
@@ -3974,7 +4280,28 @@ export enum ReturnWidgetKind {
   Custom = 'CUSTOM'
 }
 
-/** A recurring assignment of one action. It owns at most one open run at a time: the next one, a delayed task created once the previous run finished. */
+/** Slim snapshot of a schedule or trigger for the change feeds. */
+export type RuleChange = {
+  __typename?: 'RuleChange';
+  consecutiveFailures: Scalars['Int']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  lastError?: Maybe<Scalars['String']['output']>;
+  lastFiredAt?: Maybe<Scalars['DateTime']['output']>;
+  name: Scalars['String']['output'];
+  runCount: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+/** A schedule or trigger was created, changed (by a user, or by its runs) or deleted. */
+export type RuleChangeEvent = {
+  __typename?: 'RuleChangeEvent';
+  create?: Maybe<RuleChange>;
+  delete?: Maybe<Scalars['ID']['output']>;
+  update?: Maybe<RuleChange>;
+};
+
+/** A recurring assignment of one action. It owns at most one waiting run at a time: the next one, a delayed task. */
 export type Schedule = {
   __typename?: 'Schedule';
   /** The action every run assigns. */
@@ -3985,16 +4312,24 @@ export type Schedule = {
   args: Scalars['AnyDefault']['output'];
   /** The identity every run is assigned as. */
   caller: Caller;
+  /** Whether slots missed during downtime are run late, in order, instead of skipped. */
+  catchUp: Scalars['Boolean']['output'];
   /** Runs in a row that ended FAILED or CRITICAL. */
   consecutiveFailures: Scalars['Int']['output'];
   /** Creation timestamp. */
   createdAt: Scalars['DateTime']['output'];
   /** A five-field cron line, read in `timezone` (exclusive with intervalSeconds). */
   cron?: Maybe<Scalars['String']['output']>;
+  /** What the schedule is for. */
+  description?: Maybe<Scalars['String']['output']>;
   /** A disabled schedule creates no runs. */
   enabled: Scalars['Boolean']['output'];
+  /** No run is planned after this moment. */
+  endsAt?: Maybe<Scalars['DateTime']['output']>;
   /** Whether runs are created as ephemeral tasks. */
   ephemeralRuns: Scalars['Boolean']['output'];
+  /** Whether it stopped by itself: its end passed, or its last allowed run is over. */
+  exhausted: Scalars['Boolean']['output'];
   /** Unique ID of the schedule. */
   id: Scalars['ID']['output'];
   /** The implementation interface on the pinned agent. */
@@ -4003,28 +4338,83 @@ export type Schedule = {
   intervalSeconds?: Maybe<Scalars['Int']['output']>;
   /** Why the last run failed, or why the next one could not be created. */
   lastError?: Maybe<Scalars['String']['output']>;
+  /** When `lastError` was written. */
+  lastErrorAt?: Maybe<Scalars['DateTime']['output']>;
+  /** When it last created a run. */
+  lastFiredAt?: Maybe<Scalars['DateTime']['output']>;
+  /** When its newest run was created; null when it never ran (or its runs were since deleted by retention). */
+  lastRunAt?: Maybe<Scalars['DateTime']['output']>;
+  /** No run is planned once it created this many. */
+  maxRuns?: Maybe<Scalars['Int']['output']>;
   /** Human-readable name. */
   name: Scalars['String']['output'];
-  /** The open run: waiting for its slot, or executing. Null while the next run is being planned, or when disabled. */
+  /** The next run: the one waiting for its slot, else the newest one still executing. Null while the next run is being planned, or when disabled or ended. */
   nextRun?: Maybe<Task>;
+  /** Whether a run may start while the previous one is open. */
+  overlap: ScheduleOverlap;
+  /** Runs it created so far. */
+  runCount: Scalars['Int']['output'];
   /** The most recent runs, newest first. */
   runs: Array<Task>;
   /** The IANA zone the cron line is read in. */
   timezone: Scalars['String']['output'];
+  /** The next slots of its timing after now. What the timing says, not a promise: a disabled or ended schedule runs none, and without overlap a slot that passes while a run is open is skipped. */
+  upcoming: Array<Scalars['DateTime']['output']>;
   /** Last update timestamp. */
   updatedAt: Scalars['DateTime']['output'];
+  /** What the wiregram's document calls this schedule. */
+  wireKey?: Maybe<Scalars['String']['output']>;
+  /** The wiregram that owns this schedule, if it was imported with one. */
+  wiregram?: Maybe<Wiregram>;
 };
 
 
-/** A recurring assignment of one action. It owns at most one open run at a time: the next one, a delayed task created once the previous run finished. */
+/** A recurring assignment of one action. It owns at most one waiting run at a time: the next one, a delayed task. */
 export type ScheduleRunsArgs = {
   limit?: Scalars['Int']['input'];
+};
+
+
+/** A recurring assignment of one action. It owns at most one waiting run at a time: the next one, a delayed task. */
+export type ScheduleUpcomingArgs = {
+  count?: Scalars['Int']['input'];
+};
+
+/** A way to filter schedules */
+export type ScheduleFilter = {
+  AND?: InputMaybe<ScheduleFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<ScheduleFilter>;
+  OR?: InputMaybe<ScheduleFilter>;
+  /** Filter by the action the rule runs */
+  action?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by the agent the rule's runs are pinned to */
+  agent?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep only enabled (true) or only disabled (false) rules */
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Keep only rules whose last run or firing failed (true), or only those in good standing (false) */
+  failing?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter by IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Keep schedules that mention this text: in their name or description, in the action or agent they run, its interface, their cron line, or the wiregram they came from */
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Identify a schedule. */
 export type ScheduleIdInput = {
   id: Scalars['ID']['input'];
 };
+
+export type ScheduleOrder =
+  { createdAt: Ordering; name?: never; updatedAt?: never; }
+  |  { createdAt?: never; name: Ordering; updatedAt?: never; }
+  |  { createdAt?: never; name?: never; updatedAt: Ordering; };
+
+/** Whether a schedule's run may start while its previous one is still open. SKIP: the next run is planned once the previous finished. ALLOW: it is planned as soon as the previous was handed over, so runs may overlap. */
+export enum ScheduleOverlap {
+  Allow = 'ALLOW',
+  Skip = 'SKIP'
+}
 
 export type SearchAssignWidget = AssignWidget & {
   __typename?: 'SearchAssignWidget';
@@ -4053,6 +4443,23 @@ export type SearchAssignWidgetInput = {
   query: Scalars['SearchQuery']['input'];
   /** The ward (service) that executes the query. */
   ward: Scalars['String']['input'];
+};
+
+/** A service of this hub (mikro, kabinet, …): the structures it hosts and the signals it emits, the same for every organization. Not an agent, and it has none: a service says what exists, agents say what can be done. */
+export type Service = {
+  __typename?: 'Service';
+  /** What the service says it is. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** Unique ID of the service. */
+  id: Scalars['ID']['output'];
+  /** The identity the service signs as, e.g. live.arkitekt.mikro. */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The name the service is known by on this hub. */
+  name: Scalars['String']['output'];
+  /** The signals it declares it emits. */
+  signals: Array<SignalDeclaration>;
+  /** The structures it hosts. */
+  structures: Array<Structure>;
 };
 
 /** A session representing a continuous interaction of an agent with the system. */
@@ -4152,6 +4559,8 @@ export type Signal = {
   causingTask?: Maybe<Task>;
   /** The object's descriptors (flat key → value). */
   descriptors: Scalars['AnyDefault']['output'];
+  /** What became of every trigger that listened for it. Empty once processed: nobody listened. */
+  firings: Array<Firing>;
   /** Unique ID of the signal. */
   id: Scalars['ID']['output'];
   /** The object's structure identifier, e.g. @mikro/arraydataset. */
@@ -4168,8 +4577,32 @@ export type Signal = {
   receivedAt: Scalars['DateTime']['output'];
   /** The runs this signal fired. */
   runs: Array<Task>;
-  /** The service that sent it. */
+  /** The service that sent it, as the hub catalogues it; null when it is no longer catalogued. */
+  service?: Maybe<Service>;
+  /** The name of the service that sent it. */
+  serviceName: Scalars['String']['output'];
+};
+
+/** Slim snapshot of a signal for the change feed. */
+export type SignalChange = {
+  __typename?: 'SignalChange';
+  /** How many triggers fired a run for it so far. */
+  fired: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  identifier: Scalars['String']['output'];
+  kind: SignalKind;
+  object: Scalars['String']['output'];
+  /** When triggers were matched against it; null = not yet. */
+  processedAt?: Maybe<Scalars['DateTime']['output']>;
+  receivedAt: Scalars['DateTime']['output'];
   service: Scalars['String']['output'];
+};
+
+/** A signal arrived (create), or triggers were matched against it (update). */
+export type SignalChangeEvent = {
+  __typename?: 'SignalChangeEvent';
+  create?: Maybe<SignalChange>;
+  update?: Maybe<SignalChange>;
 };
 
 /** A signal a service of this hub declares it emits (from its manifest). Hub-wide. */
@@ -4186,7 +4619,37 @@ export type SignalDeclaration = {
   /** What happens to them. */
   kind: SignalKind;
   /** The service that emits it. */
-  service: Scalars['String']['output'];
+  service: Service;
+  /** Your organization's triggers that wait for this signal. */
+  triggers: Array<Trigger>;
+};
+
+/** A way to filter signals */
+export type SignalFilter = {
+  AND?: InputMaybe<SignalFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<SignalFilter>;
+  OR?: InputMaybe<SignalFilter>;
+  /** Filter by the object's structure identifier */
+  identifier?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter by what happened to the object */
+  kind?: InputMaybe<Array<SignalKind>>;
+  /** Keep only signals that caused at least one run (true), or only those that caused none (false) */
+  matched?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter by the object's id within its structure */
+  object?: InputMaybe<Scalars['String']['input']>;
+  /** Keep only signals triggers were already matched against (true), or only those still waiting (false) */
+  processed?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Only signals received after this timestamp */
+  receivedAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only signals received before this timestamp */
+  receivedBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Keep signals that mention this text: in the structure identifier, the object's id, the sending service, or anywhere in the descriptors (keys and values) */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by the service that sent the signal */
+  service?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** What happened to the object a service signalled. */
@@ -4195,6 +4658,10 @@ export enum SignalKind {
   Deleted = 'DELETED',
   Updated = 'UPDATED'
 }
+
+export type SignalOrder =
+  { occurredAt: Ordering; receivedAt?: never; }
+  |  { occurredAt?: never; receivedAt: Ordering; };
 
 export type SliderAssignWidget = AssignWidget & {
   __typename?: 'SliderAssignWidget';
@@ -4505,20 +4972,79 @@ export type StringAssignWidgetInput = {
   placeholder?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** A structure (data type) referenced by an action's port, derived from the relational port rows. */
+/** A structure (data type): referenced by an action's port, hosted by a service of this hub, or both. */
 export type Structure = {
   __typename?: 'Structure';
-  /** The full identifier, e.g. '@mikro/image'. */
+  /** What the hosting service says about the structure. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The descriptors of its objects, as the hosting service declares them. Empty when nobody hosts it. */
+  descriptors: Array<StructureDescriptor>;
+  /** The hosted structure itself, as its service declares it; null when no service of this hub hosts it. */
+  hosted?: Maybe<HostedStructure>;
+  /** The full identifier, e.g. '@mikro/arraydataset'. */
   identifier: Scalars['ID']['output'];
   /** Usages of this structure as an input in actions (derived from the relational arg ports). */
   inputUsages: Array<PortUsage>;
   /** The local key (the part after '/'). */
   key: Scalars['String']['output'];
+  /** What the hosting service calls one such object. */
+  label?: Maybe<Scalars['String']['output']>;
   /** Usages of this structure as an output in actions (derived from the relational return ports). */
   outputUsages: Array<PortUsage>;
   /** The package this structure belongs to. */
   package: StructurePackage;
+  /** The service of this hub that hosts the structure; null when none declares it. */
+  service?: Maybe<Service>;
+  /** The signals services declare they emit about this structure. */
+  signals: Array<SignalDeclaration>;
 };
+
+/** A descriptor of a hosted structure's objects: a key action ports can require or provide, and triggers can test. Hub-wide. */
+export type StructureDescriptor = {
+  __typename?: 'StructureDescriptor';
+  /** What the service says the descriptor means. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The hosted structure whose objects carry it. */
+  hostedStructure: HostedStructure;
+  /** Unique ID of the descriptor. */
+  id: Scalars['ID']['output'];
+  /** The descriptor key, e.g. '@mikro/n_channels'. */
+  key: Scalars['String']['output'];
+  /** The service that declares it. */
+  service: Service;
+  /** Other structures whose objects carry a descriptor of the same key. */
+  sharedWith: Array<HostedStructure>;
+  /** The structure whose objects carry it. */
+  structure: Structure;
+  /** What its value is: INT, FLOAT, STRING, BOOL, LIST, or ANY when the service does not say. */
+  type: Scalars['String']['output'];
+};
+
+/** A way to filter descriptors */
+export type StructureDescriptorFilter = {
+  AND?: InputMaybe<StructureDescriptorFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<StructureDescriptorFilter>;
+  OR?: InputMaybe<StructureDescriptorFilter>;
+  /** Filter by IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter by the exact descriptor key, e.g. '@mikro/n_channels' */
+  key?: InputMaybe<Scalars['String']['input']>;
+  /** Keep the descriptors of structures in this package, e.g. 'mikro' */
+  package?: InputMaybe<Scalars['String']['input']>;
+  /** Keep descriptors whose key or description contains this text */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Keep the descriptors declared by this service, by its name */
+  service?: InputMaybe<Scalars['String']['input']>;
+  /** Keep the descriptors of this structure, by its identifier, e.g. '@mikro/arraydataset' */
+  structure?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by what the value is: INT, FLOAT, STRING, BOOL, LIST or ANY */
+  type?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type StructureDescriptorOrder =
+  { key: Ordering; type?: never; }
+  |  { key?: never; type: Ordering; };
 
 /** A package of structures/interfaces, derived from the '@package/' prefix of port identifiers. */
 export type StructurePackage = {
@@ -4527,7 +5053,9 @@ export type StructurePackage = {
   interfaces: Array<Interface>;
   /** The package key (the part between '@' and '/'). */
   key: Scalars['ID']['output'];
-  /** Structures of this package referenced by the org's ports. */
+  /** The service of this hub that hosts this package's structures, if one declares any. */
+  service?: Maybe<Service>;
+  /** Structures of this package: those the org's ports reference and those a service hosts. */
   structures: Array<Structure>;
 };
 
@@ -4548,10 +5076,16 @@ export type Subscription = {
   mytasks: TaskChangeEvent;
   /** Stream the events of one probe (caller-scoped, payload-carrying). Emits a state snapshot first when events already happened. */
   probeEvents: ProbeEvent;
+  /** Subscribe to the organization's schedules being created, changed (by a user or by their runs) or deleted. */
+  schedules: RuleChangeEvent;
+  /** Subscribe to the signals services send about the organization's objects: one arrived, or triggers were matched against it. */
+  signals: SignalChangeEvent;
   /** Subscribe to updates of state values and patches. */
   stateUpdateEvents: State;
   /** Subscribe to root task changes across the whole organization. */
   tasks: TaskChangeEvent;
+  /** Subscribe to the organization's triggers being created, changed (by a user or by their firings) or deleted. */
+  triggers: RuleChangeEvent;
   /** Watch an agent: yields snapshots for all states then streams patches. */
   watchAgent: AgentSnapshotEventStatePatchEvent;
   /** Watch a state: yields the current snapshot then streams patches. */
@@ -4673,6 +5207,8 @@ export type Task = {
   revision: Scalars['Int']['output'];
   /** Root task in the creation chain. */
   root?: Maybe<Task>;
+  /** The schedule this task is a run of, if any. */
+  schedule?: Maybe<Schedule>;
   /** The signal that caused this task, if a trigger fired it. */
   signal?: Maybe<Signal>;
   /** The trigger that fired this task, if any. */
@@ -4873,8 +5409,14 @@ export type TaskFilter = {
   root?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only root tasks (true) or only descendants of a root (false) */
   rootIsnull?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Keep the runs of this schedule */
+  schedule?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep the runs this signal caused */
+  signal?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the latest lifecycle event of the task */
   state?: InputMaybe<Array<TaskEventKind>>;
+  /** Keep the runs this trigger fired */
+  trigger?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** An instruct event for a specific task. */
@@ -5164,8 +5706,18 @@ export type Trigger = {
   consecutiveFailures: Scalars['Int']['output'];
   /** Creation timestamp. */
   createdAt: Scalars['DateTime']['output'];
+  /** Fires at most once per object within this many seconds. */
+  debounceSeconds?: Maybe<Scalars['Int']['output']>;
+  /** What the trigger is for. */
+  description?: Maybe<Scalars['String']['output']>;
   /** A disabled trigger fires nothing. */
   enabled: Scalars['Boolean']['output'];
+  /** Nothing fires after this moment. */
+  endsAt?: Maybe<Scalars['DateTime']['output']>;
+  /** Whether it stopped by itself: its end passed, or it created its last allowed run. */
+  exhausted: Scalars['Boolean']['output'];
+  /** What became of it for the most recent signals it listened for, newest first. */
+  firings: Array<Firing>;
   /** Unique ID of the trigger. */
   id: Scalars['ID']['output'];
   /** The structure identifier it reacts to. */
@@ -5176,14 +5728,42 @@ export type Trigger = {
   kind: SignalKind;
   /** Why the last firing did not create a run. */
   lastError?: Maybe<Scalars['String']['output']>;
+  /** When `lastError` was written. */
+  lastErrorAt?: Maybe<Scalars['DateTime']['output']>;
+  /** When it last created a run. */
+  lastFiredAt?: Maybe<Scalars['DateTime']['output']>;
+  /** When its newest run was created; null when it never fired (or its runs were since deleted by retention). */
+  lastRunAt?: Maybe<Scalars['DateTime']['output']>;
+  /** A dry run: the stored signals this trigger would fire on as it is now, newest first. Applies its conditions and its port's requires, like a real firing; fires nothing. */
+  matchingSignals: Array<Signal>;
+  /** Nothing fires once it created this many runs. */
+  maxRuns?: Maybe<Scalars['Int']['output']>;
   /** Human-readable name. */
   name: Scalars['String']['output'];
   /** The STRUCTURE argument that receives the signalled object. */
   port: Scalars['String']['output'];
+  /** Runs it created so far. */
+  runCount: Scalars['Int']['output'];
   /** The most recent runs, newest first. */
   runs: Array<Task>;
   /** Last update timestamp. */
   updatedAt: Scalars['DateTime']['output'];
+  /** What the wiregram's document calls this trigger. */
+  wireKey?: Maybe<Scalars['String']['output']>;
+  /** The wiregram that owns this trigger, if it was imported with one. */
+  wiregram?: Maybe<Wiregram>;
+};
+
+
+/** A rule over signals: on a signal of this kind and structure whose descriptors match, run the action with the object in `port`. */
+export type TriggerFiringsArgs = {
+  limit?: Scalars['Int']['input'];
+};
+
+
+/** A rule over signals: on a signal of this kind and structure whose descriptors match, run the action with the object in `port`. */
+export type TriggerMatchingSignalsArgs = {
+  limit?: Scalars['Int']['input'];
 };
 
 
@@ -5192,10 +5772,39 @@ export type TriggerRunsArgs = {
   limit?: Scalars['Int']['input'];
 };
 
+/** A way to filter triggers */
+export type TriggerFilter = {
+  AND?: InputMaybe<TriggerFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<TriggerFilter>;
+  OR?: InputMaybe<TriggerFilter>;
+  /** Filter by the action the rule runs */
+  action?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by the agent the rule's runs are pinned to */
+  agent?: InputMaybe<Scalars['ID']['input']>;
+  /** Keep only enabled (true) or only disabled (false) rules */
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Keep only rules whose last run or firing failed (true), or only those in good standing (false) */
+  failing?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter by the structure identifier the trigger reacts to */
+  identifier?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter by the signal kind the trigger reacts to */
+  kind?: InputMaybe<SignalKind>;
+  /** Keep triggers that mention this text: in their name or description, in the action or agent they run, its interface, the structure they listen for, its port, or the wiregram they came from */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
 /** Identify a trigger. */
 export type TriggerIdInput = {
   id: Scalars['ID']['input'];
 };
+
+export type TriggerOrder =
+  { createdAt: Ordering; name?: never; updatedAt?: never; }
+  |  { createdAt?: never; name: Ordering; updatedAt?: never; }
+  |  { createdAt?: never; name?: never; updatedAt: Ordering; };
 
 /** A UI catalog: the components a UI app can render and the pure operations it can evaluate for UtilCalls, registered per organization. */
 export type UiCatalog = {
@@ -5282,14 +5891,23 @@ export type UpdatePlacementInput = {
   role?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** Change a schedule. Giving intervalSeconds clears cron and vice versa. A waiting run is re-planned; an executing one finishes first. */
+/** Change a schedule. Giving intervalSeconds clears cron and vice versa. Give `agent: null` (with `interface: null`) to unpin it; give `endsAt` or `maxRuns` as null to lift it. A waiting run is re-planned; an executing one finishes first. */
 export type UpdateScheduleInput = {
+  action?: InputMaybe<Scalars['ID']['input']>;
+  agent?: InputMaybe<Scalars['ID']['input']>;
   args?: InputMaybe<Scalars['Args']['input']>;
+  catchUp?: InputMaybe<Scalars['Boolean']['input']>;
   cron?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  endsAt?: InputMaybe<Scalars['DateTime']['input']>;
+  ephemeralRuns?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['ID']['input'];
+  interface?: InputMaybe<Scalars['String']['input']>;
   intervalSeconds?: InputMaybe<Scalars['Int']['input']>;
+  maxRuns?: InputMaybe<Scalars['Int']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  overlap?: InputMaybe<ScheduleOverlap>;
   timezone?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -5319,13 +5937,23 @@ export type UpdateThreeDModelInput = {
   transferFunction?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** Change a trigger. Omitted fields stay as they are. */
+/** Change a trigger. Omitted fields stay as they are; the result is checked as a whole, like a new trigger. Give `agent: null` (with `interface: null`) to unpin it; give a policy as null to lift it. */
 export type UpdateTriggerInput = {
+  action?: InputMaybe<Scalars['ID']['input']>;
+  agent?: InputMaybe<Scalars['ID']['input']>;
   args?: InputMaybe<Scalars['Args']['input']>;
   conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+  debounceSeconds?: InputMaybe<Scalars['Int']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  endsAt?: InputMaybe<Scalars['DateTime']['input']>;
   id: Scalars['ID']['input'];
+  identifier?: InputMaybe<Scalars['String']['input']>;
+  interface?: InputMaybe<Scalars['String']['input']>;
+  kind?: InputMaybe<SignalKind>;
+  maxRuns?: InputMaybe<Scalars['Int']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  port?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Represents an authenticated user. */
@@ -5432,6 +6060,132 @@ export type WindowInput = {
   windowFunction: WindowFunction;
 };
 
+/** A schedule of a wiregram: run an agent's interface on an interval or a cron line. */
+export type WireScheduleInput = {
+  /** The name of the agent whose action runs, as the importing organization sees it (e.g. 'kuvert'). */
+  agent: Scalars['String']['input'];
+  /** The args every run is assigned with. */
+  args?: InputMaybe<Scalars['Args']['input']>;
+  /** Run slots missed during downtime late, in order, instead of skipping them. */
+  catchUp?: Scalars['Boolean']['input'];
+  /** A five-field cron line, read in `timezone` (exclusive with interval_seconds). */
+  cron?: InputMaybe<Scalars['String']['input']>;
+  /** What the rule is for. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** Whether the rule starts out enabled. An organization's own later switch is kept on re-import. */
+  enabled?: Scalars['Boolean']['input'];
+  /** The rule stops after this moment. */
+  endsAt?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Create the runs as ephemeral tasks (housekeeping: retention may drop them early). */
+  ephemeralRuns?: Scalars['Boolean']['input'];
+  /** The interface of that agent to run (e.g. 'sync_all_mailboxes'). */
+  interface: Scalars['String']['input'];
+  /** Run every N seconds (exclusive with cron). */
+  intervalSeconds?: InputMaybe<Scalars['Int']['input']>;
+  /** What the document calls this rule. Unique among the document's rules of its kind; importing again updates the rule with this key. */
+  key: Scalars['String']['input'];
+  /** The rule stops once it created this many runs. */
+  maxRuns?: InputMaybe<Scalars['Int']['input']>;
+  /** A human-readable name. */
+  name: Scalars['String']['input'];
+  /** Whether a run may start while the previous one is open. */
+  overlap?: ScheduleOverlap;
+  /** The IANA zone the cron line is read in. */
+  timezone?: Scalars['String']['input'];
+};
+
+/** A trigger of a wiregram: run an agent's interface when a service signals a matching object. */
+export type WireTriggerInput = {
+  /** The name of the agent whose action runs, as the importing organization sees it (e.g. 'kuvert'). */
+  agent: Scalars['String']['input'];
+  /** The args every run is assigned with. */
+  args?: InputMaybe<Scalars['Args']['input']>;
+  /** Extra descriptor conditions the signal must satisfy. */
+  conditions?: InputMaybe<Array<RequiresInput>>;
+  /** Fire at most once per object within this many seconds. */
+  debounceSeconds?: InputMaybe<Scalars['Int']['input']>;
+  /** What the rule is for. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** Whether the rule starts out enabled. An organization's own later switch is kept on re-import. */
+  enabled?: Scalars['Boolean']['input'];
+  /** The rule stops after this moment. */
+  endsAt?: InputMaybe<Scalars['DateTime']['input']>;
+  /** The structure identifier it reacts to, e.g. @mikro/arraydataset. */
+  identifier: Scalars['String']['input'];
+  /** The interface of that agent to run (e.g. 'sync_all_mailboxes'). */
+  interface: Scalars['String']['input'];
+  /** What the document calls this rule. Unique among the document's rules of its kind; importing again updates the rule with this key. */
+  key: Scalars['String']['input'];
+  /** The signal kind it reacts to. */
+  kind: SignalKind;
+  /** The rule stops once it created this many runs. */
+  maxRuns?: InputMaybe<Scalars['Int']['input']>;
+  /** A human-readable name. */
+  name: Scalars['String']['input'];
+  /** The STRUCTURE argument that receives the signalled object. */
+  port: Scalars['String']['input'];
+};
+
+/** An automation document an organization imported, and the owner of the schedules and triggers it created. */
+export type Wiregram = {
+  __typename?: 'Wiregram';
+  /** Who imported it last; the runs of its rules are assigned as this identity. */
+  caller: Caller;
+  /** When it was first imported. */
+  createdAt: Scalars['DateTime']['output'];
+  /** What the document says it is for. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The document as it was last imported: importable as it is. */
+  document: Scalars['AnyDefault']['output'];
+  /** Unique ID of the wiregram. */
+  id: Scalars['ID']['output'];
+  /** What the document calls itself; importing the same key again updates this wiregram. */
+  key: Scalars['String']['output'];
+  /** Human-readable name. */
+  name: Scalars['String']['output'];
+  /** The schedules it owns. */
+  schedules: Array<Schedule>;
+  /** The triggers it owns. */
+  triggers: Array<Trigger>;
+  /** When it was last imported. */
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+
+/** An automation document an organization imported, and the owner of the schedules and triggers it created. */
+export type WiregramSchedulesArgs = {
+  filters?: InputMaybe<ScheduleFilter>;
+  ordering?: Array<ScheduleOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** An automation document an organization imported, and the owner of the schedules and triggers it created. */
+export type WiregramTriggersArgs = {
+  filters?: InputMaybe<TriggerFilter>;
+  ordering?: Array<TriggerOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** Identify a wiregram. */
+export type WiregramIdInput = {
+  id: Scalars['ID']['input'];
+};
+
+/** A wiregram: one document of automation. Importing it creates its schedules and triggers; importing the same key again brings them in line with the new document. */
+export type WiregramInput = {
+  /** What the document is for. */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** What the document calls itself. Importing the same key again updates what the earlier import created. */
+  key: Scalars['String']['input'];
+  /** A human-readable name. */
+  name: Scalars['String']['input'];
+  /** The schedules it wants. */
+  schedules?: InputMaybe<Array<WireScheduleInput>>;
+  /** The triggers it wants. */
+  triggers?: InputMaybe<Array<WireTriggerInput>>;
+};
+
 export type _Entity = MediaStore | Session | User;
 
 export type _Service = {
@@ -5518,29 +6272,71 @@ export type AgentChangeEventFragment = { __typename?: 'AgentChangeEvent', delete
 
 export type HoverAgentFragment = { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> };
 
-export type ListScheduleFragment = { __typename?: 'Schedule', id: string, name: string, enabled: boolean, cron?: string | null, intervalSeconds?: number | null, timezone: string, consecutiveFailures: number, lastError?: string | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null, nextRun?: { __typename?: 'Task', id: string, notBefore?: any | null, latestEventKind: TaskEventKind, isDone: boolean } | null };
+export type ListScheduleFragment = { __typename?: 'Schedule', id: string, name: string, enabled: boolean, cron?: string | null, intervalSeconds?: number | null, timezone: string, consecutiveFailures: number, lastError?: string | null, description?: string | null, runCount: number, lastRunAt?: any | null, lastErrorAt?: any | null, exhausted: boolean, endsAt?: any | null, maxRuns?: number | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null, nextRun?: { __typename?: 'Task', id: string, notBefore?: any | null, latestEventKind: TaskEventKind, isDone: boolean } | null };
 
 export type DetailScheduleFragment = (
-  { __typename?: 'Schedule', args: any, interface?: string | null, ephemeralRuns: boolean, createdAt: any, updatedAt: any, runs: Array<(
+  { __typename?: 'Schedule', args: any, interface?: string | null, ephemeralRuns: boolean, overlap: ScheduleOverlap, catchUp: boolean, lastFiredAt?: any | null, upcoming: Array<any>, wireKey?: string | null, createdAt: any, updatedAt: any, wiregram?: { __typename?: 'Wiregram', id: string, name: string } | null, caller: { __typename?: 'Caller', id: string, user: { __typename?: 'User', id: string, sub: string } }, runs: Array<(
     { __typename?: 'Task' }
     & ListTaskFragment
   )> }
   & ListScheduleFragment
 );
 
-export type ListTriggerFragment = { __typename?: 'Trigger', id: string, name: string, enabled: boolean, identifier: string, kind: SignalKind, port: string, conditions: any, consecutiveFailures: number, lastError?: string | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null };
+export type ListTriggerFragment = { __typename?: 'Trigger', id: string, name: string, enabled: boolean, identifier: string, kind: SignalKind, port: string, conditions: any, consecutiveFailures: number, lastError?: string | null, description?: string | null, runCount: number, lastRunAt?: any | null, lastErrorAt?: any | null, exhausted: boolean, endsAt?: any | null, maxRuns?: number | null, debounceSeconds?: number | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null };
 
 export type DetailTriggerFragment = (
-  { __typename?: 'Trigger', args: any, interface?: string | null, createdAt: any, updatedAt: any, runs: Array<(
-    { __typename?: 'Task' }
-    & ListTaskFragment
+  { __typename?: 'Trigger', args: any, interface?: string | null, lastFiredAt?: any | null, createdAt: any, updatedAt: any, wireKey?: string | null, caller: { __typename?: 'Caller', id: string, user: { __typename?: 'User', id: string, sub: string } }, wiregram?: { __typename?: 'Wiregram', id: string, name: string } | null, firings: Array<(
+    { __typename?: 'Firing' }
+    & ListFiringFragment
   )> }
   & ListTriggerFragment
 );
 
-export type ListSignalFragment = { __typename?: 'Signal', id: string, identifier: string, kind: SignalKind, object: string, service: string, descriptors: any, occurredAt?: any | null, receivedAt: any, processedAt?: any | null, causingTask?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } } | null, runs: Array<{ __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } }> };
+export type ListSignalFragment = { __typename?: 'Signal', id: string, identifier: string, kind: SignalKind, object: string, serviceName: string, descriptors: any, occurredAt?: any | null, receivedAt: any, processedAt?: any | null, service?: { __typename?: 'Service', id: string, name: string } | null, causingTask?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } } | null, runs: Array<{ __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string }, trigger?: { __typename?: 'Trigger', id: string, name: string } | null }> };
 
-export type SignalDeclarationFragment = { __typename?: 'SignalDeclaration', id: string, identifier: string, kind: SignalKind, service: string, description?: string | null, descriptorKeys: Array<string> };
+export type SignalDeclarationFragment = { __typename?: 'SignalDeclaration', id: string, identifier: string, kind: SignalKind, description?: string | null, descriptorKeys: Array<string>, service: { __typename?: 'Service', id: string, name: string } };
+
+export type ListFiringFragment = { __typename?: 'Firing', id: string, outcome: FiringOutcome, reason?: string | null, replay: boolean, createdAt: any, trigger: { __typename?: 'Trigger', id: string, name: string }, signal: { __typename?: 'Signal', id: string, identifier: string, object: string, kind: SignalKind, occurredAt?: any | null, receivedAt: any }, task?: (
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  ) | null };
+
+export type DetailSignalFragment = (
+  { __typename?: 'Signal', firings: Array<(
+    { __typename?: 'Firing' }
+    & ListFiringFragment
+  )> }
+  & ListSignalFragment
+);
+
+export type ListWiregramFragment = { __typename?: 'Wiregram', id: string, key: string, name: string, description?: string | null, updatedAt: any };
+
+export type DetailWiregramFragment = (
+  { __typename?: 'Wiregram', document: any, createdAt: any, caller: { __typename?: 'Caller', id: string, user: { __typename?: 'User', id: string, sub: string } }, schedules: Array<(
+    { __typename?: 'Schedule' }
+    & ListScheduleFragment
+  )>, triggers: Array<(
+    { __typename?: 'Trigger' }
+    & ListTriggerFragment
+  )> }
+  & ListWiregramFragment
+);
+
+export type ListServiceFragment = { __typename?: 'Service', id: string, name: string, identifier?: string | null, description?: string | null, signals: Array<{ __typename?: 'SignalDeclaration', id: string }>, structures: Array<{ __typename?: 'Structure', id: string }> };
+
+export type DetailServiceFragment = { __typename?: 'Service', id: string, name: string, identifier?: string | null, description?: string | null, signals: Array<(
+    { __typename?: 'SignalDeclaration', triggers: Array<{ __typename?: 'Trigger', id: string, name: string }> }
+    & SignalDeclarationFragment
+  )>, structures: Array<{ __typename?: 'Structure', identifier: string, label?: string | null, description?: string | null, id: string, descriptors: Array<{ __typename?: 'StructureDescriptor', id: string, key: string, type: string, description?: string | null }> }> };
+
+export type DetailFiringFragment = (
+  { __typename?: 'Firing', trigger: { __typename?: 'Trigger', id: string, name: string, action: { __typename?: 'Action', id: string, name: string } }, signal: { __typename?: 'Signal', id: string, serviceName: string, descriptors: any } }
+  & ListFiringFragment
+);
+
+export type RuleChangeFragment = { __typename?: 'RuleChange', id: string, name: string, enabled: boolean, consecutiveFailures: number, lastError?: string | null, runCount: number, lastFiredAt?: any | null, updatedAt: any };
+
+export type SignalChangeFragment = { __typename?: 'SignalChange', id: string, service: string, kind: SignalKind, identifier: string, object: string, receivedAt: any, processedAt?: any | null, fired: number };
 
 export type BlokAgentCallLeafFragment = { __typename?: 'AgentCall', dependency: string, operation: string, arguments?: Array<(
     { __typename?: 'ActionArgument' }
@@ -6353,7 +7149,10 @@ export type ListOutputInterfaceUsageFragment = (
   & ListPortUsageFragment
 );
 
-export type StructureFragment = { __typename?: 'Structure', identifier: string, key: string, id: string, package: { __typename?: 'StructurePackage', key: string }, outputUsages: Array<(
+export type StructureFragment = { __typename?: 'Structure', identifier: string, key: string, label?: string | null, description?: string | null, id: string, package: { __typename?: 'StructurePackage', key: string }, service?: { __typename?: 'Service', id: string, name: string } | null, descriptors: Array<{ __typename?: 'StructureDescriptor', id: string, key: string, type: string, description?: string | null }>, signals: Array<(
+    { __typename?: 'SignalDeclaration' }
+    & SignalDeclarationFragment
+  )>, outputUsages: Array<(
     { __typename?: 'PortUsage' }
     & ListOutputStructureUsageFragment
   )>, inputUsages: Array<(
@@ -6404,7 +7203,7 @@ export type NoChildrenDetailTaskFragment = (
 );
 
 export type DetailTaskFragment = (
-  { __typename?: 'Task', finishedAt?: any | null, children: Array<(
+  { __typename?: 'Task', finishedAt?: any | null, schedule?: { __typename?: 'Schedule', id: string, name: string } | null, trigger?: { __typename?: 'Trigger', id: string, name: string } | null, signal?: { __typename?: 'Signal', id: string, identifier: string, object: string, kind: SignalKind } | null, children: Array<(
     { __typename?: 'Task', parentStep?: number | null, callKey?: string | null }
     & PostmanTaskFragment
   )>, parent?: { __typename?: 'Task', id: string } | null, implementation?: { __typename?: 'Implementation', execution: Execution, effects: Effects, agent: { __typename?: 'Agent', id: string, name: string, client: { __typename?: 'Client', clientId: string, device?: { __typename?: 'Device', deviceId: string } | null }, placements: Array<(
@@ -6704,6 +7503,40 @@ export type DeleteTriggerMutationVariables = Exact<{
 
 
 export type DeleteTriggerMutation = { __typename?: 'Mutation', deleteTrigger: string };
+
+export type FireTriggerMutationVariables = Exact<{
+  input: FireTriggerInput;
+}>;
+
+
+export type FireTriggerMutation = { __typename?: 'Mutation', fireTrigger: (
+    { __typename?: 'Firing' }
+    & ListFiringFragment
+  ) };
+
+export type ImportWiregramMutationVariables = Exact<{
+  input: WiregramInput;
+}>;
+
+
+export type ImportWiregramMutation = { __typename?: 'Mutation', importWiregram: (
+    { __typename?: 'Wiregram' }
+    & DetailWiregramFragment
+  ) };
+
+export type ExportWiregramMutationVariables = Exact<{
+  input: ExportWiregramInput;
+}>;
+
+
+export type ExportWiregramMutation = { __typename?: 'Mutation', exportWiregram: any };
+
+export type DeleteWiregramMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteWiregramMutation = { __typename?: 'Mutation', deleteWiregram: string };
 
 export type CreateBlokMutationVariables = Exact<{
   input: CreateBlokInput;
@@ -7199,6 +8032,8 @@ export type HoverAgentQuery = { __typename?: 'Query', agent: (
   ) };
 
 export type ListSchedulesQueryVariables = Exact<{
+  filters?: InputMaybe<ScheduleFilter>;
+  ordering?: InputMaybe<Array<ScheduleOrder>>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 }>;
 
@@ -7219,6 +8054,8 @@ export type ScheduleQuery = { __typename?: 'Query', schedule: (
   ) };
 
 export type ListTriggersQueryVariables = Exact<{
+  filters?: InputMaybe<TriggerFilter>;
+  ordering?: InputMaybe<Array<TriggerOrder>>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 }>;
 
@@ -7239,6 +8076,8 @@ export type TriggerQuery = { __typename?: 'Query', trigger: (
   ) };
 
 export type ListSignalsQueryVariables = Exact<{
+  filters?: InputMaybe<SignalFilter>;
+  ordering?: InputMaybe<Array<SignalOrder>>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 }>;
 
@@ -7247,6 +8086,96 @@ export type ListSignalsQuery = { __typename?: 'Query', signals: Array<(
     { __typename?: 'Signal' }
     & ListSignalFragment
   )> };
+
+export type SignalQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SignalQuery = { __typename?: 'Query', signal: (
+    { __typename?: 'Signal' }
+    & DetailSignalFragment
+  ) };
+
+export type ListFiringsQueryVariables = Exact<{
+  filters?: InputMaybe<FiringFilter>;
+  ordering?: InputMaybe<Array<FiringOrder>>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListFiringsQuery = { __typename?: 'Query', firings: Array<(
+    { __typename?: 'Firing' }
+    & ListFiringFragment
+  )> };
+
+export type ListWiregramsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListWiregramsQuery = { __typename?: 'Query', wiregrams: Array<(
+    { __typename?: 'Wiregram' }
+    & ListWiregramFragment
+  )> };
+
+export type WiregramQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type WiregramQuery = { __typename?: 'Query', wiregram: (
+    { __typename?: 'Wiregram' }
+    & DetailWiregramFragment
+  ) };
+
+export type FiringQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type FiringQuery = { __typename?: 'Query', firing: (
+    { __typename?: 'Firing' }
+    & DetailFiringFragment
+  ) };
+
+export type ListServicesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ListServicesQuery = { __typename?: 'Query', services: Array<(
+    { __typename?: 'Service' }
+    & ListServiceFragment
+  )> };
+
+export type ServiceQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ServiceQuery = { __typename?: 'Query', service: (
+    { __typename?: 'Service' }
+    & DetailServiceFragment
+  ) };
+
+export type MatchingSignalsQueryVariables = Exact<{
+  kind: SignalKind;
+  identifier: Scalars['String']['input'];
+  conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+  limit?: Scalars['Int']['input'];
+}>;
+
+
+export type MatchingSignalsQuery = { __typename?: 'Query', matchingSignals: Array<{ __typename?: 'Signal', id: string }> };
+
+export type TriggerMatchingSignalsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TriggerMatchingSignalsQuery = { __typename?: 'Query', trigger: { __typename?: 'Trigger', id: string, matchingSignals: Array<(
+      { __typename?: 'Signal' }
+      & ListSignalFragment
+    )> } };
 
 export type SignalDeclarationsQueryVariables = Exact<{
   identifier?: InputMaybe<Scalars['String']['input']>;
@@ -7943,6 +8872,39 @@ export type WatchAgentsSubscription = { __typename?: 'Subscription', agents: (
     { __typename?: 'AgentChangeEvent' }
     & AgentChangeEventFragment
   ) };
+
+export type WatchSchedulesSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchSchedulesSubscription = { __typename?: 'Subscription', schedules: { __typename?: 'RuleChangeEvent', delete?: string | null, create?: (
+      { __typename?: 'RuleChange' }
+      & RuleChangeFragment
+    ) | null, update?: (
+      { __typename?: 'RuleChange' }
+      & RuleChangeFragment
+    ) | null } };
+
+export type WatchTriggersSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchTriggersSubscription = { __typename?: 'Subscription', triggers: { __typename?: 'RuleChangeEvent', delete?: string | null, create?: (
+      { __typename?: 'RuleChange' }
+      & RuleChangeFragment
+    ) | null, update?: (
+      { __typename?: 'RuleChange' }
+      & RuleChangeFragment
+    ) | null } };
+
+export type WatchSignalsSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchSignalsSubscription = { __typename?: 'Subscription', signals: { __typename?: 'SignalChangeEvent', create?: (
+      { __typename?: 'SignalChange' }
+      & SignalChangeFragment
+    ) | null, update?: (
+      { __typename?: 'SignalChange' }
+      & SignalChangeFragment
+    ) | null } };
 
 export type WatchProbeEventsSubscriptionVariables = Exact<{
   probe: Scalars['ID']['input'];
@@ -9094,6 +10056,13 @@ export const ListScheduleFragmentDoc = gql`
     latestEventKind
     isDone
   }
+  description
+  runCount
+  lastRunAt
+  lastErrorAt
+  exhausted
+  endsAt
+  maxRuns
 }
     `;
 export const DetailScheduleFragmentDoc = gql`
@@ -9102,8 +10071,24 @@ export const DetailScheduleFragmentDoc = gql`
   args
   interface
   ephemeralRuns
+  overlap
+  catchUp
+  lastFiredAt
+  upcoming(count: 5)
+  wireKey
+  wiregram {
+    id
+    name
+  }
   createdAt
   updatedAt
+  caller {
+    id
+    user {
+      id
+      sub
+    }
+  }
   runs(limit: 24) {
     ...ListTask
   }
@@ -9129,28 +10114,77 @@ export const ListTriggerFragmentDoc = gql`
     id
     name
   }
+  description
+  runCount
+  lastRunAt
+  lastErrorAt
+  exhausted
+  endsAt
+  maxRuns
+  debounceSeconds
 }
     `;
+export const ListFiringFragmentDoc = gql`
+    fragment ListFiring on Firing {
+  id
+  outcome
+  reason
+  replay
+  createdAt
+  trigger {
+    id
+    name
+  }
+  signal {
+    id
+    identifier
+    object
+    kind
+    occurredAt
+    receivedAt
+  }
+  task {
+    ...ListTask
+  }
+}
+    ${ListTaskFragmentDoc}`;
 export const DetailTriggerFragmentDoc = gql`
     fragment DetailTrigger on Trigger {
   ...ListTrigger
   args
   interface
+  lastFiredAt
   createdAt
   updatedAt
-  runs(limit: 24) {
-    ...ListTask
+  caller {
+    id
+    user {
+      id
+      sub
+    }
+  }
+  wireKey
+  wiregram {
+    id
+    name
+  }
+  firings(limit: 24) {
+    ...ListFiring
   }
 }
     ${ListTriggerFragmentDoc}
-${ListTaskFragmentDoc}`;
+${ListFiringFragmentDoc}`;
 export const ListSignalFragmentDoc = gql`
     fragment ListSignal on Signal {
   id
   identifier
   kind
   object
-  service
+  serviceName
+  service {
+    id
+    name
+  }
   descriptors
   occurredAt
   receivedAt
@@ -9168,6 +10202,64 @@ export const ListSignalFragmentDoc = gql`
       id
       name
     }
+    trigger {
+      id
+      name
+    }
+  }
+}
+    `;
+export const DetailSignalFragmentDoc = gql`
+    fragment DetailSignal on Signal {
+  ...ListSignal
+  firings {
+    ...ListFiring
+  }
+}
+    ${ListSignalFragmentDoc}
+${ListFiringFragmentDoc}`;
+export const ListWiregramFragmentDoc = gql`
+    fragment ListWiregram on Wiregram {
+  id
+  key
+  name
+  description
+  updatedAt
+}
+    `;
+export const DetailWiregramFragmentDoc = gql`
+    fragment DetailWiregram on Wiregram {
+  ...ListWiregram
+  document
+  createdAt
+  caller {
+    id
+    user {
+      id
+      sub
+    }
+  }
+  schedules {
+    ...ListSchedule
+  }
+  triggers {
+    ...ListTrigger
+  }
+}
+    ${ListWiregramFragmentDoc}
+${ListScheduleFragmentDoc}
+${ListTriggerFragmentDoc}`;
+export const ListServiceFragmentDoc = gql`
+    fragment ListService on Service {
+  id
+  name
+  identifier
+  description
+  signals {
+    id
+  }
+  structures {
+    id: identifier
   }
 }
     `;
@@ -9176,9 +10268,81 @@ export const SignalDeclarationFragmentDoc = gql`
   id
   identifier
   kind
-  service
+  service {
+    id
+    name
+  }
   description
   descriptorKeys
+}
+    `;
+export const DetailServiceFragmentDoc = gql`
+    fragment DetailService on Service {
+  id
+  name
+  identifier
+  description
+  signals {
+    ...SignalDeclaration
+    triggers {
+      id
+      name
+    }
+  }
+  structures {
+    id: identifier
+    identifier
+    label
+    description
+    descriptors {
+      id
+      key
+      type
+      description
+    }
+  }
+}
+    ${SignalDeclarationFragmentDoc}`;
+export const DetailFiringFragmentDoc = gql`
+    fragment DetailFiring on Firing {
+  ...ListFiring
+  trigger {
+    id
+    name
+    action {
+      id
+      name
+    }
+  }
+  signal {
+    id
+    serviceName
+    descriptors
+  }
+}
+    ${ListFiringFragmentDoc}`;
+export const RuleChangeFragmentDoc = gql`
+    fragment RuleChange on RuleChange {
+  id
+  name
+  enabled
+  consecutiveFailures
+  lastError
+  runCount
+  lastFiredAt
+  updatedAt
+}
+    `;
+export const SignalChangeFragmentDoc = gql`
+    fragment SignalChange on SignalChange {
+  id
+  service
+  kind
+  identifier
+  object
+  receivedAt
+  processedAt
+  fired
 }
     `;
 export const ListBlokFragmentDoc = gql`
@@ -10190,8 +11354,23 @@ export const StructureFragmentDoc = gql`
   id: identifier
   identifier
   key
+  label
+  description
   package {
     key
+  }
+  service {
+    id
+    name
+  }
+  descriptors {
+    id
+    key
+    type
+    description
+  }
+  signals {
+    ...SignalDeclaration
   }
   outputUsages {
     ...ListOutputStructureUsage
@@ -10200,7 +11379,8 @@ export const StructureFragmentDoc = gql`
     ...ListInputStructureUsage
   }
 }
-    ${ListOutputStructureUsageFragmentDoc}
+    ${SignalDeclarationFragmentDoc}
+${ListOutputStructureUsageFragmentDoc}
 ${ListInputStructureUsageFragmentDoc}`;
 export const ListOutputInterfaceUsageFragmentDoc = gql`
     fragment ListOutputInterfaceUsage on PortUsage {
@@ -10364,6 +11544,20 @@ export const FrozenBindingFragmentDoc = gql`
 export const DetailTaskFragmentDoc = gql`
     fragment DetailTask on Task {
   ...PostmanTask
+  schedule {
+    id
+    name
+  }
+  trigger {
+    id
+    name
+  }
+  signal {
+    id
+    identifier
+    object
+    kind
+  }
   children {
     ...PostmanTask
     parentStep
@@ -11392,6 +12586,134 @@ export function useDeleteTriggerMutation(baseOptions?: ApolloReactHooks.Mutation
 export type DeleteTriggerMutationHookResult = ReturnType<typeof useDeleteTriggerMutation>;
 export type DeleteTriggerMutationResult = Apollo.MutationResult<DeleteTriggerMutation>;
 export type DeleteTriggerMutationOptions = Apollo.BaseMutationOptions<DeleteTriggerMutation, DeleteTriggerMutationVariables>;
+export const FireTriggerDocument = gql`
+    mutation FireTrigger($input: FireTriggerInput!) {
+  fireTrigger(input: $input) {
+    ...ListFiring
+  }
+}
+    ${ListFiringFragmentDoc}`;
+export type FireTriggerMutationFn = Apollo.MutationFunction<FireTriggerMutation, FireTriggerMutationVariables>;
+
+/**
+ * __useFireTriggerMutation__
+ *
+ * To run a mutation, you first call `useFireTriggerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useFireTriggerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [fireTriggerMutation, { data, loading, error }] = useFireTriggerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useFireTriggerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<FireTriggerMutation, FireTriggerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<FireTriggerMutation, FireTriggerMutationVariables>(FireTriggerDocument, options);
+      }
+export type FireTriggerMutationHookResult = ReturnType<typeof useFireTriggerMutation>;
+export type FireTriggerMutationResult = Apollo.MutationResult<FireTriggerMutation>;
+export type FireTriggerMutationOptions = Apollo.BaseMutationOptions<FireTriggerMutation, FireTriggerMutationVariables>;
+export const ImportWiregramDocument = gql`
+    mutation ImportWiregram($input: WiregramInput!) {
+  importWiregram(input: $input) {
+    ...DetailWiregram
+  }
+}
+    ${DetailWiregramFragmentDoc}`;
+export type ImportWiregramMutationFn = Apollo.MutationFunction<ImportWiregramMutation, ImportWiregramMutationVariables>;
+
+/**
+ * __useImportWiregramMutation__
+ *
+ * To run a mutation, you first call `useImportWiregramMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useImportWiregramMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [importWiregramMutation, { data, loading, error }] = useImportWiregramMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useImportWiregramMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ImportWiregramMutation, ImportWiregramMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ImportWiregramMutation, ImportWiregramMutationVariables>(ImportWiregramDocument, options);
+      }
+export type ImportWiregramMutationHookResult = ReturnType<typeof useImportWiregramMutation>;
+export type ImportWiregramMutationResult = Apollo.MutationResult<ImportWiregramMutation>;
+export type ImportWiregramMutationOptions = Apollo.BaseMutationOptions<ImportWiregramMutation, ImportWiregramMutationVariables>;
+export const ExportWiregramDocument = gql`
+    mutation ExportWiregram($input: ExportWiregramInput!) {
+  exportWiregram(input: $input)
+}
+    `;
+export type ExportWiregramMutationFn = Apollo.MutationFunction<ExportWiregramMutation, ExportWiregramMutationVariables>;
+
+/**
+ * __useExportWiregramMutation__
+ *
+ * To run a mutation, you first call `useExportWiregramMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useExportWiregramMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [exportWiregramMutation, { data, loading, error }] = useExportWiregramMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useExportWiregramMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ExportWiregramMutation, ExportWiregramMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ExportWiregramMutation, ExportWiregramMutationVariables>(ExportWiregramDocument, options);
+      }
+export type ExportWiregramMutationHookResult = ReturnType<typeof useExportWiregramMutation>;
+export type ExportWiregramMutationResult = Apollo.MutationResult<ExportWiregramMutation>;
+export type ExportWiregramMutationOptions = Apollo.BaseMutationOptions<ExportWiregramMutation, ExportWiregramMutationVariables>;
+export const DeleteWiregramDocument = gql`
+    mutation DeleteWiregram($id: ID!) {
+  deleteWiregram(input: {id: $id})
+}
+    `;
+export type DeleteWiregramMutationFn = Apollo.MutationFunction<DeleteWiregramMutation, DeleteWiregramMutationVariables>;
+
+/**
+ * __useDeleteWiregramMutation__
+ *
+ * To run a mutation, you first call `useDeleteWiregramMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteWiregramMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteWiregramMutation, { data, loading, error }] = useDeleteWiregramMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteWiregramMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteWiregramMutation, DeleteWiregramMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteWiregramMutation, DeleteWiregramMutationVariables>(DeleteWiregramDocument, options);
+      }
+export type DeleteWiregramMutationHookResult = ReturnType<typeof useDeleteWiregramMutation>;
+export type DeleteWiregramMutationResult = Apollo.MutationResult<DeleteWiregramMutation>;
+export type DeleteWiregramMutationOptions = Apollo.BaseMutationOptions<DeleteWiregramMutation, DeleteWiregramMutationVariables>;
 export const CreateBlokDocument = gql`
     mutation CreateBlok($input: CreateBlokInput!) {
   createBlok(input: $input) {
@@ -13137,8 +14459,8 @@ export type HoverAgentQueryHookResult = ReturnType<typeof useHoverAgentQuery>;
 export type HoverAgentLazyQueryHookResult = ReturnType<typeof useHoverAgentLazyQuery>;
 export type HoverAgentQueryResult = Apollo.QueryResult<HoverAgentQuery, HoverAgentQueryVariables>;
 export const ListSchedulesDocument = gql`
-    query ListSchedules($pagination: OffsetPaginationInput) {
-  schedules(pagination: $pagination) {
+    query ListSchedules($filters: ScheduleFilter, $ordering: [ScheduleOrder!] = [], $pagination: OffsetPaginationInput) {
+  schedules(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListSchedule
   }
 }
@@ -13156,6 +14478,8 @@ export const ListSchedulesDocument = gql`
  * @example
  * const { data, loading, error } = useListSchedulesQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
  *      pagination: // value for 'pagination'
  *   },
  * });
@@ -13207,8 +14531,8 @@ export type ScheduleQueryHookResult = ReturnType<typeof useScheduleQuery>;
 export type ScheduleLazyQueryHookResult = ReturnType<typeof useScheduleLazyQuery>;
 export type ScheduleQueryResult = Apollo.QueryResult<ScheduleQuery, ScheduleQueryVariables>;
 export const ListTriggersDocument = gql`
-    query ListTriggers($pagination: OffsetPaginationInput) {
-  triggers(pagination: $pagination) {
+    query ListTriggers($filters: TriggerFilter, $ordering: [TriggerOrder!] = [], $pagination: OffsetPaginationInput) {
+  triggers(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListTrigger
   }
 }
@@ -13226,6 +14550,8 @@ export const ListTriggersDocument = gql`
  * @example
  * const { data, loading, error } = useListTriggersQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
  *      pagination: // value for 'pagination'
  *   },
  * });
@@ -13277,8 +14603,8 @@ export type TriggerQueryHookResult = ReturnType<typeof useTriggerQuery>;
 export type TriggerLazyQueryHookResult = ReturnType<typeof useTriggerLazyQuery>;
 export type TriggerQueryResult = Apollo.QueryResult<TriggerQuery, TriggerQueryVariables>;
 export const ListSignalsDocument = gql`
-    query ListSignals($pagination: OffsetPaginationInput) {
-  signals(pagination: $pagination) {
+    query ListSignals($filters: SignalFilter, $ordering: [SignalOrder!] = [], $pagination: OffsetPaginationInput) {
+  signals(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListSignal
   }
 }
@@ -13296,6 +14622,8 @@ export const ListSignalsDocument = gql`
  * @example
  * const { data, loading, error } = useListSignalsQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
  *      pagination: // value for 'pagination'
  *   },
  * });
@@ -13311,6 +14639,333 @@ export function useListSignalsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type ListSignalsQueryHookResult = ReturnType<typeof useListSignalsQuery>;
 export type ListSignalsLazyQueryHookResult = ReturnType<typeof useListSignalsLazyQuery>;
 export type ListSignalsQueryResult = Apollo.QueryResult<ListSignalsQuery, ListSignalsQueryVariables>;
+export const SignalDocument = gql`
+    query Signal($id: ID!) {
+  signal(id: $id) {
+    ...DetailSignal
+  }
+}
+    ${DetailSignalFragmentDoc}`;
+
+/**
+ * __useSignalQuery__
+ *
+ * To run a query within a React component, call `useSignalQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSignalQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSignalQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useSignalQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SignalQuery, SignalQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SignalQuery, SignalQueryVariables>(SignalDocument, options);
+      }
+export function useSignalLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SignalQuery, SignalQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SignalQuery, SignalQueryVariables>(SignalDocument, options);
+        }
+export type SignalQueryHookResult = ReturnType<typeof useSignalQuery>;
+export type SignalLazyQueryHookResult = ReturnType<typeof useSignalLazyQuery>;
+export type SignalQueryResult = Apollo.QueryResult<SignalQuery, SignalQueryVariables>;
+export const ListFiringsDocument = gql`
+    query ListFirings($filters: FiringFilter, $ordering: [FiringOrder!] = [], $pagination: OffsetPaginationInput) {
+  firings(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListFiring
+  }
+}
+    ${ListFiringFragmentDoc}`;
+
+/**
+ * __useListFiringsQuery__
+ *
+ * To run a query within a React component, call `useListFiringsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListFiringsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListFiringsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListFiringsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListFiringsQuery, ListFiringsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListFiringsQuery, ListFiringsQueryVariables>(ListFiringsDocument, options);
+      }
+export function useListFiringsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListFiringsQuery, ListFiringsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListFiringsQuery, ListFiringsQueryVariables>(ListFiringsDocument, options);
+        }
+export type ListFiringsQueryHookResult = ReturnType<typeof useListFiringsQuery>;
+export type ListFiringsLazyQueryHookResult = ReturnType<typeof useListFiringsLazyQuery>;
+export type ListFiringsQueryResult = Apollo.QueryResult<ListFiringsQuery, ListFiringsQueryVariables>;
+export const ListWiregramsDocument = gql`
+    query ListWiregrams($pagination: OffsetPaginationInput) {
+  wiregrams(pagination: $pagination) {
+    ...ListWiregram
+  }
+}
+    ${ListWiregramFragmentDoc}`;
+
+/**
+ * __useListWiregramsQuery__
+ *
+ * To run a query within a React component, call `useListWiregramsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListWiregramsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListWiregramsQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListWiregramsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListWiregramsQuery, ListWiregramsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListWiregramsQuery, ListWiregramsQueryVariables>(ListWiregramsDocument, options);
+      }
+export function useListWiregramsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListWiregramsQuery, ListWiregramsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListWiregramsQuery, ListWiregramsQueryVariables>(ListWiregramsDocument, options);
+        }
+export type ListWiregramsQueryHookResult = ReturnType<typeof useListWiregramsQuery>;
+export type ListWiregramsLazyQueryHookResult = ReturnType<typeof useListWiregramsLazyQuery>;
+export type ListWiregramsQueryResult = Apollo.QueryResult<ListWiregramsQuery, ListWiregramsQueryVariables>;
+export const WiregramDocument = gql`
+    query Wiregram($id: ID!) {
+  wiregram(id: $id) {
+    ...DetailWiregram
+  }
+}
+    ${DetailWiregramFragmentDoc}`;
+
+/**
+ * __useWiregramQuery__
+ *
+ * To run a query within a React component, call `useWiregramQuery` and pass it any options that fit your needs.
+ * When your component renders, `useWiregramQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWiregramQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useWiregramQuery(baseOptions: ApolloReactHooks.QueryHookOptions<WiregramQuery, WiregramQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<WiregramQuery, WiregramQueryVariables>(WiregramDocument, options);
+      }
+export function useWiregramLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<WiregramQuery, WiregramQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<WiregramQuery, WiregramQueryVariables>(WiregramDocument, options);
+        }
+export type WiregramQueryHookResult = ReturnType<typeof useWiregramQuery>;
+export type WiregramLazyQueryHookResult = ReturnType<typeof useWiregramLazyQuery>;
+export type WiregramQueryResult = Apollo.QueryResult<WiregramQuery, WiregramQueryVariables>;
+export const FiringDocument = gql`
+    query Firing($id: ID!) {
+  firing(id: $id) {
+    ...DetailFiring
+  }
+}
+    ${DetailFiringFragmentDoc}`;
+
+/**
+ * __useFiringQuery__
+ *
+ * To run a query within a React component, call `useFiringQuery` and pass it any options that fit your needs.
+ * When your component renders, `useFiringQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useFiringQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useFiringQuery(baseOptions: ApolloReactHooks.QueryHookOptions<FiringQuery, FiringQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<FiringQuery, FiringQueryVariables>(FiringDocument, options);
+      }
+export function useFiringLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<FiringQuery, FiringQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<FiringQuery, FiringQueryVariables>(FiringDocument, options);
+        }
+export type FiringQueryHookResult = ReturnType<typeof useFiringQuery>;
+export type FiringLazyQueryHookResult = ReturnType<typeof useFiringLazyQuery>;
+export type FiringQueryResult = Apollo.QueryResult<FiringQuery, FiringQueryVariables>;
+export const ListServicesDocument = gql`
+    query ListServices {
+  services {
+    ...ListService
+  }
+}
+    ${ListServiceFragmentDoc}`;
+
+/**
+ * __useListServicesQuery__
+ *
+ * To run a query within a React component, call `useListServicesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListServicesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListServicesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useListServicesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListServicesQuery, ListServicesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListServicesQuery, ListServicesQueryVariables>(ListServicesDocument, options);
+      }
+export function useListServicesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListServicesQuery, ListServicesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListServicesQuery, ListServicesQueryVariables>(ListServicesDocument, options);
+        }
+export type ListServicesQueryHookResult = ReturnType<typeof useListServicesQuery>;
+export type ListServicesLazyQueryHookResult = ReturnType<typeof useListServicesLazyQuery>;
+export type ListServicesQueryResult = Apollo.QueryResult<ListServicesQuery, ListServicesQueryVariables>;
+export const ServiceDocument = gql`
+    query Service($id: ID!) {
+  service(id: $id) {
+    ...DetailService
+  }
+}
+    ${DetailServiceFragmentDoc}`;
+
+/**
+ * __useServiceQuery__
+ *
+ * To run a query within a React component, call `useServiceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useServiceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useServiceQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useServiceQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ServiceQuery, ServiceQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ServiceQuery, ServiceQueryVariables>(ServiceDocument, options);
+      }
+export function useServiceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ServiceQuery, ServiceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ServiceQuery, ServiceQueryVariables>(ServiceDocument, options);
+        }
+export type ServiceQueryHookResult = ReturnType<typeof useServiceQuery>;
+export type ServiceLazyQueryHookResult = ReturnType<typeof useServiceLazyQuery>;
+export type ServiceQueryResult = Apollo.QueryResult<ServiceQuery, ServiceQueryVariables>;
+export const MatchingSignalsDocument = gql`
+    query MatchingSignals($kind: SignalKind!, $identifier: String!, $conditions: AnyDefault, $limit: Int! = 20) {
+  matchingSignals(
+    kind: $kind
+    identifier: $identifier
+    conditions: $conditions
+    limit: $limit
+  ) {
+    id
+  }
+}
+    `;
+
+/**
+ * __useMatchingSignalsQuery__
+ *
+ * To run a query within a React component, call `useMatchingSignalsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMatchingSignalsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMatchingSignalsQuery({
+ *   variables: {
+ *      kind: // value for 'kind'
+ *      identifier: // value for 'identifier'
+ *      conditions: // value for 'conditions'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useMatchingSignalsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<MatchingSignalsQuery, MatchingSignalsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MatchingSignalsQuery, MatchingSignalsQueryVariables>(MatchingSignalsDocument, options);
+      }
+export function useMatchingSignalsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MatchingSignalsQuery, MatchingSignalsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MatchingSignalsQuery, MatchingSignalsQueryVariables>(MatchingSignalsDocument, options);
+        }
+export type MatchingSignalsQueryHookResult = ReturnType<typeof useMatchingSignalsQuery>;
+export type MatchingSignalsLazyQueryHookResult = ReturnType<typeof useMatchingSignalsLazyQuery>;
+export type MatchingSignalsQueryResult = Apollo.QueryResult<MatchingSignalsQuery, MatchingSignalsQueryVariables>;
+export const TriggerMatchingSignalsDocument = gql`
+    query TriggerMatchingSignals($id: ID!) {
+  trigger(id: $id) {
+    id
+    matchingSignals(limit: 20) {
+      ...ListSignal
+    }
+  }
+}
+    ${ListSignalFragmentDoc}`;
+
+/**
+ * __useTriggerMatchingSignalsQuery__
+ *
+ * To run a query within a React component, call `useTriggerMatchingSignalsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTriggerMatchingSignalsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTriggerMatchingSignalsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTriggerMatchingSignalsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TriggerMatchingSignalsQuery, TriggerMatchingSignalsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TriggerMatchingSignalsQuery, TriggerMatchingSignalsQueryVariables>(TriggerMatchingSignalsDocument, options);
+      }
+export function useTriggerMatchingSignalsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TriggerMatchingSignalsQuery, TriggerMatchingSignalsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TriggerMatchingSignalsQuery, TriggerMatchingSignalsQueryVariables>(TriggerMatchingSignalsDocument, options);
+        }
+export type TriggerMatchingSignalsQueryHookResult = ReturnType<typeof useTriggerMatchingSignalsQuery>;
+export type TriggerMatchingSignalsLazyQueryHookResult = ReturnType<typeof useTriggerMatchingSignalsLazyQuery>;
+export type TriggerMatchingSignalsQueryResult = Apollo.QueryResult<TriggerMatchingSignalsQuery, TriggerMatchingSignalsQueryVariables>;
 export const SignalDeclarationsDocument = gql`
     query SignalDeclarations($identifier: String) {
   signalDeclarations(identifier: $identifier) {
@@ -15892,6 +17547,110 @@ export function useWatchAgentsSubscription(baseOptions?: ApolloReactHooks.Subscr
       }
 export type WatchAgentsSubscriptionHookResult = ReturnType<typeof useWatchAgentsSubscription>;
 export type WatchAgentsSubscriptionResult = Apollo.SubscriptionResult<WatchAgentsSubscription>;
+export const WatchSchedulesDocument = gql`
+    subscription WatchSchedules {
+  schedules {
+    create {
+      ...RuleChange
+    }
+    update {
+      ...RuleChange
+    }
+    delete
+  }
+}
+    ${RuleChangeFragmentDoc}`;
+
+/**
+ * __useWatchSchedulesSubscription__
+ *
+ * To run a query within a React component, call `useWatchSchedulesSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchSchedulesSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchSchedulesSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchSchedulesSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchSchedulesSubscription, WatchSchedulesSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchSchedulesSubscription, WatchSchedulesSubscriptionVariables>(WatchSchedulesDocument, options);
+      }
+export type WatchSchedulesSubscriptionHookResult = ReturnType<typeof useWatchSchedulesSubscription>;
+export type WatchSchedulesSubscriptionResult = Apollo.SubscriptionResult<WatchSchedulesSubscription>;
+export const WatchTriggersDocument = gql`
+    subscription WatchTriggers {
+  triggers {
+    create {
+      ...RuleChange
+    }
+    update {
+      ...RuleChange
+    }
+    delete
+  }
+}
+    ${RuleChangeFragmentDoc}`;
+
+/**
+ * __useWatchTriggersSubscription__
+ *
+ * To run a query within a React component, call `useWatchTriggersSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchTriggersSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchTriggersSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchTriggersSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchTriggersSubscription, WatchTriggersSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchTriggersSubscription, WatchTriggersSubscriptionVariables>(WatchTriggersDocument, options);
+      }
+export type WatchTriggersSubscriptionHookResult = ReturnType<typeof useWatchTriggersSubscription>;
+export type WatchTriggersSubscriptionResult = Apollo.SubscriptionResult<WatchTriggersSubscription>;
+export const WatchSignalsDocument = gql`
+    subscription WatchSignals {
+  signals {
+    create {
+      ...SignalChange
+    }
+    update {
+      ...SignalChange
+    }
+  }
+}
+    ${SignalChangeFragmentDoc}`;
+
+/**
+ * __useWatchSignalsSubscription__
+ *
+ * To run a query within a React component, call `useWatchSignalsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchSignalsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchSignalsSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchSignalsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchSignalsSubscription, WatchSignalsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchSignalsSubscription, WatchSignalsSubscriptionVariables>(WatchSignalsDocument, options);
+      }
+export type WatchSignalsSubscriptionHookResult = ReturnType<typeof useWatchSignalsSubscription>;
+export type WatchSignalsSubscriptionResult = Apollo.SubscriptionResult<WatchSignalsSubscription>;
 export const WatchProbeEventsDocument = gql`
     subscription WatchProbeEvents($probe: ID!) {
   probeEvents(probe: $probe) {

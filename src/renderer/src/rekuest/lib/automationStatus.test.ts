@@ -20,6 +20,11 @@ describe("scheduleState", () => {
     ).toBe("running");
     expect(scheduleState({ ...base, nextRun: null }, now)).toBe("idle");
   });
+
+  it("has ended once exhausted, whatever else holds", () => {
+    expect(scheduleState({ ...base, exhausted: true, consecutiveFailures: 2 }, now)).toBe("ended");
+    expect(scheduleState({ ...base, exhausted: true, enabled: false }, now)).toBe("ended");
+  });
 });
 
 describe("triggerState", () => {
@@ -27,5 +32,6 @@ describe("triggerState", () => {
     expect(triggerState({ enabled: true, consecutiveFailures: 0 })).toBe("waiting");
     expect(triggerState({ enabled: true, consecutiveFailures: 3 })).toBe("failing");
     expect(triggerState({ enabled: false, consecutiveFailures: 3 })).toBe("paused");
+    expect(triggerState({ enabled: true, consecutiveFailures: 3, exhausted: true })).toBe("ended");
   });
 });

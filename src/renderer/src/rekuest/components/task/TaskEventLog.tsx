@@ -483,7 +483,7 @@ const argPortToDisplayPort = (port: ArgPortLike): ReturnPortFragment =>
     widget: null,
   }) as unknown as ReturnPortFragment;
 
-const TaskArgValue = (props: { port: ArgPortLike; value: unknown }) => {
+export const TaskArgValue = (props: { port: ArgPortLike; value: unknown }) => {
   const { registry } = useWidgetRegistry();
   const displayPort = useMemo(
     () => argPortToDisplayPort(props.port),
