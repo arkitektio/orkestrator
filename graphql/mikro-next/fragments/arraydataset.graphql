@@ -17,6 +17,7 @@ fragment DataArray on DataArray {
 }
 
 fragment ListArrayDataset on ArrayDataset {
+  descriptors
   id
   name
   description
@@ -45,6 +46,7 @@ fragment ListArrayDataset on ArrayDataset {
 }
 
 fragment ArrayDataset on ArrayDataset {
+  descriptors
   id
   name
   description

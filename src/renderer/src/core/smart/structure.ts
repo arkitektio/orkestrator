@@ -17,6 +17,16 @@ export const sameStructure = (
 export const structureKey = ({ identifier, id }: Pick<Structure, "identifier" | "id">): string =>
   `${identifier}:${id}`;
 
+/** Key-sorted JSON, so equal descriptors serialise equally. */
+export const stableJson = (value: JSONObject): string =>
+  JSON.stringify(Object.keys(value).sort().map((key) => [key, value[key]]));
+
+/** The `descriptors` a module's fragment selected for an object, when it is a plain object. */
+export const descriptorsOf = (value: unknown): JSONObject | undefined =>
+  value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0
+    ? (value as JSONObject)
+    : undefined;
+
 export const structure = (
   identifier: string,
   id: string | number,

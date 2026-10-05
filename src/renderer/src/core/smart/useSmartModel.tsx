@@ -1,5 +1,5 @@
 import { SMART_MODEL_DROP_TYPE } from "@/core/constants";
-import { sameStructure, structure } from "@/core/smart/structure";
+import { descriptorsOf, sameStructure, stableJson, structure } from "@/core/smart/structure";
 import { Structure } from "@/core/types";
 import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react";
 import { createSelector } from "reselect";
@@ -102,9 +102,17 @@ export const useSmartModel = ({
 }: Pick<SmartModelProps, "identifier" | "object">): UseSmartModelResult => {
   const selectionStore = useSelectionStoreApi();
   const label = typeof object.label === "string" ? object.label : typeof object.name === "string" ? object.name : undefined;
+  // What the service says about the object (its structure's descriptors), when the module's
+  // fragment selected it: this is what action matching reads. Keyed by value, since every
+  // render hands in a new object.
+  const descriptorsKey = useMemo(() => {
+    const descriptors = descriptorsOf(object.descriptors);
+    return descriptors ? stableJson(descriptors) : "";
+  }, [object.descriptors]);
   const self = useMemo<Structure>(
-    () => structure(identifier, object.id, { label }),
-    [identifier, object.id, label], // Not on other fragment fields: they never leave the module
+    () => structure(identifier, object.id, { label, descriptors: descriptorsOf(object.descriptors) }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- descriptorsKey stands for object.descriptors
+    [identifier, object.id, label, descriptorsKey], // Not on other fragment fields: they never leave the module
   );
 
 

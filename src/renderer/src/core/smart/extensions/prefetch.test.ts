@@ -100,8 +100,8 @@ describe("createSmartPrefetcher", () => {
   it("evicts the oldest keys past maxKeys", () => {
     const { prefetcher } = setup({ maxKeys: 2 });
     prefetcher.prefetch({ objects: [image("1")] });
-    prefetcher.prefetch({ objects: [{ identifier: "@mikro/dataset", id: "1" }] });
+    prefetcher.prefetch({ objects: [{ identifier: "@mikro/folder", id: "1" }] });
     expect(prefetcher.keys()).toHaveLength(2);
-    expect(prefetcher.keys().every((key) => key.includes("@mikro/dataset"))).toBe(true);
+    expect(prefetcher.keys().every((key) => key.includes("@mikro/folder"))).toBe(true);
   });
 });

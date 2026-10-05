@@ -1,4 +1,5 @@
 fragment Scene on Scene {
+  descriptors
   id
   name
   # How the scene asks to be opened: flat, volumetric, or AUTO (no preference
@@ -30,6 +31,7 @@ fragment Scene on Scene {
 }
 
 fragment ListScene on Scene {
+  descriptors
   id
   name
   # The tile the card shows. Null until something snapshots the scene, so the

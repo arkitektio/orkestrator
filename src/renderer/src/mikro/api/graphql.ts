@@ -9362,12 +9362,12 @@ export type DataArrayFragment = { __typename?: 'DataArray', id: string, level: n
     & ZarrStoreFragment
   ) };
 
-export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: (
+export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: (
     { __typename?: 'SceneSnapshot' }
     & SceneSnapshotFragment
   ) | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null };
 
-export type ArrayDatasetFragment = { __typename?: 'ArrayDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, folder?: { __typename?: 'Folder', id: string, name: string } | null, intrinsicSystem?: (
+export type ArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, folder?: { __typename?: 'Folder', id: string, name: string } | null, intrinsicSystem?: (
     { __typename?: 'CoordinateSystem' }
     & CoordinateSystemFragment
   ) | null, dataArrays: Array<(
@@ -9721,7 +9721,7 @@ export type FabriksUploadGrantFragment = { __typename?: 'FabriksUploadGrant', ac
 
 export type GeneralKonnektionAccessGrantFragment = { __typename?: 'GeneralKonnektionAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
-export type FileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, store: (
+export type FileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, store: (
     { __typename?: 'BigFileStore' }
     & BigFileStoreFragment
   ), provenanceEntries: Array<(
@@ -9729,7 +9729,7 @@ export type FileFragment = { __typename?: 'File', id: string, name: string, size
     & ProvenanceEntryFragment
   )>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
-export type ListFileFragment = { __typename?: 'File', id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
+export type ListFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
 
 export type FileLinkFragment = { __typename?: 'FileLink', id: string, direction: FileLinkDirection, seriesIdentifier?: string | null, valueRelation?: ValueRelation | null, createdAt: any, container: { __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'MeshCollection', id: string, version: string } | { __typename: 'TableDataset', id: string, name: string } };
 
@@ -10022,7 +10022,7 @@ export type DimSliceFragment = { __typename?: 'Slice', axis: string, start?: num
 
 export type PhasorContextFragment = { __typename?: 'PhasorContext', axis: string, axisType: AxisType, bins: number, binWidth?: GenericQuantity | null, harmonic: number, laserFrequency?: Frequency | null, window?: GenericQuantity | null, calibration?: { __typename?: 'PhasorCalibration', id: string, harmonic: number, phaseOffset?: number | null, modulationFactor?: number | null, reference?: string | null } | null, phasorHistogram?: { __typename?: 'PhasorHistogram', id: string, bins: number, counts: Array<number>, gMin: number, gMax: number, sMin: number, sMax: number, profile: Array<number>, total?: number | null, calibrated: boolean } | null };
 
-export type SceneLensFragment = { __typename?: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, renderAxes: { __typename?: 'RenderAxes', x: string, y: string, z?: string | null, t?: string | null, intensity?: string | null, phasor?: string | null }, phasor?: (
+export type SceneLensFragment = { __typename?: 'Lens', descriptors: any, id: string, shape: Array<number>, axisNames: Array<string>, renderAxes: { __typename?: 'RenderAxes', x: string, y: string, z?: string | null, t?: string | null, intensity?: string | null, phasor?: string | null }, phasor?: (
     { __typename?: 'PhasorContext' }
     & PhasorContextFragment
   ) | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
@@ -10096,7 +10096,7 @@ export type SceneLensFragment = { __typename?: 'Lens', id: string, shape: Array<
         & LightpathGraphFragment
       ) } | null }> };
 
-export type DetailLensFragment = { __typename?: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
+export type DetailLensFragment = { __typename?: 'Lens', descriptors: any, id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
   )>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
@@ -10327,7 +10327,7 @@ export type NetworkCollectionFragment = { __typename?: 'NetworkCollection', id: 
 
 export type ProvenanceEntryFragment = { __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> };
 
-export type SceneFragment = { __typename?: 'Scene', id: string, name: string, preferredView: PreferredView, backgroundColor?: Array<number> | null, animations: Array<(
+export type SceneFragment = { __typename?: 'Scene', descriptors: any, id: string, name: string, preferredView: PreferredView, backgroundColor?: Array<number> | null, animations: Array<(
     { __typename?: 'Animation' }
     & AnimationFragment
   )>, latestSnapshot?: (
@@ -10371,7 +10371,7 @@ export type SceneFragment = { __typename?: 'Scene', id: string, name: string, pr
     & SceneLayer_VectorLayer_Fragment
   )> };
 
-export type ListSceneFragment = { __typename?: 'Scene', id: string, name: string, latestSnapshot?: (
+export type ListSceneFragment = { __typename?: 'Scene', descriptors: any, id: string, name: string, latestSnapshot?: (
     { __typename?: 'SceneSnapshot' }
     & SceneSnapshotFragment
   ) | null };
@@ -13454,6 +13454,7 @@ export const SceneSnapshotFragmentDoc = gql`
     ${MediaStoreFragmentDoc}`;
 export const ListSceneFragmentDoc = gql`
     fragment ListScene on Scene {
+  descriptors
   id
   name
   latestSnapshot {
@@ -13481,6 +13482,7 @@ export const DetailAnnotationFragmentDoc = gql`
 ${ListSceneFragmentDoc}`;
 export const ListArrayDatasetFragmentDoc = gql`
     fragment ListArrayDataset on ArrayDataset {
+  descriptors
   id
   name
   description
@@ -13600,6 +13602,7 @@ ${TransformationFragmentDoc}
 ${ZarrStoreFragmentDoc}`;
 export const ArrayDatasetFragmentDoc = gql`
     fragment ArrayDataset on ArrayDataset {
+  descriptors
   id
   name
   description
@@ -14034,6 +14037,7 @@ export const ProvenanceEntryFragmentDoc = gql`
     `;
 export const FileFragmentDoc = gql`
     fragment File on File {
+  descriptors
   id
   name
   store {
@@ -14084,6 +14088,7 @@ export const FileLinkFragmentDoc = gql`
     `;
 export const ListFileFragmentDoc = gql`
     fragment ListFile on File {
+  descriptors
   id
   name
   creator {
@@ -14131,6 +14136,7 @@ ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}`;
 export const DetailLensFragmentDoc = gql`
     fragment DetailLens on Lens {
+  descriptors
   id
   shape
   axisNames
@@ -14248,6 +14254,7 @@ export const PhasorContextFragmentDoc = gql`
     `;
 export const SceneLensFragmentDoc = gql`
     fragment SceneLens on Lens {
+  descriptors
   id
   shape
   axisNames
@@ -14850,6 +14857,7 @@ ${NetworkColorByFragmentDoc}
 ${NetworkFilterByFragmentDoc}`;
 export const SceneFragmentDoc = gql`
     fragment Scene on Scene {
+  descriptors
   id
   name
   preferredView

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { fromLegacy, sameStructure, structure, structureKey, toWire, uniqueStructures } from "./structure";
+import { descriptorsOf, fromLegacy, sameStructure, stableJson, structure, structureKey, toWire, uniqueStructures } from "./structure";
 
 describe("sameStructure", () => {
   it("compares by identifier and id, never by reference or hints", () => {
@@ -67,5 +67,26 @@ describe("keys and dedupe", () => {
     ];
     expect(uniqueStructures(items).map((item) => item.label ?? item.id)).toEqual(["first", "2"]);
     expect(structureKey(items[2])).toBe("@x/y:2");
+  });
+});
+
+describe("descriptors a service states about an object", () => {
+  it("are carried by the structure when the fragment selected them", () => {
+    const descriptors = descriptorsOf({ "@mikro/n_channels": 3, "@mikro/n_space_axes": 2 });
+    expect(structure("@mikro/arraydataset", 7, { descriptors }).descriptors).toEqual({
+      "@mikro/n_channels": 3,
+      "@mikro/n_space_axes": 2,
+    });
+  });
+
+  it("are absent when nothing was selected, or the structure declares none", () => {
+    expect(descriptorsOf(undefined)).toBeUndefined();
+    expect(descriptorsOf({})).toBeUndefined();
+    expect(descriptorsOf(["@mikro/n_channels"])).toBeUndefined();
+    expect(structure("@mikro/folder", 1, { descriptors: descriptorsOf({}) })).not.toHaveProperty("descriptors");
+  });
+
+  it("serialise equally whatever order the service sent the keys in", () => {
+    expect(stableJson({ a: 1, b: 2 })).toBe(stableJson({ b: 2, a: 1 }));
   });
 });

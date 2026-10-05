@@ -1,3 +1,4 @@
+import { stableJson } from "@/core/smart/structure";
 import {
   ActionDemandInput,
   DemandKind,
@@ -39,10 +40,6 @@ export type SmartDemands = {
 
 export const arityOf = (items: readonly unknown[] | undefined): Arity =>
   !items || items.length === 0 ? "none" : items.length === 1 ? "one" : "many";
-
-/** Key-sorted JSON, so equal descriptors serialise equally. */
-const stableJson = (value: JSONObject): string =>
-  JSON.stringify(Object.keys(value).sort().map((key) => [key, value[key]]));
 
 /**
  * What one side of the selection PROVIDES, as rekuest descriptors: the

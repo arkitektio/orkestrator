@@ -127,7 +127,7 @@ describe("what a drag carries", () => {
 
 describe("the left side of a drop", () => {
   const dropped = { identifier: "@mikro/image", id: "40" };
-  const target = { identifier: "@mikro/dataset", id: "7" };
+  const target = { identifier: "@mikro/folder", id: "7" };
 
   it("is the selection, dropping on one of the selected", () => {
     expect(getSmartDropObjects([image, roi], image, [dropped])).toEqual([image, roi]);

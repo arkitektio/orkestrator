@@ -39,6 +39,7 @@ fragment PhasorContext on PhasorContext {
 }
 
 fragment SceneLens on Lens {
+  descriptors
   id
   shape
   axisNames
@@ -129,6 +130,7 @@ fragment SceneLens on Lens {
 # (`mikro-next/lenses.ts`) is what turns the slices into the line that tells one
 # lens of a dataset from another.
 fragment DetailLens on Lens {
+  descriptors
   id
   shape
   axisNames
