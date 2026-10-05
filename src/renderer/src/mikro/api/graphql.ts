@@ -364,6 +364,17 @@ export type AnnotationCollectionOrder =
   |  { createdAt?: never; id: Ordering; name?: never; }
   |  { createdAt?: never; id?: never; name: Ordering; };
 
+/** One change to an annotation collection. Exactly one field is set per event */
+export type AnnotationEvent = {
+  __typename?: 'AnnotationEvent';
+  /** An annotation drawn into the collection */
+  create?: Maybe<Annotation>;
+  /** The ID of an annotation deleted from the collection */
+  delete?: Maybe<Scalars['ID']['output']>;
+  /** An annotation of the collection that was edited, in its new state */
+  update?: Maybe<Annotation>;
+};
+
 export type AnnotationFilter = {
   AND?: InputMaybe<AnnotationFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
@@ -7908,8 +7919,15 @@ export type StrFilterLookup = {
 
 export type Subscription = {
   __typename?: 'Subscription';
+  /** Follow one annotation collection: an event for every annotation drawn into it, edited or deleted. Carries changes only -- read the collection's current annotations with the `annotations` query first */
+  annotations: AnnotationEvent;
   /** Subscribe to real-time file updates */
   files: FileEvent;
+};
+
+
+export type SubscriptionAnnotationsArgs = {
+  collection: Scalars['ID']['input'];
 };
 
 
@@ -12710,6 +12728,19 @@ export type GetTableDatasetAnchorsFullQuery = { __typename?: 'Query', tableDatas
       { __typename?: 'CoordinateAnchor' }
       & FullCoordinateAnchorFragment
     )> } };
+
+export type WatchSceneAnnotationsSubscriptionVariables = Exact<{
+  collection: Scalars['ID']['input'];
+}>;
+
+
+export type WatchSceneAnnotationsSubscription = { __typename?: 'Subscription', annotations: { __typename?: 'AnnotationEvent', delete?: string | null, create?: (
+      { __typename?: 'Annotation' }
+      & SceneAnnotationFragment
+    ) | null, update?: (
+      { __typename?: 'Annotation' }
+      & SceneAnnotationFragment
+    ) | null } };
 
 export const AddLayerStagedLensFragmentDoc = gql`
     fragment AddLayerStagedLens on Lens {
@@ -20252,3 +20283,39 @@ export function useGetTableDatasetAnchorsFullLazyQuery(baseOptions?: ApolloReact
 export type GetTableDatasetAnchorsFullQueryHookResult = ReturnType<typeof useGetTableDatasetAnchorsFullQuery>;
 export type GetTableDatasetAnchorsFullLazyQueryHookResult = ReturnType<typeof useGetTableDatasetAnchorsFullLazyQuery>;
 export type GetTableDatasetAnchorsFullQueryResult = Apollo.QueryResult<GetTableDatasetAnchorsFullQuery, GetTableDatasetAnchorsFullQueryVariables>;
+export const WatchSceneAnnotationsDocument = gql`
+    subscription WatchSceneAnnotations($collection: ID!) {
+  annotations(collection: $collection) {
+    create {
+      ...SceneAnnotation
+    }
+    update {
+      ...SceneAnnotation
+    }
+    delete
+  }
+}
+    ${SceneAnnotationFragmentDoc}`;
+
+/**
+ * __useWatchSceneAnnotationsSubscription__
+ *
+ * To run a query within a React component, call `useWatchSceneAnnotationsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchSceneAnnotationsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchSceneAnnotationsSubscription({
+ *   variables: {
+ *      collection: // value for 'collection'
+ *   },
+ * });
+ */
+export function useWatchSceneAnnotationsSubscription(baseOptions: ApolloReactHooks.SubscriptionHookOptions<WatchSceneAnnotationsSubscription, WatchSceneAnnotationsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchSceneAnnotationsSubscription, WatchSceneAnnotationsSubscriptionVariables>(WatchSceneAnnotationsDocument, options);
+      }
+export type WatchSceneAnnotationsSubscriptionHookResult = ReturnType<typeof useWatchSceneAnnotationsSubscription>;
+export type WatchSceneAnnotationsSubscriptionResult = Apollo.SubscriptionResult<WatchSceneAnnotationsSubscription>;

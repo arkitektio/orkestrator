@@ -40,7 +40,7 @@ const FocusBody = ({ annotation }: { annotation: DetailAnnotationFragment }) => 
   // reconcile (the provider folds a changed layer set into the live stores
   // rather than rebuilding), but the reconcile preserves the object identity
   // of layers that did not structurally change — so this still settles on the
-  // first commit and never churns at camera or poll cadence.
+  // first commit and never churns at camera or refetch cadence.
   const layer = useSceneStore((state) =>
     state.sceneLayers.find(
       (candidate): candidate is AnnotationLayerVariant =>

@@ -4,6 +4,7 @@ import {
   useCreateAnnotationMutation,
   type CreateAnnotationMutation,
 } from "@/mikro/api/graphql";
+import { upsertSceneAnnotation } from "./annotationCache";
 import { useRoiSelectionStoreApi } from "./roiSelectionStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 
@@ -34,19 +35,30 @@ export const useCreateSceneAnnotation = () => {
       worldVectors: [number, number, number][],
     ): Promise<CreatedSceneAnnotation | null> => {
       try {
-        const { id: sceneId, sceneLayers } = sceneStoreApi.getState();
-        // Annotating the scene mints its annotation collection, the
-        // collection's registration into the world AND the AnnotationLayer
-        // that draws it — but only on first use. Until that layer exists there
-        // is nothing to render the shape, so the first annotation has to
-        // refetch the scene itself; later ones only need the layer's own
-        // annotation query.
-        const hasAnnotationLayer = sceneLayers.some(
-          (layer) => layer.__typename === "AnnotationLayer",
-        );
+        const { id: sceneId } = sceneStoreApi.getState();
+        const drawsCollection = (collectionId: string | undefined) =>
+          sceneStoreApi
+            .getState()
+            .sceneLayers.some(
+              (layer) =>
+                layer.__typename === "AnnotationLayer" &&
+                layer.annotationCollection?.id === collectionId,
+            );
         const result = await createAnnotation({
           variables: { input: { scene: sceneId, kind, vectors: worldVectors } },
-          refetchQueries: hasAnnotationLayer ? ["GetSceneAnnotations"] : ["GetScene"],
+          // The answer IS the new shape: write it into its collection's list
+          // instead of fetching the whole list again (`annotationCache.ts`).
+          update: (cache, { data }) => {
+            const drawn = data?.createAnnotation;
+            if (drawn) upsertSceneAnnotation(cache, drawn.collection.id, drawn);
+          },
+          // Annotating the scene mints its annotation collection, the
+          // collection's registration into the world AND the AnnotationLayer
+          // that draws it — but only on first use. Until that layer exists
+          // there is nothing to render the shape, so the first annotation has
+          // to refetch the scene itself, once.
+          refetchQueries: ({ data }) =>
+            drawsCollection(data?.createAnnotation.collection.id) ? [] : ["GetScene"],
           awaitRefetchQueries: false,
         });
         const created = result.data?.createAnnotation ?? null;

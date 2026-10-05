@@ -38,8 +38,9 @@ fragment Annotation on Annotation {
 # the system per shape would ship the same axes once per annotation.
 #
 # Named for its consumer rather than `ListAnnotation`, because it is NOT the
-# card selection: `GetSceneAnnotations` is polled every 5s per annotation layer
-# per mounted scene, so a field added here is paid per shape on every tick.
+# card selection: every shape of a collection is fetched with it when a scene
+# opens, and it is what a live layer's subscription ships per change, so a
+# field added here is paid per shape.
 # The browse list has its own `ListAnnotation` below.
 fragment SceneAnnotation on Annotation {
   id

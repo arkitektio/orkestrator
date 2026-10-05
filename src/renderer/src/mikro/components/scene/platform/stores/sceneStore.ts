@@ -72,8 +72,21 @@ export type NetworkLayerSessionState = {
   directedOverride?: boolean;
 };
 
+/** Session-local state an ANNOTATION layer carries beyond its fragment. */
+export type AnnotationLayerSessionState = {
+  /**
+   * Follow the collection's subscription, so shapes drawn, edited or deleted
+   * elsewhere show up as they happen. Off by default: the list is fetched once
+   * and then only our own draws and deletes change it (never polled).
+   */
+  liveAnnotations?: boolean;
+};
+
 /** A polymorphic scene layer plus its session-local render state. */
-export type SceneLayer = SceneLayerFragment & MeshLayerSessionState & NetworkLayerSessionState;
+export type SceneLayer = SceneLayerFragment &
+  MeshLayerSessionState &
+  NetworkLayerSessionState &
+  AnnotationLayerSessionState;
 
 export interface SceneState {
   /**
@@ -364,6 +377,7 @@ export const createSceneStore = ({ scene }: { scene: SceneFragment }) => {
             slabScale: previous.slabScale,
             showNodesOverride: previous.showNodesOverride,
             directedOverride: previous.directedOverride,
+            liveAnnotations: previous.liveAnnotations,
           }),
         });
 

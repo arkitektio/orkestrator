@@ -6,8 +6,8 @@ query GetAnnotation($id: ID!) {
 
 # Who drew one shape, for the scene's hover button. Its own lean document:
 # the button mounts per hovered shape and must not drag `GetAnnotation`'s
-# vectors and scene along, and `SceneAnnotation` is polled per layer per
-# mounted scene, so the author does not ride there.
+# vectors and scene along, and `SceneAnnotation` is fetched for every shape of
+# every layer of a scene, so the author does not ride there.
 query GetAnnotationCreator($id: ID!) {
   annotation(id: $id) {
     id
@@ -17,11 +17,13 @@ query GetAnnotationCreator($id: ID!) {
   }
 }
 
-# The renderer's list: one entry per collection, polled by every mounted
-# AnnotationLayer and ridden along by the annotations panel (same variables, so
-# Apollo serves both from one cache entry). Keep its selection lean — see
-# `SceneAnnotation`. Named in `refetchQueries` by string in
-# useCreateSceneAnnotation / useDeleteSelectedRois.
+# The renderer's list: one entry per collection, fetched ONCE per mounted
+# scene and shared by the AnnotationLayer, its card and the annotations panel
+# (same variables, so Apollo serves all three from one cache entry). It is
+# never polled: our own draws and deletes are written into the entry, and a
+# layer set to "live" follows everybody else's through `WatchSceneAnnotations`
+# (see `features/annotations/annotationCache.ts`). Keep its selection lean —
+# see `SceneAnnotation`.
 query GetSceneAnnotations(
   $filters: AnnotationFilter
   $pagination: OffsetPaginationInput

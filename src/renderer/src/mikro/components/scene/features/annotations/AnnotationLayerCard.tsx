@@ -1,12 +1,16 @@
 import { Button } from "@/core/ui/button";
-import { Eye, EyeOff, Shapes, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Radio, Shapes, Trash2 } from "lucide-react";
 import { memo, useMemo } from "react";
 import {
   useGetSceneAnnotationsQuery,
   type SceneLayerFragment,
 } from "@/mikro/api/graphql";
+import { sceneAnnotationsVariables } from "./annotationCache";
 import { useRoiSelectionStore } from "./roiSelectionStore";
-import { useSceneStore } from "../../platform/stores/sceneStore";
+import {
+  useSceneStore,
+  type AnnotationLayerSessionState,
+} from "../../platform/stores/sceneStore";
 import {
   Badge,
   LayerCardShell,
@@ -27,6 +31,11 @@ import {
  * `updateAnnotationLayer` mutation, so visibility lives for the session and no
  * longer — the same bound the mesh card's render settings work under.
  *
+ * "Live" is one of them. The layer's shapes are fetched once and never polled;
+ * our own draws and deletes are written straight into that list. Live adds
+ * everybody else's, over the collection's subscription — off by default, so a
+ * scene nobody else is drawing in holds no socket subscription per layer.
+ *
  * The "in view" count is the one thing here that a user cannot get anywhere
  * else, and it answers the question annotations actually provoke: shapes are
  * pinned to discrete coordinates, so a layer can be fully visible and still
@@ -37,7 +46,8 @@ import {
 type AnnotationLayerVariant = Extract<
   SceneLayerFragment,
   { __typename: "AnnotationLayer" }
->;
+> &
+  AnnotationLayerSessionState;
 
 /** Plural-aware kind caption: "3 rectangles", "1 point". */
 const kindCaption = (kind: string, count: number): string => {
@@ -62,13 +72,15 @@ export const AnnotationLayerCard = memo(
     const patchSceneLayer = useSceneStore((s) => s.patchSceneLayer);
     const hidden = layer.visible === false;
     const collection = layer.annotationCollection;
+    const live = layer.liveAnnotations === true;
 
-    // The renderer polls this exact query for the same collection, so this is
-    // a cache read that stays fresh on its cadence rather than a second poll.
+    // The renderer runs this exact query for the same collection, so this is
+    // a read of the one cache entry every draw, delete and live event is
+    // written into (`annotationCache.ts`), not a second fetch.
     // It does run on its own when the layer is HIDDEN (the renderer unmounts
     // then) — which is the point: the card still has to say what is in there.
     const { data } = useGetSceneAnnotationsQuery({
-      variables: { filters: { collection: collection?.id ?? "" } },
+      variables: sceneAnnotationsVariables(collection?.id ?? ""),
       skip: !collection,
     });
     const annotations = data?.annotations;
@@ -130,6 +142,24 @@ export const AnnotationLayerCard = memo(
         }
         actions={
           <>
+            {collection && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-5 w-5 shrink-0 ${
+                  live ? "text-sky-300 hover:text-sky-200" : "text-white/45 hover:text-white/90"
+                }`}
+                title={
+                  live
+                    ? "Live: shapes drawn, edited or deleted elsewhere appear as they happen. Click to stop following (session)"
+                    : "Not live: only your own changes appear. Click to follow changes made elsewhere (session)"
+                }
+                aria-pressed={live}
+                onClick={() => patchSceneLayer(layer.id, { liveAnnotations: !live })}
+              >
+                <Radio className="h-3 w-3" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

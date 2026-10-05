@@ -36,8 +36,8 @@ import { buttonOriginFor, projectTopRightCorner } from "./projectRoiBox";
  * The button wears the avatar of whoever drew the shape, so a hover already
  * says whose it is; the ellipsis stands in until that is known, and for a
  * shape with no recorded author. The author is asked for per hovered shape
- * (`GetAnnotationCreator`, one row by id), never selected on the polled scene
- * list.
+ * (`GetAnnotationCreator`, one row by id), never selected on the scene list,
+ * which ships every shape of every layer.
  *
  * An experiment (Settings → General): with `experimentAnnotationHover` off the
  * button never appears and annotations are reached from the sidebar row and
