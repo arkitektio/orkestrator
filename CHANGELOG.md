@@ -1,3 +1,13 @@
+# [2.19.0](https://github.com/arkitektio/orkestrator/compare/v2.18.0...v2.19.0) (2026-10-05)
+
+
+### Features
+
+* **rekuest:** a service has no agent, an agent no service ([0079f52](https://github.com/arkitektio/orkestrator/commit/0079f528eadafc318bfd11efeef208f7ea198337))
+* **rekuest:** a signal names its service as an object; GetService ([afa4cbe](https://github.com/arkitektio/orkestrator/commit/afa4cbeb966f2f92aa46f3abc531f81f4614d6b8))
+* **rekuest:** queries for descriptors and hosted structures ([9b3e2ef](https://github.com/arkitektio/orkestrator/commit/9b3e2efae088facb84ad803b6c39c609b032dc64))
+* **rekuest:** services, hosted structures and the descriptors an object carries ([7bf60bf](https://github.com/arkitektio/orkestrator/commit/7bf60bff44975a02faf39518374f077178fec40c))
+
 # [2.18.0](https://github.com/arkitektio/orkestrator/compare/v2.17.0...v2.18.0) (2026-10-02)
 
 
