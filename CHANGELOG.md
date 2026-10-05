@@ -1,3 +1,26 @@
+# [2.18.0](https://github.com/arkitektio/orkestrator/compare/v2.17.0...v2.18.0) (2026-10-02)
+
+
+### Bug Fixes
+
+* **bank,kuvert:** picker queries declare only the variables their filters take ([e482d68](https://github.com/arkitektio/orkestrator/commit/e482d686f5625f6fbda8ed31c4872c2d3e81e598))
+* **layout:** grids animate without auto-animate, which leaked every page ([5884aee](https://github.com/arkitektio/orkestrator/commit/5884aee21b415afd36e8b0f0446b57592c27627e))
+* **rekuest:** an assign without a reference sends none ([af915d1](https://github.com/arkitektio/orkestrator/commit/af915d1415012dfba6f11139146e217f3d162354))
+
+
+### Features
+
+* **blok:** a call bound to a name shows its task in the blok ([044c9ed](https://github.com/arkitektio/orkestrator/commit/044c9ed1666f4f31b7072a2649dcd6c22232ecc8))
+* **blok:** structure picker, display and viewer bloks ([7c18911](https://github.com/arkitektio/orkestrator/commit/7c18911830ef1c62f8758a330fba4d0d91ca78ce))
+* **chrome:** Linux wears the same auto-hiding title bar as Windows ([a38f585](https://github.com/arkitektio/orkestrator/commit/a38f5859b368879068446fa8425b1208875f41ef))
+* **doctor:** draw the connection as a diagram, with system Tailscale routing ([4510499](https://github.com/arkitektio/orkestrator/commit/4510499d2bb7c851e5c8f58962f5a681f43c109b))
+* **help:** page-specific help on every module page ([f001d1b](https://github.com/arkitektio/orkestrator/commit/f001d1b301c725dbc7c6785e9e9116c379c87eaf))
+* **kabinet:** installing a release is authorize, then deploy, in one dialog ([fb00aa5](https://github.com/arkitektio/orkestrator/commit/fb00aa5ca13655efa1a780c33c0d7eca0a3f7bac))
+* **mikro:** annotations show who drew them ([e416224](https://github.com/arkitektio/orkestrator/commit/e4162248ca4c8e63c0e6ec075afd630e247967ba))
+* **mikro:** scenes and array datasets have viewers and are pickable ([d0596b7](https://github.com/arkitektio/orkestrator/commit/d0596b7c64e1fe97433fffba5651e80d4855011b))
+* **modules:** a `viewers` builtin opens another module's object in place ([ae62e14](https://github.com/arkitektio/orkestrator/commit/ae62e14cd80fc13c7d5ee4abd6a06f4f9a8353af))
+* **rekuest:** the assign dialog shows and pins the whole dependency tree ([e41fcd7](https://github.com/arkitektio/orkestrator/commit/e41fcd737feb561ad0d94edfa89ad94ee2020dc7))
+
 # [2.17.0](https://github.com/arkitektio/orkestrator/compare/v2.16.0...v2.17.0) (2026-09-30)
 
 
