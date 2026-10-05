@@ -58,6 +58,11 @@ input AppOrdering @oneOf {
   name: Ordering
 }
 
+input ApproveMembershipRequestInput {
+  id: ID!
+  roles: [String!] = null
+}
+
 input CancelInviteInput {
   id: ID!
 }
@@ -216,6 +221,11 @@ type Context {
   """
   hub: Hub
 
+  """
+  Is the user a member of this organization? False for an organization that does not exist, so it says nothing about other tenants.
+  """
+  memberOf(organization: ID!): Boolean!
+
   """The organization that is associated with this app"""
   organization: Organization!
 
@@ -300,6 +310,10 @@ scalar DateTime
 
 input DeclineInviteInput {
   token: String!
+}
+
+input DeclineMembershipRequestInput {
+  id: ID!
 }
 
 input DeleteRedeemTokenInput {
@@ -513,7 +527,7 @@ type InstanceAlias {
   challenge: String!
 
   """
-  The host of the alias, if its a ABSOLUTE alias (e.g. 'example.com'). If not set, the alias is relative to the layer's domain.
+  The host of the alias (e.g. 'example.com'). Not set for a mesh alias, which resolves to its hub node's MagicDNS name.
   """
   host: String
   id: ID!
@@ -522,20 +536,18 @@ type InstanceAlias {
   instance: ServiceInstance!
 
   """
-  The kind of alias. If relative, the alias is resolved against the layer's domain/port/path; if absolute, it is a full URL.
+  The kind of alias. If absolute, it is a full URL; if mesh, it resolves to its hub node on the organization's mesh; if docker, it is only reachable from inside the hub's own docker environment.
   """
   kind: String!
 
   """The layer that this alias belongs to, if any."""
   layer: Layer
 
-  """
-  The path of the alias, if its a ABSOLUTE alias (e.g. 'example.com/path'). If not set, the alias is relative to the layer's path.
-  """
+  """The path of the alias (e.g. 'path' for 'example.com/path')."""
   path: String
 
   """
-  The port of the alias, if its a ABSOLUTE alias (e.g. 'example.com:8080'). If not set, the alias is relative to the layer's port.
+  The port of the alias (e.g. 8080 for 'example.com:8080'). If not set, the scheme's default port is used.
   """
   port: Int
 
@@ -774,10 +786,30 @@ input MembershipOrdering @oneOf {
   id: Ordering
 }
 
+"""
+A request of a user who is not a member of an organization to become one.
+"""
+type MembershipRequest {
+  createdAt: DateTime!
+  id: ID!
+
+  """Optional note from the user explaining the request."""
+  reason: String
+  resolvedBy: User
+  respondedAt: DateTime
+  status: String!
+
+  """
+  The user who asks to join. Not a member yet, so they are visible here and nowhere else.
+  """
+  user: User!
+}
+
 type Mutation {
   acceptInvite(input: AcceptInviteInput!): Membership!
   acknowledgeMessage(input: AcknowledgeMessageInput!): SystemMessage!
   addUserToOrganization(input: AddUserToOrganizationInput!): Membership!
+  approveMembershipRequest(input: ApproveMembershipRequestInput!): Membership!
   cancelInvite(input: CancelInviteInput!): Invite!
   createDevelopmentalClient(input: DevelopmentClientInput!): Client!
   createGroupProfile(input: CreateGroupProfileInput!): GroupProfile!
@@ -788,6 +820,7 @@ type Mutation {
   createRedeemToken(input: RedeemTokenInput!): RedeemToken!
   createServiceInstance(input: CreateServiceInstanceInput!): ServiceInstance!
   declineInvite(input: DeclineInviteInput!): Invite!
+  declineMembershipRequest(input: DeclineMembershipRequestInput!): MembershipRequest!
   deleteRedeemToken(input: DeleteRedeemTokenInput!): ID!
   notifyUser(input: NotifyUserInput!): Boolean!
   provision(input: ProvisionInput!): RedeemToken!
@@ -795,6 +828,7 @@ type Mutation {
   releaseMandateClient(input: ReleaseMandateClientInput!): String!
   render(input: RenderInput!): Fakt!
   requestMediaUpload(input: RequestMediaUploadInput!): PresignedPostCredentials!
+  requestMembership(input: RequestMembershipInput!): Boolean!
   revokeMandate(input: RevokeMandateInput!): Mandate!
   updateDevice(input: UpdateDeviceInput!): Device!
   updateGroupProfile(input: UpdateGroupProfileInput!): GroupProfile!
@@ -852,6 +886,11 @@ type Organization {
 
   """the invites for this organization"""
   invites(filters: InviteFilter, ordering: [InviteOrdering!]! = [], pagination: OffsetPaginationInput): [Invite!]!
+
+  """
+  Requests of non-members to join this organization. Only its owner and admins see any.
+  """
+  membershipRequests: [MembershipRequest!]!
 
   """the memberships of people"""
   memberships(filters: MembershipFilter, ordering: [MembershipOrdering!]! = [], pagination: OffsetPaginationInput): [Membership!]!
@@ -1152,6 +1191,11 @@ input RequestMediaUploadInput {
   key: String!
 }
 
+input RequestMembershipInput {
+  organization: ID!
+  reason: String = null
+}
+
 input RequirementInput {
   description: String = null
   key: String!
@@ -1255,7 +1299,7 @@ A ServiceInstance is a configured instance of a Service. It will be configured b
 """
 type ServiceInstance {
   """
-  The aliases of the instance. An alias is a way to reach the instance. Clients can use these aliases to check if they can reach the instance. An alias can be an absolute alias (e.g. 'example.com') or a relative alias (e.g. 'example.com/path'). If the alias is relative, it will be relative to the layer's domain, port and path.
+  The aliases of the instance. An alias is a way to reach the instance. Clients can use these aliases to check if they can reach the instance.
   """
   aliases(ordering: [InstanceAliasOrdering!]! = []): [InstanceAlias!]!
 

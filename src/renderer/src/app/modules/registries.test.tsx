@@ -29,6 +29,7 @@ describe("host registries", () => {
       "addlayer",
       "addusertoorganization",
       "alpakareplyerassign",
+      "answermembershiprequest",
       "bankassignmerchant",
       "bankcategorize",
       "bankcreatebudget",

@@ -1,0 +1,15 @@
+mutation RequestMembership($input: RequestMembershipInput!) {
+  requestMembership(input: $input)
+}
+
+mutation ApproveMembershipRequest($input: ApproveMembershipRequestInput!) {
+  approveMembershipRequest(input: $input) {
+    id
+  }
+}
+
+mutation DeclineMembershipRequest($input: DeclineMembershipRequestInput!) {
+  declineMembershipRequest(input: $input) {
+    ...MembershipRequest
+  }
+}

@@ -1,5 +1,7 @@
 import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { Button } from "@/core/ui/button";
+import { Textarea } from "@/core/ui/textarea";
+import { useOperation } from "@/core/modules/hooks/useOperation";
 import { profileScope, useActiveScope } from "@/core/tabs/sharing/use-active-scope";
 import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import { rememberPendingShare } from "@/core/tabs/pendingShare";
@@ -22,6 +24,8 @@ import { useLocation, useNavigate } from "react-router-dom";
  * different object without erroring. So a scoped link points here instead, and
  * this page decides: land silently when the scope already matches, ask before
  * switching when it does not, and refuse when there is nothing to switch to.
+ * Someone signed into the link's server who is not a member of its
+ * organization can ask to join from here.
  *
  * It renders its own confirmation rather than using the dialog registry
  * deliberately: `DialogProvider` wraps every dialog in `<Guard.Rekuest>`, which
@@ -33,6 +37,7 @@ export const ShareGatePage = () => {
   const { search } = useLocation();
 
   const activeScope = useActiveScope();
+  const activeProfile = Arkitekt.useActiveProfile();
   const profiles = Arkitekt.useProfiles();
   const switchProfile = Arkitekt.useSwitchProfile();
   const connect = Arkitekt.useConnect();
@@ -150,6 +155,37 @@ export const ShareGatePage = () => {
     [request, switchProfile],
   );
 
+  // Signed into the link's server, in another organization: lok can say
+  // whether this user belongs to the link's one. `undefined` while asking,
+  // `null` when it could not be asked (then the gate behaves as before).
+  const linkOrg = request?.scope?.org ?? null;
+  const onLinkServer = Boolean(
+    request?.scope && activeProfile?.identity.baseUrl === request.scope.baseUrl,
+  );
+  const isMemberOf = useOperation<{ member: boolean }>("lok.isMemberOf");
+  const requestMembership = useOperation("lok.requestMembership");
+  const [member, setMember] = React.useState<boolean | null | undefined>(undefined);
+  // This page sits outside the guards, so a link that started the app gets
+  // here before the session is up: wait for it rather than give up on lok.
+  const connected = Boolean(Arkitekt.useConnection()?.selfService);
+  const connectFailed = Boolean(Arkitekt.useAutoLoginError());
+  React.useEffect(() => {
+    if (candidate !== null || !onLinkServer || !linkOrg) return;
+    if (!connected) {
+      setMember(connectFailed ? null : undefined);
+      return;
+    }
+    let cancelled = false;
+    setMember(undefined);
+    isMemberOf({ organization: linkOrg }).then(
+      (answer) => !cancelled && setMember(answer.member),
+      () => !cancelled && setMember(null),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [candidate, onLinkServer, linkOrg, isMemberOf, connected, connectFailed]);
+
   if (!request) {
     return (
       <Gate title="This link is incomplete">
@@ -186,6 +222,29 @@ export const ShareGatePage = () => {
   // Nothing local matches. A readable link still names its deployment, so it can
   // become an invitation; a digest cannot be turned back into one.
   if (request.scope) {
+    if (onLinkServer && linkOrg) {
+      if (member === undefined) return <Gate title="Checking this link…" busy />;
+      if (member === false) {
+        return (
+          <JoinGate
+            requestKey={[request.scope.baseUrl, activeProfile?.identity.userId, linkOrg].join("::")}
+            baseUrl={request.scope.baseUrl}
+            ask={async (reason) => {
+              await requestMembership({ organization: linkOrg, ...(reason ? { reason } : {}) });
+            }}
+            onCancel={() => navigate("/", { replace: true })}
+          />
+        );
+      }
+    }
+
+    // Signed into that server on another profile: only from there can this
+    // user ask to join. The gate itself is remembered, not the page, so it
+    // looks again once the switch has landed.
+    const elsewhere = onLinkServer
+      ? undefined
+      : profiles.find((p) => p.identity.baseUrl === request.scope!.baseUrl);
+
     return (
       <Gate title="You are not connected to this workspace">
         <p className="text-sm text-muted-foreground">
@@ -226,6 +285,22 @@ export const ShareGatePage = () => {
             Cancel
           </Button>
         </div>
+        {elsewhere && linkOrg && (
+          <p className="pt-2 text-sm text-muted-foreground">
+            Not a member of its organization?{" "}
+            <button
+              type="button"
+              className="underline underline-offset-2 hover:text-foreground"
+              disabled={connecting}
+              onClick={() => {
+                rememberPendingShare(`/open${search}`);
+                void switchProfile(elsewhere.id);
+              }}
+            >
+              Switch to {describe(elsewhere)} to ask to join
+            </button>
+          </p>
+        )}
       </Gate>
     );
   }
@@ -236,6 +311,115 @@ export const ShareGatePage = () => {
         This is a private link. It names its workspace only to apps that are already
         signed into it, so there is nothing here to connect to.
       </p>
+    </Gate>
+  );
+};
+
+const JOIN_REQUESTS_KEY = "arkitektJoinRequests";
+
+/** When this user last asked to join, by server, user and organization. */
+const readAskedAt = (key: string): string | null => {
+  try {
+    const asked = JSON.parse(window.localStorage.getItem(JOIN_REQUESTS_KEY) ?? "{}");
+    return typeof asked[key] === "string" ? asked[key] : null;
+  } catch {
+    return null;
+  }
+};
+
+const rememberAsked = (key: string, at: string): void => {
+  try {
+    const asked = JSON.parse(window.localStorage.getItem(JOIN_REQUESTS_KEY) ?? "{}");
+    window.localStorage.setItem(JOIN_REQUESTS_KEY, JSON.stringify({ ...asked, [key]: at }));
+  } catch {
+    // Without storage the request is still sent; reopening the link just
+    // shows the form again.
+  }
+};
+
+/**
+ * The link's organization is one this user is not part of: let them ask.
+ *
+ * lok never confirms that an organization exists to someone outside it, so
+ * this names no organization and cannot say whether the request was seen; it
+ * only remembers, on this machine, that it was sent.
+ */
+const JoinGate = ({
+  requestKey,
+  baseUrl,
+  ask,
+  onCancel,
+}: {
+  requestKey: string;
+  baseUrl: string;
+  ask: (reason: string) => Promise<void>;
+  onCancel: () => void;
+}) => {
+  const [askedAt, setAskedAt] = React.useState(() => readAskedAt(requestKey));
+  const [reason, setReason] = React.useState("");
+  const [sending, setSending] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const send = async () => {
+    setError(null);
+    setSending(true);
+    try {
+      await ask(reason.trim());
+      const at = new Date().toISOString();
+      rememberAsked(requestKey, at);
+      setAskedAt(at);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not send the request.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (askedAt) {
+    return (
+      <Gate title="Request sent">
+        <p className="text-sm text-muted-foreground">
+          You asked to join this organization on {new Date(askedAt).toLocaleDateString()}. Its
+          administrators decide; open this link again once they have added you.
+        </p>
+        <div className="flex gap-2 pt-2">
+          <Button onClick={onCancel}>Done</Button>
+          <Button variant="ghost" onClick={() => setAskedAt(null)}>
+            Ask again
+          </Button>
+        </div>
+      </Gate>
+    );
+  }
+
+  return (
+    <Gate title="You are not a member of this organization">
+      <p className="text-sm text-muted-foreground">
+        This link opens a page of an organization on {baseUrl} that you are not part of. You can
+        ask to be part of it; its administrators decide.
+      </p>
+      <Textarea
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        maxLength={2000}
+        placeholder="A note for the administrators (optional)"
+        disabled={sending}
+      />
+      {error && (
+        <div className="flex items-start gap-2 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+      <div className="flex gap-2 pt-2">
+        <Button disabled={sending} onClick={() => void send()}>
+          {sending && <Loader2 className="h-4 w-4 animate-spin" />}
+          Ask to join
+        </Button>
+        <Button variant="ghost" disabled={sending} onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
     </Gate>
   );
 };

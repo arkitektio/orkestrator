@@ -4,8 +4,14 @@ import {
   CreateMandateDocument,
   type CreateMandateMutation,
   type CreateMandateMutationVariables,
+  IsMemberOfDocument,
+  type IsMemberOfQuery,
+  type IsMemberOfQueryVariables,
   type ManifestInput,
   MandatesDocument,
+  RequestMembershipDocument,
+  type RequestMembershipMutation,
+  type RequestMembershipMutationVariables,
   RevokeMandateDocument,
   type RevokeMandateMutation,
   type RevokeMandateMutationVariables,
@@ -71,7 +77,49 @@ const revokeMandate: OperationHandler = {
   },
 };
 
+/**
+ * `lok.isMemberOf`: is the signed-in user a member of this organization on
+ * the server they are signed into? Args `{ organization }` (its id); answers
+ * `{ member }`. `false` also for an organization that does not exist: lok
+ * never says which ids are real. Asked fresh every time, so an approval shows
+ * on the next look.
+ */
+const isMemberOf: OperationHandler = {
+  service: "lok",
+  run: async (client, args: JSONObject) => {
+    const organization = optionalString(args.organization);
+    if (!organization) throw new Error("Which organization?");
+    const result = await client.query<IsMemberOfQuery, IsMemberOfQueryVariables>({
+      query: IsMemberOfDocument,
+      variables: { organization },
+      fetchPolicy: "network-only",
+    });
+    return { member: result.data.mycontext.memberOf };
+  },
+};
+
+/**
+ * `lok.requestMembership`: the signed-in user asks to join an organization
+ * they are not in; its administrators answer on their Team page. Args
+ * `{ organization, reason? }`; answers `{ sent: true }` whatever the id
+ * names, for the same reason `lok.isMemberOf` answers `false`.
+ */
+const requestMembership: OperationHandler = {
+  service: "lok",
+  run: async (client, args: JSONObject) => {
+    const organization = optionalString(args.organization);
+    if (!organization) throw new Error("Which organization?");
+    await client.mutate<RequestMembershipMutation, RequestMembershipMutationVariables>({
+      mutation: RequestMembershipDocument,
+      variables: { input: { organization, reason: optionalString(args.reason) } },
+    });
+    return { sent: true };
+  },
+};
+
 export const LOK_OPERATIONS: Record<string, OperationHandler> = {
   "lok.createMandate": createMandate,
   "lok.revokeMandate": revokeMandate,
+  "lok.isMemberOf": isMemberOf,
+  "lok.requestMembership": requestMembership,
 };
