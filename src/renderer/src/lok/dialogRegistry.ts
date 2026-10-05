@@ -2,6 +2,7 @@ import { ADMIN_ROLE } from "@/core/connection/roles";
 import { needsRoles } from "@/core/modules/host/dialogNeeds";
 import { ReportClientBugDialog } from "./dialogs/ReportClientBugDialog";
 import { AddUserToOrganizationDialog } from "./dialogs/AddUserToOrganization";
+import { AnswerMembershipRequestDialog } from "./dialogs/AnswerMembershipRequestDialog";
 import { CreateOrganizationForm } from "./dialogs/CreateOrganization";
 import { NotifyDialog } from "./dialogs/NotifyDialog";
 import { RevokeMandateDialog } from "./dialogs/RevokeMandateDialog";
@@ -17,6 +18,7 @@ import { UpdateServiceInstanceForm } from "./forms/UpdateServiceInstanceForm";
 export const LOK_DIALOGS = {
   notifyusers: NotifyDialog,
   addusertoorganization: needsRoles(ADMIN_ROLE, AddUserToOrganizationDialog),
+  answermembershiprequest: needsRoles(ADMIN_ROLE, AnswerMembershipRequestDialog),
   createorganization: CreateOrganizationForm,
   createserviceinstance: needsRoles(ADMIN_ROLE, CreateServiceInstanceForm),
   updateserviceinstance: needsRoles(ADMIN_ROLE, UpdateServiceInstanceForm),

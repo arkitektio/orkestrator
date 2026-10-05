@@ -1,0 +1,11 @@
+# Its own query, not part of the Organization fragment: a lok that predates
+# membership requests rejects the field, and that must not take the Team page
+# and the invites with it.
+query MembershipRequests($id: ID!) {
+  organization(id: $id) {
+    id
+    membershipRequests {
+      ...MembershipRequest
+    }
+  }
+}

@@ -3,8 +3,10 @@ import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
-const { profilesRef, activeRef, switchProfile, connect, discover, navigated } = vi.hoisted(
+const { profilesRef, activeRef, switchProfile, connect, discover, navigated, operations, connectionRef } = vi.hoisted(
   () => ({
+    operations: { isMemberOf: vi.fn(), requestMembership: vi.fn() },
+    connectionRef: { current: { selfService: {} } as unknown },
     profilesRef: { current: [] as unknown[] },
     activeRef: { current: null as unknown },
     switchProfile: vi.fn(),
@@ -21,9 +23,15 @@ vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
     useActiveProfile: () => activeRef.current,
     useSwitchProfile: () => switchProfile,
     useConnect: () => connect,
+    useConnection: () => connectionRef.current,
+    useAutoLoginError: () => undefined,
   },
 }));
 vi.mock("@/core/connection/arkitekt/fakts/discover", () => ({ discover }));
+vi.mock("@/core/modules/hooks/useOperation", () => ({
+  useOperation: (name: string) =>
+    name === "lok.isMemberOf" ? operations.isMemberOf : operations.requestMembership,
+}));
 
 import { ShareGatePage } from "./ShareGatePage";
 
@@ -65,6 +73,11 @@ describe("ShareGatePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
+    window.localStorage.clear();
+    connectionRef.current = { selfService: {} };
+    // lok not reachable unless a test says otherwise: the gate behaves as before.
+    operations.isMemberOf.mockRejectedValue(new Error("lok is not available"));
+    operations.requestMembership.mockResolvedValue({ sent: true });
     profilesRef.current = [];
     activeRef.current = null;
     discover.mockResolvedValue({ name: "other", base_url: "https://other.example.org" });
@@ -169,6 +182,91 @@ describe("ShareGatePage", () => {
     expect(screen.getByText(/do not have access/i)).toBeTruthy();
     // A digest cannot be turned back into an invitation.
     expect(screen.queryByRole("button", { name: /connect/i })).toBeNull();
+  });
+
+  it("lets someone signed into the server ask to join an organization they are not in", async () => {
+    activeRef.current = profile({ identity: { organizationId: "other" } });
+    operations.isMemberOf.mockResolvedValue({ member: false });
+    await renderGate(SCOPED);
+
+    expect(operations.isMemberOf).toHaveBeenCalledWith({ organization: "acme" });
+    expect(screen.getByText(/not a member of this organization/i)).toBeTruthy();
+    await act(async () => {
+      screen.getByRole("button", { name: /ask to join/i }).click();
+    });
+
+    expect(operations.requestMembership).toHaveBeenCalledWith({ organization: "acme" });
+    expect(screen.getByText(/request sent/i)).toBeTruthy();
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it("waits for the session before asking lok, on a link that started the app", async () => {
+    activeRef.current = profile({ identity: { organizationId: "other" } });
+    operations.isMemberOf.mockResolvedValue({ member: false });
+    connectionRef.current = undefined;
+    const view = await renderGate(SCOPED);
+
+    expect(screen.getByText(/checking this link/i)).toBeTruthy();
+    expect(operations.isMemberOf).not.toHaveBeenCalled();
+
+    connectionRef.current = { selfService: {} };
+    view.rerender(
+      <MemoryRouter initialEntries={[`/open${SCOPED}`]}>
+        <Routes>
+          <Route path="/open" element={<ShareGatePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await act(async () => {});
+    expect(screen.getByText(/not a member of this organization/i)).toBeTruthy();
+  });
+
+  it("remembers that it asked, and can ask again", async () => {
+    activeRef.current = profile({ identity: { organizationId: "other" } });
+    operations.isMemberOf.mockResolvedValue({ member: false });
+    const first = await renderGate(SCOPED);
+    await act(async () => {
+      screen.getByRole("button", { name: /ask to join/i }).click();
+    });
+    first.unmount();
+
+    await renderGate(SCOPED);
+    expect(screen.getByText(/request sent/i)).toBeTruthy();
+    await act(async () => {
+      screen.getByRole("button", { name: /ask again/i }).click();
+    });
+    expect(screen.getByRole("button", { name: /ask to join/i })).toBeTruthy();
+  });
+
+  it("still offers to connect to a member who has no profile for the organization", async () => {
+    activeRef.current = profile({ identity: { organizationId: "other" } });
+    operations.isMemberOf.mockResolvedValue({ member: true });
+    await renderGate(SCOPED);
+
+    expect(screen.getByText(/not connected to this workspace/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /ask to join/i })).toBeNull();
+  });
+
+  it("falls back to connecting when lok cannot say", async () => {
+    activeRef.current = profile({ identity: { organizationId: "other" } });
+    await renderGate(SCOPED);
+
+    expect(screen.getByText(/not connected to this workspace/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /ask to join/i })).toBeNull();
+  });
+
+  it("offers a switch to the profile on the link's server, and comes back to the gate", async () => {
+    activeRef.current = profile({ identity: { baseUrl: "https://elsewhere.example.org" } });
+    profilesRef.current = [{ ...profile({ identity: { organizationId: "other" } }), id: "p2" }];
+    await renderGate(SCOPED);
+
+    // Not signed in there right now, so there is nobody to ask as.
+    expect(operations.isMemberOf).not.toHaveBeenCalled();
+    await act(async () => {
+      screen.getByRole("button", { name: /to ask to join/i }).click();
+    });
+    expect(switchProfile).toHaveBeenCalledWith("p2");
+    expect(window.sessionStorage.getItem("arkitektPendingShare")).toBe(`/open${SCOPED}`);
   });
 
   it("says so when the link carries no page to open", async () => {

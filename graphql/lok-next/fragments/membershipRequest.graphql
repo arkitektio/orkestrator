@@ -1,0 +1,12 @@
+fragment MembershipRequest on MembershipRequest {
+  id
+  reason
+  status
+  createdAt
+  # Read here, not through `user(id)`: the requester is not a member yet, so
+  # nothing else on the schema shows them.
+  user {
+    id
+    username
+  }
+}
