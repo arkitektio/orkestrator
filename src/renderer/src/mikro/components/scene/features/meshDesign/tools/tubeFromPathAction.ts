@@ -4,12 +4,9 @@ import { AnnotationKind } from "@/mikro/api/graphql";
 import { resolveCollectionMatrix } from "../../annotations/annotationBounds";
 import type { SelectedRoi } from "../../annotations/roiSelectionStore";
 import type { SceneState } from "../../../platform/stores/sceneStore";
-import type { BrushSkeletonState } from "../../annotations/enhancers/brushSkeletonStore";
-import { marchField } from "../field/sculptField";
-import { applyStamp, capsuleChainStamp, stampToField } from "../field/stamps";
-import { finishDesignGeometry } from "../ops/postProcess";
-import { fieldSpacingFor, targetMesh } from "./context";
-import { meshToField } from "../field/sculptField";
+import type { BrushSkeletonState } from "../brush";
+import { designDispatcher } from "../worker/designDispatcher";
+import { baseFor, fieldSpacingFor, finishFor, targetMesh } from "./context";
 import type { MeshDesignState } from "../store/meshDesignStore";
 
 /**
@@ -43,20 +40,19 @@ export async function tubeFromSelectedPath(
     const p = new THREE.Vector3(vector[0] ?? 0, vector[1] ?? 0, vector[2] ?? 0).applyMatrix4(matrix);
     return [p.x, p.y, p.z] as const;
   });
-  const stamp = capsuleChainStamp(points, radius);
+  const spec = { kind: "capsuleChain", points, radius } as const;
   const target = targetMesh(design);
   const spacing = target?.field?.spacing ?? fieldSpacingFor([radius / 6, radius / 6, radius / 6], brush.detailVoxels);
-  const field = target
-    ? applyStamp(target.field ?? meshToField(target.original, spacing), stamp, "add")
-    : stampToField(stamp, spacing);
-  const { original, current } = await finishDesignGeometry(marchField(field, brush.marcher), {
-    polishIterations: brush.polishIterations,
-    detailWorld: brush.detailVoxels * spacing,
-  });
+  const result = await designDispatcher().run(
+    target
+      ? { base: baseFor(target, spacing), ops: [{ type: "stamp", mode: "add", spec }], finish: finishFor(brush, spacing) }
+      : { base: { kind: "stamp", spec, spacing }, ops: [], finish: finishFor(brush, spacing) },
+  );
+  if (!result) return null;
   return design.applySculpt(target?.id ?? null, {
-    field,
-    original,
-    current,
+    field: result.field,
+    original: result.original,
+    current: result.current,
     source: { kind: "tube", layerId: path.layerId, level: 0 },
   });
 }

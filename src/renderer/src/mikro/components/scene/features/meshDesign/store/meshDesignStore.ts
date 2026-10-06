@@ -2,6 +2,8 @@ import { createStore } from "zustand/vanilla";
 import { createScopedStoreHooks } from "@/core/util/createScopedStore";
 import { eraseNearPolyline, mergeGeometry, type Vec3 } from "../ops/sculpt";
 import type { SculptField } from "../field/sculptField";
+import type { StampSpec } from "../field/stamps";
+import type { MarcherId } from "../brush";
 
 /**
  * The mesh DESIGN session: meshes extracted from the volume, waiting to be
@@ -30,6 +32,9 @@ export type DesignGeometry = {
   positions: Float32Array;
   /** Triangle list into `positions`. */
   indices: Uint32Array;
+  /** Per-vertex normals, when whoever built the geometry computed them (the
+   * geometry worker does); the overlay derives them otherwise. */
+  normals?: Float32Array;
 };
 
 export type DesignMesh = {
@@ -52,6 +57,73 @@ export type DesignMesh = {
    * Null until the first sculpt op; built lazily from `original` then.
    */
   field: SculptField | null;
+};
+
+/**
+ * Which reconstructor turns a gesture into a mesh. The ids live with the
+ * state, not in `reconstruct/registry` — the registry's modules consume this
+ * store, and the union living here keeps the import graph acyclic (the
+ * `AnnotationEnhancerId` idiom).
+ */
+export type ReconstructorId = "tube-fit" | "tube-surface" | "ball-fit" | "ball-surface";
+
+/** The two reconstruct gestures: a painted stroke (trace) or one click (seed). */
+export type ReconstructGesture = "stroke" | "click";
+
+/** The knobs only the reconstructors read; the shared ones (radius, wrap,
+ * detail…) stay on the brush store, where the capture reads them too. */
+export type ReconstructParams = {
+  /** Tube fit: fraction of the core-to-background drop that is the edge. */
+  tubeEdge: number;
+  /** Tube fit: smoothing passes along the tube. */
+  tubeSmooth: number;
+  /** Tube fit: multiplier on the measured radii. */
+  tubeScale: number;
+  /** Ball fit: one radius, or three with an orientation. */
+  ballShape: "sphere" | "ellipsoid";
+  /** Ball fit: multiplier on the fitted radii. */
+  ballScale: number;
+  /** Ball reconstructors: take the threshold from the clicked voxel's own
+   * brightness instead of the Wrap slider. */
+  autoThreshold: boolean;
+};
+
+export const DEFAULT_RECONSTRUCT_PARAMS: ReconstructParams = {
+  tubeEdge: 0.5,
+  tubeSmooth: 2,
+  tubeScale: 1,
+  ballShape: "ellipsoid",
+  ballScale: 1,
+  autoThreshold: true,
+};
+
+/**
+ * A reconstruction awaiting its verdict. It is a complete standalone mesh
+ * (`field` / `original` / `current`, exactly what `applySculpt` takes), so
+ * accepting it into an empty target costs nothing; `piece` is what gets
+ * unioned when there IS a target. `gesture` is a copy of what the user drew —
+ * a slider move re-runs the reconstructor on it.
+ */
+export type DesignCandidate = {
+  id: number;
+  reconstructorId: ReconstructorId;
+  gestureKind: ReconstructGesture;
+  gesture: { world: Vec3; voxel: Vec3 }[];
+  layerId: string;
+  level: number;
+  /** The settings it was built with (`reconstruct/settings.ts`). */
+  paramsKey: string;
+  field: SculptField;
+  original: DesignGeometry;
+  current: DesignGeometry;
+  piece: { kind: "surface"; geometry: DesignGeometry } | { kind: "stamp"; spec: StampSpec };
+  sourceKind: "tube" | "blob";
+  /** How the union is re-marched when it is accepted into an existing mesh. */
+  finish: { marcher: MarcherId; polishIterations: number; detailWorld: number };
+  /** A fitted centerline, drawn over the preview. */
+  guide?: Vec3[];
+  /** What the reconstructor wants the user to know (a degradation, a size). */
+  note: string | null;
 };
 
 export type DesignStatus = "idle" | "editing" | "baking" | "uploading" | "committing" | "error";
@@ -85,6 +157,13 @@ export interface MeshDesignState {
   sculptVariant: SculptVariant;
   /** A two-click tool's parked first point (bridge, split). */
   pendingPoint: { world: Vec3; voxel: Vec3 } | null;
+  /** The reconstruction awaiting accept / discard, if any. */
+  candidate: DesignCandidate | null;
+  /** A re-run of the candidate is in flight (a slider moved). */
+  candidateBusy: boolean;
+  /** The reconstructor picked per gesture; sticky across strokes. */
+  reconstructors: Record<ReconstructGesture, ReconstructorId>;
+  reconstructParams: ReconstructParams;
 
   /** Add a mesh; returns its session id. `objectId` is assigned unless given. */
   addMesh: (mesh: {
@@ -116,6 +195,11 @@ export interface MeshDesignState {
   setStampShape: (shape: StampShape) => void;
   setSculptVariant: (variant: SculptVariant) => void;
   setPendingPoint: (point: { world: Vec3; voxel: Vec3 } | null) => void;
+  /** Show a reconstruction for a verdict (replaces the previous one). */
+  setCandidate: (candidate: DesignCandidate | null) => void;
+  setCandidateBusy: (busy: boolean) => void;
+  setReconstructor: (gesture: ReconstructGesture, id: ReconstructorId) => void;
+  setReconstructParams: (patch: Partial<ReconstructParams>) => void;
   removeMesh: (id: string) => void;
   renameMesh: (id: string, name: string) => void;
   setVisible: (id: string, visible: boolean) => void;
@@ -170,6 +254,10 @@ export const createMeshDesignStore = () =>
     stampShape: "sphere" as StampShape,
     sculptVariant: "inflate" as SculptVariant,
     pendingPoint: null,
+    candidate: null,
+    candidateBusy: false,
+    reconstructors: { stroke: "tube-fit", click: "ball-fit" } as Record<ReconstructGesture, ReconstructorId>,
+    reconstructParams: DEFAULT_RECONSTRUCT_PARAMS,
 
     addMesh: ({ name, geometry, source, objectId }) => {
       snapshot();
@@ -258,6 +346,12 @@ export const createMeshDesignStore = () =>
     setStampShape: (stampShape) => set({ stampShape }),
     setSculptVariant: (sculptVariant) => set({ sculptVariant }),
     setPendingPoint: (pendingPoint) => set({ pendingPoint }),
+    setCandidate: (candidate) => set({ candidate, candidateBusy: false, message: null }),
+    setCandidateBusy: (candidateBusy) => set({ candidateBusy }),
+    setReconstructor: (gesture, id) =>
+      set((state) => ({ reconstructors: { ...state.reconstructors, [gesture]: id } })),
+    setReconstructParams: (patch) =>
+      set((state) => ({ reconstructParams: { ...state.reconstructParams, ...patch } })),
     setStatus: (status, message = null) => set({ status, message }),
     applySculpt: (id, sculpt) => {
       const state = get();
@@ -323,6 +417,9 @@ export const createMeshDesignStore = () =>
         nextObjectId: 1,
         history: [],
         future: [],
+        candidate: null,
+        candidateBusy: false,
+        pendingPoint: null,
       }),
     };
   });

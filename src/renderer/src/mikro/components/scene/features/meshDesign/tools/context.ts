@@ -1,15 +1,11 @@
-import type { ExtractionContext } from "../../annotations/enhancers/paths/brushSkeleton/extraction";
-import type { BrushSkeletonState, TubeSurface } from "../../annotations/enhancers/brushSkeletonStore";
-import type { BrushSample, Vec3 } from "../../annotations/enhancers/shared/strokeModel";
-import { marchField, meshToField, unionMesh } from "../field/sculptField";
-import { finishDesignGeometry } from "../ops/postProcess";
-import { weldSoup } from "../ops/weld";
+import type { ExtractionContext, BrushSkeletonState, TubeSurface, BrushSample, Vec3 } from "../brush";
 import type { DesignMesh, MeshDesignState } from "../store/meshDesignStore";
+import type { DesignJob } from "../worker/designJob";
 
 /**
  * What a design tool's `run` receives: the gesture (already captured into
  * the brush store), the resolved extraction context of the layer it landed
- * on, snapshots of both stores, and the field helpers every tool ends in.
+ * on, and snapshots of both stores.
  * Tools NEVER touch React — they are plain async functions, dispatched by
  * `useBrushSkeleton.extract` via the registry — which is what keeps each one
  * a small, unit-testable module.
@@ -22,6 +18,7 @@ export type DesignToolRunContext = {
   extraction: ExtractionContext | null;
   /** Snapshot of the brush store (settings + gesture bookkeeping). */
   brush: BrushSkeletonState;
+  /** Snapshot of the session, taken AFTER any pending candidate was accepted. */
   design: MeshDesignState;
   /** True when a newer gesture took over — abandon silently. */
   stale: () => boolean;
@@ -41,41 +38,18 @@ export const targetMesh = (design: MeshDesignState): DesignMesh | undefined =>
 export const fieldSpacingFor = (spacing: Vec3 | readonly number[], detailVoxels: number): number =>
   Math.max(...spacing) * Math.min(1, Math.max(0.25, detailVoxels));
 
-/**
- * The shared tail of every ADDITIVE tool: weld the world-space surface soup,
- * union it into the target mesh's field (building the field lazily for a
- * mesh that predates sculpting), re-march, polish, simplify, apply — ONE
- * undo step. Returns false when the piece is empty.
- */
-export async function unionPieceIntoDesign(
-  ctx: DesignToolRunContext,
-  tube: TubeSurface,
-  spacing: Vec3,
-  level: number,
-  kind: "tube" | "blob",
-): Promise<boolean> {
-  if (tube.triangles === 0) return false;
-  const piece = weldSoup(tube.positions);
-  if (piece.indices.length === 0) return false;
-  const { detailVoxels, polishIterations, marcher } = ctx.brush;
-  const target = ctx.design.selectedId
-    ? ctx.design.meshes.find((m) => m.id === ctx.design.selectedId)
-    : undefined;
+/** Where an edit of `target` starts: its field, or its mesh voxelized at `spacing`. */
+export const baseFor = (target: DesignMesh, spacing: number): DesignJob["base"] =>
+  target.field
+    ? { kind: "field", field: target.field }
+    : { kind: "mesh", geometry: target.original, spacing };
 
-  const fieldSpacing = fieldSpacingFor(spacing, detailVoxels);
-  let field = target ? (target.field ?? meshToField(target.original, fieldSpacing)) : null;
-  field = field ? unionMesh(field, piece) : meshToField(piece, fieldSpacing);
-  const marched = marchField(field, marcher);
-  const { original, current } = await finishDesignGeometry(marched, {
-    polishIterations,
-    detailWorld: detailVoxels * Math.max(...spacing),
-  });
-  if (ctx.stale()) return true; // applied nothing, but the gesture moved on
-  ctx.design.applySculpt(target?.id ?? null, {
-    field,
-    original,
-    current,
-    source: { kind, layerId: ctx.layerId, level },
-  });
-  return true;
-}
+/** The shared finishing settings of an edit at `spacing` (world units per cell). */
+export const finishFor = (
+  brush: Pick<BrushSkeletonState, "marcher" | "polishIterations" | "detailVoxels">,
+  spacing: number,
+): DesignJob["finish"] => ({
+  marcher: brush.marcher,
+  polishIterations: brush.polishIterations,
+  detailWorld: brush.detailVoxels * spacing,
+});

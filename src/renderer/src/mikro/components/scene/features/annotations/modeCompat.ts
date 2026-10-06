@@ -30,9 +30,6 @@ const ALL_TOOLS: AnnotateTool[] = [
   "LINE",
   "PATH",
   "BRUSH",
-  // BLOB is a DESIGN-mode tool (a grown surface is a mesh, not an annotation);
-  // it stays an `AnnotateTool` so the shared capture keys on it, but ANNOTATE
-  // never offers it.
 ];
 
 /**
@@ -50,12 +47,11 @@ const FLAT_ONLY_TOOLS = new Set<AnnotateTool>(["SELECT"]);
 const VOLUMETRIC_TOOLS = new Set<AnnotateTool>(["SPHERE", "CUBE"]);
 
 /**
- * The skeleton brush and the smooth blob: probe-driven gestures on the
- * volume — 3D only. Kept out of `VOLUMETRIC_TOOLS`, whose membership drives
+ * The skeleton brush: a probe-driven gesture on the volume — 3D only. Kept out of `VOLUMETRIC_TOOLS`, whose membership drives
  * the anchor-then-size gesture (`isPrimitiveTool`); these have their own
  * session (`features/annotations/enhancers/paths/brushSkeleton/BrushStrokeSession.tsx`).
  */
-const BRUSH_TOOLS = new Set<AnnotateTool>(["BRUSH", "BLOB"]);
+const BRUSH_TOOLS = new Set<AnnotateTool>(["BRUSH"]);
 
 /** Where a coercion lands. Never null: a null tool leaves ANNOTATE inert. */
 export const FALLBACK_MODE: InteractionMode = "NAVIGATE";
@@ -98,9 +94,10 @@ export function isInteractionModeAvailable(
   switch (mode) {
     case "PROBE":
       return ctx.hasProbeableLayer;
-    // The designer works in both views: the volume tools (C/V/X/W/G) need
-    // 3D, but lifting a label instance clicks the 2D plane and lofting
-    // traces 2D slices — the mode itself only needs something probeable.
+    // The designer works in both views: strokes and the surface tools need
+    // 3D, but the click tools (seed, lift, bridge) reach the 2D plane and
+    // lofting traces 2D slices — the mode itself only needs something
+    // probeable.
     case "DESIGN":
       return ctx.hasProbeableLayer;
     default:
@@ -153,23 +150,9 @@ export function coerceModeState(
     ? requested.interactionMode
     : FALLBACK_MODE;
 
-  // In DESIGN the designer owns the tool: it arms BRUSH/BLOB by held key and
-  // `MeshDesignToolbar` insists on a design tool while the mode is active.
-  // Evicting one here as "3D-only" would swap it for a shape, the toolbar
-  // would put the brush back, and the two guards would loop until React gave
-  // up ("Maximum update depth exceeded"). Whether a given design gesture
-  // works on the flat view is the tool's own business (lift clicks the 2D
-  // plane), so the annotator's availability rule does not apply.
-  if (
-    interactionMode === "DESIGN" &&
-    requested.activeTool !== null &&
-    BRUSH_TOOLS.has(requested.activeTool)
-  ) {
-    return { interactionMode, activeTool: requested.activeTool };
-  }
-
-  // Otherwise the tool is coerced whatever the active mode is, so flipping
-  // back into ANNOTATE later never lands on a tool that cannot draw.
+  // The tool is coerced whatever the active mode is, so flipping back into
+  // ANNOTATE later never lands on a tool that cannot draw. (DESIGN has its
+  // own tool — `modeStore.selectedDesignTool` — and never reads this one.)
   const activeTool =
     requested.activeTool === null ||
     isAnnotateToolAvailable(requested.activeTool, ctx)

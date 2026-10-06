@@ -6,9 +6,8 @@ import { useModeStoreApi } from "../../../../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../../../../platform/stores/sceneStore";
 import { useBrickStoreApi } from "../../../../bricks/store/brickSlice";
 import { useMeshDesignStoreApi } from "../../../../meshDesign/store/meshDesignStore";
-import { designToolById } from "../../../../meshDesign/tools/registry";
+import { commitCandidate, designToolById } from "../../../../meshDesign/tools/registry";
 import type { DesignToolRunContext } from "../../../../meshDesign/tools/context";
-import { weldSoup } from "../../../../meshDesign/ops/weld";
 import { useCreateSceneAnnotation } from "../../../useCreateSceneAnnotation";
 import { useBrushSkeletonStoreApi } from "../../brushSkeletonStore";
 import { voxelCost } from "../../shared/corridorCost";
@@ -27,16 +26,16 @@ import { resampleStroke } from "../../shared/strokeModel";
 import { traceChannelSlab, traceLayerShape, traceLevelSteps } from "../../shared/traceLayer";
 import {
   MAX_STROKE_POINTS,
-  runGrowLoop,
   runStrokeExtraction,
   type ExtractionContext,
 } from "./extraction";
 
 /**
- * The GESTURE orchestration of the skeleton brush and the smooth blob: the
- * store transitions around a captured stroke/click. The engine-level work
- * lives in `extraction.ts` (shared with the mesh-design tools), and DESIGN
- * mode dispatches the whole verdict to `features/meshDesign/tools/registry`
+ * The GESTURE orchestration around a captured stroke/click: ANNOTATE's
+ * skeleton brush (extract a centerline, preview it, save it as a PATH) and
+ * the hand-over of DESIGN gestures. The engine-level work lives in
+ * `extraction.ts` (shared with the mesh designer's reconstructors), and a
+ * DESIGN release is dispatched whole to `features/meshDesign/tools/registry`
  * — this hook only decides WHICH of the two worlds a release belongs to.
  *
  * Nothing here subscribes (the `useTraceHop` rule): every input is read from
@@ -157,6 +156,10 @@ export const useBrushSkeleton = () => {
         return;
       }
       brush.setExtracting();
+      // A reconstruction still awaiting its verdict is accepted by the next
+      // gesture — the session is re-read after, the accept changed it.
+      await commitCandidate(designApi.getState());
+      if (stale()) return;
       const ctx: DesignToolRunContext = {
         stroke,
         layerId: strokeLayerId,
@@ -186,42 +189,6 @@ export const useBrushSkeleton = () => {
     // one that is simplified away afterwards.
     const minSpacingWorld =
       brush.detailVoxels >= 2 ? brush.detailVoxels * Math.max(...ctx.voxelSize) : undefined;
-
-    if (brush.strokeMode === "blob") {
-      const outcome = await runGrowLoop(ctx, {
-        seed: stroke[0],
-        startRadius: radiusWorld,
-        weights: brush.weights,
-        tau: brush.tubeThreshold,
-        smoothVoxels: Math.max(0, Math.floor(brush.blobSmoothness)),
-        gapVoxels: Math.max(0, Math.floor(brush.blobGap)),
-        minSpacingWorld,
-        marcher: brush.marcher,
-        stale,
-        publishLive: (tube) => brushApi.getState().setLiveTube(tube),
-      });
-      if (stale()) return;
-      const after = brushApi.getState();
-      if (!outcome || outcome.tube.triangles === 0) {
-        after.fail(
-          "Nothing brighter than the Wrap threshold near the probe point — lower Wrap and try again",
-        );
-        return;
-      }
-      after.setCandidate(
-        {
-          points: [],
-          layerId: strokeLayerId,
-          level: outcome.level,
-          holes: 0,
-          tube: outcome.tube,
-        },
-        outcome.closed
-          ? null
-          : "Surface still touches the search boundary — the structure may extend further",
-      );
-      return;
-    }
 
     let extraction;
     try {
@@ -264,7 +231,8 @@ export const useBrushSkeleton = () => {
     const brush = brushApi.getState();
     const designing = modeApi.getState().interactionMode === "DESIGN";
     if (brush.status !== "painting" || !(brush.tubeEnabled || designing)) return;
-    if (designing && brush.strokeTool === "carve") return; // a carve previews nothing
+    // In DESIGN only the trace previews: a carve adds nothing to show.
+    if (designing && brush.strokeTool !== "trace") return;
     const { stroke, strokeLayerId } = brush;
     if (!strokeLayerId || stroke.length < 2) return;
 
@@ -309,68 +277,22 @@ export const useBrushSkeleton = () => {
     });
   }, [brushApi, resolveContext, modeApi]);
 
-  /**
-   * ANNOTATE's escape hatch into the designer: the candidate's surface
-   * becomes a mesh in the design session (welded, indexed, world
-   * coordinates) and the gesture is cleared.
-   */
-  const addToDesign = useCallback((): boolean => {
-    const brush = brushApi.getState();
-    const candidate = brush.candidate;
-    const tube = candidate?.tube;
-    if (!candidate || !tube || tube.triangles === 0) {
-      brush.fail("Nothing to add — turn on Tube so the extraction produces a surface");
-      return false;
-    }
-    const geometry = weldSoup(tube.positions);
-    if (geometry.indices.length === 0) {
-      brush.fail("The surface collapsed to nothing after welding");
-      return false;
-    }
-    designApi.getState().addMesh({
-      geometry,
-      source: {
-        kind: brush.strokeMode === "blob" ? "blob" : "tube",
-        layerId: candidate.layerId,
-        level: candidate.level,
-      },
-    });
-    brush.clear();
-    return true;
-  }, [brushApi, designApi]);
-
   const save = useCallback(async () => {
     const brush = brushApi.getState();
     const candidate = brush.candidate;
     if (!candidate || brush.status !== "preview") return;
-    if (modeApi.getState().interactionMode === "DESIGN") {
-      addToDesign();
-      return;
-    }
-    // A GROW candidate has no centerline — its whole payload is the tube.
-    const hasPath = candidate.points.length >= 2;
+    if (candidate.points.length < 2) return;
     const tube = candidate.tube;
-    if (!hasPath && !tube) return;
-    if (!hasPath) {
-      brush.fail("Surfaces are kept in Design mode — switch there to add this one");
-      return;
-    }
     brush.setSaving();
-    let persistedAny = false;
-
-    let after = brushApi.getState();
-    if (hasPath) {
-      const created = await createSceneAnnotation(
-        AnnotationKind.Path,
-        candidate.points.map((p) => [p[0], p[1], p[2]]),
-      );
-      after = brushApi.getState();
-      if (after.candidate !== candidate) return; // a new stroke took over
-      if (!created) {
-        after.fail("Saving failed — the annotation was not created");
-        return;
-      }
-      persistedAny = true;
+    const created = await createSceneAnnotation(
+      AnnotationKind.Path,
+      candidate.points.map((p) => [p[0], p[1], p[2]]),
+    );
+    const after = brushApi.getState();
+    if (after.candidate !== candidate) return; // a new stroke took over
+    if (!created) {
+      after.fail("Saving failed — the annotation was not created");
+      return;
     }
 
     // The tube is NOT persisted as an annotation any more: a painted surface
@@ -380,18 +302,15 @@ export const useBrushSkeleton = () => {
       ? "Centerline saved — switch to Design mode to keep the tube as a mesh"
       : "Saved";
     after.setCandidate(candidate, savedNote);
-    // The persisted copy arrives with the annotation layer's next poll; keep
-    // the local preview meanwhile so the shape never blinks off screen. When
-    // NOTHING persisted, the preview is all there is — keep it indefinitely.
-    if (persistedAny) {
-      setTimeout(() => {
-        const state = brushApi.getState();
-        if (state.candidate === candidate && state.status === "preview") {
-          state.clear();
-        }
-      }, SAVED_PREVIEW_CLEAR_MS);
-    }
-  }, [brushApi, createSceneAnnotation, modeApi, addToDesign]);
+    // The persisted copy arrives with the annotation layer's update; keep
+    // the local preview meanwhile so the shape never blinks off screen.
+    setTimeout(() => {
+      const state = brushApi.getState();
+      if (state.candidate === candidate && state.status === "preview") {
+        state.clear();
+      }
+    }, SAVED_PREVIEW_CLEAR_MS);
+  }, [brushApi, createSceneAnnotation]);
 
-  return { initRadiusForLayer, extract, previewLiveTube, save, addToDesign };
+  return { initRadiusForLayer, resolveContext, extract, previewLiveTube, save };
 };

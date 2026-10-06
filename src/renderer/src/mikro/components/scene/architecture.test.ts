@@ -51,16 +51,16 @@ const KNOWN_SIDEWAYS: Record<string, number> = {
   // the point; removing it means giving the probe a narrower way to ask
   // "which object is this?".
   "features/probe->features/meshes": 1,
-  // The mesh designer composes the annotation brush (its gesture, panels and
-  // tool store) with the fabriks reader/writer: the downward edges are the
-  // composition itself. The two upward edges are the seams where those
-  // features hand over to it — the brush verdict routing an accepted surface
-  // into the design session, and the Meshes panel's "edit in design" entry.
-  // Removed by giving the enhancer registry a per-mode verdict sink and
-  // moving the entry onto a design-owned panel. See ARCHITECTURE.md.
-  "features/meshDesign->features/annotations": 25,
+  // The mesh designer composes the annotation brush (its gesture capture,
+  // extraction engines and param rows) with the fabriks reader/writer: the
+  // downward edges are the composition itself, and the brush's types and
+  // engines come through ONE file (`meshDesign/brush.ts`). The two upward
+  // edges are the seams where those features hand over to it — the brush hook
+  // dispatching a DESIGN release to the tool registry, and the Meshes panel's
+  // "edit in design" entry. See ARCHITECTURE.md.
+  "features/meshDesign->features/annotations": 16,
   "features/meshDesign->features/meshes": 7,
-  "features/annotations->features/meshDesign": 4,
+  "features/annotations->features/meshDesign": 3,
   "features/meshes->features/meshDesign": 2,
 };
 

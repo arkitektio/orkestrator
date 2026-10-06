@@ -1,10 +1,10 @@
+import { Slice } from "lucide-react";
+
 import * as THREE from "three";
 
-import { marchField, meshToField } from "../field/sculptField";
-import { applyStamp, halfspaceStamp } from "../field/stamps";
-import { finishDesignGeometry } from "../ops/postProcess";
-import { fieldSpacingFor } from "./context";
-import type { BrushSkeletonState } from "../../annotations/enhancers/brushSkeletonStore";
+import { designDispatcher } from "../worker/designDispatcher";
+import { baseFor, fieldSpacingFor, finishFor } from "./context";
+import type { BrushSkeletonState } from "../brush";
 import type { DesignMesh, MeshDesignState } from "../store/meshDesignStore";
 import type { DesignTool } from "./registry";
 
@@ -17,10 +17,11 @@ export const trimTool: DesignTool = {
   id: "trim",
   key: "t",
   label: "Trim",
+  icon: Slice,
+  group: "more",
   gesture: "screen",
-  roiTool: null,
-  hint: "Trimming — drag a line across the mesh; the drag's left side is cut away",
-  shortcut: { keys: ["T", "drag"], description: "Cut the mesh along a screen line" },
+  hint: "Drag a line across the mesh; the drag's left side is cut away",
+  shortcut: { keys: ["T", "drag"], description: "Trim: cut the mesh along a screen line" },
 };
 
 /**
@@ -51,14 +52,24 @@ export async function applyTrim(
   plane: { normal: [number, number, number]; distance: number },
 ): Promise<boolean> {
   const fieldSpacing = target.field?.spacing ?? fieldSpacingFor([1, 1, 1], brush.detailVoxels);
-  const field = target.field ?? meshToField(target.original, fieldSpacing);
-  const cut = applyStamp(field, halfspaceStamp(plane.normal, plane.distance), "subtract");
-  if (cut === field) return false;
-  const marched = marchField(cut, brush.marcher);
-  const { original, current } = await finishDesignGeometry(marched, {
-    polishIterations: brush.polishIterations,
-    detailWorld: brush.detailVoxels * fieldSpacing,
+  const result = await designDispatcher().run({
+    base: baseFor(target, fieldSpacing),
+    ops: [
+      {
+        type: "stamp",
+        mode: "subtract",
+        spec: { kind: "halfspace", normal: plane.normal, distance: plane.distance },
+      },
+    ],
+    finish: finishFor(brush, fieldSpacing),
+    skipUnchanged: true,
   });
-  design.applySculpt(target.id, { field: cut, original, current, source: target.source });
+  if (!result || !result.changed) return false;
+  design.applySculpt(target.id, {
+    field: result.field,
+    original: result.original,
+    current: result.current,
+    source: target.source,
+  });
   return true;
 }

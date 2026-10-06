@@ -4,7 +4,6 @@ import { Toggle } from "@/core/ui/toggle";
 import { useBrushSkeleton } from "./useBrushSkeleton";
 import { useBrushSkeletonStore } from "../../brushSkeletonStore";
 import { SurfaceQualityControls } from "../../shared/SurfaceQualityControls";
-import { useModeStore } from "../../../../../platform/stores/modeStore";
 
 /**
  * The skeleton brush's params/status/confirm panel — the `intensity-skeleton`
@@ -28,8 +27,6 @@ export const BrushSkeletonPanel = () => {
   const candidate = useBrushSkeletonStore((s) => s.candidate);
   const clear = useBrushSkeletonStore((s) => s.clear);
   const { extract, save } = useBrushSkeleton();
-  // In DESIGN the verdict adds the surface to the session instead of saving.
-  const designing = useModeStore((s) => s.interactionMode) === "DESIGN";
 
   return (
     <div className="pointer-events-auto flex flex-col gap-1 rounded-md bg-background/80 px-2 py-1.5 shadow-md backdrop-blur-sm">
@@ -106,7 +103,7 @@ export const BrushSkeletonPanel = () => {
           </span>
         </div>
       )}
-      {(tubeEnabled || designing) && <SurfaceQualityControls />}
+      {tubeEnabled && <SurfaceQualityControls />}
       {(status === "preview" || status === "saving") && candidate && (
         <div className="flex items-center gap-1">
           <Button
@@ -115,7 +112,7 @@ export const BrushSkeletonPanel = () => {
             disabled={status === "saving"}
             onClick={() => void save()}
           >
-            {status === "saving" ? "Saving…" : designing ? "Add to design" : "Save"}
+            {status === "saving" ? "Saving…" : "Save"}
           </Button>
           <Button
             size="xs"
@@ -149,12 +146,8 @@ export const BrushSkeletonPanel = () => {
         ) : status === "extracting" ? (
           "Extracting centerline…"
         ) : status === "preview" && candidate ? (
-          candidate.points.length < 2 ? (
-            `Grown surface: ${candidate.tube?.triangles ?? 0} triangles at level ${candidate.level}`
-          ) : (
-            `Centerline: ${candidate.points.length} points at level ${candidate.level}` +
-            (candidate.tube ? ` — tube: ${candidate.tube.triangles} triangles` : "")
-          )
+          `Centerline: ${candidate.points.length} points at level ${candidate.level}` +
+          (candidate.tube ? ` — tube: ${candidate.tube.triangles} triangles` : "")
         ) : (
           "Drag along a bright structure to trace its centerline"
         )}

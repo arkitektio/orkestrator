@@ -39,8 +39,9 @@ export interface ProbeGateInput {
    */
   brushToolActive?: boolean;
   /**
-   * DESIGN only: a brush key (C/V/X) is held. Without one DESIGN behaves
-   * exactly like NAVIGATE — no hover probe, no click capture.
+   * DESIGN only: a design tool currently owns the left button
+   * (`modeStore.designTool` is set). Without one DESIGN behaves exactly like
+   * NAVIGATE — no hover probe, no click capture.
    */
   designArmed?: boolean;
   /**
@@ -76,8 +77,8 @@ export const hoverProbeEnabled = ({
   (annotateProbes &&
     interactionMode === "ANNOTATE" &&
     (drawingToolActive || brushToolActive)) ||
-  // DESIGN hosts only the brush/blob gestures, which paint through the probe —
-  // and only while a modifier is held; otherwise it is NAVIGATE.
+  // DESIGN's volume gestures paint through the probe — and only while a
+  // design tool owns the left button; otherwise it is NAVIGATE.
   (annotateProbes && interactionMode === "DESIGN" && brushToolActive && designArmed);
 
 /**

@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
-import { InteractionMode, useModeStore, useModeStoreApi, type DesignToolId } from "../../platform/stores/modeStore";
+import { InteractionMode, useModeStore, useModeStoreApi } from "../../platform/stores/modeStore";
 import { designToolByKey } from "../../features/meshDesign/tools/registry";
 import { isTypingTarget } from "../../platform/input/keyboardTarget";
-import { useRoiDrawingStoreApi } from "../../features/annotations/roiDrawingStore";
 import { layersPlanKey } from "../../platform/model/layerPlanKey";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
@@ -32,7 +31,6 @@ export const KeyboardModeController = () => {
   // drag's per-tick layer replacement must not rebuild the listener effect.
   const layersKey = useSceneStore((s) => layersPlanKey(s.layers));
   const viewerStoreApi = useViewerStoreApi();
-  const roiDrawingApi = useRoiDrawingStoreApi();
   const setCurrentZ = useViewerStore((s) => s.setCurrentZ);
 
   // `sceneZExtent` has no display-mode gate of its own — `currentZ` is only the
@@ -46,12 +44,15 @@ export const KeyboardModeController = () => {
   );
 
   useEffect(() => {
-    // DESIGN's tool keys, hold-to-act, straight from the registry — the key
-    // also picks the tool, so the toolbar never needs a click. (A stays the
+    // DESIGN's tool keys, hold-to-act, straight from the registry: the key
+    // selects the tool (its panel shows) AND arms it for as long as it is
+    // down; released, DESIGN is back to navigating. (A stays the
     // hold-ANNOTATE key; the registry's test guards against collisions.)
-    const setDesignTool = (next: DesignToolId | null) => {
+    let heldToolKey: string | null = null;
+    const releaseTool = () => {
+      heldToolKey = null;
       const mode = modeApi.getState();
-      if (mode.designTool !== next) mode.setDesignTool(next);
+      if (mode.designToolHeld) mode.releaseDesignTool();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -65,13 +66,13 @@ export const KeyboardModeController = () => {
 
       const key = e.key.toLowerCase();
 
-      const designKey = designToolByKey(key);
-      if (designKey && modeApi.getState().interactionMode === "DESIGN") {
-        if (designKey.roiTool && roiDrawingApi.getState().activeTool !== designKey.roiTool) {
-          roiDrawingApi.getState().setActiveTool(designKey.roiTool);
+      if (modeApi.getState().interactionMode === "DESIGN") {
+        const designKey = designToolByKey(key);
+        if (designKey) {
+          heldToolKey = key;
+          modeApi.getState().selectDesignTool(designKey.id, true);
+          return;
         }
-        setDesignTool(designKey.id);
-        return;
       }
 
       const next = HOLD_MODES[key];
@@ -99,9 +100,7 @@ export const KeyboardModeController = () => {
     // move mid-hold.
     const handleKeyUp = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
-      if (designToolByKey(key) && modeApi.getState().designTool === designToolByKey(key)?.id) {
-        setDesignTool(null);
-      }
+      if (heldToolKey === key) releaseTool();
       if (heldKeyRef.current !== key) return;
       releaseHold();
     };
@@ -110,7 +109,7 @@ export const KeyboardModeController = () => {
     // the held mode.
     const handleBlur = () => {
       releaseHold();
-      setDesignTool(null);
+      releaseTool();
     };
 
     const handleWheel = (e: WheelEvent) => {
@@ -142,7 +141,7 @@ export const KeyboardModeController = () => {
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("wheel", handleWheel);
     };
-  }, [setCurrentZ, setInteractionMode, modeApi, viewerStoreApi, roiDrawingApi, zNavigation]);
+  }, [setCurrentZ, setInteractionMode, modeApi, viewerStoreApi, zNavigation]);
 
   return null; // This is a headless component, it renders nothing
 };

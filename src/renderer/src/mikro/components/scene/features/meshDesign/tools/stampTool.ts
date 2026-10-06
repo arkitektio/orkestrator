@@ -1,8 +1,9 @@
-import { marchField, meshToField } from "../field/sculptField";
-import { applyStamp, boxStamp, ellipsoidStamp, sphereStamp, stampToField, type Stamp, type Vec3 } from "../field/stamps";
-import { finishDesignGeometry } from "../ops/postProcess";
-import { fieldSpacingFor, targetMesh } from "./context";
-import type { BrushSkeletonState } from "../../annotations/enhancers/brushSkeletonStore";
+import { Shapes } from "lucide-react";
+
+import type { StampSpec, Vec3 } from "../field/stamps";
+import { designDispatcher } from "../worker/designDispatcher";
+import { baseFor, fieldSpacingFor, finishFor, targetMesh } from "./context";
+import type { BrushSkeletonState } from "../brush";
 import type { MeshDesignState, StampShape } from "../store/meshDesignStore";
 import type { DesignTool } from "./registry";
 
@@ -16,20 +17,21 @@ export const stampTool: DesignTool = {
   id: "stamp",
   key: "s",
   label: "Stamp",
+  icon: Shapes,
+  group: "primary",
   gesture: "surface",
-  roiTool: null,
-  hint: "Stamping — click to place the primitive on the mesh (or in space)",
-  shortcut: { keys: ["S", "click"], description: "Stamp the chosen primitive onto the mesh" },
+  hint: "Click to place the primitive on the mesh (or in space)",
+  shortcut: { keys: ["S", "click"], description: "Stamp: click to place a primitive" },
 };
 
-export const stampFor = (shape: StampShape, center: Vec3, radius: number): Stamp => {
+export const stampSpecFor = (shape: StampShape, center: Vec3, radius: number): StampSpec => {
   switch (shape) {
     case "box":
-      return boxStamp(center, [radius, radius, radius]);
+      return { kind: "box", center, halfExtents: [radius, radius, radius] };
     case "ellipsoid":
-      return ellipsoidStamp(center, [radius * 1.5, radius, radius * 0.6]);
+      return { kind: "ellipsoid", center, radii: [radius * 1.5, radius, radius * 0.6] };
     default:
-      return sphereStamp(center, radius);
+      return { kind: "sphere", center, radius };
   }
 };
 
@@ -41,21 +43,24 @@ export async function applyStampClick(
 ): Promise<boolean> {
   const radius = brush.radiusWorld ?? 0;
   if (radius <= 0) return false;
-  const stamp = stampFor(design.stampShape, center, radius);
+  const spec = stampSpecFor(design.stampShape, center, radius);
   const target = targetMesh(design);
   const fieldSpacing =
     target?.field?.spacing ?? fieldSpacingFor([radius / 6, radius / 6, radius / 6], brush.detailVoxels);
-  let field = target ? (target.field ?? meshToField(target.original, fieldSpacing)) : null;
-  field = field ? applyStamp(field, stamp, "add") : stampToField(stamp, fieldSpacing);
-  const marched = marchField(field, brush.marcher);
-  const { original, current } = await finishDesignGeometry(marched, {
-    polishIterations: brush.polishIterations,
-    detailWorld: brush.detailVoxels * fieldSpacing,
-  });
+  const result = await designDispatcher().run(
+    target
+      ? {
+          base: baseFor(target, fieldSpacing),
+          ops: [{ type: "stamp", mode: "add", spec }],
+          finish: finishFor(brush, fieldSpacing),
+        }
+      : { base: { kind: "stamp", spec, spacing: fieldSpacing }, ops: [], finish: finishFor(brush, fieldSpacing) },
+  );
+  if (!result) return false;
   design.applySculpt(target?.id ?? null, {
-    field,
-    original,
-    current,
+    field: result.field,
+    original: result.original,
+    current: result.current,
     source: target?.source ?? { kind: "tube", layerId: "", level: 0 },
   });
   return true;

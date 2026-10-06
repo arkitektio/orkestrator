@@ -104,7 +104,7 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
   const probeFollowsCursor = useModeStore((s) => s.probeFollowsCursor);
   const designTool = useModeStore((s) => s.designTool);
   // The raycast gate (P20): PROBE hovers/clicks; DESIGN's click tools (LIFT)
-  // arm while their key is held. ANNOTATE never probes a mask.
+  // arm while one is selected. ANNOTATE never probes a mask.
   const gate: ProbeGateInput = {
     interactionMode,
     probeFollowsCursor,

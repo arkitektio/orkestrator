@@ -70,7 +70,7 @@ the one folder other features may import.
 | `volume/` | intensity image layers, the two-pass compositor shell, levels + phasor editors, the render-graph editor |
 
 | `labels/` | label-mask layers, label materials and uniforms, the object-id colour LUT, the label card |
-| `annotations/` | ROI geometry, drawing gestures, the drawers and handles, annotation layers and panels, the ROI stores, and `enhancers/` (vector trace, brush skeleton, smooth blob) |
+| `annotations/` | ROI geometry, drawing gestures, the drawers and handles, annotation layers and panels, the ROI stores, and `enhancers/` (vector trace, brush skeleton, and the extraction engines the mesh designer builds on) |
 | `meshes/` | the fabriks Parquet mesh-collection renderer end-to-end |
 | `network/` | the konnektion Parquet network-collection renderer end-to-end — node/edge graphs (traced arbors, vessel trees, connectomes) |
 | `probe/` | the probe trackers, readout settler, axis guides, and the readout UI |
@@ -147,16 +147,19 @@ is precisely what turned the old `core/` into a 153-file grab-bag.
 
 - `meshDesign -> annotations`, `meshDesign -> meshes`: the mesh designer
   (`features/meshDesign`) is a COMPOSITION of the annotation brush (its
-  gesture, panels and tool store) and the fabriks reader/writer. These are the
-  composition itself; they go away only if the brush and the fabriks writer
-  move down to `platform/`, which they should not — both are features.
+  gesture capture, extraction engines and param rows) and the fabriks
+  reader/writer. These are the composition itself; they go away only if the
+  brush and the fabriks writer move down to `platform/`, which they should
+  not — both are features. The brush's types and engine functions reach the
+  designer through ONE file, `meshDesign/brush.ts`, so the seam is a list
+  that can be read; only the React pieces (`ParamRow`,
+  `SurfaceQualityControls`, `useBrushSkeleton`) and the annotation selection
+  (loft / tube-from-path) are imported where they are used.
 - `annotations -> meshDesign` (the brush hook dispatches a DESIGN release to
-  `meshDesign/tools/registry` and the ANNOTATE candidate's "add to design"
-  hands over the welded surface) and `meshes -> meshDesign` (the Meshes
-  panel's "edit in design" entry): the hand-over seams. The tool registry
-  CONCENTRATES the reverse edges — each design tool imports the annotation
-  extraction core (`enhancers/paths/brushSkeleton/extraction.ts`) rather than
-  the hook, which is what the raised meshDesign->annotations count pays for.
+  `meshDesign/tools/registry`, accepting a pending reconstruction first) and
+  `meshes -> meshDesign` (the Meshes panel's "edit in design" entry): the
+  hand-over seams. ANNOTATE no longer hands surfaces over — a brush stroke
+  there saves a path, and meshes are only ever built in DESIGN.
 
 `architecture.test.ts` asserts these rules in `pnpm test`. Three are hard
 zeroes; "features do not reach sideways" is a RATCHET against a known list, in

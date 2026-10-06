@@ -115,11 +115,9 @@ describe("availableAnnotateTools", () => {
     expect(isAnnotateToolAvailable("SPHERE", ctx3D)).toBe(true);
     expect(isAnnotateToolAvailable("CUBE", ctx3D)).toBe(true);
     expect(isAnnotateToolAvailable("PATH", ctx3D)).toBe(true);
-    // The skeleton brush and smooth blob work through the volume probe — 3D only.
+    // The skeleton brush works through the volume probe — 3D only.
     expect(isAnnotateToolAvailable("BRUSH", ctx2D)).toBe(false);
     expect(isAnnotateToolAvailable("BRUSH", ctx3D)).toBe(true);
-    expect(isAnnotateToolAvailable("BLOB", ctx2D)).toBe(false);
-    expect(isAnnotateToolAvailable("BLOB", ctx3D)).toBe(true);
   });
 });
 
@@ -188,17 +186,13 @@ describe("coerceModeState", () => {
 describe("coerceModeState in DESIGN", () => {
   const ctx2D = { displayMode: "2D" as const, hasProbeableLayer: true };
 
-  it("leaves a design-owned tool alone on the flat view (no guard ping-pong)", () => {
-    // MeshDesignToolbar forces BRUSH while in DESIGN; evicting it as 3D-only
-    // here made the two guards alternate BRUSH -> RECTANGLE -> BRUSH forever.
-    for (const tool of ["BRUSH", "BLOB"] as const) {
-      const requested = { interactionMode: "DESIGN" as const, activeTool: tool };
-      const next = coerceModeState(requested, ctx2D);
-      expect(next.interactionMode).toBe("DESIGN");
-      expect(next.activeTool).toBe(tool);
-      // Idempotent: a second pass changes nothing either.
-      expect(coerceModeState(next, ctx2D)).toEqual(next);
-    }
+  it("coerces the annotate tool in DESIGN like anywhere else, idempotently", () => {
+    // DESIGN owns its own tool (`modeStore.selectedDesignTool`) and nothing
+    // forces an annotate tool while it is active, so there is no guard to
+    // ping-pong with: the brush is simply swapped out on the flat view.
+    const next = coerceModeState({ interactionMode: "DESIGN", activeTool: "BRUSH" }, ctx2D);
+    expect(next).toEqual({ interactionMode: "DESIGN", activeTool: "RECTANGLE" });
+    expect(coerceModeState(next, ctx2D)).toEqual(next);
   });
 
   it("still swaps the brush for the rectangle once the mode is back to ANNOTATE", () => {

@@ -93,7 +93,7 @@ export interface BrushSkeletonState {
   strokeMode: "stroke" | "blob";
   /**
    * DESIGN only: the tool the gesture was captured FOR — its `run` gets the
-   * release (`meshDesign/tools/registry.ts`). "brush" in ANNOTATE.
+   * release (`meshDesign/tools/registry.ts`). Unread in ANNOTATE.
    */
   strokeTool: DesignToolId;
   /** Smooth-blob only: box-blur radius (level voxels) applied to the field
@@ -156,7 +156,7 @@ export const createBrushSkeletonStore = () =>
     strokeVersion: 0,
     strokeLayerId: null,
     strokeMode: "stroke" as const,
-    strokeTool: "brush" as DesignToolId,
+    strokeTool: "trace" as DesignToolId,
     candidate: null,
     liveTube: null,
 
@@ -182,7 +182,7 @@ export const createBrushSkeletonStore = () =>
     setBlobSmoothness: (blobSmoothness) => set({ blobSmoothness }),
     setBlobGap: (blobGap) => set({ blobGap }),
 
-    beginStroke: (layerId, mode = "stroke", tool = "brush") => {
+    beginStroke: (layerId, mode = "stroke", tool = "trace") => {
       const stroke = get().stroke;
       stroke.length = 0;
       set({

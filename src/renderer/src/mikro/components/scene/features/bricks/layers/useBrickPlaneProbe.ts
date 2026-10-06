@@ -388,7 +388,7 @@ export const useBrickPlaneProbe = ({
           const local = group.worldToLocal(world.clone());
           if (designClick && designTool) {
             // One probed click IS the whole design gesture on the plane
-            // (lift/wand/blob/bridge): hand it to the brush store, whose
+            // (seed/lift/bridge): hand it to the brush store, whose
             // release runs the tool (`useBrushSkeleton.extract`).
             const voxel = baseVoxelAt(local);
             if (!voxel) return;

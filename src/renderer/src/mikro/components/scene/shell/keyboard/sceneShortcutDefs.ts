@@ -49,6 +49,7 @@ export const SCENE_SHORTCUTS: SceneShortcutGroup[] = [
       { keys: ["P"], description: "Hold to probe" },
       { keys: ["M"], description: "Hold to design meshes" },
       { keys: ["D"], description: "Draw a path from the probe" },
+      { keys: ["Right-click"], description: "Actions and workflows for the shape or mesh under the pointer" },
     ],
   },
   {
@@ -56,8 +57,9 @@ export const SCENE_SHORTCUTS: SceneShortcutGroup[] = [
     shortcuts: [
       // One entry per registered tool — a tool cannot exist half-documented.
       ...DESIGN_TOOLS.map((tool) => tool.shortcut),
-      { keys: ["⌘", "Z"], description: "Undo the last sculpt (⇧ redoes)" },
-      { keys: ["Esc"], description: "Cancel the stroke in progress" },
+      { keys: ["↵"], description: "Add the previewed reconstruction to the mesh" },
+      { keys: ["Esc"], description: "Discard the preview" },
+      { keys: ["⌘", "Z"], description: "Undo the last step (⇧ redoes)" },
     ],
   },
   {

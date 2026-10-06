@@ -70,7 +70,7 @@ export const DRAWING_TOOL_TO_ROI_KIND: Record<DrawingTool, AnnotationKind> = {
  * Drawing and the pointer tools are then mutually exclusive by construction:
  * `isDrawingTool(activeTool)` holds exactly when a shape tool is armed.
  */
-export type AnnotateTool = "SELECT" | "BRUSH" | "BLOB" | DrawingTool;
+export type AnnotateTool = "SELECT" | "BRUSH" | DrawingTool;
 
 export const isDrawingTool = (
   tool: AnnotateTool | null | undefined,
@@ -83,8 +83,7 @@ export const isDrawingTool = (
  */
 export type AnnotationEnhancerId =
   | "vector-trace"
-  | "intensity-skeleton"
-  | "smooth-blob";
+  | "intensity-skeleton";
 
 /**
  * A shape the user just drew, held only until the server confirms it. Drawing
