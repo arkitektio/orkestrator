@@ -38,6 +38,7 @@ import { isDrawingTool, useRoiDrawingStore } from "../roiDrawingStore";
 import {
   useRoiSelectionStore,
   useRoiSelectionStoreApi,
+  type HoverPoint,
   type SelectedRoi,
 } from "../roiSelectionStore";
 import { AnnotationInteriorBatch } from "./AnnotationInteriorBatch";
@@ -134,6 +135,12 @@ const AnnotationCollectionGroup = ({
   const clearVisibleLayerRois = useRoiSelectionStore((s) => s.clearVisibleLayerRois);
   const hoverRoi = useRoiSelectionStore((s) => s.hoverRoi);
   const unhoverRoi = useRoiSelectionStore((s) => s.unhoverRoi);
+  // The hovered shape's id when it is THIS layer's, else null: a primitive, so
+  // a hover on another layer re-renders nothing here, and one on this layer
+  // re-renders it on enter/leave only (the highlight is a color-only pass).
+  const hoveredId = useRoiSelectionStore((s) =>
+    s.hoveredRoi?.layerId === layerId ? s.hoveredRoi.id : null,
+  );
   // A scalar (P17): only the drawing/not-drawing answer gates the hover.
   const drawingToolActive = useRoiDrawingStore((s) => isDrawingTool(s.activeTool));
 
@@ -280,7 +287,10 @@ const AnnotationCollectionGroup = ({
 
   // Called per pointer move over a shape; the store dedupes by id, so the
   // state (and anything subscribed) changes on enter/leave only.
-  const onHoverRoi = useCallback((roi: SelectedRoi) => hoverRoi(roi), [hoverRoi]);
+  const onHoverRoi = useCallback(
+    (roi: SelectedRoi, point: HoverPoint) => hoverRoi(roi, point),
+    [hoverRoi],
+  );
   const onUnhoverRoi = useCallback((roiId: string) => unhoverRoi(roiId), [unhoverRoi]);
 
   const selectable = interactionMode !== "PROBE";
@@ -371,6 +381,7 @@ const AnnotationCollectionGroup = ({
           key={batch.lineWidth}
           batch={batch}
           selectedIds={selectedRoiIds}
+          hoveredId={hoveredId}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
           hoverable={hoverable}
@@ -383,6 +394,7 @@ const AnnotationCollectionGroup = ({
           key={`sectioned:${batch.lineWidth}`}
           batch={batch}
           selectedIds={selectedRoiIds}
+          hoveredId={hoveredId}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
           hoverable={hoverable}
@@ -421,6 +433,7 @@ const AnnotationCollectionGroup = ({
           roi={roi}
           flattenToPlane={flattenToPlane}
           isActive={selectedRoiIds.has(annotation.id)}
+          isHovered={hoveredId === annotation.id}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
           hoverable={hoverable}

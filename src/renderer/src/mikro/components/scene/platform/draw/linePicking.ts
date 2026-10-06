@@ -24,9 +24,10 @@ import * as THREE from "three";
 /**
  * Pick RADIUS around a stroke, in CSS pixels — how far off an outline a click
  * may land and still select it. The stroke's own half-width is added on top by
- * three, so this is the padding, not the total.
+ * three, so this is the padding, not the total. Generous on purpose: a path
+ * is nothing BUT its stroke, and hovering one is how its actions are reached.
  */
-export const ROI_PICK_RADIUS_PX = 8;
+export const ROI_PICK_RADIUS_PX = 14;
 
 /**
  * The radius expressed as three's threshold: it halves `linewidth + threshold`,
@@ -55,4 +56,48 @@ export function applyLinePickThreshold(
     return;
   }
   params.Line2 = { threshold };
+}
+
+/** The parts of a fat-line hit `nearestLineHit` reads. */
+type LineHit = { point: THREE.Vector3; pointOnLine?: THREE.Vector3 };
+
+/**
+ * Of one fat-line object's hits, the one whose stroke passes CLOSEST to the
+ * pick ray — the path the pointer is actually nearest to.
+ *
+ * A wide pick band makes this necessary. A merged outline batch is ONE
+ * object holding many shapes, and R3F keeps a single hit per object (its
+ * dedupe key has no segment in it), choosing by distance along the ray.
+ * Shapes on one plane all tie on that, so the winner was whichever segment
+ * came first in the batch: with two paths inside the band, hover and click
+ * landed on the wrong one about as often as the right one. Each hit carries
+ * the ray point and the point on its segment; their gap is the miss
+ * distance, and the smallest gap is the answer.
+ */
+export function nearestLineHit<H extends LineHit>(hits: readonly H[]): H | null {
+  let best: H | null = null;
+  let bestGap = Infinity;
+  for (const hit of hits) {
+    const gap = hit.pointOnLine ? hit.point.distanceToSquared(hit.pointOnLine) : 0;
+    if (gap < bestGap) {
+      bestGap = gap;
+      best = hit;
+    }
+  }
+  return best;
+}
+
+/**
+ * Make a fat line report only its nearest hit (`nearestLineHit`). Wraps the
+ * instance's own `raycast`; call once per line object.
+ */
+export function raycastNearestOnly(line: THREE.Object3D): void {
+  const original = line.raycast.bind(line);
+  const scratch: THREE.Intersection[] = [];
+  line.raycast = (raycaster, intersects) => {
+    scratch.length = 0;
+    original(raycaster, scratch);
+    const nearest = nearestLineHit(scratch as (THREE.Intersection & LineHit)[]);
+    if (nearest) intersects.push(nearest);
+  };
 }

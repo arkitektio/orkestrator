@@ -6,9 +6,10 @@ import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeome
 import { Line2NodeMaterial } from "three/webgpu";
 
 import { swapGeometry } from "@/core/data/scene/gpu/swapGeometry";
+import { raycastNearestOnly } from "../../../platform/draw/linePicking";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { batchColors, roiForSegment, type OutlineBatch } from "../annotationBatch";
-import type { SelectedRoi } from "../roiSelectionStore";
+import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 
 /**
  * One merged fat-line draw for a batch of shape outlines. Picking maps the
@@ -26,6 +27,7 @@ import type { SelectedRoi } from "../roiSelectionStore";
 export const AnnotationOutlineBatch = ({
   batch,
   selectedIds,
+  hoveredId,
   selectable,
   onSelectRoi,
   hoverable,
@@ -34,12 +36,14 @@ export const AnnotationOutlineBatch = ({
 }: {
   batch: OutlineBatch<SelectedRoi>;
   selectedIds: ReadonlySet<string>;
+  /** The hovered roi when it belongs to this layer — a color-only pass too. */
+  hoveredId: string | null;
   selectable: boolean;
   onSelectRoi: (roi: SelectedRoi, appendSelection: boolean) => void;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
   hoverable: boolean;
   /** Per move over a shape; the store dedupes by id (state changes on enter/leave). */
-  onHoverRoi: (roi: SelectedRoi) => void;
+  onHoverRoi: (roi: SelectedRoi, point: HoverPoint) => void;
   onUnhoverRoi: (roiId: string) => void;
 }) => {
   perfMonitor.countRender("AnnotationOutlineBatch"); // no-op unless a recording is armed
@@ -61,7 +65,13 @@ export const AnnotationOutlineBatch = ({
     created.vertexColors = true;
     return created;
   }, []);
-  const line = useMemo(() => new LineSegments2(new LineSegmentsGeometry(), material), [material]);
+  const line = useMemo(() => {
+    const created = new LineSegments2(new LineSegmentsGeometry(), material);
+    // One object, many shapes, a generous pick band: report the stroke the
+    // pointer is nearest to, not the first one inside the band.
+    raycastNearestOnly(created);
+    return created;
+  }, [material]);
 
   // `line.geometry`, not a mount-time one: every batch is a new geometry.
   useEffect(
@@ -87,7 +97,7 @@ export const AnnotationOutlineBatch = ({
   // drawn them yet), every later one — a selection change — rewrites them in
   // place, the one kind of update the renderer picks up on a drawn geometry.
   useLayoutEffect(() => {
-    const colors = batchColors(batch, (id) => selectedIds.has(id));
+    const colors = batchColors(batch, (id) => selectedIds.has(id), hoveredId);
     const attribute = line.geometry.attributes.instanceColorStart as
       | InterleavedBufferAttribute
       | undefined;
@@ -97,7 +107,7 @@ export const AnnotationOutlineBatch = ({
       return;
     }
     line.geometry.setColors(colors);
-  }, [batch, selectedIds, line]);
+  }, [batch, selectedIds, hoveredId, line]);
 
   useEffect(() => {
     material.linewidth = batch.lineWidth;
@@ -123,7 +133,7 @@ export const AnnotationOutlineBatch = ({
         const roi = roiForSegment(batch.ranges, event.faceIndex);
         if (!roi) return;
         hoveredIdRef.current = roi.id;
-        onHoverRoi(roi);
+        onHoverRoi(roi, [event.point.x, event.point.y, event.point.z]);
       }
     : undefined;
   const handleHoverOut = hoverable

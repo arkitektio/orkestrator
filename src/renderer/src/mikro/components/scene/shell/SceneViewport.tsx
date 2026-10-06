@@ -27,6 +27,7 @@ import { AnimationPlayer } from "../features/animation/AnimationPlayer";
 import { CameraController } from "../platform/camera/CameraController";
 import { CanvasSync } from "../platform/camera/CanvasSync";
 import { LinePickTuning } from "../platform/draw/LinePickTuning";
+import { SceneContextMenu } from "./SceneContextMenu";
 import { InitialCameraFit } from "../platform/camera/InitialCameraFit";
 import { QualityAdapter } from "../platform/quality/QualityAdapter";
 import { KeyboardLayerVisibility } from "./keyboard/KeyboardLayerVisibility";
@@ -386,6 +387,8 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
           <TabVisibilitySync />
           {/* Annotation outlines are hairline-thin to pick without this. */}
           <LinePickTuning />
+          {/* Right-click a shape or a mesh for its actions and workflows. */}
+          <SceneContextMenu />
           <SceneScreenshot />
           {/* Feeds SceneBrandTheme the majority hue of the rendered pixels. */}
           <CanvasHueProbe />

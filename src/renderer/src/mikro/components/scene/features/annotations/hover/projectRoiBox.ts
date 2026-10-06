@@ -60,6 +60,32 @@ export function projectTopRightCorner(
   return best;
 }
 
+const POINT = new THREE.Vector3();
+
+/**
+ * The screen position of one world point, or null when it is behind the
+ * camera or past the far plane (the same rule the corners above follow).
+ */
+export function projectWorldPoint(
+  point: readonly [number, number, number],
+  viewProjection: THREE.Matrix4,
+  viewport: { width: number; height: number },
+): ScreenPoint | null {
+  POINT.set(point[0], point[1], point[2]).applyMatrix4(viewProjection);
+  if (!Number.isFinite(POINT.x) || !Number.isFinite(POINT.y) || POINT.z > 1) return null;
+  return {
+    x: (POINT.x * 0.5 + 0.5) * viewport.width,
+    y: (-POINT.y * 0.5 + 0.5) * viewport.height,
+  };
+}
+
+/**
+ * How far up-right of the pointer's entry point the button sits: clear of
+ * the cursor and of the stroke under it (a right-click on the shape must
+ * still land on the shape), yet a few pixels' travel away.
+ */
+export const BUTTON_POINTER_OFFSET_PX = 12;
+
 /** Margin the button keeps to the frame edge when the corner is off-screen. */
 export const BUTTON_MARGIN = 8;
 

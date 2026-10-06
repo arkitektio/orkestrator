@@ -3,9 +3,13 @@ import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { Line2NodeMaterial } from "three/webgpu";
+import { LineSegments2 } from "three/examples/jsm/lines/webgpu/LineSegments2.js";
+import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js";
 import {
   applyLinePickThreshold,
   linePickThreshold,
+  nearestLineHit,
+  raycastNearestOnly,
   ROI_PICK_RADIUS_PX,
 } from "./linePicking";
 
@@ -128,7 +132,8 @@ describe("Line2 picking", () => {
   it("scales the band with DPR, so it is the same size on screen", () => {
     const line = asRendered(makeLine(2));
     const camera = makeCamera();
-    // At 2x, 8 CSS px is 16 device px — and this viewport measures in device px.
+    // 16 device px is inside the band at 2x (14 CSS px = 28 device px) and
+    // outside it at 1x (14 device px) — this viewport measures in device px.
     expect(raycastAt(line, camera, 16, { padded: true, dpr: 2 }).length).toBeGreaterThan(0);
     expect(raycastAt(line, camera, 16, { padded: true, dpr: 1 })).toHaveLength(0);
   });
@@ -151,5 +156,51 @@ describe("Line2 picking", () => {
     // a click seems to miss a line that only just appeared.
     const line = makeLine();
     expect(raycastAt(line, makeCamera(), 0, { padded: true })).toHaveLength(0);
+  });
+});
+
+describe("nearest stroke in a merged batch", () => {
+  /** Two parallel segments in ONE object, the way an outline batch holds
+   * many shapes: segment 0 at y = 0, segment 1 at y = 10. */
+  const makeBatch = () => {
+    const geometry = new LineSegmentsGeometry();
+    geometry.setPositions([-5, 0, 0, 5, 0, 0, -5, 10, 0, 5, 10, 0]);
+    const material = new Line2NodeMaterial();
+    material.linewidth = 2;
+    const batch = new LineSegments2(geometry, material);
+    batch.updateMatrixWorld(true);
+    (batch as unknown as { _resolution: THREE.Vector2 })._resolution.set(VIEWPORT.width, VIEWPORT.height);
+    return batch;
+  };
+  const raycastBatch = (batch: LineSegments2, y: number) => {
+    const raycaster = new THREE.Raycaster();
+    applyLinePickThreshold(raycaster, 1);
+    raycaster.camera = makeCamera();
+    raycaster.set(new THREE.Vector3(0, y, 10), new THREE.Vector3(0, 0, -1));
+    const hits: THREE.Intersection[] = [];
+    batch.raycast(raycaster, hits);
+    return hits;
+  };
+
+  it("unwrapped, a ray between two strokes hits BOTH — and they tie on depth", () => {
+    // 7 px from the first stroke, 3 px from the second: both inside the band.
+    const hits = raycastBatch(makeBatch(), 7);
+    expect(hits.map((hit) => hit.faceIndex).sort()).toEqual([0, 1]);
+    expect(hits[0].distance).toBeCloseTo(hits[1].distance);
+  });
+
+  it("picks the hit whose stroke passes closest to the ray", () => {
+    const hits = raycastBatch(makeBatch(), 7);
+    expect(nearestLineHit(hits as never)).toBe(hits.find((hit) => hit.faceIndex === 1));
+    expect(nearestLineHit([])).toBeNull();
+  });
+
+  it("wrapped, the batch reports only the nearer stroke, whichever side the ray is on", () => {
+    const batch = makeBatch();
+    raycastNearestOnly(batch);
+    expect(raycastBatch(batch, 7).map((hit) => hit.faceIndex)).toEqual([1]);
+    expect(raycastBatch(batch, 3).map((hit) => hit.faceIndex)).toEqual([0]);
+    // Nothing in the band is still nothing.
+    expect(raycastBatch(batch, 60)).toHaveLength(0);
   });
 });

@@ -14,7 +14,7 @@ import {
   sectionedOutlinePoints,
 } from "./annotationBatch";
 import { getVectorPoint } from "./annotationBounds";
-import { DEFAULT_STROKE, ACTIVE_STROKE } from "./annotationStyle";
+import { DEFAULT_STROKE, ACTIVE_STROKE, HOVER_STROKE } from "./annotationStyle";
 import * as THREE from "three";
 
 /**
@@ -134,6 +134,15 @@ describe("buildOutlineBatches", () => {
     // A selection change re-tints without touching the positions.
     const none = batchColors(thin, () => false);
     expect(none[2 * 6]).toBeCloseTo(idle.r);
+    // The hovered shape wears the hover tint — unless it is selected.
+    const hover = new THREE.Color(HOVER_STROKE);
+    const hovered = batchColors(thin, () => false, "selected");
+    expect(hovered[2 * 6]).toBeCloseTo(hover.r);
+    expect(hovered[2 * 6 + 2]).toBeCloseTo(hover.b);
+    expect(hovered[0]).toBeCloseTo(idle.r);
+    const both = batchColors(thin, (id) => id === "selected", "selected");
+    expect(both[2 * 6]).toBeCloseTo(active.r);
+    expect(both[2 * 6 + 1]).toBeCloseTo(active.g);
   });
 
   it("sectioned ellipsoids stay OUT of the static batch — their ring moves with the plane", () => {
