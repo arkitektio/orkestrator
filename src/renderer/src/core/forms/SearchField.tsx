@@ -34,6 +34,8 @@ export type Option = {
 export const ButtonLabel = (props: {
   search: SearchFunction;
   value: string;
+  /** Changes when the option source changes, so the label is resolved again. */
+  searchKey?: string | number;
 }) => {
   const [option, setOption] = useState<Option | null | undefined>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +50,9 @@ export const ButtonLabel = (props: {
       .current({ values: [props.value] })
       .then((res) => {
         if (cancelled) return;
-        if (res.length === 0) {
-          setOption(null);
-          setError("No option found for value");
-        }
+        // A source that failed before it was ready (live state not reported
+        // yet) must not leave its error beside the label it resolves later.
+        setError(res.length === 0 ? "No option found for value" : null);
         setOption(res[0] || null);
       })
       .catch((err) => {
@@ -60,7 +61,7 @@ export const ButtonLabel = (props: {
     return () => {
       cancelled = true;
     };
-  }, [props.value]);
+  }, [props.value, props.searchKey]);
 
   return (
     <div className="flex flex-row items-center">
@@ -230,7 +231,7 @@ export const SearchField = ({
                             inputRef.current?.focus();
                           }}
                         >
-                          <ButtonLabel search={search} value={currentKey} />
+                          <ButtonLabel search={search} value={currentKey} searchKey={searchKey} />
                         </div>
                       )}
                     </div>

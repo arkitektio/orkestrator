@@ -1,5 +1,5 @@
 import { UploadOptions } from "@/core/datalayer/hooks/useUpload";
-import { useUpload } from "@/core/datalayer/UploadProvider";
+import { useUpload, type UploadRefs } from "@/core/datalayer/UploadProvider";
 import { acceptsFiles } from "@/core/dnd/files";
 import { useDropTarget } from "@/core/dnd/react";
 
@@ -9,7 +9,8 @@ export type UploadFunc = (
   file: ElectronFile,
   options: UploadOptions,
 ) => Promise<string>;
-export type CreateFunc = (file: ElectronFile, key: string) => Promise<any>;
+/** Registers the uploaded store; returning what it created links the island's row to it. */
+export type CreateFunc = (file: ElectronFile, key: string) => Promise<UploadRefs | void>;
 
 export const UploadWrapper = ({ uploadFile, createFile, children }: {
   uploadFile: UploadFunc;

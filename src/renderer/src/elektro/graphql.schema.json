@@ -1089,6 +1089,22 @@
             "deprecationReason": null
           },
           {
+            "name": "descriptors",
+            "description": "This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "experiment",
             "description": "The experiment this collection was minted for as its default drawing surface, or null for a collection drawn over a dataset, a clock, or nothing. Bookkeeping, not placement: the registration edge is what places it",
             "args": [],
@@ -2882,6 +2898,22 @@
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "descriptors",
+            "description": "This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -15069,6 +15101,22 @@
             "deprecationReason": null
           },
           {
+            "name": "descriptors",
+            "description": "This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": null,
             "args": [],
@@ -16873,6 +16921,22 @@
                     "ofType": null
                   }
                 }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "descriptors",
+            "description": "This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
               }
             },
             "isDeprecated": false,
@@ -19034,6 +19098,22 @@
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "descriptors",
+            "description": "This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -22331,6 +22411,22 @@
             "deprecationReason": null
           },
           {
+            "name": "descriptors",
+            "description": "This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": null,
             "args": [],
@@ -24612,6 +24708,22 @@
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "descriptors",
+            "description": "This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -30092,6 +30204,22 @@
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "descriptors",
+            "description": "This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -40858,6 +40986,22 @@
             "deprecationReason": null
           },
           {
+            "name": "descriptors",
+            "description": "This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "folder",
             "description": "The folder it is filed in. Organisational only",
             "args": [],
@@ -43443,6 +43587,22 @@
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "descriptors",
+            "description": "This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null

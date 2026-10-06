@@ -73,7 +73,7 @@ export const StateChoiceWidget = (
   });
 
   const search = useCallback(
-    async (_searching: SearchOptions) => {
+    async (searching: SearchOptions) => {
       const accessedValue = accessNestedValue(liveValue || {}, statePaths);
       // 1. Validation: Must be an array — the options are built by mapping over it.
       if (!Array.isArray(accessedValue)) {
@@ -100,7 +100,7 @@ export const StateChoiceWidget = (
 
 
       // 3. Map the array with fallbacks
-      return accessedValue.map((rawItem, index) => {
+      const options = accessedValue.map((rawItem, index) => {
         // Handle Objects
         if (rawItem !== null && typeof rawItem === "object") {
           const item = rawItem;
@@ -134,7 +134,22 @@ export const StateChoiceWidget = (
           label: String(rawItem),
           key: String(rawItem),
         };
-      })
+      });
+
+      // 4. Narrow to what was asked for: the selected values (so the field
+      // shows the label of the choice made, not of the first option) or the
+      // typed text.
+      if (searching.values) {
+        const wanted = searching.values.map(String);
+        return options.filter(
+          (o) => wanted.includes(o.key) || wanted.includes(String(o.value)),
+        );
+      }
+      const term = searching.search?.trim().toLowerCase();
+      if (term) {
+        return options.filter((o) => String(o.label).toLowerCase().includes(term));
+      }
+      return options;
     },
     [liveValue, statePaths, stateAccessors],
   );

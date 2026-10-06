@@ -7,3 +7,14 @@ fragment BigFileAccessGrant on BigFileAccessGrant {
   key
   bucket
 }
+
+fragment BigFileUploadGrant on BigFileUploadGrant {
+  accessKey
+  secretKey
+  sessionToken
+  path
+  key
+  bucket
+  expiresIn
+  store
+}

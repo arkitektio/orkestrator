@@ -38,7 +38,9 @@ import {
   UnknownReturnWidget,
 } from "@/core/ports/engine/WidgetsProvider";
 import {
+  ArgPort,
   EffectWidgetProps,
+  ReturnPort,
   ReturnWidgetProps,
   WidgetRegistryType,
 } from "@/core/ports/engine/types";
@@ -170,7 +172,10 @@ registry.registerReturnWidgetFallback(
 // `WidgetRegistry.getInputWidgetForPort` / `getReturnWidgetForPort` are typed
 // against the specific `ArgPort` / `ReturnPort` fragments, while
 // `WidgetRegistryType` (consumed by `WidgetRegistryProvider`) works over the
-// broader `MappablePort` union. Narrow on `__typename` before delegating.
+// broader `MappablePort` union. The caller says which side it wants by the
+// method it calls, so the port is cast, never refused on its `__typename`:
+// nested child ports and fluss ports do not carry the top-level typename, and
+// refusing them painted "No widget registered" over kinds that have a widget.
 export const THE_WIDGET_REGISTRY: WidgetRegistryType = {
   registerWard: (wardKey, ward) => registry.registerWard(wardKey, ward),
   getWard: (wardKey) => registry.getWard(wardKey),
@@ -184,17 +189,9 @@ export const THE_WIDGET_REGISTRY: WidgetRegistryType = {
     registry.registerEffectWidget(effectType, widget),
   registerReturnWidgetFallback: (portType, widget) =>
     registry.registerReturnWidgetFallback(portType, widget),
-  getReturnWidgetForPort: (port, allowFallback) => {
-    if (port.__typename !== "ReturnPort") {
-      return UnknownReturnWidget;
-    }
-    return registry.getReturnWidgetForPort(port, allowFallback);
-  },
-  getInputWidgetForPort: (port, allowFallback) => {
-    if (port.__typename !== "ArgPort") {
-      return UnknownInputWidget;
-    }
-    return registry.getInputWidgetForPort(port, allowFallback);
-  },
+  getReturnWidgetForPort: (port, allowFallback) =>
+    registry.getReturnWidgetForPort(port as ReturnPort, allowFallback),
+  getInputWidgetForPort: (port, allowFallback) =>
+    registry.getInputWidgetForPort(port as ArgPort, allowFallback),
   getEffectWidget: (effectType) => registry.getEffectWidget(effectType),
 };

@@ -188,6 +188,11 @@ type AnnotationCollection {
   description: String
 
   """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
+  """
   The experiment this collection was minted for as its default drawing surface, or null for a collection drawn over a dataset, a clock, or nothing. Bookkeeping, not placement: the registration edge is what places it
   """
   experiment: Experiment
@@ -478,6 +483,11 @@ type ArrayDataset {
   """
   derivedResidents: [Resident!]!
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """The experiment layers drawing this dataset, through any of its lenses"""
   experimentLayers: [ExperimentLayer!]!
@@ -2749,6 +2759,11 @@ type Experiment {
   createdAt: DateTime!
   creator: User
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
 
   """
@@ -3072,6 +3087,11 @@ type File {
   The containers converted out of this file: the datasets a converter wrote from it, one per series. **Not a derivation** -- a file has no coordinate system, so these links claim no geometry and place nothing; they say only that this file's bytes and that data are the same thing
   """
   derivedContainers(filters: FileLinkFilter): [FileLink!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   The containers this file was written from: the dataset exported to NWB, the annotation collection written to a CSV of events. The mirror of `derivedContainers`
@@ -3463,6 +3483,11 @@ type Folder {
   createdThroughBy: User
   creator: User
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   files(filters: FileFilter, ordering: [FileOrder!]! = [], pagination: OffsetPaginationInput): [File!]!
   id: ID!
   isDefault: Boolean!
@@ -3976,6 +4001,11 @@ type Lens {
   The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived
   """
   derivedDatasets: [ArrayDataset!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
 
   """The shape this lens' slices cut out of its dataset"""
@@ -4304,6 +4334,11 @@ type ModelChange {
 
 type ModelCollection {
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
   models(filters: NeuronModelFilter, ordering: [NeuronModelOrder!]! = [], pagination: OffsetPaginationInput): [NeuronModel!]!
   name: String!
@@ -5043,6 +5078,11 @@ type NeuronModel {
   """
   derivedInto: [Resident!]!
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   environment: ModEnvironment!
   id: ID!
   mappings(filters: WorkspaceMappingFilter, ordering: [WorkspaceMappingOrder!]! = [], pagination: OffsetPaginationInput): [WorkspaceMapping!]!
@@ -6667,6 +6707,11 @@ type SparseDataset {
   derivedFrom: [Transformation!]!
   description: String
 
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
   """The folder it is filed in. Organisational only"""
   folder: Folder
   id: ID!
@@ -7124,6 +7169,11 @@ type TableDataset {
   """
   derivedFrom: [Transformation!]!
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   The files written out of this table dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles`
