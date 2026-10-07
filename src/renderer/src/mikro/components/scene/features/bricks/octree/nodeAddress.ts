@@ -162,6 +162,32 @@ export function brickFetchBox(
     : fetchVoxelBox(geo, spec, levelIndex, coords);
 }
 
+/**
+ * Spatial zarr chunk index range `[lo, hi)` per axis covering the phase's
+ * fetch box, or null when the box is empty. The one place a brick is mapped to
+ * its chunks: the fetch path enumerates it (`chunksTouchingBrick`), the
+ * planner's decode ledger walks it without building the list.
+ */
+export function chunkRangeTouchingBrick(
+  geo: LayerLevelGeometry,
+  spec: BrickSpec,
+  levelIndex: number,
+  coords: Vec3,
+  phase: FetchPhase = "full",
+): { lo: Vec3; hi: Vec3 } | null {
+  const box = brickFetchBox(geo, spec, levelIndex, coords, phase);
+  const chunkShape = geo.levels[levelIndex].spatialChunks;
+
+  const lo: [number, number, number] = [0, 0, 0];
+  const hi: [number, number, number] = [0, 0, 0];
+  for (const axis of [0, 1, 2] as const) {
+    if (box.max[axis] <= box.min[axis]) return null;
+    lo[axis] = Math.floor(box.min[axis] / chunkShape[axis]);
+    hi[axis] = Math.ceil(box.max[axis] / chunkShape[axis]);
+  }
+  return { lo, hi };
+}
+
 /** Spatial zarr chunk coords ([x, y, z] chunk indices) covering the phase's fetch box. */
 export function chunksTouchingBrick(
   geo: LayerLevelGeometry,
@@ -170,16 +196,9 @@ export function chunksTouchingBrick(
   coords: Vec3,
   phase: FetchPhase = "full",
 ): Vec3[] {
-  const box = brickFetchBox(geo, spec, levelIndex, coords, phase);
-  const chunkShape = geo.levels[levelIndex].spatialChunks;
-
-  const lo: number[] = [];
-  const hi: number[] = [];
-  for (const axis of [0, 1, 2] as const) {
-    if (box.max[axis] <= box.min[axis]) return [];
-    lo.push(Math.floor(box.min[axis] / chunkShape[axis]));
-    hi.push(Math.ceil(box.max[axis] / chunkShape[axis]));
-  }
+  const range = chunkRangeTouchingBrick(geo, spec, levelIndex, coords, phase);
+  if (range === null) return [];
+  const { lo, hi } = range;
 
   const chunkCoords: Vec3[] = [];
   for (let z = lo[2]; z < hi[2]; z++)

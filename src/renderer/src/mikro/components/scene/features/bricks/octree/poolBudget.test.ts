@@ -7,6 +7,7 @@ import {
 import {
   COARSE_CHAIN_RESERVE,
   MIN_POOL_HEADROOM_SLOTS,
+  DECODE_BUDGET_CACHE_FRACTION,
   POOL_PLAN_SHARE_FRACTION,
   POOL_RESERVE_COUNT,
   getDecodedChunkCacheBytes,
@@ -14,6 +15,7 @@ import {
   resolveDecodeAllowanceBytes,
   resolveDecodeCacheShareBytes,
   resolveDecodeFloorBytes,
+  resolveDecodeBudgetBytes,
   resolvePlanBytesForAtlas,
   resolvePoolBudget,
 } from "./poolBudget";
@@ -294,6 +296,19 @@ describe("decode budgets", () => {
         floorLevelBytes: 600 * MiB,
       }),
     ).toBe(0);
+  });
+
+  it("lets a 2D plane plan fill most of the share, and never all of it", () => {
+    // Chunk by chunk, so the share itself is the bound — less the room the
+    // adjacent-slab prefetch and the previous plan's chunks need beside it.
+    for (const share of [128 * MiB, 737 * MiB, 3070 * MiB]) {
+      const budget = resolveDecodeBudgetBytes({ decodeCacheShareBytes: share });
+      expect(budget).toBe(Math.floor(DECODE_BUDGET_CACHE_FRACTION * share));
+      expect(budget).toBeLessThan(share);
+      // More than the floor + allowance could commit to between them.
+      expect(budget).toBeGreaterThan(Math.floor(0.75 * share));
+    }
+    expect(resolveDecodeBudgetBytes({ decodeCacheShareBytes: 0 })).toBe(0);
   });
 
   it("splits the cache per pool", () => {

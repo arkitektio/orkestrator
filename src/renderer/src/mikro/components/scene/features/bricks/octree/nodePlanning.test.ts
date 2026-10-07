@@ -2,9 +2,11 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import type { LayerState } from "../../../platform/model/layerModel";
 import type { LayerViewRange } from "../../../platform/visibility/visibility";
+import { frustumBoxIntersectionAabb } from "../../../platform/visibility/frustumClip";
+import { atlasKindForGeometry, atlasSlotBytes } from "./atlasFormat";
 import { resolveBrickSpec } from "./brickSpec";
 import { buildLayerLevelGeometry, type LevelSource } from "../../../platform/coords/levelGeometry";
-import { chunksTouchingBrick, nodeBaseBox } from "./nodeAddress";
+import { chunksTouchingBrick, nodeBaseBox, totalBrickCount } from "./nodeAddress";
 import {
   adjacentSelectionChunk,
   adjacentSlabBrickZ,
@@ -16,10 +18,12 @@ import {
   sameNodePlan,
   slabLevelZ,
   LOD_HYSTERESIS,
+  PLANE_LOD_THRESHOLD,
   type LayerNodePlan,
   type NodeCamera,
   type PlannedNode,
 } from "./nodePlanning";
+import { resolvePoolBudget } from "./poolBudget";
 import { FRUSTUM_CULL_MARGIN } from "./viewportPlanning";
 
 const makeLayer = (
@@ -482,10 +486,11 @@ describe("planLayerNodes (3D octree)", () => {
 
     /**
      * THE invariant. The margin buys hysteresis at the edges; it must never
-     * buy it with bricks the user is actually looking at. Refinement is
-     * closest-first and margin nodes score farthest, so they only ever consume
-     * budget that nothing visible wanted — but that is an emergent property of
-     * the ordering, not something the code states, so pin it.
+     * buy it with bricks the user is actually looking at. This fixture is too
+     * shallow to break it (two levels: no budget runs out mid-pyramid), which
+     * is how it passed while a deeper volume lost visible bricks to the
+     * margin — see "cull margin under a binding budget" below for the test
+     * that can tell.
      */
     it("never displaces a strictly-visible node, at any budget", () => {
       const MB = 1024 * 1024;
@@ -1650,8 +1655,13 @@ describe("plane-chunked 4-channel pyramid (the reported case)", () => {
 });
 
 describe("planLayerNodes LOD hysteresis (previousKeepKeys)", () => {
-  // FLAT_LEVELS: the L1 root refines into the 2×2 L0 grid once
-  // scale × L0 factor (1) × lodBias >= 1. Sweep the scale across the band.
+  // FLAT_LEVELS in 2D: the L1 root refines into the 2×2 L0 grid once
+  // scale × L0 factor (1) × lodBias >= PLANE_LOD_THRESHOLD. Sweep the scale
+  // across the band below that.
+  const UNLOCK = PLANE_LOD_THRESHOLD;
+  const HOLD = PLANE_LOD_THRESHOLD / LOD_HYSTERESIS;
+  /** Inside the band: under the unlock threshold, above the hold one. */
+  const IN_BAND = UNLOCK - 0.03;
   const planAt = (scale: number, previousKeepKeys?: ReadonlySet<string>) =>
     planLayerNodes({
       layer: makeLayer(),
@@ -1667,9 +1677,13 @@ describe("planLayerNodes LOD hysteresis (previousKeepKeys)", () => {
   const keepKeysOf = (plan: LayerNodePlan) =>
     new Set(plan.nodes.filter((n) => n.role === "keep").map((n) => n.key));
 
+  it("has a band to sweep", () => {
+    expect(IN_BAND).toBeGreaterThan(HOLD);
+  });
+
   it("unlocks the finer level only at the full threshold without history", () => {
-    expect(planAt(1.0).targetLevel).toBe(0);
-    expect(planAt(0.95).targetLevel).toBe(1);
+    expect(planAt(UNLOCK).targetLevel).toBe(0);
+    expect(planAt(IN_BAND).targetLevel).toBe(1);
   });
 
   it("holds a previously refined node within the slack band", () => {
@@ -1677,19 +1691,62 @@ describe("planLayerNodes LOD hysteresis (previousKeepKeys)", () => {
     expect(fine.targetLevel).toBe(0);
     const keep = keepKeysOf(fine);
     expect(keep.size).toBeGreaterThan(0);
-    // 0.95 >= 1/1.15 — held; the same view without history coarsened above.
-    expect(planAt(0.95, keep).targetLevel).toBe(0);
+    // Held; the same view without history coarsened above.
+    expect(planAt(IN_BAND, keep).targetLevel).toBe(0);
   });
 
   it("is a band, not a ratchet: below the slack it coarsens even with history", () => {
     const keep = keepKeysOf(planAt(2));
-    expect(planAt(1 / LOD_HYSTERESIS - 0.01, keep).targetLevel).toBe(1);
+    expect(planAt(HOLD - 0.01, keep).targetLevel).toBe(1);
   });
 
   it("does not help a node that was never refined", () => {
     const keep = keepKeysOf(planAt(0.5)); // coarse view: nothing was refined
     expect(keep.size).toBe(0);
-    expect(planAt(0.95, keep).targetLevel).toBe(1);
+    expect(planAt(IN_BAND, keep).targetLevel).toBe(1);
+  });
+});
+
+describe("planLayerNodes 2D picks the level nearest one texel per pixel", () => {
+  // FLAT_LEVELS: L0 texels cover `scale` px, L1 texels 2 × `scale`.
+  const levelAt = (mode: "2D" | "3D", scale: number) =>
+    planLayerNodes({
+      layer: makeLayer(),
+      geometry: flatGeo,
+      spec: resolveBrickSpec(flatGeo, mode),
+      mode,
+      viewRange: { ...FULL_VIEW, scale },
+      camera: null,
+      lodBias: 1,
+      currentZ: 0,
+    }).targetLevel;
+
+  it("switches to the finer level at the midpoint, not at a full pixel", () => {
+    // 0.75 px per L0 texel: L0 (0.75 px) is nearer one pixel than L1 (1.5 px).
+    expect(levelAt("2D", 0.75)).toBe(0);
+    // 0.70: L1 (1.4 px) is nearer than L0 (0.70 px).
+    expect(levelAt("2D", 0.7)).toBe(1);
+  });
+
+  it("leaves the 3D rule where it was: a full pixel", () => {
+    expect(levelAt("3D", 0.95)).toBe(1);
+    expect(levelAt("3D", 1)).toBe(0);
+  });
+
+  it("still scales with lodBias", () => {
+    const biased = (lodBias: number) =>
+      planLayerNodes({
+        layer: makeLayer(),
+        geometry: flatGeo,
+        spec: flatSpec,
+        mode: "2D",
+        viewRange: { ...FULL_VIEW, scale: 0.6 },
+        camera: null,
+        lodBias,
+        currentZ: 0,
+      }).targetLevel;
+    expect(biased(1)).toBe(1);
+    expect(biased(1.5)).toBe(0);
   });
 });
 
@@ -1720,5 +1777,687 @@ describe("planLayerNodes motion ceiling (refineCeilingLevel)", () => {
 
   it("a pinned fixedLOD ignores the ceiling", () => {
     expect(planWith({ refineCeilingLevel: 1, layer: makeLayer({ fixedLOD: 0 }) }).targetLevel).toBe(0);
+  });
+});
+
+/**
+ * The reported scene: a thin 4-channel stack (46 × 2456²) whose coarse levels
+ * are floor-halved from odd sizes (307 → 153 → 76), so their true factors are
+ * 16.05 / 32.3 rather than 16 / 32. Two planner defects showed as "loads half
+ * the volume, leaves the rest at the coarsest level":
+ *  - a parent's box overhangs the next child brick by a fraction of a voxel, so
+ *    that child (and its whole subtree) was planned from BOTH parents and
+ *    charged to the slot budget twice;
+ *  - refinement was depth-first, so the nearest subtree took the whole budget
+ *    and every later one stopped four levels coarser.
+ */
+describe("planLayerNodes on an odd-sized true-factor pyramid (the reported scene)", () => {
+  const DIMS = ["c", "z", "y", "x"];
+  const layer = {
+    ...makeLayer({ zAxis: "z" }),
+    lens: {
+      slices: [],
+      axisNames: DIMS,
+      shape: [4, 46, 2456, 2456],
+      dataset: { axisNames: DIMS, dataArrays: [] },
+    },
+  } as unknown as LayerState;
+  const SHAPES: [number, number, number][] = [
+    [46, 2456, 2456],
+    [23, 1228, 1228],
+    [11, 614, 614],
+    [5, 307, 307],
+    [2, 153, 153],
+    [1, 76, 76],
+  ];
+  const levels: LevelSource[] = SHAPES.map(([z, y, x], i) => ({
+    shape: [4, z, y, x],
+    // Whole-level chunks: chunking is irrelevant here (the decode floor is lifted).
+    chunks: [4, z, y, x],
+    dtype: "uint8",
+    storeId: `s${i}`,
+    scaleFactors: [1, 46 / z, 2456 / y, 2456 / x],
+  }));
+  const geo = buildLayerLevelGeometry(DIMS, layer, levels)!;
+  const spec = resolveBrickSpec(geo, "3D");
+  const slotBytes = atlasSlotBytes(spec, atlasKindForGeometry(geo));
+  // 0.5 px per base voxel: level 1 (factor 2) is wanted everywhere, level 0 is not.
+  const VIEW: LayerViewRange = {
+    xRange: [0, 2456],
+    yRange: [0, 2456],
+    zRange: [0, 46],
+    scale: 0.5,
+  };
+  const plan = (maxPlanBytes?: number) =>
+    planLayerNodes({
+      layer,
+      geometry: geo,
+      spec,
+      mode: "3D",
+      viewRange: VIEW,
+      camera: null,
+      lodBias: 1,
+      currentZ: undefined,
+      maxPlanBytes,
+      decodeFloorBytes: Number.POSITIVE_INFINITY,
+    });
+  /** Bricks on levels 1..4: everything a full level-1 plan holds below the roots. */
+  const FULL_L1_SLOTS = 400 + 100 + 25 + 9;
+
+  it("has the brick grids the numbers below assume", () => {
+    expect(spec.payload).toEqual([64, 64, 46]);
+    expect(totalBrickCount(geo, spec)).toBe(1521 + 400 + 100 + 25 + 9 + 4);
+  });
+
+  it("plans every brick once", () => {
+    const p = plan();
+    const keys = new Set(p.nodes.map((n) => n.key));
+    expect(p.nodes.length).toBe(keys.size);
+    expect(p.planBytes).toBe(keys.size * slotBytes);
+    expect(keys.size).toBe(FULL_L1_SLOTS + 4);
+  });
+
+  it("reaches all of level 1 on exactly the slots level 1 needs", () => {
+    const p = plan((FULL_L1_SLOTS + 4) * slotBytes);
+    expect(p.nodes.filter((n) => n.level === 1)).toHaveLength(400);
+    expect(p.planBytes).toBeLessThanOrEqual((FULL_L1_SLOTS + 4) * slotBytes);
+  });
+
+  it("stops at the level the budget ran out on, not at the coarsest", () => {
+    const p = plan((FULL_L1_SLOTS / 2 + 4) * slotBytes);
+    const targetLevels = new Set(p.nodes.filter((n) => n.role === "target").map((n) => n.level));
+    expect(p.targetLevel).toBe(1);
+    expect([...targetLevels].sort()).toEqual([1, 2]);
+    expect(p.planBytes).toBeLessThanOrEqual((FULL_L1_SLOTS / 2 + 4) * slotBytes);
+  });
+});
+
+/** A uint16 `[c, z, y, x]` volume, halved isotropically per level. */
+const makeUint16Volume = (
+  mode: "2D" | "3D",
+  channels: number,
+  [z, y, x]: [number, number, number],
+  levelCount: number,
+  chunksOf: (level: number) => number[] = () => [1, 64, 64, 64],
+) => {
+  const dims = ["c", "z", "y", "x"];
+  const layer = {
+    ...makeLayer({ zAxis: "z" }),
+    lens: {
+      slices: [],
+      axisNames: dims,
+      shape: [channels, z, y, x],
+      dataset: { axisNames: dims, dataArrays: [] },
+    },
+  } as unknown as LayerState;
+  const levels: LevelSource[] = Array.from({ length: levelCount }, (_, i) => ({
+    shape: [channels, z >> i, y >> i, x >> i],
+    chunks: chunksOf(i),
+    dtype: "uint16",
+    storeId: `v${i}`,
+    scaleFactors: i === 0 ? null : [1, 1 << i, 1 << i, 1 << i],
+  }));
+  const geometry = buildLayerLevelGeometry(dims, layer, levels)!;
+  return { layer, geometry, spec: resolveBrickSpec(geometry, mode) };
+};
+
+/**
+ * A 1024³ volume in 64³ chunks, five levels, seen through a 2200 × 1300 px,
+ * 60° perspective camera — with the view range `visibility.ts` would publish
+ * for it (the exact box of frustum ∩ volume). Deep enough, unlike the 256³
+ * two-level fixture above, for a budget to run out MID-pyramid.
+ */
+const DEEP_SIZE = 1024;
+const deepVolume = (channels: number) =>
+  makeUint16Volume("3D", channels, [DEEP_SIZE, DEEP_SIZE, DEEP_SIZE], 5);
+const deepCamera = (
+  position: [number, number, number],
+  target: [number, number, number],
+): { camera: NodeCamera; viewRange: LayerViewRange } => {
+  const cam = new THREE.PerspectiveCamera(60, 2200 / 1300, 1, 100000);
+  cam.position.set(...position);
+  cam.lookAt(...target);
+  cam.updateMatrixWorld(true);
+  cam.updateProjectionMatrix();
+  const projScreen = new THREE.Matrix4().multiplyMatrices(
+    cam.projectionMatrix,
+    cam.matrixWorldInverse,
+  );
+  const box = new THREE.Box3();
+  frustumBoxIntersectionAabb(projScreen, [0, 0, 0], [DEEP_SIZE, DEEP_SIZE, DEEP_SIZE], box);
+  const clamp = (lo: number, hi: number): [number, number] => [
+    Math.max(0, Math.floor(lo)),
+    Math.min(DEEP_SIZE, Math.ceil(hi)),
+  ];
+  return {
+    camera: {
+      voxelFrustum: new THREE.Frustum().setFromProjectionMatrix(projScreen),
+      voxelPosition: position,
+      pxPerVoxelAtUnitDistance: 1300 / (2 * Math.tan(THREE.MathUtils.degToRad(60) / 2)),
+    },
+    viewRange: {
+      xRange: clamp(box.min.x, box.max.x),
+      yRange: clamp(box.min.y, box.max.y),
+      zRange: clamp(box.min.z, box.max.z),
+      scale: 1,
+    },
+  };
+};
+/** Views in which the volume overflows the frustum, so there is a margin. */
+const DEEP_POSES: Record<string, [[number, number, number], [number, number, number]]> = {
+  "close to a face": [
+    [-100, 512, 512],
+    [512, 512, 512],
+  ],
+  "inside, looking along x": [
+    [300, 512, 512],
+    [1024, 512, 512],
+  ],
+};
+/** GPU ceiling and decode-cache share (MiB) of three kinds of machine. */
+const DEEP_BUDGETS: [gpuMB: number, cacheMB: number][] = [
+  [6141, 3070],
+  [1475, 737],
+  [512, 512],
+];
+
+/**
+ * P26's invariant, on a pyramid deep enough to test it. The margin buys
+ * hysteresis at the edges of the view and must never buy it with bricks the
+ * user is looking at — which a single nearest-first walk broke as soon as a
+ * budget ran out part-way down: a margin brick beside the camera sorts ahead
+ * of a visible one far from it, and a coarse level's margin was bought before
+ * the next level's screen. On this volume, with the camera inside it, that
+ * cost up to 96 of the bricks on screen.
+ */
+describe("planLayerNodes cull margin under a binding budget (P26)", () => {
+  const MiB = 1024 * 1024;
+
+  for (const channels of [1, 4]) {
+    const volume = deepVolume(channels);
+    const slotBytes = atlasSlotBytes(volume.spec, atlasKindForGeometry(volume.geometry));
+    for (const [pose, [position, target]] of Object.entries(DEEP_POSES)) {
+      const { camera, viewRange } = deepCamera(position, target);
+      const base = {
+        layer: volume.layer,
+        geometry: volume.geometry,
+        spec: volume.spec,
+        mode: "3D" as const,
+        viewRange,
+        camera,
+        lodBias: 1,
+        currentZ: undefined,
+      };
+      /** On screen by GEOMETRY — not by `fetchBand`, whose band 0 also holds
+       * the margin's root bricks. */
+      const onScreen = (node: PlannedNode) => {
+        const box = nodeBaseBox(volume.geometry, volume.spec, node.level, node.coords);
+        return (
+          box.min[0] < viewRange.xRange[1] &&
+          viewRange.xRange[0] < box.max[0] &&
+          box.min[1] < viewRange.yRange[1] &&
+          viewRange.yRange[0] < box.max[1] &&
+          box.min[2] < viewRange.zRange![1] &&
+          viewRange.zRange![0] < box.max[2] &&
+          camera.voxelFrustum.intersectsBox(
+            new THREE.Box3(new THREE.Vector3(...box.min), new THREE.Vector3(...box.max)),
+          )
+        );
+      };
+      const screenKeys = (plan: LayerNodePlan) =>
+        plan.nodes
+          .filter(onScreen)
+          .map((node) => node.key)
+          .sort();
+
+      it(`${channels}ch, ${pose}: has a margin, and budgets that bind`, () => {
+        // Without both, the invariant below would hold of anything.
+        const unbounded = planLayerNodes({ ...base, decodeFloorBytes: Number.POSITIVE_INFINITY });
+        expect(unbounded.nodes.some((node) => node.fetchBand === 2)).toBe(true);
+        const binding = DEEP_BUDGETS.filter(([gpuMB, cacheMB]) => {
+          const { maxPlanBytes } = resolvePoolBudget({
+            deviceBudgetBytes: gpuMB * MiB,
+            poolCount: 1,
+            slotBytes,
+            totalBrickBytes: Number.MAX_SAFE_INTEGER,
+          });
+          const bounded = planLayerNodes({
+            ...base,
+            maxPlanBytes,
+            decodeCacheShareBytes: cacheMB * MiB,
+          });
+          return bounded.nodes.length < unbounded.nodes.length;
+        });
+        expect(binding.length).toBeGreaterThanOrEqual(2);
+      });
+
+      it(`${channels}ch, ${pose}: the bricks on screen do not depend on the margin`, () => {
+        for (const [gpuMB, cacheMB] of DEEP_BUDGETS) {
+          const { maxPlanBytes } = resolvePoolBudget({
+            deviceBudgetBytes: gpuMB * MiB,
+            poolCount: 1,
+            slotBytes,
+            totalBrickBytes: Number.MAX_SAFE_INTEGER,
+          });
+          // The settled plan and the first one (the cold-open gate).
+          for (const decodeAllowanceBytes of [undefined, 0]) {
+            const budgets = {
+              ...base,
+              maxPlanBytes,
+              decodeCacheShareBytes: cacheMB * MiB,
+              decodeAllowanceBytes,
+            };
+            const withMargin = planLayerNodes(budgets);
+            const without = planLayerNodes({ ...budgets, frustumCullMargin: 0 });
+            expect(screenKeys(withMargin)).toEqual(screenKeys(without));
+            // …and what is left over does reach the margin.
+            expect(withMargin.nodes.length).toBeGreaterThanOrEqual(without.nodes.length);
+          }
+        }
+      });
+    }
+  }
+});
+
+/**
+ * A 64³-chunked volume seen in 2D: every 256² slab brick is cut from 4×4
+ * chunks that are 64 slices deep, per channel, and no chunk feeds a second
+ * brick of the slab. The floor + allowance — built for plane-chunked pyramids,
+ * where a level is all-or-nothing — held such a view a level or two coarser
+ * than the decode cache could hold. `decodeBudgetBytes` lets it go on
+ * refining, visible bricks first, while the chunks its bricks REALLY need fit
+ * the cache share.
+ */
+describe("planLayerNodes chunk budget in 2D (64³-chunked volume)", () => {
+  const MiB = 1024 * 1024;
+  /** `size`² × `size`/4 voxels at L0, halved isotropically per level. */
+  const makeVolume = (
+    channels: number,
+    size: number,
+    levelCount: number,
+    chunksOf: (level: number) => number[] = () => [1, 64, 64, 64],
+  ) => makeUint16Volume("2D", channels, [size / 4, size, size], levelCount, chunksOf);
+  type Volume = ReturnType<typeof makeVolume>;
+
+  const overlapsView = (volume: Volume, view: LayerViewRange, node: PlannedNode) => {
+    const box = nodeBaseBox(volume.geometry, volume.spec, node.level, node.coords);
+    return (
+      box.min[0] < view.xRange[1] &&
+      view.xRange[0] < box.max[0] &&
+      box.min[1] < view.yRange[1] &&
+      view.yRange[0] < box.max[1]
+    );
+  };
+  /** Bricks per level that are on screen / only in the prefetch margin. */
+  const census = (volume: Volume, view: LayerViewRange, plan: LayerNodePlan) => {
+    const screen: number[] = volume.geometry.levels.map(() => 0);
+    const margin: number[] = volume.geometry.levels.map(() => 0);
+    for (const node of plan.nodes) {
+      (overlapsView(volume, view, node) ? screen : margin)[node.level] += 1;
+    }
+    return { screen, margin };
+  };
+  /** The independent recomputation: deduped chunks of every planned brick,
+   * each a whole uint16 chunk per channel. */
+  const chunkBytesOf = (volume: Volume, plan: LayerNodePlan, channels: number) => {
+    const keys = new Set<string>();
+    for (const node of plan.nodes)
+      for (const chunk of chunksTouchingBrick(volume.geometry, volume.spec, node.level, node.coords))
+        keys.add(`${node.level}:${chunk[0]}:${chunk[1]}:${chunk[2]}`);
+    let bytes = 0;
+    for (const key of keys) {
+      const [x, y, z] = volume.geometry.levels[Number(key.split(":")[0])].spatialChunks;
+      bytes += x * y * z * 2 * channels;
+    }
+    return bytes;
+  };
+
+  const plan = (
+    volume: Volume,
+    view: LayerViewRange,
+    overrides: Partial<Parameters<typeof planLayerNodes>[0]> = {},
+  ) =>
+    planLayerNodes({
+      layer: volume.layer,
+      geometry: volume.geometry,
+      spec: volume.spec,
+      mode: "2D",
+      viewRange: view,
+      camera: null,
+      lodBias: 1,
+      currentZ: 100,
+      ...overrides,
+    });
+
+  // 4096² × 1024, five levels. A 2200 × 1300 px viewport at 1 px per voxel:
+  // 10 × 6 = 60 L0 bricks on screen.
+  const big = (channels: number) => makeVolume(channels, 4096, 5);
+  const screenView = (scale: number): LayerViewRange => ({
+    xRange: [Math.floor(2048 - 1100 / scale), Math.ceil(2048 + 1100 / scale)],
+    yRange: [Math.floor(2048 - 650 / scale), Math.ceil(2048 + 650 / scale)],
+    zRange: [0, 1024],
+    scale,
+  });
+
+  it("counts exactly the chunks the plan's bricks need", () => {
+    for (const channels of [1, 4]) {
+      const volume = big(channels);
+      const p = plan(volume, screenView(1), { decodeCacheShareBytes: 3070 * MiB });
+      expect(p.decodeBytesPlanned).toBe(chunkBytesOf(volume, p, channels));
+    }
+  });
+
+  it("goes on refining past the allowance, as far as the cache share reaches", () => {
+    // One channel, a 737 MiB cache share. A slab brick needs 16 chunks of
+    // 64³ × 2 B = 8 MiB; the 37 bricks the coarser levels put on screen 296 MiB.
+    const volume = big(1);
+    const view = screenView(1);
+    const share = { decodeCacheShareBytes: 737 * MiB };
+    const before = plan(volume, view, { ...share, decodeBudgetBytes: 0 });
+    const after = plan(volume, view, share);
+
+    expect(before.budgetMinLevel).toBe(2);
+    // The allowance alone: 369 MiB below the floor, 24 L1 bricks and then 22 of L0.
+    expect(census(volume, view, before).screen[0]).toBe(22);
+    // 0.9 × 737 MiB = 663 MiB: 367 MiB left for L0 after the coarser levels,
+    // which is 45 bricks — and nothing over for the margin.
+    expect(after.decodeBudgetBytes).toBe(Math.floor(0.9 * 737 * MiB));
+    expect(census(volume, view, after).screen[0]).toBe(45);
+    expect(census(volume, view, after).margin).toEqual([0, 0, 0, 0, 0]);
+    expect(after.decodeBytesPlanned).toBe((37 + 45) * 8 * MiB);
+    expect(after.decodeBytesPlanned).toBeLessThanOrEqual(after.decodeBudgetBytes);
+
+    // With the cache this machine's GPU earns, all 60.
+    const roomy = plan(volume, view, { decodeCacheShareBytes: 3070 * MiB });
+    expect(census(volume, view, roomy).screen[0]).toBe(60);
+  });
+
+  it("does not wait for a second plan (the cold-open gate only zeroes the allowance)", () => {
+    const volume = big(1);
+    const view = screenView(1);
+    const first = { decodeCacheShareBytes: 737 * MiB, decodeAllowanceBytes: 0 };
+    const before = plan(volume, view, { ...first, decodeBudgetBytes: 0 });
+    const after = plan(volume, view, first);
+    expect(before.targetLevel).toBe(2);
+    expect(after.targetLevel).toBe(0);
+    expect(census(volume, view, after).screen[0]).toBe(45);
+  });
+
+  it("is never coarser on screen than the floor + allowance alone", () => {
+    for (const channels of [1, 4])
+      for (const scale of [0.72, 1, 1.4, 1.99])
+        for (const shareMiB of [128, 256, 400, 512, 737, 1024, 1535, 2048, 3070])
+          for (const decodeAllowanceBytes of [undefined, 0]) {
+            const volume = big(channels);
+            const view = screenView(scale);
+            const inputs = { decodeCacheShareBytes: shareMiB * MiB, decodeAllowanceBytes };
+            const before = census(
+              volume,
+              view,
+              plan(volume, view, { ...inputs, decodeBudgetBytes: 0 }),
+            );
+            const after = census(volume, view, plan(volume, view, inputs));
+            const label = `${channels}ch scale ${scale} share ${shareMiB} MiB`;
+            after.screen.forEach((count, level) => {
+              expect(count, `${label} L${level}`).toBeGreaterThanOrEqual(before.screen[level]);
+            });
+          }
+  });
+
+  describe("the whole screen before any margin brick", () => {
+    // 2048² × 512, four levels, four channels: 32 MiB of chunks per brick. A
+    // 1024 × 512 px view at 1 px per voxel puts 8 L0 bricks on screen and 16
+    // more in the margin; above them 4 + 4 on L1, 4 on L2 and the L3 root.
+    const volume = makeVolume(4, 2048, 4);
+    const view: LayerViewRange = {
+      xRange: [512, 1536],
+      yRange: [768, 1280],
+      zRange: [0, 512],
+      scale: 1,
+    };
+    const BRICK = 32 * MiB;
+    /** Everything below the root charged, against exactly `bricks` bricks. */
+    const withBudgetFor = (bricks: number) => {
+      const p = plan(volume, view, {
+        decodeFloorBytes: 0,
+        decodeAllowanceBytes: 0,
+        decodeBudgetBytes: bricks * BRICK,
+      });
+      return { plan: p, ...census(volume, view, p) };
+    };
+
+    it("has the brick counts the budgets below assume", () => {
+      const all = withBudgetFor(1000);
+      expect(all.screen).toEqual([8, 4, 4, 1]);
+      expect(all.margin).toEqual([16, 4, 0, 0]);
+    });
+
+    it("fills the screen on exactly the bricks the screen needs", () => {
+      // Root + L2 + the 4 of L1 on screen = 9 bricks; the 8 at L0 make 17.
+      const exact = withBudgetFor(17);
+      expect(exact.screen).toEqual([8, 4, 4, 1]);
+      expect(exact.margin).toEqual([0, 0, 0, 0]);
+      expect(exact.plan.decodeBytesPlanned).toBe(17 * BRICK);
+    });
+
+    it("gives the margin what the screen left over, coarse levels first", () => {
+      // The four L1 bricks of the margin come before any of its L0 bricks…
+      expect(withBudgetFor(21).margin).toEqual([0, 4, 0, 0]);
+      // …which are bought two at a time, as their parents' children.
+      expect(withBudgetFor(22).margin).toEqual([0, 4, 0, 0]);
+      expect(withBudgetFor(23).margin).toEqual([2, 4, 0, 0]);
+      for (const bricks of [18, 19, 20, 21, 23, 25, 37]) {
+        expect(withBudgetFor(bricks).screen).toEqual([8, 4, 4, 1]);
+      }
+    });
+
+    it("lets the margin have only what the screen could not use", () => {
+      // 16: the screen's next purchase is a pair of L0 bricks and one brick is
+      // left, so that one goes to the margin — the screen is exactly what it
+      // would have been with no margin at all.
+      const short = withBudgetFor(16);
+      expect(short.screen).toEqual([6, 4, 4, 1]);
+      expect(short.margin).toEqual([0, 1, 0, 0]);
+      expect(withBudgetFor(15).screen).toEqual([6, 4, 4, 1]);
+      expect(withBudgetFor(15).margin).toEqual([0, 0, 0, 0]);
+    });
+  });
+
+  it("leaves a plane-chunked pyramid to the floor + allowance", () => {
+    // Whole-plane chunks: one chunk feeds every brick of its slab, so only the
+    // 256² coarsest level has brick-sized chunks — and that one is above the
+    // floor. The budget buys nothing here; the plan's chunks are still counted.
+    const volume = makeVolume(1, 2048, 4, (level) => [1, 8, 2048 >> level, 2048 >> level]);
+    const view: LayerViewRange = {
+      xRange: [512, 1536],
+      yRange: [768, 1280],
+      zRange: [0, 512],
+      scale: 1,
+    };
+    for (const shareMiB of [128, 256, 512, 1024, 3070])
+      for (const decodeAllowanceBytes of [undefined, 0]) {
+        const inputs = { decodeCacheShareBytes: shareMiB * MiB, decodeAllowanceBytes };
+        const before = plan(volume, view, { ...inputs, decodeBudgetBytes: 0 });
+        const after = plan(volume, view, inputs);
+        expect(sameNodePlan(before, after)).toBe(true);
+        expect(after.decodeBytesCharged).toBe(before.decodeBytesCharged);
+        expect(after.decodeBytesPlanned).toBe(chunkBytesOf(volume, after, 1));
+        expect(before.decodeBytesPlanned).toBe(0);
+      }
+  });
+
+});
+
+/**
+ * The same budget in 3D. There the floor prices a level by the whole box of
+ * the view, which per-node LOD never fills, and the allowance past it stops at
+ * half the cache share — so a multi-channel volume stopped refining with slots
+ * to spare and the cache half empty.
+ */
+describe("planLayerNodes chunk budget in 3D (64³-chunked volume)", () => {
+  const MiB = 1024 * 1024;
+  const setup = (channels: number, pose: keyof typeof DEEP_POSES, [gpuMB, cacheMB]: [number, number]) => {
+    const volume = deepVolume(channels);
+    const slotBytes = atlasSlotBytes(volume.spec, atlasKindForGeometry(volume.geometry));
+    const { camera, viewRange } = deepCamera(...DEEP_POSES[pose]);
+    const { maxPlanBytes } = resolvePoolBudget({
+      deviceBudgetBytes: gpuMB * MiB,
+      poolCount: 1,
+      slotBytes,
+      totalBrickBytes: Number.MAX_SAFE_INTEGER,
+    });
+    const inputs = {
+      layer: volume.layer,
+      geometry: volume.geometry,
+      spec: volume.spec,
+      mode: "3D" as const,
+      viewRange,
+      camera,
+      lodBias: 1,
+      currentZ: undefined,
+      maxPlanBytes,
+      decodeCacheShareBytes: cacheMB * MiB,
+    };
+    return { volume, slotBytes, maxPlanBytes, inputs };
+  };
+  /** Visible bricks per level (the margin's are band 2). */
+  const visible = (plan: LayerNodePlan) => {
+    const counts = [0, 0, 0, 0, 0];
+    for (const node of plan.nodes) if (node.fetchBand !== 2) counts[node.level] += 1;
+    return counts;
+  };
+  /** The independent recomputation: deduped 64³ uint16 chunks, per channel. */
+  const chunkBytesOf = (
+    volume: ReturnType<typeof deepVolume>,
+    plan: LayerNodePlan,
+    channels: number,
+  ) => {
+    const keys = new Set<string>();
+    for (const node of plan.nodes)
+      for (const chunk of chunksTouchingBrick(volume.geometry, volume.spec, node.level, node.coords))
+        keys.add(`${node.level}:${chunk[0]}:${chunk[1]}:${chunk[2]}`);
+    return keys.size * 64 * 64 * 64 * 2 * channels;
+  };
+
+  it("goes on refining past the allowance while slots and cache have room", () => {
+    // Four channels, camera inside the volume, an RTX 4070's budgets: 699
+    // slots and a 3070 MiB cache share.
+    const { volume, slotBytes, maxPlanBytes, inputs } = setup(4, "inside, looking along x", [6141, 3070]);
+    const slots = Math.floor(maxPlanBytes / slotBytes);
+    const before = planLayerNodes({ ...inputs, decodeBudgetBytes: 0 });
+    const after = planLayerNodes(inputs);
+    expect(slots).toBe(699);
+
+    // The allowance (half the share) ran out with a third of the slots unused…
+    expect(before.decodeBytesCharged).toBeGreaterThan(0.99 * before.decodeAllowanceBytes);
+    expect(before.nodes.length).toBeLessThan((2 / 3) * slots);
+    // …and about half the cache share: the chunks its bricks need.
+    expect(chunkBytesOf(volume, before, 4)).toBeLessThan(0.6 * 3070 * MiB);
+
+    // With the budget the plan runs until the slots or the cache share give
+    // out, whichever comes first — and stays inside both.
+    expect(after.decodeBudgetBytes).toBe(Math.floor(0.9 * 3070 * MiB));
+    expect(visible(after)[0]).toBeGreaterThan(3 * visible(before)[0]);
+    const slotsLeft = slots - after.nodes.length;
+    const chunkBytesLeft = after.decodeBudgetBytes - after.decodeBytesPlanned;
+    expect(slotsLeft < 8 || chunkBytesLeft < 0.05 * after.decodeBudgetBytes).toBe(true);
+    expect(after.planBytes).toBeLessThanOrEqual(maxPlanBytes);
+    expect(after.decodeBytesPlanned).toBe(chunkBytesOf(volume, after, 4));
+    expect(after.decodeBytesPlanned).toBeLessThanOrEqual(after.decodeBudgetBytes);
+  });
+
+  it("never plans fewer visible bricks than the allowance alone, within both budgets", () => {
+    let improved = 0;
+    for (const channels of [1, 4])
+      for (const pose of Object.keys(DEEP_POSES))
+        for (const budgets of DEEP_BUDGETS) {
+          const { maxPlanBytes, inputs } = setup(channels, pose, budgets);
+          const before = planLayerNodes({ ...inputs, decodeBudgetBytes: 0 });
+          const after = planLayerNodes(inputs);
+          const label = `${channels}ch, ${pose}, ${budgets[1]} MiB cache`;
+          visible(after).forEach((count, level) => {
+            expect(count, `${label} L${level}`).toBeGreaterThanOrEqual(visible(before)[level]);
+          });
+          expect(after.planBytes, label).toBeLessThanOrEqual(maxPlanBytes);
+          if (after.nodes.length > before.nodes.length) {
+            improved += 1;
+            // What the budget added still fits the cache share.
+            expect(after.decodeBytesPlanned, label).toBeLessThanOrEqual(after.decodeBudgetBytes);
+          }
+        }
+    expect(improved).toBeGreaterThan(0);
+  });
+
+  it("is what the tracker switches off for a first 3D plan (the cold-open gate)", () => {
+    const { inputs } = setup(4, "inside, looking along x", [6141, 3070]);
+    const first = planLayerNodes({ ...inputs, decodeAllowanceBytes: 0, decodeBudgetBytes: 0 });
+    // Floor only: nothing below it, nothing counted.
+    expect(first.nodes.every((node) => node.level >= first.budgetMinLevel)).toBe(true);
+    expect(first.decodeBudgetBytes).toBe(0);
+    expect(first.decodeBytesPlanned).toBe(0);
+  });
+
+  it("leaves a pyramid whose chunks are larger than a brick to the floor + allowance", () => {
+    // Whole planes in rows of 40, single planes, and 64 × 64 columns 512 deep:
+    // on none of them can a level be bought brick by brick.
+    const layouts: [size: [number, number, number], chunksOf: (level: number) => number[]][] = [
+      [[1024, 1024, 1024], (level) => [1, 40, 1024 >> level, 1024 >> level]],
+      [[64, 2048, 2048], (level) => [1, 1, 2048 >> level, 2048 >> level]],
+      [[1024, 1024, 1024], () => [1, 512, 64, 64]],
+    ];
+    for (const [size, chunksOf] of layouts) {
+      const volume = makeUint16Volume("3D", 4, size, 4, chunksOf);
+      const [z, y, x] = size;
+      for (const viewRange of [
+        { xRange: [0, x], yRange: [0, y], zRange: [0, z], scale: 1 },
+        { xRange: [x / 4, x / 2], yRange: [y / 4, y / 2], zRange: [0, z], scale: 3.4 },
+      ] as LayerViewRange[])
+        for (const cacheMB of [512, 737, 3070, 4096])
+          for (const decodeAllowanceBytes of [undefined, 0]) {
+            const inputs = {
+              layer: volume.layer,
+              geometry: volume.geometry,
+              spec: volume.spec,
+              mode: "3D" as const,
+              viewRange,
+              camera: null,
+              lodBias: 1,
+              currentZ: undefined,
+              maxPlanBytes: 1535 * MiB,
+              decodeCacheShareBytes: cacheMB * MiB,
+              decodeAllowanceBytes,
+            };
+            const before = planLayerNodes({ ...inputs, decodeBudgetBytes: 0 });
+            const after = planLayerNodes(inputs);
+            expect(sameNodePlan(before, after)).toBe(true);
+            expect(after.decodeBytesCharged).toBe(before.decodeBytesCharged);
+          }
+    }
+  });
+
+  it("clamps a chunk to its level before measuring it against a brick", () => {
+    // A thin stack: 32 slices in chunks declared 64 deep. The brick is 32 deep
+    // too, and a chunk that cannot be deeper than the level is brick-sized.
+    const volume = makeUint16Volume("3D", 4, [32, 1024, 1024], 3);
+    expect(volume.spec.payload[2]).toBe(32);
+    const inputs = {
+      layer: volume.layer,
+      geometry: volume.geometry,
+      spec: volume.spec,
+      mode: "3D" as const,
+      viewRange: { xRange: [0, 1024], yRange: [0, 1024], zRange: [0, 32], scale: 1 } as LayerViewRange,
+      camera: null,
+      lodBias: 1,
+      currentZ: undefined,
+      maxPlanBytes: 1535 * MiB,
+      // A floor (128 MiB) and allowance (125 MiB) the 256 L0 bricks outgrow.
+      decodeCacheShareBytes: 250 * MiB,
+    };
+    const before = planLayerNodes({ ...inputs, decodeBudgetBytes: 0 });
+    const after = planLayerNodes({ ...inputs, decodeBudgetBytes: 4096 * MiB });
+    expect(before.budgetMinLevel).toBeGreaterThan(0);
+    expect(after.nodes.filter((node) => node.level === 0).length).toBeGreaterThan(
+      before.nodes.filter((node) => node.level === 0).length,
+    );
   });
 });

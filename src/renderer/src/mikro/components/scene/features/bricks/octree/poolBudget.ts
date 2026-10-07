@@ -174,6 +174,34 @@ export function resolveDecodeAllowanceBytes(input: {
   );
 }
 
+/** Share of a pool's decode cache the chunks of ONE plan may fill
+ * (`resolveDecodeBudgetBytes`). The tenth left over is for what lands in the
+ * cache beside the plan: the adjacent-slab prefetch and chunks of the previous
+ * plan still being repacked. */
+export const DECODE_BUDGET_CACHE_FRACTION = 0.9;
+
+/**
+ * Decoded-chunk bytes a plan's bricks may need in total (`planLayerNodes`
+ * `decodeBudgetBytes`) — a second way past the budget floor, beside the
+ * sub-floor allowance, on levels whose chunks are no larger than a brick.
+ *
+ * The floor and the allowance were built for plane-chunked pyramids, where one
+ * chunk feeds many bricks and a level is all-or-nothing, and they are cautious
+ * in ways that fit those: the floor prices a level at the whole view PLUS its
+ * margin against a QUARTER of the cache, and the allowance past it is capped
+ * at half. On brick-sized chunks (64³) a level is simply the sum of its
+ * bricks, and that caution left plans well short of what the cache could
+ * hold: a 2D slab, 64 slices decoded per slice shown, sat a level or two too
+ * coarse at every zoom, and a multi-channel volume stopped refining at about
+ * half the share with slots to spare. Here the plan counts the chunks its
+ * bricks really need, and may go on refining — visible bricks first — while
+ * that count fits the share. Everything admitted this way still fits the
+ * cache, which is the property P24 was about.
+ */
+export function resolveDecodeBudgetBytes(input: { decodeCacheShareBytes: number }): number {
+  return Math.floor(DECODE_BUDGET_CACHE_FRACTION * input.decodeCacheShareBytes);
+}
+
 export type PoolBudget = {
   /** Bytes to allocate the atlas at. */
   atlasBytes: number;
