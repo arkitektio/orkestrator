@@ -1,9 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  applyRendererBudgetSettings,
+  getRendererBudget,
+  resetRendererBudgetForTests,
+} from "@/core/settings/renderer/rendererBudget";
 import {
   COARSE_CHAIN_RESERVE,
   MIN_POOL_HEADROOM_SLOTS,
   POOL_PLAN_SHARE_FRACTION,
   POOL_RESERVE_COUNT,
+  getDecodedChunkCacheBytes,
+  resetDecodedChunkCacheBytesForTests,
   resolveDecodeAllowanceBytes,
   resolveDecodeCacheShareBytes,
   resolveDecodeFloorBytes,
@@ -362,5 +369,35 @@ describe("resolvePlanBytesForAtlas", () => {
 
   it("never returns less than one slot", () => {
     expect(clamp({ liveAtlasBytes: 0, totalBrickBytes: HUGE_PYRAMID })).toBe(SLOT_BYTES);
+  });
+});
+
+describe("getDecodedChunkCacheBytes", () => {
+  const hardware = {
+    probedAt: "2026-10-07T10:00:00.000Z",
+    totalRamMB: 32768,
+    gpus: [{ vendor: "NVIDIA Corporation", model: "RTX 4070", vramMB: 12282, vramDynamic: false }],
+  };
+
+  afterEach(() => {
+    resetDecodedChunkCacheBytesForTests();
+    resetRendererBudgetForTests();
+  });
+
+  it("stays what it was first read as, whatever the settings do afterwards", () => {
+    // The cache is built once per session; the planner asks on every replan.
+    // If the two drift apart the planner admits a working set the cache
+    // cannot hold — which is exactly what the first-start hardware probe
+    // would do, raising the automatic size several-fold mid-session.
+    const atBoot = getDecodedChunkCacheBytes();
+    expect(atBoot).toBe(512 * MiB);
+    applyRendererBudgetSettings({ rendererHardware: hardware });
+    expect(getRendererBudget().decodeCacheBytes).toBeGreaterThan(atBoot);
+    expect(getDecodedChunkCacheBytes()).toBe(atBoot);
+  });
+
+  it("takes the stored size at the next start", () => {
+    applyRendererBudgetSettings({ rendererHardware: hardware, rendererDecodeCacheMB: 1024 });
+    expect(getDecodedChunkCacheBytes()).toBe(1024 * MiB);
   });
 });

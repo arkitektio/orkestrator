@@ -97,6 +97,85 @@ export const settingsValidator = zod.object({
   voiceThreads: zod.number().int().min(1).max(8),
   /** Mirror to fetch models from instead of Hugging Face (offline labs). */
   voiceModelHost: zod.string().optional(),
+
+  // ── Renderer (Settings → Renderer, see `core/settings/renderer`) ──
+  /**
+   * What this computer has, as main's `HardwareService` found it. Null until
+   * the first probe lands (and always in the web build). A SNAPSHOT, kept so
+   * the memory ceiling derived from it is known synchronously at boot; "Detect
+   * again" replaces it.
+   */
+  rendererHardware: zod
+    .object({
+      probedAt: zod.string(),
+      totalRamMB: zod.number(),
+      gpus: zod.array(
+        zod.object({
+          vendor: zod.string(),
+          model: zod.string(),
+          vramMB: zod.number().nullable(),
+          vramDynamic: zod.boolean(),
+          driverVersion: zod.string().nullable().optional(),
+        }),
+      ),
+      cpu: zod
+        .object({
+          brand: zod.string(),
+          cores: zod.number(),
+          physicalCores: zod.number(),
+          speedGHz: zod.number().nullable(),
+        })
+        .nullable()
+        .optional(),
+      os: zod
+        .object({
+          platform: zod.string(),
+          distro: zod.string(),
+          release: zod.string(),
+          kernel: zod.string(),
+          arch: zod.string(),
+        })
+        .nullable()
+        .optional(),
+      displays: zod
+        .array(
+          zod.object({
+            width: zod.number(),
+            height: zod.number(),
+            refreshRate: zod.number().nullable(),
+            main: zod.boolean(),
+          }),
+        )
+        .optional(),
+      adapterVendor: zod.string().nullable().optional(),
+      adapter: zod
+        .object({
+          vendor: zod.string(),
+          architecture: zod.string(),
+          device: zod.string(),
+          description: zod.string(),
+          maxTextureDimension3D: zod.number().nullable(),
+          maxBufferSize: zod.number().nullable(),
+        })
+        .nullable()
+        .optional(),
+    })
+    .nullable(),
+  /** GPU memory 3D scenes may take, in MB; null picks it from the hardware. */
+  rendererGpuBudgetMB: zod.number().positive().nullable(),
+  /** Memory for decoded image data, in MB; null follows the GPU ceiling. */
+  rendererDecodeCacheMB: zod.number().positive().nullable(),
+
+  // ── Telemetry (Settings → Telemetry) ──
+  // Nothing here sends anything by itself. Both are ON unless switched off.
+  /**
+   * Look at this computer's hardware on first start (and on "Detect again")
+   * and keep the result in `rendererHardware`. Off: nothing is detected, any
+   * snapshot is dropped, and the renderer limits fall back to an estimate.
+   */
+  telemetryDetectHardware: zod.boolean(),
+  /** Add the hardware snapshot to the text of a bug report the user files. */
+  telemetryAttachHardware: zod.boolean(),
 });
 
 export const defaultSettings: Settings = {
@@ -135,6 +214,11 @@ export const defaultSettings: Settings = {
   voiceAutoStop: 8,
   voiceThreads: 2,
   voiceModelHost: undefined,
+  rendererHardware: null,
+  rendererGpuBudgetMB: null,
+  rendererDecodeCacheMB: null,
+  telemetryDetectHardware: true,
+  telemetryAttachHardware: true,
 };
 
 export type Settings = zod.infer<typeof settingsValidator>;

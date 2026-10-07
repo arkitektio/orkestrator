@@ -1,8 +1,10 @@
 import {
   Bug,
+  Cpu,
   Mic,
   Network,
   Pin,
+  Radio,
   RotateCcw,
   Server,
   SlidersHorizontal,
@@ -63,6 +65,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     group: "app",
   },
   {
+    slug: "renderer",
+    label: "Renderer",
+    description: "How much memory 3D scenes may use on this computer.",
+    icon: Cpu,
+    group: "app",
+  },
+  {
     slug: "voice",
     label: "Voice input",
     description: "Dictate into the palette and text fields.",
@@ -88,6 +97,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: "Mesh",
     description: "The private network of the organisation you are signed in to.",
     icon: Network,
+    group: "system",
+  },
+  {
+    slug: "telemetry",
+    label: "Telemetry",
+    description: "What Orkestrator learns about this computer, and what a bug report says about it.",
+    icon: Radio,
     group: "system",
   },
   {

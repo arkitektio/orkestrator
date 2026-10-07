@@ -1,9 +1,5 @@
-import {
-  MIN_LAYER_POOL_BYTES,
-  getInitialVolumeTextureBudgetBytes,
-  readBudgetOverride,
-  writeBudgetOverride,
-} from "../../../platform/quality/lodPlanning";
+import { MIN_LAYER_POOL_BYTES } from "../../../platform/quality/lodPlanning";
+import { getRendererBudget, writeRendererSettings } from "@/core/settings/renderer/rendererBudget";
 
 /**
  * The single source of truth for how a brick pool's memory is split between
@@ -61,69 +57,52 @@ export const POOL_PLAN_SHARE_FRACTION = 0.5;
  */
 export const POOL_RESERVE_COUNT = 2;
 
-/** Byte cap for decoded chunks held for repacking (the runner's default
- * cache is count-bounded and can pin GBs of plane-chunked SABs). Sized above
- * a typical plane-chunked working set, scaled down on low-RAM machines
- * (8 GiB Macs hit GC pauses with the full 512 MB alongside the atlases).
- * Lives here — not in brickResidency — so the planner's sub-floor decode
- * allowance and the residency cache agree on one number. */
 /**
- * User override for the decoded-chunk cache (`orkestrator.decodeCacheMB`).
+ * Byte cap for decoded chunks held for repacking (the runner's default cache is
+ * count-bounded and can pin GBs of plane-chunked SABs).
  *
- * A SEPARATE knob from `orkestrator.volumeBudgetMB` because these are different
+ * A SEPARATE number from the volume budget because these are different
  * physical resources: the volume budget is VRAM, this is JS heap. They are also
  * needed independently — a plane-chunked pyramid can be blocked purely on the
  * decode side (one brick's chunk set exceeding the cache) while its GPU slot
  * need is modest.
  *
- * Memoized for the same reason as the volume override: the cache size feeds
- * `resolveDecodeFloorBytes`/`resolveDecodeAllowanceBytes`, which the planner
- * reads, and the cache itself, which residency reads.
+ * Both are settings now (Settings → Renderer; `core/settings/renderer` holds
+ * the rule: half the GPU ceiling, bounded by real RAM, or the user's own
+ * number). Read here — not in brickResidency — so the planner's sub-floor
+ * decode allowance and the residency cache agree on one number.
  */
-const DECODE_CACHE_MB_KEY = "orkestrator.decodeCacheMB";
-const MIN_DECODE_CACHE_OVERRIDE_BYTES = 128 * 1024 * 1024;
-const MAX_DECODE_CACHE_OVERRIDE_BYTES = 4 * 1024 * 1024 * 1024;
+export { DECODE_CACHE_BUDGET_FRACTION } from "@/core/settings/renderer/rendererBudget";
 
-let decodeCacheOverrideMemo: number | null | undefined;
-
+/** The user's own decode-cache size, or null when it is automatic. */
 export function getDecodeCacheOverrideBytes(): number | null {
-  if (decodeCacheOverrideMemo !== undefined) return decodeCacheOverrideMemo;
-  decodeCacheOverrideMemo = readBudgetOverride(DECODE_CACHE_MB_KEY, {
-    min: MIN_DECODE_CACHE_OVERRIDE_BYTES,
-    max: MAX_DECODE_CACHE_OVERRIDE_BYTES,
-  });
-  return decodeCacheOverrideMemo;
+  const budget = getRendererBudget();
+  return budget.decodeCacheCustom ? budget.decodeCacheBytes : null;
 }
 
 export function setDecodeCacheOverrideMB(mb: number | null): void {
-  writeBudgetOverride(DECODE_CACHE_MB_KEY, mb);
-  decodeCacheOverrideMemo = undefined;
+  writeRendererSettings({ rendererDecodeCacheMB: mb });
 }
 
-/** Fraction of the VOLUME budget the chunk cache is allowed to track. The cache
- * is heap, not VRAM, but the volume budget is the only device-size signal we
- * have, and a machine that can afford a big atlas can generally afford the
- * chunks feeding it. */
-export const DECODE_CACHE_BUDGET_FRACTION = 0.5;
+let decodedChunkCacheBytes: number | undefined;
 
+/**
+ * FROZEN at its first read, for the session. The cache itself is built once
+ * (`brickResidency` sizes it at import) while the planner asks on every
+ * replan, and the planner's floor and sub-floor allowance are only safe
+ * against the cache that EXISTS: let this follow a settings change — or the
+ * first-start hardware probe, which raises the automatic size several-fold —
+ * and the planner admits a working set the cache cannot hold (P24). A new
+ * size therefore applies at the next start, as Settings → Renderer says.
+ */
 export function getDecodedChunkCacheBytes(): number {
-  const override = getDecodeCacheOverrideBytes();
-  if (override !== null) return override;
+  decodedChunkCacheBytes ??= getRendererBudget().decodeCacheBytes;
+  return decodedChunkCacheBytes;
+}
 
-  const nav =
-    typeof navigator !== "undefined"
-      ? (navigator as Navigator & { deviceMemory?: number })
-      : undefined;
-  const memoryGiB = nav?.deviceMemory;
-  // The low-RAM guard stays the FLOOR of the auto path: 8 GiB Macs hit GC
-  // pauses with the full 512 MB alongside the atlases (the reason this
-  // function exists), and scaling must never walk that back.
-  const base =
-    typeof memoryGiB === "number" && memoryGiB > 0 && memoryGiB <= 8
-      ? 256 * 1024 * 1024
-      : 512 * 1024 * 1024;
-  const scaled = DECODE_CACHE_BUDGET_FRACTION * getInitialVolumeTextureBudgetBytes();
-  return Math.min(Math.max(base, scaled), MAX_DECODE_CACHE_OVERRIDE_BYTES);
+/** Test seam: let the next read size the cache afresh. */
+export function resetDecodedChunkCacheBytesForTests(): void {
+  decodedChunkCacheBytes = undefined;
 }
 
 /** Share of a pool's decode cache the BUDGET FLOOR may commit to. A quarter

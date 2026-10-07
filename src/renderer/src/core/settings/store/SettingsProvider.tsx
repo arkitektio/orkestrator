@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useStore } from "zustand";
+import { useFirstStartHardwareProbe } from "../renderer/useFirstStartHardwareProbe";
 import { SettingsContext } from "./SettingsContext";
 import { createSettingsStore, type SettingsStore } from "./settingsStore";
 import { type Settings, defaultSettings as defSett } from "./validator";
@@ -7,6 +8,12 @@ import { type Settings, defaultSettings as defSett } from "./validator";
 export type SettingsProps = {
   children: React.ReactNode;
   defaultSettings?: Settings;
+};
+
+/** Inside the provider, so it only runs once the settings have hydrated. */
+const FirstStartHardwareProbe = () => {
+  useFirstStartHardwareProbe();
+  return null;
 };
 
 export const SettingsProvider: React.FC<SettingsProps> = ({
@@ -36,5 +43,10 @@ export const SettingsProvider: React.FC<SettingsProps> = ({
     return <>Loading settings</>;
   }
 
-  return <SettingsContext.Provider value={store}>{children}</SettingsContext.Provider>;
+  return (
+    <SettingsContext.Provider value={store}>
+      <FirstStartHardwareProbe />
+      {children}
+    </SettingsContext.Provider>
+  );
 };

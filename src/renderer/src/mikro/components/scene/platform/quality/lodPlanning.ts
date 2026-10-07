@@ -1,5 +1,10 @@
 import type { DataType } from "zarrita";
 import { mapDTypeToTextureBytes } from "@/core/data/zarr/indexing/dtype";
+import {
+  getRendererBudget,
+  reportedDeviceMemoryGiB,
+  writeRendererSettings,
+} from "@/core/settings/renderer/rendererBudget";
 import { BrickLayerFragment, ImageLayerFragment } from "../model/layerGuards";
 
 /**
@@ -7,8 +12,6 @@ import { BrickLayerFragment, ImageLayerFragment } from "../model/layerGuards";
  * Extracted from `platform/stores/sceneStore.ts` so the store no longer owns this
  * concern — it just calls `planDefaultVolumeLods(brickLayers)` at construction.
  */
-
-const DEFAULT_VOLUME_TEXTURE_BUDGET_BYTES = 512 * 1024 * 1024;
 
 /**
  * Per-pool slot-budget FLOOR (atlas bytes AND the node plan's slot-byte budget —
@@ -22,113 +25,41 @@ const DEFAULT_VOLUME_TEXTURE_BUDGET_BYTES = 512 * 1024 * 1024;
  * devices behave exactly as before and large ones get what they paid for.
  */
 export const MIN_LAYER_POOL_BYTES = 128 * 1024 * 1024;
-const MIN_VOLUME_TEXTURE_BUDGET_BYTES = 256 * 1024 * 1024;
-const MAX_VOLUME_TEXTURE_BUDGET_BYTES = 2 * 1024 * 1024 * 1024;
-const DEVICE_MEMORY_TEXTURE_FRACTION = 0.18;
 
 /**
- * User override for the whole-device volume budget
- * (`orkestrator.volumeBudgetMB`, megabytes; absent/invalid = auto).
+ * The user's own whole-device volume budget, or null when it is automatic.
  *
- * The auto estimate is `deviceMemory x 0.18` clamped to [256 MiB, 2 GiB], which
- * is a guess about a number the browser only reports coarsely (Chromium clamps
- * `deviceMemory` to 8). A user who knows their machine — and knows a dataset
- * needs a bigger working set than the guess allows — can say so.
- *
- * MEMOIZED for the session. Two consumers read this: the planner
- * (`nodePlanTracker`) and the atlas allocator (`ensurePool`), and
- * `maxPlanBytes = atlasBytes - headroom` is a load-bearing coupling — if they
- * read `localStorage` at different times and saw different values, a plan would
- * be sized for a pool that does not exist. The memo makes disagreement
- * impossible within a session; the setter updates it so a live change is still
- * coherent (it takes effect for plans at the next replan and for atlases at the
- * next pool creation, the same rule as `orkestrator.r16Atlas`).
+ * A SETTING now (Settings → Renderer, `rendererGpuBudgetMB`), no longer a
+ * `localStorage` key of the scene's own: it is derived from the detected
+ * graphics card and overruled there — see `core/settings/renderer`.
  */
-const VOLUME_BUDGET_MB_KEY = "orkestrator.volumeBudgetMB";
-
-/** Override bounds. The upper bound is above the auto clamp on purpose — the
- * whole point is to exceed a conservative estimate — but not unbounded: an
- * atlas is real VRAM and an over-large one fails allocation rather than
- * degrading. */
-const MIN_BUDGET_OVERRIDE_BYTES = 256 * 1024 * 1024;
-const MAX_BUDGET_OVERRIDE_BYTES = 4 * 1024 * 1024 * 1024;
-
-/** `undefined` = not yet read this session; `null` = read, no override set. */
-let volumeBudgetOverrideMemo: number | null | undefined;
-
 export function getVolumeBudgetOverrideBytes(): number | null {
-  if (volumeBudgetOverrideMemo !== undefined) return volumeBudgetOverrideMemo;
-  volumeBudgetOverrideMemo = readBudgetOverride(VOLUME_BUDGET_MB_KEY, {
-    min: MIN_BUDGET_OVERRIDE_BYTES,
-    max: MAX_BUDGET_OVERRIDE_BYTES,
-  });
-  return volumeBudgetOverrideMemo;
+  const budget = getRendererBudget();
+  return budget.gpuSource.kind === "custom" ? budget.gpuBudgetBytes : null;
 }
 
 export function setVolumeBudgetOverrideMB(mb: number | null): void {
-  writeBudgetOverride(VOLUME_BUDGET_MB_KEY, mb);
-  volumeBudgetOverrideMemo = undefined; // re-read (and re-clamp) on next get
+  writeRendererSettings({ rendererGpuBudgetMB: mb });
 }
 
 /**
- * Shared parse/clamp for the megabyte-valued overrides. Exported so
- * `poolBudget.ts`'s decode-cache override cannot drift from this one.
+ * GPU memory brick atlases may take, all pools together.
+ *
+ * Two consumers read this — the planner (`nodePlanTracker`) and the atlas
+ * allocator (`ensurePool`) — and `maxPlanBytes = atlasBytes - headroom` is a
+ * load-bearing coupling: if they saw different values a plan would be sized
+ * for a pool that does not exist. Both read the ONE resolved value
+ * `getRendererBudget` holds, so they cannot disagree; a change takes effect for
+ * plans at the next replan and for atlases at the next pool creation.
  */
-export function readBudgetOverride(
-  key: string,
-  bounds: { min: number; max: number },
-): number | null {
-  let raw: string | null = null;
-  try {
-    raw = window.localStorage.getItem(key);
-  } catch {
-    return null; // storage unavailable: auto
-  }
-  if (raw === null || raw === "" || raw === "auto") return null;
-  const mb = Number(raw);
-  if (!Number.isFinite(mb) || mb <= 0) return null;
-  return Math.min(Math.max(mb * 1024 * 1024, bounds.min), bounds.max);
-}
-
-export function writeBudgetOverride(key: string, mb: number | null): void {
-  try {
-    if (mb === null) window.localStorage.removeItem(key);
-    else window.localStorage.setItem(key, String(mb));
-  } catch {
-    /* storage unavailable: session keeps its current state */
-  }
-}
-
 export function getInitialVolumeTextureBudgetBytes(): number {
-  const override = getVolumeBudgetOverrideBytes();
-  if (override !== null) return override;
-
-  const nav = typeof navigator !== "undefined"
-    ? (navigator as Navigator & { deviceMemory?: number })
-    : undefined;
-  const memoryGiB = nav?.deviceMemory;
-
-  if (typeof memoryGiB !== "number" || !Number.isFinite(memoryGiB) || memoryGiB <= 0) {
-    return DEFAULT_VOLUME_TEXTURE_BUDGET_BYTES;
-  }
-
-  const estimatedBudget = memoryGiB * 1024 * 1024 * 1024 * DEVICE_MEMORY_TEXTURE_FRACTION;
-  return Math.min(
-    Math.max(estimatedBudget, MIN_VOLUME_TEXTURE_BUDGET_BYTES),
-    MAX_VOLUME_TEXTURE_BUDGET_BYTES,
-  );
+  return getRendererBudget().gpuBudgetBytes;
 }
 
 /** Raw `navigator.deviceMemory`, for the debug report — the resolved budget
  * alone cannot distinguish "8 GiB machine" from "override set". */
 export function getReportedDeviceMemoryGiB(): number | null {
-  const nav = typeof navigator !== "undefined"
-    ? (navigator as Navigator & { deviceMemory?: number })
-    : undefined;
-  const memoryGiB = nav?.deviceMemory;
-  return typeof memoryGiB === "number" && Number.isFinite(memoryGiB) && memoryGiB > 0
-    ? memoryGiB
-    : null;
+  return reportedDeviceMemoryGiB();
 }
 
 function getSliceLength(

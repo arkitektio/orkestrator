@@ -73,6 +73,22 @@ function buildIssueUrl({
     return `${base}?${params.toString()}`;
 }
 
+/** At most this many lines, each at most this long: the report travels in a
+ * URL, and what arrives here came over IPC. */
+const MAX_HARDWARE_LINES = 12;
+const MAX_HARDWARE_LINE_LENGTH = 160;
+
+/** The "Hardware" part of the issue body; nothing when the user opted out. */
+export function hardwareSection(lines: unknown): string[] {
+    if (!Array.isArray(lines)) return [];
+    const clean = lines
+        .filter((line): line is string => typeof line === "string" && line.trim().length > 0)
+        .slice(0, MAX_HARDWARE_LINES)
+        .map((line) => sanitizePath(line.replace(/[\r\n`]/g, " ").slice(0, MAX_HARDWARE_LINE_LENGTH)));
+    if (clean.length === 0) return [];
+    return ["", "### Hardware", ...clean.map((line) => `- ${line}`)];
+}
+
 /**
  * Register the IPC handler. Call registerIssueIpc() in app.whenReady().
  *
@@ -86,6 +102,12 @@ export function registerIssueIpc() {
         includeScreenshot?: boolean;
         labels?: string[];
         template?: string;        // e.g. "bug_report.md"
+        /**
+         * Lines describing this computer, already worded by the renderer
+         * (`hardwareReportLines`). Present only while the user leaves
+         * "Attach to bug reports" on in Settings → Telemetry.
+         */
+        hardware?: string[];
     }) => {
         const win = BrowserWindow.fromWebContents(event.sender);
         const rawCurrentUrl = win?.webContents.getURL() || "unknown";
@@ -128,6 +150,7 @@ export function registerIssueIpc() {
             `- App version: \`${appVersion}\``,
             `- OS: \`${platform}\``,
             `- Arch: \`${arch}\``,
+            ...hardwareSection(args?.hardware),
             screenshotNote,
         ].join("\n");
 

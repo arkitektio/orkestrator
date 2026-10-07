@@ -329,7 +329,7 @@ export const BRICK_DEBUG_SECTION = {
     {
       label: "Decode cache (heap)",
       title:
-        "Decoded-chunk cache. This is what the LOD FLOOR is derived from: a level is only unlocked if its chunk working set fits. Raise it when a level you expect is never selected on a plane-chunked pyramid. Applies at the next scene open.",
+        "Decoded-chunk cache. This is what the LOD FLOOR is derived from: a level is only unlocked if its chunk working set fits. Raise it when a level you expect is never selected on a plane-chunked pyramid. The same setting as Settings → Renderer; the cache itself is resized at the next restart.",
       get: getDecodeCacheOverrideBytes,
       setMB: setDecodeCacheOverrideMB,
     },

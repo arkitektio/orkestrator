@@ -1,5 +1,9 @@
 import { getPlatform } from "@/core/util/platform";
 import { createStore, type StoreApi } from "zustand/vanilla";
+import {
+  applyRendererBudgetSettings,
+  registerRendererSettingsWriter,
+} from "../renderer/rendererBudget";
 import { setBrandBase, setBrandSource } from "./brandTheme";
 import { defaultSettings, type Settings, settingsValidator } from "./validator";
 
@@ -46,6 +50,12 @@ function normalizeSettings(
   if (!result.success) {
     console.error("Invalid settings", result.error);
     return undefined;
+  }
+
+  // Detection switched off means nothing detected is kept, whoever wrote the
+  // settings — the snapshot must not outlive the permission to take it.
+  if (!result.data.telemetryDetectHardware && result.data.rendererHardware) {
+    return { ...result.data, rendererHardware: null };
   }
 
   return result.data;
@@ -141,6 +151,35 @@ function applyGlobalShortcut(
   });
 }
 
+/** The scene's debug panel kept its two budget overrides in keys of their own
+ * before they became settings. */
+const LEGACY_RENDERER_KEYS = {
+  rendererGpuBudgetMB: "orkestrator.volumeBudgetMB",
+  rendererDecodeCacheMB: "orkestrator.decodeCacheMB",
+} as const;
+
+/**
+ * Carry a pre-settings budget override over, once: the value becomes the
+ * setting (unless one is already there) and the old key is removed either way,
+ * so there is a single place the number can live.
+ */
+function migrateLegacyRendererOverrides(settings: Settings): Settings {
+  let next = settings;
+  for (const [field, key] of Object.entries(LEGACY_RENDERER_KEYS) as [
+    keyof typeof LEGACY_RENDERER_KEYS,
+    string,
+  ][]) {
+    const raw = localStorage.getItem(key);
+    if (raw === null) continue;
+    localStorage.removeItem(key);
+    const mb = Number(raw);
+    if (next[field] === null && Number.isFinite(mb) && mb > 0) {
+      next = { ...next, [field]: mb };
+    }
+  }
+  return next;
+}
+
 export function createSettingsStore(
   initialDefaultSettings: Settings = defaultSettings,
 ): SettingsStore {
@@ -159,6 +198,7 @@ export function createSettingsStore(
 
         applyThemeSettings(normalizedSettings);
         applyBrandSettings(normalizedSettings);
+        applyRendererBudgetSettings(normalizedSettings);
 
         if (
           isHydrating ||
@@ -210,18 +250,25 @@ export function createSettingsStore(
         localSettings = undefined;
       }
 
-      if (localSettings) {
-        store.getState().setSettings(localSettings);
-      } else {
-        console.log("Could not load settings from local storage");
-        store.getState().setSettings(currentDefaultSettings);
-      }
+      if (!localSettings) console.log("Could not load settings from local storage");
+      store
+        .getState()
+        .setSettings(migrateLegacyRendererOverrides(localSettings ?? currentDefaultSettings));
       isHydrating = false;
     },
     setDefaultSettings: (settings) => {
       currentDefaultSettings = settings;
     },
   }));
+
+  // The scene's debug panel changes the renderer budget from outside React;
+  // it does so through this store, so the change is saved and shown in
+  // Settings → Renderer like any other.
+  const writeRendererSettings = (patch: Partial<Settings>) => {
+    const settings = store.getState().settings;
+    if (settings) store.getState().setSettings({ ...settings, ...patch });
+  };
+  registerRendererSettingsWriter(writeRendererSettings);
 
   const extendedStore = store as SettingsStore;
   extendedStore.cleanup = () => {

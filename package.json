@@ -71,6 +71,7 @@
     "sherpa-onnx-node": "1.13.8",
     "socks": "^2.8.10",
     "socks-proxy-agent": "^10.1.0",
+    "systeminformation": "^5.33.15",
     "undici": "^8.10.2",
     "zundo": "^2.3.0",
     "zustand": "^5.0.12"

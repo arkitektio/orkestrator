@@ -252,7 +252,33 @@ scaledShare))`, with `share = globalBudget / pools` and `scaledShare =
 globalBudget / max(pools, POOL_RESERVE_COUNT)`. 128 MB is the FLOOR, so the
 default 512 MB device budget reproduces the old ceiling exactly while a larger
 budget actually scales (see §6c — the flat cap is what pinned the LOD floor on
-plane-chunked pyramids). `orkestrator.volumeBudgetMB` overrides `globalBudget`.
+plane-chunked pyramids).
+
+**Where `globalBudget` comes from.** It was `navigator.deviceMemory × 0.18` —
+system RAM, capped at 8 by Chromium, so every machine with 8 GiB or more got
+1.44 GiB whatever card it had. It is a SETTING now (Settings → Renderer,
+`core/settings/renderer/rendererBudget.ts`): main's `HardwareService`
+(`systeminformation`) is asked once on first start, the answer is kept in the
+settings (`rendererHardware`), and the automatic ceiling is half of the render
+GPU's own memory. Where the GPU has none of its own (Apple silicon's unified
+memory, integrated graphics) atlas and decode cache are the same bytes as
+everything else, so they share one RAM-scaled budget — a quarter of RAM on
+8 GiB, a third on 16, three eighths above, two thirds of it atlas
+(`sharedAtlasFraction`, `gpuMemoryKind`); with
+nothing detected (web build, very first launch) the old rule still applies,
+byte for byte. The user can overrule it (`rendererGpuBudgetMB`); the debug
+panel's budget row writes that same setting, and the old
+`orkestrator.volumeBudgetMB` / `decodeCacheMB` keys are adopted once and
+removed. Kept as a snapshot rather than probed per launch because planner and
+allocator read it synchronously — some scene modules while they are being
+imported — and must agree: `getRendererBudget()` is the one resolved value
+both read. The decoded-chunk cache follows the same module (half the ceiling,
+at most an eighth of real RAM) and is sized once per session. Not handled: an
+atlas allocation that runs out of memory does not shrink and retry, and the
+ceiling is a share of the card's TOTAL, sampled once. Detection is the user's
+to switch off (Settings → Telemetry, on by default): off means no probe, the
+snapshot is dropped and the old rule applies. The same snapshot is what a bug
+report attaches (also on by default, also switchable there).
 The `totalBrickCount` cap matters: a tiny 4-brick debug layer must not allocate
 a 296-slot float32 atlas (pitfall P4).
 
