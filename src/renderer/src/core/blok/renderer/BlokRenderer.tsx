@@ -49,10 +49,6 @@ export default function BlokRenderer({
     [catalog, uiComponents],
   );
 
-  const [runtimeStore] = useState(() =>
-    createBlokRuntimeStore({initialDataModel: initialState}),
-  );
-
   const tree = useMemo<BlokTree>(
     () => ({
       catalog,
@@ -80,6 +76,16 @@ export default function BlokRenderer({
         );
       }),
     [dispatchAction, surfaceId],
+  );
+
+  // Seeded with the handlers, not just synced in the effects below: nodes
+  // resolve their props during the first render, before any effect has run.
+  const [runtimeStore] = useState(() =>
+    createBlokRuntimeStore({
+      initialDataModel: initialState,
+      invokeFunction: resolvedInvokeFunction,
+      dispatchAction: resolvedDispatchAction,
+    }),
   );
 
   useEffect(() => {
