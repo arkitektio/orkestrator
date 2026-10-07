@@ -23,6 +23,12 @@ import {
   ACTIVE_IMPLEMENTATION_ORDERING,
   SMART_IMPLEMENTATION_PAGE_SIZE,
 } from "./queries";
+import {
+  OpenResultButtons,
+  runsDirectly,
+  useOpenResult,
+  type OpenableReturn,
+} from "./openResult";
 import { useRunOnSubmenu } from "./runOnContext";
 
 /**
@@ -288,8 +294,11 @@ export const ImplementationAssignButton = (
     triggerErrorFeedback,
   } = useAssignActionProgress(props);
 
+  const thenOpen = useOpenResult();
+
   const conditionalAssign = async (
     implementation: DetailImplementationFragment,
+    open?: OpenableReturn,
   ) => {
     const keys = buildActionArgs(implementation.action, props);
     if (!keys) {
@@ -312,7 +321,9 @@ export const ImplementationAssignButton = (
     // Tracked locally for the row's own progress bar AND globally: the menu
     // this row sits in closes on select, so the rail island is the only place
     // the task can still be watched or cancelled.
-    const untrack = trackTask(reference, onEvent, { notifyGlobally: true });
+    const untrack = trackTask(reference, open ? thenOpen(open, onEvent) : onEvent, {
+      notifyGlobally: true,
+    });
 
     try {
       await assign(buildAssignInput({
@@ -352,6 +363,14 @@ export const ImplementationAssignButton = (
             </span>
           ) : null}
         </span>
+      }
+      buttons={
+        runsDirectly(props.implementation.action.args, props) ? (
+          <OpenResultButtons
+            returns={props.implementation.action.returns}
+            onRun={(port) => conditionalAssign(props.implementation, port)}
+          />
+        ) : null
       }
       icon={PlayCircle}
     />
@@ -480,7 +499,9 @@ export const AssignButton = (
   } =
     useAssignActionProgress(props);
 
-  const conditionalAssign = async (action: PrimaryActionFragment) => {
+  const thenOpen = useOpenResult();
+
+  const conditionalAssign = async (action: PrimaryActionFragment, open?: OpenableReturn) => {
     const keys = buildActionArgs(action, props);
     if (!keys) {
       return;
@@ -497,7 +518,9 @@ export const AssignButton = (
     }
 
     const reference = uuidv4();
-    const untrack = trackTask(reference, onEvent, { notifyGlobally: true });
+    const untrack = trackTask(reference, open ? thenOpen(open, onEvent) : onEvent, {
+      notifyGlobally: true,
+    });
 
     try {
       await assign(buildAssignInput({
@@ -539,6 +562,14 @@ export const AssignButton = (
             </span>
           ) : null}
         </span>
+      }
+      buttons={
+        runsDirectly(props.action.args, props) ? (
+          <OpenResultButtons
+            returns={props.action.returns}
+            onRun={(port) => conditionalAssign(props.action, port)}
+          />
+        ) : null
       }
       icon={PlayCircle}
     />

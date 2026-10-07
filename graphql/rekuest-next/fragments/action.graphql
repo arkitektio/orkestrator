@@ -191,6 +191,13 @@ fragment PrimaryAction on Action {
     nullable
     default
   }
+  # What a run hands back: the menu offers "run, then open" per structure.
+  returns {
+    key
+    label
+    identifier
+    kind
+  }
   description
 }
 

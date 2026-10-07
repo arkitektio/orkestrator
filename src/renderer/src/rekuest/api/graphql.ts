@@ -26,7 +26,7 @@ export type Scalars = {
   Args: { input: any; output: any; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
-  /** A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it). */
+  /** A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector (it carries no text, or the model could not be loaded when it was saved). */
   Embedding: { input: any; output: any; }
   /** The `Identifier` scalar is a structure identifier of the form `@package/key` (e.g. `@mikro/image`) that types STRUCTURE, MEMORY_STRUCTURE and INTERFACE ports */
   Identifier: { input: any; output: any; }
@@ -671,8 +671,8 @@ export type AgentSnapshotEvent = {
   __typename?: 'AgentSnapshotEvent';
   agentId: Scalars['ID']['output'];
   globalRevision: Scalars['Int']['output'];
-  sessionId: Scalars['String']['output'];
-  timestamp: Scalars['DateTime']['output'];
+  sessionId?: Maybe<Scalars['String']['output']>;
+  timestamp?: Maybe<Scalars['DateTime']['output']>;
   values: Scalars['Args']['output'];
 };
 
@@ -4898,9 +4898,9 @@ export type StatePatchEvent = {
   interface: Scalars['String']['output'];
   op: Scalars['String']['output'];
   path: Scalars['String']['output'];
-  sessionId: Scalars['String']['output'];
+  sessionId?: Maybe<Scalars['String']['output']>;
   stateId: Scalars['ID']['output'];
-  timestamp: Scalars['DateTime']['output'];
+  timestamp?: Maybe<Scalars['DateTime']['output']>;
   value: Scalars['Args']['output'];
 };
 
@@ -4910,9 +4910,9 @@ export type StateSnapshotEvent = {
   agentId: Scalars['ID']['output'];
   globalRevision: Scalars['Int']['output'];
   interface: Scalars['String']['output'];
-  sessionId: Scalars['String']['output'];
+  sessionId?: Maybe<Scalars['String']['output']>;
   stateId: Scalars['ID']['output'];
-  timestamp: Scalars['DateTime']['output'];
+  timestamp?: Maybe<Scalars['DateTime']['output']>;
   value: Scalars['Args']['output'];
 };
 
@@ -5300,7 +5300,7 @@ export type TaskEvent = {
   /** Progress percentage. */
   progress?: Maybe<Scalars['Int']['output']>;
   /** Reference string for the event. */
-  reference: Scalars['String']['output'];
+  reference?: Maybe<Scalars['String']['output']>;
   /** Optional return values. */
   returns?: Maybe<Scalars['AnyDefault']['output']>;
   /** The report's step within its task; a task's history in step order. Null for server-written events. */
@@ -6227,7 +6227,7 @@ export type DetailActionFragment = (
   & GraphNodeActionFragment
 );
 
-export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, description?: string | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }> };
+export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, description?: string | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
 
 export type HoverActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
 
@@ -7121,11 +7121,11 @@ export type StateEventFragment = { __typename?: 'State', id: string, updatedAt: 
 
 export type PatchFragment = { __typename?: 'Patch', id: string, op: string, path: string, value: any, interface: string };
 
-export type StatePatchEventFragment = { __typename?: 'StatePatchEvent', stateId: string, agentId: string, op: string, path: string, value: any, globalRevision: number, sessionId: string, timestamp: any, interface: string };
+export type StatePatchEventFragment = { __typename?: 'StatePatchEvent', stateId: string, agentId: string, op: string, path: string, value: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null, interface: string };
 
-export type StateSnapshotEventFragment = { __typename?: 'StateSnapshotEvent', stateId: string, agentId: string, interface: string, value: any, globalRevision: number, sessionId: string, timestamp: any };
+export type StateSnapshotEventFragment = { __typename?: 'StateSnapshotEvent', stateId: string, agentId: string, interface: string, value: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null };
 
-export type AgentSnapshotEventFragment = { __typename?: 'AgentSnapshotEvent', agentId: string, values: any, globalRevision: number, sessionId: string, timestamp: any };
+export type AgentSnapshotEventFragment = { __typename?: 'AgentSnapshotEvent', agentId: string, values: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null };
 
 export type ListPortUsageFragment = { __typename?: 'PortUsage', portKey: string, index: number, keyPath: string, modifiers: Array<string>, action: { __typename?: 'Action', id: string, name: string, description?: string | null } };
 
@@ -7225,7 +7225,7 @@ export type DetailTaskFragment = (
   & PostmanTaskFragment
 );
 
-export type TaskEventFragment = { __typename?: 'TaskEvent', id: string, kind: TaskEventKind, level: LogLevel, returns?: any | null, progress?: number | null, reference: string, createdAt: any, message?: string | null, step?: number | null, agentTs?: any | null, effect?: string | null, key?: string | null, value?: any | null, task: { __typename?: 'Task', id: string, reference?: string | null }, delegatedTo?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', name: string } } | null } | null };
+export type TaskEventFragment = { __typename?: 'TaskEvent', id: string, kind: TaskEventKind, level: LogLevel, returns?: any | null, progress?: number | null, reference?: string | null, createdAt: any, message?: string | null, step?: number | null, agentTs?: any | null, effect?: string | null, key?: string | null, value?: any | null, task: { __typename?: 'Task', id: string, reference?: string | null }, delegatedTo?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', name: string } } | null } | null };
 
 export type TaskChangeFragment = { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null };
 
@@ -9164,6 +9164,12 @@ export const PrimaryActionFragmentDoc = gql`
     kind
     nullable
     default
+  }
+  returns {
+    key
+    label
+    identifier
+    kind
   }
   description
 }

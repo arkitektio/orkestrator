@@ -17,9 +17,10 @@ import { ArrowRight, PlayIcon } from "lucide-react";
 import React from "react";
 import { describeStructures } from "./describe";
 import { useSmartPrefetcher } from "./prefetchContext";
+import { CompactRowsProvider, PinnedSlotProvider } from "./rowPin";
 import { SmartMenuWrappers } from "./SmartMenuWrappers";
 import type { SmartSectionContext } from "./section";
-import { SectionHost } from "./SectionHost";
+import { SectionHost, SectionSearchBar } from "./SectionHost";
 import { resolveSections, SmartSectionRegistry } from "./sectionRegistry";
 import { SectionsProgress } from "./SectionsProgress";
 import { createSectionStatusStore, isEmptyResult } from "./sectionStatus";
@@ -96,6 +97,10 @@ const SmartContextHeader = ({ objects, partners }: SmartContextProps) => {
  * appear, each in its fixed slot, as their data lands — nothing above them
  * moves. A slim bar under the search runs until every section has answered,
  * and only then may the menu say there is nothing to do.
+ *
+ * The search field ends in the sections' `SearchBar` buttons (local: Share,
+ * Open). Every row carries a pin toggle; pinned rows leave their section for the
+ * start of the list, above every section, so the first is the one Enter runs.
  */
 export const SmartContext = ({
   registry = smartSections(),
@@ -107,6 +112,8 @@ export const SmartContext = ({
   // debounced copy, so typing does not cost a request per key.
   const debouncedFilter = useDebounce(filter, 200);
   const [store] = React.useState(createSectionStatusStore);
+  // Where the sections lift their pinned rows to (`SectionHost`).
+  const [pinnedSlot, setPinnedSlot] = React.useState<HTMLDivElement | null>(null);
 
   const plan = React.useMemo(
     () => resolveSections(registry, { objects, partners, returns, collection, sections }),
@@ -133,6 +140,7 @@ export const SmartContext = ({
       onError,
       filter: debouncedFilter,
       liveFilter: filter,
+      hasSearchBar: true,
     }),
     [objects, partners, returns, collection, sections, onDone, onError, debouncedFilter, filter],
   );
@@ -158,15 +166,28 @@ export const SmartContext = ({
                 selection.repin();
               }}
               autoFocus
+              trailing={
+                plan.some((section) => section.SearchBar)
+                  ? plan.map((section) => (
+                      <SectionSearchBar key={section.id} section={section} context={context} />
+                    ))
+                  : undefined
+              }
             />
             <SectionsProgress active={summary.pending} />
 
             <CommandList className="mt-2" onPointerMove={selection.onPointerMove}>
-              {plan.map((section) =>
-                section.tier === "instant" || painted ? (
-                  <SectionHost key={section.id} section={section} context={context} />
-                ) : null,
-              )}
+              {/* No heading: what is first in the menu is what was pinned. */}
+              <div ref={setPinnedSlot} role="group" aria-label="Pinned actions" />
+              <CompactRowsProvider value>
+                <PinnedSlotProvider value={pinnedSlot}>
+                  {plan.map((section) =>
+                    section.tier === "instant" || painted ? (
+                      <SectionHost key={section.id} section={section} context={context} />
+                    ) : null,
+                  )}
+                </PinnedSlotProvider>
+              </CompactRowsProvider>
               {isEmptyResult(summary) ? (
                 <CommandEmpty>No Action available</CommandEmpty>
               ) : null}

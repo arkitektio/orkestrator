@@ -141,6 +141,12 @@ the open frame; `remote` = mounts one frame later), `Guard`, `applies(props)`,
   declaring `prefetch(target)` → `{ service, name, query, variables }[]`,
   built with the SAME builders, or the warmed entry is never hit; the host
   prefetcher (`extensions/prefetch.ts`) owns TTL, dedupe and the client.
+- Pins are the host's: `SectionHost` tells every row its pin through
+  `RowPinContext` and moves pinned rows into the "Pinned" group at the start
+  of the menu; `CommandActionRow` draws the toggle, so a row built on it
+  needs nothing. The host keeps pins per profile in localStorage
+  (`extensions/pins.ts`); a section with its own pin store answers through
+  `usePins` (local actions). A pin never decides whether a row exists.
 - Callers narrow the menu with `sections={{ only | exclude | palette }}`,
   never with a new `disableX` prop. A section opts into the ⌘K palette with
   `palette: true` (the palette renders them through `PaletteSections`).

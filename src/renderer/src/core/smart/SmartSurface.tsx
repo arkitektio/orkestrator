@@ -10,10 +10,12 @@ import {
 } from "@/core/ui/hover-card";
 import { useSettingsStore } from "@/core/settings/store/SettingsContext";
 import { Structure } from "@/core/types";
+import { cn } from "@/core/util/utils";
 import React from "react";
 import { useSelectionStoreApi } from "../dnd/selection/SelectionContext";
 import { getSmartBuilderAdapters } from "./buildSmartAdapters";
 import { SmartContext } from "./extensions/context";
+import { useMenuChrome } from "./menuChrome";
 import { useSmartPrefetcher } from "./extensions/prefetchContext";
 import { hoverOpenDelay, smartNodeAt, SmartHit } from "./nodeRegistry";
 
@@ -125,8 +127,13 @@ const SmartContextMenuSurface = ({
 }: {
   menuOpenRef: React.MutableRefObject<boolean>;
 }) => {
+  const menuChrome = useMenuChrome();
   const triggerRef = React.useRef<HTMLSpanElement | null>(null);
   const targetRef = React.useRef<Structure | null>(null);
+  // One content instance per right-click. Radix keeps the content mounted
+  // through its close animation, so a right-click on another card while the
+  // menu is open would reuse it: same position, same snapshotted target.
+  const [opening, setOpening] = React.useState(0);
 
   React.useEffect(() => {
     // Radix's `ContextMenuTrigger` anchors its content to the event's
@@ -143,6 +150,7 @@ const SmartContextMenuSurface = ({
 
       event.preventDefault();
       targetRef.current = hit.structure;
+      setOpening((current) => current + 1);
       trigger.dispatchEvent(
         new MouseEvent("contextmenu", {
           bubbles: true,
@@ -177,7 +185,11 @@ const SmartContextMenuSurface = ({
           SelectionBox's global mousedown handler would clear the selection the
           moment a row is pressed — an action on a multi-selection would then run
           against the single right-clicked item. */}
-      <ContextMenuContent className="dark:border-border max-w-md" data-nonbreaker>
+      <ContextMenuContent
+        key={opening}
+        className={cn("dark:border-border w-72 max-w-[90vw]", menuChrome)}
+        data-nonbreaker
+      >
         <SmartMenuContent targetRef={targetRef} />
       </ContextMenuContent>
     </ContextMenu>
