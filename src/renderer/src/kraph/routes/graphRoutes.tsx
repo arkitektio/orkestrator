@@ -1,5 +1,5 @@
-import { ErrorPage } from "@/core/layout/fallbacks/ErrorPage";
-import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import { renderQueryState } from "@/core/layout/routes/queryState";
 import type { DetailVariables, HookFunction } from "@/core/layout/routes/DetailQueryRoute";
 import { useDebugReport } from "@/core/debug/useDebugReport";
 import { ApolloQueryResult, OperationVariables, QueryHookOptions } from "@apollo/client";
@@ -36,7 +36,7 @@ export const asGraphScopeQueryRoute = <T extends any>(
   options: {
     fallback?: React.ReactNode;
     queryOptions?: QueryHookOptions<T, DetailVariables>;
-  } = { fallback: <></> },
+  } = {},
 ) => {
   return () => {
     const scope = useGraphScope();
@@ -54,16 +54,11 @@ export const asGraphScopeQueryRoute = <T extends any>(
       loading: query.loading,
     });
 
-    if (!graphId) {
-      return options.fallback ?? <> This route is illconfigured</>;
-    }
+    if (!graphId) return options.fallback ?? <NotFound />;
 
-    if (query.error) {
-      return <ErrorPage error={query.error} />;
-    }
-
+    const state = renderQueryState(query);
     const data = query.data;
-    if (!data) return <LoadingPage />;
+    if (state !== undefined || !data) return state ?? null;
 
     return (
       <Component {...query} data={data} id={graphId} />
@@ -101,7 +96,7 @@ export const asGraphDetailQueryRoute = <T extends any>(
   options: {
     fallback?: React.ReactNode;
     queryOptions?: QueryHookOptions<T, GraphDetailVariables>;
-  } = { fallback: <></> },
+  } = {},
 ) => {
   return ({ direct }: { direct?: any | undefined }) => {
     const { id } = useParams<{ id: string }>();
@@ -122,26 +117,17 @@ export const asGraphDetailQueryRoute = <T extends any>(
       loading: passyProps.loading,
     });
 
-    if (misconfigured) {
-      return options.fallback ?? <> This route is illconfigured</>;
-    }
+    if (misconfigured) return options.fallback ?? <NotFound />;
 
-    if (passyProps.error) {
-      return <ErrorPage error={passyProps.error} />;
-    }
+    const state = renderQueryState(passyProps);
+    if (state !== undefined) return state;
 
-    if (passyProps.loading && !passyProps.data) return <LoadingPage />;
-
-    if (passyProps && passyProps.data) {
-      return (
-        <Component
-          {...passyProps}
-          id={id ?? ""}
-          graph={scope?.graphId ?? ""}
-        />
-      );
-    }
-
-    return null;
+    return (
+      <Component
+        {...passyProps}
+        id={id ?? ""}
+        graph={scope?.graphId ?? ""}
+      />
+    );
   };
 };

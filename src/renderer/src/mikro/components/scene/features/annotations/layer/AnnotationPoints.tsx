@@ -4,7 +4,7 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { computeWorldUnitsPerPixel } from "../../../platform/probe/probeWorld";
-import type { SelectedRoi } from "../roiSelectionStore";
+import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 import type { PointEntry } from "./placedAnnotations";
 import { samePointEntries, syncPointColors, syncPointMatrices } from "./pointsInstancing";
 
@@ -37,7 +37,7 @@ export const AnnotationPoints = ({
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
   hoverable: boolean;
   /** Per move over a shape; the store dedupes by id (state changes on enter/leave). */
-  onHoverRoi: (roi: SelectedRoi) => void;
+  onHoverRoi: (roi: SelectedRoi, point: HoverPoint) => void;
   onUnhoverRoi: (roiId: string) => void;
 }) => {
   perfMonitor.countRender("AnnotationPoints"); // no-op unless a recording is armed
@@ -103,7 +103,7 @@ export const AnnotationPoints = ({
         const entry = event.instanceId !== undefined ? entries[event.instanceId] : undefined;
         if (!entry) return;
         hoveredIdRef.current = entry.roi.id;
-        onHoverRoi(entry.roi);
+        onHoverRoi(entry.roi, [event.point.x, event.point.y, event.point.z]);
       }
     : undefined;
   const handleHoverOut = hoverable

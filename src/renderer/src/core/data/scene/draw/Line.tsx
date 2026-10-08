@@ -4,6 +4,7 @@ import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { Line2NodeMaterial } from "three/webgpu";
 import type { ThreeEvent } from "@react-three/fiber";
+import { swapGeometry } from "../gpu/swapGeometry";
 
 type PointLike = THREE.Vector3 | [number, number, number];
 
@@ -49,17 +50,17 @@ export const Line = ({
 }: LineProps) => {
   /** The positions last handed to `setPositions`, for the value dedupe below. */
   const uploadedRef = useRef<number[] | null>(null);
-  const geometry = useMemo(() => new LineGeometry(), []);
   const material = useMemo(() => new Line2NodeMaterial(), []);
-  const line = useMemo(() => new Line2(geometry, material), [geometry, material]);
+  const line = useMemo(() => new Line2(new LineGeometry(), material), [material]);
 
-  // Release GPU resources when the line unmounts.
+  // Release GPU resources when the line unmounts. `line.geometry`, not a
+  // mount-time one: every upload below puts the line on a new geometry.
   useEffect(
     () => () => {
-      geometry.dispose();
+      line.geometry.dispose();
       material.dispose();
     },
-    [geometry, material],
+    [line, material],
   );
 
   // Rebuild the vertex buffer whenever the points change. Layout effect, not
@@ -82,8 +83,8 @@ export const Line = ({
     // their point arrays inline in render (`AnnotationLayer` does, for every
     // shape), so an identity dep re-uploaded every line's vertex buffer — and
     // rebuilt its line distances — on any re-render of the subtree, e.g. a
-    // selection change. `setPositions` allocates fresh interleaved buffers and
-    // marks the geometry for a GPU re-upload, so this is not a cheap no-op.
+    // selection change. An upload is a new geometry and new GPU buffers, so
+    // this is not a cheap no-op.
     const previous = uploadedRef.current;
     if (previous !== null && previous.length === flat.length) {
       let same = true;
@@ -96,9 +97,14 @@ export const Line = ({
       if (same) return;
     }
     uploadedRef.current = flat;
+    // A NEW geometry per upload, never `setPositions` on the drawn one: the
+    // renderer would keep the first vertex buffer bound, and a longer polyline
+    // would invalidate every frame (`swapGeometry`).
+    const geometry = new LineGeometry();
     geometry.setPositions(flat);
+    swapGeometry(line, geometry);
     line.computeLineDistances(); // required for dashed rendering
-  }, [points, geometry, line]);
+  }, [points, line]);
 
   // Sync material appearance.
   //

@@ -500,7 +500,7 @@ export const NeuronEditor = ({
                 size="icon"
                 className="h-7 w-7 flex-none text-muted-foreground"
                 title="How does this work?"
-                onClick={() => openSheet("neuroneditorhelp", {})}
+                onClick={() => openSheet("neuroneditorhelp", {}, { className: "p-0" })}
               >
                 <HelpCircle className="w-4 h-4" />
               </Button>

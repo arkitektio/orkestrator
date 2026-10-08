@@ -28,6 +28,11 @@ export interface SmartModelProps {
   children: React.ReactNode;
   containerClassName?: string;
   hover?: boolean;
+  /**
+   * Shows a small burger in the card's bottom-right corner while it is hovered, which
+   * opens the card's right-click menu. Never shown inside the page sidebar.
+   */
+  menuButton?: boolean;
   className?: string;
 }
 

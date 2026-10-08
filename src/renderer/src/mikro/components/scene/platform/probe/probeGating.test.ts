@@ -52,7 +52,7 @@ describe("hoverProbeEnabled", () => {
     ).toBe(false);
   });
 
-  it("ignores ANNOTATE entirely for a layer that does not answer it (the 2D plane)", () => {
+  it("ignores ANNOTATE entirely for a layer that does not answer it (the 2D plane's click)", () => {
     expect(
       hoverProbeEnabled(
         gate({

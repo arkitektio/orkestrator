@@ -1,4 +1,4 @@
-import { CloudUpload, Flag, Inbox, ListTodo, Mailbox, MailOpen, Search, Send, SendHorizontal } from "lucide-react";
+import { CloudUpload, Flag, Inbox, ListChecks, ListTodo, MailOpen, Mailbox, Search, Send, SendHorizontal, Tags } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
 
@@ -13,4 +13,6 @@ export const KUVERT_NAV_LINKS: NavLinkDecl[] = [
   { label: "Outbox", route: "/kuvert/outbox", keywords: ["mail", "sending", "failed"], group: "Manage", icon: SendHorizontal, description: "Queued and failed sends" },
   { label: "Unsynced changes", route: "/kuvert/changes", keywords: ["mail", "sync", "push", "pending", "failed", "undo"], group: "Manage", icon: CloudUpload, description: "Changes on their way to the server" },
   { label: "Mailboxes", route: "/kuvert/accounts", keywords: ["mail", "email", "accounts", "imap", "gmail", "outlook"], group: "Manage", icon: Mailbox, description: "Linked accounts" },
+  { label: "Categories", route: "/kuvert/categories", keywords: ["mail", "labels", "tags"], group: "Manage", icon: Tags, description: "Labels on your mail" },
+  { label: "Task lists", route: "/kuvert/tasklists", keywords: ["mail", "todo", "lists"], group: "Manage", icon: ListChecks, description: "Lists your tasks live in" },
 ];

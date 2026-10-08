@@ -26,71 +26,27 @@ fragment ListOutputInterfaceUsage on PortUsage {
   ...ListPortUsage
 }
 
-fragment StructureDescriptor on StructureDescriptor {
-  id
-  key
-  type
-  description
-}
-
-# A descriptor as a thing of its own: where it is declared, and who else carries its key.
-fragment ListDescriptor on StructureDescriptor {
-  ...StructureDescriptor
-  structure {
-    id: identifier
-    identifier
-    label
-  }
-  service {
-    id
-    name
-  }
-}
-
-fragment Descriptor on StructureDescriptor {
-  ...ListDescriptor
-  sharedWith {
-    id
-    identifier
-    label
-  }
-}
-
-# A structure a service hosts, as a row: searchable, with its descriptors.
-fragment ListHostedStructure on HostedStructure {
-  id
-  identifier
-  key
-  label
-  description
-  service {
-    id
-    name
-  }
-  descriptors {
-    ...StructureDescriptor
-  }
-}
-
 fragment Structure on Structure {
   id: identifier
   identifier
   key
   label
   description
+  package {
+    key
+  }
   service {
     id
     name
-    description
   }
   descriptors {
-    ...StructureDescriptor
+    id
+    key
+    type
+    description
   }
   signals {
     ...SignalDeclaration
-  }
-  package {
-    key
   }
   outputUsages {
     ...ListOutputStructureUsage
@@ -104,14 +60,6 @@ fragment ListStructure on Structure {
   id: identifier
   identifier
   key
-  label
-  service {
-    id
-    name
-  }
-  descriptors {
-    key
-  }
   package {
     key
   }
@@ -144,11 +92,6 @@ fragment Interface on Interface {
 fragment StructurePackage on StructurePackage {
   id: key
   key
-  service {
-    id
-    name
-    description
-  }
   structures {
     ...ListStructure
   }
@@ -160,19 +103,4 @@ fragment StructurePackage on StructurePackage {
 fragment ListStructurePackage on StructurePackage {
   id: key
   key
-}
-
-# A service of the hub: what exists (structures, signals). Not an agent and it has none:
-# agents are a separate thing and say what can be done.
-fragment Service on Service {
-  id
-  name
-  identifier
-  description
-  structures {
-    ...ListStructure
-  }
-  signals {
-    ...SignalDeclaration
-  }
 }

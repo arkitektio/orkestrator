@@ -4,6 +4,7 @@ import { computeSceneWorldBox } from "../../platform/camera/sceneFit";
 import { layersPlanKey } from "../../platform/model/layerPlanKey";
 import { useModeStore } from "../../platform/stores/modeStore";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
+import { liveProbeWorld } from "../../platform/stores/viewer/probeSlice";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
@@ -18,9 +19,9 @@ import { bindAll } from "@/core/data/scene/stores/bindStore";
  *
  * X/Y reuse the origin crosshair's colors (`SceneAxis`); Z completes the
  * RGB=XYZ convention. Rendering follows the PreviewLine idiom: three
- * mount-styled Line2s whose buffers are rewritten at probe cadence — the
- * probe stream is already voxel-deduped and rAF-coalesced upstream, the same
- * cadence `SceneProbedPoint` rides.
+ * mount-styled Line2s whose buffers are rewritten at cursor cadence
+ * (`liveProbeWorld`: at most once per frame upstream), the same cadence
+ * `SceneProbedPoint` rides.
  */
 
 const X_COLOR = "#ef4444";
@@ -72,9 +73,7 @@ export const ProbeAxisGuides = () => {
     };
 
     const apply = () => {
-      const worldPos = guidesApply
-        ? viewerStoreApi.getState().probedCoordinate?.worldPos
-        : null;
+      const worldPos = guidesApply ? liveProbeWorld(viewerStoreApi.getState()) : null;
       if (!worldPos || !box) {
         clear();
         return;

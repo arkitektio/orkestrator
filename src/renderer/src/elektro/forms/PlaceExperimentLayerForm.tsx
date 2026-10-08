@@ -41,7 +41,7 @@ const hasTime = (system: { axes: { type?: string | null }[] }) => system.axes.so
  * guards Rekuest, and these queries run on mount.
  */
 export const PlaceExperimentLayerForm = (props: PlaceExperimentLayerFormProps) => (
-  <ElektroGuard unavailable={<div className="p-4 text-sm">Elektro is not available.</div>}>
+  <ElektroGuard fallback={<div className="p-4 text-sm">Elektro is not available.</div>}>
     <PlaceExperimentLayer {...props} />
   </ElektroGuard>
 );

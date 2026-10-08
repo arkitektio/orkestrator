@@ -9,7 +9,7 @@ interface Props {
 
 const TheCard = ({ item }: Props) => {
   return (
-    <MikroTableDataset.Smart object={item}>
+    <MikroTableDataset.Smart object={item} menuButton>
       <Card className="px-2 py-2 aspect-[5/3] flex flex-col justify-between">
         <CardTitle className="line-clamp-2 break-words">
           <MikroTableDataset.DetailLink object={item}>

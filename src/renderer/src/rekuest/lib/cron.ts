@@ -393,3 +393,56 @@ export const cadenceToInput = (
     },
   };
 };
+
+// --- Simple cadences ------------------------------------------------------------
+
+/**
+ * The cron lines the schedule panel edits without showing cron: one time of
+ * day, every day, on some weekdays, or on some days of the month. Only a view
+ * over the line: anything else is edited as the line itself.
+ */
+export type SimpleCadence =
+  | { kind: "daily"; hour: number; minute: number }
+  | { kind: "weekly"; hour: number; minute: number; weekdays: number[] }
+  | { kind: "monthly"; hour: number; minute: number; days: number[] };
+
+const single = (field: CronField): number | null =>
+  !field.any && field.values.size === 1 ? [...field.values][0] : null;
+
+/** The line as a simple cadence, or null when it says more than one can. */
+export const simpleFromCron = (line: string): SimpleCadence | null => {
+  const parsed = parseCron(line);
+  if (!parsed.ok) return null;
+  const { minute, hour, dayOfMonth, month, dayOfWeek } = parsed.cron;
+  const m = single(minute);
+  const h = single(hour);
+  if (m === null || h === null || !month.any) return null;
+  if (dayOfMonth.any && dayOfWeek.any) return { kind: "daily", hour: h, minute: m };
+  if (dayOfMonth.any) return { kind: "weekly", hour: h, minute: m, weekdays: sorted(dayOfWeek) };
+  if (dayOfWeek.any) return { kind: "monthly", hour: h, minute: m, days: sorted(dayOfMonth) };
+  return null;
+};
+
+const list = (values: number[]) => [...new Set(values)].sort((a, b) => a - b).join(",");
+
+export const cronFromSimple = (simple: SimpleCadence): string => {
+  const time = `${simple.minute} ${simple.hour}`;
+  if (simple.kind === "weekly") return `${time} * * ${list(simple.weekdays) || "*"}`;
+  if (simple.kind === "monthly") return `${time} ${list(simple.days) || "*"} * *`;
+  return `${time} * * *`;
+};
+
+/**
+ * Whether the line fires at all on this calendar day (the date's own year,
+ * month and day, read as a day in the schedule's zone): what a month view
+ * marks. A weekday belongs to the date, not to a zone.
+ */
+export const cronFiresOnDay = (cron: ParsedCron, date: Date): boolean =>
+  cron.month.values.has(date.getMonth() + 1) &&
+  dayMatches(cron, {
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+    weekday: date.getDay(),
+    hour: 0,
+    minute: 0,
+  });

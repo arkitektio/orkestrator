@@ -1,4 +1,4 @@
-import { ChartNoAxesCombined, History, MapPin, ShieldCheck } from "lucide-react";
+import { ChartNoAxesCombined, Footprints, History, MapPin, Route, ShieldCheck } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
 
@@ -20,6 +20,22 @@ export const LOKATE_NAV_LINKS: NavLinkDecl[] = [
     group: "Explore",
     icon: MapPin,
     description: "Your named places",
+  },
+  {
+    label: "Visits",
+    route: "/lokate/visits",
+    keywords: ["location", "stays", "history"],
+    group: "Explore",
+    icon: Footprints,
+    description: "Every stay, newest first",
+  },
+  {
+    label: "Trips",
+    route: "/lokate/trips",
+    keywords: ["location", "travel", "movement"],
+    group: "Explore",
+    icon: Route,
+    description: "Every movement between stays",
   },
   {
     label: "Insights",

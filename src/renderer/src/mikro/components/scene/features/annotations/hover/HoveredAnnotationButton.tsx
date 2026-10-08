@@ -13,14 +13,24 @@ import {
   useRoiSelectionStoreApi,
   type VisibleRoi,
 } from "../roiSelectionStore";
-import { buttonOriginFor, projectTopRightCorner } from "./projectRoiBox";
+import {
+  BUTTON_POINTER_OFFSET_PX,
+  buttonOriginFor,
+  projectTopRightCorner,
+  projectWorldPoint,
+} from "./projectRoiBox";
 
 /**
  * The action button attached to the hovered annotation: one small button
- * whose bottom-left sits exactly on the shape's most top-right corner on
- * screen (an actual corner of the shape's world box, `projectTopRightCorner`),
- * opening the annotation's `SmartContext` (the same menu as the sidebar row's button and
- * the right-click menu on a smart card).
+ * just up-right of where the pointer ENTERED the shape
+ * (`roiSelectionStore.hoverPoint`), opening the annotation's `SmartContext`
+ * (the same menu as the sidebar row's button and the viewport's right-click,
+ * `shell/SceneContextMenu`). Next to the pointer rather than on the shape's
+ * box corner, because for a long path that corner can be half a screen from
+ * the stroke the pointer is on. It stays where it appeared while the pointer
+ * moves along the shape — a target that fled would be no easier to reach.
+ * A hover that reported no point falls back to the box's most top-right
+ * corner (`projectTopRightCorner`).
  *
  * Plain DOM over the canvas, in the viewport's overlay block. Hover comes
  * from the pick surfaces through `roiSelectionStore.hoveredRoi` (enter/leave
@@ -36,8 +46,8 @@ import { buttonOriginFor, projectTopRightCorner } from "./projectRoiBox";
  * The button wears the avatar of whoever drew the shape, so a hover already
  * says whose it is; the ellipsis stands in until that is known, and for a
  * shape with no recorded author. The author is asked for per hovered shape
- * (`GetAnnotationCreator`, one row by id), never selected on the polled scene
- * list.
+ * (`GetAnnotationCreator`, one row by id), never selected on the scene list,
+ * which ships every shape of every layer.
  *
  * An experiment (Settings → General): with `experimentAnnotationHover` off the
  * button never appears and annotations are reached from the sidebar row and
@@ -63,6 +73,9 @@ const AttachedButton = ({ roi }: { roi: VisibleRoi }) => {
   const viewApi = useViewStoreApi();
   const selectionApi = useRoiSelectionStoreApi();
   const [open, setOpen] = useState(false);
+  // Read once: this component is keyed by the hovered id, so its lifetime IS
+  // one hover, and the entry point never moves within it.
+  const [entry] = useState(() => selectionApi.getState().hoverPoint());
   const pointerInsideRef = useRef(false);
   // The smart object is the SELECTION shape (what the sidebar card and the
   // local actions expect), not the placement box: strip the world extent,
@@ -82,10 +95,17 @@ const AttachedButton = ({ roi }: { roi: VisibleRoi }) => {
     const place = () => {
       const view = viewApi.getState();
       const matrix = view.viewProjectionMatrix;
+      const entryOnScreen =
+        entry && matrix ? projectWorldPoint(entry, matrix, view.viewportSize) : null;
       const anchor =
-        matrix && !view.cameraMoving
-          ? projectTopRightCorner(roi.bounds, roi.zSpan, matrix, view.viewportSize)
-          : null;
+        !matrix || view.cameraMoving
+          ? null
+          : entryOnScreen
+            ? {
+                x: entryOnScreen.x + BUTTON_POINTER_OFFSET_PX,
+                y: entryOnScreen.y - BUTTON_POINTER_OFFSET_PX,
+              }
+            : projectTopRightCorner(roi.bounds, roi.zSpan, matrix, view.viewportSize);
       if (!anchor) {
         node.style.opacity = "0";
         node.style.pointerEvents = "none";
@@ -102,7 +122,7 @@ const AttachedButton = ({ roi }: { roi: VisibleRoi }) => {
     };
     place();
     return viewApi.subscribe(place);
-  }, [roi, viewApi]);
+  }, [roi, entry, viewApi]);
 
   // Release the grip on unmount too — a held hover with nobody holding it
   // would never clear.

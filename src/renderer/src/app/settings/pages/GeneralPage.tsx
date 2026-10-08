@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/core/ui/card";
 import { FlaskConical } from "lucide-react";
+import { MenuShadowField } from "../components/MenuShadowField";
 import { SettingsForm } from "../components/SettingsForm";
 import { SettingsPage } from "../components/SettingsPage";
 
@@ -24,6 +25,7 @@ export const GeneralPage = () => (
             label="Hover previews"
             description="Show a detail preview card when hovering over items"
           />
+          <MenuShadowField />
         </CardContent>
       </Card>
 

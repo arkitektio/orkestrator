@@ -9,6 +9,7 @@ import {
   resolveCollectionMatrix,
   type AnnotationLayerVariant,
 } from "./annotationBounds";
+import { sceneAnnotationsVariables } from "./annotationCache";
 import { formatAnnotationMeasure, measureAnnotation } from "./roiMeasure";
 import { unitLabel } from "../../platform/coords/sceneUnits";
 import { useNavigateToAnnotation } from "./useNavigateToAnnotation";
@@ -123,7 +124,7 @@ const SelectedAnnotationCard = ({
 }) => {
   const collectionId = layer?.annotationCollection?.id;
   const { data } = useGetSceneAnnotationsQuery({
-    variables: { filters: { collection: collectionId ?? "" } },
+    variables: sceneAnnotationsVariables(collectionId ?? ""),
     skip: !collectionId,
   });
   const index =
@@ -147,8 +148,8 @@ const SelectedAnnotationCard = ({
 /**
  * One collection's list section. A component per layer is what lets each
  * collection run its own query hook; the variables match the canvas layer's
- * query exactly, so Apollo serves both from one cache entry (the canvas polls,
- * this list rides along).
+ * query exactly (`sceneAnnotationsVariables`), so Apollo serves both from one
+ * cache entry — and a draw, a delete or a live event lands in both.
  */
 const AnnotationLayerSection = ({
   layer,
@@ -159,7 +160,7 @@ const AnnotationLayerSection = ({
 }) => {
   const collection = layer.annotationCollection!;
   const { data } = useGetSceneAnnotationsQuery({
-    variables: { filters: { collection: collection.id } },
+    variables: sceneAnnotationsVariables(collection.id),
   });
   const toggleSelectedRoi = useRoiSelectionStore((s) => s.toggleSelectedRoi);
   const navigateToAnnotation = useNavigateToAnnotation();

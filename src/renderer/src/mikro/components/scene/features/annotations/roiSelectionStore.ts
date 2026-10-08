@@ -21,6 +21,9 @@ export interface SelectedRoi {
   coordinates: { name: string; value: number }[];
 }
 
+/** A point in scene world coordinates. */
+export type HoverPoint = readonly [number, number, number];
+
 export interface RoiBounds {
   minX: number;
   maxX: number;
@@ -36,10 +39,11 @@ export interface VisibleRoi extends SelectedRoi {
 
 /**
  * How long a hover survives the pointer leaving the shape. Long enough to
- * travel from the shape onto its attached button, short enough that a
+ * travel from the shape onto its attached button — from a path that is a
+ * few pixels of stroke and no interior to rest on — short enough that a
  * button never lingers on a shape the pointer merely crossed.
  */
-export const HOVER_GRACE_MS = 200;
+export const HOVER_GRACE_MS = 350;
 
 interface RoiSelectionState {
   selectedRois: SelectedRoi[];
@@ -52,7 +56,14 @@ interface RoiSelectionState {
   /** Cancels a pending grace clear; sets when the id changed. Cheap enough to
    * call per pointer move — re-asserting is what heals a grace clear that
    * landed while the pointer was still on the shape. */
-  hoverRoi: (roi: SelectedRoi) => void;
+  hoverRoi: (roi: SelectedRoi, point?: HoverPoint) => void;
+  /**
+   * Where the pointer ENTERED the hovered shape, scene world coordinates —
+   * the attached button sits next to it. Recorded once per hover (a getter
+   * over the closure, not state: nothing re-renders on it) and null when
+   * nothing is hovered or the pick surface reported no point.
+   */
+  hoverPoint: () => HoverPoint | null;
   /**
    * Clears after `HOVER_GRACE_MS` — unless the hover is held, or another
    * shape took over in the meantime. Ignored for a roi that is not hovered.
@@ -87,6 +98,7 @@ export const createRoiSelectionStore = () => {
   // a hold flag are not things a subscriber should ever re-render on.
   let graceTimer: ReturnType<typeof setTimeout> | null = null;
   let held = false;
+  let enteredAt: HoverPoint | null = null;
   const cancelGrace = () => {
     if (graceTimer === null) return;
     clearTimeout(graceTimer);
@@ -110,13 +122,15 @@ export const createRoiSelectionStore = () => {
         selectedRois: [],
         visibleRois: {},
         hoveredRoi: null,
-        hoverRoi: (roi) => {
+        hoverRoi: (roi, point) => {
           cancelGrace();
           if (get().hoveredRoi?.id === roi.id) return;
+          enteredAt = point ?? null;
           set((state) => {
             state.hoveredRoi = roi;
           });
         },
+        hoverPoint: () => (get().hoveredRoi ? enteredAt : null),
         unhoverRoi: (roiId) => {
           if (get().hoveredRoi?.id !== roiId) return;
           scheduleClear();

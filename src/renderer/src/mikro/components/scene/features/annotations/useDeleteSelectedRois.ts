@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { toast } from "@/core/notify";
 import { useDeleteAnnotationMutation } from "@/mikro/api/graphql";
+import { removeSceneAnnotation } from "./annotationCache";
 import { useRoiSelectionStore, type SelectedRoi } from "./roiSelectionStore";
 
 /**
@@ -27,8 +28,10 @@ export const useDeleteSelectedRois = (): {
   const selectedRois = useRoiSelectionStore((s) => s.selectedRois);
   const removeSelectedRoi = useRoiSelectionStore((s) => s.removeSelectedRoi);
   const [deleteAnnotationMutation, { loading: isDeleting }] = useDeleteAnnotationMutation({
-    refetchQueries: ["GetSceneAnnotations"],
-    awaitRefetchQueries: false,
+    // Drop the shape from the cached lists instead of fetching them again.
+    update: (cache, _result, { variables }) => {
+      if (variables) removeSceneAnnotation(cache, variables.input.id);
+    },
   });
 
   const deleteSelectedRois = useCallback(async () => {

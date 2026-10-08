@@ -98,6 +98,26 @@ describe("hoveredRoi", () => {
     expect(store.getState().hoveredRoi).toBeNull();
   });
 
+  it("records where the pointer entered a shape, once per hover", () => {
+    const store = createRoiSelectionStore();
+    expect(store.getState().hoverPoint()).toBeNull();
+    store.getState().hoverRoi(roi("ann:1", "layer:a"), [1, 2, 3]);
+    expect(store.getState().hoverPoint()).toEqual([1, 2, 3]);
+    // Later moves over the same shape do not drag the point along.
+    store.getState().hoverRoi(roi("ann:1", "layer:a"), [9, 9, 9]);
+    expect(store.getState().hoverPoint()).toEqual([1, 2, 3]);
+    // Another shape is another hover; one without a point reports none.
+    store.getState().hoverRoi(roi("ann:2", "layer:a"), [4, 5, 6]);
+    expect(store.getState().hoverPoint()).toEqual([4, 5, 6]);
+    store.getState().hoverRoi(roi("ann:3", "layer:a"));
+    expect(store.getState().hoverPoint()).toBeNull();
+    // And nothing hovered means no point.
+    store.getState().hoverRoi(roi("ann:4", "layer:a"), [7, 8, 9]);
+    store.getState().unhoverRoi("ann:4");
+    vi.advanceTimersByTime(HOVER_GRACE_MS);
+    expect(store.getState().hoverPoint()).toBeNull();
+  });
+
   it("re-entering (or entering another shape) cancels a pending clear", () => {
     const store = createRoiSelectionStore();
     store.getState().hoverRoi(roi("ann:1", "layer:a"));

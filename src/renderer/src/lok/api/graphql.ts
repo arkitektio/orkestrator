@@ -80,6 +80,11 @@ export type AppOrdering =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
 
+export type ApproveMembershipRequestInput = {
+  id: Scalars['ID']['input'];
+  roles?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type CancelInviteInput = {
   id: Scalars['ID']['input'];
 };
@@ -213,6 +218,8 @@ export type Context = {
   fitsActiveOrganization: Scalars['Boolean']['output'];
   /** The hub this client was approved into (for an app client) or is the identity of (for a hub client). Null for clients bound to no hub, e.g. plain OIDC relying parties. Apps can pass its id back as `?hub=` on a later configure link to preselect it. */
   hub?: Maybe<Hub>;
+  /** Is the user a member of this organization? False for an organization that does not exist, so it says nothing about other tenants. */
+  memberOf: Scalars['Boolean']['output'];
   /** The organization that is associated with this app */
   organization: Organization;
   /** The roles that the user has in the organization */
@@ -221,6 +228,11 @@ export type Context = {
   scope: Array<Scalars['String']['output']>;
   /** The user that is associated with this app */
   user: User;
+};
+
+
+export type ContextMemberOfArgs = {
+  organization: Scalars['ID']['input'];
 };
 
 export type CreateGroupProfileInput = {
@@ -276,6 +288,10 @@ export type CreateServiceInstanceInput = {
 
 export type DeclineInviteInput = {
   token: Scalars['String']['input'];
+};
+
+export type DeclineMembershipRequestInput = {
+  id: Scalars['ID']['input'];
 };
 
 export type DeleteRedeemTokenInput = {
@@ -480,18 +496,18 @@ export type InstanceAlias = {
   __typename?: 'InstanceAlias';
   /** The challenge of the alias. This is used to verify that the alias is reachable. If set, the alias will be accessed via the challenge URL (e.g. 'example.com/.well-known/challenge'). If not set, the alias will be accessed via the instance's URL. */
   challenge: Scalars['String']['output'];
-  /** The host of the alias, if its a ABSOLUTE alias (e.g. 'example.com'). If not set, the alias is relative to the layer's domain. */
+  /** The host of the alias (e.g. 'example.com'). Not set for a mesh alias, which resolves to its hub node's MagicDNS name. */
   host?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   /** The instance that this alias belongs to. */
   instance: ServiceInstance;
-  /** The kind of alias. If relative, the alias is resolved against the layer's domain/port/path; if absolute, it is a full URL. */
+  /** The kind of alias. If absolute, it is a full URL; if mesh, it resolves to its hub node on the organization's mesh; if docker, it is only reachable from inside the hub's own docker environment. */
   kind: Scalars['String']['output'];
   /** The layer that this alias belongs to, if any. */
   layer?: Maybe<Layer>;
-  /** The path of the alias, if its a ABSOLUTE alias (e.g. 'example.com/path'). If not set, the alias is relative to the layer's path. */
+  /** The path of the alias (e.g. 'path' for 'example.com/path'). */
   path?: Maybe<Scalars['String']['output']>;
-  /** The port of the alias, if its a ABSOLUTE alias (e.g. 'example.com:8080'). If not set, the alias is relative to the layer's port. */
+  /** The port of the alias (e.g. 8080 for 'example.com:8080'). If not set, the scheme's default port is used. */
   port?: Maybe<Scalars['Int']['output']>;
   /** Is this alias publicly reachable? If true, the coordination server can also check the alias's health directly, enabling health checks from the kontrol interface. */
   public: Scalars['Boolean']['output'];
@@ -729,11 +745,26 @@ export type MembershipFilter = {
 export type MembershipOrdering =
   { id: Ordering; };
 
+/** A request of a user who is not a member of an organization to become one. */
+export type MembershipRequest = {
+  __typename?: 'MembershipRequest';
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  /** Optional note from the user explaining the request. */
+  reason?: Maybe<Scalars['String']['output']>;
+  resolvedBy?: Maybe<User>;
+  respondedAt?: Maybe<Scalars['DateTime']['output']>;
+  status: Scalars['String']['output'];
+  /** The user who asks to join. Not a member yet, so they are visible here and nowhere else. */
+  user: User;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   acceptInvite: Membership;
   acknowledgeMessage: SystemMessage;
   addUserToOrganization: Membership;
+  approveMembershipRequest: Membership;
   cancelInvite: Invite;
   createDevelopmentalClient: Client;
   createGroupProfile: GroupProfile;
@@ -744,6 +775,7 @@ export type Mutation = {
   createRedeemToken: RedeemToken;
   createServiceInstance: ServiceInstance;
   declineInvite: Invite;
+  declineMembershipRequest: MembershipRequest;
   deleteRedeemToken: Scalars['ID']['output'];
   notifyUser: Scalars['Boolean']['output'];
   provision: RedeemToken;
@@ -751,6 +783,7 @@ export type Mutation = {
   releaseMandateClient: Scalars['String']['output'];
   render: Scalars['Fakt']['output'];
   requestMediaUpload: PresignedPostCredentials;
+  requestMembership: Scalars['Boolean']['output'];
   revokeMandate: Mandate;
   updateDevice: Device;
   updateGroupProfile: GroupProfile;
@@ -773,6 +806,11 @@ export type MutationAcknowledgeMessageArgs = {
 
 export type MutationAddUserToOrganizationArgs = {
   input: AddUserToOrganizationInput;
+};
+
+
+export type MutationApproveMembershipRequestArgs = {
+  input: ApproveMembershipRequestInput;
 };
 
 
@@ -826,6 +864,11 @@ export type MutationDeclineInviteArgs = {
 };
 
 
+export type MutationDeclineMembershipRequestArgs = {
+  input: DeclineMembershipRequestInput;
+};
+
+
 export type MutationDeleteRedeemTokenArgs = {
   input: DeleteRedeemTokenInput;
 };
@@ -858,6 +901,11 @@ export type MutationRenderArgs = {
 
 export type MutationRequestMediaUploadArgs = {
   input: RequestMediaUploadInput;
+};
+
+
+export type MutationRequestMembershipArgs = {
+  input: RequestMembershipInput;
 };
 
 
@@ -931,6 +979,8 @@ export type Organization = {
   id: Scalars['ID']['output'];
   /** the invites for this organization */
   invites: Array<Invite>;
+  /** Requests of non-members to join this organization. Only its owner and admins see any. */
+  membershipRequests: Array<MembershipRequest>;
   /** the memberships of people */
   memberships: Array<Membership>;
   /** The name of this organization */
@@ -1448,6 +1498,11 @@ export type RequestMediaUploadInput = {
   key: Scalars['String']['input'];
 };
 
+export type RequestMembershipInput = {
+  organization: Scalars['ID']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type RequirementInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   key: Scalars['String']['input'];
@@ -1530,7 +1585,7 @@ export type ServiceFilter = {
 /** A ServiceInstance is a configured instance of a Service. It will be configured by a configuration backend and will be used to send to the client as a configuration. It should never contain sensitive information. */
 export type ServiceInstance = {
   __typename?: 'ServiceInstance';
-  /** The aliases of the instance. An alias is a way to reach the instance. Clients can use these aliases to check if they can reach the instance. An alias can be an absolute alias (e.g. 'example.com') or a relative alias (e.g. 'example.com/path'). If the alias is relative, it will be relative to the layer's domain, port and path. */
+  /** The aliases of the instance. An alias is a way to reach the instance. Clients can use these aliases to check if they can reach the instance. */
   aliases: Array<InstanceAlias>;
   /** The groups that are allowed to use this instance. */
   allowedGroups: Array<Group>;
@@ -2020,6 +2075,8 @@ export type MembershipFragment = { __typename?: 'Membership', id: string, brandH
     & ListOrganizationFragment
   ) };
 
+export type MembershipRequestFragment = { __typename?: 'MembershipRequest', id: string, reason?: string | null, status: string, createdAt: any, user: { __typename?: 'User', id: string, username: string } };
+
 export type OrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, roles: Array<{ __typename?: 'Role', id: string, identifier: string, description: string }>, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null, profile: { __typename?: 'OrganizationProfile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null }, memberships: Array<{ __typename?: 'Membership', id: string, roles: Array<{ __typename?: 'Role', identifier: string }>, user: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } }>, invites: Array<{ __typename?: 'Invite', status: string, expiresAt?: any | null, token: string, inviteUrl: string, acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null }> };
 
 export type ListOrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null };
@@ -2212,6 +2269,30 @@ export type UpdateMembershipColorsMutation = { __typename?: 'Mutation', updateMe
     & MembershipFragment
   ) };
 
+export type RequestMembershipMutationVariables = Exact<{
+  input: RequestMembershipInput;
+}>;
+
+
+export type RequestMembershipMutation = { __typename?: 'Mutation', requestMembership: boolean };
+
+export type ApproveMembershipRequestMutationVariables = Exact<{
+  input: ApproveMembershipRequestInput;
+}>;
+
+
+export type ApproveMembershipRequestMutation = { __typename?: 'Mutation', approveMembershipRequest: { __typename?: 'Membership', id: string } };
+
+export type DeclineMembershipRequestMutationVariables = Exact<{
+  input: DeclineMembershipRequestInput;
+}>;
+
+
+export type DeclineMembershipRequestMutation = { __typename?: 'Mutation', declineMembershipRequest: (
+    { __typename?: 'MembershipRequest' }
+    & MembershipRequestFragment
+  ) };
+
 export type NotifyUserMutationVariables = Exact<{
   input: NotifyUserInput;
 }>;
@@ -2367,6 +2448,13 @@ export type MyContextQuery = { __typename?: 'Query', mycontext: (
     & ContextFragment
   ) };
 
+export type IsMemberOfQueryVariables = Exact<{
+  organization: Scalars['ID']['input'];
+}>;
+
+
+export type IsMemberOfQuery = { __typename?: 'Query', mycontext: { __typename?: 'Context', memberOf: boolean } };
+
 export type ListDevicesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<DeviceFilter>;
@@ -2501,6 +2589,16 @@ export type GetMandateQuery = { __typename?: 'Query', mandate: (
     { __typename?: 'Mandate' }
     & DetailMandateFragment
   ) };
+
+export type MembershipRequestsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type MembershipRequestsQuery = { __typename?: 'Query', organization: { __typename?: 'Organization', id: string, membershipRequests: Array<(
+      { __typename?: 'MembershipRequest' }
+      & MembershipRequestFragment
+    )> } };
 
 export type MyActiveMessagesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3149,6 +3247,18 @@ export const DetailMandateFragmentDoc = gql`
   }
 }
     ${ListMandateFragmentDoc}`;
+export const MembershipRequestFragmentDoc = gql`
+    fragment MembershipRequest on MembershipRequest {
+  id
+  reason
+  status
+  createdAt
+  user {
+    id
+    username
+  }
+}
+    `;
 export const ListRedeemTokenFragmentDoc = gql`
     fragment ListRedeemToken on RedeemToken {
   id
@@ -3762,6 +3872,103 @@ export function useUpdateMembershipColorsMutation(baseOptions?: ApolloReactHooks
 export type UpdateMembershipColorsMutationHookResult = ReturnType<typeof useUpdateMembershipColorsMutation>;
 export type UpdateMembershipColorsMutationResult = Apollo.MutationResult<UpdateMembershipColorsMutation>;
 export type UpdateMembershipColorsMutationOptions = Apollo.BaseMutationOptions<UpdateMembershipColorsMutation, UpdateMembershipColorsMutationVariables>;
+export const RequestMembershipDocument = gql`
+    mutation RequestMembership($input: RequestMembershipInput!) {
+  requestMembership(input: $input)
+}
+    `;
+export type RequestMembershipMutationFn = Apollo.MutationFunction<RequestMembershipMutation, RequestMembershipMutationVariables>;
+
+/**
+ * __useRequestMembershipMutation__
+ *
+ * To run a mutation, you first call `useRequestMembershipMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestMembershipMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestMembershipMutation, { data, loading, error }] = useRequestMembershipMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRequestMembershipMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RequestMembershipMutation, RequestMembershipMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RequestMembershipMutation, RequestMembershipMutationVariables>(RequestMembershipDocument, options);
+      }
+export type RequestMembershipMutationHookResult = ReturnType<typeof useRequestMembershipMutation>;
+export type RequestMembershipMutationResult = Apollo.MutationResult<RequestMembershipMutation>;
+export type RequestMembershipMutationOptions = Apollo.BaseMutationOptions<RequestMembershipMutation, RequestMembershipMutationVariables>;
+export const ApproveMembershipRequestDocument = gql`
+    mutation ApproveMembershipRequest($input: ApproveMembershipRequestInput!) {
+  approveMembershipRequest(input: $input) {
+    id
+  }
+}
+    `;
+export type ApproveMembershipRequestMutationFn = Apollo.MutationFunction<ApproveMembershipRequestMutation, ApproveMembershipRequestMutationVariables>;
+
+/**
+ * __useApproveMembershipRequestMutation__
+ *
+ * To run a mutation, you first call `useApproveMembershipRequestMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useApproveMembershipRequestMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [approveMembershipRequestMutation, { data, loading, error }] = useApproveMembershipRequestMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useApproveMembershipRequestMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ApproveMembershipRequestMutation, ApproveMembershipRequestMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ApproveMembershipRequestMutation, ApproveMembershipRequestMutationVariables>(ApproveMembershipRequestDocument, options);
+      }
+export type ApproveMembershipRequestMutationHookResult = ReturnType<typeof useApproveMembershipRequestMutation>;
+export type ApproveMembershipRequestMutationResult = Apollo.MutationResult<ApproveMembershipRequestMutation>;
+export type ApproveMembershipRequestMutationOptions = Apollo.BaseMutationOptions<ApproveMembershipRequestMutation, ApproveMembershipRequestMutationVariables>;
+export const DeclineMembershipRequestDocument = gql`
+    mutation DeclineMembershipRequest($input: DeclineMembershipRequestInput!) {
+  declineMembershipRequest(input: $input) {
+    ...MembershipRequest
+  }
+}
+    ${MembershipRequestFragmentDoc}`;
+export type DeclineMembershipRequestMutationFn = Apollo.MutationFunction<DeclineMembershipRequestMutation, DeclineMembershipRequestMutationVariables>;
+
+/**
+ * __useDeclineMembershipRequestMutation__
+ *
+ * To run a mutation, you first call `useDeclineMembershipRequestMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeclineMembershipRequestMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [declineMembershipRequestMutation, { data, loading, error }] = useDeclineMembershipRequestMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useDeclineMembershipRequestMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeclineMembershipRequestMutation, DeclineMembershipRequestMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeclineMembershipRequestMutation, DeclineMembershipRequestMutationVariables>(DeclineMembershipRequestDocument, options);
+      }
+export type DeclineMembershipRequestMutationHookResult = ReturnType<typeof useDeclineMembershipRequestMutation>;
+export type DeclineMembershipRequestMutationResult = Apollo.MutationResult<DeclineMembershipRequestMutation>;
+export type DeclineMembershipRequestMutationOptions = Apollo.BaseMutationOptions<DeclineMembershipRequestMutation, DeclineMembershipRequestMutationVariables>;
 export const NotifyUserDocument = gql`
     mutation NotifyUser($input: NotifyUserInput!) {
   notifyUser(input: $input)
@@ -4312,6 +4519,41 @@ export function useMyContextLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type MyContextQueryHookResult = ReturnType<typeof useMyContextQuery>;
 export type MyContextLazyQueryHookResult = ReturnType<typeof useMyContextLazyQuery>;
 export type MyContextQueryResult = Apollo.QueryResult<MyContextQuery, MyContextQueryVariables>;
+export const IsMemberOfDocument = gql`
+    query IsMemberOf($organization: ID!) {
+  mycontext {
+    memberOf(organization: $organization)
+  }
+}
+    `;
+
+/**
+ * __useIsMemberOfQuery__
+ *
+ * To run a query within a React component, call `useIsMemberOfQuery` and pass it any options that fit your needs.
+ * When your component renders, `useIsMemberOfQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useIsMemberOfQuery({
+ *   variables: {
+ *      organization: // value for 'organization'
+ *   },
+ * });
+ */
+export function useIsMemberOfQuery(baseOptions: ApolloReactHooks.QueryHookOptions<IsMemberOfQuery, IsMemberOfQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<IsMemberOfQuery, IsMemberOfQueryVariables>(IsMemberOfDocument, options);
+      }
+export function useIsMemberOfLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<IsMemberOfQuery, IsMemberOfQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<IsMemberOfQuery, IsMemberOfQueryVariables>(IsMemberOfDocument, options);
+        }
+export type IsMemberOfQueryHookResult = ReturnType<typeof useIsMemberOfQuery>;
+export type IsMemberOfLazyQueryHookResult = ReturnType<typeof useIsMemberOfLazyQuery>;
+export type IsMemberOfQueryResult = Apollo.QueryResult<IsMemberOfQuery, IsMemberOfQueryVariables>;
 export const ListDevicesDocument = gql`
     query ListDevices($pagination: OffsetPaginationInput, $filters: DeviceFilter) {
   devices(pagination: $pagination, filters: $filters) {
@@ -4808,6 +5050,44 @@ export function useGetMandateLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetMandateQueryHookResult = ReturnType<typeof useGetMandateQuery>;
 export type GetMandateLazyQueryHookResult = ReturnType<typeof useGetMandateLazyQuery>;
 export type GetMandateQueryResult = Apollo.QueryResult<GetMandateQuery, GetMandateQueryVariables>;
+export const MembershipRequestsDocument = gql`
+    query MembershipRequests($id: ID!) {
+  organization(id: $id) {
+    id
+    membershipRequests {
+      ...MembershipRequest
+    }
+  }
+}
+    ${MembershipRequestFragmentDoc}`;
+
+/**
+ * __useMembershipRequestsQuery__
+ *
+ * To run a query within a React component, call `useMembershipRequestsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMembershipRequestsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMembershipRequestsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useMembershipRequestsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<MembershipRequestsQuery, MembershipRequestsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MembershipRequestsQuery, MembershipRequestsQueryVariables>(MembershipRequestsDocument, options);
+      }
+export function useMembershipRequestsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MembershipRequestsQuery, MembershipRequestsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MembershipRequestsQuery, MembershipRequestsQueryVariables>(MembershipRequestsDocument, options);
+        }
+export type MembershipRequestsQueryHookResult = ReturnType<typeof useMembershipRequestsQuery>;
+export type MembershipRequestsLazyQueryHookResult = ReturnType<typeof useMembershipRequestsLazyQuery>;
+export type MembershipRequestsQueryResult = Apollo.QueryResult<MembershipRequestsQuery, MembershipRequestsQueryVariables>;
 export const MyActiveMessagesDocument = gql`
     query MyActiveMessages {
   myActiveMessages {

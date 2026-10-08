@@ -45,7 +45,7 @@ const TOOLS: {
   // The skeleton brush (3D-only): paint a stroke over a bright structure,
   // the extracted centerline becomes a PATH annotation.
   { tool: "BRUSH", label: "Brush", icon: Brush },
-  // The smooth blob lives in DESIGN mode: a grown surface is a mesh, not an
+  // Surfaces live in DESIGN mode: a reconstructed surface is a mesh, not an
   // annotation (`features/meshDesign/ui/MeshDesignToolbar`).
 ];
 
@@ -88,8 +88,6 @@ export const RoiToolbar = () => {
           "Drag to select annotations"
         ) : activeTool === "BRUSH" ? (
           "Drag over the volume to paint a stroke along the structure"
-        ) : activeTool === "BLOB" ? (
-          "Click a bright structure — a surface grows around it"
         ) : displayMode === "3D" ? (
           "Click the volume to place each point — probed onto the data"
         ) : (

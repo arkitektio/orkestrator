@@ -5,7 +5,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { roiForSegment } from "../annotationBatch";
 import { interiorColors, type InteriorBatch } from "../interiorBatch";
-import type { SelectedRoi } from "../roiSelectionStore";
+import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 
 /**
  * One merged interior mesh for a batch of flat shapes (rectangles, ellipses,
@@ -37,7 +37,7 @@ export const AnnotationInteriorBatch = ({
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
   hoverable: boolean;
   /** Per move over a shape; the store dedupes by id (state changes on enter/leave). */
-  onHoverRoi: (roi: SelectedRoi) => void;
+  onHoverRoi: (roi: SelectedRoi, point: HoverPoint) => void;
   onUnhoverRoi: (roiId: string) => void;
 }) => {
   perfMonitor.countRender("AnnotationInteriorBatch"); // no-op unless a recording is armed
@@ -98,7 +98,7 @@ export const AnnotationInteriorBatch = ({
         const roi = roiForSegment(batch.ranges, event.faceIndex);
         if (!roi) return;
         hoveredIdRef.current = roi.id;
-        onHoverRoi(roi);
+        onHoverRoi(roi, [event.point.x, event.point.y, event.point.z]);
       }
     : undefined;
   const handleHoverOut = hoverable

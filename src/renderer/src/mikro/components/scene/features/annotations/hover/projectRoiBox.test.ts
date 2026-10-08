@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 
-import { BUTTON_MARGIN, buttonOriginFor, projectTopRightCorner } from "./projectRoiBox";
+import {
+  BUTTON_MARGIN,
+  buttonOriginFor,
+  projectTopRightCorner,
+  projectWorldPoint,
+} from "./projectRoiBox";
 
 const viewport = { width: 200, height: 100 };
 
@@ -78,6 +83,24 @@ describe("projectTopRightCorner", () => {
     expect(
       projectTopRightCorner({ minX: 0, maxX: 1, minY: 0, maxY: 1 }, { min: 15, max: 20 }, vp, viewport),
     ).toBeNull();
+  });
+});
+
+describe("projectWorldPoint", () => {
+  it("maps NDC to pixels with y flipped", () => {
+    expect(projectWorldPoint([0, 0, 0], new THREE.Matrix4(), viewport)).toEqual({ x: 100, y: 50 });
+    expect(projectWorldPoint([1, 1, 0], new THREE.Matrix4(), viewport)).toEqual({ x: 200, y: 0 });
+  });
+
+  it("puts a point on the view axis at the screen centre, and drops one behind the camera", () => {
+    const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 100);
+    camera.position.set(0, 0, 10);
+    camera.lookAt(0, 0, 0);
+    const matrix = viewProjectionOf(camera);
+    const centre = projectWorldPoint([0, 0, 0], matrix, viewport)!;
+    expect(centre.x).toBeCloseTo(100);
+    expect(centre.y).toBeCloseTo(50);
+    expect(projectWorldPoint([0, 0, 20], matrix, viewport)).toBeNull();
   });
 });
 

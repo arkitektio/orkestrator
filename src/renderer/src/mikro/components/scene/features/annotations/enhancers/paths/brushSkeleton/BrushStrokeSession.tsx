@@ -7,7 +7,7 @@ import { useBrushSkeleton } from "./useBrushSkeleton";
 import { smoothSoupNormals } from "../../meshes/soupNormals";
 import { PreviewLine, type PreviewLineHandle } from "../../../../../platform/draw/PreviewLine";
 import { useBrushSkeletonStore, useBrushSkeletonStoreApi } from "../../brushSkeletonStore";
-import { useModeStore } from "../../../../../platform/stores/modeStore";
+import { DESIGN_TOOL_GESTURES, useModeStore } from "../../../../../platform/stores/modeStore";
 import { useRoiDrawingStore } from "../../../roiDrawingStore";
 import { useSceneStoreApi } from "../../../../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../../../../platform/stores/viewerStore";
@@ -42,11 +42,17 @@ export const BrushStrokeSession = () => {
 
   const interactionMode = useModeStore((s) => s.interactionMode);
   const activeTool = useRoiDrawingStore((s) => s.activeTool);
-  // ANNOTATE and DESIGN share the gesture; only the verdict differs
-  // (`useBrushSkeleton.save`).
+  // ANNOTATE and DESIGN share the gesture capture; what a release MEANS
+  // differs (`useBrushSkeleton.extract`). DESIGN arms off the SELECTED design
+  // tool, not the held one: letting go of the key must not cancel an
+  // extraction in flight.
+  const selectedDesignTool = useModeStore((s) => s.selectedDesignTool);
+  const designGesture = selectedDesignTool ? DESIGN_TOOL_GESTURES[selectedDesignTool] : null;
   const armed =
-    (interactionMode === "ANNOTATE" || interactionMode === "DESIGN") &&
-    (activeTool === "BRUSH" || activeTool === "BLOB");
+    interactionMode === "ANNOTATE"
+      ? activeTool === "BRUSH"
+      : interactionMode === "DESIGN" &&
+        (designGesture === "volume-stroke" || designGesture === "volume-click");
   // Gesture-cadence facts, fine to select on: which phase drives extraction
   // and whether a candidate line should be shown. `liveTube` moves at the
   // preview THROTTLE (~7 Hz), not pointer cadence — the re-render it costs
@@ -184,6 +190,17 @@ export const BrushStrokeSession = () => {
       candidateRef.current?.clear();
     }
   }, [candidate, status]);
+
+  // DESIGN: the tool key came up mid-stroke. The volume drops its pointer
+  // handlers with the key, so the release would never arrive — end the
+  // stroke here, as if the button had been let go (it extracts what was
+  // painted; a stroke of one sample fails with its usual message).
+  const heldDesignTool = useModeStore((s) => s.designTool);
+  useEffect(() => {
+    if (interactionMode !== "DESIGN" || heldDesignTool !== null) return;
+    const brush = brushApi.getState();
+    if (brush.status === "painting") brush.endStroke();
+  }, [interactionMode, heldDesignTool, brushApi]);
 
   // Arming fills the blank radius from the probe target's own scale.
   useEffect(() => {

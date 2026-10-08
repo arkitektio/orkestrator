@@ -30,7 +30,15 @@ query) fire on mount, so guarding the JSX *inside* the component is too late —
 the query already ran. Put `<XGuard>` around the component so it never mounts
 until the service is ready.
 
+`fallback` is the prop to reach for. `unavailable` only fires for a service
+key the app does not know at all; a service missing from the deployment is
+`unconfigured`, so an `unavailable=`-only guard shows nothing when it matters.
+
 Examples in-tree:
+- A module's pages are guarded by the host too: `ModuleRoute`
+  (`core/modules/ModuleRoute.tsx`) wraps every module root in chunk → role →
+  service, from the definition's `roles` and `serviceKey`. A module root
+  (`<Module>Module.tsx`) is layout + routes and carries no service guard.
 - Builtins the host mounts for a module (displays, hover cards, palette
   search, background components) are wrapped in that module's guard by the
   host (`moduleGuard` in `core/modules/registries.tsx`, keyed by the
@@ -133,6 +141,12 @@ the open frame; `remote` = mounts one frame later), `Guard`, `applies(props)`,
   declaring `prefetch(target)` → `{ service, name, query, variables }[]`,
   built with the SAME builders, or the warmed entry is never hit; the host
   prefetcher (`extensions/prefetch.ts`) owns TTL, dedupe and the client.
+- Pins are the host's: `SectionHost` tells every row its pin through
+  `RowPinContext` and moves pinned rows into the "Pinned" group at the start
+  of the menu; `CommandActionRow` draws the toggle, so a row built on it
+  needs nothing. The host keeps pins per profile in localStorage
+  (`extensions/pins.ts`); a section with its own pin store answers through
+  `usePins` (local actions). A pin never decides whether a row exists.
 - Callers narrow the menu with `sections={{ only | exclude | palette }}`,
   never with a new `disableX` prop. A section opts into the ⌘K palette with
   `palette: true` (the palette renders them through `PaletteSections`).
@@ -266,3 +280,34 @@ any of, `{ allOf }` / `{ anyOf }`), `useRoles()` / `useHasRoles(req)`,
   unknown roles meet no requirement (gated UI stays hidden until known).
 - **Cosmetic only.** The backend enforces permissions; a hidden page must
   never be the only protection.
+
+## 7. Fallback pages
+
+Every screen shown INSTEAD of a page has one look: `StatusPage`
+(`core/layout/fallbacks/StatusPage.tsx`: icon tile, eyebrow, headline,
+actions, "What you can try", "Details" with copy and a technical block, the
+code as a faint numeral behind). It knows no router or store; the pages next
+to it gather the context (`useStatusContext`, the buttons in
+`statusActions.tsx`).
+
+| Case | Page |
+|---|---|
+| no route matches | `NotFound` (404) |
+| role missing | `NotPermitted` (403), via `RoleRoute` / `ModuleRoute` |
+| the server refused or hid the object | `AccessDenied` (403) |
+| service not installed / connecting / unreachable | `ServiceUnavailable`, via `ModuleRoute` |
+| a page query failed | `QueryError` picks by `classifyError` (denied, signed out, network, unknown) |
+| a render threw | `UnexpectedError`, via `BackNavigationErrorCatcher` |
+
+- **The host owns the cascade.** Shell (`AppShell`: profile, session) →
+  `ModuleRoute` (chunk, role, service) → the page's query. Do not add a
+  session guard, a service guard or a `Suspense` to a module root or a page.
+- **Page queries go through the route builders** (`asDetailQueryRoute`,
+  `asParamlessRoute`, kraph's graph routes), which share one ladder
+  (`core/layout/routes/queryState.tsx`). A page that runs its own query
+  returns `<QueryError error={error} onRetry={() => refetch()} />`, never a
+  bare `error.message`, and never a loader that ignores `error`.
+- A fallback for a PART of a page is `<StatusPage variant="compact">`, or
+  nothing (sections with nothing to show render null).
+- Like role gates, these are cosmetic: "denied" is read off the server's
+  answer, it does not decide anything.

@@ -10,8 +10,10 @@ import DeveloperPage from "./pages/DeveloperPage";
 import GeneralPage from "./pages/GeneralPage";
 import MeshPage from "./pages/MeshPage";
 import PalettePage from "./pages/PalettePage";
+import RendererPage from "./pages/RendererPage";
 import ResetPage from "./pages/ResetPage";
 import ServicesPage from "./pages/ServicesPage";
+import TelemetryPage from "./pages/TelemetryPage";
 import VoicePage from "./pages/VoicePage";
 import { DEFAULT_SECTION, SETTINGS_SECTIONS } from "./sections";
 
@@ -20,10 +22,12 @@ const PAGES: Record<string, React.FC> = {
   account: AccountPage,
   general: GeneralPage,
   appearance: AppearancePage,
+  renderer: RendererPage,
   voice: VoicePage,
   palette: PalettePage,
   services: ServicesPage,
   mesh: MeshPage,
+  telemetry: TelemetryPage,
   developer: DeveloperPage,
   reset: ResetPage,
 };

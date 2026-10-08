@@ -340,8 +340,9 @@ export const CameraController = () => {
   // Pan and rotate stay *enabled* in every mode; the button map alone decides
   // what a drag does. Disabling them was only ever a blunt way of neutering the
   // left button, and it left tool modes with no way to move the view at all.
-  // DESIGN navigates like NAVIGATE — the left button is the camera's — until
-  // a brush key (C/V/X) is held, when it hands the left button to the stroke.
+  // DESIGN navigates like NAVIGATE — the left button is the camera's — while
+  // no design tool has it (`designTool` is null: none selected, or Space
+  // held); a selected tool takes the left button and leaves right/middle.
   const isNavigate =
     interactionMode === "NAVIGATE" || (interactionMode === "DESIGN" && designTool === null);
 

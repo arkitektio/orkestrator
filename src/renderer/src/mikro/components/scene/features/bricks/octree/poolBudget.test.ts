@@ -1,12 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  applyRendererBudgetSettings,
+  getRendererBudget,
+  resetRendererBudgetForTests,
+} from "@/core/settings/renderer/rendererBudget";
 import {
   COARSE_CHAIN_RESERVE,
   MIN_POOL_HEADROOM_SLOTS,
+  DECODE_BUDGET_CACHE_FRACTION,
   POOL_PLAN_SHARE_FRACTION,
   POOL_RESERVE_COUNT,
+  getDecodedChunkCacheBytes,
+  resetDecodedChunkCacheBytesForTests,
   resolveDecodeAllowanceBytes,
   resolveDecodeCacheShareBytes,
   resolveDecodeFloorBytes,
+  resolveDecodeBudgetBytes,
   resolvePlanBytesForAtlas,
   resolvePoolBudget,
 } from "./poolBudget";
@@ -289,6 +298,19 @@ describe("decode budgets", () => {
     ).toBe(0);
   });
 
+  it("lets a 2D plane plan fill most of the share, and never all of it", () => {
+    // Chunk by chunk, so the share itself is the bound — less the room the
+    // adjacent-slab prefetch and the previous plan's chunks need beside it.
+    for (const share of [128 * MiB, 737 * MiB, 3070 * MiB]) {
+      const budget = resolveDecodeBudgetBytes({ decodeCacheShareBytes: share });
+      expect(budget).toBe(Math.floor(DECODE_BUDGET_CACHE_FRACTION * share));
+      expect(budget).toBeLessThan(share);
+      // More than the floor + allowance could commit to between them.
+      expect(budget).toBeGreaterThan(Math.floor(0.75 * share));
+    }
+    expect(resolveDecodeBudgetBytes({ decodeCacheShareBytes: 0 })).toBe(0);
+  });
+
   it("splits the cache per pool", () => {
     expect(
       resolveDecodeCacheShareBytes({ decodedChunkCacheBytes: 1024 * MiB, poolCount: 4 }),
@@ -362,5 +384,35 @@ describe("resolvePlanBytesForAtlas", () => {
 
   it("never returns less than one slot", () => {
     expect(clamp({ liveAtlasBytes: 0, totalBrickBytes: HUGE_PYRAMID })).toBe(SLOT_BYTES);
+  });
+});
+
+describe("getDecodedChunkCacheBytes", () => {
+  const hardware = {
+    probedAt: "2026-10-07T10:00:00.000Z",
+    totalRamMB: 32768,
+    gpus: [{ vendor: "NVIDIA Corporation", model: "RTX 4070", vramMB: 12282, vramDynamic: false }],
+  };
+
+  afterEach(() => {
+    resetDecodedChunkCacheBytesForTests();
+    resetRendererBudgetForTests();
+  });
+
+  it("stays what it was first read as, whatever the settings do afterwards", () => {
+    // The cache is built once per session; the planner asks on every replan.
+    // If the two drift apart the planner admits a working set the cache
+    // cannot hold — which is exactly what the first-start hardware probe
+    // would do, raising the automatic size several-fold mid-session.
+    const atBoot = getDecodedChunkCacheBytes();
+    expect(atBoot).toBe(512 * MiB);
+    applyRendererBudgetSettings({ rendererHardware: hardware });
+    expect(getRendererBudget().decodeCacheBytes).toBeGreaterThan(atBoot);
+    expect(getDecodedChunkCacheBytes()).toBe(atBoot);
+  });
+
+  it("takes the stored size at the next start", () => {
+    applyRendererBudgetSettings({ rendererHardware: hardware, rendererDecodeCacheMB: 1024 });
+    expect(getDecodedChunkCacheBytes()).toBe(1024 * MiB);
   });
 });

@@ -24,7 +24,7 @@ export type Props = {
 
 const RekuestRequired = () => (
   <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-    The workflow editor needs the Rekuest service, which is not available in this deployment.
+    The workflow editor needs the Rekuest service, which is not available right now.
   </div>
 );
 
@@ -76,7 +76,7 @@ export const EditFlow: React.FC<Props> = ({ flow, onSave }) => {
   }, [onSave, store]);
 
   return (
-    <RekuestGuard unavailable={<RekuestRequired />}>
+    <RekuestGuard fallback={<RekuestRequired />}>
       <EditFlowStoreContext.Provider value={store}>
         <FlowAdapterProvider adapter={adapter}>
           <RedoUndoHandler />

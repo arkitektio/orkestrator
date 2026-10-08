@@ -1,32 +1,44 @@
+import type { LucideIcon } from "lucide-react";
+
 import type { DesignToolId } from "../../../platform/stores/modeStore";
 import type { DesignToolRunContext } from "./context";
-import { brushTool } from "./brushTool";
-import { blobTool } from "./blobTool";
+import { traceTool } from "./traceTool";
+import { seedTool } from "./seedTool";
 import { carveTool } from "./carveTool";
 import { stampTool } from "./stampTool";
 import { sculptTool } from "./sculptTool";
 import { trimTool } from "./trimTool";
-import { wandTool } from "./wandTool";
 import { bridgeTool } from "./bridgeTool";
 import { liftTool } from "./liftTool";
 import { splitTool } from "./splitTool";
 
+// The gesture capture (`useBrushSkeleton.extract`) accepts a pending
+// candidate before it hands a release to a tool; it reaches that through the
+// registry, its one door into the designer.
+export { commitCandidate } from "../reconstruct/candidate";
+
 /**
- * The design tools — one module per verb, dispatched by held key.
+ * The design tools — one module per verb, picked in the designer's toolbar.
  *
- * The interaction pattern is fixed: DESIGN navigates like NAVIGATE, a HELD
- * key arms exactly one tool (`modeStore.designTool`), and the gesture class
- * says who captures it:
+ * DESIGN navigates like NAVIGATE, and a tool ACTS only while its key is
+ * HELD (`modeStore.designTool`). Clicking its toolbar button — or pressing
+ * the key — also SELECTS it (`modeStore.selectedDesignTool`), which is only
+ * about whose panel is shown. The gesture class says who captures a held
+ * tool's gesture:
  *
- *  - `volume-stroke` / `volume-click` — captured by the 3D volume's pointer
- *    handlers into the brush store, extracted on release by
- *    `useBrushSkeleton.extract`, which dispatches `run(ctx)` here.
+ *  - `volume-stroke` / `volume-click` — captured by the volume layers'
+ *    pointer handlers into the brush store, and dispatched on release by
+ *    `useBrushSkeleton.extract` to `run(ctx)` here.
  *  - `surface` / `screen` — owned by `ui/MeshDesignSession.tsx` (overlay
  *    raycasts / camera math), no volume probe involved.
  *
- * Adding a tool = one module + one entry in `DESIGN_TOOLS`. The keyboard
- * bindings, the shortcuts overlay and the toolbar hints all derive from the
- * registry, so a tool cannot exist half-wired.
+ * `trace` and `seed` are the two RECONSTRUCT tools: they only capture the
+ * gesture, and the reconstructor picked for it (`reconstruct/registry.ts`)
+ * decides what the data becomes. Every other tool edits what is there.
+ *
+ * Adding a tool = one module + one entry in `DESIGN_TOOLS`. The toolbar, the
+ * key bindings and the shortcuts overlay all derive from the registry, so a
+ * tool cannot exist half-wired.
  */
 export type DesignToolGesture = "volume-stroke" | "volume-click" | "surface" | "screen";
 
@@ -35,10 +47,11 @@ export type DesignTool = {
   /** The HELD key that arms it (lowercase; must not collide with HOLD_MODES). */
   key: string;
   label: string;
+  icon: LucideIcon;
+  /** `primary` tools are toolbar buttons; `more` ones sit in its More menu. */
+  group: "primary" | "more";
   gesture: DesignToolGesture;
-  /** Which `AnnotateTool` the shared capture keys on, when it uses one. */
-  roiTool: "BRUSH" | "BLOB" | null;
-  /** The toolbar's status line while the tool is armed. */
+  /** The toolbar's status line for the tool (prefixed "Hold K —" until held). */
   hint: string;
   /** The `?` overlay entry. */
   shortcut: { keys: string[]; description: string };
@@ -46,7 +59,17 @@ export type DesignTool = {
   run?: (ctx: DesignToolRunContext) => Promise<void>;
 };
 
-export const DESIGN_TOOLS: readonly DesignTool[] = [brushTool, blobTool, carveTool, wandTool, liftTool, stampTool, sculptTool, trimTool, bridgeTool, splitTool];
+export const DESIGN_TOOLS: readonly DesignTool[] = [
+  traceTool,
+  seedTool,
+  carveTool,
+  sculptTool,
+  stampTool,
+  trimTool,
+  splitTool,
+  bridgeTool,
+  liftTool,
+];
 
 export const designToolById = (id: DesignToolId | null | undefined): DesignTool | undefined =>
   DESIGN_TOOLS.find((tool) => tool.id === id);

@@ -14,10 +14,11 @@ export const LOK_HELP = {
         <>Right-click a member and choose <b>Notify + send message</b> to push a short message to their registered phones.</>,
         <>Press <b>Invite</b> to create an invite link: set <b>Expires in (days)</b>, tick the roles the newcomer should get and confirm with <b>Create Invite</b>.</>,
         <>Open the <b>Invites</b> tab of the sidebar and click a link to copy it, then send it to the person you are inviting.</>,
+        <>Open the <b>Requests</b> tab to see who asked to join after following a shared link. Click a request, pick their <b>Roles</b> and press <b>Approve</b>, or press <b>Decline</b>.</>,
         <>Hover the organization’s logo and click <b>Change</b>, or drop an image on it, to replace the logo.</>,
       ]}
       tips={[
-        <>The <b>Invite</b> button, the <b>Invites</b> tab and the <b>Add to organization</b> menu entry are only shown to administrators.</>,
+        <>The <b>Invite</b> button, the <b>Invites</b> and <b>Requests</b> tabs and the <b>Add to organization</b> menu entry are only shown to administrators.</>,
         <>The line under each name lists that member’s roles in this organization.</>,
         <>The <b>Statistics</b> tab shows the total number of users.</>,
       ]}

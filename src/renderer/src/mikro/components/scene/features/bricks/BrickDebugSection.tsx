@@ -211,6 +211,18 @@ const BrickDebugBody: FC<{ selfTests: readonly SelfTest[] }> = ({ selfTests }) =
                   {(plan.decodeBytesCharged / MB).toFixed(0)} MB decode
                 </span>
               )}
+              {/* The chunks the plan's bricks really need against the cache
+                  share they may fill. At the budget, the decode cache is what
+                  keeps the view from sharpening. */}
+              {plan.decodeBudgetBytes > 0 && (
+                <span
+                  className="bg-accent px-1 rounded"
+                  title="Decoded chunks this plan's bricks need, of the decode cache it may fill. When the two meet, a larger decode cache (Settings → Renderer) is what sharpens the view."
+                >
+                  chunks {(plan.decodeBytesPlanned / MB).toFixed(0)} /{" "}
+                  {(plan.decodeBudgetBytes / MB).toFixed(0)} MB
+                </span>
+              )}
               {plan.slabZ !== null && (
                 <span className="bg-accent px-1 rounded">slab z {plan.slabZ}</span>
               )}
@@ -304,6 +316,10 @@ const useBrickDebugContribution = () => {
               levelDecodeBytes: plan.levelDecodeBytes,
               decodeFloorBytes: plan.decodeFloorBytes,
               decodeAllowanceBytes: plan.decodeAllowanceBytes,
+              // The plan's real chunk bytes vs the cache share they may
+              // fill (0 budget = not in force).
+              decodeBudgetBytes: plan.decodeBudgetBytes,
+              decodeBytesPlanned: plan.decodeBytesPlanned,
               // The SLOT budget the same question needs (refineBudgetBytes 0 =
               // no refinement was possible at any zoom).
               planBudgetBytes: plan.planBudgetBytes,
@@ -329,7 +345,7 @@ export const BRICK_DEBUG_SECTION = {
     {
       label: "Decode cache (heap)",
       title:
-        "Decoded-chunk cache. This is what the LOD FLOOR is derived from: a level is only unlocked if its chunk working set fits. Raise it when a level you expect is never selected on a plane-chunked pyramid. Applies at the next scene open.",
+        "Decoded-chunk cache. This is what the LOD FLOOR is derived from: a level is only unlocked if its chunk working set fits. Raise it when a level you expect is never selected on a plane-chunked pyramid. The same setting as Settings → Renderer; the cache itself is resized at the next restart.",
       get: getDecodeCacheOverrideBytes,
       setMB: setDecodeCacheOverrideMB,
     },

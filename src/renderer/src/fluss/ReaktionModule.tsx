@@ -1,6 +1,4 @@
-import { ServiceUnavailable } from "@/core/layout/fallbacks/ServiceUnavailable";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
-import { FlussGuard } from "@/fluss/api/hooks";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import Flow from "./pages/Flow";
@@ -10,6 +8,7 @@ import Runs from "./pages/Runs";
 import Workspace from "./pages/Workspace";
 import Workspaces from "./pages/Workspaces";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import Flows from "./pages/Flows";
 
 interface Props { }
 
@@ -23,20 +22,19 @@ interface Props { }
 
 const Module: React.FC<Props> = () => {
   return (
-    <FlussGuard fallback={<ServiceUnavailable serviceKey="fluss" />}>
-      <ModuleLayout>
-        <Routes>
-          <Route index element={<Home />} />
-          <Route path="runs" element={<Runs />} />
-          <Route path="workspaces" element={<Workspaces />} />
-          <Route path="workspaces/:id" element={<Workspace />} />
-          <Route path="flows/:id" element={<Flow />} />
-          <Route path="runs/:id" element={<Run />} />
-          <Route path="home" element={<Home />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </ModuleLayout>
-    </FlussGuard>
+    <ModuleLayout>
+      <Routes>
+        <Route index element={<Home />} />
+        <Route path="runs" element={<Runs />} />
+        <Route path="workspaces" element={<Workspaces />} />
+        <Route path="workspaces/:id" element={<Workspace />} />
+        <Route path="flows/:id" element={<Flow />} />
+        <Route path="runs/:id" element={<Run />} />
+        <Route path="home" element={<Home />} />
+        <Route path="flows" element={<Flows />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ModuleLayout>
   );
 };
 

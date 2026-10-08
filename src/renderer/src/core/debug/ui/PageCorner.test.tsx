@@ -41,6 +41,7 @@ const renderCorner = (path = "/mikro/arraydatasets/5") =>
   );
 
 beforeEach(() => {
+  localStorage.clear(); // debug mode is persisted
   setElectron(true);
   Element.prototype.hasPointerCapture ??= () => false;
   Element.prototype.scrollIntoView ??= () => {};

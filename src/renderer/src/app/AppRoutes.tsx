@@ -1,15 +1,11 @@
-import { Arkitekt } from "@/core/connection/arkitekt/host";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { BackNavigationErrorCatcher } from "./AppProvider";
 import { NewTabPage } from "./pages/NewTabPage";
 import { ShareGatePage } from "./pages/ShareGatePage";
-import { ConnectingFallback } from "../core/layout/fallbacks/Connecting";
-import { ModuleLoadingFallback } from "./components/fallbacks/ModuleLoading";
-import { QuietPage } from "../core/layout/fallbacks/QuietPage";
-import { ShellSignInNotice } from "../core/connection/ui/ShellSignInNotice";
+import { ModuleLoadingFallback } from "../core/layout/fallbacks/ModuleLoading";
+import { ModuleRoute } from "../core/modules/ModuleRoute";
 import { NotFound } from "../core/layout/fallbacks/NotFound";
-import { RoleRoute } from "../core/layout/fallbacks/NotPermitted";
 import { MODULE_ALIASES, ModuleRedirect } from "./components/navigation/ModuleRedirect";
 import { useModuleHostVersion } from "@/core/modules/host/host";
 import { modulePages } from "../core/modules/registries";
@@ -26,32 +22,16 @@ const Hero = React.lazy(() => import("@/app/pages/Hero"));
 const BlokModule = React.lazy(() => import("@/core/blok/BlokModule"));
 const SettingsModule = React.lazy(() => import("@/app/settings/SettingsModule"));
 
-// Entrypoint of the application.
-// We provide two main routers, one for the public routes, and one for the private routes.
-const protectModule = (component: React.ReactNode, fallback?: React.ReactNode) => {
-  return (
-    <Arkitekt.Guard
-      // Inside the shell these can only fire on a LATER loss of session — the
-      // launch never reaches a route — and `AppShell` already owns both of
-      // those surfaces. A full welcome screen in the content card would be the
-      // boot flicker again, one level down.
-      notConnectedFallback={fallback || <ShellSignInNotice />}
-      bootingFallback={<QuietPage />}
-      connectingFallback={<ConnectingFallback />}
-    >
-      {/* The chunk is loading, not the session: the guard above already passed. */}
-      <React.Suspense fallback={<ModuleLoadingFallback />}>{component}</React.Suspense>
-    </Arkitekt.Guard>
-  );
-};
-
 /**
  * The app's routes, as one component.
  *
- * Lifted verbatim out of `App.tsx` — lazy modules, `protectModule` and all —
- * so that `TabOutlet` can render a copy per open tab, each under that tab's
- * own memory router. Nothing here knows tabs exist: a page mounted in a
- * background tab is the same page it always was.
+ * One component, so that `TabOutlet` can render a copy per open tab, each
+ * under that tab's own memory router. Nothing here knows tabs exist: a page
+ * mounted in a background tab is the same page it always was.
+ *
+ * No session guard: `AppShell` does not render routes without a session.
+ * What stands between a route and its module is `ModuleRoute` (chunk, role,
+ * service), the same for every module.
  */
 export const AppRoutes = () => {
   // A module arriving (or leaving) adds (or drops) its routes.
@@ -75,20 +55,36 @@ export const AppRoutes = () => {
               the wrong connection, or none. */}
           <Route path="open" element={<ShareGatePage />} />
           {/* Every module under its namespace (lok too: labelled "Team", routed as lok). */}
-          {/* A module with `roles` shows "not permitted" to anyone else. */}
-          {modulePages().map(({ namespace, roles, Page }) => (
+          {/* A module with `roles` shows "not permitted" to anyone else; one
+              whose service is down, why. */}
+          {modulePages().map(({ namespace, roles, serviceKey, Page }) => (
             <Route
               key={namespace}
               path={`${namespace}/*`}
-              element={protectModule(
-                <RoleRoute roles={roles}>
+              element={
+                <ModuleRoute roles={roles} serviceKey={serviceKey}>
                   <Page />
-                </RoleRoute>,
-              )}
+                </ModuleRoute>
+              }
             />
           ))}
-          <Route path="settings/*" element={protectModule(<SettingsModule />)} />
-          <Route path="blok/*" element={protectModule(<BlokModule />)} />
+          <Route
+            path="settings/*"
+            element={
+              <ModuleRoute>
+                <SettingsModule />
+              </ModuleRoute>
+            }
+          />
+          {/* Bloks run on rekuest. */}
+          <Route
+            path="blok/*"
+            element={
+              <ModuleRoute serviceKey="rekuest">
+                <BlokModule />
+              </ModuleRoute>
+            }
+          />
           {Object.entries(MODULE_ALIASES).map(([from, to]) => (
             <Route key={from} path={`${from}/*`} element={<ModuleRedirect from={from} to={to} />} />
           ))}

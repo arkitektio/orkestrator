@@ -46,7 +46,7 @@ const MechanismCatalogInner = ({ children }: { children: ReactNode }) => {
  * quantity entry).
  */
 export const MechanismCatalogProvider = ({ children }: { children: ReactNode }) => (
-  <ElektroGuard unavailable={<>{children}</>}>
+  <ElektroGuard fallback={<>{children}</>}>
     <MechanismCatalogInner>{children}</MechanismCatalogInner>
   </ElektroGuard>
 );

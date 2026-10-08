@@ -1,5 +1,9 @@
-query ListSchedules($pagination: OffsetPaginationInput) {
-  schedules(pagination: $pagination) {
+query ListSchedules(
+  $filters: ScheduleFilter
+  $ordering: [ScheduleOrder!] = []
+  $pagination: OffsetPaginationInput
+) {
+  schedules(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListSchedule
   }
 }
@@ -10,8 +14,12 @@ query Schedule($id: ID!) {
   }
 }
 
-query ListTriggers($pagination: OffsetPaginationInput) {
-  triggers(pagination: $pagination) {
+query ListTriggers(
+  $filters: TriggerFilter
+  $ordering: [TriggerOrder!] = []
+  $pagination: OffsetPaginationInput
+) {
+  triggers(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListTrigger
   }
 }
@@ -22,9 +30,86 @@ query Trigger($id: ID!) {
   }
 }
 
-query ListSignals($pagination: OffsetPaginationInput) {
-  signals(pagination: $pagination) {
+query ListSignals(
+  $filters: SignalFilter
+  $ordering: [SignalOrder!] = []
+  $pagination: OffsetPaginationInput
+) {
+  signals(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListSignal
+  }
+}
+
+query Signal($id: ID!) {
+  signal(id: $id) {
+    ...DetailSignal
+  }
+}
+
+query ListFirings(
+  $filters: FiringFilter
+  $ordering: [FiringOrder!] = []
+  $pagination: OffsetPaginationInput
+) {
+  firings(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListFiring
+  }
+}
+
+query ListWiregrams($pagination: OffsetPaginationInput) {
+  wiregrams(pagination: $pagination) {
+    ...ListWiregram
+  }
+}
+
+query Wiregram($id: ID!) {
+  wiregram(id: $id) {
+    ...DetailWiregram
+  }
+}
+
+query Firing($id: ID!) {
+  firing(id: $id) {
+    ...DetailFiring
+  }
+}
+
+query ListServices {
+  services {
+    ...ListService
+  }
+}
+
+query Service($id: ID!) {
+  service(id: $id) {
+    ...DetailService
+  }
+}
+
+# A dry run of a rule being built: the stored signals it would have fired on.
+query MatchingSignals(
+  $kind: SignalKind!
+  $identifier: String!
+  $conditions: AnyDefault
+  $limit: Int! = 20
+) {
+  matchingSignals(
+    kind: $kind
+    identifier: $identifier
+    conditions: $conditions
+    limit: $limit
+  ) {
+    id
+  }
+}
+
+# The stored signals a saved trigger would fire on as it is now.
+query TriggerMatchingSignals($id: ID!) {
+  trigger(id: $id) {
+    id
+    matchingSignals(limit: 20) {
+      ...ListSignal
+    }
   }
 }
 

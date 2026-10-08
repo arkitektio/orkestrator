@@ -5,6 +5,7 @@ import { Badge } from "@/core/ui/badge";
 import { LightningBoltIcon } from "@radix-ui/react-icons";
 import React from "react";
 import { toast } from "@/core/notify";
+import { assignErrorMessage } from "../lib/assignError";
 import { v4 as uuidv4 } from "uuid";
 import { TaskEventFragment, ListShortcutFragment, PortKind } from "@/rekuest/api/graphql";
 import { failureFallback, trackTask } from "@/rekuest/lib/taskTracker";
@@ -12,12 +13,17 @@ import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Zap } from "lucide-react";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
 import type { SmartContextProps } from "@/core/smart/extensions/types";
+import {
+  OpenResultButtons,
+  runsDirectly,
+  useOpenResult,
+  type OpenableReturn,
+} from "./openResult";
 import { bindShortcutKey } from "./shortcutKeybinds";
 
 /** The Shortcuts row; the section is a descriptor in `./sections.tsx`. */
 
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : "Unknown error";
+const getErrorMessage = assignErrorMessage;
 
 const buildShortcutArgs = (
   shortcut: ListShortcutFragment,
@@ -110,8 +116,10 @@ export const ShortcutButton = (
     [onDone, onError],
   );
 
+  const thenOpen = useOpenResult();
+
   const conditionalAssign = React.useCallback(
-    async (shortcut: ListShortcutFragment) => {
+    async (shortcut: ListShortcutFragment, open?: OpenableReturn) => {
       const keys = buildShortcutArgs(shortcut, { objects, partners });
       if (!keys) {
         return;
@@ -130,7 +138,9 @@ export const ShortcutButton = (
       const reference = uuidv4();
       // Also globally: the popover holding this row closes on select, so the
       // rail's task island is the only surface left for the running task.
-      const untrack = trackTask(reference, doStuff, { notifyGlobally: true });
+      const untrack = trackTask(reference, open ? thenOpen(open, doStuff) : doStuff, {
+        notifyGlobally: true,
+      });
 
       try {
         await assign(buildAssignInput({
@@ -146,11 +156,12 @@ export const ShortcutButton = (
       } catch (error) {
         untrack();
         const message = getErrorMessage(error);
-        toast.error(message);
+        // Inline on the row, like a task that fails after it started.
+        setError(message);
         onError?.(message);
       }
     },
-    [assign, doStuff, openDialog, objects, partners, onError],
+    [assign, doStuff, thenOpen, openDialog, objects, partners, onError],
   );
 
   React.useEffect(() => {
@@ -170,6 +181,14 @@ export const ShortcutButton = (
       description={props.shortcut.description || (props.shortcut.bindNumber ? `Shortcut ${props.shortcut.bindNumber}` : undefined)}
       icon={Zap}
       progress={progress}
+      buttons={
+        runsDirectly(props.shortcut.args, props) ? (
+          <OpenResultButtons
+            returns={props.shortcut.returns}
+            onRun={(port) => conditionalAssign(props.shortcut, port)}
+          />
+        ) : null
+      }
       trailing={
         <span className="ml-auto flex items-center gap-2">
           {props.shortcut.allowQuick ? <LightningBoltIcon className="h-4 w-4 text-muted-foreground" /> : null}

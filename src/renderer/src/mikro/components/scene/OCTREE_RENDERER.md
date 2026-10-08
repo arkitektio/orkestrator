@@ -79,12 +79,13 @@ downsample z). `buildLevelSources` is the ONE `LevelSource[]` builder — the
 plan tracker, residency manager and pool-viability probe all go through it.
 
 True (non-nominal) factors mean adjacent levels need not divide evenly
-(z 36→4 levels give 4→9 = 2.25×): the addressing already tolerates this (no
-power-of-two assumptions), but the DFS can visit a straddling child from two
-parents — and the per-level half-voxel TRANSLATION on the `toParent` edges is
-parsed but deliberately not yet consumed (corner-aligned sampling, the
-pre-migration status quo). Both land together as the planner/shader/probe
-lockstep change; see COORDINATE_SYSTEMS.md §3.2.
+(z 36→4 levels give 4→9 = 2.25×; xy floor-halved from an odd size, 307→153,
+gives 2.007×): the addressing already tolerates this (no power-of-two
+assumptions), and a child brick that straddles two parents is planned once —
+the planner claims each node (P31). The per-level half-voxel TRANSLATION on
+the `toParent` edges is parsed but deliberately not yet consumed
+(corner-aligned sampling, the pre-migration status quo); that one is the
+planner/shader/probe lockstep change, see COORDINATE_SYSTEMS.md §3.2.
 
 Channel count is `min(16, intensity extent)` — 16 is the compositor limit
 shared with the legacy path.
@@ -252,7 +253,33 @@ scaledShare))`, with `share = globalBudget / pools` and `scaledShare =
 globalBudget / max(pools, POOL_RESERVE_COUNT)`. 128 MB is the FLOOR, so the
 default 512 MB device budget reproduces the old ceiling exactly while a larger
 budget actually scales (see §6c — the flat cap is what pinned the LOD floor on
-plane-chunked pyramids). `orkestrator.volumeBudgetMB` overrides `globalBudget`.
+plane-chunked pyramids).
+
+**Where `globalBudget` comes from.** It was `navigator.deviceMemory × 0.18` —
+system RAM, capped at 8 by Chromium, so every machine with 8 GiB or more got
+1.44 GiB whatever card it had. It is a SETTING now (Settings → Renderer,
+`core/settings/renderer/rendererBudget.ts`): main's `HardwareService`
+(`systeminformation`) is asked once on first start, the answer is kept in the
+settings (`rendererHardware`), and the automatic ceiling is half of the render
+GPU's own memory. Where the GPU has none of its own (Apple silicon's unified
+memory, integrated graphics) atlas and decode cache are the same bytes as
+everything else, so they share one RAM-scaled budget — a quarter of RAM on
+8 GiB, a third on 16, three eighths above, two thirds of it atlas
+(`sharedAtlasFraction`, `gpuMemoryKind`); with
+nothing detected (web build, very first launch) the old rule still applies,
+byte for byte. The user can overrule it (`rendererGpuBudgetMB`); the debug
+panel's budget row writes that same setting, and the old
+`orkestrator.volumeBudgetMB` / `decodeCacheMB` keys are adopted once and
+removed. Kept as a snapshot rather than probed per launch because planner and
+allocator read it synchronously — some scene modules while they are being
+imported — and must agree: `getRendererBudget()` is the one resolved value
+both read. The decoded-chunk cache follows the same module (half the ceiling,
+at most an eighth of real RAM) and is sized once per session. Not handled: an
+atlas allocation that runs out of memory does not shrink and retry, and the
+ceiling is a share of the card's TOTAL, sampled once. Detection is the user's
+to switch off (Settings → Telemetry, on by default): off means no probe, the
+snapshot is dropped and the old rule applies. The same snapshot is what a bug
+report attaches (also on by default, also switchable there).
 The `totalBrickCount` cap matters: a tiny 4-brick debug layer must not allocate
 a 296-slot float32 atlas (pitfall P4).
 
@@ -289,10 +316,15 @@ slabZ, nodes, planBytes }` with exactly two roles:
 - `target` — fetch and protect,
 - `keep` — ancestor chain: protect, fetch only if missing.
 
-Refinement is a closest-first DFS from the coarsest level: a node splits into
-children while its screen footprint (`px per voxel × finerFactor × lodBias`)
-says finer data would be visible **and** the byte budget allows. Closest-first
-ordering means budget exhaustion degrades *distant* regions first.
+Refinement walks the pyramid ONE LEVEL AT A TIME from the coarsest level,
+closest-first within a level: a node splits into children while its screen
+footprint (`px per voxel × finerFactor × lodBias`) says finer data would be
+visible **and** the byte budget allows. Level order means the budget runs out
+while ONE level is being admitted, farthest bricks first, so a region that
+wanted finer stops at that level or the one above (it was a depth-first walk,
+and a cliff — P31). The price of a tight budget is paid near the camera:
+coarse levels across the whole view are bought before fine ones up close.
+Each node is claimed once, so a child two parents both reach costs one slot.
 `finerFactor` is the **MAX spatial component** of the finer level's scale —
 true-factor pyramids are anisotropic (z can diverge from xy), so testing x
 alone under-refines z-dominant views. Under `orkestrator.anisoLod`
@@ -308,6 +340,15 @@ are provably unchanged. The shader's per-sample `desiredLevelAt`
 `uDesiredLevel` and falls back per-sample to resident coarser data, so the
 planner alone decides fetch and display; the residual divergence is stride
 only (bounded ≤ 1/λ = 2×, ≈1.46× on the target family).
+
+**2D switches levels at the midpoint** (`PLANE_LOD_THRESHOLD` = 1/√2). The
+footprint test above unlocks a finer level once its texel covers a full pixel,
+so the level on screen is always the COARSER of the two candidates: texels of
+1–2 px. A volume composites along the ray and filters linearly, and a level
+costs it 8× the bricks; a slab is drawn nearest-filtered and a level costs 4×,
+so there the rule read as soft at every zoom (P32). In 2D a node refines once
+the finer texel covers 0.71 px — the level whose texels are NEAREST one pixel,
+0.71–1.41 px. Hysteresis and `lodBias` scale the same threshold.
 
 **The world-metric LOD contract** (`orkestrator.worldLod`, default ON, live
 at the next replan): every SCREEN question — footprint distance, the finer
@@ -345,6 +386,33 @@ bytes. This is the fix for plane-chunked SPIM data where one 64³ brick forces
 a 14 MB `[2, 2048, 2048]` chunk decode — GPU-byte accounting made absurdly
 optimistic plans (pitfall P5). `budgetMinLevel` is the finest level whose
 chunk-aligned visible cost fits `maxPlanBytes`; `fixedLOD` overrides it.
+
+**A second way past the floor: the chunk budget** (P32). On a level whose
+chunks are no larger than a brick (`brickSizedChunks` — 64³, the layout the
+backend writes; x/y only in 2D, where a brick is one slab), a level is not
+all-or-nothing: its cost is the sum of its bricks'. Refinement the sub-floor
+allowance cannot pay goes on there for as long as the chunks the plan's bricks
+really need (`decodeBytesPlanned`: deduped, every level and the roots counted)
+fit `decodeBudgetBytes`, 90% of the pool's cache share. The floor and the
+allowance still decide first, so this only ever adds, and a pyramid with
+larger chunks (planes, z-rows, columns) never sees it. A FIRST 3D plan does
+not get it either: the tracker passes 0, beside the zeroed allowance, so a 3D
+scene still opens on the coarse set (the cold-open gate). A first 2D plan
+does. The ledger keys chunks as NUMBERS per level (`chunkRangeTouchingBrick`,
+no coordinate lists): it runs for every brick of every replan, and string keys
+were over half of a 3D plan's time (7.8 → 3.4 ms on a 2,800-brick plan).
+
+**The screen is planned before the margin** (P26). The pyramid is walked
+twice: once for the bricks on screen, then, with whatever the budgets have
+left, for the bricks that are only in the plan as margin (the 2D prefetch
+band, the 3D cull margin). One predicate (`marginOnly`) decides both the walk
+a brick is bought in and its fetch band, so the bricks on screen are exactly
+what they would be with no margin at all, at any budget. (One exception, by
+design: on a truncated 2D stack, whose roots sit below the coarsest level and
+so cost slots, the margin's ROOT bricks hold theirs from the start — a root is
+in the plan whatever the budget says.) The margin pays for the rest: under a
+tight budget it holds the root level and whatever the visible bricks of the
+coarser levels overhang into it, and nothing finer.
 
 Refinement/fetch ORDER is **foveated** (`foveatedScore` in
 `features/bricks/octree/nodePlanning.ts`): roots and children sort by camera distance
@@ -1291,6 +1359,28 @@ the 2D margin's, so they are fetched LAST: without that arm the hysteresis
 band competes with genuinely visible bricks for in-flight slots and trades
 edge flicker for centre latency. Symptom to recognise: bricks blinking at the
 viewport border during camera motion only, steady once the camera is still.
+Fetched last was not enough (2026-10-07): which bricks are BOUGHT is decided in
+the planner, and there a margin node was a frontier node like any other.
+Nearest-first puts a margin brick beside the camera ahead of a visible one far
+from it; a node on the view's edge bought its margin and visible children in
+one all-or-nothing purchase; and a level at a time, a coarse level's margin was
+bought before the next level's screen. With the decode allowance spent, a 1024³
+volume seen from inside lost up to 96 of 2,597 visible L0 bricks to the margin
+(291 over the 48 view/budget cells measured), and the test that pinned "never
+displaces a strictly-visible node" could not see it — a two-level 256³ fixture
+has no budget that runs out mid-pyramid. The visible tree is now planned FIRST
+and the margin gets what is left (§2.6), in 2D and 3D alike and on every chunk
+layout, which makes the invariant structural; it is tested on a five-level
+volume with slot and decode budgets that bind. Against the previous planner
+(one-off sweep, chunk budget off): 2D, 2,160 view/budget cells, none with fewer
+bricks on screen at any level and 461 changed; 3D, 1,152 cells, 198 changed and
+FOUR with fewer visible bricks on the finest level (48 → 12 the largest), all
+on chunks larger than a brick with the allowance spent. Those four are the
+invariant working, not failing: the new on-screen set is exactly what the old
+planner produced with the margin switched off. Its extra bricks existed only
+BECAUSE of the margin — margin children inflated the all-or-nothing price of
+the nodes nearest the focus, the walk skipped them, and the same 22 chunks
+bought cheaper bricks 470–1,120 voxels away instead of the ones 0–260 away.
 
 **P27 — A retry is only a fix if it retries somewhere DIFFERENT.**
 `brickResidency`'s `outcome.failed` handler unmaps the page entry, releases the
@@ -1359,6 +1449,82 @@ wheel-driven zoom also relies on `cameraInteraction`'s wheel hold
 (`platform/camera/cameraMotion.ts`): before it, `cameraMoving` flickered on
 every trackpad tick and each flicker was a settle edge, i.e. 3–5 extra plans
 per zoom.
+
+**P31 — A depth-first budget is a cliff, and non-nesting levels were charged
+twice.** Reported on a thin 4-channel stack (46 × 2456², levels floor-halved
+through 307 → 153 → 76): the near part of the volume sharpened and the rest
+stayed at the coarsest levels forever, with nothing in flight. Not a fetch
+stall — the PLAN never asked for the missing bricks. Two defects in
+`planLayerNodes`, either one enough:
+(1) the walk was depth-first, nearest root first, so the nearest subtree was
+taken to the finest level and spent the whole slot budget; every later subtree
+was emitted at the level it had reached, four levels coarser, with no middle
+ground. (2) a level floor-halved from an odd size has a factor a hair over 2
+(16.05, 32.3), so a parent's box overhangs the next child brick, `childrenOf`
+returns that child for both parents, and with no visited set the child AND its
+subtree were emitted and charged once per parent — on that pyramid a full
+level-1 plan emitted 1364 nodes for 538 bricks (the old planner, orthographic,
+unbounded), and a perspective view whose whole plan is 130 bricks left level
+4/5 targets on a 160-slot budget. Fix: level-by-level refinement (the budget
+runs out while one level is being admitted, farthest first) and a claimed-key
+set consulted BEFORE the slot check and the decode charge (a duplicate must
+cost neither). The trade, measured on the same pyramid at 160 slots with a
+close camera: 23 level-1 bricks where the depth-first walk had 105, in
+exchange for level 2 everywhere instead of levels 3–5 over the rest. If near
+detail under a starved budget matters more, the next step is ordering
+admissions by screen error, not going back to depth-first. A node
+whose wanted children are all in the plan — its own or a neighbour's — is a
+`keep`. Symptom to recognise: the debug report's node count above its unique
+keys, `planBytes` at the budget, and target levels spanning the whole pyramid
+instead of two adjacent ones. Two things this did NOT fix, same dataset:
+plane chunks `[1,1,853,2456]` put level 0 out of reach in 3D (one brick column
+is 46 planes × 4 channels ≈ 368 MiB of decode — P5, needs brick-aligned
+chunks), and the payload's z is clamped to the BASE depth for every level, so
+a level-1 brick fills 25 of 48 slot slices.
+
+**P32 — A slab cut from 3D chunks costs 64× what it shows, and the whole-view
+floor priced it as if a level were all-or-nothing.** Reported as "2D is stuck
+blocky and soft at every zoom" on 64³-chunked volumes. Every 256² slab brick is
+cut from 4×4 chunks that are 64 slices deep, per channel: 8 MiB of decoded
+chunks for a 128 KiB slot (uint16), 32 MiB with four channels — at EVERY level,
+the fallback chain included. Against that, the floor compared the level's whole
+chunk-aligned view, 25% prefetch margin and all (2.25× the screen), with a
+QUARTER of the cache share; the allowance past it was capped at half, and
+bought a node's margin children in the same all-or-nothing purchase as its
+visible ones, nearest-first on a circle around a rectangular view. Measured on
+a 4096² × 1024 volume, 2200 × 1300 px at one pixel per voxel (60 L0 bricks on
+screen): one channel on a 737 MiB share planned 12 of them; four channels on
+3070 MiB, 12; four channels on 737 MiB sat at L2 with no L1 brick on screen at
+all — and each of those only from the SECOND plan on, the first being a level
+or two coarser still.
+Fix (`resolveDecodeBudgetBytes`, `brickSizedChunks` in `planLayerNodes`): on a
+level whose chunks are no larger than a brick, refinement the allowance cannot
+pay goes on while the chunks the plan's bricks REALLY need fit 90% of the
+cache share, and the screen is planned before the margin (P26). Same
+measurement: 45, 49, and 6 of the 24 L1 bricks — on the first plan too, since
+in 2D the cold-open gate zeroes only the allowance. The floor + allowance still
+decide first, so the budget only ever adds (swept in `nodePlanning.test.ts`
+with it off and on); everything it admits still fits the cache, so a z-step
+inside a chunk band stays a cache hit.
+The same caution cost 3D, differently: the floor prices a level by the whole
+box of the view, which per-node LOD never fills (2,048 MiB estimated where the
+wanted L0 set needed 620), and the allowance past it stops at half the share.
+Four channels, camera inside a 1024³ volume, an RTX 4070's budgets: 132 visible
+L0 bricks, the allowance spent at 1.7 GiB of chunks with 289 of 699 slots
+unused. The budget applies there too now — 432, slots full, 2,758 of 2,763 MiB
+— except on a first 3D plan (the gate), and never on plane-, row- or
+column-chunked pyramids: with it on or off their plans are identical. (The
+visible-first walk of P26 is a separate change and does apply to them.) The second, smaller cause
+was the level rule itself — see "2D switches levels at the midpoint" (§2.6).
+What this does NOT fix: the cost. Four channels at 1:1 need ~3.3 GiB of
+decoded chunks for the screen and its fallback chain; under that the rim stays
+a level coarse, and the 737 MiB share above still cannot show L1 across the
+screen. The way past the cache is to stop KEEPING those chunks — fetch, repack
+and drop for visible bricks beyond the budget, once camera and z are at rest,
+at the price of a re-download per z-step — which is not built. Symptom to
+recognise: the debug line's `chunks X / Y MB` with X at Y (the cache is the
+limit; a larger decode cache in Settings → Renderer sharpens the view), as
+opposed to `refine 0.0 MB` (slots, P25).
 
 **P20 — Handler ATTACHMENT is the raycast gate, not the handler body.** R3F
 puts an object in `internal.interaction` as soon as it carries any event
@@ -1655,6 +1821,15 @@ the cache share. L0 is reached through the sub-floor ALLOWANCE with
 `decodeCacheMB` raised to 4 GiB, at a one-time ~1.08 GiB decode burst, because
 every L0 brick touches all 64 chunks of the level. The real fix remains
 re-chunking L0 with tiled x/y chunks upstream.
+
+**The opposite layout has its own wall (P32).** Brick-aligned 64³ chunks are
+what 3D wants, and what a 2D slab pays for: 64 slices decoded per slice shown.
+There the floor above is not inert but far too cautious — it prices a level as
+all-or-nothing when it can be bought brick by brick — so plans over such
+levels additionally run on `decodeBudgetBytes` (chunk by chunk, visible bricks
+first, 90% of the cache share), in 2D and, from the second plan on, in 3D.
+`plans[].decodeBytesPlanned` beside it in the debug report is the plan's real
+chunk bill.
 
 ---
 

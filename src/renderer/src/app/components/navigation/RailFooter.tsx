@@ -19,7 +19,7 @@ import React from "react";
 import { pathTitle, type TunnelPath } from "@/core/connection/mesh/connectionPath";
 import { useConnectionPath } from "@/core/connection/mesh/useConnectionPath";
 
-import { useRailSwitcherRequests } from "./railSwitcher";
+import { useRailSwitcherRequests } from "@/core/connection/profile/ui/railSwitcher";
 
 /**
  * How the org switcher marks a tunnel: a thin ring on the avatar and a small

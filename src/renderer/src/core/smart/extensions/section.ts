@@ -44,6 +44,8 @@ export type SmartSectionTier = "instant" | "remote";
 export type SmartSectionContext = SmartContextProps & {
   filter?: string;
   liveFilter?: string;
+  /** The surface draws the sections' `SearchBar`s (the menu does, the palette does not). */
+  hasSearchBar?: boolean;
 };
 
 /**
@@ -59,6 +61,20 @@ export type SectionItems<T> = {
   items: readonly T[] | undefined;
   status: SectionStatus;
   error?: unknown;
+};
+
+/**
+ * A section's pins, by item key. The host keeps them for every section
+ * (`pins.ts`); a section whose rows already have a pin store of their own
+ * (local actions) answers with that one through `usePins`.
+ */
+export type SectionPins = {
+  isPinned: (itemKey: string) => boolean;
+  toggle: (itemKey: string) => void;
+  /** Pinned by declaration; the user cannot unpin it. */
+  isLocked?: (itemKey: string) => boolean;
+  /** Position among the pinned rows, ascending. Omit to keep the row order. */
+  order?: (itemKey: string) => number;
 };
 
 export type SmartContextSection<T = unknown> = {
@@ -88,6 +104,13 @@ export type SmartContextSection<T = unknown> = {
    */
   searchParts?: (item: T) => FilterParts;
   Row: React.ComponentType<{ item: T; context: SmartSectionContext }>;
+  /**
+   * Buttons for the right end of the menu's search field: what is worth one
+   * click on every open. Mounted inside the section's guard, like its rows.
+   */
+  SearchBar?: React.ComponentType<{ context: SmartSectionContext }>;
+  /** Its own pin store, instead of the host's. A hook: one per mounted section. */
+  usePins?: (sectionId: SmartSectionId) => SectionPins;
   /** Also offered in the ⌘K palette (under its own search), not only in the menu. */
   palette?: boolean;
   /**

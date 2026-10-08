@@ -32,6 +32,19 @@ export interface ProbeSlice {
   probedCoordinate: ProbedCoordinate | null;
   setProbedCoordinate: (coordinate: ProbedCoordinate | null) => void
   /**
+   * Where the pointer's hit is NOW, in world space. **Hotter still: vanilla
+   * subscribers only**, and only the things that draw at the cursor (the
+   * marker, the axis guides, the drawer's rubber band).
+   *
+   * `probedCoordinate` is voxel-deduped, so its `worldPos` is where the pointer
+   * ENTERED the voxel; zoomed in, a marker placed there sticks and then jumps.
+   * A same-voxel hover move writes only this. `setProbedCoordinate` mirrors it
+   * in the same write, so it is never behind the probe — read both through
+   * `liveProbeWorld`.
+   */
+  probeCursorWorld: [number, number, number] | null;
+  setProbeCursorWorld: (world: [number, number, number]) => void
+  /**
    * UI-cadence mirror of `probedCoordinate` — the only probe field React may
    * subscribe to. Published by `features/probe/ProbeReadoutSettler.tsx` once the
    * cursor rests, with retractions, clicks and target changes bypassing the
@@ -122,7 +135,19 @@ export const createProbeSlice = (
   set: SliceSet<ProbeSlice>,
 ): ProbeSlice => ({
   probedCoordinate: null,
-  setProbedCoordinate: (coordinate) => set({ probedCoordinate: coordinate }),
+  setProbedCoordinate: (coordinate) =>
+    set({ probedCoordinate: coordinate, probeCursorWorld: coordinate?.worldPos ?? null }),
+  probeCursorWorld: null,
+  setProbeCursorWorld: (world) =>
+    set((state) => {
+      const current = state.probeCursorWorld;
+      // Only ever refines a live probe, and never publishes a point that did not move.
+      if (!state.probedCoordinate) return state;
+      if (current && current[0] === world[0] && current[1] === world[1] && current[2] === world[2]) {
+        return state;
+      }
+      return { probeCursorWorld: world };
+    }),
   probeReadout: null,
   setProbeReadout: (coordinate) =>
     set((state) =>
@@ -134,10 +159,14 @@ export const createProbeSlice = (
   setProbeMode: (mode) => set({ probeMode: mode }),
   probeLayerId: null,
   setProbeLayerId: (layerId) =>
-    set((state) => ({
-      probeLayerId: layerId,
-      probedCoordinate: probeAfterPinChange(state.probedCoordinate, layerId),
-    })),
+    set((state) => {
+      const probedCoordinate = probeAfterPinChange(state.probedCoordinate, layerId);
+      return {
+        probeLayerId: layerId,
+        probedCoordinate,
+        probeCursorWorld: probedCoordinate ? state.probeCursorWorld : null,
+      };
+    }),
   mergeExactProbeValues: (key, values) =>
     set((state) => applyExactValues(state, key, values) ?? state),
   probedAttributes: null,
@@ -177,6 +206,17 @@ export const createProbeSlice = (
   setSparseLimit: (limit) =>
     set((state) => persisted(withSparseLimit(state.attributeSelection, limit))),
 });
+
+/**
+ * The live probe's world point: the sub-voxel cursor when there is one, else
+ * the probe's own hit. Null without a probe (or for one that carries no world
+ * position), so a cleared probe can never leave a cursor behind.
+ */
+export const liveProbeWorld = (state: {
+  probedCoordinate: ProbedCoordinate | null;
+  probeCursorWorld: [number, number, number] | null;
+}): [number, number, number] | null =>
+  state.probedCoordinate ? (state.probeCursorWorld ?? state.probedCoordinate.worldPos ?? null) : null;
 
 /** Write-through: the browser keeps what the session chose. */
 const persisted = (attributeSelection: AttributeSelection) => {

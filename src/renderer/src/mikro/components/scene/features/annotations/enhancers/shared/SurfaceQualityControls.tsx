@@ -2,6 +2,7 @@ import { Slider } from "@/core/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { useBrushSkeletonStore } from "../brushSkeletonStore";
 import { MARCHER_IDS, MARCHERS, type MarcherId } from "../meshes/marcher";
+import { ParamRow } from "./ParamRow";
 
 /**
  * The surface-quality rows shared by the brush and blob panels: which
@@ -17,16 +18,6 @@ import { MARCHER_IDS, MARCHERS, type MarcherId } from "../meshes/marcher";
 export const DETAIL_MIN = 0.1;
 export const DETAIL_MAX = 2;
 
-const Row = ({ label, title, children, readout }: { label: string; title: string; children: React.ReactNode; readout?: string }) => (
-  <div className="flex items-center gap-2" title={title}>
-    <span className="w-12 select-none text-right text-[10px] font-medium uppercase text-muted-foreground">{label}</span>
-    <div className="w-32">{children}</div>
-    {readout !== undefined && (
-      <span className="w-8 select-none text-[10px] tabular-nums text-muted-foreground">{readout}</span>
-    )}
-  </div>
-);
-
 export const SurfaceQualityControls = () => {
   const marcher = useBrushSkeletonStore((s) => s.marcher);
   const setMarcher = useBrushSkeletonStore((s) => s.setMarcher);
@@ -37,7 +28,7 @@ export const SurfaceQualityControls = () => {
 
   return (
     <>
-      <Row label="Marcher" title="Which algorithm turns the field into a surface">
+      <ParamRow label="Marcher" title="Which algorithm turns the field into a surface">
         <ToggleGroup
           type="single"
           size="sm"
@@ -52,15 +43,15 @@ export const SurfaceQualityControls = () => {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </Row>
-      <Row
+      </ParamRow>
+      <ParamRow
         label="Polish"
         title="Shrink-free (Taubin) smoothing passes on the extracted surface — removes marching artefacts before simplifying; 0 = off"
         readout={String(polish)}
       >
         <Slider min={0} max={20} step={1} value={[polish]} onValueChange={([value]) => setPolish(value)} />
-      </Row>
-      <Row
+      </ParamRow>
+      <ParamRow
         label="Detail"
         title="Surface detail in voxels of the extraction level: the mesh stays within this many voxels of the marched surface. 1 = the data's own resolution; below keeps sub-voxel shape, above 2 marches a coarser level"
         readout={`${detailVoxels.toFixed(2)} vx`}
@@ -72,7 +63,7 @@ export const SurfaceQualityControls = () => {
           value={[detailVoxels]}
           onValueChange={([value]) => setDetailVoxels(value)}
         />
-      </Row>
+      </ParamRow>
     </>
   );
 };

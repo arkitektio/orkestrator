@@ -4,7 +4,13 @@ import { useThree } from "@react-three/fiber";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { Line2NodeMaterial } from "three/webgpu";
-import { writeLineDistances, writePolylinePairs } from "@/core/data/scene/gpu/lineBuffer";
+import {
+  FLOATS_PER_SEGMENT,
+  pairBufferLength,
+  writeLineDistances,
+  writePolylinePairs,
+} from "@/core/data/scene/gpu/lineBuffer";
+import { swapGeometry } from "@/core/data/scene/gpu/swapGeometry";
 import type { OutlinePoint } from "../model/geometry";
 
 /**
@@ -26,9 +32,9 @@ import type { OutlinePoint } from "../model/geometry";
 
 export interface PreviewLineHandle {
   /**
-   * Rewrite the border. Mutates the existing buffers when the point COUNT is
-   * unchanged (the pointer-move path: no allocation, one buffer write);
-   * reallocates via `setPositions` when it changes (the click path).
+   * Rewrite the border, in place: no allocation, one buffer write. A polyline
+   * past the preallocation gets a NEW, larger geometry first (click cadence
+   * at worst — capacities double).
    */
   setPoints(points: readonly OutlinePoint[]): void;
   /** Hide without clearing — the idle state between gestures. */
@@ -46,8 +52,23 @@ export interface PreviewLineProps {
   capacity?: number;
 }
 
-/** An ellipse is 49 points; polygons realistically stay well under this. */
+/**
+ * An ellipse is 49 points; hand-clicked polygons stay well under this. A chain
+ * the vector enhancer traced does not — it grows past it (`setPoints`).
+ */
 const DEFAULT_CAPACITY = 256;
+
+/**
+ * A geometry preallocated for `capacity` points. `setPositions` takes
+ * POSITIONS (3 floats per point) and expands them to the interleaved pair
+ * layout itself, so the input is `capacity * 3` — which yields exactly
+ * `pairBufferLength(capacity)` floats of pairs.
+ */
+const allocateGeometry = (capacity: number): LineGeometry => {
+  const geometry = new LineGeometry();
+  geometry.setPositions(new Float32Array(capacity * 3));
+  return geometry;
+};
 
 export const PreviewLine = forwardRef<PreviewLineHandle, PreviewLineProps>(
   (
@@ -64,8 +85,7 @@ export const PreviewLine = forwardRef<PreviewLineHandle, PreviewLineProps>(
   ) => {
     const invalidate = useThree((s) => s.invalidate);
 
-    const { line, geometry, material } = useMemo(() => {
-      const geo = new LineGeometry();
+    const { line, material } = useMemo(() => {
       const mat = new Line2NodeMaterial();
 
       // Configured once and never mutated. `Line`'s declarative path sets
@@ -85,14 +105,9 @@ export const PreviewLine = forwardRef<PreviewLineHandle, PreviewLineProps>(
       mat.depthWrite = false;
 
       // Preallocate for `capacity` points so ordinary drawing never reallocates.
-      // `setPositions` takes POSITIONS (3 floats per point) and expands them to
-      // the interleaved pair layout itself, so the input is `capacity * 3` —
-      // which yields exactly `pairBufferLength(capacity)` floats of pairs.
       // `visible = false` keeps the zero-length seed segments (whose direction
       // normalizes to NaN) away from the shader until real points arrive.
-      geo.setPositions(new Float32Array(capacity * 3));
-
-      const obj = new Line2(geo, mat);
+      const obj = new Line2(allocateGeometry(capacity), mat);
       // Dashing reads cumulative arc length per fragment. If the attributes are
       // missing entirely the shader falls back to 0.0 and renders a silently
       // UNDASHED line rather than crashing — so seed them once, up front.
@@ -105,17 +120,19 @@ export const PreviewLine = forwardRef<PreviewLineHandle, PreviewLineProps>(
       obj.renderOrder = renderOrder;
       obj.visible = false;
 
-      return { line: obj, geometry: geo, material: mat };
+      return { line: obj, material: mat };
       // Styling is mount-time only, by design (see above).
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // `line.geometry`, not the mount-time one: a preview that outgrew its
+    // preallocation is on a later geometry (`setPoints`).
     useEffect(
       () => () => {
-        geometry.dispose();
+        line.geometry.dispose();
         material.dispose();
       },
-      [geometry, material],
+      [line, material],
     );
 
     useImperativeHandle(
@@ -130,37 +147,38 @@ export const PreviewLine = forwardRef<PreviewLineHandle, PreviewLineProps>(
             return;
           }
 
-          const start = geometry.attributes.instanceStart as
-            | THREE.InterleavedBufferAttribute
-            | undefined;
           const segments = points.length - 1;
-          const pairs = start?.data.array as Float32Array | undefined;
-          // -1 means the preallocation is too small; nothing was written.
-          const written = pairs ? writePolylinePairs(pairs, points) : -1;
+          let geometry = line.geometry;
+          let start = geometry.attributes.instanceStart as THREE.InterleavedBufferAttribute;
+          let pairs = start.data.array as Float32Array;
 
-          if (!start || !pairs || written < 0) {
-            // Outgrew the preallocation — rare, and only ever at click cadence.
-            geometry.setPositions(points.flatMap((p) => [p[0], p[1], p[2]]));
+          if (pairs.length < pairBufferLength(points.length)) {
+            // Outgrew the preallocation — a traced chain does, at click
+            // cadence. A NEW geometry, never `setPositions` on this one: the
+            // renderer would keep the old vertex buffer bound and the longer
+            // draw would invalidate every frame (`swapGeometry`).
+            const held = pairs.length / FLOATS_PER_SEGMENT + 1;
+            geometry = allocateGeometry(Math.max(points.length, held * 2));
+            swapGeometry(line, geometry);
             if (dashed) line.computeLineDistances();
-          } else {
-            start.data.needsUpdate = true;
-            // The pair buffer holds `capacity` segments regardless of how many
-            // we just wrote, so the draw range has to be narrowed by hand —
-            // otherwise the untouched tail renders as stale segments.
-            geometry.instanceCount = segments;
+            start = geometry.attributes.instanceStart as THREE.InterleavedBufferAttribute;
+            pairs = start.data.array as Float32Array;
+          }
 
-            if (dashed) {
-              const distances = geometry.attributes.instanceDistanceStart as
-                | THREE.InterleavedBufferAttribute
-                | undefined;
-              if (distances) {
-                writeLineDistances(
-                  distances.data.array as Float32Array,
-                  pairs,
-                  segments,
-                );
-                distances.data.needsUpdate = true;
-              }
+          writePolylinePairs(pairs, points);
+          start.data.needsUpdate = true;
+          // The pair buffer holds `capacity` segments regardless of how many
+          // we just wrote, so the draw range has to be narrowed by hand —
+          // otherwise the untouched tail renders as stale segments.
+          geometry.instanceCount = segments;
+
+          if (dashed) {
+            const distances = geometry.attributes.instanceDistanceStart as
+              | THREE.InterleavedBufferAttribute
+              | undefined;
+            if (distances) {
+              writeLineDistances(distances.data.array as Float32Array, pairs, segments);
+              distances.data.needsUpdate = true;
             }
           }
 
@@ -174,7 +192,7 @@ export const PreviewLine = forwardRef<PreviewLineHandle, PreviewLineProps>(
           invalidate();
         },
       }),
-      [line, geometry, dashed, invalidate],
+      [line, dashed, invalidate],
     );
 
     // Mounted unconditionally — visibility, not mounting, is what toggles it.

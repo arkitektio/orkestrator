@@ -1,12 +1,19 @@
 // @vitest-environment jsdom
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CommandItem } from "@/core/ui/command";
 
 vi.mock("@/core/util/hooks/use-debounce", () => ({ useDebounce: <T,>(value: T) => value }));
 
+vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
+  Arkitekt: { useActiveProfileId: () => "org-a" },
+}));
+
+import { CommandActionRow } from "./CommandActionRow";
 import { SmartContext } from "./context";
+import { resetSmartPinsCache, smartPinsStorageKey } from "./pins";
 import type { SectionItems, SmartContextSection } from "./section";
 import { createSmartSectionRegistry } from "./sectionRegistry";
 
@@ -129,5 +136,92 @@ describe("SmartContext", () => {
     // Nothing remote is expected, so the menu is settled at once.
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-busy", "false");
     expect(screen.getByText("Instant a")).toBeInTheDocument();
+  });
+
+  describe("pins", () => {
+    const ran = vi.fn();
+    /** Rows through the shared row, as every module's are. */
+    const actionSection = (
+      id: "local.actions" | "rekuest.actions",
+      items: readonly string[],
+      extra: Partial<SmartContextSection<string>> = {},
+    ): SmartContextSection<string> => ({
+      id,
+      module: id.split(".")[0],
+      title: id,
+      priority: id === "local.actions" ? 0 : 40,
+      tier: "instant",
+      applies: () => true,
+      useItems: () => ({ items, status: "ready" }),
+      itemKey: (item) => item,
+      Row: ({ item }) => (
+        <CommandActionRow value={`${id}-${item}`} title={item} onSelect={() => ran(item)} />
+      ),
+      ...extra,
+    });
+
+    const registry = () =>
+      createSmartSectionRegistry([
+        actionSection("local.actions", ["Open"]),
+        actionSection("rekuest.actions", ["Segment", "Denoise"]),
+      ]);
+    const pinnedGroup = () => screen.getByRole("group", { name: "Pinned actions" });
+    const order = () =>
+      screen.getAllByText(/^(Open|Segment|Denoise)$/).map((node) => node.textContent);
+
+    beforeEach(() => {
+      // cmdk scrolls its selection into view; jsdom has no layout to do it in.
+      Element.prototype.scrollIntoView = vi.fn();
+      localStorage.clear();
+      resetSmartPinsCache();
+      ran.mockClear();
+    });
+
+    it("moves a pinned server-side row to the start without running it", () => {
+      render(<SmartContext registry={registry()} objects={objects} />);
+      expect(pinnedGroup()).toBeEmptyDOMElement();
+      expect(order()).toEqual(["Open", "Segment", "Denoise"]);
+
+      fireEvent.click(screen.getByRole("button", { name: "Pin Denoise" }));
+      expect(ran).not.toHaveBeenCalled();
+      // Moved, not copied: above the local rows, and once.
+      expect(within(pinnedGroup()).getByText("Denoise")).toBeInTheDocument();
+      expect(order()).toEqual(["Denoise", "Open", "Segment"]);
+
+      fireEvent.click(within(pinnedGroup()).getByText("Denoise"));
+      expect(ran).toHaveBeenCalledWith("Denoise");
+    });
+
+    it("persists per profile and reads the pin back on the next open", () => {
+      const first = render(<SmartContext registry={registry()} objects={objects} />);
+      fireEvent.click(screen.getByRole("button", { name: "Pin Denoise" }));
+      expect(JSON.parse(localStorage.getItem(smartPinsStorageKey("org-a"))!)).toEqual([
+        "rekuest.actions:Denoise",
+      ]);
+      first.unmount();
+      resetSmartPinsCache();
+
+      render(<SmartContext registry={registry()} objects={objects} />);
+      expect(within(pinnedGroup()).getByText("Denoise")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Unpin Denoise" }));
+      expect(pinnedGroup()).toBeEmptyDOMElement();
+      expect(order()).toEqual(["Open", "Segment", "Denoise"]);
+      expect(JSON.parse(localStorage.getItem(smartPinsStorageKey("org-a"))!)).toEqual([]);
+    });
+
+    it("lets a section bring its own pins, and shows a declared pin as locked", () => {
+      const toggle = vi.fn();
+      const own = createSmartSectionRegistry([
+        actionSection("local.actions", ["Open"], {
+          usePins: () => ({ isPinned: () => true, isLocked: () => true, toggle }),
+        }),
+      ]);
+      render(<SmartContext registry={own} objects={objects} />);
+
+      expect(within(pinnedGroup()).getByText("Open")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Open is always pinned" })).toBeDisabled();
+      expect(localStorage.getItem(smartPinsStorageKey("org-a"))).toBeNull();
+    });
   });
 });

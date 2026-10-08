@@ -330,11 +330,13 @@ map), and `brickSampling` (CPU probe march) — see OCTREE_RENDERER.md P15/P14
 for why these three must move together. Recommended shape: apply translation
 exactly in the *sampling* path, keep brick *addressing* corner-aligned.
 
-**Known planner nit for true-factor pyramids:** adjacent levels need not
-divide evenly (z 4→9 is 2.25×), so `childrenOf` boxes don't nest exactly and
-the DFS can visit a straddling child from two parents (no visited-set).
-Bounded double-accounting; add dedup in `planLayerNodes` when translation
-work lands.
+**True-factor pyramids do not nest.** Adjacent levels need not divide evenly
+(z 4→9 is 2.25×; xy floor-halved from an odd size is 2.007×), so `childrenOf`
+boxes overhang and a straddling child is returned for two parents.
+`planLayerNodes` claims each node once, so it is planned and charged once
+(OCTREE_RENDERER.md P31 — unclaimed, this was 2.5× the nodes on a real
+pyramid, not a nit). Independent of the translation work above: it is
+planner-only, and the shader resolves the level per sample by coordinate.
 
 ### 3.3 Lenses and the crop offset
 

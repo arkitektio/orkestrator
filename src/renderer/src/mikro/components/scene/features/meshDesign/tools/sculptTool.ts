@@ -1,8 +1,10 @@
-import { marchField, meshToField, subtractCapsule, type SculptField } from "../field/sculptField";
-import { applyStamp, capsuleChainStamp, smoothInSphere, type Vec3 } from "../field/stamps";
-import { finishDesignGeometry } from "../ops/postProcess";
-import { fieldSpacingFor } from "./context";
-import type { BrushSkeletonState } from "../../annotations/enhancers/brushSkeletonStore";
+import { Hand } from "lucide-react";
+
+import type { Vec3 } from "../field/stamps";
+import { designDispatcher } from "../worker/designDispatcher";
+import type { DesignOp } from "../worker/designJob";
+import { baseFor, fieldSpacingFor, finishFor } from "./context";
+import type { BrushSkeletonState } from "../brush";
 import type { DesignMesh, MeshDesignState, SculptVariant } from "../store/meshDesignStore";
 import type { DesignTool } from "./registry";
 
@@ -16,27 +18,30 @@ export const sculptTool: DesignTool = {
   id: "sculpt",
   key: "b",
   label: "Sculpt",
+  icon: Hand,
+  group: "primary",
   gesture: "surface",
-  roiTool: null,
-  hint: "Sculpting — drag on the mesh to inflate / deflate / smooth it",
-  shortcut: { keys: ["B", "drag"], description: "Sculpt the mesh surface (inflate / deflate / smooth)" },
+  hint: "Drag on the mesh to inflate / deflate / smooth it",
+  shortcut: { keys: ["B", "drag"], description: "Sculpt: drag on the mesh surface" },
 };
 
 /** The brush sphere is half the extraction radius — sculpting is local. */
 const SCULPT_RADIUS_FACTOR = 0.5;
 
-export function sculptFieldAlong(
-  field: SculptField,
+/** The field ops one sculpt drag amounts to, for a field of `spacing`. */
+export function sculptOps(
   points: readonly Vec3[],
   radiusWorld: number,
   variant: SculptVariant,
-): SculptField {
-  const radius = Math.max(field.spacing, radiusWorld * SCULPT_RADIUS_FACTOR);
-  if (variant === "inflate") return applyStamp(field, capsuleChainStamp(points, radius), "add");
-  if (variant === "deflate") return subtractCapsule(field, points, radius);
-  let out = field;
-  for (const point of points) out = smoothInSphere(out, point, radius);
-  return out;
+  spacing: number,
+): DesignOp[] {
+  const radius = Math.max(spacing, radiusWorld * SCULPT_RADIUS_FACTOR);
+  const stroke = points.map((point) => [point[0], point[1], point[2]] as const);
+  if (variant === "inflate") {
+    return [{ type: "stamp", mode: "add", spec: { kind: "capsuleChain", points: stroke, radius } }];
+  }
+  if (variant === "deflate") return [{ type: "subtractCapsule", stroke, radius }];
+  return [{ type: "smoothSpheres", points: stroke, radius }];
 }
 
 /** Apply one finished sculpt drag to `target`. */
@@ -50,14 +55,18 @@ export async function applySculptStroke(
   if (points.length === 0 || radius <= 0) return false;
   const fieldSpacing =
     target.field?.spacing ?? fieldSpacingFor([radius / 6, radius / 6, radius / 6], brush.detailVoxels);
-  const field = target.field ?? meshToField(target.original, fieldSpacing);
-  const sculpted = sculptFieldAlong(field, points, radius, design.sculptVariant);
-  if (sculpted === field) return false;
-  const marched = marchField(sculpted, brush.marcher);
-  const { original, current } = await finishDesignGeometry(marched, {
-    polishIterations: brush.polishIterations,
-    detailWorld: brush.detailVoxels * fieldSpacing,
+  const result = await designDispatcher().run({
+    base: baseFor(target, fieldSpacing),
+    ops: sculptOps(points, radius, design.sculptVariant, fieldSpacing),
+    finish: finishFor(brush, fieldSpacing),
+    skipUnchanged: true,
   });
-  design.applySculpt(target.id, { field: sculpted, original, current, source: target.source });
+  if (!result || !result.changed) return false;
+  design.applySculpt(target.id, {
+    field: result.field,
+    original: result.original,
+    current: result.current,
+    source: target.source,
+  });
   return true;
 }

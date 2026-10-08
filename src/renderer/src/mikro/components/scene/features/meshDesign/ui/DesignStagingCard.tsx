@@ -5,11 +5,9 @@ import { Button } from "@/core/ui/button";
 import { Slider } from "@/core/ui/slider";
 import { useDialog } from "@/core/dialogs/registry";
 import { useModeStore } from "../../../platform/stores/modeStore";
-import { useSceneStore, useSceneStoreApi } from "../../../platform/stores/sceneStore";
-import { useBrushSkeletonStoreApi } from "../../annotations/enhancers/brushSkeletonStore";
-import { useRoiSelectionStoreApi } from "../../annotations/roiSelectionStore";
-import { loftSelectedPolygons } from "../tools/loftAction";
-import { tubeFromSelectedPath } from "../tools/tubeFromPathAction";
+import { useSceneStore } from "../../../platform/stores/sceneStore";
+import { useBrushSkeletonStoreApi } from "../brush";
+import { commitCandidate } from "../reconstruct/candidate";
 import { simplifyGeometry } from "../ops/simplify";
 import {
   DESIGN_TRIANGLE_BUDGET,
@@ -23,9 +21,9 @@ import {
  * The design session as a STAGING entry in the sidebar's layer panel: the
  * uncommitted meshes behave like a layer (they render in the scene), so they
  * are listed where layers are listed — with the management verbs (rename,
- * simplify, visibility, remove, commit) that were crowding the in-viewport
- * HUD. The HUD (`MeshDesignToolbar`) keeps only the gesture surface: hints
- * and the held-tool pickers, next to where the pointer is.
+ * simplify, visibility, remove, commit). The in-viewport `MeshDesignToolbar`
+ * keeps the gesture surface: the tools and their panels, next to where the
+ * pointer is.
  *
  * Deliberately NOT a `cardRegistry` entry: those render server `SceneLayer`s
  * and this is session state — pretending otherwise would hand it controls
@@ -65,7 +63,7 @@ const MeshRow = ({ mesh, selected }: { mesh: DesignMesh; selected: boolean }) =>
     >
       <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: `hsl(${mesh.hue} 65% 55%)` }} />
       {selected && (
-        <span className="rounded bg-emerald-500/30 px-1 text-[9px] uppercase text-emerald-200" title="Strokes add to this mesh">
+        <span className="rounded bg-emerald-500/30 px-1 text-[9px] uppercase text-emerald-200" title="Reconstructions and edits go into this mesh">
           active
         </span>
       )}
@@ -129,10 +127,9 @@ export const DesignStagingCard = () => {
   const canUndo = useMeshDesignStore((s) => s.history.length > 0);
   const canRedo = useMeshDesignStore((s) => s.future.length > 0);
   const newMesh = useMeshDesignStore((s) => s.newMesh);
+  const hasCandidate = useMeshDesignStore((s) => s.candidate !== null);
   const designApi = useMeshDesignStoreApi();
   const brushApi = useBrushSkeletonStoreApi();
-  const sceneApi = useSceneStoreApi();
-  const roiSelectionApi = useRoiSelectionStoreApi();
   const sceneId = useSceneStore((s) => s.id);
   const patchSceneLayer = useSceneStore((s) => s.patchSceneLayer);
   const world = useSceneStore((s) => s.transformContext.worldCoordinateSystem);
@@ -140,8 +137,7 @@ export const DesignStagingCard = () => {
 
   // The staging entry exists while there is a session to manage — in any
   // interaction mode (reviewing before commit shouldn't require holding M) —
-  // or while DESIGN is active with an empty session (so the actions are
-  // discoverable).
+  // or while DESIGN is active with an empty session (so it is discoverable).
   if (meshes.length === 0 && interactionMode !== "DESIGN") return null;
 
   const triangles = totalTriangles(meshes);
@@ -170,7 +166,7 @@ export const DesignStagingCard = () => {
         </span>
       )}
       {meshes.length === 0 ? (
-        <span className="text-[10px] text-muted-foreground">Nothing staged — hold C/V/S in the scene to add a mesh.</span>
+        <span className="text-[10px] text-muted-foreground">Nothing staged — pick Trace or Seed in the scene and reconstruct a mesh.</span>
       ) : (
         meshes.map((mesh) => <MeshRow key={mesh.id} mesh={mesh} selected={mesh.id === selectedId} />)
       )}
@@ -178,10 +174,12 @@ export const DesignStagingCard = () => {
         <Button
           size="xs"
           variant="default"
-          disabled={committing || !world || meshes.length === 0}
-          onClick={() => {
+          disabled={committing || !world || (meshes.length === 0 && !hasCandidate)}
+          onClick={async () => {
             if (!world) return;
             brushApi.getState().clear();
+            // A preview still on screen is part of what the user is committing.
+            await commitCandidate(designApi.getState());
             // Dialogs render outside the scene scope: hand the session over
             // as props, take the outcome back through callbacks.
             openDialog(
@@ -208,7 +206,7 @@ export const DesignStagingCard = () => {
         >
           {committing ? "Committing…" : origin ? "Commit as new version" : "Commit collection"}
         </Button>
-        <Button size="xs" variant="ghost" className="h-6 w-6 p-0" title="Undo the last sculpt (⌘Z)" disabled={committing || !canUndo} onClick={undo}>
+        <Button size="xs" variant="ghost" className="h-6 w-6 p-0" title="Undo the last step (⌘Z)" disabled={committing || !canUndo} onClick={undo}>
           <Undo2 className="h-3.5 w-3.5" />
         </Button>
         <Button size="xs" variant="ghost" className="h-6 w-6 p-0" title="Redo (⇧⌘Z)" disabled={committing || !canRedo} onClick={redo}>
@@ -219,39 +217,9 @@ export const DesignStagingCard = () => {
         </Button>
       </div>
       <div className="flex flex-wrap items-center gap-1">
-        <Button size="xs" variant="outline" title="Start a new mesh — the next C/V stroke goes there" onClick={() => newMesh()}>
+        <Button size="xs" variant="outline" title="Start a new mesh — the next reconstruction goes there" onClick={() => newMesh()}>
           <Plus className="h-3 w-3" />
           <span className="text-[10px]">New mesh</span>
-        </Button>
-        <Button
-          size="xs"
-          variant="outline"
-          title="Loft the selected polygon annotations (traced on different slices) into a mesh"
-          onClick={() =>
-            void loftSelectedPolygons(
-              designApi.getState(),
-              brushApi.getState(),
-              sceneApi.getState(),
-              roiSelectionApi.getState().selectedRois,
-            )
-          }
-        >
-          <span className="text-[10px]">Loft</span>
-        </Button>
-        <Button
-          size="xs"
-          variant="outline"
-          title="Sweep the selected path annotation into a tube at the brush radius"
-          onClick={() =>
-            void tubeFromSelectedPath(
-              designApi.getState(),
-              brushApi.getState(),
-              sceneApi.getState(),
-              roiSelectionApi.getState().selectedRois,
-            )
-          }
-        >
-          <span className="text-[10px]">Tube</span>
         </Button>
       </div>
     </div>

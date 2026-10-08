@@ -1,3 +1,4 @@
+import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
 import { LOK_HELP } from "../help";
 import { PageLayout } from "@/core/layout/PageLayout";
@@ -8,8 +9,11 @@ import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { useState } from "react";
 import { ADMIN_ROLE, useHasRoles } from "@/core/connection/roles";
 import { toast } from "@/core/notify";
+import { useDialog } from "@/core/dialogs/registry";
 import {
+  MembershipRequestFragment,
   OrganizationFragment,
+  useMembershipRequestsQuery,
   useMyContextQuery,
   useOrganizationQuery,
   useUpdateOrganizationMutation,
@@ -57,6 +61,43 @@ const Invites = ({ invites }: { invites: OrganizationFragment["invites"] }) => {
   );
 };
 
+/** People outside the organization who asked to join; click one to answer. */
+const Requests = ({ requests }: { requests: MembershipRequestFragment[] }) => {
+  const { openDialog } = useDialog();
+  if (requests.length === 0) {
+    return <p className="p-4 text-sm text-muted-foreground">No open requests.</p>;
+  }
+  return (
+    <div className="flex flex-col divide-y divide-border/40 p-2">
+      {requests.map((request) => (
+        <button
+          key={request.id}
+          type="button"
+          title="Answer this request"
+          onClick={() =>
+            openDialog(
+              "answermembershiprequest",
+              { id: request.id, username: request.user.username, reason: request.reason },
+              { size: "small" },
+            )
+          }
+          className="space-y-1 rounded px-2 py-2.5 text-left text-xs transition-colors hover:bg-muted/50"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">{request.user.username}</span>
+            <span className="text-muted-foreground">
+              {new Date(request.createdAt).toLocaleDateString()}
+            </span>
+          </div>
+          {request.reason && (
+            <p className="line-clamp-3 text-muted-foreground">{request.reason}</p>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 /**
  * Team's start page — the organization this profile acts in, which is the only
  * one it has: its banner, then its people. Each card opens that member's
@@ -65,7 +106,7 @@ const Invites = ({ invites }: { invites: OrganizationFragment["invites"] }) => {
 const TeamHomePage = () => {
   const { data: context } = useMyContextQuery();
   const organizationId = context?.mycontext.organization.id;
-  const { data } = useOrganizationQuery({
+  const { data, error, refetch } = useOrganizationQuery({
     variables: { id: organizationId ?? "" },
     skip: !organizationId,
     fetchPolicy: "cache-and-network",
@@ -73,6 +114,14 @@ const TeamHomePage = () => {
   const [inviteOpen, setInviteOpen] = useState(false);
   // Inviting (and the invite links themselves) is for the organization's admins.
   const isAdmin = useHasRoles(ADMIN_ROLE);
+  // Asked apart from the organization: a lok without membership requests
+  // fails this query alone, and the page just has none to show.
+  const { data: requested } = useMembershipRequestsQuery({
+    variables: { id: organizationId ?? "" },
+    skip: !organizationId || !isAdmin,
+    fetchPolicy: "cache-and-network",
+    errorPolicy: "ignore",
+  });
   const resolve = useLokResolve();
   const [updateOrganization] = useUpdateOrganizationMutation();
   // Lands on `OrganizationProfile.avatar`, the one logo field lok keeps; lok
@@ -84,6 +133,9 @@ const TeamHomePage = () => {
   );
 
   const organization = data?.organization;
+  if (error && !organization) {
+    return <QueryError error={error} onRetry={() => refetch()} resource="organization" id={organizationId} />;
+  }
   if (!organization) return <LoadingPage />;
 
   const me = context?.mycontext.user.id;
@@ -94,6 +146,11 @@ const TeamHomePage = () => {
       a.user.username.localeCompare(b.user.username),
   );
   const openInvites = organization.invites.filter((invite) => !invite.acceptedBy).length;
+
+  // Answered requests stay on record in lok; only the open ones need someone.
+  const openRequests = (requested?.organization?.membershipRequests ?? []).filter(
+    (request) => request.status === "pending",
+  );
 
   const logo = organization.profile.avatar ?? organization.avatar;
 
@@ -124,6 +181,11 @@ const TeamHomePage = () => {
           {isAdmin && (
             <Sidebars.Tab label="Invites">
               <Invites invites={organization.invites} />
+            </Sidebars.Tab>
+          )}
+          {isAdmin && (
+            <Sidebars.Tab label="Requests">
+              <Requests requests={openRequests} />
             </Sidebars.Tab>
           )}
           <Sidebars.Tab label="Statistics">
@@ -160,6 +222,14 @@ const TeamHomePage = () => {
               <div>
                 <p className="text-2xl font-semibold tabular-nums">{openInvites}</p>
                 <p className="text-xs text-muted-foreground">open invites</p>
+              </div>
+            )}
+            {openRequests.length > 0 && (
+              <div>
+                <p className="text-2xl font-semibold tabular-nums">{openRequests.length}</p>
+                <p className="text-xs text-muted-foreground">
+                  {openRequests.length === 1 ? "request to join" : "requests to join"}
+                </p>
               </div>
             )}
           </div>

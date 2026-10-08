@@ -3,15 +3,15 @@
  *
  * three's own `LineGeometry.setPositions` / `LineSegments2.computeLineDistances`
  * allocate a fresh Float32Array, a fresh InstancedInterleavedBuffer and fresh
- * InterleavedBufferAttributes on every call. New attribute objects mean new
- * attribute ids, which trips the renderer's `needsGeometryUpdate` and orphans
- * the previous GPU buffers until the geometry is disposed — fine once, ruinous
- * per pointer move.
+ * InterleavedBufferAttributes on every call — which a geometry that has already
+ * been drawn does not survive: the renderer keeps the vertex buffer it first
+ * bound (`swapGeometry.ts` has the why), so the new data is never drawn and a
+ * longer polyline invalidates the frame.
  *
  * These write into the buffers that already exist, so the caller only has to set
  * `needsUpdate` and the backend issues a single `writeBuffer`. Valid only while
- * the point COUNT is unchanged; the caller falls back to `setPositions` when it
- * is not (`platform/draw/PreviewLine.tsx`).
+ * the points FIT the buffer; past that the caller moves to a new, larger
+ * geometry (`platform/draw/PreviewLine.tsx`).
  */
 
 /** Floats per pair-buffer segment: (start.xyz, end.xyz). */

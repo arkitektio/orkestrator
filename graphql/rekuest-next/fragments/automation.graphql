@@ -24,6 +24,13 @@ fragment ListSchedule on Schedule {
     latestEventKind
     isDone
   }
+  description
+  runCount
+  lastRunAt
+  lastErrorAt
+  exhausted
+  endsAt
+  maxRuns
 }
 
 fragment DetailSchedule on Schedule {
@@ -31,8 +38,25 @@ fragment DetailSchedule on Schedule {
   args
   interface
   ephemeralRuns
+  overlap
+  catchUp
+  lastFiredAt
+  # what its timing says comes next; a paused or ended schedule runs none
+  upcoming(count: 5)
+  wireKey
+  wiregram {
+    id
+    name
+  }
   createdAt
   updatedAt
+  caller {
+    id
+    user {
+      id
+      sub
+    }
+  }
   runs(limit: 24) {
     ...ListTask
   }
@@ -56,16 +80,38 @@ fragment ListTrigger on Trigger {
     id
     name
   }
+  description
+  runCount
+  lastRunAt
+  lastErrorAt
+  exhausted
+  endsAt
+  maxRuns
+  debounceSeconds
 }
 
 fragment DetailTrigger on Trigger {
   ...ListTrigger
   args
   interface
+  lastFiredAt
   createdAt
   updatedAt
-  runs(limit: 24) {
-    ...ListTask
+  caller {
+    id
+    user {
+      id
+      sub
+    }
+  }
+  wireKey
+  wiregram {
+    id
+    name
+  }
+  # what became of it for each signal it listened for: fired, rejected or failed
+  firings(limit: 24) {
+    ...ListFiring
   }
 }
 
@@ -75,6 +121,7 @@ fragment ListSignal on Signal {
   kind
   object
   serviceName
+  # null when the hub no longer catalogues the sender
   service {
     id
     name
@@ -96,6 +143,10 @@ fragment ListSignal on Signal {
       id
       name
     }
+    trigger {
+      id
+      name
+    }
   }
 }
 
@@ -109,4 +160,146 @@ fragment SignalDeclaration on SignalDeclaration {
   }
   description
   descriptorKeys
+}
+
+# One trigger meeting one signal: it fired a run, the signal was rejected
+# (conditions, debounce, limits), or creating the run failed.
+fragment ListFiring on Firing {
+  id
+  outcome
+  reason
+  replay
+  createdAt
+  trigger {
+    id
+    name
+  }
+  signal {
+    id
+    identifier
+    object
+    kind
+    occurredAt
+    receivedAt
+  }
+  task {
+    ...ListTask
+  }
+}
+
+fragment DetailSignal on Signal {
+  ...ListSignal
+  firings {
+    ...ListFiring
+  }
+}
+
+# A set of rules imported from one document.
+fragment ListWiregram on Wiregram {
+  id
+  key
+  name
+  description
+  updatedAt
+}
+
+fragment DetailWiregram on Wiregram {
+  ...ListWiregram
+  document
+  createdAt
+  caller {
+    id
+    user {
+      id
+      sub
+    }
+  }
+  schedules {
+    ...ListSchedule
+  }
+  triggers {
+    ...ListTrigger
+  }
+}
+
+# A service of the hub. The list counts what it declares; the page shows it.
+fragment ListService on Service {
+  id
+  name
+  identifier
+  description
+  signals {
+    id
+  }
+  structures {
+    id: identifier
+  }
+}
+
+# What a service declares: the signals it sends (with your triggers waiting
+# for each) and the structures it hosts, each with its objects' descriptors.
+fragment DetailService on Service {
+  id
+  name
+  identifier
+  description
+  signals {
+    ...SignalDeclaration
+    triggers {
+      id
+      name
+    }
+  }
+  structures {
+    id: identifier
+    identifier
+    label
+    description
+    descriptors {
+      id
+      key
+      type
+      description
+    }
+  }
+}
+
+fragment DetailFiring on Firing {
+  ...ListFiring
+  trigger {
+    id
+    name
+    action {
+      id
+      name
+    }
+  }
+  signal {
+    id
+    serviceName
+    descriptors
+  }
+}
+
+# What the rule subscriptions carry: the fields that move while a rule runs.
+fragment RuleChange on RuleChange {
+  id
+  name
+  enabled
+  consecutiveFailures
+  lastError
+  runCount
+  lastFiredAt
+  updatedAt
+}
+
+fragment SignalChange on SignalChange {
+  id
+  service
+  kind
+  identifier
+  object
+  receivedAt
+  processedAt
+  fired
 }

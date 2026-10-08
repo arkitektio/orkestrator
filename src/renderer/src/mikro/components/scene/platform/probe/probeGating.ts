@@ -39,17 +39,18 @@ export interface ProbeGateInput {
    */
   brushToolActive?: boolean;
   /**
-   * DESIGN only: a brush key (C/V/X) is held. Without one DESIGN behaves
-   * exactly like NAVIGATE — no hover probe, no click capture.
+   * DESIGN only: a design tool currently owns the left button
+   * (`modeStore.designTool` is set). Without one DESIGN behaves exactly like
+   * NAVIGATE — no hover probe, no click capture.
    */
   designArmed?: boolean;
   /**
    * Whether this layer answers ANNOTATE-mode probing at all. True for the 3D
    * volume and the mesh collection — there the probe IS the placement, since a
-   * volume has no draw plane. False for the 2D plane layer, where the
-   * `RoiDrawer`'s own interaction plane drives the rubber band and a second
-   * hover probe would only fight it for the event. The asymmetry is
-   * deliberate — see COORDINATE_SYSTEMS.md.
+   * volume has no draw plane. The 2D plane layer passes true for HOVER only
+   * (the cross follows the pointer as a placement cursor) and false for the
+   * click: there the `RoiDrawer`'s own interaction plane drives the rubber
+   * band and places every point — see COORDINATE_SYSTEMS.md.
    */
   annotateProbes: boolean;
 }
@@ -76,8 +77,8 @@ export const hoverProbeEnabled = ({
   (annotateProbes &&
     interactionMode === "ANNOTATE" &&
     (drawingToolActive || brushToolActive)) ||
-  // DESIGN hosts only the brush/blob gestures, which paint through the probe —
-  // and only while a modifier is held; otherwise it is NAVIGATE.
+  // DESIGN's volume gestures paint through the probe — and only while a
+  // design tool owns the left button; otherwise it is NAVIGATE.
   (annotateProbes && interactionMode === "DESIGN" && brushToolActive && designArmed);
 
 /**

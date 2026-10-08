@@ -153,7 +153,7 @@ const StructureRoomView = ({
           must not mount at all without that service — guarded from out here,
           before its hooks can fire. */}
       <RekuestGuard
-        unavailable={
+        fallback={
           <div className="p-3 text-xs text-muted-foreground">
             Chat needs the rekuest service.
           </div>

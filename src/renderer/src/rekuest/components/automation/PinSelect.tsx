@@ -7,8 +7,9 @@ import {
 } from "@/core/ui/select";
 import { useAutomationPinOptionsQuery } from "@/rekuest/api/graphql";
 import { AgentStatusDot, agentStatus } from "../displays/AgentStatusDot";
+import type { Pin } from "./builder/initial";
 
-export type Pin = { agent: string; interface: string };
+export type { Pin };
 
 const ANY = "__any__";
 const keyOf = (pin: Pin) => `${pin.agent}::${pin.interface}`;

@@ -35,3 +35,25 @@ mutation UpdateTrigger($input: UpdateTriggerInput!) {
 mutation DeleteTrigger($id: ID!) {
   deleteTrigger(input: { id: $id })
 }
+
+# Run a trigger on a stored signal by hand: a replay.
+mutation FireTrigger($input: FireTriggerInput!) {
+  fireTrigger(input: $input) {
+    ...ListFiring
+  }
+}
+
+mutation ImportWiregram($input: WiregramInput!) {
+  importWiregram(input: $input) {
+    ...DetailWiregram
+  }
+}
+
+# Existing rules as a document, importable elsewhere.
+mutation ExportWiregram($input: ExportWiregramInput!) {
+  exportWiregram(input: $input)
+}
+
+mutation DeleteWiregram($id: ID!) {
+  deleteWiregram(input: { id: $id })
+}

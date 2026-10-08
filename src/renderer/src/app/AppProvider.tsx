@@ -9,10 +9,10 @@ import "@/core/smart/smartcontext";
 import { DialogProvider } from "@/core/dialogs/registry";
 import type { DialogRequest } from "@/core/dialogs/DialogProvider";
 import { LocalActionProvider } from "@/core/smart/localactions/registry";
-import { ModuleLayout } from "@/core/layout/ModuleLayout";
-import { PageLayout } from "@/core/layout/PageLayout";
+import { UnexpectedError } from "@/core/layout/fallbacks/UnexpectedError";
+import { ReportButton } from "@/core/layout/fallbacks/statusActions";
 import { Button } from "@/core/ui/button";
-import { ButtonGroup } from "@/core/ui/button-group";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Toaster } from "@/core/ui/sonner";
 import { UpdateListener } from "@/app/updates/UpdateListener";
 import { TooltipProvider } from "@/core/ui/tooltip";
@@ -33,56 +33,51 @@ import { DisplayProvider } from "../core/smart/display/displays";
 import { THE_WIDGET_REGISTRY } from "./shadCnWidgetRegistry";
 
 
-function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
-  // Call resetErrorBoundary() to reset the error boundary and retry the render.
-
+/** A render that threw: say so, with the stack to copy and a way back. */
+function ErrorFallback({
+  error,
+  resetErrorBoundary,
+  variant,
+}: FallbackProps & { variant?: "embedded" | "page" }) {
   const reportBug = useFatalReport();
 
   return (
-    <ModuleLayout>
-      <PageLayout title="Test">
-        <div className="h-full w-full flex flex-col items-center justify-center">
-          <div className="text-6xl text-muted-foreground mb-3">😬</div>
-          <div className="text-2xl font-bold mb-5">
-            Oh boy this is embarrassing
-          </div>
-
-          <p>Something went wrong:</p>
-          <pre style={{ color: "red" }} className="my-5">
-            {error.message}
-          </pre>
-
-          <p className="text-muted-foreground mb-2">
-            You can try to go back and try again. But please let us know about
-            this...
-          </p>
-          <ButtonGroup>
-            <Button variant={"outline"} onClick={resetErrorBoundary}>
-              Go back again
-            </Button>
-            <Button className="ml-2"
-              variant={"destructive"}
-              onClick={() => reportBug(error)}
-            >
-              Report Bug
-            </Button>
-          </ButtonGroup>
-        </div>
-      </PageLayout>
-    </ModuleLayout>
+    <UnexpectedError
+      variant={variant}
+      error={error}
+      actions={
+        <>
+          <Button size="lg" variant="outline" onClick={resetErrorBoundary}>
+            <ArrowLeft />
+            Go back
+          </Button>
+          <Button size="lg" variant="outline" onClick={() => window.location.reload()}>
+            <RefreshCw />
+            Reload
+          </Button>
+          <ReportButton onReport={() => reportBug(error)} />
+        </>
+      }
+    />
   );
 }
 
+/**
+ * Catches a render that threw and offers the way back. `variant="page"` for
+ * the one around the shell itself, where the fallback is all the window has.
+ */
 export const BackNavigationErrorCatcher = ({
   children,
+  variant,
 }: {
   children: React.ReactNode;
+  variant?: "embedded" | "page";
 }) => {
   const navigate = useNavigate();
 
   return (
     <ErrorBoundary
-      fallbackRender={(props) => <ErrorFallback {...props} />}
+      fallbackRender={(props) => <ErrorFallback {...props} variant={variant} />}
       onReset={() => {
 
         navigate(-1);
@@ -212,7 +207,7 @@ export const AppProvider = ({
                                     {/* One subscription to the app updater, for
                                         the rail island and the settings card. */}
                                     {!quick && <UpdateListener />}
-                                    <BackNavigationErrorCatcher>
+                                    <BackNavigationErrorCatcher variant="page">
                                       {children}
                                     </BackNavigationErrorCatcher>
                                     </CommandPaletteProvider>

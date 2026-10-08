@@ -4,10 +4,10 @@ import { AnnotationKind } from "@/mikro/api/graphql";
 import { resolveCollectionMatrix } from "../../annotations/annotationBounds";
 import type { SelectedRoi } from "../../annotations/roiSelectionStore";
 import type { SceneState } from "../../../platform/stores/sceneStore";
-import type { BrushSkeletonState } from "../../annotations/enhancers/brushSkeletonStore";
-import { marchField } from "../field/sculptField";
+import type { BrushSkeletonState } from "../brush";
 import { loftContours, type LoftContour } from "../field/loft";
-import { finishDesignGeometry } from "../ops/postProcess";
+import { designDispatcher } from "../worker/designDispatcher";
+import { finishFor } from "./context";
 import type { MeshDesignState } from "../store/meshDesignStore";
 
 /**
@@ -59,14 +59,16 @@ export async function loftSelectedPolygons(
     design.setStatus("editing", error instanceof Error ? error.message : String(error));
     return null;
   }
-  const { original, current } = await finishDesignGeometry(marchField(field, brush.marcher), {
-    polishIterations: brush.polishIterations,
-    detailWorld: brush.detailVoxels * spacing,
+  const result = await designDispatcher().run({
+    base: { kind: "field", field },
+    ops: [],
+    finish: finishFor(brush, spacing),
   });
+  if (!result) return null;
   return design.applySculpt(null, {
-    field,
-    original,
-    current,
+    field: result.field,
+    original: result.original,
+    current: result.current,
     source: { kind: "blob", layerId: polygons[0].layerId, level: 0 },
   });
 }

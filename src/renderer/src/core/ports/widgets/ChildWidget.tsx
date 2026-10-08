@@ -1,5 +1,7 @@
 import { AssignWidgetFragment, PortKind } from "@/rekuest/api/graphql";
 import { EffectWrapper } from "@/core/ports/engine/EffectWrapper";
+import { FollowValue } from "@/core/ports/engine/useFollowValue";
+import { cn } from "@/core/util/utils";
 import { InputWidgetProps, Port, PortOptions } from "@/core/ports/engine/types";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import React, { useMemo } from "react";
@@ -26,6 +28,8 @@ type ChildWidgetProps = {
   parentKind: PortKind;
   bound?: string;
   options?: PortOptions;
+  /** Replaces the default top margin, e.g. a grid span in a model. */
+  className?: string;
 };
 
 /**
@@ -40,6 +44,7 @@ export const ChildWidget = React.memo(function ChildWidget({
   parentKind,
   bound,
   options,
+  className,
 }: ChildWidgetProps) {
   const { registry } = useWidgetRegistry();
   const port = asChildPort(child);
@@ -54,16 +59,18 @@ export const ChildWidget = React.memo(function ChildWidget({
     path,
   };
 
+  // The wrapper sits inside the effects: a hidden child leaves no empty cell.
   return (
-    <div className="mt-2">
-      <EffectWrapper
-        effects={port.effects ?? EMPTY_EFFECTS}
-        port={port}
-        path={path}
-        registry={registry}
-      >
+    <EffectWrapper
+      effects={port.effects ?? EMPTY_EFFECTS}
+      port={port}
+      path={path}
+      registry={registry}
+    >
+      <div className={cn("relative", className ?? "mt-2")}>
         <Widget {...widgetProps} />
-      </EffectWrapper>
-    </div>
+        <FollowValue followValue={port.widget?.followValue} path={path} />
+      </div>
+    </EffectWrapper>
   );
 });

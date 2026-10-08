@@ -116,7 +116,7 @@ const MechanismPickerInner = ({ value, onChange }: MechanismPickerProps) => {
  * mechanisms can still be typed.
  */
 export const MechanismPicker = (props: MechanismPickerProps) => (
-  <ElektroGuard unavailable={<FreeTextMechanismPicker {...props} />}>
+  <ElektroGuard fallback={<FreeTextMechanismPicker {...props} />}>
     <MechanismPickerInner {...props} />
   </ElektroGuard>
 );

@@ -62,8 +62,12 @@ function CommandDialog({
 
 function CommandInput({
   className,
+  trailing,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+}: React.ComponentProps<typeof CommandPrimitive.Input> & {
+  /** Buttons at the right end of the field. */
+  trailing?: React.ReactNode
+}) {
   return (
     <div data-slot="command-input-wrapper" className="p-1 pb-0">
       <InputGroup className="bg-input/20 dark:bg-input/30 h-8!">
@@ -78,6 +82,11 @@ function CommandInput({
         <InputGroupAddon>
           <SearchIcon className="size-3.5 shrink-0 opacity-50" />
         </InputGroupAddon>
+        {trailing ? (
+          <InputGroupAddon align="inline-end" className="gap-0.5">
+            {trailing}
+          </InputGroupAddon>
+        ) : null}
       </InputGroup>
     </div>
   )

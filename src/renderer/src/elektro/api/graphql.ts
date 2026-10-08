@@ -227,6 +227,8 @@ export type AnnotationCollection = {
   /** Every edge from this collection's space back into what the shapes are drawn over, in declared order -- the first is the primary parent, the one that places it. An edge into a dataset's sample grid for a collection drawn over a dataset, into a clock for one marking a whole segment. Empty for a freestanding collection, and for an experiment-minted one: its edge lands in a world, which is a registration (see `coordinateSystem { registrations }` on the world), not a lineage */
   derivedFrom: Array<Transformation>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The experiment this collection was minted for as its default drawing surface, or null for a collection drawn over a dataset, a clock, or nothing. Bookkeeping, not placement: the registration edge is what places it */
   experiment?: Maybe<Experiment>;
   /** The experiment layers drawing this collection, one per experiment */
@@ -463,6 +465,8 @@ export type ArrayDataset = {
   /** Everything computed from this dataset, whatever kind of container it is: the derived datasets `derivedDatasets` lists, and also the annotation collections that named this dataset as their source. A separate field rather than a widening of that one, which stays honestly about *datasets*. Same edges, same kind-blindness: an UNMAPPABLE child came from here even though its geometry did not survive */
   derivedResidents: Array<Resident>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The experiment layers drawing this dataset, through any of its lenses */
   experimentLayers: Array<ExperimentLayer>;
   /** The files written out of this dataset: an NWB export, a CSV of samples. The mirror of `sourceFiles` */
@@ -2093,6 +2097,8 @@ export type Experiment = {
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   /** What this experiment draws, top to bottom: traces, spike rasters, event tables and annotation collections. Each carries its own placement on the timeline, derived from the graph */
   layers: Array<ExperimentLayer>;
@@ -2337,6 +2343,8 @@ export type File = {
   creator: User;
   /** The containers converted out of this file: the datasets a converter wrote from it, one per series. **Not a derivation** -- a file has no coordinate system, so these links claim no geometry and place nothing; they say only that this file's bytes and that data are the same thing */
   derivedContainers: Array<FileLink>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The containers this file was written from: the dataset exported to NWB, the annotation collection written to a CSV of events. The mirror of `derivedContainers` */
   exportedFrom: Array<FileLink>;
   /** The folder this file is filed in */
@@ -2618,6 +2626,8 @@ export type Folder = {
   createdThroughBy?: Maybe<User>;
   creator?: Maybe<User>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   files: Array<File>;
   id: Scalars['ID']['output'];
   isDefault: Scalars['Boolean']['output'];
@@ -3048,6 +3058,8 @@ export type Lens = {
   dataset: ArrayDataset;
   /** The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived */
   derivedDatasets: Array<ArrayDataset>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   /** The shape this lens' slices cut out of its dataset */
   shape: Array<Scalars['Int']['output']>;
@@ -3325,6 +3337,8 @@ export type ModelChange = {
 export type ModelCollection = {
   __typename?: 'ModelCollection';
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   models: Array<NeuronModel>;
   name: Scalars['String']['output'];
@@ -4316,6 +4330,8 @@ export type NeuronModel = {
   /** Everything computed from this model, whatever kind of container it is: the models edited out of it, and the datasets whose `derivedFrom` names it -- a simulated trace that stated where it came from. Derived from the same edges as `derivedFrom`, never a stored back-reference that could disagree with them. **Not the same question as `simulatedDatasets`**, which reads the `simulation` spoke and answers for every run of this model whether or not anyone authored a derivation */
   derivedInto: Array<Resident>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   environment: ModEnvironment;
   id: Scalars['ID']['output'];
   mappings: Array<WorkspaceMapping>;
@@ -5770,6 +5786,8 @@ export type SparseDataset = {
   /** Every edge from this matrix's space back into the data it was computed from, in declared order */
   derivedFrom: Array<Transformation>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The folder it is filed in. Organisational only */
   folder?: Maybe<Folder>;
   id: Scalars['ID']['output'];
@@ -6123,6 +6141,8 @@ export type TableDataset = {
   /** Every edge from this table's space back into data it was computed from, in declared order -- the first is the primary parent, the one that places it. UNMAPPABLE where the lineage is recorded but no geometry is claimed; empty for a freestanding table. The same relation a derived dataset's `derivedFrom` records */
   derivedFrom: Array<Transformation>;
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@elektro/n_samples`). The keys are the ones elektro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The files written out of this table dataset: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
   exports: Array<FileLink>;
   /** The folder this table dataset is filed in. Organisational only: it says where a user keeps this table, never where its rows sit in space -- that is `coordinateSystem` and the edges out of it */
@@ -7359,6 +7379,8 @@ export type ExpAffinePlacementFragment = { __typename?: 'AffinePlacement', matri
 
 export type BigFileAccessGrantFragment = { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string };
 
+export type BigFileUploadGrantFragment = { __typename?: 'BigFileUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, store: string };
+
 export type ModEnvironmentFragment = { __typename?: 'ModEnvironment', id: string, name: string, description?: string | null, mechanisms: Array<(
     { __typename?: 'Mechanism' }
     & MechanismFragment
@@ -7749,6 +7771,16 @@ export type CreateExperimentAnnotationCollectionMutationVariables = Exact<{
 export type CreateExperimentAnnotationCollectionMutation = { __typename?: 'Mutation', createAnnotationCollection: (
     { __typename?: 'AnnotationCollection' }
     & ExpAnnotationCollectionFragment
+  ) };
+
+export type RequestBigfileUploadMutationVariables = Exact<{
+  input: RequestBigFileUploadInput;
+}>;
+
+
+export type RequestBigfileUploadMutation = { __typename?: 'Mutation', requestBigfileUpload: (
+    { __typename?: 'BigFileUploadGrant' }
+    & BigFileUploadGrantFragment
   ) };
 
 export type FinishBigfileUploadMutationVariables = Exact<{
@@ -8877,6 +8909,18 @@ export const BigFileAccessGrantFragmentDoc = gql`
   bucket
 }
     `;
+export const BigFileUploadGrantFragmentDoc = gql`
+    fragment BigFileUploadGrant on BigFileUploadGrant {
+  accessKey
+  secretKey
+  sessionToken
+  path
+  key
+  bucket
+  expiresIn
+  store
+}
+    `;
 export const ParameterFragmentDoc = gql`
     fragment Parameter on Parameter {
   key
@@ -9907,6 +9951,39 @@ export function useCreateExperimentAnnotationCollectionMutation(baseOptions?: Ap
 export type CreateExperimentAnnotationCollectionMutationHookResult = ReturnType<typeof useCreateExperimentAnnotationCollectionMutation>;
 export type CreateExperimentAnnotationCollectionMutationResult = Apollo.MutationResult<CreateExperimentAnnotationCollectionMutation>;
 export type CreateExperimentAnnotationCollectionMutationOptions = Apollo.BaseMutationOptions<CreateExperimentAnnotationCollectionMutation, CreateExperimentAnnotationCollectionMutationVariables>;
+export const RequestBigfileUploadDocument = gql`
+    mutation RequestBigfileUpload($input: RequestBigFileUploadInput!) {
+  requestBigfileUpload(input: $input) {
+    ...BigFileUploadGrant
+  }
+}
+    ${BigFileUploadGrantFragmentDoc}`;
+export type RequestBigfileUploadMutationFn = Apollo.MutationFunction<RequestBigfileUploadMutation, RequestBigfileUploadMutationVariables>;
+
+/**
+ * __useRequestBigfileUploadMutation__
+ *
+ * To run a mutation, you first call `useRequestBigfileUploadMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestBigfileUploadMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestBigfileUploadMutation, { data, loading, error }] = useRequestBigfileUploadMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRequestBigfileUploadMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RequestBigfileUploadMutation, RequestBigfileUploadMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RequestBigfileUploadMutation, RequestBigfileUploadMutationVariables>(RequestBigfileUploadDocument, options);
+      }
+export type RequestBigfileUploadMutationHookResult = ReturnType<typeof useRequestBigfileUploadMutation>;
+export type RequestBigfileUploadMutationResult = Apollo.MutationResult<RequestBigfileUploadMutation>;
+export type RequestBigfileUploadMutationOptions = Apollo.BaseMutationOptions<RequestBigfileUploadMutation, RequestBigfileUploadMutationVariables>;
 export const FinishBigfileUploadDocument = gql`
     mutation FinishBigfileUpload($input: FinishBigFileUploadInput!) {
   finishBigfileUpload(input: $input) {

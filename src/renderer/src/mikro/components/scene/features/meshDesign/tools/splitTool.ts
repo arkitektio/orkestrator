@@ -1,8 +1,10 @@
-import { marchField, meshToField } from "../field/sculptField";
+import { Split } from "lucide-react";
+
+import { meshToField } from "../field/sculptField";
 import { splitField } from "../field/split";
-import { finishDesignGeometry } from "../ops/postProcess";
-import { fieldSpacingFor } from "./context";
-import type { BrushSkeletonState } from "../../annotations/enhancers/brushSkeletonStore";
+import { designDispatcher } from "../worker/designDispatcher";
+import { fieldSpacingFor, finishFor } from "./context";
+import type { BrushSkeletonState } from "../brush";
 import type { DesignMesh, MeshDesignState } from "../store/meshDesignStore";
 import type { DesignTool } from "./registry";
 import type { Vec3 } from "../field/stamps";
@@ -16,10 +18,11 @@ export const splitTool: DesignTool = {
   id: "split",
   key: "k",
   label: "Split",
+  icon: Split,
+  group: "more",
   gesture: "surface",
-  roiTool: null,
-  hint: "Split — click both sides of the waist; the mesh parts between them",
-  shortcut: { keys: ["K", "click ×2"], description: "Split the mesh between two clicked points" },
+  hint: "Click both sides of the waist; the mesh parts between them",
+  shortcut: { keys: ["K", "click ×2"], description: "Split: click two points to part the mesh between them" },
 };
 
 /** Apply the second click. True when the mesh actually split. */
@@ -34,14 +37,15 @@ export async function applySplit(
   const field = target.field ?? meshToField(target.original, fieldSpacing);
   const parts = splitField(field, seedA, seedB);
   if (!parts) return false;
-  const finish = (f: typeof field) =>
-    finishDesignGeometry(marchField(f, brush.marcher), {
-      polishIterations: brush.polishIterations,
-      detailWorld: brush.detailVoxels * fieldSpacing,
-    });
-  const [a, b] = await Promise.all([finish(parts.a), finish(parts.b)]);
+  // The watershed itself stays here (it needs the whole field in hand and
+  // is one pass); the two re-marches go to the worker, one after the other.
+  const finish = (half: typeof field) =>
+    designDispatcher().run({ base: { kind: "field", field: half }, ops: [], finish: finishFor(brush, fieldSpacing) });
+  const a = await finish(parts.a);
+  const b = await finish(parts.b);
+  if (!a || !b) return false;
   // The near half replaces the mesh (ONE undo step); the far half is new.
-  design.applySculpt(target.id, { field: parts.a, original: a.original, current: a.current, source: target.source });
-  design.applySculpt(null, { field: parts.b, original: b.original, current: b.current, source: target.source });
+  design.applySculpt(target.id, { field: a.field, original: a.original, current: a.current, source: target.source });
+  design.applySculpt(null, { field: b.field, original: b.original, current: b.current, source: target.source });
   return true;
 }

@@ -1,39 +1,154 @@
 import { SearchField, SearchOptions } from "@/core/forms/SearchField";
-import { notEmpty } from "@/core/util/utils";
+import {
+  choicePresentation,
+  portDescription,
+  portLabel,
+  portPlaceholder,
+} from "@/core/ports/engine/portPresentation";
 import { InputWidgetProps } from "@/core/ports/engine/types";
 import { pathToName } from "@/core/ports/engine/utils";
-import { useCallback } from "react";
+import { Button } from "@/core/ui/button";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/core/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/core/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
+import { notEmpty } from "@/core/util/utils";
+import { X } from "lucide-react";
+import { useCallback, useMemo } from "react";
+import { useFormContext } from "react-hook-form";
 
-export const EnumWidget = (
-  props: InputWidgetProps,
-) => {
-  const choices = props.port.choices || [];
+type Choice = { value: string; label: string; description?: string | null };
+
+/**
+ * A port's `choices`, shown by how many there are: a few sit side by side,
+ * a handful go in a dropdown, a long list is searched. The stored value is
+ * the choice's `value` either way. Also what `ChoiceAssignWidget` renders
+ * (the widget only adds a placeholder).
+ */
+export const ChoicePortField = (props: InputWidgetProps) => {
+  const form = useFormContext();
+  const name = pathToName(props.path);
+  const choices = useMemo(
+    () => (props.port.choices ?? []).filter(notEmpty) as Choice[],
+    [props.port.choices],
+  );
+  const label = portLabel(props.port);
+  const description = portDescription(props.port, props.widget);
+  const placeholder = portPlaceholder(props.port, props.widget);
+  const presentation = choicePresentation(choices.length);
 
   const search = useCallback(
     async (searching: SearchOptions) => {
-      if (searching.search) {
-        return choices
-          .filter(notEmpty)
-          .filter((c) => c.label.startsWith(searching.search || ""));
-      }
       if (searching.values) {
-        return choices
-          .filter(notEmpty)
-          .filter((c) => searching.values?.includes(c.value));
+        return choices.filter((c) => searching.values?.includes(c.value));
       }
-      return choices.filter(notEmpty);
+      const needle = searching.search?.trim().toLowerCase();
+      if (!needle) return choices;
+      return choices.filter(
+        (c) => c.label.toLowerCase().includes(needle) || c.value.toLowerCase().includes(needle),
+      );
     },
     [choices],
   );
 
+  if (presentation === "search") {
+    return (
+      <SearchField
+        name={name}
+        label={label}
+        search={search}
+        description={description}
+        noOptionFoundPlaceholder="No options found"
+        commandPlaceholder={placeholder}
+      />
+    );
+  }
+
   return (
-    <SearchField
-      name={pathToName(props.path)}
-      label={props.port.label || props.port.key}
-      search={search}
-      description={props.port.description || undefined}
-      noOptionFoundPlaceholder="No options found"
-      commandPlaceholder="Search..."
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => {
+        const value = typeof field.value === "string" ? field.value : "";
+        const chosen = choices.find((c) => c.value === value);
+        return (
+          <FormItem>
+            <FormLabel>{label}</FormLabel>
+            {presentation === "segmented" ? (
+              <FormControl>
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  size="sm"
+                  value={value}
+                  // Radix sends "" when the pressed one is pressed again:
+                  // that clears an optional port and is ignored otherwise.
+                  onValueChange={(next) => {
+                    if (next) field.onChange(next);
+                    else if (props.port.nullable) field.onChange(undefined);
+                  }}
+                  className="w-full"
+                >
+                  {choices.map((choice) => (
+                    <ToggleGroupItem
+                      key={choice.value}
+                      value={choice.value}
+                      title={choice.description ?? undefined}
+                      className="min-w-0 flex-1 px-2"
+                    >
+                      <span className="truncate">{choice.label}</span>
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </FormControl>
+            ) : (
+              <div className="flex items-center gap-1">
+                <Select value={value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="w-full min-w-0">
+                      <SelectValue placeholder={placeholder} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {choices.map((choice) => (
+                      <SelectItem key={choice.value} value={choice.value}>
+                        {choice.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {props.port.nullable && value !== "" && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Clear ${label}`}
+                    onClick={() => field.onChange(undefined)}
+                  >
+                    <X />
+                  </Button>
+                )}
+              </div>
+            )}
+            <FormDescription>{chosen?.description || description}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 };
+
+export const EnumWidget = ChoicePortField;

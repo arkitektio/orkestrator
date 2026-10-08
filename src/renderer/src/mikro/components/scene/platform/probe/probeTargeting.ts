@@ -13,7 +13,7 @@
  * the event and probe nothing.
  *
  * This covers EVERY probe-shaped gesture, not just PROBE-mode readouts: the
- * DESIGN tools' volume clicks and strokes (brush, blob, wand, lift, bridge)
+ * DESIGN tools' volume clicks and strokes (trace, seed, carve, lift, bridge)
  * are captured by the intensity volume, the label raymarcher and the 2D
  * plane through the same `layerAnswersProbe` guard — so a design gesture
  * lands on the pinned layer (or the default first visible one), never on

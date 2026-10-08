@@ -91,6 +91,18 @@ export type PerfSessionReport = {
    * The gating in `platform/probe/probeGating.ts` is only verifiable against this:
    * it must read zero for a NAVIGATE-mode sweep. */
   probes: number;
+  /** Main-thread time inside those probe evaluations (the CPU march + the
+   * store write and everything it synchronously triggers). */
+  probeMs: { avg: number; max: number; total: number } | null;
+  /** Time inside the canvas `pointermove` handler: R3F's raycast over every
+   * object carrying a move handler, plus the handlers themselves (which now
+   * include the leading probe). `total / durationMs` is the share of the main
+   * thread a sweep spends on input alone. */
+  pointerMoveMs: { count: number; avg: number; max: number; total: number } | null;
+  /** Volume compositor decisions per frame, by reason. `cached` frames reuse
+   * the raymarched target; every other key is a full re-raymarch and names
+   * why. A hover sweep with a still camera should be almost all `cached`. */
+  volumeFrames: Record<string, number>;
   bricksUploaded: number;
   bytesUploaded: number;
 };
@@ -104,6 +116,12 @@ class PerfMonitor {
   private replans = 0;
   private visibilityRecomputes = 0;
   private probes = 0;
+  private probeMsTotal = 0;
+  private probeMsMax = 0;
+  private pointerMoves = 0;
+  private pointerMoveMsTotal = 0;
+  private pointerMoveMsMax = 0;
+  private volumeFrames = new Map<string, number>();
   private pendingBricks = 0;
   private pendingBytes = 0;
   private readonly listeners = new Set<() => void>();
@@ -163,6 +181,27 @@ class PerfMonitor {
   markProbe(): void {
     if (!this.recording) return;
     this.probes += 1;
+  }
+
+  /** Main-thread ms one probe evaluation took (pairs with `markProbe`). */
+  addProbeMs(ms: number): void {
+    if (!this.recording) return;
+    this.probeMsTotal += ms;
+    if (ms > this.probeMsMax) this.probeMsMax = ms;
+  }
+
+  /** Main-thread ms one canvas pointermove took, raycast included. */
+  addPointerMoveMs(ms: number): void {
+    if (!this.recording) return;
+    this.pointerMoves += 1;
+    this.pointerMoveMsTotal += ms;
+    if (ms > this.pointerMoveMsMax) this.pointerMoveMsMax = ms;
+  }
+
+  /** One volume compositor frame decision (`decideVolumeFrame`'s reason). */
+  markVolumeFrame(reason: string): void {
+    if (!this.recording) return;
+    this.volumeFrames.set(reason, (this.volumeFrames.get(reason) ?? 0) + 1);
   }
 
   /** Accumulated into the next recorded frame. */
@@ -261,6 +300,22 @@ class PerfMonitor {
       replans: this.replans,
       visibilityRecomputes: this.visibilityRecomputes,
       probes: this.probes,
+      probeMs:
+        this.probes > 0
+          ? { avg: this.probeMsTotal / this.probes, max: this.probeMsMax, total: this.probeMsTotal }
+          : null,
+      pointerMoveMs:
+        this.pointerMoves > 0
+          ? {
+              count: this.pointerMoves,
+              avg: this.pointerMoveMsTotal / this.pointerMoves,
+              max: this.pointerMoveMsMax,
+              total: this.pointerMoveMsTotal,
+            }
+          : null,
+      volumeFrames: Object.fromEntries(
+        [...this.volumeFrames.entries()].sort((a, b) => b[1] - a[1]),
+      ),
       bricksUploaded: frames.reduce((a, f) => a + f.bricksUploaded, 0),
       bytesUploaded: frames.reduce((a, f) => a + f.bytesUploaded, 0),
     };

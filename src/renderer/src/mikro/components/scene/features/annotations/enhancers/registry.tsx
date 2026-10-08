@@ -7,7 +7,6 @@ import {
 } from "../roiDrawingStore";
 import { VectorEnhancerPanel } from "./paths/vectorTrace/VectorEnhancerPanel";
 import { BrushSkeletonPanel } from "./paths/brushSkeleton/BrushSkeletonPanel";
-import { SmoothBlobPanel } from "./meshes/smoothBlob/SmoothBlobPanel";
 
 /**
  * The annotation enhancers: tools-adjacent features that turn a gesture into
@@ -50,15 +49,6 @@ export const ANNOTATION_ENHANCERS: readonly AnnotationEnhancer[] = [
     appliesTo: ({ tool, displayMode }) =>
       tool === "BRUSH" && displayMode === "3D",
     ParamsPanel: BrushSkeletonPanel,
-  },
-  {
-    id: "smooth-blob",
-    title: "Smooth blob",
-    // Click a probed point, grow a smoothed surface around it — 3D only,
-    // same reasoning as the brush.
-    appliesTo: ({ tool, displayMode }) =>
-      tool === "BLOB" && displayMode === "3D",
-    ParamsPanel: SmoothBlobPanel,
   },
 ];
 

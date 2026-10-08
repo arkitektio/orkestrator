@@ -26,7 +26,7 @@ vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
   },
 }));
 
-import { openRailSwitcher } from "./railSwitcher";
+import { openRailSwitcher } from "@/core/connection/profile/ui/railSwitcher";
 
 vi.mock("@/app/components/profile/ProfileSwitcher", () => ({
   default: () => <div>switcher</div>,

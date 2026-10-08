@@ -1,6 +1,7 @@
 fragment StringAssignWidget on StringAssignWidget {
   __typename
   kind
+  followValue
   placeholder
   asParagraph
 }
@@ -8,6 +9,7 @@ fragment StringAssignWidget on StringAssignWidget {
 fragment SliderAssignWidget on SliderAssignWidget {
   __typename
   kind
+  followValue
   min
   max
   step
@@ -35,6 +37,7 @@ fragment StateChoiceAssignWidget on StateChoiceAssignWidget {
 fragment ProxyWidget on ProxyWidget {
   __typename
   kind
+  followValue
   targetPort
   targetAction
   targetDependency
@@ -57,6 +60,7 @@ fragment FilterPort on ArgPort {
 fragment SearchAssignWidget on SearchAssignWidget {
   __typename
   kind
+  followValue
   query
   ward
   filters {

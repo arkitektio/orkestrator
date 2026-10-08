@@ -43,3 +43,10 @@ query GetLens($id: ID!) {
     ...DetailLens
   }
 }
+
+# Every lens, for the list page.
+query ListLenses($filters: LensFilter, $ordering: [LensOrder!], $pagination: OffsetPaginationInput) {
+  lenses(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListLens
+  }
+}

@@ -3,6 +3,7 @@ import { SmartContext } from "@/core/smart/extensions/context";
 import { Portal } from "@radix-ui/react-portal";
 import React from "react";
 import { motion } from "framer-motion";
+import { Menu } from "lucide-react";
 import { SmartModelProps } from "./types";
 import { useSmartModel } from "./useSmartModel";
 
@@ -54,6 +55,7 @@ export const SmartModel = ({ ...props }: SmartModelProps) => {
       data-partners={partners.length > 0 ? "true" : undefined}
     >
       {props.children}
+      {props.menuButton && <MenuButton />}
       {isOver && <CombineButton />}
 
       {partners.length > 0 && (
@@ -76,6 +78,50 @@ export const SmartModel = ({ ...props }: SmartModelProps) => {
         </Portal>
       )}
     </div>
+  );
+};
+
+/**
+ * The card's right-click menu, for a pointer that would rather click. It owns
+ * no menu: it raises a `contextmenu` event from inside the card, which the
+ * root `SmartSurface` resolves to this card exactly as it does a right-click,
+ * so the two can never show different menus.
+ *
+ * `[#sidebar_&]:hidden`: a card in the page sidebar is a reference, not a
+ * thing to act on from there.
+ */
+const MenuButton = () => {
+  return (
+    <button
+      type="button"
+      aria-label="Open menu"
+      title="Menu"
+      // The card is a drag source and a selection target: this is neither.
+      draggable={false}
+      onDragStart={(event) => event.preventDefault()}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        const box = event.currentTarget.getBoundingClientRect();
+        event.currentTarget.dispatchEvent(
+          new MouseEvent("contextmenu", {
+            bubbles: true,
+            cancelable: true,
+            clientX: box.right,
+            clientY: box.bottom,
+          }),
+        );
+      }}
+      className={cn(
+        "absolute bottom-1.5 right-1.5 z-20 flex h-6 w-6 items-center justify-center",
+        "rounded-full border border-border bg-background text-muted-foreground shadow-sm",
+        "opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100",
+        "[#sidebar_&]:hidden",
+      )}
+    >
+      <Menu className="h-3.5 w-3.5" />
+    </button>
   );
 };
 

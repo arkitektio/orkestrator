@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { computeWorldUnitsPerPixel } from "../probe/probeWorld";
+import { computeWorldUnitsPerPixel, readControlsTarget } from "../probe/probeWorld";
 import { useViewerStore, useViewerStoreApi } from "../stores/viewerStore";
 
 /** Max cadence (ms) at which worldUnitsPerPixel is published DURING motion;
@@ -14,8 +14,9 @@ const WUPP_PUBLISH_INTERVAL_MS = 150;
  * actions (fitToLayer, etc.) can operate on the camera directly.
  *
  * Also publishes `worldUnitsPerPixel` for HTML panels (e.g. ScaleBar) —
- * THROTTLED, not per frame: it is a React-subscribed store field, and
- * `camera.position.length()` changes on every pan/orbit/zoom frame, so an
+ * measured at the controls target, i.e. at the depth of what the camera is
+ * orbiting. THROTTLED, not per frame: it is a React-subscribed store field,
+ * and the camera distance changes on every pan/orbit/zoom frame, so an
  * unthrottled write re-rendered every subscriber at frame rate (P17).
  * In-canvas consumers (probe markers) don't read the store at all — they
  * compute it from the camera in their own useFrame.
@@ -60,8 +61,12 @@ export const CanvasSync = () => {
   }, [camera, controls, invalidate, registerCanvas, size, dpr]);
 
   // Publish worldUnitsPerPixel at a bounded cadence (leading + trailing).
-  useFrame(({ camera, size }) => {
-    const wupp = computeWorldUnitsPerPixel(camera, size.height);
+  useFrame(({ camera, size, controls }) => {
+    const wupp = computeWorldUnitsPerPixel(
+      camera,
+      size.height,
+      readControlsTarget(controls),
+    );
     // Dead-band: skip when the value is effectively unchanged.
     const prev = storeApi.getState().worldUnitsPerPixel;
     if (Math.abs(wupp - prev) <= prev * 0.001) return;

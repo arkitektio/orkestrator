@@ -33,42 +33,17 @@ import { UnionReturnWidget } from "@/core/ports/widgets/returns/fallbacks/UnionR
 import { PortKind } from "@/rekuest/api/graphql";
 import { WidgetRegistry } from "@/core/ports/engine/Registry";
 import {
+  UnknownEffectWidget,
+  UnknownInputWidget,
+  UnknownReturnWidget,
+} from "@/core/ports/engine/WidgetsProvider";
+import {
+  ArgPort,
   EffectWidgetProps,
-  InputWidgetProps,
+  ReturnPort,
   ReturnWidgetProps,
   WidgetRegistryType,
 } from "@/core/ports/engine/types";
-
-export const UnknownInputWidget = ({ port }: InputWidgetProps) => {
-  return (
-    <div className="text-xl bg-red-200">
-      Registry error! No assign Widget registered for: {port.kind} and{" "}
-      {port?.widget?.__typename || "unset widget"}
-    </div>
-  );
-};
-
-export const UnknownReturnWidget = ({ port }: ReturnWidgetProps) => {
-  return (
-    <div className="text-xl bg-red-200">
-      Registry error! No assign Widget registered for: {port.kind} and{" "}
-      {port?.widget?.__typename || "unset widget"}
-    </div>
-
-  );
-};
-
-export const UnknownEffectWidget = ({
-  children,
-  effect,
-}: EffectWidgetProps) => {
-  return (
-    <div className="text-xl bg-red-200">
-      Registry error! No effect registered for: {effect.kind}
-      {children}
-    </div>
-  );
-};
 
 // HideEffect only knows how to render the "HideEffect" variant of the
 // PortEffectFragment union, so narrow to that variant before delegating.
@@ -197,7 +172,10 @@ registry.registerReturnWidgetFallback(
 // `WidgetRegistry.getInputWidgetForPort` / `getReturnWidgetForPort` are typed
 // against the specific `ArgPort` / `ReturnPort` fragments, while
 // `WidgetRegistryType` (consumed by `WidgetRegistryProvider`) works over the
-// broader `MappablePort` union. Narrow on `__typename` before delegating.
+// broader `MappablePort` union. The caller says which side it wants by the
+// method it calls, so the port is cast, never refused on its `__typename`:
+// nested child ports and fluss ports do not carry the top-level typename, and
+// refusing them painted "No widget registered" over kinds that have a widget.
 export const THE_WIDGET_REGISTRY: WidgetRegistryType = {
   registerWard: (wardKey, ward) => registry.registerWard(wardKey, ward),
   getWard: (wardKey) => registry.getWard(wardKey),
@@ -211,17 +189,9 @@ export const THE_WIDGET_REGISTRY: WidgetRegistryType = {
     registry.registerEffectWidget(effectType, widget),
   registerReturnWidgetFallback: (portType, widget) =>
     registry.registerReturnWidgetFallback(portType, widget),
-  getReturnWidgetForPort: (port, allowFallback) => {
-    if (port.__typename !== "ReturnPort") {
-      return UnknownReturnWidget;
-    }
-    return registry.getReturnWidgetForPort(port, allowFallback);
-  },
-  getInputWidgetForPort: (port, allowFallback) => {
-    if (port.__typename !== "ArgPort") {
-      return UnknownInputWidget;
-    }
-    return registry.getInputWidgetForPort(port, allowFallback);
-  },
+  getReturnWidgetForPort: (port, allowFallback) =>
+    registry.getReturnWidgetForPort(port as ReturnPort, allowFallback),
+  getInputWidgetForPort: (port, allowFallback) =>
+    registry.getInputWidgetForPort(port as ArgPort, allowFallback),
   getEffectWidget: (effectType) => registry.getEffectWidget(effectType),
 };

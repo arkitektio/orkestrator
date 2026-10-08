@@ -26,19 +26,24 @@ export type InteractionMode = "NAVIGATE" | "ANNOTATE" | "PROBE" | "DESIGN";
 
 /**
  * The DESIGN-mode tool vocabulary. DESIGN navigates like NAVIGATE — the
- * camera never fights the brush — and only a HELD key arms exactly one tool
- * (`designTool`, tracked here from the keyboard controller) so the volume
- * layer arms its probe handlers, and the camera releases the left button,
- * only while a key is down. The ids and their gesture classes live on the
- * PLATFORM because the volume layer and the camera must branch on them; the
- * tools themselves — labels, keys, behaviour — live in
- * `features/meshDesign/tools/registry.ts`.
+ * camera never fights a tool — and a tool only ACTS while its key is held.
+ *
+ * Two facts, kept apart: `selectedDesignTool` is the tool whose panel the
+ * toolbar shows (picked by clicking it, or by pressing its key; sticky), and
+ * `designTool` is the tool that owns the left button RIGHT NOW — the
+ * selected one while its key is down, else null. The volume layers and the
+ * camera branch on `designTool` only: null means "DESIGN is NAVIGATE at the
+ * moment". The ids and their gesture classes live on the PLATFORM because
+ * those consumers must branch on them; the tools themselves — labels, keys,
+ * behaviour — live in `features/meshDesign/tools/registry.ts`. `trace` (a
+ * stroke) and `seed` (a click) are the two RECONSTRUCT tools; which
+ * reconstructor turns the gesture into a mesh is the designer's business,
+ * not the platform's.
  */
 export type DesignToolId =
-  | "brush"
-  | "blob"
+  | "trace"
+  | "seed"
   | "carve"
-  | "wand"
   | "stamp"
   | "sculpt"
   | "trim"
@@ -51,10 +56,9 @@ export const DESIGN_TOOL_GESTURES: Record<
   DesignToolId,
   "volume-stroke" | "volume-click" | "surface" | "screen"
 > = {
-  brush: "volume-stroke",
+  trace: "volume-stroke",
   carve: "volume-stroke",
-  blob: "volume-click",
-  wand: "volume-click",
+  seed: "volume-click",
   lift: "volume-click",
   bridge: "volume-click",
   stamp: "surface",
@@ -100,7 +104,7 @@ export const interactionModeOptions: InteractionModeOption[] = [
     label: "Design",
     value: "DESIGN",
     description:
-      "Navigate as usual; hold C and drag to brush a mesh, V to grow a blob, X to remove (hold M)",
+      "Navigate as usual; hold a tool key (C trace, V seed, X carve…) and drag or click to build a mesh (hold M)",
   },
 ];
 
@@ -145,7 +149,11 @@ export interface ModeState {
    * re-renders.
    */
   probeFollowsCursor: boolean;
-  /** The DESIGN tool currently held, or null (see `DesignToolId`). */
+  /** The DESIGN tool whose panel is shown; sticky (see `DesignToolId`). */
+  selectedDesignTool: DesignToolId | null;
+  /** The selected tool's key is down: it owns the left button meanwhile. */
+  designToolHeld: boolean;
+  /** The ARMED design tool: the selected one while its key is held, else null. */
   designTool: DesignToolId | null;
   /**
    * The presentation/faithful switch. OFF is the SCIENTIFIC look and is the
@@ -194,7 +202,10 @@ export interface ModeState {
   setPivotOnProbe: (on: boolean) => void;
   setSmoothOrbit: (on: boolean) => void;
   setProbeFollowsCursor: (on: boolean) => void;
-  setDesignTool: (tool: DesignToolId | null) => void;
+  /** Pick the tool whose panel is shown; `held` also arms it (its key went down). */
+  selectDesignTool: (tool: DesignToolId | null, held?: boolean) => void;
+  /** The tool key came up (or focus was lost): back to navigating. */
+  releaseDesignTool: () => void;
   setCinematic: (on: boolean) => void;
   setIsoThreshold: (value: number) => void;
   setLightRig: (patch: Partial<LightRig>) => void;
@@ -220,6 +231,8 @@ export const createModeStore = ({
     pivotOnProbe: false,
     smoothOrbit: false,
     probeFollowsCursor: true,
+    selectedDesignTool: "trace",
+    designToolHeld: false,
     designTool: null,
     cinematic: false,
     isoThreshold: 0.5,
@@ -251,9 +264,16 @@ export const createModeStore = ({
       set((state) => {
         state.probeFollowsCursor = on;
       }),
-    setDesignTool: (tool) =>
+    selectDesignTool: (tool, held = false) =>
       set((state) => {
-        state.designTool = tool;
+        state.selectedDesignTool = tool;
+        state.designToolHeld = held && tool !== null;
+        state.designTool = state.designToolHeld ? tool : null;
+      }),
+    releaseDesignTool: () =>
+      set((state) => {
+        state.designToolHeld = false;
+        state.designTool = null;
       }),
     setCinematic: (on) =>
       set((state) => {

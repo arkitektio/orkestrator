@@ -7,6 +7,9 @@
 
 export const DEFAULT_STROKE = "#38bdf8";
 export const ACTIVE_STROKE = "#f59e0b";
+/** The shape under the pointer: near-white, so it reads on any stroke color
+ * and apart from the amber selection (which wins when both apply). */
+export const HOVER_STROKE = "#f8fafc";
 /** Fill alpha for a shape that asks to be filled but names no fill color. */
 export const IMPLIED_FILL_OPACITY = 0.08;
 
@@ -31,14 +34,19 @@ export function resolveStyle(
     filled?: boolean | null;
   },
   isActive: boolean,
+  isHovered = false,
 ): ShapeStyle {
   const stroke = rgbaToStyle(annotation.strokeColor);
   const fill = rgbaToStyle(annotation.fillColor);
-  const strokeColor = isActive ? ACTIVE_STROKE : (stroke?.color ?? DEFAULT_STROKE);
+  const strokeColor = isActive
+    ? ACTIVE_STROKE
+    : isHovered
+      ? HOVER_STROKE
+      : (stroke?.color ?? DEFAULT_STROKE);
 
   return {
     stroke: strokeColor,
-    strokeOpacity: isActive ? 1 : (stroke?.opacity ?? 1),
+    strokeOpacity: isActive || isHovered ? 1 : (stroke?.opacity ?? 1),
     strokeWidth: annotation.strokeWidth ?? 1.5,
     fill: annotation.filled ? (fill?.color ?? strokeColor) : null,
     fillOpacity: fill?.opacity ?? IMPLIED_FILL_OPACITY,

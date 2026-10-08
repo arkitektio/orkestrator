@@ -45,6 +45,33 @@ export const SETTINGS_HELP: Record<string, ReactNode> = {
       ]}
     />
   ),
+  renderer: (
+    <PageHelp
+      intro="How much memory 3D scenes may use on this computer. Orkestrator detects the graphics card when it first starts and picks limits from it."
+      steps={[
+        <><b>This computer</b> lists what was detected. Press <b>Detect again</b> after changing the graphics card or the memory.</>,
+        <>Under <b>Graphics memory</b>, leave <b>Automatic</b> on, or switch it off and enter your own limit in MB.</>,
+        <>Under <b>Image data cache</b>, do the same for the system memory that holds unpacked image data.</>,
+      ]}
+      tips={[
+        <>Raise the graphics memory limit if a large scene stays blurry in places. Lower it if other applications run short.</>,
+        <>A new graphics memory limit applies to scenes opened afterwards; a new cache limit after a restart.</>,
+      ]}
+    />
+  ),
+  telemetry: (
+    <PageHelp
+      intro="What Orkestrator learns about this computer, and what a bug report you file says about it. Nothing is sent by itself."
+      steps={[
+        <>Leave <b>Detect this computer's hardware</b> on to let Orkestrator size 3D scenes to your graphics card. Switch it off to forget what was detected.</>,
+        <>Leave <b>Attach hardware details to bug reports</b> on to include those details in the text of a report. The list below the switch shows exactly what would be included.</>,
+      ]}
+      tips={[
+        <>Both are on until you switch them off.</>,
+        <>A bug report opens as a GitHub issue in your browser. You can edit its text before submitting, and it is public afterwards.</>,
+      ]}
+    />
+  ),
   voice: (
     <PageHelp
       intro="Dictate into the command palette and text fields instead of typing. Speech is recognized on this computer."

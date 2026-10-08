@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { act, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import { TabIdContext } from "@/core/tabs/TabContext";
 import { useDebug } from "@/core/debug/DebugContext";
-import { DebugProvider } from "@/core/debug/DebugProvider";
+import { DEBUG_STORAGE_KEY, DebugProvider } from "@/core/debug/DebugProvider";
 import { useDebugReport, type DebugReport } from "@/core/debug/useDebugReport";
 
 import { DebugBadge } from "./DebugBadge";
@@ -26,6 +26,8 @@ const badge = () => screen.queryByLabelText("Debug: page state");
 
 // Radix Popover needs these in jsdom.
 beforeEach(() => {
+  // Debug mode is persisted; one test's toggle must not leak into the next.
+  localStorage.clear();
   Element.prototype.hasPointerCapture ??= () => false;
   Element.prototype.scrollIntoView ??= () => {};
   window.ResizeObserver ??= class {
@@ -117,5 +119,36 @@ describe("DebugBadge", () => {
       </MemoryRouter>,
     );
     expect(badge()!.textContent).toContain("0");
+  });
+
+  it("stays on across a reload, and off once turned off", () => {
+    localStorage.setItem(DEBUG_STORAGE_KEY, "1");
+    renderApp(<Page label="DatasetPage" report={{ data: 1 }} />);
+    // On from the first render, and the page reported without a toggle.
+    expect(badge()!.textContent).toContain("1");
+    click("toggle-debug");
+    expect(badge()).toBeNull();
+    expect(localStorage.getItem(DEBUG_STORAGE_KEY)).toBeNull();
+    click("toggle-debug");
+    expect(localStorage.getItem(DEBUG_STORAGE_KEY)).toBe("1");
+  });
+
+  it("copies every query on the page at once", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    renderApp(
+      <>
+        <Page label="DatasetPage" report={{ variables: { id: "5" }, data: { name: "HeLa s3" } }} />
+        <Page label="BrokenPage" report={{ error: new Error("boom") }} />
+      </>,
+    );
+    click("toggle-debug");
+    act(() => badge()!.click());
+    await act(async () => screen.getByLabelText("Copy all queries").click());
+    const copied = JSON.parse(writeText.mock.calls[0][0]);
+    expect(copied.map((e: { label: string }) => e.label)).toEqual(["DatasetPage", "BrokenPage"]);
+    expect(copied[0]).toMatchObject({ variables: { id: "5" }, data: { name: "HeLa s3" } });
+    expect(copied[1].error.message).toBe("boom");
+    expect(screen.getByText("Copied")).toBeInTheDocument();
   });
 });

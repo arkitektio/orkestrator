@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { AnnotationKind, type SceneAnnotationFragment } from "@/mikro/api/graphql";
 import { MIN_DEPTH, ellipseRing, getVectorPoint } from "./annotationBounds";
-import { resolveStyle } from "./annotationStyle";
+import { HOVER_STROKE, resolveStyle } from "./annotationStyle";
 import { ellipsoidCrossSectionScale } from "./primitiveDraw";
 
 /**
@@ -303,17 +303,25 @@ function foldOutlineBatches<R>(
 /**
  * The color buffer for one batch under one selection — the ONLY thing a
  * selection change recomputes: `setColors` re-tints in place while the
- * positions (and their GPU buffer) stay untouched.
+ * positions (and their GPU buffer) stay untouched. The hovered shape, when
+ * there is one, wears `HOVER_STROKE` — unless it is selected, which wins.
  */
 export function batchColors<R>(
   batch: OutlineBatch<R>,
   isActive: (annotationId: string) => boolean,
+  hoveredId: string | null = null,
 ): Float32Array {
   const colors = new Float32Array(batch.segmentCount * 6);
   for (let k = 0; k < batch.ranges.length; k++) {
     const range = batch.ranges[k];
     const stroke = batch.strokes[k];
-    SCRATCH_COLOR.set(isActive(stroke.annotationId) ? stroke.selectedStroke : stroke.stroke);
+    SCRATCH_COLOR.set(
+      isActive(stroke.annotationId)
+        ? stroke.selectedStroke
+        : stroke.annotationId === hoveredId
+          ? HOVER_STROKE
+          : stroke.stroke,
+    );
     const r = SCRATCH_COLOR.r;
     const g = SCRATCH_COLOR.g;
     const b = SCRATCH_COLOR.b;

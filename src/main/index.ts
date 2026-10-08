@@ -23,6 +23,7 @@ import { stat, writeFile } from "node:fs/promises";
 import { normalize, sep } from "node:path";
 import { Readable } from "node:stream";
 import { ShellService } from "./modules/ShellService";
+import { HardwareService } from "./modules/HardwareService";
 import { FactoryResetService, finishFactoryReset } from "./modules/FactoryReset";
 import { DoctorService, defaultDoctorDeps } from "./doctor/DoctorService";
 import { VoiceService } from "./voice/VoiceService";
@@ -189,6 +190,7 @@ const doctorService = new DoctorService(transport, { ...defaultDoctorDeps(), pro
 const bigFileUploadService = new BigFileUploadService(transport, meshProxyPort);
 const bigFileDownloadService = new BigFileDownloadService(transport, meshProxyPort);
 const shellService = new ShellService(transport);
+const hardwareService = new HardwareService(transport);
 const factoryResetService = new FactoryResetService(transport);
 // Voice input: the speech model runs in a utilityProcess (`voice/worker.ts`,
 // built to `out/main/voice-worker.js`), started only once a user switches
@@ -214,6 +216,7 @@ appManager.register(uploadService);
 appManager.register(bigFileUploadService);
 appManager.register(bigFileDownloadService);
 appManager.register(shellService);
+appManager.register(hardwareService);
 appManager.register(factoryResetService);
 appManager.register(doctorService);
 appManager.register(voiceService);

@@ -44,8 +44,9 @@ export const RectangleDrawer = () => {
   const mergeSelectedRois = useRoiSelectionStore((s) => s.mergeSelectedRois);
   const clearSelectedRois = useRoiSelectionStore((s) => s.clearSelectedRois);
   // Read the visible ROIs at COMMIT time instead of subscribing: the annotation
-  // layer re-mints that map on a 5-second poll, and subscribing to an object
-  // re-rendered this drawer every time it did (P17/P9c).
+  // layer re-mints that map whenever its shown set changes (a scrub, a draw,
+  // a live event), and subscribing to an object re-rendered this drawer every
+  // time it did (P17/P9c).
   const selectionApi = useRoiSelectionStoreApi();
   const invalidate = useThree((s) => s.invalidate);
 

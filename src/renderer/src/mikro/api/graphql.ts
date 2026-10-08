@@ -364,6 +364,17 @@ export type AnnotationCollectionOrder =
   |  { createdAt?: never; id: Ordering; name?: never; }
   |  { createdAt?: never; id?: never; name: Ordering; };
 
+/** One change to an annotation collection. Exactly one field is set per event */
+export type AnnotationEvent = {
+  __typename?: 'AnnotationEvent';
+  /** An annotation drawn into the collection */
+  create?: Maybe<Annotation>;
+  /** The ID of an annotation deleted from the collection */
+  delete?: Maybe<Scalars['ID']['output']>;
+  /** An annotation of the collection that was edited, in its new state */
+  update?: Maybe<Annotation>;
+};
+
 export type AnnotationFilter = {
   AND?: InputMaybe<AnnotationFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
@@ -7908,8 +7919,15 @@ export type StrFilterLookup = {
 
 export type Subscription = {
   __typename?: 'Subscription';
+  /** Follow one annotation collection: an event for every annotation drawn into it, edited or deleted. Carries changes only -- read the collection's current annotations with the `annotations` query first */
+  annotations: AnnotationEvent;
   /** Subscribe to real-time file updates */
   files: FileEvent;
+};
+
+
+export type SubscriptionAnnotationsArgs = {
+  collection: Scalars['ID']['input'];
 };
 
 
@@ -10130,6 +10148,11 @@ export type DetailLensFragment = { __typename?: 'Lens', descriptors: any, id: st
     { __typename?: 'UnmappableTransformation' }
     & Transformation_UnmappableTransformation_Fragment
   ) | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
+
+export type ListLensFragment = { __typename?: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
+    { __typename?: 'Slice' }
+    & DimSliceFragment
+  )>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
 
 type OpticalElement_ApertureElement_Fragment = { __typename?: 'ApertureElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
 
@@ -12543,6 +12566,18 @@ export type GetLensQuery = { __typename?: 'Query', lens: (
     & DetailLensFragment
   ) };
 
+export type ListLensesQueryVariables = Exact<{
+  filters?: InputMaybe<LensFilter>;
+  ordering?: InputMaybe<Array<LensOrder> | LensOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListLensesQuery = { __typename?: 'Query', lenses: Array<(
+    { __typename?: 'Lens' }
+    & ListLensFragment
+  )> };
+
 export type MembersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -12693,6 +12728,19 @@ export type GetTableDatasetAnchorsFullQuery = { __typename?: 'Query', tableDatas
       { __typename?: 'CoordinateAnchor' }
       & FullCoordinateAnchorFragment
     )> } };
+
+export type WatchSceneAnnotationsSubscriptionVariables = Exact<{
+  collection: Scalars['ID']['input'];
+}>;
+
+
+export type WatchSceneAnnotationsSubscription = { __typename?: 'Subscription', annotations: { __typename?: 'AnnotationEvent', delete?: string | null, create?: (
+      { __typename?: 'Annotation' }
+      & SceneAnnotationFragment
+    ) | null, update?: (
+      { __typename?: 'Annotation' }
+      & SceneAnnotationFragment
+    ) | null } };
 
 export const AddLayerStagedLensFragmentDoc = gql`
     fragment AddLayerStagedLens on Lens {
@@ -14142,6 +14190,22 @@ export const DetailLensFragmentDoc = gql`
 }
     ${DimSliceFragmentDoc}
 ${TransformationFragmentDoc}`;
+export const ListLensFragmentDoc = gql`
+    fragment ListLens on Lens {
+  id
+  shape
+  axisNames
+  slices {
+    ...DimSlice
+  }
+  dataset {
+    id
+    name
+    axisNames
+    shape
+  }
+}
+    ${DimSliceFragmentDoc}`;
 export const CcdElementFragmentDoc = gql`
     fragment CCDElement on CCDElement {
   ...OpticalElement
@@ -19543,6 +19607,43 @@ export function useGetLensLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHook
 export type GetLensQueryHookResult = ReturnType<typeof useGetLensQuery>;
 export type GetLensLazyQueryHookResult = ReturnType<typeof useGetLensLazyQuery>;
 export type GetLensQueryResult = Apollo.QueryResult<GetLensQuery, GetLensQueryVariables>;
+export const ListLensesDocument = gql`
+    query ListLenses($filters: LensFilter, $ordering: [LensOrder!], $pagination: OffsetPaginationInput) {
+  lenses(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListLens
+  }
+}
+    ${ListLensFragmentDoc}`;
+
+/**
+ * __useListLensesQuery__
+ *
+ * To run a query within a React component, call `useListLensesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListLensesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListLensesQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListLensesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListLensesQuery, ListLensesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListLensesQuery, ListLensesQueryVariables>(ListLensesDocument, options);
+      }
+export function useListLensesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListLensesQuery, ListLensesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListLensesQuery, ListLensesQueryVariables>(ListLensesDocument, options);
+        }
+export type ListLensesQueryHookResult = ReturnType<typeof useListLensesQuery>;
+export type ListLensesLazyQueryHookResult = ReturnType<typeof useListLensesLazyQuery>;
+export type ListLensesQueryResult = Apollo.QueryResult<ListLensesQuery, ListLensesQueryVariables>;
 export const MembersDocument = gql`
     query Members {
   members {
@@ -20182,3 +20283,39 @@ export function useGetTableDatasetAnchorsFullLazyQuery(baseOptions?: ApolloReact
 export type GetTableDatasetAnchorsFullQueryHookResult = ReturnType<typeof useGetTableDatasetAnchorsFullQuery>;
 export type GetTableDatasetAnchorsFullLazyQueryHookResult = ReturnType<typeof useGetTableDatasetAnchorsFullLazyQuery>;
 export type GetTableDatasetAnchorsFullQueryResult = Apollo.QueryResult<GetTableDatasetAnchorsFullQuery, GetTableDatasetAnchorsFullQueryVariables>;
+export const WatchSceneAnnotationsDocument = gql`
+    subscription WatchSceneAnnotations($collection: ID!) {
+  annotations(collection: $collection) {
+    create {
+      ...SceneAnnotation
+    }
+    update {
+      ...SceneAnnotation
+    }
+    delete
+  }
+}
+    ${SceneAnnotationFragmentDoc}`;
+
+/**
+ * __useWatchSceneAnnotationsSubscription__
+ *
+ * To run a query within a React component, call `useWatchSceneAnnotationsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchSceneAnnotationsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchSceneAnnotationsSubscription({
+ *   variables: {
+ *      collection: // value for 'collection'
+ *   },
+ * });
+ */
+export function useWatchSceneAnnotationsSubscription(baseOptions: ApolloReactHooks.SubscriptionHookOptions<WatchSceneAnnotationsSubscription, WatchSceneAnnotationsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchSceneAnnotationsSubscription, WatchSceneAnnotationsSubscriptionVariables>(WatchSceneAnnotationsDocument, options);
+      }
+export type WatchSceneAnnotationsSubscriptionHookResult = ReturnType<typeof useWatchSceneAnnotationsSubscription>;
+export type WatchSceneAnnotationsSubscriptionResult = Apollo.SubscriptionResult<WatchSceneAnnotationsSubscription>;

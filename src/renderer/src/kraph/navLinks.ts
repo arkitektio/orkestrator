@@ -1,4 +1,4 @@
-import { Cat, Divide, GitFork, Home, Notebook, Ruler, Shapes, Sigma, Sparkles, SpellCheck, Waypoints } from "lucide-react";
+import { Boxes, Cat, ChartScatter, Divide, GitFork, Home, Notebook, Ruler, Shapes, Sigma, Sparkles, SpellCheck, Waypoints } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
 
@@ -15,4 +15,6 @@ export const KRAPH_NAV_LINKS: NavLinkDecl[] = [
   { label: "Structure Relations", route: "/kraph/structurerelationcategories", group: "Categories", icon: GitFork, description: "Structure to structure" },
   { label: "Metrics", route: "/kraph/metrickinds", group: "Categories", icon: Sigma, description: "Measured values" },
   { label: "Measurements", route: "/kraph/measurementcategories", keywords: ["measurements"], group: "Categories", icon: Ruler, description: "Structure to entity" },
+  { label: "All Structures", route: "/kraph/structures", keywords: ["linked", "objects"], group: "Explore", icon: Boxes, description: "Every linked data object" },
+  { label: "Scatter Plots", route: "/kraph/scatterplots", keywords: ["plots", "charts"], group: "Explore", icon: ChartScatter, description: "Plots over graph queries" },
 ];

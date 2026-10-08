@@ -1,3 +1,4 @@
+import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
 import { ListSearchField, SearchOptions } from "@/core/forms/ListSearchField";
 import { notEmpty } from "@/core/util/utils";
 import { ChoiceAssignWidgetFragment } from "@/rekuest/api/graphql";
@@ -40,9 +41,9 @@ export const ListChoicesWidget = (
   return (
     <ListSearchField
       name={pathToName(props.path)}
-      label={props.port.label || props.port.key}
+      label={portLabel(props.port)}
       search={search}
-      description={props.port.description || undefined}
+      description={portDescription(props.port, props.widget)}
       noOptionFoundPlaceholder="No options found"
       commandPlaceholder={props.widget?.placeholder || "Search..."}
       toFieldValue={toRows}

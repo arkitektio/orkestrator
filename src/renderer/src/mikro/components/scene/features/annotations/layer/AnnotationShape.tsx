@@ -7,7 +7,7 @@ import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { getVectorPoint } from "../annotationBounds";
 import { drawsOwnMesh } from "../annotationBatch";
 import { resolveStyle } from "../annotationStyle";
-import type { SelectedRoi } from "../roiSelectionStore";
+import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 import { useSharedBasicMaterial } from "./sharedBasicMaterial";
 
 /**
@@ -34,13 +34,15 @@ export type AnnotationShapeProps = {
   roi: SelectedRoi;
   flattenToPlane: boolean;
   isActive: boolean;
+  /** The pointer is on this shape (selection wins over it). */
+  isHovered: boolean;
   /** False in PROBE mode, so a shape can't swallow the click meant for a probe. */
   selectable: boolean;
   onSelectRoi: (roi: SelectedRoi, appendSelection: boolean) => void;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
   hoverable: boolean;
   /** Per move over the shape; the store dedupes by id (state changes on enter/leave). */
-  onHoverRoi: (roi: SelectedRoi) => void;
+  onHoverRoi: (roi: SelectedRoi, point: HoverPoint) => void;
   onUnhoverRoi: (roiId: string) => void;
 };
 
@@ -52,6 +54,7 @@ export const shapePropsEqual = (
   prev.roi === next.roi &&
   prev.flattenToPlane === next.flattenToPlane &&
   prev.isActive === next.isActive &&
+  prev.isHovered === next.isHovered &&
   prev.selectable === next.selectable &&
   prev.onSelectRoi === next.onSelectRoi &&
   prev.hoverable === next.hoverable &&
@@ -83,6 +86,7 @@ export const AnnotationShape = memo(function AnnotationShape({
   roi,
   flattenToPlane,
   isActive,
+  isHovered,
   selectable,
   onSelectRoi,
   hoverable,
@@ -105,7 +109,7 @@ export const AnnotationShape = memo(function AnnotationShape({
   const vectors = annotation.vectors; // Array of [x, y, z]
   if (!vectors || vectors.length === 0) return null;
 
-  const style = resolveStyle(annotation, isActive);
+  const style = resolveStyle(annotation, isActive, isHovered);
 
   // `undefined` when the shape is not selectable, NOT a handler that returns
   // early (P20): a handler prop is what puts the object in R3F's interaction
@@ -124,9 +128,9 @@ export const AnnotationShape = memo(function AnnotationShape({
   // a grace clear that landed while the pointer never left the shape.
   // No stopPropagation: a hover must not starve the layers underneath.
   const handleHoverMove = hoverable
-    ? () => {
+    ? (event: ThreeEvent<PointerEvent>) => {
         hoveringRef.current = true;
-        onHoverRoi(roi);
+        onHoverRoi(roi, [event.point.x, event.point.y, event.point.z]);
       }
     : undefined;
   const handleHoverOut = hoverable

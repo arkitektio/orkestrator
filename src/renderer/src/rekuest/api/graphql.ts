@@ -26,7 +26,7 @@ export type Scalars = {
   Args: { input: any; output: any; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
-  /** A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it). */
+  /** A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector (it carries no text, or the model could not be loaded when it was saved). */
   Embedding: { input: any; output: any; }
   /** The `Identifier` scalar is a structure identifier of the form `@package/key` (e.g. `@mikro/image`) that types STRUCTURE, MEMORY_STRUCTURE and INTERFACE ports */
   Identifier: { input: any; output: any; }
@@ -671,8 +671,8 @@ export type AgentSnapshotEvent = {
   __typename?: 'AgentSnapshotEvent';
   agentId: Scalars['ID']['output'];
   globalRevision: Scalars['Int']['output'];
-  sessionId: Scalars['String']['output'];
-  timestamp: Scalars['DateTime']['output'];
+  sessionId?: Maybe<Scalars['String']['output']>;
+  timestamp?: Maybe<Scalars['DateTime']['output']>;
   values: Scalars['Args']['output'];
 };
 
@@ -4898,9 +4898,9 @@ export type StatePatchEvent = {
   interface: Scalars['String']['output'];
   op: Scalars['String']['output'];
   path: Scalars['String']['output'];
-  sessionId: Scalars['String']['output'];
+  sessionId?: Maybe<Scalars['String']['output']>;
   stateId: Scalars['ID']['output'];
-  timestamp: Scalars['DateTime']['output'];
+  timestamp?: Maybe<Scalars['DateTime']['output']>;
   value: Scalars['Args']['output'];
 };
 
@@ -4910,9 +4910,9 @@ export type StateSnapshotEvent = {
   agentId: Scalars['ID']['output'];
   globalRevision: Scalars['Int']['output'];
   interface: Scalars['String']['output'];
-  sessionId: Scalars['String']['output'];
+  sessionId?: Maybe<Scalars['String']['output']>;
   stateId: Scalars['ID']['output'];
-  timestamp: Scalars['DateTime']['output'];
+  timestamp?: Maybe<Scalars['DateTime']['output']>;
   value: Scalars['Args']['output'];
 };
 
@@ -5300,7 +5300,7 @@ export type TaskEvent = {
   /** Progress percentage. */
   progress?: Maybe<Scalars['Int']['output']>;
   /** Reference string for the event. */
-  reference: Scalars['String']['output'];
+  reference?: Maybe<Scalars['String']['output']>;
   /** Optional return values. */
   returns?: Maybe<Scalars['AnyDefault']['output']>;
   /** The report's step within its task; a task's history in step order. Null for server-written events. */
@@ -6227,7 +6227,7 @@ export type DetailActionFragment = (
   & GraphNodeActionFragment
 );
 
-export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, description?: string | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }> };
+export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, description?: string | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
 
 export type HoverActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
 
@@ -6272,29 +6272,71 @@ export type AgentChangeEventFragment = { __typename?: 'AgentChangeEvent', delete
 
 export type HoverAgentFragment = { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> };
 
-export type ListScheduleFragment = { __typename?: 'Schedule', id: string, name: string, enabled: boolean, cron?: string | null, intervalSeconds?: number | null, timezone: string, consecutiveFailures: number, lastError?: string | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null, nextRun?: { __typename?: 'Task', id: string, notBefore?: any | null, latestEventKind: TaskEventKind, isDone: boolean } | null };
+export type ListScheduleFragment = { __typename?: 'Schedule', id: string, name: string, enabled: boolean, cron?: string | null, intervalSeconds?: number | null, timezone: string, consecutiveFailures: number, lastError?: string | null, description?: string | null, runCount: number, lastRunAt?: any | null, lastErrorAt?: any | null, exhausted: boolean, endsAt?: any | null, maxRuns?: number | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null, nextRun?: { __typename?: 'Task', id: string, notBefore?: any | null, latestEventKind: TaskEventKind, isDone: boolean } | null };
 
 export type DetailScheduleFragment = (
-  { __typename?: 'Schedule', args: any, interface?: string | null, ephemeralRuns: boolean, createdAt: any, updatedAt: any, runs: Array<(
+  { __typename?: 'Schedule', args: any, interface?: string | null, ephemeralRuns: boolean, overlap: ScheduleOverlap, catchUp: boolean, lastFiredAt?: any | null, upcoming: Array<any>, wireKey?: string | null, createdAt: any, updatedAt: any, wiregram?: { __typename?: 'Wiregram', id: string, name: string } | null, caller: { __typename?: 'Caller', id: string, user: { __typename?: 'User', id: string, sub: string } }, runs: Array<(
     { __typename?: 'Task' }
     & ListTaskFragment
   )> }
   & ListScheduleFragment
 );
 
-export type ListTriggerFragment = { __typename?: 'Trigger', id: string, name: string, enabled: boolean, identifier: string, kind: SignalKind, port: string, conditions: any, consecutiveFailures: number, lastError?: string | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null };
+export type ListTriggerFragment = { __typename?: 'Trigger', id: string, name: string, enabled: boolean, identifier: string, kind: SignalKind, port: string, conditions: any, consecutiveFailures: number, lastError?: string | null, description?: string | null, runCount: number, lastRunAt?: any | null, lastErrorAt?: any | null, exhausted: boolean, endsAt?: any | null, maxRuns?: number | null, debounceSeconds?: number | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null };
 
 export type DetailTriggerFragment = (
-  { __typename?: 'Trigger', args: any, interface?: string | null, createdAt: any, updatedAt: any, runs: Array<(
-    { __typename?: 'Task' }
-    & ListTaskFragment
+  { __typename?: 'Trigger', args: any, interface?: string | null, lastFiredAt?: any | null, createdAt: any, updatedAt: any, wireKey?: string | null, caller: { __typename?: 'Caller', id: string, user: { __typename?: 'User', id: string, sub: string } }, wiregram?: { __typename?: 'Wiregram', id: string, name: string } | null, firings: Array<(
+    { __typename?: 'Firing' }
+    & ListFiringFragment
   )> }
   & ListTriggerFragment
 );
 
-export type ListSignalFragment = { __typename?: 'Signal', id: string, identifier: string, kind: SignalKind, object: string, serviceName: string, descriptors: any, occurredAt?: any | null, receivedAt: any, processedAt?: any | null, service?: { __typename?: 'Service', id: string, name: string } | null, causingTask?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } } | null, runs: Array<{ __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } }> };
+export type ListSignalFragment = { __typename?: 'Signal', id: string, identifier: string, kind: SignalKind, object: string, serviceName: string, descriptors: any, occurredAt?: any | null, receivedAt: any, processedAt?: any | null, service?: { __typename?: 'Service', id: string, name: string } | null, causingTask?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string } } | null, runs: Array<{ __typename?: 'Task', id: string, action: { __typename?: 'Action', id: string, name: string }, trigger?: { __typename?: 'Trigger', id: string, name: string } | null }> };
 
 export type SignalDeclarationFragment = { __typename?: 'SignalDeclaration', id: string, identifier: string, kind: SignalKind, description?: string | null, descriptorKeys: Array<string>, service: { __typename?: 'Service', id: string, name: string } };
+
+export type ListFiringFragment = { __typename?: 'Firing', id: string, outcome: FiringOutcome, reason?: string | null, replay: boolean, createdAt: any, trigger: { __typename?: 'Trigger', id: string, name: string }, signal: { __typename?: 'Signal', id: string, identifier: string, object: string, kind: SignalKind, occurredAt?: any | null, receivedAt: any }, task?: (
+    { __typename?: 'Task' }
+    & ListTaskFragment
+  ) | null };
+
+export type DetailSignalFragment = (
+  { __typename?: 'Signal', firings: Array<(
+    { __typename?: 'Firing' }
+    & ListFiringFragment
+  )> }
+  & ListSignalFragment
+);
+
+export type ListWiregramFragment = { __typename?: 'Wiregram', id: string, key: string, name: string, description?: string | null, updatedAt: any };
+
+export type DetailWiregramFragment = (
+  { __typename?: 'Wiregram', document: any, createdAt: any, caller: { __typename?: 'Caller', id: string, user: { __typename?: 'User', id: string, sub: string } }, schedules: Array<(
+    { __typename?: 'Schedule' }
+    & ListScheduleFragment
+  )>, triggers: Array<(
+    { __typename?: 'Trigger' }
+    & ListTriggerFragment
+  )> }
+  & ListWiregramFragment
+);
+
+export type ListServiceFragment = { __typename?: 'Service', id: string, name: string, identifier?: string | null, description?: string | null, signals: Array<{ __typename?: 'SignalDeclaration', id: string }>, structures: Array<{ __typename?: 'Structure', id: string }> };
+
+export type DetailServiceFragment = { __typename?: 'Service', id: string, name: string, identifier?: string | null, description?: string | null, signals: Array<(
+    { __typename?: 'SignalDeclaration', triggers: Array<{ __typename?: 'Trigger', id: string, name: string }> }
+    & SignalDeclarationFragment
+  )>, structures: Array<{ __typename?: 'Structure', identifier: string, label?: string | null, description?: string | null, id: string, descriptors: Array<{ __typename?: 'StructureDescriptor', id: string, key: string, type: string, description?: string | null }> }> };
+
+export type DetailFiringFragment = (
+  { __typename?: 'Firing', trigger: { __typename?: 'Trigger', id: string, name: string, action: { __typename?: 'Action', id: string, name: string } }, signal: { __typename?: 'Signal', id: string, serviceName: string, descriptors: any } }
+  & ListFiringFragment
+);
+
+export type RuleChangeFragment = { __typename?: 'RuleChange', id: string, name: string, enabled: boolean, consecutiveFailures: number, lastError?: string | null, runCount: number, lastFiredAt?: any | null, updatedAt: any };
+
+export type SignalChangeFragment = { __typename?: 'SignalChange', id: string, service: string, kind: SignalKind, identifier: string, object: string, receivedAt: any, processedAt?: any | null, fired: number };
 
 export type BlokAgentCallLeafFragment = { __typename?: 'AgentCall', dependency: string, operation: string, arguments?: Array<(
     { __typename?: 'ActionArgument' }
@@ -6574,9 +6616,9 @@ export type AgentPlacementFragment = { __typename?: 'Placement', id: string, nam
 
 export type ListPlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null };
 
-export type StringAssignWidgetFragment = { __typename: 'StringAssignWidget', kind: AssignWidgetKind, placeholder?: string | null, asParagraph?: boolean | null };
+export type StringAssignWidgetFragment = { __typename: 'StringAssignWidget', kind: AssignWidgetKind, followValue?: string | null, placeholder?: string | null, asParagraph?: boolean | null };
 
-export type SliderAssignWidgetFragment = { __typename: 'SliderAssignWidget', kind: AssignWidgetKind, min?: number | null, max?: number | null, step?: number | null };
+export type SliderAssignWidgetFragment = { __typename: 'SliderAssignWidget', kind: AssignWidgetKind, followValue?: string | null, min?: number | null, max?: number | null, step?: number | null };
 
 export type StateChoiceAssignWidgetFragment = { __typename: 'StateChoiceAssignWidget', kind: AssignWidgetKind, followValue?: string | null, statePath?: string | null, dependency?: string | null, dependencies?: Array<string> | null, stateCall?: (
     { __typename?: 'UtilCall' }
@@ -6586,11 +6628,11 @@ export type StateChoiceAssignWidgetFragment = { __typename: 'StateChoiceAssignWi
       & PortCallFragment
     ) | null }> | null };
 
-export type ProxyWidgetFragment = { __typename: 'ProxyWidget', kind: AssignWidgetKind, targetPort: string, targetAction: string, targetDependency?: string | null };
+export type ProxyWidgetFragment = { __typename: 'ProxyWidget', kind: AssignWidgetKind, followValue?: string | null, targetPort: string, targetAction: string, targetDependency?: string | null };
 
 export type FilterPortFragment = { __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, description?: string | null, nullable: boolean, widget?: { __typename?: 'ChoiceAssignWidget' } | { __typename?: 'CustomAssignWidget' } | { __typename?: 'ProxyWidget' } | { __typename?: 'SearchAssignWidget', query: string } | { __typename?: 'SliderAssignWidget' } | { __typename?: 'StateChoiceAssignWidget' } | { __typename?: 'StringAssignWidget' } | null };
 
-export type SearchAssignWidgetFragment = { __typename: 'SearchAssignWidget', kind: AssignWidgetKind, query: string, ward: string, dependencies?: Array<string> | null, filters?: Array<(
+export type SearchAssignWidgetFragment = { __typename: 'SearchAssignWidget', kind: AssignWidgetKind, followValue?: string | null, query: string, ward: string, dependencies?: Array<string> | null, filters?: Array<(
     { __typename?: 'ArgPort' }
     & FilterPortFragment
   )> | null };
@@ -7079,11 +7121,11 @@ export type StateEventFragment = { __typename?: 'State', id: string, updatedAt: 
 
 export type PatchFragment = { __typename?: 'Patch', id: string, op: string, path: string, value: any, interface: string };
 
-export type StatePatchEventFragment = { __typename?: 'StatePatchEvent', stateId: string, agentId: string, op: string, path: string, value: any, globalRevision: number, sessionId: string, timestamp: any, interface: string };
+export type StatePatchEventFragment = { __typename?: 'StatePatchEvent', stateId: string, agentId: string, op: string, path: string, value: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null, interface: string };
 
-export type StateSnapshotEventFragment = { __typename?: 'StateSnapshotEvent', stateId: string, agentId: string, interface: string, value: any, globalRevision: number, sessionId: string, timestamp: any };
+export type StateSnapshotEventFragment = { __typename?: 'StateSnapshotEvent', stateId: string, agentId: string, interface: string, value: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null };
 
-export type AgentSnapshotEventFragment = { __typename?: 'AgentSnapshotEvent', agentId: string, values: any, globalRevision: number, sessionId: string, timestamp: any };
+export type AgentSnapshotEventFragment = { __typename?: 'AgentSnapshotEvent', agentId: string, values: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null };
 
 export type ListPortUsageFragment = { __typename?: 'PortUsage', portKey: string, index: number, keyPath: string, modifiers: Array<string>, action: { __typename?: 'Action', id: string, name: string, description?: string | null } };
 
@@ -7107,30 +7149,10 @@ export type ListOutputInterfaceUsageFragment = (
   & ListPortUsageFragment
 );
 
-export type StructureDescriptorFragment = { __typename?: 'StructureDescriptor', id: string, key: string, type: string, description?: string | null };
-
-export type ListDescriptorFragment = (
-  { __typename?: 'StructureDescriptor', structure: { __typename?: 'Structure', identifier: string, label?: string | null, id: string }, service: { __typename?: 'Service', id: string, name: string } }
-  & StructureDescriptorFragment
-);
-
-export type DescriptorFragment = (
-  { __typename?: 'StructureDescriptor', sharedWith: Array<{ __typename?: 'HostedStructure', id: string, identifier: string, label?: string | null }> }
-  & ListDescriptorFragment
-);
-
-export type ListHostedStructureFragment = { __typename?: 'HostedStructure', id: string, identifier: string, key: string, label?: string | null, description?: string | null, service: { __typename?: 'Service', id: string, name: string }, descriptors: Array<(
-    { __typename?: 'StructureDescriptor' }
-    & StructureDescriptorFragment
-  )> };
-
-export type StructureFragment = { __typename?: 'Structure', identifier: string, key: string, label?: string | null, description?: string | null, id: string, service?: { __typename?: 'Service', id: string, name: string, description?: string | null } | null, descriptors: Array<(
-    { __typename?: 'StructureDescriptor' }
-    & StructureDescriptorFragment
-  )>, signals: Array<(
+export type StructureFragment = { __typename?: 'Structure', identifier: string, key: string, label?: string | null, description?: string | null, id: string, package: { __typename?: 'StructurePackage', key: string }, service?: { __typename?: 'Service', id: string, name: string } | null, descriptors: Array<{ __typename?: 'StructureDescriptor', id: string, key: string, type: string, description?: string | null }>, signals: Array<(
     { __typename?: 'SignalDeclaration' }
     & SignalDeclarationFragment
-  )>, package: { __typename?: 'StructurePackage', key: string }, outputUsages: Array<(
+  )>, outputUsages: Array<(
     { __typename?: 'PortUsage' }
     & ListOutputStructureUsageFragment
   )>, inputUsages: Array<(
@@ -7138,7 +7160,7 @@ export type StructureFragment = { __typename?: 'Structure', identifier: string, 
     & ListInputStructureUsageFragment
   )> };
 
-export type ListStructureFragment = { __typename?: 'Structure', identifier: string, key: string, label?: string | null, id: string, service?: { __typename?: 'Service', id: string, name: string } | null, descriptors: Array<{ __typename?: 'StructureDescriptor', key: string }>, package: { __typename?: 'StructurePackage', key: string } };
+export type ListStructureFragment = { __typename?: 'Structure', identifier: string, key: string, id: string, package: { __typename?: 'StructurePackage', key: string } };
 
 export type ListInterfaceFragment = { __typename?: 'Interface', identifier: string, key: string, id: string, package: { __typename?: 'StructurePackage', key: string } };
 
@@ -7150,7 +7172,7 @@ export type InterfaceFragment = { __typename?: 'Interface', identifier: string, 
     & ListInputInterfaceUsageFragment
   )> };
 
-export type StructurePackageFragment = { __typename?: 'StructurePackage', key: string, id: string, service?: { __typename?: 'Service', id: string, name: string, description?: string | null } | null, structures: Array<(
+export type StructurePackageFragment = { __typename?: 'StructurePackage', key: string, id: string, structures: Array<(
     { __typename?: 'Structure' }
     & ListStructureFragment
   )>, interfaces: Array<(
@@ -7159,14 +7181,6 @@ export type StructurePackageFragment = { __typename?: 'StructurePackage', key: s
   )> };
 
 export type ListStructurePackageFragment = { __typename?: 'StructurePackage', key: string, id: string };
-
-export type ServiceFragment = { __typename?: 'Service', id: string, name: string, identifier?: string | null, description?: string | null, structures: Array<(
-    { __typename?: 'Structure' }
-    & ListStructureFragment
-  )>, signals: Array<(
-    { __typename?: 'SignalDeclaration' }
-    & SignalDeclarationFragment
-  )> };
 
 export type PostmanTaskFragment = { __typename?: 'Task', id: string, latestEventKind: TaskEventKind, args: any, reference?: string | null, isDone: boolean, dependencyMethod?: string | null, dependency?: string | null, dependencies: any, createdAt: any, finishedAt?: any | null, events: Array<(
     { __typename?: 'TaskEvent' }
@@ -7189,7 +7203,7 @@ export type NoChildrenDetailTaskFragment = (
 );
 
 export type DetailTaskFragment = (
-  { __typename?: 'Task', finishedAt?: any | null, children: Array<(
+  { __typename?: 'Task', finishedAt?: any | null, schedule?: { __typename?: 'Schedule', id: string, name: string } | null, trigger?: { __typename?: 'Trigger', id: string, name: string } | null, signal?: { __typename?: 'Signal', id: string, identifier: string, object: string, kind: SignalKind } | null, children: Array<(
     { __typename?: 'Task', parentStep?: number | null, callKey?: string | null }
     & PostmanTaskFragment
   )>, parent?: { __typename?: 'Task', id: string } | null, implementation?: { __typename?: 'Implementation', execution: Execution, effects: Effects, agent: { __typename?: 'Agent', id: string, name: string, client: { __typename?: 'Client', clientId: string, device?: { __typename?: 'Device', deviceId: string } | null }, placements: Array<(
@@ -7211,7 +7225,7 @@ export type DetailTaskFragment = (
   & PostmanTaskFragment
 );
 
-export type TaskEventFragment = { __typename?: 'TaskEvent', id: string, kind: TaskEventKind, level: LogLevel, returns?: any | null, progress?: number | null, reference: string, createdAt: any, message?: string | null, step?: number | null, agentTs?: any | null, effect?: string | null, key?: string | null, value?: any | null, task: { __typename?: 'Task', id: string, reference?: string | null }, delegatedTo?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', name: string } } | null } | null };
+export type TaskEventFragment = { __typename?: 'TaskEvent', id: string, kind: TaskEventKind, level: LogLevel, returns?: any | null, progress?: number | null, reference?: string | null, createdAt: any, message?: string | null, step?: number | null, agentTs?: any | null, effect?: string | null, key?: string | null, value?: any | null, task: { __typename?: 'Task', id: string, reference?: string | null }, delegatedTo?: { __typename?: 'Task', id: string, action: { __typename?: 'Action', name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', name: string } } | null } | null };
 
 export type TaskChangeFragment = { __typename?: 'TaskChange', id: string, reference?: string | null, isDone: boolean, latestEventKind: TaskEventKind, latestInstructKind: TaskInstructKind, action: string, implementation?: string | null, agent?: string | null, root?: string | null, parent?: string | null, createdAt: any, updatedAt: any, finishedAt?: any | null };
 
@@ -7489,6 +7503,40 @@ export type DeleteTriggerMutationVariables = Exact<{
 
 
 export type DeleteTriggerMutation = { __typename?: 'Mutation', deleteTrigger: string };
+
+export type FireTriggerMutationVariables = Exact<{
+  input: FireTriggerInput;
+}>;
+
+
+export type FireTriggerMutation = { __typename?: 'Mutation', fireTrigger: (
+    { __typename?: 'Firing' }
+    & ListFiringFragment
+  ) };
+
+export type ImportWiregramMutationVariables = Exact<{
+  input: WiregramInput;
+}>;
+
+
+export type ImportWiregramMutation = { __typename?: 'Mutation', importWiregram: (
+    { __typename?: 'Wiregram' }
+    & DetailWiregramFragment
+  ) };
+
+export type ExportWiregramMutationVariables = Exact<{
+  input: ExportWiregramInput;
+}>;
+
+
+export type ExportWiregramMutation = { __typename?: 'Mutation', exportWiregram: any };
+
+export type DeleteWiregramMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteWiregramMutation = { __typename?: 'Mutation', deleteWiregram: string };
 
 export type CreateBlokMutationVariables = Exact<{
   input: CreateBlokInput;
@@ -7984,6 +8032,8 @@ export type HoverAgentQuery = { __typename?: 'Query', agent: (
   ) };
 
 export type ListSchedulesQueryVariables = Exact<{
+  filters?: InputMaybe<ScheduleFilter>;
+  ordering?: InputMaybe<Array<ScheduleOrder>>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 }>;
 
@@ -8004,6 +8054,8 @@ export type ScheduleQuery = { __typename?: 'Query', schedule: (
   ) };
 
 export type ListTriggersQueryVariables = Exact<{
+  filters?: InputMaybe<TriggerFilter>;
+  ordering?: InputMaybe<Array<TriggerOrder>>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 }>;
 
@@ -8024,6 +8076,8 @@ export type TriggerQuery = { __typename?: 'Query', trigger: (
   ) };
 
 export type ListSignalsQueryVariables = Exact<{
+  filters?: InputMaybe<SignalFilter>;
+  ordering?: InputMaybe<Array<SignalOrder>>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 }>;
 
@@ -8032,6 +8086,96 @@ export type ListSignalsQuery = { __typename?: 'Query', signals: Array<(
     { __typename?: 'Signal' }
     & ListSignalFragment
   )> };
+
+export type SignalQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type SignalQuery = { __typename?: 'Query', signal: (
+    { __typename?: 'Signal' }
+    & DetailSignalFragment
+  ) };
+
+export type ListFiringsQueryVariables = Exact<{
+  filters?: InputMaybe<FiringFilter>;
+  ordering?: InputMaybe<Array<FiringOrder>>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListFiringsQuery = { __typename?: 'Query', firings: Array<(
+    { __typename?: 'Firing' }
+    & ListFiringFragment
+  )> };
+
+export type ListWiregramsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListWiregramsQuery = { __typename?: 'Query', wiregrams: Array<(
+    { __typename?: 'Wiregram' }
+    & ListWiregramFragment
+  )> };
+
+export type WiregramQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type WiregramQuery = { __typename?: 'Query', wiregram: (
+    { __typename?: 'Wiregram' }
+    & DetailWiregramFragment
+  ) };
+
+export type FiringQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type FiringQuery = { __typename?: 'Query', firing: (
+    { __typename?: 'Firing' }
+    & DetailFiringFragment
+  ) };
+
+export type ListServicesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ListServicesQuery = { __typename?: 'Query', services: Array<(
+    { __typename?: 'Service' }
+    & ListServiceFragment
+  )> };
+
+export type ServiceQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ServiceQuery = { __typename?: 'Query', service: (
+    { __typename?: 'Service' }
+    & DetailServiceFragment
+  ) };
+
+export type MatchingSignalsQueryVariables = Exact<{
+  kind: SignalKind;
+  identifier: Scalars['String']['input'];
+  conditions?: InputMaybe<Scalars['AnyDefault']['input']>;
+  limit?: Scalars['Int']['input'];
+}>;
+
+
+export type MatchingSignalsQuery = { __typename?: 'Query', matchingSignals: Array<{ __typename?: 'Signal', id: string }> };
+
+export type TriggerMatchingSignalsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TriggerMatchingSignalsQuery = { __typename?: 'Query', trigger: { __typename?: 'Trigger', id: string, matchingSignals: Array<(
+      { __typename?: 'Signal' }
+      & ListSignalFragment
+    )> } };
 
 export type SignalDeclarationsQueryVariables = Exact<{
   identifier?: InputMaybe<Scalars['String']['input']>;
@@ -8134,53 +8278,6 @@ export type DependencyTreeQuery = { __typename?: 'Query', dependencyTree: { __ty
       { __typename?: 'ResolvedAgentDependency' }
       & DependencyTreeRootFragment
     )> } };
-
-export type ListDescriptorsQueryVariables = Exact<{
-  filters?: InputMaybe<StructureDescriptorFilter>;
-  ordering?: InputMaybe<Array<StructureDescriptorOrder>>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type ListDescriptorsQuery = { __typename?: 'Query', descriptors: Array<(
-    { __typename?: 'StructureDescriptor' }
-    & ListDescriptorFragment
-  )> };
-
-export type GetDescriptorQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetDescriptorQuery = { __typename?: 'Query', descriptor: (
-    { __typename?: 'StructureDescriptor' }
-    & DescriptorFragment
-  ) };
-
-export type ListHostedStructuresQueryVariables = Exact<{
-  filters?: InputMaybe<HostedStructureFilter>;
-  ordering?: InputMaybe<Array<HostedStructureOrder>>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type ListHostedStructuresQuery = { __typename?: 'Query', hostedStructures: Array<(
-    { __typename?: 'HostedStructure' }
-    & ListHostedStructureFragment
-  )> };
-
-export type GetHostedStructureQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetHostedStructureQuery = { __typename?: 'Query', hostedStructure: (
-    { __typename?: 'HostedStructure', structure: (
-      { __typename?: 'Structure' }
-      & StructureFragment
-    ) }
-    & ListHostedStructureFragment
-  ) };
 
 export type SearchMemoryDrawerQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
@@ -8480,26 +8577,6 @@ export type ListResolutionsQuery = { __typename?: 'Query', resolutions: Array<(
     & ResolutionFragment
   )> };
 
-export type ServicesQueryVariables = Exact<{
-  name?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-
-export type ServicesQuery = { __typename?: 'Query', services: Array<(
-    { __typename?: 'Service' }
-    & ServiceFragment
-  )> };
-
-export type GetServiceQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetServiceQuery = { __typename?: 'Query', service: (
-    { __typename?: 'Service' }
-    & ServiceFragment
-  ) };
-
 export type ShortcutsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<ShortcutFilter>;
@@ -8796,6 +8873,39 @@ export type WatchAgentsSubscription = { __typename?: 'Subscription', agents: (
     & AgentChangeEventFragment
   ) };
 
+export type WatchSchedulesSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchSchedulesSubscription = { __typename?: 'Subscription', schedules: { __typename?: 'RuleChangeEvent', delete?: string | null, create?: (
+      { __typename?: 'RuleChange' }
+      & RuleChangeFragment
+    ) | null, update?: (
+      { __typename?: 'RuleChange' }
+      & RuleChangeFragment
+    ) | null } };
+
+export type WatchTriggersSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchTriggersSubscription = { __typename?: 'Subscription', triggers: { __typename?: 'RuleChangeEvent', delete?: string | null, create?: (
+      { __typename?: 'RuleChange' }
+      & RuleChangeFragment
+    ) | null, update?: (
+      { __typename?: 'RuleChange' }
+      & RuleChangeFragment
+    ) | null } };
+
+export type WatchSignalsSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchSignalsSubscription = { __typename?: 'Subscription', signals: { __typename?: 'SignalChangeEvent', create?: (
+      { __typename?: 'SignalChange' }
+      & SignalChangeFragment
+    ) | null, update?: (
+      { __typename?: 'SignalChange' }
+      & SignalChangeFragment
+    ) | null } };
+
 export type WatchProbeEventsSubscriptionVariables = Exact<{
   probe: Scalars['ID']['input'];
 }>;
@@ -9054,6 +9164,12 @@ export const PrimaryActionFragmentDoc = gql`
     kind
     nullable
     default
+  }
+  returns {
+    key
+    label
+    identifier
+    kind
   }
   description
 }
@@ -9428,6 +9544,7 @@ export const StringAssignWidgetFragmentDoc = gql`
     fragment StringAssignWidget on StringAssignWidget {
   __typename
   kind
+  followValue
   placeholder
   asParagraph
 }
@@ -9451,6 +9568,7 @@ export const SearchAssignWidgetFragmentDoc = gql`
     fragment SearchAssignWidget on SearchAssignWidget {
   __typename
   kind
+  followValue
   query
   ward
   filters {
@@ -9463,6 +9581,7 @@ export const SliderAssignWidgetFragmentDoc = gql`
     fragment SliderAssignWidget on SliderAssignWidget {
   __typename
   kind
+  followValue
   min
   max
   step
@@ -9480,6 +9599,7 @@ export const ProxyWidgetFragmentDoc = gql`
     fragment ProxyWidget on ProxyWidget {
   __typename
   kind
+  followValue
   targetPort
   targetAction
   targetDependency
@@ -9942,6 +10062,13 @@ export const ListScheduleFragmentDoc = gql`
     latestEventKind
     isDone
   }
+  description
+  runCount
+  lastRunAt
+  lastErrorAt
+  exhausted
+  endsAt
+  maxRuns
 }
     `;
 export const DetailScheduleFragmentDoc = gql`
@@ -9950,8 +10077,24 @@ export const DetailScheduleFragmentDoc = gql`
   args
   interface
   ephemeralRuns
+  overlap
+  catchUp
+  lastFiredAt
+  upcoming(count: 5)
+  wireKey
+  wiregram {
+    id
+    name
+  }
   createdAt
   updatedAt
+  caller {
+    id
+    user {
+      id
+      sub
+    }
+  }
   runs(limit: 24) {
     ...ListTask
   }
@@ -9977,21 +10120,66 @@ export const ListTriggerFragmentDoc = gql`
     id
     name
   }
+  description
+  runCount
+  lastRunAt
+  lastErrorAt
+  exhausted
+  endsAt
+  maxRuns
+  debounceSeconds
 }
     `;
+export const ListFiringFragmentDoc = gql`
+    fragment ListFiring on Firing {
+  id
+  outcome
+  reason
+  replay
+  createdAt
+  trigger {
+    id
+    name
+  }
+  signal {
+    id
+    identifier
+    object
+    kind
+    occurredAt
+    receivedAt
+  }
+  task {
+    ...ListTask
+  }
+}
+    ${ListTaskFragmentDoc}`;
 export const DetailTriggerFragmentDoc = gql`
     fragment DetailTrigger on Trigger {
   ...ListTrigger
   args
   interface
+  lastFiredAt
   createdAt
   updatedAt
-  runs(limit: 24) {
-    ...ListTask
+  caller {
+    id
+    user {
+      id
+      sub
+    }
+  }
+  wireKey
+  wiregram {
+    id
+    name
+  }
+  firings(limit: 24) {
+    ...ListFiring
   }
 }
     ${ListTriggerFragmentDoc}
-${ListTaskFragmentDoc}`;
+${ListFiringFragmentDoc}`;
 export const ListSignalFragmentDoc = gql`
     fragment ListSignal on Signal {
   id
@@ -10020,7 +10208,147 @@ export const ListSignalFragmentDoc = gql`
       id
       name
     }
+    trigger {
+      id
+      name
+    }
   }
+}
+    `;
+export const DetailSignalFragmentDoc = gql`
+    fragment DetailSignal on Signal {
+  ...ListSignal
+  firings {
+    ...ListFiring
+  }
+}
+    ${ListSignalFragmentDoc}
+${ListFiringFragmentDoc}`;
+export const ListWiregramFragmentDoc = gql`
+    fragment ListWiregram on Wiregram {
+  id
+  key
+  name
+  description
+  updatedAt
+}
+    `;
+export const DetailWiregramFragmentDoc = gql`
+    fragment DetailWiregram on Wiregram {
+  ...ListWiregram
+  document
+  createdAt
+  caller {
+    id
+    user {
+      id
+      sub
+    }
+  }
+  schedules {
+    ...ListSchedule
+  }
+  triggers {
+    ...ListTrigger
+  }
+}
+    ${ListWiregramFragmentDoc}
+${ListScheduleFragmentDoc}
+${ListTriggerFragmentDoc}`;
+export const ListServiceFragmentDoc = gql`
+    fragment ListService on Service {
+  id
+  name
+  identifier
+  description
+  signals {
+    id
+  }
+  structures {
+    id: identifier
+  }
+}
+    `;
+export const SignalDeclarationFragmentDoc = gql`
+    fragment SignalDeclaration on SignalDeclaration {
+  id
+  identifier
+  kind
+  service {
+    id
+    name
+  }
+  description
+  descriptorKeys
+}
+    `;
+export const DetailServiceFragmentDoc = gql`
+    fragment DetailService on Service {
+  id
+  name
+  identifier
+  description
+  signals {
+    ...SignalDeclaration
+    triggers {
+      id
+      name
+    }
+  }
+  structures {
+    id: identifier
+    identifier
+    label
+    description
+    descriptors {
+      id
+      key
+      type
+      description
+    }
+  }
+}
+    ${SignalDeclarationFragmentDoc}`;
+export const DetailFiringFragmentDoc = gql`
+    fragment DetailFiring on Firing {
+  ...ListFiring
+  trigger {
+    id
+    name
+    action {
+      id
+      name
+    }
+  }
+  signal {
+    id
+    serviceName
+    descriptors
+  }
+}
+    ${ListFiringFragmentDoc}`;
+export const RuleChangeFragmentDoc = gql`
+    fragment RuleChange on RuleChange {
+  id
+  name
+  enabled
+  consecutiveFailures
+  lastError
+  runCount
+  lastFiredAt
+  updatedAt
+}
+    `;
+export const SignalChangeFragmentDoc = gql`
+    fragment SignalChange on SignalChange {
+  id
+  service
+  kind
+  identifier
+  object
+  receivedAt
+  processedAt
+  fired
 }
     `;
 export const ListBlokFragmentDoc = gql`
@@ -11004,67 +11332,6 @@ export const AgentSnapshotEventFragmentDoc = gql`
   timestamp
 }
     `;
-export const StructureDescriptorFragmentDoc = gql`
-    fragment StructureDescriptor on StructureDescriptor {
-  id
-  key
-  type
-  description
-}
-    `;
-export const ListDescriptorFragmentDoc = gql`
-    fragment ListDescriptor on StructureDescriptor {
-  ...StructureDescriptor
-  structure {
-    id: identifier
-    identifier
-    label
-  }
-  service {
-    id
-    name
-  }
-}
-    ${StructureDescriptorFragmentDoc}`;
-export const DescriptorFragmentDoc = gql`
-    fragment Descriptor on StructureDescriptor {
-  ...ListDescriptor
-  sharedWith {
-    id
-    identifier
-    label
-  }
-}
-    ${ListDescriptorFragmentDoc}`;
-export const ListHostedStructureFragmentDoc = gql`
-    fragment ListHostedStructure on HostedStructure {
-  id
-  identifier
-  key
-  label
-  description
-  service {
-    id
-    name
-  }
-  descriptors {
-    ...StructureDescriptor
-  }
-}
-    ${StructureDescriptorFragmentDoc}`;
-export const SignalDeclarationFragmentDoc = gql`
-    fragment SignalDeclaration on SignalDeclaration {
-  id
-  identifier
-  kind
-  service {
-    id
-    name
-  }
-  description
-  descriptorKeys
-}
-    `;
 export const ListPortUsageFragmentDoc = gql`
     fragment ListPortUsage on PortUsage {
   portKey
@@ -11095,19 +11362,21 @@ export const StructureFragmentDoc = gql`
   key
   label
   description
+  package {
+    key
+  }
   service {
     id
     name
-    description
   }
   descriptors {
-    ...StructureDescriptor
+    id
+    key
+    type
+    description
   }
   signals {
     ...SignalDeclaration
-  }
-  package {
-    key
   }
   outputUsages {
     ...ListOutputStructureUsage
@@ -11116,8 +11385,7 @@ export const StructureFragmentDoc = gql`
     ...ListInputStructureUsage
   }
 }
-    ${StructureDescriptorFragmentDoc}
-${SignalDeclarationFragmentDoc}
+    ${SignalDeclarationFragmentDoc}
 ${ListOutputStructureUsageFragmentDoc}
 ${ListInputStructureUsageFragmentDoc}`;
 export const ListOutputInterfaceUsageFragmentDoc = gql`
@@ -11152,14 +11420,6 @@ export const ListStructureFragmentDoc = gql`
   id: identifier
   identifier
   key
-  label
-  service {
-    id
-    name
-  }
-  descriptors {
-    key
-  }
   package {
     key
   }
@@ -11179,11 +11439,6 @@ export const StructurePackageFragmentDoc = gql`
     fragment StructurePackage on StructurePackage {
   id: key
   key
-  service {
-    id
-    name
-    description
-  }
   structures {
     ...ListStructure
   }
@@ -11199,21 +11454,6 @@ export const ListStructurePackageFragmentDoc = gql`
   key
 }
     `;
-export const ServiceFragmentDoc = gql`
-    fragment Service on Service {
-  id
-  name
-  identifier
-  description
-  structures {
-    ...ListStructure
-  }
-  signals {
-    ...SignalDeclaration
-  }
-}
-    ${ListStructureFragmentDoc}
-${SignalDeclarationFragmentDoc}`;
 export const LiveTaskFragmentDoc = gql`
     fragment LiveTask on Task {
   id
@@ -11310,6 +11550,20 @@ export const FrozenBindingFragmentDoc = gql`
 export const DetailTaskFragmentDoc = gql`
     fragment DetailTask on Task {
   ...PostmanTask
+  schedule {
+    id
+    name
+  }
+  trigger {
+    id
+    name
+  }
+  signal {
+    id
+    identifier
+    object
+    kind
+  }
   children {
     ...PostmanTask
     parentStep
@@ -12338,6 +12592,134 @@ export function useDeleteTriggerMutation(baseOptions?: ApolloReactHooks.Mutation
 export type DeleteTriggerMutationHookResult = ReturnType<typeof useDeleteTriggerMutation>;
 export type DeleteTriggerMutationResult = Apollo.MutationResult<DeleteTriggerMutation>;
 export type DeleteTriggerMutationOptions = Apollo.BaseMutationOptions<DeleteTriggerMutation, DeleteTriggerMutationVariables>;
+export const FireTriggerDocument = gql`
+    mutation FireTrigger($input: FireTriggerInput!) {
+  fireTrigger(input: $input) {
+    ...ListFiring
+  }
+}
+    ${ListFiringFragmentDoc}`;
+export type FireTriggerMutationFn = Apollo.MutationFunction<FireTriggerMutation, FireTriggerMutationVariables>;
+
+/**
+ * __useFireTriggerMutation__
+ *
+ * To run a mutation, you first call `useFireTriggerMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useFireTriggerMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [fireTriggerMutation, { data, loading, error }] = useFireTriggerMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useFireTriggerMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<FireTriggerMutation, FireTriggerMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<FireTriggerMutation, FireTriggerMutationVariables>(FireTriggerDocument, options);
+      }
+export type FireTriggerMutationHookResult = ReturnType<typeof useFireTriggerMutation>;
+export type FireTriggerMutationResult = Apollo.MutationResult<FireTriggerMutation>;
+export type FireTriggerMutationOptions = Apollo.BaseMutationOptions<FireTriggerMutation, FireTriggerMutationVariables>;
+export const ImportWiregramDocument = gql`
+    mutation ImportWiregram($input: WiregramInput!) {
+  importWiregram(input: $input) {
+    ...DetailWiregram
+  }
+}
+    ${DetailWiregramFragmentDoc}`;
+export type ImportWiregramMutationFn = Apollo.MutationFunction<ImportWiregramMutation, ImportWiregramMutationVariables>;
+
+/**
+ * __useImportWiregramMutation__
+ *
+ * To run a mutation, you first call `useImportWiregramMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useImportWiregramMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [importWiregramMutation, { data, loading, error }] = useImportWiregramMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useImportWiregramMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ImportWiregramMutation, ImportWiregramMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ImportWiregramMutation, ImportWiregramMutationVariables>(ImportWiregramDocument, options);
+      }
+export type ImportWiregramMutationHookResult = ReturnType<typeof useImportWiregramMutation>;
+export type ImportWiregramMutationResult = Apollo.MutationResult<ImportWiregramMutation>;
+export type ImportWiregramMutationOptions = Apollo.BaseMutationOptions<ImportWiregramMutation, ImportWiregramMutationVariables>;
+export const ExportWiregramDocument = gql`
+    mutation ExportWiregram($input: ExportWiregramInput!) {
+  exportWiregram(input: $input)
+}
+    `;
+export type ExportWiregramMutationFn = Apollo.MutationFunction<ExportWiregramMutation, ExportWiregramMutationVariables>;
+
+/**
+ * __useExportWiregramMutation__
+ *
+ * To run a mutation, you first call `useExportWiregramMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useExportWiregramMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [exportWiregramMutation, { data, loading, error }] = useExportWiregramMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useExportWiregramMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ExportWiregramMutation, ExportWiregramMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ExportWiregramMutation, ExportWiregramMutationVariables>(ExportWiregramDocument, options);
+      }
+export type ExportWiregramMutationHookResult = ReturnType<typeof useExportWiregramMutation>;
+export type ExportWiregramMutationResult = Apollo.MutationResult<ExportWiregramMutation>;
+export type ExportWiregramMutationOptions = Apollo.BaseMutationOptions<ExportWiregramMutation, ExportWiregramMutationVariables>;
+export const DeleteWiregramDocument = gql`
+    mutation DeleteWiregram($id: ID!) {
+  deleteWiregram(input: {id: $id})
+}
+    `;
+export type DeleteWiregramMutationFn = Apollo.MutationFunction<DeleteWiregramMutation, DeleteWiregramMutationVariables>;
+
+/**
+ * __useDeleteWiregramMutation__
+ *
+ * To run a mutation, you first call `useDeleteWiregramMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteWiregramMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteWiregramMutation, { data, loading, error }] = useDeleteWiregramMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteWiregramMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteWiregramMutation, DeleteWiregramMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteWiregramMutation, DeleteWiregramMutationVariables>(DeleteWiregramDocument, options);
+      }
+export type DeleteWiregramMutationHookResult = ReturnType<typeof useDeleteWiregramMutation>;
+export type DeleteWiregramMutationResult = Apollo.MutationResult<DeleteWiregramMutation>;
+export type DeleteWiregramMutationOptions = Apollo.BaseMutationOptions<DeleteWiregramMutation, DeleteWiregramMutationVariables>;
 export const CreateBlokDocument = gql`
     mutation CreateBlok($input: CreateBlokInput!) {
   createBlok(input: $input) {
@@ -14083,8 +14465,8 @@ export type HoverAgentQueryHookResult = ReturnType<typeof useHoverAgentQuery>;
 export type HoverAgentLazyQueryHookResult = ReturnType<typeof useHoverAgentLazyQuery>;
 export type HoverAgentQueryResult = Apollo.QueryResult<HoverAgentQuery, HoverAgentQueryVariables>;
 export const ListSchedulesDocument = gql`
-    query ListSchedules($pagination: OffsetPaginationInput) {
-  schedules(pagination: $pagination) {
+    query ListSchedules($filters: ScheduleFilter, $ordering: [ScheduleOrder!] = [], $pagination: OffsetPaginationInput) {
+  schedules(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListSchedule
   }
 }
@@ -14102,6 +14484,8 @@ export const ListSchedulesDocument = gql`
  * @example
  * const { data, loading, error } = useListSchedulesQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
  *      pagination: // value for 'pagination'
  *   },
  * });
@@ -14153,8 +14537,8 @@ export type ScheduleQueryHookResult = ReturnType<typeof useScheduleQuery>;
 export type ScheduleLazyQueryHookResult = ReturnType<typeof useScheduleLazyQuery>;
 export type ScheduleQueryResult = Apollo.QueryResult<ScheduleQuery, ScheduleQueryVariables>;
 export const ListTriggersDocument = gql`
-    query ListTriggers($pagination: OffsetPaginationInput) {
-  triggers(pagination: $pagination) {
+    query ListTriggers($filters: TriggerFilter, $ordering: [TriggerOrder!] = [], $pagination: OffsetPaginationInput) {
+  triggers(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListTrigger
   }
 }
@@ -14172,6 +14556,8 @@ export const ListTriggersDocument = gql`
  * @example
  * const { data, loading, error } = useListTriggersQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
  *      pagination: // value for 'pagination'
  *   },
  * });
@@ -14223,8 +14609,8 @@ export type TriggerQueryHookResult = ReturnType<typeof useTriggerQuery>;
 export type TriggerLazyQueryHookResult = ReturnType<typeof useTriggerLazyQuery>;
 export type TriggerQueryResult = Apollo.QueryResult<TriggerQuery, TriggerQueryVariables>;
 export const ListSignalsDocument = gql`
-    query ListSignals($pagination: OffsetPaginationInput) {
-  signals(pagination: $pagination) {
+    query ListSignals($filters: SignalFilter, $ordering: [SignalOrder!] = [], $pagination: OffsetPaginationInput) {
+  signals(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListSignal
   }
 }
@@ -14242,6 +14628,8 @@ export const ListSignalsDocument = gql`
  * @example
  * const { data, loading, error } = useListSignalsQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
  *      pagination: // value for 'pagination'
  *   },
  * });
@@ -14257,6 +14645,333 @@ export function useListSignalsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type ListSignalsQueryHookResult = ReturnType<typeof useListSignalsQuery>;
 export type ListSignalsLazyQueryHookResult = ReturnType<typeof useListSignalsLazyQuery>;
 export type ListSignalsQueryResult = Apollo.QueryResult<ListSignalsQuery, ListSignalsQueryVariables>;
+export const SignalDocument = gql`
+    query Signal($id: ID!) {
+  signal(id: $id) {
+    ...DetailSignal
+  }
+}
+    ${DetailSignalFragmentDoc}`;
+
+/**
+ * __useSignalQuery__
+ *
+ * To run a query within a React component, call `useSignalQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSignalQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSignalQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useSignalQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SignalQuery, SignalQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SignalQuery, SignalQueryVariables>(SignalDocument, options);
+      }
+export function useSignalLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SignalQuery, SignalQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SignalQuery, SignalQueryVariables>(SignalDocument, options);
+        }
+export type SignalQueryHookResult = ReturnType<typeof useSignalQuery>;
+export type SignalLazyQueryHookResult = ReturnType<typeof useSignalLazyQuery>;
+export type SignalQueryResult = Apollo.QueryResult<SignalQuery, SignalQueryVariables>;
+export const ListFiringsDocument = gql`
+    query ListFirings($filters: FiringFilter, $ordering: [FiringOrder!] = [], $pagination: OffsetPaginationInput) {
+  firings(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListFiring
+  }
+}
+    ${ListFiringFragmentDoc}`;
+
+/**
+ * __useListFiringsQuery__
+ *
+ * To run a query within a React component, call `useListFiringsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListFiringsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListFiringsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListFiringsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListFiringsQuery, ListFiringsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListFiringsQuery, ListFiringsQueryVariables>(ListFiringsDocument, options);
+      }
+export function useListFiringsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListFiringsQuery, ListFiringsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListFiringsQuery, ListFiringsQueryVariables>(ListFiringsDocument, options);
+        }
+export type ListFiringsQueryHookResult = ReturnType<typeof useListFiringsQuery>;
+export type ListFiringsLazyQueryHookResult = ReturnType<typeof useListFiringsLazyQuery>;
+export type ListFiringsQueryResult = Apollo.QueryResult<ListFiringsQuery, ListFiringsQueryVariables>;
+export const ListWiregramsDocument = gql`
+    query ListWiregrams($pagination: OffsetPaginationInput) {
+  wiregrams(pagination: $pagination) {
+    ...ListWiregram
+  }
+}
+    ${ListWiregramFragmentDoc}`;
+
+/**
+ * __useListWiregramsQuery__
+ *
+ * To run a query within a React component, call `useListWiregramsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListWiregramsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListWiregramsQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListWiregramsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListWiregramsQuery, ListWiregramsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListWiregramsQuery, ListWiregramsQueryVariables>(ListWiregramsDocument, options);
+      }
+export function useListWiregramsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListWiregramsQuery, ListWiregramsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListWiregramsQuery, ListWiregramsQueryVariables>(ListWiregramsDocument, options);
+        }
+export type ListWiregramsQueryHookResult = ReturnType<typeof useListWiregramsQuery>;
+export type ListWiregramsLazyQueryHookResult = ReturnType<typeof useListWiregramsLazyQuery>;
+export type ListWiregramsQueryResult = Apollo.QueryResult<ListWiregramsQuery, ListWiregramsQueryVariables>;
+export const WiregramDocument = gql`
+    query Wiregram($id: ID!) {
+  wiregram(id: $id) {
+    ...DetailWiregram
+  }
+}
+    ${DetailWiregramFragmentDoc}`;
+
+/**
+ * __useWiregramQuery__
+ *
+ * To run a query within a React component, call `useWiregramQuery` and pass it any options that fit your needs.
+ * When your component renders, `useWiregramQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWiregramQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useWiregramQuery(baseOptions: ApolloReactHooks.QueryHookOptions<WiregramQuery, WiregramQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<WiregramQuery, WiregramQueryVariables>(WiregramDocument, options);
+      }
+export function useWiregramLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<WiregramQuery, WiregramQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<WiregramQuery, WiregramQueryVariables>(WiregramDocument, options);
+        }
+export type WiregramQueryHookResult = ReturnType<typeof useWiregramQuery>;
+export type WiregramLazyQueryHookResult = ReturnType<typeof useWiregramLazyQuery>;
+export type WiregramQueryResult = Apollo.QueryResult<WiregramQuery, WiregramQueryVariables>;
+export const FiringDocument = gql`
+    query Firing($id: ID!) {
+  firing(id: $id) {
+    ...DetailFiring
+  }
+}
+    ${DetailFiringFragmentDoc}`;
+
+/**
+ * __useFiringQuery__
+ *
+ * To run a query within a React component, call `useFiringQuery` and pass it any options that fit your needs.
+ * When your component renders, `useFiringQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useFiringQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useFiringQuery(baseOptions: ApolloReactHooks.QueryHookOptions<FiringQuery, FiringQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<FiringQuery, FiringQueryVariables>(FiringDocument, options);
+      }
+export function useFiringLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<FiringQuery, FiringQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<FiringQuery, FiringQueryVariables>(FiringDocument, options);
+        }
+export type FiringQueryHookResult = ReturnType<typeof useFiringQuery>;
+export type FiringLazyQueryHookResult = ReturnType<typeof useFiringLazyQuery>;
+export type FiringQueryResult = Apollo.QueryResult<FiringQuery, FiringQueryVariables>;
+export const ListServicesDocument = gql`
+    query ListServices {
+  services {
+    ...ListService
+  }
+}
+    ${ListServiceFragmentDoc}`;
+
+/**
+ * __useListServicesQuery__
+ *
+ * To run a query within a React component, call `useListServicesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListServicesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListServicesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useListServicesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListServicesQuery, ListServicesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListServicesQuery, ListServicesQueryVariables>(ListServicesDocument, options);
+      }
+export function useListServicesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListServicesQuery, ListServicesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListServicesQuery, ListServicesQueryVariables>(ListServicesDocument, options);
+        }
+export type ListServicesQueryHookResult = ReturnType<typeof useListServicesQuery>;
+export type ListServicesLazyQueryHookResult = ReturnType<typeof useListServicesLazyQuery>;
+export type ListServicesQueryResult = Apollo.QueryResult<ListServicesQuery, ListServicesQueryVariables>;
+export const ServiceDocument = gql`
+    query Service($id: ID!) {
+  service(id: $id) {
+    ...DetailService
+  }
+}
+    ${DetailServiceFragmentDoc}`;
+
+/**
+ * __useServiceQuery__
+ *
+ * To run a query within a React component, call `useServiceQuery` and pass it any options that fit your needs.
+ * When your component renders, `useServiceQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useServiceQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useServiceQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ServiceQuery, ServiceQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ServiceQuery, ServiceQueryVariables>(ServiceDocument, options);
+      }
+export function useServiceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ServiceQuery, ServiceQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ServiceQuery, ServiceQueryVariables>(ServiceDocument, options);
+        }
+export type ServiceQueryHookResult = ReturnType<typeof useServiceQuery>;
+export type ServiceLazyQueryHookResult = ReturnType<typeof useServiceLazyQuery>;
+export type ServiceQueryResult = Apollo.QueryResult<ServiceQuery, ServiceQueryVariables>;
+export const MatchingSignalsDocument = gql`
+    query MatchingSignals($kind: SignalKind!, $identifier: String!, $conditions: AnyDefault, $limit: Int! = 20) {
+  matchingSignals(
+    kind: $kind
+    identifier: $identifier
+    conditions: $conditions
+    limit: $limit
+  ) {
+    id
+  }
+}
+    `;
+
+/**
+ * __useMatchingSignalsQuery__
+ *
+ * To run a query within a React component, call `useMatchingSignalsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMatchingSignalsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMatchingSignalsQuery({
+ *   variables: {
+ *      kind: // value for 'kind'
+ *      identifier: // value for 'identifier'
+ *      conditions: // value for 'conditions'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useMatchingSignalsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<MatchingSignalsQuery, MatchingSignalsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MatchingSignalsQuery, MatchingSignalsQueryVariables>(MatchingSignalsDocument, options);
+      }
+export function useMatchingSignalsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MatchingSignalsQuery, MatchingSignalsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MatchingSignalsQuery, MatchingSignalsQueryVariables>(MatchingSignalsDocument, options);
+        }
+export type MatchingSignalsQueryHookResult = ReturnType<typeof useMatchingSignalsQuery>;
+export type MatchingSignalsLazyQueryHookResult = ReturnType<typeof useMatchingSignalsLazyQuery>;
+export type MatchingSignalsQueryResult = Apollo.QueryResult<MatchingSignalsQuery, MatchingSignalsQueryVariables>;
+export const TriggerMatchingSignalsDocument = gql`
+    query TriggerMatchingSignals($id: ID!) {
+  trigger(id: $id) {
+    id
+    matchingSignals(limit: 20) {
+      ...ListSignal
+    }
+  }
+}
+    ${ListSignalFragmentDoc}`;
+
+/**
+ * __useTriggerMatchingSignalsQuery__
+ *
+ * To run a query within a React component, call `useTriggerMatchingSignalsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTriggerMatchingSignalsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTriggerMatchingSignalsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTriggerMatchingSignalsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TriggerMatchingSignalsQuery, TriggerMatchingSignalsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TriggerMatchingSignalsQuery, TriggerMatchingSignalsQueryVariables>(TriggerMatchingSignalsDocument, options);
+      }
+export function useTriggerMatchingSignalsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TriggerMatchingSignalsQuery, TriggerMatchingSignalsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TriggerMatchingSignalsQuery, TriggerMatchingSignalsQueryVariables>(TriggerMatchingSignalsDocument, options);
+        }
+export type TriggerMatchingSignalsQueryHookResult = ReturnType<typeof useTriggerMatchingSignalsQuery>;
+export type TriggerMatchingSignalsLazyQueryHookResult = ReturnType<typeof useTriggerMatchingSignalsLazyQuery>;
+export type TriggerMatchingSignalsQueryResult = Apollo.QueryResult<TriggerMatchingSignalsQuery, TriggerMatchingSignalsQueryVariables>;
 export const SignalDeclarationsDocument = gql`
     query SignalDeclarations($identifier: String) {
   signalDeclarations(identifier: $identifier) {
@@ -14664,158 +15379,6 @@ export function useDependencyTreeLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type DependencyTreeQueryHookResult = ReturnType<typeof useDependencyTreeQuery>;
 export type DependencyTreeLazyQueryHookResult = ReturnType<typeof useDependencyTreeLazyQuery>;
 export type DependencyTreeQueryResult = Apollo.QueryResult<DependencyTreeQuery, DependencyTreeQueryVariables>;
-export const ListDescriptorsDocument = gql`
-    query ListDescriptors($filters: StructureDescriptorFilter, $ordering: [StructureDescriptorOrder!] = [], $pagination: OffsetPaginationInput) {
-  descriptors(filters: $filters, ordering: $ordering, pagination: $pagination) {
-    ...ListDescriptor
-  }
-}
-    ${ListDescriptorFragmentDoc}`;
-
-/**
- * __useListDescriptorsQuery__
- *
- * To run a query within a React component, call `useListDescriptorsQuery` and pass it any options that fit your needs.
- * When your component renders, `useListDescriptorsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListDescriptorsQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      ordering: // value for 'ordering'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useListDescriptorsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListDescriptorsQuery, ListDescriptorsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListDescriptorsQuery, ListDescriptorsQueryVariables>(ListDescriptorsDocument, options);
-      }
-export function useListDescriptorsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListDescriptorsQuery, ListDescriptorsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListDescriptorsQuery, ListDescriptorsQueryVariables>(ListDescriptorsDocument, options);
-        }
-export type ListDescriptorsQueryHookResult = ReturnType<typeof useListDescriptorsQuery>;
-export type ListDescriptorsLazyQueryHookResult = ReturnType<typeof useListDescriptorsLazyQuery>;
-export type ListDescriptorsQueryResult = Apollo.QueryResult<ListDescriptorsQuery, ListDescriptorsQueryVariables>;
-export const GetDescriptorDocument = gql`
-    query GetDescriptor($id: ID!) {
-  descriptor(id: $id) {
-    ...Descriptor
-  }
-}
-    ${DescriptorFragmentDoc}`;
-
-/**
- * __useGetDescriptorQuery__
- *
- * To run a query within a React component, call `useGetDescriptorQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetDescriptorQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetDescriptorQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetDescriptorQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetDescriptorQuery, GetDescriptorQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetDescriptorQuery, GetDescriptorQueryVariables>(GetDescriptorDocument, options);
-      }
-export function useGetDescriptorLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetDescriptorQuery, GetDescriptorQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetDescriptorQuery, GetDescriptorQueryVariables>(GetDescriptorDocument, options);
-        }
-export type GetDescriptorQueryHookResult = ReturnType<typeof useGetDescriptorQuery>;
-export type GetDescriptorLazyQueryHookResult = ReturnType<typeof useGetDescriptorLazyQuery>;
-export type GetDescriptorQueryResult = Apollo.QueryResult<GetDescriptorQuery, GetDescriptorQueryVariables>;
-export const ListHostedStructuresDocument = gql`
-    query ListHostedStructures($filters: HostedStructureFilter, $ordering: [HostedStructureOrder!] = [], $pagination: OffsetPaginationInput) {
-  hostedStructures(
-    filters: $filters
-    ordering: $ordering
-    pagination: $pagination
-  ) {
-    ...ListHostedStructure
-  }
-}
-    ${ListHostedStructureFragmentDoc}`;
-
-/**
- * __useListHostedStructuresQuery__
- *
- * To run a query within a React component, call `useListHostedStructuresQuery` and pass it any options that fit your needs.
- * When your component renders, `useListHostedStructuresQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListHostedStructuresQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      ordering: // value for 'ordering'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useListHostedStructuresQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListHostedStructuresQuery, ListHostedStructuresQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListHostedStructuresQuery, ListHostedStructuresQueryVariables>(ListHostedStructuresDocument, options);
-      }
-export function useListHostedStructuresLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListHostedStructuresQuery, ListHostedStructuresQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListHostedStructuresQuery, ListHostedStructuresQueryVariables>(ListHostedStructuresDocument, options);
-        }
-export type ListHostedStructuresQueryHookResult = ReturnType<typeof useListHostedStructuresQuery>;
-export type ListHostedStructuresLazyQueryHookResult = ReturnType<typeof useListHostedStructuresLazyQuery>;
-export type ListHostedStructuresQueryResult = Apollo.QueryResult<ListHostedStructuresQuery, ListHostedStructuresQueryVariables>;
-export const GetHostedStructureDocument = gql`
-    query GetHostedStructure($id: ID!) {
-  hostedStructure(id: $id) {
-    ...ListHostedStructure
-    structure {
-      ...Structure
-    }
-  }
-}
-    ${ListHostedStructureFragmentDoc}
-${StructureFragmentDoc}`;
-
-/**
- * __useGetHostedStructureQuery__
- *
- * To run a query within a React component, call `useGetHostedStructureQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetHostedStructureQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetHostedStructureQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetHostedStructureQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetHostedStructureQuery, GetHostedStructureQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetHostedStructureQuery, GetHostedStructureQueryVariables>(GetHostedStructureDocument, options);
-      }
-export function useGetHostedStructureLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetHostedStructureQuery, GetHostedStructureQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetHostedStructureQuery, GetHostedStructureQueryVariables>(GetHostedStructureDocument, options);
-        }
-export type GetHostedStructureQueryHookResult = ReturnType<typeof useGetHostedStructureQuery>;
-export type GetHostedStructureLazyQueryHookResult = ReturnType<typeof useGetHostedStructureLazyQuery>;
-export type GetHostedStructureQueryResult = Apollo.QueryResult<GetHostedStructureQuery, GetHostedStructureQueryVariables>;
 export const SearchMemoryDrawerDocument = gql`
     query SearchMemoryDrawer($search: String, $implementation: ID, $values: [ID!], $identifier: String, $pagination: OffsetPaginationInput) {
   options: memoryDrawers(
@@ -15952,76 +16515,6 @@ export function useListResolutionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
 export type ListResolutionsQueryHookResult = ReturnType<typeof useListResolutionsQuery>;
 export type ListResolutionsLazyQueryHookResult = ReturnType<typeof useListResolutionsLazyQuery>;
 export type ListResolutionsQueryResult = Apollo.QueryResult<ListResolutionsQuery, ListResolutionsQueryVariables>;
-export const ServicesDocument = gql`
-    query Services($name: String) {
-  services(name: $name) {
-    ...Service
-  }
-}
-    ${ServiceFragmentDoc}`;
-
-/**
- * __useServicesQuery__
- *
- * To run a query within a React component, call `useServicesQuery` and pass it any options that fit your needs.
- * When your component renders, `useServicesQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useServicesQuery({
- *   variables: {
- *      name: // value for 'name'
- *   },
- * });
- */
-export function useServicesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ServicesQuery, ServicesQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ServicesQuery, ServicesQueryVariables>(ServicesDocument, options);
-      }
-export function useServicesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ServicesQuery, ServicesQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ServicesQuery, ServicesQueryVariables>(ServicesDocument, options);
-        }
-export type ServicesQueryHookResult = ReturnType<typeof useServicesQuery>;
-export type ServicesLazyQueryHookResult = ReturnType<typeof useServicesLazyQuery>;
-export type ServicesQueryResult = Apollo.QueryResult<ServicesQuery, ServicesQueryVariables>;
-export const GetServiceDocument = gql`
-    query GetService($id: ID!) {
-  service(id: $id) {
-    ...Service
-  }
-}
-    ${ServiceFragmentDoc}`;
-
-/**
- * __useGetServiceQuery__
- *
- * To run a query within a React component, call `useGetServiceQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetServiceQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetServiceQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetServiceQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetServiceQuery, GetServiceQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetServiceQuery, GetServiceQueryVariables>(GetServiceDocument, options);
-      }
-export function useGetServiceLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetServiceQuery, GetServiceQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetServiceQuery, GetServiceQueryVariables>(GetServiceDocument, options);
-        }
-export type GetServiceQueryHookResult = ReturnType<typeof useGetServiceQuery>;
-export type GetServiceLazyQueryHookResult = ReturnType<typeof useGetServiceLazyQuery>;
-export type GetServiceQueryResult = Apollo.QueryResult<GetServiceQuery, GetServiceQueryVariables>;
 export const ShortcutsDocument = gql`
     query Shortcuts($pagination: OffsetPaginationInput, $filters: ShortcutFilter, $ordering: [ShortcutOrder!]) {
   shortcuts(ordering: $ordering, pagination: $pagination, filters: $filters) {
@@ -17060,6 +17553,110 @@ export function useWatchAgentsSubscription(baseOptions?: ApolloReactHooks.Subscr
       }
 export type WatchAgentsSubscriptionHookResult = ReturnType<typeof useWatchAgentsSubscription>;
 export type WatchAgentsSubscriptionResult = Apollo.SubscriptionResult<WatchAgentsSubscription>;
+export const WatchSchedulesDocument = gql`
+    subscription WatchSchedules {
+  schedules {
+    create {
+      ...RuleChange
+    }
+    update {
+      ...RuleChange
+    }
+    delete
+  }
+}
+    ${RuleChangeFragmentDoc}`;
+
+/**
+ * __useWatchSchedulesSubscription__
+ *
+ * To run a query within a React component, call `useWatchSchedulesSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchSchedulesSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchSchedulesSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchSchedulesSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchSchedulesSubscription, WatchSchedulesSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchSchedulesSubscription, WatchSchedulesSubscriptionVariables>(WatchSchedulesDocument, options);
+      }
+export type WatchSchedulesSubscriptionHookResult = ReturnType<typeof useWatchSchedulesSubscription>;
+export type WatchSchedulesSubscriptionResult = Apollo.SubscriptionResult<WatchSchedulesSubscription>;
+export const WatchTriggersDocument = gql`
+    subscription WatchTriggers {
+  triggers {
+    create {
+      ...RuleChange
+    }
+    update {
+      ...RuleChange
+    }
+    delete
+  }
+}
+    ${RuleChangeFragmentDoc}`;
+
+/**
+ * __useWatchTriggersSubscription__
+ *
+ * To run a query within a React component, call `useWatchTriggersSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchTriggersSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchTriggersSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchTriggersSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchTriggersSubscription, WatchTriggersSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchTriggersSubscription, WatchTriggersSubscriptionVariables>(WatchTriggersDocument, options);
+      }
+export type WatchTriggersSubscriptionHookResult = ReturnType<typeof useWatchTriggersSubscription>;
+export type WatchTriggersSubscriptionResult = Apollo.SubscriptionResult<WatchTriggersSubscription>;
+export const WatchSignalsDocument = gql`
+    subscription WatchSignals {
+  signals {
+    create {
+      ...SignalChange
+    }
+    update {
+      ...SignalChange
+    }
+  }
+}
+    ${SignalChangeFragmentDoc}`;
+
+/**
+ * __useWatchSignalsSubscription__
+ *
+ * To run a query within a React component, call `useWatchSignalsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchSignalsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchSignalsSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchSignalsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchSignalsSubscription, WatchSignalsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchSignalsSubscription, WatchSignalsSubscriptionVariables>(WatchSignalsDocument, options);
+      }
+export type WatchSignalsSubscriptionHookResult = ReturnType<typeof useWatchSignalsSubscription>;
+export type WatchSignalsSubscriptionResult = Apollo.SubscriptionResult<WatchSignalsSubscription>;
 export const WatchProbeEventsDocument = gql`
     subscription WatchProbeEvents($probe: ID!) {
   probeEvents(probe: $probe) {

@@ -19,6 +19,7 @@ import { getPlatform } from "@/core/util/platform";
 import type { Settings } from "@/core/settings/store/validator";
 import { Minus, Plus } from "lucide-react";
 import { useFormContext, useWatch } from "react-hook-form";
+import { BackdropFields } from "../components/BackdropFields";
 import { ColorModeField } from "../components/ColorModeField";
 import { SettingsForm } from "../components/SettingsForm";
 import { SettingsPage } from "../components/SettingsPage";
@@ -159,17 +160,16 @@ export const AppearancePage = () => (
         </CardContent>
       </Card>
 
-      {canDrawGlass() && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Sidebar</CardTitle>
-            <CardDescription>How the rail sits over your desktop.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <GlassFields />
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Sidebar</CardTitle>
+          <CardDescription>What is behind the rail and around the page: your desktop, a backdrop, or both.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {canDrawGlass() && <GlassFields />}
+          <BackdropFields />
+        </CardContent>
+      </Card>
     </SettingsForm>
   </SettingsPage>
 );

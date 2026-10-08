@@ -67,7 +67,7 @@ const CategoryPage = asDetailQueryRoute(useGetCategoryQuery, ({ data }) => {
               collapse="icon"
               priority={-10}
               icon={<PiggyBank className="h-4 w-4" />}
-              onClick={() => openDialog("bankcreatebudget", { category: category.id }, { size: "small" })}
+              onClick={() => openDialog("bankcreatebudget", { category: category.id }, { size: "medium" })}
             >
               Set budget
             </PageAction>
@@ -78,7 +78,7 @@ const CategoryPage = asDetailQueryRoute(useGetCategoryQuery, ({ data }) => {
             priority={-20}
             icon={<FolderPlus className="h-4 w-4" />}
             onClick={() =>
-              openDialog("bankcreatecategory", { parent: category.id, kind: category.kind }, { size: "small" })
+              openDialog("bankcreatecategory", { parent: category.id, kind: category.kind }, { size: "medium" })
             }
           >
             Add subcategory

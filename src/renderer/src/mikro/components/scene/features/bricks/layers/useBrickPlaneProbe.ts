@@ -14,7 +14,7 @@ import {
   resolveVoxelIndex,
   type AxisSelection,
 } from "../../../platform/coords/selection";
-import { createRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
+import { createLeadingRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import { effectiveProbeLayerId, layerAnswersProbe } from "../../../platform/probe/probeTargeting";
 import type { ProbeOrigin, ProbeResult } from "../../../platform/probe/probeTypes";
 import {
@@ -102,24 +102,24 @@ export const useBrickPlaneProbe = ({
   // The handler PROPS below are the raycast gate (P20), so the consuming
   // component must re-render when the gate's inputs change — which it does,
   // because these are store subscriptions read here.
+  const annotating = interactionMode === "ANNOTATE";
   const gate: ProbeGateInput = {
     interactionMode,
     probeFollowsCursor,
-    // The 2D plane never probes for ANNOTATE, so the armed tool cannot change
-    // its answer — no `activeTool` subscription needed here.
-    drawingToolActive: false,
-    // Deliberately false: in 2D the RoiDrawer's own interaction plane drives
-    // the rubber band, and a second hover probe would only fight it for the
-    // event. The 3D volume is the one that must answer (no draw plane inside a
-    // volume) — see platform/probe/probeGating.ts.
-    annotateProbes: false,
+    // HOVER only, and for every ANNOTATE tool (so no `activeTool`
+    // subscription, and no further edge into features/annotations): the cross
+    // keeps following the pointer as a placement cursor. The RoiDrawer's own
+    // interaction plane still drives the rubber band and takes every click —
+    // this plane neither stops the move (below) nor arms a click for ANNOTATE.
+    drawingToolActive: true,
+    annotateProbes: true,
   };
   const hoverEnabled = hoverProbeEnabled(gate);
   // DESIGN's click tools reach the 2D plane too — the label LIFT clicks here,
   // because the 3D label raymarcher answers no probe at all.
   const designClick =
     interactionMode === "DESIGN" && designTool != null && DESIGN_TOOL_GESTURES[designTool] === "volume-click";
-  const clickEnabled = clickProbeEnabled(gate) || designClick;
+  const clickEnabled = clickProbeEnabled({ ...gate, annotateProbes: false }) || designClick;
   const { createPointAnnotation } = useCreateSceneAnnotation();
   const brushApi = useBrushSkeletonStoreApi();
 
@@ -299,9 +299,9 @@ export const useBrickPlaneProbe = ({
         worldPos: [points.world.x, points.world.y, points.world.z],
         strategy: "plane",
         origin,
-        // Always a measurement: the 2D plane does not answer ANNOTATE hover
-        // (the RoiDrawer's own plane does) — see platform/probe/probeGating.ts.
-        purpose: "readout",
+        // In ANNOTATE the probe is the drawer's cursor, not a measurement — the
+        // HUD and the attribute plans skip it (platform/probe/probeTypes.ts).
+        purpose: annotating ? "placement" : "readout",
         values: resident
           ? resident.values.map((value, channel) => ({ channel, value }))
           : Array.from({ length: channelCount }, (_, channel) => ({ channel, value: null })),
@@ -319,8 +319,12 @@ export const useBrickPlaneProbe = ({
         origin === "hover" &&
         !save &&
         currentProbe?.layerId === nextProbe.layerId &&
+        // Leaving ANNOTATE on the same voxel must turn the cursor back into a readout.
+        currentProbe.purpose === nextProbe.purpose &&
         currentProbe.voxelIndex.every((v, i) => v === nextProbe.voxelIndex[i])
       ) {
+        // Same voxel, but the hit still moved inside it: the marker follows.
+        viewerStoreApi.getState().setProbeCursorWorld([points.world.x, points.world.y, points.world.z]);
         return;
       }
 
@@ -334,15 +338,17 @@ export const useBrickPlaneProbe = ({
       pool,
       brickSystem,
       planTargetLevel,
+      annotating,
       resolveProbeGeometryContext,
       viewerStoreApi,
       createPointAnnotation,
     ],
   );
 
-  // Pointermove storms coalesce to ≤1 probe per frame (see BrickVolumeLayer):
-  // event-time thunks close over fresh props; only the newest runs per frame.
-  const probeCoalescer = useMemo(() => createRafCoalescer<() => void>((run) => run()), []);
+  // Pointermove storms coalesce to ≤1 probe per frame, leading (see
+  // BrickVolumeLayer): the first move of a frame probes inside the event;
+  // later ones are event-time thunks and only the newest runs.
+  const probeCoalescer = useMemo(() => createLeadingRafCoalescer<() => void>((run) => run()), []);
   useEffect(() => () => probeCoalescer.cancel(), [probeCoalescer]);
 
   const handlers: BrickPlaneProbeHandlers = {
@@ -355,7 +361,9 @@ export const useBrickPlaneProbe = ({
           if (!answersProbe()) return;
           const group = groupRef.current;
           if (!group) return;
-          event.stopPropagation();
+          // Not in ANNOTATE: the drawer's plane needs the same move for its
+          // rubber band, whichever of the two the ray reaches first.
+          if (!annotating) event.stopPropagation();
           const world = event.point.clone();
           const local = group.worldToLocal(world.clone());
           probeCoalescer.schedule(() =>
@@ -380,7 +388,7 @@ export const useBrickPlaneProbe = ({
           const local = group.worldToLocal(world.clone());
           if (designClick && designTool) {
             // One probed click IS the whole design gesture on the plane
-            // (lift/wand/blob/bridge): hand it to the brush store, whose
+            // (seed/lift/bridge): hand it to the brush store, whose
             // release runs the tool (`useBrushSkeleton.extract`).
             const voxel = baseVoxelAt(local);
             if (!voxel) return;

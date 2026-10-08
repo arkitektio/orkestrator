@@ -42,7 +42,7 @@ const KINDS: { value: Kind; label: string; hint: string }[] = [
  * and the pickers below query elektro on mount.
  */
 export const AddExperimentLayerForm = (props: AddExperimentLayerFormProps) => (
-  <ElektroGuard unavailable={<div className="p-4 text-sm">Elektro is not available.</div>}>
+  <ElektroGuard fallback={<div className="p-4 text-sm">Elektro is not available.</div>}>
     <AddExperimentLayer {...props} />
   </ElektroGuard>
 );

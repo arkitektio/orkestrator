@@ -10,7 +10,6 @@ import { annotationHoverEnabled } from "../../../platform/probe/probeGating";
 import { useModeStore } from "../../../platform/stores/modeStore";
 import { useSceneStore, useSceneStoreApi } from "../../../platform/stores/sceneStore";
 import { useViewerStore } from "../../../platform/stores/viewerStore";
-import { useViewStoreApi } from "../../../platform/stores/viewStore";
 import {
   isAnnotationInView,
   sceneCoverages,
@@ -32,11 +31,14 @@ import {
   sectionedInteriorTriangles,
   staticInteriorTriangles,
 } from "../interiorBatch";
+import { sceneAnnotationsVariables } from "../annotationCache";
 import { prunedSelections, repairedSelections } from "../selectionRepair";
+import { useLiveSceneAnnotations } from "../useLiveSceneAnnotations";
 import { isDrawingTool, useRoiDrawingStore } from "../roiDrawingStore";
 import {
   useRoiSelectionStore,
   useRoiSelectionStoreApi,
+  type HoverPoint,
   type SelectedRoi,
 } from "../roiSelectionStore";
 import { AnnotationInteriorBatch } from "./AnnotationInteriorBatch";
@@ -61,9 +63,10 @@ import {
  * the one placement question with an answer here (COORDINATE_SYSTEMS.md §0).
  *
  * ## The cadence contract (what each event is allowed to cost)
- * - **5 s poll, unchanged data**: nothing — Apollo preserves the root array
- *   identity, every memo skips.
- * - **poll delta / draw / delete**: re-place ONLY the changed rows
+ * - **nothing happened**: nothing. The list is fetched once and never polled;
+ *   it changes only when a draw, a delete or (layer set to "live") a
+ *   subscription event is written into its cache entry (`annotationCache.ts`).
+ * - **draw / delete / live event**: re-place ONLY the changed rows
  *   (`placedAnnotations`' per-row cache keeps every other entry, and with it
  *   every other `AnnotationShape`'s memo).
  * - **z-scrub tick** (pointer cadence): re-filter `shown`; the SECTIONED
@@ -77,14 +80,24 @@ import {
 export const AnnotationLayerRenderer = ({ layerId }: { layerId: string }) => {
   const layer = useSceneStore((s) => s.sceneLayers.find((candidate) => candidate.id === layerId));
   if (!layer || layer.__typename !== "AnnotationLayer") return null;
-  if (!layer.annotationCollection || layer.visible === false) return null;
+  const collection = layer.annotationCollection;
+  if (!collection) return null;
   return (
-    <AnnotationCollectionGroup
-      layer={layer}
-      collection={layer.annotationCollection}
-      layerId={layerId}
-    />
+    <>
+      {/* Outside the visibility gate: a hidden live layer keeps its list (and
+          with it the card's counts and the panel) current. */}
+      {layer.liveAnnotations && <LiveAnnotations collectionId={collection.id} />}
+      {layer.visible !== false && (
+        <AnnotationCollectionGroup layer={layer} collection={collection} layerId={layerId} />
+      )}
+    </>
   );
+};
+
+/** Mounted only while the layer is set to "live" — see the hook. */
+const LiveAnnotations = ({ collectionId }: { collectionId: string }) => {
+  useLiveSceneAnnotations(collectionId);
+  return null;
 };
 
 const AnnotationCollectionGroup = ({
@@ -122,18 +135,17 @@ const AnnotationCollectionGroup = ({
   const clearVisibleLayerRois = useRoiSelectionStore((s) => s.clearVisibleLayerRois);
   const hoverRoi = useRoiSelectionStore((s) => s.hoverRoi);
   const unhoverRoi = useRoiSelectionStore((s) => s.unhoverRoi);
+  // The hovered shape's id when it is THIS layer's, else null: a primitive, so
+  // a hover on another layer re-renders nothing here, and one on this layer
+  // re-renders it on enter/leave only (the highlight is a color-only pass).
+  const hoveredId = useRoiSelectionStore((s) =>
+    s.hoveredRoi?.layerId === layerId ? s.hoveredRoi.id : null,
+  );
   // A scalar (P17): only the drawing/not-drawing answer gates the hover.
   const drawingToolActive = useRoiDrawingStore((s) => isDrawingTool(s.activeTool));
 
-  const viewApi = useViewStoreApi();
   const { data } = useGetSceneAnnotationsQuery({
-    variables: {
-      filters: { collection: collection.id },
-    },
-    pollInterval: 5000,
-    // A poll landing mid-gesture re-renders and re-diffs the whole annotation
-    // subtree while the user is dragging; skip those attempts.
-    skipPollAttempt: () => viewApi.getState().cameraMoving,
+    variables: sceneAnnotationsVariables(collection.id),
   });
 
   const affineMatrix = useMemo(
@@ -184,7 +196,7 @@ const AnnotationCollectionGroup = ({
   }, [affineInverse, plane]);
 
   /**
-   * Every shape placed in the world once — cached PER ROW, so a poll delta
+   * Every shape placed in the world once — cached PER ROW, so a list change
    * re-places only what changed and everything downstream keeps identity.
    */
   const placed = useMemo(
@@ -275,7 +287,10 @@ const AnnotationCollectionGroup = ({
 
   // Called per pointer move over a shape; the store dedupes by id, so the
   // state (and anything subscribed) changes on enter/leave only.
-  const onHoverRoi = useCallback((roi: SelectedRoi) => hoverRoi(roi), [hoverRoi]);
+  const onHoverRoi = useCallback(
+    (roi: SelectedRoi, point: HoverPoint) => hoverRoi(roi, point),
+    [hoverRoi],
+  );
   const onUnhoverRoi = useCallback((roiId: string) => unhoverRoi(roiId), [unhoverRoi]);
 
   const selectable = interactionMode !== "PROBE";
@@ -366,6 +381,7 @@ const AnnotationCollectionGroup = ({
           key={batch.lineWidth}
           batch={batch}
           selectedIds={selectedRoiIds}
+          hoveredId={hoveredId}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
           hoverable={hoverable}
@@ -378,6 +394,7 @@ const AnnotationCollectionGroup = ({
           key={`sectioned:${batch.lineWidth}`}
           batch={batch}
           selectedIds={selectedRoiIds}
+          hoveredId={hoveredId}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
           hoverable={hoverable}
@@ -416,6 +433,7 @@ const AnnotationCollectionGroup = ({
           roi={roi}
           flattenToPlane={flattenToPlane}
           isActive={selectedRoiIds.has(annotation.id)}
+          isHovered={hoveredId === annotation.id}
           selectable={selectable}
           onSelectRoi={onSelectRoi}
           hoverable={hoverable}

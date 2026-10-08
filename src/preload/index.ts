@@ -157,6 +157,7 @@ const api = {
     includeScreenshot?: boolean;
     labels?: string[];
     template?: string;
+    hardware?: string[];
   }) => ipcRenderer.invoke("arkitekt.reportIssue", opts),
   openFilePicker: () => ipcRenderer.invoke("dialog:openFile"),
   uploadBigFile: (opts: { uploadId: string; path: string; grant: any; endpointUrl: string }) => ipcRenderer.invoke("upload:bigFile", opts),
@@ -165,6 +166,10 @@ const api = {
   cancelBigFileDownload: (opts: { downloadId: string; }) => ipcRenderer.invoke("download:cancel", opts),
   showItemInFolder: (path: string) => ipcRenderer.invoke("shell:showItemInFolder", { path }),
   openPath: (path: string) => ipcRenderer.invoke("shell:openPath", { path }),
+  hardware: {
+    /** What GPU and how much memory this computer has (main's HardwareService). */
+    probe: () => ipcRenderer.invoke("hardware:probe"),
+  },
   onDownloadProgress: (downloadId: string, cb: (data: any) => void) => {
     const channel = `download-progress-${downloadId}`;
     const listener = (_e: any, data: any) => cb(data);

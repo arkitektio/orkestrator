@@ -10,6 +10,9 @@
    the rail is for that to show. Components opt out of their fill with `glass:`
    the way they opt into dark colours with `dark:`. */
 @custom-variant glass (&:is(.rail-glass *));
+/* A backdrop is painted behind the rail (`RailBackdrop`): what would cover it
+   with an opaque fill steps aside with `railbg:`. */
+@custom-variant railbg (&:is(.rail-backdrop *));
 @custom-variant selected (&[data-selected="true"]);
 @custom-variant b-selected (&[data-bselected="true"]);
 @custom-variant over (&[data-over="true"]);
@@ -102,6 +105,34 @@
   animation: mark-ping 1.1s ease-out 2 both;
 }
 
+/* A submit button whose run was refused: a short sideways jiggle, the "no" of
+ * a login field. One shot; the form sets the class and drops it when it ends. */
+@keyframes refuse-shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  12% { transform: translateX(-10px) rotate(-3deg); }
+  28% { transform: translateX(10px) rotate(3deg); }
+  44% { transform: translateX(-8px) rotate(-2deg); }
+  60% { transform: translateX(8px) rotate(2deg); }
+  76% { transform: translateX(-4px) rotate(-1deg); }
+  90% { transform: translateX(3px) rotate(0); }
+}
+
+/* The reason arriving beside that button: it slides in from the button's side
+ * and settles, so the eye is led from the jiggle to the sentence. */
+@keyframes refuse-reason {
+  from { opacity: 0; transform: translateX(16px); }
+  60% { opacity: 1; transform: translateX(-3px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@utility animate-refuse-shake {
+  animation: refuse-shake 600ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@utility animate-refuse-reason {
+  animation: refuse-reason 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 /* Cards entering a `ContainerGrid`: each fades in and rises a few pixels, the
  * first ones a beat apart so a page of cards arrives as a wave rather than a
  * flash. CSS on purpose — it plays once when the node is inserted and then
@@ -142,6 +173,12 @@
   }
   @keyframes mark-ping {
     from, to { opacity: 0; }
+  }
+  @keyframes refuse-shake {
+    from, to { transform: none; }
+  }
+  @keyframes refuse-reason {
+    from, to { opacity: 1; transform: none; }
   }
   @keyframes grid-item-enter {
     from, to { opacity: 1; transform: none; }
@@ -186,14 +223,18 @@
   --brand-chroma: 0.20962;
 
   /* Base Neutrals */
-  --background: oklch(1 0 0);
-  --backgroundpaired: oklch(26.448% 0.005 var(--brand-hue));
+  /* Off-white, not white: the page is the quiet surface, and what sits on it
+     (cards, menus) is the brighter one. `backgroundpaired` is where the page
+     gradient ends, a faint tint toward the corner; it must stay LIGHT here
+     (a dark one made every light page fade to charcoal). */
+  --background: oklch(0.972 0.004 var(--brand-hue));
+  --backgroundpaired: oklch(0.93 0.012 var(--brand-hue));
   --foreground: oklch(0.145 0.005 var(--brand-hue));
 
   /* Surfaces */
-  --card: var(--background);
+  --card: oklch(0.993 0.002 var(--brand-hue));
   --card-foreground: var(--foreground);
-  --popover: var(--background);
+  --popover: var(--card);
   --popover-foreground: var(--foreground);
 
   /* Primary Colors */
@@ -202,17 +243,17 @@
   --primary-foreground: oklch(0.98 0.02 var(--brand-hue));
 
   /* Secondary & Accents */
-  --secondary: oklch(0.967 0.005 var(--brand-hue));
+  --secondary: oklch(0.935 0.006 var(--brand-hue));
   --secondary-foreground: oklch(0.21 0.006 var(--brand-hue));
-  --muted: oklch(0.97 0.002 var(--brand-hue));
-  --muted-foreground: oklch(0.556 0.01 var(--brand-hue));
-  --accent: oklch(0.97 0.01 var(--brand-hue));
+  --muted: oklch(0.94 0.004 var(--brand-hue));
+  --muted-foreground: oklch(0.5 0.01 var(--brand-hue));
+  --accent: oklch(0.93 0.012 var(--brand-hue));
   --accent-foreground: oklch(0.205 0.01 var(--brand-hue));
 
   /* Interactive & Status */
   --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.922 0.005 var(--brand-hue));
-  --input: oklch(0.922 0.005 var(--brand-hue));
+  --border: oklch(0.885 0.006 var(--brand-hue));
+  --input: oklch(0.885 0.006 var(--brand-hue));
   --ring: oklch(from var(--primary) 0.708 calc(c * 0.5) h);
 
   /* Charts */
@@ -225,7 +266,7 @@
   --radius: 0.625rem;
 
   /* Sidebar */
-  --sidebar: oklch(0.985 0.002 var(--brand-hue));
+  --sidebar: oklch(0.948 0.006 var(--brand-hue));
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);

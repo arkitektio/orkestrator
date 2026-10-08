@@ -8,7 +8,6 @@ import {
 } from "@/rekuest/api/graphql";
 import { useImplementationAction } from "../hooks/useImplementationAction";
 import { usePortForm } from "@/core/ports/engine/usePortForm";
-import { toast } from "@/core/notify";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { Form } from "@/core/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
@@ -19,6 +18,7 @@ import { ReturnsContainer } from "@/core/ports/widgets/returns/ReturnsContainer"
 import { portToLabel } from "@/core/ports/engine/utils";
 import { ResolutionGraph } from "../components/global/ResolutionGraph";
 import { REKUEST_HELP } from "../help";
+import { notifyAssignError } from "../lib/assignError";
 
 export const DoForm = ({ id, resolution }: { id: string, resolution: string }) => {
   const { assign, latestTask, implementation } = useImplementationAction({
@@ -39,7 +39,7 @@ export const DoForm = ({ id, resolution }: { id: string, resolution: string }) =
     })).then(
       () => {},
       (error) => {
-        toast.error(error.message);
+        notifyAssignError(error, { id: `assign:${id}` });
       },
     );
   };

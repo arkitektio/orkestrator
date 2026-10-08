@@ -156,3 +156,20 @@ fragment DetailLens on Lens {
     shape
   }
 }
+
+# One row of the lens list. A lens borrows its dataset's name, and `lensLabel`
+# needs the slices and the dataset's axes to tell two lenses of it apart.
+fragment ListLens on Lens {
+  id
+  shape
+  axisNames
+  slices {
+    ...DimSlice
+  }
+  dataset {
+    id
+    name
+    axisNames
+    shape
+  }
+}

@@ -32,6 +32,8 @@ import type { MeshProbeResult } from "../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
 import { Loader2, RefreshCw, Unplug } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { StatusPage, type StatusDetail } from "./StatusPage";
+import { BackButton, HomeButton } from "./statusActions";
 
 /**
  * What a module page shows when its backend service is not ready.
@@ -99,6 +101,8 @@ export type ServiceStatusPanelProps = {
   doctor?: { status: DoctorStatus; report?: DoctorReport; error?: string };
   /** Rows for a diagram part's findings; without it the parts do not expand. */
   renderFindings?: (findings: Finding[]) => React.ReactNode;
+  /** Ways out when there is nothing to retry (the service is not installed). */
+  leaveActions?: React.ReactNode;
 };
 
 /**
@@ -121,6 +125,7 @@ export const ServiceStatusPanel = ({
   onTailscaleAnswer,
   doctor,
   renderFindings,
+  leaveActions,
 }: ServiceStatusPanelProps) => {
   const [retrying, setRetrying] = useState(false);
   const name = state?.definition.name ?? serviceKey;
@@ -135,49 +140,41 @@ export const ServiceStatusPanel = ({
     }
   };
 
-  const page = (busy: boolean, children: React.ReactNode) => (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-busy={busy}
-      // Centred while it fits; once the diagram outgrows the tab it scrolls
-      // from the top instead of being cut off at both ends (`my-auto` on the
-      // column, rather than `justify-center` here).
-      className="flex h-full w-full flex-col items-center overflow-y-auto bg-radial-[at_100%_100%] from-background to-backgroundpaired px-4"
-    >
-      <div className="my-auto flex w-full max-w-3xl flex-col items-center gap-4 py-6 text-center">{children}</div>
-    </div>
-  );
+  const facts: StatusDetail[] = [{ label: "Service", value: serviceKey, mono: true }];
+  if (hubName && hubName !== deployment?.name) facts.push({ label: "Hub", value: hubName });
 
   if (!state || state.status === "unconfigured") {
-    return page(
-      false,
-      <>
-        <Unplug className="size-8 text-muted-foreground" aria-hidden />
-        <h1 className="text-lg font-semibold">{name} is not part of this deployment</h1>
-        <p className="max-w-md text-sm text-muted-foreground">
-          {deployment?.name ? (
-            <>The deployment <span className="font-medium">{deployment.name}</span> </>
-          ) : (
-            <>This deployment </>
-          )}
-          does not offer the <span className="font-mono">{serviceKey}</span> service, so this
-          module has nothing to talk to.
-        </p>
-      </>,
+    return (
+      <StatusPage
+        busy={false}
+        icon={Unplug}
+        eyebrow="Not installed"
+        title={`${name} is not part of this deployment`}
+        description={
+          <>
+            {deployment?.name ? (
+              <>The deployment <span className="font-medium">{deployment.name}</span> </>
+            ) : (
+              <>This deployment </>
+            )}
+            does not offer the <span className="font-mono">{serviceKey}</span> service, so this
+            module has nothing to talk to.
+          </>
+        }
+        hints={[
+          <>Another organization or hub may run it: switch from the account menu in the sidebar.</>,
+          <>Whoever runs this deployment can add the service to it.</>,
+        ]}
+        actions={leaveActions}
+        details={facts}
+      />
     );
   }
 
   if (state.status !== "invalid") {
     // Still trying its addresses. Nothing has failed, so there is nothing to
     // draw and nothing to explain: this is usually gone in a moment.
-    return page(
-      true,
-      <>
-        <Loader2 className="size-6 animate-spin text-muted-foreground motion-reduce:animate-none" aria-hidden />
-        <h1 className="text-lg font-semibold">Connecting to {name}</h1>
-      </>,
-    );
+    return <StatusPage busy icon={Loader2} spin title={`Connecting to ${name}`} />;
   }
 
   // Every address failed. Only now the picture, and the doctor behind it.
@@ -204,36 +201,52 @@ export const ServiceStatusPanel = ({
   // the live state is all there is, and that is drawn as it is.
   const diagnosing = !!doctor && (doctor.status === "idle" || doctor.status === "running");
 
-  return page(
-    diagnosing,
-    <>
-      {/* What happened first, then the looking into it, in the order they
-          occur: the heading stays put while the picture arrives under it. */}
-      <h1 className="text-lg font-semibold">Couldn&apos;t reach {subject}</h1>
-      <ConnectionDiagram
-        diagram={diagram}
-        pending={diagnosing}
-        renderFindings={renderFindings}
-        onTailscaleAnswer={onTailscaleAnswer}
-      />
-      <div className="max-w-md space-y-1 text-sm text-muted-foreground">
-        {diagnosing ? null : doctor?.status === "error" ? (
-          <p>The diagnosis itself failed{doctor.error ? `: ${doctor.error}` : "."}</p>
+  if (deployment?.name && !allDown) facts.push({ label: "Deployment", value: deployment.name });
+  if (state.alias) {
+    facts.push({ label: "Address", value: `${state.alias.host}${state.alias.port ? `:${state.alias.port}` : ""}`, mono: true });
+  }
+  if (checkedAt) facts.push({ label: "Last checked", value: checkedAt });
+
+  return (
+    <StatusPage
+      busy={diagnosing}
+      tone="destructive"
+      icon={Unplug}
+      eyebrow="Unreachable"
+      // What happened first, then the looking into it, in the order they
+      // occur: the heading stays put while the picture arrives under it.
+      title={`Couldn't reach ${subject}`}
+      description={
+        diagnosing ? null : doctor?.status === "error" ? (
+          <>The diagnosis itself failed{doctor.error ? `: ${doctor.error}` : "."}</>
         ) : verdict ? (
           // The likeliest reason, as one line. Everything else the check saw
           // is on the part it is about: hover it, or open the red one.
-          <p>{verdict.title}</p>
-        ) : null}
-        {checkedAt && <p className="text-xs text-muted-foreground/70">Last checked {checkedAt}</p>}
+          verdict.title
+        ) : null
+      }
+      actions={
+        <>
+          <Button size="lg" disabled={retrying} onClick={() => void retry(allDown)}>
+            <RefreshCw className={retrying ? "animate-spin motion-reduce:animate-none" : undefined} />
+            {allDown ? "Retry all services" : `Retry ${name}`}
+          </Button>
+          {doctor?.report && !diagnosing && <CopyReportButton report={doctor.report} />}
+        </>
+      }
+      details={facts}
+      technical={state.errors.length > 0 ? state.errors.join("\n") : null}
+    >
+      {/* Wider than the column of text: the diagram is the page here. */}
+      <div className="flex w-[min(48rem,calc(100cqw-2rem))] justify-center">
+        <ConnectionDiagram
+          diagram={diagram}
+          pending={diagnosing}
+          renderFindings={renderFindings}
+          onTailscaleAnswer={onTailscaleAnswer}
+        />
       </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        <Button size="sm" disabled={retrying} onClick={() => void retry(allDown)}>
-          <RefreshCw className={retrying ? "mr-2 size-3.5 animate-spin" : "mr-2 size-3.5"} />
-          {allDown ? "Retry all services" : `Retry ${name}`}
-        </Button>
-        {doctor?.report && !diagnosing && <CopyReportButton report={doctor.report} />}
-      </div>
-    </>,
+    </StatusPage>
   );
 };
 
@@ -310,6 +323,12 @@ const ConnectedPanel = ({ serviceKey, doctor }: { serviceKey: string; doctor: Co
       // What the doctor found about a part opens under the diagram when that
       // part is clicked, with whatever can be done about it.
       renderFindings={(findings) => <FindingList findings={findings} onRemedy={doctor.onRemedy} />}
+      leaveActions={
+        <>
+          <BackButton />
+          <HomeButton />
+        </>
+      }
     />
   );
 };

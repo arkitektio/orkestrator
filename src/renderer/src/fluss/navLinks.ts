@@ -1,4 +1,4 @@
-import { Home, Play, Workflow } from "lucide-react";
+import { GitBranch, Home, Play, Workflow } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
 
@@ -7,4 +7,5 @@ export const FLUSS_NAV_LINKS: NavLinkDecl[] = [
   { label: "Dashboard", route: "/fluss/home", keywords: ["workflows", "flows"], group: "Explore", icon: Home, home: true },
   { label: "Workspaces", route: "/fluss/workspaces", keywords: ["workflows", "flows"], group: "Explore", icon: Workflow, description: "Your workflow designs" },
   { label: "Runs", route: "/fluss/runs", keywords: ["executions"], group: "Explore", icon: Play, description: "Past and running flows" },
+  { label: "Flows", route: "/fluss/flows", keywords: ["workflows", "versions"], group: "Explore", icon: GitBranch, description: "Every saved flow" },
 ];

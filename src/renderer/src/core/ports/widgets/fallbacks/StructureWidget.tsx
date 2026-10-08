@@ -1,3 +1,4 @@
+import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
 import {
   FormControl,
   FormDescription,
@@ -26,7 +27,7 @@ export const StructureWidget = (props: InputWidgetProps) => {
       name={pathToName(props.path)}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{props.port.label || props.port.key}</FormLabel>
+          <FormLabel>{portLabel(props.port)}</FormLabel>
           <FormControl>
             <Input
               placeholder={`Id of the ${identifier ?? "structure"}`}
@@ -47,7 +48,7 @@ export const StructureWidget = (props: InputWidgetProps) => {
               className="text-foreground"
             />
           </FormControl>
-          <FormDescription>{props.port.description}</FormDescription>
+          <FormDescription>{portDescription(props.port, props.widget)}</FormDescription>
           <FormMessage />
         </FormItem>
       )}

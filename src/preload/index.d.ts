@@ -109,6 +109,7 @@ declare global {
         includeScreenshot?: boolean;
         labels?: string[];
         template?: string;
+        hardware?: string[];
       }) => Promise<void>;
       getNodeId: () => Promise<string>;
       factoryReset: () => Promise<void>;
@@ -148,6 +149,22 @@ declare global {
       cancelBigFileDownload: (opts: { downloadId: string }) => Promise<void>;
       showItemInFolder: (path: string) => Promise<void>;
       openPath: (path: string) => Promise<string>;
+      hardware: {
+        probe: () => Promise<{
+          probedAt: string;
+          totalRamMB: number;
+          gpus: {
+            vendor: string;
+            model: string;
+            vramMB: number | null;
+            vramDynamic: boolean;
+            driverVersion?: string | null;
+          }[];
+          cpu?: { brand: string; cores: number; physicalCores: number; speedGHz: number | null } | null;
+          os?: { platform: string; distro: string; release: string; kernel: string; arch: string } | null;
+          displays?: { width: number; height: number; refreshRate: number | null; main: boolean }[];
+        }>;
+      };
       onDownloadProgress: (downloadId: string, cb: (data: any) => void) => () => void;
       onDownloadError: (downloadId: string, cb: (data: any) => void) => () => void;
       onUploadProgress: (uploadId: string, cb: (data: any) => void) => () => void;

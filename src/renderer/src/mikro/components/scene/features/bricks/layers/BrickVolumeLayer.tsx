@@ -17,7 +17,7 @@ import {
   hoverProbeEnabled,
   type ProbeGateInput,
 } from "../../../platform/probe/probeGating";
-import { createRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
+import { createLeadingRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import {
   effectiveProbeLayerId,
   layerAnswersProbe,
@@ -231,15 +231,28 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
     interactionMode,
     probeFollowsCursor,
     drawingToolActive: isDrawingTool(activeTool),
-    // The skeleton brush and the smooth blob both work THROUGH this volume's
-    // probe march, so the volume is the one layer that arms for them.
-    brushToolActive: activeTool === "BRUSH" || activeTool === "BLOB",
+    // The skeleton brush (ANNOTATE) and the design tools that gesture on the
+    // data (DESIGN) work THROUGH this volume's probe march, so the volume is
+    // the one layer that arms for them.
+    brushToolActive:
+      interactionMode === "DESIGN"
+        ? designTool !== null && DESIGN_TOOL_GESTURES[designTool].startsWith("volume")
+        : activeTool === "BRUSH",
     designArmed: designTool !== null,
     // The volume answers ANNOTATE hover: inside a volume there is no draw
     // plane, so the probe IS the placement for every shape tool.
     annotateProbes: true,
   };
-  const hoverEnabled = hoverProbeEnabled(gate);
+  // DESIGN arms the MOVE handler only for stroke tools — it is what paints
+  // the drag — and never to publish a hover probe (see the handler). A click
+  // tool needs no move handler at all, so it stays out of the per-move
+  // raycast set: with a tool always selected, a hover march per pointer move
+  // was a standing main-thread cost for the whole mode.
+  const hoverEnabled = hoverProbeEnabled({
+    ...gate,
+    designArmed:
+      designTool !== null && DESIGN_TOOL_GESTURES[designTool] === "volume-stroke",
+  });
   const clickEnabled = clickProbeEnabled(gate);
 
   // Event-time resolution — fresh pin AND fresh layer list, no render
@@ -746,6 +759,8 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
       cur.strategy === probe.strategy &&
       cur.voxelIndex.every((v, i) => v === probe.voxelIndex[i])
     ) {
+      // Same voxel, but the hit still moved inside it: the marker follows.
+      if (probe.worldPos) state.setProbeCursorWorld(probe.worldPos);
       return;
     }
     state.setProbedCoordinate(probe);
@@ -754,10 +769,12 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
     if (save && probe.worldPos) createPointAnnotation(probe.worldPos);
   };
 
-  // Pointermove storms coalesce to ≤1 march per frame: the handler schedules
-  // a thunk (built at event time, so it closes over fresh props and a cloned
-  // ray — R3F mutates the event's ray in place) and only the newest runs.
-  const probeCoalescer = useMemo(() => createRafCoalescer<() => void>((run) => run()), []);
+  // Pointermove storms coalesce to ≤1 march per frame, LEADING: the first move
+  // of a frame marches inside the event, so the marker's invalidate() renders
+  // in that same frame. Any further move that frame is a thunk (built at event
+  // time, so it closes over fresh props and a cloned ray — R3F mutates the
+  // event's ray in place) and only the newest runs.
+  const probeCoalescer = useMemo(() => createLeadingRafCoalescer<() => void>((run) => run()), []);
   useEffect(() => () => probeCoalescer.cancel(), [probeCoalescer]);
 
   if (layer?.visible === false) return null;
@@ -806,6 +823,9 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
           return;
         }
         if (e.buttons !== 0) return;
+        // DESIGN reads no hover probe: outside a live stroke the move is
+        // nobody's, and marching it would cost a ray per pointer move.
+        if (interactionMode === "DESIGN") return;
         // A primitive being SIZED owns the pointer: the drawer rubber-bands
         // the radius on the world plane through its anchor and never reads the
         // hover probe for it. Claiming the move here would swallow the sizing
@@ -823,7 +843,7 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
         // target layer behind this one instead of being swallowed here.
         if (!answersProbe()) return;
         // The event already raycast this volume's box, so the front-most
-        // volume claims the hover; the march itself is deferred to the frame.
+        // volume claims the hover; the march runs at most once per frame.
         e.stopPropagation();
         const ray = e.ray.clone();
         probeCoalescer.schedule(() => updateProbe(probeFromRay(ray, "hover"), false));
@@ -845,23 +865,20 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
           updateProbe(probeFromRay(e.ray, "click"), e.shiftKey);
           return;
         }
-        // DESIGN captures only while a tool key is held; the tool's GESTURE
-        // class says which branch owns the pointer (`DESIGN_TOOL_GESTURES`).
-        // A bare drag is the camera's, as in NAVIGATE.
+        // DESIGN captures for the selected tool; its GESTURE class says which
+        // branch owns the pointer (`DESIGN_TOOL_GESTURES`). With no tool (or
+        // Space held) a drag is the camera's, as in NAVIGATE.
         const designGesture =
           interactionMode === "DESIGN" && designTool ? DESIGN_TOOL_GESTURES[designTool] : null;
-        if (
-          (interactionMode === "ANNOTATE" && roiDrawingApi.getState().activeTool === "BLOB") ||
-          designGesture === "volume-click"
-        ) {
-          // The smooth blob: one probed point IS the whole gesture — the
-          // grow loop takes it from here. Same single-layer decline rule.
+        if (designGesture === "volume-click" && designTool) {
+          // A design click: one probed point IS the whole gesture — the
+          // tool takes it from here. Same single-layer decline rule.
           if (!answersProbe()) return;
           const probe = probeFromRay(e.ray, "click");
           if (!probe?.worldPos) return;
           e.stopPropagation();
           const brush = brushApi.getState();
-          brush.beginStroke(layerId, "blob", designTool ?? "blob");
+          brush.beginStroke(layerId, "blob", designTool);
           brush.addSample({ world: probe.worldPos, voxel: probe.voxelIndex });
           brush.endStroke();
           return;
@@ -884,7 +901,7 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
           (e.target as { setPointerCapture?: (id: number) => void })
             .setPointerCapture?.(e.pointerId);
           const brush = brushApi.getState();
-          brush.beginStroke(layerId, "stroke", designTool ?? "brush");
+          brush.beginStroke(layerId, "stroke", designTool ?? "trace");
           brush.addSample({ world: probe.worldPos, voxel: probe.voxelIndex });
           return;
         }

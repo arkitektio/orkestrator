@@ -11,7 +11,7 @@ import {
   PortKind,
   ReturnPortFragment,
 } from "@/rekuest/api/graphql";
-import { UnknownReturnWidget } from "@/app/shadCnWidgetRegistry";
+import { UnknownReturnWidget } from "@/core/ports/engine/WidgetsProvider";
 import { Clock } from "lucide-react";
 import { ReactNode, memo, useEffect, useMemo, useState } from "react";
 import Timestamp from "@/core/ui/timestamp";
@@ -483,7 +483,7 @@ const argPortToDisplayPort = (port: ArgPortLike): ReturnPortFragment =>
     widget: null,
   }) as unknown as ReturnPortFragment;
 
-const TaskArgValue = (props: { port: ArgPortLike; value: unknown }) => {
+export const TaskArgValue = (props: { port: ArgPortLike; value: unknown }) => {
   const { registry } = useWidgetRegistry();
   const displayPort = useMemo(
     () => argPortToDisplayPort(props.port),

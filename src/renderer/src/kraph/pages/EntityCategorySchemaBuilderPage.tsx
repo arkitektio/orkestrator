@@ -1,4 +1,6 @@
-import { PageLayout } from "@/core/layout/PageLayout";
+import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
+import { LoadingPage } from "@/core/layout/fallbacks/LoadingPage";
+import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import { SchemaBuilderPage } from "@/kraph/pages/SchemaBuilderPage";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEntityNodesQuery, useGetEntityCategoryQuery, useUpdateEntityCategoryMutation } from "../api/graphql";
@@ -7,13 +9,12 @@ import {
   DEFAULT_DERIVATION,
   PropertyDefinition,
 } from "../components/schema-builder/utils";
-import { KRAPH_HELP } from "../help";
 
 export function EntityCategorySchemaBuilderPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { data, loading } = useGetEntityCategoryQuery({
+  const { data, loading, error, refetch } = useGetEntityCategoryQuery({
     variables: { id: id! },
     skip: !id,
   });
@@ -30,33 +31,11 @@ export function EntityCategorySchemaBuilderPage() {
     refetchQueries: ["GetEntityCategory"],
   });
 
-  if (loading) {
-    return (
-      <PageLayout help={KRAPH_HELP.schemaBuilder} title="Loading...">
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading schema...</p>
-          </div>
-        </div>
-      </PageLayout>
-    );
+  if (error && !data) {
+    return <QueryError error={error} onRetry={() => refetch()} resource="entity category" id={id} />;
   }
-
-  if (!data?.entityCategory) {
-    return (
-      <PageLayout help={KRAPH_HELP.schemaBuilder} title="Not Found">
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <p className="text-lg font-semibold mb-2">Entity Category not found</p>
-            <p className="text-muted-foreground">
-              The entity category you&apos;re looking for doesn&apos;t exist
-            </p>
-          </div>
-        </div>
-      </PageLayout>
-    );
-  }
+  if (loading && !data) return <LoadingPage />;
+  if (!data?.entityCategory) return <NotFound />;
 
   const entityCategory = data.entityCategory;
 

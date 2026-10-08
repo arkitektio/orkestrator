@@ -4,7 +4,10 @@ import { EffectWrapper } from "@/core/ports/engine/EffectWrapper";
 import { PortsRootContext } from "@/core/ports/engine/PortsRootContext";
 import { ArgsContainerProps } from "@/core/ports/engine/tailwind";
 import { ArgPort, PortGroup, PortOptions, WidgetRegistryType } from "@/core/ports/engine/types";
+import { portSize } from "@/core/ports/engine/portPresentation";
+import { FollowValue } from "@/core/ports/engine/useFollowValue";
 import { pathToName, portHash } from "@/core/ports/engine/utils";
+import { cn } from "@/core/util/utils";
 import React, { useMemo } from "react";
 import { useController } from "react-hook-form";
 import {
@@ -12,7 +15,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../../ui/collapsible";
-import { portGridClass } from "./gridColumns";
+import { PORT_GRID, PORT_STACK, portSpanClass } from "./gridColumns";
 
 export { portHash };
 
@@ -54,18 +57,37 @@ const PortRow = React.memo(function PortRow({
   options?: PortOptions;
   bound?: string;
 }) {
+  // The cell sits inside the effects: a hidden port leaves no empty cell.
   return (
     <EffectWrapper effects={effects} port={port} path={path} registry={registry}>
-      <Widget
-        port={port}
-        bound={bound}
-        widget={port.widget as unknown as AssignWidgetFragment}
-        options={options}
-        path={path}
-      />
+      <div className={cn("relative", portSpanClass(portSize(port, port.widget)))}>
+        <Widget
+          port={port}
+          bound={bound}
+          widget={port.widget as unknown as AssignWidgetFragment}
+          options={options}
+          path={path}
+        />
+        <FollowValue followValue={port.widget?.followValue} path={path} />
+      </div>
     </EffectWrapper>
   );
 });
+
+/**
+ * `PortOptions` applied to everything below, without every widget having to
+ * know: `disable` through a fieldset (it disables every control inside),
+ * `labels: false` and `minimal` by hiding the form slots.
+ */
+const optionsClass = (options?: PortOptions) =>
+  cn(
+    "contents",
+    // Hints small and quiet, close under their control (see PORT_HINT).
+    "[&_[data-slot=form-description]]:text-[11px] [&_[data-slot=form-description]]:leading-snug [&_[data-slot=form-description]]:text-muted-foreground/70",
+    "[&_[data-slot=form-item]]:content-start [&_[data-slot=form-item]]:gap-1.5",
+    options?.labels === false && "[&_[data-slot=form-label]]:hidden",
+    options?.minimal && "[&_[data-slot=form-description]]:hidden",
+  );
 
 export const ArgsContainer = ({
   ports,
@@ -124,42 +146,60 @@ export const ArgsContainer = ({
     [resolvedGroups, hidden],
   );
 
-  const groupCount = visibleGroups.filter((g) => g.visible.length > 0).length;
-
   return (
     <PortsRootContext.Provider value={path}>
-      <div className={portGridClass(groupCount)}>
-        {visibleGroups.map((group) => (
-          <Collapsible key={group.key} className="@container" defaultOpen={true}>
-            {group.prefilled.map((r) => (
-              <HiddenPortField key={r.port.key} name={pathToName(r.path)} />
-            ))}
-            {group.visible.length > 0 && group.key != "default" && (
-              <div className="mb-2">
-                <CollapsibleTrigger className="text-xs">
-                  {group.key}
-                </CollapsibleTrigger>
-                <p className="text-muted-foreground text-xs">
-                  {group.description}
-                </p>
-              </div>
-            )}
-            <CollapsibleContent>
-              <div className={portGridClass(group.visible.length)}>
-                {group.visible.map((resolved) => (
-                  <PortRow
-                    key={resolved.port.key}
-                    {...resolved}
-                    registry={registry}
-                    options={options}
-                    bound={bound}
-                  />
+      <fieldset disabled={options?.disable} className={optionsClass(options)}>
+        <div className="@container flex flex-col gap-5">
+          {visibleGroups.map((group) => {
+            const anchor = group.resolvedPorts[0];
+            const body = (
+              <Collapsible key={group.key} defaultOpen={true}>
+                {group.prefilled.map((r) => (
+                  <HiddenPortField key={r.port.key} name={pathToName(r.path)} />
                 ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        ))}
-      </div>
+                {group.visible.length > 0 && group.key != "default" && (
+                  <div className="mb-2">
+                    <CollapsibleTrigger className="text-xs font-medium">
+                      {group.title || group.key}
+                    </CollapsibleTrigger>
+                    {group.description && (
+                      <p className="text-muted-foreground text-xs">{group.description}</p>
+                    )}
+                  </div>
+                )}
+                <CollapsibleContent>
+                  <div className={options?.layout === "stack" ? PORT_STACK : PORT_GRID}>
+                    {group.visible.map((resolved) => (
+                      <PortRow
+                        key={resolved.port.key}
+                        {...resolved}
+                        registry={registry}
+                        options={options}
+                        bound={bound}
+                      />
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+            // A group's own effects (hide the whole group) read their
+            // dependencies as siblings of the group's ports.
+            const effects = (group.effects ?? EMPTY_EFFECTS).filter(notEmpty);
+            if (effects.length === 0 || !anchor) return body;
+            return (
+              <EffectWrapper
+                key={group.key}
+                effects={effects}
+                port={anchor.port}
+                path={anchor.path}
+                registry={registry}
+              >
+                {body}
+              </EffectWrapper>
+            );
+          })}
+        </div>
+      </fieldset>
     </PortsRootContext.Provider>
   );
 };

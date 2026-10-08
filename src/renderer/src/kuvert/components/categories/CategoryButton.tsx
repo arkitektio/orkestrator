@@ -75,7 +75,7 @@ export const CategoryButton = ({
                 value="__new"
                 onSelect={() => {
                   setOpen(false);
-                  openDialog("kuvertcategory", { account }, { size: "small" });
+                  openDialog("kuvertcategory", { account }, { size: "medium" });
                 }}
               >
                 <Plus />

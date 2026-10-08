@@ -83,6 +83,11 @@ export type PortOptions = {
   bound?: string | null;
   minimal?: boolean;
   labels?: boolean;
+  /**
+   * `stack`: one port per row, top to bottom (a dialog's form). Default is
+   * the size-aware grid, which packs small fields side by side.
+   */
+  layout?: "flow" | "stack";
 };
 
 export interface Ward {

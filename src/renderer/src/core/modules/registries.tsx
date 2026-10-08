@@ -12,7 +12,7 @@ import type {
   PaletteHitActionProps,
 } from "@/core/modules/host/define";
 import type { PassDownProps } from "@/core/smart/extensions/types";
-import { dialogNeeds, dialogRoles } from "@/core/modules/host/dialogNeeds";
+import { dialogNeeds, dialogRoles, keepPreferredSize } from "@/core/modules/host/dialogNeeds";
 import { currentRoles, describeRoles, RoleGuard, satisfiesRoles, type RoleRequirement } from "@/core/connection/roles";
 import { installedModules, useModuleHostVersion } from "@/core/modules/host/host";
 import { derived, derivedRecord } from "@/core/modules/host/lazy";
@@ -188,13 +188,13 @@ const guardedDialog = <P extends object>(definition: ModuleDefinition, Dialog: C
     }, <Dialog {...props} />);
     if (roles === undefined) return guarded;
     return (
-      <RoleGuard require={roles} fallback={<DialogNotPermitted roles={roles} />}>
+      <RoleGuard require={roles} fallback={<DialogNotPermitted roles={roles} />} pending={null}>
         {guarded}
       </RoleGuard>
     );
   };
   Guarded.displayName = `GuardedDialog(${Dialog.displayName ?? Dialog.name ?? namespaceOf(definition)})`;
-  return Guarded;
+  return keepPreferredSize(Dialog, Guarded);
 };
 
 /** Dialogs, each behind the guards of the services it needs (see `guardedDialog`). */
@@ -352,7 +352,7 @@ export const modulePages = derived(() =>
       Page = React.lazy(definition.builtins.page);
       pageCache.set(definition, Page);
     }
-    return { namespace: namespaceOf(definition), roles: definition.roles, Page };
+    return { namespace: namespaceOf(definition), roles: definition.roles, serviceKey: definition.serviceKey, Page };
   }),
 );
 

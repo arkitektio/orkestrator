@@ -49,7 +49,7 @@ const TransactionPage = asDetailQueryRoute(useGetTransactionQuery, ({ data }) =>
     openDialog(
       "bankassignmerchant",
       { ids: [tx.id], merchant: tx.merchant?.id, location: tx.merchantLocation?.id },
-      { size: "small" },
+      { size: "medium" },
     );
   const makeRule = () =>
     openDialog(

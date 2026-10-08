@@ -22,7 +22,7 @@ export type DialogRequest = {
   type: "dialog" | "sheet";
   id: string;
   props: Record<string, unknown>;
-  options?: { className?: string; side?: "top" | "bottom" | "left" | "right"; size?: "small" | "medium" | "large" };
+  options?: { className?: string; side?: "top" | "bottom" | "left" | "right"; size?: "small" | "medium" | "large" | "full" };
 };
 
 export const isDialogRequest = (value: unknown): value is DialogRequest => {

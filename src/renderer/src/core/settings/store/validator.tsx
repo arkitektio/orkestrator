@@ -10,6 +10,8 @@ export const settingsValidator = zod.object({
   defaultZoomLevel: zod.number().min(0.25).max(3.0),
   startAgent: zod.boolean(),
   showHoverCards: zod.boolean(),
+  /** How much drop shadow the right-click menu casts. */
+  menuShadow: zod.enum(["none", "soft", "medium", "strong"]),
   agentExpanded: zod.boolean().optional(),
   brandHue: zod.number().min(0).max(360).optional(),
   brandChroma: zod.number().min(0).max(1).optional(),
@@ -39,6 +41,19 @@ export const settingsValidator = zod.object({
    * bare OS blur). What is left is the sidebar colour laid over the blur.
    */
   railGlassTransparency: zod.number().min(0).max(1),
+  /**
+   * What is painted behind the rail: nothing, one of the built-in backdrops,
+   * or the user's own image (`custom`). The image itself is NOT in here: it
+   * lives in IndexedDB (`backdropStore`), since this object is one JSON string
+   * rewritten on every change.
+   */
+  railBackdrop: zod.enum(["none", "aurora", "grid", "custom"]),
+  /** Bumped on every upload, so every window re-reads the stored image. */
+  railBackdropVersion: zod.number(),
+  /** How strongly the backdrop shows, 0.1 to 1. */
+  railBackdropOpacity: zod.number().min(0.1).max(1),
+  /** `fill` covers the rail; `bottom` keeps the image whole at its foot. */
+  railBackdropFit: zod.enum(["fill", "bottom"]),
   /**
    * The SYSTEM-WIDE shortcut that brings Orkestrator forward with the palette
    * open, as an Electron accelerator; null turns it off. Registered by main
@@ -84,6 +99,85 @@ export const settingsValidator = zod.object({
   voiceThreads: zod.number().int().min(1).max(8),
   /** Mirror to fetch models from instead of Hugging Face (offline labs). */
   voiceModelHost: zod.string().optional(),
+
+  // ── Renderer (Settings → Renderer, see `core/settings/renderer`) ──
+  /**
+   * What this computer has, as main's `HardwareService` found it. Null until
+   * the first probe lands (and always in the web build). A SNAPSHOT, kept so
+   * the memory ceiling derived from it is known synchronously at boot; "Detect
+   * again" replaces it.
+   */
+  rendererHardware: zod
+    .object({
+      probedAt: zod.string(),
+      totalRamMB: zod.number(),
+      gpus: zod.array(
+        zod.object({
+          vendor: zod.string(),
+          model: zod.string(),
+          vramMB: zod.number().nullable(),
+          vramDynamic: zod.boolean(),
+          driverVersion: zod.string().nullable().optional(),
+        }),
+      ),
+      cpu: zod
+        .object({
+          brand: zod.string(),
+          cores: zod.number(),
+          physicalCores: zod.number(),
+          speedGHz: zod.number().nullable(),
+        })
+        .nullable()
+        .optional(),
+      os: zod
+        .object({
+          platform: zod.string(),
+          distro: zod.string(),
+          release: zod.string(),
+          kernel: zod.string(),
+          arch: zod.string(),
+        })
+        .nullable()
+        .optional(),
+      displays: zod
+        .array(
+          zod.object({
+            width: zod.number(),
+            height: zod.number(),
+            refreshRate: zod.number().nullable(),
+            main: zod.boolean(),
+          }),
+        )
+        .optional(),
+      adapterVendor: zod.string().nullable().optional(),
+      adapter: zod
+        .object({
+          vendor: zod.string(),
+          architecture: zod.string(),
+          device: zod.string(),
+          description: zod.string(),
+          maxTextureDimension3D: zod.number().nullable(),
+          maxBufferSize: zod.number().nullable(),
+        })
+        .nullable()
+        .optional(),
+    })
+    .nullable(),
+  /** GPU memory 3D scenes may take, in MB; null picks it from the hardware. */
+  rendererGpuBudgetMB: zod.number().positive().nullable(),
+  /** Memory for decoded image data, in MB; null follows the GPU ceiling. */
+  rendererDecodeCacheMB: zod.number().positive().nullable(),
+
+  // ── Telemetry (Settings → Telemetry) ──
+  // Nothing here sends anything by itself. Both are ON unless switched off.
+  /**
+   * Look at this computer's hardware on first start (and on "Detect again")
+   * and keep the result in `rendererHardware`. Off: nothing is detected, any
+   * snapshot is dropped, and the renderer limits fall back to an estimate.
+   */
+  telemetryDetectHardware: zod.boolean(),
+  /** Add the hardware snapshot to the text of a bug report the user files. */
+  telemetryAttachHardware: zod.boolean(),
 });
 
 export const defaultSettings: Settings = {
@@ -96,6 +190,7 @@ export const defaultSettings: Settings = {
   defaultZoomLevel: 1,
   startAgent: false,
   showHoverCards: true,
+  menuShadow: "medium",
   agentExpanded: false,
   brandHue: 267.256,
   brandChroma: 0.20962,
@@ -104,6 +199,10 @@ export const defaultSettings: Settings = {
   autoSceneSnapshot: true,
   railGlass: false,
   railGlassTransparency: 0.7,
+  railBackdrop: "none",
+  railBackdropVersion: 0,
+  railBackdropOpacity: 1,
+  railBackdropFit: "fill",
   globalPaletteShortcut: "CommandOrControl+Shift+Space",
   experimentMenuPrefetch: true,
   experimentAnnotationHover: true,
@@ -118,6 +217,11 @@ export const defaultSettings: Settings = {
   voiceAutoStop: 8,
   voiceThreads: 2,
   voiceModelHost: undefined,
+  rendererHardware: null,
+  rendererGpuBudgetMB: null,
+  rendererDecodeCacheMB: null,
+  telemetryDetectHardware: true,
+  telemetryAttachHardware: true,
 };
 
 export type Settings = zod.infer<typeof settingsValidator>;

@@ -12,6 +12,7 @@ import {
   TIER_LABELS,
   type QualityTier,
 } from "../../platform/quality/qualityGovernor";
+import { getRendererBudget } from "@/core/settings/renderer/rendererBudget";
 import { perfMonitor, type PerfSessionReport } from "../../platform/perf/perfMonitor";
 import { usePerfRecording } from "../../platform/perf/PerfFrameProbe";
 import { useModeStore } from "../../platform/stores/modeStore";
@@ -23,7 +24,7 @@ import type { DebugBudgetControl, DebugSection } from "./debugSection";
 const VOLUME_BUDGET: DebugBudgetControl = {
   label: "Volume budget (VRAM)",
   title:
-    "Total GPU budget for brick atlases. Raises the per-pool slot budget, so the plan may cover more bricks. Auto = navigator.deviceMemory x 0.18. Applies to plans at the next replan and to atlases at the next scene open.",
+    "Total GPU budget for brick atlases. Raises the per-pool slot budget, so the plan may cover more bricks. Auto = half the detected graphics memory (Settings → Renderer; the same setting as this). Applies to plans at the next replan and to atlases at the next scene open.",
   get: getVolumeBudgetOverrideBytes,
   setMB: setVolumeBudgetOverrideMB,
 };
@@ -86,6 +87,11 @@ export const DebugPanel = ({ sections }: { sections: readonly DebugSection[] }) 
         deviceMemoryGiB: getReportedDeviceMemoryGiB(),
         volumeBudgetBytes: getInitialVolumeTextureBudgetBytes(),
         volumeBudgetOverrideBytes: getVolumeBudgetOverrideBytes(),
+        /** Where the automatic ceiling came from: `vram` / `ram` / `legacy`
+         * (nothing detected), or `custom`. */
+        volumeBudgetSource: getRendererBudget().gpuSource.kind,
+        /** What main detected on first start (Settings → Renderer). */
+        hardware: getRendererBudget().hardware,
       },
       viewportSize: viewState.viewportSize,
       // CSS size alone cannot tell you the fragment count — the quality

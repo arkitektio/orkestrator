@@ -51,6 +51,7 @@ import {
   isPausable,
   isResumable,
 } from "../lib/taskStatus";
+import { TaskFiredBy } from "../components/task/TaskFiredBy";
 import { REKUEST_HELP } from "../help";
 
 // Only stats the main column doesn't already show — status, progress and
@@ -181,6 +182,7 @@ export const TPage = asDetailQueryRoute(
 
     const body = (
       <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-y-auto p-4">
+        <TaskFiredBy task={data.task} />
         <TaskLane
           task={data.task}
           selection={

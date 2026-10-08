@@ -1,7 +1,9 @@
-import type { Vec3 } from "../../annotations/enhancers/shared/strokeModel";
-import { createField, marchField, meshToField, unionMesh, type SculptField } from "../field/sculptField";
-import { finishDesignGeometry } from "../ops/postProcess";
-import { fieldSpacingFor, targetMesh, type DesignToolRunContext } from "./context";
+import { Layers } from "lucide-react";
+
+import type { Vec3 } from "../brush";
+import { createField, type SculptField } from "../field/sculptField";
+import { designDispatcher } from "../worker/designDispatcher";
+import { baseFor, fieldSpacingFor, targetMesh, type DesignToolRunContext } from "./context";
 import type { DesignTool } from "./registry";
 
 /**
@@ -21,10 +23,11 @@ export const liftTool: DesignTool = {
   id: "lift",
   key: "l",
   label: "Lift",
+  icon: Layers,
+  group: "more",
   gesture: "volume-click",
-  roiTool: "BLOB",
-  hint: "Lift — click a labelled instance (2D or 3D) to pull it into the design",
-  shortcut: { keys: ["L", "click"], description: "Lift a label instance into the design" },
+  hint: "Click a labelled instance (2D or 3D) to pull it into the design",
+  shortcut: { keys: ["L", "click"], description: "Lift: click a label instance into the design" },
   async run(ctx: DesignToolRunContext) {
     if (!ctx.extraction) return ctx.fail("The click's layer is no longer in the scene");
     const { extraction, brush } = ctx;
@@ -112,21 +115,22 @@ export const liftTool: DesignTool = {
     }
 
     const target = targetMesh(ctx.design);
-    let field = lifted;
-    if (target) {
-      const base = target.field ?? meshToField(target.original, lifted.spacing);
-      field = unionMesh(base, marchField(lifted, brush.marcher));
-    }
-    const marched = marchField(field, brush.marcher);
-    const { original, current } = await finishDesignGeometry(marched, {
+    const finish = {
+      marcher: brush.marcher,
       polishIterations: Math.max(brush.polishIterations, 6), // a binary lift NEEDS polish
       detailWorld: brush.detailVoxels * spacing,
-    });
-    if (ctx.stale()) return;
+    };
+    const result = await designDispatcher().run(
+      target
+        ? { base: baseFor(target, lifted.spacing), ops: [{ type: "unionField", field: lifted }], finish }
+        : { base: { kind: "field", field: lifted }, ops: [], finish },
+      { superseded: ctx.stale },
+    );
+    if (!result || ctx.stale()) return;
     ctx.design.applySculpt(target?.id ?? null, {
-      field,
-      original,
-      current,
+      field: result.field,
+      original: result.original,
+      current: result.current,
       source: { kind: "blob", layerId: ctx.layerId, level },
     });
     if (truncated) ctx.fail(`Lifted the first ${LIFT_MAX_VOXELS.toLocaleString()} voxels — the instance is larger`);

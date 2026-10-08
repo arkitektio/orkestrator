@@ -16,6 +16,9 @@ import { useHooksSearchLazyQuery } from "../api/graphql";
 import { useAction } from "../hooks/useAction";
 import { usePortForm } from "@/core/ports/engine/usePortForm";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
+import { useState } from "react";
+import { cn } from "@/core/util/utils";
+import { AssignErrorNote } from "../components/AssignErrorNote";
 
 
 
@@ -41,19 +44,31 @@ export const ActionAssignForm = (props: {
     overwrites: props.args,
   });
 
-  const onSubmit = async (data: any) => {
-    console.log("Submitting");
+  // Why the last submit did not start; the dialog stays open on it.
+  const [failure, setFailure] = useState<unknown>(null);
+  // The button jiggles once per refusal; cleared when the animation ends so
+  // the next refusal plays it again.
+  const [refused, setRefused] = useState(false);
+  // Counts refusals: keys the reason so it slides in again on a repeat.
+  const [refusals, setRefusals] = useState(0);
 
+  const onSubmit = async (data: any) => {
     const reference = uuidv4()
 
-
-
-    await assign(buildAssignInput({
-      action: props.id,
-      args: data,
-      reference: reference,
-      hooks: [],
-    }));
+    setFailure(null);
+    try {
+      await assign(buildAssignInput({
+        action: props.id,
+        args: data,
+        reference: reference,
+        hooks: [],
+      }));
+    } catch (error) {
+      setFailure(error);
+      setRefused(true);
+      setRefusals((count) => count + 1);
+      return;
+    }
     dialog.closeDialog();
   };
 
@@ -88,11 +103,21 @@ export const ActionAssignForm = (props: {
               groups={action?.portGroups || []}
               ports={action?.args || []}
               hidden={props.args}
+              options={{ layout: "stack" }}
               path={[]}
             />
 
-            <DialogFooter>
-              <Button type="submit" variant={"outline"} disabled={isSubmitting}>
+            <DialogFooter className="sm:items-center">
+              {/* To the left of the button that was pressed. */}
+              <AssignErrorNote key={refusals} error={failure} variant="line" className="animate-refuse-reason sm:mr-auto" />
+              <Button
+                type="submit"
+                // Red while it jiggles, then back to the plain button.
+                variant={refused ? "destructive" : "outline"}
+                disabled={isSubmitting}
+                className={cn("shrink-0", refused && "animate-refuse-shake")}
+                onAnimationEnd={() => setRefused(false)}
+              >
                 {" "}
                 Do {isSubmitting && "ing"}
               </Button>

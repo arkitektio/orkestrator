@@ -37,7 +37,7 @@ const CategoryRow = ({ category }: { category: CategoryFragment }) => {
             variant="ghost"
             size="icon-sm"
             tooltip="Edit"
-            onClick={() => openDialog("kuvertcategory", { id: category.id }, { size: "small" })}
+            onClick={() => openDialog("kuvertcategory", { id: category.id }, { size: "medium" })}
           >
             <Pencil />
           </TooltipButton>
@@ -63,7 +63,7 @@ export const AccountCategories = ({ account }: { account: MailAccountFragment })
       variant="ghost"
       size="sm"
       className="self-start text-muted-foreground"
-      onClick={() => openDialog("kuvertcategory", { account: account.id }, { size: "small" })}
+      onClick={() => openDialog("kuvertcategory", { account: account.id }, { size: "medium" })}
     >
       <Plus />
       New category

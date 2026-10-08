@@ -442,6 +442,14 @@ export function startNodePlanTracking({
         // unlocks from the second replan (~500 ms later / next interaction).
         // `undefined` lets the planner derive it from the cache share above.
         decodeAllowanceBytes: prevRepresentative ? undefined : 0,
+        // The chunk budget (derived from the same share) follows the gate in
+        // 3D, where a first plan would otherwise open on gigabytes of chunks
+        // instead of the coarse set — first in 3D, so a switch from 2D counts
+        // (new pools, nothing resident). In 2D it is NOT gated: a level there
+        // is a few dozen bricks, the root backdrop is fetched first whatever
+        // else the plan holds, and a slab that waited for an interaction to
+        // sharpen read as stuck.
+        decodeBudgetBytes: mode === "3D" && prevRepresentative?.mode !== "3D" ? 0 : undefined,
         anisoLod: true,
         previousBudgetMinLevel: prevCompatible ? prevRepresentative.budgetMinLevel : undefined,
         previousKeepKeys: prevCompatible ? keepKeysOf(prevRepresentative) : undefined,

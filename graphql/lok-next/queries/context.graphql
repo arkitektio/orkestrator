@@ -3,3 +3,9 @@ query MyContext {
     ...Context
   }
 }
+
+query IsMemberOf($organization: ID!) {
+  mycontext {
+    memberOf(organization: $organization)
+  }
+}

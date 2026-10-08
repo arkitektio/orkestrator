@@ -24,9 +24,10 @@ import { closingInsert, hopExtension } from "./enhancers/paths/vectorTrace/vecto
 import { planarRadius, primitiveCornerVectors, spatialRadius } from "./primitiveDraw";
 import { useRoiDrawSessionStoreApi } from "./roiDrawSessionStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
+import { liveProbeWorld } from "../../platform/stores/viewer/probeSlice";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { useCreateSceneAnnotation } from "./useCreateSceneAnnotation";
-import { createRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
+import { createLeadingRafCoalescer } from "@/core/data/scene/perf/rafCoalesce";
 import {
   DRAG_THRESHOLD_PX,
   exceedsDragThreshold,
@@ -281,11 +282,13 @@ export const RoiDrawer = () => {
     invalidate(); // the Canvas is frameloop="demand"
   }, [tool, unit, readoutApi, invalidate, sizingRadius]);
 
-  // Pointer-move storms coalesce to ≤1 repaint per frame (same idiom as the
-  // brick layers): the ray math runs synchronously in the handler so the session
-  // stays truthful for the next event, and only the idempotent paint is deferred.
+  // Pointer-move storms coalesce to ≤1 repaint per frame, leading (same idiom
+  // as the brick layers): the first paint of a frame runs inside the event — in
+  // 3D inside the probe's own store write, so the band lands in the marker's
+  // frame — and only an extra one that frame is deferred. The ray math always
+  // runs synchronously in the handler, so the session stays truthful.
   const paintCoalescer = useMemo(
-    () => createRafCoalescer<() => void>((run) => run()),
+    () => createLeadingRafCoalescer<() => void>((run) => run()),
     [],
   );
   useEffect(() => () => paintCoalescer.cancel(), [paintCoalescer]);
@@ -378,10 +381,12 @@ export const RoiDrawer = () => {
     if (isPrimitiveTool(tool)) return; // sized on the plane through its anchor
 
     return viewerStoreApi.subscribe((state, previous) => {
-      if (state.probedCoordinate === previous.probedCoordinate) return;
+      // The sub-voxel cursor, so the band tracks the marker instead of
+      // stepping per voxel. Every probe publish replaces it too.
+      const world = liveProbeWorld(state);
+      if (world === liveProbeWorld(previous)) return;
       const session = sessionRef.current;
       if (session.vertices.length === 0) return; // nothing to rubber-band yet
-      const world = state.probedCoordinate?.worldPos;
       session.cursor = world ? new THREE.Vector3(...world) : null;
       paintCoalescer.schedule(paint);
     });
@@ -636,6 +641,10 @@ export const RoiDrawer = () => {
           e.stopPropagation();
           (e.target as Element).setPointerCapture?.(e.pointerId);
 
+          // The drag's rubber band is the cursor now; the cross returns with
+          // the first hover move after release.
+          viewerStoreApi.getState().setProbedCoordinate(null);
+
           const session = sessionRef.current;
           session.downPx = eventPx(e);
           session.movedPastThreshold = false;
@@ -664,10 +673,10 @@ export const RoiDrawer = () => {
           // cursor arrives through the probe subscription instead, so this
           // plane must stay out of the way of the volume's hover.
           if (probePlaced && !isPrimitive) return;
-          // Otherwise unconditional: this plane sits in front of the image
-          // planes, so stopping propagation is what keeps a probe from firing
-          // while you draw.
-          e.stopPropagation();
+          // A press owns the pointer. A bare hover does not: the image plane
+          // behind keeps its placement cursor (the cross) following the
+          // pointer, which is all a probe does in ANNOTATE.
+          if (e.buttons !== 0) e.stopPropagation();
 
           const hit = pointOnPlane(e);
           if (!hit) return; // keep the last valid cursor rather than jumping

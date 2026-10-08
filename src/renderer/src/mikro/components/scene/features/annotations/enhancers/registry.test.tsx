@@ -21,13 +21,6 @@ describe("enhancer registry", () => {
     expect(applicableEnhancers({ tool: "BRUSH", displayMode: "2D" })).toEqual([]);
   });
 
-  it("offers the smooth blob only for BLOB in 3D", () => {
-    expect(
-      applicableEnhancers({ tool: "BLOB", displayMode: "3D" }).map((e) => e.id),
-    ).toEqual(["smooth-blob"]);
-    expect(applicableEnhancers({ tool: "BLOB", displayMode: "2D" })).toEqual([]);
-  });
-
   it("offers nothing for pointer tools and a null tool", () => {
     expect(applicableEnhancers({ tool: "SELECT", displayMode: "2D" })).toEqual([]);
     expect(applicableEnhancers({ tool: "RECTANGLE", displayMode: "3D" })).toEqual([]);

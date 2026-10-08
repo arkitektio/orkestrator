@@ -1,8 +1,13 @@
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 import { createStore, type StoreApi } from "zustand/vanilla";
+import {
+  applyRendererBudgetSettings,
+  resetRendererBudgetForTests,
+} from "@/core/settings/renderer/rendererBudget";
 import { startNodePlanTracking } from "./nodePlanTracker";
 import type { LayerNodePlan } from "../octree/nodePlanning";
+import { resetDecodedChunkCacheBytesForTests, resolvePoolBudget } from "../octree/poolBudget";
 import type { LayerState } from "../../../platform/model/layerModel";
 import type { ModeState } from "../../../platform/stores/modeStore";
 import type { SceneState } from "../../../platform/stores/sceneStore";
@@ -277,6 +282,207 @@ describe("startNodePlanTracking", () => {
 
     stop();
     delete ARRAYS["store-huge"];
+  });
+
+  describe("a 64³-chunked volume, through the real budget chain", () => {
+    // 4096² × 1024 uint16, five isotropic levels, every level in 64³ chunks:
+    // a slab brick is cut from 16 chunks, 64 slices deep, per channel.
+    const MiB = 1024 * 1024;
+    const DIMS = ["c", "z", "y", "x"];
+    const volumeLayer = (channels: number) => {
+      const id = `volume-${channels}ch`;
+      for (let level = 0; level < 5; level++) {
+        ARRAYS[`${id}-${level}`] = {
+          shape: [channels, 1024 >> level, 4096 >> level, 4096 >> level],
+          chunks: [1, 64, 64, 64],
+          dtype: "uint16",
+        };
+      }
+      return {
+        ...layer,
+        id,
+        zAxis: "z",
+        lens: {
+          slices: [],
+          axisNames: DIMS,
+          shape: [channels, 1024, 4096, 4096],
+          dataset: {
+            axisNames: DIMS,
+            dataArrays: [0, 1, 2, 3, 4].map((level) => ({
+              level,
+              scaleFactors: level === 0 ? null : [1, 1 << level, 1 << level, 1 << level],
+              store: { id: `${id}-${level}` },
+            })),
+          },
+        },
+      } as unknown as LayerState;
+    };
+    /** A 2200 × 1300 px viewport at one pixel per voxel: 10 × 6 L0 bricks. */
+    const SCREEN: LayerViewRange = {
+      xRange: [948, 3148],
+      yRange: [1398, 2698],
+      zRange: [0, 1024],
+      scale: 1,
+    };
+    const onScreenL0 = (plan: LayerNodePlan) =>
+      plan.nodes.filter(
+        (node) =>
+          node.level === 0 &&
+          node.coords[0] >= 3 &&
+          node.coords[0] <= 12 &&
+          node.coords[1] >= 5 &&
+          node.coords[1] <= 10,
+      ).length;
+
+    const planWith = async (
+      channels: number,
+      budgets: { gpuMB: number; decodeCacheMB: number },
+    ) => {
+      applyRendererBudgetSettings({
+        rendererGpuBudgetMB: budgets.gpuMB,
+        rendererDecodeCacheMB: budgets.decodeCacheMB,
+      });
+      resetDecodedChunkCacheBytesForTests();
+      const volume = volumeLayer(channels);
+      // 256² × 1 r16f texels per channel; the atlas the pool would allocate.
+      const slotBytes = 256 * 256 * channels * 2;
+      const { atlasBytes } = resolvePoolBudget({
+        deviceBudgetBytes: budgets.gpuMB * MiB,
+        poolCount: 1,
+        slotBytes,
+        totalBrickBytes: Number.MAX_SAFE_INTEGER,
+      });
+      const stores = makeStores([volume], atlasBytes);
+      const stop = startNodePlanTracking(stores);
+      try {
+        await settle();
+        stores.viewerStore.setState({ layerViewRanges: { [volume.id]: SCREEN } });
+        await settle();
+        return { plan: stores.viewerStore.getState().nodePlans[volume.id], slotBytes };
+      } finally {
+        stop();
+        resetRendererBudgetForTests();
+        resetDecodedChunkCacheBytesForTests();
+      }
+    };
+
+    it("holds the whole screen at L0 on the budgets an RTX 4070 earns", async () => {
+      const { plan, slotBytes } = await planWith(1, { gpuMB: 6141, decodeCacheMB: 3070 });
+      expect(plan.decodeBudgetBytes).toBe(Math.floor(0.9 * 3070 * MiB));
+      expect(plan.targetLevel).toBe(0);
+      expect(onScreenL0(plan)).toBe(60);
+      // Neither currency binds: slots to spare, chunks inside the cache share.
+      expect(plan.nodes.length * slotBytes).toBeLessThan(plan.refineBudgetBytes / 4);
+      expect(plan.decodeBytesPlanned).toBeLessThan(plan.decodeBudgetBytes);
+    });
+
+    it("is bounded by the decode cache, not by slots, with four channels", async () => {
+      // 32 MiB of chunks per brick now: the cache share runs out first, on
+      // either machine, and the plan says so.
+      for (const budgets of [
+        { gpuMB: 6141, decodeCacheMB: 3070 },
+        { gpuMB: 1475, decodeCacheMB: 737 },
+      ]) {
+        const { plan, slotBytes } = await planWith(4, budgets);
+        const budget = Math.floor(0.9 * budgets.decodeCacheMB * MiB);
+        expect(plan.decodeBudgetBytes).toBe(budget);
+        expect(plan.decodeBytesPlanned).toBeLessThanOrEqual(budget);
+        expect(budget - plan.decodeBytesPlanned).toBeLessThan(32 * MiB);
+        expect(plan.nodes.length * slotBytes).toBeLessThan(plan.refineBudgetBytes / 4);
+        expect(onScreenL0(plan)).toBeLessThan(60);
+      }
+    });
+
+    /** A class's FIRST plan with the view already known (a layer switched on
+     * in an open scene), then the replan any later input causes. */
+    const firstAndSecondPlan = async (displayMode: "2D" | "3D", viewRange: LayerViewRange) => {
+      applyRendererBudgetSettings({ rendererGpuBudgetMB: 1475, rendererDecodeCacheMB: 737 });
+      resetDecodedChunkCacheBytesForTests();
+      const volume = volumeLayer(1);
+      const stores = makeStores([volume]);
+      stores.modeStore.setState({ displayMode });
+      stores.viewerStore.setState({ layerViewRanges: { [volume.id]: viewRange } });
+      const stop = startNodePlanTracking(stores);
+      try {
+        await settle();
+        const first = stores.viewerStore.getState().nodePlans[volume.id];
+        stores.viewerStore.setState({ lodBias: 1.0001 });
+        await settle();
+        return { first, second: stores.viewerStore.getState().nodePlans[volume.id] };
+      } finally {
+        stop();
+        resetRendererBudgetForTests();
+        resetDecodedChunkCacheBytesForTests();
+      }
+    };
+    const CHUNK_BUDGET = Math.floor(0.9 * 737 * MiB);
+
+    it("holds the chunk budget back for a first 3D plan (the cold-open gate)", async () => {
+      const { first, second } = await firstAndSecondPlan("3D", {
+        xRange: [0, 4096],
+        yRange: [0, 4096],
+        zRange: [0, 1024],
+        scale: 1,
+      });
+      // The coarse set a 3D scene has always opened on: floor only.
+      expect(first.mode).toBe("3D");
+      expect(first.decodeAllowanceBytes).toBe(0);
+      expect(first.decodeBudgetBytes).toBe(0);
+      expect(first.nodes.every((node) => node.level >= first.budgetMinLevel)).toBe(true);
+      // From the next plan on, allowance and budget both.
+      expect(second.decodeAllowanceBytes).toBeGreaterThan(0);
+      expect(second.decodeBudgetBytes).toBe(CHUNK_BUDGET);
+      expect(second.nodes.length).toBeGreaterThan(first.nodes.length);
+    });
+
+    it("holds it back again for the first 3D plan after a switch from 2D", async () => {
+      applyRendererBudgetSettings({ rendererGpuBudgetMB: 1475, rendererDecodeCacheMB: 737 });
+      resetDecodedChunkCacheBytesForTests();
+      const volume = volumeLayer(1);
+      const stores = makeStores([volume]);
+      stores.viewerStore.setState({ layerViewRanges: { [volume.id]: SCREEN } });
+      const stop = startNodePlanTracking(stores);
+      try {
+        await settle();
+        expect(stores.viewerStore.getState().nodePlans[volume.id].decodeBudgetBytes).toBe(CHUNK_BUDGET);
+
+        // New pools, nothing resident: a cold open in all but name.
+        stores.modeStore.setState({ displayMode: "3D" });
+        stores.viewerStore.setState({
+          layerViewRanges: {
+            [volume.id]: { xRange: [0, 4096], yRange: [0, 4096], zRange: [0, 1024], scale: 1 },
+          },
+        });
+        await settle();
+        const first = stores.viewerStore.getState().nodePlans[volume.id];
+        expect(first.mode).toBe("3D");
+        expect(first.decodeBudgetBytes).toBe(0);
+
+        // The next plan that differs (a value-equal replan keeps the old
+        // plan object, and with it the old debug figures).
+        stores.viewerStore.setState({
+          layerViewRanges: {
+            [volume.id]: { xRange: [0, 2048], yRange: [0, 2048], zRange: [0, 1024], scale: 1 },
+          },
+        });
+        await settle();
+        const second = stores.viewerStore.getState().nodePlans[volume.id];
+        expect(second).not.toBe(first);
+        expect(second.decodeBudgetBytes).toBe(CHUNK_BUDGET);
+      } finally {
+        stop();
+        resetRendererBudgetForTests();
+        resetDecodedChunkCacheBytesForTests();
+      }
+    });
+
+    it("gives a first 2D plan the chunk budget straight away", async () => {
+      const { first } = await firstAndSecondPlan("2D", SCREEN);
+      expect(first.mode).toBe("2D");
+      expect(first.decodeAllowanceBytes).toBe(0);
+      expect(first.decodeBudgetBytes).toBe(CHUNK_BUDGET);
+      expect(first.targetLevel).toBe(0);
+    });
   });
 
   it("plans co-pool layers with identical placement ONCE, sharing plan identity", async () => {

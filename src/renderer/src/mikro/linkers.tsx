@@ -19,5 +19,6 @@ export const MikroScene = smartOf(manifest, "@mikro/scene");
 export const MikroTableDataset = smartOf(manifest, "@mikro/tabledataset");
 export const MikroSparseDataset = smartOf(manifest, "@mikro/sparsedataset");
 export const MikroAnnotation = smartOf(manifest, "@mikro/annotation");
+export const MikroMeshCollection = smartOf(manifest, "@mikro/meshcollection");
 export const MikroEntityRelation = smartOf(manifest, "@mikro/entityrelation");
 export const MikroSpecimen = smartOf(manifest, "@mikro/specimen");

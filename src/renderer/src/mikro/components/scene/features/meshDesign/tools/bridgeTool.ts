@@ -1,8 +1,8 @@
-import { runStrokeExtraction } from "../../annotations/enhancers/paths/brushSkeleton/extraction";
-import { marchField, meshToField } from "../field/sculptField";
-import { applyStamp, capsuleChainStamp } from "../field/stamps";
-import { finishDesignGeometry } from "../ops/postProcess";
-import { fieldSpacingFor, targetMesh, type DesignToolRunContext } from "./context";
+import { Link2 } from "lucide-react";
+
+import { runStrokeExtraction } from "../brush";
+import { designDispatcher } from "../worker/designDispatcher";
+import { baseFor, fieldSpacingFor, targetMesh, type DesignToolRunContext } from "./context";
 import type { DesignTool } from "./registry";
 
 /**
@@ -16,10 +16,11 @@ export const bridgeTool: DesignTool = {
   id: "bridge",
   key: "g",
   label: "Bridge",
+  icon: Link2,
+  group: "more",
   gesture: "volume-click",
-  roiTool: "BLOB",
-  hint: "Bridge — click both ends; the brightest path between them joins the mesh",
-  shortcut: { keys: ["G", "click ×2"], description: "Bridge two points along the brightest path" },
+  hint: "Click both ends; the brightest path between them joins the mesh",
+  shortcut: { keys: ["G", "click ×2"], description: "Bridge: click two points to join them along the brightest path" },
   async run(ctx: DesignToolRunContext) {
     if (!ctx.extraction) return ctx.fail("The click's layer is no longer in the scene");
     const click = ctx.stroke[0];
@@ -50,27 +51,25 @@ export const bridgeTool: DesignTool = {
     if (!path) return; // stale
     const target = targetMesh(ctx.design);
     const tubeRadius = Math.max(radiusWorld * 0.4, Math.max(...extraction.voxelSize));
-    const stamp = capsuleChainStamp(path.points, tubeRadius);
+    const spec = { kind: "capsuleChain", points: path.points, radius: tubeRadius } as const;
     const fieldSpacing =
       target?.field?.spacing ?? fieldSpacingFor([tubeRadius / 4, tubeRadius / 4, tubeRadius / 4], brush.detailVoxels);
-    let field = target ? (target.field ?? meshToField(target.original, fieldSpacing)) : null;
-    field = field
-      ? applyStamp(field, stamp, "add")
-      : applyStamp(
-          { ...meshToField({ positions: new Float32Array(0), indices: new Uint32Array(0) }, fieldSpacing) },
-          stamp,
-          "add",
-        );
-    const marched = marchField(field, brush.marcher);
-    const { original, current } = await finishDesignGeometry(marched, {
+    const finish = {
+      marcher: brush.marcher,
       polishIterations: brush.polishIterations,
       detailWorld: brush.detailVoxels * Math.max(...extraction.voxelSize),
-    });
-    if (ctx.stale()) return;
+    };
+    const result = await designDispatcher().run(
+      target
+        ? { base: baseFor(target, fieldSpacing), ops: [{ type: "stamp", mode: "add", spec }], finish }
+        : { base: { kind: "stamp", spec, spacing: fieldSpacing }, ops: [], finish },
+      { superseded: ctx.stale },
+    );
+    if (!result || ctx.stale()) return;
     ctx.design.applySculpt(target?.id ?? null, {
-      field,
-      original,
-      current,
+      field: result.field,
+      original: result.original,
+      current: result.current,
       source: { kind: "tube", layerId: ctx.layerId, level: path.picked.level },
     });
     ctx.clear();

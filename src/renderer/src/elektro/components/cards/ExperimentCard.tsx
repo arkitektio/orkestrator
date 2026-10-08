@@ -1,6 +1,6 @@
 import React from "react";
-import { Card } from "@/core/ui/card";
-import { cn } from "@/core/util/utils";
+import { HomeCard, HomeCardMeta, HomeCardTitle } from "@/core/ui/home-card";
+import { FlaskConical } from "lucide-react";
 import { ElektroExperiment } from "@/core/linkers";
 import { ListExperimentFragment } from "../../api/graphql";
 
@@ -13,19 +13,12 @@ interface Props {
 const TheCard = ({ item, className }: Props) => {
   return (
     <ElektroExperiment.Smart object={item} hover>
-      <Card
-        className={cn(
-          "px-2 py-2 h-20 transition-all ease-in-out duration-200 truncate",
-          className,
-        )}
-      >
-        <ElektroExperiment.DetailLink
-          object={item}
-          className="px-2 py-2 h-full w-full absolute top-0 left-0 bg-opacity-20 bg-back-999 hover:bg-opacity-10 transition-all ease-in-out duration-200 truncate"
-        >
-          {item.name}
-        </ElektroExperiment.DetailLink>
-      </Card>
+      <HomeCard className={className}>
+        <HomeCardTitle icon={<FlaskConical />}>
+          <ElektroExperiment.DetailLink object={item}>{item.name}</ElektroExperiment.DetailLink>
+        </HomeCardTitle>
+        <HomeCardMeta>Experiment</HomeCardMeta>
+      </HomeCard>
     </ElektroExperiment.Smart>
   );
 };

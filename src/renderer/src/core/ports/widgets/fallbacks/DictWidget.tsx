@@ -1,3 +1,5 @@
+import { PORT_HINT } from "../gridColumns";
+import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
 import { StringField } from "@/core/forms/StringField";
 import { ContainerGrid } from "@/core/layout/ContainerGrid";
 import { Button } from "@/core/ui/button";
@@ -11,6 +13,8 @@ import { useFieldArray, useFormContext } from "react-hook-form";
 import { ChildWidget } from "../ChildWidget";
 
 export const SideBySideWidget = ({
+  port,
+  widget,
   valuetype,
   path,
   bound,
@@ -26,6 +30,10 @@ export const SideBySideWidget = ({
 
   return (
     <div className="@container">
+      <div className="mb-2">
+        <div className="text-sm font-medium">{portLabel(port)}</div>
+        <p className={PORT_HINT}>{portDescription(port, widget)}</p>
+      </div>
       <ContainerGrid minItemWidth={320}>
         {fields.map((item, index) => (
           <Card

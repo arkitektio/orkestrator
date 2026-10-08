@@ -4,7 +4,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { ScrollArea } from "@/core/ui/scroll-area";
 import { cn } from "@/core/util/utils";
 import { useDebug, type DebugEntry } from "@/core/debug/DebugContext";
-import { Bug, Copy } from "lucide-react";
+import { Bug, Check, Copy } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { ReportBugButton } from "./ReportBugButton";
 
@@ -66,6 +67,44 @@ const EntryView = ({ entry }: { entry: DebugEntry }) => {
   );
 };
 
+/** Copies every query shown in the popover, as one JSON array. */
+const CopyAllButton = ({ entries }: { entries: DebugEntry[] }) => {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  const copy = () => {
+    const text = serialize(
+      entries.map((e) => ({
+        label: e.label,
+        variables: e.variables,
+        // An Error serializes to `{}` once nested, so write its fields out.
+        error: e.error instanceof Error ? { ...e.error, name: e.error.name, message: e.error.message } : e.error,
+        data: e.data,
+      })),
+    );
+    void navigator.clipboard?.writeText(text).then(() => setCopied(true));
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-6 px-2 text-xs"
+      aria-label="Copy all queries"
+      disabled={entries.length === 0}
+      onClick={copy}
+    >
+      {copied ? <Check className="mr-1 h-3 w-3" /> : <Copy className="mr-1 h-3 w-3" />}
+      {copied ? "Copied" : "Copy all"}
+    </Button>
+  );
+};
+
 /**
  * Debug mode, as a small badge in the corner of the page (see `PageCorner`).
  *
@@ -115,6 +154,7 @@ export const DebugBadge = () => {
             {visible.length === 0 ? "nothing reported on this page" : `${visible.length} quer${visible.length === 1 ? "y" : "ies"}`}
           </span>
           <span className="flex-1" />
+          <CopyAllButton entries={visible} />
           <ReportBugButton />
         </div>
         <ScrollArea className="max-h-[60vh]">

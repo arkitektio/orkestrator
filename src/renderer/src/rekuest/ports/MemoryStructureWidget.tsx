@@ -1,3 +1,4 @@
+import { portDescription, portLabel } from "@/core/ports/engine/portPresentation";
 import { SearchField, SearchOptions } from "@/core/forms/SearchField";
 import { useSearchMemoryDrawerLazyQuery } from "@/rekuest/api/graphql";
 import { InputWidgetProps } from "@/core/ports/engine/types";
@@ -46,9 +47,9 @@ export const MemoryStructureWidget = (props: InputWidgetProps) => {
   return (
     <SearchField
       name={pathToName(props.path)}
-      label={props.port.label || props.port.key}
+      label={portLabel(props.port)}
       search={search}
-      description={props.port.description || undefined}
+      description={portDescription(props.port, props.widget)}
       noOptionFoundPlaceholder="No options found"
       commandPlaceholder="Search..."
       toFieldValue={toFieldValue}

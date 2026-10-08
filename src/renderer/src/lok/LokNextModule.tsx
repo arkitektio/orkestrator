@@ -1,7 +1,3 @@
-import { QuietPage } from "@/core/layout/fallbacks/QuietPage";
-import { ShellSignInNotice } from "@/core/connection/ui/ShellSignInNotice";
-import { ConnectingFallback } from "@/core/layout/fallbacks/Connecting";
-import { Guard } from "@/core/connection/arkitekt/host";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
@@ -30,55 +26,49 @@ import TeamHomePage from "./pages/TeamHomePage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import { RoleRoute } from "@/core/layout/fallbacks/NotPermitted";
 import { ADMIN_ROLE } from "@/core/connection/roles";
+import ClientsPage from "./pages/ClientsPage";
+import ReleasesPage from "./pages/ReleasesPage";
 interface Props { }
 
 export const LokNextModule: React.FC<Props> = () => {
   return (
-    // `Guard.Lok` IS `Arkitekt.Guard` (the session), not a service guard: the
-    // shell owns both of these surfaces now, so this route stays quiet while a
-    // launch is still proving its token and defers to the shell's notice when
-    // one has failed.
-    <Guard.Lok
-      notConnectedFallback={<ShellSignInNotice />}
-      bootingFallback={<QuietPage />}
-      connectingFallback={<ConnectingFallback />}
-    >
-      <ModuleLayout>
-        <Routes>
-          <Route path="me" element={<MePage />} />
-          <Route path="record" element={<RecordPage />} />
-          <Route path="users" element={<RoleRoute roles={ADMIN_ROLE}><UsersPage /></RoleRoute>} />
-          {/* A member's profile. `users/:id` is its older address. */}
-          <Route path="members/:id" element={<UserPage />} />
-          <Route path="users/:id" element={<UserPage />} />
-          <Route path="apps" element={<RoleRoute roles={ADMIN_ROLE}><AppsPage /></RoleRoute>} />
-          <Route path="devices/:id" element={<DevicePage />} />
-          <Route path="devices" element={<RoleRoute roles={ADMIN_ROLE}><DevicesPage /></RoleRoute>} />
-          <Route path="apps/:id" element={<AppPage />} />
-          <Route path="releases/:id" element={<ReleasePage />} />
-          <Route path="clients/:id" element={<ClientPage />} />
-          <Route path="services" element={<RoleRoute roles={ADMIN_ROLE}><ServicesPage /></RoleRoute>} />
-          <Route path="instances" element={<RoleRoute roles={ADMIN_ROLE}><InstancesPage /></RoleRoute>} />
-          <Route path="layers" element={<LayersPage />} />
-          <Route path="layers/:id" element={<LayerPage />} />
-          {/* A profile acts in exactly one organization, and Team's start
-              page IS it — there is no other organization to list or open. */}
-          <Route path="organizations/*" element={<Navigate replace to="/lok" />} />
-          <Route path="services/:id" element={<ServicePage />} />
-          <Route path="mandates" element={<MandatesPage />} />
-          <Route path="mandates/:id" element={<MandatePage />} />
-          <Route path="redeemtokens" element={<RoleRoute roles={ADMIN_ROLE}><RedeemTokensPage /></RoleRoute>} />
-          <Route path="redeemtokens/:id" element={<RedeemTokenPage />} />
-          <Route
-            path="serviceinstances/:id"
-            element={<ServiceInstancePage />}
-          />
-          <Route path="overview" element={<HomePage />} />
-          <Route index element={<TeamHomePage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </ModuleLayout>
-    </Guard.Lok>
+    <ModuleLayout>
+      <Routes>
+        <Route path="me" element={<MePage />} />
+        <Route path="record" element={<RecordPage />} />
+        <Route path="users" element={<RoleRoute roles={ADMIN_ROLE}><UsersPage /></RoleRoute>} />
+        {/* A member's profile. `users/:id` is its older address. */}
+        <Route path="members/:id" element={<UserPage />} />
+        <Route path="users/:id" element={<UserPage />} />
+        <Route path="apps" element={<RoleRoute roles={ADMIN_ROLE}><AppsPage /></RoleRoute>} />
+        <Route path="devices/:id" element={<DevicePage />} />
+        <Route path="devices" element={<RoleRoute roles={ADMIN_ROLE}><DevicesPage /></RoleRoute>} />
+        <Route path="apps/:id" element={<AppPage />} />
+        <Route path="releases/:id" element={<ReleasePage />} />
+        <Route path="clients/:id" element={<ClientPage />} />
+        <Route path="services" element={<RoleRoute roles={ADMIN_ROLE}><ServicesPage /></RoleRoute>} />
+        <Route path="instances" element={<RoleRoute roles={ADMIN_ROLE}><InstancesPage /></RoleRoute>} />
+        <Route path="layers" element={<LayersPage />} />
+        <Route path="layers/:id" element={<LayerPage />} />
+        {/* A profile acts in exactly one organization, and Team's start
+            page IS it — there is no other organization to list or open. */}
+        <Route path="organizations/*" element={<Navigate replace to="/lok" />} />
+        <Route path="services/:id" element={<ServicePage />} />
+        <Route path="mandates" element={<MandatesPage />} />
+        <Route path="mandates/:id" element={<MandatePage />} />
+        <Route path="redeemtokens" element={<RoleRoute roles={ADMIN_ROLE}><RedeemTokensPage /></RoleRoute>} />
+        <Route path="redeemtokens/:id" element={<RedeemTokenPage />} />
+        <Route
+          path="serviceinstances/:id"
+          element={<ServiceInstancePage />}
+        />
+        <Route path="overview" element={<HomePage />} />
+        <Route index element={<TeamHomePage />} />
+        <Route path="clients" element={<RoleRoute roles={ADMIN_ROLE}><ClientsPage /></RoleRoute>} />
+        <Route path="releases" element={<RoleRoute roles={ADMIN_ROLE}><ReleasesPage /></RoleRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ModuleLayout>
   );
 };
 

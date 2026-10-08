@@ -118,14 +118,12 @@ export const perspectiveScaleToDistance = (
  * World units per screen pixel for a perspective camera at `distance` FROM THE
  * TARGET.
  *
- * Deliberately distance-to-target, where `platform/probe/probeWorld.ts`
- * `computeWorldUnitsPerPixel` uses distance-to-ORIGIN. The two agree only for
- * an origin-centred scene, and they answer different questions: the probe/
- * ScaleBar one describes what is under the cursor right now, while a stored
- * `projectionScale` has to reproduce a FRAMING — how much of the subject fills
- * the viewport — which is a fact about the camera's distance from what it
- * orbits. Round-tripping through the origin-based one would move the camera
- * whenever the tour's subject is off-centre.
+ * Distance-to-target, the same measure the ScaleBar publishes
+ * (`platform/probe/probeWorld.ts` `computeWorldUnitsPerPixel` with the controls
+ * target as pivot): a stored `projectionScale` has to reproduce a FRAMING —
+ * how much of the subject fills the viewport — which is a fact about the
+ * camera's distance from what it orbits. Measuring from the world origin
+ * instead would move the camera whenever the tour's subject is off-centre.
  */
 export const perspectiveDistanceToScale = (
   distance: number,

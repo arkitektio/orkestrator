@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { DESIGN_TOOL_GESTURES } from "../../../platform/stores/modeStore";
 import { DESIGN_TOOLS, designToolByKey } from "./registry";
 
 describe("design tool registry", () => {
@@ -17,7 +18,19 @@ describe("design tool registry", () => {
       expect(tool.hint.length).toBeGreaterThan(0);
       expect(tool.shortcut.keys.length).toBeGreaterThan(0);
     }
-    expect(designToolByKey("c")?.id).toBe("brush");
+    expect(designToolByKey("c")?.id).toBe("trace");
+    expect(designToolByKey("v")?.id).toBe("seed");
     expect(designToolByKey("x")?.id).toBe("carve");
+  });
+
+  it("registers exactly the platform's tool ids, with the gesture the platform routes on", () => {
+    expect(DESIGN_TOOLS.map((tool) => tool.id).sort()).toEqual(Object.keys(DESIGN_TOOL_GESTURES).sort());
+    for (const tool of DESIGN_TOOLS) expect(tool.gesture).toBe(DESIGN_TOOL_GESTURES[tool.id]);
+  });
+
+  it("puts the reconstruct tools first on the toolbar", () => {
+    const primary = DESIGN_TOOLS.filter((tool) => tool.group === "primary").map((tool) => tool.id);
+    expect(primary.slice(0, 2)).toEqual(["trace", "seed"]);
+    expect(DESIGN_TOOLS.some((tool) => tool.group === "more")).toBe(true);
   });
 });

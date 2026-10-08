@@ -395,6 +395,20 @@ input AnnotationCollectionOrder @oneOf {
   name: Ordering
 }
 
+"""
+One change to an annotation collection. Exactly one field is set per event
+"""
+type AnnotationEvent {
+  """An annotation drawn into the collection"""
+  create: Annotation
+
+  """The ID of an annotation deleted from the collection"""
+  delete: ID
+
+  """An annotation of the collection that was edited, in its new state"""
+  update: Annotation
+}
+
 input AnnotationFilter {
   AND: AnnotationFilter
   DISTINCT: Boolean
@@ -9148,6 +9162,11 @@ input StrFilterLookup {
 }
 
 type Subscription {
+  """
+  Follow one annotation collection: an event for every annotation drawn into it, edited or deleted. Carries changes only -- read the collection's current annotations with the `annotations` query first
+  """
+  annotations(collection: ID!): AnnotationEvent!
+
   """Subscribe to real-time file updates"""
   files(folder: ID = null): FileEvent!
 }

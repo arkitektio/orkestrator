@@ -1,0 +1,16 @@
+# One collection's changes, for an AnnotationLayer set to "live": what somebody
+# else (or a task) drew, edited or deleted. Changes only — the list itself is
+# `GetSceneAnnotations`, and each event is written into that query's cache
+# entry (`features/annotations/annotationCache.ts`), so the selection is the
+# renderer's `SceneAnnotation` and nothing more.
+subscription WatchSceneAnnotations($collection: ID!) {
+  annotations(collection: $collection) {
+    create {
+      ...SceneAnnotation
+    }
+    update {
+      ...SceneAnnotation
+    }
+    delete
+  }
+}

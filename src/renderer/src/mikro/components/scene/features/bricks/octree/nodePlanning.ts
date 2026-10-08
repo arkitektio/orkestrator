@@ -10,12 +10,16 @@ import type { LayerState } from "../../../platform/model/layerModel";
 import type { LayerViewRange } from "../../../platform/visibility/visibility";
 import { atlasKindForGeometry, atlasSlotBytes, decodedBytesPerVoxel } from "./atlasFormat";
 import type { BrickSpec } from "./brickSpec";
-import { resolveDecodeAllowanceBytes, resolveDecodeFloorBytes } from "./poolBudget";
+import {
+  resolveDecodeAllowanceBytes,
+  resolveDecodeFloorBytes,
+  resolveDecodeBudgetBytes,
+} from "./poolBudget";
 import type { LayerLevelGeometry, LevelGeometry, Vec3 } from "../../../platform/coords/levelGeometry";
 import {
   brickGridForLevel,
   childrenOf,
-  chunksTouchingBrick,
+  chunkRangeTouchingBrick,
   nodeBaseBox,
   nodeKey,
   totalBrickCount,
@@ -34,8 +38,11 @@ import {
  *              resident. Protected AND fetched when missing — but a far
  *              keep dispatches after near targets (see compareFetchOrder)
  *
- * Traversal refines closest-first, so when the byte budget runs out it is
- * the distant regions that degrade to coarser bricks.
+ * Traversal refines one level at a time, closest-first within a level, so
+ * the byte budget runs out at ONE level, farthest bricks first: a region that
+ * wanted finer stops at that level or the one above, never at the coarsest.
+ * The bricks on screen are planned first; the margin (the 2D prefetch band,
+ * the 3D cull margin) gets what the budgets have left.
  */
 
 export type PlannedNode = {
@@ -86,6 +93,15 @@ export type LayerNodePlan = {
   decodeFloorBytes: number;
   /** Sub-floor allowance actually in force this plan. Debug only. */
   decodeAllowanceBytes: number;
+  /**
+   * The decoded-chunk budget (`PlanLayerNodesInput.decodeBudgetBytes`) and the
+   * chunk bytes the plan's bricks really need — every level, however it was
+   * admitted. A budget of 0 means it was not in force (and nothing was
+   * counted). Debug only: a count sitting at the budget says the decode
+   * cache, not the zoom or the slots, is what keeps the view from sharpening.
+   */
+  decodeBudgetBytes: number;
+  decodeBytesPlanned: number;
   /**
    * GPU ATLAS SLOT bytes this plan was allowed (`maxPlanBytes`) and the part of
    * it refinement could actually spend (slot currency — the decode pair above
@@ -238,6 +254,17 @@ export type PlanLayerNodesInput = {
    * 0 (default) disables sub-floor refinement — the legacy all-or-nothing
    * floor. See `resolveDecodeAllowanceBytes` (poolBudget.ts). */
   decodeAllowanceBytes?: number;
+  /**
+   * Decoded-chunk bytes the plan's bricks may need in total. Below the floor,
+   * a level whose chunks are no larger than a brick refines on the allowance
+   * as any other, and past it for as long as the plan's real chunk bytes stay
+   * within this — see `resolveDecodeBudgetBytes` for why the floor and the
+   * allowance alone are too cautious there. Derived from
+   * `decodeCacheShareBytes` when that is given. Without either, and at an
+   * explicit 0 (the tracker's first 3D plan — the cold-open gate), the floor
+   * + allowance decide alone.
+   */
+  decodeBudgetBytes?: number;
   /** Anisotropy-aware LOD criterion (`anisoEffectiveFactor`) — the caller
    * passes `isAnisoLodEnabled()`; false (default) = the legacy max rule. */
   anisoLod?: boolean;
@@ -321,6 +348,18 @@ const BUDGET_FLOOR_HYSTERESIS = 1.15;
  * it coarsens again (see `previousKeepKeys`). A genuine two-sided band, never a
  * ratchet: unlock needs the full `>= 1` footprint, hold needs `>= 1/1.15`. */
 export const LOD_HYSTERESIS = 1.15;
+
+/**
+ * 2D refinement threshold: the screen px one texel of the FINER level must
+ * cover before a node refines. At 1 (the 3D rule) the level shown is always
+ * the coarser of the two candidates — its texels span 1–2 px, drawn
+ * nearest-filtered, so a slab looked soft at every zoom. 1/√2 switches at the
+ * midpoint instead: the level whose texels are NEAREST one pixel, 0.71–1.41
+ * px, which is the level a nearest-mip pick samples. That is one level finer
+ * — four times the bricks — over the upper half of every zoom octave, which a
+ * slab can afford and a volume (eight times) cannot; 3D keeps 1.
+ */
+export const PLANE_LOD_THRESHOLD = Math.SQRT1_2;
 
 // Scratch objects (single-threaded, one plan at a time).
 const scratchBox = new THREE.Box3();
@@ -430,6 +469,7 @@ export function planLayerNodes({
   decodeFloorBytes,
   decodeCacheShareBytes,
   decodeAllowanceBytes,
+  decodeBudgetBytes,
   anisoLod = false,
   previousBudgetMinLevel,
   previousKeepKeys,
@@ -450,6 +490,8 @@ export function planLayerNodes({
     levelDecodeBytes: [],
     decodeFloorBytes: 0,
     decodeAllowanceBytes: 0,
+    decodeBudgetBytes: 0,
+    decodeBytesPlanned: 0,
     planBudgetBytes: maxPlanBytes,
     refineBudgetBytes: 0,
     slabZ,
@@ -668,6 +710,37 @@ export function planLayerNodes({
         })
       : 0);
 
+  // --- The chunk budget -------------------------------------------------------
+  // The floor prices a level as its WHOLE visible chunk set, margin included,
+  // and unlocks it or not; the allowance past it is half the cache at most.
+  // That caution fits a pyramid where one chunk feeds many bricks
+  // (plane-chunked data: the level IS all-or-nothing). It is too much where
+  // chunks are no larger than a brick — 64³, the layout the backend writes —
+  // and the cost of a level is the sum of its bricks'. Such a level can be
+  // bought brick by brick, so past the allowance it goes on refining for as
+  // long as the chunks the plan's bricks REALLY need fit the cache share
+  // (`tryChargeChildren`).
+  const chunkBudgetBytes =
+    decodeBudgetBytes ??
+    (decodeCacheShareBytes !== undefined ? resolveDecodeBudgetBytes({ decodeCacheShareBytes }) : 0);
+  /**
+   * Chunks no larger than a brick, along every axis a brick spans (a 2D brick
+   * is one slab: the chunk's depth is charged, never asked about). Extents are
+   * clamped to the level, whose chunks may be declared bigger than it is. A 3D
+   * brick's guard band reads its neighbours' chunks too; the ledger counts a
+   * chunk once however many bricks touch it, so sharing costs nothing here.
+   */
+  const brickSizedChunks = (levelIndex: number): boolean => {
+    if (chunkBudgetBytes <= 0) return false;
+    const level = levels[levelIndex];
+    for (const axis of mode === "2D" ? ([0, 1] as const) : ([0, 1, 2] as const)) {
+      if (Math.min(level.spatialChunks[axis], level.spatialShape[axis]) > spec.payload[axis]) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // --- Per-node screen footprint --------------------------------------------
   /** Per-axis world size of one base voxel — the metric every distance,
    * angle and refinement factor below is measured in. `[1,1,1]` (no camera,
@@ -765,7 +838,8 @@ export function planLayerNodes({
     const finerScale = levels[level - 1].scale;
     // LOD hysteresis (see `previousKeepKeys`): a node refined last plan holds
     // within the slack band; a node that was not needs the full threshold.
-    const threshold = previousKeepKeys?.has(key) ? 1 / LOD_HYSTERESIS : 1;
+    const unlock = mode === "2D" ? PLANE_LOD_THRESHOLD : 1;
+    const threshold = previousKeepKeys?.has(key) ? unlock / LOD_HYSTERESIS : unlock;
     return footprintPxOf(baseBox) * finerFactorOf(finerScale, baseBox) * lodBias >= threshold;
   };
 
@@ -824,8 +898,8 @@ export function planLayerNodes({
 
   // --- Sub-floor decode accounting ------------------------------------------
   // Charged in the currency the fetcher actually pays: whole decoded zarr
-  // chunks, deduped plan-wide (`chunksTouchingBrick` is the fetch path's own
-  // mapping). On plane-chunked levels one charged chunk covers the full x/y
+  // chunks, deduped plan-wide (`chunkRangeTouchingBrick` is the fetch path's
+  // own mapping). On plane-chunked levels one charged chunk covers the full x/y
   // extent, so every other brick in it refines at zero marginal cost — the
   // fine region grows chunk-aligned, which also keeps it stable under small
   // focus motion.
@@ -841,60 +915,72 @@ export function planLayerNodes({
       nonSpatialDecodeFactor(geometry, level)
     );
   };
-  const chargedChunks = new Set<string>();
+  /** Per level, the chunks already charged — as numbers, `(z·n + y)·n + x`
+   * with `n` past the level's largest chunk index (exact in a double up to
+   * some 200 000 chunks along an axis). This runs for every brick of every
+   * replan: as strings, built from a list of coordinate triples, the keys
+   * were over half of a 3D plan's time. */
+  const chargedChunks: Set<number>[] = levels.map(() => new Set<number>());
+  const chunkKeyRadix = levels.map((level) => {
+    let radix = 1;
+    for (const axis of [0, 1, 2] as const) {
+      const chunkExtent = Math.max(1, level.spatialChunks[axis]);
+      radix = Math.max(radix, Math.ceil(level.spatialShape[axis] / chunkExtent) + 1);
+    }
+    return radix;
+  });
   let decodeBytesCharged = 0;
-  /** All-or-nothing: charge every NEW chunk the children need, or admit none. */
+  /** Every chunk byte the plan's bricks need, on any level and however they
+   * were admitted — what the chunk budget is measured against (counted only
+   * while that budget is in force). Apart from `decodeBytesCharged`, which
+   * stays the allowance's own ledger. */
+  let chunkBytesPlanned = 0;
+  /** The chunks these bricks need that the plan has not charged yet. */
+  const unchargedChunksOf = (levelIndex: number, bricks: Vec3[]): Set<number> => {
+    const charged = chargedChunks[levelIndex];
+    const radix = chunkKeyRadix[levelIndex];
+    const fresh = new Set<number>();
+    for (const brick of bricks) {
+      const range = chunkRangeTouchingBrick(geometry, spec, levelIndex, brick);
+      if (range === null) continue;
+      const { lo, hi } = range;
+      for (let z = lo[2]; z < hi[2]; z++)
+        for (let y = lo[1]; y < hi[1]; y++)
+          for (let x = lo[0]; x < hi[0]; x++) {
+            const key = (z * radix + y) * radix + x;
+            if (!charged.has(key)) fresh.add(key);
+          }
+    }
+    return fresh;
+  };
+  /**
+   * All-or-nothing: charge every NEW chunk the children need, or admit none.
+   * Below the floor the allowance pays first, exactly as it always did; what
+   * it cannot cover, a level of brick-sized chunks may still take while the
+   * plan's real chunk bytes stay within the chunk budget. At and above the
+   * floor nothing is refused — the chunks are only counted.
+   */
   const tryChargeChildren = (childLevel: number, children: Vec3[]): boolean => {
-    const fresh = new Set<string>();
-    for (const child of children)
-      for (const chunk of chunksTouchingBrick(geometry, spec, childLevel, child)) {
-        const key = `${childLevel}:${chunk[0]}:${chunk[1]}:${chunk[2]}`;
-        if (!chargedChunks.has(key)) fresh.add(key);
-      }
+    const fresh = unchargedChunksOf(childLevel, children);
     const cost = fresh.size * chunkDecodedBytes(childLevel);
-    if (decodeBytesCharged + cost > allowanceBytes) return false;
-    for (const key of fresh) chargedChunks.add(key);
-    decodeBytesCharged += cost;
+    if (childLevel < budgetMinLevel) {
+      if (decodeBytesCharged + cost <= allowanceBytes) decodeBytesCharged += cost;
+      else if (!brickSizedChunks(childLevel) || chunkBytesPlanned + cost > chunkBudgetBytes) {
+        return false;
+      }
+    }
+    if (chunkBudgetBytes > 0) chunkBytesPlanned += cost;
+    for (const key of fresh) chargedChunks[childLevel].add(key);
     return true;
   };
 
-  // --- Closest-first refinement ---------------------------------------------
+  // --- Level-by-level, closest-first refinement ------------------------------
   const nodes: PlannedNode[] = [];
   let planBytes = 0;
-  /** Bytes of sub-coarsest nodes only — what competes for unreserved slots. */
+  /** Bytes of sub-coarsest nodes only — what competes for unreserved slots.
+   * Committed when a node is ADMITTED (see `refine`), ahead of its emission. */
   let refineBytes = 0;
   let targetLevel = coarsest;
-
-  const emit = (
-    level: number,
-    coords: Vec3,
-    role: PlannedNode["role"],
-    baseBox: VoxelBox,
-  ) => {
-    // Band 2 = margin-only prefetch, fetched last. Either margin can put a node
-    // there: the 2D viewport's (outside `strictBox`) or the 3D frustum's (only
-    // inside once dilated by FRUSTUM_CULL_MARGIN). Without this arm the
-    // hysteresis margin would compete with genuinely visible bricks for
-    // in-flight slots and trade edge flicker for centre latency.
-    const fetchBand: PlannedNode["fetchBand"] =
-      level === rootLevel
-        ? 0
-        : (strictBox && !boxesOverlap(baseBox, strictBox)) || !nodeInFrustum(baseBox, 0)
-          ? 2
-          : 1;
-    nodes.push({
-      key: nodeKey(level, coords),
-      level,
-      coords,
-      role,
-      priority: nodes.length,
-      fetchScore: fetchScoreOf(baseBox),
-      fetchBand,
-    });
-    planBytes += slotBytes;
-    if (level < coarsest) refineBytes += slotBytes;
-    if (role === "target" && level < targetLevel) targetLevel = level;
-  };
 
   /**
    * Does this node meet the camera frustum, allowing `margin` × its own extent
@@ -919,57 +1005,161 @@ export function planLayerNodes({
     return nodeInFrustum(baseBox, frustumCullMargin);
   };
 
-  const visit = (level: number, coords: Vec3): void => {
-    const baseBox = nodeBaseBox(geometry, spec, level, coords);
-    if (!nodeVisible(baseBox)) return;
+  /**
+   * In the plan only as MARGIN: outside the viewport proper (the 2D prefetch
+   * band, `PREFETCH_MARGIN`) or inside the frustum only once it is dilated
+   * (the 3D hysteresis band, `FRUSTUM_CULL_MARGIN`). Asked once per node, and
+   * the one answer decides both when the node may be bought (the margin walk
+   * below) and when it is fetched (band 2, last): if the two could disagree, a
+   * brick would be bought ahead of visible ones and then fetched behind them.
+   */
+  const marginOnly = (baseBox: VoxelBox): boolean =>
+    (strictBox !== null && !boxesOverlap(baseBox, strictBox)) || !nodeInFrustum(baseBox, 0);
 
-    let children: Vec3[] = [];
-    if (wantFiner(level, baseBox, nodeKey(level, coords))) {
-      const childSlab = slabBrickZ(level - 1);
-      // 2D with a real z axis: a child level that doesn't cover the slab
-      // (childSlab null) must not be refined into — its bricks would show a
-      // different z. Cannot happen below rootLevel with monotone pyramid
-      // coverage, but guard against irregular level shapes.
-      const childCoversSlab = mode !== "2D" || zPos === -1 || childSlab !== null;
-      children = !childCoversSlab
-        ? []
-        : childrenOf(geometry, spec, level, coords).filter((child) => {
-            if (mode === "2D" && childSlab !== null && child[2] !== childSlab) return false;
-            return nodeVisible(nodeBaseBox(geometry, spec, level - 1, child));
-          });
-      const childBytes = children.length * slotBytes;
-      const pendingSelfBytes = level < coarsest ? slotBytes : 0;
+  // Level by level, nearest first within a level — NOT depth-first. A
+  // depth-first walk spends the whole slot budget taking the nearest subtree to
+  // the finest level, and every subtree after it stops wherever it stood: a
+  // sharp near half against a far half four levels coarser. Walking a level at
+  // a time, the budget runs out while ONE level is being admitted, farthest
+  // bricks first: whatever wanted finer stops there or one level above. The
+  // price under a tight budget is paid near the camera — coarse levels across
+  // the whole view are bought before fine ones up close.
+  //
+  // `claimed` is the plan's node set. True-factor pyramids do not nest: a
+  // level floor-halved from an odd size (307 → 153) has a factor a hair over
+  // 2, so a parent's box overhangs the next child brick and `childrenOf`
+  // returns that child for BOTH parents. Unclaimed, the child and its whole
+  // subtree were emitted and charged once per parent.
+  //
+  // The pyramid is walked TWICE: first for the bricks on screen, then, with
+  // whatever the budgets have left, for the margin-only ones. A margin brick
+  // must never cost a visible one (P26), and a single walk broke that three
+  // ways whenever a budget ran out: nearest-first buys a margin brick beside
+  // the camera before a visible one far from it; a node on the view's edge
+  // bought its margin children in the same all-or-nothing purchase as its
+  // visible ones; and a level at a time, a coarse level's margin is bought
+  // before the next level's screen. So the screen is planned as if the margin
+  // did not exist, and the margin gets what is left.
+  type Candidate = { key: string; coords: Vec3; baseBox: VoxelBox; index: number };
+  type PlanNode = Candidate & {
+    level: number;
+    dist: number;
+    margin: boolean;
+    /** A child of it is in the plan: a fallback (`keep`), not a target. */
+    refined: boolean;
+    /** The node whose refinement claimed it (null for a root). With `dist` and
+     * `index` — its place among that node's children — the plan order. */
+    parent: PlanNode | null;
+    /** Its place within its level, once `orderLevel` has run. */
+    rank: number;
+    /** Its visible children, split by `marginOnly`: enumerated once, read by
+     * both walks. null = it does not refine. */
+    children?: { screen: Candidate[]; margin: Candidate[] } | null;
+  };
+  const claimed = new Set<string>();
+  const byLevel: PlanNode[][] = levels.map(() => []);
+
+  /** Nearest first; ties in the order a single walk would have reached them
+   * (parents in plan order, children as `childrenOf` lists them). */
+  const byPlanOrder = (a: PlanNode, b: PlanNode) =>
+    a.dist - b.dist || (a.parent?.rank ?? 0) - (b.parent?.rank ?? 0) || a.index - b.index;
+  const orderLevel = (level: number): PlanNode[] => {
+    const levelNodes = byLevel[level];
+    levelNodes.sort(byPlanOrder);
+    levelNodes.forEach((node, rank) => {
+      node.rank = rank;
+    });
+    return levelNodes;
+  };
+
+  const childrenFor = (node: PlanNode): NonNullable<PlanNode["children"]> | null => {
+    if (node.children !== undefined) return node.children;
+    node.children = null;
+    if (!wantFiner(node.level, node.baseBox, node.key)) return null;
+    const childLevel = node.level - 1;
+    const childSlab = slabBrickZ(childLevel);
+    // 2D with a real z axis: a child level that doesn't cover the slab
+    // (childSlab null) must not be refined into — its bricks would show a
+    // different z. Cannot happen below rootLevel with monotone pyramid
+    // coverage, but guard against irregular level shapes.
+    if (mode === "2D" && zPos !== -1 && childSlab === null) return null;
+
+    const split: NonNullable<PlanNode["children"]> = { screen: [], margin: [] };
+    childrenOf(geometry, spec, node.level, node.coords).forEach((coords, index) => {
+      if (mode === "2D" && childSlab !== null && coords[2] !== childSlab) return;
+      const baseBox = nodeBaseBox(geometry, spec, childLevel, coords);
+      if (!nodeVisible(baseBox)) return;
+      (marginOnly(baseBox) ? split.margin : split.screen).push({
+        key: nodeKey(childLevel, coords),
+        coords,
+        baseBox,
+        index,
+      });
+    });
+    node.children = split;
+    return split;
+  };
+
+  /** Buy the children of `node` that belong to this walk: all of them, or
+   * none. A node whose wanted children are all in the plan — its own or a
+   * neighbour's — is a fallback rather than a target. */
+  const refine = (node: PlanNode, marginWalk: boolean): void => {
+    const split = childrenFor(node);
+    if (split === null) return;
+    const wanted = marginWalk ? split.margin : split.screen;
+    if (wanted.length === 0) return;
+    const childLevel = node.level - 1;
+    const fresh = wanted.filter((child) => !claimed.has(child.key));
+    if (fresh.length > 0) {
+      // Only the children this node ADDS cost anything: slots first, then the
+      // decode side (below the floor: the allowance, then the chunk budget where
+      // chunks are brick-sized), so slot-rejected refinement never consumes either.
+      if (refineBytes + fresh.length * slotBytes > refineBudgetBytes) return;
       if (
-        children.length === 0 ||
-        refineBytes + pendingSelfBytes + childBytes > refineBudgetBytes
-      ) {
-        children = [];
-      }
-      // Sub-floor admission: charged against the decode allowance, AFTER the
-      // slot check so slot-rejected refinement never consumes allowance.
-      if (
-        children.length !== 0 &&
         fixedLOD === null &&
-        level - 1 < budgetMinLevel &&
-        !tryChargeChildren(level - 1, children)
+        (childLevel < budgetMinLevel || chunkBudgetBytes > 0) &&
+        !tryChargeChildren(
+          childLevel,
+          fresh.map((child) => child.coords),
+        )
       ) {
-        children = [];
+        return;
       }
+      for (const child of fresh) {
+        claimed.add(child.key);
+        byLevel[childLevel].push({
+          ...child,
+          level: childLevel,
+          dist: orderScore(child.baseBox),
+          margin: marginWalk,
+          refined: false,
+          parent: node,
+          rank: 0,
+        });
+      }
+      // Committed here, not at emission: the next level's admissions must see
+      // every brick this level already promised.
+      refineBytes += fresh.length * slotBytes;
     }
+    node.refined = true;
+  };
 
-    if (children.length === 0) {
-      emit(level, coords, "target", baseBox);
-      return;
-    }
-
-    emit(level, coords, "keep", baseBox);
-    children
-      .map((child) => ({
-        child,
-        dist: orderScore(nodeBaseBox(geometry, spec, level - 1, child)),
-      }))
-      .sort((a, b) => a.dist - b.dist)
-      .forEach(({ child }) => visit(level - 1, child));
+  const emit = (node: PlanNode) => {
+    const { level } = node;
+    const role: PlannedNode["role"] = node.refined ? "keep" : "target";
+    nodes.push({
+      key: node.key,
+      level,
+      coords: node.coords,
+      role,
+      priority: nodes.length,
+      fetchScore: fetchScoreOf(node.baseBox),
+      // Band 2 = margin-only, fetched last — the same answer that put the node
+      // in the margin walk (see `marginOnly`).
+      fetchBand: level === rootLevel ? 0 : node.margin ? 2 : 1,
+    });
+    planBytes += slotBytes;
+    if (role === "target" && level < targetLevel) targetLevel = level;
   };
 
   // Roots: bricks of the coarsest slab-covering level overlapping the
@@ -993,18 +1183,51 @@ export function planLayerNodes({
   const [y0, y1] = rootRange(1);
   const [z0, z1] = rootSlab !== null ? [rootSlab, rootSlab + 1] : rootRange(2);
 
-  const roots: { coords: Vec3; dist: number }[] = [];
   for (let z = z0; z < z1; z++)
     for (let y = y0; y < y1; y++)
       for (let x = x0; x < x1; x++) {
         const coords: Vec3 = [x, y, z];
-        roots.push({
+        const baseBox = nodeBaseBox(geometry, spec, rootLevel, coords);
+        if (!nodeVisible(baseBox)) continue;
+        const key = nodeKey(rootLevel, coords);
+        claimed.add(key);
+        // Roots below the coarsest level (a 2D slab the coarse levels do not
+        // cover) compete for unreserved slots like any other brick — margin
+        // roots too, and up front: a root is in the plan whatever the budget
+        // says, so its slot has to be set aside before anything is refined.
+        if (rootLevel < coarsest) refineBytes += slotBytes;
+        byLevel[rootLevel].push({
+          key,
           coords,
-          dist: orderScore(nodeBaseBox(geometry, spec, rootLevel, coords)),
+          baseBox,
+          index: byLevel[rootLevel].length,
+          level: rootLevel,
+          dist: orderScore(baseBox),
+          margin: marginOnly(baseBox),
+          refined: false,
+          parent: null,
+          rank: 0,
         });
       }
-  roots.sort((a, b) => a.dist - b.dist);
-  for (const root of roots) visit(rootLevel, root.coords);
+
+  const walk = (marginWalk: boolean) => {
+    // The roots' chunks sit in the same cache as everything refined from them:
+    // counted before their walk — the margin's only once the screen is done.
+    if (fixedLOD === null && chunkBudgetBytes > 0) {
+      const fresh = unchargedChunksOf(
+        rootLevel,
+        byLevel[rootLevel].filter((root) => root.margin === marginWalk).map((root) => root.coords),
+      );
+      for (const key of fresh) chargedChunks[rootLevel].add(key);
+      chunkBytesPlanned += fresh.size * chunkDecodedBytes(rootLevel);
+    }
+    for (let level = rootLevel; level > 0; level--) {
+      for (const node of orderLevel(level)) refine(node, marginWalk);
+    }
+  };
+  walk(false);
+  walk(true);
+  for (let level = rootLevel; level >= 0; level--) orderLevel(level).forEach(emit);
 
   return {
     mode,
@@ -1015,6 +1238,8 @@ export function planLayerNodes({
     levelDecodeBytes: levels.map((_, i) => visibleBytesAtLevel(i)),
     decodeFloorBytes: floorBytes,
     decodeAllowanceBytes: allowanceBytes,
+    decodeBudgetBytes: chunkBudgetBytes,
+    decodeBytesPlanned: chunkBytesPlanned,
     planBudgetBytes: maxPlanBytes,
     refineBudgetBytes,
     slabZ: slabZOut,

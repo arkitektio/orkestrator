@@ -321,7 +321,7 @@ export const CreateEntityWithPropertiesDialog = (props: {
   };
 
   return (
-    <div className="space-y-4 p-6 max-h-[80vh] overflow-y-auto">
+    <div className="space-y-4">
       <div className="space-y-2">
         <h2 className="text-2xl font-bold">Create New {props.category.label}</h2>
         <p className="text-sm text-muted-foreground">
