@@ -6,6 +6,8 @@ import ArrayDatasetSpecPage from "./pages/ArrayDatasetSpecPage";
 import ArrayDatasetsPage from "./pages/ArrayDatasetsPage";
 import AnnotationPage from "./pages/AnnotationPage";
 import AnnotationsPage from "./pages/AnnotationsPage";
+import ChartPage from "./pages/ChartPage";
+import ChartsPage from "./pages/ChartsPage";
 import CoordinateSystemPage from "./pages/CoordinateSystemPage";
 import CoordinateSystemsPage from "./pages/CoordinateSystemsPage";
 import FilePage from "./pages/FilePage";
@@ -50,6 +52,8 @@ export const MikroNextModule = () => {
         <Route path="scenes/:id" element={<ScenePage />} />
         {/* Its own page, opted into from a scene — never a mode of ScenePage. */}
         <Route path="scenes/:id/register" element={<SceneRegistrationPage />} />
+        <Route path="charts" element={<ChartsPage />} />
+        <Route path="charts/:id" element={<ChartPage />} />
         <Route path="peerhome/:id" element={<PeerHomePage />} />
         <Route path="files/:id" element={<FilePage />} />
         <Route path="tabledatasets" element={<TableDatasetsPage />} />

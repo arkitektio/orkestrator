@@ -280,6 +280,31 @@ export const MIKRO_HELP = {
       ]}
     />
   ),
+  charts: (
+    <PageHelp
+      intro="Charts lay data out along one axis, such as time or wavelength, and read values off it. Arrays are drawn as traces, table columns as series."
+      steps={[
+        <>Click a chart to open it.</>,
+        <>Press <b>New</b> to make an empty chart over a new axis or an existing space.</>,
+        <>Right-click a coordinate system and choose <b>Create Chart</b> to draw everything already laid along its axis.</>,
+      ]}
+      tips={[
+        <>A chart owns none of its data: deleting one leaves the arrays, tables and the space untouched.</>,
+      ]}
+    />
+  ),
+  chart: (
+    <PageHelp
+      intro="A chart is data laid out along one axis. Each layer reads one source: a trace reads an array, a series reads a table column, an annotation layer shows drawn marks."
+      steps={[
+        <>Read <b>Laid out along</b> for the axis and its unit, and click the space below it to see what is registered into it.</>,
+        <>Under <b>Layers</b>, click a source to open the data a layer reads.</>,
+      ]}
+      tips={[
+        <>Where a layer sits along the axis comes from how its data is registered into the space, not from the chart.</>,
+      ]}
+    />
+  ),
   lens: (
     <PageHelp
       intro="A lens is a named selection of an array dataset: the whole array, or a cut along some of its axes. Scenes draw data through lenses; this page only describes one."

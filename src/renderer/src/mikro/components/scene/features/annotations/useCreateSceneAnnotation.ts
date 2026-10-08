@@ -4,7 +4,7 @@ import {
   useCreateAnnotationMutation,
   type CreateAnnotationMutation,
 } from "@/mikro/api/graphql";
-import { upsertSceneAnnotation } from "./annotationCache";
+import { upsertSceneAnnotation } from "../../../../lib/annotations/annotationCache";
 import { useRoiSelectionStoreApi } from "./roiSelectionStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 

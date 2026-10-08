@@ -1,5 +1,5 @@
-import { pixelAtTime } from "../../platform/camera/rangeToCamera";
-import { valueToY } from "../../platform/coords/rowMap";
+import { pixelAtTime } from "@/core/data/plot/camera/rangeToCamera";
+import { valueToY } from "@/core/data/plot/coords/rowMap";
 import type { AnnotationMarks } from "./annotationGeometry";
 
 /**

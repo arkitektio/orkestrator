@@ -1,0 +1,250 @@
+# The chart: mikro's second composition beside the scene.
+#
+# A `Scene` is a place; a `Chart` is an AXIS. Its layers are data laid out along
+# one metric axis (time, wavelength, distance, ...) with values read off it: a
+# trace (a lens over an array), a series (one column of a table against
+# another), or an annotation collection's drawn marks. `worldCoordinateSystem`
+# is the space they share, and each layer's `asAffine` is the one authority on
+# where its samples land along the axis.
+#
+# `layers` comes back in server order; the client sorts it by (order, id) for
+# drawing and by (typename, id) for its structural signature.
+
+fragment ChartAffine on AffinePlacement {
+  # ONE row: the chart's world has a single axis. The coefficient in the
+  # `alongAxis` column is the step along the chart's axis per step along the
+  # data, the last entry is the offset.
+  matrix
+  inputAxes
+  outputAxes
+  total
+}
+
+fragment ChartLayerCommon on ChartLayer {
+  __typename
+  id
+  kind
+  name
+  visible
+  order
+  opacity
+  # RGBA; null lets the viewer choose.
+  color
+  # PLACED | CONDITIONAL | UNREGISTERED | UNMAPPABLE: four different
+  # affordances, so a bare null `asAffine` is not enough to render the card.
+  placement
+  placementValidity
+  placementInvariance
+  # Derived, not a setting: the source axis the composed placement reads the
+  # chart's axis from. Null when the layer is not placed.
+  alongAxis
+  # THE placement, and the only one: there is no client walk of the path.
+  #
+  # This field ERRORS rather than nulling when a path exists but will not
+  # condense, which is why `GetChart` runs with `errorPolicy: "all"` and the
+  # page reads the errors. A layer whose `asAffine` is null is not drawn and
+  # its card says why.
+  asAffine {
+    ...ChartAffine
+  }
+  # The reconcile key only: (id, version) names the STATE of each edge, so the
+  # provider rebuilds on a registration change and on nothing else. Never
+  # composed client-side.
+  pathToWorld {
+    inverted
+    transformation {
+      id
+      version
+    }
+  }
+}
+
+# What a trace needs of its lens: the selection (which axis is free, where the
+# others are pinned), the pyramid it reads from, and what its anchors call the
+# positions it draws a line for. Deliberately NOT `SceneLens`, which carries the
+# phasor context and every anchor's histogram.
+fragment ChartLens on Lens {
+  id
+  shape
+  axisNames
+  slices {
+    ...DimSlice
+  }
+  activeAnchors {
+    id
+    coordinates
+    channelLabel {
+      label
+    }
+  }
+  coordinateSystem {
+    id
+    name
+  }
+  dataset {
+    id
+    name
+    axisNames
+    shape
+    dataArrays {
+      id
+      level
+      shape
+      chunkShape
+      toParent {
+        ...Transformation
+      }
+      store {
+        ...ZarrStore
+      }
+    }
+  }
+}
+
+fragment ChartTraceLayer on TraceChartLayer {
+  ...ChartLayerCommon
+  lens {
+    ...ChartLens
+  }
+  mark
+  lineWidth
+  markerSize
+  # The CHANNEL or INDEX axis the lens leaves free beside `alongAxis`: one line
+  # per position along it. Null for a single line.
+  seriesAxis
+}
+
+fragment ChartSeriesLayer on SeriesChartLayer {
+  ...ChartLayerCommon
+  tableDataset {
+    id
+    name
+    store {
+      ...ParquetStore
+    }
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  valueColumn
+  # The same name as `alongAxis`; null when the table is no longer placed.
+  coordinateColumn
+  valueUnit
+  mark
+  lineWidth
+  markerSize
+}
+
+fragment ChartAnnotationLayer on AnnotationChartLayer {
+  ...ChartLayerCommon
+  annotationCollection {
+    id
+    name
+    # The drawing space. Its axes say whether marks carry a height (a VALUE
+    # axis beside the chart's own) or only an extent along the axis.
+    coordinateSystem {
+      id
+      name
+      axes {
+        ...Axis
+      }
+    }
+  }
+}
+
+# What `updateChartLayer` answers with: view state only, which is all it can
+# change. No placement fields, so a restyle can never fail on `asAffine`.
+fragment ChartLayerStyle on ChartLayer {
+  __typename
+  id
+  name
+  visible
+  order
+  opacity
+  color
+  ... on TraceChartLayer {
+    mark
+    lineWidth
+    markerSize
+  }
+  ... on SeriesChartLayer {
+    mark
+    lineWidth
+    markerSize
+  }
+}
+
+fragment Chart on Chart {
+  descriptors
+  id
+  name
+  description
+  createdAt
+  creator {
+    sub
+  }
+  # The world's only axis, repeated on the chart: its name, metric type, unit.
+  axis {
+    ...Axis
+  }
+  worldCoordinateSystem {
+    id
+    name
+  }
+  layers {
+    __typename
+    ...ChartTraceLayer
+    ...ChartSeriesLayer
+    ...ChartAnnotationLayer
+  }
+}
+
+fragment ListChart on Chart {
+  descriptors
+  id
+  name
+  description
+  createdAt
+  axis {
+    ...Axis
+  }
+}
+
+# Something laid in (or registered into) a chart's world that a layer could
+# read. Only the three kinds a chart layer reads are selected; the rest of the
+# union comes back as a bare typename and is left out of the picker.
+fragment ChartLayerCandidate on Resident {
+  __typename
+  ... on Lens {
+    id
+    shape
+    axisNames
+    slices {
+      ...DimSlice
+    }
+    coordinateSystem {
+      id
+      name
+      axes {
+        ...Axis
+      }
+    }
+    dataset {
+      id
+      name
+      axisNames
+      shape
+    }
+  }
+  ... on TableDataset {
+    id
+    name
+    columns {
+      ...TableDatasetColumn
+    }
+  }
+  ... on AnnotationCollection {
+    id
+    name
+  }
+}

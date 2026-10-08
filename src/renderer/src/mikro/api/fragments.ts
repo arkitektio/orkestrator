@@ -6,6 +6,11 @@
       }
       const result: PossibleTypesResultData = {
   "possibleTypes": {
+    "ChartLayer": [
+      "AnnotationChartLayer",
+      "SeriesChartLayer",
+      "TraceChartLayer"
+    ],
     "FileLinkContainer": [
       "AnnotationCollection",
       "ArrayDataset",
@@ -96,6 +101,7 @@
       "Animation",
       "AnimationWaypoint",
       "Annotation",
+      "AnnotationChartLayer",
       "AnnotationCollection",
       "AnnotationLayer",
       "ArrayDataset",
@@ -103,6 +109,7 @@
       "BigFileStore",
       "ByDimensionTransformation",
       "ChannelLabel",
+      "Chart",
       "Client",
       "Column",
       "CoordinateAnchor",
@@ -141,12 +148,14 @@
       "Scene",
       "SceneSnapshot",
       "SequenceTransformation",
+      "SeriesChartLayer",
       "SparseArray",
       "SparseAxisReference",
       "SparseDataset",
       "SparseStore",
       "TableDataset",
       "Task",
+      "TraceChartLayer",
       "TrackLayer",
       "TranslationTransformation",
       "UnmappableTransformation",

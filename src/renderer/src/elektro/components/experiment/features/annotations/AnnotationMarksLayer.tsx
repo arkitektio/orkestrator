@@ -4,10 +4,10 @@ import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { Line2NodeMaterial, MeshBasicNodeMaterial } from "three/webgpu";
 import { bindField } from "@/core/data/scene/stores/bindStore";
-import { useBandValueMatrix } from "../../platform/marks/bandValueMatrix";
-import { useSegmentGeometry, writeSegments } from "../../platform/marks/segmentGeometry";
+import { useBandValueMatrix } from "@/core/data/plot/marks/bandValueMatrix";
+import { useSegmentGeometry, writeSegments } from "@/core/data/plot/marks/segmentGeometry";
 import { useExperimentStore } from "../../platform/stores/experimentStore";
-import { bandKey, useViewerStoreApi } from "../../platform/stores/viewerStore";
+import { bandKey, useViewerStoreApi } from "@/core/data/plot/stores/viewerStore";
 import type { AnnotationMarks, RowShapes } from "./annotationGeometry";
 import { useAnnotationMarks, useAnnotationStore, useAnnotationStoreApi } from "./store/annotationSlice";
 

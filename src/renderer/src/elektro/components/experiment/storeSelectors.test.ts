@@ -16,7 +16,9 @@ import { describe, expect, it } from "vitest";
  *
  * The allowlist is for records that legitimately change at UI cadence and are
  * rendered as a list; each entry carries its reason. Mirrors mikro's
- * `scene/storeSelectors.test.ts`.
+ * `scene/storeSelectors.test.ts`. The plot engine's own components (the layers
+ * panel, the overview strip) are held to the same rule by
+ * `core/data/plot/storeSelectors.test.ts`.
  */
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -48,12 +50,6 @@ const RECORDS = new Set([
 const ALLOWLIST: Record<string, Record<string, string>> = {
   "experimentHost.ts": {
     layers: "the host API returns the layer list as plain data; a list at UI cadence",
-  },
-  "shell/layerPanel/LayerControlPanel.tsx": {
-    layers: "the panel renders one card per layer; a list at UI cadence",
-  },
-  "shell/chrome/OverviewStrip.tsx": {
-    layers: "one extent bar per layer; changes only on a fold or an edit",
   },
 };
 

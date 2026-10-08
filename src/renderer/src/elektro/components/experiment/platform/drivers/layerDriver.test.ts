@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeAnnotationLayer, withPersisted } from "../model/layerModel";
 import { createExperimentStore } from "../stores/experimentStore";
-import { createViewerStore } from "../stores/viewerStore";
+import { createViewerStore } from "@/core/data/plot/stores/viewerStore";
 import { LayerDriverRegistry, type LayerDriver } from "./layerDriver";
 
 const layer = (id: string, over: Record<string, unknown> = {}) =>

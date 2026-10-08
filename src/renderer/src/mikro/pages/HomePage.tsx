@@ -39,6 +39,7 @@ import { HookFunction } from "@/core/layout/routes/ParamlessRoute";
 import { OperationVariables, QueryHookOptions } from "@apollo/client";
 import {
   ArrayDatasetOrder,
+  ChartOrder,
   FolderOrder,
   FileOrder,
   HomePageQuery,
@@ -59,6 +60,7 @@ const useHomePageQueryForRoute: HookFunction<HomePageQuery, OperationVariables> 
   ) as unknown as ReturnType<HookFunction<HomePageQuery, OperationVariables>>;
 import { UploadDialog } from "../components/dialogs/UploadDialog";
 import { PinnedFolders } from "../components/folder/PinnedFolders";
+import { ChartSectionList } from "../components/lists/ChartList";
 import FolderList from "../components/lists/FolderList";
 import FileList from "../components/lists/FileList";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
@@ -115,6 +117,7 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
   const arrayDatasetOrdering: ArrayDatasetOrder[] = [orderByField];
   const fileOrdering: FileOrder[] = [orderByField];
   const folderOrdering: FolderOrder[] = [orderByField];
+  const chartOrdering: ChartOrder[] = [orderByField];
 
   const sortFieldLabels = { createdAt: "Date created", name: "Name" } as const;
   // Defaults the dashboard ships with — a tag is shown when the user diverges.
@@ -316,6 +319,11 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
               filters={{ parentless: true, ...temporalFilter, ...searchFilter }}
               ordering={folderOrdering}
             />
+            {/* ChartFilter has no created-range, so under a date filter the
+                charts step aside rather than ignore it. */}
+            {!createdAfter && !createdBefore && (
+              <ChartSectionList filters={searchFilter} ordering={chartOrdering} />
+            )}
             <Separator className="my-4" />
             <FileList
               filters={{ ...temporalFilter, ...searchFilter }}

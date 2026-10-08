@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildTraceSource, planTraceRead, tileReadsFor, type LensLike } from "./traceSource";
-import { planTraceTiles } from "../quality/tracePlanning";
+import { planTraceTiles } from "@/core/data/plot/quality/tracePlanning";
 
 const TIME = { name: "t", type: "TIME", order: 0 };
 const CHANNEL = { name: "c", type: "CHANNEL", order: 0 };

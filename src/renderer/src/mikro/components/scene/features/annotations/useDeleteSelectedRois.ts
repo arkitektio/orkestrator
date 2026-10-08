@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { toast } from "@/core/notify";
 import { useDeleteAnnotationMutation } from "@/mikro/api/graphql";
-import { removeSceneAnnotation } from "./annotationCache";
+import { removeSceneAnnotation } from "../../../../lib/annotations/annotationCache";
 import { useRoiSelectionStore, type SelectedRoi } from "./roiSelectionStore";
 
 /**

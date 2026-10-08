@@ -11,6 +11,12 @@
  * Structural — no generated types — so it runs in node.
  */
 
+import { anchorsForChannel, pinOf } from "@/core/data/plot/model/channelAnchors";
+
+// Which anchor describes which line is the plot engine's; the rest of this
+// file is what an experiment reads off them.
+export { anchorsForChannel, channelLabelsOf, pinOf } from "@/core/data/plot/model/channelAnchors";
+
 export type AnchorLike = {
   coordinates?: unknown;
   channelLabel?: { label: string } | null;
@@ -38,37 +44,6 @@ export type SiteRefLike = {
 /** A channel's site, and which side of the experiment it is on. */
 export type ChannelSite = SiteRefLike & { role: "recording" | "stimulus" };
 
-/** The index an anchor pins `axis` to; null when it is global along it. */
-export const pinOf = (coordinates: unknown, axis: string): number | null => {
-  if (typeof coordinates !== "object" || coordinates === null || Array.isArray(coordinates)) {
-    return null;
-  }
-  const raw = (coordinates as Record<string, unknown>)[axis];
-  const value =
-    typeof raw === "number" ? raw : typeof raw === "string" && raw.trim() !== "" ? Number(raw) : NaN;
-  return Number.isInteger(value) ? value : null;
-};
-
-/**
- * The anchors describing one channel, most specific first: pinned to it before
- * global along the channel axis. With no channel axis every anchor applies.
- */
-export const anchorsForChannel = <A extends AnchorLike>(
-  anchors: readonly A[],
-  channelAxis: string | null,
-  datasetIndex: number | null,
-): A[] => {
-  if (!channelAxis || datasetIndex == null) return [...anchors];
-  const pinned: A[] = [];
-  const global: A[] = [];
-  for (const anchor of anchors) {
-    const pin = pinOf(anchor.coordinates, channelAxis);
-    if (pin === null) global.push(anchor);
-    else if (pin === datasetIndex) pinned.push(anchor);
-  }
-  return [...pinned, ...global];
-};
-
 const first = <A, T>(items: readonly A[], pick: (a: A) => T | null | undefined): T | null => {
   for (const item of items) {
     const value = pick(item);
@@ -76,16 +51,6 @@ const first = <A, T>(items: readonly A[], pick: (a: A) => T | null | undefined):
   }
   return null;
 };
-
-/** One label per drawn channel (null where no anchor names it). */
-export const channelLabelsOf = (
-  anchors: readonly AnchorLike[],
-  channelAxis: string | null,
-  channelIndices: readonly number[],
-): (string | null)[] =>
-  channelIndices.map((index) =>
-    first(anchorsForChannel(anchors, channelAxis, index), (a) => a.channelLabel?.label),
-  );
 
 /**
  * One site per drawn channel — where it was recorded, else what stimulated it —

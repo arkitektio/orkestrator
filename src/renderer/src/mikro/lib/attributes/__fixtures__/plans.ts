@@ -5,6 +5,7 @@
  * they exercise exactly what the core executes.
  */
 import type {
+  ArrayHopLike,
   AttributePlanLike,
   SampleLike,
   SparseHopLike,
@@ -168,5 +169,49 @@ export const chainPlan = (): AttributePlanLike => ({
         attributes: [],
       },
     }),
+  ],
+});
+
+/** A cell's trace: a `(cell, t)` array derived from the table of cells, bound
+ * through its INDEX column `i`, where row `k` of the array is cell `k + 1`. */
+export const arrayHop = (over: Partial<ArrayHopLike> = {}): ArrayHopLike => ({
+  index: 1,
+  parent: 0,
+  cardinality: "ONE",
+  via: { column: { name: "i" }, axis: null },
+  joinPath: [],
+  arrayDataset: {
+    id: "ad1",
+    name: "traces",
+    axisNames: ["cell", "t"],
+    shape: [40, 600],
+    dataArrays: [{ shape: [40, 600], store: { id: "z-traces", key: "traces.zarr" } }],
+  },
+  lookup: {
+    kind: "ARRAY",
+    keyAxis: "cell",
+    keyHeld: "i",
+    keyMap: { scale: 1, offset: -1 },
+    valueAxes: ["t"],
+    valueAxisMaps: [{ axis: "t", probedAxis: "t", scale: 1, offset: 0 }],
+  },
+  ...over,
+});
+
+/** mask → table of cells → the cell's trace. */
+export const tracePlan = (over: Partial<ArrayHopLike> = {}): AttributePlanLike => ({
+  edge: { id: "e-trace", version: 1 },
+  path: [],
+  sample: arraySample(),
+  hops: [
+    tableHop({
+      lookup: {
+        kind: "TABLE",
+        store: { id: "pq1", bucket: "b", key: "cells.parquet" },
+        keyColumns: [{ axis: "i", column: { name: "i", dtype: "BIGINT" } }],
+        attributes: [{ name: "peak", dtype: "DOUBLE" }],
+      },
+    }),
+    arrayHop(over),
   ],
 });

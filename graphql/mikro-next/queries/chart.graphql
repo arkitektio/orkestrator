@@ -1,0 +1,76 @@
+# Run with `errorPolicy: "all"`: a layer's `asAffine` errors rather than nulls
+# when its path will not condense, and that must null the one field instead of
+# discarding the whole chart.
+query GetChart($id: ID!) {
+  chart(id: $id) {
+    ...Chart
+  }
+}
+
+# The chart without its layers: what a display line or a hover card needs.
+query GetListChart($id: ID!) {
+  chart(id: $id) {
+    ...ListChart
+  }
+}
+
+query GetCharts(
+  $filters: ChartFilter
+  $ordering: [ChartOrder!]
+  $pagination: OffsetPaginationInput
+) {
+  charts(filters: $filters, ordering: $ordering, pagination: $pagination) {
+    ...ListChart
+  }
+}
+
+# What could be drawn in this chart: everything laid in its world, and in each
+# space registered into it. The world's own `residents` are asked for beside
+# `placedSystems` so the answer does not depend on whether a space counts as
+# placed in itself. `layers` says what is already drawn.
+query ChartAddLayerCandidates($chart: ID!) {
+  chart(id: $chart) {
+    id
+    name
+    axis {
+      ...Axis
+    }
+    layers {
+      __typename
+      id
+      ... on TraceChartLayer {
+        lens {
+          id
+          dataset {
+            id
+          }
+        }
+      }
+      ... on SeriesChartLayer {
+        tableDataset {
+          id
+        }
+        valueColumn
+      }
+      ... on AnnotationChartLayer {
+        annotationCollection {
+          id
+        }
+      }
+    }
+    worldCoordinateSystem {
+      id
+      name
+      residents {
+        ...ChartLayerCandidate
+      }
+      placedSystems {
+        id
+        name
+        residents {
+          ...ChartLayerCandidate
+        }
+      }
+    }
+  }
+}

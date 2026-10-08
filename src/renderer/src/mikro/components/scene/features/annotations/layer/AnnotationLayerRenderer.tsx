@@ -31,9 +31,9 @@ import {
   sectionedInteriorTriangles,
   staticInteriorTriangles,
 } from "../interiorBatch";
-import { sceneAnnotationsVariables } from "../annotationCache";
+import { sceneAnnotationsVariables } from "../../../../../lib/annotations/annotationCache";
 import { prunedSelections, repairedSelections } from "../selectionRepair";
-import { useLiveSceneAnnotations } from "../useLiveSceneAnnotations";
+import { useLiveSceneAnnotations } from "../../../../../lib/annotations/useLiveSceneAnnotations";
 import { isDrawingTool, useRoiDrawingStore } from "../roiDrawingStore";
 import {
   useRoiSelectionStore,

@@ -6,6 +6,7 @@ import {
   AttributePlansQueryVariables,
 } from "@/mikro/api/graphql";
 import type {
+  ArrayHopLike,
   AttributeHopLike,
   AttributePlanLike,
   SparseHopLike,
@@ -48,9 +49,10 @@ export type QueryClient = {
 export const PLAN_JOIN_DEPTH = 2;
 
 /**
- * `LookupStep` is a flat discriminator over two shapes: TABLE names a parquet
- * store, its key columns and attributes; SPARSE names a matrix layout to
- * slice and the axis the held id binds. These typed filters are where the
+ * `LookupStep` is a flat discriminator over three shapes: TABLE names a
+ * parquet store, its key columns and attributes; SPARSE names a matrix layout
+ * to slice and the axis the held id binds; ARRAY names a dense array and the
+ * axis one position of it is read along. These typed filters are where the
  * compiler PROVES the generated fragment is a structural superset of the
  * core's hop types (no cast) — the one place the codegen dependency touches
  * the core contract. Written on the fields each shape requires rather than
@@ -69,6 +71,14 @@ const isSparseHopFragment = (
   hop.lookup.sparseArray != null &&
   hop.lookup.keyAxis != null;
 
+const isArrayHopFragment = (
+  hop: AttributePlanHopFragment,
+): hop is AttributePlanHopFragment & ArrayHopLike =>
+  hop.lookup.kind === "ARRAY" &&
+  hop.arrayDataset != null &&
+  hop.lookup.keyAxis != null &&
+  hop.lookup.valueAxes != null;
+
 /**
  * One fragment as a core plan, or null when its landing is not executable.
  * A later hop that is malformed is dropped WITH its descendants (a hop never
@@ -79,14 +89,14 @@ const toStructuralPlan = (fragment: AttributePlanFragment): AttributePlanLike | 
   const accepted = new Map<number, AttributeHopLike>();
   const dropped: number[] = [];
   for (const hop of [...fragment.hops].sort((a, b) => a.index - b.index)) {
-    const executable = isTableHopFragment(hop) || isSparseHopFragment(hop);
+    const executable = isTableHopFragment(hop) || isSparseHopFragment(hop) || isArrayHopFragment(hop);
     const parentAccepted = hop.parent === null || hop.parent === undefined || accepted.has(hop.parent);
     if (executable && parentAccepted) accepted.set(hop.index, hop);
     else dropped.push(hop.index);
   }
   if (dropped.length) {
     console.warn(
-      `[attributePlans] edge ${fragment.edge.id}: hop(s) ${dropped.join(", ")} ignored — neither a parquet TABLE nor a sliceable SPARSE lookup, or under a hop that was`,
+      `[attributePlans] edge ${fragment.edge.id}: hop(s) ${dropped.join(", ")} ignored — neither a parquet TABLE, a sliceable SPARSE nor a dense ARRAY lookup, or under a hop that was`,
     );
   }
   const landing = accepted.get(0);

@@ -25,7 +25,25 @@ experiment/
 Only `features/traces` may be imported by other features (`FEATURE_ALLOWLIST`);
 `KNOWN_SIDEWAYS` is empty and stays empty — move a shared piece to `platform/`.
 elektro never imports `@/mikro/**` (`sharedImports.test.ts`): shared
-infrastructure is PROMOTED to `@/lib/**`.
+infrastructure is PROMOTED to `@/core/**`.
+
+## The plot engine — `@/core/data/plot`
+
+Everything here that is not about an EXPERIMENT lives in the plot engine, which
+mikro's chart (`mikro/components/chart`) is built on too: the plot, range and
+viewer stores and the optimistic overlay; the scope provider and its phases;
+the driver protocol and registry; the camera and its gestures; level and tile
+planning, residency and the tile driver; packed lines; the axis, grid, value
+axis, overview strip and HUD; the layers panel and card shell; the gesture
+machine. Its own rules are asserted by `core/data/plot/architecture.test.ts`
+(no module, no generated GraphQL) and `storeSelectors.test.ts`.
+
+The files named below under `platform/` and `shell/` that the engine now owns
+are thin wrappers: the engine's piece, typed and worded for an experiment
+(`experimentStore`, `layerDriver`, `traceSource`, `TraceTileDriver`,
+`ExperimentSceneProvider`, `LayerControlPanel`, …). What stays elektro's is
+what a timeline of recordings has and a chart does not: finding axes by type,
+events, spikes, pickers, channel metadata, value collections.
 
 ## Stores
 

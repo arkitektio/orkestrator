@@ -3,7 +3,7 @@ import { ZarrStoreFragment } from "../api/graphql";
 import {
   AxisSelection,
   selectionForAxes,
-} from "../components/experiment/platform/sources/axisSelection";
+} from "@/core/data/plot/sources/axisSelection";
 import {
   ArrayWindow,
   useElektroZarrStoreApi,
@@ -13,8 +13,8 @@ export type { ArrayWindow } from "../components/store/zarrStore";
 export type {
   AxisRange,
   AxisSelection,
-} from "../components/experiment/platform/sources/axisSelection";
-export { selectionForAxes } from "../components/experiment/platform/sources/axisSelection";
+} from "@/core/data/plot/sources/axisSelection";
+export { selectionForAxes } from "@/core/data/plot/sources/axisSelection";
 
 /**
  * Reading sample data out of an array dataset.

@@ -8,7 +8,7 @@ import { channelAxisName, type CoordinateSystemLike } from "../coords/timeAxis";
 import { buildEventSource, type EventSource, type EventTableLike } from "../sources/eventSource";
 import { buildSpikeSource, type SparseDatasetLike, type SpikeSource } from "../sources/spikeSource";
 import { durationToMs } from "../coords/timeUnits";
-import type { AffinePlacementLike } from "../coords/timeMap";
+import type { AffinePlacementLike } from "@/core/data/plot/coords/timeMap";
 import {
   anchorUnitOf,
   channelLabelsOf,
@@ -19,8 +19,9 @@ import {
   type AnchorLike,
   type ChannelSite,
 } from "./anchors";
-import { placeabilityOf, type Placeability } from "./placeable";
-import { channelColoringOf, type ChannelColoring } from "./channelColor";
+import { placeabilityOf, type Placeability } from "@/core/data/plot/model/placeable";
+import { channelColoringOf, type ChannelColoring } from "@/core/data/plot/model/channelColor";
+import { colorForLayerId } from "@/core/data/plot/model/layerColor";
 
 /**
  * A layer, normalized into what the renderer and the panel read.
@@ -169,16 +170,8 @@ export type AnnotationLayerLike = LayerCommonLike & {
 
 export const DEFAULT_LINE_WIDTH = 1.25;
 
-const GOLDEN_ANGLE = 137.508;
-
-/** Stable per-layer hue — the walk the legend has always used. */
-export const colorForLayerId = (id: string): string => {
-  const numeric = Number.parseInt(id, 10);
-  const seed = Number.isFinite(numeric)
-    ? numeric
-    : [...id].reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) | 0, 7);
-  return `hsl(${Math.abs(seed * GOLDEN_ANGLE) % 360}, 70%, 60%)`;
-};
+/** Stable per-layer hue — the plot engine's, so a chart and a timeline agree. */
+export { colorForLayerId };
 
 /** An RGBA 0–255 list as CSS; the alpha channel is honoured. */
 export const rgbaCss = (color: readonly number[]): string => {
@@ -437,27 +430,4 @@ export const normalizeAnnotationLayer = (
   label: layer.name ?? layer.annotationCollection.name,
 });
 
-/**
- * The world extent every placed layer covers together, and the origin the GPU
- * works relative to.
- *
- * `timeOrigin` is subtracted from every world time BEFORE it is cast to float32.
- * A world anchored at a Unix epoch in seconds puts times near 1.8e9, where
- * float32's resolution is ~128 — every trace would collapse to a staircase. Taking
- * the origin at the data's own start keeps the float32 values small. It is fixed
- * per scope build and never moves mid-session, so nothing GPU-resident needs
- * rewriting when a layer arrives.
- */
-export const worldExtentOf = (
-  layers: readonly LayerState[],
-): { span: { start: number; end: number } | null; timeOrigin: number } => {
-  let start = Infinity;
-  let end = -Infinity;
-  for (const layer of layers) {
-    if (!layer.span) continue;
-    if (layer.span.start < start) start = layer.span.start;
-    if (layer.span.end > end) end = layer.span.end;
-  }
-  if (!(end > start)) return { span: null, timeOrigin: 0 };
-  return { span: { start, end }, timeOrigin: start };
-};
+export { worldExtentOf } from "@/core/data/plot/stores/plotStore";

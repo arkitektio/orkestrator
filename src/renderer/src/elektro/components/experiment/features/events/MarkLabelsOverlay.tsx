@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { bindFields } from "@/core/data/scene/stores/bindStore";
-import { pixelAtTime } from "../../platform/camera/rangeToCamera";
-import { useRangeStoreApi } from "../../platform/stores/rangeStore";
-import { bandKey, useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
+import { pixelAtTime } from "@/core/data/plot/camera/rangeToCamera";
+import { useRangeStoreApi } from "@/core/data/plot/stores/rangeStore";
+import { bandKey, useViewerStore, useViewerStoreApi } from "@/core/data/plot/stores/viewerStore";
 
 /**
  * Labels of point marks (event names), drawn in the DOM over the canvas.

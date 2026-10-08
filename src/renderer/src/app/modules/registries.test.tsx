@@ -25,6 +25,7 @@ describe("host registries", () => {
   it("hold every dialog", () => {
     expect(Object.keys(DIALOGS).sort()).toEqual([
       "actionassign",
+      "addchartlayer",
       "addexperimentlayer",
       "addlayer",
       "addusertoorganization",
@@ -46,6 +47,7 @@ describe("host registries", () => {
       "chat",
       "commitmeshdesign",
       "createautomation",
+      "createchart",
       "createentity",
       "createentitycategory",
       "createentitywithproperties",
@@ -159,6 +161,7 @@ describe("host registries", () => {
       "@lovekit/solo_broadcast",
       "@mikro/annotation",
       "@mikro/arraydataset",
+      "@mikro/chart",
       "@mikro/file",
       "@mikro/folder",
       "@mikro/lens",
@@ -196,7 +199,11 @@ describe("host registries", () => {
 
   it("hold every local action", () => {
     expect(Object.keys(ACTIONS).sort()).toEqual([
+      "add-arraydataset-to-chart",
+      "add-layer-to-chart",
       "add-layer-to-scene",
+      "add-lens-to-chart",
+      "add-tabledataset-to-chart",
       "addElektroExperimentLayer",
       "add_user_to_organization",
       "alpaka-delete-provider",
@@ -234,6 +241,7 @@ describe("host registries", () => {
       "calibrate-arrayDataset",
       "copylink",
       "copyprivatelink",
+      "create-chart-from-coordinatesystem",
       "create-new-entity",
       "create-new-measurment-category",
       "create-protocol-event-category",
@@ -247,6 +255,7 @@ describe("host registries", () => {
       "delete-kraph-naturaleventcategory",
       "delete-kraph-protocoleventcategory",
       "delete-mikro-arrayDataset",
+      "delete-mikro-chart",
       "delete-mikro-file",
       "delete-mikro-folder",
       "delete-mikro-scene",

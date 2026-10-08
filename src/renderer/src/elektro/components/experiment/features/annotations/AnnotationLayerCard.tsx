@@ -1,7 +1,7 @@
-import { unplaceableMessage } from "../../platform/model/placeable";
+import { unplaceableMessage } from "@/core/data/plot/model/placeable";
 import { PlacementFix } from "../../platform/edits/PlacementFix";
 import type { LayerState } from "../../platform/model/layerModel";
-import { CardFact, CardShell, type LayerCardProps } from "../../platform/layerui/cardShell";
+import { CardFact, CardShell, type LayerCardProps } from "@/core/data/plot/layerui/cardShell";
 import { LayerMenu } from "../../platform/layerui/layerControls";
 import type { AnnotationMarks } from "./annotationGeometry";
 import { useAnnotationMarks } from "./store/annotationSlice";

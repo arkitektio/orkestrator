@@ -4,8 +4,8 @@ import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/webgpu/Line2.js";
 import { Line2NodeMaterial, MeshBasicNodeMaterial } from "three/webgpu";
 import { bindField } from "@/core/data/scene/stores/bindStore";
-import { bandKey, useViewerStoreApi, type Band } from "../stores/viewerStore";
-import { useSegmentGeometry, writeSegments } from "./segmentGeometry";
+import { bandKey, useViewerStoreApi, type Band } from "@/core/data/plot/stores/viewerStore";
+import { useSegmentGeometry, writeSegments } from "@/core/data/plot/marks/segmentGeometry";
 
 /**
  * Drawing point marks — spike ticks, event instants, intervals, density bars —

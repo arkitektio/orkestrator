@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { TraceSparkline } from "@/core/data/plot/chrome/TraceSparkline";
+import { MikroArrayDataset } from "@/mikro/linkers";
 import type { ProbeResult } from "../probe/probeTypes";
 import { isSameProbeKey } from "../probe/probeTypes";
 import type {
@@ -6,6 +8,7 @@ import type {
   AttributeRow,
   HopMeta,
   PlanRowsState,
+  PlanSeries,
 } from "@/mikro/lib/attributes/attributeTypes";
 import { useViewerStore } from "../stores/viewerStore";
 import { perfMonitor } from "../perf/perfMonitor";
@@ -23,6 +26,10 @@ import { perfMonitor } from "../perf/perfMonitor";
  * first, capped — and reads its labels (gene symbols) off the names hop that
  * follows it in the chain, when that hop ran: the rows of a MANY hop carry
  * the position they answer, so the join is a map lookup here, not a query.
+ *
+ * An ARRAY block is one object's line through a dense array (a cell's trace),
+ * drawn small, with the probed point marked on it when the graph relates the
+ * line's axis to the scene's.
  */
 
 const formatCell = (value: unknown): string => {
@@ -205,6 +212,16 @@ const ProfileRows = ({
   </div>
 );
 
+const SeriesLine = ({ series }: { series: PlanSeries }) => (
+  <div className="text-white/80">
+    <TraceSparkline values={series.values} marker={series.marker} />
+    <span className="block text-[9px] text-white/35">
+      {series.values.length * series.stride} samples along {series.axis}
+      {series.stride > 1 ? `, every ${series.stride}th shown` : ""}
+    </span>
+  </div>
+);
+
 /**
  * One hop's result block — presentational, host-agnostic. The probe section
  * feeds it from `probedAttributes`; the selected-ROI section feeds it from
@@ -215,7 +232,8 @@ export const AttributePlanBlock = ({
   state,
   labels = null,
 }: {
-  meta: Pick<HopMeta, "name" | "kind" | "attributes" | "via" | "valueAxes">;
+  meta: Pick<HopMeta, "name" | "kind" | "attributes" | "via" | "valueAxes"> &
+    Partial<Pick<HopMeta, "sourceId">>;
   state: PlanRowsState;
   /** (SPARSE) Position → label, when the names hop ran. */
   labels?: ReadonlyMap<number, string> | null;
@@ -225,18 +243,33 @@ export const AttributePlanBlock = ({
     [meta.attributes],
   );
   const sparse = meta.kind === "SPARSE";
+  const array = meta.kind === "ARRAY";
 
   return (
     <div className="space-y-0.5 rounded border border-white/10 bg-white/5 px-2 py-1.5">
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1">
-          <span className="truncate text-[10px] font-medium text-white/60">{meta.name}</span>
+          {array && meta.sourceId ? (
+            <MikroArrayDataset.DetailLink
+              object={{ id: meta.sourceId }}
+              className="pointer-events-auto truncate text-[10px] font-medium text-white/60 hover:text-white"
+            >
+              {meta.name}
+            </MikroArrayDataset.DetailLink>
+          ) : (
+            <span className="truncate text-[10px] font-medium text-white/60">{meta.name}</span>
+          )}
           {meta.via && (
             <span className="truncate text-[9px] text-white/35">{meta.via}</span>
           )}
           {sparse && (
             <span className="rounded bg-sky-500/20 px-1 text-[9px] font-medium text-sky-200/80">
               matrix
+            </span>
+          )}
+          {array && (
+            <span className="rounded bg-amber-500/20 px-1 text-[9px] font-medium text-amber-200/80">
+              array
             </span>
           )}
         </span>
@@ -255,11 +288,16 @@ export const AttributePlanBlock = ({
       {state.status === "error" && (
         <span className="text-[10px] text-red-300/70">{state.error ?? "failed"}</span>
       )}
-      {state.status === "rows" && state.rows.length === 0 && (
+      {state.status === "rows" && state.rows.length === 0 && !state.series && (
         <span className="text-[10px] text-white/40">
-          {sparse ? "no entries for this object" : "no row for this object (never measured)"}
+          {array
+            ? "no line for this object"
+            : sparse
+              ? "no entries for this object"
+              : "no row for this object (never measured)"}
         </span>
       )}
+      {state.status === "rows" && state.series && <SeriesLine series={state.series} />}
       {state.status === "rows" && sparse && state.rows.length > 0 && (
         <ProfileRows state={state} valueAxes={meta.valueAxes} labels={labels} />
       )}

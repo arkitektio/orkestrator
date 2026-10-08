@@ -1,6 +1,9 @@
 import type { AxisCoords } from "../coords/axisPath";
 import { applyPathToCoords } from "../coords/axisPath";
+import type { ArrayLineReaderLike } from "./arrayLine";
+import { markerFor } from "./arrayLine";
 import type {
+  ArrayHopLike,
   AttributeHopLike,
   AttributePlanLike,
   PlanRowsState,
@@ -11,6 +14,7 @@ import {
   hopKey,
   hopSource,
   hopViaName,
+  isArrayHop,
   isMeshSample,
   isNetworkSample,
   isSparseHop,
@@ -57,6 +61,12 @@ export type ExecutePlanOptions = {
   sparseLimit?: number;
   /** Per-hop delivery as each settles, in chain order. */
   onHop?: (hopKey: string, state: PlanRowsState) => void;
+  /**
+   * The point in the PROBED system, for what an ARRAY hop marks on its line.
+   * The coordinate entry points fill it themselves; `peekPlanWithValue`, which
+   * is handed the mapped point, takes it here.
+   */
+  probed?: AxisCoords | null;
 };
 
 /** What the executor needs of the sparse profile reader (structural; the
@@ -76,6 +86,7 @@ export type SparseProfileReaderLike = {
 export type ExecutePlanDeps = {
   engine: AttributeLookupEngine;
   sparse: SparseProfileReaderLike;
+  arrays: ArrayLineReaderLike;
   sampleExact: (
     plan: AttributePlanLike,
     index: readonly number[],
@@ -89,7 +100,7 @@ export const DEFAULT_SPARSE_LIMIT = 25;
 
 const UNREACHABLE: PlanRowsState = { status: "unreachable", rows: [] };
 
-type ChainDeps = Pick<ExecutePlanDeps, "engine" | "sparse">;
+type ChainDeps = Pick<ExecutePlanDeps, "engine" | "sparse" | "arrays">;
 
 type ChainContext = {
   plan: AttributePlanLike;
@@ -100,6 +111,7 @@ type ChainContext = {
   unreachable: (hop: AttributeHopLike, reason: string, detail?: unknown) => PlanRowsState;
   columnsFor: (hop: TableHopLike) => readonly string[] | null;
   sparseLimit: number;
+  probed: AxisCoords | null;
   onHop?: (hopKey: string, state: PlanRowsState) => void;
 };
 
@@ -107,6 +119,7 @@ type ChainContext = {
 type Binding =
   | { kind: "table"; held: HeldMap }
   | { kind: "sparse"; id: HeldValue }
+  | { kind: "array"; id: HeldValue }
   /** Nothing to bind — the parent had no rows (or was background). */
   | { kind: "empty" }
   | { kind: "unreachable"; reason: string; detail?: unknown };
@@ -168,6 +181,17 @@ const bindHop = (
       }
       return { kind: "sparse", id };
     }
+    if (isArrayHop(hop)) {
+      const id = rootHeld[hop.lookup.keyHeld ?? hop.lookup.keyAxis] ?? rootHeld[hop.lookup.keyAxis];
+      if (!isHeldValue(id)) {
+        return {
+          kind: "unreachable",
+          reason: "held values do not name the array's key axis",
+          detail: { keyAxis: hop.lookup.keyAxis, keyHeld: hop.lookup.keyHeld, held: Object.keys(rootHeld) },
+        };
+      }
+      return { kind: "array", id };
+    }
     return { kind: "table", held: rootHeld };
   }
 
@@ -190,15 +214,15 @@ const bindHop = (
   const values = valuesFrom(parent, name);
   if (values.length === 0) return { kind: "empty" };
 
-  if (isSparseHop(hop)) {
+  if (isSparseHop(hop) || isArrayHop(hop)) {
     if (values.length !== 1 || !isHeldValue(values[0])) {
       return {
         kind: "unreachable",
-        reason: "a matrix takes one id, and the parent returned several (or a non-numeric one)",
+        reason: `${isSparseHop(hop) ? "a matrix" : "an array"} takes one id, and the parent returned several (or a non-numeric one)`,
         detail: { via: name, count: values.length },
       };
     }
-    return { kind: "sparse", id: values[0] };
+    return { kind: isSparseHop(hop) ? "sparse" : "array", id: values[0] };
   }
   const many = hop.cardinality === "MANY" || values.length > 1;
   return { kind: "table", held: { ...rootHeld, [name]: many ? values : values[0] } };
@@ -219,6 +243,13 @@ const withSample = (
   hop.parent === null || hop.parent === undefined
     ? { ...state, sampledValue: context.value, sampleSource: context.sampleSource }
     : state;
+
+/** A line as this point sees it: the cached read, marked where the point sits. */
+const withMarker = (hop: ArrayHopLike, state: PlanRowsState, context: ChainContext): PlanRowsState => {
+  if (!state.series) return state;
+  const marker = markerFor(hop, state.series, context.probed);
+  return marker === null ? state : { ...state, series: { ...state.series, marker } };
+};
 
 /** What a hop settled to, and what it was bound with (for its children). */
 type HopOutcome = { state: PlanRowsState; held: HeldMap | null };
@@ -274,6 +305,11 @@ async function executeChain(
           });
           if (read === null) return null;
           state = withSample(hop, read, context);
+        } else if (binding.kind === "array") {
+          const array = hop as ArrayHopLike;
+          const read = await deps.arrays.read(context.plan, array, binding.id, { isStale: context.isStale });
+          if (read === null) return null;
+          state = withSample(hop, withMarker(array, read, context), context);
         } else {
           const table = hop as TableHopLike;
           const rows = await deps.engine.lookup(context.plan, table, binding.held, context.isStale, {
@@ -319,6 +355,11 @@ function peekChain(deps: ChainDeps, context: ChainContext, rootHeld: HeldMap | n
         const read = deps.sparse.peek(context.plan, hop as SparseHopLike, binding.id, context.sparseLimit);
         if (read === null) return null;
         state = withSample(hop, read, context);
+      } else if (binding.kind === "array") {
+        const array = hop as ArrayHopLike;
+        const read = deps.arrays.peek(context.plan, array, binding.id);
+        if (read === null) return null;
+        state = withSample(hop, withMarker(array, read, context), context);
       } else {
         const table = hop as TableHopLike;
         const rows = deps.engine.peek(context.plan, table, binding.held, { columns: context.columnsFor(table) });
@@ -349,6 +390,7 @@ const contextFor = (
   },
   columnsFor: opts.columnsFor ?? (() => null),
   sparseLimit: opts.sparseLimit ?? DEFAULT_SPARSE_LIMIT,
+  probed: opts.probed ?? null,
   onHop: opts.onHop,
 });
 
@@ -430,7 +472,11 @@ export async function executePlanAt(
   if (value === null) {
     return allErrored(plan, opts, "could not sample the field array");
   }
-  return executeChain(deps, contextFor(plan, value, sampleSource, opts), buildHeld(plan, mapped, value));
+  return executeChain(
+    deps,
+    contextFor(plan, value, sampleSource, { ...opts, probed: opts.probed ?? startCoords }),
+    buildHeld(plan, mapped, value),
+  );
 }
 
 /**
@@ -455,7 +501,11 @@ export async function executePlanWithValue(
       startCoords,
     });
   }
-  return executeChain(deps, contextFor(plan, value, "exact", opts), buildHeld(plan, mapped, value));
+  return executeChain(
+    deps,
+    contextFor(plan, value, "exact", { ...opts, probed: opts.probed ?? startCoords }),
+    buildHeld(plan, mapped, value),
+  );
 }
 
 /**
@@ -470,7 +520,7 @@ export function peekPlanWithValue(
   mapped: AxisCoords,
   value: HeldValue,
   sampleSource: "resident" | "exact",
-  opts: Pick<ExecutePlanOptions, "hops" | "columnsFor" | "sparseLimit"> = {},
+  opts: Pick<ExecutePlanOptions, "hops" | "columnsFor" | "sparseLimit" | "probed"> = {},
 ): PlanHopStates | null {
   return peekChain(deps, contextFor(plan, value, sampleSource, opts), buildHeld(plan, mapped, value));
 }

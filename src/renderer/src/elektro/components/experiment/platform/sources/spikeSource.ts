@@ -1,4 +1,4 @@
-import { placementToTimeMap, type AffinePlacementLike, type TimeMap } from "../coords/timeMap";
+import { placementToTimeMap, type AffinePlacementLike, type TimeMap } from "@/core/data/plot/coords/timeMap";
 import { timeAxisName, type CoordinateSystemLike } from "../coords/timeAxis";
 
 /**

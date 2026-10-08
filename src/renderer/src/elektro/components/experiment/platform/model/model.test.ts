@@ -4,8 +4,8 @@ import {
   experimentLayerSignature,
   orderedLayers,
 } from "./experimentStructure";
-import { placeabilityOf, unplaceableMessage } from "./placeable";
-import { placementErrorsByLayerId } from "./placementErrors";
+import { placeabilityOf, unplaceableMessage } from "@/core/data/plot/model/placeable";
+import { placementErrorsByLayerId } from "@/core/data/plot/model/placementErrors";
 import {
   colorForLayerId,
   normalizeAnnotationLayer,

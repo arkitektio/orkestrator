@@ -8,9 +8,10 @@ import {
   type ExecutePlanDeps,
   type SparseProfileReaderLike,
 } from "./executePlan";
+import { createArrayLineReader, type ArrayLineReaderLike } from "./arrayLine";
 import type { AttributeLookupEngine } from "./lookupEngine";
 import type { HeldMap, HeldValue } from "./planExec";
-import { arraySample, chainPlan, sparsePlan, tablePlan } from "./__fixtures__/plans";
+import { arraySample, chainPlan, sparsePlan, tablePlan, tracePlan } from "./__fixtures__/plans";
 
 const plan = tablePlan;
 
@@ -75,13 +76,30 @@ const fakeSparse = (
   return { reads, sparse };
 };
 
+type WindowRead = { store: string; ranges: unknown };
+/** A real line reader over a fake window read: row `k` holds `k, k+1, …`. */
+const fakeArrays = (): { reads: WindowRead[]; arrays: ArrayLineReaderLike } => {
+  const reads: WindowRead[] = [];
+  const arrays = createArrayLineReader({
+    read: async (store, ranges) => {
+      reads.push({ store: store.id, ranges });
+      const row = (ranges[0] as { start: number }).start;
+      const data = Float32Array.from({ length: 600 }, (_, i) => row + i);
+      return { shape: [1, 600], strides: [600, 1], data };
+    },
+  });
+  return { reads, arrays };
+};
+
 const deps = (
   engine: AttributeLookupEngine,
   exact: (index: readonly number[]) => Promise<HeldValue | null>,
   sparse: SparseProfileReaderLike = fakeSparse().sparse,
+  arrays: ArrayLineReaderLike = fakeArrays().arrays,
 ): ExecutePlanDeps => ({
   engine,
   sparse,
+  arrays,
   sampleExact: (_plan, index) => exact(index),
 });
 
@@ -407,5 +425,52 @@ describe("mesh-sampled plans", () => {
     );
     expect(states?.[landing(meshPlan())].status).toBe("rows");
     expect(lookups[0].held).toEqual({ t: 1, i: 7 });
+  });
+});
+
+describe("an ARRAY hop", () => {
+  const run = (value: number, arrays = fakeArrays()) =>
+    executePlanAt(
+      deps(fakeEngine({ t1: [{ peak: 1.5 }] }).engine, async () => value, undefined, arrays.arrays),
+      tracePlan(),
+      { t: 2, y: 3, x: 5 },
+    );
+
+  it("reads the line of the object the parent was bound with, through the key map", async () => {
+    const arrays = fakeArrays();
+    const plan = tracePlan();
+    const states = await run(7, arrays);
+    // Cell 7 is row 6: the id is the table's KEY, which its rows do not carry.
+    expect(arrays.reads).toEqual([{ store: "z-traces", ranges: [{ start: 6, stop: 7 }, null] }]);
+    const series = states?.[hopKey(plan, plan.hops[1])].series;
+    expect(series).toMatchObject({ axis: "t", index: 6, stride: 1, marker: 2 });
+    expect(Array.from(series!.values.slice(0, 3))).toEqual([6, 7, 8]);
+    expect(states?.[hopKey(plan, plan.hops[1])].rows).toEqual([]);
+  });
+
+  it("has no line for an id past the array, and none on background", async () => {
+    const arrays = fakeArrays();
+    const plan = tracePlan();
+    const past = await run(41, arrays);
+    expect(past?.[hopKey(plan, plan.hops[1])]).toEqual({ status: "rows", rows: [] });
+    const background = await run(0, arrays);
+    expect(background?.[hopKey(plan, plan.hops[1])]).toEqual({ status: "rows", rows: [] });
+    expect(arrays.reads).toEqual([]);
+  });
+
+  it("answers a revisited object from memory, marked where the new point sits", async () => {
+    const arrays = fakeArrays();
+    const plan = tracePlan();
+    const engine = fakeEngine({ t1: [{ peak: 1.5 }] }, true).engine;
+    const chain = deps(engine, async () => 7, undefined, arrays.arrays);
+    expect(peekPlanWithValue(chain, plan, { t: 2, y: 3, x: 5 }, 7, "resident")).toBeNull();
+    const first = await executePlanAt(chain, plan, { t: 2, y: 3, x: 5 });
+    const again = peekPlanWithValue(chain, plan, { t: 9, y: 3, x: 5 }, 7, "resident", {
+      probed: { t: 9, y: 3, x: 5 },
+    });
+    const key = hopKey(plan, plan.hops[1]);
+    expect(again?.[key].series?.values).toBe(first?.[key].series?.values);
+    expect(again?.[key].series?.marker).toBe(9);
+    expect(arrays.reads).toHaveLength(1);
   });
 });

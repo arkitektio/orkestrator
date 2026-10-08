@@ -4,8 +4,8 @@ import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { useDeleteExperimentAnnotationMutation } from "@/elektro/api/graphql";
 import { evictAnnotation } from "./annotationCache";
-import { formatValue } from "../../platform/probe/formatValue";
-import { useRangeStoreApi } from "../../platform/stores/rangeStore";
+import { formatValue } from "@/core/data/plot/probe/formatValue";
+import { useRangeStoreApi } from "@/core/data/plot/stores/rangeStore";
 import {
   useAnnotationStore,
   useAnnotationStoreApi,

@@ -172,7 +172,8 @@ The source root holds only the entry files (`main.tsx`, `App.tsx`,
   `ports` (engine, widgets), `command` (palette), `tabs` (+ sharing), `dnd`
   (+ selection), `dialogs`, `ui` (shadcn + generic primitives), `forms`,
   `layout` (page layouts, fallbacks, routes, `PageSections`), `data` (zarr,
-  parquet, sparse, arrays, s3, scene, color), `datalayer`, `settings` (store,
+  parquet, sparse, arrays, s3, scene, color, `plot`: the one-axis plot engine
+  under elektro's experiment timeline and mikro's chart), `datalayer`, `settings` (store,
   theme), `debug`, `dashboard`, `updates`, `agent`, `blok`, `voice`, `util`,
   plus the shared `core/types.tsx` / `core/linkers.tsx` / `core/constants.tsx`.
   Core never imports `app/` (the boundary test enforces it); what core needs

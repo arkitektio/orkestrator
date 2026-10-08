@@ -3,8 +3,8 @@ import type { StoreApi } from "zustand/vanilla";
 import { normalizeEventsLayer, type EventsLayerLike } from "../../platform/model/layerModel";
 import { createPickerSlice, type PickerSlice } from "../../platform/pickers/pickerSlice";
 import { createExperimentStore } from "../../platform/stores/experimentStore";
-import { createRangeStore } from "../../platform/stores/rangeStore";
-import { createViewerStore, type ViewerState } from "../../platform/stores/viewerStore";
+import { createRangeStore } from "@/core/data/plot/stores/rangeStore";
+import { createViewerStore, type ViewerState } from "@/core/data/plot/stores/viewerStore";
 import { createEventsSlice, type EventsSlice } from "./store/eventsSlice";
 import { EventTableDriver, WHOLE_TABLE_MAX } from "./EventTableDriver";
 

@@ -3,8 +3,8 @@ import type { StoreApi } from "zustand/vanilla";
 import { normalizeSpikesLayer, type SpikesLayerLike } from "../../platform/model/layerModel";
 import { createPickerSlice, type PickerSlice } from "../../platform/pickers/pickerSlice";
 import { createExperimentStore } from "../../platform/stores/experimentStore";
-import { createRangeStore } from "../../platform/stores/rangeStore";
-import { createViewerStore, type ViewerState } from "../../platform/stores/viewerStore";
+import { createRangeStore } from "@/core/data/plot/stores/rangeStore";
+import { createViewerStore, type ViewerState } from "@/core/data/plot/stores/viewerStore";
 import { createSpikesSlice, type SpikesSlice } from "./store/spikesSlice";
 import { SpikeRasterDriver, type SparseReader } from "./SpikeRasterDriver";
 

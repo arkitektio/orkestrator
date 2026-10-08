@@ -7,8 +7,9 @@
 # A plan is a CHAIN of hops. `hops[0]` is the landing — the table or matrix the
 # FIELD edge's id keys, bound from `sample`. Every later hop crosses one
 # declared reference from its `parent` (a `Column.references`, a matrix axis a
-# table identifies, or the same axis walked into the matrix) and is bound from
-# what the parent returned. The server describes the chain and reads nothing;
+# table identifies, the same axis walked into the matrix, or a dense array
+# derived from the table by its INDEX column) and is bound from what the parent
+# returned. The server describes the chain and reads nothing;
 # the client runs it hop by hop with grants it already holds. There is no SQL
 # in a plan any more: a TABLE lookup is `keyColumns` + `attributes`, and the
 # statement is derived from them locally (`lib/attributes/planSql.ts`).
@@ -60,6 +61,23 @@ fragment AttributePlanSparseDataset on SparseDataset {
   }
 }
 
+# The dense array an ARRAY hop reads one position of. Level 0 is the grid
+# `keyMap` and `shape` are stated on, and the one the line is read from.
+fragment AttributePlanArrayDataset on ArrayDataset {
+  id
+  name
+  axisNames
+  shape
+  dataArrays {
+    id
+    level
+    shape
+    store {
+      ...ZarrStore
+    }
+  }
+}
+
 fragment AttributePlanHop on Hop {
   index
   parent
@@ -86,6 +104,9 @@ fragment AttributePlanHop on Hop {
   sparseDataset {
     ...AttributePlanSparseDataset
   }
+  arrayDataset {
+    ...AttributePlanArrayDataset
+  }
   # The picker's name for this hop (`colorBys[].joinPath`); empty on the
   # landing and once the chain has crossed a matrix.
   joinPath {
@@ -99,9 +120,10 @@ fragment AttributePlanHop on Hop {
     }
   }
   lookup {
-    # `TABLE` (rows of a parquet) or `SPARSE` (one object's whole profile, a
-    # slice of the object-major layout). The fields of the other shape are
-    # null — a flat discriminator, not an interface.
+    # `TABLE` (rows of a parquet), `SPARSE` (one object's whole profile, a
+    # slice of the object-major layout) or `ARRAY` (one object's line through
+    # a dense array). The fields of the other shapes are null — a flat
+    # discriminator, not an interface.
     kind
     # (TABLE) The parquet store. Ask it for an accessGrant to read it.
     store {
@@ -132,7 +154,13 @@ fragment AttributePlanHop on Hop {
         ...SparseStoreRead
       }
     }
-    # (SPARSE) The axis the held id binds — always the one `sparseArray`'s
+    # (ARRAY) The held id as a position along `keyAxis`: `id * scale + offset`,
+    # the derivation edge already inverted.
+    keyMap {
+      scale
+      offset
+    }
+    # (SPARSE, ARRAY) The axis the held id binds — for a matrix, always the one `sparseArray`'s
     # `indptr` indexes, which is what makes the read one contiguous range.
     keyAxis
     # (SPARSE) The name the worker holds that id under: `keyAxis` on a

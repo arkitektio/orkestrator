@@ -1,9 +1,9 @@
 import { createAnnotationSlice } from "../features/annotations/store/annotationSlice";
 import { createEventsSlice } from "../features/events/store/eventsSlice";
 import { createSpikesSlice } from "../features/spikes/store/spikesSlice";
-import { createTraceSlice } from "../features/traces/store/traceSlice";
+import { createTraceSlice } from "@/core/data/plot/lines/traceSlice";
 import { createPickerSlice } from "../platform/pickers/pickerSlice";
-import type { AnyViewerSlice } from "../platform/stores/viewerStore";
+import type { AnyViewerSlice } from "@/core/data/plot/stores/viewerStore";
 
 /**
  * The feature slices composed into the viewer store — the shell knows the

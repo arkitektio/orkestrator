@@ -1,4 +1,4 @@
-import { placementToTimeMap, sampleToTime } from "../../platform/coords/timeMap";
+import { placementToTimeMap, sampleToTime } from "@/core/data/plot/coords/timeMap";
 import {
   axisNamesOf,
   channelAxisName,
@@ -6,7 +6,7 @@ import {
   valueAxisName,
   type CoordinateSystemLike,
 } from "../../platform/coords/timeAxis";
-import type { AffinePlacementLike } from "../../platform/coords/timeMap";
+import type { AffinePlacementLike } from "@/core/data/plot/coords/timeMap";
 import { drawnChannelOf, type RowTarget } from "./valueCollections";
 
 /**

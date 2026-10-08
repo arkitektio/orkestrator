@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import type { StoreApi } from "zustand/vanilla";
 import { normalizeTraceLayer, type TraceLayerLike } from "../../platform/model/layerModel";
 import { createExperimentStore } from "../../platform/stores/experimentStore";
-import { createRangeStore } from "../../platform/stores/rangeStore";
-import { createViewerStore, type ViewerState } from "../../platform/stores/viewerStore";
-import { createTraceSlice, type TraceSlice } from "./store/traceSlice";
+import { createRangeStore } from "@/core/data/plot/stores/rangeStore";
+import { createViewerStore, type ViewerState } from "@/core/data/plot/stores/viewerStore";
+import { createTraceSlice, type TraceSlice } from "@/core/data/plot/lines/traceSlice";
 import { TraceTileDriver, type ReadWindow } from "./TraceTileDriver";
 
 const TIME = { name: "t", type: "TIME", order: 0 };

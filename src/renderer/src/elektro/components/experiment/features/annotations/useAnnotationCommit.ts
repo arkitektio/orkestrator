@@ -12,7 +12,7 @@ import {
 } from "@/elektro/api/graphql";
 import { appendAnnotation, appendLayer, defaultCollectionId, optimisticAnnotation } from "./annotationCache";
 import { useExperimentStoreApi } from "../../platform/stores/experimentStore";
-import { bandKey, effectiveClim, useViewerStoreApi } from "../../platform/stores/viewerStore";
+import { bandKey, effectiveClim, useViewerStoreApi } from "@/core/data/plot/stores/viewerStore";
 import type { Commit } from "./annotationTools";
 import {
   findValueCollection,

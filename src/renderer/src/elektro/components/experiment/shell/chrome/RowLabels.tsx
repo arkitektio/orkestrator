@@ -1,12 +1,12 @@
 import { ChannelTag } from "../../features/metadata/ChannelMetadata";
 import { cn } from "@/core/util/utils";
-import { ROW_PADDING } from "../../features/stacking/stackLayout";
-import { formatValue } from "../../platform/probe/formatValue";
+import { ROW_PADDING } from "@/core/data/plot/layout/stackLayout";
+import { formatValue } from "@/core/data/plot/probe/formatValue";
 import { useChannelColors } from "../../platform/stores/channelColors";
 import { useLayerState } from "../../platform/stores/experimentStore";
-import { coloursChannels } from "../../platform/model/channelColor";
-import type { RowInfo } from "../../platform/stores/viewer/layoutSlice";
-import { useViewerStore } from "../../platform/stores/viewerStore";
+import { coloursChannels } from "@/core/data/plot/model/channelColor";
+import type { RowInfo } from "@/core/data/plot/stores/viewer/layoutSlice";
+import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
 
 /**
  * Row labels. Down the LEFT edge: which layer each row is, in its colour, with

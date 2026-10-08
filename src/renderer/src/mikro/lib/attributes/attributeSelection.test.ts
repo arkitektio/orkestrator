@@ -16,7 +16,7 @@ import {
   type SelectionStorage,
 } from "./attributeSelection";
 import { hopKey, type TableHopLike } from "./attributeTypes";
-import { chainPlan, sparsePlan, tablePlan } from "./__fixtures__/plans";
+import { chainPlan, sparsePlan, tablePlan, tracePlan } from "./__fixtures__/plans";
 
 const fakeStorage = (initial: Record<string, string> = {}): SelectionStorage & { data: Record<string, string> } => {
   const data = { ...initial };
@@ -41,6 +41,13 @@ describe("defaults", () => {
     const chain = chainPlan();
     expect(defaultEnabled(chain, chain.hops[1])).toBe(false);
     expect(defaultEnabled(chain, chain.hops[2])).toBe(false);
+  });
+
+  it("runs an array hop under a table that runs, and not without it", () => {
+    const trace = tracePlan();
+    expect(selectHops(EMPTY_SELECTION, trace).map((hop) => hop.index)).toEqual([0, 1]);
+    const off = withHopEnabled(EMPTY_SELECTION, hopKey(trace, trace.hops[0]), false);
+    expect(selectHops(off, trace)).toEqual([]);
   });
 
   it("a default-on child still waits for its parent", () => {

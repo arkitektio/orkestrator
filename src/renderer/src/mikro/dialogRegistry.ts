@@ -1,6 +1,8 @@
 import { CommitMeshDesignDialog } from "./components/scene/features/meshDesign/ui/CommitMeshDesignDialog";
+import { AddChartLayerForm } from "./forms/AddChartLayerForm";
 import { AddLayerForm } from "./forms/AddLayerForm";
 import { CalibrateForm } from "./forms/CalibrateForm";
+import { CreateChartForm } from "./forms/CreateChartForm";
 import { CreateFolderForm } from "./forms/CreateFolderForm";
 import { MoveToFolderForm } from "./forms/MoveToFolderForm";
 import { RegisterForm } from "./forms/RegisterForm";
@@ -14,9 +16,11 @@ import { UpdateFolderForm } from "./forms/UpdateFolderForm";
 export const MIKRO_DIALOGS = {
   // the scene's mesh designer commit (features/meshDesign)
   commitmeshdesign: CommitMeshDesignDialog,
+  addchartlayer: AddChartLayerForm,
   addlayer: AddLayerForm,
   register: RegisterForm,
   calibrate: CalibrateForm,
+  createchart: CreateChartForm,
   createmikrofolder: CreateFolderForm,
   movetofolder: MoveToFolderForm,
   updatefolder: UpdateFolderForm,

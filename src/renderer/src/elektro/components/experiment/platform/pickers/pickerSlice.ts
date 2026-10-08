@@ -1,4 +1,4 @@
-import { makeViewerSliceHooks, type ViewerSliceOf } from "../stores/viewerStore";
+import { makeViewerSliceHooks, type ViewerSliceOf } from "@/core/data/plot/stores/viewerStore";
 import type { PickerValuesService } from "./pickerValuesService";
 
 /**

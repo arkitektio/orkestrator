@@ -1,4 +1,4 @@
-import { timeToSample, type TimeMap } from "../../platform/coords/timeMap";
+import { timeToSample, type TimeMap } from "@/core/data/plot/coords/timeMap";
 import {
   axisNamesOf,
   channelAxisName,
@@ -7,7 +7,7 @@ import {
   type AxisLike,
   type CoordinateSystemLike,
 } from "../../platform/coords/timeAxis";
-import { yToValue } from "../../platform/coords/rowMap";
+import { yToValue } from "@/core/data/plot/coords/rowMap";
 import type { GesturePoint } from "./annotationTools";
 
 /**

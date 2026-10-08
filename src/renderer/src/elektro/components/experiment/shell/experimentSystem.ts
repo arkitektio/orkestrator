@@ -1,8 +1,8 @@
 import type { StoreApi } from "zustand/vanilla";
 import { LayerDriverRegistry } from "../platform/drivers/layerDriver";
 import type { ExperimentStoreState } from "../platform/stores/experimentStore";
-import type { RangeState } from "../platform/stores/rangeStore";
-import type { ViewerState } from "../platform/stores/viewerStore";
+import type { RangeState } from "@/core/data/plot/stores/rangeStore";
+import type { ViewerState } from "@/core/data/plot/stores/viewerStore";
 import type { ParquetQueryEngine } from "@/core/data/parquet/parquetEngine";
 import { AnnotationMarksIndexer } from "../features/annotations/AnnotationMarksIndexer";
 import type { AnnotationSlice } from "../features/annotations/store/annotationSlice";
@@ -11,9 +11,9 @@ import type { EventsSlice } from "../features/events/store/eventsSlice";
 import { SpikeRasterDriver, type SparseReader } from "../features/spikes/SpikeRasterDriver";
 import type { SpikesSlice } from "../features/spikes/store/spikesSlice";
 import { TraceTileDriver, type ReadWindow } from "../features/traces/TraceTileDriver";
-import type { TraceSlice } from "../features/traces/store/traceSlice";
+import type { TraceSlice } from "@/core/data/plot/lines/traceSlice";
 import type { PickerSlice } from "../platform/pickers/pickerSlice";
-import { TraceMemoryBudget } from "../platform/quality/traceBudget";
+import { TraceMemoryBudget } from "@/core/data/plot/quality/traceBudget";
 import { PickerValuesService, type TableMeta } from "../platform/pickers/pickerValuesService";
 
 /** How many finest-level samples the narrowest window must still show. */

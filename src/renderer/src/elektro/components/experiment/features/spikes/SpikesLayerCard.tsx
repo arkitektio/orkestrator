@@ -1,12 +1,12 @@
-import { unplaceableMessage } from "../../platform/model/placeable";
+import { unplaceableMessage } from "@/core/data/plot/model/placeable";
 import { PlacementFix } from "../../platform/edits/PlacementFix";
 import { PickerSection } from "../../platform/pickers/PickerSection";
 import { usePickerProblems } from "../../platform/pickers/pickerSlice";
 import { useRawLayer } from "../../platform/stores/experimentStore";
 import type { LayerState } from "../../platform/model/layerModel";
 import { useLayerWrite } from "../../platform/edits/useLayerWrite";
-import { useViewerStore } from "../../platform/stores/viewerStore";
-import { CardFact, CardShell, type LayerCardProps } from "../../platform/layerui/cardShell";
+import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
+import { CardFact, CardShell, type LayerCardProps } from "@/core/data/plot/layerui/cardShell";
 import { ColorInput, LayerMenu } from "../../platform/layerui/layerControls";
 
 /**

@@ -9,7 +9,7 @@ import {
   resolveCollectionMatrix,
   type AnnotationLayerVariant,
 } from "./annotationBounds";
-import { sceneAnnotationsVariables } from "./annotationCache";
+import { sceneAnnotationsVariables } from "../../../../lib/annotations/annotationCache";
 import { formatAnnotationMeasure, measureAnnotation } from "./roiMeasure";
 import { unitLabel } from "../../platform/coords/sceneUnits";
 import { useNavigateToAnnotation } from "./useNavigateToAnnotation";

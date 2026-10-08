@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { StoreApi } from "zustand/vanilla";
 import { normalizeAnnotationLayer } from "../../platform/model/layerModel";
 import { createExperimentStore } from "../../platform/stores/experimentStore";
-import { createViewerStore } from "../../platform/stores/viewerStore";
+import { createViewerStore } from "@/core/data/plot/stores/viewerStore";
 import { AnnotationMarksIndexer } from "./AnnotationMarksIndexer";
 import { createAnnotationSlice, type AnnotationSlice } from "./store/annotationSlice";
 

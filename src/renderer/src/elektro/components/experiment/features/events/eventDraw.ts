@@ -9,7 +9,7 @@ import {
 } from "../../platform/pickers/pickerModel";
 import { normalizeKey } from "../../platform/pickers/pickerValuesService";
 import type { EventMarks } from "../../platform/sources/eventSource";
-import type { MarkLabel } from "../../platform/stores/viewerStore";
+import type { MarkLabel } from "@/core/data/plot/stores/viewerStore";
 
 /**
  * From read marks to what an events layer DRAWS — pure, so the driver's output

@@ -1,16 +1,24 @@
 import { buildDeleteAction } from "@/core/smart/localactions/builders/deleteAction";
 import type { ModuleServices } from "@/core/connection/arkitekt/host";
 import {
+  CreateChartFromCoordinateSystemDocument,
+  CreateChartFromCoordinateSystemMutation,
+  CreateChartFromCoordinateSystemMutationVariables,
+  CreateTraceChartLayerDocument,
+  CreateTraceChartLayerMutation,
+  CreateTraceChartLayerMutationVariables,
   CreateSceneFromCoordinateSystemDocument,
   CreateSceneFromCoordinateSystemMutation,
   CreateSceneFromCoordinateSystemMutationVariables,
   DeleteArrayDatasetDocument,
+  DeleteChartDocument,
   DeleteFolderDocument,
   DeleteFileDocument,
   DeleteSceneDocument,
   GetArrayDatasetIntrinsicSystemDocument,
   GetArrayDatasetIntrinsicSystemQuery,
   GetArrayDatasetIntrinsicSystemQueryVariables,
+  GetChartsDocument,
   GetCoordinateSystemDocument,
   GetFolderDocument,
   GetFoldersDocument,
@@ -37,6 +45,7 @@ import { linkBuilder } from "@/core/smart/builder";
 import { sceneRegistrationLink } from "@/mikro/components/registration/entry";
 import {
   Boxes,
+  ChartSpline,
   Clapperboard,
   File,
   FolderInput,
@@ -162,6 +171,51 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       }
 
       navigate(linkBuilder('mikro/scenes')(scene.id));
+    },
+  },
+  'create-chart-from-coordinatesystem': {
+    title: 'Create Chart',
+    description:
+      'Draw what is already laid along this coordinate system\'s axis as a new chart: its arrays as traces, its tables as series',
+    icon: ChartSpline,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/coordinatesystem' },
+      { type: 'nopartner' },
+    ],
+    collections: ['coordinatesystem'],
+    execute: async ({ state, services, navigate }) => {
+      const selected = state.left.find(
+        (item) => item.identifier === '@mikro/coordinatesystem',
+      );
+
+      if (!selected?.id) {
+        throw new Error('No coordinate system selected for Create Chart action');
+      }
+
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+
+      // A chart is laid out along ONE metric axis, and the schema has no way
+      // to ask up front whether this system is such a space: the server
+      // decides, and its refusal is the message the user sees.
+      const { data } = await mikro.client.mutate<
+        CreateChartFromCoordinateSystemMutation,
+        CreateChartFromCoordinateSystemMutationVariables
+      >({
+        mutation: CreateChartFromCoordinateSystemDocument,
+        // `policy` is left to the server default (the nchildren cap).
+        variables: { input: { coordinateSystem: selected.id } },
+        refetchQueries: [GetChartsDocument],
+      });
+
+      const chart = data?.createChartFromCoordinateSystem;
+      if (!chart) {
+        throw new Error('Chart creation returned no chart');
+      }
+
+      navigate(linkBuilder('mikro/charts')(chart.id));
     },
   },
   // The three registration entry points. All open the same dialog; they differ
@@ -680,6 +734,120 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     service: 'mikro',
     typename: 'Scene',
     mutation: DeleteSceneDocument
+  }),
+  'add-layer-to-chart': {
+    title: 'Add Layer',
+    description: 'Draw an array, a table column or annotations in this chart',
+    icon: ChartSpline,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/chart' },
+      { type: 'nopartner' },
+    ],
+    collections: ['chart'],
+    execute: async ({ state, dialog }) => {
+      const selected = state.left.find((item) => item.identifier === '@mikro/chart');
+      if (!selected?.id) {
+        throw new Error('No chart selected for Add Layer action');
+      }
+      dialog.openDialog('addchartlayer', { chart: selected.id }, { size: 'medium' });
+    },
+  },
+  'add-lens-to-chart': {
+    title: 'Draw as Trace',
+    description: 'Draw this lens along the axis of the chart it was dropped on',
+    icon: ChartSpline,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/chart' },
+      { type: 'partner', partner: '@mikro/lens' },
+    ],
+    collections: ['chart'],
+    execute: async ({ state, services }) => {
+      const chart = state.left.find((item) => item.identifier === '@mikro/chart');
+      const lenses = (state.right ?? []).filter((item) => item.identifier === '@mikro/lens');
+      if (!chart?.id || lenses.length === 0) {
+        throw new Error('Draw as Trace needs both a chart and a lens');
+      }
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+      // No registration is written: the lens must already be laid along the
+      // chart's axis, and the server's refusal is what says when it is not.
+      for (const lens of lenses) {
+        await mikro.client.mutate<
+          CreateTraceChartLayerMutation,
+          CreateTraceChartLayerMutationVariables
+        >({
+          mutation: CreateTraceChartLayerDocument,
+          variables: { input: { chart: chart.id, lens: lens.id } },
+          refetchQueries: ['GetChart'],
+        });
+      }
+    },
+  },
+  'add-arraydataset-to-chart': {
+    title: 'Draw as Trace',
+    description: 'Draw this dataset along the axis of the chart it was dropped on',
+    icon: ChartSpline,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/chart' },
+      { type: 'partner', partner: '@mikro/arraydataset' },
+    ],
+    collections: ['chart'],
+    execute: async ({ state, services }) => {
+      const chart = state.left.find((item) => item.identifier === '@mikro/chart');
+      const datasets = (state.right ?? []).filter(
+        (item) => item.identifier === '@mikro/arraydataset',
+      );
+      if (!chart?.id || datasets.length === 0) {
+        throw new Error('Draw as Trace needs both a chart and a dataset');
+      }
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+      // Naming the dataset leaves the lens to the server: which selection of
+      // the array is a trace is its call, as is refusing one that is not.
+      for (const dataset of datasets) {
+        await mikro.client.mutate<
+          CreateTraceChartLayerMutation,
+          CreateTraceChartLayerMutationVariables
+        >({
+          mutation: CreateTraceChartLayerDocument,
+          variables: { input: { chart: chart.id, dataset: dataset.id } },
+          refetchQueries: ['GetChart'],
+        });
+      }
+    },
+  },
+  'add-tabledataset-to-chart': {
+    title: 'Draw as Series…',
+    description: 'Draw a column of this table along the axis of the chart it was dropped on',
+    icon: ChartSpline,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/chart' },
+      { type: 'partner', partner: '@mikro/tabledataset' },
+    ],
+    collections: ['chart'],
+    execute: async ({ state, dialog }) => {
+      const chart = state.left.find((item) => item.identifier === '@mikro/chart');
+      const table = state.right?.find((item) => item.identifier === '@mikro/tabledataset');
+      if (!chart?.id || !table?.id) {
+        throw new Error('Draw as Series needs both a chart and a table');
+      }
+      // A series must be told which column is the value, so this opens the
+      // picker on that table instead of letting the server guess one.
+      dialog.openDialog('addchartlayer', { chart: chart.id, table: table.id }, { size: 'medium' });
+    },
+  },
+  'delete-mikro-chart': buildDeleteAction<ModuleServices<"mikro">>({
+    title: 'Delete Chart',
+    identifier: '@mikro/chart',
+    description:
+      'Delete the chart and its layers. The data they drew and the space it is laid out along are untouched',
+    service: 'mikro',
+    typename: 'Chart',
+    mutation: DeleteChartDocument
   }),
   'delete-mikro-arrayDataset': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete Dataset',

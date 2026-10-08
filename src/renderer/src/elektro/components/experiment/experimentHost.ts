@@ -10,12 +10,12 @@ import {
   useRangeStore,
   useRangeStoreApi,
   type TimeWindow,
-} from "./platform/stores/rangeStore";
+} from "@/core/data/plot/stores/rangeStore";
 import {
   useViewerStore,
   useViewerStoreApi,
   type InteractionMode,
-} from "./platform/stores/viewerStore";
+} from "@/core/data/plot/stores/viewerStore";
 
 export { ExperimentGuard as ExperimentHostGuard } from "./platform/stores/experimentScope";
 

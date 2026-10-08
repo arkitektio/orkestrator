@@ -11,7 +11,7 @@ import {
 import { Button } from "@/core/ui/button";
 import { ButtonGroup } from "@/core/ui/button-group";
 import { useExperimentStore } from "../../platform/stores/experimentStore";
-import { useViewerStore } from "../../platform/stores/viewerStore";
+import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
 import { ANNOTATE_TOOLS, toolSpec, type AnnotateTool } from "./annotationTools";
 import { useAnnotationStore, useAnnotationStoreApi } from "./store/annotationSlice";
 

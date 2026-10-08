@@ -8,7 +8,7 @@ import { ByteBudgetChunkCache } from "@/core/data/zarr/caches/byteBudgetChunkCac
 import { INTERACTIVE_FETCH_PRIORITY } from "@/core/data/zarr/pool/types";
 import { workerPool } from "@/core/data/zarr/pool/sharedWorkerPool";
 import { readArrayWindow } from "@/core/data/zarr/readArrayWindow";
-import type { AxisRange } from "@/elektro/components/experiment/platform/sources/axisSelection";
+import type { AxisRange } from "@/core/data/plot/sources/axisSelection";
 import { createStore } from "zustand/vanilla";
 import {
   GeneralZarrAccessGrantFragment,

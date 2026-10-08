@@ -1,4 +1,4 @@
-import { makeViewerSliceHooks, type ViewerSliceOf } from "../../../platform/stores/viewerStore";
+import { makeViewerSliceHooks, type ViewerSliceOf } from "@/core/data/plot/stores/viewerStore";
 import type { AnnotationMarks } from "../annotationGeometry";
 import type { AnnotateTool, Draft } from "../annotationTools";
 

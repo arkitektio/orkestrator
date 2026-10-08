@@ -1,0 +1,65 @@
+mutation CreateChart($input: CreateChartInput!) {
+  createChart(input: $input) {
+    ...ListChart
+  }
+}
+
+# Draws what is already laid along the system's axis. Authors no edges.
+mutation CreateChartFromCoordinateSystem(
+  $input: CreateChartFromCoordinateSystemInput!
+) {
+  createChartFromCoordinateSystem(input: $input) {
+    ...ListChart
+  }
+}
+
+mutation UpdateChart($input: UpdateChartInput!) {
+  updateChart(input: $input) {
+    ...ListChart
+  }
+}
+
+mutation DeleteChart($id: ID!) {
+  deleteChart(input: { id: $id })
+}
+
+# The create-layer mutations answer with the id ONLY and the caller refetches
+# `GetChart`. Selecting the layer's placement here would be a trap: `asAffine`
+# errors when the path does not condense, and under a mutation's default error
+# policy that rejects a create which succeeded.
+mutation CreateTraceChartLayer($input: CreateTraceChartLayerInput!) {
+  createTraceChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+
+mutation CreateSeriesChartLayer($input: CreateSeriesChartLayerInput!) {
+  createSeriesChartLayer(input: $input) {
+    __typename
+    id
+  }
+}
+
+# With no collection named the server makes a drawing surface for the chart;
+# its id is what `createAnnotation(collection:)` then draws into.
+mutation CreateAnnotationChartLayer($input: CreateAnnotationChartLayerInput!) {
+  createAnnotationChartLayer(input: $input) {
+    __typename
+    id
+    annotationCollection {
+      id
+    }
+  }
+}
+
+# One mutation for every kind: view state only.
+mutation UpdateChartLayer($input: UpdateChartLayerInput!) {
+  updateChartLayer(input: $input) {
+    ...ChartLayerStyle
+  }
+}
+
+mutation DeleteChartLayer($id: ID!) {
+  deleteChartLayer(input: { id: $id })
+}

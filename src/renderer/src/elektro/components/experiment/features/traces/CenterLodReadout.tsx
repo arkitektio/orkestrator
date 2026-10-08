@@ -5,7 +5,7 @@ import {
   useExperimentStore,
   useExperimentStoreApi,
 } from "../../platform/stores/experimentStore";
-import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
+import { useViewerStore, useViewerStoreApi } from "@/core/data/plot/stores/viewerStore";
 
 /**
  * Which pyramid level the middle of the window is actually showing — the

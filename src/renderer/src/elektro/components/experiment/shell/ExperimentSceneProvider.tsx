@@ -1,5 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { assertWebGPUSupported } from "@/core/data/scene/gpu/webgpuSupport";
+import { useMemo, useRef, type ReactNode } from "react";
+import type { GraphQLErrorLike } from "@/core/data/plot/model/placementErrors";
+import {
+  PlotScopeProvider,
+  type PlotScope,
+  type PlotScopeSpec,
+} from "@/core/data/plot/scope/PlotScopeProvider";
+import type { TimeWindow } from "@/core/data/plot/stores/rangeStore";
 import { ExperimentSystemHost } from "./ExperimentSystemHost";
 import { MIN_VISIBLE_SAMPLES } from "./experimentSystem";
 import { FEATURE_SLICES } from "./featureSlices";
@@ -7,20 +13,11 @@ import { experimentScopeSignature } from "../platform/model/experimentStructure"
 import {
   foldExperiment,
   type ExperimentLike,
+  type FoldedExperiment,
   selectedLayers,
   type ServedExperimentLike,
-  type SourceMemo,
 } from "../platform/model/foldExperiment";
 import {
-  placementErrorsByLayerId,
-  type GraphQLErrorLike,
-} from "../platform/model/placementErrors";
-import {
-  ExperimentScopeStatusContext,
-  type ExperimentScopeStatus,
-} from "../platform/stores/experimentScope";
-import {
-  ExperimentStoreContext,
   createExperimentStore,
   type ExperimentLayerFragment,
   type ExperimentStoreApi,
@@ -28,45 +25,26 @@ import {
 
 /** The fold is structural (no generated types); the fragments it passes on ARE the scene's. */
 const typedRaw = (raw: Record<string, unknown>) => raw as Record<string, ExperimentLayerFragment>;
-import {
-  RangeStoreContext,
-  createRangeStore,
-  type RangeStoreApi,
-  type TimeWindow,
-} from "../platform/stores/rangeStore";
-import {
-  ViewerStoreContext,
-  createViewerStore,
-  type ViewerStoreApi,
-} from "../platform/stores/viewerStore";
 
 /**
  * Builds and maintains the experiment's store scope.
  *
- * Transposed from mikro's `shell/SceneProvider.tsx`, and it keeps that file's
- * load-bearing contract:
+ * The rebuild / fold / phase contract is the plot engine's
+ * (`@/core/data/plot/scope/PlotScopeProvider`, transposed from mikro's
+ * `shell/SceneProvider.tsx`): rebuild only when the scope signature moves, fold
+ * everything else into the live stores, and never let a fold push the phase back
+ * to "initializing". This file says what an EXPERIMENT is to it: how it folds,
+ * what its store holds, and which system hosts its drivers.
  *
- *  - **Rebuild** only when the SCOPE signature moves — a different experiment or a
- *    different world. That is the one change nothing built can survive.
- *  - **Fold** on every other fragment change: re-normalize (cheaply), keep every
- *    layer's pyramid by identity unless that layer's structure moved, and push the
- *    result into the live stores (which fold away the optimistic edits the server
- *    now agrees with). No store is recreated.
- *  - **`phase` comes from the scope signature ALONE.** A fold never pushes it back
- *    to "initializing", so the `<Canvas>` — and every GPU buffer under it — survives
- *    a layer arriving, an annotation being minted on first draw, or a re-placement.
- *
- * Contexts are ALWAYS mounted, with null values until ready: if the provider chain
- * appeared only on readiness, the transition would remount the whole page.
  * Consumers gate on `ExperimentGuard`, not on provider presence.
  */
 
-type Scope = {
-  experiment: ExperimentStoreApi;
-  range: RangeStoreApi;
-  viewer: ViewerStoreApi;
-};
+type Subject = ExperimentLike & { id: string };
 
+/** The system host reads the plot store as the experiment's. */
+const System = ({ scope }: { scope: PlotScope<ExperimentStoreApi> }) => (
+  <ExperimentSystemHost scope={{ experiment: scope.plot, range: scope.range, viewer: scope.viewer }} />
+);
 
 /**
  * What the provider builds a scope from: an experiment's scene fragment, which
@@ -94,52 +72,20 @@ export const ExperimentSceneProvider = ({
   children: ReactNode;
 }) => {
   const experiment = useMemo(
-    () => (served ? selectedLayers<ExperimentLike & { id: string }>(served) : served),
+    () => (served ? selectedLayers<Subject>(served) : served),
     [served],
   );
-  const [scope, setScope] = useState<Scope | null>(null);
-  const [status, setStatus] = useState<ExperimentScopeStatus>({
-    phase: "no-experiment",
-    experimentId: null,
-    error: null,
-  });
-
-  const scopeSignature = experiment ? experimentScopeSignature(experiment) : null;
-  const memoRef = useRef<SourceMemo | null>(null);
-  // Read at build time only — the URL range seeds the scope, it does not drive it.
-  const initialRangeRef = useRef(initialRange ?? null);
+  // Read when a scope is built, not a reason to build one.
   const annotatableRef = useRef(annotatable);
   annotatableRef.current = annotatable;
-  const latestRef = useRef({ experiment, placementErrors });
-  latestRef.current = { experiment, placementErrors };
 
-  // --- REBUILD: identity or world changed -------------------------------------
-  useEffect(() => {
-    const current = latestRef.current.experiment;
-    if (!current || !scopeSignature) {
-      setScope(null);
-      setStatus({ phase: "no-experiment", experimentId: null, error: null });
-      return;
-    }
-
-    let cancelled = false;
-    setScope(null);
-    setStatus({ phase: "initializing", experimentId: current.id, error: null });
-
-    if (!current.world) {
-      // Not an error: there is simply no timeline, and no mutation to add one.
-      setStatus({ phase: "no-world", experimentId: current.id, error: null });
-      return;
-    }
-
-    assertWebGPUSupported()
-      .then(() => {
-        if (cancelled) return;
-        const errors = placementErrorsByLayerId(current, latestRef.current.placementErrors);
-        const folded = foldExperiment(current, errors, null);
-        memoRef.current = folded.memo;
-
-        const experimentStore = createExperimentStore({
+  const spec = useMemo<PlotScopeSpec<Subject, FoldedExperiment, ExperimentStoreApi>>(
+    () => ({
+      scopeSignatureOf: experimentScopeSignature,
+      hasWorld: (current) => current.world != null,
+      fold: (current, errors, previous) => foldExperiment(current, errors, previous?.memo ?? null),
+      createStore: (current, folded) =>
+        createExperimentStore({
           experimentId: current.id,
           world: current.world ?? null,
           annotatable: annotatableRef.current,
@@ -147,65 +93,24 @@ export const ExperimentSceneProvider = ({
           rawLayers: typedRaw(folded.rawLayers),
           timeOrigin: folded.timeOrigin,
           worldSpan: folded.worldSpan,
-        });
-        const minWidth = experimentStore.getState().finestPeriod * MIN_VISIBLE_SAMPLES;
-        const rangeStore = createRangeStore({
-          worldSpan: folded.worldSpan,
-          minWidth,
-          range: initialRangeRef.current,
-        });
-
-        setScope({
-          experiment: experimentStore,
-          range: rangeStore,
-          viewer: createViewerStore(FEATURE_SLICES),
-        });
-        setStatus({ phase: "ready", experimentId: current.id, error: null });
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        const err = error instanceof Error ? error : new Error(String(error));
-        setStatus({
-          phase: err.name === "WebGPUUnavailableError" ? "unsupported" : "error",
-          experimentId: current.id,
-          error: err,
-        });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [scopeSignature]);
-
-  // --- FOLD: everything else ---------------------------------------------------
-  useEffect(() => {
-    if (!scope || !experiment) return;
-    // A fragment for a DIFFERENT scope is the rebuild's business, not ours.
-    if (experimentScopeSignature(experiment) !== scopeSignature) return;
-
-    const errors = placementErrorsByLayerId(experiment, placementErrors);
-    const folded = foldExperiment(experiment, errors, memoRef.current);
-    memoRef.current = folded.memo;
-
-    const { removedIds } = scope.experiment
-      .getState()
-      .syncLayers(folded.layers, typedRaw(folded.rawLayers), folded.worldSpan);
-    for (const id of removedIds) scope.viewer.getState().clearLayer(id);
-    // The range follows `worldSpan` through the system's subscription.
-  }, [scope, experiment, placementErrors, scopeSignature]);
-
-  const statusValue = useMemo(() => status, [status]);
+        }),
+      sync: (plot, folded) =>
+        plot.getState().syncLayers(folded.layers, typedRaw(folded.rawLayers), folded.worldSpan),
+      minVisibleSamples: MIN_VISIBLE_SAMPLES,
+      featureSlices: FEATURE_SLICES,
+      System,
+    }),
+    [],
+  );
 
   return (
-    <ExperimentScopeStatusContext.Provider value={statusValue}>
-      <ExperimentStoreContext.Provider value={scope?.experiment ?? null}>
-        <RangeStoreContext.Provider value={scope?.range ?? null}>
-          <ViewerStoreContext.Provider value={scope?.viewer ?? null}>
-            {scope && <ExperimentSystemHost scope={scope} />}
-            {children}
-          </ViewerStoreContext.Provider>
-        </RangeStoreContext.Provider>
-      </ExperimentStoreContext.Provider>
-    </ExperimentScopeStatusContext.Provider>
+    <PlotScopeProvider
+      subject={experiment}
+      spec={spec}
+      placementErrors={placementErrors}
+      initialRange={initialRange}
+    >
+      {children}
+    </PlotScopeProvider>
   );
 };

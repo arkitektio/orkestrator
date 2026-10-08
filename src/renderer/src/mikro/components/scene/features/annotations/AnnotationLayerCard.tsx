@@ -5,7 +5,7 @@ import {
   useGetSceneAnnotationsQuery,
   type SceneLayerFragment,
 } from "@/mikro/api/graphql";
-import { sceneAnnotationsVariables } from "./annotationCache";
+import { sceneAnnotationsVariables } from "../../../../lib/annotations/annotationCache";
 import { useRoiSelectionStore } from "./roiSelectionStore";
 import {
   useSceneStore,

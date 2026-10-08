@@ -1,21 +1,21 @@
 import { useEffect, useMemo, useRef } from "react";
 import { channelColorsFor } from "../../platform/stores/channelColors";
-import { coloursChannels } from "../../platform/model/channelColor";
+import { coloursChannels } from "@/core/data/plot/model/channelColor";
 import { bindFields } from "@/core/data/scene/stores/bindStore";
-import { pixelAtTime } from "../../platform/camera/rangeToCamera";
-import { sampleAt } from "../../platform/probe/sampleAt";
+import { pixelAtTime } from "@/core/data/plot/camera/rangeToCamera";
+import { sampleAt } from "@/core/data/plot/probe/sampleAt";
 import {
   drawnLayersKey,
   isLayerHidden,
   useExperimentStore,
   useExperimentStoreApi,
 } from "../../platform/stores/experimentStore";
-import { useRangeStoreApi } from "../../platform/stores/rangeStore";
+import { useRangeStoreApi } from "@/core/data/plot/stores/rangeStore";
 import {
   useViewerStore,
   useViewerStoreApi,
-} from "../../platform/stores/viewerStore";
-import { formatValue } from "../../platform/probe/formatValue";
+} from "@/core/data/plot/stores/viewerStore";
+import { formatValue } from "@/core/data/plot/probe/formatValue";
 
 /**
  * The hover probe: a cursor line across every row, and a readout of each view's

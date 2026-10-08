@@ -1,5 +1,5 @@
 import type { AttributeHopLike, AttributePlanLike, TableHopLike } from "./attributeTypes";
-import { hopKey, isSparseHop, isTableHop } from "./attributeTypes";
+import { hopKey, isArrayHop, isSparseHop, isTableHop } from "./attributeTypes";
 import { DEFAULT_SPARSE_LIMIT, type ExecutePlanOptions } from "./executePlan";
 import { projectColumns } from "./planSql";
 
@@ -15,7 +15,8 @@ import { projectColumns } from "./planSql";
  *  - a landing SPARSE — one object's whole profile, thousands of entries plus
  *    the names hop after it — is OFF until switched on per matrix;
  *  - a later hop is OFF, except the names hop under an enabled sparse landing
- *    (bounded by `sparseLimit`, and the profile means nothing without it);
+ *    (bounded by `sparseLimit`, and the profile means nothing without it)
+ *    and a dense ARRAY hop (one contiguous line, read once per object);
  *  - a hop never runs without its parent: enabling a child does not enable
  *    what it binds from, and disabling a parent silences its chain.
  */
@@ -48,7 +49,7 @@ const parentOf = (plan: AttributePlanLike, hop: AttributeHopLike): AttributeHopL
 export const defaultEnabled = (plan: AttributePlanLike, hop: AttributeHopLike): boolean => {
   const parent = parentOf(plan, hop);
   if (parent === null) return isTableHop(hop);
-  return isSparseHop(parent);
+  return isSparseHop(parent) || isArrayHop(hop);
 };
 
 /** The user's explicit choice for one hop, or its default. */

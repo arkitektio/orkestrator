@@ -44,6 +44,8 @@ export const AXIS_TYPE_NOTES: Record<AxisType, string> = {
     "A wavelength bin of a spectrally resolved acquisition. Continuous, unlike a channel axis.",
   [AxisType.Time]:
     "A time axis: frame indices in a pixel grid, or a physical duration in a unit-carrying system.",
+  [AxisType.Value]:
+    "The direction values are drawn along. Only a drawing space has one, so that a mark can sit at a height as well as a position; always unitless.",
 };
 
 /** `GROUP_ID` → "group id": the enum's wire spelling, read as words. */

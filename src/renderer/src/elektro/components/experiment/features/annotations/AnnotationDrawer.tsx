@@ -1,19 +1,19 @@
 import { useEffect, useRef } from "react";
 import { isTypingTarget } from "@/core/dnd/keyboardTarget";
 import type { LayerState } from "../../platform/model/layerModel";
-import { pixelAtTime, timeAtPixel, yAtPixel } from "../../platform/camera/rangeToCamera";
-import { rowHitAt } from "../../platform/coords/rowHit";
+import { pixelAtTime, timeAtPixel, yAtPixel } from "@/core/data/plot/camera/rangeToCamera";
+import { rowHitAt } from "@/core/data/plot/coords/rowHit";
 import {
   isLayerHidden,
   useExperimentStore,
   useExperimentStoreApi,
 } from "../../platform/stores/experimentStore";
-import { useRangeStoreApi } from "../../platform/stores/rangeStore";
+import { useRangeStoreApi } from "@/core/data/plot/stores/rangeStore";
 import {
   effectiveClim,
   useViewerStore,
   useViewerStoreApi,
-} from "../../platform/stores/viewerStore";
+} from "@/core/data/plot/stores/viewerStore";
 import { hitAnnotation } from "./annotationHit";
 import { gesture, toolForShortcut, type Draft, type GestureEvent, type GesturePoint } from "./annotationTools";
 import { useAnnotationStore, useAnnotationStoreApi } from "./store/annotationSlice";

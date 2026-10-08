@@ -2,14 +2,14 @@ import { Scaling } from "lucide-react";
 import { Button } from "@/core/ui/button";
 import { useAutoscale } from "../../platform/edits/useAutoscale";
 import { useLayerWrite } from "../../platform/edits/useLayerWrite";
-import { unplaceableMessage } from "../../platform/model/placeable";
+import { unplaceableMessage } from "@/core/data/plot/model/placeable";
 import { PlacementFix } from "../../platform/edits/PlacementFix";
 import type { LayerState } from "../../platform/model/layerModel";
-import { formatValue } from "../../platform/probe/formatValue";
-import { useViewerStore } from "../../platform/stores/viewerStore";
-import { CardFact, CardShell, type LayerCardProps } from "../../platform/layerui/cardShell";
+import { formatValue } from "@/core/data/plot/probe/formatValue";
+import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
+import { CardFact, CardShell, type LayerCardProps } from "@/core/data/plot/layerui/cardShell";
 import { ColorInput, LayerMenu, LineWidthSelect } from "../../platform/layerui/layerControls";
-import type { ChannelColoring } from "../../platform/model/channelColor";
+import type { ChannelColoring } from "@/core/data/plot/model/channelColor";
 import {
   Select,
   SelectContent,

@@ -378,7 +378,10 @@ export function AttributeProbeTracker() {
           if (resident === null) return false; // not resident: needs the async path
           value = resident;
         }
-        const chain = service.peekPlanWithValue(plan, mapped, value, sampleSource, options);
+        const chain = service.peekPlanWithValue(plan, mapped, value, sampleSource, {
+          ...options,
+          probed: startCoords,
+        });
         if (chain === null) return false; // a cache miss somewhere: a real lookup is needed
         for (const hop of hops) {
           const id = hopKey(plan, hop);

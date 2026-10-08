@@ -173,6 +173,8 @@ export const MIKRO_PAGINATED_FIELDS: PaginatedFieldMap = {
   annotationCollections: ["filters", "ordering"],
   annotations: ["filters", "ordering"],
   arrayDatasets: ["filters", "ordering"],
+  chartLayers: ["filters", "ordering"],
+  charts: ["filters", "ordering"],
   children: ["filters", "order", "parent"],
   colorByOptions: ["filters", "maxJoinDepth", "meshCollection"],
   coordinateSystems: ["filters", "ordering"],

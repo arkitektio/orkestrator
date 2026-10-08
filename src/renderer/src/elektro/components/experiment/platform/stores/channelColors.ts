@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { channelColors, coloursChannels, type ChannelColoring } from "../model/channelColor";
+import { channelColors, coloursChannels, type ChannelColoring } from "@/core/data/plot/model/channelColor";
 import { useLayerState } from "./experimentStore";
-import { useViewerStore } from "./viewerStore";
+import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
 
 /**
  * The colour each of a layer's drawn channels is drawn in, under the LAYER's

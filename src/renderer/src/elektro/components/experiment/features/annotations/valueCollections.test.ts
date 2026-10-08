@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { valueToY } from "../../platform/coords/rowMap";
+import { valueToY } from "@/core/data/plot/coords/rowMap";
 import {
   drawnChannelOf,
   findValueCollection,

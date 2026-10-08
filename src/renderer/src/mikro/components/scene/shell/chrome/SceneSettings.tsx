@@ -383,10 +383,14 @@ const HopRow = ({
           </span>
           <span
             className={`rounded px-1 text-[9px] font-medium ${
-              meta.kind === "SPARSE" ? "bg-chart-2/15 text-chart-2" : "bg-muted text-muted-foreground"
+              meta.kind === "SPARSE"
+                ? "bg-chart-2/15 text-chart-2"
+                : meta.kind === "ARRAY"
+                  ? "bg-chart-4/15 text-chart-4"
+                  : "bg-muted text-muted-foreground"
             }`}
           >
-            {meta.kind === "SPARSE" ? "matrix" : "table"}
+            {meta.kind === "SPARSE" ? "matrix" : meta.kind === "ARRAY" ? "array" : "table"}
           </span>
           {meta.via && <span className="truncate text-[9px] text-muted-foreground/70">{meta.via}</span>}
           {narrowed && (
@@ -404,7 +408,9 @@ const HopRow = ({
               ? "Switch on what this hop binds from first"
               : meta.kind === "SPARSE"
                 ? "One object's whole profile — off by default"
-                : undefined
+                : meta.kind === "ARRAY"
+                  ? "One object's line through the array, read once per object"
+                  : undefined
           }
         />
       </div>

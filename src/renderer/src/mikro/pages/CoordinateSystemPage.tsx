@@ -11,6 +11,7 @@ import {
   useGetCoordinateSystemQuery,
 } from "../api/graphql";
 import SceneCard from "../components/cards/SceneCard";
+import { ChartSectionList } from "../components/lists/ChartList";
 import CoordinateGraphView, {
   DEFAULT_MAX_DEPTH,
 } from "../components/coordinates/CoordinateGraphView";
@@ -178,6 +179,8 @@ export const CoordinateSystemPage = asDetailQueryRoute(
                     ))}
                   </div>
                 )}
+                {/* Charts adopt a space the same way; nothing when there are none. */}
+                <ChartSectionList filters={{ coordinateSystem: system.id }} />
               </div>
             </Sidebars.Tab>
             <Sidebars.Tab label="Provenance">

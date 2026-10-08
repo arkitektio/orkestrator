@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useViewerStoreApi } from "../stores/viewerStore";
+import { useViewerStoreApi } from "@/core/data/plot/stores/viewerStore";
 import { useLayerWrite } from "./useLayerWrite";
 
 /**

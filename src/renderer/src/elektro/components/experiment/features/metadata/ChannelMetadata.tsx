@@ -25,7 +25,7 @@ import {
   type ChannelSite,
 } from "../../platform/model/anchors";
 import { useLayerState, useRawLayer } from "../../platform/stores/experimentStore";
-import { useRangeStore } from "../../platform/stores/rangeStore";
+import { useRangeStore } from "@/core/data/plot/stores/rangeStore";
 
 /**
  * A channel's NAME at the right edge of its track (its label, else its site's,

@@ -163,6 +163,34 @@ export type SparseDatasetLike = {
   axisReferences: readonly { axis: string; references: { id: string; name: string } }[];
 };
 
+// ---- dense array shapes ------------------------------------------------------
+
+/** A dense array an ARRAY hop reads one line of. `dataArrays` are its levels;
+ * level 0 is the full-resolution grid. */
+export type ArrayDatasetLike = {
+  id: string;
+  name: string;
+  axisNames: readonly string[];
+  shape: readonly number[];
+  dataArrays: readonly {
+    level?: number | null;
+    shape?: readonly number[] | null;
+    store: { id: string; key: string };
+  }[];
+};
+
+/**
+ * How a value axis of an ARRAY hop relates to an axis of the PROBED system,
+ * in grid indices: `sample = probed · scale + offset`. Published only when
+ * the graph relates the two (a trace's `t` and the movie's `t` on one clock).
+ */
+export type ValueAxisMapLike = {
+  axis: string;
+  probedAxis: string;
+  scale: number;
+  offset: number;
+};
+
 // ---- hops -------------------------------------------------------------------
 
 /**
@@ -203,6 +231,7 @@ export type AttributeHopBase = {
 export type TableHopLike = AttributeHopBase & {
   table: { id: string; name: string };
   sparseDataset?: null;
+  arrayDataset?: null;
   lookup: {
     kind: "TABLE";
     store: ParquetStoreLike;
@@ -218,6 +247,7 @@ export type TableHopLike = AttributeHopBase & {
 export type SparseHopLike = AttributeHopBase & {
   table?: null;
   sparseDataset: SparseDatasetLike;
+  arrayDataset?: null;
   lookup: {
     kind: "SPARSE";
     sparseArray: SparseArrayLike;
@@ -231,13 +261,43 @@ export type SparseHopLike = AttributeHopBase & {
   };
 };
 
-export type AttributeHopLike = TableHopLike | SparseHopLike;
+/**
+ * A hop landing in a dense array: one object's line through it — a cell's
+ * trace out of a `(cell, t)` array derived from the table of cells. The held
+ * id selects ONE position along `keyAxis`; what comes back runs along the
+ * value axis.
+ */
+export type ArrayHopLike = AttributeHopBase & {
+  table?: null;
+  sparseDataset?: null;
+  arrayDataset: ArrayDatasetLike;
+  lookup: {
+    kind: "ARRAY";
+    /** The array axis the held id binds. */
+    keyAxis: string;
+    /** The name the worker holds that id under (`keyAxis` on a landing). */
+    keyHeld?: string | null;
+    /** Held id → position along `keyAxis`: `id · scale + offset`. The
+     * derivation edge already inverted by the server; absent = the id is the
+     * position. */
+    keyMap?: { scale: number; offset: number } | null;
+    /** What comes back is indexed by. One axis: a line. */
+    valueAxes: readonly string[];
+    valueAxisMaps?: readonly ValueAxisMapLike[] | null;
+    attributes?: readonly AttributeColumnLike[];
+  };
+};
+
+export type AttributeHopLike = TableHopLike | SparseHopLike | ArrayHopLike;
 
 export const isTableHop = (hop: AttributeHopLike): hop is TableHopLike =>
   hop.lookup.kind === "TABLE";
 
 export const isSparseHop = (hop: AttributeHopLike): hop is SparseHopLike =>
   hop.lookup.kind === "SPARSE";
+
+export const isArrayHop = (hop: AttributeHopLike): hop is ArrayHopLike =>
+  hop.lookup.kind === "ARRAY";
 
 export type AttributePlanLike = {
   /** The FIELD edge the plan was built from — half of the staleness key. */
@@ -252,15 +312,17 @@ export type AttributePlanLike = {
 /** The landing: the table or matrix the sampled id keys directly. */
 export const landingOf = (plan: AttributePlanLike): AttributeHopLike => plan.hops[0];
 
-export type HopSourceKind = "TABLE" | "SPARSE";
+export type HopSourceKind = "TABLE" | "SPARSE" | "ARRAY";
 
-/** What a hop lands in, uniformly: the table's or the matrix's identity. */
+/** What a hop lands in, uniformly: the table's, the matrix's or the array's identity. */
 export const hopSource = (
   hop: AttributeHopLike,
 ): { id: string; name: string; kind: HopSourceKind } =>
   isSparseHop(hop)
     ? { id: hop.sparseDataset.id, name: hop.sparseDataset.name, kind: "SPARSE" }
-    : { id: hop.table.id, name: hop.table.name, kind: "TABLE" };
+    : isArrayHop(hop)
+      ? { id: hop.arrayDataset.id, name: hop.arrayDataset.name, kind: "ARRAY" }
+      : { id: hop.table.id, name: hop.table.name, kind: "TABLE" };
 
 /**
  * The plan's full identity: the landing plus the FIELD edge plus every path
@@ -311,7 +373,7 @@ export type HopMeta = {
    * or `along <axis>`; null on the landing. */
   via: string | null;
   cardinality: "ONE" | "MANY";
-  /** (SPARSE) The value axes a profile is indexed by. */
+  /** (SPARSE, ARRAY) The value axes a profile or a line is indexed by. */
   valueAxes: readonly string[];
 };
 
@@ -336,7 +398,7 @@ export const hopMetaOf = (plan: AttributePlanLike, hop: AttributeHopLike): HopMe
         ? `along ${hop.via.axis}`
         : null,
     cardinality: hop.cardinality === "MANY" ? "MANY" : "ONE",
-    valueAxes: isSparseHop(hop) ? hop.lookup.valueAxes : [],
+    valueAxes: isSparseHop(hop) || isArrayHop(hop) ? hop.lookup.valueAxes : [],
   };
 };
 
@@ -382,6 +444,22 @@ export type PlanRowsStatus =
   | "unreachable"
   | "error";
 
+/** One object's line through a dense array: what an ARRAY hop settles to. */
+export type PlanSeries = {
+  /** The samples, in order along `axis`. Shared with the reader's cache —
+   * read-only, and compared by identity. */
+  values: Float32Array;
+  /** The value axis the samples run along. */
+  axis: string;
+  /** The position along the key axis that was read. */
+  index: number;
+  /** Every `stride`-th sample of the stored line was read (1 = all of it). */
+  stride: number;
+  /** Where the probed point sits along the line, as an index into `values`;
+   * null when the graph does not relate the two axes. */
+  marker: number | null;
+};
+
 export type PlanRowsState = {
   status: PlanRowsStatus;
   /** For a TABLE hop, the parquet rows. For a SPARSE hop, one row per
@@ -395,6 +473,8 @@ export type PlanRowsState = {
   error?: string;
   /** Set when `rows` is a cap over a longer answer (a sparse profile). */
   truncated?: { shown: number; total: number };
+  /** (ARRAY) The line read; `rows` stays empty. */
+  series?: PlanSeries;
 };
 
 /** Everything known about the attributes under one probed point. */
@@ -455,6 +535,8 @@ const samePlanRows = (
     if (
       left.status !== right.status ||
       left.rows !== right.rows ||
+      left.series?.values !== right.series?.values ||
+      left.series?.marker !== right.series?.marker ||
       left.sampledValue !== right.sampledValue ||
       left.sampleSource !== right.sampleSource ||
       left.error !== right.error ||

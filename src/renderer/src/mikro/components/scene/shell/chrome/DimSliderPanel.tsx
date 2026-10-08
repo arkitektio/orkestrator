@@ -11,6 +11,7 @@ import {
 import { layersPlanKey } from '../../platform/model/layerPlanKey'
 import { useSceneStore, useSceneStoreApi } from '../../platform/stores/sceneStore'
 import { useViewerStore } from '../../platform/stores/viewerStore'
+import { DimPlayButton } from './DimPlayButton'
 
 /**
  * Scene-wide scrubbers for the COLLAPSIBLE dims (t, tau, ... - everything not
@@ -157,6 +158,11 @@ export const DimSliderPanel = ({
             >
               {scrubber.dim}
             </span>
+            <DimPlayButton
+              dim={scrubber.dim}
+              maxIndex={scrubber.maxIndex}
+              defaultIndex={scrubber.defaultIndex}
+            />
             <div className={vertical ? 'h-48' : 'w-56'}>
               <Slider
                 orientation={orientation}

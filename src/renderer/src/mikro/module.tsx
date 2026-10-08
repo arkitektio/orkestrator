@@ -1,12 +1,14 @@
 import { defineModule } from "@/core/modules/host/define";
 import { MIKRO_ACTIONS } from "./actions";
 import ArrayDatasetHoverCard from "./components/hovers/ArrayDatasetHoverCard";
+import ChartHoverCard from "./components/hovers/ChartHoverCard";
 import FileHoverCard from "./components/hovers/FileHoverCard";
 import FolderHoverCard from "./components/hovers/FolderHoverCard";
 import { LatestArrayDatasetsDashboardWidget } from "./dashboard/LatestArrayDatasetsDashboardWidget";
 import { MikroDashboardWidgets } from "./dashboard/MikroDashboardWidgets";
 import { AnnotationDisplay } from "./displays/AnnotationDisplay";
 import { ArrayDatasetDisplay } from "./displays/ArrayDatasetDisplay";
+import { ChartDisplay } from "./displays/ChartDisplay";
 import { FileDisplay } from "./displays/FileDisplay";
 import { FolderDisplay } from "./displays/FolderDisplay";
 import { LensDisplay } from "./displays/LensDisplay";
@@ -38,6 +40,7 @@ export const MIKRO_MODULE = defineModule({
       "@mikro/sparsedataset": SparseDatasetDisplay,
       "@mikro/annotation": AnnotationDisplay,
       "@mikro/lens": LensDisplay,
+      "@mikro/chart": ChartDisplay,
     },
     viewers: {
       "@mikro/scene": SceneViewer,
@@ -47,6 +50,7 @@ export const MIKRO_MODULE = defineModule({
       "@mikro/file": FileHoverCard,
       "@mikro/folder": FolderHoverCard,
       "@mikro/arraydataset": ArrayDatasetHoverCard,
+      "@mikro/chart": ChartHoverCard,
     },
     dialogs: MIKRO_DIALOGS,
     actions: MIKRO_ACTIONS,

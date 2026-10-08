@@ -1,8 +1,11 @@
 import type { MikroClient } from "@/core/data/zarr/store/types";
 import type { AxisCoords } from "../coords/axisPath";
 import { createSparseProfileReader } from "../sparse/sparseProfile";
+import { createWindowReader } from "../zarr/windowReader";
+import { createArrayLineReader } from "./arrayLine";
 import {
   hopMetaOf,
+  isArrayHop,
   isMeshSample,
   isNetworkSample,
   isSparseHop,
@@ -82,7 +85,10 @@ export type AttributesAtInput = {
 export type PlanAttributesResult = HopMeta & { state: PlanRowsState };
 
 /** Which hops to peek and what they select — the executor's selection slice. */
-export type PeekPlanOptions = Pick<ExecutePlanOptions, "hops" | "columnsFor" | "sparseLimit">;
+export type PeekPlanOptions = Pick<
+  ExecutePlanOptions,
+  "hops" | "columnsFor" | "sparseLimit" | "probed"
+>;
 
 export interface AttributeService {
   /**
@@ -163,6 +169,8 @@ export function createAttributeService(
     client: options.client,
     datalayer: options.datalayer,
   });
+  const windows = createWindowReader(() => ({ client: options.client, datalayer: options.datalayer }));
+  const arrays = createArrayLineReader({ read: windows.read });
   const planCache = new AttributePlanCache(options.client, options.planCacheCap);
   const sampler = createExactSampler({
     client: options.client,
@@ -177,6 +185,7 @@ export function createAttributeService(
   const execDeps: ExecutePlanDeps = {
     engine,
     sparse,
+    arrays,
     sampleExact: (plan: AttributePlanLike, index: readonly number[]) =>
       // Mesh and network samples have no array; executePlanAt guards earlier,
       // this is type-narrowing plus defense in depth.
@@ -199,6 +208,7 @@ export function createAttributeService(
 
   const warmHop = (plan: AttributePlanLike, hop: AttributeHopLike): void => {
     if (isSparseHop(hop)) sparse.warm(plan, hop);
+    else if (isArrayHop(hop)) arrays.warm(plan, hop);
     else engine.warm(plan, hop);
   };
 
@@ -282,6 +292,8 @@ export function createAttributeService(
     dispose() {
       engine.dispose();
       sparse.dispose();
+      arrays.dispose();
+      windows.dispose();
       sampler.dispose();
       planCache.invalidate();
       results.drain();

@@ -18,8 +18,8 @@ import {
 } from "../../platform/sources/eventSource";
 import type { ExperimentStoreState } from "../../platform/stores/experimentStore";
 import { rawLayerOf } from "../../platform/stores/layerFragments";
-import type { RangeState } from "../../platform/stores/rangeStore";
-import type { LayerReadout, ViewerState } from "../../platform/stores/viewerStore";
+import type { RangeState } from "@/core/data/plot/stores/rangeStore";
+import type { LayerReadout, ViewerState } from "@/core/data/plot/stores/viewerStore";
 import {
   eventDrawFor,
   filterMarks,

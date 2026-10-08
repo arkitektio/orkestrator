@@ -12,8 +12,8 @@ import { laneCountOf, packSpikes, unitLanes, type SpikeSource } from "../../plat
 import { unitIdColumn, unitOrderSql } from "../../platform/sources/unitTable";
 import type { ExperimentStoreState } from "../../platform/stores/experimentStore";
 import { rawLayerOf, type LayerFragments } from "../../platform/stores/layerFragments";
-import type { RangeState } from "../../platform/stores/rangeStore";
-import type { ViewerState } from "../../platform/stores/viewerStore";
+import type { RangeState } from "@/core/data/plot/stores/rangeStore";
+import type { ViewerState } from "@/core/data/plot/stores/viewerStore";
 import {
   amplitudeTickColors,
   colorByTickColors,

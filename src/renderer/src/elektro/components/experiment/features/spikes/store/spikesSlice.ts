@@ -1,4 +1,4 @@
-import { makeViewerSliceHooks, type ViewerSliceOf } from "../../../platform/stores/viewerStore";
+import { makeViewerSliceHooks, type ViewerSliceOf } from "@/core/data/plot/stores/viewerStore";
 import type { SpikeDraw } from "../spikeDraw";
 
 /** The spikes feature's slice: per layer, what its `SpikeRasterDriver` prepared to draw. */

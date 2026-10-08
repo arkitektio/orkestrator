@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { StoreApi } from "zustand/vanilla";
-import { createViewerStore } from "../../../platform/stores/viewerStore";
+import { createViewerStore } from "@/core/data/plot/stores/viewerStore";
 import { createAnnotationSlice, type AnnotationSlice } from "./annotationSlice";
 
 const store = () => createViewerStore([createAnnotationSlice]) as unknown as StoreApi<AnnotationSlice>;

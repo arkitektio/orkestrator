@@ -1,7 +1,5 @@
 import { Canvas } from "@react-three/fiber";
-import { useEffect } from "react";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
-import { isTypingTarget } from "@/core/dnd/keyboardTarget";
 import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
 import { RendererDisposer } from "@/core/data/scene/gpu/RendererDisposer";
 import { AnnotationDrawer } from "../features/annotations/AnnotationDrawer";
@@ -10,25 +8,22 @@ import { MarkLabelsOverlay } from "../features/events/MarkLabelsOverlay";
 import { CenterLodReadout } from "../features/traces/CenterLodReadout";
 import { ProbeReadout } from "../features/probe/ProbeReadout";
 import { StackLayoutManager } from "../features/stacking/StackLayoutManager";
-import { TimelineCamera } from "../platform/camera/TimelineCamera";
+import { AxisCamera } from "@/core/data/plot/camera/AxisCamera";
 import {
   phaseMessage,
   useExperimentScopeStatus,
 } from "../platform/stores/experimentScope";
 import { useExperimentStoreApi } from "../platform/stores/experimentStore";
-import { panBy, useRangeStoreApi } from "../platform/stores/rangeStore";
-import {
-  useViewerStore,
-  useViewerStoreApi,
-  type InteractionMode,
-} from "../platform/stores/viewerStore";
+import { LoadingBar } from "@/core/data/plot/chrome/LoadingBar";
+import { PlotKeyboardShortcuts } from "@/core/data/plot/chrome/PlotKeyboardShortcuts";
+import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
 import { ExperimentModeControls } from "./chrome/ExperimentModeControls";
-import { OverviewStrip } from "./chrome/OverviewStrip";
+import { OverviewStrip } from "@/core/data/plot/chrome/OverviewStrip";
 import { RowLabels } from "./chrome/RowLabels";
 import { TimeAxis } from "./chrome/TimeAxis";
-import { TimeGrid } from "./chrome/TimeGrid";
-import { ValueAxis } from "./chrome/ValueAxis";
-import { ZoomBoxOverlay } from "./chrome/ZoomBoxOverlay";
+import { TimeGrid } from "@/core/data/plot/chrome/TimeGrid";
+import { ValueAxis } from "@/core/data/plot/chrome/ValueAxis";
+import { ZoomBoxOverlay } from "@/core/data/plot/chrome/ZoomBoxOverlay";
 import { TimeRangeUrlSync } from "./TimeRangeUrlSync";
 import { LayerRenderer } from "./LayerRenderer";
 
@@ -69,7 +64,7 @@ export const ExperimentViewport = ({ variant = "full" }: { variant?: ExperimentV
     );
   }
   // Keyed: a different experiment remounts the canvas rather than repopulating it.
-  return <ReadyViewport key={status.experimentId} variant={variant} />;
+  return <ReadyViewport key={status.subjectId} variant={variant} />;
 };
 
 export const ExperimentMiniViewport = () => <ExperimentViewport variant="mini" />;
@@ -89,7 +84,7 @@ const ReadyViewport = ({ variant }: { variant: ExperimentViewportVariant }) => {
       <div className="absolute inset-x-0 top-0 bottom-12">
         <Canvas frameloop={visible ? "demand" : "never"} gl={rendererFactory}>
           <RendererDisposer />
-          <TimelineCamera />
+          <AxisCamera />
           <LayerRenderer />
         </Canvas>
       </div>
@@ -126,97 +121,8 @@ const EmptyNotice = () => (
   </div>
 );
 
-/** A hairline along the top while any layer is still reading. */
-const LoadingBar = () => {
-  // A scalar the stats slice maintains — not a scan of every stats write.
-  const loading = useViewerStore((s) => s.anyLoading);
-  if (!loading) return null;
-  return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 animate-pulse bg-primary/70" />
-  );
-};
-
-/**
- * The timeline's keys — the scene's bindings where the meaning is the same:
- *
- *  - hold **A** — annotate while held; release restores whatever mode was active
- *    (mikro's hold-to-mode, including its two edge cases: a toolbar click during
- *    the hold wins over the restore, and alt-tabbing mid-hold — which never fires
- *    keyup — restores on blur rather than stranding the viewer in ANNOTATE);
- *  - **Esc** — back to explore (unless the annotate drawer consumed it to cancel
- *    a shape in progress);
- *  - in ANNOTATE, the tool keys (`annotationTools.ts`) and Enter / Esc are the
- *    drawer's own — see `AnnotationDrawer`;
- *  - **F** — fit the whole timeline;
- *  - **← / →** — pan by a tenth of the window;
- *  - **⌘/Ctrl-Z**, **⇧⌘/Ctrl-Z** — step the zoom history (box zooms are in it).
- */
-const PAN_FRACTION = 0.1;
-
+/** The plot's keys; hold-A annotates only where there is an experiment to draw on. */
 const KeyboardShortcuts = () => {
-  const rangeApi = useRangeStoreApi();
-  const viewerApi = useViewerStoreApi();
   const experimentApi = useExperimentStoreApi();
-
-  useEffect(() => {
-    let held: { key: string; restore: InteractionMode } | null = null;
-
-    const releaseHold = () => {
-      if (!held) return;
-      const { restore } = held;
-      held = null;
-      if (viewerApi.getState().interactionMode === "ANNOTATE") {
-        viewerApi.getState().setInteractionMode(restore);
-      }
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (isTypingTarget(event.target as HTMLElement | null)) return;
-      const mod = event.metaKey || event.ctrlKey;
-      if (mod && event.key.toLowerCase() === "z") {
-        event.preventDefault();
-        if (event.shiftKey) rangeApi.getState().redo();
-        else rangeApi.getState().undo();
-        return;
-      }
-      // Cmd+A must not flip the viewer into a tool mode.
-      if (mod || event.altKey) return;
-
-      const key = event.key.toLowerCase();
-      if (key === "a" && !event.repeat && !held && experimentApi.getState().annotatable) {
-        held = { key, restore: viewerApi.getState().interactionMode };
-        viewerApi.getState().setInteractionMode("ANNOTATE");
-        return;
-      }
-      if (key === "f") rangeApi.getState().fit();
-      // A consumed Esc (the annotate drawer cancelling a shape) is not "back to explore".
-      if (event.key === "Escape" && !event.defaultPrevented) {
-        viewerApi.getState().setInteractionMode("EXPLORE");
-      }
-      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-        event.preventDefault();
-        const { liveRange } = rangeApi.getState();
-        const delta = (liveRange.end - liveRange.start) * PAN_FRACTION;
-        rangeApi
-          .getState()
-          .setLiveRange(panBy(liveRange, event.key === "ArrowLeft" ? -delta : delta));
-      }
-    };
-
-    // Keyed off the armed hold, not the event target: focus can move mid-hold.
-    const onKeyUp = (event: KeyboardEvent) => {
-      if (held && event.key.toLowerCase() === held.key) releaseHold();
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
-    window.addEventListener("blur", releaseHold);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
-      window.removeEventListener("blur", releaseHold);
-    };
-  }, [rangeApi, viewerApi, experimentApi]);
-
-  return null;
+  return <PlotKeyboardShortcuts annotatable={() => experimentApi.getState().annotatable} />;
 };

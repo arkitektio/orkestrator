@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { StoreApi } from "zustand/vanilla";
 import { normalizeEventsLayer, type EventsLayerLike } from "../platform/model/layerModel";
 import { createExperimentStore } from "../platform/stores/experimentStore";
-import { createRangeStore } from "../platform/stores/rangeStore";
-import { createViewerStore, type ViewerState } from "../platform/stores/viewerStore";
+import { createRangeStore } from "@/core/data/plot/stores/rangeStore";
+import { createViewerStore, type ViewerState } from "@/core/data/plot/stores/viewerStore";
 import { createExperimentSystem } from "./experimentSystem";
 import { FEATURE_SLICES } from "./featureSlices";
 

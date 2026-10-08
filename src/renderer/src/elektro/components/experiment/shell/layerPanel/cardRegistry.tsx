@@ -4,7 +4,7 @@ import { EventsLayerCard } from "../../features/events/EventsLayerCard";
 import { SpikesLayerCard } from "../../features/spikes/SpikesLayerCard";
 import { TraceLayerCard } from "../../features/traces/TraceLayerCard";
 import type { LayerState } from "../../platform/model/layerModel";
-import type { LayerCardProps } from "../../platform/layerui/cardShell";
+import type { LayerCardProps } from "@/core/data/plot/layerui/cardShell";
 import type { LayerTypename } from "../layerRegistry";
 
 /**
