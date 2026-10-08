@@ -1,3 +1,35 @@
+# [2.20.0](https://github.com/arkitektio/orkestrator/compare/v2.19.0...v2.20.0) (2026-10-08)
+
+
+### Bug Fixes
+
+* **blok:** a catalog function resolves on the first render ([92e944f](https://github.com/arkitektio/orkestrator/commit/92e944fb5edcd055a7ede82b2f727f82ed429523))
+* **chrome:** draw the rail backdrop behind the whole window frame ([634c154](https://github.com/arkitektio/orkestrator/commit/634c15415d5273e03dc07e66225a3606cd6b5978))
+* **rekuest:** one readable error when an assign is refused ([56e76ed](https://github.com/arkitektio/orkestrator/commit/56e76ed839baf0e119059e994f165ff1984681c0))
+* scalbar ([977cbed](https://github.com/arkitektio/orkestrator/commit/977cbed37dc3cee8fe12e58d3faec893b32bc19f))
+
+
+### Features
+
+* **debug:** debug mode survives a reload, and its badge copies every query at once ([50cab9c](https://github.com/arkitektio/orkestrator/commit/50cab9cb5b0b4362c3dae80e82b57042ce026360))
+* **elektro:** big-file uploads through a datalayer grant, and upload rows link to what they created ([9e2562e](https://github.com/arkitektio/orkestrator/commit/9e2562e6c85cf084a58778cd9669d1802d508a17))
+* **lok:** membership requests, asked from the share gate and answered by the team ([46a1779](https://github.com/arkitektio/orkestrator/commit/46a1779d1f465e563466d585d7cb1e233ab6b548))
+* **mikro:** mesh design gets a toolbar, previewed reconstructors and a geometry worker ([7b6b133](https://github.com/arkitektio/orkestrator/commit/7b6b13336dfda12353ca6cc938718e640e1ea598))
+* **mikro:** right-click a shape or mesh in the scene for its workflows, and annotations are easier to hover ([2590d6c](https://github.com/arkitektio/orkestrator/commit/2590d6ce859f4a6ba0946c66c2ef94c1efa643a6))
+* **mikro:** scene annotations are fetched once and followed live, not polled ([bd11cb6](https://github.com/arkitektio/orkestrator/commit/bd11cb674457d9d51ac7d0377b1e0d0a6f19392e))
+* **mikro:** the scene planner buys the screen before the margin, and refines as far as the decode cache reaches ([eaa81bf](https://github.com/arkitektio/orkestrator/commit/eaa81bfbd17addb1e2a25f3e9b5188de144a3c39))
+* **rekuest:** one automations page, signals feed, firings and wiregrams ([0d70805](https://github.com/arkitektio/orkestrator/commit/0d70805a6f9d3000727d054f6a352f9fba37a237))
+* **settings:** 3D memory budgets come from the detected graphics card, and are settings ([060a80f](https://github.com/arkitektio/orkestrator/commit/060a80f7375b37e5fd6050d20a4e83b58ac07e15))
+* **smart:** hover burger on mikro cards that opens the right-click menu ([52e2e1c](https://github.com/arkitektio/orkestrator/commit/52e2e1ca5a243c230cae218da356cccf4a38f8f6))
+* **smart:** the menu pins its rows, opens a run's result, and carries Share and Open in its search field ([470adbc](https://github.com/arkitektio/orkestrator/commit/470adbc3e5a53f3b42350b1acd0b215a5cbe7f01))
+* **ui:** home cards, status pages, rail backdrop and port presentation ([d4a8e59](https://github.com/arkitektio/orkestrator/commit/d4a8e59994ec40a554d532b50eba1a846568e7c1))
+* **ui:** list pages for models that only had a detail page ([c6808ae](https://github.com/arkitektio/orkestrator/commit/c6808ae7765ef00d77d874d2ff399cf77b432341))
+
+
+### Performance Improvements
+
+* **scene:** run the hover probe and draw preview in the event's frame ([2ddc0f0](https://github.com/arkitektio/orkestrator/commit/2ddc0f06a734366f0bd381441dd95c2dd01f6f13))
+
 # [2.19.0](https://github.com/arkitektio/orkestrator/compare/v2.18.0...v2.19.0) (2026-10-05)
 
 
