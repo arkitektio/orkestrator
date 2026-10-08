@@ -49,18 +49,33 @@ export function probeMarkerRadius(
   );
 }
 
-/** World units spanned by one screen pixel for this camera + viewport height. */
+/**
+ * World units spanned by one screen pixel for this camera + viewport height.
+ *
+ * A perspective camera has no single answer — it depends on how far away the
+ * thing being measured is — so `pivot` names that point. Rulers (the scale
+ * bar, the grid) pass the CONTROLS TARGET: frames are corner-anchored, so the
+ * data sits away from the world origin and the origin distance (the fallback
+ * when no pivot is given) describes a depth nothing is drawn at.
+ */
 export function computeWorldUnitsPerPixel(
   camera: THREE.Camera,
   viewportHeight: number,
+  pivot?: THREE.Vector3 | null,
 ): number {
   if ((camera as THREE.OrthographicCamera).isOrthographicCamera) {
     return 1 / (camera as THREE.OrthographicCamera).zoom;
   }
   const persp = camera as THREE.PerspectiveCamera;
-  const distance = camera.position.length();
+  const distance = pivot ? camera.position.distanceTo(pivot) : camera.position.length();
   const vFov = THREE.MathUtils.degToRad(persp.fov);
   return (2 * Math.tan(vFov / 2) * distance) / Math.max(viewportHeight, 1);
+}
+
+/** The point a frame's controls orbit, when they have one (OrbitControls do). */
+export function readControlsTarget(controls: unknown): THREE.Vector3 | null {
+  const target = (controls as { target?: unknown } | null)?.target;
+  return target instanceof THREE.Vector3 ? target : null;
 }
 
 /** Resolve the volume LOD used for probe geometry (fixed → default → highest). */

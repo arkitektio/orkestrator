@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { resolveProbeMarkerGeometry } from "./probeWorld";
+import * as THREE from "three";
+import {
+  computeWorldUnitsPerPixel,
+  readControlsTarget,
+  resolveProbeMarkerGeometry,
+} from "./probeWorld";
 import type { LayerState } from "../stores/sceneStore";
 import type { ProbedCoordinate } from "../stores/viewerStore";
 
@@ -104,5 +109,39 @@ describe("resolveProbeMarkerGeometry", () => {
     // Sliced x box: width 200 at start 100 → corner-anchored volumePosition x
     // = 100 + 100 = 200; marker x = 200 + 0.25 × 200 = 250 (NOT 0.75 × 400).
     expect(geometry!.markerPosition[0]).toBe(250);
+  });
+});
+
+describe("computeWorldUnitsPerPixel", () => {
+  // fov 90° → 2·tan(45°) = 2, so world-per-pixel = 2·distance / height.
+  const makeCamera = (x: number, y: number, z: number) => {
+    const camera = new THREE.PerspectiveCamera(90, 1, 0.1, 10_000);
+    camera.position.set(x, y, z);
+    return camera;
+  };
+
+  it("measures a perspective camera at the pivot, not at the world origin", () => {
+    // Corner-anchored data: the camera orbits a target far from the origin.
+    const camera = makeCamera(1000, 1000, 100);
+    const pivot = new THREE.Vector3(1000, 1000, 0);
+
+    expect(computeWorldUnitsPerPixel(camera, 100, pivot)).toBeCloseTo(2, 6);
+    // The origin distance (~1418) would have drawn the bar ~14× too long.
+    expect(computeWorldUnitsPerPixel(camera, 100)).toBeGreaterThan(28);
+  });
+
+  it("is pure zoom for an orthographic camera, whatever the pivot", () => {
+    const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
+    camera.zoom = 4;
+    camera.position.set(1000, 1000, 100);
+
+    expect(computeWorldUnitsPerPixel(camera, 100, new THREE.Vector3())).toBe(0.25);
+  });
+
+  it("reads the orbit target off controls that have one", () => {
+    const target = new THREE.Vector3(1, 2, 3);
+    expect(readControlsTarget({ target })).toBe(target);
+    expect(readControlsTarget(null)).toBeNull();
+    expect(readControlsTarget({})).toBeNull();
   });
 });

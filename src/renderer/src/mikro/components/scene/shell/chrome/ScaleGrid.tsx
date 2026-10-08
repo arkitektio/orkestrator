@@ -2,7 +2,7 @@ import { Grid } from "../../platform/draw/Grid";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState } from "react";
 import { useViewerStore } from "../../platform/stores/viewerStore";
-import * as THREE from "three";
+import { computeWorldUnitsPerPixel, readControlsTarget } from "../../platform/probe/probeWorld";
 
 function getNiceNumber(value: number): number {
   if (value <= 0) return 1;
@@ -21,20 +21,16 @@ export const ScaleGrid = () => {
   const [cellSize, setCellSize] = useState(10);
   const lastCellRef = useRef(10);
 
-  useFrame(({ camera, size }) => {
+  useFrame(({ camera, size, controls }) => {
     // The grid is OFF by default: skip the per-frame math (and the setState
     // below, which re-rendered on every 1/2/5 zoom-boundary crossing) while
     // nothing renders it. The hook itself must stay mounted (rules of hooks).
     if (!show) return;
-    let worldUnitsPerPixel: number;
-    if ((camera as THREE.OrthographicCamera).isOrthographicCamera) {
-      worldUnitsPerPixel = 1 / (camera as THREE.OrthographicCamera).zoom;
-    } else {
-      const persp = camera as THREE.PerspectiveCamera;
-      const distance = camera.position.length();
-      const vFov = THREE.MathUtils.degToRad(persp.fov);
-      worldUnitsPerPixel = (2 * Math.tan(vFov / 2) * distance) / size.height;
-    }
+    const worldUnitsPerPixel = computeWorldUnitsPerPixel(
+      camera,
+      size.height,
+      readControlsTarget(controls),
+    );
 
     // Aim for grid lines roughly 60px apart on screen
     const rawSpacing = 60 * worldUnitsPerPixel;
