@@ -329,6 +329,7 @@ describe("host registries", () => {
       "notify_user",
       "openElektroArrayDatasetOnTimeline",
       "opentotheside",
+      "pin-mikro-folder",
       "popout",
       "register-arrayDataset-into",
       "register-arrayDataset-into-coordinatesystem",

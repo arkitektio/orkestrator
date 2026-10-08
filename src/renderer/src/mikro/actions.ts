@@ -13,9 +13,13 @@ import {
   GetArrayDatasetIntrinsicSystemQueryVariables,
   GetCoordinateSystemDocument,
   GetFolderDocument,
+  GetFoldersDocument,
   GetScenesDocument,
   GetFolderQuery,
   GetFolderQueryVariables,
+  PinFolderDocument,
+  PinFolderMutation,
+  PinFolderMutationVariables,
   PutFoldersInFolderDocument,
   PutFoldersInFolderMutation,
   PutFoldersInFolderMutationVariables,
@@ -39,6 +43,7 @@ import {
   Table2,
   Layers,
   Pencil,
+  Pin,
   Ruler,
   Waypoints,
 } from "lucide-react";
@@ -391,6 +396,47 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       }
 
       dialog.openDialog('updatefolder', { folder: data.folder });
+    },
+  },
+  'pin-mikro-folder': {
+    title: 'Pin / Unpin Folder',
+    description: 'Pin this folder for quick access, or unpin it if it already is',
+    icon: Pin,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/folder' },
+      { type: 'nopartner' },
+    ],
+    collections: ['folder'],
+    execute: async ({ state, services }) => {
+      const folders = state.left.filter(
+        (item) => item.identifier === '@mikro/folder',
+      );
+
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+
+      // The menu only knows the structure, not whether it is pinned.
+      for (const folder of folders) {
+        const { data } = await mikro.client.query<
+          GetFolderQuery,
+          GetFolderQueryVariables
+        >({
+          query: GetFolderDocument,
+          variables: { id: folder.id },
+          fetchPolicy: 'network-only',
+        });
+
+        await mikro.client.mutate<
+          PinFolderMutation,
+          PinFolderMutationVariables
+        >({
+          mutation: PinFolderDocument,
+          variables: { id: folder.id, pin: !data.folder.pinned },
+          refetchQueries: [GetFoldersDocument],
+        });
+      }
     },
   },
   'delete-mikro-file': buildDeleteAction<ModuleServices<"mikro">>({

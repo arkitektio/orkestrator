@@ -58,6 +58,7 @@ const useHomePageQueryForRoute: HookFunction<HomePageQuery, OperationVariables> 
     options as unknown as QueryHookOptions<HomePageQuery, HomePageQueryVariables>,
   ) as unknown as ReturnType<HookFunction<HomePageQuery, OperationVariables>>;
 import { UploadDialog } from "../components/dialogs/UploadDialog";
+import { PinnedFolders } from "../components/folder/PinnedFolders";
 import FolderList from "../components/lists/FolderList";
 import FileList from "../components/lists/FileList";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
@@ -302,6 +303,10 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
                 Your recently uploaded and managed data
               </CardDescription>
             </CardHeader>
+
+            {/* Pulled up against the header: the pills read as part of it,
+                not as one more list. */}
+            <PinnedFolders className="-mt-4" />
 
             <ArrayDatasetList
               filters={{ notDerived: true, ...temporalFilter, ...searchFilter }}

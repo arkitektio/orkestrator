@@ -13,6 +13,7 @@ import {
   useFolderExplorer,
 } from "../components/explorer/FolderListExplorer";
 import { FolderTableExplorer } from "../components/explorer/FolderTableExplorer";
+import { FolderTitle } from "../components/folder/FolderTitle";
 import { FolderInfoSidebar } from "../components/sidebars/FolderInfoSidebar";
 import { MIKRO_HELP } from "../help";
 
@@ -59,8 +60,10 @@ export type ViewType = "list" | "icons";
       <div className="flex h-full w-full flex-col gap-2">
         {/* The breadcrumb trail above only knows the route (".../folders/5"),
             so without this the page never says which folder you are in. Same
-            title treatment as the dataset pages. */}
-        <div className="flex flex-col gap-0.5">
+            title treatment as the dataset pages. Inset to the explorer's row
+            content (card border + row `px-3`), so the name sits over the item
+            icons instead of on the card's outer edge. */}
+        <div className="flex flex-col gap-1 px-3.5 pt-1">
           {folder.parent && (
             <MikroFolder.DetailLink
               object={folder.parent}
@@ -69,12 +72,7 @@ export type ViewType = "list" | "icons";
               ← {folder.parent.name}
             </MikroFolder.DetailLink>
           )}
-          <MikroFolder.DetailLink
-            object={folder}
-            className="ellipsis truncate break-all text-3xl font-semibold leading-tight text-ellipsis"
-          >
-            {folder.name}
-          </MikroFolder.DetailLink>
+          <FolderTitle folder={folder} />
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {folder.description && <span className="truncate">{folder.description}</span>}
             <Badge variant="outline" className="text-[0.625rem]">
