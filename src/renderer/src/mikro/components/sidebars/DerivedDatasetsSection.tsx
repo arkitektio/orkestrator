@@ -6,7 +6,10 @@ import {
 } from "@/core/ui/empty";
 import { MikroArrayDataset } from "@/core/linkers";
 import { Grid3x3 } from "lucide-react";
-import { GetArrayDatasetDerivedQuery } from "../../api/graphql";
+import {
+  DerivedDatasetFragment,
+  GetArrayDatasetDerivedQuery,
+} from "../../api/graphql";
 import { modifierSpecsOf, spatialSpecOf, splitAxesBySpec } from "../../specs";
 import { groupDerived } from "./derivedGrouping";
 
@@ -32,12 +35,15 @@ type QueryDerived =
  * Compact enough for the rail — deliberately not `ArrayDatasetCard`, which is an
  * aspect-square grid tile. Same vocabulary though: the spec's icon, the spatial
  * extent, then the acquisition modifiers.
+ *
+ * Exported for the lens' own lineage (`LensInfoSection`), which lists the same
+ * rows without the grouping: a lens is already one group.
  */
-const DerivedRow = ({
+export const DerivedRow = ({
   dataset,
   otherParents,
 }: {
-  dataset: QueryDerived;
+  dataset: DerivedDatasetFragment;
   otherParents: number;
 }) => {
   const spatial = spatialSpecOf(dataset.spec);

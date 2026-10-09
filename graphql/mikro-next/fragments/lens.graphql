@@ -41,6 +41,9 @@ fragment PhasorContext on PhasorContext {
 fragment SceneLens on Lens {
   descriptors
   id
+  # What someone called the selection, if anyone did — `lensTitle` falls back to
+  # "Whole array" or the slices.
+  name
   shape
   axisNames
   renderAxes {
@@ -121,10 +124,16 @@ fragment SceneLens on Lens {
   }
 }
 
-# The detail page's selection. Deliberately NOT `SceneLens`: that one carries
+# The lens page's selection. Deliberately NOT `SceneLens`: that one carries
 # the whole pyramid (every level's store and chunking), the phasor context and
 # every anchor's histogram, because the renderer needs them to build a brick
-# pool. A page that says what this lens IS needs none of it.
+# pool — and the page gets those through the scene it opens, not through this.
+#
+# The page is a workspace now, so this carries what a workspace switches on:
+# the scenes that draw this lens and the one it nominates. For an UNSLICED lens
+# the server answers both with its dataset's (the lens is the dataset, looked at
+# whole), which is why the page sends such a lens to the dataset's route rather
+# than rendering a second copy of it.
 #
 # A lens has no name of its own — it borrows its dataset's, and `lensLabel`
 # (`mikro-next/lenses.ts`) is what turns the slices into the line that tells one
@@ -132,6 +141,7 @@ fragment SceneLens on Lens {
 fragment DetailLens on Lens {
   descriptors
   id
+  name
   shape
   axisNames
   slices {
@@ -154,6 +164,23 @@ fragment DetailLens on Lens {
     name
     axisNames
     shape
+    # THE whole-array lens. A dataset written before lenses were deduplicated
+    # can carry several unsliced ones; the page forwards the others here so the
+    # whole array has one address.
+    fullLens {
+      id
+    }
+  }
+  scenes {
+    ...ListScene
+  }
+  defaultScene {
+    ...ListScene
+  }
+  # What was computed from this selection. Same row shape as the dataset's own
+  # lineage panel, so one row component draws both.
+  derivedDatasets {
+    ...DerivedDataset
   }
 }
 
@@ -161,10 +188,16 @@ fragment DetailLens on Lens {
 # needs the slices and the dataset's axes to tell two lenses of it apart.
 fragment ListLens on Lens {
   id
+  name
   shape
   axisNames
   slices {
     ...DimSlice
+  }
+  # The lens' own picture once it nominates a scene, its dataset's until then —
+  # so a crop nobody has staged still has a tile.
+  latestSnapshot {
+    ...SceneSnapshot
   }
   dataset {
     id

@@ -71,6 +71,9 @@ const Page = asDetailQueryRoute(useGetAnnotationQuery, ({ data }) => {
             <Sidebars.Tab label="Annotations">
               <Scene.AnnotationsSidebar />
             </Sidebars.Tab>
+            <Sidebars.Tab label="Probe">
+              <Scene.ProbeSidebar />
+            </Sidebars.Tab>
             {/* Only when there is something to list — see Scene.hasMeshLayer. */}
             {Scene.hasMeshLayer(sceneData?.scene) && (
               <Sidebars.Tab label="Meshes">

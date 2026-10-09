@@ -34,6 +34,19 @@ const makeRenderer = () => {
 };
 
 describe("flushPageTable dirty-box uploads", () => {
+  it("reports the bytes it wrote — the box's texels across page and sidecar planes — and 0 when clean", () => {
+    const { renderer } = makeRenderer();
+    const pageTable = createPageTableTexture(LAYOUT);
+    expect(pageTable.lastFlushBytes).toBe(0);
+    setPageEntry(pageTable, 0, [1, 1, 0], [0, 0, 0], PAGE_FLAG_RESIDENT);
+    setPageEntry(pageTable, 0, [2, 3, 1], [1, 0, 0], PAGE_FLAG_RESIDENT);
+    expect(flushPageTable(renderer, pageTable)).toBe(true);
+    // Box [1..2]×[1..3]×[0..1] = 12 texels: RGBA8 page + RG8 occupancy per slab.
+    expect(pageTable.lastFlushBytes).toBe(12 * (4 + 2 * pageTable.occSlabs));
+    expect(flushPageTable(renderer, pageTable)).toBe(false);
+    expect(pageTable.lastFlushBytes).toBe(0);
+  });
+
   it("uploads only the bounding box of the touched entries, strided from the mirror", () => {
     const { renderer, writeTexture } = makeRenderer();
     const pageTable = createPageTableTexture(LAYOUT);

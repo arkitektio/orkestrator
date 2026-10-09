@@ -12,6 +12,7 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
 import { useBrickStore } from "../../features/bricks/store/brickSlice";
 import { unplaceableReason } from "../../platform/model/layerModel";
 import { UnplaceableNotice } from "./UnplaceableNotice";
+import { LayerLensHeader } from "./LayerLensHeader";
 
 // Viewport coverage is deliberately GONE from this panel (and from
 // LayerViewRange entirely). It used to arrive as a bucketed Record and flow
@@ -19,6 +20,15 @@ import { UnplaceableNotice } from "./UnplaceableNotice";
 // `memo(LayerCard)`, so every bucket crossing during a zoom re-rendered the
 // card's whole render-graph editor subtree (measured 54–174 ms commits, the
 // sidebar's share of gesture jank).
+
+// The lens a card's layer reads, for the cards that read one. `source` on the
+// registry entry is what says the layer is a normalized `LayerState` — the
+// lens-backed kinds — rather than a fragment over a collection.
+const lensOf = (
+  entry: AnyLayerCardEntry,
+  layer: LayerState | SceneLayerFragment,
+): LayerState["lens"] | undefined =>
+  entry.source === "layerState" ? (layer as LayerState).lens : undefined;
 
 export const LayerControlPanel = ({
   sceneId,
@@ -169,7 +179,15 @@ export const LayerControlPanel = ({
             width. `items-start` keeps an unfolded card from dragging its row
             mates taller. */}
         <div className="grid grid-cols-1 items-start gap-1 @2xl/layers:grid-cols-2 @5xl/layers:grid-cols-3">
-          {cards.map(({ key, entry, layer }) => {
+          {cards.map(({ key, entry, layer }, index) => {
+            // Lens-backed cards are headed by the lens they read, once per run
+            // of cards over the same lens — a multi-channel dataset's layers
+            // are consecutive, so that is one line per lens, not one per layer.
+            const lens = lensOf(entry, layer);
+            const previous = index > 0 ? cards[index - 1] : undefined;
+            const startsLens =
+              lens !== undefined &&
+              (previous === undefined || lensOf(previous.entry, previous.layer)?.id !== lens.id);
             // The row IS the button: selecting it unfolds the editor inline
             // within the same card (one border around header + body), rather
             // than popping a separate flyout window.
@@ -186,13 +204,18 @@ export const LayerControlPanel = ({
             // the canvas at all — say so under its card, for every kind, in
             // the one place that sees every kind.
             const unplaceable = unplaceableReason(layer);
-            return unplaceable ? (
-              <div key={key} className="flex flex-col">
-                {renderLayerCard(entry, layer, common)}
-                <UnplaceableNotice reason={unplaceable} />
-              </div>
-            ) : (
-              <Fragment key={key}>{renderLayerCard(entry, layer, common)}</Fragment>
+            return (
+              <Fragment key={key}>
+                {startsLens && lens && <LayerLensHeader lens={lens} />}
+                {unplaceable ? (
+                  <div className="flex flex-col">
+                    {renderLayerCard(entry, layer, common)}
+                    <UnplaceableNotice reason={unplaceable} />
+                  </div>
+                ) : (
+                  renderLayerCard(entry, layer, common)
+                )}
+              </Fragment>
             );
           })}
         </div>

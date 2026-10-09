@@ -13,9 +13,9 @@ import {
  * the layer card, or as a standalone flyout beside the Layers panel.
  *
  * The acquisition metadata anchored to what the layer is showing is NOT here:
- * it is the viewport's bottom-left overlay (`features/annotations/
- * MetadataOverlay.tsx`), which describes the active layer next to the picture
- * instead of folding a copy into every card.
+ * it is the metadata section of the sidebar's Probe tab (`features/annotations/
+ * ProbeMetadata.tsx`), which describes the probed points — or the active
+ * layer — instead of folding a copy into every card.
  */
 export const LayerGraphFlyout = ({
   layer,

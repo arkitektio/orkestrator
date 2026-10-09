@@ -177,7 +177,7 @@ describe("adjacentSlabBrickZ (z±1 prefetch targeting)", () => {
 describe("adjacentSelectionChunk (collapsed-dim ±1 prefetch targeting)", () => {
   // Key parity: the returned chunk coord must be exactly what
   // computeFixedIndices would derive for the neighbor index —
-  // floor(index / level-0 chunk extent).
+  // floor(index / the level's own chunk extent).
   it("targets the post-step fetch's chunk for the neighbor selection", () => {
     // t chunked 5-per-chunk, 23 timepoints. Selection t=9 (chunk 1, offset 4):
     // t=10 crosses into chunk 2; t=8 stays in chunk 1 → nothing to warm.
@@ -2020,6 +2020,9 @@ describe("planLayerNodes cull margin under a binding budget (P26)", () => {
             poolCount: 1,
             slotBytes,
             totalBrickBytes: Number.MAX_SAFE_INTEGER,
+            // The device share itself: these tests are about what the planner
+            // does with a budget, not about the automatic plan ceiling.
+            planCapCeilingBytes: Number.POSITIVE_INFINITY,
           });
           const bounded = planLayerNodes({
             ...base,
@@ -2038,6 +2041,9 @@ describe("planLayerNodes cull margin under a binding budget (P26)", () => {
             poolCount: 1,
             slotBytes,
             totalBrickBytes: Number.MAX_SAFE_INTEGER,
+            // The device share itself: these tests are about what the planner
+            // does with a budget, not about the automatic plan ceiling.
+            planCapCeilingBytes: Number.POSITIVE_INFINITY,
           });
           // The settled plan and the first one (the cold-open gate).
           for (const decodeAllowanceBytes of [undefined, 0]) {
@@ -2305,6 +2311,9 @@ describe("planLayerNodes chunk budget in 3D (64³-chunked volume)", () => {
       poolCount: 1,
       slotBytes,
       totalBrickBytes: Number.MAX_SAFE_INTEGER,
+      // The card's full share (699 slots on a 4070), past the automatic
+      // plan ceiling: the chunk budget is what is under test here.
+      planCapCeilingBytes: Number.POSITIVE_INFINITY,
     });
     const inputs = {
       layer: volume.layer,

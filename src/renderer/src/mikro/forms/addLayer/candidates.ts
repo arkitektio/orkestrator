@@ -316,7 +316,7 @@ export const buildSections = (input: {
           entry.lenses.push({
             key: `Lens:${resident.id}`,
             lens: resident,
-            label: lensLabel(resident),
+            label: resident.lensName ? `${resident.lensName} — ${lensLabel(resident)}` : lensLabel(resident),
             space: spaceRef,
             kinds: suggestion.kinds,
             suggestion,

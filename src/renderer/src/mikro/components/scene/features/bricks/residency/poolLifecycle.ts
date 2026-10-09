@@ -431,7 +431,7 @@ export function createLayerBrickPool(input: {
 export function resetPoolContents(
   pool: LayerBrickPool,
   nextSliceSignature: string,
-  fixed: { fixedChunkCoords: number[]; fixedOffsets: number[] },
+  fixed: { fixedChunkCoords: number[][]; fixedOffsets: number[][] },
 ): void {
   for (const controller of pool.inFlight.values()) controller.abort();
   pool.inFlight.clear();

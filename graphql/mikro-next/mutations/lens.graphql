@@ -5,3 +5,25 @@ mutation CreateLens($input: CreateLensInput!) {
     ...SceneLens
   }
 }
+
+# The same call for a lens a person cuts by hand. The server hands back the
+# existing lens when this dataset already has one with these slices, so asking
+# twice is safe and the result is always the lens to open.
+mutation CreateListLens($input: CreateLensInput!) {
+  createLens(input: $input) {
+    ...ListLens
+  }
+}
+
+mutation DeleteLens($id: ID!) {
+  deleteLens(input: { id: $id })
+}
+
+# The one editable thing about a lens. `name: null` (or blank) clears it, and
+# the lens reads as its slices again.
+mutation UpdateLens($id: ID!, $name: String) {
+  updateLens(input: { id: $id, name: $name }) {
+    id
+    name
+  }
+}

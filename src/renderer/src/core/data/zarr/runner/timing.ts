@@ -12,3 +12,23 @@
 export function zarrTimingEnabled(): boolean {
   return (globalThis as { __ZARR_TIMING__?: boolean }).__ZARR_TIMING__ === true
 }
+
+/**
+ * How the store is actually being reached, always on (two integers and a
+ * string, updated per ranged GET — not per chunk). The question it answers
+ * is "is loading serialized by the transport?": `http/1.1` means the browser
+ * holds at most six requests per origin on the wire however many are started.
+ */
+export const zarrTransportStats = {
+  /** `nextHopProtocol` of the latest ranged GET (`h2`, `http/1.1`, …). */
+  protocol: null as string | null,
+  /** Ranged GETs started and not yet answered. */
+  requestsInFlight: 0,
+  peakRequestsInFlight: 0,
+}
+
+export function resetZarrTransportStats(): void {
+  zarrTransportStats.protocol = null
+  zarrTransportStats.requestsInFlight = 0
+  zarrTransportStats.peakRequestsInFlight = 0
+}

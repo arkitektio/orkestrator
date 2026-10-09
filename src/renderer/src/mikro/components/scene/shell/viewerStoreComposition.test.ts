@@ -36,6 +36,8 @@ const EXPECTED_KEYS = [
   "meshSystems", "meshVersion", "nodePlans", "poolsVersion",
   "probeLayerId", "probeMode", "probeReadout", "probeThreshold",
   "probeCursorWorld", "setProbeCursorWorld",
+  "probePoints", "probePointSerial", "pinProbePoint", "refreshProbePoint",
+  "removeProbePoint", "clearProbePoints",
   "probedAttributes", "probedCoordinate", "register", "registerArrays",
   "registerBrickSystem", "registerCanvas", "registerCapture", "registerFollowAttributeReference",
   "registerMeshSystem", "registerVolumeCompositor", "renderBudget", "residencyVersion",

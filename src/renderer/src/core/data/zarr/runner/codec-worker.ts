@@ -422,10 +422,9 @@ interface FetchDecodeCommon {
 }
 
 /** One inner chunk inside a coalesced shard range (absolute byte offsets). */
-export interface FetchDecodePart {
+export interface FetchRangePart {
   offset: number
   length: number
-  actualChunkShape?: number[]
 }
 
 type WorkerMessage =
@@ -435,13 +434,31 @@ type WorkerMessage =
    * per request — the main thread never terminates a worker to cancel one. */
   | { type: 'cancel'; id: number }
   | (FetchDecodeCommon & { type: 'fetch_decode'; actualChunkShape?: number[] })
-  | (FetchDecodeCommon & {
-      /** Coalesced read: ONE ranged GET covering `range`, sliced into
-       * `parts` (each an inner chunk), decoded and promoted individually. */
-      type: 'fetch_decode_multi'
+  | {
+      /** Coalesced read, fetch half: ONE ranged GET covering `range`, cut
+       * into the compressed bytes of each part. Decoding is a separate
+       * `decode` request per part, so the parts of one GET spread over the
+       * pool instead of queueing behind each other on this worker. */
+      type: 'fetch_range'
+      id: number
+      store: S3FetchConfig
+      path: `/${string}`
+      requestInit?: SerializedRequestInit
       range: { offset: number; length: number }
-      parts: FetchDecodePart[]
-    })
+      parts: FetchRangePart[]
+    }
+  | {
+      /** Coalesced read, decode half: one part's compressed bytes in, one
+       * decoded and promoted chunk out. */
+      type: 'decode'
+      id: number
+      bytes: ArrayBuffer
+      metaId: number
+      meta?: CodecChunkMeta
+      actualChunkShape?: number[]
+      textureFidelity?: TextureFidelity
+      useSharedArrayBuffer?: boolean
+    }
 
 interface DecodedPartMessage {
   promotedType: TextureCompatibleDataType | undefined
@@ -619,15 +636,14 @@ ctx.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       return
     }
 
-    if (msg.type === 'fetch_decode_multi') {
-      const workerStartedAt = now()
-      ensurePipeline(msg.metaId, msg.meta)
-      getPipeline(msg.metaId)
+    if (msg.type === 'fetch_range') {
       const init = deserializeRequestInit(msg.requestInit) ?? {}
       const headers = new Headers(init.headers)
       headers.set('Range', `bytes=${msg.range.offset}-${msg.range.offset + msg.range.length - 1}`)
       const signal = beginRequest(msg.id)
       const fetchStartedAt = now()
+      // Transport info always: it is one lookup per GET here, not per chunk,
+      // and it is what tells an HTTP/1.1 connection cap from a slow store.
       const { bytes: body, transport } = await fetchChunkBytes(
         msg.store,
         msg.path,
@@ -635,7 +651,7 @@ ctx.onmessage = async (event: MessageEvent<WorkerMessage>) => {
           ...msg.requestInit,
           headers: Array.from(headers.entries()),
         },
-        msg.timing === true,
+        true,
         signal,
       )
       const fetchMs = now() - fetchStartedAt
@@ -643,44 +659,37 @@ ctx.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       if (!body) {
         // The shard vanished between index read and chunk read: every part
         // is missing (fill) — the caller treats it like a 404 per chunk.
-        ctx.postMessage({
-          type: 'fetch_decoded_multi',
-          id: msg.id,
-          parts: msg.parts.map(() => null),
-          timings: { fetchMs, totalMs: now() - workerStartedAt, ...transport },
-        })
+        ctx.postMessage({ type: 'fetch_range_ok', id: msg.id, parts: null, timings: { fetchMs, ...transport } })
         return
       }
-      const parts: (DecodedPartMessage | null)[] = []
-      for (const part of msg.parts) {
-        // A multi-part decode can be long; bail between parts once canceled.
-        if (signal.aborted) return
+      // Each part gets its OWN buffer: they are transferred on to different
+      // workers, and a transferred buffer cannot be shared.
+      const parts = msg.parts.map((part) => {
         const start = part.offset - msg.range.offset
-        const slice = body.subarray(start, start + part.length)
+        const slice = body.slice(start, start + part.length)
         if (slice.byteLength !== part.length) {
           throw new Error(
             `Coalesced read short: part at ${part.offset} wanted ${part.length} bytes, got ${slice.byteLength} (${msg.path})`,
           )
         }
-        parts.push(
-          await decodeOne(
-            slice,
-            msg.metaId,
-            part.actualChunkShape,
-            msg.textureFidelity ?? 'default',
-            msg.useSharedArrayBuffer === true,
-          ),
-        )
-      }
-      ctx.postMessage(
-        {
-          type: 'fetch_decoded_multi',
-          id: msg.id,
-          parts,
-          timings: { fetchMs, totalMs: now() - workerStartedAt, ...transport },
-        },
-        transferListOf(parts),
+        return slice.buffer
+      })
+      ctx.postMessage({ type: 'fetch_range_ok', id: msg.id, parts, timings: { fetchMs, ...transport } }, parts)
+      return
+    }
+
+    if (msg.type === 'decode') {
+      ensurePipeline(msg.metaId, msg.meta)
+      const signal = beginRequest(msg.id)
+      const part = await decodeOne(
+        new Uint8Array(msg.bytes),
+        msg.metaId,
+        msg.actualChunkShape,
+        msg.textureFidelity ?? 'default',
+        msg.useSharedArrayBuffer === true,
       )
+      if (signal.aborted) return
+      ctx.postMessage({ type: 'decode_ok', id: msg.id, part }, transferListOf([part]))
       return
     }
   } catch (error) {

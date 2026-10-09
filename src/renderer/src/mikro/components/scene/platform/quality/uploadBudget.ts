@@ -113,6 +113,16 @@ export type DrainPolicy = {
   allowFreePass: boolean;
   allowStale: boolean;
   allowGpuDispatch: boolean;
+  /**
+   * Upload the dirty page-table boxes at the end of this drain. Only a
+   * RENDER reads the page table, so only the in-frame drain flushes it; an
+   * off-frame pump drain leaves the mirrors dirty and the next frame drain
+   * uploads the accumulated box once. Every pump drain used to flush — the
+   * dirty box of a level that bricks land all over is about the whole level
+   * grid (page + occupancy + aggregate planes: megabytes), up to ~125 times
+   * a second while the queue was full, for frames that render every 150 ms.
+   */
+  flushPageTables: boolean;
 };
 
 /** Interacting caps: a trickle that never causes a felt hitch. */
@@ -120,22 +130,35 @@ const INTERACTING_MAX_BYTES = 2 * 1024 * 1024;
 const INTERACTING_MAX_BRICKS = 4;
 const INTERACTING_MAX_MS = 1.5;
 
+/**
+ * Wall-clock slice of an OFF-FRAME (pump) drain. The pump runs between
+ * animation frames as a background task; a pending one never delays a frame,
+ * but a running one cannot be interrupted, so its slice is half the in-frame
+ * budget — short enough that a slice starting just before a vsync still
+ * leaves the frame most of its time. The first-brick free pass stays:
+ * streaming must make progress every slice.
+ */
+export const PUMP_MAX_MS = 2;
+
 export function resolveDrainPolicy(
   tierBudget: DrainBudget,
   interacting: boolean,
+  /** The drain runs from the pump timer, between frames, not from `useFrame`. */
+  offFrame = false,
 ): DrainPolicy {
-  if (!interacting) {
-    return { budget: tierBudget, allowFreePass: true, allowStale: true, allowGpuDispatch: true };
-  }
+  const budget = interacting
+    ? {
+        maxBytes: Math.min(tierBudget.maxBytes, INTERACTING_MAX_BYTES),
+        maxBricks: Math.min(tierBudget.maxBricks, INTERACTING_MAX_BRICKS),
+        maxMs: Math.min(tierBudget.maxMs, INTERACTING_MAX_MS),
+      }
+    : tierBudget;
   return {
-    budget: {
-      maxBytes: Math.min(tierBudget.maxBytes, INTERACTING_MAX_BYTES),
-      maxBricks: Math.min(tierBudget.maxBricks, INTERACTING_MAX_BRICKS),
-      maxMs: Math.min(tierBudget.maxMs, INTERACTING_MAX_MS),
-    },
-    allowFreePass: false,
-    allowStale: false,
+    budget: offFrame ? { ...budget, maxMs: Math.min(budget.maxMs, PUMP_MAX_MS) } : budget,
+    allowFreePass: !interacting,
+    allowStale: !interacting,
     allowGpuDispatch: true,
+    flushPageTables: !offFrame,
   };
 }
 

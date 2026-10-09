@@ -8,6 +8,13 @@ describe("sparklineGeometry", () => {
     expect([geometry.valueMin, geometry.valueMax]).toEqual([0, 10]);
   });
 
+  it("lays a line out in a range shared with others", () => {
+    const geometry = sparklineGeometry([0, 10], 100, 20, 0, { min: 0, max: 20 });
+    expect(geometry.points).toBe("0,20 100,10");
+    // The line's own extremes are still what it reports.
+    expect([geometry.valueMin, geometry.valueMax]).toEqual([0, 10]);
+  });
+
   it("puts a flat line in the middle", () => {
     expect(sparklineGeometry([3, 3], 100, 20, 0).points).toBe("0,10 100,10");
   });

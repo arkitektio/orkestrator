@@ -118,7 +118,12 @@ class WorkerDispatcher {
    * rejects locally at once and posts `{type:'cancel', id}` so the worker
    * aborts that one fetch — the worker stays alive for its other requests.
    */
-  send(id: number, message: unknown, signal?: AbortSignal): Promise<unknown> {
+  send(
+    id: number,
+    message: unknown,
+    signal?: AbortSignal,
+    transfer: Transferable[] = [],
+  ): Promise<unknown> {
     if (signal?.aborted) return Promise.reject(createAbortError())
     return new Promise((resolve, reject) => {
       const onAbort = () => {
@@ -132,7 +137,7 @@ class WorkerDispatcher {
       }
       this.pending.set(id, { resolve: settle(resolve), reject: settle(reject) })
       signal?.addEventListener('abort', onAbort, { once: true })
-      this.worker.postMessage(message)
+      this.worker.postMessage(message, transfer)
     })
   }
 
@@ -209,38 +214,70 @@ let nextRequestId = 0
 export interface WorkerFetchPart {
   offset: number
   length: number
-  actualChunkShape?: number[]
 }
 
-export interface WorkerFetchDecodeMultiResult<D extends DataType> {
-  /** Per part, in request order; `undefined` = the shard object was missing. */
-  chunks: (TexturedChunk<D> | undefined)[]
+export interface WorkerFetchRangeResult {
+  /** Compressed bytes per part, in request order; `undefined` = the shard
+   * object was missing. */
+  parts: ArrayBuffer[] | undefined
   timings: {
     roundTripMs: number
     fetchMs: number
-    totalWorkerMs: number
     fromHttpCache: boolean | null
     protocol: string | null
   }
 }
 
 /**
- * Coalesced read: one ranged GET over `range`, decoded into `parts.length`
- * chunks by the worker. Same meta piggybacking as `workerFetchDecode`.
+ * Coalesced read, fetch half: one ranged GET over `range`, cut into the
+ * compressed bytes of each part. Decode them with {@link workerDecode} — on
+ * any worker, which is the point: the parts of one GET decode in parallel.
  */
-export async function workerFetchDecodeMulti<D extends DataType>(
+export async function workerFetchRange(
   worker: Worker,
   store: S3FetchConfig,
   path: `/${string}`,
   range: { offset: number; length: number },
   parts: WorkerFetchPart[],
+  requestInit?: SerializedRequestInit,
+  signal?: AbortSignal,
+): Promise<WorkerFetchRangeResult> {
+  const id = nextRequestId++
+  const roundTripStartedAt = performance.now()
+  const response = (await getDispatcher(worker).send(
+    id,
+    { type: 'fetch_range' as const, id, store, path, range, parts, requestInit },
+    signal,
+  )) as {
+    parts: ArrayBuffer[] | null
+    timings?: { fetchMs?: number; fromHttpCache?: boolean | null; protocol?: string | null }
+  }
+  return {
+    parts: response.parts ?? undefined,
+    timings: {
+      roundTripMs: performance.now() - roundTripStartedAt,
+      fetchMs: response.timings?.fetchMs ?? 0,
+      fromHttpCache: response.timings?.fromHttpCache ?? null,
+      protocol: response.timings?.protocol ?? null,
+    },
+  }
+}
+
+/**
+ * Coalesced read, decode half: one part's compressed bytes (transferred to
+ * the worker) into a decoded, texture-promoted chunk. Same meta piggybacking
+ * as `workerFetchDecode`.
+ */
+export async function workerDecode<D extends DataType>(
+  worker: Worker,
+  bytes: ArrayBuffer,
   metaId: number,
   meta: CodecChunkMeta,
-  requestInit?: SerializedRequestInit,
+  actualChunkShape?: number[],
   textureFidelity: TextureFidelity = 'default',
   useSharedArrayBuffer = false,
   signal?: AbortSignal,
-): Promise<WorkerFetchDecodeMultiResult<D>> {
+): Promise<TexturedChunk<D>> {
   const dispatcher = getDispatcher(worker)
   let inlineMeta: CodecChunkMeta | undefined
   if (!dispatcher.hasMeta(metaId)) {
@@ -248,57 +285,44 @@ export async function workerFetchDecodeMulti<D extends DataType>(
     dispatcher.markMeta(metaId)
   }
   const id = nextRequestId++
-  const roundTripStartedAt = performance.now()
-  const response = (await dispatcher.send(id, {
-    type: 'fetch_decode_multi' as const,
+  const response = (await dispatcher.send(
     id,
-    store,
-    path,
-    range,
-    parts,
-    metaId,
-    meta: inlineMeta,
-    requestInit,
-    textureFidelity,
-    useSharedArrayBuffer,
-    timing: zarrTimingEnabled(),
-  }, signal)) as {
-    parts: ({
+    {
+      type: 'decode' as const,
+      id,
+      bytes,
+      metaId,
+      meta: inlineMeta,
+      actualChunkShape,
+      textureFidelity,
+      useSharedArrayBuffer,
+    },
+    signal,
+    [bytes],
+  )) as {
+    part: {
       promotedType?: TextureCompatibleDataType
       textureBounds?: TextureChunkBounds
-      data?: ArrayBufferLike
+      data: ArrayBufferLike
       byteOffset?: number
       byteLength?: number
-      shape?: number[]
-      stride?: number[]
-    } | null)[]
-    timings?: { fetchMs?: number; totalMs?: number; fromHttpCache?: boolean | null; protocol?: string | null }
+      shape: number[]
+      stride: number[]
+    }
   }
+  const { part } = response
   return {
-    chunks: response.parts.map((part) => {
-      if (!part) return undefined
-      const data = createPromotedArray<D>(
-        part.promotedType,
-        part.data!,
-        part.byteOffset ?? 0,
-        part.byteLength ?? part.data!.byteLength,
-        meta,
-      )
-      return {
-        data,
-        shape: part.shape!,
-        stride: part.stride!,
-        textureBounds: part.textureBounds,
-      } as TexturedChunk<D>
-    }),
-    timings: {
-      roundTripMs: performance.now() - roundTripStartedAt,
-      fetchMs: response.timings?.fetchMs ?? 0,
-      totalWorkerMs: response.timings?.totalMs ?? 0,
-      fromHttpCache: response.timings?.fromHttpCache ?? null,
-      protocol: response.timings?.protocol ?? null,
-    },
-  }
+    data: createPromotedArray<D>(
+      part.promotedType,
+      part.data,
+      part.byteOffset ?? 0,
+      part.byteLength ?? part.data.byteLength,
+      meta,
+    ),
+    shape: part.shape,
+    stride: part.stride,
+    textureBounds: part.textureBounds,
+  } as TexturedChunk<D>
 }
 
 export async function workerFetchDecode<D extends DataType>(

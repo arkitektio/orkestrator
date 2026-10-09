@@ -6,6 +6,7 @@ import {
 } from "@/core/settings/renderer/rendererBudget";
 import {
   COARSE_CHAIN_RESERVE,
+  MAX_AUTO_PLAN_BYTES,
   MIN_POOL_HEADROOM_SLOTS,
   DECODE_BUDGET_CACHE_FRACTION,
   POOL_PLAN_SHARE_FRACTION,
@@ -16,6 +17,7 @@ import {
   resolveDecodeCacheShareBytes,
   resolveDecodeFloorBytes,
   resolveDecodeBudgetBytes,
+  resolveAutoPlanCapBytes,
   resolvePlanBytesForAtlas,
   resolvePoolBudget,
 } from "./poolBudget";
@@ -222,6 +224,76 @@ describe("resolvePoolBudget — device scaling", () => {
     const paired = budget({ deviceBudgetBytes: 2048 * MiB, poolCount: 2 });
     // Opening a second image must not shrink what the first one already got.
     expect(alone.maxPlanBytes).toBe(paired.maxPlanBytes);
+  });
+});
+
+/**
+ * The automatic plan stops at MAX_AUTO_PLAN_BYTES. A plan sized from the
+ * card's memory — 1.5 GiB per pool on a 12 GiB card — is twelve times the
+ * flat cap of August 2026, and the raymarch stride follows the plan's finest
+ * level, so the extra resolution was also the extra frame time that made
+ * large volumes feel slower. The user's own GPU budget lifts the ceiling.
+ */
+describe("resolvePoolBudget — the automatic plan ceiling", () => {
+  afterEach(() => resetRendererBudgetForTests());
+
+  const headroom = MIN_POOL_HEADROOM_SLOTS * SLOT_BYTES;
+  /** Half of a 12 GiB card: what the hardware probe resolves to. */
+  const BIG_CARD = 6144 * MiB;
+
+  it("stops the automatic plan at the ceiling, and the atlas with it", () => {
+    const { maxPlanBytes, atlasBytes } = budget({ deviceBudgetBytes: BIG_CARD });
+    expect(maxPlanBytes).toBe(MAX_AUTO_PLAN_BYTES);
+    expect(atlasBytes).toBe(MAX_AUTO_PLAN_BYTES + headroom);
+    expect(resolveAutoPlanCapBytes()).toBe(MAX_AUTO_PLAN_BYTES);
+  });
+
+  it("a GPU budget the user set lifts the ceiling", () => {
+    applyRendererBudgetSettings({ rendererGpuBudgetMB: 6144 });
+    expect(getRendererBudget().gpuSource.kind).toBe("custom");
+    expect(resolveAutoPlanCapBytes()).toBe(Number.POSITIVE_INFINITY);
+    const { maxPlanBytes } = budget({ deviceBudgetBytes: BIG_CARD });
+    // share/2 × POOL_PLAN_SHARE_FRACTION on a lone pool: 6144/2/2 MiB.
+    expect(maxPlanBytes).toBe(
+      Math.floor((BIG_CARD / POOL_RESERVE_COUNT) * POOL_PLAN_SHARE_FRACTION),
+    );
+    expect(maxPlanBytes).toBeGreaterThan(MAX_AUTO_PLAN_BYTES);
+  });
+
+  it("an explicit ceiling pins either side", () => {
+    const lifted = budget({ deviceBudgetBytes: BIG_CARD, planCapCeilingBytes: Infinity });
+    expect(lifted.maxPlanBytes).toBe(1536 * MiB);
+    const held = budget({ deviceBudgetBytes: BIG_CARD, planCapCeilingBytes: 256 * MiB });
+    expect(held.maxPlanBytes).toBe(256 * MiB);
+  });
+
+  it("never pushes a plan below the 128 MiB floor or past a starved share", () => {
+    expect(budget({ deviceBudgetBytes: 512 * MiB, planCapCeilingBytes: 1 }).maxPlanBytes).toBe(
+      MIN_LAYER_POOL_BYTES,
+    );
+    const starved = budget({ deviceBudgetBytes: 150 * MiB, planCapCeilingBytes: 1 });
+    expect(starved.atlasBytes).toBeLessThanOrEqual(150 * MiB);
+  });
+
+  it("is a no-op on budgets the ceiling does not reach", () => {
+    for (const deviceBudgetBytes of [256 * MiB, 512 * MiB, 1024 * MiB, 2048 * MiB]) {
+      for (const poolCount of [1, 2, 4]) {
+        const auto = resolvePoolBudget({
+          deviceBudgetBytes,
+          poolCount,
+          slotBytes: SLOT_BYTES,
+          totalBrickBytes: HUGE_PYRAMID,
+        });
+        const lifted = resolvePoolBudget({
+          deviceBudgetBytes,
+          poolCount,
+          slotBytes: SLOT_BYTES,
+          totalBrickBytes: HUGE_PYRAMID,
+          planCapCeilingBytes: Infinity,
+        });
+        expect(auto).toEqual(lifted);
+      }
+    }
   });
 });
 

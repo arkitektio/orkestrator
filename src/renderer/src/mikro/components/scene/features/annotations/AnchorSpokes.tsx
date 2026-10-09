@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatDisplay } from "@/core/util/quantities";
 import {
   DeviceRows,
@@ -140,7 +141,17 @@ export const OmeSpoke = ({ omeMetadata }: { omeMetadata: { metadata: unknown } }
 };
 
 /** One in-view anchor: whichever metadata spokes it carries. */
-export const ActiveAnchor = ({ anchor }: { anchor: PanelAnchor }) => {
+export const ActiveAnchor = ({
+  anchor,
+  align,
+  children,
+}: {
+  anchor: PanelAnchor;
+  /** Which edge the box hangs off; the box's own default when omitted. */
+  align?: "start" | "end";
+  /** A caption the host puts first in the box (who this anchor applies to). */
+  children?: ReactNode;
+}) => {
   const hasSpokes =
     Boolean(anchor.channelLabel) ||
     Boolean(anchor.valueHistogram) ||
@@ -151,7 +162,8 @@ export const ActiveAnchor = ({ anchor }: { anchor: PanelAnchor }) => {
     omeEntries(anchor.omeMetadata?.metadata).length > 0;
 
   return (
-    <MetadataAnchorBox>
+    <MetadataAnchorBox align={align}>
+      {children}
       {/* Which slice the anchor pins is not shown — the host decided it is in
           view, and that is all the reader needs; the coordinates are noise
           on a viewport. A host where they are the identity (a table, whose

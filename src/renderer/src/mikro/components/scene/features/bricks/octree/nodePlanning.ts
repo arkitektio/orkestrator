@@ -164,21 +164,21 @@ export const adjacentSlabBrickZ = (
  * nothing to warm).
  *
  * Key parity with the real post-step fetch is load-bearing: after a dim step,
- * `computeFixedIndices` derives `fixedChunkCoords[d]` from LEVEL-0 chunk
- * extents and `enumerateBrickChunkCoords` applies that value at every level —
- * so this helper must be fed level-0 chunking, or the warmed cache keys are
- * never the keys the flush's refetch asks for.
+ * `computeFixedIndices` derives each level's `fixedChunkCoords` from that
+ * level's own chunk extent — so this helper must be fed the chunking and
+ * extent of the level being warmed, or the warmed cache keys are never the
+ * keys the flush's refetch asks for.
  */
 export const adjacentSelectionChunk = (
   fixedChunkCoord: number,
   fixedOffset: number,
-  chunkExtent0: number,
+  chunkExtent: number,
   dimExtent: number,
   delta: number,
 ): number | null => {
-  const neighborIndex = fixedChunkCoord * chunkExtent0 + fixedOffset + delta;
+  const neighborIndex = fixedChunkCoord * chunkExtent + fixedOffset + delta;
   if (neighborIndex < 0 || neighborIndex > dimExtent - 1) return null;
-  const neighborChunk = Math.floor(neighborIndex / chunkExtent0);
+  const neighborChunk = Math.floor(neighborIndex / chunkExtent);
   return neighborChunk === fixedChunkCoord ? null : neighborChunk;
 };
 

@@ -1878,7 +1878,7 @@ export function createVolumeNodeMaterial(
   // steps LENGTHENS the stride (see floorDelta) rather than cutting the far
   // volume. The compile-time loop bound of THIS material is
   // MAX_RAY_STEPS_CEILING, not MAX_RAY_STEPS: the settle refinement ladder
-  // (qualityGovernor.setSettleRefineStage) may raise the uniform up to 4×
+  // (qualityGovernor.setSettleRefineStage) may raise the uniform up to 2×
   // the settled budget while idle; runtime cost stays bounded by the
   // uMaxSteps Break either way. The default here is overwritten at mount by
   // useStepScaleUniform.
@@ -2010,7 +2010,7 @@ export function createVolumeNodeMaterial(
       // Tier cap: the uniform can't feed the compile-constant loop bound, so
       // it breaks here. floorDelta above guarantees full-ray coverage in
       // uMaxSteps iterations. The bound is the settle-refinement CEILING
-      // (4× the largest settled budget) — cost stays bounded by uMaxSteps.
+      // (2× the largest settled budget) — cost stays bounded by uMaxSteps.
       If(float(i).greaterThanEqual(float(uMaxSteps)), () => {
         Break();
       });

@@ -4,8 +4,10 @@ import { AddLayerForm } from "./forms/AddLayerForm";
 import { CalibrateForm } from "./forms/CalibrateForm";
 import { CreateChartForm } from "./forms/CreateChartForm";
 import { CreateFolderForm } from "./forms/CreateFolderForm";
+import { CreateLensForm } from "./forms/CreateLensForm";
 import { MoveToFolderForm } from "./forms/MoveToFolderForm";
 import { RegisterForm } from "./forms/RegisterForm";
+import { RenameLensForm } from "./forms/RenameLensForm";
 import { UpdateFolderForm } from "./forms/UpdateFolderForm";
 
 /**
@@ -22,6 +24,8 @@ export const MIKRO_DIALOGS = {
   calibrate: CalibrateForm,
   createchart: CreateChartForm,
   createmikrofolder: CreateFolderForm,
+  createlens: CreateLensForm,
+  renamelens: RenameLensForm,
   movetofolder: MoveToFolderForm,
   updatefolder: UpdateFolderForm,
 };

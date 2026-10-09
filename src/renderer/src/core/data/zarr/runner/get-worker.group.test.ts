@@ -2,11 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ByteRange } from '@/core/data/zarr/store/types'
 import { MISSING_INNER_CHUNK } from './sharding'
 
-const workerFetchDecodeMulti = vi.hoisted(() => vi.fn())
+const workerFetchRange = vi.hoisted(() => vi.fn())
+const workerDecode = vi.hoisted(() => vi.fn())
 const workerFetchDecode = vi.hoisted(() => vi.fn())
 vi.mock('./worker-rpc', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./worker-rpc')>()),
-  workerFetchDecodeMulti,
+  workerFetchRange,
+  workerDecode,
   workerFetchDecode,
 }))
 
@@ -71,14 +73,22 @@ const fakePool = {
 
 const chunkOf = (v: number) => ({ data: new Uint16Array(16).fill(v), shape: [4, 4], stride: [4, 1] })
 
+/** A run's GET hands back one buffer per part, tagged with the part's 1-based
+ * position in the run; the decode turns that tag into the chunk's value. */
+function mockShardRuns() {
+  workerFetchRange.mockImplementation(async (_w, _s, _p, _range, parts: unknown[]) => ({
+    parts: parts.map((_, i) => new Uint8Array([i + 1]).buffer),
+    timings: { roundTripMs: 0, fetchMs: 0, fromHttpCache: null, protocol: 'h2' },
+  }))
+  workerDecode.mockImplementation(async (_w, bytes: ArrayBuffer) => chunkOf(new Uint8Array(bytes)[0]))
+}
+
 describe('getChunkGroupWorker', () => {
-  it('coalesces contiguous inner chunks of one shard into one multi task, keeps far ones single, fills missing', async () => {
-    workerFetchDecodeMulti.mockReset()
+  it('coalesces contiguous inner chunks of one shard into one ranged GET, keeps far ones single, fills missing', async () => {
+    workerFetchRange.mockReset()
+    workerDecode.mockReset()
     workerFetchDecode.mockReset()
-    workerFetchDecodeMulti.mockImplementation(async (_w, _s, _p, _range, parts: unknown[]) => ({
-      chunks: parts.map((_, i) => chunkOf(i + 1)),
-      timings: { roundTripMs: 0, fetchMs: 0, totalWorkerMs: 0 },
-    }))
+    mockShardRuns()
     workerFetchDecode.mockImplementation(async () => ({ chunk: chunkOf(99), timings: { metaInitMs: 0, roundTripMs: 0, fetchMs: 0, decodeMs: 0, reshapeMs: 0, promoteMs: 0, totalWorkerMs: 0 } }))
 
     const { arr, getRange } = fakeArray({ '/c/0/0': shardObject() })
@@ -98,8 +108,8 @@ describe('getChunkGroupWorker', () => {
     const chunks = await Promise.all(promises)
 
     // One coalesced task for [0,1], one single for [2], none for the fill.
-    expect(workerFetchDecodeMulti).toHaveBeenCalledTimes(1)
-    const [, , path, range, parts] = workerFetchDecodeMulti.mock.calls[0]
+    expect(workerFetchRange).toHaveBeenCalledTimes(1)
+    const [, , path, range, parts] = workerFetchRange.mock.calls[0]
     expect(path).toBe('/c/0/0')
     expect(range).toEqual({ offset: 0, length: 200 })
     expect(parts.map((p: { offset: number }) => p.offset)).toEqual([0, 100])
@@ -118,37 +128,33 @@ describe('getChunkGroupWorker', () => {
   })
 
   it('serves cached chunks without any worker task', async () => {
-    workerFetchDecodeMulti.mockReset()
+    workerFetchRange.mockReset()
+    workerDecode.mockReset()
     workerFetchDecode.mockReset()
-    workerFetchDecodeMulti.mockImplementation(async (_w, _s, _p, _range, parts: unknown[]) => ({
-      chunks: parts.map((_, i) => chunkOf(i + 1)),
-      timings: { roundTripMs: 0, fetchMs: 0, totalWorkerMs: 0 },
-    }))
+    mockShardRuns()
     workerFetchDecode.mockImplementation(async () => ({ chunk: chunkOf(99), timings: { metaInitMs: 0, roundTripMs: 0, fetchMs: 0, decodeMs: 0, reshapeMs: 0, promoteMs: 0, totalWorkerMs: 0 } }))
     const { arr } = fakeArray({ '/c/0/0': shardObject() })
     const cache = new Map()
     await Promise.all(
       getChunkGroupWorker(arr, [[0, 0], [0, 1]], { pool: fakePool, cache, useSharedArrayBuffer: true, textureFidelity: 'raw16' }),
     )
-    expect(workerFetchDecodeMulti).toHaveBeenCalledTimes(1)
-    workerFetchDecodeMulti.mockClear()
+    expect(workerFetchRange).toHaveBeenCalledTimes(1)
+    workerFetchRange.mockClear()
     workerFetchDecode.mockClear()
     let dispatched = 0
     await Promise.all(
       getChunkGroupWorker(arr, [[0, 0], [0, 1]], { pool: fakePool, cache, useSharedArrayBuffer: true, textureFidelity: 'raw16', onDispatch: (n) => (dispatched += n) }),
     )
-    expect(workerFetchDecodeMulti).not.toHaveBeenCalled()
+    expect(workerFetchRange).not.toHaveBeenCalled()
     expect(workerFetchDecode).not.toHaveBeenCalled()
     expect(dispatched).toBe(0)
   })
 
   it('merges same-shard ranges ACROSS group calls issued in the same tick', async () => {
-    workerFetchDecodeMulti.mockReset()
+    workerFetchRange.mockReset()
+    workerDecode.mockReset()
     workerFetchDecode.mockReset()
-    workerFetchDecodeMulti.mockImplementation(async (_w, _s, _p, _range, parts: unknown[]) => ({
-      chunks: parts.map((_, i) => chunkOf(i + 1)),
-      timings: { roundTripMs: 0, fetchMs: 0, totalWorkerMs: 0 },
-    }))
+    mockShardRuns()
     workerFetchDecode.mockImplementation(async () => ({ chunk: chunkOf(99), timings: { metaInitMs: 0, roundTripMs: 0, fetchMs: 0, decodeMs: 0, reshapeMs: 0, promoteMs: 0, totalWorkerMs: 0 } }))
 
     const { arr } = fakeArray({ '/c/0/0': shardObject() })
@@ -162,8 +168,8 @@ describe('getChunkGroupWorker', () => {
     const callB = getChunkGroupWorker(arr, [[0, 1], [1, 1]], { ...shared })
     const [a, b] = await Promise.all([Promise.all(callA), Promise.all(callB)])
 
-    expect(workerFetchDecodeMulti).toHaveBeenCalledTimes(1)
-    const [, , path, range, parts] = workerFetchDecodeMulti.mock.calls[0]
+    expect(workerFetchRange).toHaveBeenCalledTimes(1)
+    const [, , path, range, parts] = workerFetchRange.mock.calls[0]
     expect(path).toBe('/c/0/0')
     expect(range).toEqual({ offset: 0, length: 200 })
     expect(parts.map((p: { offset: number }) => p.offset)).toEqual([0, 100])
@@ -176,13 +182,68 @@ describe('getChunkGroupWorker', () => {
     expect((b[1].data as Uint16Array)[0]).toBe(0) // fill
   })
 
-  it('does not merge calls with incompatible options (textureFidelity)', async () => {
-    workerFetchDecodeMulti.mockReset()
+  it('merges ONE-chunk calls of the same tick (brick-aligned chunks: a brick is one chunk)', async () => {
+    workerFetchRange.mockReset()
+    workerDecode.mockReset()
     workerFetchDecode.mockReset()
-    workerFetchDecodeMulti.mockImplementation(async (_w, _s, _p, _range, parts: unknown[]) => ({
-      chunks: parts.map((_, i) => chunkOf(i + 1)),
-      timings: { roundTripMs: 0, fetchMs: 0, totalWorkerMs: 0 },
-    }))
+    mockShardRuns()
+
+    const { arr } = fakeArray({ '/c/0/0': shardObject() })
+    let dispatched = 0
+    const shared = { pool: fakePool, cache: new Map(), useSharedArrayBuffer: true, textureFidelity: 'raw16', coalesce: { maxGap: 64, maxBytes: 1 << 20 }, onDispatch: (n: number) => (dispatched += n) } as const
+    // Two neighbouring bricks, each needing exactly one inner chunk.
+    const [a] = getChunkGroupWorker(arr, [[0, 0]], { ...shared })
+    const [b] = getChunkGroupWorker(arr, [[0, 1]], { ...shared })
+    const [chunkA, chunkB] = await Promise.all([a, b])
+
+    expect(workerFetchRange).toHaveBeenCalledTimes(1)
+    expect(workerFetchRange.mock.calls[0][3]).toEqual({ offset: 0, length: 200 })
+    expect(workerFetchDecode).not.toHaveBeenCalled()
+    expect(dispatched).toBe(1)
+    expect((chunkA.data as Uint16Array)[0]).toBe(1)
+    expect((chunkB.data as Uint16Array)[0]).toBe(2)
+  })
+
+  it('decodes the parts of one GET as separate tasks, each settling on its own', async () => {
+    workerFetchRange.mockReset()
+    workerDecode.mockReset()
+    workerFetchDecode.mockReset()
+    mockShardRuns()
+    // The first part's decode never finishes; the second must not wait for it.
+    let releaseSlow!: () => void
+    const slow = new Promise<void>((resolve) => (releaseSlow = resolve))
+    workerDecode.mockImplementation(async (_w, bytes: ArrayBuffer) => {
+      const tag = new Uint8Array(bytes)[0]
+      if (tag === 1) await slow
+      return chunkOf(tag)
+    })
+
+    const { arr } = fakeArray({ '/c/0/0': shardObject() })
+    const controllers = [new AbortController(), new AbortController()]
+    const [first, second] = getChunkGroupWorker(arr, [[0, 0], [0, 1]], {
+      pool: fakePool,
+      cache: new Map(),
+      useSharedArrayBuffer: true,
+      textureFidelity: 'raw16',
+      coalesce: { maxGap: 64, maxBytes: 1 << 20 },
+      signals: controllers.map((c) => c.signal),
+    })
+
+    expect(((await second).data as Uint16Array)[0]).toBe(2)
+    expect(workerFetchRange).toHaveBeenCalledTimes(1)
+    expect(workerDecode).toHaveBeenCalledTimes(2)
+    // Each decode carries its own member's signal, not the run's.
+    expect(workerDecode.mock.calls.map((call) => call[7])).toEqual(controllers.map((c) => c.signal))
+
+    releaseSlow()
+    expect(((await first).data as Uint16Array)[0]).toBe(1)
+  })
+
+  it('does not merge calls with incompatible options (textureFidelity)', async () => {
+    workerFetchRange.mockReset()
+    workerDecode.mockReset()
+    workerFetchDecode.mockReset()
+    mockShardRuns()
     workerFetchDecode.mockImplementation(async () => ({ chunk: chunkOf(99), timings: { metaInitMs: 0, roundTripMs: 0, fetchMs: 0, decodeMs: 0, reshapeMs: 0, promoteMs: 0, totalWorkerMs: 0 } }))
 
     const { arr } = fakeArray({ '/c/0/0': shardObject() })
@@ -193,17 +254,15 @@ describe('getChunkGroupWorker', () => {
 
     // No shared run: inner 0 and inner 1 stay in separate batches, so every
     // fetched chunk goes out as a single (0, 2 from A; 1 from B; 3 fills).
-    expect(workerFetchDecodeMulti).not.toHaveBeenCalled()
+    expect(workerFetchRange).not.toHaveBeenCalled()
     expect(workerFetchDecode).toHaveBeenCalledTimes(3)
   })
 
   it('enqueues a merged run at the max priority of its members', async () => {
-    workerFetchDecodeMulti.mockReset()
+    workerFetchRange.mockReset()
+    workerDecode.mockReset()
     workerFetchDecode.mockReset()
-    workerFetchDecodeMulti.mockImplementation(async (_w, _s, _p, _range, parts: unknown[]) => ({
-      chunks: parts.map((_, i) => chunkOf(i + 1)),
-      timings: { roundTripMs: 0, fetchMs: 0, totalWorkerMs: 0 },
-    }))
+    mockShardRuns()
     workerFetchDecode.mockImplementation(async () => ({ chunk: chunkOf(99), timings: { metaInitMs: 0, roundTripMs: 0, fetchMs: 0, decodeMs: 0, reshapeMs: 0, promoteMs: 0, totalWorkerMs: 0 } }))
 
     const priorities: (number | undefined)[] = []
@@ -225,14 +284,16 @@ describe('getChunkGroupWorker', () => {
     const callB = getChunkGroupWorker(arr, [[0, 0], [1, 1]], { pool: recordingPool, cache, useSharedArrayBuffer: true, textureFidelity: 'raw16', coalesce, priority: 5 })
     await Promise.all([...callA, ...callB])
 
-    expect(workerFetchDecodeMulti).toHaveBeenCalledTimes(1)
-    // Runs flush in offset order: the merged run (offset 0) at max(-1, 5),
-    // then A's far single at its own -1.
-    expect(priorities).toEqual([5, -1])
+    expect(workerFetchRange).toHaveBeenCalledTimes(1)
+    // Runs flush in offset order: the merged run's GET (offset 0) at
+    // max(-1, 5), then A's far single at its own -1. Once the GET answers,
+    // each part decodes at ITS member's priority: inner 0 (B, 5), inner 1 (A, -1).
+    expect(priorities).toEqual([5, -1, 5, -1])
   })
 
   it('rejects without fetching when every member aborts before the flush', async () => {
-    workerFetchDecodeMulti.mockReset()
+    workerFetchRange.mockReset()
+    workerDecode.mockReset()
     workerFetchDecode.mockReset()
 
     const { arr, getRange } = fakeArray({ '/c/0/0': shardObject() })
@@ -252,7 +313,7 @@ describe('getChunkGroupWorker', () => {
 
     const settled = await Promise.allSettled(promises)
     expect(settled.map((s) => s.status)).toEqual(['rejected', 'rejected'])
-    expect(workerFetchDecodeMulti).not.toHaveBeenCalled()
+    expect(workerFetchRange).not.toHaveBeenCalled()
     expect(workerFetchDecode).not.toHaveBeenCalled()
     // Only the shard-index suffix read went out — never the payload range.
     expect(getRange.mock.calls.every(([, r]) => 'suffixLength' in (r as object))).toBe(true)

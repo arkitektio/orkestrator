@@ -85,16 +85,22 @@ const objectKey = (object: THREE.Object3D): string => {
  * settle edge flips back and renders one crisp frame (the QualityAdapter
  * restore philosophy).
  *
- * `active` here means camera motion ONLY — deliberately NOT
- * `qualityGovernor.isStreaming()`: slow-network sessions stream for many
- * seconds after a gesture, and pinning the target at half-res for that whole
- * window hides exactly the progressive LOD sharpening streaming exists to
- * show. Streaming frames arrive at the residency cadence (~300 ms), so
- * full-res raymarch there costs what the pre-compositor renderer always
- * paid.
+ * Streaming counts as active too. It did not at first: the thought was that a
+ * slow-network session streams for seconds after a gesture, and a half-res
+ * target would hide the progressive LOD sharpening. But a plan sized from
+ * the card's memory streams for far longer than a 128 MiB one, and each
+ * residency bump (150 ms) re-marched the whole volume at full resolution and
+ * the plan's finest stride — the streaming window, not the gesture, became
+ * the slow part of a large volume. At half res the bricks still visibly
+ * land and sharpen; the drained edge renders one crisp frame, as the settle
+ * edge does (the QualityAdapter restore philosophy).
  */
-export function resolveVolumeScale(_tier: QualityTier, cameraMoving: boolean): number {
-  return cameraMoving ? 0.5 : 1;
+export function resolveVolumeScale(
+  _tier: QualityTier,
+  cameraMoving: boolean,
+  streaming = false,
+): number {
+  return cameraMoving || streaming ? 0.5 : 1;
 }
 
 export type VolumeTargetSize = { width: number; height: number };
@@ -319,6 +325,78 @@ export function decideSettleRefine(input: {
 }
 
 // ---------------------------------------------------------------------------
+// Settled-render cost: is a ladder stage affordable?
+// ---------------------------------------------------------------------------
+
+/**
+ * Wall-clock budget for ONE ladder stage render. A stage is an idle-time
+ * luxury: it must never be the frame the next gesture queues behind. Two and
+ * a half 60 Hz frames — a settled render that fits one vsync qualifies (its
+ * probe reads ~17 ms, doubled ~33), one that spills into a second does not.
+ */
+export const SETTLE_REFINE_FRAME_BUDGET_MS = 40;
+
+/**
+ * Frames the meter watches after a settled render. The GPU finishes a heavy
+ * frame long after `gl.render` returned, and the browser throttles the
+ * following animation frames until it has — so the cost shows up as the
+ * delta to the NEXT frame, or the one after, depending on how many frames
+ * the compositor lets run ahead. Two probe frames (cached composites, cheap)
+ * and the larger delta is the cost.
+ */
+export const SETTLED_RENDER_PROBE_FRAMES = 2;
+
+export type SettledRenderMeter = {
+  /**
+   * Once per compositor frame, after the render block, with the frame's
+   * timestamp and whether THIS frame rendered the target settled (scale 1,
+   * no motion, no streaming). `probe` asks the shell for one more frame.
+   */
+  onFrame(nowMs: number, renderedSettled: boolean): { probe: boolean };
+  /** Measured cost of the latest settled render; null until one completed. */
+  costMs(): number | null;
+};
+
+export const createSettledRenderMeter = (): SettledRenderMeter => {
+  let lastFrameAt: number | null = null;
+  let probesLeft = 0;
+  let pending = 0;
+  let cost: number | null = null;
+  return {
+    onFrame: (nowMs, renderedSettled) => {
+      if (probesLeft > 0 && lastFrameAt !== null) {
+        pending = Math.max(pending, nowMs - lastFrameAt);
+        probesLeft -= 1;
+        if (probesLeft === 0) cost = pending;
+      }
+      if (renderedSettled) {
+        probesLeft = SETTLED_RENDER_PROBE_FRAMES;
+        pending = 0;
+      }
+      lastFrameAt = nowMs;
+      return { probe: probesLeft > 0 };
+    },
+    costMs: () => cost,
+  };
+};
+
+/**
+ * May the ladder advance to `nextStage`? Stage n doubles the step ceiling n
+ * times, so its render costs up to 2ⁿ × the settled render that was measured
+ * (less where rays exit at bounds first). Unmeasured means no: a settled
+ * image a little grainier is cheaper than a stage render of unknown length.
+ */
+export function settleRefineAffordable(input: {
+  settledRenderMs: number | null;
+  nextStage: number;
+  budgetMs?: number;
+}): boolean {
+  const budgetMs = input.budgetMs ?? SETTLE_REFINE_FRAME_BUDGET_MS;
+  if (input.settledRenderMs === null) return false;
+  return input.settledRenderMs * 2 ** Math.max(0, input.nextStage) <= budgetMs;
+}
+
+// ---------------------------------------------------------------------------
 // Stats (DebugPanel report)
 // ---------------------------------------------------------------------------
 
@@ -337,6 +415,9 @@ export type VolumeCompositorReport = {
   lastRenderReason: string;
   /** Settle refinement ladder stage the governor currently holds. */
   settleRefineStage: number;
+  /** Measured cost of the latest settled render (`createSettledRenderMeter`);
+   * null until one completed. What the ladder gate reads. */
+  settledRenderMs: number | null;
 };
 
 export type VolumeCompositorStats = {

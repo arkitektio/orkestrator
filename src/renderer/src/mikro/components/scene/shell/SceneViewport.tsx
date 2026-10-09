@@ -36,6 +36,7 @@ import { KeyboardSceneNavigation } from "./keyboard/KeyboardSceneNavigation";
 import { ModeCompatGuard } from "./keyboard/ModeCompatGuard";
 import { SceneAxis } from "./chrome/SceneAxis";
 import { AttributeProbeTracker } from "../features/probe/AttributeProbeTracker";
+import { ProbePointPinner } from "../features/probe/ProbePointPinner";
 import { ProbeReadoutSettler } from "../features/probe/ProbeReadoutSettler";
 import { BrickSystemProvider } from "../features/bricks/residency/BrickSystemProvider";
 import { VisibilityManager } from "./VisibilityManager";
@@ -46,7 +47,6 @@ import { SceneModeControls } from "./chrome/SceneModeControls";
 import { SceneShortcuts } from "./keyboard/SceneShortcuts";
 import { CenterLodReadout } from "../features/bricks/CenterLodReadout";
 import { DrawSizeReadout } from "../features/annotations/DrawSizeReadout";
-import { MetadataOverlay } from "../features/annotations/MetadataOverlay";
 import { RoiToolbar } from "../features/annotations/RoiToolbar";
 import { MeshDesignToolbar } from "../features/meshDesign/ui/MeshDesignToolbar";
 import { SceneScreenshot } from "./chrome/SceneScreenshot";
@@ -55,7 +55,7 @@ import { CanvasHueProbe } from "./theme/CanvasHueProbe";
 import { DebugPanel } from "../features/debug/DebugPanel";
 import { DEBUG_SECTIONS } from "./debugRegistry";
 import { DimSliderPanel } from "./chrome/DimSliderPanel";
-import { SelectedPointPanel } from "../features/probe/SelectedPointPanel";
+import { StaleProbeReconciler } from "../features/probe/StaleProbeReconciler";
 import { RoiDeleteKeybinding } from "../features/annotations/RoiDeleteKeybinding";
 import { HoveredAnnotationButton } from "../features/annotations/hover/HoveredAnnotationButton";
 import { ZSliderPanel } from "./chrome/ZSliderPanel";
@@ -422,9 +422,9 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
           <DebugPanel sections={DEBUG_SECTIONS} />
         </WhenDebug>
         {/* The renderer's own overlays, bracketed so their commits are
-            attributable: `SelectedPointPanel` in particular used to sit
-            outside every profiler, which made a HUD re-render storm show up
-            as unexplained main-thread time. */}
+            attributable: the probe HUD in particular used to sit outside
+            every profiler, which made a re-render storm show up as
+            unexplained main-thread time. */}
         <LongCommitProfiler id="scene-overlays">
           {/* The annotation and mesh lists live in their sidebar tabs; the
               viewport keeps the Backspace-delete keybinding — sidebar tabs
@@ -435,19 +435,18 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
           <HoveredAnnotationButton />
           <VisibilityManager />
           <AttributeProbeTracker />
+          <ProbePointPinner />
+          <StaleProbeReconciler />
           <ProbeReadoutSettler />
           <ScaleBar />
           {/* Bottom-left, under the scale bar: both answer "what am I
               actually looking at" — one in world units, one in pixels. */}
           <CenterLodReadout />
-          {/* Bottom-right, above the mode controls: what was RECORDED about
-              what you are looking at — the active layer's anchored acquisition
-              metadata, folded to a single unfold button until asked. */}
-          <MetadataOverlay />
           <DrawSizeReadout />
-          {/* Both dock bottom-right: the probe readout sits directly above the
-              mode controls that turn probing on. */}
-          <SelectedPointPanel />
+          {/* The probe readout and the acquisition metadata are not here:
+              they are the page sidebar's "Probe" tab
+              (`features/probe/ProbePanel.tsx`,
+              `features/annotations/ProbeMetadata.tsx`). */}
           <SceneModeControls />
 
           <RoiToolbar />

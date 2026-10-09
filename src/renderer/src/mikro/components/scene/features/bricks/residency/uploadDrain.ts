@@ -189,7 +189,7 @@ export function drainEntry(
           pending.coords,
           pending.phase,
         ),
-        fixedOffsets: pool.fixedOffsets,
+        fixedOffsets: pool.fixedOffsets[pending.level],
         chunks: pending.gpu.chunks,
       },
       chunkKeys: pending.gpu.chunks.map((chunk) => chunk.cacheKey),

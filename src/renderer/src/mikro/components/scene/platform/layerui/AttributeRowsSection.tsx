@@ -11,6 +11,9 @@ import type {
   PlanSeries,
 } from "@/mikro/lib/attributes/attributeTypes";
 import { useViewerStore } from "../stores/viewerStore";
+import { profileLabelsFor, type HopBlock } from "./attributeComparison";
+
+export { profileLabelsFor, type HopBlock };
 import { perfMonitor } from "../perf/perfMonitor";
 
 /**
@@ -32,7 +35,7 @@ import { perfMonitor } from "../perf/perfMonitor";
  * line's axis to the scene's.
  */
 
-const formatCell = (value: unknown): string => {
+export const formatCell = (value: unknown): string => {
   if (value === null || value === undefined) return "—";
   if (typeof value === "number") {
     if (Number.isInteger(value)) return String(value);
@@ -153,45 +156,6 @@ const AttributeRowBlock = ({
     })}
   </div>
 );
-
-/** A settled block: what the HUD and the ROI panel both render one of. */
-export type HopBlock = { meta: HopMeta; state: PlanRowsState };
-
-/**
- * `position → label` for a sparse hop, read off its names hop: the first
- * child TABLE hop that ran, keyed by the axis it binds (`along <axis>`), its
- * label the first LABEL-role column, else the first text column that is not
- * the key.
- */
-export const profileLabelsFor = (
-  hop: HopMeta,
-  blocks: readonly HopBlock[],
-): ReadonlyMap<number, string> | null => {
-  if (hop.kind !== "SPARSE") return null;
-  const child = blocks.find(
-    (block) =>
-      block.meta.parentKey === hop.hopKey &&
-      block.meta.kind === "TABLE" &&
-      block.state.status === "rows",
-  );
-  if (!child) return null;
-  const axis = hop.valueAxes[0];
-  if (!axis) return null;
-  const labelColumn =
-    child.meta.attributes.find((column) => column.role === "LABEL")?.name ??
-    child.meta.attributes.find((column) => column.name !== axis && column.dtype.toUpperCase().includes("VARCHAR"))?.name ??
-    null;
-  if (!labelColumn) return null;
-  const labels = new Map<number, string>();
-  for (const row of child.state.rows) {
-    const position = row[axis];
-    const label = row[labelColumn];
-    if ((typeof position === "number" || typeof position === "bigint") && label != null) {
-      labels.set(Number(position), String(label));
-    }
-  }
-  return labels;
-};
 
 const ProfileRows = ({
   state,

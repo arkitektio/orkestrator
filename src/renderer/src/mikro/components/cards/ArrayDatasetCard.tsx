@@ -2,7 +2,7 @@ import React from "react";
 import { Badge } from '@/core/ui/badge'
 import { CardTitle } from '@/core/ui/card'
 import { HomeCard } from '@/core/ui/home-card'
-import { MikroArrayDataset, MikroScene } from '@/core/linkers'
+import { MikroArrayDataset, MikroLens, MikroScene } from '@/core/linkers'
 import { cn } from '@/core/util/utils'
 import { Clapperboard, Grid3x3 } from 'lucide-react'
 import { ListArrayDatasetFragment } from '../../api/graphql'
@@ -73,9 +73,20 @@ const TheCard = ({ item: arrayDataset, fill }: Props) => {
             <div className="flex min-w-0 flex-row items-start gap-2">
               <Icon className="mt-0.5 h-4 w-4 shrink-0 text-white/70" aria-label={spatial?.label} />
               <CardTitle className="min-w-0 break-words text-sm leading-tight line-clamp-2">
-                <MikroArrayDataset.DetailLink object={arrayDataset}>
-                  {arrayDataset.name}
-                </MikroArrayDataset.DetailLink>
+                {/* A dataset is opened by opening the lens that selects all of
+                    it — the viewer is a lens' page. The tile itself is still
+                    the DATASET (its menu, its drag payload), and its own page,
+                    with every lens cut from it, is one step up from the
+                    viewer. Only a dataset with no pixel grid has no such lens. */}
+                {arrayDataset.fullLens ? (
+                  <MikroLens.DetailLink object={arrayDataset.fullLens}>
+                    {arrayDataset.name}
+                  </MikroLens.DetailLink>
+                ) : (
+                  <MikroArrayDataset.DetailLink object={arrayDataset}>
+                    {arrayDataset.name}
+                  </MikroArrayDataset.DetailLink>
+                )}
               </CardTitle>
 
               {/* What the tile is a picture OF. The backdrop is the newest

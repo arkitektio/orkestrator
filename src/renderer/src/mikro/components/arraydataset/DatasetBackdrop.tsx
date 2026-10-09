@@ -10,10 +10,13 @@ import {
 } from "@/core/ui/dropdown-menu";
 import { Clapperboard, ChevronDown } from "lucide-react";
 import {
+  DetailLensFragment,
   GetArrayDatasetQuery,
   useCreateSceneFromCoordinateSystemMutation,
+  useCreateSceneFromLensMutation,
   useGetCoordinateGraphQuery,
 } from "../../api/graphql";
+import { lensLabel, lensTitle } from "../../lenses";
 import { formatShape } from "../../specs";
 import { datasetRegistrations } from "../coordinates/registrations";
 
@@ -59,14 +62,22 @@ export const useDatasetWorlds = (dataset: PageDataset) => {
  * Where the new scene goes is the caller's decision, not this control's — the
  * dataset page renders scenes itself, so it selects the new one in place rather
  * than being navigated away from the dataset it just staged.
+ *
+ * With a `lens`, the scene is of THAT selection: the same choice of space, but
+ * the layers read the cut rather than the whole array. That needs its own
+ * mutation — staging a space draws whatever lives in it, and what lives behind
+ * a cut's space is its whole dataset.
  */
 export const CreateSceneControl = ({
   dataset,
+  lens,
   size = "default",
   variant = "default",
   onCreated,
 }: {
   dataset: PageDataset;
+  /** The lens to stage. Absent only in the embedded dataset viewer. */
+  lens?: DetailLensFragment;
   size?: "default" | "sm";
   /** "outline" for the header, where this is a secondary way to add a scene. */
   variant?: "default" | "outline";
@@ -80,7 +91,7 @@ export const CreateSceneControl = ({
   const worlds = useDatasetWorlds(dataset);
   const grid = dataset.intrinsicSystem;
 
-  const [createScene, { loading }] = useCreateSceneFromCoordinateSystemMutation({
+  const [createScene, { loading: stagingDataset }] = useCreateSceneFromCoordinateSystemMutation({
     // The new scene is one of the dataset's own `scenes` now, and that list is
     // what the switcher reads; awaited so `onCreated` never names a scene the
     // caller cannot find yet.
@@ -96,15 +107,36 @@ export const CreateSceneControl = ({
   // Only when the dataset nominates nothing yet: staging a second scene is not a
   // claim that it should replace the picture someone already chose. Changing an
   // existing nomination is what the title overlay's "Make default" is for.
+  //
+  // A lens needs none of that from here: the server nominates the first scene
+  // staged from a lens for that lens, and leaves an existing nomination alone.
+  const [createLensScene, { loading: stagingLens }] = useCreateSceneFromLensMutation({
+    refetchQueries: ["GetLens", "GetArrayDataset"],
+    awaitRefetchQueries: true,
+    onCompleted: (result) => onCreated(result.createSceneFromLens.id),
+  });
+  const loading = stagingDataset || stagingLens;
+
   const stage = (coordinateSystem: string) =>
-    createScene({
-      variables: {
-        input: {
-          coordinateSystem,
-          defaultFor: dataset.defaultScene ? undefined : [dataset.id],
-        },
-      },
-    });
+    lens
+      ? createLensScene({
+          variables: {
+            input: {
+              lens: lens.id,
+              // The grid is the server's default world for a lens; naming it
+              // would say nothing.
+              world: coordinateSystem === grid?.id ? undefined : coordinateSystem,
+            },
+          },
+        })
+      : createScene({
+          variables: {
+            input: {
+              coordinateSystem,
+              defaultFor: dataset.defaultScene ? undefined : [dataset.id],
+            },
+          },
+        });
 
   const label = loading ? "Creating scene…" : "Create scene";
 
@@ -163,9 +195,12 @@ export const CreateSceneControl = ({
  */
 export const DatasetBackdrop = ({
   dataset,
+  lens,
   onSceneCreated,
 }: {
   dataset: PageDataset;
+  /** The lens the page is about. Absent only in the embedded dataset viewer. */
+  lens?: DetailLensFragment;
   onSceneCreated: (sceneId: string) => void;
 }) => {
   const worlds = useDatasetWorlds(dataset);
@@ -173,13 +208,17 @@ export const DatasetBackdrop = ({
 
   // The same "64z 2048y 2048x" the title overlay uses — one dataset should not
   // read two ways depending on whether it has a scene yet.
-  const dimensions = formatShape(dataset.axisNames, dataset.shape);
+  const dimensions = lens
+    ? lensLabel(lens)
+    : formatShape(dataset.axisNames, dataset.shape);
 
   return (
     <div className="flex h-full w-full items-center justify-center p-6">
       <div className="flex w-full max-w-md flex-col items-center gap-4 text-center">
         <div className="flex flex-col items-center gap-2">
-          <h2 className="text-lg font-semibold">{dataset.name}</h2>
+          <h2 className="text-lg font-semibold">
+            {lens ? lensTitle(lens) : dataset.name}
+          </h2>
           <div className="font-mono text-xs text-muted-foreground">{dimensions}</div>
           <div className="flex flex-wrap justify-center gap-1.5">
             {dataset.multiscale && (
@@ -202,11 +241,12 @@ export const DatasetBackdrop = ({
         </div>
 
         <p className="text-sm text-muted-foreground">
-          Not rendered in any scene yet. A scene composes it into a world, which
-          is what the viewer draws.
+          {lens && lens.slices.length > 0
+            ? "This lens is not rendered in any scene yet. A scene of it draws just this part of the dataset, where it was cut from."
+            : "Not rendered in any scene yet. A scene composes it into a world, which is what the viewer draws."}
         </p>
 
-        <CreateSceneControl dataset={dataset} onCreated={onSceneCreated} />
+        <CreateSceneControl dataset={dataset} lens={lens} onCreated={onSceneCreated} />
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { zarrTransportStats } from "@/core/data/zarr/runner/index";
 import type { Vec3 } from "../../../platform/coords/levelGeometry";
 import { coldOpenTimeline } from "../../../platform/perf/coldOpenTimeline";
 import { parseNodeKey } from "../octree/nodeAddress";
@@ -58,6 +59,11 @@ export function buildResidencyDebugReport(input: ResidencyDebugInput): Record<st
   for (const pool of pools.values()) atlasBytesTotal += pool.atlas.byteLength;
   return {
     stats: { ...stats, chunkCacheBytes: input.chunkCacheBytes },
+    /** How the store is being reached. `protocol: "http/1.1"` means at most
+     * six requests per origin are on the wire however many were started —
+     * the first thing to read when loading looks sequential. Process-wide,
+     * ranged (sharded) reads only. */
+    transport: { ...zarrTransportStats },
     /** Time-to-first-voxel decomposition for THIS scene open. The only
      * instrumentation that can see the cold open — perfMonitor only arms
      * once the scene is already up. See coldOpenTimeline. */

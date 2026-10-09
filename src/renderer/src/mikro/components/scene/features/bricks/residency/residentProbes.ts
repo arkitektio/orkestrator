@@ -130,7 +130,7 @@ export function sampleChunkCacheSync(
             ? cz
             : d === intensityPos
               ? channelChunk
-              : pool.fixedChunkCoords[d];
+              : pool.fixedChunkCoords[levelIndex][d];
   }
 
   const chunk: Chunk<DataType> | null = chunks.cachedChunkSync(level.storeId, coords, getArray);
@@ -147,7 +147,7 @@ export function sampleChunkCacheSync(
             ? oz
             : d === intensityPos
               ? channel % channelsPerChunk
-              : pool.fixedOffsets[d];
+              : pool.fixedOffsets[levelIndex][d];
     index += offset * (chunk.stride[d] ?? 0);
   }
   const value = (chunk.data as ArrayLike<number | bigint>)[index];
@@ -202,7 +202,7 @@ export async function readExactVoxel(
         if (d === yPos) return spatialChunk[1];
         if (d === zPos) return spatialChunk[2];
         if (d === intensityPos) return channelChunk;
-        return pool.fixedChunkCoords[d];
+        return pool.fixedChunkCoords[0][d];
       });
       const chunk = await fetchChunk(level.storeId, chunkCoords);
       for (const channel of channels) {
@@ -216,7 +216,7 @@ export async function readExactVoxel(
                   ? spatialOffset[2]
                   : d === intensityPos
                     ? channel % channelsPerChunk
-                    : pool.fixedOffsets[d];
+                    : pool.fixedOffsets[0][d];
           return acc + offset * (chunk.stride[d] ?? 0);
         }, 0);
         values[channel] = Number(chunk.data[index]);

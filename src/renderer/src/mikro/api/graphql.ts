@@ -640,11 +640,15 @@ export type ArrayDataset = {
   exports: Array<FileLink>;
   /** The folder this dataset is filed in. Organisational only: it says where a user keeps this dataset, never where the data sits in space -- that is `intrinsicSystem` and the edges out of it */
   folder?: Maybe<Folder>;
+  /** The lens that selects this whole dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and the whole array is meant. Every dataset is created with one. The oldest unsliced lens, so the answer is stable; null only for a dataset with no pixel grid to select from -- reading never mints one */
+  fullLens?: Maybe<Lens>;
   id: Scalars['ID']['output'];
   /** The dataset's INTRINSIC coordinate system: its level-0 pixel grid, the space every pyramid level and lens maps into and the space ROIs resolve against. Structural and unit-independent */
   intrinsicSystem?: Maybe<CoordinateSystem>;
   /** The most recent picture of this dataset's `defaultScene`, for previewing it without loading the array. Null when no default scene is set. **A picture of the scene, not of the dataset**: snapshots are taken of compositions, so if the nominated scene stages other data too, the tile shows that data as well. This used to answer instead from *sole occupancy* -- the newest picture of a scene whose only anchored dataset was this one -- which guaranteed the picture showed nothing else but returned null for every dataset staged alongside another, and cost a five-query graph walk per request to decide */
   latestSnapshot?: Maybe<SceneSnapshot>;
+  /** The lenses over this dataset, oldest first. `sliced: true` keeps the ones that cut something out -- the crops and sub-volumes people work on; `sliced: false` the ones that select everything. A dataset usually carries several of the latter and they are interchangeable (each is the dataset, looked at whole), so a list for people wants `sliced: true` and `fullLens` beside it */
+  lenses: Array<Lens>;
   /** Whether this dataset carries a resolution pyramid. Derived: true when it has more than one level */
   multiscale: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
@@ -658,7 +662,7 @@ export type ArrayDataset = {
   shape: Array<Scalars['Int']['output']>;
   /** The files this dataset was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete */
   sourceFiles: Array<FileLink>;
-  /** What this dataset structurally is, materialized at creation from the axes of its intrinsic coordinate system and its level-0 shape: the one spatial spec its SPACE axes denote, then a modifier per acquisition axis. An axis counts only when it has more than one position. A 3D timelapse is [VOLUME, TIMESERIES, MULTICHANNEL]. A stack stored with a single plane is an IMAGE, and a single frame is not a TIMESERIES; `hasAxisTypes` is the filter for whether an axis is declared at all. Empty while the intrinsic system does not exist yet */
+  /** What this dataset structurally is, materialized at creation from the axes of its intrinsic coordinate system and its level-0 shape: the one spatial spec its SPACE axes denote, then a modifier per non-spatial axis type: the acquisition ones (TIMESERIES, MULTICHANNEL, SPECTRAL, FLIM), then the ones that say what the values or positions are (DISPLACEMENT_FIELD, COORDINATE_FIELD, INDEXED). An axis counts only when it has more than one position. A 3D timelapse is [VOLUME, TIMESERIES, MULTICHANNEL]; a 2D flow field is [IMAGE, DISPLACEMENT_FIELD]. Last comes TRACE, for a dataset that is a curve along one measured axis: a decay is [SCALAR, FLIM, TRACE], a line profile per channel [PROFILE, MULTICHANNEL, TRACE]. A stack stored with a single plane is an IMAGE, and a single frame is not a TIMESERIES; `hasAxisTypes` is the filter for whether an axis is declared at all. Empty while the intrinsic system does not exist yet */
   spec: Array<ArrayDatasetSpec>;
 };
 
@@ -681,6 +685,12 @@ export type ArrayDatasetDataArraysArgs = {
 /** A multi-dimensional array dataset. Its dimensions and their types live on the axes of its INTRINSIC (pixel grid) coordinate system; physical units live on the physical spaces it has edges into; its pyramid levels are DataArrays, each mapping into its grid */
 export type ArrayDatasetExportsArgs = {
   filters?: InputMaybe<FileLinkFilter>;
+};
+
+
+/** A multi-dimensional array dataset. Its dimensions and their types live on the axes of its INTRINSIC (pixel grid) coordinate system; physical units live on the physical spaces it has edges into; its pyramid levels are DataArrays, each mapping into its grid */
+export type ArrayDatasetLensesArgs = {
+  sliced?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -735,7 +745,7 @@ export type ArrayDatasetFilter = {
   folder?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by a list of folder IDs */
   folders?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Filter to datasets whose intrinsic coordinate system carries every one of these axis types, e.g. [TIME, CHANNEL]. The raw form of `spec`, for the types no spec names: COORDINATE, DISPLACEMENT, INDEX */
+  /** Filter to datasets whose intrinsic coordinate system carries every one of these axis types, e.g. [TIME, CHANNEL]. The raw form of `spec`: it asks whether an axis is declared at all, where a spec counts it only when it has more than one position */
   hasAxisTypes?: InputMaybe<Array<AxisType>>;
   /** Filter by whether the dataset nominates a scene to open. False finds the ones with no thumbnail -- what `backfill_default_scenes` could not seed, and the work remaining before that command can be deleted */
   hasDefaultScene?: InputMaybe<Scalars['Boolean']['input']>;
@@ -761,7 +771,7 @@ export type ArrayDatasetFilter = {
   sourceFile?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the datasets converted from one series of a file. Pair it with `sourceFile`; alone it matches that series identifier in any file */
   sourceSeriesIdentifier?: InputMaybe<Scalars['String']['input']>;
-  /** Filter to datasets satisfying every one of these specs, e.g. [VOLUME, TIMESERIES] for 3D timelapses. Materialized at creation from the axes of the intrinsic coordinate system and the level-0 shape; an axis counts only when it has more than one position, so a stack of one plane is an IMAGE and a single frame is not a TIMESERIES (use `hasAxisTypes` to ask whether an axis is declared at all). A dataset carries one spatial spec (by how many such SPACE axes it has) plus a modifier per such acquisition axis, so two spatial specs together match nothing */
+  /** Filter to datasets satisfying every one of these specs, e.g. [VOLUME, TIMESERIES] for 3D timelapses. Materialized at creation from the axes of the intrinsic coordinate system and the level-0 shape; an axis counts only when it has more than one position, so a stack of one plane is an IMAGE and a single frame is not a TIMESERIES (use `hasAxisTypes` to ask whether an axis is declared at all). A dataset carries one spatial spec (by how many such SPACE axes it has) plus a modifier per non-spatial axis type it has more than one position along (TIMESERIES, MULTICHANNEL, SPECTRAL, FLIM, DISPLACEMENT_FIELD, COORDINATE_FIELD, INDEXED), and TRACE when it is a curve along one measured axis -- `[TRACE]` finds what a chart can draw whole. Two spatial specs together match nothing */
   spec?: InputMaybe<Array<ArrayDatasetSpec>>;
 };
 
@@ -770,14 +780,20 @@ export type ArrayDatasetOrder =
   |  { createdAt?: never; id: Ordering; name?: never; }
   |  { createdAt?: never; id?: never; name: Ordering; };
 
-/** What a dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation. Specs stack: a 3D timelapse is VOLUME, TIMESERIES and MULTICHANNEL at once. Exactly one spatial member (SCALAR/PROFILE/IMAGE/VOLUME/HYPERVOLUME) ever holds. */
+/** What a dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation. Specs stack: a 3D timelapse is VOLUME, TIMESERIES and MULTICHANNEL at once. Exactly one spatial member (SCALAR/PROFILE/IMAGE/VOLUME/HYPERVOLUME) ever holds; the others are modifiers: one per non-spatial axis type the dataset has more than one position along, and TRACE for a dataset that is a curve along one measured axis. */
 export enum ArrayDatasetSpec {
+  /** Carries a COORDINATE axis of more than one component: the values are absolute positions -- a lookup map, the field of a FIELD edge. A scalar-valued array declares no such axis and is not one. */
+  CoordinateField = 'COORDINATE_FIELD',
+  /** Carries a DISPLACEMENT axis of more than one component: the values are per-point offsets -- a flow field, a drift map, a deformation. */
+  DisplacementField = 'DISPLACEMENT_FIELD',
   /** Carries a MICROTIME axis of more than one bin: fluorescence-lifetime arrival-time bins. */
   Flim = 'FLIM',
   /** Four or more spatial axes with more than one position each. */
   Hypervolume = 'HYPERVOLUME',
   /** Two spatial axes with more than one position each: a plane. The ordinary micrograph. */
   Image = 'IMAGE',
+  /** Carries an INDEX axis of more than one position: an axis that enumerates -- objects, rows -- rather than measures. A stack of per-object crops, a per-object measurement. */
+  Indexed = 'INDEXED',
   /** Carries a CHANNEL axis of more than one channel. A one-channel axis does not count. */
   Multichannel = 'MULTICHANNEL',
   /** One spatial axis with more than one position -- a line profile, a depth trace. */
@@ -788,6 +804,8 @@ export enum ArrayDatasetSpec {
   Spectral = 'SPECTRAL',
   /** Carries a TIME axis of more than one frame -- a timelapse. A single-frame time axis does not count. */
   Timeseries = 'TIMESERIES',
+  /** A curve: exactly one measured axis (SPACE, TIME, MICROTIME or SPECTRUM) with more than one position, and beside it at most one enumerating axis (CHANNEL or INDEX), one line per position. A line profile, a time trace, a decay, a spectrum -- what a chart draws whole as a TRACE layer. An image is not one, though a row of it is: that is a lens, and a spec describes the whole dataset. Says nothing about placement: whether a given chart can draw it depends on what is registered. */
+  Trace = 'TRACE',
   /** Three spatial axes with more than one position each: a stack. A z axis of a single plane does not make one -- that dataset is an IMAGE. */
   Volume = 'VOLUME'
 }
@@ -881,6 +899,12 @@ export type AttributePlan = {
   path: Array<PlacementStep>;
   /** Where the id comes from: an `ArraySample` to read at the (path-mapped) point, or a `MeshSample`/`NetworkSample` whose id the client already picked */
   sample: SampleStep;
+};
+
+/** Show a coordinate system without choosing how. A space with exactly one metric, unit-carrying axis becomes a chart; any other space with a time or space axis becomes a scene. Either is bootstrapped from what already resides in the space, with that kind's default policy, and authors no edges. For a say in the kind or the policy, use `createChartFromCoordinateSystem` or `createSceneFromCoordinateSystem` */
+export type AutoVisualizeInput = {
+  coordinateSystem: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** One named, typed dimension of a coordinate system. Its `order` is its index into the array shape */
@@ -1295,7 +1319,7 @@ export type ChannelSourceNode = LayerRenderNode & {
 };
 
 /** A composition of data laid out along one metric axis, with values read off it. The second kind of composition beside a scene: a scene is a place, a chart is an axis. It names data by id and owns none of it, and it carries no unit of its own -- the unit is its world axis's */
-export type Chart = {
+export type Chart = Visualization & {
   __typename?: 'Chart';
   /** The one axis this chart is laid out along: its name, its metric type and its unit. The world's only axis, repeated here so a client drawing the chart need not unwrap a list of one */
   axis: Axis;
@@ -1776,6 +1800,8 @@ export type CoordinateSystem = {
   scenes: Array<Scene>;
   /** How many times the transformation chain from this system down to its dataset's intrinsic pixel space has been written, as it stands now. Compare it with an annotation's `createdWithTransforms` to detect staleness: the two agreeing means the geometry was authored against the chain still in force, and them differing means an edge on the path has been written since. Only the comparison is meaningful -- the number counts history rows, so it also moves when an edge is merely renamed, which errs towards recomputing a box that did not need it rather than trusting one that did. 0 for a system that IS an intrinsic space, or one with no path down to pixels (a unit-carrying or shared space -- its coordinates are meaningful on their own). Provenance only: it never takes part in resolving a coordinate */
   transformVersion: Scalars['Int']['output'];
+  /** Everything laid out over this system as its world, of every kind: its scenes, then its charts. The inverse of `Visualization.worldCoordinateSystem`. Unpaginated -- for a filtered or paged list of one kind, ask `scenes` here or the top-level `charts` */
+  visualizations: Array<Visualization>;
 };
 
 
@@ -2022,6 +2048,7 @@ export type CreateLayerInput = {
 /** Input type for creating an image from an array-like object */
 export type CreateLensInput = {
   dataset: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
   slices: Array<SliceInput>;
 };
 
@@ -2182,6 +2209,15 @@ export type CreateSceneFromCoordinateSystemInput = {
   defaultFor?: InputMaybe<Array<Scalars['ID']['input']>>;
   name?: InputMaybe<Scalars['String']['input']>;
   policy?: ScenePolicyInput;
+};
+
+/** Bootstrap a renderable scene showing one lens: its selection and nothing else of its dataset, one layer per channel exactly as createSceneFromCoordinateSystem draws a whole dataset. This is how a crop is staged -- staging a sliced lens' *space* draws its whole dataset again, because which lens the layers read is not a fact of the space */
+export type CreateSceneFromLensInput = {
+  kind?: InputMaybe<BootstrapLayerKind>;
+  lens: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  nominate?: Scalars['Boolean']['input'];
+  world?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** Input type for creating a scene over a world coordinate system: an adopted existing system (a shared space, a dataset's intrinsic grid, a physical space), or one created for it */
@@ -4162,17 +4198,23 @@ export type Lens = {
   /** The coordinate system the lens' selection is expressed in. A sliced lens owns one (the space its slices cut out, with the derived edge recording the shift); an unsliced lens selects everything, so this resolves to the dataset's INTRINSIC system */
   coordinateSystem?: Maybe<CoordinateSystem>;
   dataset: ArrayDataset;
+  /** The scene to open for this lens. A sliced lens' own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its dataset's while it has none; an unsliced lens always answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree. A nomination, not a derivation -- see `scenes` */
+  defaultScene?: Maybe<Scene>;
   /** The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived */
   derivedDatasets: Array<ArrayDataset>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
-  /** The most recent picture of this lens' dataset's `defaultScene` -- the tile to put on this lens. The same picture the dataset itself reports: the nomination is a fact about the dataset, so every lens over one dataset answers alike. Null when the dataset nominates no scene */
+  /** The most recent picture of this lens' `defaultScene` -- the tile to put on this lens. A sliced lens that nominates a scene shows that one; one that nominates nothing, and every unsliced lens, shows the dataset's, so a crop nobody has staged yet still has a picture. Null when neither nominates a scene */
   latestSnapshot?: Maybe<SceneSnapshot>;
+  /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the slices -- or 'the whole array' -- in its place */
+  name?: Maybe<Scalars['String']['output']>;
   /** Everything needed to reduce one axis of this lens to a phasor: the bin count and width, the period the transform runs over, the laser rate, the instrument-response correction and the persisted distribution. Null when the lens has no MICROTIME or SPECTRUM axis. Derived -- none of it is stored on the lens, and a phasor render node references it rather than copying it, so two layers over one dataset cannot disagree about the instrument */
   phasor?: Maybe<PhasorContext>;
   /** Which axis of the data source maps to screen x, y, z, time and intensity. Derived from the axis types: spatial axes are in array order, so the last is x */
   renderAxes: RenderAxes;
+  /** The scenes this lens is rendered in: those with a layer over it. Derived, never stored, exactly as `ArrayDataset.scenes` is. An unsliced lens answers for every unsliced lens of its dataset -- they are one selection, the whole array, and which of them a layer happens to name is not a fact about the picture. Scenes that show only a *crop* of the dataset are not among them: ask the dataset's `scenes` for those too */
+  scenes: Array<Scene>;
   /** The shape this lens' slices cut out of its dataset */
   shape: Array<Scalars['Int']['output']>;
   slices: Array<Slice>;
@@ -4246,6 +4288,10 @@ export type LensFilter = {
   overlapsAnnotation?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to lenses placeable into a coordinate system: those whose space reaches it across steps that compose into one affine map, walking the transformation edges. Takes a *space*, not a scene -- pass `scene.worldCoordinateSystem.id` to ask it of a scene. `derivedOnly` and `asLayer` narrow the answer for a particular picker; with neither, this is the whole set layer creation would accept */
   placeableIn?: InputMaybe<LensPlaceableFilter>;
+  /** Search by the lens' own name or, since most lenses have none and are known by their dataset's, by the name of the dataset it selects from (case-insensitive substring) */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Filter by whether the lens cuts anything out of its dataset. True keeps the crops and sub-volumes; false the lenses that select everything, of which a dataset usually carries several interchangeable ones -- a list meant for people wants true */
+  sliced?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 /** The kind of layer a lens could source, for narrowing a picker: the members of `LayerKind` that draw array data. Input-only, and deliberately not `LayerKind` itself -- an annotation, point, track or mesh layer sources from a collection or a table, never from a lens, so four of that enum's members could only ever answer 'no'. */
@@ -4861,6 +4907,8 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Attach unstructured metadata to a file */
   attachUnstructuredMeta: UnstructuredMeta;
+  /** Show a coordinate system as whichever composition fits it: a chart over a space with exactly one metric, unit-carrying axis, a scene over any other space with a time or space axis. Bootstrapped from what already resides in the space; authors no edges */
+  autoVisualize: Visualization;
   /** Delete every registration INTO a shared space in one call, returning the deleted edge ids. The space, the scenes over it (their layers drop to UNREGISTERED) and the space's own claims into wider spaces all survive. Guarded by the space's creator: clearing a space is the space-owner's act */
   clearCoordinateSystem: Array<Scalars['ID']['output']>;
   /** Delete every layer of a scene, keeping the scene itself. A pure view-state reset: no coordinate system, registration or dataset is touched, and other scenes over the same space never notice */
@@ -4919,6 +4967,8 @@ export type Mutation = {
   createScene: Scene;
   /** Bootstrap a renderable scene over an existing coordinate system: a shared space (its registered sources become layers, up to the policy's nchildren) or an owned system such as a dataset's intrinsic grid or a physical space (the container's own data becomes the layer). The scene adopts the system as its world; no edges are authored. This is how a dataset is staged -- pass `intrinsicSystem` to render in pixels, or a physical space it is registered into to render at physical scale */
   createSceneFromCoordinateSystem: Scene;
+  /** Bootstrap a renderable scene showing one lens -- a crop, a sub-volume, or the whole array -- with one layer per channel over that lens. Composes in the dataset's intrinsic grid unless `world` names another space the lens reaches */
+  createSceneFromLens: Scene;
   /** Adopt an uploaded media file as a pre-rendered picture of a scene */
   createSceneSnapshot: SceneSnapshot;
   /** Draw a table as a series in a chart: one numeric column as the value, against the coordinate column the graph lays along the chart's axis */
@@ -5075,6 +5125,8 @@ export type Mutation = {
   revertFolder: Folder;
   /** Nominate the scene to open for a dataset, and take its thumbnail from. Null clears it */
   setDefaultScene: ArrayDataset;
+  /** Nominate the scene to open for a lens, and take its thumbnail from. Null clears it. On an unsliced lens this writes its dataset's nomination: the lens is the dataset, looked at whole */
+  setLensDefaultScene: Lens;
   /** Delete a file link */
   unlinkFile: Scalars['ID']['output'];
   /** Re-author a camera tour: rename it, or replace its stops */
@@ -5097,6 +5149,8 @@ export type Mutation = {
   updateLabelLayer: LabelLayer;
   /** Update a general image layer's lens, scene, compositing settings and render graph. Refuses every other kind, naming the mutation that does write its settings -- a layer's kind is fixed for the life of the row */
   updateLayer: ImageLayer;
+  /** Rename a lens, or clear its name. What it selects cannot change: a different selection is a different lens */
+  updateLens: Lens;
   /** Retune how a mesh layer is drawn: its material, wireframe, compositing, and which table column colours its objects. A patch -- an omitted field keeps its value */
   updateMeshLayer: MeshLayer;
   /** Retune how a network layer is drawn: its colour, its widths, whether direction and nodes are drawn, and the compositing it takes part in. A patch -- an omitted field keeps its value */
@@ -5124,6 +5178,11 @@ export type Mutation = {
 
 export type MutationAttachUnstructuredMetaArgs = {
   input: UnstructuredMetaInput;
+};
+
+
+export type MutationAutoVisualizeArgs = {
+  input: AutoVisualizeInput;
 };
 
 
@@ -5269,6 +5328,11 @@ export type MutationCreateSceneArgs = {
 
 export type MutationCreateSceneFromCoordinateSystemArgs = {
   input: CreateSceneFromCoordinateSystemInput;
+};
+
+
+export type MutationCreateSceneFromLensArgs = {
+  input: CreateSceneFromLensInput;
 };
 
 
@@ -5657,6 +5721,11 @@ export type MutationSetDefaultSceneArgs = {
 };
 
 
+export type MutationSetLensDefaultSceneArgs = {
+  input: SetLensDefaultSceneInput;
+};
+
+
 export type MutationUnlinkFileArgs = {
   input: UnlinkFileInput;
 };
@@ -5709,6 +5778,11 @@ export type MutationUpdateLabelLayerArgs = {
 
 export type MutationUpdateLayerArgs = {
   input: UpdateLayerInput;
+};
+
+
+export type MutationUpdateLensArgs = {
+  input: UpdateLensInput;
 };
 
 
@@ -7746,7 +7820,7 @@ export type ScaleTransformationProvenanceEntriesArgs = {
 };
 
 /** A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
-export type Scene = {
+export type Scene = Visualization & {
   __typename?: 'Scene';
   /** The named camera tours through this composition */
   animations: Array<Animation>;
@@ -8045,6 +8119,14 @@ export type SeriesChartLayerPlacementValidityArgs = {
 export type SetDefaultSceneInput = {
   /** The dataset to nominate a scene for */
   dataset: Scalars['ID']['input'];
+  /** The scene to nominate, or null to clear the nomination */
+  scene?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** Nominate the scene to open for a lens, and take its thumbnail from */
+export type SetLensDefaultSceneInput = {
+  /** The lens to nominate a scene for */
+  lens: Scalars['ID']['input'];
   /** The scene to nominate, or null to clear the nomination */
   scene?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -9192,6 +9274,14 @@ export type UpdateLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+/** Input for renaming a lens -- the whole of what is editable about one */
+export type UpdateLensInput = {
+  /** The ID of the lens to update */
+  id: Scalars['ID']['input'];
+  /** The new name, or null (or blank) to clear it */
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
 /** Retune how a mesh layer is drawn. A patch: an OMITTED field keeps its current value, so switching the colouring cannot silently drop the material or the wireframe -- while an explicit `null` CLEARS the fields whose null means something. The collection and the scene are not editable -- a layer renders what it was created to render */
 export type UpdateMeshLayerInput = {
   /** Which entry of `colorBys` is drawn, as an index into it. Null draws the flat `materialColor` -- what having no colouring has always meant. Pass `null` to publish the picker and draw none of it; omit to leave the choice alone. Re-checked against the picker being written, never the stored one. If a new `colorBys` no longer holds the entry that was active, the layer falls back to `materialColor` -- name `activeColorBy` in the same call to point at another entry instead */
@@ -9509,6 +9599,16 @@ export type VectorLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
+/** A composition laid out over a coordinate system: a scene (a place) or a chart (one metric axis). It adopts the space as its world, names data by id and owns none of it. Only what every kind has is here -- the layers differ per kind, so select them on the concrete type */
+export type Visualization = {
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  /** The space this visualization is laid out over. Never owned by it: several can share the space, it outlives each of them, and deleting one never deletes it */
+  worldCoordinateSystem: CoordinateSystem;
+};
+
 /** A retarder: a fraction of a wave, at an angle */
 export type WaveplateElement = OpticalElement & {
   __typename?: 'WaveplateElement';
@@ -9711,7 +9811,7 @@ type AddLayerCandidate_ArrayDataset_Fragment = (
 
 type AddLayerCandidate_DataArray_Fragment = { __typename: 'DataArray', id: string, level: number, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null };
 
-type AddLayerCandidate_Lens_Fragment = { __typename: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
+type AddLayerCandidate_Lens_Fragment = { __typename: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, lensName?: string | null, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
   )>, lensSpace?: { __typename?: 'CoordinateSystem', id: string } | null, renderAxes: { __typename?: 'RenderAxes', x: string, y: string, z?: string | null, intensity?: string | null, vector?: string | null, phasor?: string | null }, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null, dataset: (
@@ -10014,7 +10114,7 @@ export type DataArrayFragment = { __typename?: 'DataArray', id: string, level: n
 export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: (
     { __typename?: 'SceneSnapshot' }
     & SceneSnapshotFragment
-  ) | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null };
+  ) | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, fullLens?: { __typename?: 'Lens', id: string } | null };
 
 export type ArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, folder?: { __typename?: 'Folder', id: string, name: string } | null, intrinsicSystem?: (
     { __typename?: 'CoordinateSystem' }
@@ -10023,6 +10123,11 @@ export type ArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: a
     { __typename?: 'DataArray' }
     & DataArrayFragment
   )> };
+
+export type DerivedDatasetFragment = (
+  { __typename?: 'ArrayDataset', derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null }> }
+  & ListArrayDatasetFragment
+);
 
 export type AttributePlanColumnFragment = { __typename?: 'Column', id: string, name: string, longName?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, references?: { __typename?: 'TableDataset', id: string, name: string, store: (
       { __typename?: 'ParquetStore' }
@@ -10817,7 +10922,7 @@ export type DimSliceFragment = { __typename?: 'Slice', axis: string, start?: num
 
 export type PhasorContextFragment = { __typename?: 'PhasorContext', axis: string, axisType: AxisType, bins: number, binWidth?: GenericQuantity | null, harmonic: number, laserFrequency?: Frequency | null, window?: GenericQuantity | null, calibration?: { __typename?: 'PhasorCalibration', id: string, harmonic: number, phaseOffset?: number | null, modulationFactor?: number | null, reference?: string | null } | null, phasorHistogram?: { __typename?: 'PhasorHistogram', id: string, bins: number, counts: Array<number>, gMin: number, gMax: number, sMin: number, sMax: number, profile: Array<number>, total?: number | null, calibrated: boolean } | null };
 
-export type SceneLensFragment = { __typename?: 'Lens', descriptors: any, id: string, shape: Array<number>, axisNames: Array<string>, renderAxes: { __typename?: 'RenderAxes', x: string, y: string, z?: string | null, t?: string | null, intensity?: string | null, phasor?: string | null }, phasor?: (
+export type SceneLensFragment = { __typename?: 'Lens', descriptors: any, id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, renderAxes: { __typename?: 'RenderAxes', x: string, y: string, z?: string | null, t?: string | null, intensity?: string | null, phasor?: string | null }, phasor?: (
     { __typename?: 'PhasorContext' }
     & PhasorContextFragment
   ) | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
@@ -10891,7 +10996,7 @@ export type SceneLensFragment = { __typename?: 'Lens', descriptors: any, id: str
         & LightpathGraphFragment
       ) } | null }> };
 
-export type DetailLensFragment = { __typename?: 'Lens', descriptors: any, id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
+export type DetailLensFragment = { __typename?: 'Lens', descriptors: any, id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
   )>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
@@ -10924,12 +11029,24 @@ export type DetailLensFragment = { __typename?: 'Lens', descriptors: any, id: st
   ) | (
     { __typename?: 'UnmappableTransformation' }
     & Transformation_UnmappableTransformation_Fragment
-  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
+  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, fullLens?: { __typename?: 'Lens', id: string } | null }, scenes: Array<(
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  )>, defaultScene?: (
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  ) | null, derivedDatasets: Array<(
+    { __typename?: 'ArrayDataset' }
+    & DerivedDatasetFragment
+  )> };
 
-export type ListLensFragment = { __typename?: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
+export type ListLensFragment = { __typename?: 'Lens', id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
-  )>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
+  )>, latestSnapshot?: (
+    { __typename?: 'SceneSnapshot' }
+    & SceneSnapshotFragment
+  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
 
 type OpticalElement_ApertureElement_Fragment = { __typename?: 'ApertureElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
 
@@ -11984,6 +12101,31 @@ export type CreateLensMutation = { __typename?: 'Mutation', createLens: (
     & SceneLensFragment
   ) };
 
+export type CreateListLensMutationVariables = Exact<{
+  input: CreateLensInput;
+}>;
+
+
+export type CreateListLensMutation = { __typename?: 'Mutation', createLens: (
+    { __typename?: 'Lens' }
+    & ListLensFragment
+  ) };
+
+export type DeleteLensMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteLensMutation = { __typename?: 'Mutation', deleteLens: string };
+
+export type UpdateLensMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type UpdateLensMutation = { __typename?: 'Mutation', updateLens: { __typename?: 'Lens', id: string, name?: string | null } };
+
 export type CreateMeshCollectionMutationVariables = Exact<{
   input: CreateMeshCollectionInput;
 }>;
@@ -12045,6 +12187,33 @@ export type SetDefaultSceneMutation = { __typename?: 'Mutation', setDefaultScene
       { __typename?: 'SceneSnapshot' }
       & SceneSnapshotFragment
     ) | null } };
+
+export type CreateSceneFromLensMutationVariables = Exact<{
+  input: CreateSceneFromLensInput;
+}>;
+
+
+export type CreateSceneFromLensMutation = { __typename?: 'Mutation', createSceneFromLens: (
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  ) };
+
+export type SetLensDefaultSceneMutationVariables = Exact<{
+  lens: Scalars['ID']['input'];
+  scene?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type SetLensDefaultSceneMutation = { __typename?: 'Mutation', setLensDefaultScene: { __typename?: 'Lens', id: string, defaultScene?: (
+      { __typename?: 'Scene' }
+      & ListSceneFragment
+    ) | null, latestSnapshot?: (
+      { __typename?: 'SceneSnapshot' }
+      & SceneSnapshotFragment
+    ) | null, dataset: { __typename?: 'ArrayDataset', id: string, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, latestSnapshot?: (
+        { __typename?: 'SceneSnapshot' }
+        & SceneSnapshotFragment
+      ) | null } } };
 
 export type CreateTransformationMutationVariables = Exact<{
   input: CreateTransformationInput;
@@ -12830,7 +12999,13 @@ export type GetArrayDatasetQuery = { __typename?: 'Query', arrayDataset: (
     )>, defaultScene?: (
       { __typename?: 'Scene' }
       & ListSceneFragment
-    ) | null }
+    ) | null, fullLens?: (
+      { __typename?: 'Lens' }
+      & ListLensFragment
+    ) | null, lenses: Array<(
+      { __typename?: 'Lens' }
+      & ListLensFragment
+    )> }
     & ArrayDatasetFragment
   ) };
 
@@ -12871,9 +13046,9 @@ export type GetArrayDatasetDerivedQuery = { __typename?: 'Query', arrayDataset: 
       { __typename?: 'FileLink' }
       & FileLinkFragment
     )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null }>, derivedDatasets: Array<(
-      { __typename?: 'ArrayDataset', derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string } | null }> }
-      & ListArrayDatasetFragment
-    )> }, lenses: Array<{ __typename?: 'Lens', id: string, axisNames: Array<string>, shape: Array<number>, slices: Array<(
+      { __typename?: 'ArrayDataset' }
+      & DerivedDatasetFragment
+    )> }, lenses: Array<{ __typename?: 'Lens', id: string, name?: string | null, axisNames: Array<string>, shape: Array<number>, slices: Array<(
       { __typename?: 'Slice' }
       & DimSliceFragment
     )>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null }> };
@@ -13499,7 +13674,7 @@ export type ListLensesForDatasetQueryVariables = Exact<{
 }>;
 
 
-export type ListLensesForDatasetQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'Lens', id: string, slices: Array<(
+export type ListLensesForDatasetQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'Lens', id: string, name?: string | null, slices: Array<(
       { __typename?: 'Slice' }
       & DimSliceFragment
     )> }> };
@@ -13961,6 +14136,7 @@ export const AddLayerCandidateFragmentDoc = gql`
   __typename
   ... on Lens {
     id
+    lensName: name
     shape
     axisNames
     slices {
@@ -14459,25 +14635,6 @@ export const DetailAnnotationFragmentDoc = gql`
 }
     ${AnnotationFragmentDoc}
 ${ListSceneFragmentDoc}`;
-export const ListArrayDatasetFragmentDoc = gql`
-    fragment ListArrayDataset on ArrayDataset {
-  descriptors
-  id
-  name
-  description
-  axisNames
-  shape
-  multiscale
-  spec
-  latestSnapshot {
-    ...SceneSnapshot
-  }
-  defaultScene {
-    id
-    name
-  }
-}
-    ${SceneSnapshotFragmentDoc}`;
 export const ListCoordinateSystemFragmentDoc = gql`
     fragment ListCoordinateSystem on CoordinateSystem {
   id
@@ -15365,10 +15522,50 @@ export const FolderFragmentDoc = gql`
     ${ProvenanceEntryFragmentDoc}
 ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}`;
+export const ListArrayDatasetFragmentDoc = gql`
+    fragment ListArrayDataset on ArrayDataset {
+  descriptors
+  id
+  name
+  description
+  axisNames
+  shape
+  multiscale
+  spec
+  latestSnapshot {
+    ...SceneSnapshot
+  }
+  defaultScene {
+    id
+    name
+  }
+  fullLens {
+    id
+  }
+}
+    ${SceneSnapshotFragmentDoc}`;
+export const DerivedDatasetFragmentDoc = gql`
+    fragment DerivedDataset on ArrayDataset {
+  ...ListArrayDataset
+  derivedFrom {
+    id
+    kind
+    valueRelation
+    output {
+      id
+      name
+    }
+    ... on UnmappableTransformation {
+      reason
+    }
+  }
+}
+    ${ListArrayDatasetFragmentDoc}`;
 export const DetailLensFragmentDoc = gql`
     fragment DetailLens on Lens {
   descriptors
   id
+  name
   shape
   axisNames
   slices {
@@ -15386,17 +15583,35 @@ export const DetailLensFragmentDoc = gql`
     name
     axisNames
     shape
+    fullLens {
+      id
+    }
+  }
+  scenes {
+    ...ListScene
+  }
+  defaultScene {
+    ...ListScene
+  }
+  derivedDatasets {
+    ...DerivedDataset
   }
 }
     ${DimSliceFragmentDoc}
-${TransformationFragmentDoc}`;
+${TransformationFragmentDoc}
+${ListSceneFragmentDoc}
+${DerivedDatasetFragmentDoc}`;
 export const ListLensFragmentDoc = gql`
     fragment ListLens on Lens {
   id
+  name
   shape
   axisNames
   slices {
     ...DimSlice
+  }
+  latestSnapshot {
+    ...SceneSnapshot
   }
   dataset {
     id
@@ -15405,7 +15620,8 @@ export const ListLensFragmentDoc = gql`
     shape
   }
 }
-    ${DimSliceFragmentDoc}`;
+    ${DimSliceFragmentDoc}
+${SceneSnapshotFragmentDoc}`;
 export const CcdElementFragmentDoc = gql`
     fragment CCDElement on CCDElement {
   ...OpticalElement
@@ -15487,6 +15703,7 @@ export const SceneLensFragmentDoc = gql`
     fragment SceneLens on Lens {
   descriptors
   id
+  name
   shape
   axisNames
   renderAxes {
@@ -18823,6 +19040,105 @@ export function useCreateLensMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type CreateLensMutationHookResult = ReturnType<typeof useCreateLensMutation>;
 export type CreateLensMutationResult = Apollo.MutationResult<CreateLensMutation>;
 export type CreateLensMutationOptions = Apollo.BaseMutationOptions<CreateLensMutation, CreateLensMutationVariables>;
+export const CreateListLensDocument = gql`
+    mutation CreateListLens($input: CreateLensInput!) {
+  createLens(input: $input) {
+    ...ListLens
+  }
+}
+    ${ListLensFragmentDoc}`;
+export type CreateListLensMutationFn = Apollo.MutationFunction<CreateListLensMutation, CreateListLensMutationVariables>;
+
+/**
+ * __useCreateListLensMutation__
+ *
+ * To run a mutation, you first call `useCreateListLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateListLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createListLensMutation, { data, loading, error }] = useCreateListLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateListLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateListLensMutation, CreateListLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateListLensMutation, CreateListLensMutationVariables>(CreateListLensDocument, options);
+      }
+export type CreateListLensMutationHookResult = ReturnType<typeof useCreateListLensMutation>;
+export type CreateListLensMutationResult = Apollo.MutationResult<CreateListLensMutation>;
+export type CreateListLensMutationOptions = Apollo.BaseMutationOptions<CreateListLensMutation, CreateListLensMutationVariables>;
+export const DeleteLensDocument = gql`
+    mutation DeleteLens($id: ID!) {
+  deleteLens(input: {id: $id})
+}
+    `;
+export type DeleteLensMutationFn = Apollo.MutationFunction<DeleteLensMutation, DeleteLensMutationVariables>;
+
+/**
+ * __useDeleteLensMutation__
+ *
+ * To run a mutation, you first call `useDeleteLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteLensMutation, { data, loading, error }] = useDeleteLensMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteLensMutation, DeleteLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteLensMutation, DeleteLensMutationVariables>(DeleteLensDocument, options);
+      }
+export type DeleteLensMutationHookResult = ReturnType<typeof useDeleteLensMutation>;
+export type DeleteLensMutationResult = Apollo.MutationResult<DeleteLensMutation>;
+export type DeleteLensMutationOptions = Apollo.BaseMutationOptions<DeleteLensMutation, DeleteLensMutationVariables>;
+export const UpdateLensDocument = gql`
+    mutation UpdateLens($id: ID!, $name: String) {
+  updateLens(input: {id: $id, name: $name}) {
+    id
+    name
+  }
+}
+    `;
+export type UpdateLensMutationFn = Apollo.MutationFunction<UpdateLensMutation, UpdateLensMutationVariables>;
+
+/**
+ * __useUpdateLensMutation__
+ *
+ * To run a mutation, you first call `useUpdateLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateLensMutation, { data, loading, error }] = useUpdateLensMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      name: // value for 'name'
+ *   },
+ * });
+ */
+export function useUpdateLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateLensMutation, UpdateLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateLensMutation, UpdateLensMutationVariables>(UpdateLensDocument, options);
+      }
+export type UpdateLensMutationHookResult = ReturnType<typeof useUpdateLensMutation>;
+export type UpdateLensMutationResult = Apollo.MutationResult<UpdateLensMutation>;
+export type UpdateLensMutationOptions = Apollo.BaseMutationOptions<UpdateLensMutation, UpdateLensMutationVariables>;
 export const CreateMeshCollectionDocument = gql`
     mutation CreateMeshCollection($input: CreateMeshCollectionInput!) {
   createMeshCollection(input: $input) {
@@ -19033,6 +19349,90 @@ export function useSetDefaultSceneMutation(baseOptions?: ApolloReactHooks.Mutati
 export type SetDefaultSceneMutationHookResult = ReturnType<typeof useSetDefaultSceneMutation>;
 export type SetDefaultSceneMutationResult = Apollo.MutationResult<SetDefaultSceneMutation>;
 export type SetDefaultSceneMutationOptions = Apollo.BaseMutationOptions<SetDefaultSceneMutation, SetDefaultSceneMutationVariables>;
+export const CreateSceneFromLensDocument = gql`
+    mutation CreateSceneFromLens($input: CreateSceneFromLensInput!) {
+  createSceneFromLens(input: $input) {
+    ...ListScene
+  }
+}
+    ${ListSceneFragmentDoc}`;
+export type CreateSceneFromLensMutationFn = Apollo.MutationFunction<CreateSceneFromLensMutation, CreateSceneFromLensMutationVariables>;
+
+/**
+ * __useCreateSceneFromLensMutation__
+ *
+ * To run a mutation, you first call `useCreateSceneFromLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateSceneFromLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createSceneFromLensMutation, { data, loading, error }] = useCreateSceneFromLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateSceneFromLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateSceneFromLensMutation, CreateSceneFromLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateSceneFromLensMutation, CreateSceneFromLensMutationVariables>(CreateSceneFromLensDocument, options);
+      }
+export type CreateSceneFromLensMutationHookResult = ReturnType<typeof useCreateSceneFromLensMutation>;
+export type CreateSceneFromLensMutationResult = Apollo.MutationResult<CreateSceneFromLensMutation>;
+export type CreateSceneFromLensMutationOptions = Apollo.BaseMutationOptions<CreateSceneFromLensMutation, CreateSceneFromLensMutationVariables>;
+export const SetLensDefaultSceneDocument = gql`
+    mutation SetLensDefaultScene($lens: ID!, $scene: ID) {
+  setLensDefaultScene(input: {lens: $lens, scene: $scene}) {
+    id
+    defaultScene {
+      ...ListScene
+    }
+    latestSnapshot {
+      ...SceneSnapshot
+    }
+    dataset {
+      id
+      defaultScene {
+        id
+        name
+      }
+      latestSnapshot {
+        ...SceneSnapshot
+      }
+    }
+  }
+}
+    ${ListSceneFragmentDoc}
+${SceneSnapshotFragmentDoc}`;
+export type SetLensDefaultSceneMutationFn = Apollo.MutationFunction<SetLensDefaultSceneMutation, SetLensDefaultSceneMutationVariables>;
+
+/**
+ * __useSetLensDefaultSceneMutation__
+ *
+ * To run a mutation, you first call `useSetLensDefaultSceneMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetLensDefaultSceneMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [setLensDefaultSceneMutation, { data, loading, error }] = useSetLensDefaultSceneMutation({
+ *   variables: {
+ *      lens: // value for 'lens'
+ *      scene: // value for 'scene'
+ *   },
+ * });
+ */
+export function useSetLensDefaultSceneMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SetLensDefaultSceneMutation, SetLensDefaultSceneMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<SetLensDefaultSceneMutation, SetLensDefaultSceneMutationVariables>(SetLensDefaultSceneDocument, options);
+      }
+export type SetLensDefaultSceneMutationHookResult = ReturnType<typeof useSetLensDefaultSceneMutation>;
+export type SetLensDefaultSceneMutationResult = Apollo.MutationResult<SetLensDefaultSceneMutation>;
+export type SetLensDefaultSceneMutationOptions = Apollo.BaseMutationOptions<SetLensDefaultSceneMutation, SetLensDefaultSceneMutationVariables>;
 export const CreateTransformationDocument = gql`
     mutation CreateTransformation($input: CreateTransformationInput!) {
   createTransformation(input: $input) {
@@ -19543,10 +19943,17 @@ export const GetArrayDatasetDocument = gql`
     defaultScene {
       ...ListScene
     }
+    fullLens {
+      ...ListLens
+    }
+    lenses(sliced: true) {
+      ...ListLens
+    }
   }
 }
     ${ArrayDatasetFragmentDoc}
-${ListSceneFragmentDoc}`;
+${ListSceneFragmentDoc}
+${ListLensFragmentDoc}`;
 
 /**
  * __useGetArrayDatasetQuery__
@@ -19695,23 +20102,12 @@ export const GetArrayDatasetDerivedDocument = gql`
       }
     }
     derivedDatasets {
-      ...ListArrayDataset
-      derivedFrom {
-        id
-        kind
-        valueRelation
-        output {
-          id
-          name
-        }
-        ... on UnmappableTransformation {
-          reason
-        }
-      }
+      ...DerivedDataset
     }
   }
   lenses(filters: {dataset: $id}) {
     id
+    name
     axisNames
     shape
     slices {
@@ -19725,7 +20121,7 @@ export const GetArrayDatasetDerivedDocument = gql`
 }
     ${ProvenanceEntryFragmentDoc}
 ${FileLinkFragmentDoc}
-${ListArrayDatasetFragmentDoc}
+${DerivedDatasetFragmentDoc}
 ${DimSliceFragmentDoc}`;
 
 /**
@@ -21221,6 +21617,7 @@ export const ListLensesForDatasetDocument = gql`
     query ListLensesForDataset($dataset: ID!) {
   lenses(filters: {dataset: $dataset}) {
     id
+    name
     slices {
       ...DimSlice
     }

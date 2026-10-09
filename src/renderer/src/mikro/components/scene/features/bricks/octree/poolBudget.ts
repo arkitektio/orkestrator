@@ -58,6 +58,31 @@ export const POOL_PLAN_SHARE_FRACTION = 0.5;
 export const POOL_RESERVE_COUNT = 2;
 
 /**
+ * Ceiling of the AUTOMATIC per-pool plan.
+ *
+ * The device-scaled share above lets a big card plan a big working set: on a
+ * 12 GiB card about 1.5 GiB per pool, twelve times the flat 128 MiB cap the
+ * renderer ran on until August 2026. Every byte of it is also marching cost,
+ * not only memory: the raymarch stride follows the plan's finest level
+ * (`levelPitch` in brickNodeMaterials.ts, clamped to `uDesiredLevel`), so a
+ * plan three levels finer halves the stride three times and runs every ray
+ * to the step cap, and the settle ladder and every streaming re-render then
+ * pay that too. The automatic budget therefore stops here. A GPU budget the
+ * user set in Settings → Renderer lifts the ceiling: that number is a
+ * deliberate choice, and the page says what it buys.
+ */
+export const MAX_AUTO_PLAN_BYTES = 512 * 1024 * 1024;
+
+/** The plan ceiling in force: `MAX_AUTO_PLAN_BYTES` under the automatic GPU
+ * budget, none under the user's own. Read by `resolvePoolBudget` by default
+ * so the planner and the atlas allocator cannot disagree about it. */
+export function resolveAutoPlanCapBytes(): number {
+  return getRendererBudget().gpuSource.kind === "custom"
+    ? Number.POSITIVE_INFINITY
+    : MAX_AUTO_PLAN_BYTES;
+}
+
+/**
  * Byte cap for decoded chunks held for repacking (the runner's default cache is
  * count-bounded and can pin GBs of plane-chunked SABs).
  *
@@ -220,8 +245,13 @@ export function resolvePoolBudget(input: {
   slotBytes: number;
   /** Bytes the ENTIRE pyramid would need if fully resident. */
   totalBrickBytes: number;
+  /** Ceiling on the plan's share of the device budget. Defaults to
+   * `resolveAutoPlanCapBytes()`; both callers leave it so the plan and its
+   * atlas are sized from one number. Tests pass it to pin either side. */
+  planCapCeilingBytes?: number;
 }): PoolBudget {
   const { deviceBudgetBytes, poolCount, slotBytes, totalBrickBytes } = input;
+  const planCapCeilingBytes = input.planCapCeilingBytes ?? resolveAutoPlanCapBytes();
   // The real share bounds the atlas, exactly as before — it must NOT carry the
   // reserve, or a 256 MiB device with one pool would squeeze its plan below the
   // 128 MiB it gets today (the atlas can no longer hold plan + headroom).
@@ -235,9 +265,14 @@ export function resolvePoolBudget(input: {
   // device budget this reproduces the old flat cap byte for byte, so small
   // machines see no change at all; only larger budgets actually scale up. The
   // outer `min(share, …)` keeps the old squeeze behaviour on starved shares.
+  // …and the scaling term stops at the automatic ceiling (MAX_AUTO_PLAN_BYTES):
+  // the 128 MiB floor and the starved-share squeeze are untouched by it.
   const planCap = Math.min(
     share,
-    Math.max(MIN_LAYER_POOL_BYTES, Math.floor(scaledShare * POOL_PLAN_SHARE_FRACTION)),
+    Math.max(
+      MIN_LAYER_POOL_BYTES,
+      Math.min(planCapCeilingBytes, Math.floor(scaledShare * POOL_PLAN_SHARE_FRACTION)),
+    ),
   );
 
   // The whole pyramid fits: every brick can be resident, so there is nothing

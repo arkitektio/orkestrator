@@ -119,6 +119,18 @@ const BrickDebugBody: FC<{ selfTests: readonly SelfTest[] }> = ({ selfTests }) =
               : "–"}{" "}
             ms/brick
           </span>
+          {/* Page-table uploads: in-frame drains only; the bytes per flush
+              say how much of a level each one re-sends. */}
+          <span
+            className="px-1 rounded border border-border/50"
+            title="page-table flushes (page box + occupancy/aggregate planes), in-frame drains only"
+          >
+            page flush {brickSystem.stats.pageFlushes} ×{" "}
+            {brickSystem.stats.pageFlushes > 0
+              ? (brickSystem.stats.pageFlushBytes / brickSystem.stats.pageFlushes / MB).toFixed(1)
+              : "–"}{" "}
+            MB
+          </span>
           <span className="px-1 rounded border border-border/50">
             evict {brickSystem.stats.evictions}
           </span>

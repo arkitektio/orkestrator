@@ -563,11 +563,26 @@ planned-first drain lanes — index cursors, one splice per pool),
   streaming bursts, re-raymarching the entire scene per brick batch (frame
   cost is O(scene), not O(change)). Now, while streaming and the camera is
   quiet, rendered frames land at the `residencyBumpMs` cadence and an
-  off-frame pump timer (`DRAIN_PUMP_MS`) keeps `drainUploads` running
-  between them at full speed; the drained edge and interacting frames
-  bypass the gate (the settled frame must always land; gesture frames flow
-  anyway). `stats.streamFramesCoalesced` counts the whole-scene re-renders
-  this saves. GPU-repacked
+  off-frame pump (`DRAIN_PUMP_MS`) keeps `drainUploads` running between
+  them; the drained edge and interacting frames bypass the gate (the settled
+  frame must always land; gesture frames flow anyway).
+  `stats.streamFramesCoalesced` counts the whole-scene re-renders this
+  saves. **2026-10-09, the pump and the page flush:** the pump used to be a
+  plain `setTimeout` running the full 4 ms budget, and every pump drain
+  ended with `flushPageTable` — the dirty box of a level that bricks land
+  all over is about the whole level grid (page + occupancy + aggregate
+  planes, megabytes), re-sent up to ~125 times a second for frames that
+  render every 150 ms. That was main-thread stutter the perf recording could
+  not see, since it brackets frames only. Now the pump is a `background`
+  task (`pumpScheduler.ts`, `scheduler.postTask`; a pending one never delays
+  a frame) with a 2 ms slice (`PUMP_MAX_MS`), and only the IN-FRAME drain
+  flushes page tables (`DrainPolicy.flushPageTables`): pump drains leave the
+  mirrors dirty, the frame drain uploads the accumulated box once before the
+  render, and `pageFlushPending` keeps the idle latch from stranding a dirty
+  table. `perfMonitor.markDrain` records every drain's main-thread ms, the
+  off-frame slices and the page-flush bytes (`drainMs`, `pageFlushBytes` in
+  the session report; `page flush N × MB` in the brick debug line).
+  GPU-repacked
   bricks are charged their REAL flush cost — the source-chunk bytes the
   compute path must `writeBuffer` for cache misses (`gpuFlushUploadBytes`),
   not the atlas-slot bytes — which bounds the previously ungated synchronous
@@ -1822,6 +1837,20 @@ the cache share. L0 is reached through the sub-floor ALLOWANCE with
 every L0 brick touches all 64 chunks of the level. The real fix remains
 re-chunking L0 with tiled x/y chunks upstream.
 
+**The automatic plan has a ceiling (2026-10-09).** With the budget read off
+the card (`core/settings/renderer`), a 12 GiB card plans ~1.5 GiB per pool —
+twelve times the flat cap of August 2026 — and the raymarch stride follows the
+plan's finest level, so those bytes were also frame time: every settled and
+streaming render ran its rays to the step cap, and large volumes felt slower
+than before the budgets were unlocked. `MAX_AUTO_PLAN_BYTES` (512 MiB,
+`poolBudget.ts`) now caps the automatic plan; a GPU budget the user set in
+Settings → Renderer lifts it (`resolveAutoPlanCapBytes`). The decode cache and
+its floor/allowance/chunk budget are unchanged — slots bind first. In the same
+pass the compositor target went to half resolution while bricks STREAM, not
+only while the camera moves (`resolveVolumeScale`): each residency bump
+re-marched the whole volume at full resolution, and on a large plan the stream
+outlasts the gesture by far.
+
 **The opposite layout has its own wall (P32).** Brick-aligned 64³ chunks are
 what 3D wants, and what a 2D slab pays for: 64 slices decoded per slice shown.
 There the floor above is not inert but far too cautious — it prices a level as
@@ -1945,18 +1974,29 @@ fullscreen composite quad shown. All decisions live in the pure, tested core
   structure key cannot see the layer go.
 - *Settle refinement ladder* (`orkestrator.settleRefine`, default ON, live):
   after the camera settles and streaming drains, the compositor drives
-  `qualityGovernor.setSettleRefineStage` 0→1→2 (200 ms of quiet between
-  stages), each stage DOUBLING the settled `uMaxSteps` of the IMAGE
-  raymarcher (384→768→1536 standard; ceiling `MAX_RAY_STEPS_CEILING` = 2048,
-  now the image material's compile loop bound) and re-rendering the cached
-  target exactly once — `floorDelta = rayLen/uMaxSteps` halves per stage, so
-  only saturated (edge-on/diagonal) rays pay more; non-saturated rays exit
-  at bounds bit-identically. The stage rides the existing transport
-  (governor emit → `useStepScaleUniform` dedupe → `volumeInputs.bump` →
-  one cache-keyed re-render); it is IGNORED while active, reset on
+  `qualityGovernor.setSettleRefineStage` 0→1 (200 ms of quiet first), the
+  stage DOUBLING the settled `uMaxSteps` of the IMAGE raymarcher (384→768
+  standard; ceiling `MAX_RAY_STEPS_CEILING` = 1024, the image material's
+  compile loop bound) and re-rendering the cached target exactly once —
+  `floorDelta = rayLen/uMaxSteps` halves, so only saturated
+  (edge-on/diagonal) rays pay more; non-saturated rays exit at bounds
+  bit-identically. The stage rides the existing transport (governor emit →
+  `useStepScaleUniform` dedupe → `volumeInputs.bump` → one cache-keyed
+  re-render); it is IGNORED while active, reset on
   motion/streaming/flag-off/cache-off and on compositor unmount (a boosted
   budget must never reach the uncached direct-render path). Labels are never
   boosted (canvas-pass material). Pure decision: `decideSettleRefine`.
+  **2026-10-09:** the ladder was two stages (0→1→2, ceiling 2048) and
+  unconditional. On a large volume whose plan is sized from the card's memory
+  the settled rays already run to the cap, and a 4× stage after every
+  gesture was the several-hundred-ms hitch that made such volumes feel
+  slower than the August 2026 renderer. Now one stage, spent only when the
+  settled render it doubles was cheap: `createSettledRenderMeter` asks for
+  two cached-composite frames after each settled render and reads its GPU
+  cost off the larger frame delta (the browser throttles the frames after a
+  heavy one); `settleRefineAffordable` admits the stage when
+  cost × 2 ≤ `SETTLE_REFINE_FRAME_BUDGET_MS` (40 ms — a render inside one
+  60 Hz vsync). The debug report shows the cost as `settledRenderMs`.
 - Kill switches (DebugPanel toggles): `orkestrator.volumeTarget` (remount),
   `orkestrator.volumeCache` (live), `orkestrator.volumeDepthPrepass` (live —
   the escape hatch if the prepass ever misbehaves). Debug

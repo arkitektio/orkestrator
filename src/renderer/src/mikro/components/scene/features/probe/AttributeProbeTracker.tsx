@@ -17,17 +17,13 @@ import type {
 import { hopKey, hopMetasOf, isMeshSample } from "@/mikro/lib/attributes/attributeTypes";
 import type { AxisCoords } from "@/mikro/lib/coords/axisPath";
 import { applyPathToCoords } from "@/mikro/lib/coords/axisPath";
-import {
-  probeCoordsFor,
-  resolveSampleIndex,
-  type HeldValue,
-} from "@/mikro/lib/attributes/planExec";
+import { resolveSampleIndex, type HeldValue } from "@/mikro/lib/attributes/planExec";
 import { sceneAttributeKey, type SceneAttributeKey } from "../../platform/stores/viewerStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import type { ProbeResult } from "../../platform/probe/probeTypes";
 import { probeSystemIdFor } from "../../platform/probe/probeTargeting";
 import type { LayerState } from "../../platform/model/layerModel";
-import { buildSliceMap, resolveFixedDimIndex } from "../../platform/coords/selection";
+import { probeAxisCoords } from "../../platform/probe/probeCoords";
 import { collectionSpatialAxes } from "../../platform/model/collectionPlacement";
 import { createResidentSampler } from "../bricks/residency/residentSampling";
 import { useBrickStoreApi } from "../bricks/store/brickSlice";
@@ -78,43 +74,11 @@ export function AttributeProbeTracker() {
       getLayers: () => sceneStore.getState().layers,
     });
 
-    const level0Of = (layer: LayerState) =>
-      layer.lens.dataset.dataArrays.reduce<
-        LayerState["lens"]["dataset"]["dataArrays"][number] | null
-      >((best, da) => (best === null || da.level < best.level ? da : best), null);
-
     const systemIdFor = probeSystemIdFor;
 
-    /**
-     * The probed point as named level-0 coordinates: spatial axes from the
-     * probe's voxel, collapsed dims resolved EXACTLY as the brick pools do
-     * (scene-wide selection clamped, else the lens slice's collapsed
-     * default) — so a locally-rooted plan reads the same slice the screen
-     * shows.
-     */
-    const coordsFor = (layer: LayerState, probe: SceneAttributeKey): AxisCoords => {
-      const dims = layer.lens.dataset.axisNames;
-      const level0 = level0Of(layer);
-      const sliceMap = buildSliceMap(layer.lens.slices);
-      const dimSelections = viewerStore.getState().dimSelections;
-      const ra = layer.lens.renderAxes;
-      const spatial = new Set([ra.x, ra.y, ra.z].filter(Boolean));
-      const resolved: Record<string, number> = {};
-      dims.forEach((dim, d) => {
-        if (spatial.has(dim)) return;
-        resolved[dim] = resolveFixedDimIndex(
-          sliceMap[dim],
-          dimSelections[dim],
-          level0?.shape[d] ?? 1,
-        );
-      });
-      return probeCoordsFor({
-        axisNames: dims,
-        renderAxes: { x: ra.x, y: ra.y, z: ra.z },
-        voxelIndex: probe.voxelIndex,
-        dimSelections: resolved,
-      });
-    };
+    /** The probed point as named level-0 coordinates (`probeAxisCoords`). */
+    const coordsFor = (layer: LayerState, probe: SceneAttributeKey): AxisCoords =>
+      probeAxisCoords(layer, probe.voxelIndex, viewerStore.getState().dimSelections);
 
     const layerById = (layerId: string): LayerState | null =>
       sceneStore.getState().layers.find((layer) => layer.id === layerId) ?? null;

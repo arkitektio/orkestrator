@@ -28,6 +28,8 @@ import {
   nodeVoxelBox,
   parseNodeKey,
 } from "../octree/nodeAddress";
+import { scheduleBackgroundTask } from "./pumpScheduler";
+import { gpuRepackIsCheaper } from "./repackRouting";
 import { haloStillWanted, initialFetchPhase } from "./twoPhase";
 import {
   compareFetchOrder,
@@ -124,6 +126,10 @@ export {
  * `gpuOutcome`, `rangeEncoding`, `residentProbes`, `adjacentPrefetch`,
  * `residencyDebugReport` (OCTREE_RENDERER.md §2.8).
  */
+
+/** How long freed fetch slots wait for company before refilling (see
+ * `scheduleRefill`): a quarter of a 60 Hz frame. */
+const REFILL_WINDOW_MS = 4;
 
 // Per-frame texSubImage3D budget lives in ./uploadBudget (bytes + bricks +
 // WALL-CLOCK cap — the time cap is what keeps integrated GPUs smooth, P19).
@@ -296,6 +302,8 @@ export class BrickResidencyManager {
     staleUploads: 0,
     fetchErrors: 0,
     streamFramesCoalesced: 0,
+    pageFlushes: 0,
+    pageFlushBytes: 0,
     aggregateWrites: 0,
   };
   /** Decoded-chunk cache, in-flight sharing and referrer cancellation. */
@@ -308,7 +316,12 @@ export class BrickResidencyManager {
    * last actually-issued streaming invalidate, and the off-frame pump timer
    * that keeps drainUploads running between the coalesced frames. */
   private lastStreamInvalidateAt = 0;
-  private drainPumpTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Cancels the scheduled off-frame pump drain (`scheduleBackgroundTask`). */
+  private cancelDrainPump: (() => void) | null = null;
+  /** An off-frame drain left page mirrors dirty: the next in-frame drain must
+   * upload them even if the pipeline has gone idle meanwhile. */
+  private pageFlushPending = false;
+  private refillTimer: ReturnType<typeof setTimeout> | null = null;
   /** True while at least one coalesced wakeup still awaits its frame — the
    * pump keeps re-entering the gate until the cadence window closes and the
    * frame lands, even if the upload queue drained mid-window. */
@@ -715,11 +728,12 @@ export class BrickResidencyManager {
     }
     this.stats.streamFramesCoalesced += 1;
     this.pendingStreamFrame = true;
-    if (this.drainPumpTimer !== null) return;
-    this.drainPumpTimer = setTimeout(() => {
-      this.drainPumpTimer = null;
+    if (this.cancelDrainPump !== null) return;
+    // Background priority (pumpScheduler.ts): never ahead of a frame.
+    this.cancelDrainPump = scheduleBackgroundTask(() => {
+      this.cancelDrainPump = null;
       if (this.disposed) return;
-      this.drainUploads(this.deps.isInteracting?.() ?? false);
+      this.drainUploads(this.deps.isInteracting?.() ?? false, true);
       // The drain re-enters this gate itself when it uploaded or left work
       // queued. If it did neither (queue drained mid-window, fetches still in
       // flight) the coalesced batches still owe a frame — keep knocking until
@@ -893,10 +907,8 @@ export class BrickResidencyManager {
       this.deps.viewerStore.getState().dimSelections,
     );
     const same =
-      fixedChunkCoords.length === pool.fixedChunkCoords.length &&
-      fixedOffsets.length === pool.fixedOffsets.length &&
-      fixedChunkCoords.every((v, i) => v === pool.fixedChunkCoords[i]) &&
-      fixedOffsets.every((v, i) => v === pool.fixedOffsets[i]);
+      JSON.stringify(fixedChunkCoords) === JSON.stringify(pool.fixedChunkCoords) &&
+      JSON.stringify(fixedOffsets) === JSON.stringify(pool.fixedOffsets);
     if (!same) {
       console.error(
         `[bricks] pool key collision: layer ${derivation.layer.id} joined pool ` +
@@ -1344,6 +1356,30 @@ export class BrickResidencyManager {
   }
 
   /**
+   * The phase THIS brick's first fetch runs in: `core` only when deferring
+   * the border actually defers a fetch. When every chunk the border adds is
+   * already decoded — always, for a brick whose rind lies inside its own
+   * chunks, and increasingly as neighbours land on chunks larger than a
+   * brick — a core pass buys nothing and costs a second repack and a second
+   * upload of the same slot. Measured on a 4-channel plane-chunked stack:
+   * 1700 of 3619 uploads were such refines.
+   */
+  private firstPhase(pool: LayerBrickPool, node: PlannedNode): FetchPhase {
+    const phase = this.initialPhase(pool);
+    if (phase !== "core") return phase;
+    const storeId = pool.geometry.levels[node.level].storeId;
+    const core = new Set<string>();
+    for (const { chunkCoords } of enumerateBrickChunkCoords(pool, node.level, node.coords, "core")) {
+      core.add(chunkCoords.join(","));
+    }
+    for (const { chunkCoords } of enumerateBrickChunkCoords(pool, node.level, node.coords, "full")) {
+      if (core.has(chunkCoords.join(","))) continue;
+      if (!this.chunks.cachedChunkSync(storeId, chunkCoords, this.getArrayForStoreId)) return "core";
+    }
+    return "full";
+  }
+
+  /**
    * @param phase `core` / `full` for a brick's first fetch (see
    *   `initialPhase`); `full` with `halo` set for the deferred border refine
    *   of an already-resident provisional brick.
@@ -1351,7 +1387,7 @@ export class BrickResidencyManager {
   private async fetchBrick(
     pool: LayerBrickPool,
     node: PlannedNode,
-    phase: FetchPhase = this.initialPhase(pool),
+    phase: FetchPhase = this.firstPhase(pool, node),
     halo = false,
   ): Promise<void> {
     const controller = new AbortController();
@@ -1473,14 +1509,19 @@ export class BrickResidencyManager {
       // path (a follow-up can teach the compute kernel the DFT).
       const reducesPhasor = hasPhasorSlabs(pool.geometry);
       const gpuIneligible = pool.gpuIneligibleKeys.has(node.key);
+      // By cost, not only by capability: see repackRouting.
+      const manyChunks = !gpuRepackIsCheaper(chunks.length);
       const useGpu =
         !reducesPhasor &&
         !gpuIneligible &&
+        !manyChunks &&
         !!gpuRepacker?.ready() &&
         gpuRepacker.supports(pool.atlas, chunks);
       pool.lastRepackPath = useGpu
         ? "gpu"
-        : gpuIneligible
+        : manyChunks
+          ? "cpu:many-chunks"
+          : gpuIneligible
           ? "cpu:gpu-ineligible"
           : reducesPhasor
             ? "cpu:phasor"
@@ -1527,7 +1568,7 @@ export class BrickResidencyManager {
             // Core phase: the payload box — `replicateEdges` fills the rind
             // from the payload's edge, exactly as for level-edge bricks.
             fetchBox: brickFetchBox(pool.geometry, pool.spec, node.level, node.coords, phase),
-            fixedOffsets: pool.fixedOffsets,
+            fixedOffsets: pool.fixedOffsets[node.level],
             chunks,
           },
           // A brick cancelled while its repack is still queued behind other
@@ -1597,8 +1638,28 @@ export class BrickResidencyManager {
       if (onScreen) this.inFlightOnScreen -= 1;
       // ALL pools, not just this one: the freed global in-flight slot may be
       // what another pool's queue is blocked on (see startNextFetchesGlobal).
-      if (!this.disposed) this.startNextFetchesGlobal();
+      if (!this.disposed) this.scheduleRefill();
     }
+  }
+
+  /**
+   * Refill after a completed fetch — grouped. Chunks settle one worker
+   * message at a time, so a refill per completion admitted one brick per
+   * task: each went out as its own one-brick shard batch and nothing merged,
+   * a steady trickle of single requests. Slots freed within the window refill
+   * together and land in ONE batch. An idle pipeline has nothing to wait
+   * for and dispatches at once.
+   */
+  private scheduleRefill(): void {
+    if (this.totalInFlight() === 0) {
+      this.startNextFetchesGlobal();
+      return;
+    }
+    if (this.refillTimer !== null) return;
+    this.refillTimer = setTimeout(() => {
+      this.refillTimer = null;
+      if (!this.disposed) this.startNextFetchesGlobal();
+    }, REFILL_WINDOW_MS);
   }
 
   /** Reusable progress snapshot for `drainUploads` (see `progressOf`). */
@@ -1611,7 +1672,12 @@ export class BrickResidencyManager {
    * no free pass, no stale drain, no GPU-repack dispatch (see
    * `resolveDrainPolicy`) — so uploads stop colliding with gesture frames;
    * the deferred backlog drains at full budget on the first settled frame. */
-  drainUploads(interacting = false): void {
+  drainUploads(
+    interacting = false,
+    /** From the pump timer, between frames: shorter slice, no page flush
+     * (`resolveDrainPolicy`). */
+    offFrame = false,
+  ): void {
     if (this.disposed) return;
     // No device, no uploads. Belt-and-braces — the only caller is the canvas
     // frame driver, which by construction has a renderer — but every GPU write
@@ -1620,13 +1686,20 @@ export class BrickResidencyManager {
     // Idle fast path: a previous drain saw the whole pipeline empty and no
     // GPU flush in flight — skip the pool walks and per-frame allocations
     // until wakeDrain() signals new work.
-    if (!this.drainNeeded) return;
+    if (!this.drainNeeded) {
+      // Idle, but a pump drain left page mirrors dirty: a frame is about to
+      // render, so the texture catches up now — the only work there is.
+      if (!offFrame && this.pageFlushPending) this.flushPendingPageTables();
+      return;
+    }
     const drainStartedAt = performance.now();
     const profile = qualityGovernor.getProfile();
     const policy = resolveDrainPolicy(
       { ...FRAME_UPLOAD_BUDGET, maxMs: profile.uploadBudgetMs },
       interacting,
+      offFrame,
     );
+    let pageFlushBytes = 0;
     const progress = { bytes: 0, bricks: 0, uploadedAny: false };
     // Evaluated in the drain loops' conditions, i.e. once per brick
     // considered per frame while streaming: fill one reusable view instead of
@@ -1701,8 +1774,15 @@ export class BrickResidencyManager {
         this.deps.viewerStore.getState().bumpPoolsVersion();
         this.invalidate();
       }
-      flushPageTable(this.renderer!, pool.pageTable);
+      if (policy.flushPageTables) {
+        pageFlushBytes += this.flushPoolPageTable(pool);
+      } else if (pool.pageTable.dirty.some((box) => box !== null)) {
+        // Off-frame: the mirrors stay dirty and the next in-frame drain
+        // uploads the accumulated box once, before the render that reads it.
+        this.pageFlushPending = true;
+      }
     }
+    if (policy.flushPageTables) this.pageFlushPending = false;
     // Only a pool that left the map mid-drain skips its write-back; its
     // partition dies with it (as the old per-drain Map's did).
     releaseDrainLanes(lanes, laneCount);
@@ -1729,6 +1809,9 @@ export class BrickResidencyManager {
 
     if (progress.uploadedAny) this.stats.uploadMs += performance.now() - drainStartedAt;
     if (progress.bricks > 0) perfMonitor.markUpload(progress.bricks, progress.bytes); // no-op unless recording
+    // The drain's whole main-thread cost, in-frame or between frames — what
+    // the frame bracket alone cannot see.
+    perfMonitor.markDrain(performance.now() - drainStartedAt, { offFrame, pageFlushBytes });
 
     // "Streaming" (work anywhere in the pipeline) counts as ACTIVITY for the
     // quality governor: frames rendered while bricks load use the tier's
@@ -1800,10 +1883,29 @@ export class BrickResidencyManager {
       !streaming &&
       !progress.uploadedAny &&
       gpuFlush === null &&
+      !this.pageFlushPending &&
       ![...this.pools.values()].some(hasPendingEncodeWork)
     ) {
       this.drainNeeded = false;
     }
+  }
+
+  /** Upload one pool's dirty page-table boxes; returns the bytes written. */
+  private flushPoolPageTable(pool: LayerBrickPool): number {
+    if (!flushPageTable(this.renderer!, pool.pageTable)) return 0;
+    this.stats.pageFlushes += 1;
+    this.stats.pageFlushBytes += pool.pageTable.lastFlushBytes;
+    return pool.pageTable.lastFlushBytes;
+  }
+
+  /** The in-frame catch-up for mirrors a pump drain left dirty. */
+  private flushPendingPageTables(): void {
+    if (this.renderer === null) return;
+    const startedAt = performance.now();
+    let bytes = 0;
+    for (const pool of this.pools.values()) bytes += this.flushPoolPageTable(pool);
+    this.pageFlushPending = false;
+    perfMonitor.markDrain(performance.now() - startedAt, { offFrame: false, pageFlushBytes: bytes });
   }
 
   /** How long the pipeline must stay drained before the governor's streaming
@@ -2043,9 +2145,13 @@ export class BrickResidencyManager {
       clearTimeout(this.streamingClearTimer);
       this.streamingClearTimer = null;
     }
-    if (this.drainPumpTimer !== null) {
-      clearTimeout(this.drainPumpTimer);
-      this.drainPumpTimer = null;
+    if (this.refillTimer !== null) {
+      clearTimeout(this.refillTimer);
+      this.refillTimer = null;
+    }
+    if (this.cancelDrainPump !== null) {
+      this.cancelDrainPump();
+      this.cancelDrainPump = null;
     }
     this.gpuRepacker?.dispose();
     this.gpuRepacker = null;

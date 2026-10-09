@@ -737,6 +737,11 @@ type ArrayDataset {
   The folder this dataset is filed in. Organisational only: it says where a user keeps this dataset, never where the data sits in space -- that is `intrinsicSystem` and the edges out of it
   """
   folder: Folder
+
+  """
+  The lens that selects this whole dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and the whole array is meant. Every dataset is created with one. The oldest unsliced lens, so the answer is stable; null only for a dataset with no pixel grid to select from -- reading never mints one
+  """
+  fullLens: Lens
   id: ID!
 
   """
@@ -748,6 +753,11 @@ type ArrayDataset {
   The most recent picture of this dataset's `defaultScene`, for previewing it without loading the array. Null when no default scene is set. **A picture of the scene, not of the dataset**: snapshots are taken of compositions, so if the nominated scene stages other data too, the tile shows that data as well. This used to answer instead from *sole occupancy* -- the newest picture of a scene whose only anchored dataset was this one -- which guaranteed the picture showed nothing else but returned null for every dataset staged alongside another, and cost a five-query graph walk per request to decide
   """
   latestSnapshot: SceneSnapshot
+
+  """
+  The lenses over this dataset, oldest first. `sliced: true` keeps the ones that cut something out -- the crops and sub-volumes people work on; `sliced: false` the ones that select everything. A dataset usually carries several of the latter and they are interchangeable (each is the dataset, looked at whole), so a list for people wants `sliced: true` and `fullLens` beside it
+  """
+  lenses(sliced: Boolean = null): [Lens!]!
 
   """
   Whether this dataset carries a resolution pyramid. Derived: true when it has more than one level
@@ -779,7 +789,7 @@ type ArrayDataset {
   sourceFiles(filters: FileLinkFilter): [FileLink!]!
 
   """
-  What this dataset structurally is, materialized at creation from the axes of its intrinsic coordinate system and its level-0 shape: the one spatial spec its SPACE axes denote, then a modifier per acquisition axis. An axis counts only when it has more than one position. A 3D timelapse is [VOLUME, TIMESERIES, MULTICHANNEL]. A stack stored with a single plane is an IMAGE, and a single frame is not a TIMESERIES; `hasAxisTypes` is the filter for whether an axis is declared at all. Empty while the intrinsic system does not exist yet
+  What this dataset structurally is, materialized at creation from the axes of its intrinsic coordinate system and its level-0 shape: the one spatial spec its SPACE axes denote, then a modifier per non-spatial axis type: the acquisition ones (TIMESERIES, MULTICHANNEL, SPECTRAL, FLIM), then the ones that say what the values or positions are (DISPLACEMENT_FIELD, COORDINATE_FIELD, INDEXED). An axis counts only when it has more than one position. A 3D timelapse is [VOLUME, TIMESERIES, MULTICHANNEL]; a 2D flow field is [IMAGE, DISPLACEMENT_FIELD]. Last comes TRACE, for a dataset that is a curve along one measured axis: a decay is [SCALAR, FLIM, TRACE], a line profile per channel [PROFILE, MULTICHANNEL, TRACE]. A stack stored with a single plane is an IMAGE, and a single frame is not a TIMESERIES; `hasAxisTypes` is the filter for whether an axis is declared at all. Empty while the intrinsic system does not exist yet
   """
   spec: [ArrayDatasetSpec!]!
 }
@@ -844,7 +854,7 @@ input ArrayDatasetFilter {
   folders: [ID!]
 
   """
-  Filter to datasets whose intrinsic coordinate system carries every one of these axis types, e.g. [TIME, CHANNEL]. The raw form of `spec`, for the types no spec names: COORDINATE, DISPLACEMENT, INDEX
+  Filter to datasets whose intrinsic coordinate system carries every one of these axis types, e.g. [TIME, CHANNEL]. The raw form of `spec`: it asks whether an axis is declared at all, where a spec counts it only when it has more than one position
   """
   hasAxisTypes: [AxisType!]
 
@@ -902,7 +912,7 @@ input ArrayDatasetFilter {
   sourceSeriesIdentifier: String
 
   """
-  Filter to datasets satisfying every one of these specs, e.g. [VOLUME, TIMESERIES] for 3D timelapses. Materialized at creation from the axes of the intrinsic coordinate system and the level-0 shape; an axis counts only when it has more than one position, so a stack of one plane is an IMAGE and a single frame is not a TIMESERIES (use `hasAxisTypes` to ask whether an axis is declared at all). A dataset carries one spatial spec (by how many such SPACE axes it has) plus a modifier per such acquisition axis, so two spatial specs together match nothing
+  Filter to datasets satisfying every one of these specs, e.g. [VOLUME, TIMESERIES] for 3D timelapses. Materialized at creation from the axes of the intrinsic coordinate system and the level-0 shape; an axis counts only when it has more than one position, so a stack of one plane is an IMAGE and a single frame is not a TIMESERIES (use `hasAxisTypes` to ask whether an axis is declared at all). A dataset carries one spatial spec (by how many such SPACE axes it has) plus a modifier per non-spatial axis type it has more than one position along (TIMESERIES, MULTICHANNEL, SPECTRAL, FLIM, DISPLACEMENT_FIELD, COORDINATE_FIELD, INDEXED), and TRACE when it is a curve along one measured axis -- `[TRACE]` finds what a chart can draw whole. Two spatial specs together match nothing
   """
   spec: [ArrayDatasetSpec!]
 }
@@ -914,9 +924,19 @@ input ArrayDatasetOrder @oneOf {
 }
 
 """
-What a dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation. Specs stack: a 3D timelapse is VOLUME, TIMESERIES and MULTICHANNEL at once. Exactly one spatial member (SCALAR/PROFILE/IMAGE/VOLUME/HYPERVOLUME) ever holds.
+What a dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation. Specs stack: a 3D timelapse is VOLUME, TIMESERIES and MULTICHANNEL at once. Exactly one spatial member (SCALAR/PROFILE/IMAGE/VOLUME/HYPERVOLUME) ever holds; the others are modifiers: one per non-spatial axis type the dataset has more than one position along, and TRACE for a dataset that is a curve along one measured axis.
 """
 enum ArrayDatasetSpec {
+  """
+  Carries a COORDINATE axis of more than one component: the values are absolute positions -- a lookup map, the field of a FIELD edge. A scalar-valued array declares no such axis and is not one.
+  """
+  COORDINATE_FIELD
+
+  """
+  Carries a DISPLACEMENT axis of more than one component: the values are per-point offsets -- a flow field, a drift map, a deformation.
+  """
+  DISPLACEMENT_FIELD
+
   """
   Carries a MICROTIME axis of more than one bin: fluorescence-lifetime arrival-time bins.
   """
@@ -929,6 +949,11 @@ enum ArrayDatasetSpec {
   Two spatial axes with more than one position each: a plane. The ordinary micrograph.
   """
   IMAGE
+
+  """
+  Carries an INDEX axis of more than one position: an axis that enumerates -- objects, rows -- rather than measures. A stack of per-object crops, a per-object measurement.
+  """
+  INDEXED
 
   """
   Carries a CHANNEL axis of more than one channel. A one-channel axis does not count.
@@ -952,6 +977,11 @@ enum ArrayDatasetSpec {
   Carries a TIME axis of more than one frame -- a timelapse. A single-frame time axis does not count.
   """
   TIMESERIES
+
+  """
+  A curve: exactly one measured axis (SPACE, TIME, MICROTIME or SPECTRUM) with more than one position, and beside it at most one enumerating axis (CHANNEL or INDEX), one line per position. A line profile, a time trace, a decay, a spectrum -- what a chart draws whole as a TRACE layer. An image is not one, though a row of it is: that is a lens, and a spec describes the whole dataset. Says nothing about placement: whether a given chart can draw it depends on what is registered.
+  """
+  TRACE
 
   """
   Three spatial axes with more than one position each: a stack. A z axis of a single plane does not make one -- that dataset is an IMAGE.
@@ -1056,6 +1086,14 @@ type AttributePlan {
   Where the id comes from: an `ArraySample` to read at the (path-mapped) point, or a `MeshSample`/`NetworkSample` whose id the client already picked
   """
   sample: SampleStep!
+}
+
+"""
+Show a coordinate system without choosing how. A space with exactly one metric, unit-carrying axis becomes a chart; any other space with a time or space axis becomes a scene. Either is bootstrapped from what already resides in the space, with that kind's default policy, and authors no edges. For a say in the kind or the policy, use `createChartFromCoordinateSystem` or `createSceneFromCoordinateSystem`
+"""
+input AutoVisualizeInput {
+  coordinateSystem: ID!
+  name: String = null
 }
 
 """
@@ -1620,7 +1658,7 @@ type ChannelSourceNode implements LayerRenderNode {
 """
 A composition of data laid out along one metric axis, with values read off it. The second kind of composition beside a scene: a scene is a place, a chart is an axis. It names data by id and owns none of it, and it carries no unit of its own -- the unit is its world axis's
 """
-type Chart {
+type Chart implements Visualization {
   """
   The one axis this chart is laid out along: its name, its metric type and its unit. The world's only axis, repeated here so a client drawing the chart need not unwrap a list of one
   """
@@ -2270,6 +2308,11 @@ type CoordinateSystem {
   How many times the transformation chain from this system down to its dataset's intrinsic pixel space has been written, as it stands now. Compare it with an annotation's `createdWithTransforms` to detect staleness: the two agreeing means the geometry was authored against the chain still in force, and them differing means an edge on the path has been written since. Only the comparison is meaningful -- the number counts history rows, so it also moves when an edge is merely renamed, which errs towards recomputing a box that did not need it rather than trusting one that did. 0 for a system that IS an intrinsic space, or one with no path down to pixels (a unit-carrying or shared space -- its coordinates are meaningful on their own). Provenance only: it never takes part in resolving a coordinate
   """
   transformVersion: Int!
+
+  """
+  Everything laid out over this system as its world, of every kind: its scenes, then its charts. The inverse of `Visualization.worldCoordinateSystem`. Unpaginated -- for a filtered or paged list of one kind, ask `scenes` here or the top-level `charts`
+  """
+  visualizations: [Visualization!]!
 }
 
 """
@@ -2557,6 +2600,7 @@ input CreateLayerInput {
 """Input type for creating an image from an array-like object"""
 input CreateLensInput {
   dataset: ID!
+  name: String = null
   slices: [SliceInput!]!
 }
 
@@ -2748,6 +2792,17 @@ input CreateSceneFromCoordinateSystemInput {
   defaultFor: [ID!] = null
   name: String = null
   policy: ScenePolicyInput! = {includeMeshes: true, includeNetworks: true, kind: null, nchildren: 8, skipUnplaceable: false, transformTables: false}
+}
+
+"""
+Bootstrap a renderable scene showing one lens: its selection and nothing else of its dataset, one layer per channel exactly as createSceneFromCoordinateSystem draws a whole dataset. This is how a crop is staged -- staging a sliced lens' *space* draws its whole dataset again, because which lens the layers read is not a fact of the space
+"""
+input CreateSceneFromLensInput {
+  kind: BootstrapLayerKind = null
+  lens: ID!
+  name: String = null
+  nominate: Boolean! = true
+  world: ID = null
 }
 
 """
@@ -5261,6 +5316,11 @@ type Lens {
   dataset: ArrayDataset!
 
   """
+  The scene to open for this lens. A sliced lens' own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its dataset's while it has none; an unsliced lens always answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree. A nomination, not a derivation -- see `scenes`
+  """
+  defaultScene: Scene
+
+  """
   The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived
   """
   derivedDatasets: [ArrayDataset!]!
@@ -5272,9 +5332,14 @@ type Lens {
   id: ID!
 
   """
-  The most recent picture of this lens' dataset's `defaultScene` -- the tile to put on this lens. The same picture the dataset itself reports: the nomination is a fact about the dataset, so every lens over one dataset answers alike. Null when the dataset nominates no scene
+  The most recent picture of this lens' `defaultScene` -- the tile to put on this lens. A sliced lens that nominates a scene shows that one; one that nominates nothing, and every unsliced lens, shows the dataset's, so a crop nobody has staged yet still has a picture. Null when neither nominates a scene
   """
   latestSnapshot: SceneSnapshot
+
+  """
+  What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the slices -- or 'the whole array' -- in its place
+  """
+  name: String
 
   """
   Everything needed to reduce one axis of this lens to a phasor: the bin count and width, the period the transform runs over, the laser rate, the instrument-response correction and the persisted distribution. Null when the lens has no MICROTIME or SPECTRUM axis. Derived -- none of it is stored on the lens, and a phasor render node references it rather than copying it, so two layers over one dataset cannot disagree about the instrument
@@ -5285,6 +5350,11 @@ type Lens {
   Which axis of the data source maps to screen x, y, z, time and intensity. Derived from the axis types: spatial axes are in array order, so the last is x
   """
   renderAxes: RenderAxes!
+
+  """
+  The scenes this lens is rendered in: those with a layer over it. Derived, never stored, exactly as `ArrayDataset.scenes` is. An unsliced lens answers for every unsliced lens of its dataset -- they are one selection, the whole array, and which of them a layer happens to name is not a fact about the picture. Scenes that show only a *crop* of the dataset are not among them: ask the dataset's `scenes` for those too
+  """
+  scenes: [Scene!]!
 
   """The shape this lens' slices cut out of its dataset"""
   shape: [Int!]!
@@ -5364,6 +5434,16 @@ input LensFilter {
   Filter to lenses placeable into a coordinate system: those whose space reaches it across steps that compose into one affine map, walking the transformation edges. Takes a *space*, not a scene -- pass `scene.worldCoordinateSystem.id` to ask it of a scene. `derivedOnly` and `asLayer` narrow the answer for a particular picker; with neither, this is the whole set layer creation would accept
   """
   placeableIn: LensPlaceableFilter
+
+  """
+  Search by the lens' own name or, since most lenses have none and are known by their dataset's, by the name of the dataset it selects from (case-insensitive substring)
+  """
+  search: String
+
+  """
+  Filter by whether the lens cuts anything out of its dataset. True keeps the crops and sub-volumes; false the lenses that select everything, of which a dataset usually carries several interchangeable ones -- a list meant for people wants true
+  """
+  sliced: Boolean
 }
 
 """
@@ -6142,6 +6222,11 @@ type Mutation {
   attachUnstructuredMeta(input: UnstructuredMetaInput!): UnstructuredMeta!
 
   """
+  Show a coordinate system as whichever composition fits it: a chart over a space with exactly one metric, unit-carrying axis, a scene over any other space with a time or space axis. Bootstrapped from what already resides in the space; authors no edges
+  """
+  autoVisualize(input: AutoVisualizeInput!): Visualization!
+
+  """
   Delete every registration INTO a shared space in one call, returning the deleted edge ids. The space, the scenes over it (their layers drop to UNREGISTERED) and the space's own claims into wider spaces all survive. Guarded by the space's creator: clearing a space is the space-owner's act
   """
   clearCoordinateSystem(input: ClearCoordinateSystemInput!): [ID!]!
@@ -6279,6 +6364,11 @@ type Mutation {
   Bootstrap a renderable scene over an existing coordinate system: a shared space (its registered sources become layers, up to the policy's nchildren) or an owned system such as a dataset's intrinsic grid or a physical space (the container's own data becomes the layer). The scene adopts the system as its world; no edges are authored. This is how a dataset is staged -- pass `intrinsicSystem` to render in pixels, or a physical space it is registered into to render at physical scale
   """
   createSceneFromCoordinateSystem(input: CreateSceneFromCoordinateSystemInput!): Scene!
+
+  """
+  Bootstrap a renderable scene showing one lens -- a crop, a sub-volume, or the whole array -- with one layer per channel over that lens. Composes in the dataset's intrinsic grid unless `world` names another space the lens reaches
+  """
+  createSceneFromLens(input: CreateSceneFromLensInput!): Scene!
 
   """Adopt an uploaded media file as a pre-rendered picture of a scene"""
   createSceneSnapshot(input: SceneSnapshotInput!): SceneSnapshot!
@@ -6586,6 +6676,11 @@ type Mutation {
   """
   setDefaultScene(input: SetDefaultSceneInput!): ArrayDataset!
 
+  """
+  Nominate the scene to open for a lens, and take its thumbnail from. Null clears it. On an unsliced lens this writes its dataset's nomination: the lens is the dataset, looked at whole
+  """
+  setLensDefaultScene(input: SetLensDefaultSceneInput!): Lens!
+
   """Delete a file link"""
   unlinkFile(input: UnlinkFileInput!): ID!
 
@@ -6630,6 +6725,11 @@ type Mutation {
   Update a general image layer's lens, scene, compositing settings and render graph. Refuses every other kind, naming the mutation that does write its settings -- a layer's kind is fixed for the life of the row
   """
   updateLayer(input: UpdateLayerInput!): ImageLayer!
+
+  """
+  Rename a lens, or clear its name. What it selects cannot change: a different selection is a different lens
+  """
+  updateLens(input: UpdateLensInput!): Lens!
 
   """
   Retune how a mesh layer is drawn: its material, wireframe, compositing, and which table column colours its objects. A patch -- an omitted field keeps its value
@@ -8785,7 +8885,7 @@ type ScaleTransformation implements Transformation {
 """
 A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system
 """
-type Scene {
+type Scene implements Visualization {
   """The named camera tours through this composition"""
   animations(filters: AnimationFilter, ordering: [AnimationOrder!]! = [], pagination: OffsetPaginationInput): [Animation!]!
 
@@ -9140,6 +9240,15 @@ type SeriesChartLayer implements ChartLayer {
 input SetDefaultSceneInput {
   """The dataset to nominate a scene for"""
   dataset: ID!
+
+  """The scene to nominate, or null to clear the nomination"""
+  scene: ID = null
+}
+
+"""Nominate the scene to open for a lens, and take its thumbnail from"""
+input SetLensDefaultSceneInput {
+  """The lens to nominate a scene for"""
+  lens: ID!
 
   """The scene to nominate, or null to clear the nomination"""
   scene: ID = null
@@ -10646,6 +10755,15 @@ input UpdateLayerInput {
   visible: Boolean = null
 }
 
+"""Input for renaming a lens -- the whole of what is editable about one"""
+input UpdateLensInput {
+  """The ID of the lens to update"""
+  id: ID!
+
+  """The new name, or null (or blank) to clear it"""
+  name: String = null
+}
+
 """
 Retune how a mesh layer is drawn. A patch: an OMITTED field keeps its current value, so switching the colouring cannot silently drop the material or the wireframe -- while an explicit `null` CLEARS the fields whose null means something. The collection and the scene are not editable -- a layer renders what it was created to render
 """
@@ -11058,6 +11176,23 @@ type VectorLayer implements Layer {
   """
   vectorAxis: String!
   visible: Boolean!
+}
+
+"""
+A composition laid out over a coordinate system: a scene (a place) or a chart (one metric axis). It adopts the space as its world, names data by id and owns none of it. Only what every kind has is here -- the layers differ per kind, so select them on the concrete type
+"""
+interface Visualization {
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+  id: ID!
+  name: String!
+
+  """
+  The space this visualization is laid out over. Never owned by it: several can share the space, it outlives each of them, and deleting one never deletes it
+  """
+  worldCoordinateSystem: CoordinateSystem!
 }
 
 """A retarder: a fraction of a wave, at an angle"""

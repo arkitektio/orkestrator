@@ -62,18 +62,17 @@ export const MIKRO_HELP = {
   ),
   arrayDataset: (
     <PageHelp
-      intro="One array dataset, shown through a scene: a composed view that decides how the data is drawn. A dataset without a scene shows a short summary and offers to create one."
+      intro="One array dataset, as a container. You do not view or process a dataset directly: you open a lens of it. This page lists its lenses and holds what is true of the dataset as a whole."
       steps={[
-        <>If there is no scene yet, press <b>Create scene</b> in the middle of the page.</>,
-        <>Pick another scene of this dataset from the selector under the title, and press <b>Make default</b> to make the one on screen the dataset’s thumbnail and landing view.</>,
-        <>Drag the sliders at the right and bottom edge to move through Z and the other dimensions.</>,
-        <>Open the <b>Layers</b> tab of the sidebar to change contrast, channels and visibility.</>,
-        <>Hold <b>A</b> and draw to annotate; the shapes are listed in the <b>Annotations</b> tab.</>,
+        <>Click <b>Whole array</b> under <b>Lenses</b> to open all of the dataset in the viewer.</>,
+        <>Click any other lens to open just that part.</>,
+        <>Press <b>New lens</b> to cut out a part of the dataset: a range of planes, a region, a timepoint.</>,
         <>Use the folder button in the header (it shows the current folder, or <b>Unfiled</b>) to move the dataset.</>,
+        <>Press <b>Dataset</b> in the header for what can be done to the dataset itself, such as deleting or calibrating it.</>,
       ]}
       tips={[
-        <>Press <b>?</b> over the viewer for the full list of keyboard shortcuts; <b>F</b> frames the whole scene.</>,
-        <>The <b>Info</b> tab holds the facts about the dataset, including what it was derived from and what was derived from it.</>,
+        <>To run a task on the data, open a lens and press <b>Run on lens</b> there.</>,
+        <>Below the lenses the page shows what the dataset was derived from and what was derived from it.</>,
       ]}
     />
   ),
@@ -253,7 +252,7 @@ export const MIKRO_HELP = {
         <>Drag to move around, and press <b>F</b> to frame the whole scene.</>,
         <>Open the <b>Layers</b> tab of the sidebar to show or hide layers and change their contrast and channels.</>,
         <>Hold <b>A</b> and draw to annotate; the shapes are listed in the <b>Annotations</b> tab.</>,
-        <>Hold <b>P</b> to probe the value under the cursor.</>,
+        <>Hold <b>P</b> to probe the value under the cursor, and click to pin a probe point; the <b>Probe</b> tab of the sidebar shows the readings and compares the pinned points.</>,
         <>Open the menu button at the right end of the page header and choose <b>Add Layer</b> to bring more data in, or <b>Align Layers…</b> to line layers up.</>,
         <>Open the <b>Animations</b> tab to build a camera tour: a sequence of stops the camera travels between.</>,
       ]}
@@ -307,11 +306,18 @@ export const MIKRO_HELP = {
   ),
   lens: (
     <PageHelp
-      intro="A lens is a named selection of an array dataset: the whole array, or a cut along some of its axes. Scenes draw data through lenses; this page only describes one."
+      intro="A lens is a selection of an array dataset: the whole array, or a part cut out of it. This page is the viewer for one lens, shows the scenes that draw it, and is where you hand it to a task."
       steps={[
-        <>Read <b>Selection</b> and <b>Axes</b> to see which part of the dataset the lens covers.</>,
-        <>Click the dataset under <b>Points at</b> to open the data the lens reads from.</>,
-        <>Click the coordinate system under <b>Points at</b> to see the space the selection lives in.</>,
+        <>Press <b>Create scene</b> to draw this lens, if it is in no scene yet.</>,
+        <>Pick a scene in the dropdown under the title, and press <b>Make default</b> to open this lens on it from now on.</>,
+        <>Press <b>Run on lens</b> in the header to run a task on exactly this selection.</>,
+        <>Click the pencil next to the title to name the lens.</>,
+        <>Open the <b>Lenses</b> tab to switch to another lens of the same dataset, or press <b>New lens</b> there to cut a new one.</>,
+        <>Click the dataset's name above the title to go to the dataset and all of its lenses.</>,
+      ]}
+      tips={[
+        <>Drag the sliders at the right and bottom edge to move through Z and the other dimensions; the <b>Layers</b> tab changes contrast, channels and visibility.</>,
+        <>The <b>Info</b> tab shows the <b>Selection</b> and what is <b>Derived from this lens</b>.</>,
       ]}
     />
   ),

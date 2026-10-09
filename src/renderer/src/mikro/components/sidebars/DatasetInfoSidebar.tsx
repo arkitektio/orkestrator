@@ -23,17 +23,22 @@ import { ProvenanceSection } from "./ProvenanceSection";
 
 type PageDataset = GetArrayDatasetQuery["arrayDataset"];
 
+// Everything about the dataset that is not the picture, in two halves with two
+// homes. `DatasetFacts` (what it IS) is free — it reads the page's own query —
+// and is shown on the dataset's page and under a lens' own facts in the viewer's
+// Info tab. `DatasetLineage` (where it came from, what came out of it, how it
+// was edited) is a round trip and belongs to the dataset's page alone.
+
 /**
- * Everything about the dataset that is not the picture: what it IS, where it
- * came from, what came out of it, and how it has been edited since.
+ * What the dataset IS: its name, shape, storage, grid, tags and calibration.
+ * All from the page's own query, so it costs nothing to show — which is why the
+ * lens viewer's Info tab carries it under the lens' own facts, while the
+ * lineage below (a round trip) stays on the dataset's page.
  *
- * The four read as one story, which is why they are one tab rather than a tab
- * each — a lineage split across two rails is a lineage nobody follows. The
- * static facts come from the page's own query; the lineage and the history are
- * one extra round trip made here, because the tab is unmounted while inactive
- * (Radix `TabsContent`) and so costs nothing until someone opens it.
+ * A fragment's worth of sections with no container of its own: the caller
+ * decides the column, the padding and what sits beside it.
  */
-export const DatasetInfoSidebar = ({ dataset }: { dataset: PageDataset }) => {
+export const DatasetFacts = ({ dataset }: { dataset: PageDataset }) => {
   const dtype = baseDtypeOf(dataset.dataArrays);
   const nbytes = datasetNbytes(dataset.dataArrays);
   const storedNbytes = datasetStoredBytes(dataset.dataArrays);
@@ -47,15 +52,8 @@ export const DatasetInfoSidebar = ({ dataset }: { dataset: PageDataset }) => {
   const chunkShape = baseArray?.store.chunks;
   const shardShape = baseArray?.store.shards;
 
-  // cache-and-network so reopening the tab after a task ran shows what it
-  // produced rather than the answer from before it started.
-  const { data, error, loading } = useGetArrayDatasetDerivedQuery({
-    variables: { id: dataset.id },
-    fetchPolicy: "cache-and-network",
-  });
-
   return (
-    <div className="flex flex-col gap-4 overflow-y-auto p-4">
+    <>
       <div className="flex flex-col gap-1">
         {/* `break-all` like the page title: a name is usually one long token, so
             the default word-wrap would not wrap it and it would run out of the
@@ -219,7 +217,25 @@ export const DatasetInfoSidebar = ({ dataset }: { dataset: PageDataset }) => {
       )}
 
       <DatasetCalibrationSection dataset={dataset} />
+    </>
+  );
+};
 
+/**
+ * Where the dataset came from, what came out of it, which files it was
+ * converted from or exported to, and how it has been edited since. One extra
+ * round trip made here, so it costs nothing until it is mounted.
+ */
+export const DatasetLineage = ({ dataset }: { dataset: PageDataset }) => {
+  // cache-and-network so reopening the page after a task ran shows what it
+  // produced rather than the answer from before it started.
+  const { data, error, loading } = useGetArrayDatasetDerivedQuery({
+    variables: { id: dataset.id },
+    fetchPolicy: "cache-and-network",
+  });
+
+  return (
+    <>
       {/* Lineage and history. One failure message for all three: they come from
           one query, so a partial rendering would be a lie about which part is
           missing. */}
@@ -266,6 +282,6 @@ export const DatasetInfoSidebar = ({ dataset }: { dataset: PageDataset }) => {
           <ProvenanceSection entries={data.arrayDataset.provenanceEntries} />
         </>
       )}
-    </div>
+    </>
   );
 };

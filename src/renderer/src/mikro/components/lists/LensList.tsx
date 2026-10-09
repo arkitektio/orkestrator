@@ -12,6 +12,8 @@ const TList = createList({
   // A page of its own says so when there is nothing, instead of going blank.
   autoHide: false,
   emptyTitle: "No lenses yet",
+  emptyDescription:
+    "A lens is a part cut out of an array dataset. Make one with New lens on a dataset's Lenses tab.",
   minItemWidth: 220,
 });
 

@@ -33,11 +33,13 @@ import {
   SETTLE_REFINE_DELAY_MS,
   buildVolumeStructureKey,
   createCompositorStats,
+  createSettledRenderMeter,
   decideSettleRefine,
   decideVolumeFrame,
   needsTargetResize,
   resolveVolumeScale,
   resolveVolumeTargetSize,
+  settleRefineAffordable,
   type VolumeFrameKey,
 } from "../../platform/gpu/volumeCompositor";
 import { useViewStoreApi } from "../../platform/stores/viewStore";
@@ -116,6 +118,8 @@ export const VolumeCompositor = () => {
   const viewStoreApi = useViewStoreApi();
   const viewerStoreApi = useBrickStoreApi();
   const stats = useMemo(() => createCompositorStats(), []);
+  // What the latest settled render cost, read before a ladder stage is spent.
+  const meter = useMemo(() => createSettledRenderMeter(), []);
   const invalidate = useThree((state) => state.invalidate);
 
   const target = useMemo(
@@ -248,9 +252,10 @@ export const VolumeCompositor = () => {
       cachedComposites: stats.cachedComposites(),
       lastRenderReason: stats.lastRenderReason(),
       settleRefineStage: qualityGovernor.getSettleRefineStage(),
+      settledRenderMs: meter.costMs(),
     }));
     return () => viewerStoreApi.getState().registerVolumeCompositor(null);
-  }, [viewerStoreApi, target, stats]);
+  }, [viewerStoreApi, target, stats, meter]);
 
   const previousKeyRef = useRef<VolumeFrameKey | null>(null);
   // Per-frame scratch, allocated once: the pass-set arrays `collectPassSets`
@@ -287,6 +292,11 @@ export const VolumeCompositor = () => {
       refineTimerRef.current = null;
       const view = viewStoreApi.getState();
       if (view.cameraMoving || view.interacting || qualityGovernor.isStreaming()) return;
+      // Only when the settled render it doubles was cheap (the meter's probe
+      // frames have run by now: they follow the render, the timer waits
+      // 200 ms). A declined stage is simply not scheduled again until the
+      // next settled render arms the ladder afresh.
+      if (!settleRefineAffordable({ settledRenderMs: meter.costMs(), nextStage })) return;
       // The emit runs the whole chain: useStepScaleUniform recomputes the
       // boosted uMaxSteps (image material only), bumps volumeInputs and
       // invalidates; the next frame re-renders the target exactly once.
@@ -379,7 +389,8 @@ export const VolumeCompositor = () => {
     const profile = qualityGovernor.getProfile();
     const view = viewStoreApi.getState();
     const interacting = view.cameraMoving || view.interacting;
-    const scale = resolveVolumeScale(qualityGovernor.getTier(), interacting);
+    const streaming = qualityGovernor.isStreaming();
+    const scale = resolveVolumeScale(qualityGovernor.getTier(), interacting, streaming);
     lastScaleRef.current = scale;
     const dpr = gl.getPixelRatio();
     const nextSize = resolveVolumeTargetSize({
@@ -421,7 +432,7 @@ export const VolumeCompositor = () => {
     const decision = decideVolumeFrame({
       cacheEnabled: true,
       hasTargetContent: hasContentRef.current,
-      streaming: qualityGovernor.isStreaming(),
+      streaming,
       key,
       trackerReason: viewer.volumeInputs.lastReason,
       previous: previousKeyRef.current,
@@ -487,6 +498,16 @@ export const VolumeCompositor = () => {
       }
     }
 
+    // --- Settled-render cost ---------------------------------------------------
+    // The meter needs the frames AFTER a settled render to see what it cost
+    // (the GPU is still on it when gl.render returns); it asks for them here
+    // and they are cached composites. Read when the ladder timer fires.
+    const { probe } = meter.onFrame(
+      performance.now(),
+      decision.render && scale === 1 && !interacting && !streaming,
+    );
+    if (probe) invalidate();
+
     // --- Settle refinement ladder seam -------------------------------------
     // "A volume render just completed while settled at full res" is literally
     // true here; advance is deferred by the quiet timer, reset is immediate.
@@ -494,7 +515,7 @@ export const VolumeCompositor = () => {
       // The OR'd interaction flag: a window drag holds the ladder down
       // exactly as camera motion does, and its falling edge advances it.
       cameraMoving: interacting,
-      streaming: qualityGovernor.isStreaming(),
+      streaming,
       enabled: true,
       cacheEnabled: true,
       renderedThisFrame: decision.render,

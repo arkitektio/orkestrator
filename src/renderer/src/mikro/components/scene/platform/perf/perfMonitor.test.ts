@@ -110,6 +110,34 @@ describe("perfMonitor aggregation", () => {
     expect(report.bytesUploaded).toBe(750);
   });
 
+  it("attributes drain time, pump slices and page-flush bytes to the next frame", () => {
+    // The frame bracket cannot see the pump: it runs between frames. The
+    // drain reports itself, in-frame and off-frame alike.
+    perfMonitor.startRecording();
+    perfMonitor.markDrain(3, { offFrame: false, pageFlushBytes: 4096 });
+    perfMonitor.markDrain(1.5, { offFrame: true, pageFlushBytes: 0 });
+    perfMonitor.markDrain(2.5, { offFrame: true, pageFlushBytes: 0 });
+    perfMonitor.recordFrame(frame());
+    perfMonitor.markDrain(1, { offFrame: true, pageFlushBytes: 0 });
+    perfMonitor.recordFrame(frame());
+    const report = perfMonitor.buildSessionReport()!;
+    expect(report.drainMs.total).toBe(8);
+    expect(report.drainMs.offFrame).toBe(5);
+    expect(report.drainMs.offFrameSlices).toBe(3);
+    expect(report.drainMs.offFrameMaxMs).toBe(2.5);
+    expect(report.pageFlushBytes).toBe(4096);
+  });
+
+  it("ignores drain marks while not recording", () => {
+    perfMonitor.markDrain(50, { offFrame: true, pageFlushBytes: 1 });
+    perfMonitor.startRecording();
+    perfMonitor.recordFrame(frame());
+    const report = perfMonitor.buildSessionReport()!;
+    expect(report.drainMs.total).toBe(0);
+    expect(report.drainMs.offFrameMaxMs).toBe(0);
+    expect(report.pageFlushBytes).toBe(0);
+  });
+
   it("reports gpuMs as null when no timer-query samples were available", () => {
     perfMonitor.startRecording();
     perfMonitor.recordFrame(frame({ gpuMs: null }));

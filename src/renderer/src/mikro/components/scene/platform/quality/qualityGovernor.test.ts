@@ -404,13 +404,25 @@ describe("resolveMaxRaySteps (settle refinement ladder)", () => {
     } = await import("./qualityGovernor");
     const high = QUALITY_PROFILES[TIER_HIGH]; // 512
     expect(resolveMaxRaySteps(high, false, 1, 1)).toBe(1024);
-    expect(resolveMaxRaySteps(high, false, 1, 2)).toBe(2048);
+    expect(resolveMaxRaySteps(high, false, 1, 2)).toBe(MAX_RAY_STEPS_CEILING); // clamp
     expect(resolveMaxRaySteps(high, false, 1, 3)).toBe(MAX_RAY_STEPS_CEILING); // clamp
     const standardHigh = STANDARD_QUALITY_PROFILES[TIER_HIGH]; // capped 384
     expect(resolveMaxRaySteps(standardHigh, false, 1, 1)).toBe(768);
-    expect(resolveMaxRaySteps(standardHigh, false, 1, 2)).toBe(1536);
+    expect(resolveMaxRaySteps(standardHigh, false, 1, 2)).toBe(MAX_RAY_STEPS_CEILING);
     const low = QUALITY_PROFILES[TIER_LOW]; // 256
     expect(resolveMaxRaySteps(low, false, 1, 2)).toBe(1024);
+  });
+
+  it("the ceiling is exactly one doubling of the largest settled budget", async () => {
+    const { MAX_RAY_STEPS_CEILING, MAX_SETTLE_REFINE_STAGES, QUALITY_PROFILES, TIER_HIGH } =
+      await import("./qualityGovernor");
+    // The image material compiles its loop to this bound; one stage, not two
+    // — a 4× stage after every gesture was a several-hundred-ms frame on a
+    // large volume whose settled rays already run to the cap.
+    expect(MAX_SETTLE_REFINE_STAGES).toBe(1);
+    expect(MAX_RAY_STEPS_CEILING).toBe(
+      QUALITY_PROFILES[TIER_HIGH].maxRaySteps << MAX_SETTLE_REFINE_STAGES,
+    );
   });
 
   it("stage 0 / omitted argument reproduces today's values exactly", async () => {
@@ -446,9 +458,12 @@ describe("resolveMaxRaySteps (settle refinement ladder)", () => {
     expect(emits).toBe(1);
     governor.setSettleRefineStage(99);
     expect(governor.getSettleRefineStage()).toBe(MAX_SETTLE_REFINE_STAGES);
+    // With a one-stage ladder the clamp lands on the stage already held, so
+    // that write is a dedupe, not an emit.
+    expect(emits).toBe(MAX_SETTLE_REFINE_STAGES === 1 ? 1 : 2);
     governor.setSettleRefineStage(-5);
     expect(governor.getSettleRefineStage()).toBe(0);
-    expect(emits).toBe(3);
+    expect(emits).toBe(MAX_SETTLE_REFINE_STAGES === 1 ? 2 : 3);
   });
 });
 

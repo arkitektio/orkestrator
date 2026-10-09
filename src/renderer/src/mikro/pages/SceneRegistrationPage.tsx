@@ -44,6 +44,7 @@ const DetailPage = asDetailQueryRoute(
               {/* Aligning means comparing: contrast, channels and visibility
                   of BOTH layers have to be within reach. */}
               <Sidebars.Tab label="Layers"><Scene.LayersSidebar /></Sidebars.Tab>
+              <Sidebars.Tab label="Probe"><Scene.ProbeSidebar /></Sidebars.Tab>
             </>
           }
           defaultSidebar="Registration"

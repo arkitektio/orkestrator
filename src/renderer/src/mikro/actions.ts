@@ -10,14 +10,18 @@ import {
   CreateSceneFromCoordinateSystemDocument,
   CreateSceneFromCoordinateSystemMutation,
   CreateSceneFromCoordinateSystemMutationVariables,
+  CreateListLensDocument,
+  CreateListLensMutation,
+  CreateListLensMutationVariables,
+  CreateSceneFromLensDocument,
+  CreateSceneFromLensMutation,
+  CreateSceneFromLensMutationVariables,
   DeleteArrayDatasetDocument,
   DeleteChartDocument,
   DeleteFolderDocument,
   DeleteFileDocument,
+  DeleteLensDocument,
   DeleteSceneDocument,
-  GetArrayDatasetIntrinsicSystemDocument,
-  GetArrayDatasetIntrinsicSystemQuery,
-  GetArrayDatasetIntrinsicSystemQueryVariables,
   GetChartsDocument,
   GetCoordinateSystemDocument,
   GetFolderDocument,
@@ -54,6 +58,7 @@ import {
   Pencil,
   Pin,
   Ruler,
+  ScanSearch,
   Waypoints,
 } from "lucide-react";
 import { Action } from "@/core/smart/localactions/LocalActionProvider";
@@ -65,7 +70,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
   'create-scene-from-arrayDataset': {
     title: 'Create Scene',
     description:
-      "Bootstrap a renderable scene over this array dataset's own pixel grid: a full lens and a default image layer",
+      "Bootstrap a renderable scene of this whole array dataset: its whole-array lens, one layer per channel, in its own pixel grid",
     icon: Clapperboard,
     pinned: true,
     conditions: [
@@ -87,44 +92,158 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         throw new Error('Mikro service is not available');
       }
 
-      // A scene is built over a coordinate SYSTEM — `createSceneFromDataset` is
-      // gone, and a dataset's own grid is simply one of those systems ("the
-      // container's own data becomes the layer"). The action holds only an id,
-      // so it asks which grid that is before it can stage anything. To render
-      // at physical scale instead, build over a space the dataset is registered
-      // into; the dataset page offers those.
-      const { data: datasetData } = await mikro.client.query<
-        GetArrayDatasetIntrinsicSystemQuery,
-        GetArrayDatasetIntrinsicSystemQueryVariables
+      // A dataset is drawn through a lens, and "all of it" is the lens with no
+      // slices. `createLens` hands back the one the dataset already has — every
+      // dataset is created with it — so this names it rather than minting one.
+      // To render at physical scale instead, stage the lens from its page,
+      // which offers the spaces the dataset is registered into.
+      const { data: lensData } = await mikro.client.mutate<
+        CreateListLensMutation,
+        CreateListLensMutationVariables
       >({
-        query: GetArrayDatasetIntrinsicSystemDocument,
-        variables: { id: selected.id },
+        mutation: CreateListLensDocument,
+        variables: { input: { dataset: selected.id, slices: [] } },
       });
-
-      const system = datasetData?.arrayDataset.intrinsicSystem;
-      if (!system) {
-        throw new Error(
-          'This dataset has no intrinsic coordinate system yet, so there is no space to build a scene over',
-        );
+      const lens = lensData?.createLens;
+      if (!lens) {
+        throw new Error('This dataset has no whole-array lens to build a scene of');
       }
 
       const { data } = await mikro.client.mutate<
-        CreateSceneFromCoordinateSystemMutation,
-        CreateSceneFromCoordinateSystemMutationVariables
+        CreateSceneFromLensMutation,
+        CreateSceneFromLensMutationVariables
       >({
-        mutation: CreateSceneFromCoordinateSystemDocument,
-        // `policy` is left to the server default; its `kind` (the layer recipe)
-        // is inferred from the dataset's axes, and only LABEL needs asking for.
-        variables: { input: { coordinateSystem: system.id } },
-        refetchQueries: [GetScenesDocument],
+        mutation: CreateSceneFromLensDocument,
+        // `kind` (the layer recipe) is inferred from the dataset's axes, and
+        // only LABEL needs asking for.
+        variables: { input: { lens: lens.id } },
+        refetchQueries: [GetScenesDocument, 'GetLens', 'GetArrayDataset'],
+        awaitRefetchQueries: true,
       });
 
-      const scene = data?.createSceneFromCoordinateSystem;
+      const scene = data?.createSceneFromLens;
       if (!scene) {
         throw new Error('Scene creation returned no scene');
       }
 
-      navigate(linkBuilder('mikro/scenes')(scene.id));
+      // The viewer is the lens' page; name the new scene so it is the one on
+      // screen.
+      navigate(`${linkBuilder('mikro/lenses')(lens.id)}?scene=${encodeURIComponent(scene.id)}`);
+    },
+  },
+  // The same for a lens someone already holds. Not a call on the lens' SPACE:
+  // staging a space draws whatever lives in it, which behind a cut is its whole
+  // dataset. Naming the lens is what makes the scene show the cut.
+  'create-scene-from-lens': {
+    title: 'Create Scene',
+    description:
+      'Bootstrap a scene showing just this lens: its selection of the dataset, one layer per channel, where it was cut from',
+    icon: Clapperboard,
+    pinned: true,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/lens' },
+      { type: 'nopartner' },
+    ],
+    collections: ['lens'],
+    execute: async ({ state, services, navigate }) => {
+      const selected = state.left.find(
+        (item) => item.identifier === '@mikro/lens',
+      );
+
+      if (!selected?.id) {
+        throw new Error('No lens selected for Create Scene action');
+      }
+
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+
+      const { data } = await mikro.client.mutate<
+        CreateSceneFromLensMutation,
+        CreateSceneFromLensMutationVariables
+      >({
+        mutation: CreateSceneFromLensDocument,
+        // `kind` (the layer recipe) and `world` are left to the server: the
+        // recipe is inferred from the lens' axes, and the world is the
+        // dataset's own grid, so the cut sits where it was taken from.
+        variables: { input: { lens: selected.id } },
+        // The lens' page lists its scenes; awaited so it holds the new one by
+        // the time we land there asking for it.
+        refetchQueries: [GetScenesDocument, 'GetLens', 'GetArrayDataset'],
+        awaitRefetchQueries: true,
+      });
+
+      const scene = data?.createSceneFromLens;
+      if (!scene) {
+        throw new Error('Scene creation returned no scene');
+      }
+
+      // Stay with the lens — its page is where a lens' scenes are drawn — and
+      // name the new scene so it is the one on screen.
+      navigate(`${linkBuilder('mikro/lenses')(selected.id)}?scene=${encodeURIComponent(scene.id)}`);
+    },
+  },
+  // One dialog behind two selections: from a dataset it starts at the whole
+  // array, from a lens at that lens' slices — a tighter cut of the same data.
+  'create-lens-from-arrayDataset': {
+    title: 'New Lens…',
+    description:
+      'Cut a selection out of this array dataset — a range of planes, a region, a timepoint — to open or process on its own',
+    icon: ScanSearch,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/arraydataset' },
+      { type: 'nopartner' },
+    ],
+    collections: ['arrayDataset'],
+    execute: async ({ state, dialog }) => {
+      const selected = state.left.find(
+        (item) => item.identifier === '@mikro/arraydataset',
+      );
+      if (!selected?.id) {
+        throw new Error('No array dataset selected for New Lens action');
+      }
+      dialog.openDialog('createlens', { dataset: selected.id }, { size: 'medium' });
+    },
+  },
+  'create-lens-from-lens': {
+    title: 'New Lens From This…',
+    description:
+      'Start from this lens\' slices and cut again: a new lens over the same dataset',
+    icon: ScanSearch,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/lens' },
+      { type: 'nopartner' },
+    ],
+    collections: ['lens'],
+    execute: async ({ state, dialog }) => {
+      const selected = state.left.find(
+        (item) => item.identifier === '@mikro/lens',
+      );
+      if (!selected?.id) {
+        throw new Error('No lens selected for New Lens action');
+      }
+      dialog.openDialog('createlens', { lens: selected.id }, { size: 'medium' });
+    },
+  },
+  'rename-lens': {
+    title: 'Rename Lens…',
+    description:
+      'Give this lens a name to find it by, or clear the one it has. What it selects does not change',
+    icon: Pencil,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/lens' },
+      { type: 'nopartner' },
+    ],
+    collections: ['lens'],
+    execute: async ({ state, dialog }) => {
+      const selected = state.left.find(
+        (item) => item.identifier === '@mikro/lens',
+      );
+      if (!selected?.id) {
+        throw new Error('No lens selected for Rename Lens action');
+      }
+      dialog.openDialog('renamelens', { lens: selected.id }, { size: 'small' });
     },
   },
   'create-scene-from-coordinatesystem': {
@@ -857,6 +976,15 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     service: 'mikro',
     typename: 'ArrayDataset',
     mutation: DeleteArrayDatasetDocument
+  }),
+  'delete-mikro-lens': buildDeleteAction<ModuleServices<"mikro">>({
+    title: 'Delete Lens',
+    identifier: '@mikro/lens',
+    description:
+      'Delete the lens and every layer drawn over it, in every scene. The dataset it selects from is untouched',
+    service: 'mikro',
+    typename: 'Lens',
+    mutation: DeleteLensDocument
   }),
   'delete-mikro-folder': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete Folder',

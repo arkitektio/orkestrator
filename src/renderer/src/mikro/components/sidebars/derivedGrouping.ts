@@ -26,6 +26,7 @@ export type DerivedGroup<D> = {
 
 export type GroupableLens = {
   id: string;
+  name?: string | null;
   coordinateSystem?: { id: string } | null;
 } & LensLabelInput;
 
@@ -76,7 +77,8 @@ export const groupDerived = <L extends GroupableLens, D extends GroupableDerived
     if (!systemId || bySystem.has(systemId)) continue;
     bySystem.set(systemId, {
       key: systemId,
-      title: "Lens",
+      // Its name when someone gave it one; the slices underneath either way.
+      title: lens.name?.trim() || "Lens",
       subtitle: lensLabel(lens),
       items: [],
     });

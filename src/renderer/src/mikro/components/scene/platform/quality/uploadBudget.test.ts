@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   gpuFlushUploadBytes,
   partitionUploadQueue,
+  PUMP_MAX_MS,
   resolveDrainPolicy,
   shouldContinueDrain,
   shouldContinueStaleDrain,
@@ -176,6 +177,31 @@ describe("resolveDrainPolicy", () => {
     const low: DrainBudget = { maxBytes: 1024, maxBricks: 2, maxMs: 1 };
     const policy = resolveDrainPolicy(low, true);
     expect(policy.budget).toEqual(low);
+  });
+
+  it("in-frame drains flush the page tables; off-frame pump drains leave them dirty", () => {
+    // Only a render reads the page table. Flushing from every 8 ms pump slice
+    // re-sent whole dirty levels ~125 times a second for frames every 150 ms.
+    expect(resolveDrainPolicy(tierBudget, false).flushPageTables).toBe(true);
+    expect(resolveDrainPolicy(tierBudget, true).flushPageTables).toBe(true);
+    expect(resolveDrainPolicy(tierBudget, false, true).flushPageTables).toBe(false);
+    expect(resolveDrainPolicy(tierBudget, true, true).flushPageTables).toBe(false);
+  });
+
+  it("off-frame: half the slice, every other allowance as idle", () => {
+    const policy = resolveDrainPolicy(tierBudget, false, true);
+    expect(policy.budget.maxMs).toBe(PUMP_MAX_MS);
+    expect(policy.budget.maxBytes).toBe(tierBudget.maxBytes);
+    expect(policy.budget.maxBricks).toBe(tierBudget.maxBricks);
+    expect(policy.allowFreePass).toBe(true); // streaming must progress each slice
+    expect(policy.allowStale).toBe(true);
+    expect(policy.allowGpuDispatch).toBe(true);
+  });
+
+  it("off-frame never RAISES a slice the tier or the interaction already cut shorter", () => {
+    const low: DrainBudget = { maxBytes: 1024, maxBricks: 2, maxMs: 1 };
+    expect(resolveDrainPolicy(low, false, true).budget.maxMs).toBe(1);
+    expect(resolveDrainPolicy(tierBudget, true, true).budget.maxMs).toBe(1.5);
   });
 });
 

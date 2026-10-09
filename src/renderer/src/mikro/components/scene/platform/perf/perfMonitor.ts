@@ -67,6 +67,14 @@ export type FrameSample = {
   cameraMoving: boolean;
   bricksUploaded: number;
   bytesUploaded: number;
+  /** Main-thread ms spent in `drainUploads` since the previous frame: the
+   * in-frame drain plus every off-frame pump slice (which the frame bracket
+   * `frameMainThreadMs` cannot see). */
+  drainMs: number;
+  offFrameDrainMs: number;
+  offFrameDrains: number;
+  /** Page-table bytes written (`flushPageTable`) since the previous frame. */
+  pageFlushBytes: number;
 };
 
 export type PerfSessionReport = {
@@ -105,6 +113,11 @@ export type PerfSessionReport = {
   volumeFrames: Record<string, number>;
   bricksUploaded: number;
   bytesUploaded: number;
+  /** Upload-drain main-thread time over the session: all of it, the part that
+   * ran between frames (the pump), how many pump slices there were and the
+   * longest one — the stutter the frame numbers alone miss. */
+  drainMs: { total: number; offFrame: number; offFrameSlices: number; offFrameMaxMs: number };
+  pageFlushBytes: number;
 };
 
 class PerfMonitor {
@@ -124,6 +137,11 @@ class PerfMonitor {
   private volumeFrames = new Map<string, number>();
   private pendingBricks = 0;
   private pendingBytes = 0;
+  private pendingDrainMs = 0;
+  private pendingOffFrameDrainMs = 0;
+  private pendingOffFrameDrains = 0;
+  private pendingPageFlushBytes = 0;
+  private offFrameDrainMaxMs = 0;
   private readonly listeners = new Set<() => void>();
 
   isRecording(): boolean {
@@ -152,6 +170,11 @@ class PerfMonitor {
     this.probes = 0;
     this.pendingBricks = 0;
     this.pendingBytes = 0;
+    this.pendingDrainMs = 0;
+    this.pendingOffFrameDrainMs = 0;
+    this.pendingOffFrameDrains = 0;
+    this.pendingPageFlushBytes = 0;
+    this.offFrameDrainMaxMs = 0;
     this.emit();
   }
 
@@ -211,6 +234,20 @@ class PerfMonitor {
     this.pendingBytes += bytes;
   }
 
+  /** One `drainUploads` pass (or page-table catch-up): its main-thread ms,
+   * whether it ran between frames (the pump), and the page-table bytes it
+   * wrote. Accumulated into the next recorded frame. */
+  markDrain(ms: number, detail: { offFrame: boolean; pageFlushBytes: number }): void {
+    if (!this.recording) return;
+    this.pendingDrainMs += ms;
+    this.pendingPageFlushBytes += detail.pageFlushBytes;
+    if (detail.offFrame) {
+      this.pendingOffFrameDrainMs += ms;
+      this.pendingOffFrameDrains += 1;
+      if (ms > this.offFrameDrainMaxMs) this.offFrameDrainMaxMs = ms;
+    }
+  }
+
   /** Called once per animation frame by `PerfFrameProbe` while recording. */
   recordFrame(sample: {
     framePeriodMs: number;
@@ -229,9 +266,17 @@ class PerfMonitor {
       cameraMoving: sample.cameraMoving,
       bricksUploaded: this.pendingBricks,
       bytesUploaded: this.pendingBytes,
+      drainMs: this.pendingDrainMs,
+      offFrameDrainMs: this.pendingOffFrameDrainMs,
+      offFrameDrains: this.pendingOffFrameDrains,
+      pageFlushBytes: this.pendingPageFlushBytes,
     });
     this.pendingBricks = 0;
     this.pendingBytes = 0;
+    this.pendingDrainMs = 0;
+    this.pendingOffFrameDrainMs = 0;
+    this.pendingOffFrameDrains = 0;
+    this.pendingPageFlushBytes = 0;
 
     if (this.frames.length >= MAX_FRAMES) {
       this.truncated = true;
@@ -318,6 +363,13 @@ class PerfMonitor {
       ),
       bricksUploaded: frames.reduce((a, f) => a + f.bricksUploaded, 0),
       bytesUploaded: frames.reduce((a, f) => a + f.bytesUploaded, 0),
+      drainMs: {
+        total: frames.reduce((a, f) => a + f.drainMs, 0),
+        offFrame: frames.reduce((a, f) => a + f.offFrameDrainMs, 0),
+        offFrameSlices: frames.reduce((a, f) => a + f.offFrameDrains, 0),
+        offFrameMaxMs: this.offFrameDrainMaxMs,
+      },
+      pageFlushBytes: frames.reduce((a, f) => a + f.pageFlushBytes, 0),
     };
   }
 }

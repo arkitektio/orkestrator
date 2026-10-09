@@ -98,7 +98,7 @@ export const interactionModeOptions: InteractionModeOption[] = [
   {
     label: "Probe",
     value: "PROBE",
-    description: "Click a layer to read its voxel values (hold P)",
+    description: "Read the values under the cursor; click to pin a probe point (hold P)",
   },
   {
     label: "Design",

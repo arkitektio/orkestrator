@@ -10,7 +10,13 @@ import {
   withSparseLimit,
   type AttributeSelection,
 } from "@/mikro/lib/attributes/attributeSelection";
-import type { ProbeFetchKey, ProbeMode } from "../../probe/probeTypes";
+import type { ProbeFetchKey, ProbeMode, ProbeResult } from "../../probe/probeTypes";
+import {
+  pinProbePoint,
+  refreshProbePoint,
+  type ProbePoint,
+  type ProbePointLookup,
+} from "../../probe/probePoints";
 import type { MeshSelectionState, ProbedCoordinate, SceneAttributeKey } from "../viewerStore";
 import type { AttributeColumnLike, AttributeRow, HopMeta, PlanRowsState, ProbedAttributes } from "@/mikro/lib/attributes/attributeTypes";
 /**
@@ -77,6 +83,26 @@ export interface ProbeSlice {
    * deliberately stays at resident-LOD values (no per-hover chunk reads);
    * retained for a future save-time upgrade. */
   mergeExactProbeValues: (key: ProbeFetchKey, values: number[]) => void
+
+  /**
+   * The points pinned by clicking in PROBE mode — ephemeral, session-only,
+   * never an annotation (`platform/probe/probePoints.ts`). Changes at click
+   * cadence, so unlike `probedCoordinate` React may subscribe to it.
+   */
+  probePoints: readonly ProbePoint[];
+  probePointSerial: number;
+  /** Written ONLY by `features/probe/ProbePointPinner.tsx`, which decides
+   * what counts as a click; a place already pinned is refreshed, not doubled. */
+  pinProbePoint: (
+    probe: ProbeResult,
+    lookup: ProbePointLookup | null,
+    flatZ?: number | null,
+    coords?: ProbePoint["coords"],
+  ) => void;
+  /** A later publish of an already-pinned place (no-op set otherwise). */
+  refreshProbePoint: (probe: ProbeResult, lookup: ProbePointLookup | null) => void;
+  removeProbePoint: (id: string) => void;
+  clearProbePoints: () => void;
 
   /** "What is under this pixel?" — per-table lookup results for the active
    * probe, written by AttributeProbeTracker executing the probed system's
@@ -169,6 +195,15 @@ export const createProbeSlice = (
     }),
   mergeExactProbeValues: (key, values) =>
     set((state) => applyExactValues(state, key, values) ?? state),
+  probePoints: [],
+  probePointSerial: 0,
+  pinProbePoint: (probe, lookup, flatZ = null, coords = null) =>
+    set((state) => pinProbePoint(state, probe, lookup, flatZ, coords)),
+  refreshProbePoint: (probe, lookup) => set((state) => refreshProbePoint(state, probe, lookup)),
+  removeProbePoint: (id) =>
+    set((state) => ({ probePoints: state.probePoints.filter((point) => point.id !== id) })),
+  clearProbePoints: () =>
+    set((state) => (state.probePoints.length === 0 ? state : { probePoints: [] })),
   probedAttributes: null,
   beginProbedAttributes: (key, hops) =>
     set({

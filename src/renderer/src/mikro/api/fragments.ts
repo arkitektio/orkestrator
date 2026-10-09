@@ -96,6 +96,10 @@
       "TranslationTransformation",
       "UnmappableTransformation"
     ],
+    "Visualization": [
+      "Chart",
+      "Scene"
+    ],
     "_Entity": [
       "AffineTransformation",
       "Animation",

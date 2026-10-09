@@ -35,6 +35,9 @@ export const sparklineGeometry = (
   height: number,
   /** Kept clear above and below, so the stroke is not clipped at the extremes. */
   inset = 1,
+  /** The value range the box spans, when several lines share one box; the
+   * line's own extremes otherwise. */
+  range: { min: number; max: number } | null = null,
 ): SparklineGeometry => {
   const count = values.length;
   const indices = new Float64Array(count);
@@ -44,12 +47,17 @@ export const sparklineGeometry = (
     widthPx: width,
   });
   const { xs, ys, valueMin, valueMax } = packed;
-  const span = valueMin !== null && valueMax !== null ? valueMax - valueMin : 0;
+  const low = range ? range.min : valueMin;
+  const span = range
+    ? range.max - range.min
+    : valueMin !== null && valueMax !== null
+      ? valueMax - valueMin
+      : 0;
   const drawable = Math.max(0, height - 2 * inset);
   const parts: string[] = [];
   for (let i = 0; i < xs.length; i++) {
     // A flat line sits in the middle rather than on an edge.
-    const level = span > 0 ? (ys[i] - (valueMin as number)) / span : 0.5;
+    const level = span > 0 ? (ys[i] - (low as number)) / span : 0.5;
     const x = sparklineX(xs[i], count, width);
     const y = inset + (1 - level) * drawable;
     parts.push(`${Number(x.toFixed(2))},${Number(y.toFixed(2))}`);

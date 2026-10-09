@@ -5,6 +5,7 @@ import { VOLUME_PASS_OBJECT, collectPassSets } from "../visibility/passVisibilit
 import {
   buildVolumeStructureKey,
   createCompositorStats,
+  createSettledRenderMeter,
   createVolumeInputsTracker,
   decideSettleRefine,
   decideVolumeFrame,
@@ -12,6 +13,9 @@ import {
   needsTargetResize,
   resolveVolumeScale,
   resolveVolumeTargetSize,
+  settleRefineAffordable,
+  SETTLE_REFINE_FRAME_BUDGET_MS,
+  SETTLED_RENDER_PROBE_FRAMES,
   type SettleRefineAction,
   type VolumeFrameKey,
 } from "./volumeCompositor";
@@ -85,6 +89,82 @@ describe("resolveVolumeScale", () => {
     expect(resolveVolumeScale(TIER_HIGH, true)).toBe(0.5);
     expect(resolveVolumeScale(TIER_MEDIUM, true)).toBe(0.5);
     expect(resolveVolumeScale(TIER_LOW, true)).toBe(0.5);
+  });
+
+  it("is half-res while bricks stream, and full once they drained", () => {
+    // Each residency bump re-marches the whole volume; on a plan sized from
+    // the card's memory the stream, not the gesture, is the long part.
+    expect(resolveVolumeScale(TIER_HIGH, false, true)).toBe(0.5);
+    expect(resolveVolumeScale(TIER_LOW, false, true)).toBe(0.5);
+    expect(resolveVolumeScale(TIER_HIGH, true, true)).toBe(0.5);
+    expect(resolveVolumeScale(TIER_HIGH, false, false)).toBe(1);
+  });
+});
+
+describe("createSettledRenderMeter", () => {
+  it("knows nothing until a settled render has been followed by its probe frames", () => {
+    const meter = createSettledRenderMeter();
+    expect(meter.costMs()).toBeNull();
+    expect(meter.onFrame(0, false).probe).toBe(false);
+    expect(meter.onFrame(16, true).probe).toBe(true);
+    expect(meter.costMs()).toBeNull();
+    expect(meter.onFrame(32, false).probe).toBe(true);
+    expect(meter.costMs()).toBeNull();
+    expect(meter.onFrame(48, false).probe).toBe(false);
+    expect(meter.costMs()).toBe(16);
+  });
+
+  it("reads the cost as the LARGEST delta among the probe frames", () => {
+    // The GPU stall may land on the first or the second frame after the
+    // render, depending on how far ahead the browser lets frames run.
+    const meter = createSettledRenderMeter();
+    meter.onFrame(0, true);
+    meter.onFrame(16, false); // ran ahead
+    meter.onFrame(136, false); // then blocked on the GPU
+    expect(meter.costMs()).toBe(120);
+    expect(SETTLED_RENDER_PROBE_FRAMES).toBe(2);
+  });
+
+  it("a new settled render restarts the measurement and keeps the old cost meanwhile", () => {
+    const meter = createSettledRenderMeter();
+    meter.onFrame(0, true);
+    meter.onFrame(100, false);
+    meter.onFrame(116, false);
+    expect(meter.costMs()).toBe(100);
+    meter.onFrame(500, true); // idle gap before it: not a probe delta
+    expect(meter.costMs()).toBe(100);
+    expect(meter.onFrame(516, false).probe).toBe(true);
+    meter.onFrame(532, false);
+    expect(meter.costMs()).toBe(16);
+  });
+
+  it("a settled render during the probes of the previous one measures the new one", () => {
+    const meter = createSettledRenderMeter();
+    meter.onFrame(0, true);
+    meter.onFrame(16, false);
+    meter.onFrame(32, true);
+    meter.onFrame(92, false);
+    meter.onFrame(108, false);
+    expect(meter.costMs()).toBe(60);
+  });
+});
+
+describe("settleRefineAffordable", () => {
+  it("never spends a stage on an unmeasured settled render", () => {
+    expect(settleRefineAffordable({ settledRenderMs: null, nextStage: 1 })).toBe(false);
+  });
+
+  it("doubles the measured cost per stage against the frame budget", () => {
+    const budget = SETTLE_REFINE_FRAME_BUDGET_MS;
+    // A settled render inside one 60 Hz vsync (its probe reads ~17 ms) qualifies.
+    expect(settleRefineAffordable({ settledRenderMs: 17, nextStage: 1 })).toBe(true);
+    expect(settleRefineAffordable({ settledRenderMs: budget / 2, nextStage: 1 })).toBe(true);
+    expect(settleRefineAffordable({ settledRenderMs: budget / 2 + 1, nextStage: 1 })).toBe(false);
+    // The large-volume case: a 150 ms settled render gets no ladder at all.
+    expect(settleRefineAffordable({ settledRenderMs: 150, nextStage: 1 })).toBe(false);
+    expect(settleRefineAffordable({ settledRenderMs: 150, nextStage: 0 })).toBe(false);
+    expect(settleRefineAffordable({ settledRenderMs: 9, nextStage: 2 })).toBe(true);
+    expect(settleRefineAffordable({ settledRenderMs: 11, nextStage: 2 })).toBe(false);
   });
 });
 

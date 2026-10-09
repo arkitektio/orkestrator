@@ -115,6 +115,34 @@ export function layerCoverage(
   };
 }
 
+/**
+ * What ONE POINT of a layer covers — the coverage of a probe rather than of
+ * the picture. The point sits at a single voxel, so the spatial axes are no
+ * longer "all": every axis `coords` names is fixed at that index (the voxel,
+ * and the collapsed dims the point was read at — its own, not the sliders').
+ * The intensity axis is the layer's: a probe reads every visible channel slab
+ * at once. The phasor axis stays whole for the same reason it is in
+ * `layerCoverage`.
+ */
+export function pointCoverage(
+  layer: AnchorLayer,
+  coords: Readonly<Record<string, number>>,
+): LayerCoverage {
+  const shown = layerCoverage(layer, {});
+  const fixed: Record<string, number> = {};
+  for (const axis of shown.axisNames) {
+    if (axis === layer.intensityAxis || axis === layer.phasorAxis) continue;
+    const index = coords[axis];
+    // An axis the point has no index for stays unresolved — an unmet pin.
+    if (index !== undefined) fixed[axis] = index;
+  }
+  return {
+    ...shown,
+    whole: new Set(layer.phasorAxis ? [layer.phasorAxis] : []),
+    fixed,
+  };
+}
+
 /** One axis an anchor pins, and whether the layer is showing that index. */
 export type AnchorPin = {
   axis: string;

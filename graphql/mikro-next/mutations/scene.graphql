@@ -77,3 +77,42 @@ mutation SetDefaultScene($dataset: ID!, $scene: ID) {
     }
   }
 }
+
+# Stage ONE lens: its selection and nothing else of its dataset, a layer per
+# channel. This is how a crop is opened — staging the crop's SPACE with the
+# mutation above draws its whole dataset again, because which lens the layers
+# read is not a fact of the space. `world` defaults to the dataset's pixel grid,
+# so the crop sits where it was cut from.
+#
+# The server nominates the new scene for the lens when it nominates nothing yet,
+# so a freshly staged crop gets its own tile without a second call.
+mutation CreateSceneFromLens($input: CreateSceneFromLensInput!) {
+  createSceneFromLens(input: $input) {
+    ...ListScene
+  }
+}
+
+# Nominate the scene a lens opens on, and takes its thumbnail from. On an
+# unsliced lens the server writes the DATASET's nomination — one write,
+# whichever door — which is why the dataset's fields are selected back too.
+mutation SetLensDefaultScene($lens: ID!, $scene: ID) {
+  setLensDefaultScene(input: { lens: $lens, scene: $scene }) {
+    id
+    defaultScene {
+      ...ListScene
+    }
+    latestSnapshot {
+      ...SceneSnapshot
+    }
+    dataset {
+      id
+      defaultScene {
+        id
+        name
+      }
+      latestSnapshot {
+        ...SceneSnapshot
+      }
+    }
+  }
+}

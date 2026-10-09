@@ -42,7 +42,7 @@ const KNOWN_SIDEWAYS: Record<string, number> = {
   "features/labels->features/annotations": 1,
   // FabriksCollectionLayer reads the ROI drawing store directly.
   "features/meshes->features/annotations": 1,
-  // SelectedPointPanel's "Mark point" (create annotation from probe) action.
+  // ProbePanel's "Mark point" (create annotation from probe) action.
   "features/probe->features/annotations": 1,
   // AttributeProbeTracker calls identifyObjectId on the fabriks managers to
   // resolve a probed instance. NOT a new coupling — it used to reach them via

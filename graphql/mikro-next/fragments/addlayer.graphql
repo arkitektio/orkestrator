@@ -81,6 +81,9 @@ fragment AddLayerCandidate on Resident {
   __typename
   ... on Lens {
     id
+    # Aliased: the other members of this union select a non-null `name`, and a
+    # lens' is nullable — GraphQL refuses the two under one response key.
+    lensName: name
     shape
     axisNames
     slices {

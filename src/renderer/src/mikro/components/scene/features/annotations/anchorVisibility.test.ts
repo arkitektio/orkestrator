@@ -4,6 +4,7 @@ import {
   describePins,
   layerCoverage,
   matchAnchor,
+  pointCoverage,
 } from "./anchorVisibility";
 
 /**
@@ -174,5 +175,30 @@ describe("describePins", () => {
       "c=0, t=5",
     );
     expect(describePins([])).toBe("");
+  });
+});
+
+describe("pointCoverage", () => {
+  const at = (coords: Record<string, number>) => pointCoverage(layerWith(), coords);
+  const point = { t: 4, z: 3, y: 10, x: 20 };
+
+  it("meets a spatial pin only at the point's own voxel", () => {
+    expect(matchAnchor({ z: 3 }, at(point)).satisfied).toBe(true);
+    expect(matchAnchor({ z: 5 }, at(point)).satisfied).toBe(false);
+  });
+
+  it("reads collapsed dims from the point, not from the sliders", () => {
+    expect(matchAnchor({ t: 4 }, at(point)).satisfied).toBe(true);
+    expect(matchAnchor({ t: 0 }, at(point)).satisfied).toBe(false);
+  });
+
+  it("keeps the layer's channel rule and matches an unpinned anchor everywhere", () => {
+    expect(matchAnchor({ c: 1 }, at(point)).satisfied).toBe(true);
+    expect(matchAnchor({ c: 2 }, at(point)).satisfied).toBe(false);
+    expect(matchAnchor({}, at(point)).satisfied).toBe(true);
+  });
+
+  it("leaves a pin unmet along an axis the point has no index for", () => {
+    expect(matchAnchor({ t: 4 }, at({ z: 3 })).satisfied).toBe(false);
   });
 });

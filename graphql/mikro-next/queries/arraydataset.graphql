@@ -15,6 +15,17 @@ query GetArrayDataset($id: ID!) {
     defaultScene {
       ...ListScene
     }
+    # The lens that selects all of it: the first tile of the dataset's page,
+    # and what opening the dataset in a viewer means. Every dataset has one;
+    # null only for a dataset with no pixel grid.
+    fullLens {
+      ...ListLens
+    }
+    # The selections people cut out of it. Sliced only: a dataset carries
+    # several interchangeable unsliced lenses, and each of them is this page.
+    lenses(sliced: true) {
+      ...ListLens
+    }
   }
 }
 
@@ -114,23 +125,12 @@ query GetArrayDatasetDerived($id: ID!) {
       }
     }
     derivedDatasets {
-      ...ListArrayDataset
-      derivedFrom {
-        id
-        kind
-        valueRelation
-        output {
-          id
-          name
-        }
-        ... on UnmappableTransformation {
-          reason
-        }
-      }
+      ...DerivedDataset
     }
   }
   lenses(filters: { dataset: $id }) {
     id
+    name
     axisNames
     shape
     slices {

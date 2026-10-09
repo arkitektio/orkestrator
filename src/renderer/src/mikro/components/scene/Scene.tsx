@@ -16,6 +16,7 @@ import {
   SceneAnnotationsSidebar,
   SceneLayersSidebar,
   SceneMeshesSidebar,
+  SceneProbeSidebar,
 } from "./shell/chrome/sceneSidebarTabs";
 import { ZSliderPanel } from "./shell/chrome/ZSliderPanel";
 
@@ -89,5 +90,6 @@ export const Scene = Object.assign(SceneRoot, {
   // Conditional by design: hosts pair it with `Scene.hasMeshLayer(scene)`, so
   // a scene without meshes carries no dead tab.
   MeshesSidebar: SceneMeshesSidebar,
+  ProbeSidebar: SceneProbeSidebar,
   hasMeshLayer: sceneHasMeshLayer,
 });

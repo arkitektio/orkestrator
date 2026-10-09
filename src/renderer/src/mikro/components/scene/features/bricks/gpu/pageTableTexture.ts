@@ -37,6 +37,9 @@ export type PageTableTexture = {
   /** Per-level RGBA8 mirrors, `levelGrid` sized, tightly packed. */
   mirrors: Uint8Array[];
   dirty: DirtyBox[];
+  /** Bytes the latest `flushPageTable` wrote (page + sidecar planes), 0 when
+   * it had nothing to do — the drain's page-flush accounting reads it. */
+  lastFlushBytes: number;
   /** Full-texture mirror (`texture.image.data`) for context restore. */
   backing: Uint8Array;
   /**
@@ -109,6 +112,7 @@ export function createPageTableTexture(
       (grid) => new Uint8Array(grid[0] * grid[1] * grid[2] * 4),
     ),
     dirty: layout.levelGrid.map(() => null),
+    lastFlushBytes: 0,
     backing,
     occupancy,
     occMirrors: layout.levelGrid.map(
@@ -267,6 +271,7 @@ export function flushPageTable(
   pageTable: PageTableTexture,
 ): boolean {
   let uploaded = false;
+  let bytes = 0;
   for (let level = 0; level < pageTable.mirrors.length; level++) {
     const box = pageTable.dirty[level];
     if (!box) continue;
@@ -328,8 +333,13 @@ export function flushPageTable(
     if (pageOk && occOk && aggOk) {
       pageTable.dirty[level] = null;
       uploaded = true;
+      const texels = extent[0] * extent[1] * extent[2];
+      // RGBA8 page box, plus RG8 occupancy and (if allocated) aggregate, one
+      // plane per slab each.
+      bytes += texels * (4 + 2 * pageTable.occSlabs * (pageTable.aggregate ? 2 : 1));
     }
   }
+  pageTable.lastFlushBytes = bytes;
   return uploaded;
 }
 

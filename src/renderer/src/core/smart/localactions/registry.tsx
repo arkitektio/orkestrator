@@ -10,7 +10,7 @@ import { MODULE_ACTIONS } from "../../modules/registries";
 import { smartRegistry } from "@/core/smart/registry";
 import { structureTabTarget } from "@/core/smart/tabTargets";
 import { requestExport } from "@/core/modules/export/exportRequests";
-import { Columns2, Download, ExternalLink, FolderOpen, Link2, Link2Off, PanelLeftOpen } from "lucide-react";
+import { Bug, Columns2, Download, ExternalLink, FolderOpen, Link2, Link2Off, PanelLeftOpen } from "lucide-react";
 import { toast } from "@/core/notify";
 import {
   getActiveProfile,
@@ -215,8 +215,30 @@ const CopyPrivateLinkAction: Action = {
   collections: ["smart"],
 };
 
+/**
+ * Show what the selection looks like from the inside: identifier, id, label,
+ * descriptors, and what the host knows about the model. No conditions, so it
+ * is there for every selection, partner or not — the point is to check what
+ * a card, a drop or a palette hit actually handed over.
+ */
+const DebugDescribeAction: Action = {
+  title: "Debug describe",
+  description: "Show the identifiers, ids and descriptors of the selected structures",
+  icon: Bug,
+  conditions: [],
+  execute: async ({ state, dialog }) => {
+    dialog.openDialog(
+      "describestructures",
+      { left: state.left, right: state.right, isCommand: state.isCommand },
+      { size: "medium" },
+    );
+  },
+  collections: ["debug"],
+};
+
 /** Actions the host owns: they apply to any structure, whichever module it is from. */
 const HOST_ACTIONS = {
+  debugdescribe: DebugDescribeAction,
   copylink: CopyLinkAction,
   copyprivatelink: CopyPrivateLinkAction,
   popout: PopOutAction,

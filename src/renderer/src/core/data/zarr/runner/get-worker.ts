@@ -9,7 +9,7 @@
  * Uses a persistent WorkerPool queue for bounded-concurrency scheduling.
  */
 
-import { zarrTimingEnabled } from './timing.js'
+import { zarrTimingEnabled, zarrTransportStats } from './timing.js'
 import type { WorkerPoolTaskHandle, WorkerPoolTaskInput } from "../pool/types"
 import type {
   Chunk,
@@ -36,8 +36,9 @@ import {
   disposeWorker,
   getMetaId,
   isWorkerCrashedError,
+  workerDecode,
   workerFetchDecode,
-  workerFetchDecodeMulti,
+  workerFetchRange,
 } from "./worker-rpc"
 import {
   DEFAULT_DENSE_COALESCE,
@@ -624,7 +625,7 @@ function whenAllAborted(signals: (AbortSignal | undefined)[]): AbortSignal | und
   return controller.signal
 }
 
-/** The non-per-item arguments of one `workerFetchDecodeMulti` call. Everything
+/** The non-per-item arguments of one shard run (its GET and its decodes). Everything
  * here is covered by `shardBatchKeyFor`, so all items of a flushed run share
  * one context regardless of which group call contributed them. */
 interface ShardRunContext {
@@ -640,54 +641,88 @@ interface ShardRunContext {
 }
 
 /**
- * Dispatch one coalesced run (possibly spanning several group calls) as one
- * worker task + one ranged GET. Cancellation: `whenAllAborted` over every
- * member's effective signal — the run dies only when every contributing chunk
- * did. Priority: max of members (WorkerPool runs higher numbers first), so a
- * merged halo part rides at its co-members' priority.
+ * Dispatch one coalesced run (possibly spanning several group calls): ONE
+ * ranged GET, then one decode task PER PART on the pool. Decoding used to
+ * ride the fetching worker — every chunk of the run decoded one after another
+ * on a single thread while the rest of the pool idled, and none was delivered
+ * before the last. Now the parts decode in parallel and each member settles
+ * as soon as its own chunk is ready.
+ *
+ * Cancellation: the GET dies only when every member aborted
+ * (`whenAllAborted`); each decode dies with its own member. Priority: the GET
+ * rides the max of its members (WorkerPool runs higher numbers first), each
+ * decode its own.
  */
 function executeShardRun(ctx: ShardRunContext, run: CoalescedRange<ShardBatchItem>): void {
   const members = run.items.map((entry) => entry.item)
-  const parts = run.items.map((entry) => ({
-    offset: entry.offset,
-    length: entry.length,
-    actualChunkShape: entry.item.actualChunkShape,
-  }))
+  const parts = run.items.map((entry) => ({ offset: entry.offset, length: entry.length }))
   const runSignal = whenAllAborted(members.map((member) => member.signal))
-  const handle = enqueueWorkerTask<void>(
+  const fetched = enqueueWorkerTask(
     ctx.pool,
     ctx.workerUrl,
     runSignal,
     async (worker, signal) => {
-      const result = await workerFetchDecodeMulti(
-        worker,
-        ctx.workerStore,
-        ctx.shardPath,
-        { offset: run.offset, length: run.length },
-        parts,
-        ctx.metaId,
-        ctx.codecMeta,
-        ctx.requestInit,
-        ctx.textureFidelity,
-        ctx.useShared,
-        signal,
+      zarrTransportStats.requestsInFlight += 1
+      zarrTransportStats.peakRequestsInFlight = Math.max(
+        zarrTransportStats.peakRequestsInFlight,
+        zarrTransportStats.requestsInFlight,
       )
-      result.chunks.forEach((chunk, k) => members[k].onChunk(chunk ?? undefined))
+      try {
+        return await workerFetchRange(
+          worker,
+          ctx.workerStore,
+          ctx.shardPath,
+          { offset: run.offset, length: run.length },
+          parts,
+          ctx.requestInit,
+          signal,
+        )
+      } finally {
+        zarrTransportStats.requestsInFlight -= 1
+      }
+    },
+    Math.max(...members.map((member) => member.priority)),
+  )
+  fetched.promise.then(
+    (result) => {
+      if (result.timings.protocol) zarrTransportStats.protocol = result.timings.protocol
       if (zarrTimingEnabled()) logChunkTiming("[zarr run timing]", {
         shardPath: ctx.shardPath,
         parts: run.items.length,
         rangeBytes: run.length,
         workerFetchMs: roundTiming(result.timings.fetchMs),
-        workerTotalMs: roundTiming(result.timings.totalWorkerMs),
         fromHttpCache: result.timings.fromHttpCache,
         protocol: result.timings.protocol,
       })
+      members.forEach((member, k) => {
+        const bytes = result.parts?.[k]
+        if (!bytes) {
+          member.onChunk(undefined)
+          return
+        }
+        enqueueWorkerTask(
+          ctx.pool,
+          ctx.workerUrl,
+          member.signal,
+          (worker, signal) =>
+            workerDecode(
+              worker,
+              bytes,
+              ctx.metaId,
+              ctx.codecMeta,
+              member.actualChunkShape,
+              ctx.textureFidelity,
+              ctx.useShared,
+              signal,
+            ),
+          member.priority,
+        ).promise.then(member.onChunk, member.onError)
+      })
     },
-    Math.max(...members.map((member) => member.priority)),
+    (error) => {
+      for (const member of members) member.onError(error)
+    },
   )
-  handle.promise.catch((error) => {
-    for (const member of members) member.onError(error)
-  })
 }
 
 function edgeShapeOf(arr: { shape: readonly number[] }, chunkShape: number[], coords: readonly number[]): number[] {
@@ -707,7 +742,7 @@ function fillChunkOf<D extends DataType>(
 
 /**
  * Fetch several chunks of one array, coalescing inner chunks that sit close
- * together inside the same shard into ONE ranged GET + worker task (decoded
+ * together inside the same shard into ONE ranged GET (each then decoded
  * into N chunks by the worker). Returns one promise per coordinate, in order,
  * synchronously — so callers can register them for in-flight sharing before
  * any I/O happens.
@@ -735,7 +770,10 @@ export function getChunkGroupWorker<D extends DataType, Store extends Readable>(
       throwIfAborted(opts.signal)
       const storeOpts = withAbortSignal(opts.opts, opts.signal)
       const meta = await readArrayMetadataCached(arr, storeOpts)
-      if (!meta.sharding || coordsList.length < 2) {
+      // A one-chunk call still goes through the shard batch: with brick-aligned
+      // chunks a brick IS one chunk, and its neighbours dispatched in the same
+      // tick are exactly what a shard keeps adjacent.
+      if (!meta.sharding) {
         coordsList.forEach((_, i) => single(i))
         tasks = coordsList.length
         return

@@ -21,3 +21,27 @@ export const lensLabel = (lens: LensLabelInput) => {
     .join(", ");
   return `${slices} — ${dims}`;
 };
+
+export type LensTitleInput = {
+  name?: string | null;
+  slices: readonly { axis: string; start?: number | null; stop?: number | null }[];
+};
+
+/** What an unsliced lens is called everywhere: the dataset, looked at whole. */
+export const WHOLE_ARRAY = "Whole array";
+
+// The slices alone, without the axes and shape `lensLabel` appends — short
+// enough to be a heading.
+export const sliceSummary = (slices: LensTitleInput["slices"]) =>
+  slices.map((s) => `${s.axis}[${s.start ?? ""}:${s.stop ?? ""}]`).join(", ");
+
+/**
+ * What to CALL a lens — the headline of its page, its tile and its row.
+ *
+ * The name someone gave it; failing that, "Whole array" for a lens that cuts
+ * nothing; failing that, its slices. `lensLabel` is the technical line that
+ * goes underneath: it always spells out the slices, axes and shape, whatever
+ * the lens is called.
+ */
+export const lensTitle = (lens: LensTitleInput) =>
+  lens.name?.trim() || (lens.slices.length === 0 ? WHOLE_ARRAY : sliceSummary(lens.slices));

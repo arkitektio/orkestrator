@@ -82,7 +82,7 @@ export function enumerateBrickChunkCoords(
             if (d === zPos) return spatial[2];
             if (d === intensityPos) return channelChunk;
             if (d === phasorPos && phasorBins > 0) return phasorChunk;
-            return pool.fixedChunkCoords[d];
+            return pool.fixedChunkCoords[levelIndex][d];
           }),
         });
       }
@@ -102,13 +102,18 @@ export function enumerateBrickChunkCoords(
  * A phasor axis is NOT collapsed: the repack reduces every one of its bins
  * (`brickRepack.reduceChunks`), so pinning one index here would hand it a
  * single bin and the DFT would read a constant.
+ *
+ * Both results are PER LEVEL (`[level][dim]`): a level is addressed by its
+ * own chunk extent and its own length along the dim. Deriving one coordinate
+ * from level 0 and reusing it asks a level chunked differently along t for a
+ * chunk it does not have, which reads back as fill.
  */
 export function computeFixedIndices(
   layer: LayerState,
   geometry: LayerLevelGeometry,
   levels: LevelSource[],
   dimSelections: ViewerState["dimSelections"],
-): { fixedChunkCoords: number[]; fixedOffsets: number[] } {
+): { fixedChunkCoords: number[][]; fixedOffsets: number[][] } {
   const dims = layer.lens.dataset.axisNames;
   const { xPos, yPos, zPos, intensityPos, phasorPos } = geometry.axes;
   const sliceMap = layer.lens.slices.reduce<Record<string, (typeof layer.lens.slices)[number]>>(
@@ -118,19 +123,25 @@ export function computeFixedIndices(
     },
     {},
   );
-  const fixedChunkCoords = dims.map(() => 0);
-  const fixedOffsets = dims.map(() => 0);
+  const fixedChunkCoords = levels.map(() => dims.map(() => 0));
+  const fixedOffsets = levels.map(() => dims.map(() => 0));
   dims.forEach((dim, d) => {
     if (d === xPos || d === yPos || d === zPos || d === intensityPos) return;
     if (d === phasorPos && geometry.phasorBins > 0) return;
-    const fixedIndex = resolveFixedDimIndex(
-      sliceMap[dim],
-      dimSelections[dim],
-      levels[0].shape[d] ?? 1,
-    );
-    const chunkExtent = Math.max(1, levels[0].chunks[d] ?? 1);
-    fixedChunkCoords[d] = Math.floor(fixedIndex / chunkExtent);
-    fixedOffsets[d] = fixedIndex % chunkExtent;
+    const baseExtent = Math.max(1, levels[0].shape[d] ?? 1);
+    const baseIndex = resolveFixedDimIndex(sliceMap[dim], dimSelections[dim], baseExtent);
+    levels.forEach((level, l) => {
+      // The selection is a level-0 index; a level that re-bins the dim (a
+      // coarsened time axis) holds it at the proportional position.
+      const extent = Math.max(1, level.shape[d] ?? 1);
+      const index =
+        extent === baseExtent
+          ? baseIndex
+          : Math.min(extent - 1, Math.floor((baseIndex * extent) / baseExtent));
+      const chunkExtent = Math.max(1, level.chunks[d] ?? 1);
+      fixedChunkCoords[l][d] = Math.floor(index / chunkExtent);
+      fixedOffsets[l][d] = index % chunkExtent;
+    });
   });
   return { fixedChunkCoords, fixedOffsets };
 }

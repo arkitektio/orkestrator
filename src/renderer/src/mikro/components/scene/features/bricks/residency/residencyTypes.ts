@@ -147,9 +147,9 @@ export type LayerBrickPool = {
    * range moves (quantization is relative to the range, exactly like
    * `emptyValues`). Entries are dropped on evict; bounded by slot count. */
   brickRanges: Map<string, [number, number]>;
-  /** Per-dim fixed chunk coords / in-chunk offsets for non-spatial dims. */
-  fixedChunkCoords: number[];
-  fixedOffsets: number[];
+  /** Fixed chunk coords / in-chunk offsets for non-spatial dims, `[level][dim]`. */
+  fixedChunkCoords: number[][];
+  fixedOffsets: number[][];
   /** Layer data range (raw value space) — shader normalization + EMPTY encode. */
   minValue: number;
   maxValue: number;
@@ -308,6 +308,11 @@ export type BrickSystemStats = {
   /** Streaming wakeups whose render was coalesced by the cadence gate — each
    * one is a whole-scene re-raymarch that no longer happened (gap 1a). */
   streamFramesCoalesced: number;
+  /** Page-table flushes that uploaded something, and their bytes (page box +
+   * occupancy/aggregate planes). Only in-frame drains flush; a high byte
+   * count per flush means bricks land scattered over large levels. */
+  pageFlushes: number;
+  pageFlushBytes: number;
   /** Hierarchical-occupancy aggregate texels written (R4) — a write happens
    * when a parent cell's LAST child range lands (or on re-encode). */
   aggregateWrites: number;

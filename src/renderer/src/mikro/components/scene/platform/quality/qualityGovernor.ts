@@ -263,17 +263,26 @@ export const MIN_ACTIVE_RAY_STEPS = 96;
 /**
  * Compile-time ceiling of the IMAGE raymarcher's step loop — the settle
  * refinement ladder may raise `uMaxSteps` up to here. Exactly
- * max(profile.maxRaySteps) << MAX_SETTLE_REFINE_STAGES = 512·4. Exported
+ * max(profile.maxRaySteps) << MAX_SETTLE_REFINE_STAGES = 512·2. Exported
  * from core (not volumeRayNodes) because the resolve function below needs it
  * and render→core is the established import direction; the label
  * raymarcher's loop keeps the plain MAX_RAY_STEPS bound (labels render live
  * in the canvas pass, outside the compositor cache — never boosted).
  */
-export const MAX_RAY_STEPS_CEILING = 2048;
+export const MAX_RAY_STEPS_CEILING = 1024;
 
-/** Settle refinement ladder depth: two doublings = 4× stride-floor density,
- * bounding the worst single refinement frame at ~4× a settled frame. */
-export const MAX_SETTLE_REFINE_STAGES = 2;
+/**
+ * Settle refinement ladder depth: one doubling = 2× stride-floor density,
+ * bounding the worst single refinement frame at ~2× a settled frame.
+ *
+ * Was two (4×). With plans sized from the card's memory the settled render of
+ * a large volume already runs its rays to the step cap, and a 4× stage on top
+ * of it was a frame of several hundred milliseconds after every gesture — the
+ * hitch that made large volumes feel slower than the August 2026 renderer,
+ * which had no ladder. One stage, and only when the settled render was cheap
+ * (`settleRefineAffordable`, volumeCompositor.ts).
+ */
+export const MAX_SETTLE_REFINE_STAGES = 1;
 
 /**
  * Extra stride multiplier for CANVAS-PASS volumes (labels/masks) while the
@@ -439,7 +448,7 @@ export function resolveDpr(
 /**
  * Was a kill switch; settled ON (OCTREE_RENDERER.md §6.9) for the SETTLE REFINEMENT LADDER: after the camera settles
  * and streaming drains, the volume compositor drives the governor's
- * `settleRefineStage` 0 → 1 → 2, each stage doubling the settled `uMaxSteps`
+ * `settleRefineStage` 0 → 1, each stage doubling the settled `uMaxSteps`
  * budget of the image raymarcher and re-rendering the cached target once —
  * progressive de-graining of floorDelta-bound rays while the scene is idle.
  * Read per advance by the compositor, so toggling takes effect at the next

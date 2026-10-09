@@ -6,6 +6,7 @@
  */
 
 export type { ArrayMetadata, ChunkLocation } from "./get-worker"
+export { zarrTransportStats } from "./timing.js"
 export {
   chunkCacheKeyFor,
   createCacheKey,

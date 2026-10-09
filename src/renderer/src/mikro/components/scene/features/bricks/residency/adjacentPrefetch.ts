@@ -138,9 +138,8 @@ export class AdjacentPrefetcher {
    * unlike z, a collapsed dim always refetches on change.
    *
    * Key parity is load-bearing: after a step, `computeFixedIndices` derives
-   * `fixedChunkCoords[d]` from LEVEL-0 chunk extents and
-   * `enumerateBrickChunkCoords` applies that same value at every level — so
-   * the neighbor's chunk coordinate here must come from level-0 chunking too,
+   * each level's `fixedChunkCoords` from THAT level's chunk extent — so the
+   * neighbor's chunk coordinate here must come from the node's own level too,
    * or the warmed keys are never the keys the real fetch asks for.
    */
   private prefetchAdjacentSelections(budget: { chunks: number; bytes: number }): void {
@@ -195,10 +194,10 @@ export class AdjacentPrefetcher {
         for (const d of collapsedDims) {
           for (const delta of [1, -1]) {
             const neighborChunk = adjacentSelectionChunk(
-              pool.fixedChunkCoords[d],
-              pool.fixedOffsets[d],
-              Math.max(1, level0.chunks[d] ?? 1),
-              Math.max(1, level0.shape[d] ?? 1),
+              pool.fixedChunkCoords[node.level][d],
+              pool.fixedOffsets[node.level][d],
+              Math.max(1, level.chunks[d] ?? 1),
+              Math.max(1, level.shape[d] ?? 1),
               delta,
             );
             if (neighborChunk === null) continue;

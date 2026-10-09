@@ -29,6 +29,7 @@ query GetLensAnchors($id: ID!) {
 query ListLensesForDataset($dataset: ID!) {
   lenses(filters: { dataset: $dataset }) {
     id
+    name
     slices {
       ...DimSlice
     }

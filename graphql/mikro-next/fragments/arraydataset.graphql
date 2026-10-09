@@ -43,6 +43,11 @@ fragment ListArrayDataset on ArrayDataset {
     id
     name
   }
+  # Where the tile leads: a dataset is opened by opening the lens that selects
+  # all of it. Id only — the tile already carries the picture and the shape.
+  fullLens {
+    id
+  }
 }
 
 fragment ArrayDataset on ArrayDataset {
@@ -70,5 +75,25 @@ fragment ArrayDataset on ArrayDataset {
   }
   dataArrays {
     ...DataArray
+  }
+}
+
+# A dataset as one row of a lineage panel: the card fields plus the edges that
+# say what it was computed from. `derivedFrom[0]` is the primary parent, the one
+# that places the child. Shared by the dataset's lineage and a lens' own, so one
+# row component draws both.
+fragment DerivedDataset on ArrayDataset {
+  ...ListArrayDataset
+  derivedFrom {
+    id
+    kind
+    valueRelation
+    output {
+      id
+      name
+    }
+    ... on UnmappableTransformation {
+      reason
+    }
   }
 }

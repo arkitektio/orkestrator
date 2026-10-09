@@ -2,7 +2,7 @@
  * Cross-call batching of shard range reads: group calls issued in the same
  * tick (neighbouring bricks dispatched by one reconcile loop) contribute
  * their post-index byte ranges here, keyed by everything that must match for
- * the items to legally share one `fetch_decode_multi` request. A
+ * the items to legally share one ranged GET. A
  * `setTimeout(0)` flush then coalesces ACROSS the contributing calls — the
  * dispatch loop is synchronous and same-shard index reads share one
  * single-flight promise, so same-tick contributions land within one
@@ -53,7 +53,7 @@ function getPoolId(pool: object): string {
 
 /**
  * The key is the correctness linchpin: it must cover EVERY non-per-item
- * argument of `workerFetchDecodeMulti` plus scheduling identity (pool,
+ * argument of a shard run (its GET and its decodes) plus scheduling identity (pool,
  * workerUrl) and the coalesce rule — anything missing here would decode a
  * merged member with another call's parameters. Keep in lockstep with
  * `executeShardRun` in get-worker.ts.

@@ -2,8 +2,10 @@ import { SceneGuard, useSceneScopeStatus } from "../SceneProvider";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { AnimationPanel } from "../../features/animation/AnimationPanel";
 import { AnnotationsPanel } from "../../features/annotations/AnnotationsPanel";
+import { ProbeMetadata } from "../../features/annotations/ProbeMetadata";
 import { LayerControlPanel } from "../layerPanel/LayerControlPanel";
 import { MeshesPanel } from "../../features/meshes/MeshesPanel";
+import { ProbePanel } from "../../features/probe/ProbePanel";
 
 /**
  * Scene panels as ModelPage sidebar tabs
@@ -67,5 +69,20 @@ export const SceneAnnotationsSidebar = () => (
 export const SceneMeshesSidebar = () => (
   <SceneGuard fallback={<SidebarFallback />}>
     <MeshesPanel variant="sidebar" />
+  </SceneGuard>
+);
+
+/**
+ * The probe readout, the pinned probe points and the acquisition metadata
+ * anchored at them, as a sidebar tab — what the cursor reads in PROBE mode
+ * (hold P), what a click there pins, and what was recorded about those
+ * places. Composed here because the two halves are different features.
+ */
+export const SceneProbeSidebar = () => (
+  <SceneGuard fallback={<SidebarFallback />}>
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-2">
+      <ProbePanel />
+      <ProbeMetadata />
+    </div>
   </SceneGuard>
 );

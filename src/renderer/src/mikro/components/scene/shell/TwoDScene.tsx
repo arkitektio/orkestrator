@@ -1,6 +1,7 @@
 import { BrushStrokeSession } from "../features/annotations/enhancers/paths/brushSkeleton/BrushStrokeSession";
 import { ScenePlane } from "./ScenePlane";
 import { SceneProbedPoint2D } from "./SceneProbedPoint2D";
+import { SceneProbePoints } from "../features/probe/SceneProbePoints";
 import { RectangleDrawer } from "../features/annotations/RectangleDrawer";
 import { RoiDrawer } from "../features/annotations/RoiDrawer";
 
@@ -9,6 +10,7 @@ export const TwoDScene = () => {
     <>
       <ScenePlane />
       <SceneProbedPoint2D />
+      <SceneProbePoints flat />
       <RectangleDrawer />
       <RoiDrawer />
       {/* The design tools' click gestures land on the 2D plane too (label lift); the session runs their extraction. */}

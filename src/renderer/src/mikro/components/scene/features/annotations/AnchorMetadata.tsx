@@ -21,18 +21,17 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
  * a light path, just not for this timepoint" is a different answer from "no light
  * path was ever recorded".
  *
- * This is the body of the viewport's metadata overlay
- * (`MetadataOverlay.tsx`, bottom-left), which describes the ACTIVE layer —
+ * This is the "nothing probed" body of the Probe tab's metadata section
+ * (`ProbeMetadata.tsx`), which then describes the ACTIVE layer —
  * not a section of every layer card: which channel a layer is and what light
- * made it is a question about what is on screen, and the answer belongs next
- * to the picture rather than folded into a list in the sidebar.
+ * made it is a question about what is on screen, asked once, not per card.
  *
  * The scene payload already carries a thin projection of these anchors (the
  * histogram the clim comes from, the label the row shows), so the panel draws
  * the instant it unfolds; `GetLensAnchors` then fills in the microscope state
  * and phasor facts that are far too heavy to ride along with every scene load.
- * The query mounts with the unfolded overlay only, and only for the one layer
- * it describes — so a scene of twenty layers fetches exactly one.
+ * The query mounts with the open Probe tab only, and only for the layers it
+ * describes — so a scene of twenty layers fetches one, not twenty.
  */
 
 // The spokes themselves (`ActiveAnchor` and the per-spoke renderers) live in
@@ -81,8 +80,7 @@ const OutOfView = ({
 /**
  * Split a layer's anchors into the ones describing what it currently shows and
  * the ones pinned elsewhere (`anchorVisibility.ts` owns the rule). Exported so
- * the overlay's collapsed pill can say "3 in view" from the same partition the
- * unfolded panel renders.
+ * a host can count what is in view from the same partition the panel renders.
  */
 export const partitionAnchors = (
   layer: LayerState,
