@@ -1,7 +1,7 @@
 import { RailIsland, RailIslandName, RailIslandRow } from "@/core/ui/rail/RailIsland";
 import { RoomContext } from "@livekit/components-react";
 import { TooltipButton } from "@/core/ui/tooltip-button";
-import { PanelRight, Phone } from "lucide-react";
+import { PanelBottom, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { LeaveButton, MediaToggles } from "./CallControls";
@@ -28,7 +28,7 @@ const useNow = () => {
 /**
  * The call this window is in, as one row in the rail: its title and clock,
  * mute, camera and leave, wherever the user has navigated. Clicking the title
- * returns to the call page; "Open to the side" puts it beside the current one.
+ * returns to the call page; "Open below" puts it beside the current one.
  */
 export const CallIsland = () => {
   const call = useCallState((state) => state.call);
@@ -63,11 +63,11 @@ export const CallIsland = () => {
             <TooltipButton
               size="icon-sm"
               variant="outline"
-              tooltip="Open to the side"
-              aria-label="Open the call to the side"
+              tooltip="Open below"
+              aria-label="Open the call in a split below"
               onClick={() => openCall(call, { target: "side" })}
             >
-              <PanelRight />
+              <PanelBottom />
             </TooltipButton>
             <LeaveButton size="icon-sm" />
           </div>

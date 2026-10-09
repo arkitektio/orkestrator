@@ -1,6 +1,7 @@
 import { Explainer } from "@/core/layout/Explainer";
 import { ListRender } from "@/core/layout/ListRender";
 import { LovekitCall } from "@/core/linkers";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -35,7 +36,12 @@ const CallsPage = () => {
                 <span className="truncate font-medium">{call.title}</span>
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Users className="size-3" />
-                  {call.participantCount} · {call.creator?.preferredUsername ?? "someone"}
+                  {call.participantCount} ·{" "}
+                  {call.creator ? (
+                    <StructureDisplay identifier="@lok/user" id={call.creator.sub} variant="inline" fallback={call.creator.preferredUsername} />
+                  ) : (
+                    "someone"
+                  )}
                 </span>
               </Link>
             </LovekitCall.Smart>

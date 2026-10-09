@@ -56,15 +56,25 @@ export type TabRecord = {
    * `tabs` (`closeTab` scrubs it), never this tab's own.
    */
   beside?: string;
+  /**
+   * How the partner is laid out: beside this tab (`row`, the default) or
+   * below it (`column`). Belongs to the pair like `beside` does.
+   */
+  besideAxis?: SplitAxis;
 };
 
+/** Side by side (`row`) or stacked, the partner below (`column`). */
+export type SplitAxis = "row" | "column";
+
 /**
- * Two tabs shown side by side: the view tab and its partner. `activeId` is
+ * Two tabs shown together: the view tab and its partner, side by side or
+ * stacked (`axis`). `left` is the first pane along the axis, `right` the
+ * second. `activeId` is
  * always one of them: the active tab is the FOCUSED pane, so everything that
  * already means "the active tab" — the chrome's Back/Forward, the hash mirror,
  * the palette's navigate — keeps meaning "the pane you last touched".
  */
-export type SplitPanes = { left: string; right: string };
+export type SplitPanes = { left: string; right: string; axis: SplitAxis };
 
 export type TabsState = {
   tabs: TabRecord[];
@@ -135,9 +145,10 @@ const tabOf = (state: TabsState, id: string): TabRecord | undefined =>
 
 /** The pair on screen — the view tab and its partner — or `undefined` when the view tab has none. */
 export const shownSplit = (state: TabsState): SplitPanes | undefined => {
-  const right = tabOf(state, state.viewId)?.beside;
+  const view = tabOf(state, state.viewId);
+  const right = view?.beside;
   return right && right !== state.viewId && tabOf(state, right)
-    ? { left: state.viewId, right }
+    ? { left: state.viewId, right, axis: view?.besideAxis ?? "row" }
     : undefined;
 };
 
@@ -151,12 +162,17 @@ export const splitPartnerId = (state: TabsState): string | null => {
   return split.left === state.activeId ? split.right : split.left;
 };
 
-/** `tabs` with tab `id`'s partner set, or removed for `undefined` — no dangling key. */
-const withBeside = (tabs: TabRecord[], id: string, beside: string | undefined): TabRecord[] =>
+/** `tabs` with tab `id`'s partner (and how it is laid out) set, or removed for `undefined` — no dangling key. */
+const withBeside = (
+  tabs: TabRecord[],
+  id: string,
+  beside: string | undefined,
+  axis: SplitAxis | undefined = undefined,
+): TabRecord[] =>
   tabs.map((t) => {
     if (t.id !== id) return t;
-    const { beside: _was, ...bare } = t;
-    return beside ? { ...bare, beside } : bare;
+    const { beside: _was, besideAxis: _how, ...bare } = t;
+    return beside ? { ...bare, beside, ...(axis && axis !== "row" ? { besideAxis: axis } : {}) } : bare;
   });
 
 const touched = (tabs: TabRecord[], id: string, now: number): TabRecord[] =>
@@ -180,6 +196,8 @@ export type OpenOptions = {
   now?: number;
   /** The new tab's page-layout defaults — see `TabLayout`. */
   layout?: TabLayout;
+  /** Opening to the side: beside the view tab (`row`, the default) or below it (`column`). */
+  axis?: SplitAxis;
 };
 
 export const openTab = (state: TabsState, to: string, options: OpenOptions = {}): TabsState => {
@@ -313,7 +331,8 @@ export const splitTabWith = (
 export const BESIDE_LAYOUT: TabLayout = { pageSidebar: false };
 
 /**
- * Open `to` in a new tab shown BESIDE the view tab — "open to the side".
+ * Open `to` in a new tab shown BESIDE the view tab — "open to the side" — or
+ * below it with `axis: "column"`.
  * Focus stays where it is, as with a background tab: you asked to see the
  * page next to this one, not to leave this one. It takes the right pane,
  * replacing the view's previous partner if it had one, and starts without
@@ -332,7 +351,7 @@ export const openTabBeside = (
   if (opened === state) return state;
   const fresh = opened.tabs[opened.tabs.length - 1];
   const activeId = opened.activeId === opened.viewId ? opened.viewId : fresh.id;
-  return { ...opened, tabs: withBeside(opened.tabs, opened.viewId, fresh.id), activeId };
+  return { ...opened, tabs: withBeside(opened.tabs, opened.viewId, fresh.id, options.axis), activeId };
 };
 
 /** Take tab `id`'s partner away (the view's by default). The partner stays open, just not beside it. */
@@ -474,6 +493,7 @@ const PersistedTabSchema = z.object({
   pinned: z.boolean().optional(),
   lastActiveAt: z.number(),
   beside: z.string().optional(),
+  besideAxis: z.enum(["row", "column"]).optional(),
   layout: z
     .object({ pageSidebar: z.boolean().optional(), sidebar: z.boolean().optional() })
     .optional(),
@@ -504,6 +524,7 @@ export const serializeTabs = (state: TabsState): TabsPersisted => ({
     label: t.label,
     ...(t.pinned ? { pinned: true } : {}),
     ...(t.beside ? { beside: t.beside } : {}),
+    ...(t.beside && t.besideAxis ? { besideAxis: t.besideAxis } : {}),
     ...(t.layout ? { layout: t.layout } : {}),
     lastActiveAt: t.lastActiveAt,
     history: t.history.serialize() as SerializedHistory,
@@ -516,6 +537,7 @@ const reviveTab = (row: z.infer<typeof PersistedTabSchema>): TabRecord => ({
   label: row.label,
   ...(row.pinned ? { pinned: true } : {}),
   ...(row.beside ? { beside: row.beside } : {}),
+  ...(row.beside && row.besideAxis ? { besideAxis: row.besideAxis } : {}),
   ...(row.layout ? { layout: row.layout } : {}),
   lastActiveAt: row.lastActiveAt,
 });

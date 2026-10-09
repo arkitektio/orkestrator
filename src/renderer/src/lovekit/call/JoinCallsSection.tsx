@@ -4,7 +4,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/core/ui/c
 import { Separator } from "@/core/ui/separator";
 import { useListCallsQuery } from "@/lovekit/api/graphql";
 import { TooltipButton } from "@/core/ui/tooltip-button";
-import { PanelRight, Phone, Users } from "lucide-react";
+import { PanelBottom, Phone, Users } from "lucide-react";
 
 import { useCallState } from "./store";
 import { fromCallStructure } from "./structureInput";
@@ -53,7 +53,11 @@ export const JoinCallsSection = () => {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{call.title}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {call.creator?.preferredUsername ?? "Someone"}
+                    {call.creator ? (
+                      <StructureDisplay identifier="@lok/user" id={call.creator.sub} variant="inline" fallback={call.creator.preferredUsername} />
+                    ) : (
+                      "Someone"
+                    )}
                     {subject && (
                       <>
                         {" · about "}
@@ -72,11 +76,11 @@ export const JoinCallsSection = () => {
                 <TooltipButton
                   size="icon-sm"
                   variant="ghost"
-                  tooltip={inIt ? "Open to the side" : "Join to the side"}
-                  aria-label={inIt ? "Open the call to the side" : "Join the call to the side"}
+                  tooltip={inIt ? "Open below" : "Join below"}
+                  aria-label={inIt ? "Open the call in a split below" : "Join the call in a split below"}
                   onClick={() => openCall(call, { join: !inIt, target: "side" })}
                 >
-                  <PanelRight />
+                  <PanelBottom />
                 </TooltipButton>
               </div>
             );

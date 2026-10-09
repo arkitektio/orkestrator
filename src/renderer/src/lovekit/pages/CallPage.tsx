@@ -61,7 +61,13 @@ export default asDetailQueryRoute(useGetCallQuery, ({ data }) => {
               ))}
               {call.about.length === 0 && <p className="text-xs text-muted-foreground">About nothing in particular.</p>}
               <p className="mt-2 text-xs text-muted-foreground">
-                Started by {call.creator?.preferredUsername ?? "someone"}.
+                Started by{" "}
+                {call.creator ? (
+                  <StructureDisplay identifier="@lok/user" id={call.creator.sub} variant="inline" fallback={call.creator.preferredUsername} />
+                ) : (
+                  "someone"
+                )}
+                .
               </p>
             </div>
           </Sidebars.Tab>

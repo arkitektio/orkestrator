@@ -3,7 +3,7 @@ import { Spinner } from "@/core/ui/spinner";
 import { TooltipButton } from "@/core/ui/tooltip-button";
 import type { Identifier, Object } from "@/core/types";
 import { useListCallsQuery } from "@/lovekit/api/graphql";
-import { PanelRight, Phone, Users } from "lucide-react";
+import { PanelBottom, Phone, Users } from "lucide-react";
 
 import { useCallState } from "./store";
 import { toStructureInput } from "./structureInput";
@@ -52,11 +52,11 @@ export const StructureCallsSection = ({ identifier, object }: { identifier: Iden
             <TooltipButton
               size="icon-xs"
               variant="ghost"
-              tooltip={inIt ? "Open to the side" : "Join to the side"}
-              aria-label={inIt ? "Open the call to the side" : "Join the call to the side"}
+              tooltip={inIt ? "Open below" : "Join below"}
+              aria-label={inIt ? "Open the call in a split below" : "Join the call in a split below"}
               onClick={() => openCall(call, { join: !inIt, target: "side" })}
             >
-              <PanelRight />
+              <PanelBottom />
             </TooltipButton>
           </div>
         );

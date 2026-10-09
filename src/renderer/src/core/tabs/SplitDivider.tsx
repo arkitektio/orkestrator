@@ -1,6 +1,8 @@
 import { cn } from "@/core/util/utils";
 import { useEffect, useRef, useState } from "react";
 
+import type { SplitAxis } from "./tabs";
+
 import {
   clampSplitRatio,
   DEFAULT_SPLIT_RATIO,
@@ -19,7 +21,9 @@ import {
  * while dragging, pointer capture so the drag survives the pointer outrunning
  * the handle. The ratio is measured against
  * the handle's PARENT — the content card the panes are laid out in — so it
- * needs no knowledge of the rail, the zoom or the card's margins.
+ * needs no knowledge of the rail, the zoom or the card's margins. Along
+ * whichever axis the split runs: a stacked split (`axis: "column"`) gets a
+ * horizontal handle measuring the height.
  *
  * Moves are coalesced to one `onChange` per frame; `onCommit` fires once when
  * the drag ends, which is when the value is worth persisting.
@@ -27,10 +31,13 @@ import {
 export const SplitDivider = ({
   ratio,
   onChange,
+  axis = "row",
 }: {
   ratio: number;
   onChange: (ratio: number) => void;
+  axis?: SplitAxis;
 }) => {
+  const stacked = axis === "column";
   const [dragging, setDragging] = useState(false);
   const frame = useRef<number | null>(null);
   // Where the drag has got to; read on release. Seeded from the prop when a
@@ -49,7 +56,9 @@ export const SplitDivider = ({
     const parent = event.currentTarget.parentElement;
     if (!parent) return;
     const box = parent.getBoundingClientRect();
-    const next = splitRatioFromPointer(event.clientX, box.left, box.width);
+    const next = stacked
+      ? splitRatioFromPointer(event.clientY, box.top, box.height)
+      : splitRatioFromPointer(event.clientX, box.left, box.width);
     latest.current = next;
     if (frame.current === null) {
       frame.current = requestAnimationFrame(() => {
@@ -85,10 +94,16 @@ export const SplitDivider = ({
   return (
     <div
       data-split-divider
-      className="group relative z-30 w-2 shrink-0 cursor-col-resize touch-none"
+      data-split-axis={axis}
+      className={cn(
+        "group relative z-30 shrink-0 touch-none",
+        stacked ? "h-2 w-full cursor-row-resize" : "w-2 cursor-col-resize",
+      )}
       style={{ order: 1 }}
       role="separator"
-      aria-orientation="vertical"
+      // The separator's own orientation: a vertical line between panes side
+      // by side, a horizontal one between stacked panes.
+      aria-orientation={stacked ? "horizontal" : "vertical"}
       aria-label="Resize split view"
       aria-valuemin={Math.round(MIN_SPLIT_RATIO * 100)}
       aria-valuemax={Math.round(MAX_SPLIT_RATIO * 100)}
@@ -100,11 +115,13 @@ export const SplitDivider = ({
       onPointerCancel={endDrag}
       onDoubleClick={() => commit(DEFAULT_SPLIT_RATIO)}
       onKeyDown={(event) => {
-        if (event.key === "ArrowLeft") {
+        const less = stacked ? "ArrowUp" : "ArrowLeft";
+        const more = stacked ? "ArrowDown" : "ArrowRight";
+        if (event.key === less) {
           event.preventDefault();
           commit(ratio - 0.05);
         }
-        if (event.key === "ArrowRight") {
+        if (event.key === more) {
           event.preventDefault();
           commit(ratio + 0.05);
         }
@@ -112,7 +129,8 @@ export const SplitDivider = ({
     >
       <div
         className={cn(
-          "mx-auto h-full w-px transition-colors",
+          "transition-colors",
+          stacked ? "my-auto h-px w-full" : "mx-auto h-full w-px",
           dragging ? "bg-primary/60" : "bg-transparent group-hover:bg-border",
         )}
       />

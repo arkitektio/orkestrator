@@ -55,10 +55,13 @@ const TabTitleReporter = ({ tabId }: { tabId: string }) => {
  * and when they warm again they mount at the index they were left at, so Back
  * and Forward still work.
  *
- * A SPLIT shows two of them side by side. The tabs stay exactly where they
+ * A SPLIT shows two of them side by side, or stacked (`axis: "column"`, the
+ * partner below). The tabs stay exactly where they
  * are in the DOM — siblings in the content card, laid out with `order` and a
  * divider between — because moving one into a pane wrapper would remount it,
- * and a remount is what the kept-alive scheme exists to avoid. The pane you
+ * and a remount is what the kept-alive scheme exists to avoid. The card
+ * itself turns into a column off the divider's `data-split-axis` (see
+ * `AppLayout`), so the axis can change without touching the tabs either. The pane you
  * last pressed is the active tab; the other one is merely visible, so the
  * chrome's Back/Forward, the hash and the palette keep their single meaning.
  *
@@ -96,7 +99,8 @@ export const TabOutlet = ({ routes }: { routes: React.ReactNode }) => {
               !visible && "hidden",
               visible && "flex min-h-0 min-w-0",
               visible && pane === null && "flex-1",
-              // The left pane holds its share; the right takes the rest.
+              // The first pane holds its share (of the width, or of the
+              // height when stacked); the second takes the rest.
               pane === "left" && "shrink-0 grow-0",
               pane === "right" && "flex-1",
               // Each pane of a split is a card of its own — the same card the
@@ -135,7 +139,7 @@ export const TabOutlet = ({ routes }: { routes: React.ReactNode }) => {
           </div>
         );
       })}
-      {split && <SplitDivider ratio={ratio} onChange={setRatio} />}
+      {split && <SplitDivider ratio={ratio} onChange={setRatio} axis={split.axis} />}
     </>
   );
 };

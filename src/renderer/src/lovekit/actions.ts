@@ -11,21 +11,21 @@ const CALL_IDENTIFIER = "@lovekit/call";
 /**
  * "Call about this": the live call about the selection, or a new one, and
  * straight into it. On any object; on a call it is simply the way in. Held
- * ⇧ opens the call beside the current page instead of in its place, so it
- * can sit next to the thing it is about.
+ * ⇧ opens the call in a split below the current page instead of in its
+ * place, so it can sit with the thing it is about.
  * The same ensure-then-join as `useStartCall`, through the service client
  * an action is handed.
  */
 export const CallAboutAction: Action = {
   title: "Call about this",
-  description: "Start or join a video call with your team about this (⇧: to the side)",
+  description: "Start or join a video call with your team about this (⇧: in a split below)",
   icon: Video,
   conditions: [{ type: "nopartner" }],
   collections: ["talk"],
   execute: async ({ services, state, navigate, tabs, modifiers }) => {
     const open = (id: string, title: string) => {
       const to = callLink(id, { join: true });
-      if (modifiers.shiftKey) tabs.openBeside(to, { label: title, evict: true });
+      if (modifiers.shiftKey) tabs.openBeside(to, { label: title, evict: true, axis: "column" });
       else navigate(to);
     };
 

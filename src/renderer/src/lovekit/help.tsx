@@ -71,7 +71,7 @@ export const LOVEKIT_HELP = {
         <>Press <b>Join call</b>. Use the buttons under the tiles to mute, stop your camera, invite people or leave.</>,
         <>Leave the page while you talk: the call follows you as a row in the rail with the same buttons, and clicking it brings you back.</>,
         <>Press <b>Invite people</b> to make teammates’ apps ring with a <b>Join</b> button; nobody needs an invitation to join, though: every call in progress is under <b>Join calls</b> on the home page.</>,
-        <>Press <b>Open to the side</b> on the call’s row in the rail, or hold ⇧ on <b>Call about this</b>, to keep the call beside the page you are working on.</>,
+        <>Press <b>Open below</b> on the call’s row in the rail, or hold ⇧ on <b>Call about this</b>, to keep the call in a split under the page you are working on.</>,
       ]}
       tips={[
         <>Joining from a second device adds you a second time; the lobby counts your devices rather than listing you twice.</>,
