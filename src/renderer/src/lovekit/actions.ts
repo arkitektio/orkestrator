@@ -1,12 +1,11 @@
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
-import { PanelBottom, Video } from "lucide-react";
+import { ListPlus, PanelRight, Video } from "lucide-react";
 
 import type { Action, ActionParams } from "@/core/smart/localactions/LocalActionProvider";
 import { EnsureCallDocument, type EnsureCallMutation, type EnsureCallMutationVariables } from "@/lovekit/api/graphql";
+import { addToCall, CALL_IDENTIFIER } from "./call/addToCall";
 import { callLink, callTitle } from "./call/links";
 import { toStructureInputs } from "./call/structureInput";
-
-const CALL_IDENTIFIER = "@lovekit/call";
 
 type Open = (id: string, title: string) => void;
 
@@ -53,23 +52,44 @@ export const CallAboutAction: Action = {
 };
 
 /**
- * "Call about this to the side": the same call, opened in a split with the
- * page you are on, so it sits with the thing it is about. The split is
- * stacked (the call below): tiles stay wide and the page keeps its width.
+ * "Call about this to the side": the same call, opened to the right of the
+ * page you are on, so it sits with the thing it is about.
  */
 export const CallAboutToTheSideAction: Action = {
   title: "Call about this to the side",
   description: "Start or join a video call about this, in a split with this page",
-  icon: PanelBottom,
+  icon: PanelRight,
   conditions: [{ type: "nopartner" }],
   collections: ["talk"],
   execute: (params) =>
     callAbout(params, (id, title) =>
-      params.tabs.openBeside(callLink(id, { join: true }), { label: title, evict: true, axis: "column" }),
+      params.tabs.openBeside(callLink(id, { join: true }), { label: title, evict: true }),
     ),
+};
+
+/**
+ * "Add to the call": what was dropped on a call becomes what the call is
+ * talking about; what it was about before stays. The drop on the call's own page
+ * and rail row (`CallDropTarget`) does the same without the menu.
+ */
+export const AddToCallAction: Action = {
+  title: "Add to the call",
+  description: "Turn the call to what you dropped; what it was about before stays",
+  icon: ListPlus,
+  conditions: [{ type: "identifier", identifier: CALL_IDENTIFIER }, { type: "haspartner" }],
+  collections: ["talk"],
+  execute: async ({ services, state, onProgress }) => {
+    const call = state.left.find((structure) => structure.identifier === CALL_IDENTIFIER);
+    if (!call) throw new Error("Drop it onto a call");
+    const client = services.lovekit.client as ApolloClient<NormalizedCache>;
+    if (!client) throw new Error("Lovekit is not available");
+    await addToCall(client, call, state.right ?? []);
+    onProgress(100);
+  },
 };
 
 export const LOVEKIT_ACTIONS: Record<string, Action> = {
   call_about: CallAboutAction,
   call_about_side: CallAboutToTheSideAction,
+  call_add: AddToCallAction,
 };

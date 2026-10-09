@@ -6,3 +6,14 @@ subscription WatchCallInvites {
     delete
   }
 }
+
+subscription WatchCalls {
+  calls {
+    create {
+      ...ListCall
+    }
+    update {
+      ...ListCall
+    }
+  }
+}

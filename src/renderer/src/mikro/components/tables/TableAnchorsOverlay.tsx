@@ -91,7 +91,7 @@ const TableAnchorsPanel = ({
         partition.inView.map(({ anchor, pins }) => (
           // The pins are the anchor's identity on a table — there is no
           // slider saying where we are — so they caption the box.
-          <div key={anchor.id} className="flex flex-col items-end gap-0.5">
+          <div key={anchor.id} className="flex w-full flex-col items-end gap-0.5">
             <MetadataChip>{describeTablePins(pins)}</MetadataChip>
             <ActiveAnchor anchor={fullById.get(anchor.id) ?? anchor} />
           </div>

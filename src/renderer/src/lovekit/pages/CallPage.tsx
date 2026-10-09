@@ -13,8 +13,24 @@ import { fromCallStructure } from "../call/structureInput";
 import { useJoinCall } from "../call/useJoinCall";
 import { LOVEKIT_HELP } from "../help";
 
+type AboutEntry = { identifier: string; object: number };
+
+const AboutCard = ({ structure }: { structure: AboutEntry }) => (
+  <StructureDisplay
+    {...fromCallStructure(structure)}
+    variant="card"
+    link
+    fallback={
+      <p className="text-xs text-muted-foreground">
+        {structure.identifier} {structure.object}
+      </p>
+    }
+  />
+);
+
 /**
- * The call's page: the room itself, and what it is about in the sidebar.
+ * The call's page: the room itself (its dock says what it is talking
+ * about), and everything it has been about in the sidebar, the newest first.
  * The host's Chat tab stays on, so the text conversation beside the call is
  * an ordinary room about it.
  */
@@ -36,6 +52,9 @@ export default asDetailQueryRoute(useGetCallQuery, ({ data }) => {
     setParams(next, { replace: true });
   }, [params, setParams, active?.id, call.id, call.title, join]);
 
+  // Lovekit lists them oldest first; the last is the current topic.
+  const [topic, ...earlier] = [...call.about].reverse();
+
   return (
     <LovekitCall.ModelPage
       help={LOVEKIT_HELP.call}
@@ -46,20 +65,11 @@ export default asDetailQueryRoute(useGetCallQuery, ({ data }) => {
         <Sidebars sidebarKey="LovekitCall" defaultTab="About">
           <Sidebars.Tab label="About">
             <div className="flex flex-col gap-2 p-2">
-              {call.about.map((structure) => (
-                <StructureDisplay
-                  key={`${structure.identifier}-${structure.object}`}
-                  {...fromCallStructure(structure)}
-                  variant="card"
-                  link
-                  fallback={
-                    <p className="text-xs text-muted-foreground">
-                      {structure.identifier} {structure.object}
-                    </p>
-                  }
-                />
+              {topic ? <AboutCard structure={topic} /> : <p className="text-xs text-muted-foreground">About nothing in particular.</p>}
+              {earlier.length > 0 && <p className="mt-2 text-xs font-medium text-muted-foreground">Earlier</p>}
+              {earlier.map((structure) => (
+                <AboutCard key={`${structure.identifier}-${structure.object}`} structure={structure} />
               ))}
-              {call.about.length === 0 && <p className="text-xs text-muted-foreground">About nothing in particular.</p>}
               <p className="mt-2 text-xs text-muted-foreground">
                 Started by{" "}
                 {call.creator ? (

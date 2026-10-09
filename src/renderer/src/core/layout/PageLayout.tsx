@@ -106,9 +106,15 @@ export const PageLayout = ({
   // it, wins — as it always did.
   const layout = useTabLayout();
   const [params, setParams] = useSearchParams({
-    pageSidebar: layout?.pageSidebar === false ? "false" : "true",
     sidebar: layout?.sidebar === false ? "false" : "true",
   });
+  // The page sidebar's default is read at every render rather than handed to
+  // `useSearchParams`, which keeps the defaults it mounted with: a tab already
+  // open and then shown to the side (⌘\, "Split with", a swap) has half the
+  // width as much as one opened there, and gives up its sidebar the same way.
+  const pageSidebarShown = params.has("pageSidebar")
+    ? params.get("pageSidebar") == "true"
+    : (layout?.pageSidebar ?? pane !== "right");
 
   const location = useLocation();
 
@@ -142,11 +148,8 @@ export const PageLayout = ({
   );
 
   const togglePageSidebar = useCallback(() => {
-    setSidebarParam(
-      "pageSidebar",
-      params.get("pageSidebar") == "true" ? "false" : "true",
-    );
-  }, [params, setSidebarParam]);
+    setSidebarParam("pageSidebar", pageSidebarShown ? "false" : "true");
+  }, [pageSidebarShown, setSidebarParam]);
 
   const toggleSidebar = useCallback(() => {
     setSidebarParam(
@@ -207,7 +210,7 @@ export const PageLayout = ({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="[--radius:1rem]">
                     <DropdownMenuItem onSelect={togglePageSidebar}>
-                      {params.get("pageSidebar") == "true" ? "Hide" : "Show"} Page
+                      {pageSidebarShown ? "Hide" : "Show"} Page
                       Sidebar
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={toggleSidebar}>
@@ -236,12 +239,20 @@ export const PageLayout = ({
             </div>
           </div>
 
-          <div className="p-3 flex-grow @container flex flex-col overflow-y-auto">
+          {/* An overlay page paints its own full-bleed canvas and sizes it
+              `h-full w-full`; padding here would make that canvas 1.5rem taller
+              and wider than its box, overflowing the scroll container. */}
+          <div
+            className={cn(
+              "flex-grow @container flex flex-col overflow-y-auto",
+              overlay ? "p-0" : "p-3",
+            )}
+          >
             {children}
           </div>
         </div>
       </ResizablePanel>
-      {params.get("pageSidebar") == "true" && (
+      {pageSidebarShown && (
         <>
           {/* Overlay: the handle root's `bg-border w-px` IS the divider line;
               its `after:` hit area has no background, so making the root

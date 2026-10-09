@@ -26,7 +26,16 @@ const initials = (name: string) =>
  * Built from LiveKit's hooks and our own styles, not the prebuilt tile, so
  * it needs no stylesheet of LiveKit's.
  */
-export const ParticipantTile = ({ trackRef, className }: { trackRef: TileRef; className?: string }) => {
+export const ParticipantTile = ({
+  trackRef,
+  className,
+  style,
+}: {
+  trackRef: TileRef;
+  className?: string;
+  /** The tile's size, from whoever lays the tiles out (`stageLayout`). */
+  style?: React.CSSProperties;
+}) => {
   const { participant } = trackRef;
   const speaking = useIsSpeaking(participant);
   const micMuted = useIsMuted({ participant, source: Track.Source.Microphone });
@@ -41,6 +50,7 @@ export const ParticipantTile = ({ trackRef, className }: { trackRef: TileRef; cl
         speaking && "ring-primary/70",
         className,
       )}
+      style={style}
       data-testid="call-participant"
     >
       {video ? (

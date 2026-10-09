@@ -1,10 +1,18 @@
+"""What a call is now also about"""
+input AddToCallInput {
+  about: [StructureInput!]!
+  call: ID!
+}
+
 type App {
   id: ID!
   identifier: String!
 }
 
 type Call {
-  """The structures this call is about."""
+  """
+  The structures this call is about, oldest first: the last one is what it turned to most recently.
+  """
   about: [Structure!]!
   createdAt: DateTime!
   creator: User
@@ -21,6 +29,17 @@ type Call {
   """The LiveKit room this call's participants join."""
   roomName: String!
   title: String!
+}
+
+"""A call starting in your organization, or changing what it is about"""
+type CallEvent {
+  """A call someone else just started, which you can join"""
+  create: Call
+
+  """
+  A call that turned to something else; what it was about before is still in `about`
+  """
+  update: Call
 }
 
 """Filter for calls"""
@@ -146,6 +165,11 @@ input JoinCallInput {
 }
 
 type Mutation {
+  """
+  Turn a call to these structures: they become what it is about last, and what it was about stays
+  """
+  addToCall(input: AddToCallInput!): Call!
+
   """Put an invitation away, on every device"""
   dismissCallInvite(input: DismissCallInviteInput!): ID!
 
@@ -314,6 +338,11 @@ input StructureInput {
 type Subscription {
   """Your invitations to calls as they arrive and go away"""
   callInvites: CallInviteEvent!
+
+  """
+  The calls others start in your organization as they start, and any call's new topics
+  """
+  calls: CallEvent!
 
   """Subscribe to stream events"""
   streams(dataset: ID = null): StreamEvent!

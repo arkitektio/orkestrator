@@ -11048,61 +11048,112 @@ export type ListLensFragment = { __typename?: 'Lens', id: string, name?: string 
     & SceneSnapshotFragment
   ) | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
 
-type OpticalElement_ApertureElement_Fragment = { __typename?: 'ApertureElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_ApertureElement_Fragment = { __typename?: 'ApertureElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_BeamSplitterElement_Fragment = { __typename?: 'BeamSplitterElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_BeamSplitterElement_Fragment = { __typename?: 'BeamSplitterElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_CcdElement_Fragment = { __typename?: 'CCDElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_CcdElement_Fragment = { __typename?: 'CCDElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_DetectorElement_Fragment = { __typename?: 'DetectorElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_DetectorElement_Fragment = { __typename?: 'DetectorElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_FilterElement_Fragment = { __typename?: 'FilterElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_FilterElement_Fragment = { __typename?: 'FilterElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_LampElement_Fragment = { __typename?: 'LampElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_LampElement_Fragment = { __typename?: 'LampElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_LaserElement_Fragment = { __typename?: 'LaserElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_LaserElement_Fragment = { __typename?: 'LaserElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_LensElement_Fragment = { __typename?: 'LensElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_LensElement_Fragment = { __typename?: 'LensElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_MirrorElement_Fragment = { __typename?: 'MirrorElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_MirrorElement_Fragment = { __typename?: 'MirrorElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_ObjectiveElement_Fragment = { __typename?: 'ObjectiveElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_ObjectiveElement_Fragment = { __typename?: 'ObjectiveElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_OtherElement_Fragment = { __typename?: 'OtherElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_OtherElement_Fragment = { __typename?: 'OtherElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_OtherSourceElement_Fragment = { __typename?: 'OtherSourceElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_OtherSourceElement_Fragment = { __typename?: 'OtherSourceElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_PinholeElement_Fragment = { __typename?: 'PinholeElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_PinholeElement_Fragment = { __typename?: 'PinholeElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_PolarizerElement_Fragment = { __typename?: 'PolarizerElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_PolarizerElement_Fragment = { __typename?: 'PolarizerElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_SampleElement_Fragment = { __typename?: 'SampleElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_SampleElement_Fragment = { __typename?: 'SampleElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_ShutterElement_Fragment = { __typename?: 'ShutterElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_ShutterElement_Fragment = { __typename?: 'ShutterElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
-type OpticalElement_WaveplateElement_Fragment = { __typename?: 'WaveplateElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind }> };
+type OpticalElement_WaveplateElement_Fragment = { __typename?: 'WaveplateElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
+      { __typename?: 'Spectrum' }
+      & SpectrumFragment
+    ) | null }> };
 
 export type OpticalElementFragment = OpticalElement_ApertureElement_Fragment | OpticalElement_BeamSplitterElement_Fragment | OpticalElement_CcdElement_Fragment | OpticalElement_DetectorElement_Fragment | OpticalElement_FilterElement_Fragment | OpticalElement_LampElement_Fragment | OpticalElement_LaserElement_Fragment | OpticalElement_LensElement_Fragment | OpticalElement_MirrorElement_Fragment | OpticalElement_ObjectiveElement_Fragment | OpticalElement_OtherElement_Fragment | OpticalElement_OtherSourceElement_Fragment | OpticalElement_PinholeElement_Fragment | OpticalElement_PolarizerElement_Fragment | OpticalElement_SampleElement_Fragment | OpticalElement_ShutterElement_Fragment | OpticalElement_WaveplateElement_Fragment;
 
 export type SpectrumFragment = { __typename?: 'Spectrum', min: Length, max: Length };
 
 export type DetectorElementFragment = (
-  { __typename?: 'DetectorElement', nepdWPerSqrtHz?: number | null }
+  { __typename?: 'DetectorElement', nepdWPerSqrtHz?: number | null, gain?: number | null }
   & OpticalElement_DetectorElement_Fragment
 );
 
 export type LaserElementFragment = (
-  { __typename?: 'LaserElement', nominalWavelength?: Length | null }
+  { __typename?: 'LaserElement', nominalWavelength?: Length | null, power?: Power | null, pulseKind?: PulseKind | null, repetitionRate?: Frequency | null }
   & OpticalElement_LaserElement_Fragment
 );
 
 export type CcdElementFragment = (
-  { __typename?: 'CCDElement', pixelSize?: Length | null }
+  { __typename?: 'CCDElement', pixelSize?: Length | null, resolution?: Array<number> | null }
   & OpticalElement_CcdElement_Fragment
 );
 
 export type ObjectiveElementFragment = (
-  { __typename?: 'ObjectiveElement', magnification?: number | null, numericalAperture?: number | null, workingDistance?: Length | null }
+  { __typename?: 'ObjectiveElement', magnification?: number | null, numericalAperture?: number | null, workingDistance?: Length | null, immersionMedium?: ObjectiveImmersion | null }
   & OpticalElement_ObjectiveElement_Fragment
 );
 
@@ -11152,11 +11203,37 @@ export type SampleElementFragment = (
   & OpticalElement_SampleElement_Fragment
 );
 
-export type LightEdgeFragment = { __typename?: 'LightEdge', id: string, sourceElementId: string, sourcePortId: string, targetElementId: string, targetPortId: string, medium?: string | null };
+export type LampElementFragment = (
+  { __typename?: 'LampElement', lampType?: string | null }
+  & OpticalElement_LampElement_Fragment
+);
+
+export type ApertureElementFragment = (
+  { __typename?: 'ApertureElement', diameter?: Length | null }
+  & OpticalElement_ApertureElement_Fragment
+);
+
+export type PolarizerElementFragment = (
+  { __typename?: 'PolarizerElement', angleDeg?: number | null }
+  & OpticalElement_PolarizerElement_Fragment
+);
+
+export type ShutterElementFragment = (
+  { __typename?: 'ShutterElement', isOpen?: boolean | null }
+  & OpticalElement_ShutterElement_Fragment
+);
+
+export type WaveplateElementFragment = (
+  { __typename?: 'WaveplateElement', angleDeg?: number | null, retardance?: number | null }
+  & OpticalElement_WaveplateElement_Fragment
+);
+
+export type LightEdgeFragment = { __typename?: 'LightEdge', id: string, sourceElementId: string, sourcePortId: string, targetElementId: string, targetPortId: string, medium?: string | null, pathLength?: Length | null, beam?: { __typename?: 'BeamState', wavelength?: Length | null } | null };
 
 export type LightpathGraphFragment = { __typename?: 'LightpathGraph', elements: Array<(
     { __typename: 'ApertureElement' }
     & OpticalElement_ApertureElement_Fragment
+    & ApertureElementFragment
   ) | (
     { __typename: 'BeamSplitterElement' }
     & OpticalElement_BeamSplitterElement_Fragment
@@ -11164,6 +11241,7 @@ export type LightpathGraphFragment = { __typename?: 'LightpathGraph', elements: 
   ) | (
     { __typename: 'CCDElement' }
     & OpticalElement_CcdElement_Fragment
+    & CcdElementFragment
   ) | (
     { __typename: 'DetectorElement' }
     & OpticalElement_DetectorElement_Fragment
@@ -11175,6 +11253,7 @@ export type LightpathGraphFragment = { __typename?: 'LightpathGraph', elements: 
   ) | (
     { __typename: 'LampElement' }
     & OpticalElement_LampElement_Fragment
+    & LampElementFragment
   ) | (
     { __typename: 'LaserElement' }
     & OpticalElement_LaserElement_Fragment
@@ -11206,6 +11285,7 @@ export type LightpathGraphFragment = { __typename?: 'LightpathGraph', elements: 
   ) | (
     { __typename: 'PolarizerElement' }
     & OpticalElement_PolarizerElement_Fragment
+    & PolarizerElementFragment
   ) | (
     { __typename: 'SampleElement' }
     & OpticalElement_SampleElement_Fragment
@@ -11213,9 +11293,11 @@ export type LightpathGraphFragment = { __typename?: 'LightpathGraph', elements: 
   ) | (
     { __typename: 'ShutterElement' }
     & OpticalElement_ShutterElement_Fragment
+    & ShutterElementFragment
   ) | (
     { __typename: 'WaveplateElement' }
     & OpticalElement_WaveplateElement_Fragment
+    & WaveplateElementFragment
   )>, edges: Array<(
     { __typename?: 'LightEdge' }
     & LightEdgeFragment
@@ -14237,6 +14319,12 @@ export const AddLayerSpaceFragmentDoc = gql`
   }
 }
     ${AddLayerCandidateFragmentDoc}`;
+export const SpectrumFragmentDoc = gql`
+    fragment Spectrum on Spectrum {
+  min
+  max
+}
+    `;
 export const OpticalElementFragmentDoc = gql`
     fragment OpticalElement on OpticalElement {
   id
@@ -14261,9 +14349,12 @@ export const OpticalElementFragmentDoc = gql`
     name
     role
     channel
+    spectrum {
+      ...Spectrum
+    }
   }
 }
-    `;
+    ${SpectrumFragmentDoc}`;
 export const SampleElementFragmentDoc = gql`
     fragment SampleElement on SampleElement {
   ...OpticalElement
@@ -14280,14 +14371,9 @@ export const DetectorElementFragmentDoc = gql`
     fragment DetectorElement on DetectorElement {
   ...OpticalElement
   nepdWPerSqrtHz
+  gain
 }
     ${OpticalElementFragmentDoc}`;
-export const SpectrumFragmentDoc = gql`
-    fragment Spectrum on Spectrum {
-  min
-  max
-}
-    `;
 export const MirrorElementFragmentDoc = gql`
     fragment MirrorElement on MirrorElement {
   ...OpticalElement
@@ -14321,12 +14407,16 @@ export const ObjectiveElementFragmentDoc = gql`
   magnification
   numericalAperture
   workingDistance
+  immersionMedium
 }
     ${OpticalElementFragmentDoc}`;
 export const LaserElementFragmentDoc = gql`
     fragment LaserElement on LaserElement {
   ...OpticalElement
   nominalWavelength
+  power
+  pulseKind
+  repetitionRate
 }
     ${OpticalElementFragmentDoc}`;
 export const FilterElementFragmentDoc = gql`
@@ -14347,6 +14437,44 @@ export const PinholeElementFragmentDoc = gql`
   diameter
 }
     ${OpticalElementFragmentDoc}`;
+export const CcdElementFragmentDoc = gql`
+    fragment CCDElement on CCDElement {
+  ...OpticalElement
+  pixelSize
+  resolution
+}
+    ${OpticalElementFragmentDoc}`;
+export const LampElementFragmentDoc = gql`
+    fragment LampElement on LampElement {
+  ...OpticalElement
+  lampType
+}
+    ${OpticalElementFragmentDoc}`;
+export const ApertureElementFragmentDoc = gql`
+    fragment ApertureElement on ApertureElement {
+  ...OpticalElement
+  diameter
+}
+    ${OpticalElementFragmentDoc}`;
+export const PolarizerElementFragmentDoc = gql`
+    fragment PolarizerElement on PolarizerElement {
+  ...OpticalElement
+  angleDeg
+}
+    ${OpticalElementFragmentDoc}`;
+export const ShutterElementFragmentDoc = gql`
+    fragment ShutterElement on ShutterElement {
+  ...OpticalElement
+  isOpen
+}
+    ${OpticalElementFragmentDoc}`;
+export const WaveplateElementFragmentDoc = gql`
+    fragment WaveplateElement on WaveplateElement {
+  ...OpticalElement
+  angleDeg
+  retardance
+}
+    ${OpticalElementFragmentDoc}`;
 export const LightEdgeFragmentDoc = gql`
     fragment LightEdge on LightEdge {
   id
@@ -14355,6 +14483,10 @@ export const LightEdgeFragmentDoc = gql`
   targetElementId
   targetPortId
   medium
+  pathLength
+  beam {
+    wavelength
+  }
 }
     `;
 export const LightpathGraphFragmentDoc = gql`
@@ -14373,6 +14505,12 @@ export const LightpathGraphFragmentDoc = gql`
     ...FilterElement
     ...OtherElement
     ...PinholeElement
+    ...CCDElement
+    ...LampElement
+    ...ApertureElement
+    ...PolarizerElement
+    ...ShutterElement
+    ...WaveplateElement
   }
   edges {
     ...LightEdge
@@ -14390,6 +14528,12 @@ ${LaserElementFragmentDoc}
 ${FilterElementFragmentDoc}
 ${OtherElementFragmentDoc}
 ${PinholeElementFragmentDoc}
+${CcdElementFragmentDoc}
+${LampElementFragmentDoc}
+${ApertureElementFragmentDoc}
+${PolarizerElementFragmentDoc}
+${ShutterElementFragmentDoc}
+${WaveplateElementFragmentDoc}
 ${LightEdgeFragmentDoc}`;
 export const FullCoordinateAnchorFragmentDoc = gql`
     fragment FullCoordinateAnchor on CoordinateAnchor {
@@ -15622,12 +15766,6 @@ export const ListLensFragmentDoc = gql`
 }
     ${DimSliceFragmentDoc}
 ${SceneSnapshotFragmentDoc}`;
-export const CcdElementFragmentDoc = gql`
-    fragment CCDElement on CCDElement {
-  ...OpticalElement
-  pixelSize
-}
-    ${OpticalElementFragmentDoc}`;
 export const CameraStateFragmentDoc = gql`
     fragment CameraState on CameraState {
   position

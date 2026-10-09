@@ -21,6 +21,13 @@ export const toStructureInputs = (
 ): StructureInput[] =>
   structures.map(toStructureInput).filter((s): s is StructureInput => s !== null);
 
+/**
+ * What a call is talking about now. Lovekit lists `about` in the order the
+ * call took things on, so the last entry is the newest; the earlier ones are
+ * what it was about before.
+ */
+export const currentTopic = <T,>(call: { about: readonly T[] }): T | undefined => call.about[call.about.length - 1];
+
 /** The app-level structure for one of a call's `about` entries. */
 export const fromCallStructure = (structure: { identifier: string; object: number }) => ({
   identifier: structure.identifier,

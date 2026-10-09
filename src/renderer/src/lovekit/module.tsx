@@ -1,5 +1,7 @@
 import { defineModule } from "@/core/modules/host/define";
 import { LOVEKIT_ACTIONS } from "./actions";
+import { CallAnnouncementIsland } from "./call/CallAnnouncementIsland";
+import { CallAnnouncementsWatcher } from "./call/CallAnnouncementsWatcher";
 import { CallConnection } from "./call/CallConnection";
 import { CallInviteNotifications } from "./call/CallInviteNotifications";
 import { CallIsland } from "./call/CallIsland";
@@ -57,8 +59,9 @@ export const LOVEKIT_MODULE = defineModule({
       },
     ],
     // The call's connection outlives the page it was joined from; the
-    // invitations ring on every device the app is open on.
-    background: [CallConnection, CallInvitesWatcher],
-    railIslands: [CallIsland],
+    // invitations ring on every device the app is open on, and a call the
+    // organization starts is announced in the rail.
+    background: [CallConnection, CallInvitesWatcher, CallAnnouncementsWatcher],
+    railIslands: [CallIsland, CallAnnouncementIsland],
   },
 });

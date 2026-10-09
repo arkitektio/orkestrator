@@ -62,12 +62,12 @@ export const LeaveButton = ({ size = "icon" }: { size?: "icon" | "icon-sm" }) =>
   </TooltipButton>
 );
 
-/** The bar under the tiles: mic, camera, invite, leave. */
+/** The call's buttons, in its dock (`CallDock`): mic, camera, invite, leave. */
 export const CallControls = () => {
   const call = useCallState((state) => state.call);
   if (!call) return null;
   return (
-    <div className="flex items-center justify-center gap-2 py-2" data-testid="call-controls">
+    <div className="flex items-center justify-center gap-2" data-testid="call-controls">
       <MediaToggles />
       <InviteButton callId={call.id} title={call.title} />
       <LeaveButton />

@@ -14,6 +14,58 @@
     },
     "types": [
       {
+        "kind": "INPUT_OBJECT",
+        "name": "AddToCallInput",
+        "description": "What a call is now also about",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "about",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "StructureInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "call",
+            "description": null,
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "App",
         "description": null,
@@ -76,7 +128,7 @@
         "fields": [
           {
             "name": "about",
-            "description": "The structures this call is about.",
+            "description": "The structures this call is about, oldest first: the last one is what it turned to most recently.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -223,12 +275,24 @@
       {
         "kind": "OBJECT",
         "name": "CallEvent",
-        "description": "A call starting in your organization",
+        "description": "A call starting in your organization, or changing what it is about",
         "isOneOf": null,
         "fields": [
           {
             "name": "create",
             "description": "A call someone else just started, which you can join",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Call",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "update",
+            "description": "A call that turned to something else; what it was about before is still in `about`",
             "args": [],
             "type": {
               "kind": "OBJECT",
@@ -1248,6 +1312,39 @@
         "description": null,
         "isOneOf": null,
         "fields": [
+          {
+            "name": "addToCall",
+            "description": "Turn a call to these structures: they become what it is about last, and what it was about stays",
+            "args": [
+              {
+                "name": "input",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "AddToCallInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Call",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "dismissCallInvite",
             "description": "Put an invitation away, on every device",
@@ -2951,7 +3048,7 @@
           },
           {
             "name": "calls",
-            "description": "The calls others start in your organization, as they start",
+            "description": "The calls others start in your organization as they start, and any call's new topics",
             "args": [],
             "type": {
               "kind": "NON_NULL",

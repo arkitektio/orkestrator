@@ -1,10 +1,11 @@
 import { RailIsland, RailIslandName, RailIslandRow } from "@/core/ui/rail/RailIsland";
 import { RoomContext } from "@livekit/components-react";
 import { TooltipButton } from "@/core/ui/tooltip-button";
-import { PanelBottom, Phone } from "lucide-react";
+import { PanelRight, Phone } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { LeaveButton, MediaToggles } from "./CallControls";
+import { CallDropTarget } from "./CallDropTarget";
 import { useCallState } from "./store";
 import { useOpenCall } from "./useOpenCall";
 
@@ -29,6 +30,8 @@ const useNow = () => {
  * The call this window is in, as one row in the rail: its title and clock,
  * mute, camera and leave, wherever the user has navigated. Clicking the title
  * returns to the call page; "Open to the side" puts it beside the current one.
+ * The row takes drops: what is dropped on it is added to what the call is
+ * about, from whatever page the user is on.
  */
 export const CallIsland = () => {
   const call = useCallState((state) => state.call);
@@ -42,35 +45,37 @@ export const CallIsland = () => {
     <RailIsland show={!!call} islandKey="lovekit-call" testId="call-island" maxHeightClassName="max-h-[14vh]">
       {call && (
         <RailIslandRow key={call.id} working={status === "connecting"} testId="call-island-row">
-          <button
-            type="button"
-            className="flex w-full min-w-0 items-center gap-2 text-left"
-            onClick={() => openCall(call)}
-            title="Open the call"
-          >
-            <Phone className="size-3.5 shrink-0 text-primary" />
-            <RailIslandName name={call.title} working={status === "connected"} />
-            <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
-              {status === "connected" && joinedAt ? clock(joinedAt, now) : status === "error" ? "dropped" : "joining"}
-            </span>
-          </button>
-          <div className="mt-1.5 flex items-center gap-1">
-            {room && status === "connected" && (
-              <RoomContext.Provider value={room}>
-                <MediaToggles size="icon-sm" />
-              </RoomContext.Provider>
-            )}
-            <TooltipButton
-              size="icon-sm"
-              variant="outline"
-              tooltip="Open to the side"
-              aria-label="Open the call to the side"
-              onClick={() => openCall(call, { target: "side" })}
+          <CallDropTarget call={call}>
+            <button
+              type="button"
+              className="flex w-full min-w-0 items-center gap-2 text-left"
+              onClick={() => openCall(call)}
+              title="Open the call"
             >
-              <PanelBottom />
-            </TooltipButton>
-            <LeaveButton size="icon-sm" />
-          </div>
+              <Phone className="size-3.5 shrink-0 text-primary" />
+              <RailIslandName name={call.title} working={status === "connected"} />
+              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                {status === "connected" && joinedAt ? clock(joinedAt, now) : status === "error" ? "dropped" : "joining"}
+              </span>
+            </button>
+            <div className="mt-1.5 flex items-center gap-1">
+              {room && status === "connected" && (
+                <RoomContext.Provider value={room}>
+                  <MediaToggles size="icon-sm" />
+                </RoomContext.Provider>
+              )}
+              <TooltipButton
+                size="icon-sm"
+                variant="outline"
+                tooltip="Open to the side"
+                aria-label="Open the call to the side"
+                onClick={() => openCall(call, { target: "side" })}
+              >
+                <PanelRight />
+              </TooltipButton>
+              <LeaveButton size="icon-sm" />
+            </div>
+          </CallDropTarget>
         </RailIslandRow>
       )}
     </RailIsland>

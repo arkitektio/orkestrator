@@ -32,9 +32,10 @@ export const MetadataChip = ({ children }: { children: React.ReactNode }) => (
 );
 
 /**
- * One in-view anchor's box; its spokes stack inside. Right-aligned by default
- * (the scene docks its overlay on the right edge); a panel hanging off a
- * left-hand label passes `align="start"`.
+ * One in-view anchor; its spokes stack inside. No frame of its own: it takes
+ * the full width of whatever hosts it, and a hairline parts it from the
+ * anchor before. Right-aligned by default (the scene docks its overlay on the
+ * right edge); a panel hanging off a left-hand label passes `align="start"`.
  */
 export const MetadataAnchorBox = ({
   children,
@@ -45,7 +46,11 @@ export const MetadataAnchorBox = ({
 }) => (
   <div
     className={cn(
-      "flex flex-col gap-1.5 rounded border border-white/10 bg-white/[0.03] p-1.5",
+      "flex w-full min-w-0 flex-col gap-1.5 [&+&]:border-t [&+&]:border-white/10 [&+&]:pt-2",
+      // Never wider than the host: one long unbreakable value (a device
+      // label, a file name) would otherwise push every spoke out of the
+      // side. Capped, the rows truncate.
+      "[&>*]:min-w-0 [&>*]:max-w-full",
       align === "end" ? "items-end text-right" : "items-start text-left",
     )}
   >

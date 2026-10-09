@@ -259,7 +259,7 @@ describe("split view — the partner belongs to the tab", () => {
 
   it("shows a tab beside the view tab, which keeps focus", () => {
     const s = splitTab(stateOf("/a", "/b", "/c"), "t0");
-    expect(shownSplit(s)).toEqual({ left: "t2", right: "t0", axis: "row" });
+    expect(shownSplit(s)).toEqual({ left: "t2", right: "t0" });
     expect(s.activeId).toBe("t2");
     expect(s.viewId).toBe("t2");
     expect(besideOf(s, "t2")).toBe("t0");
@@ -268,20 +268,9 @@ describe("split view — the partner belongs to the tab", () => {
 
   it("splits to the left: the other tab becomes the view, this one its partner", () => {
     const s = splitTab(stateOf("/a", "/b"), "t0", "left");
-    expect(shownSplit(s)).toEqual({ left: "t0", right: "t1", axis: "row" });
+    expect(shownSplit(s)).toEqual({ left: "t0", right: "t1" });
     expect(s.viewId).toBe("t0");
     expect(s.activeId).toBe("t1"); // still the tab that had focus
-  });
-
-  it("opens below instead of beside when asked, and remembers it with the pair", () => {
-    const s = openTabBeside(stateOf("/a"), "/call", { axis: "column" });
-    expect(shownSplit(s)?.axis).toBe("column");
-    saveTabs("org-a", s, storage);
-    expect(shownSplit(loadTabs("org-a", storage)!)?.axis).toBe("column");
-    // Beside (the default) stores nothing extra.
-    const row = openTabBeside(stateOf("/a"), "/b");
-    expect(shownSplit(row)?.axis).toBe("row");
-    expect(row.tabs.find((t) => t.id === row.viewId)?.besideAxis).toBeUndefined();
   });
 
   it("cannot split a tab with itself, nor with a tab that is not there", () => {
@@ -297,7 +286,7 @@ describe("split view — the partner belongs to the tab", () => {
     s = focusTab(s, "t0");
     expect(s.activeId).toBe("t0");
     expect(s.viewId).toBe("t1");
-    expect(shownSplit(s)).toEqual({ left: "t1", right: "t0", axis: "row" });
+    expect(shownSplit(s)).toEqual({ left: "t1", right: "t0" });
   });
 
   it("switching to a tab shows it with its OWN partner, or alone — nothing is inherited", () => {
@@ -309,7 +298,7 @@ describe("split view — the partner belongs to the tab", () => {
     expect(besideOf(s, "t1")).toBeUndefined();
     expect(besideOf(s, "t2")).toBe("t0"); // t2 keeps its pair
     // Back to t2: its pair is back. And t0 as the view shows t0 alone.
-    expect(shownSplit(focusTab(s, "t2"))).toEqual({ left: "t2", right: "t0", axis: "row" });
+    expect(shownSplit(focusTab(s, "t2"))).toEqual({ left: "t2", right: "t0" });
     expect(shownSplit(focusTab(s, "t0"))).toBeUndefined();
     // A new tab starts alone too.
     const opened = openTab(splitTab(stateOf("/a", "/b"), "t0"), "/d");
@@ -327,7 +316,7 @@ describe("split view — the partner belongs to the tab", () => {
     s = splitTab(s, "t0"); // t1 > t0 as well
     expect(besideOf(s, "t1")).toBe("t0");
     expect(besideOf(s, "t2")).toBe("t0");
-    expect(shownSplit(focusTab(s, "t2"))).toEqual({ left: "t2", right: "t0", axis: "row" });
+    expect(shownSplit(focusTab(s, "t2"))).toEqual({ left: "t2", right: "t0" });
   });
 
   it("closing the view tab shows its partner in its place", () => {
@@ -353,13 +342,13 @@ describe("split view — the partner belongs to the tab", () => {
 
   it("closing a tab outside the pair leaves it alone", () => {
     const s = closeTab(splitTab(stateOf("/a", "/b", "/c"), "t0"), "t1");
-    expect(shownSplit(s)).toEqual({ left: "t2", right: "t0", axis: "row" });
+    expect(shownSplit(s)).toEqual({ left: "t2", right: "t0" });
   });
 
   it("close-others keeps the tab's own partner", () => {
     const s = closeOtherTabs(splitTab(stateOf("/a", "/b", "/c"), "t0"), "t2");
     expect(ids(s).sort()).toEqual(["t0", "t2"]);
-    expect(shownSplit(s)).toEqual({ left: "t2", right: "t0", axis: "row" });
+    expect(shownSplit(s)).toEqual({ left: "t2", right: "t0" });
     // From the partner: it becomes the view, alone, unless the view was pinned.
     const fromPartner = closeOtherTabs(splitTab(stateOf("/a", "/b", "/c"), "t0"), "t0");
     expect(ids(fromPartner)).toEqual(["t0"]);
@@ -369,7 +358,7 @@ describe("split view — the partner belongs to the tab", () => {
   it("unsplits and swaps by owner, the view's pair by default", () => {
     let s = splitTab(stateOf("/a", "/b"), "t0"); // t1 > t0
     const swapped = swapSplit(s);
-    expect(shownSplit(swapped)).toEqual({ left: "t0", right: "t1", axis: "row" });
+    expect(shownSplit(swapped)).toEqual({ left: "t0", right: "t1" });
     expect(swapped.viewId).toBe("t0");
     expect(swapped.activeId).toBe("t1"); // the same TAB keeps focus
     expect(besideOf(swapped, "t1")).toBeUndefined();
@@ -401,12 +390,12 @@ describe("split view — the partner belongs to the tab", () => {
     const s = splitTabWith(stateOf("/a", "/b", "/c"), "t0", "t1"); // from t0's row
     expect(s.viewId).toBe("t0");
     expect(s.activeId).toBe("t0");
-    expect(shownSplit(s)).toEqual({ left: "t0", right: "t1", axis: "row" });
+    expect(shownSplit(s)).toEqual({ left: "t0", right: "t1" });
 
     const fresh = splitTabWith(stateOf("/a", "/b"), "t0");
     expect(fresh.viewId).toBe("t0");
     expect(fresh.tabs).toHaveLength(3);
-    expect(shownSplit(fresh)).toEqual({ left: "t0", right: fresh.tabs[2].id, axis: "row" });
+    expect(shownSplit(fresh)).toEqual({ left: "t0", right: fresh.tabs[2].id });
     expect(locationPathOf(fresh.tabs[2])).toBe(NEW_TAB_PATH);
 
     const plain = stateOf("/a", "/b");
@@ -419,20 +408,20 @@ describe("split view — the partner belongs to the tab", () => {
     s = focusTab(s, "t0", 50);
     s = focusTab(s, "t2", 60); // active t2; the most recent OTHER is t0, not the neighbour t1
     s = toggleSplit(s);
-    expect(shownSplit(s)).toEqual({ left: "t2", right: "t0", axis: "row" });
+    expect(shownSplit(s)).toEqual({ left: "t2", right: "t0" });
     expect(shownSplit(toggleSplit(s))).toBeUndefined();
 
     const alone = toggleSplit(stateOf("/a"));
     expect(alone.tabs).toHaveLength(2);
     expect(locationPathOf(alone.tabs[1])).toBe(NEW_TAB_PATH);
-    expect(shownSplit(alone)).toEqual({ left: "t0", right: alone.tabs[1].id, axis: "row" });
+    expect(shownSplit(alone)).toEqual({ left: "t0", right: alone.tabs[1].id });
     expect(alone.activeId).toBe("t0");
   });
 
   it("opens to the side: a new tab as the view's partner, focus unmoved", () => {
     let s = openTabBeside(stateOf("/a"), "/b");
     expect(s.activeId).toBe("t0");
-    expect(shownSplit(s)).toEqual({ left: "t0", right: s.tabs[1].id, axis: "row" });
+    expect(shownSplit(s)).toEqual({ left: "t0", right: s.tabs[1].id });
     expect(locationPathOf(s.tabs[1])).toBe("/b");
     // Half the width: no page sidebar to start with, unless asked for.
     expect(s.tabs[1].layout).toEqual(BESIDE_LAYOUT);
@@ -441,7 +430,7 @@ describe("split view — the partner belongs to the tab", () => {
 
     // It replaces the previous partner, which stays open.
     s = openTabBeside(s, "/c");
-    expect(shownSplit(s)).toEqual({ left: "t0", right: s.tabs[2].id, axis: "row" });
+    expect(shownSplit(s)).toEqual({ left: "t0", right: s.tabs[2].id });
     expect(s.tabs).toHaveLength(3);
 
     // Refused at the cap without `evict`, like any open.
@@ -485,7 +474,7 @@ describe("split view — the partner belongs to the tab", () => {
     s = focusTab(s, "t0"); // partner focused
     saveTabs("org-a", s, storage);
     const back = loadTabs("org-a", storage)!;
-    expect(shownSplit(back)).toEqual({ left: "t2", right: "t0", axis: "row" });
+    expect(shownSplit(back)).toEqual({ left: "t2", right: "t0" });
     expect(back.viewId).toBe("t2");
     expect(back.activeId).toBe("t0");
 

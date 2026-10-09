@@ -12,7 +12,7 @@ import type {
   FullCoordinateAnchorFragment,
   LightpathGraphFragment,
 } from "@/mikro/api/graphql";
-import { LightPathListView } from "@/mikro/components/lightpath/LightPathListView";
+import { LightPathSpoke } from "@/mikro/components/lightpath/LightPathSpoke";
 
 /**
  * How one coordinate anchor's metadata spokes are drawn — the presentational
@@ -177,15 +177,13 @@ export const ActiveAnchor = ({
       )}
 
       {anchor.lightGraph && (
-        <div className="flex flex-col gap-1">
+        // Full width: a drawing has no content to size itself by.
+        <div className="flex w-full flex-col gap-1">
           <MetadataHeader>Light path</MetadataHeader>
-          {/* LightPathListView styles itself with themed tokens rather than the
-              scene's white-on-black chrome. They read correctly on this
-              near-black surface in the dark theme, and the wrapper sets the
-              inherited color so they do in the light theme too. */}
-          <div className="text-white/85">
-            <LightPathListView graph={anchor.lightGraph.graph} />
-          </div>
+          <LightPathSpoke
+            graph={anchor.lightGraph.graph}
+            title={anchor.channelLabel?.label}
+          />
         </div>
       )}
 

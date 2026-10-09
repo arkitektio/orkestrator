@@ -21,6 +21,12 @@ export type Scalars = {
   _Any: { input: any; output: any; }
 };
 
+/** What a call is now also about */
+export type AddToCallInput = {
+  about: Array<StructureInput>;
+  call: Scalars['ID']['input'];
+};
+
 export type App = {
   __typename?: 'App';
   id: Scalars['ID']['output'];
@@ -29,7 +35,7 @@ export type App = {
 
 export type Call = {
   __typename?: 'Call';
-  /** The structures this call is about. */
+  /** The structures this call is about, oldest first: the last one is what it turned to most recently. */
   about: Array<Structure>;
   createdAt: Scalars['DateTime']['output'];
   creator?: Maybe<User>;
@@ -43,11 +49,13 @@ export type Call = {
   title: Scalars['String']['output'];
 };
 
-/** A call starting in your organization */
+/** A call starting in your organization, or changing what it is about */
 export type CallEvent = {
   __typename?: 'CallEvent';
   /** A call someone else just started, which you can join */
   create?: Maybe<Call>;
+  /** A call that turned to something else; what it was about before is still in `about` */
+  update?: Maybe<Call>;
 };
 
 /** Filter for calls */
@@ -174,6 +182,8 @@ export type JoinCallInput = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Turn a call to these structures: they become what it is about last, and what it was about stays */
+  addToCall: Call;
   /** Put an invitation away, on every device */
   dismissCallInvite: Scalars['ID']['output'];
   /** The live call about these structures, or a new one */
@@ -190,6 +200,11 @@ export type Mutation = {
   joinBroadcast: Scalars['String']['output'];
   /** Join a call and return the token for it */
   joinCall: Scalars['String']['output'];
+};
+
+
+export type MutationAddToCallArgs = {
+  input: AddToCallInput;
 };
 
 
@@ -429,7 +444,7 @@ export type Subscription = {
   __typename?: 'Subscription';
   /** Your invitations to calls as they arrive and go away */
   callInvites: CallInviteEvent;
-  /** The calls others start in your organization, as they start */
+  /** The calls others start in your organization as they start, and any call's new topics */
   calls: CallEvent;
   /** Subscribe to stream events */
   streams: StreamEvent;
@@ -514,6 +529,16 @@ export type EnsureCallMutationVariables = Exact<{
 
 
 export type EnsureCallMutation = { __typename?: 'Mutation', ensureCall: (
+    { __typename?: 'Call' }
+    & CallFragment
+  ) };
+
+export type AddToCallMutationVariables = Exact<{
+  input: AddToCallInput;
+}>;
+
+
+export type AddToCallMutation = { __typename?: 'Mutation', addToCall: (
     { __typename?: 'Call' }
     & CallFragment
   ) };
@@ -703,6 +728,9 @@ export type WatchCallsSubscriptionVariables = Exact<{ [key: string]: never; }>;
 export type WatchCallsSubscription = { __typename?: 'Subscription', calls: { __typename?: 'CallEvent', create?: (
       { __typename?: 'Call' }
       & ListCallFragment
+    ) | null, update?: (
+      { __typename?: 'Call' }
+      & ListCallFragment
     ) | null } };
 
 export const StreamerFragmentDoc = gql`
@@ -882,6 +910,39 @@ export function useEnsureCallMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type EnsureCallMutationHookResult = ReturnType<typeof useEnsureCallMutation>;
 export type EnsureCallMutationResult = Apollo.MutationResult<EnsureCallMutation>;
 export type EnsureCallMutationOptions = Apollo.BaseMutationOptions<EnsureCallMutation, EnsureCallMutationVariables>;
+export const AddToCallDocument = gql`
+    mutation AddToCall($input: AddToCallInput!) {
+  addToCall(input: $input) {
+    ...Call
+  }
+}
+    ${CallFragmentDoc}`;
+export type AddToCallMutationFn = Apollo.MutationFunction<AddToCallMutation, AddToCallMutationVariables>;
+
+/**
+ * __useAddToCallMutation__
+ *
+ * To run a mutation, you first call `useAddToCallMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAddToCallMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [addToCallMutation, { data, loading, error }] = useAddToCallMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAddToCallMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AddToCallMutation, AddToCallMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AddToCallMutation, AddToCallMutationVariables>(AddToCallDocument, options);
+      }
+export type AddToCallMutationHookResult = ReturnType<typeof useAddToCallMutation>;
+export type AddToCallMutationResult = Apollo.MutationResult<AddToCallMutation>;
+export type AddToCallMutationOptions = Apollo.BaseMutationOptions<AddToCallMutation, AddToCallMutationVariables>;
 export const JoinCallDocument = gql`
     mutation JoinCall($input: JoinCallInput!) {
   joinCall(input: $input)
@@ -1586,6 +1647,9 @@ export const WatchCallsDocument = gql`
     subscription WatchCalls {
   calls {
     create {
+      ...ListCall
+    }
+    update {
       ...ListCall
     }
   }

@@ -52,7 +52,7 @@ const OutOfView = ({
   return (
     <div className="flex flex-col gap-1">
       <button
-        className="self-end text-[9px] uppercase tracking-widest text-white/40 transition-colors hover:text-white/70"
+        className="self-start text-[9px] uppercase tracking-widest text-white/40 transition-colors hover:text-white/70"
         onClick={() => setOpen((previous) => !previous)}
       >
         {entries.length} more out of view
@@ -62,7 +62,7 @@ const OutOfView = ({
           // The coordinates are not shown; the mismatch rides on the tooltip.
           <div
             key={anchor.id}
-            className="flex flex-wrap justify-end gap-1 pr-1"
+            className="flex flex-wrap gap-1"
             title={match.pins
               .filter((pin) => !pin.met)
               .map((pin) => `${pin.axis}: showing ${pin.current}`)
@@ -123,13 +123,14 @@ export const AnchorMetadata = ({
   if (anchors.length === 0) return null;
 
   return (
-    <div className="flex max-h-64 min-w-0 flex-col items-end gap-1.5 overflow-y-auto text-right text-[10px]">
+    // No height of its own: the Probe sidebar it sits in scrolls.
+    <div className="flex min-w-0 flex-col gap-2 text-[10px]">
       {active.length === 0 ? (
         <span className="text-white/40">
           Nothing anchored to what this layer is showing.
         </span>
       ) : (
-        active.map(({ anchor }) => <ActiveAnchor key={anchor.id} anchor={anchor} />)
+        active.map(({ anchor }) => <ActiveAnchor key={anchor.id} anchor={anchor} align="start" />)
       )}
       {hidden.length > 0 && <OutOfView entries={hidden} />}
       {loading && <span className="text-[9px] text-white/30">Loading…</span>}

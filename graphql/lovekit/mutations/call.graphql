@@ -4,6 +4,12 @@ mutation EnsureCall($input: EnsureCallInput!) {
   }
 }
 
+mutation AddToCall($input: AddToCallInput!) {
+  addToCall(input: $input) {
+    ...Call
+  }
+}
+
 mutation JoinCall($input: JoinCallInput!) {
   joinCall(input: $input)
 }

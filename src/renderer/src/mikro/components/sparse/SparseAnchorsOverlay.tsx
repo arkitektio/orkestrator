@@ -85,7 +85,7 @@ const SparseAnchorsPanel = ({
   return (
     <div className="flex max-h-64 min-w-0 flex-col items-end gap-1.5 overflow-y-auto text-right text-[10px]">
       {anchors.map((anchor) => (
-        <div key={anchor.id} className="flex flex-col items-end gap-0.5">
+        <div key={anchor.id} className="flex w-full flex-col items-end gap-0.5">
           <MetadataChip>
             {describePins(readTablePins(anchor.coordinates), "whole matrix")}
           </MetadataChip>

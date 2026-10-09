@@ -1,10 +1,10 @@
 import { useReportNotificationCount } from "@/core/dashboard/notificationCount";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Button } from "@/core/ui/button";
-import { PanelBottom, Phone, X } from "lucide-react";
+import { PanelRight, Phone, X } from "lucide-react";
 
 import { useCallInvites, useDismissInvite } from "./invites";
-import { fromCallStructure } from "./structureInput";
+import { currentTopic, fromCallStructure } from "./structureInput";
 import { useOpenCall } from "./useOpenCall";
 
 /**
@@ -23,7 +23,7 @@ export const CallInviteNotifications = () => {
   return (
     <>
       {invites.map((invite) => {
-        const subject = invite.call.about[0];
+        const subject = currentTopic(invite.call);
         return (
           <div key={invite.id} className="flex items-start gap-2 rounded-lg bg-muted/50 p-2" data-testid="call-invite">
             <Phone className="mt-0.5 size-3 shrink-0 animate-pulse text-emerald-500" />
@@ -46,7 +46,7 @@ export const CallInviteNotifications = () => {
                   <Phone /> Join
                 </Button>
                 <Button size="xs" variant="outline" onClick={() => openCall(invite.call, { join: true, target: "side" })}>
-                  <PanelBottom /> To the side
+                  <PanelRight /> To the side
                 </Button>
                 <Button size="xs" variant="ghost" onClick={() => void dismiss(invite)}>
                   <X /> Dismiss

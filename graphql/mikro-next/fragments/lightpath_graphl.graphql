@@ -21,6 +21,9 @@ fragment OpticalElement on OpticalElement {
     name
     role
     channel
+    spectrum {
+      ...Spectrum
+    }
   }
 }
 
@@ -32,16 +35,21 @@ fragment Spectrum on Spectrum {
 fragment DetectorElement on DetectorElement {
   ...OpticalElement
   nepdWPerSqrtHz
+  gain
 }
 
 fragment LaserElement on LaserElement {
   ...OpticalElement
   nominalWavelength
+  power
+  pulseKind
+  repetitionRate
 }
 
 fragment CCDElement on CCDElement {
   ...OpticalElement
   pixelSize
+  resolution
 }
 
 fragment ObjectiveElement on ObjectiveElement {
@@ -49,6 +57,7 @@ fragment ObjectiveElement on ObjectiveElement {
   magnification
   numericalAperture
   workingDistance
+  immersionMedium
 }
 
 fragment FilterElement on FilterElement {
@@ -98,6 +107,32 @@ fragment SampleElement on SampleElement {
   label
 }
 
+fragment LampElement on LampElement {
+  ...OpticalElement
+  lampType
+}
+
+fragment ApertureElement on ApertureElement {
+  ...OpticalElement
+  diameter
+}
+
+fragment PolarizerElement on PolarizerElement {
+  ...OpticalElement
+  angleDeg
+}
+
+fragment ShutterElement on ShutterElement {
+  ...OpticalElement
+  isOpen
+}
+
+fragment WaveplateElement on WaveplateElement {
+  ...OpticalElement
+  angleDeg
+  retardance
+}
+
 fragment LightEdge on LightEdge {
   id
   sourceElementId
@@ -105,6 +140,10 @@ fragment LightEdge on LightEdge {
   targetElementId
   targetPortId
   medium
+  pathLength
+  beam {
+    wavelength
+  }
 }
 
 fragment LightpathGraph on LightpathGraph {
@@ -122,6 +161,12 @@ fragment LightpathGraph on LightpathGraph {
     ...FilterElement
     ...OtherElement
     ...PinholeElement
+    ...CCDElement
+    ...LampElement
+    ...ApertureElement
+    ...PolarizerElement
+    ...ShutterElement
+    ...WaveplateElement
   }
   edges {
     ...LightEdge

@@ -58,6 +58,7 @@ export const LOVEKIT_HELP = {
       steps={[
         <>Right-click any object, or open its menu button, and choose <b>Call about this</b> to start or join the call about it, or <b>Call about this to the side</b> to keep the object on screen with the call under it.</>,
         <>Click a call under <b>In progress</b> to open it and press <b>Join call</b>.</>,
+        <>When a teammate starts a call while your app is open, it shows up as a row in the rail: press <b>Join</b> to get in, or <b>Dismiss</b> to put it away.</>,
       ]}
       tips={[
         <>A call stays listed while someone is in it and disappears a couple of minutes after the last person leaves.</>,
@@ -72,6 +73,8 @@ export const LOVEKIT_HELP = {
         <>Leave the page while you talk: the call follows you as a row in the rail with the same buttons, and clicking it brings you back.</>,
         <>Press <b>Invite people</b> to make teammates’ apps ring with a <b>Join</b> button; nobody needs an invitation to join, though: every call in progress is under <b>Join calls</b> on the home page.</>,
         <>Press <b>Open to the side</b> on the call’s row in the rail to keep the call in a split with the page you are working on.</>,
+        <>Drag any object onto the call, or onto the call’s row in the rail, to turn the call to it: it shows under <b>Talking about</b> for everyone, and what the call was about before stays under <b>Earlier</b> in the <b>About</b> tab.</>,
+        <>Click <b>Talking about</b>, under the tiles, to put what the call is talking about on screen to the right of it.</>,
       ]}
       tips={[
         <>Joining from a second device adds you a second time; the lobby counts your devices rather than listing you twice.</>,

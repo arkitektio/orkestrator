@@ -4,10 +4,10 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/core/ui/c
 import { Separator } from "@/core/ui/separator";
 import { useListCallsQuery } from "@/lovekit/api/graphql";
 import { TooltipButton } from "@/core/ui/tooltip-button";
-import { PanelBottom, Phone, Users } from "lucide-react";
+import { PanelRight, Phone, Users } from "lucide-react";
 
 import { useCallState } from "./store";
-import { fromCallStructure } from "./structureInput";
+import { currentTopic, fromCallStructure } from "./structureInput";
 import { useOpenCall } from "./useOpenCall";
 
 /**
@@ -42,7 +42,7 @@ export const JoinCallsSection = () => {
             </p>
           )}
           {calls.map((call) => {
-            const subject = call.about[0];
+            const subject = currentTopic(call);
             const inIt = active?.id === call.id;
             return (
               <div key={call.id} className="flex items-center gap-3 rounded-lg border border-border/60 px-3 py-2" data-testid="join-call">
@@ -80,7 +80,7 @@ export const JoinCallsSection = () => {
                   aria-label={inIt ? "Open the call to the side" : "Join the call to the side"}
                   onClick={() => openCall(call, { join: !inIt, target: "side" })}
                 >
-                  <PanelBottom />
+                  <PanelRight />
                 </TooltipButton>
               </div>
             );

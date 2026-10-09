@@ -1,3 +1,4 @@
+import { LightPath3DDialog } from "./components/lightpath/LightPath3DDialog";
 import { CommitMeshDesignDialog } from "./components/scene/features/meshDesign/ui/CommitMeshDesignDialog";
 import { AddChartLayerForm } from "./forms/AddChartLayerForm";
 import { AddLayerForm } from "./forms/AddLayerForm";
@@ -18,6 +19,8 @@ import { UpdateFolderForm } from "./forms/UpdateFolderForm";
 export const MIKRO_DIALOGS = {
   // the scene's mesh designer commit (features/meshDesign)
   commitmeshdesign: CommitMeshDesignDialog,
+  // the metadata panel's light path, to turn around (components/lightpath)
+  lightpath3d: LightPath3DDialog,
   addchartlayer: AddChartLayerForm,
   addlayer: AddLayerForm,
   register: RegisterForm,
