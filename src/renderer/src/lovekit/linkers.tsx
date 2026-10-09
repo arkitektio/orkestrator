@@ -6,3 +6,4 @@ import { manifest } from "./manifest";
 
 export const LovekitStream = smartOf(manifest, "@lovekit/stream");
 export const LovekitSoloBroadcast = smartOf(manifest, "@lovekit/solo_broadcast");
+export const LovekitCall = smartOf(manifest, "@lovekit/call");

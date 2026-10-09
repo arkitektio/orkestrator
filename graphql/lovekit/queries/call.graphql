@@ -1,0 +1,26 @@
+query GetCall($id: ID!) {
+  call(id: $id) {
+    ...Call
+  }
+}
+
+query ListCalls($filter: CallFilter, $pagination: OffsetPaginationInput) {
+  calls(filters: $filter, pagination: $pagination, order: { createdAt: DESC }) {
+    ...ListCall
+  }
+}
+
+query CallParticipants($id: ID!) {
+  call(id: $id) {
+    id
+    participants {
+      ...CallParticipant
+    }
+  }
+}
+
+query MyCallInvites {
+  myCallInvites {
+    ...CallInvite
+  }
+}

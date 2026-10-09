@@ -1,0 +1,19 @@
+mutation EnsureCall($input: EnsureCallInput!) {
+  ensureCall(input: $input) {
+    ...Call
+  }
+}
+
+mutation JoinCall($input: JoinCallInput!) {
+  joinCall(input: $input)
+}
+
+mutation InviteToCall($input: InviteToCallInput!) {
+  inviteToCall(input: $input) {
+    id
+  }
+}
+
+mutation DismissCallInvite($input: DismissCallInviteInput!) {
+  dismissCallInvite(input: $input)
+}

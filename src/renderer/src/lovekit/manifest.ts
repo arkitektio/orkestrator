@@ -15,5 +15,15 @@ export const manifest: ModuleManifest = {
   models: [
     { identifier: "@lovekit/stream", name: "Stream", datum: true, path: "streams/:id" },
     { identifier: "@lovekit/solo_broadcast", name: "Solo Broadcast", datum: false, path: "solobroadcasts/:id" },
+    {
+      identifier: "@lovekit/call",
+      name: "Call",
+      datum: false,
+      path: "calls/:id",
+      description: "A video call with your team about some objects",
+    },
   ],
+  // Calls are carried by the LiveKit media server the host configures
+  // (`io.livekit.livekit`); lovekit only mints the tokens.
+  requires: { services: ["livekit"] },
 };

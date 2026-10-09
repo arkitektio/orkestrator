@@ -1,0 +1,8 @@
+subscription WatchCallInvites {
+  callInvites {
+    create {
+      ...CallInvite
+    }
+    delete
+  }
+}

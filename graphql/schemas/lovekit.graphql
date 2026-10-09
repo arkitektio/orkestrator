@@ -3,6 +3,73 @@ type App {
   identifier: String!
 }
 
+type Call {
+  """The structures this call is about."""
+  about: [Structure!]!
+  createdAt: DateTime!
+  creator: User
+  id: ID!
+
+  """How many are in the call right now."""
+  participantCount: Int!
+
+  """
+  Who is in the call right now. Empty when nobody is: a call is live while LiveKit holds its room.
+  """
+  participants: [CallParticipant!]!
+
+  """The LiveKit room this call's participants join."""
+  roomName: String!
+  title: String!
+}
+
+"""Filter for calls"""
+input CallFilter {
+  AND: CallFilter
+  DISTINCT: Boolean
+  NOT: CallFilter
+  OR: CallFilter
+
+  """Calls about this structure."""
+  about: StructureInput
+  ids: [ID!]
+
+  """Only calls whose LiveKit room is up (true) or down (false)."""
+  live: Boolean
+  search: String
+}
+
+"""Someone asking someone else into a call"""
+type CallInvite {
+  call: Call!
+  createdAt: DateTime!
+  id: ID!
+  invitee: User!
+  inviter: User!
+}
+
+"""An invitation to a call arriving, or going away"""
+type CallInviteEvent {
+  """A new invitation for you"""
+  create: CallInvite
+
+  """
+  An invitation that was dismissed or answered, here or on another device
+  """
+  delete: ID
+}
+
+input CallOrder @oneOf {
+  createdAt: Ordering
+}
+
+"""Someone in a live call, as LiveKit reports them"""
+type CallParticipant {
+  identity: String!
+  joinedAt: Int!
+  name: String!
+}
+
 type Client {
   clientId: String!
   id: ID!
@@ -34,6 +101,17 @@ input CollaborativeBroadcastFilter {
 """Date with time (isoformat)"""
 scalar DateTime
 
+"""The invitation to put away"""
+input DismissCallInviteInput {
+  id: ID!
+}
+
+"""The call to find or start"""
+input EnsureCallInput {
+  about: [StructureInput!]!
+  title: String = null
+}
+
 input EnsureCollaborativeBroadcastInput {
   instanceId: String = null
   title: String = null
@@ -50,11 +128,30 @@ input EnsureStreamInput {
   title: String = null
 }
 
+"""Who to ask into a call"""
+input InviteToCallInput {
+  call: ID!
+
+  """The users to invite, by their lok id (the `sub` their token carries)"""
+  users: [ID!]!
+}
+
 input JoinBroadcastInput {
   broadcast: ID!
 }
 
+"""The call to join"""
+input JoinCallInput {
+  call: ID!
+}
+
 type Mutation {
+  """Put an invitation away, on every device"""
+  dismissCallInvite(input: DismissCallInviteInput!): ID!
+
+  """The live call about these structures, or a new one"""
+  ensureCall(input: EnsureCallInput!): Call!
+
   """Create a collaborative broadcast"""
   ensureCollaborativeBroadcast(input: EnsureCollaborativeBroadcastInput!): CollaborativeBroadcast!
 
@@ -64,13 +161,28 @@ type Mutation {
   """Create a stream and return the token for it"""
   ensureStream(input: EnsureStreamInput!): String!
 
+  """Ask users into a call; their open apps ring"""
+  inviteToCall(input: InviteToCallInput!): Call!
+
   """Join a solo broadcast and return the token for it"""
   joinBroadcast(input: JoinBroadcastInput!): String!
+
+  """Join a call and return the token for it"""
+  joinCall(input: JoinCallInput!): String!
 }
 
 input OffsetPaginationInput {
   limit: Int
   offset: Int! = 0
+}
+
+enum Ordering {
+  ASC
+  ASC_NULLS_FIRST
+  ASC_NULLS_LAST
+  DESC
+  DESC_NULLS_FIRST
+  DESC_NULLS_LAST
 }
 
 type Organization {
@@ -82,11 +194,20 @@ type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
 
+  """Get a call by ID"""
+  call(id: ID!): Call!
+
+  """The organization's calls; filter `live` for the ones in progress"""
+  calls(filters: CallFilter, order: CallOrder, pagination: OffsetPaginationInput): [Call!]!
+
   """Get a collaborative broadcast by ID"""
   collaborativeBroadcast(id: ID!): CollaborativeBroadcast!
 
   """Get all collaborative broadcasts"""
   collaborativeBroadcasts(filters: CollaborativeBroadcastFilter, pagination: OffsetPaginationInput): [CollaborativeBroadcast!]!
+
+  """Your pending invitations to calls that are still live"""
+  myCallInvites: [CallInvite!]!
 
   """Get a solo broadcast by ID"""
   soloBroadcast(id: ID!): SoloBroadcast!
@@ -178,7 +299,22 @@ input StreamerFilter {
   search: String = null
 }
 
+"""A reference to an object on another service"""
+type Structure {
+  identifier: String!
+  object: Int!
+}
+
+"""A reference to an object on another service"""
+input StructureInput {
+  identifier: String!
+  object: Int!
+}
+
 type Subscription {
+  """Your invitations to calls as they arrive and go away"""
+  callInvites: CallInviteEvent!
+
   """Subscribe to stream events"""
   streams(dataset: ID = null): StreamEvent!
 }

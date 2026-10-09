@@ -426,6 +426,12 @@ app.whenReady().then(() => {
       }
       return true;
     });
+    // Camera and microphone for lovekit's calls. Electron grants every
+    // request while no handler is set; naming it keeps a later deny-list
+    // from taking the calls down in silence.
+    session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+      callback(permission === "media" || permission === "clipboard-read" || permission === "clipboard-sanitized-write" || permission === "notifications" || permission === "fullscreen");
+    });
   });
 
   app.on("browser-window-created", (_, window) => {

@@ -72,10 +72,10 @@ describe("page sections", () => {
     const ids = (identifier: string, where: Parameters<typeof pageSectionsFor>[1], datum: boolean) =>
       pageSectionsFor(identifier, where, datum).map((section) => section.id);
 
-    // Knowledge is a datum's affair; chat applies to every model.
+    // Knowledge is a datum's affair; chat (rooms, then calls) applies to every model.
     expect(ids("@mikro/image", { slot: "knowledge" }, true)).toEqual(["kraph.knowledge"]);
     expect(ids("@rekuest/agent", { slot: "knowledge" }, false)).toEqual([]);
-    expect(ids("@rekuest/agent", { slot: "chat" }, false)).toEqual(["alpaka.rooms"]);
+    expect(ids("@rekuest/agent", { slot: "chat" }, false)).toEqual(["alpaka.rooms", "lovekit.calls"]);
 
     // Contributions to other modules' pages, by identifier and placement.
     expect(ids("@kraph/entitycategory", { placement: "actions", slot: null }, false)).toEqual(["rekuest.enhance"]);

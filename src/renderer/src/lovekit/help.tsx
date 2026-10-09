@@ -52,4 +52,31 @@ export const LOVEKIT_HELP = {
       ]}
     />
   ),
+  calls: (
+    <PageHelp
+      intro="The video calls your team has in progress. A call is about an object: start one from that object’s menu, and anyone in the organization can join."
+      steps={[
+        <>Right-click any object, or open its menu button, and choose <b>Call about this</b> to start or join the call about it.</>,
+        <>Click a call under <b>In progress</b> to open it and press <b>Join call</b>.</>,
+      ]}
+      tips={[
+        <>A call stays listed while someone is in it and disappears a couple of minutes after the last person leaves.</>,
+      ]}
+    />
+  ),
+  call: (
+    <PageHelp
+      intro="One call. Press Join call to connect with your camera and microphone; everyone in it is shown as a tile, and the About tab shows what the call is about."
+      steps={[
+        <>Press <b>Join call</b>. Use the buttons under the tiles to mute, stop your camera, invite people or leave.</>,
+        <>Leave the page while you talk: the call follows you as a row in the rail with the same buttons, and clicking it brings you back.</>,
+        <>Press <b>Invite people</b> to make teammates’ apps ring with a <b>Join</b> button; nobody needs an invitation to join, though: every call in progress is under <b>Join calls</b> on the home page.</>,
+        <>Press <b>Open to the side</b> on the call’s row in the rail, or hold ⇧ on <b>Call about this</b>, to keep the call beside the page you are working on.</>,
+      ]}
+      tips={[
+        <>Joining from a second device adds you a second time; the lobby counts your devices rather than listing you twice.</>,
+        <>Voice input uses the microphone too; dictating while in a call may compete for it.</>,
+      ]}
+    />
+  ),
 };

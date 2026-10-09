@@ -1,0 +1,57 @@
+fragment CallParticipant on CallParticipant {
+  identity
+  name
+  joinedAt
+}
+
+fragment CallStructure on Structure {
+  identifier
+  object
+}
+
+fragment Call on Call {
+  id
+  title
+  roomName
+  createdAt
+  creator {
+    id
+    sub
+    preferredUsername
+  }
+  about {
+    ...CallStructure
+  }
+  participants {
+    ...CallParticipant
+  }
+}
+
+fragment ListCall on Call {
+  id
+  title
+  roomName
+  createdAt
+  creator {
+    id
+    sub
+    preferredUsername
+  }
+  about {
+    ...CallStructure
+  }
+  participantCount
+}
+
+fragment CallInvite on CallInvite {
+  id
+  createdAt
+  call {
+    ...ListCall
+  }
+  inviter {
+    id
+    sub
+    preferredUsername
+  }
+}

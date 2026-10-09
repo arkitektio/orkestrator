@@ -52,7 +52,9 @@ export const manifest: Manifest = {
     {
       key: "livekit",
       service: "io.livekit.livekit",
-      optional: false,
+      // The media server behind lovekit's calls; a deployment without one
+      // still boots, it just has no calls (`app/Arkitekt.tsx` agrees).
+      optional: true,
     },
     {
       key: "omero_ark",
