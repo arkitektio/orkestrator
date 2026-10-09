@@ -245,6 +245,7 @@ describe("host registries", () => {
       "bank-unmark-transfer",
       "calibrate-arrayDataset",
       "call_about",
+      "call_about_side",
       "copylink",
       "copyprivatelink",
       "create-chart-from-coordinatesystem",

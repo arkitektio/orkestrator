@@ -1,57 +1,75 @@
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
-import { Video } from "lucide-react";
+import { PanelBottom, Video } from "lucide-react";
 
-import type { Action } from "@/core/smart/localactions/LocalActionProvider";
+import type { Action, ActionParams } from "@/core/smart/localactions/LocalActionProvider";
 import { EnsureCallDocument, type EnsureCallMutation, type EnsureCallMutationVariables } from "@/lovekit/api/graphql";
 import { callLink, callTitle } from "./call/links";
 import { toStructureInputs } from "./call/structureInput";
 
 const CALL_IDENTIFIER = "@lovekit/call";
 
+type Open = (id: string, title: string) => void;
+
 /**
- * "Call about this": the live call about the selection, or a new one, and
- * straight into it. On any object; on a call it is simply the way in. Held
- * ⇧ opens the call in a split below the current page instead of in its
- * place, so it can sit with the thing it is about.
- * The same ensure-then-join as `useStartCall`, through the service client
- * an action is handed.
+ * The live call about the selection, or a new one, and straight into it:
+ * the same ensure-then-join as `useStartCall`, through the service client an
+ * action is handed. On a call itself it is simply the way in. `open` says
+ * where the call's page goes.
  */
+const callAbout = async (
+  { services, state }: Pick<ActionParams, "services" | "state">,
+  open: Open,
+) => {
+  const call = state.left.find((structure) => structure.identifier === CALL_IDENTIFIER);
+  if (call) {
+    open(call.id, call.label ?? "Call");
+    return;
+  }
+
+  const client = services.lovekit.client as ApolloClient<NormalizedCache>;
+  if (!client) throw new Error("Lovekit is not available");
+
+  const about = toStructureInputs(state.left);
+  if (about.length === 0) throw new Error("None of the selected objects can be called about");
+
+  const result = await client.mutate<EnsureCallMutation, EnsureCallMutationVariables>({
+    mutation: EnsureCallDocument,
+    variables: { input: { about, title: callTitle(state.left) } },
+    refetchQueries: ["ListCalls"],
+  });
+  const created = result.data?.ensureCall;
+  if (!created) throw new Error("No call came back");
+  open(created.id, created.title);
+};
+
+/** "Call about this": the call's page in this tab. */
 export const CallAboutAction: Action = {
   title: "Call about this",
-  description: "Start or join a video call with your team about this (⇧: in a split below)",
+  description: "Start or join a video call with your team about this",
   icon: Video,
   conditions: [{ type: "nopartner" }],
   collections: ["talk"],
-  execute: async ({ services, state, navigate, tabs, modifiers }) => {
-    const open = (id: string, title: string) => {
-      const to = callLink(id, { join: true });
-      if (modifiers.shiftKey) tabs.openBeside(to, { label: title, evict: true, axis: "column" });
-      else navigate(to);
-    };
+  execute: (params) => callAbout(params, (id) => params.navigate(callLink(id, { join: true }))),
+};
 
-    const call = state.left.find((structure) => structure.identifier === CALL_IDENTIFIER);
-    if (call) {
-      open(call.id, call.label ?? "Call");
-      return;
-    }
-
-    const client = services.lovekit.client as ApolloClient<NormalizedCache>;
-    if (!client) throw new Error("Lovekit is not available");
-
-    const about = toStructureInputs(state.left);
-    if (about.length === 0) throw new Error("None of the selected objects can be called about");
-
-    const result = await client.mutate<EnsureCallMutation, EnsureCallMutationVariables>({
-      mutation: EnsureCallDocument,
-      variables: { input: { about, title: callTitle(state.left) } },
-      refetchQueries: ["ListCalls"],
-    });
-    const created = result.data?.ensureCall;
-    if (!created) throw new Error("No call came back");
-    open(created.id, created.title);
-  },
+/**
+ * "Call about this to the side": the same call, opened in a split with the
+ * page you are on, so it sits with the thing it is about. The split is
+ * stacked (the call below): tiles stay wide and the page keeps its width.
+ */
+export const CallAboutToTheSideAction: Action = {
+  title: "Call about this to the side",
+  description: "Start or join a video call about this, in a split with this page",
+  icon: PanelBottom,
+  conditions: [{ type: "nopartner" }],
+  collections: ["talk"],
+  execute: (params) =>
+    callAbout(params, (id, title) =>
+      params.tabs.openBeside(callLink(id, { join: true }), { label: title, evict: true, axis: "column" }),
+    ),
 };
 
 export const LOVEKIT_ACTIONS: Record<string, Action> = {
   call_about: CallAboutAction,
+  call_about_side: CallAboutToTheSideAction,
 };

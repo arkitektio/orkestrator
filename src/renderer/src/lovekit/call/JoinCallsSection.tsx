@@ -76,8 +76,8 @@ export const JoinCallsSection = () => {
                 <TooltipButton
                   size="icon-sm"
                   variant="ghost"
-                  tooltip={inIt ? "Open below" : "Join below"}
-                  aria-label={inIt ? "Open the call in a split below" : "Join the call in a split below"}
+                  tooltip={inIt ? "Open to the side" : "Join to the side"}
+                  aria-label={inIt ? "Open the call to the side" : "Join the call to the side"}
                   onClick={() => openCall(call, { join: !inIt, target: "side" })}
                 >
                   <PanelBottom />

@@ -7,10 +7,11 @@ import { callLink } from "./links";
 export type OpenCallTarget = "here" | "side";
 
 /**
- * Open a call's page: in this tab, or in a split with it (`side`) so the
- * call sits with what you are working on. The split is stacked, the call
- * below: tiles are wide and a page keeps its width. With `join`, connecting
- * on arrival. One implementation behind every Join / Open button.
+ * Open a call's page: in this tab, or "to the side" (`side`): in a split
+ * with it, so the call sits with what you are working on. The split is
+ * stacked, the call below: tiles are wide and a page keeps its width. With
+ * `join`, connecting on arrival. One implementation behind every Join / Open
+ * button; the local actions do the same through the action's own `tabs`.
  */
 export const useOpenCall = () => {
   const navigate = useNavigate();

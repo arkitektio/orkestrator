@@ -46,7 +46,7 @@ export const CallInviteNotifications = () => {
                   <Phone /> Join
                 </Button>
                 <Button size="xs" variant="outline" onClick={() => openCall(invite.call, { join: true, target: "side" })}>
-                  <PanelBottom /> Below
+                  <PanelBottom /> To the side
                 </Button>
                 <Button size="xs" variant="ghost" onClick={() => void dismiss(invite)}>
                   <X /> Dismiss

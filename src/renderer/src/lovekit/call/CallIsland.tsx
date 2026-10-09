@@ -28,7 +28,7 @@ const useNow = () => {
 /**
  * The call this window is in, as one row in the rail: its title and clock,
  * mute, camera and leave, wherever the user has navigated. Clicking the title
- * returns to the call page; "Open below" puts it beside the current one.
+ * returns to the call page; "Open to the side" puts it beside the current one.
  */
 export const CallIsland = () => {
   const call = useCallState((state) => state.call);
@@ -63,8 +63,8 @@ export const CallIsland = () => {
             <TooltipButton
               size="icon-sm"
               variant="outline"
-              tooltip="Open below"
-              aria-label="Open the call in a split below"
+              tooltip="Open to the side"
+              aria-label="Open the call to the side"
               onClick={() => openCall(call, { target: "side" })}
             >
               <PanelBottom />

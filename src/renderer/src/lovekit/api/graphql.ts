@@ -43,6 +43,13 @@ export type Call = {
   title: Scalars['String']['output'];
 };
 
+/** A call starting in your organization */
+export type CallEvent = {
+  __typename?: 'CallEvent';
+  /** A call someone else just started, which you can join */
+  create?: Maybe<Call>;
+};
+
 /** Filter for calls */
 export type CallFilter = {
   AND?: InputMaybe<CallFilter>;
@@ -422,6 +429,8 @@ export type Subscription = {
   __typename?: 'Subscription';
   /** Your invitations to calls as they arrive and go away */
   callInvites: CallInviteEvent;
+  /** The calls others start in your organization, as they start */
+  calls: CallEvent;
   /** Subscribe to stream events */
   streams: StreamEvent;
 };
@@ -686,6 +695,14 @@ export type WatchCallInvitesSubscriptionVariables = Exact<{ [key: string]: never
 export type WatchCallInvitesSubscription = { __typename?: 'Subscription', callInvites: { __typename?: 'CallInviteEvent', delete?: string | null, create?: (
       { __typename?: 'CallInvite' }
       & CallInviteFragment
+    ) | null } };
+
+export type WatchCallsSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchCallsSubscription = { __typename?: 'Subscription', calls: { __typename?: 'CallEvent', create?: (
+      { __typename?: 'Call' }
+      & ListCallFragment
     ) | null } };
 
 export const StreamerFragmentDoc = gql`
@@ -1565,3 +1582,34 @@ export function useWatchCallInvitesSubscription(baseOptions?: ApolloReactHooks.S
       }
 export type WatchCallInvitesSubscriptionHookResult = ReturnType<typeof useWatchCallInvitesSubscription>;
 export type WatchCallInvitesSubscriptionResult = Apollo.SubscriptionResult<WatchCallInvitesSubscription>;
+export const WatchCallsDocument = gql`
+    subscription WatchCalls {
+  calls {
+    create {
+      ...ListCall
+    }
+  }
+}
+    ${ListCallFragmentDoc}`;
+
+/**
+ * __useWatchCallsSubscription__
+ *
+ * To run a query within a React component, call `useWatchCallsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchCallsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchCallsSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchCallsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchCallsSubscription, WatchCallsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchCallsSubscription, WatchCallsSubscriptionVariables>(WatchCallsDocument, options);
+      }
+export type WatchCallsSubscriptionHookResult = ReturnType<typeof useWatchCallsSubscription>;
+export type WatchCallsSubscriptionResult = Apollo.SubscriptionResult<WatchCallsSubscription>;

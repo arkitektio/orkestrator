@@ -221,6 +221,30 @@
         "possibleTypes": null
       },
       {
+        "kind": "OBJECT",
+        "name": "CallEvent",
+        "description": "A call starting in your organization",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "create",
+            "description": "A call someone else just started, which you can join",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Call",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "INPUT_OBJECT",
         "name": "CallFilter",
         "description": "Filter for calls",
@@ -2918,6 +2942,22 @@
               "name": null,
               "ofType": {
                 "name": "CallInviteEvent",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "calls",
+            "description": "The calls others start in your organization, as they start",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "CallEvent",
                 "kind": "OBJECT",
                 "ofType": null
               }
