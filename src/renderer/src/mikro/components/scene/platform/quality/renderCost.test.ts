@@ -24,9 +24,9 @@ const makeLayer = (
     id,
     fixedLOD: overrides.fixedLOD ?? null,
     defaultVolumeLOD: overrides.defaultVolumeLOD ?? null,
+    renderAxes: { x: "x", y: "y", z: overrides.zAxis ?? null, intensity: "c" },
     lens: {
       slices: overrides.slices ?? [],
-      renderAxes: { x: "x", y: "y", z: overrides.zAxis ?? null, intensity: "c" },
       dataset: {
         axisNames: overrides.axisNames ?? ["y", "x", "c"],
         dataArrays: levels.map((level, index) => ({

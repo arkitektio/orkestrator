@@ -12,7 +12,7 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
 import { useBrickStore } from "../../features/bricks/store/brickSlice";
 import { unplaceableReason } from "../../platform/model/layerModel";
 import { UnplaceableNotice } from "./UnplaceableNotice";
-import { LayerLensHeader } from "./LayerLensHeader";
+import { LayerLensHeader, type HeaderLens } from "./LayerLensHeader";
 
 // Viewport coverage is deliberately GONE from this panel (and from
 // LayerViewRange entirely). It used to arrive as a bucketed Record and flow
@@ -21,14 +21,28 @@ import { LayerLensHeader } from "./LayerLensHeader";
 // card's whole render-graph editor subtree (measured 54–174 ms commits, the
 // sidebar's share of gesture jank).
 
-// The lens a card's layer reads, for the cards that read one. `source` on the
-// registry entry is what says the layer is a normalized `LayerState` — the
-// lens-backed kinds — rather than a fragment over a collection.
+// The lens a card's layer reads. Every layer has one: an array lens for the
+// normalized `LayerState` kinds, a table, mesh, network or annotation lens on
+// the fragment the other cards consume straight. A fragment from before every
+// layer carried its lens (or an arm that selects none) simply has no header.
 const lensOf = (
-  entry: AnyLayerCardEntry,
+  _entry: AnyLayerCardEntry,
   layer: LayerState | SceneLayerFragment,
-): LayerState["lens"] | undefined =>
-  entry.source === "layerState" ? (layer as LayerState).lens : undefined;
+): HeaderLens | undefined => ("lens" in layer ? (layer.lens ?? undefined) : undefined);
+
+// The layer kinds whose renderer draws exactly what their lens selects: the
+// array kinds read through the lens' slices, and a point layer applies its
+// lens' windows as row filters. Tracks, meshes, networks and annotations do not
+// narrow to a windowed lens yet; their header says so (`drawnWhole`).
+const APPLIES_ITS_LENS: ReadonlySet<string> = new Set([
+  "ImageLayer",
+  "IntensityLayer",
+  "RgbLayer",
+  "PhasorLayer",
+  "LabelLayer",
+  "VectorLayer",
+  "PointLayer",
+]);
 
 export const LayerControlPanel = ({
   sceneId,
@@ -180,9 +194,9 @@ export const LayerControlPanel = ({
             mates taller. */}
         <div className="grid grid-cols-1 items-start gap-1 @2xl/layers:grid-cols-2 @5xl/layers:grid-cols-3">
           {cards.map(({ key, entry, layer }, index) => {
-            // Lens-backed cards are headed by the lens they read, once per run
-            // of cards over the same lens — a multi-channel dataset's layers
-            // are consecutive, so that is one line per lens, not one per layer.
+            // Cards are headed by the lens they read, once per run of cards
+            // over the same lens — a multi-channel dataset's layers are
+            // consecutive, so that is one line per lens, not one per layer.
             const lens = lensOf(entry, layer);
             const previous = index > 0 ? cards[index - 1] : undefined;
             const startsLens =
@@ -206,7 +220,12 @@ export const LayerControlPanel = ({
             const unplaceable = unplaceableReason(layer);
             return (
               <Fragment key={key}>
-                {startsLens && lens && <LayerLensHeader lens={lens} />}
+                {startsLens && lens && (
+                  <LayerLensHeader
+                    lens={lens}
+                    drawnWhole={!APPLIES_ITS_LENS.has(layer.__typename ?? "")}
+                  />
+                )}
                 {unplaceable ? (
                   <div className="flex flex-col">
                     {renderLayerCard(entry, layer, common)}

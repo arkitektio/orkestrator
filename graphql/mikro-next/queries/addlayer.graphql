@@ -59,13 +59,20 @@ query AddLayerWorldGraph($world: ID!, $maxDepth: Int) {
 # can see that edge in the lineage too, but the server is the last word on what
 # it will draw as a mask — a crop of a mask is one to a person and not to
 # `createLabelLayer` — so LABEL stays a gate the server answers, and lineage
-# only orders and explains within it. PHASOR needs no set of its own:
-# `renderAxes.phasor` is the same server-derived fact `asLayer: PHASOR` checks.
+# only orders and explains within it. PHASOR and VECTOR are asked for the
+# same reason since `renderAxes` left the lens: the client can read a value axis
+# off the axis types, but only the server says whether it will draw one.
 query AddLayerLensCapabilities($space: ID!) {
   drawable: lenses(filters: { placeableIn: { space: $space, asLayer: IMAGE } }) {
     id
   }
   labels: lenses(filters: { placeableIn: { space: $space, asLayer: LABEL } }) {
+    id
+  }
+  phasor: lenses(filters: { placeableIn: { space: $space, asLayer: PHASOR } }) {
+    id
+  }
+  vector: lenses(filters: { placeableIn: { space: $space, asLayer: VECTOR } }) {
     id
   }
 }
@@ -100,5 +107,30 @@ query AddLayerLineage($coordinateSystem: ID!, $maxDepth: Int) {
         }
       }
     }
+  }
+}
+
+# The WINDOWED lenses of the non-array containers reachable from a space: a
+# table cut to a time range, a mesh collection cut to a box. The picker lists
+# such containers by themselves (their whole lens); these are what a row offers
+# beside "the whole thing". `sliced: true` so the whole lenses, which every
+# container has, are not fetched only to be dropped.
+query AddLayerWindowLenses($space: ID!) {
+  points: lenses(filters: { sliced: true, placeableIn: { space: $space, asLayer: POINT } }) {
+    ...LayerLens
+  }
+  tracks: lenses(filters: { sliced: true, placeableIn: { space: $space, asLayer: TRACK } }) {
+    ...LayerLens
+  }
+  meshes: lenses(filters: { sliced: true, placeableIn: { space: $space, asLayer: MESH } }) {
+    ...LayerLens
+  }
+  networks: lenses(filters: { sliced: true, placeableIn: { space: $space, asLayer: NETWORK } }) {
+    ...LayerLens
+  }
+  annotations: lenses(
+    filters: { sliced: true, placeableIn: { space: $space, asLayer: ANNOTATION } }
+  ) {
+    ...LayerLens
   }
 }

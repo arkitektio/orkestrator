@@ -15,7 +15,7 @@
  *
  * Transformation arrays (`scale`, `translation`, affine rows/columns) are in
  * the axis order of their edge's input coordinate system; the spatial subset
- * is extracted by axis NAME via the lens' server-derived `renderAxes`.
+ * is extracted by axis NAME via the layer's server-derived `renderAxes`.
  * Anything the evaluator cannot interpret (displacement fields, bijections,
  * axis permutations, singular inverses) degrades to identity with a console
  * warning rather than rendering the layer somewhere wrong silently.
@@ -72,9 +72,11 @@ export type LayerTransformSource = {
     outputAxes: readonly string[];
     total?: boolean;
   } | null;
+  /** Which axes of the lens are screen x, y, z. Stated on the LAYER: a lens
+   *  is a selection and does not choose how it is looked at. */
+  renderAxes: { x: string; y: string; z?: string | null };
   lens: {
     axisNames: readonly string[];
-    renderAxes: { x: string; y: string; z?: string | null };
     coordinateSystem?: { id: string } | null;
     toParent?: TransformLike;
     dataset: {
@@ -93,7 +95,7 @@ export type LayerTransformSource = {
  * reduction in this module addresses rows and columns by.
  *
  * mikro writes spatial axes in array order with **x LAST** (`(c,y,x)`,
- * `(z,y,x)`) — the rule `Lens.renderAxes` states as "spatial axes are in array
+ * `(z,y,x)`) — the rule `renderAxes` states as "spatial axes are in array
  * order, so the last is x". So this takes the SPACE-typed axes in order and
  * reads them back to front. A 2D system yields `z = null`, which the evaluator
  * already treats as "leave that row/column identity".
@@ -511,7 +513,7 @@ export function composeLayerAffine(
   layer: LayerTransformSource,
 ): number[][] | null {
   const dims = layer.lens.axisNames;
-  const ra = layer.lens.renderAxes;
+  const ra = layer.renderAxes;
   const spatial = [ra.x, ra.y, ra.z] as const;
   // The path ENDS in the world system, whose axes need not be named like the
   // lens' (`row,col` bin lattices land in a `y,x` world). Reducing the

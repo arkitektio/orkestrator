@@ -5,7 +5,7 @@ import {
 } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import { executeOptionsFor, selectHops } from "@/mikro/lib/attributes/attributeSelection";
 import { hopMetasOf } from "@/mikro/lib/attributes/attributeTypes";
-import { ComparedHopBlock, ComparisonGrid } from "../../platform/layerui/AttributeComparison";
+import { ComparedHopBlock, ComparisonGrid } from "../../platform/layerui/AttributeComparisonViews";
 import type { HopBlock } from "../../platform/layerui/AttributeRowsSection";
 import {
   compareHopBlocks,

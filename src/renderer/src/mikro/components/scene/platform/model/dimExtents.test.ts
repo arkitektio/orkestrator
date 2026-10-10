@@ -72,11 +72,11 @@ describe("declaredDimExtents — a vector layer", () => {
       __typename: "VectorLayer",
       id: "1",
       vectorAxis,
+      renderAxes: { x: "x", y: "y", z: "z", t: "t", intensity: null, phasor: null },
       lens: {
         axisNames: ["v", "t", "z", "y", "x"],
         shape: [3, 10, 32, 80, 96],
         slices: [],
-        renderAxes: { x: "x", y: "y", z: "z", t: "t", intensity: null, phasor: null },
       },
     }) as unknown as SceneLayerFragment;
 

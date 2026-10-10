@@ -280,7 +280,7 @@ export const createSceneStore = ({ scene }: { scene: SceneFragment }) => {
           // differently-named 3D collection would preview flattened.
           dataSpatialOf: (layer) =>
             isBrickLayer(layer)
-              ? [layer.lens.renderAxes.x, layer.lens.renderAxes.y, layer.lens.renderAxes.z]
+              ? [layer.renderAxes.x, layer.renderAxes.y, layer.renderAxes.z]
               : worldSpatial,
           placeImage: (state, placement) => {
             const asAffine = placement as unknown as LayerState["asAffine"];

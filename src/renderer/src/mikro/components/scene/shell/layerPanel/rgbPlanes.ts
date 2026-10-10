@@ -195,14 +195,14 @@ export const rangeUnion = (planes: readonly Plane[]): [number, number] | null =>
 export const intensityAxisCandidates = (
   lens: PlaneLens,
   layer: Pick<AnchorLayer, "phasorAxis"> & {
-    lens: { renderAxes?: { x?: string | null; y?: string | null; z?: string | null } | null };
+    renderAxes?: { x?: string | null; y?: string | null; z?: string | null } | null;
   },
 ): string[] => {
   const spent = new Set(
     [
-      layer.lens.renderAxes?.x,
-      layer.lens.renderAxes?.y,
-      layer.lens.renderAxes?.z,
+      layer.renderAxes?.x,
+      layer.renderAxes?.y,
+      layer.renderAxes?.z,
       layer.phasorAxis,
     ].filter((axis): axis is string => Boolean(axis)),
   );

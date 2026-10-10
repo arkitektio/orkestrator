@@ -63,7 +63,7 @@ fragment ChartLayerCommon on ChartLayer {
 # others are pinned), the pyramid it reads from, and what its anchors call the
 # positions it draws a line for. Deliberately NOT `SceneLens`, which carries the
 # phasor context and every anchor's histogram.
-fragment ChartLens on Lens {
+fragment ChartLens on ArrayLens {
   id
   shape
   axisNames
@@ -126,6 +126,14 @@ fragment ChartSeriesLayer on SeriesChartLayer {
       ...TableDatasetColumn
     }
   }
+  lens {
+    ...LayerLens
+  }
+  # The lens' windows as filters the server always applies; empty for a whole
+  # lens.
+  windowFilters {
+    ...LabelFilterBy
+  }
   valueColumn
   # The same name as `alongAxis`; null when the table is no longer placed.
   coordinateColumn
@@ -137,6 +145,12 @@ fragment ChartSeriesLayer on SeriesChartLayer {
 
 fragment ChartAnnotationLayer on AnnotationChartLayer {
   ...ChartLayerCommon
+  lens {
+    ...LayerLens
+  }
+  clip {
+    ...LensWindow
+  }
   annotationCollection {
     id
     name
@@ -215,7 +229,7 @@ fragment ListChart on Chart {
 # union comes back as a bare typename and is left out of the picker.
 fragment ChartLayerCandidate on Resident {
   __typename
-  ... on Lens {
+  ... on ArrayLens {
     id
     shape
     axisNames

@@ -111,7 +111,7 @@ export const groupDerived = <L extends GroupableLens, D extends GroupableDerived
 /** A `Resident` of the space an edge lands in, as far as finding a parent cares. */
 export type ParentResident =
   | { __typename: "ArrayDataset"; id: string; name: string }
-  | { __typename: "Lens"; id: string; dataset: { id: string; name: string } }
+  | { __typename: "ArrayLens"; id: string; dataset: { id: string; name: string } }
   | { __typename: string };
 
 export type ParentEdge = {
@@ -145,7 +145,7 @@ export const parentDatasetOfEdge = (
   }
 
   for (const resident of residents) {
-    if (resident.__typename === "Lens") {
+    if (resident.__typename === "ArrayLens") {
       const lens = resident as { dataset: { id: string; name: string } };
       return { id: lens.dataset.id, name: lens.dataset.name };
     }

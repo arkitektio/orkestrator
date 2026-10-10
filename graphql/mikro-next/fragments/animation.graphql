@@ -4,7 +4,7 @@
 # triple — per COORDINATE_SYSTEMS.md R3, an axis name only means anything
 # within a specific CS, and a tour through a timelapse moves in `t` as much as
 # in `z`. The client maps it to three-space via the world axis names the
-# layers' `lens.renderAxes` already name (see core/cameraState.ts).
+# layers' `renderAxes` already name (see core/cameraState.ts).
 #
 # Each view has its own orientation/scale pair, and only the pair for the view
 # that was live when the pose was captured is filled — the viewer keeps its own

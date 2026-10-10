@@ -27,7 +27,12 @@ import { groupDerived } from "./derivedGrouping";
  * history in the Info tab. The query lives with that tab, so this takes data.
  */
 
-type QueryLens = GetArrayDatasetDerivedQuery["lenses"][number];
+// `lenses(filters: { dataset })` answers the Lens interface, but every lens of
+// an array dataset is an array lens: the slices are what a group is labelled by.
+type QueryLens = Extract<
+  GetArrayDatasetDerivedQuery["lenses"][number],
+  { __typename?: "ArrayLens" }
+>;
 type QueryDerived =
   GetArrayDatasetDerivedQuery["arrayDataset"]["derivedDatasets"][number];
 
@@ -128,13 +133,16 @@ export const DerivedDatasetsSection = ({
   derived,
 }: {
   intrinsicSystem: GetArrayDatasetDerivedQuery["arrayDataset"]["intrinsicSystem"];
-  lenses: readonly QueryLens[];
+  lenses: readonly GetArrayDatasetDerivedQuery["lenses"][number][];
   derived: readonly QueryDerived[];
 }) => {
+  const arrayLenses = lenses.filter(
+    (lens): lens is QueryLens => lens.__typename === "ArrayLens",
+  );
   const groups = groupDerived<QueryLens, QueryDerived>(
     intrinsicSystem?.id,
     intrinsicSystem?.name,
-    lenses,
+    arrayLenses,
     derived,
   );
 

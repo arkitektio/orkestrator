@@ -90,14 +90,14 @@ const VectorField = ({ layer }: { layer: VectorLayerFragment }) => {
   const scrubbableDims = useMemo(
     () =>
       collapsibleLensDims(layer.lens, [
-        layer.lens.renderAxes.x,
-        layer.lens.renderAxes.y,
-        layer.lens.renderAxes.z,
-        layer.lens.renderAxes.intensity,
-        layer.lens.renderAxes.phasor,
+        layer.renderAxes.x,
+        layer.renderAxes.y,
+        layer.renderAxes.z,
+        layer.renderAxes.intensity,
+        layer.renderAxes.phasor,
         layer.vectorAxis,
       ]),
-    [layer.lens, layer.vectorAxis],
+    [layer.lens, layer.renderAxes, layer.vectorAxis],
   );
 
   // ------------------------------------------------------------------ the read

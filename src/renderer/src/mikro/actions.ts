@@ -22,9 +22,19 @@ import {
   DeleteFileDocument,
   DeleteLensDocument,
   DeleteSceneDocument,
+  GetWholeLensDocument,
+  GetWholeLensQuery,
+  GetWholeLensQueryVariables,
+  GetWindowLensSubjectDocument,
+  GetWindowLensSubjectQuery,
+  GetWindowLensSubjectQueryVariables,
+  CreateAnnotationChartLayerDocument,
   GetChartsDocument,
   GetCoordinateSystemDocument,
   GetFolderDocument,
+  GetLensContainersDocument,
+  GetLensContainersQuery,
+  GetLensContainersQueryVariables,
   GetFoldersDocument,
   GetScenesDocument,
   GetFolderQuery,
@@ -48,6 +58,7 @@ import {
 import { linkBuilder } from "@/core/smart/builder";
 import { sceneRegistrationLink } from "@/mikro/components/registration/entry";
 import {
+  Aperture,
   Boxes,
   ChartSpline,
   Clapperboard,
@@ -137,7 +148,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
   'create-scene-from-lens': {
     title: 'Create Scene',
     description:
-      'Bootstrap a scene showing just this lens: its selection of the dataset, one layer per channel, where it was cut from',
+      'Bootstrap a scene showing just this lens: its selection of the dataset, table, mesh, network or annotation collection, where it was cut from',
     icon: Clapperboard,
     pinned: true,
     conditions: [
@@ -169,7 +180,8 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         // dataset's own grid, so the cut sits where it was taken from.
         variables: { input: { lens: selected.id } },
         // The lens' page lists its scenes; awaited so it holds the new one by
-        // the time we land there asking for it.
+        // the time we land there asking for it. Named, so only the queries on
+        // screen run again — the dataset's, when the lens is an array's.
         refetchQueries: [GetScenesDocument, 'GetLens', 'GetArrayDataset'],
         awaitRefetchQueries: true,
       });
@@ -184,8 +196,9 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       navigate(`${linkBuilder('mikro/lenses')(selected.id)}?scene=${encodeURIComponent(scene.id)}`);
     },
   },
-  // One dialog behind two selections: from a dataset it starts at the whole
-  // array, from a lens at that lens' slices — a tighter cut of the same data.
+  // One dialog behind every selection: from a container it starts at the whole
+  // of it, from a lens at that lens' slices or windows — a tighter cut of the
+  // same data. The dialog reads the kind off what it is opened with.
   'create-lens-from-arrayDataset': {
     title: 'New Lens…',
     description:
@@ -209,7 +222,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
   'create-lens-from-lens': {
     title: 'New Lens From This…',
     description:
-      'Start from this lens\' slices and cut again: a new lens over the same dataset',
+      'Start from this lens\' selection and cut again: a new lens over the same dataset, table or collection',
     icon: ScanSearch,
     conditions: [
       { type: 'identifier', identifier: '@mikro/lens' },
@@ -226,6 +239,68 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       dialog.openDialog('createlens', { lens: selected.id }, { size: 'medium' });
     },
   },
+  ...Object.fromEntries(
+    (
+      [
+        ['tableDataset', '@mikro/tabledataset', 'table dataset', 'a time range, a region'],
+        ['sparseDataset', '@mikro/sparsedataset', 'sparse dataset', 'a range of rows or columns'],
+        ['meshCollection', '@mikro/meshcollection', 'mesh collection', 'a box of space'],
+      ] as const
+    ).map(([key, identifier, noun, example]): [string, MikroAction] => [
+      `create-lens-from-${key}`,
+      {
+        title: 'New Lens…',
+        description: `Cut a selection out of this ${noun} — ${example} — to open or process on its own`,
+        icon: ScanSearch,
+        conditions: [{ type: 'identifier', identifier }, { type: 'nopartner' }],
+        execute: async ({ state, dialog }) => {
+          const selected = state.left.find((item) => item.identifier === identifier);
+          if (!selected?.id) {
+            throw new Error(`No ${noun} selected for New Lens action`);
+          }
+          dialog.openDialog('createlens', { [key]: selected.id }, { size: 'medium' });
+        },
+      },
+    ]),
+  ),
+  // A table or a sparse dataset has a page of its own, but what is opened in a
+  // viewer and handed to a task is its lens. Every container has one that cuts
+  // nothing; this is the way to it from the container.
+  ...Object.fromEntries(
+    (
+      [
+        ['tableDataset', '@mikro/tabledataset', 'table dataset'],
+        ['sparseDataset', '@mikro/sparsedataset', 'sparse dataset'],
+      ] as const
+    ).map(([key, identifier, noun]): [string, MikroAction] => [
+      `open-whole-lens-from-${key}`,
+      {
+        title: 'Open as Lens',
+        description: `Open the lens that selects this whole ${noun}: the page it is viewed and worked on from`,
+        icon: Aperture,
+        conditions: [{ type: 'identifier', identifier }, { type: 'nopartner' }],
+        execute: async ({ state, services, navigate }) => {
+          const selected = state.left.find((item) => item.identifier === identifier);
+          if (!selected?.id) {
+            throw new Error(`No ${noun} selected for Open as Lens action`);
+          }
+          const mikro = services.mikro;
+          if (!mikro) {
+            throw new Error('Mikro service is not available');
+          }
+          const { data } = await mikro.client.query<GetWholeLensQuery, GetWholeLensQueryVariables>({
+            query: GetWholeLensDocument,
+            variables: { filters: { [key]: selected.id, sliced: false } },
+          });
+          const whole = data.lenses.at(0);
+          if (!whole) {
+            throw new Error(`This ${noun} has no whole lens`);
+          }
+          navigate(linkBuilder('mikro/lenses')(whole.id));
+        },
+      },
+    ]),
+  ),
   'rename-lens': {
     title: 'Rename Lens…',
     description:
@@ -497,6 +572,30 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       dialog.openDialog(
         'addlayer',
         { scene: selected.id },
+        { className: 'max-w-3xl' },
+      );
+    },
+  },
+  // A lens dropped on a scene: the same dialog, already past the picker. Any
+  // kind of lens — the dialog finds it among what the scene's world reaches.
+  'add-lens-to-scene': {
+    title: 'Add as Layer…',
+    description: 'Draw this lens in the scene it was dropped on',
+    icon: Layers,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/scene' },
+      { type: 'partner', partner: '@mikro/lens' },
+    ],
+    collections: ['scene'],
+    execute: async ({ state, dialog }) => {
+      const scene = state.left.find((item) => item.identifier === '@mikro/scene');
+      const lens = (state.right ?? []).find((item) => item.identifier === '@mikro/lens');
+      if (!scene?.id || !lens?.id) {
+        throw new Error('Add as Layer needs both a scene and a lens');
+      }
+      dialog.openDialog(
+        'addlayer',
+        { scene: scene.id, lens: lens.id },
         { className: 'max-w-3xl' },
       );
     },
@@ -803,6 +902,68 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
      })
     }
   },
+  // A data tile on the home page is the whole LENS of its container, so that is
+  // what lands on a folder there. Filing is the container's: resolve what the
+  // dropped lenses select from (one query for the whole drop) and file those.
+  move_lenses_to_folder: {
+    description: 'File the datasets and tables these lenses select from into this folder',
+    title: 'Move Data to Folder',
+    icon: Boxes,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/folder' },
+      { type: 'partner', partner: '@mikro/lens' }
+    ],
+    collections: ['folder'],
+    execute: async ({ state, services }) => {
+      const lenses = (state.right ?? []).filter((item) => item.identifier === '@mikro/lens')
+      if (lenses.length === 0) {
+        throw new Error('No lenses selected for Move Data to Folder action')
+      }
+
+      const mikro = services.mikro
+      if (!mikro) {
+        throw new Error('Mikro service is not available')
+      }
+
+      const client = mikro.client
+
+      const inside = state.left.at(0)
+      if (!inside || inside.identifier !== '@mikro/folder') {
+        throw new Error('Inside item must be a folder for Move Data to Folder action')
+      }
+
+      const { data } = await client.query<GetLensContainersQuery, GetLensContainersQueryVariables>({
+        query: GetLensContainersDocument,
+        variables: { ids: lenses.map((i) => i.id) },
+      })
+
+      const datasets = new Set<string>()
+      const tables = new Set<string>()
+      for (const lens of data.lenses) {
+        if (lens.__typename === 'ArrayLens') datasets.add(lens.dataset.id)
+        if (lens.__typename === 'TableLens') tables.add(lens.tableDataset.id)
+      }
+      // Only array datasets and tables can be filed in a folder at all.
+      if (datasets.size === 0 && tables.size === 0) {
+        throw new Error('Only array datasets and tables can be filed in a folder')
+      }
+
+      if (datasets.size > 0) {
+        await client.mutate<PutArrayDatasetsInFolderMutation, PutArrayDatasetsInFolderMutationVariables>({
+          mutation: PutArrayDatasetsInFolderDocument,
+          variables: { selfs: [...datasets], other: inside.id },
+          refetchQueries: getRefetchableQueriesForEntities(client, [...datasets].map((id) => ({ typename: "ArrayDataset", id })))
+        })
+      }
+      if (tables.size > 0) {
+        await client.mutate<PutTableDatasetsInFolderMutation, PutTableDatasetsInFolderMutationVariables>({
+          mutation: PutTableDatasetsInFolderDocument,
+          variables: { selfs: [...tables], other: inside.id },
+          refetchQueries: getRefetchableQueriesForEntities(client, [...tables].map((id) => ({ typename: "TableDataset", id })))
+        })
+      }
+    }
+  },
   move_files_to_folder: {
     description: 'File files into this folder',
     title: 'Move Files to Folder',
@@ -871,20 +1032,23 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       dialog.openDialog('addchartlayer', { chart: selected.id }, { size: 'medium' });
     },
   },
+  // What a lens becomes on a chart follows from what it selects over: an array
+  // a trace, a table a series (which needs a column chosen, hence the dialog),
+  // an annotation collection its marks. The other kinds have no chart layer.
   'add-lens-to-chart': {
-    title: 'Draw as Trace',
-    description: 'Draw this lens along the axis of the chart it was dropped on',
+    title: 'Draw on Chart',
+    description: 'Draw this lens along the axis of the chart it was dropped on: an array as a trace, a table as a series, annotations as marks',
     icon: ChartSpline,
     conditions: [
       { type: 'identifier', identifier: '@mikro/chart' },
       { type: 'partner', partner: '@mikro/lens' },
     ],
     collections: ['chart'],
-    execute: async ({ state, services }) => {
+    execute: async ({ state, services, dialog }) => {
       const chart = state.left.find((item) => item.identifier === '@mikro/chart');
       const lenses = (state.right ?? []).filter((item) => item.identifier === '@mikro/lens');
       if (!chart?.id || lenses.length === 0) {
-        throw new Error('Draw as Trace needs both a chart and a lens');
+        throw new Error('Draw on Chart needs both a chart and a lens');
       }
       const mikro = services.mikro;
       if (!mikro) {
@@ -893,14 +1057,40 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       // No registration is written: the lens must already be laid along the
       // chart's axis, and the server's refusal is what says when it is not.
       for (const lens of lenses) {
-        await mikro.client.mutate<
-          CreateTraceChartLayerMutation,
-          CreateTraceChartLayerMutationVariables
-        >({
-          mutation: CreateTraceChartLayerDocument,
-          variables: { input: { chart: chart.id, lens: lens.id } },
-          refetchQueries: ['GetChart'],
-        });
+        const { data } = await mikro.client.query<
+          GetWindowLensSubjectQuery,
+          GetWindowLensSubjectQueryVariables
+        >({ query: GetWindowLensSubjectDocument, variables: { id: lens.id } });
+
+        switch (data.lens.__typename) {
+          case 'ArrayLens':
+            await mikro.client.mutate<
+              CreateTraceChartLayerMutation,
+              CreateTraceChartLayerMutationVariables
+            >({
+              mutation: CreateTraceChartLayerDocument,
+              variables: { input: { chart: chart.id, lens: lens.id } },
+              refetchQueries: ['GetChart'],
+            });
+            break;
+          case 'AnnotationLens':
+            await mikro.client.mutate({
+              mutation: CreateAnnotationChartLayerDocument,
+              variables: { input: { chart: chart.id, lens: lens.id } },
+              refetchQueries: ['GetChart'],
+            });
+            break;
+          case 'TableLens':
+            // One dialog at a time: a series needs its value column chosen.
+            dialog.openDialog(
+              'addchartlayer',
+              { chart: chart.id, table: data.lens.tableDataset.id, lens: lens.id },
+              { size: 'medium' },
+            );
+            return;
+          default:
+            throw new Error('A chart draws arrays, tables and annotations; this lens selects over none of them');
+        }
       }
     },
   },
@@ -981,9 +1171,9 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     title: 'Delete Lens',
     identifier: '@mikro/lens',
     description:
-      'Delete the lens and every layer drawn over it, in every scene. The dataset it selects from is untouched',
+      'Delete this selection. What it selects from is untouched. Refused while a layer still draws through it, and for a whole lens, which lives as long as its container',
     service: 'mikro',
-    typename: 'Lens',
+    typename: ['ArrayLens', 'TableLens', 'SparseLens', 'MeshLens', 'NetworkLens', 'AnnotationLens'],
     mutation: DeleteLensDocument
   }),
   'delete-mikro-folder': buildDeleteAction<ModuleServices<"mikro">>({

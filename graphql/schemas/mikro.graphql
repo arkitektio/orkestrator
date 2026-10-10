@@ -283,7 +283,7 @@ type AnnotationChartLayer implements ChartLayer {
   alongAxis(at: [CoordinateInput!] = null): String
 
   """
-  The annotation collection whose marks this layer draws. Its own coordinate system is the layer's space
+  The annotation collection whose marks this layer draws: the container of the lens. Its own coordinate system is the layer's space
   """
   annotationCollection: AnnotationCollection!
 
@@ -293,10 +293,18 @@ type AnnotationChartLayer implements ChartLayer {
   asAffine(at: [CoordinateInput!] = null): AffinePlacement
   chart: Chart!
 
+  """
+  The lens' windows as a clip box in the collection's own space: marks outside it are not drawn. Derived from the lens; empty for a whole lens
+  """
+  clip: [Window!]!
+
   """The colour the layer is drawn in, as RGBA. Null lets the viewer choose"""
   color: [Float!]
   id: ID!
   kind: ChartLayerKind!
+
+  """The annotation lens this layer draws through"""
+  lens: AnnotationLens!
   name: String
   opacity: Float!
   order: Int!
@@ -357,7 +365,17 @@ type AnnotationCollection {
   The folder this annotation collection is filed in. Organisational only: distinct from `scene`, which says which drawing surface minted it, and from `coordinateSystem`, which says where its shapes are drawn
   """
   folder: Folder
+
+  """
+  The lens that selects this whole annotation collection: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every annotation collection is created with one
+  """
+  fullLens: AnnotationLens
   id: ID!
+
+  """
+  The lenses over this annotation collection, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens`
+  """
+  lenses(windowed: Boolean = null): [AnnotationLens!]!
   name: String!
 
   """Provenance entries for this annotation collection"""
@@ -575,7 +593,7 @@ A layer that renders an annotation collection's drawn shapes (polygons, boxes, e
 """
 type AnnotationLayer implements Layer {
   """
-  The annotation collection whose shapes this layer renders. Its own coordinate system is the layer's space
+  The annotation collection whose shapes this layer renders: the container of the lens. Its own coordinate system is the layer's space
   """
   annotationCollection: AnnotationCollection!
 
@@ -584,8 +602,16 @@ type AnnotationLayer implements Layer {
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
+
+  """
+  The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens
+  """
+  clip: [Window!]!
   id: ID!
   kind: LayerKind!
+
+  """The annotation lens this layer draws through"""
+  lens: AnnotationLens!
   name: String
   opacity: Float!
   order: Int!
@@ -611,6 +637,74 @@ type AnnotationLayer implements Layer {
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
   scene: Scene!
   visible: Boolean!
+}
+
+"""
+A selection over an annotation collection by windows in its drawing space
+"""
+type AnnotationLens implements Lens {
+  """
+  The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
+  """
+  activeAnchors: [CoordinateAnchor!]!
+  annotationCollection: AnnotationCollection!
+
+  """
+  The collection's annotations this lens keeps: those whose own reach -- vertices and pins, in the drawing space the windows are stated in -- meets every window. Every annotation for a whole lens. Decided per shape, so it costs a read of the collection
+  """
+  annotations: [Annotation!]!
+
+  """
+  The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
+  """
+  coordinateSystem: CoordinateSystem
+
+  """
+  When this selection was first asked for; a whole lens, when its container was made
+  """
+  createdAt: DateTime!
+
+  """The task this selection was made under, if any"""
+  createdThrough: Task
+
+  """The assigner of the creating task, if any"""
+  createdThroughBy: User
+
+  """
+  Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing
+  """
+  creator: User
+
+  """
+  The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation
+  """
+  defaultScene: Scene
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+  id: ID!
+
+  """
+  What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows
+  """
+  kind: LensKind!
+
+  """
+  What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
+  """
+  name: String
+
+  """
+  The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report
+  """
+  scenes: [Scene!]!
+
+  """
+  The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
+  """
+  windows: [Window!]!
 }
 
 input AnnotationOrder @oneOf {
@@ -739,9 +833,9 @@ type ArrayDataset {
   folder: Folder
 
   """
-  The lens that selects this whole dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and the whole array is meant. Every dataset is created with one. The oldest unsliced lens, so the answer is stable; null only for a dataset with no pixel grid to select from -- reading never mints one
+  The lens that selects this whole dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and the whole array is meant. Every dataset is created with one, and there is one; null only for a dataset with no pixel grid to select from -- reading never mints one
   """
-  fullLens: Lens
+  fullLens: ArrayLens
   id: ID!
 
   """
@@ -755,9 +849,9 @@ type ArrayDataset {
   latestSnapshot: SceneSnapshot
 
   """
-  The lenses over this dataset, oldest first. `sliced: true` keeps the ones that cut something out -- the crops and sub-volumes people work on; `sliced: false` the ones that select everything. A dataset usually carries several of the latter and they are interchangeable (each is the dataset, looked at whole), so a list for people wants `sliced: true` and `fullLens` beside it
+  The array lenses over this dataset, oldest first. `sliced: true` keeps the ones that cut something out -- the crops and sub-volumes people work on; `sliced: false` the one that selects everything, which is `fullLens`. A list for people wants `sliced: true` and `fullLens` beside it
   """
-  lenses(sliced: Boolean = null): [Lens!]!
+  lenses(sliced: Boolean = null): [ArrayLens!]!
 
   """
   Whether this dataset carries a resolution pyramid. Derived: true when it has more than one level
@@ -1015,6 +1109,107 @@ type ArrayDatasetStats {
 """Datetime fields of ArrayDataset for bucketing"""
 enum ArrayDatasetTimestampField {
   CREATED_AT
+}
+
+"""
+A selection over an array dataset by index slices: what an action that works on pixels is handed. Its shape and axes are derived from the dataset and the slices
+"""
+type ArrayLens implements Lens {
+  """
+  The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
+  """
+  activeAnchors: [CoordinateAnchor!]!
+
+  """
+  The lens' axis names, in array order. A selection never drops or reorders an axis
+  """
+  axisNames: [String!]!
+
+  """
+  Every column a label layer over this lens can be coloured or filtered by, with the control each one's role admits -- the same set `createLabelLayer(render: {colorBys: ...})` accepts. The nested form of the `labelColorByOptions` root query, which is where the search, narrowing and paging live; this one hands back the whole list. It walks the coordinate graph once per lens, so read it on a lens, not across a page of them
+  """
+  colorByOptions(maxJoinDepth: Int! = 1): [ColorByOption!]!
+
+  """
+  The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
+  """
+  coordinateSystem: CoordinateSystem
+
+  """
+  When this selection was first asked for; a whole lens, when its container was made
+  """
+  createdAt: DateTime!
+
+  """The task this selection was made under, if any"""
+  createdThrough: Task
+
+  """The assigner of the creating task, if any"""
+  createdThroughBy: User
+
+  """
+  Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing
+  """
+  creator: User
+  dataset: ArrayDataset!
+
+  """
+  The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation
+  """
+  defaultScene: Scene
+
+  """
+  The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived
+  """
+  derivedDatasets: [ArrayDataset!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+  id: ID!
+
+  """
+  What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows
+  """
+  kind: LensKind!
+
+  """
+  The most recent picture of this lens' `defaultScene` -- the tile to put on this lens. A sliced lens that nominates a scene shows that one; one that nominates nothing, and every unsliced lens, shows the dataset's, so a crop nobody has staged yet still has a picture. Null when neither nominates a scene
+  """
+  latestSnapshot: SceneSnapshot
+
+  """
+  What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
+  """
+  name: String
+
+  """
+  Everything needed to reduce one axis of this lens to a phasor: the bin count and width, the period the transform runs over, the laser rate, the instrument-response correction and the persisted distribution. Null when the lens has no MICROTIME or SPECTRUM axis. Derived -- none of it is stored on the lens, and a phasor render node references it rather than copying it, so two layers over one dataset cannot disagree about the instrument
+  """
+  phasor(axis: String = null, harmonic: Int! = 1): PhasorContext
+
+  """
+  The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report
+  """
+  scenes: [Scene!]!
+
+  """The shape this lens' slices cut out of its dataset"""
+  shape: [Int!]!
+
+  """
+  The slices, in the one normalized spelling: dataset axis order, explicit ints, a step always present. Empty for the whole lens
+  """
+  slices: [Slice!]!
+
+  """
+  What a layer over this lens would answer for `renderAxes`, before any layer exists: which of the lens' axes face screen x, y, z, time and intensity under the default convention. A preview for opening a viewer on a bare lens; once a layer exists, its own `renderAxes` is the one to follow -- the mapping is the view's, not the selection's
+  """
+  suggestedRenderAxes: RenderAxes!
+
+  """
+  The edge from this lens' space back into its dataset's intrinsic pixel space. A crop is a translation of the slice starts; a stepped lens also rescales. Without this edge an ROI drawn on a cropped lens has no defined path back to its dataset. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record
+  """
+  toParent: Transformation
 }
 
 """
@@ -2437,6 +2632,7 @@ Input for drawing an annotation collection's marks in a chart. Name an existing 
 input CreateAnnotationChartLayerInput {
   annotationCollection: ID = null
   chart: ID!
+  lens: ID = null
   name: String = null
   opacity: Float = null
   order: Int = null
@@ -2476,12 +2672,33 @@ input CreateAnnotationInput {
 Create a layer that renders an annotation collection's drawn shapes in a scene. The collection's own coordinate system is the layer's space, so it must already have a path to the scene's world
 """
 input CreateAnnotationLayerInput {
-  annotationCollection: ID!
+  annotationCollection: ID = null
   blending: Blending = null
+  lens: ID = null
   opacity: Float = null
   order: Int = null
   scene: ID!
   visible: Boolean = null
+}
+
+"""
+Input for the lens making a selection over an annotation collection, by windows in its drawing space
+"""
+input CreateAnnotationLensInput {
+  """
+  The annotation collection to select over. Exactly one of this and `lens`
+  """
+  annotationCollection: ID = null
+
+  """
+  A lens over the annotation collection to select within, in place of the container: the windows then intersect with its own, and the result is the annotation collection's lens for what that keeps
+  """
+  lens: ID = null
+
+  """
+  Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the annotation collection's whole lens, or the lens cut from
+  """
+  windows: [WindowInput!] = null
 }
 
 """
@@ -2597,11 +2814,37 @@ input CreateLayerInput {
   visible: Boolean = null
 }
 
-"""Input type for creating an image from an array-like object"""
+"""
+Input for the lens making a selection over an array dataset -- or within one of its lenses -- by slices
+"""
 input CreateLensInput {
-  dataset: ID!
+  """
+  In place of `slices`: an annotation, cut to the voxels under its stored box (crop to the ROI). With `dataset` only
+  """
+  annotation: ID = null
+
+  """
+  In place of `slices`: a box in any coordinate system the dataset reaches, cut to the voxels whose cells it meets. With `dataset` only: a box names its own frame, it is not relative to a crop
+  """
+  box: LensBoxInput = null
+
+  """The array dataset to select over. Exactly one of this and `lens`"""
+  dataset: ID = null
+
+  """
+  An array lens to cut from, in place of `dataset`: a crop of a crop. The slices are stated in this lens' own index space and composed through it; the result is the dataset's lens for the voxels that keeps
+  """
+  lens: ID = null
+
+  """
+  What to call this selection. Applied when the lens has no name yet; a lens that already makes this selection and is named keeps its name: finding a selection is not a request to rename it, `updateLens` is
+  """
   name: String = null
-  slices: [SliceInput!]!
+
+  """
+  Slices selecting a window of the dataset (or of the lens), one per axis to restrict. Omit, or pass an empty list, for everything: the dataset's whole lens, or the lens cut from. The same selection, however spelled, is the same lens
+  """
+  slices: [SliceInput!] = null
 }
 
 """
@@ -2626,15 +2869,34 @@ input CreateMeshLayerInput {
   blending: Blending = null
   colorBys: [MeshColorByInput!] = null
   filterBys: [MeshFilterByInput!] = null
+  lens: ID = null
   materialColor: [Int!] = null
   maxLevel: Int = null
-  meshCollection: ID!
+  meshCollection: ID = null
   opacity: Float = null
   order: Int = null
   scene: ID!
   shading: MeshShading = null
   visible: Boolean = null
   wireframe: Boolean = null
+}
+
+"""
+Input for the lens making a selection over a mesh collection, by windows in its own space
+"""
+input CreateMeshLensInput {
+  """
+  A lens over the mesh collection to select within, in place of the container: the windows then intersect with its own, and the result is the mesh collection's lens for what that keeps
+  """
+  lens: ID = null
+
+  """The mesh collection to select over. Exactly one of this and `lens`"""
+  meshCollection: ID = null
+
+  """
+  Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the mesh collection's whole lens, or the lens cut from
+  """
+  windows: [WindowInput!] = null
 }
 
 """
@@ -2661,16 +2923,35 @@ input CreateNetworkLayerInput {
   directed: Boolean = null
   edgeWidthColumn: String = null
   filterBys: [NetworkFilterByInput!] = null
+  lens: ID = null
   lineWidth: Float = null
   materialColor: [Int!] = null
   maxLevel: Int = null
-  networkCollection: ID!
+  networkCollection: ID = null
   nodeSizeColumn: String = null
   opacity: Float = null
   order: Int = null
   scene: ID!
   showNodes: Boolean = null
   visible: Boolean = null
+}
+
+"""
+Input for the lens making a selection over a network collection, by windows in its own space
+"""
+input CreateNetworkLensInput {
+  """
+  A lens over the network collection to select within, in place of the container: the windows then intersect with its own, and the result is the network collection's lens for what that keeps
+  """
+  lens: ID = null
+
+  """The network collection to select over. Exactly one of this and `lens`"""
+  networkCollection: ID = null
+
+  """
+  Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the network collection's whole lens, or the lens cut from
+  """
+  windows: [WindowInput!] = null
 }
 
 """
@@ -2757,12 +3038,13 @@ input CreatePointLayerInput {
   colorColumn: String = null
   colormap: ColorMap = null
   filterBys: [LabelFilterByInput!] = null
+  lens: ID = null
   opacity: Float = null
   order: Int = null
   pointSize: Float = null
   scene: ID!
   sizeColumn: String = null
-  tableDataset: ID!
+  tableDataset: ID = null
   visible: Boolean = null
 }
 
@@ -2825,13 +3107,14 @@ Input for drawing a table as a series in a chart: one numeric column read as the
 input CreateSeriesChartLayerInput {
   chart: ID!
   color: [Float!] = null
+  lens: ID = null
   lineWidth: Float = null
   mark: ChartMark = null
   markerSize: Float = null
   name: String = null
   opacity: Float = null
   order: Int = null
-  tableDataset: ID!
+  tableDataset: ID = null
   valueColumn: String = null
   visible: Boolean = null
 }
@@ -2851,6 +3134,24 @@ input CreateSparseDatasetInput {
 }
 
 """
+Input for the lens making a selection over a sparse dataset, by windows on its axes
+"""
+input CreateSparseLensInput {
+  """
+  A lens over the sparse dataset to select within, in place of the container: the windows then intersect with its own, and the result is the sparse dataset's lens for what that keeps
+  """
+  lens: ID = null
+
+  """The sparse dataset to select over. Exactly one of this and `lens`"""
+  sparseDataset: ID = null
+
+  """
+  Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the sparse dataset's whole lens, or the lens cut from
+  """
+  windows: [WindowInput!] = null
+}
+
+"""
 Input for creating a table dataset from a Parquet store. A column is declared ONCE, in `columns`: a non-null `axisType` makes it an axis of the coordinate system the table owns, and the axis-typed columns, in list (= file) order, are the space -- there is no separate axes list, because a table's axes are named columns and every consumer addresses them by name. Declare no axis-typed columns for a pure measurement table (its rows enumerate objects, its space is a synthetic `object` axis, and its lineage edge is UNMAPPABLE)
 """
 input CreateTableDatasetInput {
@@ -2862,6 +3163,24 @@ input CreateTableDatasetInput {
   folder: ID = null
   name: String!
   sourceFiles: [SourceFileInput!] = null
+}
+
+"""
+Input for the lens making a selection over a table dataset, by windows on its coordinate columns
+"""
+input CreateTableLensInput {
+  """
+  A lens over the table dataset to select within, in place of the container: the windows then intersect with its own, and the result is the table dataset's lens for what that keeps
+  """
+  lens: ID = null
+
+  """The table dataset to select over. Exactly one of this and `lens`"""
+  tableDataset: ID = null
+
+  """
+  Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the table dataset's whole lens, or the lens cut from
+  """
+  windows: [WindowInput!] = null
 }
 
 """
@@ -2888,11 +3207,12 @@ input CreateTrackLayerInput {
   blending: Blending = null
   colorByColumn: String = null
   colormap: ColorMap = null
+  lens: ID = null
   lineWidth: Float = null
   opacity: Float = null
   order: Int = null
   scene: ID!
-  tableDataset: ID!
+  tableDataset: ID = null
   visible: Boolean = null
 }
 
@@ -4574,7 +4894,11 @@ type ImageLayer implements Layer {
   blending: Blending!
   id: ID!
   kind: LayerKind!
-  lens: Lens!
+
+  """
+  The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind
+  """
+  lens: ArrayLens!
 
   """
   Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene
@@ -4603,6 +4927,11 @@ type ImageLayer implements Layer {
   How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+
+  """
+  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
+  """
+  renderAxes: RenderAxes!
 
   """The composable in-layer render graph, if this layer defines one"""
   renderGraph: LayerRenderGraph
@@ -4653,7 +4982,11 @@ type IntensityLayer implements Layer {
   intensityAxis: String
   intensityIndex: Int!
   kind: LayerKind!
-  lens: Lens!
+
+  """
+  The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind
+  """
+  lens: ArrayLens!
 
   """
   Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene
@@ -4683,6 +5016,11 @@ type IntensityLayer implements Layer {
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
   projectionMode: ProjectionMode
+
+  """
+  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
+  """
+  renderAxes: RenderAxes!
   scene: Scene!
   visible: Boolean!
 }
@@ -4885,7 +5223,11 @@ type LabelLayer implements Layer {
   How this layer's object ids become color: the hashing, the transparent background id, contour-or-fill, the selection, and any `colorBy`
   """
   labelRender: LabelRender
-  lens: Lens!
+
+  """
+  The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind
+  """
+  lens: ArrayLens!
 
   """
   Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene
@@ -4914,6 +5256,11 @@ type LabelLayer implements Layer {
   How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+
+  """
+  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
+  """
+  renderAxes: RenderAxes!
   scene: Scene!
   visible: Boolean!
 }
@@ -5294,36 +5641,39 @@ interface LayerRenderNode {
 scalar Length
 
 """
-A Lens is a way of looking at a dataset: a dimensional selection (slices) over a dataset that defines a view of its data
+A selection over a container that lives in a coordinate system: one row per (container, selection), so the same selection asked for twice is the same id. An ArrayLens selects over an array dataset by index slices and, when sliced, owns the crop's space and the edge back into the dataset's grid; every other kind selects over its container by value windows in the container's own axes and lives in the container's space. Every container has its whole lens from creation.
 """
-type Lens {
+interface Lens {
+  """
+  The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
+  """
   activeAnchors: [CoordinateAnchor!]!
 
   """
-  The lens' axis names, in array order. A selection never drops or reorders an axis
-  """
-  axisNames: [String!]!
-
-  """
-  Every column a label layer over this lens can be coloured or filtered by, with the control each one's role admits -- the same set `createLabelLayer(render: {colorBys: ...})` accepts. The nested form of the `labelColorByOptions` root query, which is where the search, narrowing and paging live; this one hands back the whole list. It walks the coordinate graph once per lens, so read it on a lens, not across a page of them
-  """
-  colorByOptions(maxJoinDepth: Int! = 1): [ColorByOption!]!
-
-  """
-  The coordinate system the lens' selection is expressed in. A sliced lens owns one (the space its slices cut out, with the derived edge recording the shift); an unsliced lens selects everything, so this resolves to the dataset's INTRINSIC system
+  The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
   """
   coordinateSystem: CoordinateSystem
-  dataset: ArrayDataset!
 
   """
-  The scene to open for this lens. A sliced lens' own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its dataset's while it has none; an unsliced lens always answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree. A nomination, not a derivation -- see `scenes`
+  When this selection was first asked for; a whole lens, when its container was made
+  """
+  createdAt: DateTime!
+
+  """The task this selection was made under, if any"""
+  createdThrough: Task
+
+  """The assigner of the creating task, if any"""
+  createdThroughBy: User
+
+  """
+  Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing
+  """
+  creator: User
+
+  """
+  The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation
   """
   defaultScene: Scene
-
-  """
-  The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived
-  """
-  derivedDatasets: [ArrayDataset!]!
 
   """
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
@@ -5332,38 +5682,34 @@ type Lens {
   id: ID!
 
   """
-  The most recent picture of this lens' `defaultScene` -- the tile to put on this lens. A sliced lens that nominates a scene shows that one; one that nominates nothing, and every unsliced lens, shows the dataset's, so a crop nobody has staged yet still has a picture. Null when neither nominates a scene
+  What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows
   """
-  latestSnapshot: SceneSnapshot
+  kind: LensKind!
 
   """
-  What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the slices -- or 'the whole array' -- in its place
+  What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
   """
   name: String
 
   """
-  Everything needed to reduce one axis of this lens to a phasor: the bin count and width, the period the transform runs over, the laser rate, the instrument-response correction and the persisted distribution. Null when the lens has no MICROTIME or SPECTRUM axis. Derived -- none of it is stored on the lens, and a phasor render node references it rather than copying it, so two layers over one dataset cannot disagree about the instrument
-  """
-  phasor(axis: String = null, harmonic: Int! = 1): PhasorContext
-
-  """
-  Which axis of the data source maps to screen x, y, z, time and intensity. Derived from the axis types: spatial axes are in array order, so the last is x
-  """
-  renderAxes: RenderAxes!
-
-  """
-  The scenes this lens is rendered in: those with a layer over it. Derived, never stored, exactly as `ArrayDataset.scenes` is. An unsliced lens answers for every unsliced lens of its dataset -- they are one selection, the whole array, and which of them a layer happens to name is not a fact about the picture. Scenes that show only a *crop* of the dataset are not among them: ask the dataset's `scenes` for those too
+  The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report
   """
   scenes: [Scene!]!
+}
 
-  """The shape this lens' slices cut out of its dataset"""
-  shape: [Int!]!
-  slices: [Slice!]!
+"""
+A box in any coordinate system an array dataset reaches -- micrometres in a physical space, a sibling dataset's grid through a shared world -- as the selection of a lens: the voxels whose cells the box meets, once the box is composed into the dataset's pixel grid
+"""
+input LensBoxInput {
+  """
+  The coordinate system the windows are stated in. The dataset's pixel grid must reach it affinely, walking the transformation edges either way
+  """
+  coordinateSystem: ID!
 
   """
-  The edge from this lens' space back into its dataset's intrinsic pixel space. A crop is a translation of the slice starts; a stepped lens also rescales. Without this edge an ROI drawn on a cropped lens has no defined path back to its dataset. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record
+  The box, one window per axis it bounds. A side left open runs to the array's edge, an axis of the grid the box says nothing about is kept whole, and a window may be a plane (min equal to max)
   """
-  toParent: Transformation
+  windows: [WindowInput!]!
 }
 
 """
@@ -5412,23 +5758,76 @@ input LensElementInput {
   serialNumber: String = null
 }
 
+"""
+One change to the lenses being followed. Exactly one field is set per event
+"""
+type LensEvent {
+  """
+  A lens that was made: a crop, a window, or the whole lens a new container was born with
+  """
+  create: Lens
+
+  """The ID of a lens that was deleted, on its own or with its container"""
+  delete: ID
+
+  """A lens that was renamed or nominated a scene, in its new state"""
+  update: Lens
+}
+
 input LensFilter {
   AND: LensFilter
   DISTINCT: Boolean
   NOT: LensFilter
   OR: LensFilter
 
-  """Filter by the dataset this lens looks at"""
+  """Filter to the lenses over this annotation collection"""
+  annotationCollection: ID
+
+  """Filter by the sub of the user that assigned the creating task"""
+  assignedBy: ID
+
+  """Filter for items created after this datetime"""
+  createdAfter: DateTime
+
+  """Filter for items created before this datetime"""
+  createdBefore: DateTime
+
+  """
+  Filter by the database ID of the task the item was created through (the `createdThrough { id }` field)
+  """
+  createdThrough: ID
+
+  """
+  Filter by the database ID of the user that assigned the creating task (the `createdThroughBy { id }` field)
+  """
+  createdThroughBy: ID
+
+  """Filter by the rekuest task id the item was created through"""
+  createdThroughTask: String
+
+  """Filter to the array lenses over this dataset"""
   dataset: ID
   id: ID
 
   """Filter by list of IDs"""
   ids: [ID!]
 
+  """Filter by the kind of container the lens selects over"""
+  kind: LensKind
+
+  """Filter to the lenses over this mesh collection"""
+  meshCollection: ID
+
+  """Filter to the lenses over this network collection"""
+  networkCollection: ID
+
   """
   Filter to lenses whose extent overlaps this annotation, wherever the two are co-registered: lenses over the dataset it was drawn on, and lenses over any other dataset registered into a space its collection reaches. Both extents are composed per request from the shapes and the edges and compared in the nearest space they share, so this costs one coordinate-graph walk per such space rather than an index lookup. A lens the server cannot bound there -- placed only per index, or across a warp -- is not returned
   """
   overlapsAnnotation: ID
+
+  """Filter by the creator's subject ID"""
+  owner: ID
 
   """
   Filter to lenses placeable into a coordinate system: those whose space reaches it across steps that compose into one affine map, walking the transformation edges. Takes a *space*, not a scene -- pass `scene.worldCoordinateSystem.id` to ask it of a scene. `derivedOnly` and `asLayer` narrow the answer for a particular picker; with neither, this is the whole set layer creation would accept
@@ -5436,20 +5835,43 @@ input LensFilter {
   placeableIn: LensPlaceableFilter
 
   """
-  Search by the lens' own name or, since most lenses have none and are known by their dataset's, by the name of the dataset it selects from (case-insensitive substring)
+  Search by the lens' own name or, since most lenses have none and are known by their container's, by its container's label: the name of a dataset, table, sparse dataset or annotation collection, the version of a mesh or network collection (case-insensitive substring)
   """
   search: String
 
   """
-  Filter by whether the lens cuts anything out of its dataset. True keeps the crops and sub-volumes; false the lenses that select everything, of which a dataset usually carries several interchangeable ones -- a list meant for people wants true
+  Filter by whether the lens cuts anything out of its container. True keeps the crops, sub-volumes and windows; false the whole lenses, one per container -- a list meant for people usually wants true
   """
   sliced: Boolean
+
+  """Filter to the lenses over this sparse dataset"""
+  sparseDataset: ID
+
+  """Filter to the lenses over this table dataset"""
+  tableDataset: ID
+}
+
+"""
+What a lens selects over: an array (by index slices, re-indexing into a space of its own), or a table, a sparse dataset, a mesh collection, a network collection or an annotation collection (by value windows, in the container's own space).
+"""
+enum LensKind {
+  ANNOTATION
+  ARRAY
+  MESH
+  NETWORK
+  SPARSE
+  TABLE
 }
 
 """
 The kind of layer a lens could source, for narrowing a picker: the members of `LayerKind` that draw array data. Input-only, and deliberately not `LayerKind` itself -- an annotation, point, track or mesh layer sources from a collection or a table, never from a lens, so four of that enum's members could only ever answer 'no'.
 """
 enum LensLayerKind {
+  """
+  Drawable as an annotation layer: any lens over an annotation collection placeable here.
+  """
+  ANNOTATION
+
   """
   Drawable as a general image layer -- which is every lens with an x and a y axis of more than one pixel. It is the renderability gate alone, and deliberately *not* the complement of the others: a mask drawn through a render graph is a legitimate thing to want, and `createLayer` does not refuse one.
   """
@@ -5466,14 +5888,34 @@ enum LensLayerKind {
   LABEL
 
   """
+  Drawable as a mesh layer: any lens over a mesh collection placeable here.
+  """
+  MESH
+
+  """
+  Drawable as a network layer: any lens over a network collection placeable here.
+  """
+  NETWORK
+
+  """
   Drawable as a phasor layer: renderable, and carrying a MICROTIME or SPECTRUM axis -- the continuous ones a phasor transform means anything over.
   """
   PHASOR
 
   """
+  Drawable as a point layer: a lens over a table that declares at least two SPACE coordinate columns -- the gate `createPointLayer` applies.
+  """
+  POINT
+
+  """
   Drawable as an RGB layer: renderable, and carrying a channel axis with at least three positions. Structural capacity only -- whether those three channels *are* red, green and blue is a fact about the acquisition, which a shape cannot carry. `createSceneFromCoordinateSystem` answers it from what ingest recorded (channel labels, a photographic source file) and falls back to one layer per channel; this filter answers the narrower structural question and never guesses.
   """
   RGB
+
+  """
+  Drawable as a track layer: a point-drawable table lens whose table also declares a TRACK_ID column -- the gate `createTrackLayer` applies.
+  """
+  TRACK
 
   """
   Drawable as a vector layer: renderable, and carrying a DISPLACEMENT value axis -- the values are components of a per-point offset. The same signal `createSceneFromCoordinateSystem` infers a vector layer from, asked of a candidate instead of a source, for LABEL's stated reason.
@@ -5482,7 +5924,9 @@ enum LensLayerKind {
 }
 
 input LensOrder @oneOf {
+  createdAt: Ordering
   id: Ordering
+  name: Ordering
 }
 
 """
@@ -5870,10 +6314,20 @@ type MeshCollection {
   folder: Folder
 
   """
+  The lens that selects this whole mesh collection: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every mesh collection is created with one
+  """
+  fullLens: MeshLens
+
+  """
   The octree grid, as read from the store's manifest. Its `cellSize` is in voxels, one size per vertex component -- the same order the catalog's bbox columns use, which is not necessarily the coordinate system's axis order
   """
   grid: Any!
   id: ID!
+
+  """
+  The lenses over this mesh collection, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens`
+  """
+  lenses(windowed: Boolean = null): [MeshLens!]!
 
   """
   The files this mesh collection was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete
@@ -6042,7 +6496,12 @@ type MeshLayer implements Layer {
   blending: Blending!
 
   """
-  The versioned, coordinate-system-anchored mesh collection this layer renders. Its geometry is fetched from the collection's Parquet catalog, not through this API
+  The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens
+  """
+  clip: [Window!]!
+
+  """
+  The versioned, coordinate-system-anchored mesh collection this layer renders: the container of the lens. Its geometry is fetched from the collection's Parquet catalog, not through this API
   """
   collection: MeshCollection
 
@@ -6062,6 +6521,9 @@ type MeshLayer implements Layer {
   filterBys: [MeshFilterBy!]!
   id: ID!
   kind: LayerKind!
+
+  """The mesh lens this layer draws through"""
+  lens: MeshLens!
   materialColor: [Int!]
   maxLevel: Int
   name: String
@@ -6091,6 +6553,67 @@ type MeshLayer implements Layer {
   shading: MeshShading!
   visible: Boolean!
   wireframe: Boolean!
+}
+
+"""A selection over a mesh collection by windows in its own space"""
+type MeshLens implements Lens {
+  """
+  The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
+  """
+  activeAnchors: [CoordinateAnchor!]!
+
+  """
+  The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
+  """
+  coordinateSystem: CoordinateSystem
+
+  """
+  When this selection was first asked for; a whole lens, when its container was made
+  """
+  createdAt: DateTime!
+
+  """The task this selection was made under, if any"""
+  createdThrough: Task
+
+  """The assigner of the creating task, if any"""
+  createdThroughBy: User
+
+  """
+  Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing
+  """
+  creator: User
+
+  """
+  The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation
+  """
+  defaultScene: Scene
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+  id: ID!
+
+  """
+  What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows
+  """
+  kind: LensKind!
+  meshCollection: MeshCollection!
+
+  """
+  What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
+  """
+  name: String
+
+  """
+  The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report
+  """
+  scenes: [Scene!]!
+
+  """
+  The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
+  """
+  windows: [Window!]!
 }
 
 """
@@ -6260,6 +6783,11 @@ type Mutation {
   createAnnotationLayer(input: CreateAnnotationLayerInput!): AnnotationLayer!
 
   """
+  The lens keeping these windows of an annotation collection's drawing space: the one that exists, or a new one
+  """
+  createAnnotationLens(input: CreateAnnotationLensInput!): AnnotationLens!
+
+  """
   Draw many annotations in one call, into a collection or onto a scene (exactly one of the two, same semantics as createAnnotation). The transform chain and version resolve once for the whole batch, and the rows insert in bulk
   """
   createAnnotations(input: CreateAnnotationsInput!): [Annotation!]!
@@ -6307,8 +6835,10 @@ type Mutation {
   """
   createLayer(input: CreateLayerInput!): ImageLayer!
 
-  """Create a new lens from an existing dataset and slicing constraints"""
-  createLens(input: CreateLensInput!): Lens!
+  """
+  The array lens making a selection over a dataset by slices: the one that exists for that selection, or a new one with its coordinate system and its edge back into the dataset's grid
+  """
+  createLens(input: CreateLensInput!): ArrayLens!
 
   """
   Register an immutable, versioned mesh collection against a coordinate system
@@ -6321,6 +6851,11 @@ type Mutation {
   createMeshLayer(input: CreateMeshLayerInput!): MeshLayer!
 
   """
+  The lens keeping these windows of a mesh collection's own space: the one that exists, or a new one
+  """
+  createMeshLens(input: CreateMeshLensInput!): MeshLens!
+
+  """
   Register an immutable, versioned network collection from an uploaded konnektion store, in a coordinate system of its own
   """
   createNetworkCollection(input: CreateNetworkCollectionInput!): NetworkCollection!
@@ -6329,6 +6864,11 @@ type Mutation {
   Create a layer that renders a node/edge network -- a traced arbor, a vessel tree, a connectome -- in a scene
   """
   createNetworkLayer(input: CreateNetworkLayerInput!): NetworkLayer!
+
+  """
+  The lens keeping these windows of a network collection's own space: the one that exists, or a new one
+  """
+  createNetworkLens(input: CreateNetworkLensInput!): NetworkLens!
 
   """
   Attach an instrument-response correction to a dataset, taking a raw phasor to a calibrated one
@@ -6366,7 +6906,7 @@ type Mutation {
   createSceneFromCoordinateSystem(input: CreateSceneFromCoordinateSystemInput!): Scene!
 
   """
-  Bootstrap a renderable scene showing one lens -- a crop, a sub-volume, or the whole array -- with one layer per channel over that lens. Composes in the dataset's intrinsic grid unless `world` names another space the lens reaches
+  Bootstrap a renderable scene showing one lens of any kind: a crop, a sub-volume or the whole array as one layer per channel; a window over a table as a point or track layer; a window over a mesh, network or annotation collection as that layer. Composes in the dataset's intrinsic grid, or the container's own space, unless `world` names another space the lens reaches
   """
   createSceneFromLens(input: CreateSceneFromLensInput!): Scene!
 
@@ -6384,9 +6924,19 @@ type Mutation {
   createSparseDataset(input: CreateSparseDatasetInput!): SparseDataset!
 
   """
+  The lens keeping these windows of a sparse dataset's axes: the one that exists, or a new one. A subset of positions, never a re-indexing
+  """
+  createSparseLens(input: CreateSparseLensInput!): SparseLens!
+
+  """
   Create a table dataset from a Parquet store. Its declared coordinate columns become the axes of a coordinate system it owns, which lets a localization table be placed in a scene; a table with no coordinate columns is a measurement table whose rows enumerate objects and whose lineage edge is UNMAPPABLE
   """
   createTableDataset(input: CreateTableDatasetInput!): TableDataset!
+
+  """
+  The lens keeping these windows of a table dataset's coordinate columns: the one that exists, or a new one. It lives in the table's own space
+  """
+  createTableLens(input: CreateTableLensInput!): TableLens!
 
   """
   Draw an array as a trace in a chart: a lens with one metric axis free, laid along the chart's axis by the graph, and optionally one CHANNEL or INDEX axis free as one line per position
@@ -6452,7 +7002,9 @@ type Mutation {
   """Delete an existing layer"""
   deleteLayer(input: DeleteLayerInput!): ID!
 
-  """Delete an existing lens"""
+  """
+  Delete a lens of any kind. Refused while a layer draws through it, and for a container's whole lens
+  """
   deleteLens(input: DeleteLensInput!): ID!
 
   """Delete an existing mesh collection"""
@@ -6803,6 +7355,11 @@ type NetworkCollection {
   derivedFrom: [Transformation!]!
 
   """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
+  """
   The geometry encoding: how positions, edges, node ids, radii and ghosts are quantized and compressed, and which coarsening operations each level ran
   """
   encoding: Any!
@@ -6818,10 +7375,20 @@ type NetworkCollection {
   folder: Folder
 
   """
+  The lens that selects this whole network collection: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every network collection is created with one
+  """
+  fullLens: NetworkLens
+
+  """
   The octree grid, as read from the store's manifest. Its `cellSize` is in voxels, one size per position component -- the same order the catalog's bbox columns use, which is not necessarily the coordinate system's axis order
   """
   grid: Any!
   id: ID!
+
+  """
+  The lenses over this network collection, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens`
+  """
+  lenses(windowed: Boolean = null): [NetworkLens!]!
 
   """
   The files this network collection was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete
@@ -6986,7 +7553,12 @@ type NetworkLayer implements Layer {
   blending: Blending!
 
   """
-  The versioned, coordinate-system-anchored network collection this layer renders. Its nodes and edges are fetched from the collection's Parquet catalog, not through this API
+  The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens
+  """
+  clip: [Window!]!
+
+  """
+  The versioned, coordinate-system-anchored network collection this layer renders: the container of the lens. Its nodes and edges are fetched from the collection's Parquet catalog, not through this API
   """
   collection: NetworkCollection
 
@@ -7011,6 +7583,9 @@ type NetworkLayer implements Layer {
   filterBys: [NetworkFilterBy!]!
   id: ID!
   kind: LayerKind!
+
+  """The network lens this layer draws through"""
+  lens: NetworkLens!
 
   """
   The flat width of every segment, in scene units. A well-defined length only from `placementInvariance` SIMILARITY up. Overridden where `nodeSizeColumn` or `edgeWidthColumn` is set
@@ -7053,6 +7628,67 @@ type NetworkLayer implements Layer {
   """
   showNodes: Boolean!
   visible: Boolean!
+}
+
+"""A selection over a network collection by windows in its own space"""
+type NetworkLens implements Lens {
+  """
+  The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
+  """
+  activeAnchors: [CoordinateAnchor!]!
+
+  """
+  The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
+  """
+  coordinateSystem: CoordinateSystem
+
+  """
+  When this selection was first asked for; a whole lens, when its container was made
+  """
+  createdAt: DateTime!
+
+  """The task this selection was made under, if any"""
+  createdThrough: Task
+
+  """The assigner of the creating task, if any"""
+  createdThroughBy: User
+
+  """
+  Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing
+  """
+  creator: User
+
+  """
+  The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation
+  """
+  defaultScene: Scene
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+  id: ID!
+
+  """
+  What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows
+  """
+  kind: LensKind!
+
+  """
+  What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
+  """
+  name: String
+  networkCollection: NetworkCollection!
+
+  """
+  The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report
+  """
+  scenes: [Scene!]!
+
+  """
+  The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
+  """
+  windows: [Window!]!
 }
 
 """
@@ -7721,7 +8357,11 @@ type PhasorLayer implements Layer {
   blending: Blending!
   id: ID!
   kind: LayerKind!
-  lens: Lens!
+
+  """
+  The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind
+  """
+  lens: ArrayLens!
 
   """
   Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene
@@ -7755,6 +8395,11 @@ type PhasorLayer implements Layer {
   How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+
+  """
+  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
+  """
+  renderAxes: RenderAxes!
   scene: Scene!
   visible: Boolean!
 }
@@ -7991,6 +8636,11 @@ type PointLayer implements Layer {
   """The dataset's ID-role column identifying each point, if any"""
   idColumn: String
   kind: LayerKind!
+
+  """
+  The table lens this layer draws through: the rows its windows keep, in the table's own space
+  """
+  lens: TableLens!
   name: String
   opacity: Float!
   order: Int!
@@ -8022,10 +8672,15 @@ type PointLayer implements Layer {
   tColumn: String
 
   """
-  The table dataset the points are drawn from. Its declared coordinate columns provide the coordinates and its own system provides the placement -- the column fields below are derived from its schema, never stored per layer
+  The table dataset the points are drawn from: the container of the lens. Its declared coordinate columns provide the coordinates and its own system provides the placement -- the column fields below are derived from its schema, never stored per layer
   """
   tableDataset: TableDataset!
   visible: Boolean!
+
+  """
+  The lens' windows as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open), on top of whatever `filterBys` are active. The selection the layer draws, derived from the lens and never stored; empty for a whole lens
+  """
+  windowFilters: [LabelFilterBy!]!
 
   """
   The coordinate column whose axis is named 'x', from the dataset's declared schema
@@ -8309,10 +8964,12 @@ type Query {
   """List layers placed in scenes (a heterogeneous list of layer kinds)"""
   layers(filters: LayerFilter, ordering: [LayerOrder!]! = [], pagination: OffsetPaginationInput): [Layer!]!
 
-  """Get a single lens by ID"""
+  """Get a single lens of any kind by ID"""
   lens(id: ID!): Lens!
 
-  """List lenses (parameterized ways of looking at an array dataset)"""
+  """
+  List lenses: selections over array datasets (by slices) and over tables, sparse datasets, meshes, networks and annotation collections (by windows), a heterogeneous list of lens kinds
+  """
   lenses(filters: LensFilter, ordering: [LensOrder!]! = [], pagination: OffsetPaginationInput): [Lens!]!
 
   """
@@ -8566,7 +9223,7 @@ input RequestZarrUploadInput {
 """
 A piece of data living in a coordinate system. Data belongs to a space; the space belongs to nobody
 """
-union Resident = AnnotationCollection | ArrayDataset | DataArray | Lens | MeshCollection | NetworkCollection | SparseDataset | TableDataset
+union Resident = AnnotationCollection | AnnotationLens | ArrayDataset | ArrayLens | DataArray | MeshCollection | MeshLens | NetworkCollection | NetworkLens | SparseDataset | SparseLens | TableDataset | TableLens
 
 """Input for reverting a folder to a previous history revision"""
 input RevertInput {
@@ -8593,7 +9250,11 @@ type RgbLayer implements Layer {
   id: ID!
   intensityAxis: String
   kind: LayerKind!
-  lens: Lens!
+
+  """
+  The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind
+  """
+  lens: ArrayLens!
 
   """
   Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene
@@ -8623,6 +9284,11 @@ type RgbLayer implements Layer {
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
   redIndex: Int!
+
+  """
+  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
+  """
+  renderAxes: RenderAxes!
   scene: Scene!
   visible: Boolean!
 
@@ -8962,6 +9628,11 @@ input SceneFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Filter to the scenes with a layer drawing through this lens, of any kind: the same set the lens' own `scenes` answers
+  """
+  lens: ID
   name: StrFilterLookup
 
   """Search by name (case-insensitive substring)"""
@@ -9191,6 +9862,9 @@ type SeriesChartLayer implements ChartLayer {
   id: ID!
   kind: ChartLayerKind!
 
+  """The table lens this series reads through: the rows its windows keep"""
+  lens: TableLens!
+
   """Line width in screen pixels. Null lets the viewer choose"""
   lineWidth: Float
 
@@ -9223,7 +9897,7 @@ type SeriesChartLayer implements ChartLayer {
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
 
-  """The table dataset whose columns are read"""
+  """The table dataset whose columns are read: the container of the lens"""
   tableDataset: TableDataset!
 
   """The numeric attribute column read as the value"""
@@ -9234,6 +9908,11 @@ type SeriesChartLayer implements ChartLayer {
   """
   valueUnit: Unit
   visible: Boolean!
+
+  """
+  The lens' windows as row filters, always applied: a row is read when every one keeps it (`min <= column <= max`, an omitted side open). The selection the series draws, derived from the lens; empty for a whole lens
+  """
+  windowFilters: [LabelFilterBy!]!
 }
 
 """Nominate the scene to open for a dataset, and take its thumbnail from"""
@@ -9355,7 +10034,7 @@ One source in view of a region: where it sits in the queried coordinate system, 
 """
 type SourcePlacement {
   """
-  The source's coordinate anchors whose slab overlaps the region. An anchor pins some axes and is global along every axis it omits, so its slab is one voxel wide where it pins and the container's full extent where it does not. Only an array dataset's anchors are placed here: a table's anchors pin column values rather than a slab, and are read through `TableDataset.anchors`; every other source kind reports none, which is not a gap
+  The source's coordinate anchors whose slab overlaps the region. An anchor pins some axes and is global along every axis it omits. For an array dataset the slab is one voxel wide where it pins and the container's full extent where it does not; for a table or a sparse dataset a pin is one position of a coordinate column, and an omitted axis is unbounded, since the server holds no extent for a table. A mesh, network or annotation collection carries no anchors and reports none
   """
   anchors: [CoordinateAnchor!]!
 
@@ -9519,12 +10198,22 @@ type SparseDataset {
 
   """The folder it is filed in. Organisational only"""
   folder: Folder
+
+  """
+  The lens that selects this whole sparse dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every sparse dataset is created with one
+  """
+  fullLens: SparseLens
   id: ID!
 
   """
   The axes this dataset can select a single position along in one contiguous read -- one per stored layout. An axis absent here is one it holds, but can only answer about by scanning every byte, so a surface needing that answer will not offer this dataset
   """
   indexableAxes: [String!]!
+
+  """
+  The lenses over this sparse dataset, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens`
+  """
+  lenses(windowed: Boolean = null): [SparseLens!]!
   name: String!
 
   """
@@ -9643,6 +10332,69 @@ type SparseLayout {
   Whether a slice can be fetched as an exact byte range instead of as whole chunks -- true when every array is one uncompressed chunk, so `indptr` names byte offsets into the raw buffer. False is the ordinary case and not a defect: the default trades bytes for cache reuse, which is the better trade when the cost is requests
   """
   rangeReadable: Boolean!
+}
+
+"""
+A selection over a sparse dataset by windows on its axes: the positions kept, never re-indexed. Lives in the dataset's own space
+"""
+type SparseLens implements Lens {
+  """
+  The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
+  """
+  activeAnchors: [CoordinateAnchor!]!
+
+  """
+  The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
+  """
+  coordinateSystem: CoordinateSystem
+
+  """
+  When this selection was first asked for; a whole lens, when its container was made
+  """
+  createdAt: DateTime!
+
+  """The task this selection was made under, if any"""
+  createdThrough: Task
+
+  """The assigner of the creating task, if any"""
+  createdThroughBy: User
+
+  """
+  Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing
+  """
+  creator: User
+
+  """
+  The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation
+  """
+  defaultScene: Scene
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+  id: ID!
+
+  """
+  What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows
+  """
+  kind: LensKind!
+
+  """
+  What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
+  """
+  name: String
+
+  """
+  The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report
+  """
+  scenes: [Scene!]!
+  sparseDataset: SparseDataset!
+
+  """
+  The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
+  """
+  windows: [Window!]!
 }
 
 """
@@ -9774,6 +10526,11 @@ type Subscription {
   layers(scene: ID!): LayerEvent!
 
   """
+  Follow the lenses of one container -- given by its kind and its id -- or of the whole organization when neither is given: an event for every selection made, renamed or deleted, the whole lens a new container is born with included. Carries changes only -- read the container's current lenses first
+  """
+  lenses(container: ID = null, kind: LensKind = null): LensEvent!
+
+  """
   Follow the organization's scenes: an event for every one created, edited or deleted
   """
   scenes: SceneEvent!
@@ -9837,7 +10594,17 @@ type TableDataset {
   The folder this table dataset is filed in. Organisational only: it says where a user keeps this table, never where its rows sit in space -- that is `coordinateSystem` and the edges out of it
   """
   folder: Folder
+
+  """
+  The lens that selects this whole table dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every table dataset is created with one
+  """
+  fullLens: TableLens
   id: ID!
+
+  """
+  The lenses over this table dataset, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens`
+  """
+  lenses(windowed: Boolean = null): [TableLens!]!
   name: String!
 
   """
@@ -9974,6 +10741,69 @@ input TableIdentifiesInput {
   table: ID!
 }
 
+"""
+A selection over a table dataset by value windows on its coordinate columns: the rows kept. Lives in the table's own space
+"""
+type TableLens implements Lens {
+  """
+  The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
+  """
+  activeAnchors: [CoordinateAnchor!]!
+
+  """
+  The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
+  """
+  coordinateSystem: CoordinateSystem
+
+  """
+  When this selection was first asked for; a whole lens, when its container was made
+  """
+  createdAt: DateTime!
+
+  """The task this selection was made under, if any"""
+  createdThrough: Task
+
+  """The assigner of the creating task, if any"""
+  createdThroughBy: User
+
+  """
+  Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing
+  """
+  creator: User
+
+  """
+  The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation
+  """
+  defaultScene: Scene
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+  id: ID!
+
+  """
+  What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows
+  """
+  kind: LensKind!
+
+  """
+  What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
+  """
+  name: String
+
+  """
+  The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report
+  """
+  scenes: [Scene!]!
+  tableDataset: TableDataset!
+
+  """
+  The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
+  """
+  windows: [Window!]!
+}
+
 """A validated Rekuest task under which objects were created or changed."""
 type Task {
   """The executing agent OAuth client id"""
@@ -10091,8 +10921,8 @@ type TraceChartLayer implements ChartLayer {
   id: ID!
   kind: ChartLayerKind!
 
-  """The lens whose values are read"""
-  lens: Lens!
+  """The array lens whose values are read"""
+  lens: ArrayLens!
 
   """Line width in screen pixels. Null lets the viewer choose"""
   lineWidth: Float
@@ -10146,6 +10976,11 @@ type TrackLayer implements Layer {
   colormap: ColorMap
   id: ID!
   kind: LayerKind!
+
+  """
+  The table lens this layer draws through: the rows its windows keep, in the table's own space
+  """
+  lens: TableLens!
   lineWidth: Float
   name: String
   opacity: Float!
@@ -10176,13 +11011,18 @@ type TrackLayer implements Layer {
   tColumn: String
 
   """
-  The table dataset the tracks are drawn from. Its coordinate and TRACK_ID columns provide the trajectories -- the column fields below are derived from its schema, never stored per layer
+  The table dataset the tracks are drawn from: the container of the lens. Its coordinate and TRACK_ID columns provide the trajectories -- the column fields below are derived from its schema, never stored per layer
   """
   tableDataset: TableDataset!
 
   """The dataset's TRACK_ID column, which groups rows into tracks"""
   trackIdColumn: String
   visible: Boolean!
+
+  """
+  The lens' windows as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open), on top of whatever `filterBys` are active. The selection the layer draws, derived from the lens and never stored; empty for a whole lens
+  """
+  windowFilters: [LabelFilterBy!]!
 
   """
   The coordinate column whose axis is named 'x', from the dataset's declared schema
@@ -11140,7 +11980,11 @@ type VectorLayer implements Layer {
   glyphStride: Int
   id: ID!
   kind: LayerKind!
-  lens: Lens!
+
+  """
+  The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind
+  """
+  lens: ArrayLens!
 
   """
   Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene
@@ -11169,6 +12013,11 @@ type VectorLayer implements Layer {
   How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+
+  """
+  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
+  """
+  renderAxes: RenderAxes!
   scene: Scene!
 
   """
@@ -11233,6 +12082,31 @@ input WaveplateElementInput {
   pose: Pose3DInput = null
   retardance: Float = null
   serialNumber: String = null
+}
+
+"""
+A value window along a named axis of a container that is not an array: the positions kept, by value, with an open side as null
+"""
+type Window {
+  """
+  The name of the axis the window constrains, e.g. 't' for a table's time column
+  """
+  axis: String!
+
+  """The largest position kept, inclusive, or None for no upper bound"""
+  max: Float
+
+  """The smallest position kept, inclusive, or None for no lower bound"""
+  min: Float
+}
+
+"""
+Input type for a window along one axis of a container that is not an array: the positions kept, by value
+"""
+input WindowInput {
+  axis: String!
+  max: Float = null
+  min: Float = null
 }
 
 """Temporary S3 credentials for reading a Zarr store."""
@@ -11308,7 +12182,7 @@ type ZarrUploadGrant {
 
 scalar _Any
 
-union _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | Lens | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | NetworkCollection | NetworkLayer | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseStore | TableDataset | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
+union _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
 
 type _Service {
   sdl: String!

@@ -9,7 +9,7 @@ const axes = [
 ];
 
 const lens = (id: string, shape: number[]): ResidentLike => ({
-  __typename: "Lens",
+  __typename: "ArrayLens",
   id,
   shape,
   axisNames: ["t", "c", "y", "x"],

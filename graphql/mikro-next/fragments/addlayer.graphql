@@ -79,7 +79,10 @@ fragment DatasetLineage on ArrayDataset {
 
 fragment AddLayerCandidate on Resident {
   __typename
-  ... on Lens {
+  # Only an ARRAY lens is a row of its own: the picker lists tables, meshes,
+  # networks and annotation collections by container, and offers their
+  # windowed lenses on the row (`AddLayerWindowLenses`).
+  ... on ArrayLens {
     id
     # Aliased: the other members of this union select a non-null `name`, and a
     # lens' is nullable — GraphQL refuses the two under one response key.
@@ -93,21 +96,19 @@ fragment AddLayerCandidate on Resident {
     # unsliced lens, its own crop space otherwise. What a derivation edge names.
     # Aliased because it is nullable here and non-null on every collection arm,
     # and one selection set may not carry both under one name.
+    #
+    # Its axes carry their TYPES because a lens no longer says which axis is x,
+    # y, z, intensity, vector or phasor (`renderAxes` moved to the layer, and no
+    # layer exists yet). `candidateRenderAxes` (`forms/addLayer/candidates.ts`)
+    # reads them off the types for the picker's defaults; what the server will
+    # actually draw stays `AddLayerLensCapabilities`' answer.
     lensSpace: coordinateSystem {
       id
-    }
-    # Which axis is x, y, z, intensity, vector and phasor — derived server-side
-    # from the axis types. The picker infers a volume from a z axis of more than
-    # one plane (`spec: VOLUME` holds for a single-plane stack too, so it cannot
-    # answer this), offers RGB only where there is a channel axis to index into,
-    # and a phasor only where a MICROTIME or SPECTRUM axis exists.
-    renderAxes {
-      x
-      y
-      z
-      intensity
-      vector
-      phasor
+      axes {
+        name
+        type
+        order
+      }
     }
     # The crop edge from this lens's space back into its dataset's grid — the
     # child edge the tree shows for a sliced lens, tagged here as a derivation
@@ -194,7 +195,7 @@ fragment AddLayerCandidate on Resident {
 
 # The source of a layer already staged in the scene, as far as relating a
 # candidate to it cares: which container, and which space.
-fragment AddLayerStagedLens on Lens {
+fragment AddLayerStagedLens on ArrayLens {
   id
   coordinateSystem {
     id
@@ -301,7 +302,7 @@ fragment AddLayerSpaceOwner on Resident {
   ... on ArrayDataset {
     id
   }
-  ... on Lens {
+  ... on ArrayLens {
     id
     dataset {
       id

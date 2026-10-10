@@ -132,7 +132,7 @@ describe("parentDatasetOfEdge", () => {
     expect(
       parentDatasetOfEdge(
         edge([
-          { __typename: "Lens", id: "lens-1", dataset: { id: "ds-2", name: "Timelapse" } },
+          { __typename: "ArrayLens", id: "lens-1", dataset: { id: "ds-2", name: "Timelapse" } },
         ]),
       ),
     ).toEqual({ id: "ds-2", name: "Timelapse" });
@@ -144,7 +144,7 @@ describe("parentDatasetOfEdge", () => {
     expect(
       parentDatasetOfEdge(
         edge([
-          { __typename: "Lens", id: "lens-1", dataset: { id: "ds-lens", name: "Via lens" } },
+          { __typename: "ArrayLens", id: "lens-1", dataset: { id: "ds-lens", name: "Via lens" } },
           { __typename: "ArrayDataset", id: "ds-direct", name: "Direct" },
         ]),
       ),

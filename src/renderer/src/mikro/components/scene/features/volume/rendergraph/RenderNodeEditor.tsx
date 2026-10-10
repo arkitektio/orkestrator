@@ -766,7 +766,7 @@ export const PhasorNodeEditor = ({
                   <Input
                     className="h-7 text-xs"
                     value={node.phasorAxis}
-                    placeholder={layer?.lens.renderAxes?.phasor ?? "tau"}
+                    placeholder={layer?.renderAxes?.phasor ?? "tau"}
                     onChange={(e) => onChange({ ...node, phasorAxis: e.target.value })}
                   />
                 </div>
@@ -999,7 +999,7 @@ const AddNodeMenu = ({
 
   // The server derives `renderAxes.phasor` from the axis TYPES — it is set only
   // when the lens actually has a MICROTIME or SPECTRUM axis. No axis, no phasor.
-  const canPhasor = Boolean(layer.lens.renderAxes?.phasor);
+  const canPhasor = Boolean(layer.renderAxes?.phasor);
 
   const add = (node: RenderNode) => {
     onAdd(node);
@@ -1161,7 +1161,7 @@ export const useRenderGraphEditor = (layer: LayerState): RenderGraphEditor => {
       // Adding or removing a phasor node (or changing its axis/harmonic) changes
       // what the BRICKS hold, not just a uniform: the slice signature picks that
       // up and the residency manager flushes the pool (sliceSignature.ts).
-      phasorAxis: resolvePhasorAxis(phasors[0]?.phasorAxis, layer.lens.renderAxes),
+      phasorAxis: resolvePhasorAxis(phasors[0]?.phasorAxis, layer.renderAxes),
       blend: nextRoot.blending,
       projection: resolveProjectionMode(nextRoot),
       climMin: primary?.climMin ?? layer.climMin,
@@ -1195,7 +1195,7 @@ export const useRenderGraphEditor = (layer: LayerState): RenderGraphEditor => {
       channels: flattenChannels(root),
       phasors,
       sources: flattenSources(root),
-      phasorAxis: resolvePhasorAxis(phasors[0]?.phasorAxis, layer.lens.renderAxes),
+      phasorAxis: resolvePhasorAxis(phasors[0]?.phasorAxis, layer.renderAxes),
       blend: root.blending,
       projection: resolveProjectionMode(root),
       climMin: primary?.climMin ?? layer.climMin,

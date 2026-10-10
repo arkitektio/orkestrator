@@ -111,7 +111,7 @@ query GetArrayDatasetDerived($id: ID!) {
             id
             name
           }
-          ... on Lens {
+          ... on ArrayLens {
             id
             dataset {
               id
@@ -129,16 +129,19 @@ query GetArrayDatasetDerived($id: ID!) {
     }
   }
   lenses(filters: { dataset: $id }) {
+    __typename
     id
     name
-    axisNames
-    shape
-    slices {
-      ...DimSlice
-    }
     coordinateSystem {
       id
       name
+    }
+    ... on ArrayLens {
+      axisNames
+      shape
+      slices {
+        ...DimSlice
+      }
     }
   }
 }

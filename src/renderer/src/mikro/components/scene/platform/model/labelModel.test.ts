@@ -26,12 +26,12 @@ const labelLayer = (over: Partial<LabelLayerFragment> = {}): LabelLayerFragment 
     order: 0,
     visible: true,
     pathToWorld: [],
+    renderAxes: { x: "x", y: "y", z: "z", t: null, intensity: "c", phasor: null },
     lens: {
-      __typename: "Lens",
+      __typename: "ArrayLens",
       id: "lens-1",
       shape: [3, 20, 512, 512],
       axisNames: ["c", "z", "y", "x"],
-      renderAxes: { x: "x", y: "y", z: "z", t: null, intensity: "c", phasor: null },
       slices: [],
       dataset: {
         name: "nuclei mask",

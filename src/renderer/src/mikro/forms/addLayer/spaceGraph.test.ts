@@ -285,7 +285,7 @@ describe("graphFromLineage — the provenance helper", () => {
           lineageEdge(
             edge("seg", "grid-mask", "crop-raw", { valueRelation: "CATEGORIZED" }),
             [owner("ArrayDataset", "mask")],
-            [owner("Lens", "l-crop", "raw")],
+            [owner("ArrayLens", "l-crop", "raw")],
           ),
         ],
       ),
@@ -387,7 +387,7 @@ describe("nodeOfCandidate", () => {
       space("grid-raw", [lens("l1", "raw")]),
       space("space-t", [table("t")]),
     ]);
-    expect(nodeOfCandidate(graph, { __typename: "Lens", id: "l1", dataset: { id: "raw" } })?.key).toBe(datasetKey("raw"));
+    expect(nodeOfCandidate(graph, { __typename: "ArrayLens", id: "l1", dataset: { id: "raw" } })?.key).toBe(datasetKey("raw"));
     expect(nodeOfCandidate(graph, { __typename: "TableDataset", id: "t" })?.kind).toBe("table");
   });
 });

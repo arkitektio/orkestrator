@@ -20,9 +20,9 @@ const layerWith = (overrides: Partial<AnchorLayer> = {}): AnchorLayer => ({
     { intensityIndex: 2, visible: false },
   ],
   phasors: [],
+  renderAxes: { x: "x", y: "y", z: "z" },
   lens: {
     slices: [],
-    renderAxes: { x: "x", y: "y", z: "z" },
     dataset: {
       axisNames: ["c", "t", "z", "y", "x"],
       dataArrays: [
@@ -50,9 +50,9 @@ describe("layerCoverage", () => {
     const coverage = layerCoverage(
       layerWith({
         phasorAxis: "tau",
+        renderAxes: { x: "x", y: "y", z: "z" },
         lens: {
           slices: [],
-          renderAxes: { x: "x", y: "y", z: "z" },
           dataset: {
             axisNames: ["c", "tau", "z", "y", "x"],
             dataArrays: [{ level: 0, shape: [3, 64, 8, 512, 512] }],

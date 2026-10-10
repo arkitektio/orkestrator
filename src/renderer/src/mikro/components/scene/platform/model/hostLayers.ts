@@ -30,8 +30,10 @@ export type HostLayerSource = {
   asAffine?: unknown | null;
   pathToWorld?: readonly StepLike[] | null;
   // The three shapes a layer's data arrives in. Structural and optional: each
-  // layer kind carries exactly one of them.
-  lens?: { dataset?: { id?: string | null } | null } | null;
+  // layer kind carries exactly one of them. Every layer has a `lens`; only an
+  // array lens carries a `dataset`, and the other kinds are named by the
+  // container fields below.
+  lens?: { id?: string | null; dataset?: { id?: string | null } | null } | null;
   tableDataset?: { id?: string | null } | null;
   collection?: { coordinateSystem?: { id?: string | null } | null } | null;
   annotationCollection?: { coordinateSystem?: { id?: string | null } | null } | null;

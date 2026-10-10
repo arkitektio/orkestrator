@@ -27,3 +27,37 @@ mutation UpdateLens($id: ID!, $name: String) {
     name
   }
 }
+
+# The same call for the five window-selected kinds. Each takes its container and
+# the windows; the server hands back the existing lens when the container
+# already has one with these windows, and the WHOLE lens for no windows at all.
+# None of these inputs takes a name: naming is a follow-up `UpdateLens`.
+mutation CreateTableLens($input: CreateTableLensInput!) {
+  createTableLens(input: $input) {
+    ...ListLens
+  }
+}
+
+mutation CreateSparseLens($input: CreateSparseLensInput!) {
+  createSparseLens(input: $input) {
+    ...ListLens
+  }
+}
+
+mutation CreateMeshLens($input: CreateMeshLensInput!) {
+  createMeshLens(input: $input) {
+    ...ListLens
+  }
+}
+
+mutation CreateNetworkLens($input: CreateNetworkLensInput!) {
+  createNetworkLens(input: $input) {
+    ...ListLens
+  }
+}
+
+mutation CreateAnnotationLens($input: CreateAnnotationLensInput!) {
+  createAnnotationLens(input: $input) {
+    ...ListLens
+  }
+}

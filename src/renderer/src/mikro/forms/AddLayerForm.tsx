@@ -12,6 +12,14 @@ import {
 } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { Input } from "@/core/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/core/ui/select";
+import { describeLens, LENS_KINDS, type LensTypename } from "@/mikro/lenses";
 import { modifierSpecsOf, spatialSpecOf } from "@/mikro/specs";
 import {
   ChevronDown,
@@ -23,7 +31,7 @@ import {
   Table2,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Blending,
@@ -34,6 +42,7 @@ import {
   useAddLayerLensCapabilitiesQuery,
   useAddLayerLineageQuery,
   useAddLayerReachableQuery,
+  useAddLayerWindowLensesQuery,
   useAddLayerWorldGraphQuery,
   useCreateAnnotationLayerMutation,
   useCreateIntensityLayerMutation,
@@ -47,6 +56,7 @@ import {
   useCreateVectorLayerMutation,
   useCreateVolumeLayerMutation,
   useGetLensPhasorQuery,
+  type LayerLensFragment,
 } from "../api/graphql";
 import {
   AnnotationEntry,
@@ -536,7 +546,8 @@ const LensLayerForm = (props: {
     variables: { id: option.lens.id, axis: defaults.phasor?.phasorAxis, harmonic },
     skip: kind !== "PHASOR" || !defaults.phasor,
   });
-  const phasorContext = phasorData?.lens.phasor;
+  const phasorContext =
+    phasorData?.lens.__typename === "ArrayLens" ? phasorData.lens.phasor : undefined;
 
   const intensityInput = () => {
     const intensity = defaults.intensity;
@@ -685,6 +696,57 @@ const LensLayerForm = (props: {
   );
 };
 
+/** A windowed lens of a non-array container, as the picker offers it. */
+type WindowLens = LayerLensFragment;
+
+/** The key a container's windowed lenses are filed under: kind and id. */
+const windowLensKey = (typename: LensTypename, containerId: string) =>
+  `${typename}:${containerId}`;
+
+const WHOLE = "__whole__";
+
+/**
+ * Which SELECTION of a container the layer draws: the whole of it, or one of
+ * the windowed lenses someone cut out of it. Nothing at all when the container
+ * has never been cut — then there is no choice to make.
+ */
+const LensChoice = (props: {
+  typename: LensTypename;
+  lenses: readonly WindowLens[];
+  value: string | null;
+  onChange: (lens: string | null) => void;
+}) => {
+  if (props.lenses.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-medium">Selection</span>
+      <Select
+        value={props.value ?? WHOLE}
+        onValueChange={(value) => props.onChange(value === WHOLE ? null : value)}
+      >
+        <SelectTrigger className="h-8">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={WHOLE}>{LENS_KINDS[props.typename].whole}</SelectItem>
+          {props.lenses.map((lens) => {
+            const { title, selection } = describeLens(lens);
+            return (
+              <SelectItem key={lens.id} value={lens.id}>
+                {lens.name?.trim() && selection ? `${title} — ${selection}` : title}
+              </SelectItem>
+            );
+          })}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
+
+/** The preselected lens, when it is one this container actually offers. */
+const initialLensOf = (lenses: readonly WindowLens[], preselect?: string) =>
+  lenses.some((lens) => lens.id === preselect) ? (preselect ?? null) : null;
+
 /**
  * Step 2b: a TableDataset becomes a point or track layer. The coordinate, time
  * and track-id columns are not chosen here: the server derives them from the
@@ -695,9 +757,12 @@ const TableLayerForm = (props: {
   scene: string;
   entry: TableEntry;
   graph: DerivationGraph;
+  lenses: readonly WindowLens[];
+  preselect?: string;
   onBack: () => void;
 }) => {
   const columns = props.entry.table.columns;
+  const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
   const [kind, setKind] = useState<TableKind>(props.entry.kinds[0]);
 
   const [createPoint] = useCreatePointLayerMutation();
@@ -745,9 +810,10 @@ const TableLayerForm = (props: {
   const onSubmit = form.handleSubmit(async (data) => {
     // "" means an unmapped optional column; the input omits it entirely.
     const orUndefined = (v: string) => v || undefined;
+    // A lens names its table; the server takes one or the other.
     const base = {
       scene: props.scene,
-      tableDataset: props.entry.table.id,
+      ...(lens ? { lens } : { tableDataset: props.entry.table.id }),
     };
     if (kind === "POINT") {
       return submitPoint({
@@ -779,6 +845,7 @@ const TableLayerForm = (props: {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <LensChoice typename="TableLens" lenses={props.lenses} value={lens} onChange={setLens} />
         <InferredKind
           kinds={props.entry.kinds}
           info={TABLE_KIND_INFO}
@@ -845,8 +912,11 @@ const TableLayerForm = (props: {
 const MeshLayerForm = (props: {
   scene: string;
   entry: MeshEntry;
+  lenses: readonly WindowLens[];
+  preselect?: string;
   onBack: () => void;
 }) => {
+  const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
   const [createMesh] = useCreateMeshLayerMutation();
   const submitMesh = useGraphQLDialog(createMesh, DIALOG_OPTIONS);
 
@@ -862,7 +932,7 @@ const MeshLayerForm = (props: {
       variables: {
         input: {
           scene: props.scene,
-          meshCollection: props.entry.mesh.id,
+          ...(lens ? { lens } : { meshCollection: props.entry.mesh.id }),
           wireframe: data.wireframe,
           opacity: data.opacity ?? undefined,
         },
@@ -874,6 +944,7 @@ const MeshLayerForm = (props: {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <LensChoice typename="MeshLens" lenses={props.lenses} value={lens} onChange={setLens} />
         <div className="grid grid-cols-2 gap-2">
           <SwitchField
             name="wireframe"
@@ -913,8 +984,11 @@ const MeshLayerForm = (props: {
 const NetworkLayerForm = (props: {
   scene: string;
   entry: NetworkEntry;
+  lenses: readonly WindowLens[];
+  preselect?: string;
   onBack: () => void;
 }) => {
+  const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
   const [createNetwork] = useCreateNetworkLayerMutation();
   const submitNetwork = useGraphQLDialog(createNetwork, DIALOG_OPTIONS);
 
@@ -930,7 +1004,7 @@ const NetworkLayerForm = (props: {
       variables: {
         input: {
           scene: props.scene,
-          networkCollection: props.entry.network.id,
+          ...(lens ? { lens } : { networkCollection: props.entry.network.id }),
           showNodes: data.showNodes,
           opacity: data.opacity ?? undefined,
         },
@@ -942,6 +1016,7 @@ const NetworkLayerForm = (props: {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <LensChoice typename="NetworkLens" lenses={props.lenses} value={lens} onChange={setLens} />
         <div className="grid grid-cols-2 gap-2">
           <SwitchField
             name="showNodes"
@@ -977,8 +1052,11 @@ const NetworkLayerForm = (props: {
 const AnnotationLayerForm = (props: {
   scene: string;
   entry: AnnotationEntry;
+  lenses: readonly WindowLens[];
+  preselect?: string;
   onBack: () => void;
 }) => {
+  const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
   const [createAnnotationLayer] = useCreateAnnotationLayerMutation();
   const submit = useGraphQLDialog(createAnnotationLayer, DIALOG_OPTIONS);
 
@@ -991,7 +1069,7 @@ const AnnotationLayerForm = (props: {
       variables: {
         input: {
           scene: props.scene,
-          annotationCollection: props.entry.collection.id,
+          ...(lens ? { lens } : { annotationCollection: props.entry.collection.id }),
           opacity: data.opacity ?? undefined,
         },
       },
@@ -1002,6 +1080,12 @@ const AnnotationLayerForm = (props: {
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <LensChoice
+          typename="AnnotationLens"
+          lenses={props.lenses}
+          value={lens}
+          onChange={setLens}
+        />
         <FloatField
           name="opacity"
           label="Opacity"
@@ -1034,7 +1118,13 @@ const stepDescription = (source: Source): string => {
   }
 };
 
-const AddLayerFormInner = (props: { scene: string }) => {
+export type AddLayerProps = {
+  scene: string;
+  /** A lens to go straight to: dropped on the scene, it skips the picker. */
+  lens?: string;
+};
+
+const AddLayerFormInner = (props: AddLayerProps) => {
   const [search, setSearch] = useState("");
   const [source, setSource] = useState<Source | null>(null);
 
@@ -1079,6 +1169,8 @@ const AddLayerFormInner = (props: { scene: string }) => {
         ? {
             drawable: new Set(capabilityData.drawable.map((lens) => lens.id)),
             labels: new Set(capabilityData.labels.map((lens) => lens.id)),
+            phasor: new Set(capabilityData.phasor.map((lens) => lens.id)),
+            vector: new Set(capabilityData.vector.map((lens) => lens.id)),
           }
         : null,
     [capabilityData],
@@ -1088,6 +1180,34 @@ const AddLayerFormInner = (props: { scene: string }) => {
     () => stagedFromLayers(data?.scene.layers ?? []),
     [data?.scene.layers],
   );
+
+  // The windowed lenses of the tables, meshes, networks and annotation
+  // collections reachable from this world, filed by container: what each of
+  // those rows offers beside "the whole thing". A table's point and track
+  // lenses are the same lenses asked twice, so they are merged by id.
+  const { data: windowData } = useAddLayerWindowLensesQuery({
+    variables: { space: world?.id ?? "" },
+    skip: !world,
+  });
+  const windowLenses = useMemo(() => {
+    const byContainer = new Map<string, WindowLens[]>();
+    const seen = new Set<string>();
+    for (const lens of [
+      ...(windowData?.points ?? []),
+      ...(windowData?.tracks ?? []),
+      ...(windowData?.meshes ?? []),
+      ...(windowData?.networks ?? []),
+      ...(windowData?.annotations ?? []),
+    ]) {
+      if (seen.has(lens.id)) continue;
+      seen.add(lens.id);
+      const key = windowLensKey(lens.__typename, describeLens(lens).container.id);
+      byContainer.set(key, [...(byContainer.get(key) ?? []), lens]);
+    }
+    return byContainer;
+  }, [windowData]);
+  const lensesOf = (typename: LensTypename, containerId: string) =>
+    windowLenses.get(windowLensKey(typename, containerId)) ?? [];
 
   const sections = useMemo(
     () =>
@@ -1126,6 +1246,42 @@ const AddLayerFormInner = (props: { scene: string }) => {
         : null,
     [lens, merged, capabilities, staged],
   );
+
+  // A lens handed in (dropped on the scene) is found among what the picker
+  // would list and chosen for the person, once: an array lens is one of its
+  // dataset's options, a windowed lens is its container's row with that lens
+  // selected. A lens the world cannot reach is simply not found, and the picker
+  // opens as it always does.
+  const preselected = useRef(false);
+  useEffect(() => {
+    const wanted = props.lens;
+    if (!wanted || preselected.current || source || !sections.length) return;
+    const entries = sections.flatMap((section) => section.entries);
+    const offers = (typename: LensTypename, containerId: string) =>
+      (windowLenses.get(windowLensKey(typename, containerId)) ?? []).some(
+        (lens) => lens.id === wanted,
+      );
+    for (const entry of entries) {
+      let found: Source | null = null;
+      if (entry.kind === "dataset") {
+        const option = entry.lenses.find((candidate) => candidate.lens.id === wanted);
+        if (option) found = { kind: "lens", dataset: entry, option };
+      } else if (entry.kind === "table" && offers("TableLens", entry.table.id)) {
+        found = { kind: "table", entry };
+      } else if (entry.kind === "mesh" && offers("MeshLens", entry.mesh.id)) {
+        found = { kind: "mesh", entry };
+      } else if (entry.kind === "network" && offers("NetworkLens", entry.network.id)) {
+        found = { kind: "network", entry };
+      } else if (entry.kind === "annotation" && offers("AnnotationLens", entry.collection.id)) {
+        found = { kind: "annotation", entry };
+      }
+      if (found) {
+        preselected.current = true;
+        setSource(found);
+        return;
+      }
+    }
+  }, [props.lens, sections, windowLenses, source]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -1177,24 +1333,32 @@ const AddLayerFormInner = (props: { scene: string }) => {
           scene={props.scene}
           entry={source.entry}
           graph={merged ?? graph!}
+          lenses={lensesOf("TableLens", source.entry.table.id)}
+          preselect={props.lens}
           onBack={() => setSource(null)}
         />
       ) : source.kind === "mesh" ? (
         <MeshLayerForm
           scene={props.scene}
           entry={source.entry}
+          lenses={lensesOf("MeshLens", source.entry.mesh.id)}
+          preselect={props.lens}
           onBack={() => setSource(null)}
         />
       ) : source.kind === "network" ? (
         <NetworkLayerForm
           scene={props.scene}
           entry={source.entry}
+          lenses={lensesOf("NetworkLens", source.entry.network.id)}
+          preselect={props.lens}
           onBack={() => setSource(null)}
         />
       ) : (
         <AnnotationLayerForm
           scene={props.scene}
           entry={source.entry}
+          lenses={lensesOf("AnnotationLens", source.entry.collection.id)}
+          preselect={props.lens}
           onBack={() => setSource(null)}
         />
       )}
@@ -1204,7 +1368,7 @@ const AddLayerFormInner = (props: { scene: string }) => {
 
 // The mikro guard must wrap from the outside: the inner component's queries
 // fire on mount, before any JSX-level guard could stop them (CLAUDE.md §1).
-export const AddLayerForm = (props: { scene: string }) => (
+export const AddLayerForm = (props: AddLayerProps) => (
   <MikroGuard>
     <AddLayerFormInner {...props} />
   </MikroGuard>

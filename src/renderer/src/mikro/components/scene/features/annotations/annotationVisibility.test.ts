@@ -27,9 +27,9 @@ const layerWith = (overrides: Partial<CoverageLayer> = {}): CoverageLayer => ({
     { intensityIndex: 2, visible: false },
   ],
   phasors: [],
+  renderAxes: { x: "x", y: "y", z: "z" },
   lens: {
     slices: [],
-    renderAxes: { x: "x", y: "y", z: "z" },
     axisNames: ["c", "t", "z", "y", "x"],
     shape: [3, 10, 8, 512, 512],
     dataset: {
@@ -122,9 +122,9 @@ describe("z pins", () => {
       2,
       [
         layerWith({
+          renderAxes: { x: "x", y: "y", z: "z" },
           lens: {
             slices: [],
-            renderAxes: { x: "x", y: "y", z: "z" },
             axisNames: ["c", "t", "z", "y", "x"],
             shape: [3, 10, 1, 512, 512],
             dataset: {

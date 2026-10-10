@@ -400,7 +400,7 @@ type GraphSourceLayer = {
   renderGraph?: ImageLayerFragment["renderGraph"];
   blending?: ImageLayerFragment["blending"] | null;
   visible?: boolean | null;
-  lens: { renderAxes?: ImageLayerFragment["lens"]["renderAxes"] };
+  renderAxes?: ImageLayerFragment["renderAxes"];
 };
 
 /**
@@ -419,7 +419,7 @@ export const defaultLayerGraph = (layer: GraphSourceLayer): BlendRenderNode => (
       type: "channel",
       kind: CHANNEL_KIND,
       label: null,
-      intensityAxis: layer.lens.renderAxes?.intensity ?? null,
+      intensityAxis: layer.renderAxes?.intensity ?? null,
       intensityIndex: 0,
       visible: layer.visible ?? true,
       transfer: { ...DEFAULT_TRANSFER },
@@ -436,7 +436,7 @@ export const newChannelNode = (layer: GraphSourceLayer): ChannelRenderNode => ({
   type: "channel",
   kind: CHANNEL_KIND,
   label: null,
-  intensityAxis: layer.lens.renderAxes?.intensity ?? null,
+  intensityAxis: layer.renderAxes?.intensity ?? null,
   intensityIndex: 0,
   visible: true,
   transfer: { ...DEFAULT_TRANSFER },
@@ -451,9 +451,9 @@ export const newPhasorNode = (layer: GraphSourceLayer): PhasorRenderNode => ({
   type: "phasor",
   kind: PHASOR_KIND,
   label: null,
-  phasorAxis: layer.lens.renderAxes?.phasor ?? "",
+  phasorAxis: layer.renderAxes?.phasor ?? "",
   harmonic: 1,
-  intensityAxis: layer.lens.renderAxes?.intensity ?? null,
+  intensityAxis: layer.renderAxes?.intensity ?? null,
   intensityIndex: 0,
   visible: true,
   transfer: {

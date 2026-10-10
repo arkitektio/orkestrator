@@ -117,7 +117,7 @@ export function lensDimExtents(
  */
 export function declaredDimExtents(layer: SceneLayerFragment): DimExtent[] {
   if (!isVectorLayer(layer)) return [];
-  const { renderAxes } = layer.lens;
+  const { renderAxes } = layer;
   return lensDimExtents(layer.lens, [
     renderAxes.x,
     renderAxes.y,

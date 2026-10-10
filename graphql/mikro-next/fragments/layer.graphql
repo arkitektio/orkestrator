@@ -403,6 +403,9 @@ fragment SceneLayer on Layer {
     lens {
       ...SceneLens
     }
+    renderAxes {
+      ...LayerRenderAxes
+    }
     # levelPaths is deliberately NOT selected: the octree renderer uses one
     # matrix per layer + relative level factors, so selecting it would pay a
     # server-side path resolution per pyramid level (duplicating the shared
@@ -420,6 +423,9 @@ fragment SceneLayer on Layer {
   ... on IntensityLayer {
     lens {
       ...SceneLens
+    }
+    renderAxes {
+      ...LayerRenderAxes
     }
     intensityAxis
     intensityIndex
@@ -444,6 +450,9 @@ fragment SceneLayer on Layer {
     lens {
       ...SceneLens
     }
+    renderAxes {
+      ...LayerRenderAxes
+    }
     intensityAxis
     redIndex
     greenIndex
@@ -459,6 +468,9 @@ fragment SceneLayer on Layer {
     lens {
       ...SceneLens
     }
+    renderAxes {
+      ...LayerRenderAxes
+    }
     phasorRender {
       ...PhasorRender
     }
@@ -471,6 +483,9 @@ fragment SceneLayer on Layer {
   ... on VectorLayer {
     lens {
       ...SceneLens
+    }
+    renderAxes {
+      ...LayerRenderAxes
     }
     vectorAxis
     glyph
@@ -498,6 +513,9 @@ fragment SceneLayer on Layer {
     lens {
       ...SceneLens
     }
+    renderAxes {
+      ...LayerRenderAxes
+    }
     labelRender {
       ...LabelRender
     }
@@ -509,10 +527,28 @@ fragment SceneLayer on Layer {
     annotationCollection {
       ...AnnotationCollection
     }
+    # The selection the layer draws: its collection, narrowed by the lens'
+    # windows. `clip` is those windows in the collection's own space, always
+    # applied; empty for a whole lens.
+    lens {
+      ...LayerLens
+    }
+    clip {
+      ...LensWindow
+    }
   }
   ... on PointLayer {
     tableDataset {
       ...TableDataset
+    }
+    # The selection the layer draws: its table, narrowed by the lens' windows.
+    # `windowFilters` is those windows as filters the server ALWAYS applies, on
+    # top of the picker's own; empty for a whole lens.
+    lens {
+      ...LayerLens
+    }
+    windowFilters {
+      ...LabelFilterBy
     }
     xColumn
     yColumn
@@ -542,6 +578,15 @@ fragment SceneLayer on Layer {
     tableDataset {
       ...TableDataset
     }
+    # The selection the layer draws: its table, narrowed by the lens' windows.
+    # `windowFilters` is those windows as filters the server ALWAYS applies, on
+    # top of the picker's own; empty for a whole lens.
+    lens {
+      ...LayerLens
+    }
+    windowFilters {
+      ...LabelFilterBy
+    }
     trackIdColumn
     xColumn
     yColumn
@@ -558,6 +603,15 @@ fragment SceneLayer on Layer {
   ... on MeshLayer {
     collection {
       ...MeshCollection
+    }
+    # The selection the layer draws: its collection, narrowed by the lens'
+    # windows. `clip` is those windows in the collection's own space, always
+    # applied; empty for a whole lens.
+    lens {
+      ...LayerLens
+    }
+    clip {
+      ...LensWindow
     }
     materialColor
     wireframe
@@ -591,6 +645,15 @@ fragment SceneLayer on Layer {
     collection {
       ...NetworkCollection
     }
+    # The selection the layer draws: its collection, narrowed by the lens'
+    # windows. `clip` is those windows in the collection's own space, always
+    # applied; empty for a whole lens.
+    lens {
+      ...LayerLens
+    }
+    clip {
+      ...LensWindow
+    }
     materialColor
     # The flat width of every segment, in SCENE units. Segments are drawn as
     # camera-facing quads rather than GL lines, which is the only reason a width
@@ -622,4 +685,17 @@ fragment SceneLayer on Layer {
     activeFilterBys
     placementInvariance
   }
+}
+
+# Which axis of the layer's lens is x, y, z, t, the value axis, the phasor axis
+# and the displacement axis. Derived server-side from the axis types and stated
+# on the LAYER: a lens is a selection and "does not choose how it is looked at".
+fragment LayerRenderAxes on RenderAxes {
+  x
+  y
+  z
+  t
+  intensity
+  phasor
+  vector
 }

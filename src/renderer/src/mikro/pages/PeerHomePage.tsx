@@ -14,7 +14,7 @@ import { parseAsBoolean, parseAsIsoDateTime, useQueryState } from "@/core/util/h
 import { usePeerHomePageQuery } from "../api/graphql";
 import FolderList from "../components/lists/FolderList";
 import FileList from "../components/lists/FileList";
-import ArrayDatasetList from "../components/lists/ArrayDatasetList";
+import { DataLensList } from "../components/lists/LensList";
 import { PeerStatisticsSidebar } from "../components/sidebars/PeerStatisticsSidebar";
 import { MIKRO_HELP } from "../help";
 
@@ -85,9 +85,8 @@ const Page = asDetailQueryRoute(usePeerHomePageQuery, ({ id }) => {
           </CardDescription>
         </CardHeader>
 
-        <ArrayDatasetList
-          filters={{ notDerived: parentless ? true : undefined, owner: id, ...temporalFilter }}
-        />
+        {/* Their data as whole lenses, like the home page. */}
+        <DataLensList filters={{ sliced: false, owner: id, ...temporalFilter }} />
         <Separator className="my-4" />
         <FolderList
           filters={{ parentless: parentless ? true : undefined, owner: id, ...temporalFilter }}

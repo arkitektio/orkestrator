@@ -49,7 +49,7 @@ export const profileLabelsFor = (
  *
  * Blocks merge when they read the same source the same way — the same table,
  * matrix or array (`sourceId`) as the same kind of hop — whichever plan or
- * layer led there. Pure: the views in `AttributeComparison.tsx` only draw
+ * layer led there. Pure: the views in `AttributeComparisonViews.tsx` only draw
  * what this returns.
  */
 

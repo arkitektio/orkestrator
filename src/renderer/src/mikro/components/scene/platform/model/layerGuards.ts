@@ -129,14 +129,17 @@ export const isBrickLayer = (
  * just a boolean expression — a lens layer missing from it compiles perfectly
  * and renders NOTHING, silently, because no zarr store is ever opened for it.
  *
- * So state the invariant as a type: every arm of `SceneLayerFragment` that has
- * a `lens` (i.e. is a view over an array) must be in `BrickLayerFragment`. Add
- * a lens layer to the schema, regenerate, and this line is the error that tells
- * you which one — before the blank viewport does.
+ * So state the invariant as a type: every arm of `SceneLayerFragment` whose
+ * `lens` is an ARRAY lens (i.e. is a view over an array) must be in
+ * `BrickLayerFragment`. Every layer has a lens now — a point layer's is a
+ * table lens, a mesh layer's a mesh lens — so the kind of lens, not its
+ * presence, is what names the brick path. Add an array-lens layer to the
+ * schema, regenerate, and this line is the error that tells you which one —
+ * before the blank viewport does.
  */
 type LensBackedTypename = Extract<
   SceneLayerFragment,
-  { lens: unknown }
+  { lens: { __typename: "ArrayLens" } }
 >["__typename"];
 
 /**

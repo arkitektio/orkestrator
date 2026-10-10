@@ -10,13 +10,12 @@ import {
 } from "@/core/ui/dropdown-menu";
 import { Clapperboard, ChevronDown } from "lucide-react";
 import {
-  DetailLensFragment,
   GetArrayDatasetQuery,
   useCreateSceneFromCoordinateSystemMutation,
   useCreateSceneFromLensMutation,
   useGetCoordinateGraphQuery,
 } from "../../api/graphql";
-import { lensLabel, lensTitle } from "../../lenses";
+import { lensLabel, lensTitle, type ArrayDetailLens } from "../../lenses";
 import { formatShape } from "../../specs";
 import { datasetRegistrations } from "../coordinates/registrations";
 
@@ -32,8 +31,11 @@ type PageDataset = GetArrayDatasetQuery["arrayDataset"];
  * page (the backdrop, the header button, and the Info tab's pixel sizes), so
  * mounting them together costs one request, not three.
  */
-export const useDatasetWorlds = (dataset: PageDataset) => {
-  const gridId = dataset.intrinsicSystem?.id;
+export const useDatasetWorlds = (dataset: PageDataset) =>
+  useGridWorlds(dataset.intrinsicSystem?.id);
+
+/** The same, for any space: a non-array lens asks it of its container's. */
+export const useGridWorlds = (gridId: string | undefined) => {
   const { data } = useGetCoordinateGraphQuery({
     variables: { coordinateSystem: gridId as string, maxDepth: 1 },
     skip: !gridId,
@@ -77,7 +79,7 @@ export const CreateSceneControl = ({
 }: {
   dataset: PageDataset;
   /** The lens to stage. Absent only in the embedded dataset viewer. */
-  lens?: DetailLensFragment;
+  lens?: ArrayDetailLens;
   size?: "default" | "sm";
   /** "outline" for the header, where this is a secondary way to add a scene. */
   variant?: "default" | "outline";
@@ -200,7 +202,7 @@ export const DatasetBackdrop = ({
 }: {
   dataset: PageDataset;
   /** The lens the page is about. Absent only in the embedded dataset viewer. */
-  lens?: DetailLensFragment;
+  lens?: ArrayDetailLens;
   onSceneCreated: (sceneId: string) => void;
 }) => {
   const worlds = useDatasetWorlds(dataset);

@@ -98,7 +98,7 @@ export async function loadVectorField(
 
   const axisNames = dataset.axisNames;
   const shape = level0.shape;
-  const renderAxes = lens.renderAxes;
+  const renderAxes = layer.renderAxes;
   const vectorAxis = layer.vectorAxis;
 
   // Spatial axes in ARRAY order (z before y before x — renderAxes derives x as the

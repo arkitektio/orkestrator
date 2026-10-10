@@ -22,7 +22,7 @@ export const probeAxisCoords = (
     LayerState["lens"]["dataset"]["dataArrays"][number] | null
   >((best, da) => (best === null || da.level < best.level ? da : best), null);
   const sliceMap = buildSliceMap(layer.lens.slices);
-  const ra = layer.lens.renderAxes;
+  const ra = layer.renderAxes;
   const spatial = new Set([ra.x, ra.y, ra.z].filter(Boolean));
   const resolved: Record<string, number> = {};
   dims.forEach((dim, d) => {

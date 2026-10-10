@@ -8,22 +8,23 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/core/ui/select'
-import { MikroArrayDataset } from '@/core/linkers'
 import { ChevronLeft, Pencil, Star } from 'lucide-react'
 import {
   DetailLensFragment,
   GetArrayDatasetQuery,
   useSetLensDefaultSceneMutation
 } from '../../api/graphql'
-import { lensLabel, lensTitle } from '../../lenses'
+import { describeLens, isWholeLens } from '../../lenses'
 import { baseDtypeOf } from '../../specs'
+import { LensContainerLink } from './LensContainerLink'
 
 type PageDataset = GetArrayDatasetQuery['arrayDataset']
 
 /**
- * What the page is *about*, said once and as the ladder it sits on: the dataset
- * it belongs to (small, and the way back up), the LENS it is (the title), and
- * the scene it is drawn in.
+ * What the page is *about*, said once and as the ladder it sits on: the
+ * container it belongs to (small, and the way back up), the LENS it is (the
+ * title), and the scene it is drawn in. The same card for every kind of lens;
+ * only an array lens has a dataset to read a dtype and a pyramid off.
  *
  * Deliberately NOT a scene panel — it is positioned by the page rather than
  * composed into a scene panel column, so it neither folds away with the
@@ -36,20 +37,28 @@ type PageDataset = GetArrayDatasetQuery['arrayDataset']
 export const LensTitleOverlay = ({
   dataset,
   lens,
+  scenes,
   activeSceneId,
   onSelectScene,
   sceneLoading
 }: {
-  dataset: PageDataset
+  /** The array lens' dataset. Absent for every other kind. */
+  dataset?: PageDataset
   lens: DetailLensFragment
+  /** The scenes the page can switch between: see `LensWorkspace`. */
+  scenes: readonly { id: string; name: string }[]
   activeSceneId: string | undefined
   onSelectScene: (id: string) => void
   sceneLoading: boolean
 }) => {
   const { openDialog } = useDialog()
-  const dtype = baseDtypeOf(dataset.dataArrays)
-  const scenes = lens.scenes
+  const dtype = dataset ? baseDtypeOf(dataset.dataArrays) : null
   const defaultSceneId = lens.defaultScene?.id
+  const { info, title, label, container } = describeLens(lens)
+  // A whole lens of anything but an array answers with its container's
+  // nomination, and only an array dataset nominates: there is nothing for
+  // "Make default" to write.
+  const canNominate = lens.__typename === 'ArrayLens' || !isWholeLens(lens)
 
   // The nomination the page landed on. Selecting `latestSnapshot` in the
   // mutation is what makes this cheap: Apollo writes the new nomination AND the
@@ -64,19 +73,19 @@ export const LensTitleOverlay = ({
         {/* Up: the container this lens was cut from, where its siblings, its
             files and its lineage are. Small on purpose — the page is not about
             the dataset. */}
-        <MikroArrayDataset.DetailLink
-          object={dataset}
+        <LensContainerLink
+          lens={lens}
           className="flex w-fit max-w-full items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{dataset.name}</span>
-        </MikroArrayDataset.DetailLink>
+          <span className="truncate">{container.name}</span>
+        </LensContainerLink>
 
         {/* The lens leads, at heading weight — this is the page's title, and the
             page has no other. Its name if someone gave it one, else "Whole
             array" or its slices. */}
         <div className="flex items-center gap-1.5">
-          <h1 className="truncate text-3xl font-semibold leading-tight">{lensTitle(lens)}</h1>
+          <h1 className="truncate text-3xl font-semibold leading-tight">{title}</h1>
           <Button
             size="icon"
             variant="ghost"
@@ -91,9 +100,10 @@ export const LensTitleOverlay = ({
 
         {/* What it selects, spelled out — always, whatever it is called. */}
         <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground w-[50%]">
-          <span className="truncate">{lensLabel(lens)}</span>
+          <span className="truncate">{label}</span>
           {dtype && <span className="shrink-0">{dtype}</span>}
-          {dataset.multiscale && (
+          {!dataset && <span className="shrink-0 font-sans">{info.label}</span>}
+          {dataset?.multiscale && (
             <Badge variant="outline" className="font-sans text-[0.625rem]">
               multiscale
             </Badge>
@@ -135,7 +145,7 @@ export const LensTitleOverlay = ({
               someone just decided they want to be the lens'. Hidden for the
               nominated scene itself rather than disabled: there is nothing to
               undo here — clearing a nomination is not a thing this page asks for. */}
-          {activeSceneId && activeSceneId !== defaultSceneId && (
+          {canNominate && activeSceneId && activeSceneId !== defaultSceneId && (
             <Button
               size="sm"
               variant="ghost"

@@ -38,7 +38,13 @@ fragment PhasorContext on PhasorContext {
   }
 }
 
-fragment SceneLens on Lens {
+# What the RENDERER reads of a lens, and only an array lens is rendered through
+# this: a table, mesh, network or annotation layer draws its container, narrowed
+# by its lens' windows (`LensSubject`). Which axis is x, y, z is no longer here —
+# "a selection does not choose how it is looked at" — it is the LAYER's
+# `renderAxes` (`LayerRenderAxes`).
+fragment SceneLens on ArrayLens {
+  __typename
   descriptors
   id
   # What someone called the selection, if anyone did — `lensTitle` falls back to
@@ -46,14 +52,6 @@ fragment SceneLens on Lens {
   name
   shape
   axisNames
-  renderAxes {
-    x
-    y
-    z
-    t
-    intensity
-    phasor
-  }
   # The phasor context at the server's default harmonic (1). A node on another
   # harmonic re-resolves it through the GetLensPhasor query — the calibration
   # and the persisted distribution are both harmonic-specific.
@@ -124,85 +122,176 @@ fragment SceneLens on Lens {
   }
 }
 
+# One window of a non-array lens: an INCLUSIVE range on one axis of its
+# container's space, an open side as null. `windowSummary` (`mikro/lenses.ts`)
+# spells it.
+fragment LensWindow on Window {
+  axis
+  min
+  max
+}
+
+# What every lens answers, whatever it selects over. `kind` and `__typename`
+# say the same thing twice on purpose: the enum is what a filter sends back, the
+# typename is what TypeScript narrows on.
+fragment LensCore on Lens {
+  __typename
+  descriptors
+  id
+  # What someone called the selection, if anyone did — `describeLens` falls
+  # back to "Whole table" or the selection itself.
+  name
+  kind
+  createdAt
+  creator {
+    sub
+  }
+  # The space the SELECTION lives in: its own for a sliced array lens, the
+  # container's for every other lens.
+  coordinateSystem {
+    id
+    name
+  }
+  # The scene the lens opens on. A whole lens answers with its container's, and
+  # only an array dataset nominates one today.
+  defaultScene {
+    ...ListScene
+  }
+}
+
+# What a lens selects OVER and what it selects: the container, and the slices
+# (an array) or the windows (everything else). The one place the six kinds are
+# spelled out; `describeLens` reads it.
+fragment LensSubject on Lens {
+  __typename
+  ... on ArrayLens {
+    shape
+    axisNames
+    slices {
+      ...DimSlice
+    }
+    dataset {
+      id
+      name
+      axisNames
+      shape
+    }
+  }
+  ... on TableLens {
+    windows {
+      ...LensWindow
+    }
+    tableDataset {
+      id
+      name
+    }
+  }
+  ... on SparseLens {
+    windows {
+      ...LensWindow
+    }
+    sparseDataset {
+      id
+      name
+    }
+  }
+  # Mesh and network collections have no name of their own: `version` is all
+  # they can honestly show.
+  ... on MeshLens {
+    windows {
+      ...LensWindow
+    }
+    meshCollection {
+      id
+      version
+    }
+  }
+  ... on NetworkLens {
+    windows {
+      ...LensWindow
+    }
+    networkCollection {
+      id
+      version
+    }
+  }
+  ... on AnnotationLens {
+    windows {
+      ...LensWindow
+    }
+    annotationCollection {
+      id
+      name
+    }
+  }
+}
+
 # The lens page's selection. Deliberately NOT `SceneLens`: that one carries
 # the whole pyramid (every level's store and chunking), the phasor context and
 # every anchor's histogram, because the renderer needs them to build a brick
 # pool — and the page gets those through the scene it opens, not through this.
 #
-# The page is a workspace now, so this carries what a workspace switches on:
-# the scenes that draw this lens and the one it nominates. For an UNSLICED lens
-# the server answers both with its dataset's (the lens is the dataset, looked at
-# whole), which is why the page sends such a lens to the dataset's route rather
-# than rendering a second copy of it.
-#
-# A lens has no name of its own — it borrows its dataset's, and `lensLabel`
-# (`mikro-next/lenses.ts`) is what turns the slices into the line that tells one
-# lens of a dataset from another.
+# The page is a workspace, so this carries what a workspace switches on: the
+# scene the lens nominates and, for an array lens, every scene that draws it.
+# Only an array lens can list its scenes; the others know their nomination and
+# nothing else.
 fragment DetailLens on Lens {
-  descriptors
-  id
-  name
-  shape
-  axisNames
-  slices {
-    ...DimSlice
-  }
-  # The space the SELECTION lives in: its own for a sliced lens, the dataset's
-  # intrinsic grid for a full one.
-  coordinateSystem {
-    id
-    name
-  }
-  # The edge back into the dataset's pixel grid — "a crop is a translation of
-  # the slice starts". Null for a full lens, whose space IS that grid, and the
-  # single most informative fact about a sliced one.
-  toParent {
-    ...Transformation
-  }
-  dataset {
-    id
-    name
-    axisNames
-    shape
-    # THE whole-array lens. A dataset written before lenses were deduplicated
-    # can carry several unsliced ones; the page forwards the others here so the
-    # whole array has one address.
-    fullLens {
-      id
+  ...LensCore
+  ...LensSubject
+  ... on ArrayLens {
+    # The edge back into the dataset's pixel grid — "a crop is a translation of
+    # the slice starts". Null for a full lens, whose space IS that grid, and the
+    # single most informative fact about a sliced one.
+    toParent {
+      ...Transformation
     }
-  }
-  scenes {
-    ...ListScene
-  }
-  defaultScene {
-    ...ListScene
-  }
-  # What was computed from this selection. Same row shape as the dataset's own
-  # lineage panel, so one row component draws both.
-  derivedDatasets {
-    ...DerivedDataset
+    dataset {
+      id
+      # THE whole-array lens. A dataset written before lenses were deduplicated
+      # can carry several unsliced ones; the page forwards the others here so
+      # the whole array has one address.
+      fullLens {
+        id
+      }
+    }
+    scenes {
+      ...ListScene
+    }
+    # What was computed from this selection. Same row shape as the dataset's own
+    # lineage panel, so one row component draws both.
+    derivedDatasets {
+      ...DerivedDataset
+    }
   }
 }
 
-# One row of the lens list. A lens borrows its dataset's name, and `lensLabel`
-# needs the slices and the dataset's axes to tell two lenses of it apart.
+# One row of the lens list, any kind.
 fragment ListLens on Lens {
+  ...LensCore
+  ...LensSubject
+  ... on ArrayLens {
+    # The lens' own picture once it nominates a scene, its dataset's until then
+    # — so a crop nobody has staged still has a tile. The other kinds have only
+    # their nominated scene's (`lensSnapshot`).
+    latestSnapshot {
+      ...SceneSnapshot
+    }
+    # What the array structurally is. The whole lens' tile IS the dataset's
+    # tile (the home page lists data as whole lenses), and that one leads with
+    # the spec.
+    dataset {
+      id
+      spec
+      multiscale
+    }
+  }
+}
+
+# A layer's lens, as the layer panel names it: which container, which part.
+# Every layer has one now. Not `LensCore`: a layer row needs no creator and no
+# nominated scene.
+fragment LayerLens on Lens {
   id
   name
-  shape
-  axisNames
-  slices {
-    ...DimSlice
-  }
-  # The lens' own picture once it nominates a scene, its dataset's until then —
-  # so a crop nobody has staged still has a tile.
-  latestSnapshot {
-    ...SceneSnapshot
-  }
-  dataset {
-    id
-    name
-    axisNames
-    shape
-  }
+  ...LensSubject
 }

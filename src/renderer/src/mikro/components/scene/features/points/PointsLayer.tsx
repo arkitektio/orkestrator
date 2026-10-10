@@ -118,7 +118,23 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
     [layer.asAffine, layer.xColumn, layer.yColumn, layer.zColumn, worldSystem],
   );
 
-  const { colorBy, rules: activeRules } = useActivePickers(layer);
+  const { colorBy, rules: pickedRules } = useActivePickers(layer);
+
+  // The layer draws a LENS of its table, and the lens' windows arrive as rules
+  // the server says are always applied: a row is drawn when every window keeps
+  // it, on top of whatever the picker has switched on. They go first and
+  // through the very same mask, so a windowed lens costs what one more filter
+  // costs. A window names a column of this table; one that arrives without its
+  // table is read as that.
+  const tableId = layer.tableDataset.id;
+  const windowFilters = layer.windowFilters;
+  const activeRules = useMemo(
+    () => [
+      ...windowFilters.map((rule) => ({ ...rule, table: rule.table ?? tableId })),
+      ...pickedRules,
+    ],
+    [windowFilters, tableId, pickedRules],
+  );
 
   // ------------------------------------------------------------------ positions
   // Read ONCE per table. Positions do not change with a colouring, and re-reading them on every

@@ -101,17 +101,19 @@ mutation SetLensDefaultScene($lens: ID!, $scene: ID) {
     defaultScene {
       ...ListScene
     }
-    latestSnapshot {
-      ...SceneSnapshot
-    }
-    dataset {
-      id
-      defaultScene {
-        id
-        name
-      }
+    ... on ArrayLens {
       latestSnapshot {
         ...SceneSnapshot
+      }
+      dataset {
+        id
+        defaultScene {
+          id
+          name
+        }
+        latestSnapshot {
+          ...SceneSnapshot
+        }
       }
     }
   }

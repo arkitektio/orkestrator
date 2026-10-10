@@ -148,7 +148,7 @@ describe("percentileUnion / rangeUnion", () => {
 describe("intensityAxisCandidates", () => {
   const layer = {
     phasorAxis: null,
-    lens: { renderAxes: { x: "x", y: "y", z: null } },
+    renderAxes: { x: "x", y: "y", z: null },
   };
 
   it("excludes axes already spent on geometry and any axis of extent 1", () => {

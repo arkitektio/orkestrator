@@ -6,6 +6,9 @@ import { ADATASET_SPECS, arrayDatasetSpecLink } from "./specs";
 /** mikro's pages, for the ⌘K palette and its rail popout (a `navLinks` builtin). */
 export const MIKRO_NAV_LINKS: NavLinkDecl[] = [
   { label: "Dashboard", route: "/mikro/home", keywords: ["images", "home"], group: "Data", icon: Home, home: true },
+  // First after the dashboard: a lens is what gets opened, looked at and handed
+  // to a task, whatever it selects over. The containers follow.
+  { label: "Lenses", route: "/mikro/lenses", keywords: ["slices", "crops", "views", "windows", "selections"], group: "Data", icon: ScanSearch, description: "Selections over datasets, tables, meshes and more" },
   { label: "Array Datasets", route: "/mikro/arraydatasets", keywords: ["images", "stacks"], group: "Data", icon: Grid3x3, description: "Images and volumes" },
   // One page per array-dataset spec, from the same catalogue as the pages.
   ...ADATASET_SPECS.map<NavLinkDecl>((spec) => ({
@@ -18,7 +21,6 @@ export const MIKRO_NAV_LINKS: NavLinkDecl[] = [
   { label: "Coordinate Systems", route: "/mikro/coordinatesystems", group: "Data", icon: Axis3d, description: "Frames and transforms" },
   { label: "Table Datasets", route: "/mikro/tabledatasets", keywords: ["tables"], group: "Data", icon: Table2, description: "Measurements as tables" },
   { label: "Sparse Datasets", route: "/mikro/sparsedatasets", keywords: ["matrices", "sparse", "csr", "anndata"], group: "Data", icon: Grid2x2, description: "Sparse matrices" },
-  { label: "Lenses", route: "/mikro/lenses", keywords: ["slices", "crops", "views"], group: "Data", icon: ScanSearch, description: "Selections over array datasets" },
   { label: "Annotations", route: "/mikro/annotations", keywords: ["rois", "labels"], group: "Data", icon: PenTool, description: "ROIs and labels" },
   { label: "Folders", route: "/mikro/folders", group: "Files", icon: Folder, description: "How data is organized" },
   { label: "Files", route: "/mikro/files", group: "Files", icon: File, description: "Uploaded raw files" },

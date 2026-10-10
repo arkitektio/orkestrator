@@ -28,7 +28,7 @@ describe("residentName", () => {
 
   it("borrows a lens' dataset name, since a lens has none of its own", () => {
     expect(
-      residentName({ __typename: "Lens", dataset: { name: "stack" } }),
+      residentName({ __typename: "ArrayLens", dataset: { name: "stack" } }),
     ).toBe("a lens of stack");
   });
 

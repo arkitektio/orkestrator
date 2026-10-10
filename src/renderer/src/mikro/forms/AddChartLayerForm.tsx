@@ -121,7 +121,13 @@ const TableRow = ({
  * `table` preselects one (the "drop a table on a chart" action lands here, so
  * its value column is chosen rather than guessed).
  */
-export const AddChartLayerForm = (props: { chart: string; table?: string; valueColumn?: string }) => {
+export const AddChartLayerForm = (props: {
+  chart: string;
+  table?: string;
+  valueColumn?: string;
+  /** A windowed lens of `table`: the series then draws that selection of it. */
+  lens?: string;
+}) => {
   const { closeDialog } = useDialog();
   const { data, error, loading, refetch } = useChartAddLayerCandidatesQuery({
     variables: { chart: props.chart },
@@ -205,7 +211,18 @@ export const AddChartLayerForm = (props: { chart: string; table?: string; valueC
                   disabled={busy}
                   onAdd={(valueColumn) =>
                     add("Series", () =>
-                      addSeries({ variables: { input: { chart, tableDataset: table.id, valueColumn } } }),
+                      addSeries({
+                        variables: {
+                          input: {
+                            chart,
+                            // A lens names its table; the server takes one or the other.
+                            ...(props.lens && table.id === props.table
+                              ? { lens: props.lens }
+                              : { tableDataset: table.id }),
+                            valueColumn,
+                          },
+                        },
+                      }),
                     )
                   }
                 />

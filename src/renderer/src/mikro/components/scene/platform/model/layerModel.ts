@@ -190,7 +190,7 @@ export type LayerState = Omit<ImageLayerFragment, "__typename"> & {
    */
   affineMatrix: number[][] | null;
   /**
-   * Axis-name mapping, from the lens' server-derived `renderAxes` (axis TYPES
+   * Axis-name mapping, from the layer's server-derived `renderAxes` (axis TYPES
    * decide, so a dim cannot be both spatial and the channel axis anymore).
    * Kept as flat fields because ~15 consumers (slice signatures, probes,
    * panels, planners) read them by these names.
@@ -266,7 +266,7 @@ export const normalizeLayer = (
       // keep [0,1] fallback
     }
   }
-  const renderAxes = layer.lens.renderAxes;
+  const renderAxes = layer.renderAxes;
   return {
     ...layer,
     climMin: transfer?.climMin ?? baseMin,
@@ -348,7 +348,7 @@ export const normalizeLabelLayer = (
       // keep [0,1] fallback
     }
   }
-  const renderAxes = layer.lens.renderAxes;
+  const renderAxes = layer.renderAxes;
   const intensityAxis = resolveIntensityAxis(
     layer.labelRender?.intensityAxis ?? undefined,
     renderAxes,
@@ -433,7 +433,7 @@ const lensLayerCommon = (
   defaultVolumeLod: number | null,
   scene: SceneTransformContext,
 ) => {
-  const renderAxes = layer.lens.renderAxes;
+  const renderAxes = layer.renderAxes;
   return {
     affineMatrix: composeLayerAffine(scene, layer),
     xAxis: renderAxes?.x ?? null,
@@ -511,7 +511,7 @@ export const normalizeIntensityLayer = (
     gamma: layer.gamma ?? null,
     intensityAxis: resolveIntensityAxis(
       layer.intensityAxis ?? undefined,
-      layer.lens.renderAxes,
+      layer.renderAxes,
     ),
     phasorAxis: null,
     channels: sources,
@@ -594,7 +594,7 @@ export const normalizeRgbLayer = (
     gamma: null,
     intensityAxis: resolveIntensityAxis(
       layer.intensityAxis ?? undefined,
-      layer.lens.renderAxes,
+      layer.renderAxes,
     ),
     phasorAxis: null,
     channels: sources,
@@ -654,9 +654,9 @@ export const normalizePhasorLayer = (
     gamma: phasor?.transfer.intensity.gamma ?? null,
     intensityAxis: resolveIntensityAxis(
       render?.intensityAxis ?? undefined,
-      layer.lens.renderAxes,
+      layer.renderAxes,
     ),
-    phasorAxis: resolvePhasorAxis(phasor?.phasorAxis, layer.lens.renderAxes),
+    phasorAxis: resolvePhasorAxis(phasor?.phasorAxis, layer.renderAxes),
     channels: [],
     phasors: phasor ? [phasor] : [],
     sources,

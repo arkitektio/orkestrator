@@ -37,6 +37,7 @@ import { residentName } from "@/mikro/components/coordinates/residents";
 import type {
   AddLayerCandidateFragment,
   ArrayDatasetSpec,
+  AxisType,
 } from "../../api/graphql";
 import { lensLabel } from "../../lenses";
 import {
@@ -47,6 +48,7 @@ import {
   extentOf,
   type Capabilities,
   type LayerKind,
+  type LensLike,
   type LensSuggestion,
   type Relation,
   type StagedScene,
@@ -82,7 +84,74 @@ export {
 
 export type Candidate = AddLayerCandidateFragment;
 
-export type LensCandidate = Extract<Candidate, { __typename: "Lens" }>;
+type ArrayLensResident = Extract<Candidate, { __typename: "ArrayLens" }>;
+
+/**
+ * An array lens as the picker reads it: the resident, plus which of its axes
+ * is x, y, z, the channel axis, the phasor axis and the displacement axis.
+ *
+ * The server used to state that on the lens. It states it on the LAYER now ("a
+ * selection does not choose how it is looked at"), and the picker runs before
+ * any layer exists — so `candidateRenderAxes` reads it off the axis types.
+ */
+export type LensCandidate = ArrayLensResident & {
+  renderAxes: NonNullable<LensLike["renderAxes"]> | null;
+};
+
+type TypedAxis = { name: string; type: AxisType; order: number };
+
+// Wire values, as everywhere in this file (see the note on the imports).
+const SPACE = "SPACE" as AxisType;
+const CHANNEL = "CHANNEL" as AxisType;
+const MICROTIME = "MICROTIME" as AxisType;
+const SPECTRUM = "SPECTRUM" as AxisType;
+const DISPLACEMENT = "DISPLACEMENT" as AxisType;
+
+/**
+ * Which axis plays which part, by the rule `RenderAxes` documents: x is the
+ * last spatial axis, y the one before it, z the one before that; the TIME, the
+ * CHANNEL, the MICROTIME-or-SPECTRUM and the DISPLACEMENT axis fill the rest.
+ *
+ * This is for the picker's DEFAULTS and its summary lines. What the server
+ * will actually draw is its own answer: `drawable` / `labels` gate the lens,
+ * and `gates` (the PHASOR and VECTOR capability sets) withdraw an axis the
+ * server would refuse, so a lens is never offered as a phasor on the strength
+ * of this function alone. Null when there is no x and y to draw along.
+ */
+export const candidateRenderAxes = (
+  axes: readonly TypedAxis[],
+  gates: { phasor?: boolean; vector?: boolean } = {},
+): LensCandidate["renderAxes"] => {
+  const ordered = [...axes].sort((a, b) => a.order - b.order);
+  const spatial = ordered.filter((axis) => axis.type === SPACE);
+  const x = spatial.at(-1)?.name;
+  const y = spatial.at(-2)?.name;
+  if (!x || !y) return null;
+
+  const first = (...types: AxisType[]) =>
+    ordered.find((axis) => types.includes(axis.type))?.name ?? null;
+
+  return {
+    x,
+    y,
+    z: spatial.at(-3)?.name ?? null,
+    intensity: first(CHANNEL),
+    phasor: gates.phasor === false ? null : first(MICROTIME, SPECTRUM),
+    vector: gates.vector === false ? null : first(DISPLACEMENT),
+  };
+};
+
+/** An array-lens resident as a picker candidate: the resident plus its render axes. */
+export const lensCandidateOf = (
+  lens: ArrayLensResident,
+  capabilities: Capabilities,
+): LensCandidate => ({
+  ...lens,
+  renderAxes: candidateRenderAxes(lens.lensSpace?.axes ?? [], {
+    phasor: capabilities?.phasor?.has(lens.id),
+    vector: capabilities?.vector?.has(lens.id),
+  }),
+});
 export type TableCandidate = Extract<Candidate, { __typename: "TableDataset" }>;
 export type MeshCandidate = Extract<Candidate, { __typename: "MeshCollection" }>;
 export type NetworkCandidate = Extract<Candidate, { __typename: "NetworkCollection" }>;
@@ -307,15 +376,16 @@ export const buildSections = (input: {
 
     for (const resident of space.residents) {
       switch (resident.__typename) {
-        case "Lens": {
-          const suggestion = suggestLensKinds(graph, resident, capabilities, staged);
+        case "ArrayLens": {
+          const lens = lensCandidateOf(resident, capabilities);
+          const suggestion = suggestLensKinds(graph, lens, capabilities, staged);
           // Not drawable as anything — the server would refuse the creation, so
           // the lens is not offered at all.
           if (!suggestion.kinds.length) break;
           const entry = datasetEntry(resident.dataset, resident.dataset.spec);
           entry.lenses.push({
             key: `Lens:${resident.id}`,
-            lens: resident,
+            lens,
             label: resident.lensName ? `${resident.lensName} — ${lensLabel(resident)}` : lensLabel(resident),
             space: spaceRef,
             kinds: suggestion.kinds,
@@ -323,7 +393,7 @@ export const buildSections = (input: {
           });
           // The relation reads the channel count off a lens, which the dataset
           // resident does not carry; the widest lens answers for the entry.
-          const channels = extentOf(resident, resident.renderAxes?.intensity);
+          const channels = extentOf(lens, lens.renderAxes?.intensity);
           if (channels > 1) {
             Object.assign(entry, relate({ __typename: "ArrayDataset", id: resident.dataset.id }, channels));
           }

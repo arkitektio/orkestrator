@@ -138,7 +138,7 @@ type Spaced = { coordinateSystem?: { id: string } | null };
 /** One resident of a space, as `AddLayerCandidate` selects it. */
 export type ResidentLike =
   | {
-      __typename: "Lens";
+      __typename: "ArrayLens";
       id: string;
       lensSpace?: { id: string } | null;
       toParent?: { id: string } | null;
@@ -416,8 +416,8 @@ const addResidents = (
   const levelEdges: string[] = [];
   for (const resident of space.residents) {
     switch (resident.__typename) {
-      case "Lens": {
-        const lens = resident as Extract<ResidentLike, { __typename: "Lens" }>;
+      case "ArrayLens": {
+        const lens = resident as Extract<ResidentLike, { __typename: "ArrayLens" }>;
         addDataset(graph, lens.dataset, [space.id, ...(lens.lensSpace ? [lens.lensSpace.id] : [])]);
         // A crop is a derivation that keeps the values: the child grid IS a
         // window of the parent's.
@@ -539,7 +539,7 @@ const ownerFromResidents = (
   );
   if (direct) return { key: datasetKey(direct.id!), kind: "dataset", id: direct.id! };
   const lens = residents.find(
-    (resident) => resident.__typename === "Lens" && resident.dataset?.id,
+    (resident) => resident.__typename === "ArrayLens" && resident.dataset?.id,
   );
   if (lens) {
     const id = lens.dataset!.id;
@@ -812,7 +812,7 @@ export const nodeOfCandidate = (
   candidate: { __typename: string; id: string; dataset?: { id: string } },
 ): GraphNode | undefined => {
   const key =
-    candidate.__typename === "Lens" && candidate.dataset
+    candidate.__typename === "ArrayLens" && candidate.dataset
       ? datasetKey(candidate.dataset.id)
       : nodeKeyOf(candidate);
   return graph.nodes.get(key);

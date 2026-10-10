@@ -1,4 +1,9 @@
-import { MikroArrayDataset, MikroSparseDataset, MikroTableDataset } from "@/core/linkers";
+import {
+  MikroArrayDataset,
+  MikroLens,
+  MikroSparseDataset,
+  MikroTableDataset,
+} from "@/core/linkers";
 import {
   Aperture,
   Grid2x2,
@@ -11,6 +16,7 @@ import {
   Share2,
 } from "lucide-react";
 import { ResidentFragment } from "../../api/graphql";
+import { describeLens } from "../../lenses";
 import { residentName } from "./residents";
 
 /**
@@ -32,7 +38,12 @@ export const RESIDENT_ICON: Record<Kind, LucideIcon> = {
   TableDataset: Table2,
   AnnotationCollection: Tags,
   MeshCollection: Shapes,
-  Lens: Aperture,
+  ArrayLens: Aperture,
+  TableLens: Aperture,
+  SparseLens: Aperture,
+  MeshLens: Aperture,
+  NetworkLens: Aperture,
+  AnnotationLens: Aperture,
   DataArray: Grid2x2,
   SparseDataset: Grid3x3,
   NetworkCollection: Share2,
@@ -44,7 +55,12 @@ export const RESIDENT_KIND_LABEL: Record<Kind, string> = {
   TableDataset: "table dataset",
   AnnotationCollection: "annotations",
   MeshCollection: "mesh collection",
-  Lens: "lens",
+  ArrayLens: "lens",
+  TableLens: "table lens",
+  SparseLens: "sparse lens",
+  MeshLens: "mesh lens",
+  NetworkLens: "network lens",
+  AnnotationLens: "annotation lens",
   DataArray: "pyramid level",
   SparseDataset: "sparse dataset",
   NetworkCollection: "network collection",
@@ -55,8 +71,8 @@ export const RESIDENT_KIND_LABEL: Record<Kind, string> = {
  *
  * There is no @mikro/annotationcollection, @mikro/meshcollection or
  * @mikro/dataarray linker, so those three name themselves rather than pretend
- * to be navigable. A Lens has no page of its own either, but it does have a
- * dataset — so it borrows that link.
+ * to be navigable. A lens of any kind links to its own page, named by the
+ * container it selects from.
  */
 export const ResidentLink = (props: {
   resident: Resident;
@@ -82,14 +98,16 @@ export const ResidentLink = (props: {
           {resident.name}
         </MikroSparseDataset.DetailLink>
       );
-    case "Lens":
+    case "ArrayLens":
+    case "TableLens":
+    case "SparseLens":
+    case "MeshLens":
+    case "NetworkLens":
+    case "AnnotationLens":
       return (
-        <span className={className}>
-          a lens of{" "}
-          <MikroArrayDataset.DetailLink object={resident.dataset}>
-            {resident.dataset.name}
-          </MikroArrayDataset.DetailLink>
-        </span>
+        <MikroLens.DetailLink object={resident} className={className}>
+          a lens of {describeLens(resident).container.name}
+        </MikroLens.DetailLink>
       );
     default:
       // AnnotationCollection names itself; DataArray has only a level and

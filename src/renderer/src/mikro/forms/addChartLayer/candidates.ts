@@ -19,7 +19,7 @@ export type SliceLike = { axis: string; start?: number | null; stop?: number | n
 
 export type ResidentLike =
   | {
-      __typename: "Lens";
+      __typename: "ArrayLens";
       id: string;
       shape: readonly number[];
       axisNames: readonly string[];
@@ -133,8 +133,8 @@ export const chartCandidates = (input: CandidatesInput): ChartCandidates => {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    if (resident.__typename === "Lens") {
-      const lens = resident as Extract<ResidentLike, { __typename: "Lens" }>;
+    if (resident.__typename === "ArrayLens") {
+      const lens = resident as Extract<ResidentLike, { __typename: "ArrayLens" }>;
       out.lenses.push({
         id: lens.id,
         datasetId: lens.dataset.id,

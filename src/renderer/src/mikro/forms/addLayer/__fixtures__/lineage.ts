@@ -91,7 +91,7 @@ export const lens = (
   datasetId: string,
   overrides: LensOverrides = {},
 ) => ({
-  __typename: "Lens" as const,
+  __typename: "ArrayLens" as const,
   id,
   shape: overrides.shape ?? [512, 512],
   axisNames: overrides.axisNames ?? ["y", "x"],

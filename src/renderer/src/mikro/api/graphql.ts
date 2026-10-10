@@ -265,15 +265,19 @@ export type AnnotationChartLayer = ChartLayer & {
   __typename?: 'AnnotationChartLayer';
   /** The name of the source axis that runs along the chart's axis: for a trace, the axis of its lens the values are read along; for a series, the table's coordinate column; for an annotation layer, the axis of the drawing space that is the chart's own. **Not a setting.** It is the one source axis the composed placement reads the chart's axis from, so it follows the registration: re-register the data by another axis and this changes with no write to the layer. Null when the layer is no longer placed, or is placed by a map that reads the chart's axis from several source axes */
   alongAxis?: Maybe<Scalars['String']['output']>;
-  /** The annotation collection whose marks this layer draws. Its own coordinate system is the layer's space */
+  /** The annotation collection whose marks this layer draws: the container of the lens. Its own coordinate system is the layer's space */
   annotationCollection: AnnotationCollection;
   /** This layer's whole `pathToWorld` composed into one affine map: a single row, because the chart's world has a single axis. The coefficient on `alongAxis` is the scale from a step along the data to a step along the chart's axis, in the axis's unit, and the last entry is the offset. Derived on read. Null when `pathToWorld` is null; an error when a path exists but does not condense */
   asAffine?: Maybe<AffinePlacement>;
   chart: Chart;
+  /** The lens' windows as a clip box in the collection's own space: marks outside it are not drawn. Derived from the lens; empty for a whole lens */
+  clip: Array<Window>;
   /** The colour the layer is drawn in, as RGBA. Null lets the viewer choose */
   color?: Maybe<Array<Scalars['Float']['output']>>;
   id: Scalars['ID']['output'];
   kind: ChartLayerKind;
+  /** The annotation lens this layer draws through */
+  lens: AnnotationLens;
   name?: Maybe<Scalars['String']['output']>;
   opacity: Scalars['Float']['output'];
   order: Scalars['Int']['output'];
@@ -342,7 +346,11 @@ export type AnnotationCollection = {
   exports: Array<FileLink>;
   /** The folder this annotation collection is filed in. Organisational only: distinct from `scene`, which says which drawing surface minted it, and from `coordinateSystem`, which says where its shapes are drawn */
   folder?: Maybe<Folder>;
+  /** The lens that selects this whole annotation collection: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every annotation collection is created with one */
+  fullLens?: Maybe<AnnotationLens>;
   id: Scalars['ID']['output'];
+  /** The lenses over this annotation collection, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens` */
+  lenses: Array<AnnotationLens>;
   name: Scalars['String']['output'];
   /** Provenance entries for this annotation collection */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -364,6 +372,12 @@ export type AnnotationCollectionAnnotationsArgs = {
 /** A named set of human-drawn annotations, owning the coordinate system they are drawn in. The CRUD counterpart of a table dataset's machine-produced rows: shapes a person draws and edits, sharing one drawing space and one registration story */
 export type AnnotationCollectionExportsArgs = {
   filters?: InputMaybe<FileLinkFilter>;
+};
+
+
+/** A named set of human-drawn annotations, owning the coordinate system they are drawn in. The CRUD counterpart of a table dataset's machine-produced rows: shapes a person draws and edits, sharing one drawing space and one registration story */
+export type AnnotationCollectionLensesArgs = {
+  windowed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -509,13 +523,17 @@ export enum AnnotationKindChoices {
 /** A layer that renders an annotation collection's drawn shapes (polygons, boxes, ellipses, lines, paths) in a scene. One layer per collection: per-shape styling lives on the annotations themselves. */
 export type AnnotationLayer = Layer & {
   __typename?: 'AnnotationLayer';
-  /** The annotation collection whose shapes this layer renders. Its own coordinate system is the layer's space */
+  /** The annotation collection whose shapes this layer renders: the container of the lens. Its own coordinate system is the layer's space */
   annotationCollection: AnnotationCollection;
   /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
+  /** The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens */
+  clip: Array<Window>;
   id: Scalars['ID']['output'];
   kind: LayerKind;
+  /** The annotation lens this layer draws through */
+  lens: AnnotationLens;
   name?: Maybe<Scalars['String']['output']>;
   opacity: Scalars['Float']['output'];
   order: Scalars['Int']['output'];
@@ -560,6 +578,39 @@ export type AnnotationLayerPlacementInvarianceArgs = {
 /** A layer that renders an annotation collection's drawn shapes (polygons, boxes, ellipses, lines, paths) in a scene. One layer per collection: per-shape styling lives on the annotations themselves. */
 export type AnnotationLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+/** A selection over an annotation collection by windows in its drawing space */
+export type AnnotationLens = Lens & {
+  __typename?: 'AnnotationLens';
+  /** The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections) */
+  activeAnchors: Array<CoordinateAnchor>;
+  annotationCollection: AnnotationCollection;
+  /** The collection's annotations this lens keeps: those whose own reach -- vertices and pins, in the drawing space the windows are stated in -- meets every window. Every annotation for a whole lens. Decided per shape, so it costs a read of the collection */
+  annotations: Array<Annotation>;
+  /** The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it */
+  coordinateSystem?: Maybe<CoordinateSystem>;
+  /** When this selection was first asked for; a whole lens, when its container was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** The task this selection was made under, if any */
+  createdThrough?: Maybe<Task>;
+  /** The assigner of the creating task, if any */
+  createdThroughBy?: Maybe<User>;
+  /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
+  creator?: Maybe<User>;
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  defaultScene?: Maybe<Scene>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
+  kind: LensKind;
+  /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
+  name?: Maybe<Scalars['String']['output']>;
+  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  scenes: Array<Scene>;
+  /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
+  windows: Array<Window>;
 };
 
 export type AnnotationOrder =
@@ -640,15 +691,15 @@ export type ArrayDataset = {
   exports: Array<FileLink>;
   /** The folder this dataset is filed in. Organisational only: it says where a user keeps this dataset, never where the data sits in space -- that is `intrinsicSystem` and the edges out of it */
   folder?: Maybe<Folder>;
-  /** The lens that selects this whole dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and the whole array is meant. Every dataset is created with one. The oldest unsliced lens, so the answer is stable; null only for a dataset with no pixel grid to select from -- reading never mints one */
-  fullLens?: Maybe<Lens>;
+  /** The lens that selects this whole dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and the whole array is meant. Every dataset is created with one, and there is one; null only for a dataset with no pixel grid to select from -- reading never mints one */
+  fullLens?: Maybe<ArrayLens>;
   id: Scalars['ID']['output'];
   /** The dataset's INTRINSIC coordinate system: its level-0 pixel grid, the space every pyramid level and lens maps into and the space ROIs resolve against. Structural and unit-independent */
   intrinsicSystem?: Maybe<CoordinateSystem>;
   /** The most recent picture of this dataset's `defaultScene`, for previewing it without loading the array. Null when no default scene is set. **A picture of the scene, not of the dataset**: snapshots are taken of compositions, so if the nominated scene stages other data too, the tile shows that data as well. This used to answer instead from *sole occupancy* -- the newest picture of a scene whose only anchored dataset was this one -- which guaranteed the picture showed nothing else but returned null for every dataset staged alongside another, and cost a five-query graph walk per request to decide */
   latestSnapshot?: Maybe<SceneSnapshot>;
-  /** The lenses over this dataset, oldest first. `sliced: true` keeps the ones that cut something out -- the crops and sub-volumes people work on; `sliced: false` the ones that select everything. A dataset usually carries several of the latter and they are interchangeable (each is the dataset, looked at whole), so a list for people wants `sliced: true` and `fullLens` beside it */
-  lenses: Array<Lens>;
+  /** The array lenses over this dataset, oldest first. `sliced: true` keeps the ones that cut something out -- the crops and sub-volumes people work on; `sliced: false` the one that selects everything, which is `fullLens`. A list for people wants `sliced: true` and `fullLens` beside it */
+  lenses: Array<ArrayLens>;
   /** Whether this dataset carries a resolution pyramid. Derived: true when it has more than one level */
   multiscale: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
@@ -864,6 +915,66 @@ export type ArrayDatasetStatsSumArgs = {
 export enum ArrayDatasetTimestampField {
   CreatedAt = 'CREATED_AT'
 }
+
+/** A selection over an array dataset by index slices: what an action that works on pixels is handed. Its shape and axes are derived from the dataset and the slices */
+export type ArrayLens = Lens & {
+  __typename?: 'ArrayLens';
+  /** The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections) */
+  activeAnchors: Array<CoordinateAnchor>;
+  /** The lens' axis names, in array order. A selection never drops or reorders an axis */
+  axisNames: Array<Scalars['String']['output']>;
+  /** Every column a label layer over this lens can be coloured or filtered by, with the control each one's role admits -- the same set `createLabelLayer(render: {colorBys: ...})` accepts. The nested form of the `labelColorByOptions` root query, which is where the search, narrowing and paging live; this one hands back the whole list. It walks the coordinate graph once per lens, so read it on a lens, not across a page of them */
+  colorByOptions: Array<ColorByOption>;
+  /** The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it */
+  coordinateSystem?: Maybe<CoordinateSystem>;
+  /** When this selection was first asked for; a whole lens, when its container was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** The task this selection was made under, if any */
+  createdThrough?: Maybe<Task>;
+  /** The assigner of the creating task, if any */
+  createdThroughBy?: Maybe<User>;
+  /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
+  creator?: Maybe<User>;
+  dataset: ArrayDataset;
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  defaultScene?: Maybe<Scene>;
+  /** The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived */
+  derivedDatasets: Array<ArrayDataset>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
+  kind: LensKind;
+  /** The most recent picture of this lens' `defaultScene` -- the tile to put on this lens. A sliced lens that nominates a scene shows that one; one that nominates nothing, and every unsliced lens, shows the dataset's, so a crop nobody has staged yet still has a picture. Null when neither nominates a scene */
+  latestSnapshot?: Maybe<SceneSnapshot>;
+  /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
+  name?: Maybe<Scalars['String']['output']>;
+  /** Everything needed to reduce one axis of this lens to a phasor: the bin count and width, the period the transform runs over, the laser rate, the instrument-response correction and the persisted distribution. Null when the lens has no MICROTIME or SPECTRUM axis. Derived -- none of it is stored on the lens, and a phasor render node references it rather than copying it, so two layers over one dataset cannot disagree about the instrument */
+  phasor?: Maybe<PhasorContext>;
+  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  scenes: Array<Scene>;
+  /** The shape this lens' slices cut out of its dataset */
+  shape: Array<Scalars['Int']['output']>;
+  /** The slices, in the one normalized spelling: dataset axis order, explicit ints, a step always present. Empty for the whole lens */
+  slices: Array<Slice>;
+  /** What a layer over this lens would answer for `renderAxes`, before any layer exists: which of the lens' axes face screen x, y, z, time and intensity under the default convention. A preview for opening a viewer on a bare lens; once a layer exists, its own `renderAxes` is the one to follow -- the mapping is the view's, not the selection's */
+  suggestedRenderAxes: RenderAxes;
+  /** The edge from this lens' space back into its dataset's intrinsic pixel space. A crop is a translation of the slice starts; a stepped lens also rescales. Without this edge an ROI drawn on a cropped lens has no defined path back to its dataset. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record */
+  toParent?: Maybe<Transformation>;
+};
+
+
+/** A selection over an array dataset by index slices: what an action that works on pixels is handed. Its shape and axes are derived from the dataset and the slices */
+export type ArrayLensColorByOptionsArgs = {
+  maxJoinDepth?: Scalars['Int']['input'];
+};
+
+
+/** A selection over an array dataset by index slices: what an action that works on pixels is handed. Its shape and axes are derived from the dataset and the slices */
+export type ArrayLensPhasorArgs = {
+  axis?: InputMaybe<Scalars['String']['input']>;
+  harmonic?: Scalars['Int']['input'];
+};
 
 /** An array whose values are the map: sample it at the point's coordinates. The client that is already rendering the array reads the value from the chunk it already has; a headless worker fetches it through the store's access grant. Either way the plan never says what is in the array -- the client owns pixels */
 export type ArraySample = SampleStep & {
@@ -1908,6 +2019,7 @@ export type CreateAnimationInput = {
 export type CreateAnnotationChartLayerInput = {
   annotationCollection?: InputMaybe<Scalars['ID']['input']>;
   chart: Scalars['ID']['input'];
+  lens?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
@@ -1941,12 +2053,23 @@ export type CreateAnnotationInput = {
 
 /** Create a layer that renders an annotation collection's drawn shapes in a scene. The collection's own coordinate system is the layer's space, so it must already have a path to the scene's world */
 export type CreateAnnotationLayerInput = {
-  annotationCollection: Scalars['ID']['input'];
+  annotationCollection?: InputMaybe<Scalars['ID']['input']>;
   blending?: InputMaybe<Blending>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   scene: Scalars['ID']['input'];
   visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** Input for the lens making a selection over an annotation collection, by windows in its drawing space */
+export type CreateAnnotationLensInput = {
+  /** The annotation collection to select over. Exactly one of this and `lens` */
+  annotationCollection?: InputMaybe<Scalars['ID']['input']>;
+  /** A lens over the annotation collection to select within, in place of the container: the windows then intersect with its own, and the result is the annotation collection's lens for what that keeps */
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  /** Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the annotation collection's whole lens, or the lens cut from */
+  windows?: InputMaybe<Array<WindowInput>>;
 };
 
 /** Input for drawing many annotations in one call. Provide exactly one of `collection` or `scene` (same semantics as createAnnotation); the transform chain and version resolve once for the whole batch */
@@ -2045,11 +2168,20 @@ export type CreateLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-/** Input type for creating an image from an array-like object */
+/** Input for the lens making a selection over an array dataset -- or within one of its lenses -- by slices */
 export type CreateLensInput = {
-  dataset: Scalars['ID']['input'];
+  /** In place of `slices`: an annotation, cut to the voxels under its stored box (crop to the ROI). With `dataset` only */
+  annotation?: InputMaybe<Scalars['ID']['input']>;
+  /** In place of `slices`: a box in any coordinate system the dataset reaches, cut to the voxels whose cells it meets. With `dataset` only: a box names its own frame, it is not relative to a crop */
+  box?: InputMaybe<LensBoxInput>;
+  /** The array dataset to select over. Exactly one of this and `lens` */
+  dataset?: InputMaybe<Scalars['ID']['input']>;
+  /** An array lens to cut from, in place of `dataset`: a crop of a crop. The slices are stated in this lens' own index space and composed through it; the result is the dataset's lens for the voxels that keeps */
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  /** What to call this selection. Applied when the lens has no name yet; a lens that already makes this selection and is named keeps its name: finding a selection is not a request to rename it, `updateLens` is */
   name?: InputMaybe<Scalars['String']['input']>;
-  slices: Array<SliceInput>;
+  /** Slices selecting a window of the dataset (or of the lens), one per axis to restrict. Omit, or pass an empty list, for everything: the dataset's whole lens, or the lens cut from. The same selection, however spelled, is the same lens */
+  slices?: InputMaybe<Array<SliceInput>>;
 };
 
 /** Input for registering an immutable, versioned mesh collection. The collection gets a coordinate system of its own, and an edge relates it to the space the meshes were extracted from */
@@ -2070,15 +2202,26 @@ export type CreateMeshLayerInput = {
   blending?: InputMaybe<Blending>;
   colorBys?: InputMaybe<Array<MeshColorByInput>>;
   filterBys?: InputMaybe<Array<MeshFilterByInput>>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   materialColor?: InputMaybe<Array<Scalars['Int']['input']>>;
   maxLevel?: InputMaybe<Scalars['Int']['input']>;
-  meshCollection: Scalars['ID']['input'];
+  meshCollection?: InputMaybe<Scalars['ID']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   scene: Scalars['ID']['input'];
   shading?: InputMaybe<MeshShading>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
   wireframe?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** Input for the lens making a selection over a mesh collection, by windows in its own space */
+export type CreateMeshLensInput = {
+  /** A lens over the mesh collection to select within, in place of the container: the windows then intersect with its own, and the result is the mesh collection's lens for what that keeps */
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  /** The mesh collection to select over. Exactly one of this and `lens` */
+  meshCollection?: InputMaybe<Scalars['ID']['input']>;
+  /** Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the mesh collection's whole lens, or the lens cut from */
+  windows?: InputMaybe<Array<WindowInput>>;
 };
 
 /** Input for registering an immutable, versioned network collection. The collection gets a coordinate system of its own, and an edge relates it to the space the network was traced in */
@@ -2101,16 +2244,27 @@ export type CreateNetworkLayerInput = {
   directed?: InputMaybe<Scalars['Boolean']['input']>;
   edgeWidthColumn?: InputMaybe<Scalars['String']['input']>;
   filterBys?: InputMaybe<Array<NetworkFilterByInput>>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   materialColor?: InputMaybe<Array<Scalars['Int']['input']>>;
   maxLevel?: InputMaybe<Scalars['Int']['input']>;
-  networkCollection: Scalars['ID']['input'];
+  networkCollection?: InputMaybe<Scalars['ID']['input']>;
   nodeSizeColumn?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   scene: Scalars['ID']['input'];
   showNodes?: InputMaybe<Scalars['Boolean']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+/** Input for the lens making a selection over a network collection, by windows in its own space */
+export type CreateNetworkLensInput = {
+  /** A lens over the network collection to select within, in place of the container: the windows then intersect with its own, and the result is the network collection's lens for what that keeps */
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  /** The network collection to select over. Exactly one of this and `lens` */
+  networkCollection?: InputMaybe<Scalars['ID']['input']>;
+  /** Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the network collection's whole lens, or the lens cut from */
+  windows?: InputMaybe<Array<WindowInput>>;
 };
 
 /** Attach an instrument-response correction to a dataset, taking a raw phasor to a calibrated one. Measured once per detector from a reference acquisition. Its absence is legitimate: an uncalibrated phasor still renders, its hue is just not traceable to an absolute lifetime */
@@ -2178,12 +2332,13 @@ export type CreatePointLayerInput = {
   colorColumn?: InputMaybe<Scalars['String']['input']>;
   colormap?: InputMaybe<ColorMap>;
   filterBys?: InputMaybe<Array<LabelFilterByInput>>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   pointSize?: InputMaybe<Scalars['Float']['input']>;
   scene: Scalars['ID']['input'];
   sizeColumn?: InputMaybe<Scalars['String']['input']>;
-  tableDataset: Scalars['ID']['input'];
+  tableDataset?: InputMaybe<Scalars['ID']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -2236,13 +2391,14 @@ export type CreateSceneInput = {
 export type CreateSeriesChartLayerInput = {
   chart: Scalars['ID']['input'];
   color?: InputMaybe<Array<Scalars['Float']['input']>>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   mark?: InputMaybe<ChartMark>;
   markerSize?: InputMaybe<Scalars['Float']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
-  tableDataset: Scalars['ID']['input'];
+  tableDataset?: InputMaybe<Scalars['ID']['input']>;
   valueColumn?: InputMaybe<Scalars['String']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -2259,6 +2415,16 @@ export type CreateSparseDatasetInput = {
   store: Scalars['SporadikLike']['input'];
 };
 
+/** Input for the lens making a selection over a sparse dataset, by windows on its axes */
+export type CreateSparseLensInput = {
+  /** A lens over the sparse dataset to select within, in place of the container: the windows then intersect with its own, and the result is the sparse dataset's lens for what that keeps */
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  /** The sparse dataset to select over. Exactly one of this and `lens` */
+  sparseDataset?: InputMaybe<Scalars['ID']['input']>;
+  /** Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the sparse dataset's whole lens, or the lens cut from */
+  windows?: InputMaybe<Array<WindowInput>>;
+};
+
 /** Input for creating a table dataset from a Parquet store. A column is declared ONCE, in `columns`: a non-null `axisType` makes it an axis of the coordinate system the table owns, and the axis-typed columns, in list (= file) order, are the space -- there is no separate axes list, because a table's axes are named columns and every consumer addresses them by name. Declare no axis-typed columns for a pure measurement table (its rows enumerate objects, its space is a synthetic `object` axis, and its lineage edge is UNMAPPABLE) */
 export type CreateTableDatasetInput = {
   anchors?: InputMaybe<Array<CoordinateAnchorInput>>;
@@ -2269,6 +2435,16 @@ export type CreateTableDatasetInput = {
   folder?: InputMaybe<Scalars['ID']['input']>;
   name: Scalars['String']['input'];
   sourceFiles?: InputMaybe<Array<SourceFileInput>>;
+};
+
+/** Input for the lens making a selection over a table dataset, by windows on its coordinate columns */
+export type CreateTableLensInput = {
+  /** A lens over the table dataset to select within, in place of the container: the windows then intersect with its own, and the result is the table dataset's lens for what that keeps */
+  lens?: InputMaybe<Scalars['ID']['input']>;
+  /** The table dataset to select over. Exactly one of this and `lens` */
+  tableDataset?: InputMaybe<Scalars['ID']['input']>;
+  /** Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the table dataset's whole lens, or the lens cut from */
+  windows?: InputMaybe<Array<WindowInput>>;
 };
 
 /** Input for drawing an array as a trace in a chart. The lens must leave one metric axis free -- the one the graph lays along the chart's axis -- and may leave one CHANNEL or INDEX axis free beside it, drawn as one line per position; every other axis must be sliced to a single position. The lens' data must already be registered into the chart's world: this writes no edge */
@@ -2291,11 +2467,12 @@ export type CreateTrackLayerInput = {
   blending?: InputMaybe<Blending>;
   colorByColumn?: InputMaybe<Scalars['String']['input']>;
   colormap?: InputMaybe<ColorMap>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   scene: Scalars['ID']['input'];
-  tableDataset: Scalars['ID']['input'];
+  tableDataset?: InputMaybe<Scalars['ID']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -3546,7 +3723,8 @@ export type ImageLayer = Layer & {
   blending: Blending;
   id: Scalars['ID']['output'];
   kind: LayerKind;
-  lens: Lens;
+  /** The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind */
+  lens: ArrayLens;
   /** Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene */
   levelPaths: Array<LevelPlacement>;
   name?: Maybe<Scalars['String']['output']>;
@@ -3560,6 +3738,8 @@ export type ImageLayer = Layer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
+  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
+  renderAxes: RenderAxes;
   /** The composable in-layer render graph, if this layer defines one */
   renderGraph?: Maybe<LayerRenderGraph>;
   scene: Scene;
@@ -3635,7 +3815,8 @@ export type IntensityLayer = Layer & {
   intensityAxis?: Maybe<Scalars['String']['output']>;
   intensityIndex: Scalars['Int']['output'];
   kind: LayerKind;
-  lens: Lens;
+  /** The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind */
+  lens: ArrayLens;
   /** Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene */
   levelPaths: Array<LevelPlacement>;
   name?: Maybe<Scalars['String']['output']>;
@@ -3650,6 +3831,8 @@ export type IntensityLayer = Layer & {
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
   projectionMode?: Maybe<ProjectionMode>;
+  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
+  renderAxes: RenderAxes;
   scene: Scene;
   visible: Scalars['Boolean']['output'];
 };
@@ -3846,7 +4029,8 @@ export type LabelLayer = Layer & {
   kind: LayerKind;
   /** How this layer's object ids become color: the hashing, the transparent background id, contour-or-fill, the selection, and any `colorBy` */
   labelRender?: Maybe<LabelRender>;
-  lens: Lens;
+  /** The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind */
+  lens: ArrayLens;
   /** Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene */
   levelPaths: Array<LevelPlacement>;
   name?: Maybe<Scalars['String']['output']>;
@@ -3860,6 +4044,8 @@ export type LabelLayer = Layer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
+  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
+  renderAxes: RenderAxes;
   scene: Scene;
   visible: Scalars['Boolean']['output'];
 };
@@ -4187,52 +4373,39 @@ export type LayerRenderNode = {
   label?: Maybe<Scalars['String']['output']>;
 };
 
-/** A Lens is a way of looking at a dataset: a dimensional selection (slices) over a dataset that defines a view of its data */
+/** A selection over a container that lives in a coordinate system: one row per (container, selection), so the same selection asked for twice is the same id. An ArrayLens selects over an array dataset by index slices and, when sliced, owns the crop's space and the edge back into the dataset's grid; every other kind selects over its container by value windows in the container's own axes and lives in the container's space. Every container has its whole lens from creation. */
 export type Lens = {
-  __typename?: 'Lens';
+  /** The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections) */
   activeAnchors: Array<CoordinateAnchor>;
-  /** The lens' axis names, in array order. A selection never drops or reorders an axis */
-  axisNames: Array<Scalars['String']['output']>;
-  /** Every column a label layer over this lens can be coloured or filtered by, with the control each one's role admits -- the same set `createLabelLayer(render: {colorBys: ...})` accepts. The nested form of the `labelColorByOptions` root query, which is where the search, narrowing and paging live; this one hands back the whole list. It walks the coordinate graph once per lens, so read it on a lens, not across a page of them */
-  colorByOptions: Array<ColorByOption>;
-  /** The coordinate system the lens' selection is expressed in. A sliced lens owns one (the space its slices cut out, with the derived edge recording the shift); an unsliced lens selects everything, so this resolves to the dataset's INTRINSIC system */
+  /** The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it */
   coordinateSystem?: Maybe<CoordinateSystem>;
-  dataset: ArrayDataset;
-  /** The scene to open for this lens. A sliced lens' own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its dataset's while it has none; an unsliced lens always answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree. A nomination, not a derivation -- see `scenes` */
+  /** When this selection was first asked for; a whole lens, when its container was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** The task this selection was made under, if any */
+  createdThrough?: Maybe<Task>;
+  /** The assigner of the creating task, if any */
+  createdThroughBy?: Maybe<User>;
+  /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
+  creator?: Maybe<User>;
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
   defaultScene?: Maybe<Scene>;
-  /** The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived */
-  derivedDatasets: Array<ArrayDataset>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
-  /** The most recent picture of this lens' `defaultScene` -- the tile to put on this lens. A sliced lens that nominates a scene shows that one; one that nominates nothing, and every unsliced lens, shows the dataset's, so a crop nobody has staged yet still has a picture. Null when neither nominates a scene */
-  latestSnapshot?: Maybe<SceneSnapshot>;
-  /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the slices -- or 'the whole array' -- in its place */
+  /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
+  kind: LensKind;
+  /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
   name?: Maybe<Scalars['String']['output']>;
-  /** Everything needed to reduce one axis of this lens to a phasor: the bin count and width, the period the transform runs over, the laser rate, the instrument-response correction and the persisted distribution. Null when the lens has no MICROTIME or SPECTRUM axis. Derived -- none of it is stored on the lens, and a phasor render node references it rather than copying it, so two layers over one dataset cannot disagree about the instrument */
-  phasor?: Maybe<PhasorContext>;
-  /** Which axis of the data source maps to screen x, y, z, time and intensity. Derived from the axis types: spatial axes are in array order, so the last is x */
-  renderAxes: RenderAxes;
-  /** The scenes this lens is rendered in: those with a layer over it. Derived, never stored, exactly as `ArrayDataset.scenes` is. An unsliced lens answers for every unsliced lens of its dataset -- they are one selection, the whole array, and which of them a layer happens to name is not a fact about the picture. Scenes that show only a *crop* of the dataset are not among them: ask the dataset's `scenes` for those too */
+  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
   scenes: Array<Scene>;
-  /** The shape this lens' slices cut out of its dataset */
-  shape: Array<Scalars['Int']['output']>;
-  slices: Array<Slice>;
-  /** The edge from this lens' space back into its dataset's intrinsic pixel space. A crop is a translation of the slice starts; a stepped lens also rescales. Without this edge an ROI drawn on a cropped lens has no defined path back to its dataset. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record */
-  toParent?: Maybe<Transformation>;
 };
 
-
-/** A Lens is a way of looking at a dataset: a dimensional selection (slices) over a dataset that defines a view of its data */
-export type LensColorByOptionsArgs = {
-  maxJoinDepth?: Scalars['Int']['input'];
-};
-
-
-/** A Lens is a way of looking at a dataset: a dimensional selection (slices) over a dataset that defines a view of its data */
-export type LensPhasorArgs = {
-  axis?: InputMaybe<Scalars['String']['input']>;
-  harmonic?: Scalars['Int']['input'];
+/** A box in any coordinate system an array dataset reaches -- micrometres in a physical space, a sibling dataset's grid through a shared world -- as the selection of a lens: the voxels whose cells the box meets, once the box is composed into the dataset's pixel grid */
+export type LensBoxInput = {
+  /** The coordinate system the windows are stated in. The dataset's pixel grid must reach it affinely, walking the transformation edges either way */
+  coordinateSystem: Scalars['ID']['input'];
+  /** The box, one window per axis it bounds. A side left open runs to the array's edge, an axis of the grid the box says nothing about is kept whole, and a window may be a plane (min equal to max) */
+  windows: Array<WindowInput>;
 };
 
 /** The fields a LENS derivation reads. Published for codegen; the wire type is the flat DerivedFromInput */
@@ -4274,44 +4447,103 @@ export type LensElementInput = {
   serialNumber?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** One change to the lenses being followed. Exactly one field is set per event */
+export type LensEvent = {
+  __typename?: 'LensEvent';
+  /** A lens that was made: a crop, a window, or the whole lens a new container was born with */
+  create?: Maybe<Lens>;
+  /** The ID of a lens that was deleted, on its own or with its container */
+  delete?: Maybe<Scalars['ID']['output']>;
+  /** A lens that was renamed or nominated a scene, in its new state */
+  update?: Maybe<Lens>;
+};
+
 export type LensFilter = {
   AND?: InputMaybe<LensFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<LensFilter>;
   OR?: InputMaybe<LensFilter>;
-  /** Filter by the dataset this lens looks at */
+  /** Filter to the lenses over this annotation collection */
+  annotationCollection?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by the sub of the user that assigned the creating task */
+  assignedBy?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter for items created after this datetime */
+  createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter for items created before this datetime */
+  createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter by the database ID of the task the item was created through (the `createdThrough { id }` field) */
+  createdThrough?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by the database ID of the user that assigned the creating task (the `createdThroughBy { id }` field) */
+  createdThroughBy?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by the rekuest task id the item was created through */
+  createdThroughTask?: InputMaybe<Scalars['String']['input']>;
+  /** Filter to the array lenses over this dataset */
   dataset?: InputMaybe<Scalars['ID']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter by the kind of container the lens selects over */
+  kind?: InputMaybe<LensKind>;
+  /** Filter to the lenses over this mesh collection */
+  meshCollection?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the lenses over this network collection */
+  networkCollection?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to lenses whose extent overlaps this annotation, wherever the two are co-registered: lenses over the dataset it was drawn on, and lenses over any other dataset registered into a space its collection reaches. Both extents are composed per request from the shapes and the edges and compared in the nearest space they share, so this costs one coordinate-graph walk per such space rather than an index lookup. A lens the server cannot bound there -- placed only per index, or across a warp -- is not returned */
   overlapsAnnotation?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by the creator's subject ID */
+  owner?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to lenses placeable into a coordinate system: those whose space reaches it across steps that compose into one affine map, walking the transformation edges. Takes a *space*, not a scene -- pass `scene.worldCoordinateSystem.id` to ask it of a scene. `derivedOnly` and `asLayer` narrow the answer for a particular picker; with neither, this is the whole set layer creation would accept */
   placeableIn?: InputMaybe<LensPlaceableFilter>;
-  /** Search by the lens' own name or, since most lenses have none and are known by their dataset's, by the name of the dataset it selects from (case-insensitive substring) */
+  /** Search by the lens' own name or, since most lenses have none and are known by their container's, by its container's label: the name of a dataset, table, sparse dataset or annotation collection, the version of a mesh or network collection (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
-  /** Filter by whether the lens cuts anything out of its dataset. True keeps the crops and sub-volumes; false the lenses that select everything, of which a dataset usually carries several interchangeable ones -- a list meant for people wants true */
+  /** Filter by whether the lens cuts anything out of its container. True keeps the crops, sub-volumes and windows; false the whole lenses, one per container -- a list meant for people usually wants true */
   sliced?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter to the lenses over this sparse dataset */
+  sparseDataset?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the lenses over this table dataset */
+  tableDataset?: InputMaybe<Scalars['ID']['input']>;
 };
+
+/** What a lens selects over: an array (by index slices, re-indexing into a space of its own), or a table, a sparse dataset, a mesh collection, a network collection or an annotation collection (by value windows, in the container's own space). */
+export enum LensKind {
+  Annotation = 'ANNOTATION',
+  Array = 'ARRAY',
+  Mesh = 'MESH',
+  Network = 'NETWORK',
+  Sparse = 'SPARSE',
+  Table = 'TABLE'
+}
 
 /** The kind of layer a lens could source, for narrowing a picker: the members of `LayerKind` that draw array data. Input-only, and deliberately not `LayerKind` itself -- an annotation, point, track or mesh layer sources from a collection or a table, never from a lens, so four of that enum's members could only ever answer 'no'. */
 export enum LensLayerKind {
+  /** Drawable as an annotation layer: any lens over an annotation collection placeable here. */
+  Annotation = 'ANNOTATION',
   /** Drawable as a general image layer -- which is every lens with an x and a y axis of more than one pixel. It is the renderability gate alone, and deliberately *not* the complement of the others: a mask drawn through a render graph is a legitimate thing to want, and `createLayer` does not refuse one. */
   Image = 'IMAGE',
   /** Drawable as an intensity layer: renderable, which is the whole condition. Every lens an image layer can draw, one channel of it can also be drawn on its own. */
   Intensity = 'INTENSITY',
   /** Drawable as a label layer: renderable, and derived by an edge declaring CATEGORIZED -- the values became object ids. The same signal `createSceneFromCoordinateSystem` infers a label layer from, asked of a candidate instead of a source, so a picker and a bootstrapped scene cannot disagree about what a label is. */
   Label = 'LABEL',
+  /** Drawable as a mesh layer: any lens over a mesh collection placeable here. */
+  Mesh = 'MESH',
+  /** Drawable as a network layer: any lens over a network collection placeable here. */
+  Network = 'NETWORK',
   /** Drawable as a phasor layer: renderable, and carrying a MICROTIME or SPECTRUM axis -- the continuous ones a phasor transform means anything over. */
   Phasor = 'PHASOR',
+  /** Drawable as a point layer: a lens over a table that declares at least two SPACE coordinate columns -- the gate `createPointLayer` applies. */
+  Point = 'POINT',
   /** Drawable as an RGB layer: renderable, and carrying a channel axis with at least three positions. Structural capacity only -- whether those three channels *are* red, green and blue is a fact about the acquisition, which a shape cannot carry. `createSceneFromCoordinateSystem` answers it from what ingest recorded (channel labels, a photographic source file) and falls back to one layer per channel; this filter answers the narrower structural question and never guesses. */
   Rgb = 'RGB',
+  /** Drawable as a track layer: a point-drawable table lens whose table also declares a TRACK_ID column -- the gate `createTrackLayer` applies. */
+  Track = 'TRACK',
   /** Drawable as a vector layer: renderable, and carrying a DISPLACEMENT value axis -- the values are components of a per-point offset. The same signal `createSceneFromCoordinateSystem` infers a vector layer from, asked of a candidate instead of a source, for LABEL's stated reason. */
   Vector = 'VECTOR'
 }
 
 export type LensOrder =
-  { id: Ordering; };
+  { createdAt: Ordering; id?: never; name?: never; }
+  |  { createdAt?: never; id: Ordering; name?: never; }
+  |  { createdAt?: never; id?: never; name: Ordering; };
 
 /** What a lens picker is asking for: a destination space, and optionally which sort of candidate. Structured rather than a bare space id because `derivedOnly` and `asLayer` are qualifications *of* the placeability question -- a lens is not derived or label-shaped in the abstract, it is those things on the way into a particular space */
 export type LensPlaceableFilter = {
@@ -4606,9 +4838,13 @@ export type MeshCollection = {
   exports: Array<FileLink>;
   /** The folder this mesh collection is filed in. Organisational only: it says where a user keeps this collection, never where the meshes sit in space -- that is `coordinateSystem` and the edges out of it */
   folder?: Maybe<Folder>;
+  /** The lens that selects this whole mesh collection: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every mesh collection is created with one */
+  fullLens?: Maybe<MeshLens>;
   /** The octree grid, as read from the store's manifest. Its `cellSize` is in voxels, one size per vertex component -- the same order the catalog's bbox columns use, which is not necessarily the coordinate system's axis order */
   grid: Scalars['Any']['output'];
   id: Scalars['ID']['output'];
+  /** The lenses over this mesh collection, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens` */
+  lenses: Array<MeshLens>;
   /** The files this mesh collection was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete */
   sourceFiles: Array<FileLink>;
   specVersion: Scalars['String']['output'];
@@ -4627,6 +4863,12 @@ export type MeshCollectionColorByOptionsArgs = {
 /** An immutable, versioned collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
 export type MeshCollectionExportsArgs = {
   filters?: InputMaybe<FileLinkFilter>;
+};
+
+
+/** An immutable, versioned collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
+export type MeshCollectionLensesArgs = {
+  windowed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -4754,7 +4996,9 @@ export type MeshLayer = Layer & {
   /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
-  /** The versioned, coordinate-system-anchored mesh collection this layer renders. Its geometry is fetched from the collection's Parquet catalog, not through this API */
+  /** The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens */
+  clip: Array<Window>;
+  /** The versioned, coordinate-system-anchored mesh collection this layer renders: the container of the lens. Its geometry is fetched from the collection's Parquet catalog, not through this API */
   collection?: Maybe<MeshCollection>;
   /**
    * The colouring currently drawn: `colorBys[activeColorBy]`, or null when nothing is selected. Derived, never stored -- there is one copy of the choice, and it is the index
@@ -4767,6 +5011,8 @@ export type MeshLayer = Layer & {
   filterBys: Array<MeshFilterBy>;
   id: Scalars['ID']['output'];
   kind: LayerKind;
+  /** The mesh lens this layer draws through */
+  lens: MeshLens;
   materialColor?: Maybe<Array<Scalars['Int']['output']>>;
   maxLevel?: Maybe<Scalars['Int']['output']>;
   name?: Maybe<Scalars['String']['output']>;
@@ -4815,6 +5061,37 @@ export type MeshLayerPlacementInvarianceArgs = {
 /** A layer that renders a 3D mesh (surface reconstruction / isosurface) placed and styled in a scene. */
 export type MeshLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+/** A selection over a mesh collection by windows in its own space */
+export type MeshLens = Lens & {
+  __typename?: 'MeshLens';
+  /** The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections) */
+  activeAnchors: Array<CoordinateAnchor>;
+  /** The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it */
+  coordinateSystem?: Maybe<CoordinateSystem>;
+  /** When this selection was first asked for; a whole lens, when its container was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** The task this selection was made under, if any */
+  createdThrough?: Maybe<Task>;
+  /** The assigner of the creating task, if any */
+  createdThroughBy?: Maybe<User>;
+  /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
+  creator?: Maybe<User>;
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  defaultScene?: Maybe<Scene>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
+  kind: LensKind;
+  meshCollection: MeshCollection;
+  /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
+  name?: Maybe<Scalars['String']['output']>;
+  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  scenes: Array<Scene>;
+  /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
+  windows: Array<Window>;
 };
 
 /** A mesh collection whose geometry carries the ids. **Nothing is sampled at a coordinate here**: an id rides on the geometry row, so a client that picked a surface is already holding one and goes straight to the lookup -- the mesh case of the rule that makes a plan worth caching, that it never costs a round-trip. `consumes` names the axes that pick resolved rather than axes to index anything with. The store is named for a headless worker that did not do the picking and must read the object catalog itself */
@@ -4923,6 +5200,8 @@ export type Mutation = {
   createAnnotationCollection: AnnotationCollection;
   /** Create a layer that renders an annotation collection's drawn shapes in a scene. The explicit path for a second scene: the collection's system must already be registered into that scene's world */
   createAnnotationLayer: AnnotationLayer;
+  /** The lens keeping these windows of an annotation collection's drawing space: the one that exists, or a new one */
+  createAnnotationLens: AnnotationLens;
   /** Draw many annotations in one call, into a collection or onto a scene (exactly one of the two, same semantics as createAnnotation). The transform chain and version resolve once for the whole batch, and the rows insert in bulk */
   createAnnotations: Array<Annotation>;
   /** Create a new dataset from array-like data with optional coordinate anchors and OME metadata */
@@ -4943,16 +5222,20 @@ export type Mutation = {
   createLabelLayer: LabelLayer;
   /** Create a general image layer: array (lens) data rendered through a composable render graph. The kind for a layer that actually composites -- several channels together, an authored transfer curve, a tint, per-channel opacity. For a recipe of fixed shape, createIntensityLayer, createRgbLayer, createVolumeLayer and createPhasorLayer make a layer of that kind, whose settings are fields rather than a tree */
   createLayer: ImageLayer;
-  /** Create a new lens from an existing dataset and slicing constraints */
-  createLens: Lens;
+  /** The array lens making a selection over a dataset by slices: the one that exists for that selection, or a new one with its coordinate system and its edge back into the dataset's grid */
+  createLens: ArrayLens;
   /** Register an immutable, versioned mesh collection against a coordinate system */
   createMeshCollection: MeshCollection;
   /** Create a layer that renders a 3D mesh (surface reconstruction / isosurface) in a scene */
   createMeshLayer: MeshLayer;
+  /** The lens keeping these windows of a mesh collection's own space: the one that exists, or a new one */
+  createMeshLens: MeshLens;
   /** Register an immutable, versioned network collection from an uploaded konnektion store, in a coordinate system of its own */
   createNetworkCollection: NetworkCollection;
   /** Create a layer that renders a node/edge network -- a traced arbor, a vessel tree, a connectome -- in a scene */
   createNetworkLayer: NetworkLayer;
+  /** The lens keeping these windows of a network collection's own space: the one that exists, or a new one */
+  createNetworkLens: NetworkLens;
   /** Attach an instrument-response correction to a dataset, taking a raw phasor to a calibrated one */
   createPhasorCalibration: PhasorCalibration;
   /** Attach a phasor distribution (the 2D g/s density at one axis and harmonic) to a dataset, so a client can range a phasor overlay without reading the cube */
@@ -4967,7 +5250,7 @@ export type Mutation = {
   createScene: Scene;
   /** Bootstrap a renderable scene over an existing coordinate system: a shared space (its registered sources become layers, up to the policy's nchildren) or an owned system such as a dataset's intrinsic grid or a physical space (the container's own data becomes the layer). The scene adopts the system as its world; no edges are authored. This is how a dataset is staged -- pass `intrinsicSystem` to render in pixels, or a physical space it is registered into to render at physical scale */
   createSceneFromCoordinateSystem: Scene;
-  /** Bootstrap a renderable scene showing one lens -- a crop, a sub-volume, or the whole array -- with one layer per channel over that lens. Composes in the dataset's intrinsic grid unless `world` names another space the lens reaches */
+  /** Bootstrap a renderable scene showing one lens of any kind: a crop, a sub-volume or the whole array as one layer per channel; a window over a table as a point or track layer; a window over a mesh, network or annotation collection as that layer. Composes in the dataset's intrinsic grid, or the container's own space, unless `world` names another space the lens reaches */
   createSceneFromLens: Scene;
   /** Adopt an uploaded media file as a pre-rendered picture of a scene */
   createSceneSnapshot: SceneSnapshot;
@@ -4975,8 +5258,12 @@ export type Mutation = {
   createSeriesChartLayer: SeriesChartLayer;
   /** Create a sparse dataset from one uploaded sparse store, which holds the matrix in one or more layouts. A sparse matrix is a grid of numbers with no row labels and no column labels, so **every axis says what its positions are** through its own `identifiedBy` -- a source whose own contents are the ids (which authors a FIELD edge, and is what makes the matrix reachable from a layer over that source), or the table whose rows they are (which authors a foreign key and no edge). Carried on the axis, identified-exactly-once is a property of the input rather than a rule this enforces. Nothing about the matrix itself is declared: the spec, the shape, each layout's encoding and its chunking were read from the store when its upload was finished, and are checked against these axes rather than taken from them */
   createSparseDataset: SparseDataset;
+  /** The lens keeping these windows of a sparse dataset's axes: the one that exists, or a new one. A subset of positions, never a re-indexing */
+  createSparseLens: SparseLens;
   /** Create a table dataset from a Parquet store. Its declared coordinate columns become the axes of a coordinate system it owns, which lets a localization table be placed in a scene; a table with no coordinate columns is a measurement table whose rows enumerate objects and whose lineage edge is UNMAPPABLE */
   createTableDataset: TableDataset;
+  /** The lens keeping these windows of a table dataset's coordinate columns: the one that exists, or a new one. It lives in the table's own space */
+  createTableLens: TableLens;
   /** Draw an array as a trace in a chart: a lens with one metric axis free, laid along the chart's axis by the graph, and optionally one CHANNEL or INDEX axis free as one line per position */
   createTraceChartLayer: TraceChartLayer;
   /** Create a layer that renders trajectories from columns of a table, grouped by a track id */
@@ -5009,7 +5296,7 @@ export type Mutation = {
   deleteFolder: Scalars['ID']['output'];
   /** Delete an existing layer */
   deleteLayer: Scalars['ID']['output'];
-  /** Delete an existing lens */
+  /** Delete a lens of any kind. Refused while a layer draws through it, and for a container's whole lens */
   deleteLens: Scalars['ID']['output'];
   /** Delete an existing mesh collection */
   deleteMeshCollection: Scalars['ID']['output'];
@@ -5221,6 +5508,11 @@ export type MutationCreateAnnotationLayerArgs = {
 };
 
 
+export type MutationCreateAnnotationLensArgs = {
+  input: CreateAnnotationLensInput;
+};
+
+
 export type MutationCreateAnnotationsArgs = {
   input: CreateAnnotationsInput;
 };
@@ -5286,6 +5578,11 @@ export type MutationCreateMeshLayerArgs = {
 };
 
 
+export type MutationCreateMeshLensArgs = {
+  input: CreateMeshLensInput;
+};
+
+
 export type MutationCreateNetworkCollectionArgs = {
   input: CreateNetworkCollectionInput;
 };
@@ -5293,6 +5590,11 @@ export type MutationCreateNetworkCollectionArgs = {
 
 export type MutationCreateNetworkLayerArgs = {
   input: CreateNetworkLayerInput;
+};
+
+
+export type MutationCreateNetworkLensArgs = {
+  input: CreateNetworkLensInput;
 };
 
 
@@ -5351,8 +5653,18 @@ export type MutationCreateSparseDatasetArgs = {
 };
 
 
+export type MutationCreateSparseLensArgs = {
+  input: CreateSparseLensInput;
+};
+
+
 export type MutationCreateTableDatasetArgs = {
   input: CreateTableDatasetInput;
+};
+
+
+export type MutationCreateTableLensArgs = {
+  input: CreateTableLensInput;
 };
 
 
@@ -5849,15 +6161,21 @@ export type NetworkCollection = {
   coordinateSystem: CoordinateSystem;
   /** Every edge from this collection's space back into data the network was traced in, in declared order -- the first is the primary parent, the one that places it. An identity when the network is in that grid as-is, a scale when it was traced on a downsampled one, UNMAPPABLE where the lineage is recorded but no geometry is claimed. Empty for a network derived from no data at all. The same relation a derived dataset's `derivedFrom` records */
   derivedFrom: Array<Transformation>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The geometry encoding: how positions, edges, node ids, radii and ghosts are quantized and compressed, and which coarsening operations each level ran */
   encoding: Scalars['Any']['output'];
   /** The files written out of this network collection: an OME-TIFF export, a rendered snapshot registered as a file. The mirror of `sourceFiles` */
   exports: Array<FileLink>;
   /** The folder this network collection is filed in. Organisational only: it says where a user keeps this collection, never where the networks sit in space -- that is `coordinateSystem` and the edges out of it */
   folder?: Maybe<Folder>;
+  /** The lens that selects this whole network collection: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every network collection is created with one */
+  fullLens?: Maybe<NetworkLens>;
   /** The octree grid, as read from the store's manifest. Its `cellSize` is in voxels, one size per position component -- the same order the catalog's bbox columns use, which is not necessarily the coordinate system's axis order */
   grid: Scalars['Any']['output'];
   id: Scalars['ID']['output'];
+  /** The lenses over this network collection, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens` */
+  lenses: Array<NetworkLens>;
   /** The files this network collection was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete */
   sourceFiles: Array<FileLink>;
   specVersion: Scalars['String']['output'];
@@ -5876,6 +6194,12 @@ export type NetworkCollectionColorByOptionsArgs = {
 /** An immutable, versioned collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
 export type NetworkCollectionExportsArgs = {
   filters?: InputMaybe<FileLinkFilter>;
+};
+
+
+/** An immutable, versioned collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
+export type NetworkCollectionLensesArgs = {
+  windowed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -6001,7 +6325,9 @@ export type NetworkLayer = Layer & {
   /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
-  /** The versioned, coordinate-system-anchored network collection this layer renders. Its nodes and edges are fetched from the collection's Parquet catalog, not through this API */
+  /** The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens */
+  clip: Array<Window>;
+  /** The versioned, coordinate-system-anchored network collection this layer renders: the container of the lens. Its nodes and edges are fetched from the collection's Parquet catalog, not through this API */
   collection?: Maybe<NetworkCollection>;
   /** The colourings this layer offers, in the order a picker should show them. A COLUMN or SPARSE entry colours whole objects, already checked reachable; a GRAPH entry colours per node, by a value the collection itself carries, already checked against its manifest. Empty means there is nothing to pick and the material color is the rendering */
   colorBys: Array<NetworkColorBy>;
@@ -6013,6 +6339,8 @@ export type NetworkLayer = Layer & {
   filterBys: Array<NetworkFilterBy>;
   id: Scalars['ID']['output'];
   kind: LayerKind;
+  /** The network lens this layer draws through */
+  lens: NetworkLens;
   /** The flat width of every segment, in scene units. A well-defined length only from `placementInvariance` SIMILARITY up. Overridden where `nodeSizeColumn` or `edgeWidthColumn` is set */
   lineWidth?: Maybe<Scalars['Float']['output']>;
   materialColor?: Maybe<Array<Scalars['Int']['output']>>;
@@ -6065,6 +6393,37 @@ export type NetworkLayerPlacementInvarianceArgs = {
 /** A layer that renders a node/edge network -- a traced arbor, a vessel tree, a connectome -- placed and styled in a scene. Its segments are drawn as camera-facing quads rather than GL lines, which is what makes a width in scene units meaningful. */
 export type NetworkLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
+};
+
+/** A selection over a network collection by windows in its own space */
+export type NetworkLens = Lens & {
+  __typename?: 'NetworkLens';
+  /** The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections) */
+  activeAnchors: Array<CoordinateAnchor>;
+  /** The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it */
+  coordinateSystem?: Maybe<CoordinateSystem>;
+  /** When this selection was first asked for; a whole lens, when its container was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** The task this selection was made under, if any */
+  createdThrough?: Maybe<Task>;
+  /** The assigner of the creating task, if any */
+  createdThroughBy?: Maybe<User>;
+  /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
+  creator?: Maybe<User>;
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  defaultScene?: Maybe<Scene>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
+  kind: LensKind;
+  /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
+  name?: Maybe<Scalars['String']['output']>;
+  networkCollection: NetworkCollection;
+  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  scenes: Array<Scene>;
+  /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
+  windows: Array<Window>;
 };
 
 /** A network collection whose geometry carries the ids -- `MeshSample`'s sentence over a wireframe. **Nothing is sampled at a coordinate here**: an OBJECT id (one per traced filament or arbor, never per node) rides on the geometry rows and the object catalog, so a client that picked a segment is already holding one and goes straight to the lookup. The store is named for a headless worker that did not do the picking and must read the object catalog itself */
@@ -6584,7 +6943,8 @@ export type PhasorLayer = Layer & {
   blending: Blending;
   id: Scalars['ID']['output'];
   kind: LayerKind;
-  lens: Lens;
+  /** The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind */
+  lens: ArrayLens;
   /** Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene */
   levelPaths: Array<LevelPlacement>;
   name?: Maybe<Scalars['String']['output']>;
@@ -6600,6 +6960,8 @@ export type PhasorLayer = Layer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
+  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
+  renderAxes: RenderAxes;
   scene: Scene;
   visible: Scalars['Boolean']['output'];
 };
@@ -6800,6 +7162,8 @@ export type PointLayer = Layer & {
   /** The dataset's ID-role column identifying each point, if any */
   idColumn?: Maybe<Scalars['String']['output']>;
   kind: LayerKind;
+  /** The table lens this layer draws through: the rows its windows keep, in the table's own space */
+  lens: TableLens;
   name?: Maybe<Scalars['String']['output']>;
   opacity: Scalars['Float']['output'];
   order: Scalars['Int']['output'];
@@ -6816,9 +7180,11 @@ export type PointLayer = Layer & {
   sizeColumn?: Maybe<Scalars['String']['output']>;
   /** The coordinate column whose axis is named 't', if any */
   tColumn?: Maybe<Scalars['String']['output']>;
-  /** The table dataset the points are drawn from. Its declared coordinate columns provide the coordinates and its own system provides the placement -- the column fields below are derived from its schema, never stored per layer */
+  /** The table dataset the points are drawn from: the container of the lens. Its declared coordinate columns provide the coordinates and its own system provides the placement -- the column fields below are derived from its schema, never stored per layer */
   tableDataset: TableDataset;
   visible: Scalars['Boolean']['output'];
+  /** The lens' windows as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open), on top of whatever `filterBys` are active. The selection the layer draws, derived from the lens and never stored; empty for a whole lens */
+  windowFilters: Array<LabelFilterBy>;
   /** The coordinate column whose axis is named 'x', from the dataset's declared schema */
   xColumn?: Maybe<Scalars['String']['output']>;
   /** The coordinate column whose axis is named 'y' */
@@ -7036,9 +7402,9 @@ export type Query = {
   layer: Layer;
   /** List layers placed in scenes (a heterogeneous list of layer kinds) */
   layers: Array<Layer>;
-  /** Get a single lens by ID */
+  /** Get a single lens of any kind by ID */
   lens: Lens;
-  /** List lenses (parameterized ways of looking at an array dataset) */
+  /** List lenses: selections over array datasets (by slices) and over tables, sparse datasets, meshes, networks and annotation collections (by windows), a heterogeneous list of lens kinds */
   lenses: Array<Lens>;
   /** Walk the *derivation* edges out from one container and return its provenance component: everything this data was computed from, everything computed from it, transitively in both directions, and the edges between them. Distinct from `coordinateGraph`, which walks every edge touching a space -- a registration there drags in every other dataset registered into the same world, which is a neighbourhood rather than a lineage. Nodes are containers, not spaces: a dataset's grid, its levels and its lenses are one node in a provenance story. Kind-blind, so an UNMAPPABLE edge is included and is the point -- that is how a measurement table hangs off the mask it was measured from; filter on `kind` for the chain that actually places things. Root it at any container's coordinate system */
   lineageGraph: LineageGraph;
@@ -7588,7 +7954,7 @@ export type RequestZarrUploadInput = {
 };
 
 /** A piece of data living in a coordinate system. Data belongs to a space; the space belongs to nobody */
-export type Resident = AnnotationCollection | ArrayDataset | DataArray | Lens | MeshCollection | NetworkCollection | SparseDataset | TableDataset;
+export type Resident = AnnotationCollection | AnnotationLens | ArrayDataset | ArrayLens | DataArray | MeshCollection | MeshLens | NetworkCollection | NetworkLens | SparseDataset | SparseLens | TableDataset | TableLens;
 
 /** Input for reverting a folder to a previous history revision */
 export type RevertInput = {
@@ -7611,7 +7977,8 @@ export type RgbLayer = Layer & {
   id: Scalars['ID']['output'];
   intensityAxis?: Maybe<Scalars['String']['output']>;
   kind: LayerKind;
-  lens: Lens;
+  /** The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind */
+  lens: ArrayLens;
   /** Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene */
   levelPaths: Array<LevelPlacement>;
   name?: Maybe<Scalars['String']['output']>;
@@ -7626,6 +7993,8 @@ export type RgbLayer = Layer & {
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
   redIndex: Scalars['Int']['output'];
+  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
+  renderAxes: RenderAxes;
   scene: Scene;
   visible: Scalars['Boolean']['output'];
   /** Per-component gains [red, green, blue], multiplied into the components before the shared contrast limits. Null: no correction, the same as [1, 1, 1] */
@@ -7900,6 +8269,8 @@ export type SceneFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the scenes with a layer drawing through this lens, of any kind: the same set the lens' own `scenes` answers */
+  lens?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<StrFilterLookup>;
   /** Search by name (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
@@ -8053,6 +8424,8 @@ export type SeriesChartLayer = ChartLayer & {
   coordinateColumn?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   kind: ChartLayerKind;
+  /** The table lens this series reads through: the rows its windows keep */
+  lens: TableLens;
   /** Line width in screen pixels. Null lets the viewer choose */
   lineWidth?: Maybe<Scalars['Float']['output']>;
   /** How the values are drawn: a line, markers, both, or steps */
@@ -8070,13 +8443,15 @@ export type SeriesChartLayer = ChartLayer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to the chart's world. Derived, never stored */
   placementValidity: PlacementValidity;
-  /** The table dataset whose columns are read */
+  /** The table dataset whose columns are read: the container of the lens */
   tableDataset: TableDataset;
   /** The numeric attribute column read as the value */
   valueColumn: Scalars['String']['output'];
   /** The unit the value column's values are in, as the table declares it. Null when the column declares none. A chart may hold layers in several units: it commits only to its axis */
   valueUnit?: Maybe<Scalars['Unit']['output']>;
   visible: Scalars['Boolean']['output'];
+  /** The lens' windows as row filters, always applied: a row is read when every one keeps it (`min <= column <= max`, an omitted side open). The selection the series draws, derived from the lens; empty for a whole lens */
+  windowFilters: Array<LabelFilterBy>;
 };
 
 
@@ -8216,7 +8591,7 @@ export type SourceFileInput = {
 /** One source in view of a region: where it sits in the queried coordinate system, how it got there, and which of its coordinate anchors are in view */
 export type SourcePlacement = {
   __typename?: 'SourcePlacement';
-  /** The source's coordinate anchors whose slab overlaps the region. An anchor pins some axes and is global along every axis it omits, so its slab is one voxel wide where it pins and the container's full extent where it does not. Only an array dataset's anchors are placed here: a table's anchors pin column values rather than a slab, and are read through `TableDataset.anchors`; every other source kind reports none, which is not a gap */
+  /** The source's coordinate anchors whose slab overlaps the region. An anchor pins some axes and is global along every axis it omits. For an array dataset the slab is one voxel wide where it pins and the container's full extent where it does not; for a table or a sparse dataset a pin is one position of a coordinate column, and an omitted axis is unbounded, since the server holds no extent for a table. A mesh, network or annotation collection carries no anchors and reports none */
   anchors: Array<CoordinateAnchor>;
   /** The source's axis-aligned extent in the queried system's coordinates, one entry per axis it constrains -- and only those. Usually a proper subset: a (c,y,x) dataset registered onto the (y,x) of a (t,z,y,x) world is a slab, extended along t and z, and an entry there would be a number nothing measured. Empty when `extentState` is not KNOWN */
   extent: Array<AxisExtent>;
@@ -8316,9 +8691,13 @@ export type SparseDataset = {
   descriptors: Scalars['JSON']['output'];
   /** The folder it is filed in. Organisational only */
   folder?: Maybe<Folder>;
+  /** The lens that selects this whole sparse dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every sparse dataset is created with one */
+  fullLens?: Maybe<SparseLens>;
   id: Scalars['ID']['output'];
   /** The axes this dataset can select a single position along in one contiguous read -- one per stored layout. An axis absent here is one it holds, but can only answer about by scanning every byte, so a surface needing that answer will not offer this dataset */
   indexableAxes: Array<Scalars['String']['output']>;
+  /** The lenses over this sparse dataset, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens` */
+  lenses: Array<SparseLens>;
   name: Scalars['String']['output'];
   /** The recorded history of this dataset. Only `name` and `description` can change */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -8335,6 +8714,12 @@ export type SparseDataset = {
 export type SparseDatasetAnchorsArgs = {
   filters?: InputMaybe<CoordinateAnchorFilter>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** A sparse matrix over two enumerated axes -- objects on one, features on the other -- stored as anndata-spelled zarr groups. It exists because a colouring names one *column*, so a colourable measurement is a column of a table: right for a few hundred features and impossible for a transcriptome, where a feature stops being a schema fact and becomes a data one. **Each axis is identified exactly once**, by its own `identifiedBy` -- a source whose contents are the ids, or the table whose rows the positions are. Its stores, axes and coordinate system are fixed at creation; a recomputation is a new dataset */
+export type SparseDatasetLensesArgs = {
+  windowed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -8407,6 +8792,37 @@ export type SparseLayout = {
   path: Scalars['String']['output'];
   /** Whether a slice can be fetched as an exact byte range instead of as whole chunks -- true when every array is one uncompressed chunk, so `indptr` names byte offsets into the raw buffer. False is the ordinary case and not a defect: the default trades bytes for cache reuse, which is the better trade when the cost is requests */
   rangeReadable: Scalars['Boolean']['output'];
+};
+
+/** A selection over a sparse dataset by windows on its axes: the positions kept, never re-indexed. Lives in the dataset's own space */
+export type SparseLens = Lens & {
+  __typename?: 'SparseLens';
+  /** The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections) */
+  activeAnchors: Array<CoordinateAnchor>;
+  /** The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it */
+  coordinateSystem?: Maybe<CoordinateSystem>;
+  /** When this selection was first asked for; a whole lens, when its container was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** The task this selection was made under, if any */
+  createdThrough?: Maybe<Task>;
+  /** The assigner of the creating task, if any */
+  createdThroughBy?: Maybe<User>;
+  /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
+  creator?: Maybe<User>;
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  defaultScene?: Maybe<Scene>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
+  kind: LensKind;
+  /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
+  name?: Maybe<Scalars['String']['output']>;
+  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  scenes: Array<Scene>;
+  sparseDataset: SparseDataset;
+  /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
+  windows: Array<Window>;
 };
 
 /** A sparse matrix stored as an anndata-spelled zarr group behind the S3 datalayer: `data`, `indices` and `indptr`, with the encoding, shape and chunking read from the group itself rather than declared. Its `encoding` says which axis `indptr` indexes, and so which question it answers in one contiguous read -- ask the other and there is no range to read at all. */
@@ -8514,6 +8930,8 @@ export type Subscription = {
   files: FileEvent;
   /** Follow one scene: an event for every layer added to it, edited or removed. Carries changes only -- read the scene's current layers first */
   layers: LayerEvent;
+  /** Follow the lenses of one container -- given by its kind and its id -- or of the whole organization when neither is given: an event for every selection made, renamed or deleted, the whole lens a new container is born with included. Carries changes only -- read the container's current lenses first */
+  lenses: LensEvent;
   /** Follow the organization's scenes: an event for every one created, edited or deleted */
   scenes: SceneEvent;
   /** Follow the table datasets of one folder, or of the whole organization when no folder is given: an event for every one created, edited or deleted */
@@ -8538,6 +8956,12 @@ export type SubscriptionFilesArgs = {
 
 export type SubscriptionLayersArgs = {
   scene: Scalars['ID']['input'];
+};
+
+
+export type SubscriptionLensesArgs = {
+  container?: InputMaybe<Scalars['ID']['input']>;
+  kind?: InputMaybe<LensKind>;
 };
 
 
@@ -8571,7 +8995,11 @@ export type TableDataset = {
   exports: Array<FileLink>;
   /** The folder this table dataset is filed in. Organisational only: it says where a user keeps this table, never where its rows sit in space -- that is `coordinateSystem` and the edges out of it */
   folder?: Maybe<Folder>;
+  /** The lens that selects this whole table dataset: what a viewer opens for it, and the handle to pass wherever a `Lens` is asked for and all of it is meant. Every table dataset is created with one */
+  fullLens?: Maybe<TableLens>;
   id: Scalars['ID']['output'];
+  /** The lenses over this table dataset, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens` */
+  lenses: Array<TableLens>;
   name: Scalars['String']['output'];
   /** Every change made to this table: who created it, and every subsequent rename or redescription, attributed to the client, user and task it happened under. Only `name` and `description` can change -- the store, the columns and the coordinate system derived from them are fixed at creation */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -8596,6 +9024,12 @@ export type TableDatasetAnchorsArgs = {
 /** A parquet-backed table whose rows are scientific records (segmented objects, localizations, cells). It owns a coordinate system whose axes are its coordinate columns, which is what makes a localization table placeable; a table with no coordinate columns enumerates its rows and its lineage edge is UNMAPPABLE. Its store, its columns and that coordinate system are fixed at creation -- only `name` and `description` can be updated, and a recomputation is a new table rather than an edit of this one. Read the rows directly from the Parquet store with a datalayer access grant rather than paginating through GraphQL */
 export type TableDatasetExportsArgs = {
   filters?: InputMaybe<FileLinkFilter>;
+};
+
+
+/** A parquet-backed table whose rows are scientific records (segmented objects, localizations, cells). It owns a coordinate system whose axes are its coordinate columns, which is what makes a localization table placeable; a table with no coordinate columns enumerates its rows and its lineage edge is UNMAPPABLE. Its store, its columns and that coordinate system are fixed at creation -- only `name` and `description` can be updated, and a recomputation is a new table rather than an edit of this one. Read the rows directly from the Parquet store with a datalayer access grant rather than paginating through GraphQL */
+export type TableDatasetLensesArgs = {
+  windowed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -8686,6 +9120,37 @@ export type TableIdentifiesInput = {
   table: Scalars['ID']['input'];
 };
 
+/** A selection over a table dataset by value windows on its coordinate columns: the rows kept. Lives in the table's own space */
+export type TableLens = Lens & {
+  __typename?: 'TableLens';
+  /** The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections) */
+  activeAnchors: Array<CoordinateAnchor>;
+  /** The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it */
+  coordinateSystem?: Maybe<CoordinateSystem>;
+  /** When this selection was first asked for; a whole lens, when its container was made */
+  createdAt: Scalars['DateTime']['output'];
+  /** The task this selection was made under, if any */
+  createdThrough?: Maybe<Task>;
+  /** The assigner of the creating task, if any */
+  createdThroughBy?: Maybe<User>;
+  /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
+  creator?: Maybe<User>;
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  defaultScene?: Maybe<Scene>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
+  kind: LensKind;
+  /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
+  name?: Maybe<Scalars['String']['output']>;
+  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  scenes: Array<Scene>;
+  tableDataset: TableDataset;
+  /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
+  windows: Array<Window>;
+};
+
 /** A validated Rekuest task under which objects were created or changed. */
 export type Task = {
   __typename?: 'Task';
@@ -8770,8 +9235,8 @@ export type TraceChartLayer = ChartLayer & {
   color?: Maybe<Array<Scalars['Float']['output']>>;
   id: Scalars['ID']['output'];
   kind: ChartLayerKind;
-  /** The lens whose values are read */
-  lens: Lens;
+  /** The array lens whose values are read */
+  lens: ArrayLens;
   /** Line width in screen pixels. Null lets the viewer choose */
   lineWidth?: Maybe<Scalars['Float']['output']>;
   /** How the values are drawn: a line, markers, both, or steps */
@@ -8840,6 +9305,8 @@ export type TrackLayer = Layer & {
   colormap?: Maybe<ColorMap>;
   id: Scalars['ID']['output'];
   kind: LayerKind;
+  /** The table lens this layer draws through: the rows its windows keep, in the table's own space */
+  lens: TableLens;
   lineWidth?: Maybe<Scalars['Float']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   opacity: Scalars['Float']['output'];
@@ -8855,11 +9322,13 @@ export type TrackLayer = Layer & {
   scene: Scene;
   /** The coordinate column whose axis is named 't', if any */
   tColumn?: Maybe<Scalars['String']['output']>;
-  /** The table dataset the tracks are drawn from. Its coordinate and TRACK_ID columns provide the trajectories -- the column fields below are derived from its schema, never stored per layer */
+  /** The table dataset the tracks are drawn from: the container of the lens. Its coordinate and TRACK_ID columns provide the trajectories -- the column fields below are derived from its schema, never stored per layer */
   tableDataset: TableDataset;
   /** The dataset's TRACK_ID column, which groups rows into tracks */
   trackIdColumn?: Maybe<Scalars['String']['output']>;
   visible: Scalars['Boolean']['output'];
+  /** The lens' windows as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open), on top of whatever `filterBys` are active. The selection the layer draws, derived from the lens and never stored; empty for a whole lens */
+  windowFilters: Array<LabelFilterBy>;
   /** The coordinate column whose axis is named 'x', from the dataset's declared schema */
   xColumn?: Maybe<Scalars['String']['output']>;
   /** The coordinate column whose axis is named 'y' */
@@ -9548,7 +10017,8 @@ export type VectorLayer = Layer & {
   glyphStride?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   kind: LayerKind;
-  lens: Lens;
+  /** The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind */
+  lens: ArrayLens;
   /** Per pyramid level, the path from that level's voxel grid to this scene's world system. What a multiscale renderer consumes directly: pick a level by zoom and use its path -- every level stars into the same intrinsic system, so the registration tail is shared. A level's path is null when the dataset is not registered into the scene */
   levelPaths: Array<LevelPlacement>;
   name?: Maybe<Scalars['String']['output']>;
@@ -9562,6 +10032,8 @@ export type VectorLayer = Layer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
+  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
+  renderAxes: RenderAxes;
   scene: Scene;
   /** The lens axis whose positions are the vector components: the DISPLACEMENT value axis. Derived from the axis types on every read and stored nowhere, so two layers over one field cannot disagree about it. Component ORDER follows the spatial axes' array order -- position i displaces along the i-th spatial axis, slowest-varying first, so the last component displaces along x. Stated here because a standalone layer has no FIELD edge to name the order per-edge, and a renderer and a writer silently disagreeing about it draws every arrow transposed */
   vectorAxis: Scalars['String']['output'];
@@ -9644,6 +10116,24 @@ export type WaveplateElementInput = {
   serialNumber?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** A value window along a named axis of a container that is not an array: the positions kept, by value, with an open side as null */
+export type Window = {
+  __typename?: 'Window';
+  /** The name of the axis the window constrains, e.g. 't' for a table's time column */
+  axis: Scalars['String']['output'];
+  /** The largest position kept, inclusive, or None for no upper bound */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** The smallest position kept, inclusive, or None for no lower bound */
+  min?: Maybe<Scalars['Float']['output']>;
+};
+
+/** Input type for a window along one axis of a container that is not an array: the positions kept, by value */
+export type WindowInput = {
+  axis: Scalars['String']['input'];
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
+};
+
 /** Temporary S3 credentials for reading a Zarr store. */
 export type ZarrAccessGrant = {
   __typename?: 'ZarrAccessGrant';
@@ -9711,7 +10201,7 @@ export type ZarrUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
-export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | ArrayDataset | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | Lens | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | NetworkCollection | NetworkLayer | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseStore | TableDataset | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -9804,20 +10294,22 @@ type AddLayerCandidate_AnnotationCollection_Fragment = { __typename: 'Annotation
     & DerivationEdge_UnmappableTransformation_Fragment
   )> };
 
+type AddLayerCandidate_AnnotationLens_Fragment = { __typename: 'AnnotationLens' };
+
 type AddLayerCandidate_ArrayDataset_Fragment = (
   { __typename: 'ArrayDataset' }
   & DatasetLineageFragment
 );
 
-type AddLayerCandidate_DataArray_Fragment = { __typename: 'DataArray', id: string, level: number, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null };
-
-type AddLayerCandidate_Lens_Fragment = { __typename: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, lensName?: string | null, slices: Array<(
+type AddLayerCandidate_ArrayLens_Fragment = { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, lensName?: string | null, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
-  )>, lensSpace?: { __typename?: 'CoordinateSystem', id: string } | null, renderAxes: { __typename?: 'RenderAxes', x: string, y: string, z?: string | null, intensity?: string | null, vector?: string | null, phasor?: string | null }, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null, dataset: (
+  )>, lensSpace?: { __typename?: 'CoordinateSystem', id: string, axes: Array<{ __typename?: 'Axis', name: string, type: AxisType, order: number }> } | null, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null, dataset: (
     { __typename?: 'ArrayDataset' }
     & DatasetLineageFragment
   ) };
+
+type AddLayerCandidate_DataArray_Fragment = { __typename: 'DataArray', id: string, level: number, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null };
 
 type AddLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, version: string, specVersion: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
     { __typename?: 'AffineTransformation' }
@@ -9851,6 +10343,8 @@ type AddLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection',
     & DerivationEdge_UnmappableTransformation_Fragment
   )> };
 
+type AddLayerCandidate_MeshLens_Fragment = { __typename: 'MeshLens' };
+
 type AddLayerCandidate_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, version: string, specVersion: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
     { __typename?: 'AffineTransformation' }
     & DerivationEdge_AffineTransformation_Fragment
@@ -9883,7 +10377,11 @@ type AddLayerCandidate_NetworkCollection_Fragment = { __typename: 'NetworkCollec
     & DerivationEdge_UnmappableTransformation_Fragment
   )> };
 
+type AddLayerCandidate_NetworkLens_Fragment = { __typename: 'NetworkLens' };
+
 type AddLayerCandidate_SparseDataset_Fragment = { __typename: 'SparseDataset', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string } };
+
+type AddLayerCandidate_SparseLens_Fragment = { __typename: 'SparseLens' };
 
 type AddLayerCandidate_TableDataset_Fragment = (
   { __typename: 'TableDataset', columns: Array<(
@@ -9923,24 +10421,26 @@ type AddLayerCandidate_TableDataset_Fragment = (
   & ListTableDatasetFragment
 );
 
-export type AddLayerCandidateFragment = AddLayerCandidate_AnnotationCollection_Fragment | AddLayerCandidate_ArrayDataset_Fragment | AddLayerCandidate_DataArray_Fragment | AddLayerCandidate_Lens_Fragment | AddLayerCandidate_MeshCollection_Fragment | AddLayerCandidate_NetworkCollection_Fragment | AddLayerCandidate_SparseDataset_Fragment | AddLayerCandidate_TableDataset_Fragment;
+type AddLayerCandidate_TableLens_Fragment = { __typename: 'TableLens' };
 
-export type AddLayerStagedLensFragment = { __typename?: 'Lens', id: string, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string } | null } };
+export type AddLayerCandidateFragment = AddLayerCandidate_AnnotationCollection_Fragment | AddLayerCandidate_AnnotationLens_Fragment | AddLayerCandidate_ArrayDataset_Fragment | AddLayerCandidate_ArrayLens_Fragment | AddLayerCandidate_DataArray_Fragment | AddLayerCandidate_MeshCollection_Fragment | AddLayerCandidate_MeshLens_Fragment | AddLayerCandidate_NetworkCollection_Fragment | AddLayerCandidate_NetworkLens_Fragment | AddLayerCandidate_SparseDataset_Fragment | AddLayerCandidate_SparseLens_Fragment | AddLayerCandidate_TableDataset_Fragment | AddLayerCandidate_TableLens_Fragment;
+
+export type AddLayerStagedLensFragment = { __typename?: 'ArrayLens', id: string, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string } | null } };
 
 type AddLayerStagedLayer_AnnotationLayer_Fragment = { __typename: 'AnnotationLayer', id: string, name?: string | null, blending: Blending, annotationCollection: { __typename?: 'AnnotationCollection', id: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string } } };
 
 type AddLayerStagedLayer_ImageLayer_Fragment = { __typename: 'ImageLayer', id: string, name?: string | null, blending: Blending, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & AddLayerStagedLensFragment
   ) };
 
 type AddLayerStagedLayer_IntensityLayer_Fragment = { __typename: 'IntensityLayer', intensityIndex: number, colormap: ColorMap, climMin?: number | null, climMax?: number | null, gamma?: number | null, id: string, name?: string | null, blending: Blending, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & AddLayerStagedLensFragment
   ) };
 
 type AddLayerStagedLayer_LabelLayer_Fragment = { __typename: 'LabelLayer', id: string, name?: string | null, blending: Blending, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & AddLayerStagedLensFragment
   ) };
 
@@ -9949,21 +10449,21 @@ type AddLayerStagedLayer_MeshLayer_Fragment = { __typename: 'MeshLayer', id: str
 type AddLayerStagedLayer_NetworkLayer_Fragment = { __typename: 'NetworkLayer', id: string, name?: string | null, blending: Blending, collection?: { __typename?: 'NetworkCollection', id: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string } } | null };
 
 type AddLayerStagedLayer_PhasorLayer_Fragment = { __typename: 'PhasorLayer', id: string, name?: string | null, blending: Blending, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & AddLayerStagedLensFragment
   ) };
 
 type AddLayerStagedLayer_PointLayer_Fragment = { __typename: 'PointLayer', id: string, name?: string | null, blending: Blending, tableDataset: { __typename?: 'TableDataset', id: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string } } };
 
 type AddLayerStagedLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', id: string, name?: string | null, blending: Blending, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & AddLayerStagedLensFragment
   ) };
 
 type AddLayerStagedLayer_TrackLayer_Fragment = { __typename: 'TrackLayer', id: string, name?: string | null, blending: Blending, tableDataset: { __typename?: 'TableDataset', id: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string } } };
 
 type AddLayerStagedLayer_VectorLayer_Fragment = { __typename: 'VectorLayer', id: string, name?: string | null, blending: Blending, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & AddLayerStagedLensFragment
   ) };
 
@@ -9971,67 +10471,102 @@ export type AddLayerStagedLayerFragment = AddLayerStagedLayer_AnnotationLayer_Fr
 
 type AddLayerSpaceOwner_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string };
 
+type AddLayerSpaceOwner_AnnotationLens_Fragment = { __typename: 'AnnotationLens' };
+
 type AddLayerSpaceOwner_ArrayDataset_Fragment = { __typename: 'ArrayDataset', id: string };
+
+type AddLayerSpaceOwner_ArrayLens_Fragment = { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string } };
 
 type AddLayerSpaceOwner_DataArray_Fragment = { __typename: 'DataArray' };
 
-type AddLayerSpaceOwner_Lens_Fragment = { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string } };
-
 type AddLayerSpaceOwner_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string };
+
+type AddLayerSpaceOwner_MeshLens_Fragment = { __typename: 'MeshLens' };
 
 type AddLayerSpaceOwner_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string };
 
+type AddLayerSpaceOwner_NetworkLens_Fragment = { __typename: 'NetworkLens' };
+
 type AddLayerSpaceOwner_SparseDataset_Fragment = { __typename: 'SparseDataset', id: string };
+
+type AddLayerSpaceOwner_SparseLens_Fragment = { __typename: 'SparseLens' };
 
 type AddLayerSpaceOwner_TableDataset_Fragment = { __typename: 'TableDataset', id: string };
 
-export type AddLayerSpaceOwnerFragment = AddLayerSpaceOwner_AnnotationCollection_Fragment | AddLayerSpaceOwner_ArrayDataset_Fragment | AddLayerSpaceOwner_DataArray_Fragment | AddLayerSpaceOwner_Lens_Fragment | AddLayerSpaceOwner_MeshCollection_Fragment | AddLayerSpaceOwner_NetworkCollection_Fragment | AddLayerSpaceOwner_SparseDataset_Fragment | AddLayerSpaceOwner_TableDataset_Fragment;
+type AddLayerSpaceOwner_TableLens_Fragment = { __typename: 'TableLens' };
+
+export type AddLayerSpaceOwnerFragment = AddLayerSpaceOwner_AnnotationCollection_Fragment | AddLayerSpaceOwner_AnnotationLens_Fragment | AddLayerSpaceOwner_ArrayDataset_Fragment | AddLayerSpaceOwner_ArrayLens_Fragment | AddLayerSpaceOwner_DataArray_Fragment | AddLayerSpaceOwner_MeshCollection_Fragment | AddLayerSpaceOwner_MeshLens_Fragment | AddLayerSpaceOwner_NetworkCollection_Fragment | AddLayerSpaceOwner_NetworkLens_Fragment | AddLayerSpaceOwner_SparseDataset_Fragment | AddLayerSpaceOwner_SparseLens_Fragment | AddLayerSpaceOwner_TableDataset_Fragment | AddLayerSpaceOwner_TableLens_Fragment;
 
 type AddLayerLineageNode_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
+
+type AddLayerLineageNode_AnnotationLens_Fragment = { __typename: 'AnnotationLens' };
 
 type AddLayerLineageNode_ArrayDataset_Fragment = (
   { __typename: 'ArrayDataset' }
   & DatasetLineageFragment
 );
 
-type AddLayerLineageNode_DataArray_Fragment = { __typename: 'DataArray' };
+type AddLayerLineageNode_ArrayLens_Fragment = { __typename: 'ArrayLens' };
 
-type AddLayerLineageNode_Lens_Fragment = { __typename: 'Lens' };
+type AddLayerLineageNode_DataArray_Fragment = { __typename: 'DataArray' };
 
 type AddLayerLineageNode_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, version: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
 
+type AddLayerLineageNode_MeshLens_Fragment = { __typename: 'MeshLens' };
+
 type AddLayerLineageNode_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, version: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
+
+type AddLayerLineageNode_NetworkLens_Fragment = { __typename: 'NetworkLens' };
 
 type AddLayerLineageNode_SparseDataset_Fragment = { __typename: 'SparseDataset', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
 
+type AddLayerLineageNode_SparseLens_Fragment = { __typename: 'SparseLens' };
+
 type AddLayerLineageNode_TableDataset_Fragment = { __typename: 'TableDataset', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }>, columns: Array<{ __typename?: 'Column', role: ColumnRole }> };
 
-export type AddLayerLineageNodeFragment = AddLayerLineageNode_AnnotationCollection_Fragment | AddLayerLineageNode_ArrayDataset_Fragment | AddLayerLineageNode_DataArray_Fragment | AddLayerLineageNode_Lens_Fragment | AddLayerLineageNode_MeshCollection_Fragment | AddLayerLineageNode_NetworkCollection_Fragment | AddLayerLineageNode_SparseDataset_Fragment | AddLayerLineageNode_TableDataset_Fragment;
+type AddLayerLineageNode_TableLens_Fragment = { __typename: 'TableLens' };
+
+export type AddLayerLineageNodeFragment = AddLayerLineageNode_AnnotationCollection_Fragment | AddLayerLineageNode_AnnotationLens_Fragment | AddLayerLineageNode_ArrayDataset_Fragment | AddLayerLineageNode_ArrayLens_Fragment | AddLayerLineageNode_DataArray_Fragment | AddLayerLineageNode_MeshCollection_Fragment | AddLayerLineageNode_MeshLens_Fragment | AddLayerLineageNode_NetworkCollection_Fragment | AddLayerLineageNode_NetworkLens_Fragment | AddLayerLineageNode_SparseDataset_Fragment | AddLayerLineageNode_SparseLens_Fragment | AddLayerLineageNode_TableDataset_Fragment | AddLayerLineageNode_TableLens_Fragment;
 
 export type AddLayerSpaceFragment = { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<(
     { __typename?: 'AnnotationCollection' }
     & AddLayerCandidate_AnnotationCollection_Fragment
   ) | (
+    { __typename?: 'AnnotationLens' }
+    & AddLayerCandidate_AnnotationLens_Fragment
+  ) | (
     { __typename?: 'ArrayDataset' }
     & AddLayerCandidate_ArrayDataset_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & AddLayerCandidate_ArrayLens_Fragment
   ) | (
     { __typename?: 'DataArray' }
     & AddLayerCandidate_DataArray_Fragment
   ) | (
-    { __typename?: 'Lens' }
-    & AddLayerCandidate_Lens_Fragment
-  ) | (
     { __typename?: 'MeshCollection' }
     & AddLayerCandidate_MeshCollection_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & AddLayerCandidate_MeshLens_Fragment
   ) | (
     { __typename?: 'NetworkCollection' }
     & AddLayerCandidate_NetworkCollection_Fragment
   ) | (
+    { __typename?: 'NetworkLens' }
+    & AddLayerCandidate_NetworkLens_Fragment
+  ) | (
     { __typename?: 'SparseDataset' }
     & AddLayerCandidate_SparseDataset_Fragment
   ) | (
+    { __typename?: 'SparseLens' }
+    & AddLayerCandidate_SparseLens_Fragment
+  ) | (
     { __typename?: 'TableDataset' }
     & AddLayerCandidate_TableDataset_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & AddLayerCandidate_TableLens_Fragment
   )> };
 
 export type FullCoordinateAnchorFragment = { __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', id: string, label: string } | null, valueHistogram?: { __typename?: 'ValueHistogram', id: string, bins: Array<number>, histogram: Array<number>, min?: number | null, max?: number | null, p1?: number | null, p99?: number | null } | null, lightGraph?: { __typename?: 'LightPath', id: string, graph: (
@@ -10114,7 +10649,7 @@ export type DataArrayFragment = { __typename?: 'DataArray', id: string, level: n
 export type ListArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, latestSnapshot?: (
     { __typename?: 'SceneSnapshot' }
     & SceneSnapshotFragment
-  ) | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, fullLens?: { __typename?: 'Lens', id: string } | null };
+  ) | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, fullLens?: { __typename?: 'ArrayLens', id: string } | null };
 
 export type ArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, folder?: { __typename?: 'Folder', id: string, name: string } | null, intrinsicSystem?: (
     { __typename?: 'CoordinateSystem' }
@@ -10224,7 +10759,7 @@ type ChartLayerCommon_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer'
 
 export type ChartLayerCommonFragment = ChartLayerCommon_AnnotationChartLayer_Fragment | ChartLayerCommon_SeriesChartLayer_Fragment | ChartLayerCommon_TraceChartLayer_Fragment;
 
-export type ChartLensFragment = { __typename?: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
+export type ChartLensFragment = { __typename?: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
   )>, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null }>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, toParent?: (
@@ -10264,7 +10799,7 @@ export type ChartLensFragment = { __typename?: 'Lens', id: string, shape: Array<
 
 export type ChartTraceLayerFragment = (
   { __typename?: 'TraceChartLayer', mark: ChartMark, lineWidth?: number | null, markerSize?: number | null, seriesAxis?: string | null, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & ChartLensFragment
   ) }
   & ChartLayerCommon_TraceChartLayer_Fragment
@@ -10277,12 +10812,24 @@ export type ChartSeriesLayerFragment = (
     ), columns: Array<(
       { __typename?: 'Column' }
       & TableDatasetColumnFragment
-    )> } }
+    )> }, lens: (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  ), windowFilters: Array<(
+    { __typename?: 'LabelFilterBy' }
+    & LabelFilterByFragment
+  )> }
   & ChartLayerCommon_SeriesChartLayer_Fragment
 );
 
 export type ChartAnnotationLayerFragment = (
-  { __typename?: 'AnnotationChartLayer', annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+  { __typename?: 'AnnotationChartLayer', lens: (
+    { __typename?: 'AnnotationLens' }
+    & LayerLens_AnnotationLens_Fragment
+  ), clip: Array<(
+    { __typename?: 'Window' }
+    & LensWindowFragment
+  )>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
         { __typename?: 'Axis' }
         & AxisFragment
       )> } } }
@@ -10318,11 +10865,11 @@ export type ListChartFragment = { __typename?: 'Chart', descriptors: any, id: st
 
 type ChartLayerCandidate_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string };
 
+type ChartLayerCandidate_AnnotationLens_Fragment = { __typename: 'AnnotationLens' };
+
 type ChartLayerCandidate_ArrayDataset_Fragment = { __typename: 'ArrayDataset' };
 
-type ChartLayerCandidate_DataArray_Fragment = { __typename: 'DataArray' };
-
-type ChartLayerCandidate_Lens_Fragment = { __typename: 'Lens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
+type ChartLayerCandidate_ArrayLens_Fragment = { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
   )>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
@@ -10330,65 +10877,118 @@ type ChartLayerCandidate_Lens_Fragment = { __typename: 'Lens', id: string, shape
       & AxisFragment
     )> } | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
 
+type ChartLayerCandidate_DataArray_Fragment = { __typename: 'DataArray' };
+
 type ChartLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection' };
+
+type ChartLayerCandidate_MeshLens_Fragment = { __typename: 'MeshLens' };
 
 type ChartLayerCandidate_NetworkCollection_Fragment = { __typename: 'NetworkCollection' };
 
+type ChartLayerCandidate_NetworkLens_Fragment = { __typename: 'NetworkLens' };
+
 type ChartLayerCandidate_SparseDataset_Fragment = { __typename: 'SparseDataset' };
+
+type ChartLayerCandidate_SparseLens_Fragment = { __typename: 'SparseLens' };
 
 type ChartLayerCandidate_TableDataset_Fragment = { __typename: 'TableDataset', id: string, name: string, columns: Array<(
     { __typename?: 'Column' }
     & TableDatasetColumnFragment
   )> };
 
-export type ChartLayerCandidateFragment = ChartLayerCandidate_AnnotationCollection_Fragment | ChartLayerCandidate_ArrayDataset_Fragment | ChartLayerCandidate_DataArray_Fragment | ChartLayerCandidate_Lens_Fragment | ChartLayerCandidate_MeshCollection_Fragment | ChartLayerCandidate_NetworkCollection_Fragment | ChartLayerCandidate_SparseDataset_Fragment | ChartLayerCandidate_TableDataset_Fragment;
+type ChartLayerCandidate_TableLens_Fragment = { __typename: 'TableLens' };
+
+export type ChartLayerCandidateFragment = ChartLayerCandidate_AnnotationCollection_Fragment | ChartLayerCandidate_AnnotationLens_Fragment | ChartLayerCandidate_ArrayDataset_Fragment | ChartLayerCandidate_ArrayLens_Fragment | ChartLayerCandidate_DataArray_Fragment | ChartLayerCandidate_MeshCollection_Fragment | ChartLayerCandidate_MeshLens_Fragment | ChartLayerCandidate_NetworkCollection_Fragment | ChartLayerCandidate_NetworkLens_Fragment | ChartLayerCandidate_SparseDataset_Fragment | ChartLayerCandidate_SparseLens_Fragment | ChartLayerCandidate_TableDataset_Fragment | ChartLayerCandidate_TableLens_Fragment;
 
 export type AxisFragment = { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null };
 
-export type ListCoordinateSystemFragment = { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset' } | { __typename: 'DataArray' } | { __typename: 'Lens' } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> };
+export type ListCoordinateSystemFragment = { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> };
 
 type Resident_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string };
 
+type Resident_AnnotationLens_Fragment = (
+  { __typename: 'AnnotationLens', id: string }
+  & LensSubject_AnnotationLens_Fragment
+);
+
 type Resident_ArrayDataset_Fragment = { __typename: 'ArrayDataset', id: string, name: string };
+
+type Resident_ArrayLens_Fragment = (
+  { __typename: 'ArrayLens', id: string }
+  & LensSubject_ArrayLens_Fragment
+);
 
 type Resident_DataArray_Fragment = { __typename: 'DataArray', id: string, level: number };
 
-type Resident_Lens_Fragment = { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } };
-
 type Resident_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, version: string };
+
+type Resident_MeshLens_Fragment = (
+  { __typename: 'MeshLens', id: string }
+  & LensSubject_MeshLens_Fragment
+);
 
 type Resident_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, version: string };
 
+type Resident_NetworkLens_Fragment = (
+  { __typename: 'NetworkLens', id: string }
+  & LensSubject_NetworkLens_Fragment
+);
+
 type Resident_SparseDataset_Fragment = { __typename: 'SparseDataset', id: string, name: string };
+
+type Resident_SparseLens_Fragment = (
+  { __typename: 'SparseLens', id: string }
+  & LensSubject_SparseLens_Fragment
+);
 
 type Resident_TableDataset_Fragment = { __typename: 'TableDataset', id: string, name: string };
 
-export type ResidentFragment = Resident_AnnotationCollection_Fragment | Resident_ArrayDataset_Fragment | Resident_DataArray_Fragment | Resident_Lens_Fragment | Resident_MeshCollection_Fragment | Resident_NetworkCollection_Fragment | Resident_SparseDataset_Fragment | Resident_TableDataset_Fragment;
+type Resident_TableLens_Fragment = (
+  { __typename: 'TableLens', id: string }
+  & LensSubject_TableLens_Fragment
+);
+
+export type ResidentFragment = Resident_AnnotationCollection_Fragment | Resident_AnnotationLens_Fragment | Resident_ArrayDataset_Fragment | Resident_ArrayLens_Fragment | Resident_DataArray_Fragment | Resident_MeshCollection_Fragment | Resident_MeshLens_Fragment | Resident_NetworkCollection_Fragment | Resident_NetworkLens_Fragment | Resident_SparseDataset_Fragment | Resident_SparseLens_Fragment | Resident_TableDataset_Fragment | Resident_TableLens_Fragment;
 
 export type CoordinateSystemFragment = { __typename?: 'CoordinateSystem', id: string, name: string, epoch?: any | null, residents: Array<(
     { __typename?: 'AnnotationCollection' }
     & Resident_AnnotationCollection_Fragment
   ) | (
+    { __typename?: 'AnnotationLens' }
+    & Resident_AnnotationLens_Fragment
+  ) | (
     { __typename?: 'ArrayDataset' }
     & Resident_ArrayDataset_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & Resident_ArrayLens_Fragment
   ) | (
     { __typename?: 'DataArray' }
     & Resident_DataArray_Fragment
   ) | (
-    { __typename?: 'Lens' }
-    & Resident_Lens_Fragment
-  ) | (
     { __typename?: 'MeshCollection' }
     & Resident_MeshCollection_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & Resident_MeshLens_Fragment
   ) | (
     { __typename?: 'NetworkCollection' }
     & Resident_NetworkCollection_Fragment
   ) | (
+    { __typename?: 'NetworkLens' }
+    & Resident_NetworkLens_Fragment
+  ) | (
     { __typename?: 'SparseDataset' }
     & Resident_SparseDataset_Fragment
   ) | (
+    { __typename?: 'SparseLens' }
+    & Resident_SparseLens_Fragment
+  ) | (
     { __typename?: 'TableDataset' }
     & Resident_TableDataset_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & Resident_TableLens_Fragment
   )>, axes: Array<(
     { __typename?: 'Axis' }
     & AxisFragment
@@ -10804,14 +11404,23 @@ export type LayerRenderGraphFragment = { __typename?: 'LayerRenderGraph', root: 
 type SceneLayer_AnnotationLayer_Fragment = { __typename: 'AnnotationLayer', id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, annotationCollection: (
     { __typename?: 'AnnotationCollection' }
     & AnnotationCollectionFragment
-  ), pathToWorld?: Array<(
+  ), lens: (
+    { __typename?: 'AnnotationLens' }
+    & LayerLens_AnnotationLens_Fragment
+  ), clip: Array<(
+    { __typename?: 'Window' }
+    & LensWindowFragment
+  )>, pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
 
 type SceneLayer_ImageLayer_Fragment = { __typename: 'ImageLayer', id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & SceneLensFragment
+  ), renderAxes: (
+    { __typename?: 'RenderAxes' }
+    & LayerRenderAxesFragment
   ), renderGraph?: (
     { __typename?: 'LayerRenderGraph' }
     & LayerRenderGraphFragment
@@ -10821,16 +11430,22 @@ type SceneLayer_ImageLayer_Fragment = { __typename: 'ImageLayer', id: string, ki
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
 
 type SceneLayer_IntensityLayer_Fragment = { __typename: 'IntensityLayer', intensityAxis?: string | null, intensityIndex: number, color?: Array<number> | null, climMin?: number | null, climMax?: number | null, gamma?: number | null, projectionMode?: ProjectionMode | null, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, intensityColormap: ColorMap, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & SceneLensFragment
+  ), renderAxes: (
+    { __typename?: 'RenderAxes' }
+    & LayerRenderAxesFragment
   ), pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
 
 type SceneLayer_LabelLayer_Fragment = { __typename: 'LabelLayer', id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & SceneLensFragment
+  ), renderAxes: (
+    { __typename?: 'RenderAxes' }
+    & LayerRenderAxesFragment
   ), labelRender?: (
     { __typename?: 'LabelRender' }
     & LabelRenderFragment
@@ -10842,7 +11457,13 @@ type SceneLayer_LabelLayer_Fragment = { __typename: 'LabelLayer', id: string, ki
 type SceneLayer_MeshLayer_Fragment = { __typename: 'MeshLayer', materialColor?: Array<number> | null, wireframe: boolean, shading: MeshShading, activeColorBy?: number | null, activeFilterBys: Array<number>, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, collection?: (
     { __typename?: 'MeshCollection' }
     & MeshCollectionFragment
-  ) | null, colorBys: Array<(
+  ) | null, lens: (
+    { __typename?: 'MeshLens' }
+    & LayerLens_MeshLens_Fragment
+  ), clip: Array<(
+    { __typename?: 'Window' }
+    & LensWindowFragment
+  )>, colorBys: Array<(
     { __typename?: 'MeshColorBy' }
     & MeshColorByFragment
   )>, filterBys: Array<(
@@ -10856,7 +11477,13 @@ type SceneLayer_MeshLayer_Fragment = { __typename: 'MeshLayer', materialColor?: 
 type SceneLayer_NetworkLayer_Fragment = { __typename: 'NetworkLayer', materialColor?: Array<number> | null, lineWidth?: number | null, nodeSizeColumn?: string | null, edgeWidthColumn?: string | null, directed: boolean, showNodes: boolean, maxLevel?: number | null, activeColorBy?: number | null, activeFilterBys: Array<number>, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, collection?: (
     { __typename?: 'NetworkCollection' }
     & NetworkCollectionFragment
-  ) | null, colorBys: Array<(
+  ) | null, lens: (
+    { __typename?: 'NetworkLens' }
+    & LayerLens_NetworkLens_Fragment
+  ), clip: Array<(
+    { __typename?: 'Window' }
+    & LensWindowFragment
+  )>, colorBys: Array<(
     { __typename?: 'NetworkColorBy' }
     & NetworkColorByFragment
   )>, filterBys: Array<(
@@ -10868,8 +11495,11 @@ type SceneLayer_NetworkLayer_Fragment = { __typename: 'NetworkLayer', materialCo
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
 
 type SceneLayer_PhasorLayer_Fragment = { __typename: 'PhasorLayer', id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & SceneLensFragment
+  ), renderAxes: (
+    { __typename?: 'RenderAxes' }
+    & LayerRenderAxesFragment
   ), phasorRender?: (
     { __typename?: 'PhasorRender' }
     & PhasorRenderFragment
@@ -10881,7 +11511,13 @@ type SceneLayer_PhasorLayer_Fragment = { __typename: 'PhasorLayer', id: string, 
 type SceneLayer_PointLayer_Fragment = { __typename: 'PointLayer', xColumn?: string | null, yColumn?: string | null, zColumn?: string | null, tColumn?: string | null, sizeColumn?: string | null, idColumn?: string | null, pointSize?: number | null, colormap?: ColorMap | null, colorColumn?: string | null, activeColorBy?: number | null, activeFilterBys: Array<number>, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
     { __typename?: 'TableDataset' }
     & TableDatasetFragment
-  ), colorBys: Array<(
+  ), lens: (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  ), windowFilters: Array<(
+    { __typename?: 'LabelFilterBy' }
+    & LabelFilterByFragment
+  )>, colorBys: Array<(
     { __typename?: 'LabelColorBy' }
     & LabelColorByFragment
   )>, filterBys: Array<(
@@ -10893,8 +11529,11 @@ type SceneLayer_PointLayer_Fragment = { __typename: 'PointLayer', xColumn?: stri
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
 
 type SceneLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', intensityAxis?: string | null, redIndex: number, greenIndex: number, blueIndex: number, climMin?: number | null, climMax?: number | null, whiteBalance?: Array<number> | null, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & SceneLensFragment
+  ), renderAxes: (
+    { __typename?: 'RenderAxes' }
+    & LayerRenderAxesFragment
   ), pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
@@ -10903,14 +11542,23 @@ type SceneLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', intensityAxis?: st
 type SceneLayer_TrackLayer_Fragment = { __typename: 'TrackLayer', trackIdColumn?: string | null, xColumn?: string | null, yColumn?: string | null, zColumn?: string | null, tColumn?: string | null, colorByColumn?: string | null, lineWidth?: number | null, colormap?: ColorMap | null, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
     { __typename?: 'TableDataset' }
     & TableDatasetFragment
-  ), pathToWorld?: Array<(
+  ), lens: (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  ), windowFilters: Array<(
+    { __typename?: 'LabelFilterBy' }
+    & LabelFilterByFragment
+  )>, pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
 
 type SceneLayer_VectorLayer_Fragment = { __typename: 'VectorLayer', vectorAxis: string, glyph: VectorGlyph, glyphStride?: number | null, glyphScale?: number | null, color?: Array<number> | null, climMin?: number | null, climMax?: number | null, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, vectorColormap: ColorMap, lens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & SceneLensFragment
+  ), renderAxes: (
+    { __typename?: 'RenderAxes' }
+    & LayerRenderAxesFragment
   ), pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
@@ -10918,11 +11566,13 @@ type SceneLayer_VectorLayer_Fragment = { __typename: 'VectorLayer', vectorAxis: 
 
 export type SceneLayerFragment = SceneLayer_AnnotationLayer_Fragment | SceneLayer_ImageLayer_Fragment | SceneLayer_IntensityLayer_Fragment | SceneLayer_LabelLayer_Fragment | SceneLayer_MeshLayer_Fragment | SceneLayer_NetworkLayer_Fragment | SceneLayer_PhasorLayer_Fragment | SceneLayer_PointLayer_Fragment | SceneLayer_RgbLayer_Fragment | SceneLayer_TrackLayer_Fragment | SceneLayer_VectorLayer_Fragment;
 
+export type LayerRenderAxesFragment = { __typename?: 'RenderAxes', x: string, y: string, z?: string | null, t?: string | null, intensity?: string | null, phasor?: string | null, vector?: string | null };
+
 export type DimSliceFragment = { __typename?: 'Slice', axis: string, start?: number | null, stop?: number | null, step?: number | null };
 
 export type PhasorContextFragment = { __typename?: 'PhasorContext', axis: string, axisType: AxisType, bins: number, binWidth?: GenericQuantity | null, harmonic: number, laserFrequency?: Frequency | null, window?: GenericQuantity | null, calibration?: { __typename?: 'PhasorCalibration', id: string, harmonic: number, phaseOffset?: number | null, modulationFactor?: number | null, reference?: string | null } | null, phasorHistogram?: { __typename?: 'PhasorHistogram', id: string, bins: number, counts: Array<number>, gMin: number, gMax: number, sMin: number, sMax: number, profile: Array<number>, total?: number | null, calibrated: boolean } | null };
 
-export type SceneLensFragment = { __typename?: 'Lens', descriptors: any, id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, renderAxes: { __typename?: 'RenderAxes', x: string, y: string, z?: string | null, t?: string | null, intensity?: string | null, phasor?: string | null }, phasor?: (
+export type SceneLensFragment = { __typename: 'ArrayLens', descriptors: any, id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, phasor?: (
     { __typename?: 'PhasorContext' }
     & PhasorContextFragment
   ) | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
@@ -10996,10 +11646,80 @@ export type SceneLensFragment = { __typename?: 'Lens', descriptors: any, id: str
         & LightpathGraphFragment
       ) } | null }> };
 
-export type DetailLensFragment = { __typename?: 'Lens', descriptors: any, id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, slices: Array<(
+export type LensWindowFragment = { __typename?: 'Window', axis: string, min?: number | null, max?: number | null };
+
+type LensCore_AnnotationLens_Fragment = { __typename: 'AnnotationLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: (
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  ) | null };
+
+type LensCore_ArrayLens_Fragment = { __typename: 'ArrayLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: (
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  ) | null };
+
+type LensCore_MeshLens_Fragment = { __typename: 'MeshLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: (
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  ) | null };
+
+type LensCore_NetworkLens_Fragment = { __typename: 'NetworkLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: (
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  ) | null };
+
+type LensCore_SparseLens_Fragment = { __typename: 'SparseLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: (
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  ) | null };
+
+type LensCore_TableLens_Fragment = { __typename: 'TableLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: (
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  ) | null };
+
+export type LensCoreFragment = LensCore_AnnotationLens_Fragment | LensCore_ArrayLens_Fragment | LensCore_MeshLens_Fragment | LensCore_NetworkLens_Fragment | LensCore_SparseLens_Fragment | LensCore_TableLens_Fragment;
+
+type LensSubject_AnnotationLens_Fragment = { __typename: 'AnnotationLens', windows: Array<(
+    { __typename?: 'Window' }
+    & LensWindowFragment
+  )>, annotationCollection: { __typename?: 'AnnotationCollection', id: string, name: string } };
+
+type LensSubject_ArrayLens_Fragment = { __typename: 'ArrayLens', shape: Array<number>, axisNames: Array<string>, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
-  )>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
+  )>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
+
+type LensSubject_MeshLens_Fragment = { __typename: 'MeshLens', windows: Array<(
+    { __typename?: 'Window' }
+    & LensWindowFragment
+  )>, meshCollection: { __typename?: 'MeshCollection', id: string, version: string } };
+
+type LensSubject_NetworkLens_Fragment = { __typename: 'NetworkLens', windows: Array<(
+    { __typename?: 'Window' }
+    & LensWindowFragment
+  )>, networkCollection: { __typename?: 'NetworkCollection', id: string, version: string } };
+
+type LensSubject_SparseLens_Fragment = { __typename: 'SparseLens', windows: Array<(
+    { __typename?: 'Window' }
+    & LensWindowFragment
+  )>, sparseDataset: { __typename?: 'SparseDataset', id: string, name: string } };
+
+type LensSubject_TableLens_Fragment = { __typename: 'TableLens', windows: Array<(
+    { __typename?: 'Window' }
+    & LensWindowFragment
+  )>, tableDataset: { __typename?: 'TableDataset', id: string, name: string } };
+
+export type LensSubjectFragment = LensSubject_AnnotationLens_Fragment | LensSubject_ArrayLens_Fragment | LensSubject_MeshLens_Fragment | LensSubject_NetworkLens_Fragment | LensSubject_SparseLens_Fragment | LensSubject_TableLens_Fragment;
+
+type DetailLens_AnnotationLens_Fragment = (
+  { __typename?: 'AnnotationLens' }
+  & LensCore_AnnotationLens_Fragment
+  & LensSubject_AnnotationLens_Fragment
+);
+
+type DetailLens_ArrayLens_Fragment = (
+  { __typename?: 'ArrayLens', toParent?: (
     { __typename?: 'AffineTransformation' }
     & Transformation_AffineTransformation_Fragment
   ) | (
@@ -11029,24 +11749,115 @@ export type DetailLensFragment = { __typename?: 'Lens', descriptors: any, id: st
   ) | (
     { __typename?: 'UnmappableTransformation' }
     & Transformation_UnmappableTransformation_Fragment
-  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, fullLens?: { __typename?: 'Lens', id: string } | null }, scenes: Array<(
+  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, fullLens?: { __typename?: 'ArrayLens', id: string } | null }, scenes: Array<(
     { __typename?: 'Scene' }
     & ListSceneFragment
-  )>, defaultScene?: (
-    { __typename?: 'Scene' }
-    & ListSceneFragment
-  ) | null, derivedDatasets: Array<(
+  )>, derivedDatasets: Array<(
     { __typename?: 'ArrayDataset' }
     & DerivedDatasetFragment
-  )> };
+  )> }
+  & LensCore_ArrayLens_Fragment
+  & LensSubject_ArrayLens_Fragment
+);
 
-export type ListLensFragment = { __typename?: 'Lens', id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, slices: Array<(
-    { __typename?: 'Slice' }
-    & DimSliceFragment
-  )>, latestSnapshot?: (
+type DetailLens_MeshLens_Fragment = (
+  { __typename?: 'MeshLens' }
+  & LensCore_MeshLens_Fragment
+  & LensSubject_MeshLens_Fragment
+);
+
+type DetailLens_NetworkLens_Fragment = (
+  { __typename?: 'NetworkLens' }
+  & LensCore_NetworkLens_Fragment
+  & LensSubject_NetworkLens_Fragment
+);
+
+type DetailLens_SparseLens_Fragment = (
+  { __typename?: 'SparseLens' }
+  & LensCore_SparseLens_Fragment
+  & LensSubject_SparseLens_Fragment
+);
+
+type DetailLens_TableLens_Fragment = (
+  { __typename?: 'TableLens' }
+  & LensCore_TableLens_Fragment
+  & LensSubject_TableLens_Fragment
+);
+
+export type DetailLensFragment = DetailLens_AnnotationLens_Fragment | DetailLens_ArrayLens_Fragment | DetailLens_MeshLens_Fragment | DetailLens_NetworkLens_Fragment | DetailLens_SparseLens_Fragment | DetailLens_TableLens_Fragment;
+
+type ListLens_AnnotationLens_Fragment = (
+  { __typename?: 'AnnotationLens' }
+  & LensCore_AnnotationLens_Fragment
+  & LensSubject_AnnotationLens_Fragment
+);
+
+type ListLens_ArrayLens_Fragment = (
+  { __typename?: 'ArrayLens', latestSnapshot?: (
     { __typename?: 'SceneSnapshot' }
     & SceneSnapshotFragment
-  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number> } };
+  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, spec: Array<ArrayDatasetSpec>, multiscale: boolean } }
+  & LensCore_ArrayLens_Fragment
+  & LensSubject_ArrayLens_Fragment
+);
+
+type ListLens_MeshLens_Fragment = (
+  { __typename?: 'MeshLens' }
+  & LensCore_MeshLens_Fragment
+  & LensSubject_MeshLens_Fragment
+);
+
+type ListLens_NetworkLens_Fragment = (
+  { __typename?: 'NetworkLens' }
+  & LensCore_NetworkLens_Fragment
+  & LensSubject_NetworkLens_Fragment
+);
+
+type ListLens_SparseLens_Fragment = (
+  { __typename?: 'SparseLens' }
+  & LensCore_SparseLens_Fragment
+  & LensSubject_SparseLens_Fragment
+);
+
+type ListLens_TableLens_Fragment = (
+  { __typename?: 'TableLens' }
+  & LensCore_TableLens_Fragment
+  & LensSubject_TableLens_Fragment
+);
+
+export type ListLensFragment = ListLens_AnnotationLens_Fragment | ListLens_ArrayLens_Fragment | ListLens_MeshLens_Fragment | ListLens_NetworkLens_Fragment | ListLens_SparseLens_Fragment | ListLens_TableLens_Fragment;
+
+type LayerLens_AnnotationLens_Fragment = (
+  { __typename?: 'AnnotationLens', id: string, name?: string | null }
+  & LensSubject_AnnotationLens_Fragment
+);
+
+type LayerLens_ArrayLens_Fragment = (
+  { __typename?: 'ArrayLens', id: string, name?: string | null }
+  & LensSubject_ArrayLens_Fragment
+);
+
+type LayerLens_MeshLens_Fragment = (
+  { __typename?: 'MeshLens', id: string, name?: string | null }
+  & LensSubject_MeshLens_Fragment
+);
+
+type LayerLens_NetworkLens_Fragment = (
+  { __typename?: 'NetworkLens', id: string, name?: string | null }
+  & LensSubject_NetworkLens_Fragment
+);
+
+type LayerLens_SparseLens_Fragment = (
+  { __typename?: 'SparseLens', id: string, name?: string | null }
+  & LensSubject_SparseLens_Fragment
+);
+
+type LayerLens_TableLens_Fragment = (
+  { __typename?: 'TableLens', id: string, name?: string | null }
+  & LensSubject_TableLens_Fragment
+);
+
+export type LayerLensFragment = LayerLens_AnnotationLens_Fragment | LayerLens_ArrayLens_Fragment | LayerLens_MeshLens_Fragment | LayerLens_NetworkLens_Fragment | LayerLens_SparseLens_Fragment | LayerLens_TableLens_Fragment;
 
 type OpticalElement_ApertureElement_Fragment = { __typename?: 'ApertureElement', id: string, label: string, kind: ElementKind, manufacturer?: string | null, model?: string | null, pose?: { __typename?: 'Pose3D', position?: { __typename?: 'Vec3', x?: number | null, y?: number | null, z?: number | null } | null, orientation?: { __typename?: 'Euler', rx?: number | null, ry?: number | null, rz?: number | null } | null } | null, ports: Array<{ __typename?: 'LightPort', id: string, name: string, role: PortRole, channel: ChannelKind, spectrum?: (
       { __typename?: 'Spectrum' }
@@ -12179,7 +12990,7 @@ export type CreateLensMutationVariables = Exact<{
 
 
 export type CreateLensMutation = { __typename?: 'Mutation', createLens: (
-    { __typename?: 'Lens' }
+    { __typename?: 'ArrayLens' }
     & SceneLensFragment
   ) };
 
@@ -12189,8 +13000,8 @@ export type CreateListLensMutationVariables = Exact<{
 
 
 export type CreateListLensMutation = { __typename?: 'Mutation', createLens: (
-    { __typename?: 'Lens' }
-    & ListLensFragment
+    { __typename?: 'ArrayLens' }
+    & ListLens_ArrayLens_Fragment
   ) };
 
 export type DeleteLensMutationVariables = Exact<{
@@ -12206,7 +13017,57 @@ export type UpdateLensMutationVariables = Exact<{
 }>;
 
 
-export type UpdateLensMutation = { __typename?: 'Mutation', updateLens: { __typename?: 'Lens', id: string, name?: string | null } };
+export type UpdateLensMutation = { __typename?: 'Mutation', updateLens: { __typename?: 'AnnotationLens', id: string, name?: string | null } | { __typename?: 'ArrayLens', id: string, name?: string | null } | { __typename?: 'MeshLens', id: string, name?: string | null } | { __typename?: 'NetworkLens', id: string, name?: string | null } | { __typename?: 'SparseLens', id: string, name?: string | null } | { __typename?: 'TableLens', id: string, name?: string | null } };
+
+export type CreateTableLensMutationVariables = Exact<{
+  input: CreateTableLensInput;
+}>;
+
+
+export type CreateTableLensMutation = { __typename?: 'Mutation', createTableLens: (
+    { __typename?: 'TableLens' }
+    & ListLens_TableLens_Fragment
+  ) };
+
+export type CreateSparseLensMutationVariables = Exact<{
+  input: CreateSparseLensInput;
+}>;
+
+
+export type CreateSparseLensMutation = { __typename?: 'Mutation', createSparseLens: (
+    { __typename?: 'SparseLens' }
+    & ListLens_SparseLens_Fragment
+  ) };
+
+export type CreateMeshLensMutationVariables = Exact<{
+  input: CreateMeshLensInput;
+}>;
+
+
+export type CreateMeshLensMutation = { __typename?: 'Mutation', createMeshLens: (
+    { __typename?: 'MeshLens' }
+    & ListLens_MeshLens_Fragment
+  ) };
+
+export type CreateNetworkLensMutationVariables = Exact<{
+  input: CreateNetworkLensInput;
+}>;
+
+
+export type CreateNetworkLensMutation = { __typename?: 'Mutation', createNetworkLens: (
+    { __typename?: 'NetworkLens' }
+    & ListLens_NetworkLens_Fragment
+  ) };
+
+export type CreateAnnotationLensMutationVariables = Exact<{
+  input: CreateAnnotationLensInput;
+}>;
+
+
+export type CreateAnnotationLensMutation = { __typename?: 'Mutation', createAnnotationLens: (
+    { __typename?: 'AnnotationLens' }
+    & ListLens_AnnotationLens_Fragment
+  ) };
 
 export type CreateMeshCollectionMutationVariables = Exact<{
   input: CreateMeshCollectionInput;
@@ -12286,16 +13147,31 @@ export type SetLensDefaultSceneMutationVariables = Exact<{
 }>;
 
 
-export type SetLensDefaultSceneMutation = { __typename?: 'Mutation', setLensDefaultScene: { __typename?: 'Lens', id: string, defaultScene?: (
+export type SetLensDefaultSceneMutation = { __typename?: 'Mutation', setLensDefaultScene: { __typename?: 'AnnotationLens', id: string, defaultScene?: (
       { __typename?: 'Scene' }
       & ListSceneFragment
-    ) | null, latestSnapshot?: (
+    ) | null } | { __typename?: 'ArrayLens', id: string, latestSnapshot?: (
       { __typename?: 'SceneSnapshot' }
       & SceneSnapshotFragment
     ) | null, dataset: { __typename?: 'ArrayDataset', id: string, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, latestSnapshot?: (
         { __typename?: 'SceneSnapshot' }
         & SceneSnapshotFragment
-      ) | null } } };
+      ) | null }, defaultScene?: (
+      { __typename?: 'Scene' }
+      & ListSceneFragment
+    ) | null } | { __typename?: 'MeshLens', id: string, defaultScene?: (
+      { __typename?: 'Scene' }
+      & ListSceneFragment
+    ) | null } | { __typename?: 'NetworkLens', id: string, defaultScene?: (
+      { __typename?: 'Scene' }
+      & ListSceneFragment
+    ) | null } | { __typename?: 'SparseLens', id: string, defaultScene?: (
+      { __typename?: 'Scene' }
+      & ListSceneFragment
+    ) | null } | { __typename?: 'TableLens', id: string, defaultScene?: (
+      { __typename?: 'Scene' }
+      & ListSceneFragment
+    ) | null } };
 
 export type CreateTransformationMutationVariables = Exact<{
   input: CreateTransformationInput;
@@ -12464,7 +13340,7 @@ export type AddLayerLensCapabilitiesQueryVariables = Exact<{
 }>;
 
 
-export type AddLayerLensCapabilitiesQuery = { __typename?: 'Query', drawable: Array<{ __typename?: 'Lens', id: string }>, labels: Array<{ __typename?: 'Lens', id: string }> };
+export type AddLayerLensCapabilitiesQuery = { __typename?: 'Query', drawable: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, labels: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, phasor: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, vector: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }> };
 
 export type AddLayerLineageQueryVariables = Exact<{
   coordinateSystem: Scalars['ID']['input'];
@@ -12476,75 +13352,120 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
       { __typename?: 'AnnotationCollection' }
       & AddLayerLineageNode_AnnotationCollection_Fragment
     ) | (
+      { __typename?: 'AnnotationLens' }
+      & AddLayerLineageNode_AnnotationLens_Fragment
+    ) | (
       { __typename?: 'ArrayDataset' }
       & AddLayerLineageNode_ArrayDataset_Fragment
+    ) | (
+      { __typename?: 'ArrayLens' }
+      & AddLayerLineageNode_ArrayLens_Fragment
     ) | (
       { __typename?: 'DataArray' }
       & AddLayerLineageNode_DataArray_Fragment
     ) | (
-      { __typename?: 'Lens' }
-      & AddLayerLineageNode_Lens_Fragment
-    ) | (
       { __typename?: 'MeshCollection' }
       & AddLayerLineageNode_MeshCollection_Fragment
+    ) | (
+      { __typename?: 'MeshLens' }
+      & AddLayerLineageNode_MeshLens_Fragment
     ) | (
       { __typename?: 'NetworkCollection' }
       & AddLayerLineageNode_NetworkCollection_Fragment
     ) | (
+      { __typename?: 'NetworkLens' }
+      & AddLayerLineageNode_NetworkLens_Fragment
+    ) | (
       { __typename?: 'SparseDataset' }
       & AddLayerLineageNode_SparseDataset_Fragment
     ) | (
+      { __typename?: 'SparseLens' }
+      & AddLayerLineageNode_SparseLens_Fragment
+    ) | (
       { __typename?: 'TableDataset' }
       & AddLayerLineageNode_TableDataset_Fragment
+    ) | (
+      { __typename?: 'TableLens' }
+      & AddLayerLineageNode_TableLens_Fragment
     )>, edges: Array<(
       { __typename?: 'AffineTransformation', input?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null, output?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null }
       & DerivationEdge_AffineTransformation_Fragment
     ) | (
@@ -12552,50 +13473,80 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null, output?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null }
       & DerivationEdge_ByDimensionTransformation_Fragment
     ) | (
@@ -12603,50 +13554,80 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null, output?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null }
       & DerivationEdge_FieldTransformation_Fragment
     ) | (
@@ -12654,50 +13635,80 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null, output?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null }
       & DerivationEdge_IdentityTransformation_Fragment
     ) | (
@@ -12705,50 +13716,80 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null, output?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null }
       & DerivationEdge_MapAxisTransformation_Fragment
     ) | (
@@ -12756,50 +13797,80 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null, output?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null }
       & DerivationEdge_RotationTransformation_Fragment
     ) | (
@@ -12807,50 +13878,80 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null, output?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null }
       & DerivationEdge_ScaleTransformation_Fragment
     ) | (
@@ -12858,50 +13959,80 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null, output?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null }
       & DerivationEdge_SequenceTransformation_Fragment
     ) | (
@@ -12909,50 +14040,80 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null, output?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null }
       & DerivationEdge_TranslationTransformation_Fragment
     ) | (
@@ -12960,53 +14121,180 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null, output?: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & AddLayerSpaceOwner_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & AddLayerSpaceOwner_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & AddLayerSpaceOwner_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & AddLayerSpaceOwner_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & AddLayerSpaceOwner_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & AddLayerSpaceOwner_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & AddLayerSpaceOwner_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & AddLayerSpaceOwner_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & AddLayerSpaceOwner_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & AddLayerSpaceOwner_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & AddLayerSpaceOwner_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & AddLayerSpaceOwner_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & AddLayerSpaceOwner_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & AddLayerSpaceOwner_TableLens_Fragment
         )> } | null }
       & DerivationEdge_UnmappableTransformation_Fragment
     )> } };
+
+export type AddLayerWindowLensesQueryVariables = Exact<{
+  space: Scalars['ID']['input'];
+}>;
+
+
+export type AddLayerWindowLensesQuery = { __typename?: 'Query', points: Array<(
+    { __typename?: 'AnnotationLens' }
+    & LayerLens_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & LayerLens_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & LayerLens_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & LayerLens_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & LayerLens_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  )>, tracks: Array<(
+    { __typename?: 'AnnotationLens' }
+    & LayerLens_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & LayerLens_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & LayerLens_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & LayerLens_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & LayerLens_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  )>, meshes: Array<(
+    { __typename?: 'AnnotationLens' }
+    & LayerLens_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & LayerLens_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & LayerLens_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & LayerLens_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & LayerLens_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  )>, networks: Array<(
+    { __typename?: 'AnnotationLens' }
+    & LayerLens_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & LayerLens_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & LayerLens_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & LayerLens_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & LayerLens_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  )>, annotations: Array<(
+    { __typename?: 'AnnotationLens' }
+    & LayerLens_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & LayerLens_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & LayerLens_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & LayerLens_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & LayerLens_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & LayerLens_TableLens_Fragment
+  )> };
 
 export type GetAnnotationQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -13082,11 +14370,11 @@ export type GetArrayDatasetQuery = { __typename?: 'Query', arrayDataset: (
       { __typename?: 'Scene' }
       & ListSceneFragment
     ) | null, fullLens?: (
-      { __typename?: 'Lens' }
-      & ListLensFragment
+      { __typename?: 'ArrayLens' }
+      & ListLens_ArrayLens_Fragment
     ) | null, lenses: Array<(
-      { __typename?: 'Lens' }
-      & ListLensFragment
+      { __typename?: 'ArrayLens' }
+      & ListLens_ArrayLens_Fragment
     )> }
     & ArrayDatasetFragment
   ) };
@@ -13127,13 +14415,13 @@ export type GetArrayDatasetDerivedQuery = { __typename?: 'Query', arrayDataset: 
     )>, exports: Array<(
       { __typename?: 'FileLink' }
       & FileLinkFragment
-    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null }>, derivedDatasets: Array<(
+    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null }>, derivedDatasets: Array<(
       { __typename?: 'ArrayDataset' }
       & DerivedDatasetFragment
-    )> }, lenses: Array<{ __typename?: 'Lens', id: string, name?: string | null, axisNames: Array<string>, shape: Array<number>, slices: Array<(
+    )> }, lenses: Array<{ __typename: 'AnnotationLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename: 'ArrayLens', axisNames: Array<string>, shape: Array<number>, id: string, name?: string | null, slices: Array<(
       { __typename?: 'Slice' }
       & DimSliceFragment
-    )>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null }> };
+    )>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename: 'MeshLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename: 'NetworkLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename: 'SparseLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename: 'TableLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null }> };
 
 export type GetArrayDatasetIntrinsicSystemQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -13194,54 +14482,84 @@ export type ChartAddLayerCandidatesQueryVariables = Exact<{
 export type ChartAddLayerCandidatesQuery = { __typename?: 'Query', chart: { __typename?: 'Chart', id: string, name: string, axis: (
       { __typename?: 'Axis' }
       & AxisFragment
-    ), layers: Array<{ __typename: 'AnnotationChartLayer', id: string, annotationCollection: { __typename?: 'AnnotationCollection', id: string } } | { __typename: 'SeriesChartLayer', valueColumn: string, id: string, tableDataset: { __typename?: 'TableDataset', id: string } } | { __typename: 'TraceChartLayer', id: string, lens: { __typename?: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string } } }>, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<(
+    ), layers: Array<{ __typename: 'AnnotationChartLayer', id: string, annotationCollection: { __typename?: 'AnnotationCollection', id: string } } | { __typename: 'SeriesChartLayer', valueColumn: string, id: string, tableDataset: { __typename?: 'TableDataset', id: string } } | { __typename: 'TraceChartLayer', id: string, lens: { __typename?: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string } } }>, worldCoordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<(
         { __typename?: 'AnnotationCollection' }
         & ChartLayerCandidate_AnnotationCollection_Fragment
+      ) | (
+        { __typename?: 'AnnotationLens' }
+        & ChartLayerCandidate_AnnotationLens_Fragment
       ) | (
         { __typename?: 'ArrayDataset' }
         & ChartLayerCandidate_ArrayDataset_Fragment
       ) | (
+        { __typename?: 'ArrayLens' }
+        & ChartLayerCandidate_ArrayLens_Fragment
+      ) | (
         { __typename?: 'DataArray' }
         & ChartLayerCandidate_DataArray_Fragment
-      ) | (
-        { __typename?: 'Lens' }
-        & ChartLayerCandidate_Lens_Fragment
       ) | (
         { __typename?: 'MeshCollection' }
         & ChartLayerCandidate_MeshCollection_Fragment
       ) | (
+        { __typename?: 'MeshLens' }
+        & ChartLayerCandidate_MeshLens_Fragment
+      ) | (
         { __typename?: 'NetworkCollection' }
         & ChartLayerCandidate_NetworkCollection_Fragment
+      ) | (
+        { __typename?: 'NetworkLens' }
+        & ChartLayerCandidate_NetworkLens_Fragment
       ) | (
         { __typename?: 'SparseDataset' }
         & ChartLayerCandidate_SparseDataset_Fragment
       ) | (
+        { __typename?: 'SparseLens' }
+        & ChartLayerCandidate_SparseLens_Fragment
+      ) | (
         { __typename?: 'TableDataset' }
         & ChartLayerCandidate_TableDataset_Fragment
+      ) | (
+        { __typename?: 'TableLens' }
+        & ChartLayerCandidate_TableLens_Fragment
       )>, placedSystems: Array<{ __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<(
           { __typename?: 'AnnotationCollection' }
           & ChartLayerCandidate_AnnotationCollection_Fragment
         ) | (
+          { __typename?: 'AnnotationLens' }
+          & ChartLayerCandidate_AnnotationLens_Fragment
+        ) | (
           { __typename?: 'ArrayDataset' }
           & ChartLayerCandidate_ArrayDataset_Fragment
+        ) | (
+          { __typename?: 'ArrayLens' }
+          & ChartLayerCandidate_ArrayLens_Fragment
         ) | (
           { __typename?: 'DataArray' }
           & ChartLayerCandidate_DataArray_Fragment
         ) | (
-          { __typename?: 'Lens' }
-          & ChartLayerCandidate_Lens_Fragment
-        ) | (
           { __typename?: 'MeshCollection' }
           & ChartLayerCandidate_MeshCollection_Fragment
+        ) | (
+          { __typename?: 'MeshLens' }
+          & ChartLayerCandidate_MeshLens_Fragment
         ) | (
           { __typename?: 'NetworkCollection' }
           & ChartLayerCandidate_NetworkCollection_Fragment
         ) | (
+          { __typename?: 'NetworkLens' }
+          & ChartLayerCandidate_NetworkLens_Fragment
+        ) | (
           { __typename?: 'SparseDataset' }
           & ChartLayerCandidate_SparseDataset_Fragment
         ) | (
+          { __typename?: 'SparseLens' }
+          & ChartLayerCandidate_SparseLens_Fragment
+        ) | (
           { __typename?: 'TableDataset' }
           & ChartLayerCandidate_TableDataset_Fragment
+        ) | (
+          { __typename?: 'TableLens' }
+          & ChartLayerCandidate_TableLens_Fragment
         )> }> } } };
 
 export type ChildrenQueryVariables = Exact<{
@@ -13678,6 +14996,7 @@ export type GlobalSearchQueryVariables = Exact<{
   noArrayDatasets: Scalars['Boolean']['input'];
   noFiles: Scalars['Boolean']['input'];
   noFolders: Scalars['Boolean']['input'];
+  noLenses: Scalars['Boolean']['input'];
   pagination?: InputMaybe<OffsetPaginationInput>;
 }>;
 
@@ -13691,12 +15010,30 @@ export type GlobalSearchQuery = { __typename?: 'Query', arrayDatasets?: Array<(
   )>, folders?: Array<(
     { __typename?: 'Folder' }
     & ListFolderFragment
+  )>, lenses?: Array<(
+    { __typename?: 'AnnotationLens' }
+    & ListLens_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & ListLens_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & ListLens_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & ListLens_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & ListLens_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & ListLens_TableLens_Fragment
   )> };
 
 export type HomePageQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type HomePageQuery = { __typename?: 'Query', arrayDatasets: Array<(
+export type HomePageQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, arrayDatasets: Array<(
     { __typename?: 'ArrayDataset' }
     & ListArrayDatasetFragment
   )>, files: Array<(
@@ -13709,10 +15046,7 @@ export type PeerHomePageQueryVariables = Exact<{
 }>;
 
 
-export type PeerHomePageQuery = { __typename?: 'Query', arrayDatasets: Array<(
-    { __typename?: 'ArrayDataset' }
-    & ListArrayDatasetFragment
-  )>, files: Array<(
+export type PeerHomePageQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, files: Array<(
     { __typename?: 'File' }
     & ListFileFragment
   )> };
@@ -13736,17 +15070,32 @@ export type GetLensPhasorQueryVariables = Exact<{
 }>;
 
 
-export type GetLensPhasorQuery = { __typename?: 'Query', lens: { __typename?: 'Lens', id: string, phasor?: (
+export type GetLensPhasorQuery = { __typename?: 'Query', lens: { __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string, phasor?: (
       { __typename?: 'PhasorContext' }
       & PhasorContextFragment
-    ) | null } };
+    ) | null } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string } };
 
 export type GetLensAnchorsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetLensAnchorsQuery = { __typename?: 'Query', lens: { __typename?: 'Lens', id: string, activeAnchors: Array<(
+export type GetLensAnchorsQuery = { __typename?: 'Query', lens: { __typename?: 'AnnotationLens', id: string, activeAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & FullCoordinateAnchorFragment
+    )> } | { __typename?: 'ArrayLens', id: string, activeAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & FullCoordinateAnchorFragment
+    )> } | { __typename?: 'MeshLens', id: string, activeAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & FullCoordinateAnchorFragment
+    )> } | { __typename?: 'NetworkLens', id: string, activeAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & FullCoordinateAnchorFragment
+    )> } | { __typename?: 'SparseLens', id: string, activeAnchors: Array<(
+      { __typename?: 'CoordinateAnchor' }
+      & FullCoordinateAnchorFragment
+    )> } | { __typename?: 'TableLens', id: string, activeAnchors: Array<(
       { __typename?: 'CoordinateAnchor' }
       & FullCoordinateAnchorFragment
     )> } };
@@ -13756,10 +15105,10 @@ export type ListLensesForDatasetQueryVariables = Exact<{
 }>;
 
 
-export type ListLensesForDatasetQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'Lens', id: string, name?: string | null, slices: Array<(
+export type ListLensesForDatasetQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'AnnotationLens', id: string, name?: string | null } | { __typename?: 'ArrayLens', id: string, name?: string | null, slices: Array<(
       { __typename?: 'Slice' }
       & DimSliceFragment
-    )> }> };
+    )> } | { __typename?: 'MeshLens', id: string, name?: string | null } | { __typename?: 'NetworkLens', id: string, name?: string | null } | { __typename?: 'SparseLens', id: string, name?: string | null } | { __typename?: 'TableLens', id: string, name?: string | null }> };
 
 export type GetLensQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -13767,8 +15116,23 @@ export type GetLensQueryVariables = Exact<{
 
 
 export type GetLensQuery = { __typename?: 'Query', lens: (
-    { __typename?: 'Lens' }
-    & DetailLensFragment
+    { __typename?: 'AnnotationLens' }
+    & DetailLens_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & DetailLens_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & DetailLens_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & DetailLens_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & DetailLens_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & DetailLens_TableLens_Fragment
   ) };
 
 export type ListLensesQueryVariables = Exact<{
@@ -13779,8 +15143,148 @@ export type ListLensesQueryVariables = Exact<{
 
 
 export type ListLensesQuery = { __typename?: 'Query', lenses: Array<(
-    { __typename?: 'Lens' }
-    & ListLensFragment
+    { __typename?: 'AnnotationLens' }
+    & ListLens_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & ListLens_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & ListLens_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & ListLens_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & ListLens_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & ListLens_TableLens_Fragment
+  )> };
+
+type WindowLensSubject_AnnotationLens_Fragment = (
+  { __typename?: 'AnnotationLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+      { __typename?: 'Axis' }
+      & AxisFragment
+    )> } | null }
+  & LensSubject_AnnotationLens_Fragment
+);
+
+type WindowLensSubject_ArrayLens_Fragment = (
+  { __typename?: 'ArrayLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+      { __typename?: 'Axis' }
+      & AxisFragment
+    )> } | null }
+  & LensSubject_ArrayLens_Fragment
+);
+
+type WindowLensSubject_MeshLens_Fragment = (
+  { __typename?: 'MeshLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+      { __typename?: 'Axis' }
+      & AxisFragment
+    )> } | null }
+  & LensSubject_MeshLens_Fragment
+);
+
+type WindowLensSubject_NetworkLens_Fragment = (
+  { __typename?: 'NetworkLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+      { __typename?: 'Axis' }
+      & AxisFragment
+    )> } | null }
+  & LensSubject_NetworkLens_Fragment
+);
+
+type WindowLensSubject_SparseLens_Fragment = (
+  { __typename?: 'SparseLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+      { __typename?: 'Axis' }
+      & AxisFragment
+    )> } | null }
+  & LensSubject_SparseLens_Fragment
+);
+
+type WindowLensSubject_TableLens_Fragment = (
+  { __typename?: 'TableLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
+      { __typename?: 'Axis' }
+      & AxisFragment
+    )> } | null }
+  & LensSubject_TableLens_Fragment
+);
+
+export type WindowLensSubjectFragment = WindowLensSubject_AnnotationLens_Fragment | WindowLensSubject_ArrayLens_Fragment | WindowLensSubject_MeshLens_Fragment | WindowLensSubject_NetworkLens_Fragment | WindowLensSubject_SparseLens_Fragment | WindowLensSubject_TableLens_Fragment;
+
+export type GetWindowLensSubjectQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetWindowLensSubjectQuery = { __typename?: 'Query', lens: (
+    { __typename?: 'AnnotationLens' }
+    & WindowLensSubject_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & WindowLensSubject_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & WindowLensSubject_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & WindowLensSubject_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & WindowLensSubject_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & WindowLensSubject_TableLens_Fragment
+  ) };
+
+export type GetWholeLensQueryVariables = Exact<{
+  filters: LensFilter;
+}>;
+
+
+export type GetWholeLensQuery = { __typename?: 'Query', lenses: Array<(
+    { __typename?: 'AnnotationLens' }
+    & WindowLensSubject_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & WindowLensSubject_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & WindowLensSubject_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & WindowLensSubject_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & WindowLensSubject_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & WindowLensSubject_TableLens_Fragment
+  )> };
+
+export type GetLensContainersQueryVariables = Exact<{
+  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type GetLensContainersQuery = { __typename?: 'Query', lenses: Array<(
+    { __typename?: 'AnnotationLens', id: string }
+    & LensSubject_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens', id: string }
+    & LensSubject_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens', id: string }
+    & LensSubject_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens', id: string }
+    & LensSubject_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens', id: string }
+    & LensSubject_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens', id: string }
+    & LensSubject_TableLens_Fragment
   )> };
 
 export type MembersQueryVariables = Exact<{ [key: string]: never; }>;
@@ -13860,7 +15364,7 @@ export type GetSparseDatasetDerivedQuery = { __typename?: 'Query', sparseDataset
     )>, sourceFiles: Array<(
       { __typename?: 'FileLink' }
       & FileLinkFragment
-    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null }> } };
+    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null }> } };
 
 export type GetSparseDatasetAnchorsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -13903,7 +15407,7 @@ export type GetTableDatasetDerivedQuery = { __typename?: 'Query', tableDataset: 
     )>, exports: Array<(
       { __typename?: 'FileLink' }
       & FileLinkFragment
-    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'DataArray' } | { __typename: 'Lens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'MeshCollection' } | { __typename: 'NetworkCollection' } | { __typename: 'SparseDataset' } | { __typename: 'TableDataset' }> } | null }> } };
+    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output?: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } | null }> } };
 
 export type GetTableDatasetsQueryVariables = Exact<{
   filters?: InputMaybe<TableDatasetFilter>;
@@ -13947,8 +15451,52 @@ export type WatchSceneAnnotationsSubscription = { __typename?: 'Subscription', a
       & SceneAnnotationFragment
     ) | null } };
 
+export type WatchLensesSubscriptionVariables = Exact<{
+  kind?: InputMaybe<LensKind>;
+  container?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type WatchLensesSubscription = { __typename?: 'Subscription', lenses: { __typename?: 'LensEvent', delete?: string | null, create?: (
+      { __typename?: 'AnnotationLens' }
+      & ListLens_AnnotationLens_Fragment
+    ) | (
+      { __typename?: 'ArrayLens' }
+      & ListLens_ArrayLens_Fragment
+    ) | (
+      { __typename?: 'MeshLens' }
+      & ListLens_MeshLens_Fragment
+    ) | (
+      { __typename?: 'NetworkLens' }
+      & ListLens_NetworkLens_Fragment
+    ) | (
+      { __typename?: 'SparseLens' }
+      & ListLens_SparseLens_Fragment
+    ) | (
+      { __typename?: 'TableLens' }
+      & ListLens_TableLens_Fragment
+    ) | null, update?: (
+      { __typename?: 'AnnotationLens' }
+      & ListLens_AnnotationLens_Fragment
+    ) | (
+      { __typename?: 'ArrayLens' }
+      & ListLens_ArrayLens_Fragment
+    ) | (
+      { __typename?: 'MeshLens' }
+      & ListLens_MeshLens_Fragment
+    ) | (
+      { __typename?: 'NetworkLens' }
+      & ListLens_NetworkLens_Fragment
+    ) | (
+      { __typename?: 'SparseLens' }
+      & ListLens_SparseLens_Fragment
+    ) | (
+      { __typename?: 'TableLens' }
+      & ListLens_TableLens_Fragment
+    ) | null } };
+
 export const AddLayerStagedLensFragmentDoc = gql`
-    fragment AddLayerStagedLens on Lens {
+    fragment AddLayerStagedLens on ArrayLens {
   id
   coordinateSystem {
     id
@@ -14050,7 +15598,7 @@ export const AddLayerSpaceOwnerFragmentDoc = gql`
   ... on ArrayDataset {
     id
   }
-  ... on Lens {
+  ... on ArrayLens {
     id
     dataset {
       id
@@ -14216,7 +15764,7 @@ export const TableDatasetColumnFragmentDoc = gql`
 export const AddLayerCandidateFragmentDoc = gql`
     fragment AddLayerCandidate on Resident {
   __typename
-  ... on Lens {
+  ... on ArrayLens {
     id
     lensName: name
     shape
@@ -14226,14 +15774,11 @@ export const AddLayerCandidateFragmentDoc = gql`
     }
     lensSpace: coordinateSystem {
       id
-    }
-    renderAxes {
-      x
-      y
-      z
-      intensity
-      vector
-      phasor
+      axes {
+        name
+        type
+        order
+      }
     }
     toParent {
       id
@@ -14641,6 +16186,77 @@ export const ListAnnotationFragmentDoc = gql`
   }
 }
     `;
+export const LensWindowFragmentDoc = gql`
+    fragment LensWindow on Window {
+  axis
+  min
+  max
+}
+    `;
+export const LensSubjectFragmentDoc = gql`
+    fragment LensSubject on Lens {
+  __typename
+  ... on ArrayLens {
+    shape
+    axisNames
+    slices {
+      ...DimSlice
+    }
+    dataset {
+      id
+      name
+      axisNames
+      shape
+    }
+  }
+  ... on TableLens {
+    windows {
+      ...LensWindow
+    }
+    tableDataset {
+      id
+      name
+    }
+  }
+  ... on SparseLens {
+    windows {
+      ...LensWindow
+    }
+    sparseDataset {
+      id
+      name
+    }
+  }
+  ... on MeshLens {
+    windows {
+      ...LensWindow
+    }
+    meshCollection {
+      id
+      version
+    }
+  }
+  ... on NetworkLens {
+    windows {
+      ...LensWindow
+    }
+    networkCollection {
+      id
+      version
+    }
+  }
+  ... on AnnotationLens {
+    windows {
+      ...LensWindow
+    }
+    annotationCollection {
+      id
+      name
+    }
+  }
+}
+    ${DimSliceFragmentDoc}
+${LensWindowFragmentDoc}`;
 export const ResidentFragmentDoc = gql`
     fragment Resident on Resident {
   __typename
@@ -14662,10 +16278,7 @@ export const ResidentFragmentDoc = gql`
   }
   ... on Lens {
     id
-    dataset {
-      id
-      name
-    }
+    ...LensSubject
   }
   ... on DataArray {
     id
@@ -14680,7 +16293,7 @@ export const ResidentFragmentDoc = gql`
     version
   }
 }
-    `;
+    ${LensSubjectFragmentDoc}`;
 export const AxisFragmentDoc = gql`
     fragment Axis on Axis {
   id
@@ -15202,7 +16815,7 @@ export const ChartLayerCommonFragmentDoc = gql`
 }
     ${ChartAffineFragmentDoc}`;
 export const ChartLensFragmentDoc = gql`
-    fragment ChartLens on Lens {
+    fragment ChartLens on ArrayLens {
   id
   shape
   axisNames
@@ -15255,6 +16868,34 @@ export const ChartTraceLayerFragmentDoc = gql`
 }
     ${ChartLayerCommonFragmentDoc}
 ${ChartLensFragmentDoc}`;
+export const LayerLensFragmentDoc = gql`
+    fragment LayerLens on Lens {
+  id
+  name
+  ...LensSubject
+}
+    ${LensSubjectFragmentDoc}`;
+export const LabelFilterByFragmentDoc = gql`
+    fragment LabelFilterBy on LabelFilterBy {
+  table
+  column
+  joinPath {
+    table
+    column
+  }
+  label
+  min
+  max
+  values
+  exclude
+  kind
+  dataset
+  at {
+    axis
+    value
+  }
+}
+    `;
 export const ChartSeriesLayerFragmentDoc = gql`
     fragment ChartSeriesLayer on SeriesChartLayer {
   ...ChartLayerCommon
@@ -15268,6 +16909,12 @@ export const ChartSeriesLayerFragmentDoc = gql`
       ...TableDatasetColumn
     }
   }
+  lens {
+    ...LayerLens
+  }
+  windowFilters {
+    ...LabelFilterBy
+  }
   valueColumn
   coordinateColumn
   valueUnit
@@ -15277,10 +16924,18 @@ export const ChartSeriesLayerFragmentDoc = gql`
 }
     ${ChartLayerCommonFragmentDoc}
 ${ParquetStoreFragmentDoc}
-${TableDatasetColumnFragmentDoc}`;
+${TableDatasetColumnFragmentDoc}
+${LayerLensFragmentDoc}
+${LabelFilterByFragmentDoc}`;
 export const ChartAnnotationLayerFragmentDoc = gql`
     fragment ChartAnnotationLayer on AnnotationChartLayer {
   ...ChartLayerCommon
+  lens {
+    ...LayerLens
+  }
+  clip {
+    ...LensWindow
+  }
   annotationCollection {
     id
     name
@@ -15294,6 +16949,8 @@ export const ChartAnnotationLayerFragmentDoc = gql`
   }
 }
     ${ChartLayerCommonFragmentDoc}
+${LayerLensFragmentDoc}
+${LensWindowFragmentDoc}
 ${AxisFragmentDoc}`;
 export const ChartFragmentDoc = gql`
     fragment Chart on Chart {
@@ -15338,7 +16995,7 @@ export const ListChartFragmentDoc = gql`
 export const ChartLayerCandidateFragmentDoc = gql`
     fragment ChartLayerCandidate on Resident {
   __typename
-  ... on Lens {
+  ... on ArrayLens {
     id
     shape
     axisNames
@@ -15666,6 +17323,26 @@ export const FolderFragmentDoc = gql`
     ${ProvenanceEntryFragmentDoc}
 ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}`;
+export const LensCoreFragmentDoc = gql`
+    fragment LensCore on Lens {
+  __typename
+  descriptors
+  id
+  name
+  kind
+  createdAt
+  creator {
+    sub
+  }
+  coordinateSystem {
+    id
+    name
+  }
+  defaultScene {
+    ...ListScene
+  }
+}
+    ${ListSceneFragmentDoc}`;
 export const ListArrayDatasetFragmentDoc = gql`
     fragment ListArrayDataset on ArrayDataset {
   descriptors
@@ -15707,64 +17384,48 @@ export const DerivedDatasetFragmentDoc = gql`
     ${ListArrayDatasetFragmentDoc}`;
 export const DetailLensFragmentDoc = gql`
     fragment DetailLens on Lens {
-  descriptors
-  id
-  name
-  shape
-  axisNames
-  slices {
-    ...DimSlice
-  }
-  coordinateSystem {
-    id
-    name
-  }
-  toParent {
-    ...Transformation
-  }
-  dataset {
-    id
-    name
-    axisNames
-    shape
-    fullLens {
+  ...LensCore
+  ...LensSubject
+  ... on ArrayLens {
+    toParent {
+      ...Transformation
+    }
+    dataset {
       id
+      fullLens {
+        id
+      }
+    }
+    scenes {
+      ...ListScene
+    }
+    derivedDatasets {
+      ...DerivedDataset
     }
   }
-  scenes {
-    ...ListScene
-  }
-  defaultScene {
-    ...ListScene
-  }
-  derivedDatasets {
-    ...DerivedDataset
-  }
 }
-    ${DimSliceFragmentDoc}
+    ${LensCoreFragmentDoc}
+${LensSubjectFragmentDoc}
 ${TransformationFragmentDoc}
 ${ListSceneFragmentDoc}
 ${DerivedDatasetFragmentDoc}`;
 export const ListLensFragmentDoc = gql`
     fragment ListLens on Lens {
-  id
-  name
-  shape
-  axisNames
-  slices {
-    ...DimSlice
-  }
-  latestSnapshot {
-    ...SceneSnapshot
-  }
-  dataset {
-    id
-    name
-    axisNames
-    shape
+  ...LensCore
+  ...LensSubject
+  ... on ArrayLens {
+    latestSnapshot {
+      ...SceneSnapshot
+    }
+    dataset {
+      id
+      spec
+      multiscale
+    }
   }
 }
-    ${DimSliceFragmentDoc}
+    ${LensCoreFragmentDoc}
+${LensSubjectFragmentDoc}
 ${SceneSnapshotFragmentDoc}`;
 export const CameraStateFragmentDoc = gql`
     fragment CameraState on CameraState {
@@ -15838,20 +17499,13 @@ export const PhasorContextFragmentDoc = gql`
 }
     `;
 export const SceneLensFragmentDoc = gql`
-    fragment SceneLens on Lens {
+    fragment SceneLens on ArrayLens {
+  __typename
   descriptors
   id
   name
   shape
   axisNames
-  renderAxes {
-    x
-    y
-    z
-    t
-    intensity
-    phasor
-  }
   phasor {
     ...PhasorContext
   }
@@ -15918,6 +17572,17 @@ ${TransformationFragmentDoc}
 ${DimSliceFragmentDoc}
 ${ZarrStoreFragmentDoc}
 ${LightpathGraphFragmentDoc}`;
+export const LayerRenderAxesFragmentDoc = gql`
+    fragment LayerRenderAxes on RenderAxes {
+  x
+  y
+  z
+  t
+  intensity
+  phasor
+  vector
+}
+    `;
 export const TransferFunctionFragmentDoc = gql`
     fragment TransferFunction on TransferFunction {
   climMin
@@ -16065,27 +17730,6 @@ export const LabelColorByFragmentDoc = gql`
   min
   max
   label
-  kind
-  dataset
-  at {
-    axis
-    value
-  }
-}
-    `;
-export const LabelFilterByFragmentDoc = gql`
-    fragment LabelFilterBy on LabelFilterBy {
-  table
-  column
-  joinPath {
-    table
-    column
-  }
-  label
-  min
-  max
-  values
-  exclude
   kind
   dataset
   at {
@@ -16287,6 +17931,9 @@ export const SceneLayerFragmentDoc = gql`
     lens {
       ...SceneLens
     }
+    renderAxes {
+      ...LayerRenderAxes
+    }
     renderGraph {
       ...LayerRenderGraph
     }
@@ -16294,6 +17941,9 @@ export const SceneLayerFragmentDoc = gql`
   ... on IntensityLayer {
     lens {
       ...SceneLens
+    }
+    renderAxes {
+      ...LayerRenderAxes
     }
     intensityAxis
     intensityIndex
@@ -16308,6 +17958,9 @@ export const SceneLayerFragmentDoc = gql`
     lens {
       ...SceneLens
     }
+    renderAxes {
+      ...LayerRenderAxes
+    }
     intensityAxis
     redIndex
     greenIndex
@@ -16320,6 +17973,9 @@ export const SceneLayerFragmentDoc = gql`
     lens {
       ...SceneLens
     }
+    renderAxes {
+      ...LayerRenderAxes
+    }
     phasorRender {
       ...PhasorRender
     }
@@ -16327,6 +17983,9 @@ export const SceneLayerFragmentDoc = gql`
   ... on VectorLayer {
     lens {
       ...SceneLens
+    }
+    renderAxes {
+      ...LayerRenderAxes
     }
     vectorAxis
     glyph
@@ -16342,6 +18001,9 @@ export const SceneLayerFragmentDoc = gql`
     lens {
       ...SceneLens
     }
+    renderAxes {
+      ...LayerRenderAxes
+    }
     labelRender {
       ...LabelRender
     }
@@ -16350,10 +18012,22 @@ export const SceneLayerFragmentDoc = gql`
     annotationCollection {
       ...AnnotationCollection
     }
+    lens {
+      ...LayerLens
+    }
+    clip {
+      ...LensWindow
+    }
   }
   ... on PointLayer {
     tableDataset {
       ...TableDataset
+    }
+    lens {
+      ...LayerLens
+    }
+    windowFilters {
+      ...LabelFilterBy
     }
     xColumn
     yColumn
@@ -16378,6 +18052,12 @@ export const SceneLayerFragmentDoc = gql`
     tableDataset {
       ...TableDataset
     }
+    lens {
+      ...LayerLens
+    }
+    windowFilters {
+      ...LabelFilterBy
+    }
     trackIdColumn
     xColumn
     yColumn
@@ -16391,6 +18071,12 @@ export const SceneLayerFragmentDoc = gql`
   ... on MeshLayer {
     collection {
       ...MeshCollection
+    }
+    lens {
+      ...LayerLens
+    }
+    clip {
+      ...LensWindow
     }
     materialColor
     wireframe
@@ -16407,6 +18093,12 @@ export const SceneLayerFragmentDoc = gql`
   ... on NetworkLayer {
     collection {
       ...NetworkCollection
+    }
+    lens {
+      ...LayerLens
+    }
+    clip {
+      ...LensWindow
     }
     materialColor
     lineWidth
@@ -16428,13 +18120,16 @@ export const SceneLayerFragmentDoc = gql`
 }
     ${PlacementStepFragmentDoc}
 ${SceneLensFragmentDoc}
+${LayerRenderAxesFragmentDoc}
 ${LayerRenderGraphFragmentDoc}
 ${PhasorRenderFragmentDoc}
 ${LabelRenderFragmentDoc}
 ${AnnotationCollectionFragmentDoc}
+${LayerLensFragmentDoc}
+${LensWindowFragmentDoc}
 ${TableDatasetFragmentDoc}
-${LabelColorByFragmentDoc}
 ${LabelFilterByFragmentDoc}
+${LabelColorByFragmentDoc}
 ${MeshCollectionFragmentDoc}
 ${MeshColorByFragmentDoc}
 ${MeshFilterByFragmentDoc}
@@ -16620,6 +18315,21 @@ ${ListTableDatasetFragmentDoc}
 ${ParquetStoreFragmentDoc}
 ${TableDatasetColumnFragmentDoc}
 ${ColumnOptionJoinStepFragmentDoc}`;
+export const WindowLensSubjectFragmentDoc = gql`
+    fragment WindowLensSubject on Lens {
+  id
+  name
+  ...LensSubject
+  coordinateSystem {
+    id
+    name
+    axes {
+      ...Axis
+    }
+  }
+}
+    ${LensSubjectFragmentDoc}
+${AxisFragmentDoc}`;
 export const SparseColouringSourceDocument = gql`
     query SparseColouringSource($id: ID!) {
   sparseDataset(id: $id) {
@@ -19277,6 +20987,171 @@ export function useUpdateLensMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type UpdateLensMutationHookResult = ReturnType<typeof useUpdateLensMutation>;
 export type UpdateLensMutationResult = Apollo.MutationResult<UpdateLensMutation>;
 export type UpdateLensMutationOptions = Apollo.BaseMutationOptions<UpdateLensMutation, UpdateLensMutationVariables>;
+export const CreateTableLensDocument = gql`
+    mutation CreateTableLens($input: CreateTableLensInput!) {
+  createTableLens(input: $input) {
+    ...ListLens
+  }
+}
+    ${ListLensFragmentDoc}`;
+export type CreateTableLensMutationFn = Apollo.MutationFunction<CreateTableLensMutation, CreateTableLensMutationVariables>;
+
+/**
+ * __useCreateTableLensMutation__
+ *
+ * To run a mutation, you first call `useCreateTableLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateTableLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createTableLensMutation, { data, loading, error }] = useCreateTableLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateTableLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateTableLensMutation, CreateTableLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateTableLensMutation, CreateTableLensMutationVariables>(CreateTableLensDocument, options);
+      }
+export type CreateTableLensMutationHookResult = ReturnType<typeof useCreateTableLensMutation>;
+export type CreateTableLensMutationResult = Apollo.MutationResult<CreateTableLensMutation>;
+export type CreateTableLensMutationOptions = Apollo.BaseMutationOptions<CreateTableLensMutation, CreateTableLensMutationVariables>;
+export const CreateSparseLensDocument = gql`
+    mutation CreateSparseLens($input: CreateSparseLensInput!) {
+  createSparseLens(input: $input) {
+    ...ListLens
+  }
+}
+    ${ListLensFragmentDoc}`;
+export type CreateSparseLensMutationFn = Apollo.MutationFunction<CreateSparseLensMutation, CreateSparseLensMutationVariables>;
+
+/**
+ * __useCreateSparseLensMutation__
+ *
+ * To run a mutation, you first call `useCreateSparseLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateSparseLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createSparseLensMutation, { data, loading, error }] = useCreateSparseLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateSparseLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateSparseLensMutation, CreateSparseLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateSparseLensMutation, CreateSparseLensMutationVariables>(CreateSparseLensDocument, options);
+      }
+export type CreateSparseLensMutationHookResult = ReturnType<typeof useCreateSparseLensMutation>;
+export type CreateSparseLensMutationResult = Apollo.MutationResult<CreateSparseLensMutation>;
+export type CreateSparseLensMutationOptions = Apollo.BaseMutationOptions<CreateSparseLensMutation, CreateSparseLensMutationVariables>;
+export const CreateMeshLensDocument = gql`
+    mutation CreateMeshLens($input: CreateMeshLensInput!) {
+  createMeshLens(input: $input) {
+    ...ListLens
+  }
+}
+    ${ListLensFragmentDoc}`;
+export type CreateMeshLensMutationFn = Apollo.MutationFunction<CreateMeshLensMutation, CreateMeshLensMutationVariables>;
+
+/**
+ * __useCreateMeshLensMutation__
+ *
+ * To run a mutation, you first call `useCreateMeshLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateMeshLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createMeshLensMutation, { data, loading, error }] = useCreateMeshLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateMeshLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateMeshLensMutation, CreateMeshLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateMeshLensMutation, CreateMeshLensMutationVariables>(CreateMeshLensDocument, options);
+      }
+export type CreateMeshLensMutationHookResult = ReturnType<typeof useCreateMeshLensMutation>;
+export type CreateMeshLensMutationResult = Apollo.MutationResult<CreateMeshLensMutation>;
+export type CreateMeshLensMutationOptions = Apollo.BaseMutationOptions<CreateMeshLensMutation, CreateMeshLensMutationVariables>;
+export const CreateNetworkLensDocument = gql`
+    mutation CreateNetworkLens($input: CreateNetworkLensInput!) {
+  createNetworkLens(input: $input) {
+    ...ListLens
+  }
+}
+    ${ListLensFragmentDoc}`;
+export type CreateNetworkLensMutationFn = Apollo.MutationFunction<CreateNetworkLensMutation, CreateNetworkLensMutationVariables>;
+
+/**
+ * __useCreateNetworkLensMutation__
+ *
+ * To run a mutation, you first call `useCreateNetworkLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateNetworkLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createNetworkLensMutation, { data, loading, error }] = useCreateNetworkLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateNetworkLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateNetworkLensMutation, CreateNetworkLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateNetworkLensMutation, CreateNetworkLensMutationVariables>(CreateNetworkLensDocument, options);
+      }
+export type CreateNetworkLensMutationHookResult = ReturnType<typeof useCreateNetworkLensMutation>;
+export type CreateNetworkLensMutationResult = Apollo.MutationResult<CreateNetworkLensMutation>;
+export type CreateNetworkLensMutationOptions = Apollo.BaseMutationOptions<CreateNetworkLensMutation, CreateNetworkLensMutationVariables>;
+export const CreateAnnotationLensDocument = gql`
+    mutation CreateAnnotationLens($input: CreateAnnotationLensInput!) {
+  createAnnotationLens(input: $input) {
+    ...ListLens
+  }
+}
+    ${ListLensFragmentDoc}`;
+export type CreateAnnotationLensMutationFn = Apollo.MutationFunction<CreateAnnotationLensMutation, CreateAnnotationLensMutationVariables>;
+
+/**
+ * __useCreateAnnotationLensMutation__
+ *
+ * To run a mutation, you first call `useCreateAnnotationLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateAnnotationLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createAnnotationLensMutation, { data, loading, error }] = useCreateAnnotationLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateAnnotationLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateAnnotationLensMutation, CreateAnnotationLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateAnnotationLensMutation, CreateAnnotationLensMutationVariables>(CreateAnnotationLensDocument, options);
+      }
+export type CreateAnnotationLensMutationHookResult = ReturnType<typeof useCreateAnnotationLensMutation>;
+export type CreateAnnotationLensMutationResult = Apollo.MutationResult<CreateAnnotationLensMutation>;
+export type CreateAnnotationLensMutationOptions = Apollo.BaseMutationOptions<CreateAnnotationLensMutation, CreateAnnotationLensMutationVariables>;
 export const CreateMeshCollectionDocument = gql`
     mutation CreateMeshCollection($input: CreateMeshCollectionInput!) {
   createMeshCollection(input: $input) {
@@ -19527,17 +21402,19 @@ export const SetLensDefaultSceneDocument = gql`
     defaultScene {
       ...ListScene
     }
-    latestSnapshot {
-      ...SceneSnapshot
-    }
-    dataset {
-      id
-      defaultScene {
-        id
-        name
-      }
+    ... on ArrayLens {
       latestSnapshot {
         ...SceneSnapshot
+      }
+      dataset {
+        id
+        defaultScene {
+          id
+          name
+        }
+        latestSnapshot {
+          ...SceneSnapshot
+        }
       }
     }
   }
@@ -19768,6 +21645,12 @@ export const AddLayerLensCapabilitiesDocument = gql`
   labels: lenses(filters: {placeableIn: {space: $space, asLayer: LABEL}}) {
     id
   }
+  phasor: lenses(filters: {placeableIn: {space: $space, asLayer: PHASOR}}) {
+    id
+  }
+  vector: lenses(filters: {placeableIn: {space: $space, asLayer: VECTOR}}) {
+    id
+  }
 }
     `;
 
@@ -19854,6 +21737,63 @@ export function useAddLayerLineageLazyQuery(baseOptions?: ApolloReactHooks.LazyQ
 export type AddLayerLineageQueryHookResult = ReturnType<typeof useAddLayerLineageQuery>;
 export type AddLayerLineageLazyQueryHookResult = ReturnType<typeof useAddLayerLineageLazyQuery>;
 export type AddLayerLineageQueryResult = Apollo.QueryResult<AddLayerLineageQuery, AddLayerLineageQueryVariables>;
+export const AddLayerWindowLensesDocument = gql`
+    query AddLayerWindowLenses($space: ID!) {
+  points: lenses(
+    filters: {sliced: true, placeableIn: {space: $space, asLayer: POINT}}
+  ) {
+    ...LayerLens
+  }
+  tracks: lenses(
+    filters: {sliced: true, placeableIn: {space: $space, asLayer: TRACK}}
+  ) {
+    ...LayerLens
+  }
+  meshes: lenses(
+    filters: {sliced: true, placeableIn: {space: $space, asLayer: MESH}}
+  ) {
+    ...LayerLens
+  }
+  networks: lenses(
+    filters: {sliced: true, placeableIn: {space: $space, asLayer: NETWORK}}
+  ) {
+    ...LayerLens
+  }
+  annotations: lenses(
+    filters: {sliced: true, placeableIn: {space: $space, asLayer: ANNOTATION}}
+  ) {
+    ...LayerLens
+  }
+}
+    ${LayerLensFragmentDoc}`;
+
+/**
+ * __useAddLayerWindowLensesQuery__
+ *
+ * To run a query within a React component, call `useAddLayerWindowLensesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useAddLayerWindowLensesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useAddLayerWindowLensesQuery({
+ *   variables: {
+ *      space: // value for 'space'
+ *   },
+ * });
+ */
+export function useAddLayerWindowLensesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<AddLayerWindowLensesQuery, AddLayerWindowLensesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<AddLayerWindowLensesQuery, AddLayerWindowLensesQueryVariables>(AddLayerWindowLensesDocument, options);
+      }
+export function useAddLayerWindowLensesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<AddLayerWindowLensesQuery, AddLayerWindowLensesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<AddLayerWindowLensesQuery, AddLayerWindowLensesQueryVariables>(AddLayerWindowLensesDocument, options);
+        }
+export type AddLayerWindowLensesQueryHookResult = ReturnType<typeof useAddLayerWindowLensesQuery>;
+export type AddLayerWindowLensesLazyQueryHookResult = ReturnType<typeof useAddLayerWindowLensesLazyQuery>;
+export type AddLayerWindowLensesQueryResult = Apollo.QueryResult<AddLayerWindowLensesQuery, AddLayerWindowLensesQueryVariables>;
 export const GetAnnotationDocument = gql`
     query GetAnnotation($id: ID!) {
   annotation(id: $id) {
@@ -20226,7 +22166,7 @@ export const GetArrayDatasetDerivedDocument = gql`
             id
             name
           }
-          ... on Lens {
+          ... on ArrayLens {
             id
             dataset {
               id
@@ -20244,16 +22184,19 @@ export const GetArrayDatasetDerivedDocument = gql`
     }
   }
   lenses(filters: {dataset: $id}) {
+    __typename
     id
     name
-    axisNames
-    shape
-    slices {
-      ...DimSlice
-    }
     coordinateSystem {
       id
       name
+    }
+    ... on ArrayLens {
+      axisNames
+      shape
+      slices {
+        ...DimSlice
+      }
     }
   }
 }
@@ -21461,7 +23404,7 @@ export type GetFoldersQueryHookResult = ReturnType<typeof useGetFoldersQuery>;
 export type GetFoldersLazyQueryHookResult = ReturnType<typeof useGetFoldersLazyQuery>;
 export type GetFoldersQueryResult = Apollo.QueryResult<GetFoldersQuery, GetFoldersQueryVariables>;
 export const GlobalSearchDocument = gql`
-    query GlobalSearch($search: String, $noArrayDatasets: Boolean!, $noFiles: Boolean!, $noFolders: Boolean!, $pagination: OffsetPaginationInput) {
+    query GlobalSearch($search: String, $noArrayDatasets: Boolean!, $noFiles: Boolean!, $noFolders: Boolean!, $noLenses: Boolean!, $pagination: OffsetPaginationInput) {
   arrayDatasets: arrayDatasets(
     filters: {search: $search}
     pagination: $pagination
@@ -21474,10 +23417,17 @@ export const GlobalSearchDocument = gql`
   folders: folders(filters: {search: $search}, pagination: $pagination) @skip(if: $noFolders) {
     ...ListFolder
   }
+  lenses: lenses(
+    filters: {search: $search, sliced: true}
+    pagination: $pagination
+  ) @skip(if: $noLenses) {
+    ...ListLens
+  }
 }
     ${ListArrayDatasetFragmentDoc}
 ${ListFileFragmentDoc}
-${ListFolderFragmentDoc}`;
+${ListFolderFragmentDoc}
+${ListLensFragmentDoc}`;
 
 /**
  * __useGlobalSearchQuery__
@@ -21495,6 +23445,7 @@ ${ListFolderFragmentDoc}`;
  *      noArrayDatasets: // value for 'noArrayDatasets'
  *      noFiles: // value for 'noFiles'
  *      noFolders: // value for 'noFolders'
+ *      noLenses: // value for 'noLenses'
  *      pagination: // value for 'pagination'
  *   },
  * });
@@ -21512,6 +23463,9 @@ export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchL
 export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
 export const HomePageDocument = gql`
     query HomePage {
+  lenses(pagination: {limit: 1}) {
+    id
+  }
   arrayDatasets: arrayDatasets(
     pagination: {limit: 1}
     ordering: [{createdAt: DESC}]
@@ -21553,12 +23507,8 @@ export type HomePageLazyQueryHookResult = ReturnType<typeof useHomePageLazyQuery
 export type HomePageQueryResult = Apollo.QueryResult<HomePageQuery, HomePageQueryVariables>;
 export const PeerHomePageDocument = gql`
     query PeerHomePage($id: ID!) {
-  arrayDatasets: arrayDatasets(
-    pagination: {limit: 1}
-    filters: {owner: $id}
-    ordering: [{createdAt: DESC}]
-  ) {
-    ...ListArrayDataset
+  lenses(pagination: {limit: 1}, filters: {owner: $id}) {
+    id
   }
   files: files(
     pagination: {limit: 1}
@@ -21568,8 +23518,7 @@ export const PeerHomePageDocument = gql`
     ...ListFile
   }
 }
-    ${ListArrayDatasetFragmentDoc}
-${ListFileFragmentDoc}`;
+    ${ListFileFragmentDoc}`;
 
 /**
  * __usePeerHomePageQuery__
@@ -21677,8 +23626,10 @@ export const GetLensPhasorDocument = gql`
     query GetLensPhasor($id: ID!, $axis: String, $harmonic: Int!) {
   lens(id: $id) {
     id
-    phasor(axis: $axis, harmonic: $harmonic) {
-      ...PhasorContext
+    ... on ArrayLens {
+      phasor(axis: $axis, harmonic: $harmonic) {
+        ...PhasorContext
+      }
     }
   }
 }
@@ -21756,8 +23707,10 @@ export const ListLensesForDatasetDocument = gql`
   lenses(filters: {dataset: $dataset}) {
     id
     name
-    slices {
-      ...DimSlice
+    ... on ArrayLens {
+      slices {
+        ...DimSlice
+      }
     }
   }
 }
@@ -21862,6 +23815,112 @@ export function useListLensesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type ListLensesQueryHookResult = ReturnType<typeof useListLensesQuery>;
 export type ListLensesLazyQueryHookResult = ReturnType<typeof useListLensesLazyQuery>;
 export type ListLensesQueryResult = Apollo.QueryResult<ListLensesQuery, ListLensesQueryVariables>;
+export const GetWindowLensSubjectDocument = gql`
+    query GetWindowLensSubject($id: ID!) {
+  lens(id: $id) {
+    ...WindowLensSubject
+  }
+}
+    ${WindowLensSubjectFragmentDoc}`;
+
+/**
+ * __useGetWindowLensSubjectQuery__
+ *
+ * To run a query within a React component, call `useGetWindowLensSubjectQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetWindowLensSubjectQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetWindowLensSubjectQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetWindowLensSubjectQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetWindowLensSubjectQuery, GetWindowLensSubjectQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetWindowLensSubjectQuery, GetWindowLensSubjectQueryVariables>(GetWindowLensSubjectDocument, options);
+      }
+export function useGetWindowLensSubjectLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetWindowLensSubjectQuery, GetWindowLensSubjectQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetWindowLensSubjectQuery, GetWindowLensSubjectQueryVariables>(GetWindowLensSubjectDocument, options);
+        }
+export type GetWindowLensSubjectQueryHookResult = ReturnType<typeof useGetWindowLensSubjectQuery>;
+export type GetWindowLensSubjectLazyQueryHookResult = ReturnType<typeof useGetWindowLensSubjectLazyQuery>;
+export type GetWindowLensSubjectQueryResult = Apollo.QueryResult<GetWindowLensSubjectQuery, GetWindowLensSubjectQueryVariables>;
+export const GetWholeLensDocument = gql`
+    query GetWholeLens($filters: LensFilter!) {
+  lenses(filters: $filters, pagination: {limit: 1}) {
+    ...WindowLensSubject
+  }
+}
+    ${WindowLensSubjectFragmentDoc}`;
+
+/**
+ * __useGetWholeLensQuery__
+ *
+ * To run a query within a React component, call `useGetWholeLensQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetWholeLensQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetWholeLensQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *   },
+ * });
+ */
+export function useGetWholeLensQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetWholeLensQuery, GetWholeLensQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetWholeLensQuery, GetWholeLensQueryVariables>(GetWholeLensDocument, options);
+      }
+export function useGetWholeLensLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetWholeLensQuery, GetWholeLensQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetWholeLensQuery, GetWholeLensQueryVariables>(GetWholeLensDocument, options);
+        }
+export type GetWholeLensQueryHookResult = ReturnType<typeof useGetWholeLensQuery>;
+export type GetWholeLensLazyQueryHookResult = ReturnType<typeof useGetWholeLensLazyQuery>;
+export type GetWholeLensQueryResult = Apollo.QueryResult<GetWholeLensQuery, GetWholeLensQueryVariables>;
+export const GetLensContainersDocument = gql`
+    query GetLensContainers($ids: [ID!]!) {
+  lenses(filters: {ids: $ids}) {
+    id
+    ...LensSubject
+  }
+}
+    ${LensSubjectFragmentDoc}`;
+
+/**
+ * __useGetLensContainersQuery__
+ *
+ * To run a query within a React component, call `useGetLensContainersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetLensContainersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetLensContainersQuery({
+ *   variables: {
+ *      ids: // value for 'ids'
+ *   },
+ * });
+ */
+export function useGetLensContainersQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetLensContainersQuery, GetLensContainersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetLensContainersQuery, GetLensContainersQueryVariables>(GetLensContainersDocument, options);
+      }
+export function useGetLensContainersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetLensContainersQuery, GetLensContainersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetLensContainersQuery, GetLensContainersQueryVariables>(GetLensContainersDocument, options);
+        }
+export type GetLensContainersQueryHookResult = ReturnType<typeof useGetLensContainersQuery>;
+export type GetLensContainersLazyQueryHookResult = ReturnType<typeof useGetLensContainersLazyQuery>;
+export type GetLensContainersQueryResult = Apollo.QueryResult<GetLensContainersQuery, GetLensContainersQueryVariables>;
 export const MembersDocument = gql`
     query Members {
   members {
@@ -22151,7 +24210,7 @@ export const GetSparseDatasetDerivedDocument = gql`
             id
             name
           }
-          ... on Lens {
+          ... on ArrayLens {
             id
             dataset {
               id
@@ -22338,7 +24397,7 @@ export const GetTableDatasetDerivedDocument = gql`
             id
             name
           }
-          ... on Lens {
+          ... on ArrayLens {
             id
             dataset {
               id
@@ -22537,3 +24596,40 @@ export function useWatchSceneAnnotationsSubscription(baseOptions: ApolloReactHoo
       }
 export type WatchSceneAnnotationsSubscriptionHookResult = ReturnType<typeof useWatchSceneAnnotationsSubscription>;
 export type WatchSceneAnnotationsSubscriptionResult = Apollo.SubscriptionResult<WatchSceneAnnotationsSubscription>;
+export const WatchLensesDocument = gql`
+    subscription WatchLenses($kind: LensKind, $container: ID) {
+  lenses(kind: $kind, container: $container) {
+    create {
+      ...ListLens
+    }
+    update {
+      ...ListLens
+    }
+    delete
+  }
+}
+    ${ListLensFragmentDoc}`;
+
+/**
+ * __useWatchLensesSubscription__
+ *
+ * To run a query within a React component, call `useWatchLensesSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchLensesSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchLensesSubscription({
+ *   variables: {
+ *      kind: // value for 'kind'
+ *      container: // value for 'container'
+ *   },
+ * });
+ */
+export function useWatchLensesSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchLensesSubscription, WatchLensesSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchLensesSubscription, WatchLensesSubscriptionVariables>(WatchLensesDocument, options);
+      }
+export type WatchLensesSubscriptionHookResult = ReturnType<typeof useWatchLensesSubscription>;
+export type WatchLensesSubscriptionResult = Apollo.SubscriptionResult<WatchLensesSubscription>;

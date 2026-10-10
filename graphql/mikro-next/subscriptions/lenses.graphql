@@ -1,0 +1,14 @@
+# Lens changes, for the lists that show lenses: one container's (`container`),
+# one kind's, or the whole organization's when neither is given. Changes only —
+# the list itself is `ListLenses`; `useLiveLenses` folds each event into it.
+subscription WatchLenses($kind: LensKind, $container: ID) {
+  lenses(kind: $kind, container: $container) {
+    create {
+      ...ListLens
+    }
+    update {
+      ...ListLens
+    }
+    delete
+  }
+}

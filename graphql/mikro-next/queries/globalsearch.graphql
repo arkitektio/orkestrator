@@ -3,6 +3,7 @@ query GlobalSearch(
   $noArrayDatasets: Boolean!
   $noFiles: Boolean!
   $noFolders: Boolean!
+  $noLenses: Boolean!
   $pagination: OffsetPaginationInput
 ) {
   arrayDatasets: arrayDatasets(
@@ -24,5 +25,14 @@ query GlobalSearch(
     pagination: $pagination
   ) @skip(if: $noFolders){
     ...ListFolder
+  }
+
+  # Only lenses that select something: a whole lens is its container, which is
+  # already a hit of its own.
+  lenses: lenses(
+    filters: { search: $search, sliced: true }
+    pagination: $pagination
+  ) @skip(if: $noLenses) {
+    ...ListLens
   }
 }

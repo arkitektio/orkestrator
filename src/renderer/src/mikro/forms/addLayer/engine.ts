@@ -123,6 +123,14 @@ export const TABLE_KIND_INFO: Record<
 export type Capabilities = {
   drawable: ReadonlySet<string>;
   labels: ReadonlySet<string>;
+  /**
+   * Which lenses the server would draw as a phasor / as vectors. Read by the
+   * adapter that fills `LensLike.renderAxes` (`candidateRenderAxes`), not by
+   * the predicates below: a lens the server refuses simply arrives with no
+   * phasor or vector axis.
+   */
+  phasor?: ReadonlySet<string>;
+  vector?: ReadonlySet<string>;
 } | null;
 
 /** The narrowest lens the structural predicates need. */
@@ -675,7 +683,7 @@ export const suggestLensKinds = (
   staged: StagedScene = emptyStaged(),
 ): LensSuggestion => {
   const gate = inferLensKinds(lens, capabilities);
-  const node = lens.dataset ? nodeOfCandidate(graph, { __typename: "Lens", id: lens.id, dataset: lens.dataset }) : undefined;
+  const node = lens.dataset ? nodeOfCandidate(graph, { __typename: "ArrayLens", id: lens.id, dataset: lens.dataset }) : undefined;
 
   const upstream = node
     ? upstreamEvidence(graph, node)

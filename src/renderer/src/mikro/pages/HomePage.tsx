@@ -29,21 +29,18 @@ import {
   ArrowDownWideNarrow,
   ArrowUpDown,
   ArrowUpWideNarrow,
-  BarChart3,
   Database,
-  Network,
-  TrendingUp,
   Upload,
 } from "lucide-react";
 import { HookFunction } from "@/core/layout/routes/ParamlessRoute";
 import { OperationVariables, QueryHookOptions } from "@apollo/client";
 import {
-  ArrayDatasetOrder,
   ChartOrder,
   FolderOrder,
   FileOrder,
   HomePageQuery,
   HomePageQueryVariables,
+  LensOrder,
   Ordering,
   useHomePageQuery,
 } from "../api/graphql";
@@ -63,7 +60,8 @@ import { PinnedFolders } from "../components/folder/PinnedFolders";
 import { ChartSectionList } from "../components/lists/ChartList";
 import FolderList from "../components/lists/FolderList";
 import FileList from "../components/lists/FileList";
-import ArrayDatasetList from "../components/lists/ArrayDatasetList";
+import { DataLensList, LensSectionList } from "../components/lists/LensList";
+import { useLiveLenses } from "../lib/lenses/useLiveLenses";
 import { StatisticsSidebar } from "../components/sidebars/StatisticsSidebar";
 import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
 import { parseAsIsoDateTime, parseAsString, parseAsStringLiteral, useQueryState } from "@/core/util/hooks/use-search-param-state";
@@ -74,6 +72,9 @@ export interface IRepresentationScreenProps { }
 
 
 const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
+  // Both lens grids follow the server: an upload adds a whole lens, a task
+  // cutting crops fills the selections in as it runs.
+  useLiveLenses();
   const performDataLayerUpload = useMikroBigFileUpload();
   const createFile = useCreateFile();
   const { startUpload } = useUpload();
@@ -109,15 +110,15 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
   const searchFilter = searchTerm ? { search: searchTerm } : {};
 
   const ordering = Ordering[sortDirection === "ASC" ? "Asc" : "Desc"];
-  // Dataset/File/Folder orders are @oneOf inputs that share createdAt/name keys.
+  // Lens/File/Folder orders are @oneOf inputs that share createdAt/name keys.
   const orderByField =
     sortField === "createdAt"
       ? ({ createdAt: ordering } as const)
       : ({ name: ordering } as const);
-  const arrayDatasetOrdering: ArrayDatasetOrder[] = [orderByField];
   const fileOrdering: FileOrder[] = [orderByField];
   const folderOrdering: FolderOrder[] = [orderByField];
   const chartOrdering: ChartOrder[] = [orderByField];
+  const lensOrdering: LensOrder[] = [orderByField];
 
   const sortFieldLabels = { createdAt: "Date created", name: "Name" } as const;
   // Defaults the dashboard ships with — a tag is shown when the user diverges.
@@ -162,7 +163,7 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
             alwaysShow
             value={search}
             onChange={(value) => setSearch(value || null)}
-            placeholder="Search datasets, folders and files…"
+            placeholder="Search data, folders and files…"
           />
 
           {/* Ordering: field + direction in a dropdown, shared across lists.
@@ -249,7 +250,7 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
         uploadFile={performDataLayerUpload}
         createFile={createFile}
       >
-        {data?.arrayDatasets?.length == 0 && data.files.length == 0 ? (
+        {data?.lenses.length == 0 && data.files.length == 0 ? (
           <div className="min-h-full w-full  flex items-center justify-center rounded-lg">
             <div className="max-w-4xl mx-auto text-center px-6 py-16">
               {/* Hero Section */}
@@ -267,31 +268,10 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
                 </h1>
 
                 <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-                  Your powerful data visualization and knowledge graph platform.
-                  Create your first graph to start exploring and organizing your
-                  data relationships.
+                  Your images, tables, meshes and annotations in one place.
+                  Drop files anywhere on this page, or press Upload Files, to
+                  bring in your first data.
                 </p>
-              </div>
-
-
-
-
-              {/* Action Section */}
-              <div className="mt-12 space-y-6">
-                <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    <span>Visualize Relationships</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Network className="h-4 w-4" />
-                    <span>Build Connections</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4" />
-                    <span>Analyze Data</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -311,9 +291,20 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
                 not as one more list. */}
             <PinnedFolders className="-mt-4" />
 
-            <ArrayDatasetList
-              filters={{ notDerived: true, ...temporalFilter, ...searchFilter }}
-              ordering={arrayDatasetOrdering}
+            {/* The data, as the lenses that select all of it: one tile per
+                dataset, table, mesh, network and annotation collection. A tile
+                IS its whole lens, so selecting tiles here is how a task is
+                handed its input. `LensFilter` has no `notDerived` yet, so
+                derived arrays are listed too. */}
+            <DataLensList
+              filters={{ sliced: false, ...temporalFilter, ...searchFilter }}
+              ordering={lensOrdering}
+            />
+            {/* What people and tasks cut out of that data, newest first. */}
+            <LensSectionList
+              title="Selections"
+              filters={{ sliced: true, ...temporalFilter, ...searchFilter }}
+              ordering={lensOrdering}
             />
             <FolderList
               filters={{ parentless: true, ...temporalFilter, ...searchFilter }}

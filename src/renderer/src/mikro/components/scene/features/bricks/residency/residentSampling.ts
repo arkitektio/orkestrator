@@ -65,7 +65,7 @@ const findResidentBinding = (
     const level0 = level0Of(layer);
     if (!level0 || level0.store.id !== plan.sample.store.id) continue;
     const axisNames = axisNamesOf(plan.sample.system);
-    const ra = layer.lens.renderAxes;
+    const ra = layer.renderAxes;
     const xPos = axisNames.indexOf(ra.x);
     const yPos = axisNames.indexOf(ra.y);
     if (xPos === -1 || yPos === -1) return null;

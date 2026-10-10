@@ -24,8 +24,8 @@ fragment ListCoordinateSystem on CoordinateSystem {
 # dataset's own pyramid levels and unsliced lenses live in its grid, and a
 # hundred tiles acquired on one stage sit in one stage frame.
 #
-# Each member selects only what the breadcrumb renders. A Lens has no name of
-# its own so it borrows its dataset's; a DataArray has neither a name nor a
+# Each member selects only what the breadcrumb renders. A lens of any kind is
+# told by its container and its selection (`LensSubject`); a DataArray has neither a name nor a
 # back-reference to its dataset, so a pyramid level can name only its level.
 fragment Resident on Resident {
   __typename
@@ -47,10 +47,7 @@ fragment Resident on Resident {
   }
   ... on Lens {
     id
-    dataset {
-      id
-      name
-    }
+    ...LensSubject
   }
   ... on DataArray {
     id

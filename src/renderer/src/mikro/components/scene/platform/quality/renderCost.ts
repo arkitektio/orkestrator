@@ -39,7 +39,7 @@ const bytesPerVoxel = (layer: CostLayer, lodIndex: number): number => {
 
 /** Full x×y×intensity slice bytes at a pyramid level (non-spatial axes count 1). */
 const sliceBytesAtLevel = (layer: CostLayer, lodIndex: number): number => {
-  const renderAxes = layer.lens.renderAxes;
+  const renderAxes = layer.renderAxes;
   const intensityLength = Math.min(
     MAX_INTENSITY_CHANNELS,
     Math.max(1, axisLength(layer, lodIndex, renderAxes?.intensity)),
@@ -79,7 +79,7 @@ export function estimateImageLayerRenderCostBytes(layer: CostLayer, mode: "2D" |
   // the coarsest level's full slice (always resident as the pan backdrop).
   const intensityLength = Math.min(
     MAX_INTENSITY_CHANNELS,
-    Math.max(1, axisLength(layer, 0, layer.lens.renderAxes?.intensity)),
+    Math.max(1, axisLength(layer, 0, layer.renderAxes?.intensity)),
   );
   const detailCap = VIEWPORT_DETAIL_VOXELS * intensityLength * bytesPerVoxel(layer, 0);
   const detailBytes = Math.min(sliceBytesAtLevel(layer, 0), detailCap);

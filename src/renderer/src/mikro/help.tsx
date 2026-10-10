@@ -8,26 +8,28 @@ import { PageHelp } from "@/core/layout/help";
 export const MIKRO_HELP = {
   home: (
     <PageHelp
-      intro="Your data at a glance: the array datasets, top-level folders and files you uploaded or created most recently. This is the quickest place to bring new data in."
+      intro="Your data at a glance. Every dataset, table, mesh, network and annotation collection is one tile under Data, the parts cut out of them follow under Selections, then top-level folders, charts and files. This is the quickest place to bring new data in and to start a task on it."
       steps={[
         <>Press <b>Upload Files</b> and pick files, or drop files from your computer anywhere on the page, to upload them.</>,
-        <>Use the search field to narrow all three lists at once by name.</>,
+        <>Use the search field to narrow every list at once by name.</>,
         <>Open <b>Sort</b> to order by <b>Date created</b> or <b>Name</b>, ascending or descending.</>,
         <>Set a date range in the header to see only what was created in that period.</>,
-        <>Click a dataset to open it in the viewer, or right-click it and choose <b>Create Scene</b>, <b>Calibrate…</b> or <b>Move to Folder</b>.</>,
+        <>Click a tile to open it in the viewer.</>,
+        <>Select one or more tiles to start a task on them: each tile is the lens that selects all of its data, and the selection panel and the right-click menu list what can run on it.</>,
+        <>Drag a dataset or table tile onto a folder to file it there. The small database icon on a tile opens the dataset’s own page.</>,
       ]}
       tips={[
         <>The <b>Statistics</b> tab of the sidebar summarizes how much data you have.</>,
-        <>Only datasets that were not derived from another dataset are listed here. Derived ones are found on their source’s page.</>,
+        <>Derived datasets (masks, results) are listed under Data as well.</>,
       ]}
     />
   ),
   peerHome: (
     <PageHelp
-      intro="The data of one other user: their array datasets, folders and files, as far as you are allowed to see them."
+      intro="The data of one other user: their datasets, tables and collections (each as the lens that selects all of it), folders and files, as far as you are allowed to see them."
       steps={[
         <>Set a date range in the header to see only what they created in that period.</>,
-        <>Press <b>All Data</b> to switch to top-level items only. The button then reads <b>No Parent</b>; press it again to see everything.</>,
+        <>Press <b>All Data</b> to list top-level folders only. The button then reads <b>No Parent</b>; press it again to see every folder.</>,
         <>Click any dataset, folder or file to open it.</>,
       ]}
       tips={[
@@ -306,18 +308,19 @@ export const MIKRO_HELP = {
   ),
   lens: (
     <PageHelp
-      intro="A lens is a selection of an array dataset: the whole array, or a part cut out of it. This page is the viewer for one lens, shows the scenes that draw it, and is where you hand it to a task."
+      intro="A lens is a selection of a container (an array dataset, a table, a sparse dataset, a mesh, a network or an annotation collection): the whole of it, or a part cut out of it. This page is the viewer for one lens, shows the scenes that draw it, and is where you hand it to a task."
       steps={[
         <>Press <b>Create scene</b> to draw this lens, if it is in no scene yet.</>,
         <>Pick a scene in the dropdown under the title, and press <b>Make default</b> to open this lens on it from now on.</>,
         <>Press <b>Run on lens</b> in the header to run a task on exactly this selection.</>,
         <>Click the pencil next to the title to name the lens.</>,
-        <>Open the <b>Lenses</b> tab to switch to another lens of the same dataset, or press <b>New lens</b> there to cut a new one.</>,
-        <>Click the dataset's name above the title to go to the dataset and all of its lenses.</>,
+        <>Open the <b>Lenses</b> tab to switch to another lens of the same container, or press <b>New lens</b> there to cut a new one.</>,
+        <>Click the name above the title to go to the dataset or table the lens was cut from. Mesh, network and annotation collections have no page of their own.</>,
       ]}
       tips={[
         <>Drag the sliders at the right and bottom edge to move through Z and the other dimensions; the <b>Layers</b> tab changes contrast, channels and visibility.</>,
-        <>The <b>Info</b> tab shows the <b>Selection</b> and what is <b>Derived from this lens</b>.</>,
+        <>The <b>Info</b> tab shows the <b>Selection</b>, who created the lens and, for an array, what is <b>Derived from this lens</b>.</>,
+        <>Only an array lens lists every scene that draws it; the other kinds list the scene they open on.</>,
       ]}
     />
   ),

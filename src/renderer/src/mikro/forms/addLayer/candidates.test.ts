@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ArrayDatasetSpec, ColumnRole } from "../../api/graphql";
+import type { ArrayDatasetSpec, AxisType, ColumnRole } from "../../api/graphql";
 import {
   Candidate,
   Capabilities,
@@ -7,8 +7,10 @@ import {
   Section,
   SpaceLike,
   buildSections,
+  candidateRenderAxes,
   inferLensKinds,
   inferTableKinds,
+  lensCandidateOf,
 } from "./candidates";
 import { stagedFromLayers } from "./engine";
 import { graphFromComponent, type DerivationGraph, type EdgeLike } from "./spaceGraph";
@@ -31,7 +33,7 @@ type LensOverrides = {
 };
 
 const lens = (id: string, overrides: LensOverrides = {}): Candidate => ({
-  __typename: "Lens",
+  __typename: "ArrayLens",
   id,
   shape: overrides.shape ?? [512, 512],
   axisNames: overrides.axisNames ?? ["y", "x"],
@@ -41,14 +43,23 @@ const lens = (id: string, overrides: LensOverrides = {}): Candidate => ({
     stop: slice.stop ?? null,
     step: null,
   })),
-  lensSpace: { id: `grid-${overrides.datasetId ?? `ds-${id}`}` },
-  renderAxes: {
-    x: "x",
-    y: "y",
-    z: overrides.z ?? null,
-    intensity: overrides.intensity ?? null,
-    vector: null,
-    phasor: overrides.phasor ?? null,
+  // A lens no longer states its render axes; the picker reads them off the
+  // TYPES of its space's axes (`candidateRenderAxes`), so the fixture types
+  // each axis by the part the override gives it.
+  lensSpace: {
+    id: `grid-${overrides.datasetId ?? `ds-${id}`}`,
+    axes: (overrides.axisNames ?? ["y", "x"]).map((name, order) => ({
+      name,
+      order,
+      type:
+        name === overrides.phasor
+          ? ("MICROTIME" as AxisType)
+          : name === overrides.intensity
+            ? ("CHANNEL" as AxisType)
+            : name === "x" || name === "y" || name === overrides.z
+              ? ("SPACE" as AxisType)
+              : ("INDEX" as AxisType),
+    })),
   },
   dataset: {
     id: overrides.datasetId ?? `ds-${id}`,
@@ -137,8 +148,10 @@ const sectionOf = (sections: Section[], id: string) =>
 const datasetsOf = (sections: Section[]) =>
   (sectionOf(sections, "datasets")?.entries ?? []) as DatasetEntry[];
 
+// As the picker hands a lens to the engine: with its render axes read off the
+// axis types (no capability gates — these tests name the sets themselves).
 const asLens = (candidate: Candidate) =>
-  candidate as Extract<Candidate, { __typename: "Lens" }>;
+  lensCandidateOf(candidate as Extract<Candidate, { __typename: "ArrayLens" }>, null);
 
 describe("inferLensKinds", () => {
   it("infers a plain image, and offers nothing else", () => {
@@ -431,7 +444,7 @@ describe("buildSections", () => {
 describe("buildSections with a derivation graph", () => {
   const segmentedFrom = (child: Candidate, parentGrid: string): Candidate => {
     const derived = {
-      ...(child as Extract<Candidate, { __typename: "Lens" }>),
+      ...(child as Extract<Candidate, { __typename: "ArrayLens" }>),
     };
     derived.dataset = {
       ...derived.dataset,
@@ -498,5 +511,62 @@ describe("buildSections with a derivation graph", () => {
       search: "",
     });
     expect(datasetsOf(sections)[0].lenses[0].kinds).toEqual(["PHASOR", "INTENSITY"]);
+  });
+});
+
+describe("candidateRenderAxes", () => {
+  const axis = (name: string, type: string, order: number) => ({
+    name,
+    type: type as AxisType,
+    order,
+  });
+
+  it("maps the last three spatial axes to x, y, z, in that order from the end", () => {
+    expect(
+      candidateRenderAxes([
+        axis("t", "TIME", 0),
+        axis("c", "CHANNEL", 1),
+        axis("z", "SPACE", 2),
+        axis("y", "SPACE", 3),
+        axis("x", "SPACE", 4),
+      ]),
+    ).toEqual({ x: "x", y: "y", z: "z", intensity: "c", phasor: null, vector: null });
+  });
+
+  it("goes by the axis ORDER, not the order they arrive in", () => {
+    expect(
+      candidateRenderAxes([axis("col", "SPACE", 1), axis("row", "SPACE", 0)]),
+    ).toMatchObject({ x: "col", y: "row", z: null });
+  });
+
+  it("names a MICROTIME or SPECTRUM axis as the phasor axis, a DISPLACEMENT one as the vector axis", () => {
+    const axes = [
+      axis("tau", "MICROTIME", 0),
+      axis("v", "DISPLACEMENT", 1),
+      axis("y", "SPACE", 2),
+      axis("x", "SPACE", 3),
+    ];
+    expect(candidateRenderAxes(axes)).toMatchObject({ phasor: "tau", vector: "v" });
+    expect(
+      candidateRenderAxes([axis("lambda", "SPECTRUM", 0), axis("y", "SPACE", 1), axis("x", "SPACE", 2)]),
+    ).toMatchObject({ phasor: "lambda" });
+  });
+
+  it("withdraws an axis the server would not draw", () => {
+    const axes = [
+      axis("tau", "MICROTIME", 0),
+      axis("v", "DISPLACEMENT", 1),
+      axis("y", "SPACE", 2),
+      axis("x", "SPACE", 3),
+    ];
+    expect(candidateRenderAxes(axes, { phasor: false, vector: false })).toMatchObject({
+      phasor: null,
+      vector: null,
+    });
+  });
+
+  it("is null without an x and a y to draw along", () => {
+    expect(candidateRenderAxes([axis("t", "TIME", 0), axis("x", "SPACE", 1)])).toBeNull();
+    expect(candidateRenderAxes([])).toBeNull();
   });
 });

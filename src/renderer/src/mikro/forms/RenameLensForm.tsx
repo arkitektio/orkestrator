@@ -10,14 +10,15 @@ import {
 import { Input } from "@/core/ui/input";
 import { useState } from "react";
 import { DetailLensFragment, useGetLensQuery, useUpdateLensMutation } from "../api/graphql";
-import { lensLabel } from "../lenses";
+import { describeLens } from "../lenses";
 
 /**
  * Name a lens, or take its name away.
  *
  * The name is the one thing about a lens that can be edited: what it selects is
  * fixed, and a different selection is a different lens. A blank name clears it,
- * and the lens reads as "Whole array" or its slices again.
+ * and the lens reads as "Whole array" (or "Whole table", …) or its selection
+ * again.
  */
 export const RenameLensForm = (props: { lens: string }) => {
   const { data, error, refetch } = useGetLensQuery({ variables: { id: props.lens } });
@@ -30,6 +31,7 @@ export const RenameLensForm = (props: { lens: string }) => {
 
 const RenameLensFields = ({ lens }: { lens: DetailLensFragment }) => {
   const [name, setName] = useState(lens.name ?? "");
+  const { label, container } = describeLens(lens);
 
   // `UpdateLens` selects `id` and `name`, so Apollo writes the new name into the
   // normalized lens and every tile, row and title showing it follows.
@@ -46,7 +48,7 @@ const RenameLensFields = ({ lens }: { lens: DetailLensFragment }) => {
       <DialogHeader>
         <DialogTitle>Rename lens</DialogTitle>
         <DialogDescription>
-          A name for this selection of {lens.dataset.name}. Leave it empty to go
+          A name for this selection of {container.name}. Leave it empty to go
           back to showing what it selects.
         </DialogDescription>
       </DialogHeader>
@@ -59,7 +61,7 @@ const RenameLensFields = ({ lens }: { lens: DetailLensFragment }) => {
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
-        <div className="font-mono text-xs text-muted-foreground">{lensLabel(lens)}</div>
+        <div className="font-mono text-xs text-muted-foreground">{label}</div>
       </div>
 
       <DialogFooter>

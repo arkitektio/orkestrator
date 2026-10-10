@@ -8,11 +8,12 @@ import {
   useGetSceneQuery,
 } from "../../api/graphql";
 import { MIKRO_HELP } from "../../help";
-import { lensTitle } from "../../lenses";
+import { describeLens, isWholeLens } from "../../lenses";
 import { useSceneOpen } from "../../lib/zarr/useDatalayerWarmup";
 import { DatasetBackdrop } from "../arraydataset/DatasetBackdrop";
 import { Scene } from "../scene/Scene";
 import { DatasetFacts } from "../sidebars/DatasetInfoSidebar";
+import { LensBackdrop } from "./LensBackdrop";
 import { LensInfoSection } from "./LensInfoSection";
 import { LensTitleOverlay } from "./LensTitleOverlay";
 import { LensesSidebar } from "./LensesSidebar";
@@ -26,26 +27,35 @@ export const SCENE_PARAM = "scene";
  * The page people work on data in: a viewport, the scenes that draw it, and the
  * lens it is about.
  *
- * The app's ONLY viewer for array data. A dataset is a container — its page
- * lists its lenses and is where they are cut — and what gets opened, looked at
- * and handed to a task is always a lens: the whole array (the lens that cuts
- * nothing) or a part of it. So the page reads top to bottom as the hierarchy it
- * sits in: the dataset it belongs to, the lens it IS, the scene it is drawn in.
+ * One shell for every kind of lens. A container — an array dataset, a table, a
+ * mesh collection — is where lenses are listed and cut, and what gets opened,
+ * looked at and handed to a task is always a lens: the whole container (the
+ * lens that cuts nothing) or a part of it. So the page reads top to bottom as
+ * the hierarchy it sits in: the container it belongs to, the lens it IS, the
+ * scene it is drawn in.
  *
  * Everything the page asks, it asks of the lens — its scenes, its nomination.
  * For the whole array the server answers those with the dataset's own (they
  * are one thing), so "Make default" there re-tiles the dataset; for a cut they
  * are the cut's alone.
  *
- * The dataset is passed alongside for what only the container knows: the
- * pyramid behind the backdrop, the spaces it is registered into, its sibling
- * lenses.
+ * **Only an array lens can list its scenes.** The other kinds know the one
+ * scene they nominate and nothing else, so their switcher holds that scene,
+ * plus whichever scene a link names (`?scene=`) once it is seen to draw this
+ * lens. A scene staged from a whole table and never nominated is therefore
+ * reachable from the scene list, not from here, until the backend can list a
+ * lens' scenes for every kind.
+ *
+ * An array lens passes its `dataset` alongside for what only that container
+ * knows: the pyramid behind the backdrop, the spaces it is registered into, its
+ * facts in the Info tab.
  */
 export const LensWorkspace = ({
   dataset,
   lens,
 }: {
-  dataset: PageDataset;
+  /** The array lens' dataset. Absent for every other kind. */
+  dataset?: PageDataset;
   lens: DetailLensFragment;
 }) => {
   // Which scene is on screen lives in the URL (`?scene=`), not in component
@@ -67,13 +77,34 @@ export const LensWorkspace = ({
     [setSearchParams],
   );
 
-  const scenes = lens.scenes;
+  const isArray = lens.__typename === "ArrayLens";
+  const listed = isArray ? lens.scenes : lens.defaultScene ? [lens.defaultScene] : [];
   // Only a scene this page actually lists: a stale link must fall back to the
   // nomination rather than open a scene of something else under this title.
   const requested = searchParams.get(SCENE_PARAM);
-  const selectedSceneId = scenes.find((scene) => scene.id === requested)?.id;
+  const listedSceneId = listed.find((scene) => scene.id === requested)?.id;
   const defaultSceneId = lens.defaultScene?.id;
-  const sliced = lens.slices.length > 0;
+  const sliced = !isWholeLens(lens);
+
+  // A non-array lens cannot list its scenes, so a link naming one is checked
+  // against the scene itself: it counts when one of its layers draws this
+  // lens. Same query the viewport runs below, so the answer is a cache read by
+  // the time the scene mounts. Until it answers the link is taken at its word.
+  const linked = !isArray && requested && !listedSceneId ? requested : undefined;
+  const { data: linkedData } = useGetSceneQuery({
+    variables: { id: linked as string },
+    skip: !linked,
+    errorPolicy: "all",
+  });
+  const linkedScene = linkedData?.scene;
+  const linkedRefused =
+    !!linkedScene &&
+    !linkedScene.layers.some((layer) => "lens" in layer && layer.lens.id === lens.id);
+  const selectedSceneId = listedSceneId ?? (linkedRefused ? undefined : linked);
+  const scenes =
+    linkedScene && !linkedRefused
+      ? [...listed, { id: linkedScene.id, name: linkedScene.name }]
+      : listed;
 
   // The nominated scene is the one to land in — it is a choice someone made, and
   // it is also where the thumbnail comes from, so opening anything else would
@@ -105,6 +136,8 @@ export const LensWorkspace = ({
     errorPolicy: "all",
   });
 
+  const description = describeLens(lens);
+
   return (
     // The provider wraps the WHOLE ModelPage so the Layers sidebar tab (a
     // sibling panel of the content area) reaches the scene stores. Null scene
@@ -113,7 +146,7 @@ export const LensWorkspace = ({
       <MikroLens.ModelPage
         object={lens}
         help={MIKRO_HELP.lens}
-        title={`${dataset.name} · ${lensTitle(lens)}`}
+        title={`${description.container.name} · ${description.title}`}
         variant="black"
         overlay
         actions={<MikroLens.Actions object={lens} />}
@@ -135,17 +168,20 @@ export const LensWorkspace = ({
               <Sidebars.Tab label="Meshes"><Scene.MeshesSidebar /></Sidebars.Tab>
             )}
             <Sidebars.Tab label="Lenses">
-              <LensesSidebar dataset={dataset} activeLensId={lens.id} />
+              <LensesSidebar lens={lens} dataset={dataset} />
             </Sidebars.Tab>
             {/* The lens leads with its own — what it selects, what was computed
-                from that — then the facts of the dataset it reads from. The
-                dataset's lineage and history are on the dataset's page. */}
+                from that — then, for an array, the facts of the dataset it
+                reads from. The container's lineage and history are on the
+                container's page. */}
             <Sidebars.Tab label="Info">
               <div className="flex h-full flex-col overflow-y-auto">
                 <LensInfoSection lens={lens} />
-                <div className="flex flex-col gap-4 p-4">
-                  <DatasetFacts dataset={dataset} />
-                </div>
+                {dataset && (
+                  <div className="flex flex-col gap-4 p-4">
+                    <DatasetFacts dataset={dataset} />
+                  </div>
+                )}
               </div>
             </Sidebars.Tab>
           </>
@@ -173,7 +209,7 @@ export const LensWorkspace = ({
             <div className="flex h-full w-full items-center justify-center">
               <div className="text-sm text-muted-foreground">Loading scene…</div>
             </div>
-          ) : (
+          ) : lens.__typename === "ArrayLens" && dataset ? (
             <DatasetBackdrop
               dataset={dataset}
               lens={lens}
@@ -183,6 +219,8 @@ export const LensWorkspace = ({
               // refetch) and the viewport remounts on its id.
               onSceneCreated={selectScene}
             />
+          ) : (
+            <LensBackdrop lens={lens} onSceneCreated={selectScene} />
           )}
 
           {/* Page chrome, not scene chrome: outside the branch above, so it is
@@ -191,6 +229,7 @@ export const LensWorkspace = ({
           <LensTitleOverlay
             dataset={dataset}
             lens={lens}
+            scenes={scenes}
             activeSceneId={activeSceneId}
             onSelectScene={selectScene}
             sceneLoading={sceneLoading}

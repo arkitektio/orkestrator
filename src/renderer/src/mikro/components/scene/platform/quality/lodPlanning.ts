@@ -87,7 +87,7 @@ export function estimateLayerVolumeBytes(layer: BrickLayerFragment, lodIndex: nu
 
   // The volume loader collapses every non-spatial axis (t, c, …) to a single
   // index, so only the x/y/z slice lengths contribute to texture memory.
-  const renderAxes = layer.lens.renderAxes;
+  const renderAxes = layer.renderAxes;
   const spatialDims = new Set([renderAxes?.x, renderAxes?.y, renderAxes?.z].filter(Boolean));
 
   const selectedVoxelCount = dataArray.store.shape.reduce((total, axisLength, axisIndex) => {

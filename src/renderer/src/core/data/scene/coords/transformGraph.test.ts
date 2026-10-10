@@ -311,9 +311,9 @@ describe("composeLayerAffine", () => {
   }) => ({
     pathToWorld: (opts?.pathToWorld ?? null) as never,
     asAffine: (opts?.asAffine ?? null) as never,
+    renderAxes: { x: "x", y: "y", z: "z" },
     lens: {
       axisNames: DIMS,
-      renderAxes: { x: "x", y: "y", z: "z" },
       coordinateSystem: { id: "cs:lens" },
       toParent: (opts?.lensToParent ?? null) as never,
       dataset: {
@@ -484,9 +484,9 @@ describe("composeLayerAffine — lens axes named unlike the world (Visium HD bin
   const binLayer = (asAffine: typeof AS_AFFINE | null) => ({
     pathToWorld: [LATTICE_STEP, CALIBRATION_CYX] as never,
     asAffine,
+    renderAxes: { x: "col", y: "row", z: null },
     lens: {
       axisNames: ["row", "col"],
-      renderAxes: { x: "col", y: "row", z: null },
       coordinateSystem: { id: "cs:bins" },
       toParent: null,
       dataset: {
@@ -521,9 +521,9 @@ describe("composeLayerAffine — lens axes named unlike the world (Visium HD bin
         outputAxes: ["c", "y", "x"],
         total: true,
       },
+      renderAxes: { x: "x", y: "y", z: null },
       lens: {
         axisNames: ["c", "y", "x"],
-        renderAxes: { x: "x", y: "y", z: null },
         coordinateSystem: { id: "cs:he" },
         toParent: null,
         dataset: {

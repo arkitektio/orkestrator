@@ -3,13 +3,14 @@ import { CommandGroup } from "cmdk";
 
 import { EntityRow } from "@/core/command/sources/entity/EntityRow";
 import { GroupHeading, PER_TYPE_LIMIT } from "@/core/command/sources/entity/shared";
+import { describeLens } from "./lenses";
 
 /**
  * Mikro's slice of the palette's entity search.
  *
  * One file per module rather than a loop, because every module's `GlobalSearch`
  * is its own query with its own `@skip` booleans and its own fragments — mikro
- * takes `noArrayDatasets`/`noFiles`/`noFolders`, lok takes `noUsers`/`noGroups`,
+ * takes `noArrayDatasets`/`noFiles`/`noFolders`/`noLenses`, lok takes `noUsers`/`noGroups`,
  * kraph takes none at all. There is no shape to share here beyond the row.
  *
  * Mounted only inside `Guard.Mikro`, from the outside — see the composer.
@@ -21,6 +22,7 @@ export const MikroEntitySearch = ({ term, onDone }: { term: string; onDone?: () 
       noArrayDatasets: false,
       noFiles: false,
       noFolders: false,
+      noLenses: false,
       pagination: { limit: PER_TYPE_LIMIT },
     },
     fetchPolicy: "cache-first",
@@ -42,6 +44,15 @@ export const MikroEntitySearch = ({ term, onDone }: { term: string; onDone?: () 
       id: f.id,
       label: f.name,
     })),
+    // A lens is found by its name, and shown as that name on its container.
+    ...(data?.lenses ?? []).map((lens) => {
+      const { title, container } = describeLens(lens);
+      return {
+        identifier: "@mikro/lens",
+        id: lens.id,
+        label: `${title} · ${container.name}`,
+      };
+    }),
   ];
 
   if (rows.length === 0) {

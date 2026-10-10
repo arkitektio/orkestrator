@@ -1,4 +1,12 @@
+# Only whether there is anything at all: the page's lists run their own
+# queries. Lenses rather than array datasets, because every container has a
+# whole lens — an organization holding only tables is not an empty one.
 query HomePage {
+  lenses(pagination: { limit: 1 }) {
+    id
+  }
+
+  # The newest dataset, for the dashboard widget's thumbnail.
   arrayDatasets: arrayDatasets(pagination: { limit: 1 }, ordering: [{ createdAt: DESC }]) {
     ...ListArrayDataset
   }
@@ -9,12 +17,8 @@ query HomePage {
 }
 
 query PeerHomePage($id: ID!) {
-  arrayDatasets: arrayDatasets(
-    pagination: { limit: 1 }
-    filters: { owner: $id }
-    ordering: [{ createdAt: DESC }]
-  ) {
-    ...ListArrayDataset
+  lenses(pagination: { limit: 1 }, filters: { owner: $id }) {
+    id
   }
 
   files: files(

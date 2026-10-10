@@ -42,13 +42,13 @@ export type AnchorLayer = {
   phasorAxis: string | null;
   channels: readonly { intensityIndex: number; visible: boolean }[];
   phasors: readonly { intensityIndex: number; visible: boolean }[];
+  renderAxes?: {
+    x?: string | null;
+    y?: string | null;
+    z?: string | null;
+  } | null;
   lens: {
     slices?: readonly DimSliceFragment[] | null;
-    renderAxes?: {
-      x?: string | null;
-      y?: string | null;
-      z?: string | null;
-    } | null;
     dataset: {
       axisNames?: readonly string[] | null;
       dataArrays?: readonly DataArrayLike[] | null;
@@ -82,7 +82,7 @@ export function layerCoverage(
   dimSelections: Readonly<Record<string, number>>,
 ): LayerCoverage {
   const axisNames = layer.lens.dataset.axisNames ?? [];
-  const renderAxes = layer.lens.renderAxes;
+  const renderAxes = layer.renderAxes;
   const whole = new Set(
     [renderAxes?.x, renderAxes?.y, renderAxes?.z, layer.phasorAxis].filter(
       (axis): axis is string => Boolean(axis),

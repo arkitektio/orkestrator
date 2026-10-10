@@ -34,14 +34,10 @@ import type { SceneTransformContext } from "@/core/data/scene/coords/transformGr
 const SCENE: SceneTransformContext = { worldCoordinateSystem: null } as SceneTransformContext;
 
 const LENS = {
-  __typename: "Lens",
+  __typename: "ArrayLens",
   id: "lens-1",
   shape: [3, 64, 20, 512, 512],
   axisNames: ["c", "m", "z", "y", "x"],
-  // "m" is the MICROTIME axis a FLIM cube reduces to a phasor. It is neither a
-  // spatial axis nor the channel axis — `resolvePhasorAxis` enforces exactly
-  // that, and returns null for a "phasor axis" that is really the channel one.
-  renderAxes: { x: "x", y: "y", z: "z", t: null, intensity: "c", phasor: "m" },
   slices: [],
   dataset: {
     name: "acquisition",
@@ -57,6 +53,10 @@ const HEAD = {
   order: 0,
   visible: true,
   pathToWorld: [],
+  // "m" is the MICROTIME axis a FLIM cube reduces to a phasor. It is neither a
+  // spatial axis nor the channel axis — `resolvePhasorAxis` enforces exactly
+  // that, and returns null for a "phasor axis" that is really the channel one.
+  renderAxes: { x: "x", y: "y", z: "z", t: null, intensity: "c", phasor: "m" },
   lens: LENS,
 };
 

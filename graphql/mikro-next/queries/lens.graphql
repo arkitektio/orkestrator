@@ -5,8 +5,10 @@
 query GetLensPhasor($id: ID!, $axis: String, $harmonic: Int!) {
   lens(id: $id) {
     id
-    phasor(axis: $axis, harmonic: $harmonic) {
-      ...PhasorContext
+    ... on ArrayLens {
+      phasor(axis: $axis, harmonic: $harmonic) {
+        ...PhasorContext
+      }
     }
   }
 }
@@ -30,8 +32,10 @@ query ListLensesForDataset($dataset: ID!) {
   lenses(filters: { dataset: $dataset }) {
     id
     name
-    slices {
-      ...DimSlice
+    ... on ArrayLens {
+      slices {
+        ...DimSlice
+      }
     }
   }
 }
@@ -45,9 +49,51 @@ query GetLens($id: ID!) {
   }
 }
 
-# Every lens, for the list page.
+# Lenses of every kind, for the list page, the home section and a container's
+# siblings (`filters: { tableDataset: … }`).
 query ListLenses($filters: LensFilter, $ordering: [LensOrder!], $pagination: OffsetPaginationInput) {
   lenses(filters: $filters, ordering: $ordering, pagination: $pagination) {
     ...ListLens
+  }
+}
+
+# What the "New lens" dialog needs to cut a window-selected container: the
+# lens it starts from (its container, its windows) and the axes of the space
+# those windows are stated in.
+fragment WindowLensSubject on Lens {
+  id
+  name
+  ...LensSubject
+  coordinateSystem {
+    id
+    name
+    axes {
+      ...Axis
+    }
+  }
+}
+
+query GetWindowLensSubject($id: ID!) {
+  lens(id: $id) {
+    ...WindowLensSubject
+  }
+}
+
+# THE whole lens of one container: `filters` names the container and
+# `sliced: false` keeps the lens that cuts nothing, of which every container
+# has exactly one. How an entry point holding only a table's or a mesh
+# collection's id reaches the lens to open or to cut.
+query GetWholeLens($filters: LensFilter!) {
+  lenses(filters: $filters, pagination: { limit: 1 }) {
+    ...WindowLensSubject
+  }
+}
+
+# What a handful of lenses select from, in one round trip: an action handed
+# lenses that has to act on their CONTAINERS (filing them in a folder).
+query GetLensContainers($ids: [ID!]!) {
+  lenses(filters: { ids: $ids }) {
+    id
+    ...LensSubject
   }
 }

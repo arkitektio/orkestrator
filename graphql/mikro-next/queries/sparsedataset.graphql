@@ -53,7 +53,7 @@ query GetSparseDatasetDerived($id: ID!) {
             id
             name
           }
-          ... on Lens {
+          ... on ArrayLens {
             id
             dataset {
               id
