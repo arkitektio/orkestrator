@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   badgeMarkdownFor,
   copyText,
+  orgLinkFor,
+  smartLinkFor,
   privateLinkFor,
   scopedLinkFor,
   universalLinkFor,
@@ -105,5 +107,34 @@ describe("copyText", () => {
     window.api = { copyToClipboard };
     expect(await copyText("hello")).toBe(true);
     expect(copyToClipboard).toHaveBeenCalledWith("hello");
+  });
+});
+
+describe("links through the organization's front door", () => {
+  const host = { frontendUrl: "https://go.arkitekt.live/", slug: "my-lab", hub: "3" };
+
+  it("names an object by identifier and id, the identifier as one segment", () => {
+    expect(smartLinkFor(host, { identifier: "@mikro/image", id: "42" })).toBe(
+      "https://go.arkitekt.live/smartlink/my-lab/3/%40mikro%2Fimage/42",
+    );
+  });
+
+  it("names whoever copied it, for kontrol to show as the sharer", () => {
+    const mine = { ...host, user: "7" };
+    expect(smartLinkFor(mine, { identifier: "@mikro/image", id: "42" })).toBe(
+      "https://go.arkitekt.live/smartlink/my-lab/3/%40mikro%2Fimage/42?user_id=7",
+    );
+    const link = orgLinkFor(mine, { pathname: "/mikro/images/5" }, SCOPE);
+    expect(new URL(link).searchParams.get("user_id")).toBe("7");
+    expect(decodeShareRequest(new URL(link).search)?.path).toBe("/mikro/images/5");
+  });
+
+  it("links a page through the gate, so the organization is checked on arrival", () => {
+    const link = orgLinkFor(host, { pathname: "/mikro/images/5", search: "?tab=info" }, SCOPE);
+    expect(link.startsWith("https://go.arkitekt.live/deeplink/my-lab/orkestrator/open?")).toBe(true);
+    expect(decodeShareRequest(new URL(link).search)).toMatchObject({
+      path: "/mikro/images/5?tab=info",
+      scope: { baseUrl: SCOPE.baseUrl, org: "acme" },
+    });
   });
 });

@@ -14,7 +14,7 @@ import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 
 import { hashFor, normalizeDeepLinkPath, readBootPath } from "./hashMirror";
-import { consumePendingShare } from "./pendingShare";
+import { consumePendingShare, rememberPendingShare } from "./pendingShare";
 import type { Action, Location } from "@remix-run/router";
 
 import type { TabHistory } from "./tabHistory";
@@ -216,9 +216,15 @@ export const TabsProvider = ({
   // Created once via the lazy initializer; re-booted (not re-created) when the
   // membership changes, so subscribers keep their subscription across a
   // profile switch.
-  const [store] = useState<Store>(() =>
-    createStore(forward ? quickTabsState() : bootTabs(profileId, readBoot())),
-  );
+  const [store] = useState<Store>(() => {
+    if (forward) return createStore(quickTabsState());
+    const boot = readBoot();
+    // Launched by a link with nobody signed in: the welcome screen is the
+    // whole window, and the boot that follows the sign-in reads no hash. Keep
+    // the link for it.
+    if (boot && profileId === null) rememberPendingShare(boot);
+    return createStore(bootTabs(profileId, boot));
+  });
 
   // Re-boot on membership change. `bootedFor` guards the first render, whose
   // boot already happened above. The boot path is deliberately `null` here:
@@ -356,11 +362,15 @@ export const TabsProvider = ({
   // clicked must land even when the strip is full.
   useEffect(() => {
     if (forward) return;
-    const dispose = window.api?.tabs?.onOpen?.(({ path }) =>
-      open(normalizeDeepLinkPath(path), { evict: true }),
-    );
+    const dispose = window.api?.tabs?.onOpen?.(({ path }) => {
+      const to = normalizeDeepLinkPath(path);
+      // Nobody signed in: no tab is on screen, and signing in re-boots the
+      // store. The link waits for that boot instead of being dropped.
+      if (profileId === null) rememberPendingShare(to);
+      open(to, { evict: true });
+    });
     return dispose;
-  }, [open, forward]);
+  }, [open, forward, profileId]);
 
   // Hotkeys. Capture phase on `window`, like the palette's, so they win over
   // whatever has focus.

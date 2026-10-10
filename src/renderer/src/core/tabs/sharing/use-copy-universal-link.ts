@@ -1,7 +1,8 @@
-import { useActiveScope } from "@/core/tabs/sharing/use-active-scope";
+import { useActiveLinkHost, useActiveScope } from "@/core/tabs/sharing/use-active-scope";
 import {
   badgeMarkdownFor,
   copyText,
+  orgLinkFor,
   privateLinkFor,
   scopedLinkFor,
   universalLinkFor,
@@ -23,7 +24,8 @@ import { toast } from "@/core/notify";
  *
  * `copy` is SCOPED while there is a connection to scope it to: a page here
  * shows one deployment's objects, and the same path elsewhere would open
- * different ones. `copyPrivate` is the same link with the deployment and
+ * different ones. It is served by the organization's own front door
+ * (`orgLinkFor`) when the deployment has one, by arkitekt.live otherwise. `copyPrivate` is the same link with the deployment and
  * organization hashed away, for pasting somewhere public. The badge stays
  * portable, because a README is read by strangers.
  */
@@ -46,16 +48,19 @@ export const useCopyUniversalLink = (location: { pathname: string; search?: stri
   }, []);
 
   const scope = useActiveScope();
+  const host = useActiveLinkHost();
 
   const copy = useCallback(
     () =>
       put(
         scope
-          ? scopedLinkFor({ pathname, search }, scope)
+          ? host
+            ? orgLinkFor(host, { pathname, search }, scope)
+            : scopedLinkFor({ pathname, search }, scope)
           : universalLinkFor({ pathname, search }),
         "Link copied",
       ),
-    [pathname, search, scope, put],
+    [pathname, search, scope, host, put],
   );
 
   const copyPrivate = useCallback(async () => {

@@ -48,6 +48,13 @@ const claims = (builtins: ModuleBuiltins): Record<string, string[]> => ({
   operation: Object.keys(builtins.operations ?? {}),
 });
 
+/**
+ * First path segments the host routes itself. `smart` is also the reserved
+ * host of a smartlink (`orkestrator://smart/…`, `core/links/LINKS.md`), so no
+ * service may ever be called that.
+ */
+export const RESERVED_NAMESPACES: ReadonlySet<string> = new Set(["smart", "auth", "open", "new", "settings", "blok"]);
+
 /** Why `definition` cannot join `installed`, if anything. */
 export const registrationIssues = (
   definition: ModuleDefinition,
@@ -58,6 +65,9 @@ export const registrationIssues = (
 
   const { namespace } = definition.manifest;
   const issues: ManifestIssue[] = [];
+  if (RESERVED_NAMESPACES.has(namespace)) {
+    issues.push({ path: "namespace", message: `namespace ${namespace} is reserved for the host` });
+  }
   if (installed.some((other) => other.manifest.namespace === namespace)) {
     issues.push({ path: "namespace", message: `namespace ${namespace} is already registered` });
   }

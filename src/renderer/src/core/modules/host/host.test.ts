@@ -57,6 +57,14 @@ describe("registerModule", () => {
     expect(result).toMatchObject({ ok: false, issues: [{ path: "namespace" }] });
   });
 
+  it("refuses a namespace the host routes itself", () => {
+    // `smart` is the reserved host of a smartlink; a service called that
+    // would swallow every one of them.
+    for (const namespace of ["smart", "auth", "open"]) {
+      expect(registerModule(module(namespace))).toMatchObject({ ok: false, issues: [{ path: "namespace" }] });
+    }
+  });
+
   it("refuses builtin ids another module already claims", () => {
     const Dialog = () => null;
     registerModule(module("alpha", { dialogs: { creatething: Dialog } }));

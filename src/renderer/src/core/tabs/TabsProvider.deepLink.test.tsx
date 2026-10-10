@@ -3,9 +3,10 @@ import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useLocation } from "react-router-dom";
 
+const session = vi.hoisted(() => ({ profile: "org-a" as string | null }));
 vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/core/connection/arkitekt/host")>()),
-  Arkitekt: { useActiveProfileId: () => "org-a" },
+  Arkitekt: { useActiveProfileId: () => session.profile },
 }));
 vi.mock("@/core/constants", () => ({ baseName: "" }));
 
@@ -32,6 +33,8 @@ const dispose = vi.fn();
 
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
+  session.profile = "org-a";
   window.location.hash = "";
   onOpenCallback = null;
   dispose.mockClear();
@@ -92,6 +95,37 @@ describe("deep links", () => {
     act(() => onOpenCallback?.({ path: "/deep" }));
     expect(screen.getByTestId("count").textContent).toBe(String(MAX_TABS));
     expect(screen.getByTestId("path").textContent).toBe("/deep");
+  });
+
+  it("keeps a link that arrives with nobody signed in, and opens it after the sign-in", () => {
+    session.profile = null;
+    const { rerender } = renderApp();
+    act(() => onOpenCallback?.({ path: "/smart/my-lab/3/%40mikro%2Fimage/42" }));
+
+    session.profile = "org-a";
+    rerender(
+      <TabsProvider>
+        <ActiveTabRouter>
+          <Probe />
+        </ActiveTabRouter>
+      </TabsProvider>,
+    );
+    expect(screen.getByTestId("path").textContent).toBe("/smart/my-lab/3/%40mikro%2Fimage/42");
+  });
+
+  it("does not replay a link that arrived while signed in on the next switch", () => {
+    const { rerender } = renderApp();
+    act(() => onOpenCallback?.({ path: "/mikro/arraydatasets/5" }));
+
+    session.profile = "org-b";
+    rerender(
+      <TabsProvider>
+        <ActiveTabRouter>
+          <Probe />
+        </ActiveTabRouter>
+      </TabsProvider>,
+    );
+    expect(screen.getByTestId("path").textContent).not.toBe("/mikro/arraydatasets/5");
   });
 
   it("disposes the subscription on unmount", () => {

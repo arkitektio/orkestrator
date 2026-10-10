@@ -3,6 +3,9 @@ import { Route, Routes } from "react-router-dom";
 import { BackNavigationErrorCatcher } from "./AppProvider";
 import { NewTabPage } from "./pages/NewTabPage";
 import { ShareGatePage } from "./pages/ShareGatePage";
+import { AuthCallbackPage } from "../core/authflow/AuthCallbackPage";
+import { RelayCallbackRedirect } from "../core/authflow/RelayCallbackRedirect";
+import { SmartLinkPage } from "../core/links/SmartLinkPage";
 import { ModuleLoadingFallback } from "../core/layout/fallbacks/ModuleLoading";
 import { ModuleRoute } from "../core/modules/ModuleRoute";
 import { NotFound } from "../core/layout/fallbacks/NotFound";
@@ -54,6 +57,15 @@ export const AppRoutes = () => {
               protected: deciding where a link belongs must work while we are on
               the wrong connection, or none. */}
           <Route path="open" element={<ShareGatePage />} />
+          {/* Where a login at an external provider comes back, for every
+              module. Not protected either: it says why a login cannot be
+              finished here instead of rendering nothing. */}
+          <Route path="auth/callback/:namespace" element={<AuthCallbackPage />} />
+          {/* The form the relay opens (orkestrator://<service>/auth/callback). */}
+          <Route path=":namespace/auth/callback" element={<RelayCallbackRedirect />} />
+          {/* A smartlink (orkestrator://smart/<org>/<hub>/<identifier>/<id>):
+              decides which login it belongs to before it becomes a page. */}
+          <Route path="smart/*" element={<SmartLinkPage />} />
           {/* Every module under its namespace (lok too: labelled "Team", routed as lok). */}
           {/* A module with `roles` shows "not permitted" to anyone else; one
               whose service is down, why. */}

@@ -198,7 +198,7 @@ else from it:
   `hovers`, `dialogs`, `actions`, `pageSections`, `sections`, `menuWrappers`, `profileSections`,
   `background`, `railIslands`, `search`, `paletteSources`,
   `paletteHitActions`, `optionSources`, `operations`, `taskHooks`,
-  `fileDownloaders` (see `core/modules/host/define.ts`).
+  `fileDownloaders`, `authFlow` (see `core/modules/host/define.ts`).
 - `dialogRegistry.ts` — its dialogs, read type-only by the app to type
   `openDialog`.
 
@@ -247,6 +247,18 @@ Rules:
   - **Asking another module to do something** that returns data (create a
     room, …) is a named operation: its `operations` builtin
     (`"alpaka.startRoom"`), called with `useOperation(name)`.
+  - **Logging in at an external provider** (a bank, a mailbox: OAuth consent
+    or a device code the backend started) is the host's flow, `core/authflow`
+    (contract: `core/authflow/AUTH_FLOWS.md`). The module keeps its own start
+    mutation and declares an `authFlow` builtin (complete / read / cancel on
+    its own client); its dialog renders `<AuthFlow flow="bank" open=… />` (or
+    `useAuthFlow` + `AuthFlowPanel` inline). The redirect comes back at the
+    host's unguarded `/auth/callback/:namespace`; a module adds no callback
+    page, no paste field, no countdown.
+  - **Links into the app** (`orkestrator://…`, and the https forms that are
+    copied) are the host's: `core/links/LINKS.md`. An object is linked by its
+    Structure (a smartlink, landing on `/smart/*`), so a module adds no link
+    code; `smart`, `auth` and `open` are reserved namespaces.
   - **The signed-in user** is the host's: `useSelf()` (`core/connection/useSelf`),
     never a lok `me` query.
   - A module that genuinely builds on another service declares it

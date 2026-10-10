@@ -65,6 +65,63 @@ export const privateLinkFor = async (
   );
 
 /**
+ * Where an organization's links are served: kontrol, the deployment's own
+ * front door (`frontend_url` in lok's `/.well-known/fakts`). It walks whoever
+ * opens one through signing in, joining the organization and installing the
+ * app before it hands the link to `orkestrator://`; the raw scheme does none
+ * of that, so only these https forms are ever copied. An organization without
+ * a slug cannot be linked this way.
+ */
+export type LinkHost = {
+  frontendUrl: string;
+  /** The organization's slug. */
+  slug: string;
+  /** lok's id of the hub. */
+  hub: string;
+  /** lok's id of whoever copies the link; kontrol shows them as the sharer. */
+  user?: string | null;
+};
+
+/** The query parameter that names the sharer. For kontrol's page only: the app drops it. */
+export const SHARER_PARAM = "user_id";
+
+const origin = (host: LinkHost) => host.frontendUrl.replace(/\/+$/, "");
+
+const withSharer = (link: string, host: LinkHost): string =>
+  host.user ? `${link}${link.includes("?") ? "&" : "?"}${SHARER_PARAM}=${encodeURIComponent(host.user)}` : link;
+
+/**
+ * A link to one object, named by identifier and id rather than by this app's
+ * route to it (`<frontend>/smartlink/<org>/<hub>/<identifier>/<id>`). The
+ * identifier is one encoded segment. Arrives back as `/smart/…`
+ * (`core/links/SmartLinkPage`).
+ */
+export const smartLinkFor = (host: LinkHost, structure: { identifier: string; id: string }): string =>
+  withSharer(
+    [origin(host), "smartlink", ...[host.slug, host.hub, structure.identifier, structure.id].map(encodeURIComponent)].join("/"),
+    host,
+  );
+
+/**
+ * A link to a page of this app inside one organization
+ * (`<frontend>/deeplink/<org>/orkestrator/<path>`). Kontrol hands the path
+ * over as written and without the organization, so the path is the `/open`
+ * gate's: the scope rides in it and this app checks it on arrival.
+ */
+export const orgLinkFor = (
+  host: LinkHost,
+  location: { pathname: string; search?: string },
+  scope: ShareScope,
+): string =>
+  withSharer(
+    `${origin(host)}/deeplink/${encodeURIComponent(host.slug)}/orkestrator/${encodeShareScope(
+      scope,
+      `${location.pathname}${location.search ?? ""}`,
+    ).replace(/^\/+/, "")}`,
+    host,
+  );
+
+/**
  * The "Open in Arkitekt" badge, as served by the site.
  *
  * One generic image for every link — what a badge points at is the link's

@@ -17,7 +17,8 @@ import {
   loadStoredProfileBook,
 } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import type { ShareScope } from "@/core/tabs/sharing/shareScope";
-import { copyText, privateLinkFor, scopedLinkFor, universalLinkFor } from "@/core/tabs/sharing/universalLink";
+import { copyText, privateLinkFor, scopedLinkFor, smartLinkFor, universalLinkFor } from "@/core/tabs/sharing/universalLink";
+import { profileLinkHost } from "@/core/tabs/sharing/use-active-scope";
 
 const NavigateAction: Action = {
   title: "Open",
@@ -181,6 +182,15 @@ const CopyLinkAction: Action = {
     },
   ],
   execute: async ({ state }) => {
+    // Through the organization's front door, the object is named as itself
+    // (a smartlink), not by this app's route to it.
+    const profile = getActiveProfile(loadStoredProfileBook());
+    const host = profile && profileLinkHost(profile);
+    if (host) {
+      const { identifier, id } = state.left[0];
+      await putOnClipboard(smartLinkFor(host, { identifier, id }), "Link copied");
+      return;
+    }
     const location = structureLocation(state);
     const scope = activeShareScope();
     await putOnClipboard(

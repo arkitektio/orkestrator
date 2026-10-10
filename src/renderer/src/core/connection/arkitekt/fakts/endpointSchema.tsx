@@ -15,9 +15,10 @@ export const FaktsEndpointSchema = z.object({
   description: z.string().optional().nullable(),
   base_url: z.string().url(),
   /**
-   * Still sent by servers, read by nothing here: the device grant opens
-   * `verification_uri_complete`. Optional so a deployment that drops them
-   * keeps working.
+   * The deployment's front door (kontrol): where its share links are served
+   * (`core/tabs/sharing/universalLink.ts`). `configure` is read by nothing:
+   * the device grant opens `verification_uri_complete`. Optional so a
+   * deployment that drops them keeps working.
    */
   frontend_url: z.string().url().optional().nullable(),
   configure: z.string().url().optional().nullable(),

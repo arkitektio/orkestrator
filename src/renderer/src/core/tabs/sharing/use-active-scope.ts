@@ -1,5 +1,6 @@
 import { Arkitekt } from "@/core/connection/arkitekt/host";
 import type { ShareScope } from "@/core/tabs/sharing/shareScope";
+import type { LinkHost } from "@/core/tabs/sharing/universalLink";
 import type { StoredProfile } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import { useMemo } from "react";
 
@@ -25,4 +26,22 @@ export const profileScope = (profile: StoredProfile): ShareScope => ({
 export const useActiveScope = (): ShareScope | null => {
   const profile = Arkitekt.useActiveProfile();
   return useMemo(() => (profile ? profileScope(profile) : null), [profile]);
+};
+
+/**
+ * Where a profile's links are served, or null when one cannot be: the
+ * deployment names no front door, the organization has no slug, or the
+ * profile has not heard its slug or hub yet.
+ */
+export const profileLinkHost = (profile: StoredProfile): LinkHost | null => {
+  const frontendUrl = profile.session?.endpoint?.frontend_url;
+  const slug = profile.label?.organizationSlug;
+  const hub = profile.identity.hubId;
+  return frontendUrl && slug && hub ? { frontendUrl, slug, hub, user: profile.identity.userId } : null;
+};
+
+/** The same for the connection we are on. */
+export const useActiveLinkHost = (): LinkHost | null => {
+  const profile = Arkitekt.useActiveProfile();
+  return useMemo(() => (profile ? profileLinkHost(profile) : null), [profile]);
 };
