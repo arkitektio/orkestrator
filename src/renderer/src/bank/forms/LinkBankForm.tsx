@@ -1,3 +1,6 @@
+import { AuthFlow } from "@/core/authflow/AuthFlow";
+import type { AuthSession } from "@/core/authflow/types";
+import { ADMIN_ROLE, useHasRoles } from "@/core/connection/roles";
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
@@ -5,21 +8,21 @@ import { Input } from "@/core/ui/input";
 import { ScrollArea } from "@/core/ui/scroll-area";
 import { BankConnection } from "@/bank/linkers";
 import { useDebounce } from "@uidotdev/usehooks";
-import { ChevronLeft, ChevronRight, Landmark, LineChart, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Landmark, Loader2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ListBankConnectionsDocument,
+  ListBankProviderFragment,
   Provider,
   useBankInstitutionsQuery,
-  useResumeLinkMutation,
-  useStartBankLinkMutation,
-  useStartScalableLinkMutation,
+  useListBankProvidersQuery,
+  useResumeAuthMutation,
+  useStartLinkMutation,
 } from "../api/graphql";
-import { AuthSessionFlow } from "../auth/AuthSessionFlow";
-import { Connection } from "../auth/useAuthSession";
-
-export { parseRedirect } from "@/core/connection/oauth/redirect";
+import { sessionOf } from "@/core/authflow/contract";
+import { providerIcon } from "../components/providerKind";
+import { errorMessageOf } from "../errors";
 
 const BackTitle = ({ children, onBack }: { children: React.ReactNode; onBack?: () => void }) => (
   <DialogTitle className="flex items-center gap-2">
@@ -32,8 +35,9 @@ const BackTitle = ({ children, onBack }: { children: React.ReactNode; onBack?: (
   </DialogTitle>
 );
 
-/** Enable Banking, step one: which bank. */
+/** A provider with institutions (Enable Banking), step one: which bank. */
 const BankPicker = (props: {
+  provider: string;
   country: string;
   search: string;
   onCountry: (country: string) => void;
@@ -43,7 +47,7 @@ const BankPicker = (props: {
 }) => {
   const debouncedCountry = useDebounce(props.country, 300);
   const { data, loading, error } = useBankInstitutionsQuery({
-    variables: { country: debouncedCountry },
+    variables: { provider: props.provider, country: debouncedCountry },
     skip: debouncedCountry.length !== 2,
   });
   const banks = useMemo(() => {
@@ -106,93 +110,140 @@ const BankPicker = (props: {
   );
 };
 
-const PROVIDERS = [
-  {
-    provider: Provider.Enablebanking,
-    icon: Landmark,
-    title: "Bank account",
-    description: "Current and savings accounts at 2,500+ European banks, through PSD2 consent.",
-  },
-  {
-    provider: Provider.Scalable,
-    icon: LineChart,
-    title: "Scalable Capital",
-    description: "Your broker: depot positions, trades and cash, through a Scalable login.",
-  },
-];
-
-const ProviderPicker = ({ onPick }: { onPick: (provider: Provider) => void }) => (
+/** Which of the organization's providers to link through. */
+const ProviderPicker = ({
+  providers,
+  onPick,
+}: {
+  providers: ListBankProviderFragment[];
+  onPick: (provider: ListBankProviderFragment) => void;
+}) => (
   <div className="flex flex-col gap-4">
     <DialogHeader>
       <DialogTitle>Link an account</DialogTitle>
       <DialogDescription>Access is read-only. Nothing can be paid or traded from here.</DialogDescription>
     </DialogHeader>
     <div className="flex flex-col gap-2">
-      {PROVIDERS.map(({ provider, icon: Icon, title, description }) => (
-        <button
-          key={provider}
-          type="button"
-          onClick={() => onPick(provider)}
-          className="group flex items-center gap-4 rounded-lg border p-4 text-left transition-colors hover:bg-accent"
-        >
-          <Icon className="h-6 w-6 shrink-0 text-muted-foreground" />
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="font-medium">{title}</span>
-            <span className="text-xs text-muted-foreground">{description}</span>
-          </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-        </button>
-      ))}
+      {providers.map((provider) => {
+        const Icon = providerIcon(provider.kind);
+        return (
+          <button
+            key={provider.id}
+            type="button"
+            onClick={() => onPick(provider)}
+            className="group flex items-center gap-4 rounded-lg border p-4 text-left transition-colors hover:bg-accent"
+          >
+            <Icon className="h-6 w-6 shrink-0 text-muted-foreground" />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="font-medium">{provider.name}</span>
+              <span className="text-xs text-muted-foreground">{provider.kindInfo.description}</span>
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          </button>
+        );
+      })}
     </div>
   </div>
 );
 
+/** Nothing to link through yet: an admin sets a provider up first. */
+const NoProvider = ({ kind }: { kind?: Provider }) => {
+  const { openDialog } = useDialog();
+  const admin = useHasRoles(ADMIN_ROLE);
+  return (
+    <div className="flex flex-col gap-4">
+      <DialogHeader>
+        <DialogTitle>No provider set up</DialogTitle>
+        <DialogDescription>
+          Banks and brokers are linked through a provider your organization sets up once, such as an Enable Banking
+          application or Scalable Capital.{" "}
+          {admin ? "Set one up, then link your accounts through it." : "Ask an admin of your organization to set one up."}
+        </DialogDescription>
+      </DialogHeader>
+      {admin && (
+        <Button className="self-start" onClick={() => openDialog("bankcreateprovider", { kind }, { size: "medium" })}>
+          Set up a provider
+        </Button>
+      )}
+    </div>
+  );
+};
+
 /**
  * Link something new, or continue a pending login.
  *
- * - `resume`: a PENDING connection's id; picks up its stored session
- *   (`resumeLink`), whichever provider it is.
- * - `provider` skips the provider choice, `bank` (+ `country`) the bank
- *   choice: how a relink opens.
+ * - `resume`: the `state` of a login still to be finished (a connection's
+ *   `pendingAuth`); picks it up again (`resumeAuth`), whichever provider it is.
+ * - `provider` (a provider's id) skips the provider choice; `kind` narrows it
+ *   to the providers of one kind. `bank` (+ `country`) pre-searches the bank:
+ *   how a relink opens.
  *
- * Every provider ends in the same `AuthSessionFlow`; the session says how it
+ * A link goes through one of the providers the organization set up
+ * (`bankProviders`); a single candidate is picked without asking. Every
+ * provider ends in the host's `AuthFlow`; the session says how it
  * finishes (a code to approve, or the bank's consent page).
  */
-export const LinkBankForm = (props: { provider?: Provider; country?: string; bank?: string; resume?: string }) => {
+export const LinkBankForm = (props: {
+  provider?: string;
+  kind?: Provider;
+  country?: string;
+  bank?: string;
+  resume?: string;
+}) => {
   const { closeDialog } = useDialog();
   const navigate = useNavigate();
-  const [provider, setProvider] = useState<Provider | null>(
-    props.provider ?? (props.bank ? Provider.Enablebanking : null),
-  );
+  const [picked, setPicked] = useState<string | null>(props.provider ?? null);
   const [country, setCountry] = useState((props.country ?? "AT").toUpperCase());
   const [search, setSearch] = useState(props.bank ?? "");
   const [bank, setBank] = useState<string | null>(null);
   // Bumped to remount the flow for a fresh session.
   const [round, setRound] = useState(0);
 
-  const refetchQueries = [ListBankConnectionsDocument];
-  const [startBank] = useStartBankLinkMutation({ refetchQueries });
-  const [startScalable] = useStartScalableLinkMutation({ refetchQueries });
-  const [resumeLink] = useResumeLinkMutation();
+  const providers = useListBankProvidersQuery({
+    variables: { filters: { enabled: true } },
+    fetchPolicy: "cache-and-network",
+    skip: !!props.resume,
+  });
+  const [startLink] = useStartLinkMutation({ refetchQueries: [ListBankConnectionsDocument] });
+  const [resumeAuth] = useResumeAuthMutation();
 
-  const done = (connection: Connection) => {
+  const done = (session: AuthSession) => {
     closeDialog();
-    navigate(BankConnection.linkBuilder(connection.id));
+    if (session.result) navigate(BankConnection.linkBuilder(session.result.id));
   };
 
+  const candidates = useMemo(
+    () => (providers.data?.bankProviders ?? []).filter((p) => !props.kind || p.kind === props.kind),
+    [providers.data, props.kind],
+  );
+  // The asked-for provider may be gone or disabled: then the choice is offered again.
+  const provider = candidates.find((p) => p.id === picked) ?? (candidates.length === 1 ? candidates[0] : null);
+  const providerId = provider?.id;
+  const withBank = !!provider?.kindInfo.hasInstitutions;
+
   const openResume = useCallback(
-    async () => (await resumeLink({ variables: { connection: props.resume! } })).data?.resumeLink,
-    [resumeLink, props.resume],
+    async () => {
+      const session = (await resumeAuth({ variables: { state: props.resume! } })).data?.resumeAuth;
+      return session && sessionOf(session);
+    },
+    [resumeAuth, props.resume],
   );
-  const openBank = useCallback(
-    async () => (await startBank({ variables: { input: { aspspName: bank!, country } } })).data?.startBankLink,
-    [startBank, bank, country],
+  const openLink = useCallback(
+    async () => {
+      const session = (
+        await startLink({
+          variables: { input: { provider: providerId!, ...(withBank ? { institution: bank, country } : {}) } },
+        })
+      ).data?.startLink;
+      return session && sessionOf(session);
+    },
+    [startLink, providerId, withBank, bank, country],
   );
-  const openScalable = useCallback(async () => (await startScalable()).data?.startScalableLink, [startScalable]);
 
   if (props.resume) {
     return (
-      <AuthSessionFlow
+      <AuthFlow
+        flow="bank"
         key={round}
         title="Continue login"
         open={openResume}
@@ -203,44 +254,47 @@ export const LinkBankForm = (props: { provider?: Provider; country?: string; ban
     );
   }
 
-  if (provider === Provider.Scalable) {
+  if (!providers.data) {
     return (
-      <AuthSessionFlow
-        key={round}
-        title="Scalable Capital"
-        open={openScalable}
-        restart={() => setRound((r) => r + 1)}
-        onDone={done}
-        header={
-          <DialogDescription>
-            Read-only access to your broker and depot: positions, trades and cash movements.
-          </DialogDescription>
-        }
+      <div className="flex flex-col gap-4">
+        <DialogHeader>
+          <DialogTitle>Link an account</DialogTitle>
+          {providers.error && (
+            <DialogDescription className="text-destructive">{errorMessageOf(providers.error)}</DialogDescription>
+          )}
+        </DialogHeader>
+        {providers.error ? (
+          <Button className="self-start" size="sm" onClick={() => providers.refetch()}>
+            Try again
+          </Button>
+        ) : (
+          <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+        )}
+      </div>
+    );
+  }
+
+  if (candidates.length === 0) return <NoProvider kind={props.kind} />;
+
+  if (!provider) {
+    return (
+      <ProviderPicker
+        providers={candidates}
+        onPick={(next) => {
+          setPicked(next.id);
+          setBank(null);
+          setRound((r) => r + 1);
+        }}
       />
     );
   }
 
-  if (provider === Provider.Enablebanking) {
-    if (bank) {
-      return (
-        <AuthSessionFlow
-          key={round}
-          title={bank}
-          open={openBank}
-          restart={() => setBank(null)}
-          onDone={done}
-          header={
-            <DialogDescription>
-              <button type="button" className="underline-offset-2 hover:underline" onClick={() => setBank(null)}>
-                Pick another bank
-              </button>
-            </DialogDescription>
-          }
-        />
-      );
-    }
+  const back = candidates.length > 1 ? () => setPicked(null) : undefined;
+
+  if (withBank && !bank) {
     return (
       <BankPicker
+        provider={provider.id}
         country={country}
         search={search}
         onCountry={setCountry}
@@ -249,11 +303,30 @@ export const LinkBankForm = (props: { provider?: Provider; country?: string; ban
           setBank(name);
           setRound((r) => r + 1);
         }}
-        onBack={props.provider || props.bank ? undefined : () => setProvider(null)}
+        onBack={back}
       />
     );
   }
 
-  return <ProviderPicker onPick={setProvider} />;
+  return (
+    <AuthFlow
+      flow="bank"
+      key={round}
+      title={bank ?? provider.name}
+      open={openLink}
+      restart={() => (withBank ? setBank(null) : setRound((r) => r + 1))}
+      onDone={done}
+      header={
+        withBank ? (
+          <DialogDescription>
+            <button type="button" className="underline-offset-2 hover:underline" onClick={() => setBank(null)}>
+              Pick another bank
+            </button>
+          </DialogDescription>
+        ) : (
+          <DialogDescription>{provider.kindInfo.description}</DialogDescription>
+        )
+      }
+    />
+  );
 };
-

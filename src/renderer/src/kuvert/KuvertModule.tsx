@@ -5,7 +5,6 @@ import { Route, Routes } from "react-router-dom";
 import { MailboxSyncs } from "./components/useMailboxSyncs";
 import AccountPage from "./pages/AccountPage";
 import AccountsPage from "./pages/AccountsPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
 import CategoryPage from "./pages/CategoryPage";
 import ChangesPage from "./pages/ChangesPage";
 import FolderPage from "./pages/FolderPage";
@@ -27,8 +26,6 @@ export const KuvertModule: React.FC = () => (
     <MailboxSyncs />
     <ModuleLayout>
       <Routes>
-        {/* Where `orkestrator://kuvert/auth/callback?code&state` lands (coord relay). */}
-        <Route path="auth/callback" element={<AuthCallbackPage />} />
         <Route path="accounts" element={<AccountsPage />} />
         <Route path="accounts/:id" element={<AccountPage />} />
         <Route path="folders/:id" element={<FolderPage />} />

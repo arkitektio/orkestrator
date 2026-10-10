@@ -28,7 +28,7 @@ const PortfolioPage = () => {
           name="banklink"
           size="sm"
           variant="outline"
-          dialogProps={{ provider: Provider.Scalable }}
+          dialogProps={{ kind: Provider.Scalable }}
           options={{ size: "medium" }}
         >
           Link Scalable
@@ -44,7 +44,7 @@ const PortfolioPage = () => {
               Log in to Scalable Capital and your positions, trades and payouts sync here.
             </p>
           </div>
-          <DialogButton name="banklink" dialogProps={{ provider: Provider.Scalable }} options={{ size: "medium" }}>
+          <DialogButton name="banklink" dialogProps={{ kind: Provider.Scalable }} options={{ size: "medium" }}>
             Link Scalable Capital
           </DialogButton>
         </div>

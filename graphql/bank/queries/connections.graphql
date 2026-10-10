@@ -10,12 +10,18 @@ query GetBankConnection($id: ID!) {
   }
 }
 
-query BankInstitutions($country: String!) {
-  bankInstitutions(country: $country) {
+query BankInstitutions($provider: ID!, $country: String!) {
+  bankInstitutions(provider: $provider, country: $country) {
     name
     country
     logo
     bic
     maximumConsentDays
+  }
+}
+
+query AuthSession($state: String!) {
+  authSession(state: $state) {
+    ...AuthSession
   }
 }

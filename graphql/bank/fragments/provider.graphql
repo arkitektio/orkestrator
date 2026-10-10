@@ -1,0 +1,43 @@
+fragment ProviderKind on ProviderKind {
+  kind
+  label
+  description
+  finish
+  hasInstitutions
+  defaultDailySyncLimit
+  capabilities {
+    capability
+    label
+    description
+  }
+}
+
+fragment ListBankProvider on BankProvider {
+  id
+  name
+  kind
+  enabled
+  dailySyncLimit
+  capabilities
+  kindInfo {
+    ...ProviderKind
+  }
+}
+
+fragment BankProvider on BankProvider {
+  ...ListBankProvider
+  createdAt
+  updatedAt
+  creator {
+    id
+    sub
+    preferredUsername
+  }
+  enableBanking {
+    appId
+    redirectUrls
+    consentDays
+    psuType
+    keyFingerprint
+  }
+}

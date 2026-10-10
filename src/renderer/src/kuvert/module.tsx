@@ -1,5 +1,6 @@
 import { defineModule } from "@/core/modules/host/define";
 import { KUVERT_ACTIONS } from "./actions";
+import { KUVERT_AUTH_FLOW } from "./authFlow";
 import { KUVERT_DIALOGS } from "./dialogRegistry";
 import { MailAccountDisplay } from "./displays/MailAccountDisplay";
 import { MessageDisplay } from "./displays/MessageDisplay";
@@ -25,6 +26,7 @@ export const KUVERT_MODULE = defineModule({
     },
     dialogs: KUVERT_DIALOGS,
     actions: KUVERT_ACTIONS,
+    authFlow: KUVERT_AUTH_FLOW,
     search: KuvertEntitySearch,
     paletteSources: [ComposeSource],
   },

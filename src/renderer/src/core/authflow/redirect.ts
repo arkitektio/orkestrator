@@ -12,3 +12,7 @@ export const parseRedirect = (text: string): { code: string; state: string } | n
   const state = params.get("state");
   return code && state ? { code, state } : null;
 };
+
+/** The provider's own refusal in a redirect's query (the user said no, …), if any. */
+export const redirectError = (params: URLSearchParams): string | null =>
+  params.get("error_description") ?? params.get("error");

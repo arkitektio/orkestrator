@@ -1,5 +1,6 @@
 import { Spinner } from "@/core/ui/spinner";
-import { parseRedirect } from "@/core/connection/oauth/redirect";
+import { AuthFlowPanel } from "@/core/authflow/AuthFlow";
+import { useAuthFlow } from "@/core/authflow/useAuthFlow";
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/ui/collapsible";
@@ -7,7 +8,7 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/co
 import { Form } from "@/core/ui/form";
 import { Input } from "@/core/ui/input";
 import { useDebounce } from "@uidotdev/usehooks";
-import { ChevronDown, ExternalLink, TriangleAlert } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -21,8 +22,9 @@ import {
   Security,
   useCreateMailAccountMutation,
   useMailPresetsQuery,
+  useStartOAuthLinkMutation,
 } from "../api/graphql";
-import { useOAuthLink } from "../auth/useOAuthLink";
+import { sessionOf } from "@/core/authflow/contract";
 import { toastText } from "../errors";
 import { MailAccount } from "../linkers";
 import { PasswordField, SelectField, ServerFields, serverInput, ServerValues, TextField } from "./fields";
@@ -32,8 +34,6 @@ const PROVIDER_NAME: Record<Provider, string> = {
   [Provider.Microsoft]: "Microsoft",
   [Provider.Generic]: "the provider",
 };
-
-const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
 /** Sign in at the provider (Gmail, Microsoft): the browser leg, then back here. */
 const OAuthStep = ({
@@ -49,96 +49,51 @@ const OAuthStep = ({
 }) => {
   const { closeDialog } = useDialog();
   const navigate = useNavigate();
-  const onLinked = useCallback(
-    (account: { id: string; emailAddress: string }) => {
-      toast.success(`${account.emailAddress} linked`);
+  const [start] = useStartOAuthLinkMutation();
+  const open = useCallback(async () => {
+    const session = (
+      await start({
+        variables: { input: { provider, loginHint: address || null, account: relink ?? null, name: name || null } },
+      })
+    ).data?.startOAuthLink;
+    return session && sessionOf(session);
+  }, [start, provider, address, relink, name]);
+
+  const auth = useAuthFlow({
+    flow: "kuvert",
+    open,
+    onDone: (session) => {
+      toast.success(`${session.result?.label ?? "Mailbox"} linked`);
       closeDialog();
-      navigate(MailAccount.linkBuilder(account.id));
+      if (session.result) navigate(MailAccount.linkBuilder(session.result.id));
     },
-    [closeDialog, navigate],
-  );
-  const auth = useOAuthLink(onLinked);
-  const [pasted, setPasted] = useState("");
-  const parsed = parseRedirect(pasted);
+  });
 
   // Leaving the dialog mid-login drops the pending session on the server.
   const cancel = useRef(auth.cancel);
   cancel.current = auth.cancel;
   useEffect(() => () => cancel.current(), []);
 
-  const begin = () =>
-    auth.begin({ provider, loginHint: address || null, account: relink ?? null, name: name || null });
-
-  if (auth.phase === "idle" || auth.phase === "starting") {
+  if (!auth.session) {
     return (
       <div className="flex flex-col gap-2">
-        <Button type="button" onClick={begin} disabled={auth.phase === "starting"}>
-          {auth.phase === "starting" && <Spinner className="mr-2 size-4" />}
+        <Button type="button" onClick={() => void auth.begin()} disabled={auth.opening}>
+          {auth.opening && <Spinner className="mr-2 size-4" />}
           Sign in with {PROVIDER_NAME[provider]}
         </Button>
-        {auth.error && <span className="text-xs text-destructive">{auth.error}</span>}
-      </div>
-    );
-  }
-
-  if (auth.phase === "expired") {
-    return (
-      <div className="flex flex-col items-start gap-2 text-sm">
-        <span className="flex items-center gap-2">
-          <TriangleAlert className="h-4 w-4 text-destructive" />
-          The sign-in was not finished in time.
-        </span>
-        <Button type="button" variant="outline" size="sm" onClick={begin}>
-          Start again
-        </Button>
+        {auth.problem && <span className="text-xs text-destructive">{auth.problem}</span>}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3 text-sm">
-      <div className="flex items-center gap-2">
-        <Spinner className="size-4 text-muted-foreground" />
-        <span className="flex-1">
-          {auth.phase === "completing" ? "Finishing…" : "Finish signing in in your browser."}
-        </span>
-        {auth.phase === "waiting" && <span className="text-xs tabular-nums text-muted-foreground">{clock(auth.secondsLeft)}</span>}
-      </div>
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={auth.reopen}>
-          <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-          Open again
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={auth.cancel}>
+    <div className="flex flex-col gap-3">
+      <AuthFlowPanel auth={auth} onRestart={() => void auth.begin()} />
+      {auth.phase?.kind === "approve" && (
+        <Button type="button" variant="ghost" size="sm" className="self-start" onClick={auth.cancel}>
           Cancel
         </Button>
-      </div>
-      <Collapsible>
-        <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          <ChevronDown className="h-3 w-3" />
-          The browser did not come back?
-        </CollapsibleTrigger>
-        <CollapsibleContent className="flex flex-col gap-2 pt-2">
-          <span className="text-xs text-muted-foreground">Paste the address the browser ended up on.</span>
-          <div className="flex gap-2">
-            <Input
-              value={pasted}
-              onChange={(e) => setPasted(e.target.value)}
-              placeholder={`${auth.session?.redirectUrl ?? "https://…"}?code=…&state=…`}
-              className="text-xs"
-            />
-            <Button
-              type="button"
-              size="sm"
-              disabled={!parsed || auth.phase === "completing"}
-              onClick={() => parsed && auth.complete(parsed.code, parsed.state)}
-            >
-              Finish
-            </Button>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-      {auth.error && <span className="text-xs text-destructive">{auth.error}</span>}
+      )}
     </div>
   );
 };

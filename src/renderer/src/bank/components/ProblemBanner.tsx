@@ -1,22 +1,14 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import { AlertTriangle } from "lucide-react";
-import { BankErrorCode, Provider } from "../api/graphql";
+import { BankErrorCode } from "../api/graphql";
 import { describeError } from "../errors";
-
-export type RelinkTarget = { provider: Provider; aspspCountry: string; aspspName: string };
+import { relinkProps, RelinkTarget } from "../relink";
 
 /** Opens the link dialog on the same provider (and bank): how every "log in again" fix starts. */
 export const useRelink = () => {
   const { openDialog } = useDialog();
-  return (target: RelinkTarget) =>
-    openDialog(
-      "banklink",
-      target.provider === Provider.Scalable
-        ? { provider: target.provider }
-        : { provider: target.provider, country: target.aspspCountry, bank: target.aspspName },
-      { size: "medium" },
-    );
+  return (target: RelinkTarget) => openDialog("banklink", relinkProps(target), { size: "medium" });
 };
 
 /**

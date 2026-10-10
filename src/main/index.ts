@@ -445,6 +445,13 @@ app.whenReady().then(() => {
 
   transport.handleChannel("open-webbrowser", async (_, url: string) => {
     try {
+      // Only what a browser or mail client opens: a renderer (or a server
+      // answering it, e.g. a login's `openUrl`) never launches another scheme.
+      const { protocol } = new URL(url);
+      if (protocol !== "https:" && protocol !== "http:" && protocol !== "mailto:") {
+        console.error("Refused to open a non-web URL:", protocol);
+        return;
+      }
       await shell.openExternal(url);
     } catch (error) {
       console.error("Failed to open URL in web browser:", error);

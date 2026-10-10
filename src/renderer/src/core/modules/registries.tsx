@@ -17,6 +17,7 @@ import { currentRoles, describeRoles, RoleGuard, satisfiesRoles, type RoleRequir
 import { installedModules, useModuleHostVersion } from "@/core/modules/host/host";
 import { derived, derivedRecord } from "@/core/modules/host/lazy";
 import type { ProfileSection } from "@/core/connection/profile/section";
+import type { AuthFlowHandler } from "@/core/authflow/types";
 import type { TaskHook } from "@/core/modules/taskhooks/types";
 import type { SmartContextSection } from "@/core/smart/extensions/section";
 import type { DialogRegistry } from "./types";
@@ -256,6 +257,16 @@ export const moduleMenuWrappers = derived(() => concat((builtins) => builtins.me
 
 export const MODULE_OPERATIONS = derivedRecord(() =>
   mergeRecords((builtins) => builtins.operations, "Operation"),
+);
+
+/** Each module's external-login handler (`authFlow`), by its namespace. */
+export const MODULE_AUTH_FLOWS = derivedRecord(
+  (): Record<string, AuthFlowHandler> =>
+    Object.fromEntries(
+      (moduleDefinitions() as readonly ModuleDefinition[]).flatMap((definition) =>
+        definition.builtins.authFlow ? [[namespaceOf(definition), definition.builtins.authFlow] as const] : [],
+      ),
+    ),
 );
 
 export const moduleOptionSources = derived(() => concat((builtins) => builtins.optionSources));

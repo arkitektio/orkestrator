@@ -1,13 +1,18 @@
 fragment AuthSession on AuthSession {
   state
+  status
+  finish
   openUrl
   expiresAt
-  finish
   redirectUrl
-  provider
-  account {
+  interval
+  userCode
+  step
+  errorCode
+  errorMessage
+  result {
+    identifier
     id
-    name
-    emailAddress
+    label
   }
 }

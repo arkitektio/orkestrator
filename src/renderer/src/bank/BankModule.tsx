@@ -1,10 +1,11 @@
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
+import { ADMIN_ROLE } from "@/core/connection/roles";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import { RoleRoute } from "@/core/layout/fallbacks/NotPermitted";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import AccountPage from "./pages/AccountPage";
 import AccountsPage from "./pages/AccountsPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
 import BudgetPage from "./pages/BudgetPage";
 import BudgetsPage from "./pages/BudgetsPage";
 import CategoriesPage from "./pages/CategoriesPage";
@@ -19,6 +20,8 @@ import MerchantsPage from "./pages/MerchantsPage";
 import PlacePage from "./pages/PlacePage";
 import PlacesPage from "./pages/PlacesPage";
 import PortfolioPage from "./pages/PortfolioPage";
+import ProviderPage from "./pages/ProviderPage";
+import ProvidersPage from "./pages/ProvidersPage";
 import RecurringPage from "./pages/RecurringPage";
 import RecurringPaymentPage from "./pages/RecurringPaymentPage";
 import RulePage from "./pages/RulePage";
@@ -30,8 +33,6 @@ import TransactionsPage from "./pages/TransactionsPage";
 export const BankModule: React.FC = () => (
   <ModuleLayout>
     <Routes>
-      {/* Where `orkestrator://bank/auth/callback?code&state` lands (coord relay). */}
-      <Route path="auth/callback" element={<AuthCallbackPage />} />
       <Route path="insights" element={<InsightsPage />} />
       <Route path="accounts" element={<AccountsPage />} />
       <Route path="accounts/:id" element={<AccountPage />} />
@@ -39,6 +40,8 @@ export const BankModule: React.FC = () => (
       <Route path="transactions/:id" element={<TransactionPage />} />
       <Route path="connections" element={<ConnectionsPage />} />
       <Route path="connections/:id" element={<ConnectionPage />} />
+      <Route path="providers" element={<RoleRoute roles={ADMIN_ROLE}><ProvidersPage /></RoleRoute>} />
+      <Route path="providers/:id" element={<RoleRoute roles={ADMIN_ROLE}><ProviderPage /></RoleRoute>} />
       <Route path="categories" element={<CategoriesPage />} />
       <Route path="categories/:id" element={<CategoryPage />} />
       <Route path="rules" element={<RulesPage />} />

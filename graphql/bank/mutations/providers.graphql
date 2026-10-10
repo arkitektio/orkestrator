@@ -1,0 +1,27 @@
+mutation CreateEnableBankingProvider($input: CreateEnableBankingProviderInput!) {
+  createEnableBankingProvider(input: $input) {
+    ...BankProvider
+  }
+}
+
+mutation UpdateEnableBankingProvider($input: UpdateEnableBankingProviderInput!) {
+  updateEnableBankingProvider(input: $input) {
+    ...BankProvider
+  }
+}
+
+mutation CreateScalableProvider($input: CreateScalableProviderInput!) {
+  createScalableProvider(input: $input) {
+    ...BankProvider
+  }
+}
+
+mutation UpdateProvider($input: UpdateProviderInput!) {
+  updateProvider(input: $input) {
+    ...BankProvider
+  }
+}
+
+mutation DeleteProvider($id: ID!) {
+  deleteProvider(id: $id)
+}

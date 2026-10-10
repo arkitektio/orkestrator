@@ -42,3 +42,9 @@ query MailPresets($address: String) {
 query OAuthProviders {
   oauthProviders
 }
+
+query AuthSession($state: String!) {
+  authSession(state: $state) {
+    ...AuthSession
+  }
+}

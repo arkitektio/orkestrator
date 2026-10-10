@@ -11,6 +11,7 @@
       "BalanceSnapshot",
       "BankAccount",
       "BankConnection",
+      "BankProvider",
       "BigFileStore",
       "Budget",
       "Category",

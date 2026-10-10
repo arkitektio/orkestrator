@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { parseRedirect } from "./redirect";
+import { parseRedirect, redirectError } from "./redirect";
 
 describe("parseRedirect", () => {
   it("reads code and state from the full redirect URL", () => {
@@ -18,5 +18,13 @@ describe("parseRedirect", () => {
   it("refuses anything without both", () => {
     expect(parseRedirect("https://example.org/?code=only")).toBeNull();
     expect(parseRedirect("  ")).toBeNull();
+  });
+});
+
+describe("redirectError", () => {
+  it("prefers the provider's description over its code", () => {
+    expect(redirectError(new URLSearchParams("error=access_denied&error_description=User+said+no"))).toBe("User said no");
+    expect(redirectError(new URLSearchParams("error=access_denied"))).toBe("access_denied");
+    expect(redirectError(new URLSearchParams("code=c&state=s"))).toBeNull();
   });
 });

@@ -45,6 +45,13 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+# The `orkestrator://` deep link (shared links, external-login callbacks):
+# written into Info.plist on macOS and the .desktop file on Linux; Windows is
+# registered at runtime (`setAsDefaultProtocolClient`).
+protocols:
+  - name: Orkestrator
+    schemes:
+      - orkestrator
 mac:
   target: # IMPORTANT: both dmg + zip for auto-update
     - dmg

@@ -4,18 +4,20 @@ mutation StartOAuthLink($input: StartOAuthLinkInput!) {
   }
 }
 
-mutation CompleteOAuthLink($input: CompleteOAuthLinkInput!) {
-  completeOAuthLink(input: $input) {
-    ...ListMailAccount
-  }
-}
-
-mutation ResumeOAuthLink($state: String!) {
-  resumeOAuthLink(state: $state) {
+mutation CompleteAuth($input: CompleteAuthInput!) {
+  completeAuth(input: $input) {
     ...AuthSession
   }
 }
 
-mutation CancelOAuthLink($state: String!) {
-  cancelOAuthLink(state: $state)
+mutation ResumeAuth($state: String!) {
+  resumeAuth(state: $state) {
+    ...AuthSession
+  }
+}
+
+mutation CancelAuth($state: String!) {
+  cancelAuth(state: $state) {
+    ...AuthSession
+  }
 }

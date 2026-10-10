@@ -8,6 +8,7 @@ import {
   Map as MapIcon,
   MapPin,
   PiggyBank,
+  Plug,
   Repeat,
   Sparkles,
   Tags,
@@ -15,6 +16,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { ADMIN_ROLE } from "@/core/connection/roles";
 import type { NavLinkDecl } from "@/core/modules/host/define";
 
 /** bank's pages, for the ⌘K palette and its rail popout (a `navLinks` builtin). */
@@ -33,4 +35,5 @@ export const BANK_NAV_LINKS: NavLinkDecl[] = [
   { label: "Rules", route: "/bank/rules", keywords: ["categorize", "automatic"], group: "Organize", icon: ListChecks, description: "Automatic categorizing" },
   { label: "Recurring", route: "/bank/recurring", keywords: ["subscriptions", "rent", "salary"], group: "Organize", icon: Repeat, description: "Subscriptions and salary" },
   { label: "Connections", route: "/bank/connections", keywords: ["link", "consent", "banks"], group: "Organize", icon: Landmark, description: "Linked banks" },
+  { label: "Providers", route: "/bank/providers", keywords: ["enable banking", "scalable", "setup", "credentials", "psd2"], group: "Admin", icon: Plug, description: "How banks are reached", roles: ADMIN_ROLE },
 ];

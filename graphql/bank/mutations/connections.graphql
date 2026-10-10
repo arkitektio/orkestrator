@@ -1,12 +1,6 @@
-mutation StartBankLink($input: StartBankLinkInput!) {
-  startBankLink(input: $input) {
+mutation StartLink($input: StartLinkInput!) {
+  startLink(input: $input) {
     ...AuthSession
-  }
-}
-
-mutation CompleteBankLink($input: CompleteBankLinkInput!) {
-  completeBankLink(input: $input) {
-    ...BankConnection
   }
 }
 
@@ -28,24 +22,20 @@ mutation SyncConnection($id: ID!) {
   }
 }
 
-mutation StartScalableLink {
-  startScalableLink {
+mutation CompleteAuth($input: CompleteAuthInput!) {
+  completeAuth(input: $input) {
     ...AuthSession
   }
 }
 
-mutation CompleteScalableLink($state: String!) {
-  completeScalableLink(state: $state) {
-    ...BankConnection
-  }
-}
-
-mutation ResumeLink($connection: ID!) {
-  resumeLink(connection: $connection) {
+mutation ResumeAuth($state: String!) {
+  resumeAuth(state: $state) {
     ...AuthSession
   }
 }
 
-mutation CancelLink($connection: ID!) {
-  cancelLink(connection: $connection)
+mutation CancelAuth($state: String!) {
+  cancelAuth(state: $state) {
+    ...AuthSession
+  }
 }

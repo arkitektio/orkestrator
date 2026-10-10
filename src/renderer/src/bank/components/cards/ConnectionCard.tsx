@@ -28,7 +28,7 @@ const ConnectionCard = ({ item }: { item: ListBankConnectionFragment }) => (
         />
       </div>
       <div className="text-xs text-muted-foreground">
-        {item.provider === Provider.Scalable ? "Scalable login" : item.aspspCountry}
+        {item.provider === Provider.Scalable ? (item.bankProvider?.name ?? "Scalable login") : item.aspspCountry}
         {item.validUntil && <> · consent until {formatDay(item.validUntil)}</>}
       </div>
     </Card>

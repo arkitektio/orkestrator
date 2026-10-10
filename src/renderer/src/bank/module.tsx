@@ -1,5 +1,6 @@
 import { defineModule } from "@/core/modules/host/define";
 import { BANK_ACTIONS } from "./actions";
+import { BANK_AUTH_FLOW } from "./authFlow";
 import { BANK_DIALOGS } from "./dialogRegistry";
 import { AccountDisplay } from "./displays/AccountDisplay";
 import { MerchantDisplay } from "./displays/MerchantDisplay";
@@ -24,6 +25,7 @@ export const BANK_MODULE = defineModule({
     },
     dialogs: BANK_DIALOGS,
     actions: BANK_ACTIONS,
+    authFlow: BANK_AUTH_FLOW,
     search: BankEntitySearch,
   },
 });

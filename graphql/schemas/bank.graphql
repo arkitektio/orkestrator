@@ -124,24 +124,63 @@ enum AuthFinish {
   REDIRECT
 }
 
+"""A Structure: what the login linked, so the app can open its page."""
+type AuthResult {
+  id: ID!
+  identifier: String!
+  label: String
+}
+
 """
-A started (or resumed) login, the same shape for every provider. Open `openUrl` in the user's browser; then, by `finish`: REDIRECT — the provider redirects to `redirectUrl` with `code` and `state`, call `completeBankLink`; POLL — call `completeScalableLink(state)` every `interval` seconds until the connection is ACTIVE. `state` is stored server-side, so any replica completes it and `resumeLink` returns it again.
+A login at an external provider, the same shape in every service. Open `openUrl` in the user's browser; then, by `finish`: REDIRECT — the provider redirects to `redirectUrl` with `code` and `state`, call `completeAuth` with both; POLL — call `completeAuth` with the `state` every `interval` seconds until `status` is not PENDING.
 """
 type AuthSession {
-  connection: BankConnection!
+  """FAILED: machine-readable, the service's own error codes."""
+  errorCode: String
+
+  """FAILED: one sentence for the user."""
+  errorMessage: String
+
+  """Until when the first approval can happen."""
   expiresAt: DateTime!
   finish: AuthFinish!
 
-  """POLL only: seconds between complete calls."""
+  """POLL: seconds between two completeAuth calls."""
   interval: Int
+
+  """https. What the app opens in the user's browser."""
   openUrl: String!
 
-  """REDIRECT only: where the provider sends the browser back to."""
+  """
+  REDIRECT: where the provider sends the browser back to (the relay URL).
+  """
   redirectUrl: String
-  state: String!
 
-  """POLL only: the code the user checks on the provider's page."""
+  """
+  DONE: what was linked. May be set earlier when it already exists (a relink).
+  """
+  result: AuthResult
+
+  """
+  Opaque, unguessable, single-use, stored server-side. THE handle of the login.
+  """
+  state: String!
+  status: AuthStatus!
+
+  """Null until the first approval; then what is still awaited, e.g. MFA."""
+  step: String
+
+  """POLL: the code the user confirms on the provider's page."""
   userCode: String
+}
+
+"""Where a login is."""
+enum AuthStatus {
+  CANCELLED
+  DONE
+  EXPIRED
+  FAILED
+  PENDING
 }
 
 """An end-of-day balance."""
@@ -204,6 +243,11 @@ type BankAccount {
 
   """A depot's positions as of its latest sync (empty for other accounts)."""
   currentHoldings: [HoldingSnapshot!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """The account's IBAN, if known."""
   iban: String
@@ -298,11 +342,21 @@ type BankConnection {
   """The bank's name, exactly as Enable Banking lists it."""
   aspspName: String!
 
+  """
+  The organization's provider it was made through; null when it is attached to none (it then cannot sync until an admin sets its provider up again).
+  """
+  bankProvider: BankProvider
+
   """When the link was started."""
   createdAt: DateTime!
 
   """The user who started the link."""
   creator: User
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
 
   """
@@ -336,11 +390,16 @@ type BankConnection {
   organization: Organization!
 
   """
-  PENDING only: when the login can no longer be completed. Nothing flips it on a timer — past this, a PENDING link is dead: hide it or `cancelLink` it.
+  The login still to be finished, when you started it and it is PENDING: continue it with `resumeAuth(state)`. Null otherwise.
+  """
+  pendingAuth: AuthSession
+
+  """
+  PENDING only: when the login can no longer be completed. Nothing flips it on a timer — past this, a PENDING link is dead: hide it or `cancelAuth` it.
   """
   pendingExpiresAt: DateTime
 
-  """Who the accounts are reached through."""
+  """The kind of provider it goes through."""
   provider: Provider!
 
   """Where this consent is in its lifecycle."""
@@ -362,7 +421,7 @@ type BankConnection {
 One consent at one bank (an Enable Banking session) or one Scalable Capital login.
 
 A Scalable connection keeps its credentials — the DPoP private key and the rotating refresh
-token bound to it — Fernet-encrypted in ``secret`` (see :mod:`finance.scalable.crypto`).
+token bound to it — Fernet-encrypted in ``secret`` (see :mod:`finance.crypto`).
 """
 input BankConnectionFilter {
   AND: BankConnectionFilter
@@ -370,6 +429,7 @@ input BankConnectionFilter {
   NOT: BankConnectionFilter
   OR: BankConnectionFilter
   ids: [ID!]
+  provider: ID
   status: ConnectionStatus
 }
 
@@ -383,10 +443,78 @@ enum BankErrorCode {
   CONNECTION_INACTIVE
   CONSENT_EXPIRED
   INVALID_STATE
+  LOGIN_REFUSED
   MFA_REJECTED
   NOT_CONFIGURED
   RATE_LIMITED
   SYNC_IN_PROGRESS
+}
+
+"""
+A provider the organization set up (an Enable Banking application, Scalable Capital). Banks are linked through one; credentials are never returned.
+"""
+type BankProvider {
+  """The capabilities switched on for this provider."""
+  capabilities: [ProviderCapability!]!
+
+  """The consents and logins made through it."""
+  connections(filters: BankConnectionFilter, pagination: OffsetPaginationInput): [BankConnection!]!
+
+  """When the provider was set up."""
+  createdAt: DateTime!
+
+  """The admin who set it up."""
+  creator: User
+
+  """
+  Syncs per account per day before the service stops asking the provider (null: unlimited).
+  """
+  dailySyncLimit: Int
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
+  """Its settings when it is an Enable Banking provider, else null."""
+  enableBanking: EnableBankingProviderSettings
+
+  """A disabled provider starts no links and syncs nothing."""
+  enabled: Boolean!
+  id: ID!
+
+  """Which provider this is an instance of."""
+  kind: Provider!
+
+  """What its kind is and can do."""
+  kindInfo: ProviderKind!
+
+  """What the organization calls it."""
+  name: String!
+
+  """The organization this provider belongs to."""
+  organization: Organization!
+
+  """When it was last changed."""
+  updatedAt: DateTime!
+}
+
+"""
+A provider an organization set up: one kind, its settings and credentials, and what is switched on.
+
+For Enable Banking that is one application (its id in ``settings``, its private key
+Fernet-encrypted in ``secret``, see :mod:`finance.crypto`); a Scalable provider holds no
+credentials. The code of a kind is its backend (:mod:`finance.providers`), which validates
+``settings`` and reads ``capabilities``; a kind needing other settings needs no migration.
+"""
+input BankProviderFilter {
+  AND: BankProviderFilter
+  DISTINCT: Boolean
+  NOT: BankProviderFilter
+  OR: BankProviderFilter
+  enabled: Boolean
+  ids: [ID!]
+  kind: Provider
 }
 
 """Temporary S3 credentials for reading a big file."""
@@ -478,6 +606,11 @@ type Budget {
   """ISO currency of the limit; only transactions in it count."""
   currency: String!
 
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
   """Last month the budget applies to, or open-ended."""
   endMonth: Date
   id: ID!
@@ -566,6 +699,11 @@ type Category {
   What belongs here, in words bank lines use. Each comma-separated phrase is a term the category is recognized by.
   """
   description: String!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """Hidden from pickers, suggestions and automatic assignment."""
   hidden: Boolean!
@@ -819,18 +957,23 @@ enum Comparison {
   SAME_PERIOD_LAST_YEAR
 }
 
-"""Finish a bank link with what the bank redirected back with."""
-input CompleteBankLinkInput {
-  """The `code` query parameter of the redirect."""
-  code: String!
+"""Finish (REDIRECT) or advance (POLL) a started login."""
+input CompleteAuthInput {
+  """REDIRECT: the `code` query parameter of the redirect. POLL: omitted."""
+  code: String = null
 
-  """The `state` query parameter of the redirect."""
+  """
+  REDIRECT: the provider's `error` / `error_description`, when it refused.
+  """
+  error: String = null
+  errorDescription: String = null
   state: String!
 }
 
 """Lifecycle of a bank consent."""
 enum ConnectionStatus {
   ACTIVE
+  CANCELLED
   EXPIRED
   FAILED
   PENDING
@@ -899,6 +1042,43 @@ input CreateCategoryRuleInput {
   priority: Int! = 100
 }
 
+"""
+A new Enable Banking provider: one application from the Enable Banking control panel.
+"""
+input CreateEnableBankingProviderInput {
+  """The application id."""
+  appId: String!
+
+  """
+  What to switch on; everything the kind can do by default (see `providerKinds`).
+  """
+  capabilities: [ProviderCapability!] = null
+
+  """How long a new consent is requested for, in days."""
+  consentDays: Int! = 90
+
+  """
+  Syncs per account per day; null is unlimited. Omitted: the kind's default.
+  """
+  dailySyncLimit: Int
+
+  """What to call it, unique in the organization."""
+  name: String!
+
+  """
+  The application's private key: the text of its `.pem` file. Stored encrypted and never returned.
+  """
+  privateKey: String!
+
+  """`personal` or `business`."""
+  psuType: String! = "personal"
+
+  """
+  The redirect URLs links may use, the default first. Omitted: those registered for the application at Enable Banking.
+  """
+  redirectUrls: [String!] = null
+}
+
 """Preview an uploaded Finanzguru export."""
 input CreateFinanzguruImportInput {
   """The uploaded file's store (`finishBigfileUpload`'s id)."""
@@ -959,6 +1139,24 @@ input CreateMerchantRuleInput {
   priority: Int! = 100
 }
 
+"""
+A new Scalable Capital provider. It holds no credentials: each login keeps its own.
+"""
+input CreateScalableProviderInput {
+  """
+  What to switch on; everything the kind can do by default (see `providerKinds`).
+  """
+  capabilities: [ProviderCapability!] = null
+
+  """
+  Syncs per account per day; null is unlimited. Omitted: the kind's default.
+  """
+  dailySyncLimit: Int
+
+  """What to call it, unique in the organization."""
+  name: String! = "Scalable Capital"
+}
+
 """An amount in one currency."""
 type CurrencyTotal {
   amount: Decimal!
@@ -987,6 +1185,28 @@ scalar Decimal
 enum Direction {
   IN
   OUT
+}
+
+"""
+The settings of an Enable Banking provider. Its private key is never returned.
+"""
+type EnableBankingProviderSettings {
+  """The Enable Banking application id."""
+  appId: String!
+
+  """How long a new consent is requested for, in days."""
+  consentDays: Int!
+
+  """
+  A fingerprint of the stored private key's public half, to recognise which key is in use.
+  """
+  keyFingerprint: String!
+
+  """`personal` or `business`."""
+  psuType: String!
+
+  """The redirect URLs a link may use; the first is the default."""
+  redirectUrls: [String!]!
 }
 
 input FinishBigFileUploadInput {
@@ -1207,7 +1427,7 @@ enum ImportTargetKind {
   SKIPPED
 }
 
-"""A bank Enable Banking can reach."""
+"""A bank a provider can reach."""
 type Institution {
   bic: String
   country: String!
@@ -1295,6 +1515,11 @@ type Merchant {
 
   """Notes about the merchant."""
   description: String!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   Meters from the point of a `near` filter to its closest located store; null without one.
@@ -1719,8 +1944,8 @@ type Mutation {
   """
   assignMerchant(input: AssignMerchantInput!): [Transaction!]!
 
-  """Delete a pending link you started."""
-  cancelLink(connection: ID!): ID!
+  """Drop a login that will not be finished. Idempotent."""
+  cancelAuth(state: String!): AuthSession!
 
   """Set or clear a transaction's category."""
   categorizeTransaction(input: CategorizeTransactionInput!): Transaction!
@@ -1728,11 +1953,10 @@ type Mutation {
   """Set or clear the category of many transactions at once."""
   categorizeTransactions(category: ID = null, ids: [ID!]!): [Transaction!]!
 
-  """Finish linking a bank with the redirect's code and state."""
-  completeBankLink(input: CompleteBankLinkInput!): BankConnection!
-
-  """Advance a Scalable Capital link; call until the connection is ACTIVE."""
-  completeScalableLink(state: String!): BankConnection!
+  """
+  REDIRECT: finish with the code. POLL: advance one step; call until not PENDING.
+  """
+  completeAuth(input: CompleteAuthInput!): AuthSession!
 
   """Create a monthly budget."""
   createBudget(input: CreateBudgetInput!): Budget!
@@ -1742,6 +1966,11 @@ type Mutation {
 
   """Create a categorization rule."""
   createCategoryRule(input: CreateCategoryRuleInput!): CategoryRule!
+
+  """
+  Admins: set up an Enable Banking application (id and private key) as a provider.
+  """
+  createEnableBankingProvider(input: CreateEnableBankingProviderInput!): BankProvider!
 
   """
   Preview an uploaded Finanzguru export (nothing is written into the accounts yet).
@@ -1758,6 +1987,9 @@ type Mutation {
 
   """Create a rule mapping matching transactions to a merchant."""
   createMerchantRule(input: CreateMerchantRuleInput!): MerchantRule!
+
+  """Admins: let the organization link Scalable Capital."""
+  createScalableProvider(input: CreateScalableProviderInput!): BankProvider!
 
   """Delete a budget."""
   deleteBudget(id: ID!): ID!
@@ -1778,6 +2010,9 @@ type Mutation {
 
   """Delete a merchant rule."""
   deleteMerchantRule(apply: Boolean! = true, id: ID!): ID!
+
+  """Admins: remove a provider that has no active or pending connections."""
+  deleteProvider(id: ID!): ID!
 
   """Detect recurring payments."""
   detectRecurring(accounts: [ID!] = null): [RecurringPayment!]!
@@ -1826,9 +2061,9 @@ type Mutation {
   restoreBaseCategory(key: String!): [Category!]!
 
   """
-  Get the auth session of a pending link you started again (to continue a login).
+  The same login again (a fresh openUrl if the old one cannot be reused).
   """
-  resumeLink(connection: ID!): AuthSession!
+  resumeAuth(state: String!): AuthSession!
 
   """Withdraw a bank consent; data is kept."""
   revokeBankConnection(id: ID!): BankConnection!
@@ -1850,13 +2085,8 @@ type Mutation {
   """Set or clear a transaction's note."""
   setTransactionNote(input: SetTransactionNoteInput!): Transaction!
 
-  """Start linking a bank; returns the auth session (finish: REDIRECT)."""
-  startBankLink(input: StartBankLinkInput!): AuthSession!
-
-  """
-  Start linking Scalable Capital; returns the auth session (finish: POLL).
-  """
-  startScalableLink: AuthSession!
+  """Start a login through a provider; returns the auth session."""
+  startLink(input: StartLinkInput!): AuthSession!
 
   """Pull an account from the bank now."""
   syncAccount(id: ID!): SyncResult!
@@ -1879,6 +2109,11 @@ type Mutation {
   updateCategoryRule(input: UpdateCategoryRuleInput!): CategoryRule!
 
   """
+  Admins: change an Enable Banking provider; an empty key keeps the stored one.
+  """
+  updateEnableBankingProvider(input: UpdateEnableBankingProviderInput!): BankProvider!
+
+  """
   Change a merchant; a new default category re-categorizes its transactions.
   """
   updateMerchant(input: UpdateMerchantInput!): Merchant!
@@ -1888,6 +2123,11 @@ type Mutation {
 
   """Change a merchant rule."""
   updateMerchantRule(input: UpdateMerchantRuleInput!): MerchantRule!
+
+  """
+  Admins: rename, enable or disable any provider, or change its capabilities.
+  """
+  updateProvider(input: UpdateProviderInput!): BankProvider!
 
   """
   Create a merchant, or update the one with this key (aliases are added).
@@ -2063,6 +2303,50 @@ enum Provider {
   SCALABLE
 }
 
+"""
+Something a provider kind can do, switched on or off per provider (see `providerKinds`).
+"""
+enum ProviderCapability {
+  BALANCES
+  HOLDINGS
+  PRICES
+  SCHEDULED_SYNC
+  TRANSACTIONS
+}
+
+"""
+A capability of a provider kind: something it can do, which an admin switches on or off per provider.
+"""
+type ProviderCapabilityInfo {
+  capability: ProviderCapability!
+  description: String!
+  label: String!
+}
+
+"""
+A kind of provider this server can run. What a client needs to offer it, without knowing the kinds itself.
+"""
+type ProviderKind {
+  """Everything the kind can do; a provider enables a subset."""
+  capabilities: [ProviderCapabilityInfo!]!
+
+  """
+  Syncs per account per day a new provider starts with (null: unlimited).
+  """
+  defaultDailySyncLimit: Int
+  description: String!
+
+  """How a login through it finishes."""
+  finish: AuthFinish!
+
+  """
+  True when a link is to one of many banks: pick one from `bankInstitutions` and pass it to `startLink`.
+  """
+  hasInstitutions: Boolean!
+  kind: Provider!
+  label: String!
+}
+
 type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
@@ -2072,6 +2356,9 @@ type Query {
 
   """Stats for located places inside a circle or viewport."""
   areaInsights(area: AreaInput!, limit: Int! = 10, window: StatsWindowInput = null): AreaInsights!
+
+  """Where a login is. No side effect."""
+  authSession(state: String!): AuthSession!
 
   """An account's end-of-day balance over a range."""
   balanceHistory(account: ID!, dateFrom: Date!, dateTo: Date = null): [BalancePoint!]!
@@ -2088,8 +2375,14 @@ type Query {
   """The organization's bank connections."""
   bankConnections(filters: BankConnectionFilter, pagination: OffsetPaginationInput): [BankConnection!]!
 
-  """The banks that can be linked in a country."""
-  bankInstitutions(country: String!): [Institution!]!
+  """The banks a provider can link in a country."""
+  bankInstitutions(country: String!, provider: ID!): [Institution!]!
+
+  """A provider by id."""
+  bankProvider(id: ID!): BankProvider!
+
+  """The providers the organization set up; banks are linked through one."""
+  bankProviders(filters: BankProviderFilter, pagination: OffsetPaginationInput): [BankProvider!]!
 
   """A budget by id."""
   budget(id: ID!): Budget!
@@ -2169,6 +2462,9 @@ type Query {
 
   """How each depot position's price moved over a window."""
   positionPerformance(accounts: [ID!] = null, dateFrom: Date = null, dateTo: Date = null): [PositionPerformance!]!
+
+  """The kinds of provider this server can run, each with its capabilities."""
+  providerKinds: [ProviderKind!]!
 
   """Recurring payments: commitment, due, missed, price changes."""
   recurringInsights(includeDetected: Boolean! = false): RecurringInsights!
@@ -2289,6 +2585,11 @@ type RecurringPayment {
 
   """ISO currency."""
   currency: String!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
 
   """Days between occurrences (7, 14, 30, 91 or 365)."""
@@ -2445,15 +2746,22 @@ type Share {
   share: Float!
 }
 
-"""Start linking a bank."""
-input StartBankLinkInput {
-  """The bank's name exactly as `bankInstitutions` lists it."""
-  aspspName: String!
+"""Start a login through one of the organization's providers."""
+input StartLinkInput {
+  """For a kind with institutions: the bank's ISO country code, e.g. AT."""
+  country: String = null
 
-  """The bank's ISO country code, e.g. AT."""
-  country: String!
+  """
+  For a kind with institutions: the bank's name exactly as `bankInstitutions` lists it.
+  """
+  institution: String = null
 
-  """One of the server's registered redirect URLs; the first by default."""
+  """The provider to link through (see `bankProviders`)."""
+  provider: ID!
+
+  """
+  REDIRECT kinds: one of the provider's redirect URLs; the first by default.
+  """
   redirectUrl: String = null
 }
 
@@ -2479,6 +2787,11 @@ type StatementImport {
 
   """The user who uploaded the file."""
   creator: User
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """FAILED only: why the file could not be read."""
   error: String
@@ -2596,6 +2909,11 @@ type Transaction {
 
   """ISO currency of the amount."""
   currency: String!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@bank/kind`). The keys are the ones bank declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """The bank's own reference, when it sends one."""
   entryReference: String
@@ -2827,6 +3145,28 @@ input UpdateCategoryRuleInput {
   priority: Int
 }
 
+"""
+Changes to an Enable Banking provider; omitted fields stay as they are.
+"""
+input UpdateEnableBankingProviderInput {
+  appId: String
+  capabilities: [ProviderCapability!]
+  consentDays: Int
+
+  """Null is unlimited."""
+  dailySyncLimit: Int
+  enabled: Boolean
+  id: ID!
+  name: String
+
+  """
+  A new private key (PEM text). Omitted or empty: the stored key is kept.
+  """
+  privateKey: String
+  psuType: String
+  redirectUrls: [String!]
+}
+
 """Changes to a merchant; omitted fields stay as they are."""
 input UpdateMerchantInput {
   """The default category, or null for none; its transactions follow."""
@@ -2878,6 +3218,19 @@ input UpdateMerchantRuleInput {
   merchant: MerchantRef
   pattern: String
   priority: Int
+}
+
+"""
+Changes any provider takes, whatever its kind; omitted fields stay as they are.
+"""
+input UpdateProviderInput {
+  capabilities: [ProviderCapability!]
+
+  """Null is unlimited."""
+  dailySyncLimit: Int
+  enabled: Boolean
+  id: ID!
+  name: String
 }
 
 """
@@ -2953,7 +3306,7 @@ type WindowInfo {
 
 scalar _Any
 
-union _Entity = AccountSyncer | BalanceSnapshot | BankAccount | BankConnection | BigFileStore | Budget | Category | CategoryRule | HoldingSnapshot | ImportCategoryMapping | Merchant | MerchantAlias | MerchantLocation | MerchantRule | Organization | RecurringPayment | SecurityListing | StatementImport | Transaction | User
+union _Entity = AccountSyncer | BalanceSnapshot | BankAccount | BankConnection | BankProvider | BigFileStore | Budget | Category | CategoryRule | HoldingSnapshot | ImportCategoryMapping | Merchant | MerchantAlias | MerchantLocation | MerchantRule | Organization | RecurringPayment | SecurityListing | StatementImport | Transaction | User
 
 type _Service {
   sdl: String!

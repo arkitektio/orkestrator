@@ -1,12 +1,18 @@
 fragment AuthSession on AuthSession {
   state
+  status
+  finish
   openUrl
   expiresAt
-  finish
+  redirectUrl
   interval
   userCode
-  redirectUrl
-  connection {
-    ...ListBankConnection
+  step
+  errorCode
+  errorMessage
+  result {
+    identifier
+    id
+    label
   }
 }

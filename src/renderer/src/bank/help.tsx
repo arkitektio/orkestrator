@@ -40,7 +40,7 @@ export const BANK_HELP = {
     <PageHelp
       intro="Every account of your linked banks with its current balance."
       steps={[
-        <>Press <b>Link bank</b> to add a bank. Choose <b>Bank account</b>, check the two-letter country code, search for your bank and give consent on the bank’s page. Choose <b>Scalable Capital</b> to link a broker instead.</>,
+        <>Press <b>Link bank</b> to add a bank. Pick the provider to link through (asked only when your organization set up more than one). For a bank, check the two-letter country code, search for your bank and give consent on the bank’s page; a broker such as Scalable Capital shows a code to approve instead.</>,
         <>Click an account to see its balance over time and its transactions.</>,
         <>Right-click an account and choose <b>Sync now</b> to fetch its latest transactions and balance.</>,
       ]}
@@ -106,7 +106,7 @@ export const BANK_HELP = {
     <PageHelp
       intro="A connection is your consent at one bank or broker; it is what allows your accounts there to be read. This page lists them with their status."
       steps={[
-        <>Press <b>Link bank</b> to add a connection: pick <b>Bank account</b> or <b>Scalable Capital</b> and follow the login.</>,
+        <>Press <b>Link bank</b> to add a connection: pick the provider to link through and follow the login.</>,
         <>Click a connection to see its accounts and when the consent runs out.</>,
         <>Right-click a connection and choose <b>Sync all accounts</b> to fetch everything from that bank now.</>,
         <>Right-click a connection marked <b>Needs relink</b> and choose <b>Relink bank</b> to give consent again. The same accounts and their history are kept.</>,
@@ -115,6 +115,38 @@ export const BANK_HELP = {
       tips={[
         <>Bank consent is temporary; each card shows “consent until” its end date. After that the connection needs a relink.</>,
         <>Revoking keeps the accounts and transactions already synced.</>,
+        <>If the dialog says <b>No provider set up</b>, an admin of your organization has to add one under <b>Providers</b> first.</>,
+      ]}
+    />
+  ),
+  providers: (
+    <PageHelp
+      intro="A provider is how your organization reaches banks and brokers: an Enable Banking application for bank accounts, or Scalable Capital for a broker. Admins set them up here; members then link their accounts through one."
+      steps={[
+        <>Press <b>Add provider</b> and pick the kind.</>,
+        <>For Enable Banking, enter the <b>Application id</b> from its control panel and paste the <b>Private key</b>, or press <b>Load .pem file</b>. Scalable Capital needs no credentials.</>,
+        <>Switch <b>Capabilities</b> on or off to decide what the provider may fetch, and set <b>Syncs per account per day</b> (empty for no limit).</>,
+        <>Click a provider to see its settings and the connections made through it.</>,
+        <>Right-click a provider for <b>Link through this provider</b>, <b>Edit provider</b>, <b>Disable provider</b> or <b>Delete provider</b>.</>,
+      ]}
+      tips={[
+        <>The private key is stored encrypted and never shown again; a provider shows only a fingerprint of it.</>,
+        <>A provider can be deleted only when it has no active or pending connections.</>,
+      ]}
+    />
+  ),
+  provider: (
+    <PageHelp
+      intro="One provider: what it is set up with, what it may fetch, and the connections made through it."
+      steps={[
+        <>Press <b>Link through it</b> to link a bank or broker through this provider.</>,
+        <>Press <b>Edit</b> to change its name, settings, capabilities or daily sync limit. For Enable Banking, leave <b>Private key</b> empty to keep the stored key.</>,
+        <>Press <b>Disable</b> to stop it starting links and syncing, and <b>Enable</b> to turn it back on.</>,
+        <>Click a connection under <b>Connections</b> to open it.</>,
+      ]}
+      tips={[
+        <>The <b>Info</b> tab shows the application id, the key’s fingerprint and the redirect URLs a link may use.</>,
+        <>While a provider is disabled, its connections cannot sync.</>,
       ]}
     />
   ),

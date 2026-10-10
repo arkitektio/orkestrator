@@ -1,3 +1,5 @@
+import { ADMIN_ROLE } from "@/core/connection/roles";
+import { needsRoles } from "@/core/modules/host/dialogNeeds";
 import { AssignMerchantForm } from "./forms/AssignMerchantForm";
 import { CategorizeForm } from "./forms/CategorizeForm";
 import { CreateBudgetForm } from "./forms/CreateBudgetForm";
@@ -10,6 +12,7 @@ import { EditMerchantForm } from "./forms/EditMerchantForm";
 import { LinkBankForm } from "./forms/LinkBankForm";
 import { MergeMerchantForm } from "./forms/MergeMerchantForm";
 import { PlaceForm } from "./forms/PlaceForm";
+import { CreateProviderForm, EditProviderForm } from "./forms/ProviderForm";
 
 /**
  * bank's dialogs, by id (a `dialogs` builtin). Its own file, apart from
@@ -18,6 +21,8 @@ import { PlaceForm } from "./forms/PlaceForm";
  */
 export const BANK_DIALOGS = {
   banklink: LinkBankForm,
+  bankcreateprovider: needsRoles(ADMIN_ROLE, CreateProviderForm),
+  bankeditprovider: needsRoles(ADMIN_ROLE, EditProviderForm),
   bankcreatecategory: CreateCategoryForm,
   bankeditcategory: EditCategoryForm,
   bankdeletecategory: DeleteCategoryForm,

@@ -1,0 +1,17 @@
+query ListBankProviders($filters: BankProviderFilter, $pagination: OffsetPaginationInput) {
+  bankProviders(filters: $filters, pagination: $pagination) {
+    ...ListBankProvider
+  }
+}
+
+query GetBankProvider($id: ID!) {
+  bankProvider(id: $id) {
+    ...BankProvider
+  }
+}
+
+query ProviderKinds {
+  providerKinds {
+    ...ProviderKind
+  }
+}

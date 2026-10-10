@@ -1,4 +1,5 @@
 import type { Service } from "@/core/connection/arkitekt/types";
+import { ADMIN_ROLE } from "@/core/connection/roles";
 import { buildDeleteAction } from "@/core/smart/localactions/builders/deleteAction";
 import { Action, ActionParams } from "@/core/smart/localactions/LocalActionProvider";
 import { ApolloClient, NormalizedCache } from "@apollo/client";
@@ -13,6 +14,8 @@ import {
   Pencil,
   Store,
   PiggyBank,
+  Power,
+  PowerOff,
   RefreshCw,
   Tag,
   Tags,
@@ -20,15 +23,17 @@ import {
   Unplug,
   X,
 } from "lucide-react";
+import { relinkProps } from "./relink";
 import { toastText } from "./errors";
 import {
-  CancelLinkDocument,
+  CancelAuthDocument,
   AssignMerchantDocument,
   CategorizeTransactionsDocument,
   DeleteBudgetDocument,
   DeleteCategoryRuleDocument,
   DeleteMerchantDocument,
   DeleteMerchantLocationDocument,
+  DeleteProviderDocument,
   GetMerchantLocationDocument,
   GetMerchantLocationQuery,
   GetBankConnectionDocument,
@@ -36,16 +41,18 @@ import {
   GetTransactionDocument,
   GetTransactionQuery,
   ListBankConnectionsDocument,
+  ListBankProvidersDocument,
   MarkTransfersDocument,
   MergeMerchantsDocument,
-  Provider,
   RecurringStatus,
   RevokeBankConnectionDocument,
   SetRecurringStatusesDocument,
   SyncAccountDocument,
   SyncConnectionDocument,
+  UpdateProviderDocument,
 } from "./api/graphql";
 
+const PROVIDER = "@bank/provider";
 const CONNECTION = "@bank/connection";
 const ACCOUNT = "@bank/account";
 const TRANSACTION = "@bank/transaction";
@@ -127,6 +134,62 @@ export const BANK_ACTIONS: Record<string, Action> = {
       );
     },
   },
+  "bank-link-through-provider": {
+    title: "Link through this provider",
+    description: "Link a bank or broker through this provider",
+    icon: Link2,
+    pinned: true,
+    conditions: [{ type: "identifier", identifier: PROVIDER }, { type: "nopartner" }],
+    execute: async ({ dialog, state }) => {
+      const [provider] = idsOf(state, PROVIDER);
+      if (!provider) throw new Error("No provider selected");
+      dialog.openDialog("banklink", { provider }, { size: "medium" });
+    },
+  },
+  "bank-edit-provider": {
+    title: "Edit provider",
+    description: "Change its name, settings and capabilities",
+    icon: Pencil,
+    roles: ADMIN_ROLE,
+    conditions: [{ type: "identifier", identifier: PROVIDER }, { type: "nopartner" }],
+    execute: async ({ dialog, state }) => {
+      const [id] = idsOf(state, PROVIDER);
+      if (!id) throw new Error("No provider selected");
+      dialog.openDialog("bankeditprovider", { id }, { size: "medium" });
+    },
+  },
+  "bank-enable-provider": {
+    title: "Enable provider",
+    description: "Let it start links and sync again",
+    icon: Power,
+    roles: ADMIN_ROLE,
+    conditions: [{ type: "identifier", identifier: PROVIDER }, { type: "nopartner" }],
+    execute: async ({ services, state, onProgress }) => {
+      await forEach(idsOf(state, PROVIDER), onProgress, (id) =>
+        bankMutate(services, {
+          mutation: UpdateProviderDocument,
+          variables: { input: { id, enabled: true } },
+          refetchQueries: [ListBankProvidersDocument],
+        }),
+      );
+    },
+  },
+  "bank-disable-provider": {
+    title: "Disable provider",
+    description: "It starts no links and syncs nothing until enabled again",
+    icon: PowerOff,
+    roles: ADMIN_ROLE,
+    conditions: [{ type: "identifier", identifier: PROVIDER }, { type: "nopartner" }],
+    execute: async ({ services, state, onProgress }) => {
+      await forEach(idsOf(state, PROVIDER), onProgress, (id) =>
+        bankMutate(services, {
+          mutation: UpdateProviderDocument,
+          variables: { input: { id, enabled: false } },
+          refetchQueries: [ListBankProvidersDocument],
+        }),
+      );
+    },
+  },
   "bank-sync-connection": {
     title: "Sync all accounts",
     description: "Pull every account of this bank connection now",
@@ -152,12 +215,7 @@ export const BANK_ACTIONS: Record<string, Action> = {
         variables: { id },
       });
       // Opens on the same provider (and bank, pre-searched); consent is one click away.
-      const { aspspCountry, aspspName, provider } = data.bankConnection;
-      dialog.openDialog(
-        "banklink",
-        provider === Provider.Scalable ? { provider } : { provider, country: aspspCountry, bank: aspspName },
-        { size: "medium" },
-      );
+      dialog.openDialog("banklink", relinkProps(data.bankConnection), { size: "medium" });
     },
   },
   "bank-revoke-connection": {
@@ -193,13 +251,26 @@ export const BANK_ACTIONS: Record<string, Action> = {
         destructive: true,
       });
       if (!ok) return;
-      await forEach(ids, onProgress, (connection) =>
-        bankMutate(services, {
-          mutation: CancelLinkDocument,
-          variables: { connection },
+      // A login is cancelled by its state, which only its starter is told.
+      let skipped = 0;
+      await forEach(ids, onProgress, async (id) => {
+        const { data } = await bankClient(services).query<GetBankConnectionQuery>({
+          query: GetBankConnectionDocument,
+          variables: { id },
+          fetchPolicy: "network-only",
+        });
+        const state = data.bankConnection.pendingAuth?.state;
+        if (!state) {
+          skipped += 1;
+          return;
+        }
+        await bankMutate(services, {
+          mutation: CancelAuthDocument,
+          variables: { state },
           refetchQueries: [ListBankConnectionsDocument],
-        }),
-      );
+        });
+      });
+      if (skipped === ids.length) throw new Error("There is no unfinished login of yours here to cancel");
     },
   },
   "bank-categorize": {
@@ -437,6 +508,17 @@ export const BANK_ACTIONS: Record<string, Action> = {
     execute: async ({ dialog, state }) => {
       dialog.openDialog("bankplace", { id: idsOf(state, PLACE)[0] }, { size: "medium" });
     },
+  },
+  "bank-delete-provider": {
+    ...buildDeleteAction({
+      title: "Delete provider",
+      identifier: PROVIDER,
+      description: "Remove the provider; only one without active or pending connections can go",
+      service: "bank",
+      typename: "BankProvider",
+      mutation: DeleteProviderDocument,
+    }),
+    roles: ADMIN_ROLE,
   },
   "bank-delete-place": buildDeleteAction({
     title: "Delete place",

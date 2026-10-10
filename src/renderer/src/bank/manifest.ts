@@ -13,6 +13,7 @@ export const manifest: ModuleManifest = {
   label: "Bank",
   icon: "landmark",
   models: [
+    { identifier: "@bank/provider", name: "Bank Provider", datum: false, path: "providers/:id" },
     { identifier: "@bank/connection", name: "Bank Connection", datum: false, path: "connections/:id" },
     { identifier: "@bank/account", name: "Bank Account", datum: false, path: "accounts/:id" },
     { identifier: "@bank/transaction", name: "Transaction (Bank)", datum: false, path: "transactions/:id" },

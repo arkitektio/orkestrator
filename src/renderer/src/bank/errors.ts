@@ -57,7 +57,7 @@ export const describeError = (
     case BankErrorCode.SyncInProgress:
       return { text: "A sync is already running for this account.", fix: "none" };
     case BankErrorCode.NotConfigured:
-      return { text: "This provider is not set up on the server. Ask an admin.", fix: "none" };
+      return { text: "No provider is set up for this. An admin adds one under Providers.", fix: "none" };
     default:
       return { text: message || "Something went wrong.", fix: "none" };
   }

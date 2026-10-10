@@ -10,6 +10,7 @@ import type {
   SectionPlacement,
   SurfaceDecl,
 } from "@/core/modules/spec";
+import type { AuthFlowHandler } from "@/core/authflow/types";
 import type { OperationHandler } from "./operations";
 import type { OptionSource } from "./options";
 import type { ProfileSection } from "@/core/connection/profile/section";
@@ -122,6 +123,12 @@ export type ModuleBuiltins = {
   railIslands?: readonly ComponentType[];
   /** Named requests on its own service, by `"<namespace>.<name>"` (spec: `request`). */
   operations?: Record<string, OperationHandler>;
+  /**
+   * EXTENSION: its side of the external-login contract (`core/authflow`): how
+   * a login a user started through this module is finished, read and dropped.
+   * One per module; its namespace is the relay's callback path.
+   */
+  authFlow?: AuthFlowHandler;
   /** EXTENSION: its models as options for pickers in other modules' UI. */
   optionSources?: readonly OptionSource[];
   /** EXTENSION: sections of the smart context menu. */

@@ -9,7 +9,7 @@ import { DISPLAY_REGISTRY } from "@/core/smart/display/displays";
 import { registry as ACTIONS } from "@/core/smart/localactions/registry";
 import { PROFILE_SECTIONS } from "@/core/connection/profile/registry";
 import { SMART_SECTIONS } from "@/core/smart/smartcontext";
-import { FILE_DOWNLOADERS, MODULE_VIEWERS } from "@/core/modules/registries";
+import { FILE_DOWNLOADERS, MODULE_AUTH_FLOWS, MODULE_VIEWERS } from "@/core/modules/registries";
 import { TASK_HOOKS } from "@/core/modules/taskhooks/registry";
 
 /**
@@ -36,10 +36,12 @@ describe("host registries", () => {
       "bankcreatebudget",
       "bankcreatecategory",
       "bankcreatemerchant",
+      "bankcreateprovider",
       "bankcreaterule",
       "bankdeletecategory",
       "bankeditcategory",
       "bankeditmerchant",
+      "bankeditprovider",
       "banklink",
       "bankmergemerchant",
       "bankplace",
@@ -209,6 +211,7 @@ describe("host registries", () => {
       "add-layer-to-chart",
       "add-layer-to-scene",
       "add-lens-to-chart",
+      "add-lens-to-scene",
       "add-tabledataset-to-chart",
       "addElektroExperimentLayer",
       "add_user_to_organization",
@@ -228,11 +231,16 @@ describe("host registries", () => {
       "bank-delete-category",
       "bank-delete-merchant",
       "bank-delete-place",
+      "bank-delete-provider",
       "bank-delete-rule",
+      "bank-disable-provider",
       "bank-edit-category",
       "bank-edit-merchant",
       "bank-edit-place",
+      "bank-edit-provider",
+      "bank-enable-provider",
       "bank-ignore-recurring",
+      "bank-link-through-provider",
       "bank-mark-transfer",
       "bank-merge-merchant",
       "bank-merge-merchant-into",
@@ -253,6 +261,9 @@ describe("host registries", () => {
       "create-chart-from-coordinatesystem",
       "create-lens-from-arrayDataset",
       "create-lens-from-lens",
+      "create-lens-from-meshCollection",
+      "create-lens-from-sparseDataset",
+      "create-lens-from-tableDataset",
       "create-new-entity",
       "create-new-measurment-category",
       "create-protocol-event-category",
@@ -346,10 +357,13 @@ describe("host registries", () => {
       "move_arrayDatasets_to_folder",
       "move_files_to_folder",
       "move_folders_to_folder",
+      "move_lenses_to_folder",
       "move_tabledatasets_to_folder",
       "navigate",
       "newtab",
       "notify_user",
+      "open-whole-lens-from-sparseDataset",
+      "open-whole-lens-from-tableDataset",
       "openElektroArrayDatasetOnTimeline",
       "opentotheside",
       "pin-mikro-folder",
@@ -441,5 +455,12 @@ describe("host registries", () => {
       "@elektro/file",
       "@mikro/file",
     ]);
+  });
+
+  it("hold every module's external-login handler, on its own service", () => {
+    expect(Object.keys(MODULE_AUTH_FLOWS).sort()).toEqual(["bank", "kuvert"]);
+    for (const [namespace, handler] of Object.entries(MODULE_AUTH_FLOWS)) {
+      expect(handler.service).toBe(namespace);
+    }
   });
 });

@@ -27,6 +27,9 @@ fragment ListBankAccount on BankAccount {
     aspspName
     aspspCountry
     provider
+    bankProvider {
+      id
+    }
     status
     needsReauth
   }

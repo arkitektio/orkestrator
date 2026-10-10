@@ -1,0 +1,257 @@
+# External auth flows — the contract (v1)
+
+How a backend service lets a user log in at an **external provider** (a bank
+through Enable Banking, a broker, Google or Microsoft for a mailbox, …) with
+Orkestrator carrying the user through it. One contract for every service, so
+the app has one flow (`core/authflow`) instead of one per module.
+
+Status: bank and kuvert run on the host flow today through small adapters
+(`bank/authFlow.ts`, `kuvert/authFlow.ts`) over their current schemas. §2 is
+what both backends move to; the adapters then become plain field mappings.
+§7 lists the exact differences.
+
+## 1. Roles
+
+| Who | Does | Never |
+|---|---|---|
+| **Backend service** | Is the OAuth client: holds client id and secret, the PKCE verifier, the tokens. Starts the login, exchanges the code, stores the result. | Hands a token, a secret or a verifier to the app. |
+| **Orkestrator** | Opens the provider in the user's **system browser**, catches the redirect, sends `code` + `state` back to the service that started it. Shows progress. | Renders the provider's login page itself, or interprets `state`. |
+| **Relay** (coord server, public https) | Turns the one redirect URL registered at the provider into a deep link into the app. | Sees a secret, exchanges a code, or stores anything. |
+| **Provider** | Authenticates the user and redirects with `code` + `state`. | |
+
+The login is always **started by the backend** and **finished by the
+backend**. The app is a courier between two requests.
+
+## 2. What a service implements
+
+Same names and shapes in every service's GraphQL schema.
+
+```graphql
+enum AuthFinish { REDIRECT POLL }
+enum AuthStatus { PENDING DONE FAILED EXPIRED CANCELLED }
+
+"A Structure: what the login linked, so the app can open its page."
+type AuthResult {
+  identifier: String!   # "@bank/connection"
+  id: ID!
+  label: String         # "Erste Bank", "jane@example.org"
+}
+
+type AuthSession {
+  "Opaque, unguessable, single-use, stored server-side. THE handle of the login."
+  state: String!
+  status: AuthStatus!
+  finish: AuthFinish!
+  "https. What the app opens in the user's browser."
+  openUrl: String!
+  "Until when the first approval can happen."
+  expiresAt: DateTime!
+  "REDIRECT: where the provider sends the browser back to (the relay URL)."
+  redirectUrl: String
+  "POLL: seconds between two completeAuth calls."
+  interval: Int
+  "POLL: the code the user confirms on the provider's page."
+  userCode: String
+  "Null until the first approval; then what is still awaited, e.g. MFA."
+  step: String
+  "FAILED: machine-readable, the service's own error codes."
+  errorCode: String
+  "FAILED: one sentence for the user."
+  errorMessage: String
+  "DONE: what was linked. May be set earlier when it already exists (a relink)."
+  result: AuthResult
+}
+
+input CompleteAuthInput {
+  state: String!
+  "REDIRECT: the `code` query parameter of the redirect. POLL: omitted."
+  code: String
+  "REDIRECT: the provider's `error` / `error_description`, when it refused."
+  error: String
+  errorDescription: String
+}
+
+type Mutation {
+  "REDIRECT: finish with the code. POLL: advance one step; call until not PENDING."
+  completeAuth(input: CompleteAuthInput!): AuthSession!
+  "The same login again (a fresh openUrl if the old one cannot be reused)."
+  resumeAuth(state: String!): AuthSession!
+  "Drop a login that will not be finished. Idempotent."
+  cancelAuth(state: String!): AuthSession!
+}
+
+type Query {
+  "Where a login is. No side effect."
+  authSession(state: String!): AuthSession!
+}
+```
+
+**Starting** stays the service's own mutation, because what a login needs
+differs (`startLink(input: { provider, institution, country })`,
+`startOAuthLink(input: { provider, loginHint, account })`). Its return type is
+`AuthSession`.
+
+A service may point at a pending login from its own model
+(`BankConnection.pendingAuth: AuthSession`), so a page can offer "Continue
+login" with `resumeAuth(state)`.
+
+### The two ways to finish
+
+**REDIRECT** (authorization code).
+1. `start…` → `AuthSession { finish: REDIRECT, openUrl, redirectUrl, state }`.
+   `openUrl` is the provider's authorize URL with `redirect_uri=redirectUrl`
+   and `state=state` (plus the PKCE challenge).
+2. The app opens `openUrl` in the system browser.
+3. The provider redirects to `redirectUrl?code=…&state=…` (the relay, §3).
+4. The relay opens `orkestrator://<namespace>/auth/callback?code=…&state=…`.
+5. The app calls `completeAuth({ state, code })` → `status: DONE`, `result`.
+
+**POLL** (device code, or any login the provider finishes out of band).
+1. `start…` → `AuthSession { finish: POLL, openUrl, userCode, interval, state }`.
+2. The app opens `openUrl`, shows `userCode`.
+3. The app calls `completeAuth({ state })` every `interval` seconds. Each call
+   is one server step; the answer stays `PENDING` (with `step` once the code is
+   approved and something else is awaited) until `DONE` or `FAILED`.
+
+### Server obligations
+
+- `state` is generated by the server (≥128 bits of entropy), stored, and bound
+  to the **user and organization** that started the login. `completeAuth`,
+  `authSession`, `resumeAuth` and `cancelAuth` refuse anyone else.
+- `completeAuth` is **idempotent once the login is settled**: a second call
+  returns the same session. The callback page and a pasted redirect may race.
+- A `code` is exchanged once. PKCE wherever the provider supports it.
+- `completeAuth` with `error` records the refusal: `FAILED`, with the
+  provider's words in `errorMessage`.
+- Past `expiresAt` with no approval → `EXPIRED`. Once `step` is set the login
+  is no longer bound to `expiresAt`.
+- Request/response only. Nothing here needs the server to push, schedule or
+  call the app.
+- `openUrl` is https.
+
+## 3. The relay
+
+One redirect URL per service is registered at each provider:
+
+```
+https://go.arkitekt.live/auth/callback/<namespace>        e.g. …/auth/callback/bank
+```
+
+`<namespace>` is the module's namespace in Orkestrator: lowercase `a-z`,
+`0-9` and `-`. The relay is kontrol. On a GET it answers with a page that opens
+
+```
+orkestrator://<namespace>/auth/callback?<query, unchanged>
+```
+
+- The query is passed through **as received**: not parsed, not re-encoded.
+- Only the query crosses. A URL fragment does not survive a deep link, so
+  flows that return tokens in the fragment (implicit grant) are not supported.
+- The page should also show the address to copy, for when no app is installed
+  to take the link (the paste fallback below).
+- GET only: a provider flow with `response_mode=form_post` does not arrive.
+- In the app that link is the path `/<namespace>/auth/callback`, a host route
+  for every module (`RelayCallbackRedirect`) that hands on to the callback
+  page, `/auth/callback/<namespace>`. A module declares no route for it.
+
+Why a relay at all: every deployment has its own hostname (often on a LAN or
+a tailnet), and providers want a fixed, public https redirect URL registered
+in advance. The relay is that one URL for all deployments.
+
+## 4. What Orkestrator does (`core/authflow`)
+
+- **Starts** through the module's own mutation, remembers the `state` it
+  started (per device, with the profile it was started on), and opens
+  `openUrl` in the system browser. Only `http(s)` URLs are ever opened.
+- **Catches the redirect** on a host route, `/auth/callback/:namespace`,
+  outside the module's guards. It finishes the login with the module's
+  `authFlow` handler and opens the linked object's page (`result`).
+  - A `state` this device did not start is **refused**: any web page or local
+    app can open an `orkestrator://` link, so an unknown state never triggers
+    a code exchange. The paste fallback in the dialog that started the login
+    is the way through.
+  - A `state` started on another profile is not submitted; the page says which
+    profile.
+  - `error` in the query is shown and, for a login this profile started, sent
+    through `completeAuth` so it ends as `FAILED`; the waiting dialog is told.
+- **Tells the dialog** that is still open on the same `state` (across windows,
+  `BroadcastChannel`). A REDIRECT dialog also re-reads the session every 3 s as
+  a safety net, when the module can read one.
+- **Paste fallback**, always: the user pastes the address the browser ended up
+  on; the app reads `code` and `state` from it.
+- **POLL**: one request in flight, three consecutive failures pause the loop
+  until the user says "Keep waiting".
+
+### A module's side
+
+```ts
+// <module>/authFlow.ts
+export const BANK_AUTH_FLOW: AuthFlowHandler = {
+  service: "bank",
+  title: "Bank login",
+  restartDialog: "banklink",
+  complete: (client, { state, code }) => …,   // → AuthUpdate
+  read: (client, session) => …,               // optional
+  cancel: (client, session) => …,             // optional
+  describeError: toastText,
+};
+
+// <module>/module.tsx
+defineModule({ …, builtins: { …, authFlow: BANK_AUTH_FLOW } });
+
+// in the module's link dialog
+<AuthFlow flow="bank" title={bank} open={startAndMapToAuthSession} onDone={…} />
+```
+
+A module adds no callback page, no paste field and no countdown.
+
+## 5. Security notes
+
+- The app never holds a token. A stolen `code` is useless without the
+  user's own session at the service, because `completeAuth` is authenticated
+  and `state` is bound to the user.
+- The deep link is not a trust boundary: `state` (server-bound) plus the
+  device's own record of what it started are.
+- The system browser is deliberate (RFC 8252): the user sees the real address,
+  keeps their password manager and passkeys, and the app never sees
+  credentials.
+
+## 6. Why this capture mechanism
+
+| | Browser + relay + deep link (**chosen**) | Loopback `127.0.0.1` | In-app window | Backend-terminated redirect |
+|---|---|---|---|---|
+| Provider must accept | one public https URL | a loopback URL (Enable Banking and most banks refuse) | any registered URL | one URL **per deployment** |
+| User's logins, passkeys | yes | yes | no | yes |
+| Providers that block embedded browsers | fine | fine | blocked (Google) | fine |
+| Needs | relay, OS scheme registration | a listening port, firewall goodwill | its own strict browser session | the service reachable under a registered name |
+| Result reaches the starter | via tab + broadcast | directly | directly | by polling |
+
+POLL covers providers with a device grant and needs none of this.
+
+## 7. Who implements it
+
+bank and kuvert both implement §2 as written (2026-10-10), so their `authFlow`
+builtins are `contractAuthFlow({ service, documents, refetchOnDone })`
+(`contract.ts`): the module passes its generated `CompleteAuth`, `AuthSession`
+and `CancelAuth` documents and nothing else. `sessionOf` (same file) turns the
+answer of a start or `resumeAuth` mutation into the host's session.
+
+A new service does the same. `AuthFlowHandler` stays the seam for one that
+cannot (a different mutation name, no `authSession`).
+
+Each keeps its own error codes in `errorCode`:
+
+| Case | bank | kuvert |
+|---|---|---|
+| Refusal passed in through `error` | `LOGIN_REFUSED` | `PROVIDER_ERROR` |
+| Provider rejects the code | `BANK_ERROR` | `CONSENT_EXPIRED` |
+| Login ran out | `CODE_EXPIRED` | `CODE_EXPIRED` |
+
+`resumeAuth` answers the stored `openUrl` in both; neither mints a new one.
+
+## 8. Not verified in the app
+
+- A real provider round trip on the host callback route.
+- A link from the relay (kontrol) arriving in the app.
+- `orkestrator://` registration in a packaged build (`protocols` in
+  `electron-builder.yml` was added for it).

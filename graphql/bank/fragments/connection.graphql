@@ -3,6 +3,11 @@ fragment ListBankConnection on BankConnection {
   aspspName
   aspspCountry
   provider
+  bankProvider {
+    id
+    name
+    enabled
+  }
   status
   linkStep
   validUntil
@@ -19,6 +24,9 @@ fragment BankConnection on BankConnection {
   ...ListBankConnection
   createdAt
   linkedAt
+  pendingAuth {
+    state
+  }
   creator {
     id
     sub
