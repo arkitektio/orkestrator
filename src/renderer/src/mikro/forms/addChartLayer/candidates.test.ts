@@ -61,7 +61,9 @@ describe("chartCandidates", () => {
     });
     expect(out.lenses.map((l) => l.id)).toEqual(["l1"]);
     expect(out.tables[0].valueColumns).toEqual([{ name: "area", unit: "µm²" }]);
-    expect(out.collections).toEqual([{ id: "c1", name: "Marks", drawn: false }]);
+    expect(out.collections).toEqual([
+      { id: "c1", name: "Marks", wholeLens: null, drawn: false },
+    ]);
   });
 
   it("lists a resident reached twice once", () => {

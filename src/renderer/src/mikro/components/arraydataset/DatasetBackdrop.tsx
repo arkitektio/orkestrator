@@ -101,10 +101,11 @@ export const CreateSceneControl = ({
     awaitRefetchQueries: true,
     onCompleted: (result) => onCreated(result.createSceneFromCoordinateSystem.id),
   });
-  // `defaultFor` nominates the new scene as the one this dataset opens on and
-  // takes its thumbnail from — without it a freshly staged dataset stays
-  // tile-less in every list, since the thumbnail is now the newest picture of a
-  // NOMINATED scene rather than something derived from sole occupancy.
+  // `defaultFor` nominates the new scene as the one this dataset's whole lens —
+  // and so the dataset — opens on and takes its thumbnail from. Without it a
+  // freshly staged dataset stays tile-less in every list, since the thumbnail
+  // is now the newest picture of a NOMINATED scene rather than something
+  // derived from sole occupancy.
   //
   // Only when the dataset nominates nothing yet: staging a second scene is not a
   // claim that it should replace the picture someone already chose. Changing an
@@ -135,7 +136,9 @@ export const CreateSceneControl = ({
           variables: {
             input: {
               coordinateSystem,
-              defaultFor: dataset.defaultScene ? undefined : [dataset.id],
+              // A nomination is a lens': the dataset's is its whole lens'.
+              defaultFor:
+                dataset.defaultScene || !dataset.fullLens ? undefined : [dataset.fullLens.id],
             },
           },
         });

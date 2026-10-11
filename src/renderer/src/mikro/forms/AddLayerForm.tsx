@@ -19,7 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/core/ui/select";
-import { describeLens, LENS_KINDS, type LensTypename } from "@/mikro/lenses";
+import {
+  describeLens,
+  LENS_KINDS,
+  type LensContainerRef,
+  type LensTypename,
+} from "@/mikro/lenses";
+import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
+import { toast } from "@/core/notify";
 import { modifierSpecsOf, spatialSpecOf } from "@/mikro/specs";
 import {
   ChevronDown,
@@ -36,6 +43,7 @@ import { useForm } from "react-hook-form";
 import {
   Blending,
   ColorMap,
+  ColorSourceKind,
   ColumnRole,
   PhasorColorMode,
   ProjectionMode,
@@ -74,8 +82,11 @@ import {
   TableEntry,
   TableKind,
   buildSections,
+  lensCandidateOf,
+  type LensCandidate,
 } from "./addLayer/candidates";
 import {
+  extentOf,
   stagedFromLayers,
   suggestLensKinds,
   suggestTableKinds,
@@ -101,6 +112,28 @@ const REFETCH_SCENE = {
 const DIALOG_OPTIONS = {
   successMessage: "Layer added",
   errorPrefix: "Could not add layer",
+};
+
+/** Said when the lens a layer is to be made from could not be found or made. */
+const lensFailed = (error: unknown) =>
+  toast.error(
+    `Could not add layer: ${error instanceof Error ? error.message : String(error)}`,
+  );
+
+/**
+ * The lens a container row's layer is made from. A layer draws a LENS, never a
+ * container: the selection picked on the row, else the container's whole lens —
+ * which the row carries (`fullLens`), and which is asked for only when it did
+ * not.
+ */
+const useContainerLens = () => {
+  const registry = useLensRegistry();
+  return (
+    picked: string | null,
+    whole: string | null | undefined,
+    container: LensContainerRef,
+  ): Promise<string> =>
+    picked || whole ? Promise.resolve((picked || whole) as string) : registry.ensureWholeLens(container);
 };
 
 const kindButton = (active: boolean) =>
@@ -491,12 +524,16 @@ const PHASOR_MODES = [
 const LensLayerForm = (props: {
   scene: string;
   source: Extract<Source, { kind: "lens" }>;
+  /** The row's lens with the server's CURRENT answer for its axes: the row is a
+   *  snapshot, and the axes may have arrived after it was clicked. */
+  lens: LensCandidate;
   suggestion: LensSuggestion;
   lineageLoading: boolean;
   onBack: () => void;
 }) => {
   const { option } = props.source;
-  const { suggestion } = props;
+  const { suggestion, lens } = props;
+  const registry = useLensRegistry();
   const [kind, setKind] = useState<LayerKind>(suggestion.kinds[0]);
   const [touched, setTouched] = useState(false);
   useEffect(() => {
@@ -549,11 +586,23 @@ const LensLayerForm = (props: {
   const phasorContext =
     phasorData?.lens.__typename === "ArrayLens" ? phasorData.lens.phasor : undefined;
 
+  /**
+   * The lens that is ONE channel of the row's lens: what an intensity, volume
+   * or phasor layer is made from, and each plane of an rgb one. A lens with no
+   * channel axis, or one that already keeps a single channel, is that lens.
+   * Otherwise it is the row's selection with the channel axis at `index` (a
+   * dataset index), found or made by the session registry.
+   */
+  const channelLens = (index: number): Promise<string> => {
+    const axis = lens.renderAxes?.intensity;
+    if (!axis || extentOf(lens, axis) <= 1) return Promise.resolve(lens.id);
+    return registry.ensureChannelLens(lens.dataset.id, lens.slices, axis, index);
+  };
+
   const intensityInput = () => {
     const intensity = defaults.intensity;
     if (!intensity) return {};
     return {
-      intensityIndex: intensity.intensityIndex,
       colormap: intensity.colormap as ColorMap,
       blending: intensity.blending as Blending,
       climMin: intensity.climMin ?? undefined,
@@ -564,21 +613,53 @@ const LensLayerForm = (props: {
 
   const onSubmit = form.handleSubmit(async (data) => {
     const base = { lens: option.lens.id, scene: props.scene };
+    // Which channel a layer draws is its LENS, so the kinds that draw one
+    // channel are made from a single-channel lens rather than from the row's.
+    const channelIndex =
+      kind === "PHASOR"
+        ? (defaults.phasor?.intensityIndex ?? 0)
+        : (defaults.intensity?.intensityIndex ?? 0);
+    let channel: string;
+    let planes: { redLens: string; greenLens: string; blueLens: string } | null = null;
+    try {
+      channel =
+        kind === "INTENSITY" || kind === "VOLUME" || kind === "PHASOR"
+          ? await channelLens(channelIndex)
+          : option.lens.id;
+      if (kind === "RGB" && defaults.rgb) {
+        const [redLens, greenLens, blueLens] = await Promise.all([
+          channelLens(defaults.rgb.redIndex),
+          channelLens(defaults.rgb.greenIndex),
+          channelLens(defaults.rgb.blueIndex),
+        ]);
+        planes = { redLens, greenLens, blueLens };
+      }
+    } catch (error) {
+      lensFailed(error);
+      return;
+    }
     switch (kind) {
       case "INTENSITY":
         return submitIntensity({
-          variables: { input: { ...base, ...intensityInput() } },
+          variables: { input: { ...base, lens: channel, ...intensityInput() } },
           ...REFETCH_SCENE,
         });
       case "RGB":
+        // The layer's own lens stays the row's: the three planes are crops of it.
+        if (!planes) return;
         return submitRgb({
-          variables: { input: { ...base, ...(defaults.rgb ?? {}) } },
+          variables: { input: { ...base, ...planes } },
           ...REFETCH_SCENE,
         });
       case "VOLUME":
         return submitVolume({
           variables: {
-            input: { ...base, ...intensityInput(), mode: data.mode as ProjectionMode },
+            input: {
+              ...base,
+              lens: channel,
+              ...intensityInput(),
+              mode: data.mode as ProjectionMode,
+            },
           },
           ...REFETCH_SCENE,
         });
@@ -596,10 +677,10 @@ const LensLayerForm = (props: {
           variables: {
             input: {
               ...base,
+              // The channel whose photons are counted, as its lens.
+              lens: channel,
               phasorAxis: phasor.phasorAxis,
               harmonic,
-              intensityAxis: phasor.intensityAxis ?? undefined,
-              intensityIndex: phasor.intensityIndex,
               blending: phasor.blending as Blending,
               transfer: {
                 colormap: phasor.colormap as ColorMap,
@@ -765,6 +846,7 @@ const TableLayerForm = (props: {
   const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
   const [kind, setKind] = useState<TableKind>(props.entry.kinds[0]);
 
+  const containerLens = useContainerLens();
   const [createPoint] = useCreatePointLayerMutation();
   const [createTrack] = useCreateTrackLayerMutation();
   const submitPoint = useGraphQLDialog(createPoint, DIALOG_OPTIONS);
@@ -810,18 +892,39 @@ const TableLayerForm = (props: {
   const onSubmit = form.handleSubmit(async (data) => {
     // "" means an unmapped optional column; the input omits it entirely.
     const orUndefined = (v: string) => v || undefined;
-    // A lens names its table; the server takes one or the other.
-    const base = {
-      scene: props.scene,
-      ...(lens ? { lens } : { tableDataset: props.entry.table.id }),
-    };
+    const table = props.entry.table;
+    let lensId: string;
+    try {
+      lensId = await containerLens(lens, table.fullLens?.id, { tableDataset: table.id });
+    } catch (error) {
+      lensFailed(error);
+      return;
+    }
+    const base = { scene: props.scene, lens: lensId };
     if (kind === "POINT") {
+      // A colouring is one entry of the layer's picker, switched on: the same
+      // picker a label or a mesh layer publishes, here over the layer's own
+      // table (its rows ARE the points, so there is no join to walk).
+      const colorColumn = orUndefined(data.colorColumn);
       return submitPoint({
         variables: {
           input: {
             ...base,
             sizeColumn: orUndefined(data.sizeColumn),
-            colorColumn: orUndefined(data.colorColumn),
+            ...(colorColumn
+              ? {
+                  colorBys: [
+                    {
+                      kind: ColorSourceKind.Column,
+                      table: table.id,
+                      column: colorColumn,
+                      joinPath: [],
+                      colormap,
+                    },
+                  ],
+                  activeColorBy: 0,
+                }
+              : {}),
             colormap,
             pointSize: data.pointSize ?? undefined,
           },
@@ -917,6 +1020,7 @@ const MeshLayerForm = (props: {
   onBack: () => void;
 }) => {
   const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
+  const containerLens = useContainerLens();
   const [createMesh] = useCreateMeshLayerMutation();
   const submitMesh = useGraphQLDialog(createMesh, DIALOG_OPTIONS);
 
@@ -927,19 +1031,27 @@ const MeshLayerForm = (props: {
     },
   });
 
-  const onSubmit = form.handleSubmit(async (data) =>
-    submitMesh({
+  const onSubmit = form.handleSubmit(async (data) => {
+    const mesh = props.entry.mesh;
+    let lensId: string;
+    try {
+      lensId = await containerLens(lens, mesh.fullLens?.id, { meshCollection: mesh.id });
+    } catch (error) {
+      lensFailed(error);
+      return;
+    }
+    return submitMesh({
       variables: {
         input: {
           scene: props.scene,
-          ...(lens ? { lens } : { meshCollection: props.entry.mesh.id }),
+          lens: lensId,
           wireframe: data.wireframe,
           opacity: data.opacity ?? undefined,
         },
       },
       ...REFETCH_SCENE,
-    }),
-  );
+    });
+  });
 
   return (
     <Form {...form}>
@@ -989,6 +1101,7 @@ const NetworkLayerForm = (props: {
   onBack: () => void;
 }) => {
   const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
+  const containerLens = useContainerLens();
   const [createNetwork] = useCreateNetworkLayerMutation();
   const submitNetwork = useGraphQLDialog(createNetwork, DIALOG_OPTIONS);
 
@@ -999,19 +1112,29 @@ const NetworkLayerForm = (props: {
     },
   });
 
-  const onSubmit = form.handleSubmit(async (data) =>
-    submitNetwork({
+  const onSubmit = form.handleSubmit(async (data) => {
+    const network = props.entry.network;
+    let lensId: string;
+    try {
+      lensId = await containerLens(lens, network.fullLens?.id, {
+        networkCollection: network.id,
+      });
+    } catch (error) {
+      lensFailed(error);
+      return;
+    }
+    return submitNetwork({
       variables: {
         input: {
           scene: props.scene,
-          ...(lens ? { lens } : { networkCollection: props.entry.network.id }),
+          lens: lensId,
           showNodes: data.showNodes,
           opacity: data.opacity ?? undefined,
         },
       },
       ...REFETCH_SCENE,
-    }),
-  );
+    });
+  });
 
   return (
     <Form {...form}>
@@ -1057,6 +1180,7 @@ const AnnotationLayerForm = (props: {
   onBack: () => void;
 }) => {
   const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
+  const containerLens = useContainerLens();
   const [createAnnotationLayer] = useCreateAnnotationLayerMutation();
   const submit = useGraphQLDialog(createAnnotationLayer, DIALOG_OPTIONS);
 
@@ -1064,18 +1188,28 @@ const AnnotationLayerForm = (props: {
     defaultValues: { opacity: undefined as number | undefined },
   });
 
-  const onSubmit = form.handleSubmit(async (data) =>
-    submit({
+  const onSubmit = form.handleSubmit(async (data) => {
+    const collection = props.entry.collection;
+    let lensId: string;
+    try {
+      lensId = await containerLens(lens, collection.fullLens?.id, {
+        annotationCollection: collection.id,
+      });
+    } catch (error) {
+      lensFailed(error);
+      return;
+    }
+    return submit({
       variables: {
         input: {
           scene: props.scene,
-          ...(lens ? { lens } : { annotationCollection: props.entry.collection.id }),
+          lens: lensId,
           opacity: data.opacity ?? undefined,
         },
       },
       ...REFETCH_SCENE,
-    }),
-  );
+    });
+  });
 
   return (
     <Form {...form}>
@@ -1170,7 +1304,16 @@ const AddLayerFormInner = (props: AddLayerProps) => {
             drawable: new Set(capabilityData.drawable.map((lens) => lens.id)),
             labels: new Set(capabilityData.labels.map((lens) => lens.id)),
             phasor: new Set(capabilityData.phasor.map((lens) => lens.id)),
-            vector: new Set(capabilityData.vector.map((lens) => lens.id)),
+            rgb: new Set(capabilityData.rgb.map((lens) => lens.id)),
+            // Which axis is which, for every lens the server would draw: its
+            // own answer, in place of one read off the axis types here.
+            axes: new Map(
+              capabilityData.drawable.flatMap((lens) =>
+                lens.__typename === "ArrayLens"
+                  ? [[lens.id, lens.suggestedRenderAxes] as const]
+                  : [],
+              ),
+            ),
           }
         : null,
     [capabilityData],
@@ -1227,7 +1370,14 @@ const AddLayerFormInner = (props: AddLayerProps) => {
   // Once a lens is chosen, its full provenance component: the ancestors the
   // reachable set could not see, and everything below. Merged into the
   // one-hop graph, so the same rules simply run again over more.
-  const lens = source?.kind === "lens" ? source.option.lens : null;
+  //
+  // Re-read against the CURRENT capabilities: the row is a snapshot, and a
+  // lens clicked before the server answered has no render axes on it.
+  const picked = source?.kind === "lens" ? source.option.lens : null;
+  const lens = useMemo(
+    () => (picked ? lensCandidateOf(picked, capabilities) : null),
+    [picked, capabilities],
+  );
   const rootSpace = lens?.dataset.intrinsicSystem?.id ?? lens?.lensSpace?.id;
   const { data: lineageData, loading: lineageLoading } = useAddLayerLineageQuery({
     variables: { coordinateSystem: rootSpace ?? "", maxDepth: 4 },
@@ -1266,13 +1416,26 @@ const AddLayerFormInner = (props: AddLayerProps) => {
       if (entry.kind === "dataset") {
         const option = entry.lenses.find((candidate) => candidate.lens.id === wanted);
         if (option) found = { kind: "lens", dataset: entry, option };
-      } else if (entry.kind === "table" && offers("TableLens", entry.table.id)) {
+      } else if (
+        entry.kind === "table" &&
+        (entry.table.fullLens?.id === wanted || offers("TableLens", entry.table.id))
+      ) {
         found = { kind: "table", entry };
-      } else if (entry.kind === "mesh" && offers("MeshLens", entry.mesh.id)) {
+      } else if (
+        entry.kind === "mesh" &&
+        (entry.mesh.fullLens?.id === wanted || offers("MeshLens", entry.mesh.id))
+      ) {
         found = { kind: "mesh", entry };
-      } else if (entry.kind === "network" && offers("NetworkLens", entry.network.id)) {
+      } else if (
+        entry.kind === "network" &&
+        (entry.network.fullLens?.id === wanted || offers("NetworkLens", entry.network.id))
+      ) {
         found = { kind: "network", entry };
-      } else if (entry.kind === "annotation" && offers("AnnotationLens", entry.collection.id)) {
+      } else if (
+        entry.kind === "annotation" &&
+        (entry.collection.fullLens?.id === wanted ||
+          offers("AnnotationLens", entry.collection.id))
+      ) {
         found = { kind: "annotation", entry };
       }
       if (found) {
@@ -1324,6 +1487,7 @@ const AddLayerFormInner = (props: AddLayerProps) => {
         <LensLayerForm
           scene={props.scene}
           source={source}
+          lens={lens ?? source.option.lens}
           suggestion={lensSuggestion ?? source.option.suggestion}
           lineageLoading={lineageLoading}
           onBack={() => setSource(null)}

@@ -79,12 +79,27 @@ export const effectiveScalarTransfer = (
   return { climMin: transfer.climMin, climMax: transfer.climMax, gamma: transfer.gamma ?? 1 };
 };
 
+/**
+ * WHICH CHANNEL a source samples, three ways at once, and why:
+ *
+ *  - `intensityIndex` is the truth the renderer reads: the position along the
+ *    dataset's channel axis (level-0 index — slab i of a brick IS channel i).
+ *    Editors write it directly, so a preview never waits on the server.
+ *  - `intensityAxis` is that axis: the layer's `renderAxes.intensity`, copied
+ *    onto the node. Derived, never stored and never sent.
+ *  - `lens` is how the SERVER names the same thing: the id of the single-channel
+ *    lens the node was read with. It is only as fresh as the last read — an
+ *    edit to `intensityIndex` does not touch it — so it is never sent back as
+ *    is: a save derives the lens from the index (`serializeRenderGraph`'s
+ *    `lensIdOf`). Null/absent means the node reads the layer's own selection.
+ */
 export type ChannelRenderNode = {
   type: "channel";
   kind: string;
   label: string | null;
   intensityAxis: string | null;
   intensityIndex: number;
+  lens?: string | null;
   visible: boolean;
   transfer: TransferFn;
 };
@@ -133,9 +148,11 @@ export type PhasorRenderNode = {
   /** The axis reduced (a MICROTIME or SPECTRUM axis of the lens). */
   phasorAxis: string;
   harmonic: number;
-  /** The channel the photons are counted in (a FLIM cube can be multi-channel). */
+  /** The channel the photons are counted in (a FLIM cube can be multi-channel).
+   *  Same three fields, same rules, as on `ChannelRenderNode`. */
   intensityAxis: string | null;
   intensityIndex: number;
+  lens?: string | null;
   visible: boolean;
   transfer: PhasorTransferFn;
 };
@@ -173,8 +190,8 @@ type FragmentNode = {
   label?: string | null;
   blending?: Blending;
   mode?: ProjectionMode;
-  intensityAxis?: string | null;
-  intensityIndex?: number;
+  /** The single-channel lens a source node samples, by bare id. */
+  lens?: string | null;
   visible?: boolean;
   transfer?: Partial<TransferFn> | null;
   // Aliased in the fragment: `transfer` on a PhasorNode is a PhasorTransfer,
@@ -278,8 +295,27 @@ export const parsePhasorTransfer = (
   cursors: (transfer?.cursors ?? []).map(parseCursor),
 });
 
+/**
+ * How a source node's `lens` becomes the channel index the renderer reads.
+ *
+ * The layer supplies it (`graphChannelContext` in `layerModel.ts`): the channel
+ * axis is the layer's, and an id is resolved against the session's lens
+ * registry. `indexOf(null)` answers for a node that names no lens — the layer's
+ * own selection.
+ */
+export type GraphChannelContext = {
+  intensityAxis: string | null;
+  indexOf: (lens: string | null | undefined) => number;
+};
+
+/** No layer in hand: every source reads channel 0 of no particular axis. */
+const NO_CHANNEL_CONTEXT: GraphChannelContext = { intensityAxis: null, indexOf: () => 0 };
+
 /** Recursively convert a fragment node into the domain model. */
-export const parseRenderNode = (node: FragmentNode): RenderNode => {
+export const parseRenderNode = (
+  node: FragmentNode,
+  context: GraphChannelContext = NO_CHANNEL_CONTEXT,
+): RenderNode => {
   if (node.__typename === "PhasorNode") {
     return {
       type: "phasor",
@@ -287,8 +323,9 @@ export const parseRenderNode = (node: FragmentNode): RenderNode => {
       label: node.label ?? null,
       phasorAxis: node.phasorAxis ?? "",
       harmonic: node.harmonic ?? 1,
-      intensityAxis: node.intensityAxis ?? null,
-      intensityIndex: node.intensityIndex ?? 0,
+      intensityAxis: context.intensityAxis,
+      intensityIndex: context.indexOf(node.lens),
+      lens: node.lens ?? null,
       visible: node.visible ?? true,
       transfer: parsePhasorTransfer(node.phasorTransfer),
     };
@@ -298,8 +335,9 @@ export const parseRenderNode = (node: FragmentNode): RenderNode => {
       type: "channel",
       kind: node.kind ?? CHANNEL_KIND,
       label: node.label ?? null,
-      intensityAxis: node.intensityAxis ?? null,
-      intensityIndex: node.intensityIndex ?? 0,
+      intensityAxis: context.intensityAxis,
+      intensityIndex: context.indexOf(node.lens),
+      lens: node.lens ?? null,
       visible: node.visible ?? true,
       transfer: parseTransfer(node.transfer),
     };
@@ -310,7 +348,7 @@ export const parseRenderNode = (node: FragmentNode): RenderNode => {
       kind: node.kind ?? PROJECTION_KIND,
       label: node.label ?? null,
       mode: node.mode ?? ProjectionMode.Mip,
-      children: (node.children ?? []).map(parseRenderNode),
+      children: (node.children ?? []).map((child) => parseRenderNode(child, context)),
     };
   }
   // BlendNode (and unknown kinds default to blend containers).
@@ -319,16 +357,17 @@ export const parseRenderNode = (node: FragmentNode): RenderNode => {
     kind: node.kind ?? BLEND_KIND,
     label: node.label ?? null,
     blending: node.blending ?? Blending.Additive,
-    children: (node.children ?? []).map(parseRenderNode),
+    children: (node.children ?? []).map((child) => parseRenderNode(child, context)),
   };
 };
 
 /** Parse a full `renderGraph` fragment; returns null when absent. */
 export const parseRenderGraph = (
   graph: LayerRenderGraphFragment | null | undefined,
+  context: GraphChannelContext = NO_CHANNEL_CONTEXT,
 ): BlendRenderNode | null => {
   if (!graph?.root) return null;
-  const root = parseRenderNode(graph.root as FragmentNode);
+  const root = parseRenderNode(graph.root as FragmentNode, context);
   return root.type === "blend" ? root : { type: "blend", kind: BLEND_KIND, label: null, blending: Blending.Additive, children: [root] };
 };
 
@@ -401,6 +440,9 @@ type GraphSourceLayer = {
   blending?: ImageLayerFragment["blending"] | null;
   visible?: boolean | null;
   renderAxes?: ImageLayerFragment["renderAxes"];
+  /** The channel the layer's own lens pins, if it pins one (`LayerState`). A
+   *  fresh source starts there: it is the channel a node naming no lens reads. */
+  channelPin?: number | null;
 };
 
 /**
@@ -420,7 +462,7 @@ export const defaultLayerGraph = (layer: GraphSourceLayer): BlendRenderNode => (
       kind: CHANNEL_KIND,
       label: null,
       intensityAxis: layer.renderAxes?.intensity ?? null,
-      intensityIndex: 0,
+      intensityIndex: layer.channelPin ?? 0,
       visible: layer.visible ?? true,
       transfer: { ...DEFAULT_TRANSFER },
     },
@@ -428,8 +470,10 @@ export const defaultLayerGraph = (layer: GraphSourceLayer): BlendRenderNode => (
 });
 
 /** The render graph for a layer: its own graph, or the default fallback. */
-export const resolveLayerGraph = (layer: GraphSourceLayer): BlendRenderNode =>
-  parseRenderGraph(layer.renderGraph) ?? defaultLayerGraph(layer);
+export const resolveLayerGraph = (
+  layer: GraphSourceLayer,
+  context?: GraphChannelContext,
+): BlendRenderNode => parseRenderGraph(layer.renderGraph, context) ?? defaultLayerGraph(layer);
 
 /** A fresh channel source, for the editor's "add node" menu. */
 export const newChannelNode = (layer: GraphSourceLayer): ChannelRenderNode => ({
@@ -437,7 +481,7 @@ export const newChannelNode = (layer: GraphSourceLayer): ChannelRenderNode => ({
   kind: CHANNEL_KIND,
   label: null,
   intensityAxis: layer.renderAxes?.intensity ?? null,
-  intensityIndex: 0,
+  intensityIndex: layer.channelPin ?? 0,
   visible: true,
   transfer: { ...DEFAULT_TRANSFER },
 });
@@ -454,7 +498,7 @@ export const newPhasorNode = (layer: GraphSourceLayer): PhasorRenderNode => ({
   phasorAxis: layer.renderAxes?.phasor ?? "",
   harmonic: 1,
   intensityAxis: layer.renderAxes?.intensity ?? null,
-  intensityIndex: 0,
+  intensityIndex: layer.channelPin ?? 0,
   visible: true,
   transfer: {
     // Lifetime overlays are read as a continuous hue ramp, not a luminance one.
@@ -520,16 +564,26 @@ export const serializePhasorTransfer = (transfer: PhasorTransferFn): PhasorTrans
   cursors: transfer.cursors.map(serializeCursor),
 });
 
+/**
+ * The lens id a source node is SAVED with. The caller derives it from the
+ * node's `intensityIndex` (the session registry's `ensureChannelLens`, resolved
+ * before serializing, which is why this is synchronous); null leaves the node
+ * on the layer's own selection.
+ */
+export type NodeLensResolver = (node: SourceRenderNode) => string | null;
+
 /** Convert a domain node back into the `LayerNodeInput` shape for `updateLayer`. */
-export const serializeRenderNode = (node: RenderNode): LayerNodeInput => {
+export const serializeRenderNode = (
+  node: RenderNode,
+  lensIdOf: NodeLensResolver,
+): LayerNodeInput => {
   if (node.type === "phasor") {
     return {
       kind: node.kind || PHASOR_KIND,
       label: node.label,
       phasorAxis: node.phasorAxis,
       harmonic: node.harmonic,
-      intensityAxis: node.intensityAxis,
-      intensityIndex: node.intensityIndex,
+      lens: lensIdOf(node),
       visible: node.visible,
       phasorTransfer: serializePhasorTransfer(node.transfer),
     };
@@ -538,8 +592,7 @@ export const serializeRenderNode = (node: RenderNode): LayerNodeInput => {
     return {
       kind: node.kind || CHANNEL_KIND,
       label: node.label,
-      intensityAxis: node.intensityAxis,
-      intensityIndex: node.intensityIndex,
+      lens: lensIdOf(node),
       visible: node.visible,
       transfer: serializeTransfer(node.transfer),
     };
@@ -549,23 +602,23 @@ export const serializeRenderNode = (node: RenderNode): LayerNodeInput => {
       kind: node.kind || PROJECTION_KIND,
       label: node.label,
       mode: node.mode,
-      children: node.children.map(serializeRenderNode),
+      children: node.children.map((child) => serializeRenderNode(child, lensIdOf)),
     };
   }
   return {
     kind: node.kind || BLEND_KIND,
     label: node.label,
     blending: node.blending,
-    children: node.children.map(serializeRenderNode),
+    children: node.children.map((child) => serializeRenderNode(child, lensIdOf)),
   };
 };
 
-export const serializeRenderGraph = (root: BlendRenderNode) => ({
-  root: serializeRenderNode(root),
+export const serializeRenderGraph = (root: BlendRenderNode, lensIdOf: NodeLensResolver) => ({
+  root: serializeRenderNode(root, lensIdOf),
 });
 
 /**
- * Render fields (clim / colormap / color / gamma / intensity source) derived
+ * Render fields (clim / colormap / color / gamma) derived
  * from a render graph's primary (first) channel. The current single-channel
  * renderer consumes these flat fields, so this lets the render graph drive the
  * viewer for single-channel graphs. Returns null when the layer has no graph
@@ -580,7 +633,6 @@ export const primaryChannelRenderFields = (
   colormap: ColorMap | null;
   color: number[] | null;
   gamma: number | null;
-  intensityAxis: string | null;
 } | null => {
   const parsed = parseRenderGraph(graph);
   const primary = flattenChannels(parsed)[0];
@@ -591,6 +643,5 @@ export const primaryChannelRenderFields = (
     colormap: primary.transfer.colormap,
     color: primary.transfer.color,
     gamma: primary.transfer.gamma,
-    intensityAxis: primary.intensityAxis,
   };
 };

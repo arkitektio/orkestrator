@@ -36,6 +36,12 @@ import {
   type PickPatch,
 } from "../../platform/layerui/entrySections";
 import { useOptimisticLayerPatch } from "../../platform/layerui/useOptimisticLayerPatch";
+import { resolveEntryInputs } from "../../platform/layerui/entryInputs";
+import type {
+  ColorByInputLike,
+  FilterByInputLike,
+} from "../../platform/layerui/columnOptions";
+import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 import { LayerCardActions } from "../../platform/layerui/LayerCardActions";
 
 /**
@@ -126,10 +132,27 @@ export const NetworkLayerCard = memo(
      * provider reconciles layers by STRUCTURE, so a `GetScene` re-emission that
      * changed only this layer's content keeps the stored object as it was.
      */
+    // A picker edit is held as DRAFTS (the position picked) and sent as lens
+    // ids; `toInput` makes that swap at the write, after the local patch has
+    // already drawn. The hook then sends this card's writes in order, so one
+    // that waited on a lens cannot land after a newer pick and undo it.
+    const registry = useLensRegistry();
+    const toInput = useCallback(
+      async (patch: NetworkPatch): Promise<NetworkPatch> => {
+        if (!patch.colorBys && !patch.filterBys) return patch;
+        const entries = await resolveEntryInputs(registry, {
+          colorBys: patch.colorBys as ColorByInputLike[] | null | undefined,
+          filterBys: patch.filterBys as FilterByInputLike[] | null | undefined,
+        });
+        return { ...patch, ...entries };
+      },
+      [registry],
+    );
     const persist = useOptimisticLayerPatch<NetworkPatch>(
       layer.id,
       updateNetworkLayer,
       "[konnektion]",
+      toInput,
     );
 
     const lineWidth = layer.lineWidth ?? 1;

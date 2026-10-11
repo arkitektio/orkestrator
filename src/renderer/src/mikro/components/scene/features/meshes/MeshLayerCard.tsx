@@ -47,6 +47,8 @@ import {
 } from "../../platform/layerui/entrySections";
 import { type ColumnOptionSource } from "../../platform/layerui/ColumnOptionPicker";
 import { colorByEntryToInput, filterByEntryToInput } from "../../platform/layerui/columnOptions";
+import { resolveEntryInputs } from "../../platform/layerui/entryInputs";
+import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 import { useMeshStore } from "./store/meshSlice";
 
 /**
@@ -353,6 +355,7 @@ export const MeshLayerCard = memo(
      * folds in when Save round-trips.
      */
     const [dirty, setDirty] = useState(false);
+    const registry = useLensRegistry();
 
     // The CURRENT stored state for `save`, read at CALL time through a ref so
     // the callbacks below never change identity — the sections' memo depends
@@ -389,20 +392,29 @@ export const MeshLayerCard = memo(
      * server's answer is folded back in (it fills labels and may normalise
      * joins), and dirty clears only on success — a failed save keeps the
      * button, not silently drops the edits.
+     *
+     * `resolveEntryInputs` turns each sparse entry's position into the lens the
+     * server names it by. This is the only place that can cost a request, and
+     * only for a position nobody has picked this session.
      */
     const save = useCallback(() => {
       const current = stateRef.current;
-      updateMeshLayer({
-        variables: {
-          input: {
-            id: layerId,
-            colorBys: current.colorBys.map(colorByEntryToInput),
-            filterBys: current.filterBys.map(filterByEntryToInput),
-            activeColorBy: current.activeColorBy,
-            activeFilterBys: [...current.activeFilterBys],
-          },
-        },
+      resolveEntryInputs(registry, {
+        colorBys: current.colorBys.map(colorByEntryToInput),
+        filterBys: current.filterBys.map(filterByEntryToInput),
       })
+        .then((entries) =>
+          updateMeshLayer({
+            variables: {
+              input: {
+                id: layerId,
+                ...entries,
+                activeColorBy: current.activeColorBy,
+                activeFilterBys: [...current.activeFilterBys],
+              },
+            },
+          }),
+        )
         .then(({ data }) => {
           const saved = data?.updateMeshLayer;
           if (saved) {
@@ -418,7 +430,7 @@ export const MeshLayerCard = memo(
         .catch((error) => {
           console.warn("[mesh] could not save the layer:", error);
         });
-    }, [layerId, patchSceneLayer, updateMeshLayer]);
+    }, [layerId, patchSceneLayer, updateMeshLayer, registry]);
 
     /** Memoized because it crosses the sections' memo boundary as an object. */
     const source: ColumnOptionSource | null = useMemo(

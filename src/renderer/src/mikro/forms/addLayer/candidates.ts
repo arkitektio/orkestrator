@@ -34,11 +34,7 @@
  */
 
 import { residentName } from "@/mikro/components/coordinates/residents";
-import type {
-  AddLayerCandidateFragment,
-  ArrayDatasetSpec,
-  AxisType,
-} from "../../api/graphql";
+import type { AddLayerCandidateFragment, ArrayDatasetSpec } from "../../api/graphql";
 import { lensLabel } from "../../lenses";
 import {
   emptyStaged,
@@ -90,68 +86,33 @@ type ArrayLensResident = Extract<Candidate, { __typename: "ArrayLens" }>;
  * An array lens as the picker reads it: the resident, plus which of its axes
  * is x, y, z, the channel axis, the phasor axis and the displacement axis.
  *
- * The server used to state that on the lens. It states it on the LAYER now ("a
- * selection does not choose how it is looked at"), and the picker runs before
- * any layer exists — so `candidateRenderAxes` reads it off the axis types.
+ * That is a fact of the VIEW ("a selection does not choose how it is looked
+ * at"), stated on a layer — and the picker runs before any layer exists. The
+ * server answers it anyway, per lens, as `suggestedRenderAxes`: what a layer
+ * over this lens would say. It arrives with the capability sets, so a lens has
+ * no axes until they have answered, and none at all if the server would not
+ * draw it.
  */
 export type LensCandidate = ArrayLensResident & {
   renderAxes: NonNullable<LensLike["renderAxes"]> | null;
-};
-
-type TypedAxis = { name: string; type: AxisType; order: number };
-
-// Wire values, as everywhere in this file (see the note on the imports).
-const SPACE = "SPACE" as AxisType;
-const CHANNEL = "CHANNEL" as AxisType;
-const MICROTIME = "MICROTIME" as AxisType;
-const SPECTRUM = "SPECTRUM" as AxisType;
-const DISPLACEMENT = "DISPLACEMENT" as AxisType;
-
-/**
- * Which axis plays which part, by the rule `RenderAxes` documents: x is the
- * last spatial axis, y the one before it, z the one before that; the TIME, the
- * CHANNEL, the MICROTIME-or-SPECTRUM and the DISPLACEMENT axis fill the rest.
- *
- * This is for the picker's DEFAULTS and its summary lines. What the server
- * will actually draw is its own answer: `drawable` / `labels` gate the lens,
- * and `gates` (the PHASOR and VECTOR capability sets) withdraw an axis the
- * server would refuse, so a lens is never offered as a phasor on the strength
- * of this function alone. Null when there is no x and y to draw along.
- */
-export const candidateRenderAxes = (
-  axes: readonly TypedAxis[],
-  gates: { phasor?: boolean; vector?: boolean } = {},
-): LensCandidate["renderAxes"] => {
-  const ordered = [...axes].sort((a, b) => a.order - b.order);
-  const spatial = ordered.filter((axis) => axis.type === SPACE);
-  const x = spatial.at(-1)?.name;
-  const y = spatial.at(-2)?.name;
-  if (!x || !y) return null;
-
-  const first = (...types: AxisType[]) =>
-    ordered.find((axis) => types.includes(axis.type))?.name ?? null;
-
-  return {
-    x,
-    y,
-    z: spatial.at(-3)?.name ?? null,
-    intensity: first(CHANNEL),
-    phasor: gates.phasor === false ? null : first(MICROTIME, SPECTRUM),
-    vector: gates.vector === false ? null : first(DISPLACEMENT),
-  };
 };
 
 /** An array-lens resident as a picker candidate: the resident plus its render axes. */
 export const lensCandidateOf = (
   lens: ArrayLensResident,
   capabilities: Capabilities,
-): LensCandidate => ({
-  ...lens,
-  renderAxes: candidateRenderAxes(lens.lensSpace?.axes ?? [], {
-    phasor: capabilities?.phasor?.has(lens.id),
-    vector: capabilities?.vector?.has(lens.id),
-  }),
-});
+): LensCandidate => {
+  const axes = capabilities?.axes?.get(lens.id) ?? null;
+  return {
+    ...lens,
+    // A phasor is offered only where the server says it would draw one
+    // (`asLayer: PHASOR`): the axis alone is not the whole condition.
+    renderAxes:
+      axes && capabilities?.phasor && !capabilities.phasor.has(lens.id)
+        ? { ...axes, phasor: null }
+        : axes,
+  };
+};
 export type TableCandidate = Extract<Candidate, { __typename: "TableDataset" }>;
 export type MeshCandidate = Extract<Candidate, { __typename: "MeshCollection" }>;
 export type NetworkCandidate = Extract<Candidate, { __typename: "NetworkCollection" }>;
@@ -317,11 +278,12 @@ export const buildSections = (input: {
   const relate = (
     candidate: { __typename: string; id: string; dataset?: { id: string } },
     channels = 1,
+    channelAxis: string | null = null,
   ): Related => {
     const node = nodeOfCandidate(graph, candidate);
     return {
       nodeKey: node?.key ?? `${candidate.__typename}:${candidate.id}`,
-      relation: node ? relationToScene(graph, node, staged, channels) : null,
+      relation: node ? relationToScene(graph, node, staged, channels, channelAxis) : null,
     };
   };
 
@@ -393,9 +355,13 @@ export const buildSections = (input: {
           });
           // The relation reads the channel count off a lens, which the dataset
           // resident does not carry; the widest lens answers for the entry.
-          const channels = extentOf(lens, lens.renderAxes?.intensity);
+          const channelAxis = lens.renderAxes?.intensity ?? null;
+          const channels = extentOf(lens, channelAxis);
           if (channels > 1) {
-            Object.assign(entry, relate({ __typename: "ArrayDataset", id: resident.dataset.id }, channels));
+            Object.assign(
+              entry,
+              relate({ __typename: "ArrayDataset", id: resident.dataset.id }, channels, channelAxis),
+            );
           }
           break;
         }

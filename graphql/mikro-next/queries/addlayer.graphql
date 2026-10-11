@@ -59,12 +59,23 @@ query AddLayerWorldGraph($world: ID!, $maxDepth: Int) {
 # can see that edge in the lineage too, but the server is the last word on what
 # it will draw as a mask — a crop of a mask is one to a person and not to
 # `createLabelLayer` — so LABEL stays a gate the server answers, and lineage
-# only orders and explains within it. PHASOR and VECTOR are asked for the
-# same reason since `renderAxes` left the lens: the client can read a value axis
-# off the axis types, but only the server says whether it will draw one.
+# only orders and explains within it. PHASOR and RGB are asked for the same
+# reason: PHASOR needs a MICROTIME or SPECTRUM axis, RGB a channel axis with at
+# least three positions to cut the planes from. VECTOR asks nothing beyond
+# IMAGE, so it is not asked: a drawable lens with a `vector` axis is one.
+#
+# The drawable set also answers which axis is which. `suggestedRenderAxes` is
+# what a layer over the lens WOULD say, before one exists. It is selected here
+# and not on the candidate because `x` and `y` are non-null: IMAGE guarantees
+# the lens has them.
 query AddLayerLensCapabilities($space: ID!) {
   drawable: lenses(filters: { placeableIn: { space: $space, asLayer: IMAGE } }) {
     id
+    ... on ArrayLens {
+      suggestedRenderAxes {
+        ...LayerRenderAxes
+      }
+    }
   }
   labels: lenses(filters: { placeableIn: { space: $space, asLayer: LABEL } }) {
     id
@@ -72,7 +83,7 @@ query AddLayerLensCapabilities($space: ID!) {
   phasor: lenses(filters: { placeableIn: { space: $space, asLayer: PHASOR } }) {
     id
   }
-  vector: lenses(filters: { placeableIn: { space: $space, asLayer: VECTOR } }) {
+  rgb: lenses(filters: { placeableIn: { space: $space, asLayer: RGB } }) {
     id
   }
 }

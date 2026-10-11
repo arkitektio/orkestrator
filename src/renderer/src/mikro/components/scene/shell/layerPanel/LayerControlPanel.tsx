@@ -12,6 +12,7 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
 import { useBrickStore } from "../../features/bricks/store/brickSlice";
 import { unplaceableReason } from "../../platform/model/layerModel";
 import { UnplaceableNotice } from "./UnplaceableNotice";
+import { lensFamilyKey } from "../../platform/model/channelLens";
 import { LayerLensHeader, type HeaderLens } from "./LayerLensHeader";
 
 // Viewport coverage is deliberately GONE from this panel (and from
@@ -197,11 +198,15 @@ export const LayerControlPanel = ({
             // Cards are headed by the lens they read, once per run of cards
             // over the same lens — a multi-channel dataset's layers are
             // consecutive, so that is one line per lens, not one per layer.
+            // "The same lens" is the FAMILY: each channel layer has a lens of
+            // its own now (one channel of the dataset), and four of them are
+            // still one selection of one dataset to whoever reads this panel.
             const lens = lensOf(entry, layer);
             const previous = index > 0 ? cards[index - 1] : undefined;
+            const previousLens = previous ? lensOf(previous.entry, previous.layer) : undefined;
             const startsLens =
               lens !== undefined &&
-              (previous === undefined || lensOf(previous.entry, previous.layer)?.id !== lens.id);
+              (previousLens === undefined || lensFamilyKey(previousLens) !== lensFamilyKey(lens));
             // The row IS the button: selecting it unfolds the editor inline
             // within the same card (one border around header + body), rather
             // than popping a separate flyout window.

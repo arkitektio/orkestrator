@@ -20,6 +20,7 @@ import {
 import { ColormapSelect } from "@/core/data/scene/layerui/ColormapSelect";
 import { CONTINUOUS_COLORMAP_CHOICES } from "../../platform/layerui/colormap-utils";
 import { useOptimisticLayerPatch } from "../../platform/layerui/useOptimisticLayerPatch";
+import type { ColorByEntry } from "../../platform/layerui/columnOptions";
 import { LayerCardActions } from "../../platform/layerui/LayerCardActions";
 
 /**
@@ -89,7 +90,7 @@ export const PointLayerCard = memo(
     const persist = useOptimisticLayerPatch<PointPatch>(layer.id, updatePointLayer, "[points]");
 
 
-    const colorBys = layer.colorBys ?? [];
+    const colorBys: readonly ColorByEntry[] = layer.colorBys ?? [];
     const pointSize = layer.pointSize ?? 3;
 
     /** A colouring's own label, else the column or matrix it names. */

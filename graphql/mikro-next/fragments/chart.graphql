@@ -250,9 +250,14 @@ fragment ChartLayerCandidate on Resident {
       shape
     }
   }
+  # A chart layer reads through a LENS, so the two container rows carry their
+  # whole one.
   ... on TableDataset {
     id
     name
+    fullLens {
+      id
+    }
     columns {
       ...TableDatasetColumn
     }
@@ -260,5 +265,8 @@ fragment ChartLayerCandidate on Resident {
   ... on AnnotationCollection {
     id
     name
+    fullLens {
+      id
+    }
   }
 }

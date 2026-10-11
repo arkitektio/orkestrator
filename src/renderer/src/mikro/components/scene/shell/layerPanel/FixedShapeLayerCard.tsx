@@ -24,6 +24,8 @@ import {
   TransferEditor,
 } from "../../features/volume/rendergraph/RenderNodeEditor";
 import { RgbChannelEditor } from "./RgbChannelEditor";
+import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
+import { toast } from "@/core/notify";
 import { readGains, storedGains } from "./whiteBalance";
 import { LayerRow } from "./LayerRow";
 import { UnplannableNotice } from "./UnplannableNotice";
@@ -109,6 +111,12 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
   // null (layerModel), so sending it unconditionally would silently turn
   // "unset" into "explicitly MIP" on every save.
   const [projectionEdited, setProjectionEdited] = useState(false);
+  // Tracked apart from `dirty` for the same reason: a plane is saved as a LENS
+  // (a crop of the layer's lens at one channel), and finding or making three
+  // of them is the only part of an rgb save that can cost a request. A window
+  // or white-balance nudge must not pay it.
+  const [planesEdited, setPlanesEdited] = useState(false);
+  const registry = useLensRegistry();
   const [saveIntensity, { loading: savingIntensity }] = useUpdateIntensityLayerMutation();
   const [saveRgb, { loading: savingRgb }] = useUpdateRgbLayerMutation();
   const [savePhasor, { loading: savingPhasor }] = useUpdatePhasorLayerMutation();
@@ -190,18 +198,30 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
 
   /** All three plane indices at once — a preset moves two or three of them,
    *  and three separate writes would republish the layer mid-edit. */
-  const setRgbPlanes = (indices: readonly number[]) =>
+  const setRgbPlanes = (indices: readonly number[]) => {
+    setPlanesEdited(true);
     pushChannels(
       layer.channels.map((channel, i) => ({
         ...channel,
         intensityIndex: indices[i] ?? channel.intensityIndex,
       })),
     );
+  };
 
-  /** The axis the three indices address. `pushChannels` folds it onto the flat
-   *  field the renderer and the planner read; `save()` persists it. */
-  const setRgbAxis = (intensityAxis: string) =>
-    pushChannels(layer.channels.map((channel) => ({ ...channel, intensityAxis })));
+  /**
+   * The lens that IS one plane: the layer's own selection with the channel axis
+   * at `index`. Found in the session registry when the scene already showed it
+   * (every plane the layer loaded with was), made on the server otherwise.
+   */
+  const planeLens = (index: number): Promise<string> | null =>
+    layer.intensityAxis
+      ? registry.ensureChannelLens(
+          layer.lens.dataset.id,
+          layer.sourceSlices,
+          layer.intensityAxis,
+          index,
+        )
+      : null;
 
   const setPhasorNode = (node: PhasorRenderNode) => {
     viewApi.getState().markInteraction(); // same live-preview cadence as pushChannels
@@ -232,7 +252,8 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
             // an intensity layer carries it as a field, so it persists here
             // rather than inside a serialized render graph.
             color: transfer?.color ?? null,
-            intensityIndex: layer.channels[0]?.intensityIndex ?? null,
+            // No channel: which one is drawn is the layer's lens, fixed when
+            // the layer was made.
             // Only `UpdateIntensityLayerInput` carries this — the RGB and
             // phasor inputs have no `projectionMode`, which is why the control
             // below is gated on the typename rather than shown for all three.
@@ -244,19 +265,32 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
       });
     } else if (layer.__typename === "RgbLayer") {
       const [red, green, blue] = layer.channels;
+      // Only when a plane moved: an untouched mapping is not re-sent, and the
+      // input is a patch, so the server keeps the three lenses it has.
+      let planes: { redLens: string; greenLens: string; blueLens: string } | null = null;
+      if (planesEdited && red && green && blue) {
+        const lenses = [red, green, blue].map((plane) => planeLens(plane.intensityIndex));
+        if (lenses.every((lens): lens is Promise<string> => lens !== null)) {
+          try {
+            const [redLens, greenLens, blueLens] = await Promise.all(lenses);
+            planes = { redLens, greenLens, blueLens };
+          } catch (error) {
+            // Keep the card dirty: nothing was saved, and the mapping the user
+            // picked is still what the viewer shows.
+            toast.error(
+              `Could not save the channel mapping: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            return;
+          }
+        }
+      }
       await saveRgb({
         variables: {
           input: {
             id: layer.id,
             climMin: red?.transfer.climMin ?? null,
             climMax: red?.transfer.climMax ?? null,
-            redIndex: red?.intensityIndex ?? null,
-            greenIndex: green?.intensityIndex ?? null,
-            blueIndex: blue?.intensityIndex ?? null,
-            // The axis those three index. Editable on a lens with more than
-            // one candidate, and unpersisted until now — a remapped layer came
-            // back addressing the old axis on the next load.
-            intensityAxis: red?.intensityAxis ?? null,
+            ...planes,
             // The planes' slot opacities ARE the white balance
             // (`normalizeRgbLayer`); neutral persists as null.
             whiteBalance: storedGains(
@@ -273,8 +307,8 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
           input: {
             id: layer.id,
             phasorAxis: phasor.phasorAxis,
-            intensityAxis: phasor.intensityAxis,
-            intensityIndex: phasor.intensityIndex,
+            // No channel: the photons counted are the layer's lens', fixed
+            // when the layer was made.
             harmonic: phasor.harmonic,
             transfer: serializePhasorTransfer(phasor.transfer),
           },
@@ -283,6 +317,7 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
     }
     setDirty(false);
     setProjectionEdited(false);
+    setPlanesEdited(false);
   };
 
   const saving = savingIntensity || savingRgb || savingPhasor;
@@ -340,7 +375,6 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
               layer={layer}
               onPlanes={setRgbPlanes}
               onWindow={setRgbWindow}
-              onIntensityAxis={setRgbAxis}
               onWhiteBalance={setRgbWhiteBalance}
             />
           )}
@@ -358,6 +392,7 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
                   layer={layer}
                   node={layer.phasors[0]}
                   onChange={setPhasorNode}
+                  channelLocked
                 />
               )}
             </CardSection>

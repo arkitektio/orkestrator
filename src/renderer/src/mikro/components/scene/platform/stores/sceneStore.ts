@@ -17,6 +17,8 @@ import {
   type SceneTransformContext,
 } from "../model/layerModel";
 import { planDefaultVolumeLods } from "../quality/lodPlanning";
+import { hydrateLayerEntries } from "../attributes/sparseEntry";
+import type { LensLookup } from "@/mikro/lib/lenses/lensSelection";
 import { composeLayerAffine, spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
 import type { FabriksInstanceColormap } from "../gpu/instanceColormaps";
 
@@ -155,6 +157,14 @@ export interface SceneState {
    */
   touchImageLayers: () => void;
   /**
+   * Re-derive what was waiting on a lens the session had not resolved yet: a
+   * render-graph source drawn at its fallback channel (`LayerState.lensPending`)
+   * and a sparse colouring that could not name its matrix. Called once a late
+   * `lensRegistry.resolveMany` lands; a no-op, with no store write, when nothing
+   * was waiting.
+   */
+  refreshLensSelections: () => void;
+  /**
    * Patch one polymorphic scene layer in place.
    *
    * The image path has `updateLayer` because those layers are normalized into
@@ -225,11 +235,27 @@ export interface SceneState {
   ) => { failures: { layerId: string; reason: string }[] };
 }
 
-export const createSceneStore = ({ scene }: { scene: SceneFragment }) => {
+export const createSceneStore = ({
+  scene,
+  resolveLens = () => undefined,
+}: {
+  scene: SceneFragment;
+  /**
+   * What a lens named by bare id selects (`lensRegistry(client).peek`). The
+   * store reads it wherever a layer enters: a render-graph source's channel and
+   * a sparse colouring's position are both stated as lens ids on the wire.
+   * Synchronous by contract — the provider resolves before it folds.
+   */
+  resolveLens?: LensLookup;
+}) => {
+  // Sparse picker entries get their matrix and position here, once, so every
+  // reader downstream sees the entry shape it always read (`sparseEntry.ts`).
+  const hydrate = <L extends object>(layer: L): L => hydrateLayerEntries(layer, resolveLens);
+  const sceneLayers = scene.layers.map(hydrate);
   // Every LENS-backed layer — images, label masks and the three fixed-shape
   // kinds alike: all are a Lens over an array, so all plan, pool and stream
   // through the same path (see `isBrickLayer`).
-  const brickLayers = scene.layers.filter(isBrickLayer);
+  const brickLayers = sceneLayers.filter(isBrickLayer);
   const defaultVolumeLods = planDefaultVolumeLods(brickLayers);
 
   // Units are per-axis on the world coordinate system now (the scene-level
@@ -302,9 +328,9 @@ export const createSceneStore = ({ scene }: { scene: SceneFragment }) => {
         }
         return { failures: result.failures };
       },
-      sceneLayers: scene.layers,
+      sceneLayers,
       layers: brickLayers.map((layer) =>
-        normalizeBrickLayer(layer, defaultVolumeLods.get(layer.id) ?? null, scene),
+        normalizeBrickLayer(layer, defaultVolumeLods.get(layer.id) ?? null, scene, resolveLens),
       ),
       // The render graph is the single rendering truth: transfer edits flow
       // graph → store (RenderGraphSection derives the flat clim/colormap
@@ -314,7 +340,9 @@ export const createSceneStore = ({ scene }: { scene: SceneFragment }) => {
         set((state) => {
           const index = state.layers.findIndex((layer) => layer.id === updatedLayer.id);
           if (index !== -1) {
-            state.layers[index] = updatedLayer;
+            // A label card folds the server's answer in through here, and that
+            // answer names sparse entries by lens again.
+            state.layers[index] = hydrate(updatedLayer);
           }
         }),
       setTrackTailWindow: (layerId, window) =>
@@ -339,22 +367,55 @@ export const createSceneStore = ({ scene }: { scene: SceneFragment }) => {
         set((state) => {
           const index = state.sceneLayers.findIndex((layer) => layer.id === id);
           if (index !== -1) {
-            Object.assign(state.sceneLayers[index], patch);
+            // `hydrate` for the same reason as in `updateLayer`: a saved mesh or
+            // network layer's pickers come back naming lenses.
+            Object.assign(state.sceneLayers[index], hydrate(patch));
           }
         }),
+      refreshLensSelections: () => {
+        const { sceneLayers: raws, layers, transformContext } = get();
+        const nextRaws = raws.map(hydrate);
+        const rawById = new Map(nextRaws.map((layer) => [layer.id, layer]));
+        const nextLayers = layers.map((state) => {
+          const raw = rawById.get(state.id);
+          if (!state.lensPending || !raw || !isBrickLayer(raw)) return state;
+          // The same carry a structural fold makes: it is the same layer, so
+          // its LOD and its session fields come along.
+          return {
+            ...normalizeBrickLayer(
+              raw,
+              state.defaultVolumeLOD ?? null,
+              transformContext,
+              resolveLens,
+            ),
+            fixedLOD: state.fixedLOD,
+            defaultVolumeLOD: state.defaultVolumeLOD,
+            visible: state.visible,
+          };
+        });
+        const rawsMoved = nextRaws.some((layer, index) => layer !== raws[index]);
+        const layersMoved = nextLayers.some((layer, index) => layer !== layers[index]);
+        if (!rawsMoved && !layersMoved) return;
+        // The PLAIN-OBJECT form, as in `syncSceneLayers`: untouched layers keep
+        // their identity, which the immer finalizer would not preserve.
+        set({
+          ...(rawsMoved ? { sceneLayers: nextRaws } : {}),
+          ...(layersMoved ? { layers: nextLayers } : {}),
+        });
+      },
       syncSceneLayers: (nextLayers) => {
         const { sceneLayers, layers, transformContext } = get();
         const result = reconcileSceneLayers<SceneLayer, SceneLayer & BrickLayerFragment, LayerState>({
           previousSceneLayers: sceneLayers,
           previousLayers: layers,
-          nextLayers: nextLayers as readonly SceneLayer[],
+          nextLayers: (nextLayers as readonly SceneLayer[]).map(hydrate),
           // Named `isImage` by the generic; what it MEANS is "normalize this
           // one into `layers`", which is every brick-backed layer.
           isImage: (layer): layer is SceneLayer & BrickLayerFragment => isBrickLayer(layer),
           structureKey: layerStructureKey,
           planDefaultLods: (bricks) => planDefaultVolumeLods(bricks as BrickLayerFragment[]),
           normalize: (layer, defaultVolumeLod) =>
-            normalizeBrickLayer(layer, defaultVolumeLod, transformContext),
+            normalizeBrickLayer(layer, defaultVolumeLod, transformContext, resolveLens),
           // New objects, never a mutation of the stored one: after any earlier
           // `updateLayer`/`patchSceneLayer` the stored objects are immer-frozen.
           carryImageSession: (previous, next) => ({

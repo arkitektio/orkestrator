@@ -5,6 +5,7 @@ import { MikroLens } from "@/core/linkers";
 import { ListLensFragment } from "@/mikro/api/graphql";
 import { Database } from "lucide-react";
 import { describeLens, isWholeLens, lensHeadline, lensSnapshot } from "../../lenses";
+import { lensSpecEntries } from "../../specs";
 import { LensContainerLink } from "../lens/LensContainerLink";
 import { ArrayDatasetReadout } from "./ArrayDatasetReadout";
 import { SnapshotBackdrop } from "./SnapshotBackdrop";
@@ -34,6 +35,12 @@ const TheCard = ({ item }: Props) => {
   const { info, label, selection } = describeLens(item);
   const { title, subline } = lensHeadline(item);
   const Icon = info.icon;
+  // What the SELECTION structurally is: one plane of a stack reads "2d", one
+  // frame of a tracking table no longer reads "timed". Empty for the kinds that
+  // have no such vocabulary.
+  const specs = lensSpecEntries(item)
+    .map((entry) => entry.short)
+    .join(" · ");
 
   return (
     <MikroLens.Smart object={item} menuButton>
@@ -41,7 +48,7 @@ const TheCard = ({ item }: Props) => {
         <SnapshotBackdrop snapshot={lensSnapshot(item)} className="h-full w-full">
           {item.__typename === "ArrayLens" && isWholeLens(item) ? (
             <ArrayDatasetReadout
-              spec={item.dataset.spec}
+              spec={item.arraySpec}
               axisNames={item.dataset.axisNames}
               shape={item.dataset.shape}
               multiscale={item.dataset.multiscale}
@@ -73,6 +80,7 @@ const TheCard = ({ item }: Props) => {
                     {label}
                   </div>
                 )}
+                {specs && <div className="truncate text-[0.625rem] text-white/60">{specs}</div>}
                 <div className="text-[0.625rem] text-white/60">
                   {new Date(item.createdAt).toLocaleDateString()}
                 </div>

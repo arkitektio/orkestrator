@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ArrayDatasetSpec, AxisType, ColumnRole } from "../../api/graphql";
+import type { ArrayDatasetSpec, ColumnRole } from "../../api/graphql";
 import {
   Candidate,
   Capabilities,
@@ -7,7 +7,6 @@ import {
   Section,
   SpaceLike,
   buildSections,
-  candidateRenderAxes,
   inferLensKinds,
   inferTableKinds,
   lensCandidateOf,
@@ -32,7 +31,32 @@ type LensOverrides = {
   phasor?: string | null;
 };
 
-const lens = (id: string, overrides: LensOverrides = {}): Candidate => ({
+/**
+ * Which axis of each fixture lens is which, as the SERVER would answer it
+ * (`suggestedRenderAxes`, riding on the capability answer). The fixture states
+ * it per lens through its overrides; `caps()` hands the picker the whole map.
+ */
+type FixtureAxes = NonNullable<NonNullable<Capabilities>["axes"]> extends ReadonlyMap<
+  string,
+  infer A
+>
+  ? A
+  : never;
+const AXES = new Map<string, FixtureAxes>();
+
+const lens = (id: string, overrides: LensOverrides = {}): Candidate => {
+  AXES.set(id, {
+    x: "x",
+    y: "y",
+    z: overrides.z ?? null,
+    intensity: overrides.intensity ?? null,
+    phasor: overrides.phasor ?? null,
+    vector: null,
+  });
+  return lensResident(id, overrides);
+};
+
+const lensResident = (id: string, overrides: LensOverrides = {}): Candidate => ({
   __typename: "ArrayLens",
   id,
   shape: overrides.shape ?? [512, 512],
@@ -43,24 +67,9 @@ const lens = (id: string, overrides: LensOverrides = {}): Candidate => ({
     stop: slice.stop ?? null,
     step: null,
   })),
-  // A lens no longer states its render axes; the picker reads them off the
-  // TYPES of its space's axes (`candidateRenderAxes`), so the fixture types
-  // each axis by the part the override gives it.
-  lensSpace: {
-    id: `grid-${overrides.datasetId ?? `ds-${id}`}`,
-    axes: (overrides.axisNames ?? ["y", "x"]).map((name, order) => ({
-      name,
-      order,
-      type:
-        name === overrides.phasor
-          ? ("MICROTIME" as AxisType)
-          : name === overrides.intensity
-            ? ("CHANNEL" as AxisType)
-            : name === "x" || name === "y" || name === overrides.z
-              ? ("SPACE" as AxisType)
-              : ("INDEX" as AxisType),
-    })),
-  },
+  // A lens does not state its render axes: they are the server's answer for a
+  // layer that does not exist yet, and arrive with the capabilities (`AXES`).
+  lensSpace: { id: `grid-${overrides.datasetId ?? `ds-${id}`}` },
   dataset: {
     id: overrides.datasetId ?? `ds-${id}`,
     name: overrides.dataset ?? "dapi.zarr",
@@ -140,6 +149,7 @@ const space = (id: string, name: string, residents: Candidate[]): SpaceLike => (
 const caps = (drawable: string[], labels: string[]): Capabilities => ({
   drawable: new Set(drawable),
   labels: new Set(labels),
+  axes: AXES,
 });
 
 const sectionOf = (sections: Section[], id: string) =>
@@ -148,10 +158,14 @@ const sectionOf = (sections: Section[], id: string) =>
 const datasetsOf = (sections: Section[]) =>
   (sectionOf(sections, "datasets")?.entries ?? []) as DatasetEntry[];
 
-// As the picker hands a lens to the engine: with its render axes read off the
-// axis types (no capability gates — these tests name the sets themselves).
+// As the picker hands a lens to the engine: with the server's render axes on
+// it (no capability gates — these tests name the sets themselves).
 const asLens = (candidate: Candidate) =>
-  lensCandidateOf(candidate as Extract<Candidate, { __typename: "ArrayLens" }>, null);
+  lensCandidateOf(candidate as Extract<Candidate, { __typename: "ArrayLens" }>, {
+    drawable: new Set(),
+    labels: new Set(),
+    axes: AXES,
+  });
 
 describe("inferLensKinds", () => {
   it("infers a plain image, and offers nothing else", () => {
@@ -514,59 +528,39 @@ describe("buildSections with a derivation graph", () => {
   });
 });
 
-describe("candidateRenderAxes", () => {
-  const axis = (name: string, type: string, order: number) => ({
-    name,
-    type: type as AxisType,
-    order,
-  });
+describe("lensCandidateOf", () => {
+  const resident = (candidate: Candidate) =>
+    candidate as Extract<Candidate, { __typename: "ArrayLens" }>;
 
-  it("maps the last three spatial axes to x, y, z, in that order from the end", () => {
-    expect(
-      candidateRenderAxes([
-        axis("t", "TIME", 0),
-        axis("c", "CHANNEL", 1),
-        axis("z", "SPACE", 2),
-        axis("y", "SPACE", 3),
-        axis("x", "SPACE", 4),
-      ]),
-    ).toEqual({ x: "x", y: "y", z: "z", intensity: "c", phasor: null, vector: null });
-  });
-
-  it("goes by the axis ORDER, not the order they arrive in", () => {
-    expect(
-      candidateRenderAxes([axis("col", "SPACE", 1), axis("row", "SPACE", 0)]),
-    ).toMatchObject({ x: "col", y: "row", z: null });
-  });
-
-  it("names a MICROTIME or SPECTRUM axis as the phasor axis, a DISPLACEMENT one as the vector axis", () => {
-    const axes = [
-      axis("tau", "MICROTIME", 0),
-      axis("v", "DISPLACEMENT", 1),
-      axis("y", "SPACE", 2),
-      axis("x", "SPACE", 3),
-    ];
-    expect(candidateRenderAxes(axes)).toMatchObject({ phasor: "tau", vector: "v" });
-    expect(
-      candidateRenderAxes([axis("lambda", "SPECTRUM", 0), axis("y", "SPACE", 1), axis("x", "SPACE", 2)]),
-    ).toMatchObject({ phasor: "lambda" });
-  });
-
-  it("withdraws an axis the server would not draw", () => {
-    const axes = [
-      axis("tau", "MICROTIME", 0),
-      axis("v", "DISPLACEMENT", 1),
-      axis("y", "SPACE", 2),
-      axis("x", "SPACE", 3),
-    ];
-    expect(candidateRenderAxes(axes, { phasor: false, vector: false })).toMatchObject({
-      phasor: null,
+  it("takes a lens' render axes from the server's answer", () => {
+    const flim = lens("l1", { axisNames: ["tau", "c", "y", "x"], intensity: "c", phasor: "tau" });
+    expect(lensCandidateOf(resident(flim), caps(["l1"], [])).renderAxes).toEqual({
+      x: "x",
+      y: "y",
+      z: null,
+      intensity: "c",
+      phasor: "tau",
       vector: null,
     });
   });
 
-  it("is null without an x and a y to draw along", () => {
-    expect(candidateRenderAxes([axis("t", "TIME", 0), axis("x", "SPACE", 1)])).toBeNull();
-    expect(candidateRenderAxes([])).toBeNull();
+  it("has no axes until the capabilities have answered, or for a lens they do not list", () => {
+    const candidate = lens("l1", { intensity: "c" });
+    expect(lensCandidateOf(resident(candidate), null).renderAxes).toBeNull();
+    expect(
+      lensCandidateOf(resident(candidate), {
+        drawable: new Set(),
+        labels: new Set(),
+        axes: new Map(),
+      }).renderAxes,
+    ).toBeNull();
+  });
+
+  it("withdraws a phasor axis the server would not draw a phasor over", () => {
+    const flim = lens("l1", { axisNames: ["tau", "y", "x"], phasor: "tau" });
+    const refused = { ...caps(["l1"], [])!, phasor: new Set<string>() };
+    expect(lensCandidateOf(resident(flim), refused).renderAxes?.phasor).toBeNull();
+    const accepted = { ...caps(["l1"], [])!, phasor: new Set(["l1"]) };
+    expect(lensCandidateOf(resident(flim), accepted).renderAxes?.phasor).toBe("tau");
   });
 });

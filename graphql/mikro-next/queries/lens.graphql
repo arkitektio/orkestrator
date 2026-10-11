@@ -26,17 +26,13 @@ query GetLensAnchors($id: ID!) {
   }
 }
 
-# Existing lenses over a dataset, so adding a layer can reuse a full lens
-# (slices: []) instead of minting a new one per layer.
-query ListLensesForDataset($dataset: ID!) {
-  lenses(filters: { dataset: $dataset }) {
-    id
-    name
-    ... on ArrayLens {
-      slices {
-        ...DimSlice
-      }
-    }
+# What a handful of lenses SELECT, in one round trip: the lenses a scene names
+# by bare id (a render-graph node's channel, a sparse colouring's position).
+# `limit` is the id count, because `lenses` is paginated and a default page
+# would silently drop the tail.
+query GetLensSelections($ids: [ID!]!, $limit: Int!) {
+  lenses(filters: { ids: $ids }, pagination: { limit: $limit }) {
+    ...LensSelection
   }
 }
 

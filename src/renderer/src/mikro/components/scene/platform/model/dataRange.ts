@@ -4,12 +4,17 @@ import { mapDTypeToMinMax } from "@/core/data/zarr/indexing/dtype";
  * The shape both functions here read: a brick-backed layer's lens, whether that
  * layer arrived as a fragment or already normalized into `LayerState`.
  */
+type RangeAnchors =
+  | readonly {
+      valueHistogram?: { min?: number | null; max?: number | null } | null;
+    }[]
+  | null;
+
 type ValueRangeLayer = {
   __typename?: string;
   lens?: {
-    activeAnchors?: readonly {
-      valueHistogram?: { min?: number | null; max?: number | null } | null;
-    }[] | null;
+    activeAnchors?: RangeAnchors;
+    dataset?: { fullLens?: { activeAnchors?: RangeAnchors } | null } | null;
   } | null;
 };
 
@@ -114,6 +119,15 @@ export function dtypeRangeIsWeakProxy(dtype: string): boolean {
  * with c=0 at [0, 500] and c=1 reaching 30000 would normalize c=1 to 60 and
  * clamp it to blown-out white. The pool range has to span every channel in it,
  * exactly as `accumulateAutoRange` does from the decoded bricks.
+ *
+ * Which is why the anchors are the DATASET's, read off its whole lens
+ * (`dataset.fullLens`), and not the layer's own. A layer's lens may be one
+ * channel of the dataset, and then its `activeAnchors` are that channel's
+ * alone — but the pool still holds every channel, and a range that differed
+ * per channel lens would key four layers over one image into four pools
+ * (`octree/poolKey.ts`: `dataRange` is in the key). Read off the dataset, the
+ * range is the same for every lens of it. The layer's own anchors remain the
+ * fallback for a payload that carries no whole lens.
  */
 export function serverHistogramRange(
   layer: ValueRangeLayer,
@@ -121,7 +135,8 @@ export function serverHistogramRange(
   let lo = Number.POSITIVE_INFINITY;
   let hi = Number.NEGATIVE_INFINITY;
 
-  for (const anchor of layer.lens?.activeAnchors ?? []) {
+  const whole = layer.lens?.dataset?.fullLens;
+  for (const anchor of (whole ? whole.activeAnchors : layer.lens?.activeAnchors) ?? []) {
     const vh = anchor.valueHistogram;
     const min = vh?.min;
     const max = vh?.max;

@@ -33,8 +33,7 @@ describe("transfer curve stops (server LookupStops)", () => {
       __typename: "ChannelSourceNode",
       kind: "channel",
       label: null,
-      intensityAxis: "c",
-      intensityIndex: 0,
+      lens: "lens-c1",
       visible: true,
       transfer: { colormap: null, stops },
     }) as unknown as Parameters<typeof parseRenderNode>[0];
@@ -68,7 +67,7 @@ describe("transfer curve stops (server LookupStops)", () => {
         { position: 4000, value: 1 },
       ]),
     ) as ChannelRenderNode;
-    const input = serializeRenderNode(node) as { transfer?: { stops?: unknown } };
+    const input = serializeRenderNode(node, () => null) as { transfer?: { stops?: unknown } };
     expect(input.transfer?.stops).toEqual([
       { position: 100, value: 0 },
       { position: 4000, value: 1 },
@@ -87,8 +86,51 @@ describe("transfer curve stops (server LookupStops)", () => {
       { position: 0, color: [10, 20, 30, 255] },
       { position: 1, color: [200, 210, 220, 255] },
     ];
-    const input = serializeRenderNode(node) as { transfer?: Record<string, unknown> };
+    const input = serializeRenderNode(node, () => null) as { transfer?: Record<string, unknown> };
     expect(input.transfer && "colorStops" in input.transfer).toBe(false);
     expect(input.transfer?.stops).toBeNull(); // and never leaks into the curve
+  });
+});
+
+describe("a source node's channel (a lens id on the wire, an index in the model)", () => {
+  const node = (lens: string | null) =>
+    ({
+      __typename: "ChannelSourceNode",
+      kind: "channel",
+      label: null,
+      lens,
+      visible: true,
+      transfer: { colormap: null },
+    }) as unknown as Parameters<typeof parseRenderNode>[0];
+
+  const context = {
+    intensityAxis: "c",
+    // What `layerModel.graphChannelContext` answers: the position the named
+    // lens pins, and the layer's own selection for a node naming none.
+    indexOf: (lens: string | null | undefined) => (lens === "lens-c3" ? 3 : 1),
+  };
+
+  it("resolves the lens to an index through the layer's context", () => {
+    const parsed = parseRenderNode(node("lens-c3"), context) as ChannelRenderNode;
+    expect(parsed.intensityIndex).toBe(3);
+    expect(parsed.intensityAxis).toBe("c");
+    expect(parsed.lens).toBe("lens-c3");
+  });
+
+  it("reads the layer's own selection for a node that names no lens", () => {
+    const parsed = parseRenderNode(node(null), context) as ChannelRenderNode;
+    expect(parsed.intensityIndex).toBe(1);
+    expect(parsed.lens).toBeNull();
+  });
+
+  it("is saved with the lens DERIVED from its index, never the id it was read with", () => {
+    // An editor moves `intensityIndex` and leaves `lens` behind; sending the
+    // stale id back would silently undo the edit.
+    const parsed = parseRenderNode(node("lens-c3"), context) as ChannelRenderNode;
+    const edited = { ...parsed, intensityIndex: 0 };
+    const input = serializeRenderNode(edited, (source) => `lens-c${source.intensityIndex}`);
+    expect(input.lens).toBe("lens-c0");
+    expect("intensityIndex" in input).toBe(false);
+    expect("intensityAxis" in input).toBe(false);
   });
 });

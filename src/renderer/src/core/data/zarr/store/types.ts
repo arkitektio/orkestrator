@@ -76,5 +76,10 @@ export type MikroClient = {
    * The read half. Only the access-grant mutations needed this shim originally;
    * the sparse colouring path also reads a dataset's layouts, which is a query.
    */
-  query?(options: { query: any; variables?: any; context?: any }): Promise<{ data?: any | null }>;
+  query?(options: {
+    query: any;
+    variables?: any;
+    context?: any;
+    fetchPolicy?: "no-cache" | "network-only" | "cache-first";
+  }): Promise<{ data?: any | null }>;
 };

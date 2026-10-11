@@ -21,6 +21,7 @@ import {
 } from "@/mikro/api/graphql";
 import { qualitativePalette } from "./colormap-utils";
 import { isColumnEntry } from "../attributes/entryKeys";
+import { sortedAt, type SparsePosition } from "../attributes/sparseEntry";
 
 /**
  * The bridge between what the server OFFERS and what a MESH OR LABEL layer
@@ -108,8 +109,18 @@ export const isGraphOption = (option: OfferedOption): option is GraphOption =>
  * `LabelColorByFragment` are field-for-field identical — same relation, same
  * `joinPath`, same caption — so every consumer takes the union rather than
  * being written twice.
+ *
+ * Plus `SparsePosition`: on the wire a SPARSE entry names a sparse `lens`; in
+ * the scene store it also carries the `dataset` and position `at` that lens
+ * stands for, which is what every reader and every picker here works in
+ * (`platform/attributes/sparseEntry.ts`).
  */
-export type ColorByEntry = MeshColorByFragment | LabelColorByFragment | NetworkColorByFragment;
+export type ColorByEntry = (
+  | MeshColorByFragment
+  | LabelColorByFragment
+  | NetworkColorByFragment
+) &
+  SparsePosition;
 
 /**
  * A stored colouring the renderers can execute: the COLUMN arm of the same
@@ -123,7 +134,12 @@ export const isColumnColorBy = (entry: ColorByEntry): entry is ColumnColorByEntr
   isColumnEntry(entry);
 
 /** A stored filter rule, any picker-bearing layer kind. See `ColorByEntry`. */
-export type FilterByEntry = MeshFilterByFragment | LabelFilterByFragment | NetworkFilterByFragment;
+export type FilterByEntry = (
+  | MeshFilterByFragment
+  | LabelFilterByFragment
+  | NetworkFilterByFragment
+) &
+  SparsePosition;
 
 /**
  * A stored rule's COLUMN arm — the same either/or a colouring has. A `SPARSE`
@@ -137,7 +153,7 @@ export const isColumnFilterBy = (entry: FilterByEntry): entry is ColumnFilterByE
   entry.table != null && entry.column != null;
 
 /**
- * What the mappers below RETURN, structurally.
+ * What a MUTATION takes for one entry, structurally.
  *
  * `MeshColorByInput` and `LabelColorByInput` are generated separately but have
  * identical fields, so the mappers are typed against the shape both satisfy
@@ -147,8 +163,22 @@ export const isColumnFilterBy = (entry: FilterByEntry): entry is ColumnFilterByE
  * this stops being structurally true the moment the two inputs diverge on the
  * server — rather than silently sending a mesh-shaped entry to a label layer.
  */
-export type ColorByInputLike = MeshColorByInput & LabelColorByInput;
-export type FilterByInputLike = MeshFilterByInput & LabelFilterByInput;
+export type ColorByWireInput = MeshColorByInput & LabelColorByInput;
+export type FilterByWireInput = MeshFilterByInput & LabelFilterByInput;
+
+/**
+ * What the mappers below RETURN, and what a card holds between an edit and its
+ * save: a DRAFT. The wire input plus the sparse position the user actually
+ * picked (`dataset` + `at`), because the lens that names that position on the
+ * wire may not exist yet and the preview must not wait for it.
+ *
+ * A draft is NOT a mutation input. `dataset` and `at` are unknown keys there
+ * and GraphQL refuses the whole mutation over one. The way out is
+ * `toWireColorBy` / `toWireFilterBy` below, reached through
+ * `entryInputs.resolveEntryInputs`, which also obtains the lens.
+ */
+export type ColorByInputLike = ColorByWireInput & SparsePosition;
+export type FilterByInputLike = FilterByWireInput & SparsePosition;
 
 /**
  * The equivalence the two aliases above rest on, asserted at compile time.
@@ -460,7 +490,7 @@ export const toSparseColorByInput = (
   return {
     kind: ColorSourceKind.Sparse,
     dataset: option.sparseDataset.id,
-    at: at.map((position) => ({ axis: position.axis, value: position.value })),
+    at: sortedAt(at),
     // A slice is a value per object, so it is always measured — never a class map.
     colormap: ColorMap.Magma,
     label: option.sparseDataset.name,
@@ -535,7 +565,7 @@ export const toSparseFilterByInput = (
   return {
     kind: ColorSourceKind.Sparse,
     dataset: option.sparseDataset.id,
-    at: at.map((position) => ({ axis: position.axis, value: position.value })),
+    at: sortedAt(at),
     label: option.sparseDataset.name,
     exclude: false,
     ...patch,
@@ -545,20 +575,36 @@ export const toSparseFilterByInput = (
 // ----------------------------------------------------------------- entry → input
 
 /**
+ * The SPARSE arm of an entry, as a draft carries it.
+ *
+ * A positioned entry (`dataset` + `at`, filled by `hydrateSparseEntries` or by
+ * a picker) keeps its position and DROPS its lens id: the id is only as fresh
+ * as the last read, a picker edits the position and never the id, and a stale
+ * id sent back would silently undo the edit. `toWire*` derives the lens from
+ * the position instead. An entry whose lens the session could not resolve has
+ * no position to derive from, so its id goes through verbatim — that is the
+ * only way it survives a whole-array replace.
+ */
+const sparseArm = (entry: {
+  lens?: string | null;
+  dataset?: string | null;
+  at?: readonly { axis: string; value: number }[] | null;
+}): { dataset: string | null; at: { axis: string; value: number }[]; lens: string | null } =>
+  entry.dataset != null
+    ? { dataset: entry.dataset, at: sortedAt(entry.at ?? []), lens: null }
+    : { dataset: null, at: [], lens: entry.lens ?? null };
+
+/**
  * Every field, including the ones no picker here authors: `colorBys` is a
  * WHOLE-ARRAY replace, so a `SPARSE` entry read back and re-sent without its
- * `kind`, `dataset` and `at` would come back a COLUMN entry naming nothing —
+ * `kind` and its position would come back a COLUMN entry naming nothing —
  * the `joinPath` hazard again, one arm further out.
  */
 export const colorByEntryToInput = (entry: ColorByEntry): ColorByInputLike => ({
   kind: entry.kind,
   table: entry.table ?? null,
   column: entry.column ?? null,
-  dataset: entry.dataset ?? null,
-  at: (entry.at ?? []).map((position) => ({
-    axis: position.axis,
-    value: position.value,
-  })),
+  ...sparseArm(entry),
   // The GRAPH arm, network entries only — and only WHEN CARRIED, both ways:
   // a network entry re-sent without them comes back a COLUMN entry naming
   // nothing (the joinPath hazard, one arm further out), while a mesh or label
@@ -581,7 +627,7 @@ export const colorByEntryToInput = (entry: ColorByEntry): ColorByInputLike => ({
 });
 
 /**
- * The same, for a rule — `kind`, `dataset` and `at` included for the same
+ * The same, for a rule — `kind` and the sparse position included for the same
  * reason they are on the colouring mapper: `filterBys` is a whole-array
  * replace, so a SPARSE rule read back and re-sent without them comes back a
  * COLUMN rule naming nothing, and the server refuses it (or worse, stores it).
@@ -590,11 +636,7 @@ export const filterByEntryToInput = (entry: FilterByEntry): FilterByInputLike =>
   kind: entry.kind,
   table: entry.table ?? null,
   column: entry.column ?? null,
-  dataset: entry.dataset ?? null,
-  at: (entry.at ?? []).map((position) => ({
-    axis: position.axis,
-    value: position.value,
-  })),
+  ...sparseArm(entry),
   // Conditional for `colorByEntryToInput`'s reason exactly — the stamped
   // COLUMN target included: stripped on re-send, re-stamped by the server.
   ...("attribute" in entry && entry.attribute != null
@@ -606,6 +648,63 @@ export const filterByEntryToInput = (entry: FilterByEntry): FilterByInputLike =>
   values: entry.values ?? null,
   exclude: entry.exclude,
   label: entry.label ?? null,
+});
+
+// ------------------------------------------------------------------ draft → wire
+
+/**
+ * The sparse lens a draft is sent with: the one that pins `draft.at` in
+ * `draft.dataset`. Resolved BEFORE the mapping (`entryInputs.resolveEntryInputs`
+ * asks the session's lens registry for every positioned draft first), which is
+ * why this is synchronous. Null leaves the entry's own `lens` standing.
+ */
+export type SparseLensResolver = (draft: SparsePosition) => string | null;
+
+/** A draft's graph arm, when it has one — see `colorByEntryToInput`. */
+const graphArm = (draft: object): { attribute?: string | null; target?: GraphTarget | null } =>
+  "attribute" in draft && (draft as { attribute?: string | null }).attribute != null
+    ? {
+        attribute: (draft as { attribute?: string | null }).attribute,
+        target: (draft as { target?: GraphTarget | null }).target ?? null,
+      }
+    : {};
+
+/**
+ * A draft colouring as the mutation takes it. Field by field, never a spread:
+ * `dataset` and `at` are the client's and must not reach the server.
+ */
+export const toWireColorBy = (
+  draft: ColorByInputLike,
+  sparseLensOf: SparseLensResolver,
+): ColorByWireInput => ({
+  kind: draft.kind,
+  table: draft.table ?? null,
+  column: draft.column ?? null,
+  lens: (draft.dataset != null ? sparseLensOf(draft) : null) ?? draft.lens ?? null,
+  ...graphArm(draft),
+  joinPath: entryJoinPath(draft),
+  colormap: draft.colormap ?? null,
+  label: draft.label ?? null,
+  min: draft.min ?? null,
+  max: draft.max ?? null,
+});
+
+/** The same, for a rule. */
+export const toWireFilterBy = (
+  draft: FilterByInputLike,
+  sparseLensOf: SparseLensResolver,
+): FilterByWireInput => ({
+  kind: draft.kind,
+  table: draft.table ?? null,
+  column: draft.column ?? null,
+  lens: (draft.dataset != null ? sparseLensOf(draft) : null) ?? draft.lens ?? null,
+  ...graphArm(draft),
+  joinPath: entryJoinPath(draft),
+  min: draft.min ?? null,
+  max: draft.max ?? null,
+  values: draft.values ?? null,
+  exclude: draft.exclude,
+  label: draft.label ?? null,
 });
 
 // ------------------------------------------------------------- index bookkeeping

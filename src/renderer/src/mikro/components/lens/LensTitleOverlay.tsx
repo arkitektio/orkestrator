@@ -14,7 +14,7 @@ import {
   GetArrayDatasetQuery,
   useSetLensDefaultSceneMutation
 } from '../../api/graphql'
-import { describeLens, isWholeLens } from '../../lenses'
+import { describeLens } from '../../lenses'
 import { baseDtypeOf } from '../../specs'
 import { LensContainerLink } from './LensContainerLink'
 
@@ -55,10 +55,6 @@ export const LensTitleOverlay = ({
   const dtype = dataset ? baseDtypeOf(dataset.dataArrays) : null
   const defaultSceneId = lens.defaultScene?.id
   const { info, title, label, container } = describeLens(lens)
-  // A whole lens of anything but an array answers with its container's
-  // nomination, and only an array dataset nominates: there is nothing for
-  // "Make default" to write.
-  const canNominate = lens.__typename === 'ArrayLens' || !isWholeLens(lens)
 
   // The nomination the page landed on. Selecting `latestSnapshot` in the
   // mutation is what makes this cheap: Apollo writes the new nomination AND the
@@ -145,7 +141,7 @@ export const LensTitleOverlay = ({
               someone just decided they want to be the lens'. Hidden for the
               nominated scene itself rather than disabled: there is nothing to
               undo here — clearing a nomination is not a thing this page asks for. */}
-          {canNominate && activeSceneId && activeSceneId !== defaultSceneId && (
+          {activeSceneId && activeSceneId !== defaultSceneId && (
             <Button
               size="sm"
               variant="ghost"

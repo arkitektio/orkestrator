@@ -61,6 +61,7 @@ import {
   PhasorRenderNode,
   ProjectionRenderNode,
   RenderNode,
+  SourceRenderNode,
   TransferFn,
   TransferStop,
   flattenChannels,
@@ -74,6 +75,9 @@ import {
   serializeRenderGraph,
 } from "../../../platform/model/renderGraph";
 import { resolvePhasorAxis } from "../../../platform/model/dims";
+import { keptPositions, pinnedIndex } from "@/mikro/lib/lenses/lensSelection";
+import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
+import { toast } from "@/core/notify";
 import { resolvePhasorScale } from "../../../platform/model/phasor";
 import { PhasorPlot } from "../PhasorPlot";
 import { useBrickStore } from "../../bricks/store/brickSlice";
@@ -473,6 +477,59 @@ const AdvancedTransferControls = ({
   );
 };
 
+/** The dataset indices a layer's lens keeps along its channel axis. */
+const channelPositionsOf = (layer: LayerState | undefined): number[] => {
+  const axis = layer?.intensityAxis;
+  if (!layer || !axis) return [];
+  const position = layer.lens.dataset.axisNames.indexOf(axis);
+  return keptPositions(layer.sourceSlices, axis, layer.lens.dataset.shape[position] ?? 0);
+};
+
+/**
+ * Which channel a source reads, picked from the positions the layer's lens
+ * keeps. A select and not a number field: the choice is saved as a lens cut
+ * from the layer's own, so an index the lens does not keep cannot be saved.
+ * Renders nothing when there is no choice to make — no channel axis, or one
+ * channel.
+ */
+const ChannelPositionSelect = ({
+  label,
+  value,
+  layer,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  layer?: LayerState;
+  onChange: (index: number) => void;
+}) => {
+  const positions = useMemo(
+    () => channelPositionsOf(layer),
+    // The three facts the positions are read from, not the layer object: it is
+    // replaced on every preview tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [layer?.intensityAxis, layer?.sourceSlices, layer?.lens.dataset],
+  );
+  if (positions.length <= 1) return null;
+  return (
+    <div className="flex flex-1 flex-col gap-1">
+      <span className="text-muted-foreground">{label}</span>
+      <Select value={String(value)} onValueChange={(next) => onChange(Number(next))}>
+        <SelectTrigger className="h-7 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {positions.map((position) => (
+            <SelectItem key={position} value={String(position)}>
+              {layer?.intensityAxis} {position}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
+
 const ChannelNodeEditor = ({
   node,
   onChange,
@@ -543,28 +600,15 @@ const ChannelNodeEditor = ({
           </button>
           {showAdvanced && (
             <div className="flex flex-col gap-2 pl-1">
-              <div className="flex items-center gap-2">
-                <div className="flex flex-col gap-1 flex-1">
-                  <span className="text-muted-foreground">Intensity index</span>
-                  <Input
-                    type="number"
-                    className="h-7 text-xs"
-                    value={node.intensityIndex}
-                    onChange={(e) => onChange({ ...node, intensityIndex: Number(e.target.value) })}
-                  />
-                </div>
-                <div className="flex flex-col gap-1 flex-1">
-                  <span className="text-muted-foreground">Intensity dim</span>
-                  <Input
-                    className="h-7 text-xs"
-                    value={node.intensityAxis ?? ""}
-                    placeholder="c"
-                    onChange={(e) =>
-                      onChange({ ...node, intensityAxis: e.target.value || null })
-                    }
-                  />
-                </div>
-              </div>
+              {/* Which axis is the channel axis is the server's answer
+                  (`renderAxes.intensity`); only the position along it is a
+                  choice. */}
+              <ChannelPositionSelect
+                label="Channel"
+                value={node.intensityIndex}
+                layer={layer}
+                onChange={(intensityIndex) => onChange({ ...node, intensityIndex })}
+              />
               <AdvancedTransferControls
                 transfer={node.transfer}
                 onChange={(transfer) => onChange({ ...node, transfer })}
@@ -594,11 +638,16 @@ export const PhasorNodeEditor = ({
   onChange,
   onRemove,
   layer,
+  channelLocked = false,
 }: {
   node: PhasorRenderNode;
   onChange: (n: PhasorRenderNode) => void;
   onRemove?: () => void;
   layer?: LayerState;
+  /** A `PhasorLayer`'s channel is its lens', fixed when the layer was made, so
+   *  its card offers no channel to pick. A phasor NODE in a render graph names
+   *  its own. */
+  channelLocked?: boolean;
 }) => {
   const [open, setOpen] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -782,18 +831,14 @@ export const PhasorNodeEditor = ({
                     }
                   />
                 </div>
-                <div className="flex flex-1 flex-col gap-1">
-                  <span className="text-muted-foreground">Channel</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    className="h-7 text-xs"
+                {!channelLocked && (
+                  <ChannelPositionSelect
+                    label="Channel"
                     value={node.intensityIndex}
-                    onChange={(e) =>
-                      onChange({ ...node, intensityIndex: Math.max(0, Number(e.target.value) || 0) })
-                    }
+                    layer={layer}
+                    onChange={(intensityIndex) => onChange({ ...node, intensityIndex })}
                   />
-                </div>
+                )}
               </div>
               <PhasorContextSummary layer={layer} harmonic={node.harmonic} />
             </div>
@@ -1122,14 +1167,32 @@ export interface RenderGraphEditor {
 }
 
 export const useRenderGraphEditor = (layer: LayerState): RenderGraphEditor => {
+  const registry = useLensRegistry();
   const initial = useMemo(
-    () => resolveLayerGraph(layer),
+    () =>
+      resolveLayerGraph(layer, {
+        intensityAxis: layer.intensityAxis,
+        // A node names its channel by lens id; the session registry says which
+        // position that lens pins. One it does not know reads the layer's own
+        // selection, exactly as normalization decided it (`layerModel.ts`).
+        indexOf: (lens) => {
+          const selection = lens ? registry.peek(lens) : undefined;
+          const pinned =
+            selection?.kind === "array"
+              ? pinnedIndex(selection.slices, layer.intensityAxis)
+              : null;
+          return pinned ?? layer.channelPin ?? 0;
+        },
+      }),
+    // `lensPending` re-seeds once a late lens lookup lands.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [layer.id, layer.renderGraph],
+    [layer.id, layer.renderGraph, layer.lensPending],
   );
   const [root, setRoot] = useState<BlendRenderNode>(initial);
   const [dirty, setDirty] = useState(false);
-  const [updateLater, { loading }] = useUpdateLaterMutation();
+  const [resolving, setResolving] = useState(false);
+  const [updateLater, { loading: writing }] = useUpdateLaterMutation();
+  const loading = writing || resolving;
   const updateStoreLayer = useSceneStore((s) => s.updateLayer);
   const viewApi = useViewStoreApi();
 
@@ -1169,7 +1232,6 @@ export const useRenderGraphEditor = (layer: LayerState): RenderGraphEditor => {
       colormap: primary?.colormap ?? layer.colormap,
       color: primary?.color ?? layer.color,
       gamma: primary?.gamma ?? layer.gamma,
-      intensityAxis: channels[0]?.intensityAxis ?? layer.intensityAxis,
     });
   };
 
@@ -1182,8 +1244,47 @@ export const useRenderGraphEditor = (layer: LayerState): RenderGraphEditor => {
   };
 
   const save = async () => {
+    // A source is SAVED as the lens that selects its channel: the layer's own
+    // selection with the channel axis at the node's index. Found in the session
+    // registry for every channel the scene already showed, made on the server
+    // for one picked just now — which is the only request this adds, and it is
+    // why the lens is derived here rather than read off the node (an edit moves
+    // the index and never the id).
+    const axis = layer.intensityAxis;
+    const lensByIndex = new Map<number, string>();
+    if (axis) {
+      const indices = [...new Set(flattenSources(root).map((source) => source.intensityIndex))];
+      setResolving(true);
+      try {
+        await Promise.all(
+          indices.map(async (index) => {
+            lensByIndex.set(
+              index,
+              await registry.ensureChannelLens(
+                layer.lens.dataset.id,
+                layer.sourceSlices,
+                axis,
+                index,
+              ),
+            );
+          }),
+        );
+      } catch (error) {
+        // Stay dirty: nothing was saved, and the graph the user built is still
+        // what the viewer shows.
+        toast.error(
+          `Could not save the render graph: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        return;
+      } finally {
+        setResolving(false);
+      }
+    }
+    // No channel axis: a source can only read the layer's own selection.
+    const lensIdOf = (source: SourceRenderNode) =>
+      lensByIndex.get(source.intensityIndex) ?? null;
     const result = await updateLater({
-      variables: { input: { id: layer.id, renderGraph: serializeRenderGraph(root) } },
+      variables: { input: { id: layer.id, renderGraph: serializeRenderGraph(root, lensIdOf) } },
     });
     const nextGraph = result.data?.updateLayer?.renderGraph ?? layer.renderGraph;
     // Reflect the saved graph's primary channel in the (single-channel) viewer.
@@ -1203,7 +1304,6 @@ export const useRenderGraphEditor = (layer: LayerState): RenderGraphEditor => {
       colormap: primary?.colormap ?? layer.colormap,
       color: primary?.color ?? layer.color,
       gamma: primary?.gamma ?? layer.gamma,
-      intensityAxis: primary?.intensityAxis ?? layer.intensityAxis,
     });
     setDirty(false);
   };

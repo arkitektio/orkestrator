@@ -40,15 +40,12 @@ fragment LabelColorBy on LabelColorBy {
   max
   label
   # The SPARSE arm: `kind` says which of the two an entry is, and a SPARSE one
-  # names a matrix and a position along its own axes instead of a column,
-  # leaving `table`/`column` null. Nothing here renders one yet — they are
-  # selected so the whole-array replace above round-trips them intact.
+  # names a sparse LENS instead of a column, leaving `table`/`column` null. The
+  # lens pins one position on every axis the matrix identifies itself by; which
+  # matrix and which position is the lens' to say, resolved through
+  # `mikro/lib/lenses/lensRegistry.ts`.
   kind
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
 }
 
 # One entry of a label layer's filter picker: which of the mask's objects are
@@ -70,16 +67,12 @@ fragment LabelFilterBy on LabelFilterBy {
   values
   exclude
   # The SPARSE arm, exactly as on `LabelColorBy`: a rule may bound one slice of
-  # a matrix rather than a column of a table, and then names `dataset` and a
-  # position `at` with `table`/`column` null. Selected for the same two reasons
+  # a matrix rather than a column of a table, and then names the sparse `lens`
+  # that pins it with `table`/`column` null. Selected for the same two reasons
   # — it renders, and `filterBys` is a whole-array replace, so an entry read
-  # back without these and re-sent comes back a column rule naming nothing.
+  # back without it and re-sent comes back a column rule naming nothing.
   kind
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
 }
 
 # One entry of a mesh layer's colour picker. Same shape and same relation as
@@ -105,15 +98,12 @@ fragment MeshColorBy on MeshColorBy {
   max
   label
   # The SPARSE arm: `kind` says which of the two an entry is, and a SPARSE one
-  # names a matrix and a position along its own axes instead of a column,
-  # leaving `table`/`column` null. Nothing here renders one yet — they are
-  # selected so the whole-array replace above round-trips them intact.
+  # names a sparse LENS instead of a column, leaving `table`/`column` null. The
+  # lens pins one position on every axis the matrix identifies itself by; which
+  # matrix and which position is the lens' to say, resolved through
+  # `mikro/lib/lenses/lensRegistry.ts`.
   kind
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
 }
 
 # One entry of a mesh layer's filter picker: which objects are DRAWN, over the
@@ -136,11 +126,7 @@ fragment MeshFilterBy on MeshFilterBy {
   # The SPARSE arm — see `LabelFilterBy`, which is this fragment over the other
   # layer kind.
   kind
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
 }
 
 # One entry of a network layer's colour picker. The mesh shape plus a third
@@ -161,11 +147,7 @@ fragment NetworkColorBy on NetworkColorBy {
   min
   max
   label
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
   # The GRAPH arm. `target` says whether node glyphs are painted too (NODE) or
   # segments only (EDGE); a segment takes its START node's value either way,
   # since an edge owns no durable value of its own.
@@ -190,11 +172,7 @@ fragment NetworkFilterBy on NetworkFilterBy {
   max
   values
   exclude
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
   attribute
   target
 }
@@ -210,8 +188,6 @@ fragment NetworkFilterBy on NetworkFilterBy {
 # `colorBys[activeColorBy]` re-derived, and a second copy of a choice is a
 # second thing to keep in sync.
 fragment LabelRender on LabelRender {
-  intensityAxis
-  intensityIndex
   seed
   background
   opacity
@@ -230,9 +206,12 @@ fragment LabelRender on LabelRender {
   activeFilterBys
 }
 
+# Which channel a node samples is its `lens`: a single-channel crop of the
+# layer's lens, named by a bare id. Null reads the layer's own selection. The
+# id is resolved to a channel index at the model boundary
+# (`platform/model/layerModel.ts`), never per frame.
 fragment ChannelSourceNode on ChannelSourceNode {
-  intensityAxis
-  intensityIndex
+  lens
   visible
   transfer {
     ...TransferFunction
@@ -272,8 +251,8 @@ fragment PhasorTransfer on PhasorTransfer {
 fragment PhasorNode on PhasorNode {
   phasorAxis
   harmonic
-  intensityAxis
-  intensityIndex
+  # The channel whose photons are counted, as on `ChannelSourceNode`.
+  lens
   visible
   # Aliased: `transfer` on a ChannelSourceNode is a TransferFunction, here it is
   # a PhasorTransfer. Same response key, different types — GraphQL rejects the
@@ -287,10 +266,10 @@ fragment PhasorNode on PhasorNode {
 # PhasorNode buried in a render graph. Same reduction, same transfer — the
 # difference is only that the shape is declared rather than discovered, which is
 # what lets the client skip the graph walk and specialise the material.
+#
+# No channel here: the layer's lens pins it.
 fragment PhasorRender on PhasorRender {
   phasorAxis
-  intensityAxis
-  intensityIndex
   harmonic
   transfer {
     ...PhasorTransfer
@@ -427,8 +406,8 @@ fragment SceneLayer on Layer {
     renderAxes {
       ...LayerRenderAxes
     }
-    intensityAxis
-    intensityIndex
+    # No channel field: the lens IS one channel, its slice on
+    # `renderAxes.intensity` says which.
     # Aliased: `colormap` is `ColorMap!` here and `ColorMap` on Point/Track
     # layers. Same response key, different nullability — GraphQL rejects the
     # merge, so the non-null one gets its own key (as `phasorTransfer` does).
@@ -453,10 +432,17 @@ fragment SceneLayer on Layer {
     renderAxes {
       ...LayerRenderAxes
     }
-    intensityAxis
-    redIndex
-    greenIndex
-    blueIndex
+    # The three planes, each a single-channel crop of `lens`. Slices only
+    # (`ChannelLens`): the pyramid and the anchors are the parent's, above.
+    redLens {
+      ...ChannelLens
+    }
+    greenLens {
+      ...ChannelLens
+    }
+    blueLens {
+      ...ChannelLens
+    }
     # ONE clim for all three planes: an RGB image is three views of one
     # acquisition, so per-plane contrast would misrepresent it.
     climMin
@@ -558,11 +544,7 @@ fragment SceneLayer on Layer {
     idColumn
     pointSize
     colormap
-    # The picker, the same one a label and a mesh layer publish. `colorColumn`
-    # above it is the flat single colouring that predates the picker and cannot
-    # name a sparse matrix; it stays selected only so a layer written before this
-    # still reads.
-    colorColumn
+    # The picker, the same one a label and a mesh layer publish.
     activeColorBy
     colorBys {
       ...LabelColorBy

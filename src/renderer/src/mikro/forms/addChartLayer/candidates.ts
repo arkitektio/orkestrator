@@ -31,9 +31,15 @@ export type ResidentLike =
       __typename: "TableDataset";
       id: string;
       name: string;
+      fullLens?: { id: string } | null;
       columns: readonly { name: string; role?: string | null; dtype?: string | null; unit?: string | null }[];
     }
-  | { __typename: "AnnotationCollection"; id: string; name: string }
+  | {
+      __typename: "AnnotationCollection";
+      id: string;
+      name: string;
+      fullLens?: { id: string } | null;
+    }
   // The rest of the `Resident` union: selected as a bare typename, not drawable.
   | { __typename: string; id?: undefined };
 
@@ -69,13 +75,22 @@ export type LensCandidate = {
 export type TableCandidate = {
   id: string;
   name: string;
+  /** The table's whole lens: what a series over all of it reads through. Null
+   *  when the row did not carry one, and it is asked for at the add. */
+  wholeLens: string | null;
   /** Columns that could be read as the value, with their unit where declared. */
   valueColumns: { name: string; unit: string | null }[];
   /** The value columns of this table already drawn in the chart. */
   drawnColumns: string[];
 };
 
-export type CollectionCandidate = { id: string; name: string; drawn: boolean };
+export type CollectionCandidate = {
+  id: string;
+  name: string;
+  /** The collection's whole lens, as on `TableCandidate`. */
+  wholeLens: string | null;
+  drawn: boolean;
+};
 
 export type ChartCandidates = {
   lenses: LensCandidate[];
@@ -150,6 +165,7 @@ export const chartCandidates = (input: CandidatesInput): ChartCandidates => {
       out.tables.push({
         id: table.id,
         name: table.name,
+        wholeLens: table.fullLens?.id ?? null,
         valueColumns: table.columns
           .filter(isValueColumn)
           .map((column) => ({ name: column.name, unit: column.unit ?? null })),
@@ -162,6 +178,7 @@ export const chartCandidates = (input: CandidatesInput): ChartCandidates => {
       out.collections.push({
         id: collection.id,
         name: collection.name,
+        wholeLens: collection.fullLens?.id ?? null,
         drawn: drawnCollections.has(collection.id),
       });
     }

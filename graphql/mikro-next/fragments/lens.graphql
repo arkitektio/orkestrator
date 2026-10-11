@@ -83,6 +83,23 @@ fragment SceneLens on ArrayLens {
       id
       name
     }
+    # The value range of the WHOLE dataset, for the brick pool. A layer's own
+    # lens may be one channel of it and then sees only that channel's anchors
+    # (`activeAnchors` below), but every channel lens of a dataset shares one
+    # pool, and a pool is keyed by the range it quantizes against
+    # (`platform/model/dataRange.ts`). Min and max only: the bins stay on the
+    # layer's own anchors.
+    fullLens {
+      id
+      activeAnchors {
+        id
+        valueHistogram {
+          id
+          min
+          max
+        }
+      }
+    }
     dataArrays {
       id
       level
@@ -103,7 +120,11 @@ fragment SceneLens on ArrayLens {
   activeAnchors {
     id
     coordinates
+    # `id` is not optional: the same anchor is reached through
+    # `dataset.fullLens` above with a narrower histogram, and without an id the
+    # two selections replace each other in the cache instead of merging.
     valueHistogram {
+      id
       bins
       histogram
       min
@@ -129,6 +150,78 @@ fragment LensWindow on Window {
   axis
   min
   max
+}
+
+# One plane of an rgb layer: a crop of the layer's lens with the channel axis at
+# one position. The slices say which, and nothing else is read of it. Never
+# `SceneLens` here: that would send the whole pyramid three more times.
+fragment ChannelLens on ArrayLens {
+  id
+  slices {
+    ...DimSlice
+  }
+}
+
+# What a lens SELECTS and from which container, and nothing about either: what
+# resolves a lens named by a bare id (a render-graph node, a sparse colouring)
+# into the channel or the matrix position it stands for
+# (`mikro/lib/lenses/lensRegistry.ts`).
+fragment LensSelection on Lens {
+  __typename
+  id
+  ... on ArrayLens {
+    slices {
+      ...DimSlice
+    }
+    dataset {
+      id
+    }
+  }
+  ... on SparseLens {
+    windows {
+      ...LensWindow
+    }
+    sparseDataset {
+      id
+    }
+  }
+  ... on TableLens {
+    tableDataset {
+      id
+    }
+  }
+  ... on MeshLens {
+    meshCollection {
+      id
+    }
+  }
+  ... on NetworkLens {
+    networkCollection {
+      id
+    }
+  }
+  ... on AnnotationLens {
+    annotationCollection {
+      id
+    }
+  }
+}
+
+# What a selection structurally IS, in its container's vocabulary read over what
+# the selection leaves free: one plane of a stack is an IMAGE, one frame of a
+# tracking table is no longer TIMED. Aliased per kind because the three enums
+# differ and GraphQL will not merge them under one response key. Mesh, network
+# and annotation lenses have no spec.
+fragment LensSpec on Lens {
+  ... on ArrayLens {
+    arraySpec: spec
+  }
+  ... on TableLens {
+    tableSpec: spec
+  }
+  ... on SparseLens {
+    sparseSpec: spec
+  }
 }
 
 # What every lens answers, whatever it selects over. `kind` and `__typename`
@@ -232,12 +325,15 @@ fragment LensSubject on Lens {
 # pool — and the page gets those through the scene it opens, not through this.
 #
 # The page is a workspace, so this carries what a workspace switches on: the
-# scene the lens nominates and, for an array lens, every scene that draws it.
-# Only an array lens can list its scenes; the others know their nomination and
-# nothing else.
+# scene the lens nominates and every scene that draws it or a selection within
+# it, whatever the lens selects over.
 fragment DetailLens on Lens {
   ...LensCore
   ...LensSubject
+  ...LensSpec
+  scenes {
+    ...ListScene
+  }
   ... on ArrayLens {
     # The edge back into the dataset's pixel grid — "a crop is a translation of
     # the slice starts". Null for a full lens, whose space IS that grid, and the
@@ -254,9 +350,6 @@ fragment DetailLens on Lens {
         id
       }
     }
-    scenes {
-      ...ListScene
-    }
     # What was computed from this selection. Same row shape as the dataset's own
     # lineage panel, so one row component draws both.
     derivedDatasets {
@@ -269,6 +362,10 @@ fragment DetailLens on Lens {
 fragment ListLens on Lens {
   ...LensCore
   ...LensSubject
+  # What the selection structurally is. The whole lens' tile IS its container's
+  # tile (the home page lists data as whole lenses) and leads with the spec; a
+  # whole lens answers what its container does.
+  ...LensSpec
   ... on ArrayLens {
     # The lens' own picture once it nominates a scene, its dataset's until then
     # — so a crop nobody has staged still has a tile. The other kinds have only
@@ -276,12 +373,8 @@ fragment ListLens on Lens {
     latestSnapshot {
       ...SceneSnapshot
     }
-    # What the array structurally is. The whole lens' tile IS the dataset's
-    # tile (the home page lists data as whole lenses), and that one leads with
-    # the spec.
     dataset {
       id
-      spec
       multiscale
     }
   }

@@ -2,9 +2,14 @@
 // (ArrayDatasetSpec is a runtime enum, and importing the generated `graphql.ts`
 // pulls in the Apollo hooks barrel, which touches `window` on load)
 import { describe, expect, it } from 'vitest'
-import { ArrayDatasetSpec } from './api/graphql'
+import { ArrayDatasetSpec, SparseDatasetSpec, TableDatasetSpec } from './api/graphql'
 import {
   ADATASET_SPECS,
+  LENS_SPECS,
+  SDATASET_SPECS,
+  TDATASET_SPECS,
+  lensSpecEntries,
+  lensSpecFilter,
   arrayNbytes,
   baseDtypeOf,
   datasetNbytes,
@@ -36,6 +41,61 @@ describe('the spec catalogue', () => {
     }
     // "four or more" does not pin a number, so it must stay unranked.
     expect(spatialSpecOf([ArrayDatasetSpec.Hypervolume])?.spatialRank).toBeUndefined()
+  })
+})
+
+describe('the table and sparse catalogues', () => {
+  it('cover every enum member exactly once', () => {
+    expect(TDATASET_SPECS.map((entry) => entry.spec).sort()).toEqual(
+      Object.values(TableDatasetSpec).sort()
+    )
+    expect(SDATASET_SPECS.map((entry) => entry.spec).sort()).toEqual(
+      Object.values(SparseDatasetSpec).sort()
+    )
+  })
+
+  it('give every spec of a kind a unique slug', () => {
+    for (const entries of Object.values(LENS_SPECS)) {
+      const slugs = entries.map((entry) => entry.slug)
+      expect(new Set(slugs).size).toBe(slugs.length)
+    }
+  })
+})
+
+describe('lensSpecEntries', () => {
+  it("reads a lens' own spec, in catalogue order, whichever kind it is", () => {
+    // One plane of a [VOLUME, MULTICHANNEL] stack: the SELECTION is an image.
+    const plane = { arraySpec: [ArrayDatasetSpec.Multichannel, ArrayDatasetSpec.Image] }
+    expect(lensSpecEntries(plane).map((entry) => entry.short)).toEqual(['2d', 'multichannel'])
+    const frame = { tableSpec: [TableDatasetSpec.Tracked, TableDatasetSpec.Points_2D] }
+    expect(lensSpecEntries(frame).map((entry) => entry.short)).toEqual(['2d points', 'tracked'])
+    expect(lensSpecEntries({ sparseSpec: [SparseDatasetSpec.Slice] })).toHaveLength(1)
+  })
+
+  it('is empty for a lens kind with no spec', () => {
+    expect(lensSpecEntries({ __typename: 'MeshLens' })).toEqual([])
+  })
+})
+
+describe('lensSpecFilter', () => {
+  it("names the picked specs under the kind's own filter field", () => {
+    expect(lensSpecFilter('ARRAY', ['image', 'multichannel'])).toEqual({
+      arraySpec: [ArrayDatasetSpec.Image, ArrayDatasetSpec.Multichannel]
+    })
+    expect(lensSpecFilter('TABLE', ['tracked'])).toEqual({
+      tableSpec: [TableDatasetSpec.Tracked]
+    })
+    expect(lensSpecFilter('SPARSE', ['slice'])).toEqual({
+      sparseSpec: [SparseDatasetSpec.Slice]
+    })
+  })
+
+  it('narrows nothing without a pick, a kind, or a kind that has a spec', () => {
+    expect(lensSpecFilter('ARRAY', [])).toEqual({})
+    expect(lensSpecFilter(null, ['image'])).toEqual({})
+    expect(lensSpecFilter('MESH', ['image'])).toEqual({})
+    // A slug from another kind's vocabulary is not this kind's.
+    expect(lensSpecFilter('TABLE', ['image'])).toEqual({})
   })
 })
 

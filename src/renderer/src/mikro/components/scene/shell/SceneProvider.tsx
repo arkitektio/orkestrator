@@ -12,6 +12,8 @@ import {
 import { resolveSceneCameraFrame } from "../platform/camera/cameraState";
 import { resolvePreferredDisplayMode } from "../platform/camera/preferredView";
 import { sceneLayerSignature, sceneScopeSignature } from "../platform/model/sceneStructure";
+import { collectSceneLensFacts } from "../platform/model/channelLens";
+import { lensRegistry, type LensRegistry } from "@/mikro/lib/lenses/lensRegistry";
 import {
   createConfiguredSceneStores,
   openMissingSceneArrays,
@@ -126,6 +128,67 @@ export type SceneScope = {
  * unmounts, and the WebGPU renderer plus every brick atlas are disposed. That
  * full reload on the first annotation is exactly what the split exists to kill.
  */
+/**
+ * How long a scene waits for the lenses it names by bare id before it is drawn
+ * without them. The lookup overlaps the zarr metadata open, which is slower, so
+ * this is normally never reached; when it is, the layers that wanted an id draw
+ * at their fallback and `refreshLensSelections` corrects them when it lands.
+ */
+const LENS_LOOKUP_BUDGET_MS = 1500;
+
+/**
+ * Seed the session's lens registry from a scene payload and START resolving
+ * the lenses it names by id alone (a render-graph node's channel, a sparse
+ * colouring's position).
+ *
+ * Returns null — nothing to wait for, nothing sent — for every scene whose
+ * layers carry their lenses as objects, which is every scene of intensity, rgb,
+ * phasor and label layers, and for any scene whose ids the session already
+ * knows. The returned promise never rejects.
+ */
+const startLensLookup = (
+  registry: LensRegistry,
+  layers: SceneFragment["layers"],
+): { ids: string[]; settled: Promise<void> } | null => {
+  const facts = collectSceneLensFacts(layers);
+  for (const selection of facts.known) registry.seed(selection);
+  const ids = registry.missing(facts.bareIds);
+  return ids.length > 0 ? { ids, settled: registry.resolveMany(ids) } : null;
+};
+
+/** How long after a failed lens lookup the one retry is sent. */
+const LENS_LOOKUP_RETRY_MS = 2000;
+
+/**
+ * What happens to a lookup the scene did not wait out, or that came back
+ * short: once it settles — after one retry, if ids are still unknown — the
+ * layers that were drawn at a fallback are re-derived. Nothing else would ask
+ * again: a layer that changed only in content is never re-normalized.
+ */
+const followUpLensLookup = (
+  registry: LensRegistry,
+  lookup: { ids: string[]; settled: Promise<void> },
+  refresh: () => void,
+): void => {
+  void lookup.settled.then(async () => {
+    if (registry.missing(lookup.ids).length > 0) {
+      await new Promise((resolve) => window.setTimeout(resolve, LENS_LOOKUP_RETRY_MS));
+      await registry.resolveMany(lookup.ids);
+    }
+    refresh();
+  });
+};
+
+/** True when `lookup` settled inside the budget. */
+const settledInBudget = (lookup: Promise<void>): Promise<boolean> =>
+  new Promise((resolve) => {
+    const timer = window.setTimeout(() => resolve(false), LENS_LOOKUP_BUDGET_MS);
+    void lookup.then(() => {
+      window.clearTimeout(timer);
+      resolve(true);
+    });
+  });
+
 export const SceneProvider = (props: {
   scene: SceneFragment | null | undefined;
   children: ReactNode;
@@ -201,6 +264,13 @@ export const SceneProvider = (props: {
           throw new Error("No datalayer endpoint configured");
         }
 
+        // Started BEFORE the stores open and awaited after, so the one request
+        // it may send rides alongside the credentials and metadata fetches
+        // instead of in front of them. Null for a scene that names no lens by
+        // bare id: nothing is sent and nothing is awaited.
+        const registry = lensRegistry(client);
+        const lensLookup = startLensLookup(registry, scene.layers);
+
         // Opening the scene's zarr arrays belongs to the provider: the store
         // is a state container, not a fetcher. Stamped here so the cold-open
         // timeline still sees the same moment it used to.
@@ -208,7 +278,14 @@ export const SceneProvider = (props: {
         const arraysByStoreId = await openSceneArrays(storesById);
         coldOpenTimeline.stamp("arraysOpen");
 
-        const sceneStore = createSceneStore({ scene });
+        const lensesInTime = lensLookup ? await settledInBudget(lensLookup.settled) : true;
+
+        const sceneStore = createSceneStore({ scene, resolveLens: registry.peek });
+        if (lensLookup && (!lensesInTime || registry.missing(lensLookup.ids).length > 0)) {
+          followUpLensLookup(registry, lensLookup, () => {
+            if (!cancelled) sceneStore.getState().refreshLensSelections();
+          });
+        }
         // Both the opening view and the pose frame are facts about the scene AS
         // LOADED, so they are resolved from the normalized layers the scene
         // store just built rather than re-derived per consumer.
@@ -326,6 +403,10 @@ export const SceneProvider = (props: {
       const source = sceneRef.current;
       if (!source || sceneScopeSignature(source) !== built.scopeSignature) return;
 
+      // As in the scope build: started before the arrays open, awaited after.
+      const registry = lensRegistry(client);
+      const lensLookup = startLensLookup(registry, source.layers);
+
       let failedStoreIds: string[] = [];
       if (datalayer) {
         try {
@@ -344,6 +425,16 @@ export const SceneProvider = (props: {
           // Never blanks the scene: fold the layers anyway (see
           // `openMissingSceneArrays`' partial-tolerance contract).
           console.warn("[scene] reconcile could not open zarr arrays", error);
+        }
+      }
+
+      if (lensLookup) {
+        const inTime = await settledInBudget(lensLookup.settled);
+        if (cancelled) return;
+        if (!inTime || registry.missing(lensLookup.ids).length > 0) {
+          followUpLensLookup(registry, lensLookup, () => {
+            if (!cancelled) scope.sceneStore.getState().refreshLensSelections();
+          });
         }
       }
 

@@ -17,13 +17,13 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
 import { useBrickStore } from "../../features/bricks/store/brickSlice";
 import {
   describePlane,
-  intensityAxisCandidates,
   intensityExtent,
   percentileUnion,
   rangeUnion,
   resolvePlanes,
   type PlaneHistogram,
 } from "./rgbPlanes";
+import { keptPositions } from "@/mikro/lib/lenses/lensSelection";
 import { WhiteBalanceSection } from "./WhiteBalanceSection";
 import type { Gains } from "./whiteBalance";
 
@@ -117,7 +117,6 @@ export const RgbChannelEditor = ({
   layer,
   onPlanes,
   onWindow,
-  onIntensityAxis,
   onWhiteBalance,
 }: {
   layer: LayerState;
@@ -126,7 +125,6 @@ export const RgbChannelEditor = ({
    *  layer three times mid-edit. */
   onPlanes: (indices: readonly number[]) => void;
   onWindow: (climMin: number, climMax: number) => void;
-  onIntensityAxis: (axis: string) => void;
   /** The three per-primary gains, written as the planes' slot opacities. */
   onWhiteBalance: (gains: Gains) => void;
 }) => {
@@ -141,21 +139,29 @@ export const RgbChannelEditor = ({
     [layer.channels],
   );
 
+  const extent = intensityExtent(layer.lens, axis);
+  // The dataset indices the layer's lens keeps along the channel axis: a plane
+  // is saved as a crop of that lens, so only these can be mapped.
+  const positions = useMemo(
+    () => keptPositions(layer.sourceSlices, axis, extent),
+    [layer.sourceSlices, axis, extent],
+  );
+
   /** Every plane the picker can offer. Empty when the extent is unknown — the
    *  rows then still describe what is mapped, they just cannot be re-picked. */
   const planes = useMemo(
-    () => resolvePlanes(layer.lens, coverage, axis),
-    [layer.lens, coverage, axis],
+    () => resolvePlanes(layer.lens, coverage, axis, positions),
+    [layer.lens, coverage, axis, positions],
   );
   const mapped = useMemo(
     () => indices.map((index) => describePlane(layer.lens, coverage, axis, index)),
     [indices, layer.lens, coverage, axis],
   );
 
-  // `layer` alone: the helper reads `layer.lens` THROUGH it, so listing both
-  // is the same dependency twice.
-  const axes = useMemo(() => intensityAxisCandidates(layer.lens, layer), [layer]);
-  const extent = intensityExtent(layer.lens, axis);
+  // The two presets, over the first three planes the lens keeps (0, 1, 2 for a
+  // lens that keeps them all).
+  const forward = [positions[0] ?? 0, positions[1] ?? 1, positions[2] ?? 2];
+  const reverse = [forward[2], forward[1], forward[0]];
 
   // Same fallback ladder as the intensity editor's histogram: a float layer
   // with no server histogram would otherwise window against the dtype's [0,1].
@@ -221,16 +227,16 @@ export const RgbChannelEditor = ({
         action={
           <SegmentGroup>
             <Segment
-              active={isPreset([0, 1, 2]) && !mono}
-              title="Planes 0, 1, 2 into red, green, blue"
-              onClick={() => onPlanes([0, 1, 2])}
+              active={isPreset(forward) && !mono}
+              title={`Planes ${forward.join(", ")} into red, green, blue`}
+              onClick={() => onPlanes(forward)}
             >
               rgb
             </Segment>
             <Segment
-              active={isPreset([2, 1, 0]) && !mono}
-              title="Planes 2, 1, 0 into red, green, blue — the usual BGR photograph"
-              onClick={() => onPlanes([2, 1, 0])}
+              active={isPreset(reverse) && !mono}
+              title={`Planes ${reverse.join(", ")} into red, green, blue — the usual BGR photograph`}
+              onClick={() => onPlanes(reverse)}
             >
               bgr
             </Segment>
@@ -244,24 +250,6 @@ export const RgbChannelEditor = ({
           </SegmentGroup>
         }
       >
-        {axes.length > 1 && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-[9px] uppercase tracking-[0.08em] text-white/35">axis</span>
-            <SegmentGroup>
-              {axes.map((candidate) => (
-                <Segment
-                  key={candidate}
-                  active={candidate === axis}
-                  title={`Index the primaries along ${candidate}`}
-                  onClick={() => onIntensityAxis(candidate)}
-                >
-                  {candidate}
-                </Segment>
-              ))}
-            </SegmentGroup>
-          </div>
-        )}
-
         <div className="flex flex-col gap-1">
           {PRIMARIES.map((primary, slot) => {
             const plane = mapped[slot];

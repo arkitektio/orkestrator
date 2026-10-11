@@ -24,10 +24,13 @@ import {
   parsePhasorTransfer,
   resolveLayerGraph,
   resolveProjectionMode,
+  type GraphChannelContext,
 } from "./renderGraph";
 import { resolveIntensityAxis, resolvePhasorAxis } from "./dims";
 import { readGains } from "./whiteBalanceGains";
 import { composeLayerAffine, type SceneTransformContext } from "@/core/data/scene/coords/transformGraph";
+import { pinnedIndex, type LensLookup } from "@/mikro/lib/lenses/lensSelection";
+import { poolLensOf } from "./channelLens";
 
 export type { SceneTransformContext };
 
@@ -201,6 +204,29 @@ export type LayerState = Omit<ImageLayerFragment, "__typename"> & {
   tAxis: string | null;
   intensityAxis: string | null;
   /**
+   * The channel the layer's OWN lens pins, as a dataset index — null when that
+   * lens keeps more than one channel (an rgb layer's parent, a graph layer's).
+   *
+   * `lens` below is the POOL lens: the server's lens with the channel slice
+   * taken out (`channelLens.ts`), so that every channel of a dataset shares one
+   * brick pool. This is where the slice went. It is what a source that names no
+   * lens of its own reads, and where a new source starts.
+   */
+  channelPin: number | null;
+  /**
+   * The lens' slices exactly as the server spelled them, channel slice
+   * included. For the two things that must speak the server's language again:
+   * which positions an editor may offer along the channel axis, and the base a
+   * new channel lens is cut from (`ensureChannelLens`).
+   */
+  sourceSlices: ImageLayerFragment["lens"]["slices"];
+  /**
+   * True while a render-graph source names a lens nothing is known about yet,
+   * so its channel index is the fallback rather than the answer. Cleared by
+   * `sceneStore.refreshLensSelections` once the registry has it.
+   */
+  lensPending?: boolean;
+  /**
    * The axis the layer's phasor nodes reduce (a MICROTIME/SPECTRUM axis). Null
    * when the graph has no phasor node — and when it is set, the axis is NOT
    * collapsible: the phasor needs every bin, so there is no dim slider for it
@@ -235,6 +261,58 @@ export type LayerState = Omit<ImageLayerFragment, "__typename"> & {
   gamma: number | null;
 };
 
+const NO_LENSES: LensLookup = () => undefined;
+
+/**
+ * Where a lens-backed layer's channel lives now that the server spells it as a
+ * slice of the lens: which axis is the channel axis (the layer's
+ * `renderAxes.intensity`, guarded like every other reading of it), the position
+ * the lens pins it to, and the lens the brick engine is handed instead
+ * (`poolLensOf`: the same lens without that slice, shared by every channel of
+ * the dataset).
+ */
+const channelOf = (layer: BrickLayerFragment) => {
+  const axis = resolveIntensityAxis(undefined, layer.renderAxes);
+  return {
+    axis,
+    pin: pinnedIndex(layer.lens.slices, axis),
+    lens: poolLensOf(layer.lens, axis),
+  };
+};
+
+/**
+ * How a render graph's source nodes become channel indices for THIS layer.
+ *
+ * A node names a single-channel lens by id; the registry says what that lens
+ * selects, and the position it pins the channel axis to is the index. A node
+ * that names no lens reads the layer's own selection. An id the registry does
+ * not know yet (the lookup is still in flight) or that belongs to another
+ * dataset takes the same fallback, and `pending()` reports the first case so
+ * the store can re-derive once it lands.
+ */
+const graphChannelContext = (
+  channel: ReturnType<typeof channelOf>,
+  datasetId: string,
+  lookup: LensLookup,
+): GraphChannelContext & { pending: () => boolean } => {
+  let pending = false;
+  const fallback = channel.pin ?? 0;
+  return {
+    intensityAxis: channel.axis,
+    indexOf: (lens) => {
+      if (!lens) return fallback;
+      const selection = lookup(lens);
+      if (!selection) {
+        pending = true;
+        return fallback;
+      }
+      if (selection.kind !== "array" || selection.dataset !== datasetId) return fallback;
+      return pinnedIndex(selection.slices, channel.axis) ?? fallback;
+    },
+    pending: () => pending,
+  };
+};
+
 /**
  * Resolve an `ImageLayerFragment` (+ its default volume LOD) into `LayerState`:
  * flatten the render graph (or a default single-channel fallback) into a channel
@@ -246,8 +324,11 @@ export const normalizeLayer = (
   layer: ImageLayerFragment,
   defaultVolumeLod: number | null,
   scene: SceneTransformContext,
+  lookup: LensLookup = NO_LENSES,
 ): LayerState => {
-  const graph = resolveLayerGraph(layer);
+  const channel = channelOf(layer);
+  const context = graphChannelContext(channel, layer.lens.dataset.id, lookup);
+  const graph = resolveLayerGraph({ ...layer, channelPin: channel.pin }, context);
   const channels = flattenChannels(graph);
   const phasors = flattenPhasors(graph);
   const sources = flattenSources(graph);
@@ -269,6 +350,10 @@ export const normalizeLayer = (
   const renderAxes = layer.renderAxes;
   return {
     ...layer,
+    lens: channel.lens,
+    channelPin: channel.pin,
+    sourceSlices: layer.lens.slices,
+    lensPending: context.pending(),
     climMin: transfer?.climMin ?? baseMin,
     climMax: transfer?.climMax ?? baseMax,
     colormap: transfer?.colormap ?? null,
@@ -279,7 +364,7 @@ export const normalizeLayer = (
     yAxis: renderAxes?.y ?? null,
     zAxis: renderAxes?.z ?? null,
     tAxis: renderAxes?.t ?? null,
-    intensityAxis: resolveIntensityAxis(primary?.intensityAxis, renderAxes),
+    intensityAxis: channel.axis,
     phasorAxis: resolvePhasorAxis(phasors[0]?.phasorAxis, renderAxes),
     channels,
     phasors,
@@ -326,12 +411,13 @@ export { isPlaceable, unplaceableReason, type UnplaceableReason } from "./placea
  *    arbitrary object); the 3D label path resolves FIRST HIT instead and decides
  *    that itself.
  *
- * `intensityAxis` is deliberately NULL even though `labelRender.intensityIndex`
- * names a channel. Setting it would make `buildLayerLevelGeometry` allocate
+ * `intensityAxis` is deliberately NULL even though the mask's lens pins a
+ * channel. Setting it would make `buildLayerLevelGeometry` allocate
  * `min(16, extent)` slabs per brick — 3-16x the atlas and the fetch — for
- * channels nothing draws. The chosen index is pinned as a collapsed slice
- * instead, which is what the slice signature, the fixed-index resolution, the
- * probe's coordinate mapping and the dim sliders all already read.
+ * channels nothing draws. The lens' own slice on that axis stays IN the lens
+ * instead (the one layer kind whose channel slice is not taken out, see
+ * `channelLens.ts`): a collapsed slice is what the slice signature, the
+ * fixed-index resolution and the probe's coordinate mapping all already read.
  */
 export const normalizeLabelLayer = (
   layer: LabelLayerFragment,
@@ -349,33 +435,14 @@ export const normalizeLabelLayer = (
     }
   }
   const renderAxes = layer.renderAxes;
-  const intensityAxis = resolveIntensityAxis(
-    layer.labelRender?.intensityAxis ?? undefined,
-    renderAxes,
-  );
   return {
     ...layer,
-    // Pin the mask's channel as a COLLAPSED slice rather than as the layer's
-    // intensity axis (see the docblock). A scene-wide dim slider can still
-    // override it — `resolveFixedDimIndex` lets a selection win over a slice —
-    // which is the right behaviour: `intensityIndex` is the default this mask
-    // opens on, not a lock.
-    lens:
-      intensityAxis && layer.labelRender
-        ? {
-            ...layer.lens,
-            slices: [
-              ...(layer.lens.slices ?? []).filter((slice) => slice.axis !== intensityAxis),
-              {
-                __typename: "Slice" as const,
-                axis: intensityAxis,
-                start: layer.labelRender.intensityIndex,
-                stop: layer.labelRender.intensityIndex + 1,
-                step: null,
-              },
-            ],
-          }
-        : layer.lens,
+    // The mask's channel stays a COLLAPSED slice of its lens rather than the
+    // layer's intensity axis (see the docblock); only the spelling is made
+    // canonical, so a mask over a whole array keys like one.
+    lens: poolLensOf(layer.lens, null),
+    channelPin: null,
+    sourceSlices: layer.lens.slices,
     climMin: baseMin,
     climMax: baseMax,
     colormap: null,
@@ -434,7 +501,14 @@ const lensLayerCommon = (
   scene: SceneTransformContext,
 ) => {
   const renderAxes = layer.renderAxes;
+  const channel = channelOf(layer);
   return {
+    lens: channel.lens,
+    channelPin: channel.pin,
+    sourceSlices: layer.lens.slices,
+    intensityAxis: channel.axis,
+    // The RAW layer: the affine is composed from the lens' own placement edges
+    // and reduces to the spatial axes, so the channel slice never reaches it.
     affineMatrix: composeLayerAffine(scene, layer),
     xAxis: renderAxes?.x ?? null,
     yAxis: renderAxes?.y ?? null,
@@ -471,12 +545,16 @@ export const normalizeIntensityLayer = (
   scene: SceneTransformContext,
 ): LayerState => {
   const [baseMin, baseMax] = resolveBaseRange(layer);
+  const common = lensLayerCommon(layer, defaultVolumeLod, scene);
   const channel: ChannelRenderNode = {
     type: "channel",
     kind: CHANNEL_KIND,
     label: layer.name ?? null,
-    intensityAxis: layer.intensityAxis ?? null,
-    intensityIndex: layer.intensityIndex,
+    intensityAxis: common.intensityAxis,
+    // Which channel is drawn is the lens' selection: the position it pins the
+    // channel axis to. A lens with no channel axis, or one channel, draws 0.
+    intensityIndex: common.channelPin ?? 0,
+    lens: layer.lens.id,
     visible: true,
     transfer: {
       climMin: layer.climMin ?? null,
@@ -503,16 +581,12 @@ export const normalizeIntensityLayer = (
   const blend = layer.blending;
   return {
     ...layer,
-    ...lensLayerCommon(layer, defaultVolumeLod, scene),
+    ...common,
     climMin: layer.climMin ?? baseMin,
     climMax: layer.climMax ?? baseMax,
     colormap: layer.intensityColormap,
     color: layer.color ?? null,
     gamma: layer.gamma ?? null,
-    intensityAxis: resolveIntensityAxis(
-      layer.intensityAxis ?? undefined,
-      layer.renderAxes,
-    ),
     phasorAxis: null,
     channels: sources,
     phasors: [],
@@ -549,17 +623,23 @@ export const normalizeRgbLayer = (
 ): LayerState => {
   const [baseMin, baseMax] = resolveBaseRange(layer);
   const gains = readGains(layer.whiteBalance);
+  const common = lensLayerCommon(layer, defaultVolumeLod, scene);
+  // Each plane is a crop of the layer's lens with the channel axis at one
+  // position; that position is the plane. A plane lens that pins nothing (no
+  // channel axis to pin) falls back to its slot, as an unset index did.
   const plane = (
     label: string,
-    intensityIndex: number,
+    lens: RgbLayerFragment["redLens"],
+    slot: number,
     color: readonly [number, number, number],
     gain: number,
   ): ChannelRenderNode => ({
     type: "channel",
     kind: CHANNEL_KIND,
     label,
-    intensityAxis: layer.intensityAxis ?? null,
-    intensityIndex,
+    intensityAxis: common.intensityAxis,
+    intensityIndex: pinnedIndex(lens?.slices, common.intensityAxis) ?? slot,
+    lens: lens?.id ?? null,
     visible: true,
     transfer: {
       climMin: layer.climMin ?? null,
@@ -574,9 +654,9 @@ export const normalizeRgbLayer = (
     },
   });
   const sources = [
-    plane("Red", layer.redIndex, RGB_TINTS[0], gains[0]),
-    plane("Green", layer.greenIndex, RGB_TINTS[1], gains[1]),
-    plane("Blue", layer.blueIndex, RGB_TINTS[2], gains[2]),
+    plane("Red", layer.redLens, 0, RGB_TINTS[0], gains[0]),
+    plane("Green", layer.greenLens, 1, RGB_TINTS[1], gains[1]),
+    plane("Blue", layer.blueLens, 2, RGB_TINTS[2], gains[2]),
   ];
   // Across the three planes the compositing is addition — an RGB image IS the
   // sum of its basis-tinted planes. The layer's own `blending` describes how it
@@ -585,17 +665,13 @@ export const normalizeRgbLayer = (
   const blend = Blending.Additive;
   return {
     ...layer,
-    ...lensLayerCommon(layer, defaultVolumeLod, scene),
+    ...common,
     climMin: layer.climMin ?? baseMin,
     climMax: layer.climMax ?? baseMax,
     // Flat fields describe the PRIMARY channel, as on an image layer.
     colormap: null,
     color: [...RGB_TINTS[0]],
     gamma: null,
-    intensityAxis: resolveIntensityAxis(
-      layer.intensityAxis ?? undefined,
-      layer.renderAxes,
-    ),
     phasorAxis: null,
     channels: sources,
     phasors: [],
@@ -627,6 +703,7 @@ export const normalizePhasorLayer = (
 ): LayerState => {
   const [baseMin, baseMax] = resolveBaseRange(layer);
   const render = layer.phasorRender;
+  const common = lensLayerCommon(layer, defaultVolumeLod, scene);
   const phasor: PhasorRenderNode | null = render
     ? {
         type: "phasor",
@@ -634,8 +711,11 @@ export const normalizePhasorLayer = (
         label: layer.name ?? null,
         phasorAxis: render.phasorAxis,
         harmonic: render.harmonic,
-        intensityAxis: render.intensityAxis ?? null,
-        intensityIndex: render.intensityIndex,
+        intensityAxis: common.intensityAxis,
+        // The channel whose photons are counted is the lens' selection, as on
+        // an intensity layer.
+        intensityIndex: common.channelPin ?? 0,
+        lens: layer.lens.id,
         visible: true,
         transfer: parsePhasorTransfer(render.transfer),
       }
@@ -644,7 +724,7 @@ export const normalizePhasorLayer = (
   const blend = layer.blending;
   return {
     ...layer,
-    ...lensLayerCommon(layer, defaultVolumeLod, scene),
+    ...common,
     // The photon-count transfer, folded flat the way an image layer folds its
     // primary channel's.
     climMin: phasor?.transfer.intensity.climMin ?? baseMin,
@@ -652,10 +732,6 @@ export const normalizePhasorLayer = (
     colormap: phasor?.transfer.colormap ?? null,
     color: null,
     gamma: phasor?.transfer.intensity.gamma ?? null,
-    intensityAxis: resolveIntensityAxis(
-      render?.intensityAxis ?? undefined,
-      layer.renderAxes,
-    ),
     phasorAxis: resolvePhasorAxis(phasor?.phasorAxis, layer.renderAxes),
     channels: [],
     phasors: phasor ? [phasor] : [],
@@ -672,15 +748,20 @@ export const normalizePhasorLayer = (
  * The single dispatcher both `sceneStore` call sites go through — construction
  * and `syncSceneLayers`. They used to spell a two-arm ternary each; with five
  * arms, two copies is how they drift.
+ *
+ * `lookup` resolves the lenses a render graph names by bare id (the session's
+ * lens registry, through `sceneStore`). Only the graph arm reads it: the
+ * fixed-shape kinds carry their lenses as objects.
  */
 export const normalizeBrickLayer = (
   layer: BrickLayerFragment,
   defaultVolumeLod: number | null,
   scene: SceneTransformContext,
+  lookup: LensLookup = NO_LENSES,
 ): LayerState => {
   if (isLabelLayer(layer)) return normalizeLabelLayer(layer, defaultVolumeLod, scene);
   if (isIntensityLayer(layer)) return normalizeIntensityLayer(layer, defaultVolumeLod, scene);
   if (isRgbLayer(layer)) return normalizeRgbLayer(layer, defaultVolumeLod, scene);
   if (isPhasorLayer(layer)) return normalizePhasorLayer(layer, defaultVolumeLod, scene);
-  return normalizeLayer(layer, defaultVolumeLod, scene);
+  return normalizeLayer(layer, defaultVolumeLod, scene, lookup);
 };

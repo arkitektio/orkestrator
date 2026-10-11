@@ -3,7 +3,6 @@ import type { LayerCoverage } from "../../features/annotations/anchorVisibility"
 import {
   anchorForPlane,
   describePlane,
-  intensityAxisCandidates,
   intensityExtent,
   percentileUnion,
   rangeUnion,
@@ -113,6 +112,13 @@ describe("describePlane / resolvePlanes", () => {
     expect(resolvePlanes(lens([]), coverage(), "t")).toEqual([]);
   });
 
+  it("offers only the positions the layer's lens keeps, when told them", () => {
+    // A plane is saved as a crop of the layer's lens, so one that lens cuts
+    // away cannot be mapped.
+    const planes = resolvePlanes(lens([], [6, 64, 64]), coverage(), "c", [2, 3, 4]);
+    expect(planes.map((plane) => plane.index)).toEqual([2, 3, 4]);
+  });
+
   it("describes an index outside the extent rather than dropping it", () => {
     // A stored mapping the dataset has since outgrown still renders as itself.
     const plane = describePlane(lens([], [2, 64, 64]), coverage(), "c", 9);
@@ -142,29 +148,5 @@ describe("percentileUnion / rangeUnion", () => {
     // A degenerate range (max === min) is not usable either.
     const flat = [{ index: 0, label: null, display: "0", histogram: histogram(7, 7) }];
     expect(rangeUnion(flat)).toBeNull();
-  });
-});
-
-describe("intensityAxisCandidates", () => {
-  const layer = {
-    phasorAxis: null,
-    renderAxes: { x: "x", y: "y", z: null },
-  };
-
-  it("excludes axes already spent on geometry and any axis of extent 1", () => {
-    const l: PlaneLens = {
-      dataset: {
-        axisNames: ["c", "t", "z", "y", "x"],
-        dataArrays: [{ level: 0, shape: [3, 10, 1, 64, 64] }],
-      },
-    };
-    expect(intensityAxisCandidates(l, layer)).toEqual(["c", "t"]);
-  });
-
-  it("returns one candidate when there is no choice to offer", () => {
-    const l: PlaneLens = {
-      dataset: { axisNames: ["c", "y", "x"], dataArrays: [{ level: 0, shape: [3, 64, 64] }] },
-    };
-    expect(intensityAxisCandidates(l, layer)).toEqual(["c"]);
   });
 });

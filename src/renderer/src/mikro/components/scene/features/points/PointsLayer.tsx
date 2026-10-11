@@ -22,7 +22,11 @@ import { loadSparseSource } from "@/mikro/lib/sparse/sparseSource";
 import { readColumnByObjectIdBatchedCached } from "../../platform/attributes/columnValueCache";
 import { accessForTable } from "../../platform/attributes/columnLut";
 import { paletteRowFor, DEFAULT_MEASURE_COLORMAP } from "../../platform/attributes/valueLut";
-import { isColumnColorBy } from "../../platform/layerui/columnOptions";
+import {
+  isColumnColorBy,
+  type ColorByEntry,
+  type FilterByEntry,
+} from "../../platform/layerui/columnOptions";
 import type { SceneLayerFragment } from "@/mikro/api/graphql";
 import { TIME_DIM, type DimExtent } from "../../platform/model/dimExtents";
 import { useSceneStore } from "../../platform/stores/sceneStore";
@@ -118,7 +122,9 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
     [layer.asAffine, layer.xColumn, layer.yColumn, layer.zColumn, worldSystem],
   );
 
-  const { colorBy, rules: pickedRules } = useActivePickers(layer);
+  // The entries as the scene store holds them: a sparse one carries the matrix
+  // and position its lens stands for (`platform/attributes/sparseEntry.ts`).
+  const { colorBy, rules: pickedRules } = useActivePickers<ColorByEntry, FilterByEntry>(layer);
 
   // The layer draws a LENS of its table, and the lens' windows arrive as rules
   // the server says are always applied: a row is drawn when every window keeps
@@ -129,7 +135,7 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
   const tableId = layer.tableDataset.id;
   const windowFilters = layer.windowFilters;
   const activeRules = useMemo(
-    () => [
+    (): FilterByEntry[] => [
       ...windowFilters.map((rule) => ({ ...rule, table: rule.table ?? tableId })),
       ...pickedRules,
     ],

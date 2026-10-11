@@ -6,5 +6,9 @@
 mutation CreateMeshCollection($input: CreateMeshCollectionInput!) {
   createMeshCollection(input: $input) {
     ...MeshCollection
+    # The collection's whole lens: what the designer makes its layer from.
+    fullLens {
+      id
+    }
   }
 }

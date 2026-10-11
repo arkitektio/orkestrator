@@ -39,10 +39,18 @@ export const LayerLensHeader = ({
   const { info, title, label, container } = describeLens(lens);
   const Icon = info.icon;
   const overdrawn = drawnWhole && !isWholeLens(lens);
+  // An array layer's lens here is its FAMILY (`channelLens.poolLensOf`): the
+  // selection its channel layers share, under whichever channel lens' id came
+  // first. When that family is the whole array, the page to open is the
+  // dataset's whole lens, not one channel of it.
+  const whole =
+    "dataset" in lens && "fullLens" in lens.dataset && lens.slices.length === 0
+      ? lens.dataset.fullLens
+      : null;
 
   return (
     <MikroLens.DetailLink
-      object={lens}
+      object={whole ?? lens}
       title={`${container.name} · ${label}`}
       className="col-span-full mt-1.5 flex min-w-0 items-center gap-1.5 px-1 text-[0.625rem] text-white/50 first:mt-0 hover:text-white/90"
     >

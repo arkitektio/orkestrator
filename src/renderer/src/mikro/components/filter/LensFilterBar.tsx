@@ -13,6 +13,7 @@ import {
 } from "@/core/ui/dropdown-menu";
 import { ActionLabel, ActionTrigger, PageAction } from "@/core/ui/page-action";
 import {
+  parseAsArrayOf,
   parseAsIsoDateTime,
   parseAsString,
   parseAsStringLiteral,
@@ -28,6 +29,7 @@ import {
 import { useMemo } from "react";
 import { LensFilter, LensKind, LensOrder, Ordering } from "../../api/graphql";
 import { LENS_KIND_ORDER, LENS_KINDS, lensKindInfo } from "../../lenses";
+import { LENS_SPECS, lensSpecFilter } from "../../specs";
 
 const SORT_FIELDS = ["createdAt", "name", "id"] as const;
 const SORT_FIELD_LABELS: Record<(typeof SORT_FIELDS)[number], string> = {
@@ -53,6 +55,11 @@ const KINDS = [ALL_KINDS, ...LENS_KIND_ORDER.map((typename) => LENS_KINDS[typena
  * under a copy of every dataset and table. They are one toggle away because
  * for a mesh, a network or an annotation collection the whole lens is the only
  * page there is.
+ *
+ * **Structure** narrows by what a selection IS (an image, a tracked table, one
+ * slice of a matrix), in its container's own vocabulary, so it is offered once
+ * a kind that has one is picked. It is the selection's spec, not the
+ * container's: one plane of a stack is found under "Images".
  */
 export const useLensFilterBar = () => {
   const [search, setSearch] = useQueryState("search", parseAsString.withDefault(""));
@@ -64,6 +71,7 @@ export const useLensFilterBar = () => {
     "whole",
     parseAsStringLiteral(["yes", "no"] as const).withDefault("no"),
   );
+  const [spec, setSpec] = useQueryState("spec", parseAsArrayOf(parseAsString).withDefault([]));
   const [createdAfter, setCreatedAfter] = useQueryState("after", parseAsIsoDateTime);
   const [createdBefore, setCreatedBefore] = useQueryState("before", parseAsIsoDateTime);
   const [sortField, setSortField] = useQueryState(
@@ -83,17 +91,35 @@ export const useLensFilterBar = () => {
   const isCustomOrder = sortField !== "createdAt" || sortDirection !== "DESC";
   const includeWhole = whole === "yes";
   const selectedKind = kind === ALL_KINDS ? null : (kind as LensKind);
+  // The vocabulary of the picked kind; empty for a kind that has none, and
+  // while no kind is picked (a spec means nothing across kinds).
+  const specEntries = selectedKind ? (LENS_SPECS[selectedKind] ?? []) : [];
+  // A stable key: the parsed array is a new one on every render.
+  const specKey = spec.join(",");
 
   const filters: LensFilter = useMemo(
     () => ({
       ...(includeWhole ? {} : { sliced: true }),
       ...(selectedKind ? { kind: selectedKind } : {}),
+      ...lensSpecFilter(selectedKind, specKey ? specKey.split(",") : []),
       ...(debouncedSearch ? { search: debouncedSearch } : {}),
       ...(createdAfter ? { createdAfter: createdAfter.toISOString() } : {}),
       ...(createdBefore ? { createdBefore: createdBefore.toISOString() } : {}),
     }),
-    [includeWhole, selectedKind, debouncedSearch, createdAfter, createdBefore],
+    [includeWhole, selectedKind, specKey, debouncedSearch, createdAfter, createdBefore],
   );
+
+  /** One spec on or off. A SHAPE member replaces the other shape (only one
+   *  ever holds, so two together match nothing); modifiers stack. */
+  const toggleSpec = (slug: string, on: boolean) => {
+    const entry = specEntries.find((candidate) => candidate.slug === slug);
+    const shapes = new Set(specEntries.filter((e) => e.shape).map((e) => e.slug));
+    const kept = spec.filter(
+      (current) => current !== slug && !(on && entry?.shape && shapes.has(current)),
+    );
+    const next = on ? [...kept, slug] : kept;
+    void setSpec(next.length > 0 ? next : null);
+  };
 
   const ordering: LensOrder[] = useMemo(() => {
     if (sortField === "name") return [{ name: dir }];
@@ -120,6 +146,7 @@ export const useLensFilterBar = () => {
                 {(selectedKind || includeWhole) && (
                   <Badge variant="secondary" className="gap-1">
                     {selectedKind ? lensKindInfo(selectedKind).label : "With whole"}
+                    {spec.length > 0 && ` · ${spec.length}`}
                   </Badge>
                 )}
               </ActionLabel>
@@ -129,7 +156,11 @@ export const useLensFilterBar = () => {
             <DropdownMenuLabel>Selects over</DropdownMenuLabel>
             <DropdownMenuRadioGroup
               value={kind}
-              onValueChange={(value) => setKind(value as (typeof KINDS)[number])}
+              onValueChange={(value) => {
+                // A spec belongs to one kind's vocabulary.
+                void setSpec(null);
+                void setKind(value as (typeof KINDS)[number]);
+              }}
             >
               <DropdownMenuRadioItem value={ALL_KINDS}>Anything</DropdownMenuRadioItem>
               {LENS_KIND_ORDER.map((typename) => {
@@ -142,6 +173,24 @@ export const useLensFilterBar = () => {
                 );
               })}
             </DropdownMenuRadioGroup>
+            {specEntries.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Structure</DropdownMenuLabel>
+                {specEntries.map((entry) => (
+                  <DropdownMenuCheckboxItem
+                    key={entry.slug}
+                    checked={spec.includes(entry.slug)}
+                    onCheckedChange={(checked) => toggleSpec(entry.slug, checked)}
+                    // The menu stays open: a structure is usually two picks.
+                    onSelect={(event) => event.preventDefault()}
+                  >
+                    <entry.icon className="mr-2 h-3.5 w-3.5" />
+                    {entry.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuCheckboxItem
               checked={includeWhole}

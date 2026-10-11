@@ -10,6 +10,7 @@ import {
   type CreateMeshLayerMutation,
 } from "@/mikro/api/graphql";
 import type { MikroClient } from "@/core/data/zarr/store/types";
+import { lensRegistry } from "@/mikro/lib/lenses/lensRegistry";
 import { buildFabriksPrefix } from "../../meshes/fabriks/writer/fabriksPrefix";
 import type { BakeMesh } from "../../meshes/fabriks/writer/fabriksBake";
 import { uploadFabriksPrefix, type FabriksUploadProgress } from "../../meshes/fabriks/writer/fabriksUpload";
@@ -154,11 +155,16 @@ export async function commitMeshDesign(opts: {
   if (!collection) throw new Error("The server did not register the mesh collection.");
 
   onProgress?.({ status: "committing", message: "Adding the layer to the scene…" });
+  // A layer draws a LENS: the new collection's whole one, which the create
+  // answers with and the registry finds if it did not.
+  const lens =
+    collection.fullLens?.id ??
+    (await lensRegistry(client).ensureWholeLens({ meshCollection: collection.id }));
   const layer = (await client.mutate({
     mutation: CreateMeshLayerDocument,
     // SMOOTH: designed surfaces are polished, welded meshes — and single-cell
     // collections shade smooth without seams. The card can still flip to flat.
-    variables: { input: { scene: sceneId, meshCollection: collection.id, shading: MeshShading.Smooth } },
+    variables: { input: { scene: sceneId, lens, shading: MeshShading.Smooth } },
     // The same refetch `AddLayerForm` uses: the scene store reconciles the
     // new MeshLayer and `FabriksCollectionLayer` streams it in. (`MikroClient`
     // narrows Apollo's options type; the refetch is Apollo's own.)

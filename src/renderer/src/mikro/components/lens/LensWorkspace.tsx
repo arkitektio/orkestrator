@@ -77,34 +77,15 @@ export const LensWorkspace = ({
     [setSearchParams],
   );
 
-  const isArray = lens.__typename === "ArrayLens";
-  const listed = isArray ? lens.scenes : lens.defaultScene ? [lens.defaultScene] : [];
+  // Every scene with a layer drawing this lens or a selection within it, for
+  // every kind of lens: the server derives it from the coordinate graph.
+  const scenes = lens.scenes;
   // Only a scene this page actually lists: a stale link must fall back to the
   // nomination rather than open a scene of something else under this title.
   const requested = searchParams.get(SCENE_PARAM);
-  const listedSceneId = listed.find((scene) => scene.id === requested)?.id;
+  const selectedSceneId = scenes.find((scene) => scene.id === requested)?.id;
   const defaultSceneId = lens.defaultScene?.id;
   const sliced = !isWholeLens(lens);
-
-  // A non-array lens cannot list its scenes, so a link naming one is checked
-  // against the scene itself: it counts when one of its layers draws this
-  // lens. Same query the viewport runs below, so the answer is a cache read by
-  // the time the scene mounts. Until it answers the link is taken at its word.
-  const linked = !isArray && requested && !listedSceneId ? requested : undefined;
-  const { data: linkedData } = useGetSceneQuery({
-    variables: { id: linked as string },
-    skip: !linked,
-    errorPolicy: "all",
-  });
-  const linkedScene = linkedData?.scene;
-  const linkedRefused =
-    !!linkedScene &&
-    !linkedScene.layers.some((layer) => "lens" in layer && layer.lens.id === lens.id);
-  const selectedSceneId = listedSceneId ?? (linkedRefused ? undefined : linked);
-  const scenes =
-    linkedScene && !linkedRefused
-      ? [...listed, { id: linkedScene.id, name: linkedScene.name }]
-      : listed;
 
   // The nominated scene is the one to land in — it is a choice someone made, and
   // it is also where the thumbnail comes from, so opening anything else would

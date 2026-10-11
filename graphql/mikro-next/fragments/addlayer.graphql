@@ -97,18 +97,11 @@ fragment AddLayerCandidate on Resident {
     # Aliased because it is nullable here and non-null on every collection arm,
     # and one selection set may not carry both under one name.
     #
-    # Its axes carry their TYPES because a lens no longer says which axis is x,
-    # y, z, intensity, vector or phasor (`renderAxes` moved to the layer, and no
-    # layer exists yet). `candidateRenderAxes` (`forms/addLayer/candidates.ts`)
-    # reads them off the types for the picker's defaults; what the server will
-    # actually draw stays `AddLayerLensCapabilities`' answer.
+    # Id only: which axis is x, y, z, intensity, vector or phasor is the
+    # server's `suggestedRenderAxes`, which rides on the capability answer
+    # (`AddLayerLensCapabilities`) rather than here.
     lensSpace: coordinateSystem {
       id
-      axes {
-        name
-        type
-        order
-      }
     }
     # The crop edge from this lens's space back into its dataset's grid — the
     # child edge the tree shows for a sliced lens, tagged here as a derivation
@@ -120,8 +113,13 @@ fragment AddLayerCandidate on Resident {
       ...DatasetLineage
     }
   }
+  # The four container arms carry their whole lens: a layer is created from a
+  # LENS, so a row whose "Selection" is the whole thing sends this id.
   ... on TableDataset {
     ...ListTableDataset
+    fullLens {
+      id
+    }
     columns {
       ...TableDatasetColumn
     }
@@ -138,6 +136,9 @@ fragment AddLayerCandidate on Resident {
     id
     version
     specVersion
+    fullLens {
+      id
+    }
     coordinateSystem {
       id
     }
@@ -149,6 +150,9 @@ fragment AddLayerCandidate on Resident {
     id
     name
     description
+    fullLens {
+      id
+    }
     coordinateSystem {
       id
     }
@@ -175,6 +179,9 @@ fragment AddLayerCandidate on Resident {
     id
     version
     specVersion
+    fullLens {
+      id
+    }
     coordinateSystem {
       id
     }
@@ -194,11 +201,16 @@ fragment AddLayerCandidate on Resident {
 }
 
 # The source of a layer already staged in the scene, as far as relating a
-# candidate to it cares: which container, and which space.
+# candidate to it cares: which container, which space, and which part of it.
+# An intensity layer's lens is ONE channel of its dataset; the slices say which,
+# and that is how the picker knows a channel is already shown.
 fragment AddLayerStagedLens on ArrayLens {
   id
   coordinateSystem {
     id
+  }
+  slices {
+    ...DimSlice
   }
   dataset {
     id
@@ -226,7 +238,6 @@ fragment AddLayerStagedLayer on Layer {
     lens {
       ...AddLayerStagedLens
     }
-    intensityIndex
     colormap
     climMin
     climMax

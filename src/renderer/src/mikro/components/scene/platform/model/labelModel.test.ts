@@ -30,18 +30,20 @@ const labelLayer = (over: Partial<LabelLayerFragment> = {}): LabelLayerFragment 
     lens: {
       __typename: "ArrayLens",
       id: "lens-1",
-      shape: [3, 20, 512, 512],
+      // The mask is channel 2 of its dataset: the lens pins it.
+      shape: [1, 20, 512, 512],
       axisNames: ["c", "z", "y", "x"],
-      slices: [],
+      slices: [{ __typename: "Slice", axis: "c", start: 2, stop: 3, step: 1 }],
       dataset: {
+        id: "dataset-1",
         name: "nuclei mask",
+        axisNames: ["c", "z", "y", "x"],
+        shape: [3, 20, 512, 512],
         dataArrays: [{ store: { id: "s0", dtype: "uint16" } }],
       },
     },
     labelRender: {
       __typename: "LabelRender",
-      intensityAxis: "c",
-      intensityIndex: 2,
       seed: 7,
       background: 0,
       opacity: 1,
@@ -105,24 +107,30 @@ describe("normalizeLabelLayer", () => {
     expect(state.phasorAxis).toBeNull();
   });
 
-  it("pins intensityIndex as a collapsed slice on that axis instead", () => {
+  it("keeps the lens' channel pin as a collapsed slice on that axis instead", () => {
+    // The one layer kind whose channel slice stays IN the lens: with no
+    // intensity axis the channel is an ordinary collapsed dim, and the slice is
+    // what pins it for the fetch.
     const state = normalizeLabelLayer(labelLayer(), null, SCENE);
-    const slice = state.lens.slices.find((s) => s.axis === "c");
-    expect(slice).toMatchObject({ axis: "c", start: 2, stop: 3 });
-  });
-
-  it("replaces rather than duplicates an existing slice on that axis", () => {
-    const layer = labelLayer();
-    const withSlice = labelLayer({
-      lens: {
-        ...layer.lens,
-        slices: [{ __typename: "Slice", axis: "c", start: 0, stop: 1, step: null }],
-      },
-    } as Partial<LabelLayerFragment>);
-    const state = normalizeLabelLayer(withSlice, null, SCENE);
     const onC = state.lens.slices.filter((s) => s.axis === "c");
     expect(onC).toHaveLength(1);
-    expect(onC[0]).toMatchObject({ start: 2, stop: 3 });
+    expect(onC[0]).toMatchObject({ axis: "c", start: 2, stop: 3 });
+    expect(state.channelPin).toBeNull();
+  });
+
+  it("drops a slice that selects a whole axis, so one mask has one spelling", () => {
+    const layer = labelLayer();
+    const padded = labelLayer({
+      lens: {
+        ...layer.lens,
+        slices: [
+          ...layer.lens.slices,
+          { __typename: "Slice", axis: "z", start: 0, stop: 20, step: 1 },
+        ],
+      },
+    } as Partial<LabelLayerFragment>);
+    const state = normalizeLabelLayer(padded, null, SCENE);
+    expect(state.lens.slices.map((s) => s.axis)).toEqual(["c"]);
   });
 
   it("survives a layer with no labelRender at all", () => {
@@ -135,7 +143,8 @@ describe("normalizeLabelLayer", () => {
     );
     expect(state.__typename).toBe("LabelLayer");
     expect(state.channels).toEqual([]);
-    expect(state.lens.slices).toEqual([]);
+    // The channel pin is the lens', not the render's: it is there either way.
+    expect(state.lens.slices).toMatchObject([{ axis: "c", start: 2, stop: 3 }]);
   });
 
   it("carries the default volume LOD it was planned with", () => {

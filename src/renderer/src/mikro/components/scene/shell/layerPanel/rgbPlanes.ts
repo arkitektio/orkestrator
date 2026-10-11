@@ -1,6 +1,5 @@
 import {
   evaluatePin,
-  type AnchorLayer,
   type LayerCoverage,
 } from "../../features/annotations/anchorVisibility";
 
@@ -9,7 +8,7 @@ import {
  * each — the data half of `RgbChannelEditor`, kept pure so the matching rules
  * are testable without a renderer.
  *
- * An RGB layer's `redIndex`/`greenIndex`/`blueIndex` are indices along ONE
+ * An RGB layer's three planes are indices along ONE
  * axis (`intensityAxis`) of the dataset's intrinsic grid. The lens already
  * ships a name and a distribution for each of those indices —
  * `SceneLens.activeAnchors` carries one anchor per coordinate, with
@@ -124,14 +123,23 @@ export const anchorForPlane = (
   return null;
 };
 
-/** Every plane along `axis`, in index order, named where an anchor names it. */
+/**
+ * Every plane the layer can map along `axis`, in index order, named where an
+ * anchor names it.
+ *
+ * `positions` are the dataset indices the layer's lens KEEPS along the axis
+ * (`keptPositions`): a plane is saved as a crop of that lens, so one the lens
+ * cuts away cannot be picked. Omitted, every index of the axis is offered.
+ */
 export const resolvePlanes = (
   lens: PlaneLens,
   coverage: LayerCoverage,
   axis: string | null,
+  positions?: readonly number[],
 ): Plane[] => {
-  const extent = intensityExtent(lens, axis);
-  return Array.from({ length: extent }, (_, index) => describePlane(lens, coverage, axis, index));
+  const indices =
+    positions ?? Array.from({ length: intensityExtent(lens, axis) }, (_, index) => index);
+  return indices.map((index) => describePlane(lens, coverage, axis, index));
 };
 
 /** One plane, for an index that may sit outside the known extent (a stored
@@ -187,26 +195,4 @@ export const rangeUnion = (planes: readonly Plane[]): [number, number] | null =>
     if (max > hi) hi = max;
   }
   return hi > lo ? [lo, hi] : null;
-};
-
-/** Axes a lens could carry its colour components along: every dataset axis
- *  that is not already spent on geometry. One candidate means no choice to
- *  offer, and the picker stays out of the card. */
-export const intensityAxisCandidates = (
-  lens: PlaneLens,
-  layer: Pick<AnchorLayer, "phasorAxis"> & {
-    renderAxes?: { x?: string | null; y?: string | null; z?: string | null } | null;
-  },
-): string[] => {
-  const spent = new Set(
-    [
-      layer.renderAxes?.x,
-      layer.renderAxes?.y,
-      layer.renderAxes?.z,
-      layer.phasorAxis,
-    ].filter((axis): axis is string => Boolean(axis)),
-  );
-  return (lens.dataset.axisNames ?? []).filter(
-    (axis) => !spent.has(axis) && intensityExtent(lens, axis) > 1,
-  );
 };

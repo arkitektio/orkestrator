@@ -40,10 +40,21 @@ const LENS = {
   axisNames: ["c", "m", "z", "y", "x"],
   slices: [],
   dataset: {
+    id: "dataset-1",
     name: "acquisition",
+    axisNames: ["c", "m", "z", "y", "x"],
+    shape: [3, 64, 20, 512, 512],
     dataArrays: [{ store: { id: "s0", dtype: "uint16" } }],
   },
 };
+
+/** One channel of `LENS`: the lens an intensity layer, or one rgb plane, draws. */
+const channelLens = (index: number) => ({
+  ...LENS,
+  id: `lens-c${index}`,
+  shape: [1, 64, 20, 512, 512],
+  slices: [{ __typename: "Slice", axis: "c", start: index, stop: index + 1, step: 1 }],
+});
 
 const HEAD = {
   id: "layer-1",
@@ -65,8 +76,8 @@ const intensityLayer = (over: Partial<IntensityLayerFragment> = {}) =>
     ...HEAD,
     __typename: "IntensityLayer",
     kind: "INTENSITY",
-    intensityAxis: "c",
-    intensityIndex: 2,
+    // Which channel is drawn is the lens' selection: channel 2 of the dataset.
+    lens: channelLens(2),
     intensityColormap: ColorMap.Viridis,
     color: null,
     climMin: 100,
@@ -81,10 +92,9 @@ const rgbLayer = (over: Partial<RgbLayerFragment> = {}) =>
     ...HEAD,
     __typename: "RgbLayer",
     kind: "RGB",
-    intensityAxis: "c",
-    redIndex: 0,
-    greenIndex: 1,
-    blueIndex: 2,
+    redLens: channelLens(0),
+    greenLens: channelLens(1),
+    blueLens: channelLens(2),
     climMin: 10,
     climMax: 900,
     ...over,
@@ -98,8 +108,6 @@ const phasorLayer = (over: Partial<PhasorLayerFragment> = {}) =>
     phasorRender: {
       __typename: "PhasorRender",
       phasorAxis: "m",
-      intensityAxis: null,
-      intensityIndex: 0,
       harmonic: 2,
       transfer: {
         colormap: ColorMap.Rainbow,
@@ -154,10 +162,35 @@ describe("normalizeIntensityLayer", () => {
     const [only] = state.channels;
     expect(only.intensityIndex).toBe(2);
     expect(only.intensityAxis).toBe("c");
+    expect(only.lens).toBe("lens-c2");
     expect(only.transfer.climMin).toBe(100);
     expect(only.transfer.climMax).toBe(4000);
     expect(only.transfer.gamma).toBe(0.8);
     expect(only.transfer.colormap).toBe(ColorMap.Viridis);
+  });
+
+  it("reads the channel off the lens and hands the engine the lens without it", () => {
+    // The channel slice is what would split one dataset into a pool per
+    // channel (`sliceSignature` serializes `lens.slices`), so it leaves the
+    // lens and travels as an index.
+    const state = normalizeIntensityLayer(intensityLayer(), null, SCENE);
+    expect(state.channelPin).toBe(2);
+    expect(state.lens.slices).toEqual([]);
+    expect(state.lens.id).toBe("lens-c2");
+    expect(state.sourceSlices).toMatchObject([{ axis: "c", start: 2, stop: 3 }]);
+    expect(state.intensityAxis).toBe("c");
+  });
+
+  it("draws channel 0 of a lens that pins no channel", () => {
+    const state = normalizeIntensityLayer(
+      intensityLayer({ lens: LENS } as never),
+      null,
+      SCENE,
+    );
+    expect(state.channelPin).toBeNull();
+    expect(state.channels[0].intensityIndex).toBe(0);
+    // Nothing to take out: the lens keeps its identity.
+    expect(state.lens).toBe(LENS);
   });
 
   it("folds the same values onto the flat single-channel fields", () => {
@@ -233,6 +266,7 @@ describe("normalizeRgbLayer", () => {
   it("synthesizes three basis-tinted planes over ONE window", () => {
     const state = normalizeRgbLayer(rgbLayer(), null, SCENE);
     expect(state.channels.map((c) => c.intensityIndex)).toEqual([0, 1, 2]);
+    expect(state.channels.map((c) => c.lens)).toEqual(["lens-c0", "lens-c1", "lens-c2"]);
     expect(state.channels.map((c) => c.transfer.color)).toEqual([
       [255, 0, 0],
       [0, 255, 0],

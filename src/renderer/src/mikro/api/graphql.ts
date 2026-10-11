@@ -470,7 +470,7 @@ export type AnnotationFilter = {
   id?: InputMaybe<Scalars['UUID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Filter to annotations whose intrinsic bounding box overlaps this box (GiST-backed). Only meaningful within one frame: pass `collection` or `coordinateSystem` alongside. A box of lower rank is zero-filled on the missing coordinates */
+  /** Filter to annotations whose intrinsic bounding box overlaps this box (GiST-backed). Only meaningful within one frame: pass `collection` or `coordinateSystem` alongside, and bound every axis of that frame -- a box of lower rank is refused rather than zero-filled on the missing coordinates */
   intersects?: InputMaybe<BoundingBoxInput>;
   kind?: InputMaybe<AnnotationKindChoices>;
   name?: InputMaybe<StrFilterLookup>;
@@ -598,7 +598,7 @@ export type AnnotationLens = Lens & {
   createdThroughBy?: Maybe<User>;
   /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
   creator?: Maybe<User>;
-  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's whole lens' while it has none. A container's nomination is its whole lens', so a whole lens answers for the container. A nomination, not a derivation */
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
@@ -607,7 +607,7 @@ export type AnnotationLens = Lens & {
   kind: LensKind;
   /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
   name?: Maybe<Scalars['String']['output']>;
-  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
@@ -674,7 +674,7 @@ export type ArrayDataset = {
   createdThroughBy?: Maybe<User>;
   /** The multiscale data arrays belonging to this dataset */
   dataArrays: Array<DataArray>;
-  /** The scene to open for this dataset, and where `latestSnapshot` comes from. A nomination, not a derivation: it says nothing about where the data sits and is **not** the answer to which scenes show this dataset -- that is `scenes`, which the coordinate graph answers and which no stored column could contradict. Null until something sets it, with `setDefaultScene` or `defaultFor` on either scene-creating mutation */
+  /** The scene to open for this dataset, and where `latestSnapshot` comes from: the nomination its whole lens holds (`fullLens.defaultScene`), so `setDefaultScene` here and `setLensDefaultScene` on that lens are one write. A nomination, not a derivation: it says nothing about where the data sits and is **not** the answer to which scenes show this dataset -- that is `scenes`, which the coordinate graph answers and which no stored column could contradict. Null until something sets it, with `setDefaultScene`, `setLensDefaultScene`, or `defaultFor` on either scene-creating mutation */
   defaultScene?: Maybe<Scene>;
   /** The datasets computed from this one -- the other end of `derivedFrom`, and the way to ask what a source produced: the deconvolutions, segmentations and projections that named a space of this dataset as their parent. Derived from the same edges, never a stored back-reference that could disagree with them. Every child, not just those this dataset places: a fusion that named this source second is listed here, and so is a child whose derivation is UNMAPPABLE -- it came from here even though its geometry did not survive. The maps themselves are on each child's own `derivedFrom` */
   derivedDatasets: Array<ArrayDataset>;
@@ -798,7 +798,7 @@ export type ArrayDatasetFilter = {
   folders?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter to datasets whose intrinsic coordinate system carries every one of these axis types, e.g. [TIME, CHANNEL]. The raw form of `spec`: it asks whether an axis is declared at all, where a spec counts it only when it has more than one position */
   hasAxisTypes?: InputMaybe<Array<AxisType>>;
-  /** Filter by whether the dataset nominates a scene to open. False finds the ones with no thumbnail -- what `backfill_default_scenes` could not seed, and the work remaining before that command can be deleted */
+  /** Filter by whether the dataset nominates a scene to open (through its whole lens). False finds the ones with no thumbnail */
   hasDefaultScene?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter by whether the dataset has an edge into a space with real units. False finds the data that is still only pixels, with no pixel size or stage pose recorded. Unrelated to a phasor histogram's `calibrated`, which is about reference correction */
   hasPhysicalSpace?: InputMaybe<Scalars['Boolean']['input']>;
@@ -831,7 +831,7 @@ export type ArrayDatasetOrder =
   |  { createdAt?: never; id: Ordering; name?: never; }
   |  { createdAt?: never; id?: never; name: Ordering; };
 
-/** What a dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation. Specs stack: a 3D timelapse is VOLUME, TIMESERIES and MULTICHANNEL at once. Exactly one spatial member (SCALAR/PROFILE/IMAGE/VOLUME/HYPERVOLUME) ever holds; the others are modifiers: one per non-spatial axis type the dataset has more than one position along, and TRACE for a dataset that is a curve along one measured axis. */
+/** What a dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation; an array lens answers the same vocabulary over the shape its slices cut out, so one plane of a stack is an IMAGE and one row of an image a TRACE. Specs stack: a 3D timelapse is VOLUME, TIMESERIES and MULTICHANNEL at once. Exactly one spatial member (SCALAR/PROFILE/IMAGE/VOLUME/HYPERVOLUME) ever holds; the others are modifiers: one per non-spatial axis type the dataset has more than one position along, and TRACE for a dataset that is a curve along one measured axis. */
 export enum ArrayDatasetSpec {
   /** Carries a COORDINATE axis of more than one component: the values are absolute positions -- a lookup map, the field of a FIELD edge. A scalar-valued array declares no such axis and is not one. */
   CoordinateField = 'COORDINATE_FIELD',
@@ -855,7 +855,7 @@ export enum ArrayDatasetSpec {
   Spectral = 'SPECTRAL',
   /** Carries a TIME axis of more than one frame -- a timelapse. A single-frame time axis does not count. */
   Timeseries = 'TIMESERIES',
-  /** A curve: exactly one measured axis (SPACE, TIME, MICROTIME or SPECTRUM) with more than one position, and beside it at most one enumerating axis (CHANNEL or INDEX), one line per position. A line profile, a time trace, a decay, a spectrum -- what a chart draws whole as a TRACE layer. An image is not one, though a row of it is: that is a lens, and a spec describes the whole dataset. Says nothing about placement: whether a given chart can draw it depends on what is registered. */
+  /** A curve: exactly one measured axis (SPACE, TIME, MICROTIME or SPECTRUM) with more than one position, and beside it at most one enumerating axis (CHANNEL or INDEX), one line per position. A line profile, a time trace, a decay, a spectrum -- what a chart draws whole as a TRACE layer. An image is not one, though a row of it is: that row is a lens, and the lens' own spec says so. Says nothing about placement: whether a given chart can draw it depends on what is registered. */
   Trace = 'TRACE',
   /** Three spatial axes with more than one position each: a stack. A z axis of a single plane does not make one -- that dataset is an IMAGE. */
   Volume = 'VOLUME'
@@ -936,7 +936,7 @@ export type ArrayLens = Lens & {
   /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
   creator?: Maybe<User>;
   dataset: ArrayDataset;
-  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's whole lens' while it has none. A container's nomination is its whole lens', so a whole lens answers for the container. A nomination, not a derivation */
   defaultScene?: Maybe<Scene>;
   /** The datasets computed from this lens' selection: the direct other end of `derivedFrom`, which names a *lens* as a parent rather than a dataset. An unsliced lens reports what was derived from the whole intrinsic grid -- its space is that grid, so it can say nothing narrower. Like the forward field this reports every child, whether or not this lens is its primary parent and whether or not its geometry survived */
   derivedDatasets: Array<ArrayDataset>;
@@ -945,18 +945,20 @@ export type ArrayLens = Lens & {
   id: Scalars['ID']['output'];
   /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
   kind: LensKind;
-  /** The most recent picture of this lens' `defaultScene` -- the tile to put on this lens. A sliced lens that nominates a scene shows that one; one that nominates nothing, and every unsliced lens, shows the dataset's, so a crop nobody has staged yet still has a picture. Null when neither nominates a scene */
+  /** The most recent picture of this lens' `defaultScene` -- the tile to put on this lens. A lens that nominates a scene shows that one; a crop that nominates nothing shows its dataset's (its whole lens'), so a crop nobody has staged yet still has a picture. Null when neither nominates a scene */
   latestSnapshot?: Maybe<SceneSnapshot>;
   /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
   name?: Maybe<Scalars['String']['output']>;
   /** Everything needed to reduce one axis of this lens to a phasor: the bin count and width, the period the transform runs over, the laser rate, the instrument-response correction and the persisted distribution. Null when the lens has no MICROTIME or SPECTRUM axis. Derived -- none of it is stored on the lens, and a phasor render node references it rather than copying it, so two layers over one dataset cannot disagree about the instrument */
   phasor?: Maybe<PhasorContext>;
-  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
   /** The shape this lens' slices cut out of its dataset */
   shape: Array<Scalars['Int']['output']>;
   /** The slices, in the one normalized spelling: dataset axis order, explicit ints, a step always present. Empty for the whole lens */
   slices: Array<Slice>;
+  /** What this selection structurally is: its dataset's `spec` vocabulary, read over the shape its slices cut out. Materialized when the lens is made -- a lens and its dataset are immutable -- and what the `arraySpec` filter reads. An axis counts only when the lens keeps more than one position along it, so one plane of a [VOLUME, MULTICHANNEL] stack is [IMAGE, MULTICHANNEL], one channel of that is [IMAGE], and one row of an image is [PROFILE, TRACE]. The whole lens answers what its dataset does */
+  spec: Array<ArrayDatasetSpec>;
   /** What a layer over this lens would answer for `renderAxes`, before any layer exists: which of the lens' axes face screen x, y, z, time and intensity under the default convention. A preview for opening a viewer on a bare lens; once a layer exists, its own `renderAxes` is the one to follow -- the mapping is the view's, not the selection's */
   suggestedRenderAxes: RenderAxes;
   /** The edge from this lens' space back into its dataset's intrinsic pixel space. A crop is a translation of the slice starts; a stepped lens also rescales. Without this edge an ROI drawn on a cropped lens has no defined path back to its dataset. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record */
@@ -1067,19 +1069,6 @@ export type AxisInput = {
   longName?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   type: AxisType;
-};
-
-/** One position along one named axis: which slice of a matrix a colouring reads */
-export type AxisPosition = {
-  __typename?: 'AxisPosition';
-  axis: Scalars['String']['output'];
-  value: Scalars['Int']['output'];
-};
-
-/** One position along one named axis: which slice of a matrix a colouring reads. The same pair a coordinate anchor carries -- it *names* a position rather than enumerating them, which is what lets a matrix with 19 059 features be selected from at all */
-export type AxisPositionInput = {
-  axis: Scalars['String']['input'];
-  value: Scalars['Int']['input'];
 };
 
 /** The semantic kind of an axis. Axes are declared in the order the data has them -- for an array, its store's dimension order; for a table, its coordinate columns as declared -- and no ordering by type is required of them: the time, channel and phasor axes are found by type rather than by position. What the render axes are derived from is the relative order of the SPACE axes, the last being x. */
@@ -1420,11 +1409,10 @@ export type ChannelLabel = {
 /** A single intensity channel of the layer's lens, with its own transfer function */
 export type ChannelSourceNode = LayerRenderNode & {
   __typename?: 'ChannelSourceNode';
-  intensityAxis?: Maybe<Scalars['String']['output']>;
-  intensityIndex: Scalars['Int']['output'];
   kind: Scalars['String']['output'];
   /** An optional human-readable label for the node */
   label?: Maybe<Scalars['String']['output']>;
+  lens?: Maybe<Scalars['ID']['output']>;
   transfer: TransferFunction;
   visible: Scalars['Boolean']['output'];
 };
@@ -1905,7 +1893,7 @@ export type CoordinateSystem = {
   provenanceEntries: Array<ProvenanceEntry>;
   /** Every top-level edge landing in this space -- the claims that place something here. They belong to the space, so every scene composing over this system sees the same list, each entry unique for its data-tree, and `layers.pathToWorld` searches exactly these plus the datasets' own facts. On a shared world these are the registrations a client authored; on a container's own grid they are the lens crops and derived children that land in it. Composing the matrices stays the client's job. Not filtered by kind, so a table's own system also lists the FIELD edge of any mask keying it -- that one places nothing (a FIELD has no inverse, so no path walks it backwards); it is a dereference, and `attributePlans` is what reads it */
   registrations: Array<Transformation>;
-  /** The data living in this space. Empty for a pure reference frame -- a world, an atlas -- which is what a space with no residents *is*; there is no separate kind to consult. Several residents may share one space: a dataset's own pyramid levels and unsliced lenses live in its grid, and a hundred tiles acquired on one stage can be registered into one stage frame */
+  /** The data living in this space. Empty for a pure reference frame -- a world, an atlas -- which is what a space with no residents *is*; there is no separate kind to consult. Several residents may share one space: a dataset's own pyramid levels live in its grid, and a hundred tiles acquired on one stage can be registered into one stage frame. A container appears once: its whole lens is the container's handle, not a second resident, so only the lenses that select something are listed beside it */
   residents: Array<Resident>;
   /** The scenes that compose over this system as their world. A SHARED space lists every scene sharing it and outlives each of them: a scene adopts a space, never owns it, and deleting a scene never deletes the space. The inverse of `Scene.worldCoordinateSystem` */
   scenes: Array<Scene>;
@@ -2017,7 +2005,6 @@ export type CreateAnimationInput = {
 
 /** Input for drawing an annotation collection's marks in a chart. Name an existing collection that is registered into the chart's world, or omit it to have a new drawing surface made for the chart: a collection whose space has the chart's axis and a VALUE axis, registered into the chart's world along the chart's axis. Marks are then drawn into it with `createAnnotation(collection:)`, at a position along the axis and a height along `value` */
 export type CreateAnnotationChartLayerInput = {
-  annotationCollection?: InputMaybe<Scalars['ID']['input']>;
   chart: Scalars['ID']['input'];
   lens?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
@@ -2053,9 +2040,8 @@ export type CreateAnnotationInput = {
 
 /** Create a layer that renders an annotation collection's drawn shapes in a scene. The collection's own coordinate system is the layer's space, so it must already have a path to the scene's world */
 export type CreateAnnotationLayerInput = {
-  annotationCollection?: InputMaybe<Scalars['ID']['input']>;
   blending?: InputMaybe<Blending>;
-  lens?: InputMaybe<Scalars['ID']['input']>;
+  lens: Scalars['ID']['input'];
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   scene: Scalars['ID']['input'];
@@ -2138,8 +2124,6 @@ export type CreateIntensityLayerInput = {
   color?: InputMaybe<Array<Scalars['Int']['input']>>;
   colormap?: InputMaybe<ColorMap>;
   gamma?: InputMaybe<Scalars['Float']['input']>;
-  intensityAxis?: InputMaybe<Scalars['String']['input']>;
-  intensityIndex?: InputMaybe<Scalars['Int']['input']>;
   lens: Scalars['ID']['input'];
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
@@ -2157,7 +2141,7 @@ export type CreateLabelLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-/** Input type for creating an image from an array-like object */
+/** Input for creating an image layer: an array lens drawn through a composable render graph */
 export type CreateLayerInput = {
   blending?: InputMaybe<Blending>;
   lens: Scalars['ID']['input'];
@@ -2202,10 +2186,9 @@ export type CreateMeshLayerInput = {
   blending?: InputMaybe<Blending>;
   colorBys?: InputMaybe<Array<MeshColorByInput>>;
   filterBys?: InputMaybe<Array<MeshFilterByInput>>;
-  lens?: InputMaybe<Scalars['ID']['input']>;
+  lens: Scalars['ID']['input'];
   materialColor?: InputMaybe<Array<Scalars['Int']['input']>>;
   maxLevel?: InputMaybe<Scalars['Int']['input']>;
-  meshCollection?: InputMaybe<Scalars['ID']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   scene: Scalars['ID']['input'];
@@ -2244,11 +2227,10 @@ export type CreateNetworkLayerInput = {
   directed?: InputMaybe<Scalars['Boolean']['input']>;
   edgeWidthColumn?: InputMaybe<Scalars['String']['input']>;
   filterBys?: InputMaybe<Array<NetworkFilterByInput>>;
-  lens?: InputMaybe<Scalars['ID']['input']>;
+  lens: Scalars['ID']['input'];
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   materialColor?: InputMaybe<Array<Scalars['Int']['input']>>;
   maxLevel?: InputMaybe<Scalars['Int']['input']>;
-  networkCollection?: InputMaybe<Scalars['ID']['input']>;
   nodeSizeColumn?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
@@ -2312,8 +2294,6 @@ export type CreatePhasorHistogramInput = {
 export type CreatePhasorLayerInput = {
   blending?: InputMaybe<Blending>;
   harmonic?: InputMaybe<Scalars['Int']['input']>;
-  intensityAxis?: InputMaybe<Scalars['String']['input']>;
-  intensityIndex?: InputMaybe<Scalars['Int']['input']>;
   lens: Scalars['ID']['input'];
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
@@ -2329,30 +2309,27 @@ export type CreatePointLayerInput = {
   activeFilterBys?: InputMaybe<Array<Scalars['Int']['input']>>;
   blending?: InputMaybe<Blending>;
   colorBys?: InputMaybe<Array<LabelColorByInput>>;
-  colorColumn?: InputMaybe<Scalars['String']['input']>;
   colormap?: InputMaybe<ColorMap>;
   filterBys?: InputMaybe<Array<LabelFilterByInput>>;
-  lens?: InputMaybe<Scalars['ID']['input']>;
+  lens: Scalars['ID']['input'];
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   pointSize?: InputMaybe<Scalars['Float']['input']>;
   scene: Scalars['ID']['input'];
   sizeColumn?: InputMaybe<Scalars['String']['input']>;
-  tableDataset?: InputMaybe<Scalars['ID']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-/** Create a layer that composites three channels of a lens as red, green and blue */
+/** Create a layer that composites three single-channel lenses, each a crop of `lens`, as the red, green and blue components of one picture */
 export type CreateRgbLayerInput = {
-  blueIndex?: InputMaybe<Scalars['Int']['input']>;
+  blueLens: Scalars['ID']['input'];
   climMax?: InputMaybe<Scalars['Float']['input']>;
   climMin?: InputMaybe<Scalars['Float']['input']>;
-  greenIndex?: InputMaybe<Scalars['Int']['input']>;
-  intensityAxis?: InputMaybe<Scalars['String']['input']>;
+  greenLens: Scalars['ID']['input'];
   lens: Scalars['ID']['input'];
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
-  redIndex?: InputMaybe<Scalars['Int']['input']>;
+  redLens: Scalars['ID']['input'];
   scene: Scalars['ID']['input'];
   visible?: InputMaybe<Scalars['Boolean']['input']>;
   whiteBalance?: InputMaybe<Array<Scalars['Float']['input']>>;
@@ -2391,14 +2368,13 @@ export type CreateSceneInput = {
 export type CreateSeriesChartLayerInput = {
   chart: Scalars['ID']['input'];
   color?: InputMaybe<Array<Scalars['Float']['input']>>;
-  lens?: InputMaybe<Scalars['ID']['input']>;
+  lens: Scalars['ID']['input'];
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   mark?: InputMaybe<ChartMark>;
   markerSize?: InputMaybe<Scalars['Float']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
-  tableDataset?: InputMaybe<Scalars['ID']['input']>;
   valueColumn?: InputMaybe<Scalars['String']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -2451,8 +2427,7 @@ export type CreateTableLensInput = {
 export type CreateTraceChartLayerInput = {
   chart: Scalars['ID']['input'];
   color?: InputMaybe<Array<Scalars['Float']['input']>>;
-  dataset?: InputMaybe<Scalars['ID']['input']>;
-  lens?: InputMaybe<Scalars['ID']['input']>;
+  lens: Scalars['ID']['input'];
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   mark?: InputMaybe<ChartMark>;
   markerSize?: InputMaybe<Scalars['Float']['input']>;
@@ -2467,12 +2442,11 @@ export type CreateTrackLayerInput = {
   blending?: InputMaybe<Blending>;
   colorByColumn?: InputMaybe<Scalars['String']['input']>;
   colormap?: InputMaybe<ColorMap>;
-  lens?: InputMaybe<Scalars['ID']['input']>;
+  lens: Scalars['ID']['input'];
   lineWidth?: InputMaybe<Scalars['Float']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
   scene: Scalars['ID']['input'];
-  tableDataset?: InputMaybe<Scalars['ID']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -2512,8 +2486,6 @@ export type CreateVolumeLayerInput = {
   color?: InputMaybe<Array<Scalars['Int']['input']>>;
   colormap?: InputMaybe<ColorMap>;
   gamma?: InputMaybe<Scalars['Float']['input']>;
-  intensityAxis?: InputMaybe<Scalars['String']['input']>;
-  intensityIndex?: InputMaybe<Scalars['Int']['input']>;
   lens: Scalars['ID']['input'];
   mode?: InputMaybe<ProjectionMode>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
@@ -2620,12 +2592,6 @@ export type DeleteCoordinateSystemInput = {
   id: Scalars['ID']['input'];
 };
 
-/** Input for deleting a data array by ID */
-export type DeleteDataArrayInput = {
-  /** The ID of the data array to delete */
-  id: Scalars['ID']['input'];
-};
-
 /** Input for deleting a file by ID */
 export type DeleteFileInput = {
   /** The ID of the file to delete */
@@ -2709,9 +2675,9 @@ export enum DerivationSourceKind {
   AnnotationCollection = 'ANNOTATION_COLLECTION',
   /** A coordinate system directly, when the source is a space rather than a container -- a physical space, or a world. */
   CoordinateSystem = 'COORDINATE_SYSTEM',
-  /** An array dataset as a whole, through its intrinsic pixel grid. Use it when the source is the entire image and there is no lens worth minting. */
+  /** An array dataset as a whole: its whole lens, through its intrinsic pixel grid. The same source as LENS on that lens, and refused beside it. */
   Dataset = 'DATASET',
-  /** A selection over an array dataset, and the preferred way to name one: a lens' own edge back to its dataset already carries the crop, so pointing at it gets the rest of the chain for free. */
+  /** A lens of any kind but a network or sparse lens, and the one path every other arm resolves to: a container arm names the container's whole lens. A crop's own edge back to its dataset already carries the crop, so pointing at it gets the rest of the chain for free. */
   Lens = 'LENS',
   /** A mesh collection, through its vertex coordinate system. */
   MeshCollection = 'MESH_COLLECTION',
@@ -2725,11 +2691,11 @@ export type DerivedFromInput = {
   annotationCollection?: InputMaybe<Scalars['ID']['input']>;
   /** (COORDINATE_SYSTEM) The space this data was computed from, when the source is a space rather than a container */
   coordinateSystem?: InputMaybe<Scalars['ID']['input']>;
-  /** (DATASET) The array dataset this data was computed from, through its whole pixel grid */
+  /** (DATASET) The array dataset this data was computed from: its whole lens, through its whole pixel grid */
   dataset?: InputMaybe<Scalars['ID']['input']>;
   /** Which sort of thing the source is. It fixes which id field below is read; any other is rejected */
   kind: DerivationSourceKind;
-  /** (LENS) The lens this data was computed from */
+  /** (LENS) The lens this data was computed from, of any kind but a network or sparse lens -- those are derived, never derived from. Every container arm below is this arm on the container's whole lens */
   lens?: InputMaybe<Scalars['ID']['input']>;
   /** (MESH_COLLECTION) The mesh collection this data was computed from */
   meshCollection?: InputMaybe<Scalars['ID']['input']>;
@@ -3800,7 +3766,7 @@ export type IntFilterLookup = {
   startsWith?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/** One channel of a lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
+/** A single-channel lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. Which channel is drawn is the lens' selection, not a field here. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
 export type IntensityLayer = Layer & {
   __typename?: 'IntensityLayer';
   /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
@@ -3812,8 +3778,6 @@ export type IntensityLayer = Layer & {
   colormap: ColorMap;
   gamma?: Maybe<Scalars['Float']['output']>;
   id: Scalars['ID']['output'];
-  intensityAxis?: Maybe<Scalars['String']['output']>;
-  intensityIndex: Scalars['Int']['output'];
   kind: LayerKind;
   /** The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind */
   lens: ArrayLens;
@@ -3838,32 +3802,32 @@ export type IntensityLayer = Layer & {
 };
 
 
-/** One channel of a lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
+/** A single-channel lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. Which channel is drawn is the lens' selection, not a field here. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
 export type IntensityLayerAsAffineArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
   strict?: Scalars['Boolean']['input'];
 };
 
 
-/** One channel of a lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
+/** A single-channel lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. Which channel is drawn is the lens' selection, not a field here. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
 export type IntensityLayerPathToWorldArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** One channel of a lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
+/** A single-channel lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. Which channel is drawn is the lens' selection, not a field here. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
 export type IntensityLayerPlacementArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** One channel of a lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
+/** A single-channel lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. Which channel is drawn is the lens' selection, not a field here. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
 export type IntensityLayerPlacementInvarianceArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** One channel of a lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
+/** A single-channel lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. Which channel is drawn is the lens' selection, not a field here. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
 export type IntensityLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
@@ -3957,13 +3921,12 @@ export type KonnektionUploadGrant = {
 /** One entry of a label layer's colour picker: colour the mask's objects by a column of the table its FIELD edge keys into, instead of by hashing their id. The table is named, never the join: which of its columns holds row identity is already declared there, and the edge that makes the lookup possible is already in the coordinate graph */
 export type LabelColorBy = {
   __typename?: 'LabelColorBy';
-  at: Array<AxisPosition>;
   colormap?: Maybe<ColorMap>;
   column?: Maybe<Scalars['String']['output']>;
-  dataset?: Maybe<Scalars['ID']['output']>;
   joinPath: Array<JoinStep>;
   kind: ColorSourceKind;
   label?: Maybe<Scalars['String']['output']>;
+  lens?: Maybe<Scalars['ID']['output']>;
   max?: Maybe<Scalars['Float']['output']>;
   min?: Maybe<Scalars['Float']['output']>;
   table?: Maybe<Scalars['ID']['output']>;
@@ -3971,13 +3934,12 @@ export type LabelColorBy = {
 
 /** One entry of a label layer's colour picker: colour objects by a column of the table this mask's FIELD edge keys into, instead of by hashing their id */
 export type LabelColorByInput = {
-  at?: Array<AxisPositionInput>;
   colormap?: InputMaybe<ColorMap>;
   column?: InputMaybe<Scalars['String']['input']>;
-  dataset?: InputMaybe<Scalars['ID']['input']>;
   joinPath?: Array<JoinStepInput>;
   kind?: ColorSourceKind;
   label?: InputMaybe<Scalars['String']['input']>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   max?: InputMaybe<Scalars['Float']['input']>;
   min?: InputMaybe<Scalars['Float']['input']>;
   table?: InputMaybe<Scalars['ID']['input']>;
@@ -3986,13 +3948,12 @@ export type LabelColorByInput = {
 /** One entry of a label layer's filter picker: draw only the objects whose row in the keyed table satisfies this rule. The sibling of `LabelColorBy` over the same FIELD edge -- same table, same column check -- deciding whether an object is drawn rather than what colour it takes */
 export type LabelFilterBy = {
   __typename?: 'LabelFilterBy';
-  at: Array<AxisPosition>;
   column?: Maybe<Scalars['String']['output']>;
-  dataset?: Maybe<Scalars['ID']['output']>;
   exclude: Scalars['Boolean']['output'];
   joinPath: Array<JoinStep>;
   kind: ColorSourceKind;
   label?: Maybe<Scalars['String']['output']>;
+  lens?: Maybe<Scalars['ID']['output']>;
   max?: Maybe<Scalars['Float']['output']>;
   min?: Maybe<Scalars['Float']['output']>;
   table?: Maybe<Scalars['ID']['output']>;
@@ -4001,13 +3962,12 @@ export type LabelFilterBy = {
 
 /** One entry of a label layer's filter picker: draw only the objects whose row in a table this mask's FIELD edge keys into satisfies this rule. Which half applies follows from the column's declared role -- bounds for a measure column, an explicit value set for a categorical one */
 export type LabelFilterByInput = {
-  at?: Array<AxisPositionInput>;
   column?: InputMaybe<Scalars['String']['input']>;
-  dataset?: InputMaybe<Scalars['ID']['input']>;
   exclude?: Scalars['Boolean']['input'];
   joinPath?: Array<JoinStepInput>;
   kind?: ColorSourceKind;
   label?: InputMaybe<Scalars['String']['input']>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   max?: InputMaybe<Scalars['Float']['input']>;
   min?: InputMaybe<Scalars['Float']['input']>;
   table?: InputMaybe<Scalars['ID']['input']>;
@@ -4096,8 +4056,6 @@ export type LabelRender = {
   contour: Scalars['Boolean']['output'];
   contourWidth?: Maybe<Scalars['Float']['output']>;
   filterBys: Array<LabelFilterBy>;
-  intensityAxis?: Maybe<Scalars['String']['output']>;
-  intensityIndex: Scalars['Int']['output'];
   opacity?: Maybe<Scalars['Float']['output']>;
   seed: Scalars['Int']['output'];
   selected: Array<Scalars['Int']['output']>;
@@ -4121,10 +4079,6 @@ export type LabelRenderInput = {
   contourWidth?: InputMaybe<Scalars['Float']['input']>;
   /** The filters this layer offers, in the order a picker should show them -- 'large cells', 'not debris' -- each keeping or dropping objects by a column of a table this mask's FIELD edge keys into. Which half of the rule applies follows from the column's declared role: `min`/`max` bounds over a measure column, an explicit `values` set over a categorical one. Two entries may share a column, because two ranges over one measure are two different rules. Which of them are actually applied is `activeFilterBys`. Replaces the published filters wholesale, as `colorBys` does; pass `[]` to remove every rule and draw all objects */
   filterBys?: InputMaybe<Array<LabelFilterByInput>>;
-  /** The lens axis to index. Pass `null` to go back to reading the pixel value itself as the id (the common case for masks); omit to leave it alone */
-  intensityAxis?: InputMaybe<Scalars['String']['input']>;
-  /** The index along that axis to render (default 0) */
-  intensityIndex?: InputMaybe<Scalars['Int']['input']>;
   /** Opacity applied to the colored ids within the layer, from 0 to 1 (default 1.0) */
   opacity?: InputMaybe<Scalars['Float']['input']>;
   /** The seed of the hash mapping an id to its color. Changing it repaints every object, which is how two touching objects that happened to hash alike are separated (default 0) */
@@ -4215,7 +4169,7 @@ export type LaserElementInput = {
   serialNumber?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer and MeshLayer draw from a collection or a table rather than a lens. */
+/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer, MeshLayer and NetworkLayer draw through a lens over a collection or a table -- every layer, of every kind, draws through a lens of its source's kind. */
 export type Layer = {
   /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
@@ -4238,32 +4192,32 @@ export type Layer = {
 };
 
 
-/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer and MeshLayer draw from a collection or a table rather than a lens. */
+/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer, MeshLayer and NetworkLayer draw through a lens over a collection or a table -- every layer, of every kind, draws through a lens of its source's kind. */
 export type LayerAsAffineArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
   strict?: Scalars['Boolean']['input'];
 };
 
 
-/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer and MeshLayer draw from a collection or a table rather than a lens. */
+/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer, MeshLayer and NetworkLayer draw through a lens over a collection or a table -- every layer, of every kind, draws through a lens of its source's kind. */
 export type LayerPathToWorldArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer and MeshLayer draw from a collection or a table rather than a lens. */
+/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer, MeshLayer and NetworkLayer draw through a lens over a collection or a table -- every layer, of every kind, draws through a lens of its source's kind. */
 export type LayerPlacementArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer and MeshLayer draw from a collection or a table rather than a lens. */
+/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer, MeshLayer and NetworkLayer draw through a lens over a collection or a table -- every layer, of every kind, draws through a lens of its source's kind. */
 export type LayerPlacementInvarianceArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer and MeshLayer draw from a collection or a table rather than a lens. */
+/** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer, MeshLayer and NetworkLayer draw through a lens over a collection or a table -- every layer, of every kind, draws through a lens of its source's kind. */
 export type LayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
@@ -4335,15 +4289,14 @@ export enum LayerKindChoices {
   Vector = 'VECTOR'
 }
 
-/** A node in a layer's internal render graph. A 'channel' node carries an intensity source and transfer function; a 'phasor' node reduces an axis to a phasor and colors the pixel by it; a 'blend' node composites its children; a 'projection' node projects theirs over z. */
+/** A node in a layer's internal render graph. A 'channel' node samples one single-channel lens through a transfer function; a 'phasor' node reduces an axis to a phasor and colors the pixel by it; a 'blend' node composites its children; a 'projection' node projects theirs over z. */
 export type LayerNodeInput = {
   blending?: InputMaybe<Blending>;
   children?: InputMaybe<Array<LayerNodeInput>>;
   harmonic?: InputMaybe<Scalars['Int']['input']>;
-  intensityAxis?: InputMaybe<Scalars['String']['input']>;
-  intensityIndex?: InputMaybe<Scalars['Int']['input']>;
   kind: Scalars['String']['input'];
   label?: InputMaybe<Scalars['String']['input']>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   mode?: InputMaybe<ProjectionMode>;
   phasorAxis?: InputMaybe<Scalars['String']['input']>;
   phasorTransfer?: InputMaybe<PhasorTransferInput>;
@@ -4387,7 +4340,7 @@ export type Lens = {
   createdThroughBy?: Maybe<User>;
   /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
   creator?: Maybe<User>;
-  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's whole lens' while it has none. A container's nomination is its whole lens', so a whole lens answers for the container. A nomination, not a derivation */
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
@@ -4396,7 +4349,7 @@ export type Lens = {
   kind: LensKind;
   /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
   name?: Maybe<Scalars['String']['output']>;
-  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
 };
 
@@ -4465,6 +4418,8 @@ export type LensFilter = {
   OR?: InputMaybe<LensFilter>;
   /** Filter to the lenses over this annotation collection */
   annotationCollection?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the array lenses whose selection satisfies every one of these specs, e.g. [IMAGE] for every plane, single-channel or not, or [PROFILE, TRACE] for what a chart draws as a trace. The spec is the selection's, not the dataset's: an axis counts only when the lens keeps more than one position along it, so one plane of a stack matches [IMAGE] and its dataset [VOLUME] */
+  arraySpec?: InputMaybe<Array<ArrayDatasetSpec>>;
   /** Filter by the sub of the user that assigned the creating task */
   assignedBy?: InputMaybe<Scalars['ID']['input']>;
   /** Filter for items created after this datetime */
@@ -4500,8 +4455,12 @@ export type LensFilter = {
   sliced?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter to the lenses over this sparse dataset */
   sparseDataset?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the sparse lenses whose selection satisfies every one of these specs, e.g. [SLICE] for the lenses a SPARSE colour or filter picker entry accepts. An axis a window pins to one position does not count */
+  sparseSpec?: InputMaybe<Array<SparseDatasetSpec>>;
   /** Filter to the lenses over this table dataset */
   tableDataset?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the table lenses whose selection satisfies every one of these specs, e.g. [POINTS_2D, TRACKED]. The spec is the selection's: a coordinate column a window pins to one value (min == max) does not count, so one frame of a tracking table does not match [TIMED] */
+  tableSpec?: InputMaybe<Array<TableDatasetSpec>>;
 };
 
 /** What a lens selects over: an array (by index slices, re-indexing into a space of its own), or a table, a sparse dataset, a mesh collection, a network collection or an annotation collection (by value windows, in the container's own space). */
@@ -4514,32 +4473,6 @@ export enum LensKind {
   Table = 'TABLE'
 }
 
-/** The kind of layer a lens could source, for narrowing a picker: the members of `LayerKind` that draw array data. Input-only, and deliberately not `LayerKind` itself -- an annotation, point, track or mesh layer sources from a collection or a table, never from a lens, so four of that enum's members could only ever answer 'no'. */
-export enum LensLayerKind {
-  /** Drawable as an annotation layer: any lens over an annotation collection placeable here. */
-  Annotation = 'ANNOTATION',
-  /** Drawable as a general image layer -- which is every lens with an x and a y axis of more than one pixel. It is the renderability gate alone, and deliberately *not* the complement of the others: a mask drawn through a render graph is a legitimate thing to want, and `createLayer` does not refuse one. */
-  Image = 'IMAGE',
-  /** Drawable as an intensity layer: renderable, which is the whole condition. Every lens an image layer can draw, one channel of it can also be drawn on its own. */
-  Intensity = 'INTENSITY',
-  /** Drawable as a label layer: renderable, and derived by an edge declaring CATEGORIZED -- the values became object ids. The same signal `createSceneFromCoordinateSystem` infers a label layer from, asked of a candidate instead of a source, so a picker and a bootstrapped scene cannot disagree about what a label is. */
-  Label = 'LABEL',
-  /** Drawable as a mesh layer: any lens over a mesh collection placeable here. */
-  Mesh = 'MESH',
-  /** Drawable as a network layer: any lens over a network collection placeable here. */
-  Network = 'NETWORK',
-  /** Drawable as a phasor layer: renderable, and carrying a MICROTIME or SPECTRUM axis -- the continuous ones a phasor transform means anything over. */
-  Phasor = 'PHASOR',
-  /** Drawable as a point layer: a lens over a table that declares at least two SPACE coordinate columns -- the gate `createPointLayer` applies. */
-  Point = 'POINT',
-  /** Drawable as an RGB layer: renderable, and carrying a channel axis with at least three positions. Structural capacity only -- whether those three channels *are* red, green and blue is a fact about the acquisition, which a shape cannot carry. `createSceneFromCoordinateSystem` answers it from what ingest recorded (channel labels, a photographic source file) and falls back to one layer per channel; this filter answers the narrower structural question and never guesses. */
-  Rgb = 'RGB',
-  /** Drawable as a track layer: a point-drawable table lens whose table also declares a TRACK_ID column -- the gate `createTrackLayer` applies. */
-  Track = 'TRACK',
-  /** Drawable as a vector layer: renderable, and carrying a DISPLACEMENT value axis -- the values are components of a per-point offset. The same signal `createSceneFromCoordinateSystem` infers a vector layer from, asked of a candidate instead of a source, for LABEL's stated reason. */
-  Vector = 'VECTOR'
-}
-
 export type LensOrder =
   { createdAt: Ordering; id?: never; name?: never; }
   |  { createdAt?: never; id: Ordering; name?: never; }
@@ -4547,8 +4480,8 @@ export type LensOrder =
 
 /** What a lens picker is asking for: a destination space, and optionally which sort of candidate. Structured rather than a bare space id because `derivedOnly` and `asLayer` are qualifications *of* the placeability question -- a lens is not derived or label-shaped in the abstract, it is those things on the way into a particular space */
 export type LensPlaceableFilter = {
-  /** Keep only the lenses that could source a layer of this kind. Every member requires the lens to be drawable at all -- an x and a y axis of more than one pixel, the same gate layer creation applies. Three ask something further: `LABEL` a primary derivation declaring CATEGORIZED, `RGB` a channel axis with at least three positions, and `PHASOR` a MICROTIME or SPECTRUM axis. `RGB` is capacity only -- whether those three channels *are* red, green and blue is not a question any axis can answer, which is why RGB is never inferred. Note that *omitting* this applies no renderability gate, so `IMAGE` is a real narrowing rather than a no-op: the unqualified filter answers what is placeable, which is a spatial question, not what is drawable */
-  asLayer?: InputMaybe<LensLayerKind>;
+  /** Keep only the lenses that could source a layer of this kind, named as `LayerKind` names it. The six array kinds require the lens to be drawable at all -- an x and a y axis of more than one pixel, the gate layer creation applies -- and three ask something further: `LABEL` a primary derivation declaring CATEGORIZED, `RGB` a channel axis with at least three positions to cut the components from, and `PHASOR` a MICROTIME or SPECTRUM axis. `RGB` is capacity only -- whether those three channels *are* red, green and blue is not a question any axis can answer, which is why RGB is never inferred. The five container kinds keep the lenses over the container the kind draws: `POINT` and `TRACK` a table with coordinate columns, `MESH` a mesh collection, `NETWORK` a network collection, `ANNOTATION` an annotation collection; a sparse lens answers `placeableIn` without `asLayer` only, since nothing draws a matrix. Note that *omitting* this applies no renderability gate, so `IMAGE` is a real narrowing rather than a no-op: the unqualified filter answers what is placeable, which is a spatial question, not what is drawable */
+  asLayer?: InputMaybe<LayerKind>;
   /** Keep only the lenses that *needed* a lineage tree to get here: the segmentations, deconvolutions and projections placed by an ancestor's registration. What the space registers directly is dropped, even when it is itself a derived dataset -- it does not need its lineage to be placeable. A narrowing of the candidate list and nothing more: every lens it keeps is one `createLayer` accepts, and every lens it drops is too */
   derivedOnly?: InputMaybe<Scalars['Boolean']['input']>;
   /** The space to be placed into. A *space*, not a scene: every scene over one world offers the same candidates, so a scene-shaped argument would ask for more than the answer depends on. Pass `scene.worldCoordinateSystem.id` to ask it of a scene */
@@ -4929,13 +4862,12 @@ export type MeshCollectionIdentifiesInput = {
 /** One entry of a mesh layer's picker: color the collection's objects by a column of the table its FIELD edge keys into, instead of by the layer's flat material color. The same shape `LabelColorBy` carries, and the same relation -- a collection's ids reach a table exactly as a mask's pixel values do -- plus the caption a picker needs */
 export type MeshColorBy = {
   __typename?: 'MeshColorBy';
-  at: Array<AxisPosition>;
   colormap?: Maybe<ColorMap>;
   column?: Maybe<Scalars['String']['output']>;
-  dataset?: Maybe<Scalars['ID']['output']>;
   joinPath: Array<JoinStep>;
   kind: ColorSourceKind;
   label?: Maybe<Scalars['String']['output']>;
+  lens?: Maybe<Scalars['ID']['output']>;
   max?: Maybe<Scalars['Float']['output']>;
   min?: Maybe<Scalars['Float']['output']>;
   table?: Maybe<Scalars['ID']['output']>;
@@ -4943,13 +4875,12 @@ export type MeshColorBy = {
 
 /** Color a mesh collection's objects by a column of the table its FIELD edge keys into, instead of by the layer's flat material color */
 export type MeshColorByInput = {
-  at?: Array<AxisPositionInput>;
   colormap?: InputMaybe<ColorMap>;
   column?: InputMaybe<Scalars['String']['input']>;
-  dataset?: InputMaybe<Scalars['ID']['input']>;
   joinPath?: Array<JoinStepInput>;
   kind?: ColorSourceKind;
   label?: InputMaybe<Scalars['String']['input']>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   max?: InputMaybe<Scalars['Float']['input']>;
   min?: InputMaybe<Scalars['Float']['input']>;
   table?: InputMaybe<Scalars['ID']['input']>;
@@ -4958,13 +4889,12 @@ export type MeshColorByInput = {
 /** One entry of a mesh layer's filter picker: draw only the objects whose row in the keyed table satisfies this rule. The sibling of `MeshColorBy` over the same FIELD edge -- same table, same column check -- deciding whether an object is drawn rather than what colour it takes */
 export type MeshFilterBy = {
   __typename?: 'MeshFilterBy';
-  at: Array<AxisPosition>;
   column?: Maybe<Scalars['String']['output']>;
-  dataset?: Maybe<Scalars['ID']['output']>;
   exclude: Scalars['Boolean']['output'];
   joinPath: Array<JoinStep>;
   kind: ColorSourceKind;
   label?: Maybe<Scalars['String']['output']>;
+  lens?: Maybe<Scalars['ID']['output']>;
   max?: Maybe<Scalars['Float']['output']>;
   min?: Maybe<Scalars['Float']['output']>;
   table?: Maybe<Scalars['ID']['output']>;
@@ -4973,13 +4903,12 @@ export type MeshFilterBy = {
 
 /** Draw only the objects whose row in a table this collection's FIELD edge keys into satisfies this rule. Which half applies follows from the column's declared role -- bounds for a measure column, an explicit value set for a categorical one */
 export type MeshFilterByInput = {
-  at?: Array<AxisPositionInput>;
   column?: InputMaybe<Scalars['String']['input']>;
-  dataset?: InputMaybe<Scalars['ID']['input']>;
   exclude?: Scalars['Boolean']['input'];
   joinPath?: Array<JoinStepInput>;
   kind?: ColorSourceKind;
   label?: InputMaybe<Scalars['String']['input']>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   max?: InputMaybe<Scalars['Float']['input']>;
   min?: InputMaybe<Scalars['Float']['input']>;
   table?: InputMaybe<Scalars['ID']['input']>;
@@ -5078,7 +5007,7 @@ export type MeshLens = Lens & {
   createdThroughBy?: Maybe<User>;
   /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
   creator?: Maybe<User>;
-  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's whole lens' while it has none. A container's nomination is its whole lens', so a whole lens answers for the container. A nomination, not a derivation */
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
@@ -5088,7 +5017,7 @@ export type MeshLens = Lens & {
   meshCollection: MeshCollection;
   /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
   name?: Maybe<Scalars['String']['output']>;
-  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
@@ -5288,8 +5217,6 @@ export type Mutation = {
   deleteChartLayer: Scalars['ID']['output'];
   /** Delete an unused shared coordinate system. Refused while any scene is rooted in it or any transformation edge touches it. This is the only door a shared space leaves through -- deleting a scene never deletes one. Other system kinds cascade with their owner and cannot be deleted directly */
   deleteCoordinateSystem: Scalars['ID']['output'];
-  /** Delete an existing data array */
-  deleteDataArray: Scalars['ID']['output'];
   /** Delete an existing file */
   deleteFile: Scalars['ID']['output'];
   /** Delete an existing folder */
@@ -5725,11 +5652,6 @@ export type MutationDeleteChartLayerArgs = {
 
 export type MutationDeleteCoordinateSystemArgs = {
   input: DeleteCoordinateSystemInput;
-};
-
-
-export type MutationDeleteDataArrayArgs = {
-  input: DeleteDataArrayInput;
 };
 
 
@@ -6250,14 +6172,13 @@ export type NetworkCollectionNodesIdentifiesInput = {
 /** One entry of a network layer's colour picker. Three kinds where the other pickers have two: COLUMN and SPARSE colour whole objects exactly as a mesh's do, and GRAPH -- this layer kind's own -- colours per node, by a value the collection itself carries (Strahler order, degree, depth, component, a stored radius, a writer's own column). Computed once on the full level-0 graph and only ever subset, so the value is the same at every level a node survives to */
 export type NetworkColorBy = {
   __typename?: 'NetworkColorBy';
-  at: Array<AxisPosition>;
   attribute?: Maybe<Scalars['String']['output']>;
   colormap?: Maybe<ColorMap>;
   column?: Maybe<Scalars['String']['output']>;
-  dataset?: Maybe<Scalars['ID']['output']>;
   joinPath: Array<JoinStep>;
   kind: ColorSourceKind;
   label?: Maybe<Scalars['String']['output']>;
+  lens?: Maybe<Scalars['ID']['output']>;
   max?: Maybe<Scalars['Float']['output']>;
   min?: Maybe<Scalars['Float']['output']>;
   table?: Maybe<Scalars['ID']['output']>;
@@ -6266,14 +6187,13 @@ export type NetworkColorBy = {
 
 /** Color a network collection's objects or nodes: by a column of the table its FIELD edge keys into, by a slice of a sparse matrix, or (GRAPH) by a per-node value the collection itself carries -- Strahler order, degree, depth, component, a stored radius, or a writer's own column */
 export type NetworkColorByInput = {
-  at?: Array<AxisPositionInput>;
   attribute?: InputMaybe<Scalars['String']['input']>;
   colormap?: InputMaybe<ColorMap>;
   column?: InputMaybe<Scalars['String']['input']>;
-  dataset?: InputMaybe<Scalars['ID']['input']>;
   joinPath?: Array<JoinStepInput>;
   kind?: ColorSourceKind;
   label?: InputMaybe<Scalars['String']['input']>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   max?: InputMaybe<Scalars['Float']['input']>;
   min?: InputMaybe<Scalars['Float']['input']>;
   table?: InputMaybe<Scalars['ID']['input']>;
@@ -6283,14 +6203,13 @@ export type NetworkColorByInput = {
 /** One entry of a network layer's filter picker. A COLUMN or SPARSE rule keeps or drops whole objects, exactly as a mesh's does; a GRAPH rule -- always `min`/`max` bounds over a per-node value the collection carries -- hides individual nodes and segments, which is what 'trunk only' means on an arbor */
 export type NetworkFilterBy = {
   __typename?: 'NetworkFilterBy';
-  at: Array<AxisPosition>;
   attribute?: Maybe<Scalars['String']['output']>;
   column?: Maybe<Scalars['String']['output']>;
-  dataset?: Maybe<Scalars['ID']['output']>;
   exclude: Scalars['Boolean']['output'];
   joinPath: Array<JoinStep>;
   kind: ColorSourceKind;
   label?: Maybe<Scalars['String']['output']>;
+  lens?: Maybe<Scalars['ID']['output']>;
   max?: Maybe<Scalars['Float']['output']>;
   min?: Maybe<Scalars['Float']['output']>;
   table?: Maybe<Scalars['ID']['output']>;
@@ -6300,14 +6219,13 @@ export type NetworkFilterBy = {
 
 /** Draw only the objects -- or, for a GRAPH rule, the nodes and segments -- whose value satisfies this rule. Which half applies follows from the source: bounds for a measure column, a sparse slice or a graph attribute; an explicit value set for a categorical column */
 export type NetworkFilterByInput = {
-  at?: Array<AxisPositionInput>;
   attribute?: InputMaybe<Scalars['String']['input']>;
   column?: InputMaybe<Scalars['String']['input']>;
-  dataset?: InputMaybe<Scalars['ID']['input']>;
   exclude?: Scalars['Boolean']['input'];
   joinPath?: Array<JoinStepInput>;
   kind?: ColorSourceKind;
   label?: InputMaybe<Scalars['String']['input']>;
+  lens?: InputMaybe<Scalars['ID']['input']>;
   max?: InputMaybe<Scalars['Float']['input']>;
   min?: InputMaybe<Scalars['Float']['input']>;
   table?: InputMaybe<Scalars['ID']['input']>;
@@ -6410,7 +6328,7 @@ export type NetworkLens = Lens & {
   createdThroughBy?: Maybe<User>;
   /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
   creator?: Maybe<User>;
-  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's whole lens' while it has none. A container's nomination is its whole lens', so a whole lens answers for the container. A nomination, not a derivation */
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
@@ -6420,7 +6338,7 @@ export type NetworkLens = Lens & {
   /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
   name?: Maybe<Scalars['String']['output']>;
   networkCollection: NetworkCollection;
-  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
@@ -7001,11 +6919,10 @@ export type PhasorLayerPlacementValidityArgs = {
 export type PhasorNode = LayerRenderNode & {
   __typename?: 'PhasorNode';
   harmonic: Scalars['Int']['output'];
-  intensityAxis?: Maybe<Scalars['String']['output']>;
-  intensityIndex: Scalars['Int']['output'];
   kind: Scalars['String']['output'];
   /** An optional human-readable label for the node */
   label?: Maybe<Scalars['String']['output']>;
+  lens?: Maybe<Scalars['ID']['output']>;
   phasorAxis: Scalars['String']['output'];
   transfer: PhasorTransfer;
   visible: Scalars['Boolean']['output'];
@@ -7015,8 +6932,6 @@ export type PhasorNode = LayerRenderNode & {
 export type PhasorRender = {
   __typename?: 'PhasorRender';
   harmonic: Scalars['Int']['output'];
-  intensityAxis?: Maybe<Scalars['String']['output']>;
-  intensityIndex: Scalars['Int']['output'];
   phasorAxis: Scalars['String']['output'];
   transfer: PhasorTransfer;
 };
@@ -7154,7 +7069,6 @@ export type PointLayer = Layer & {
   blending: Blending;
   /** The colourings this layer offers, in the order a picker should show them. Each names a column of a table this layer's ids key into, or one slice of a sparse matrix they index, already checked to be reachable. Empty means there is nothing to pick */
   colorBys: Array<LabelColorBy>;
-  colorColumn?: Maybe<Scalars['String']['output']>;
   colormap?: Maybe<ColorMap>;
   /** The filters this layer offers, in the order a picker should show them. Each keeps or drops points by a column of a table this layer's ids key into. Empty means nothing is offered and every point draws */
   filterBys: Array<LabelFilterBy>;
@@ -7964,18 +7878,19 @@ export type RevertInput = {
   id: Scalars['ID']['input'];
 };
 
-/** Three channels of a lens as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
+/** Three single-channel lenses, each a crop of `lens`, as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
 export type RgbLayer = Layer & {
   __typename?: 'RgbLayer';
   /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
-  blueIndex: Scalars['Int']['output'];
+  /** The single-channel lens drawn as blue: a crop of `lens` with its channel axis at one position */
+  blueLens: ArrayLens;
   climMax?: Maybe<Scalars['Float']['output']>;
   climMin?: Maybe<Scalars['Float']['output']>;
-  greenIndex: Scalars['Int']['output'];
+  /** The single-channel lens drawn as green: a crop of `lens` with its channel axis at one position */
+  greenLens: ArrayLens;
   id: Scalars['ID']['output'];
-  intensityAxis?: Maybe<Scalars['String']['output']>;
   kind: LayerKind;
   /** The array lens this layer draws through: the selection, and the space the data is placed from. Read through the layer's own prefetch rather than the optimizer's, which cannot follow a polymorphic foreign key to the kind */
   lens: ArrayLens;
@@ -7992,7 +7907,8 @@ export type RgbLayer = Layer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
-  redIndex: Scalars['Int']['output'];
+  /** The single-channel lens drawn as red: a crop of `lens` with its channel axis at one position */
+  redLens: ArrayLens;
   /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
   renderAxes: RenderAxes;
   scene: Scene;
@@ -8002,32 +7918,32 @@ export type RgbLayer = Layer & {
 };
 
 
-/** Three channels of a lens as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
+/** Three single-channel lenses, each a crop of `lens`, as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
 export type RgbLayerAsAffineArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
   strict?: Scalars['Boolean']['input'];
 };
 
 
-/** Three channels of a lens as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
+/** Three single-channel lenses, each a crop of `lens`, as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
 export type RgbLayerPathToWorldArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** Three channels of a lens as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
+/** Three single-channel lenses, each a crop of `lens`, as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
 export type RgbLayerPlacementArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** Three channels of a lens as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
+/** Three single-channel lenses, each a crop of `lens`, as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
 export type RgbLayerPlacementInvarianceArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
 
-/** Three channels of a lens as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
+/** Three single-channel lenses, each a crop of `lens`, as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
 export type RgbLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
@@ -8197,8 +8113,8 @@ export type Scene = Visualization & {
   annotationCollection?: Maybe<AnnotationCollection>;
   /** The viewer background, as RGBA. Null lets the viewer use its own */
   backgroundColor?: Maybe<Array<Scalars['Float']['output']>>;
-  /** The datasets that nominate this scene as the one to open for them, and take their thumbnail from it. Several may: a scene staging a plate is a reasonable landing place for every dataset in it. Not the datasets this scene *shows* -- for that, ask each dataset's `scenes`, which the coordinate graph derives */
-  defaultFor: Array<ArrayDataset>;
+  /** The lenses that nominate this scene as the one to open for them, and take their thumbnail from it -- a container's whole lens where the container was nominated for. Several may: a scene staging a plate is a reasonable landing place for every well in it. Not the lenses this scene *shows* -- for that, ask each lens' `scenes`, which the coordinate graph derives */
+  defaultFor: Array<Lens>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
@@ -8220,14 +8136,6 @@ export type Scene = Visualization & {
 export type SceneAnimationsArgs = {
   filters?: InputMaybe<AnimationFilter>;
   ordering?: Array<AnimationOrder>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-/** A composition of layers over a shared world coordinate system. The scene carries no units of its own -- they are per-axis, on the axes of its world system */
-export type SceneDefaultForArgs = {
-  filters?: InputMaybe<ArrayDatasetFilter>;
-  ordering?: Array<ArrayDatasetOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -8264,12 +8172,12 @@ export type SceneFilter = {
   NOT?: InputMaybe<SceneFilter>;
   OR?: InputMaybe<SceneFilter>;
   blending?: InputMaybe<BlendingChoices>;
-  /** Filter to the scene this dataset nominates as its default. A choice someone made, not the set of scenes that show the dataset -- for that, ask the dataset's `scenes` */
-  defaultForDataset?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the scene this lens nominates as its default -- a container's whole lens for the container. A choice someone made, not the set of scenes that show the lens; for that, ask the lens' `scenes` */
+  defaultForLens?: InputMaybe<Scalars['ID']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  /** Filter to the scenes with a layer drawing through this lens, of any kind: the same set the lens' own `scenes` answers */
+  /** Filter to the scenes with a layer drawing through this lens or any selection within it, of any kind: the same set the lens' own `scenes` answers */
   lens?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<StrFilterLookup>;
   /** Search by name (case-insensitive substring) */
@@ -8290,7 +8198,7 @@ export type ScenePolicyInput = {
   transformTables?: Scalars['Boolean']['input'];
 };
 
-/** A pre-rendered picture of a composition: every layer of the scene, blended. Clients use snapshots to preview without compositing the layers themselves. A picture of the scene, not of any one dataset in it -- though `ArrayDataset.latestSnapshot` will offer one of these where the scene's only anchored dataset is that dataset, since then the picture shows it and nothing else */
+/** A pre-rendered picture of a composition: every layer of the scene, blended. Clients use snapshots to preview without compositing the layers themselves. A picture of the scene, not of any one lens in it -- `Lens.latestSnapshot` and `ArrayDataset.latestSnapshot` offer the newest picture of the scene the lens nominates, which may stage other data too */
 export type SceneSnapshot = {
   __typename?: 'SceneSnapshot';
   createdAt: Scalars['DateTime']['output'];
@@ -8490,7 +8398,7 @@ export type SeriesChartLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
-/** Nominate the scene to open for a dataset, and take its thumbnail from */
+/** Nominate the scene to open for a dataset, and take its thumbnail from: the same write as `setLensDefaultScene` on the dataset's whole lens */
 export type SetDefaultSceneInput = {
   /** The dataset to nominate a scene for */
   dataset: Scalars['ID']['input'];
@@ -8658,11 +8566,10 @@ export type SparseAxisReference = {
 
 /** The fields a SPARSE member of a colour picker entry reads. Published for codegen; the wire type is the flat LabelColorByInput / MeshColorByInput / NetworkColorByInput */
 export type SparseColorByInput = {
-  at: Array<AxisPositionInput>;
   colormap?: InputMaybe<ColorMap>;
-  dataset: Scalars['ID']['input'];
   kind?: ColorSourceKind;
   label?: InputMaybe<Scalars['String']['input']>;
+  lens: Scalars['ID']['input'];
   max?: InputMaybe<Scalars['Float']['input']>;
   min?: InputMaybe<Scalars['Float']['input']>;
 };
@@ -8707,6 +8614,8 @@ export type SparseDataset = {
   shape: Array<Scalars['Int']['output']>;
   /** The files this dataset was converted from */
   sourceFiles: Array<FileLink>;
+  /** What this matrix structurally is, read off its axes and its store's shape: the one rank member its axes of more than one position denote -- MATRIX, ordinarily. Derived on read, never stored. A lens over it answers the same vocabulary for its selection, which is where VECTOR and SLICE appear */
+  spec: Array<SparseDatasetSpec>;
 };
 
 
@@ -8771,6 +8680,20 @@ export type SparseDatasetOrder =
   |  { createdAt?: never; id: Ordering; name?: never; }
   |  { createdAt?: never; id?: never; name: Ordering; };
 
+/** What a sparse matrix structurally is, read off its axes, its shape and the layouts its store holds; a sparse lens answers the same vocabulary over what its windows leave free. Exactly one rank member (SCALAR/VECTOR/MATRIX/TENSOR) ever holds, by how many axes still have more than one position: an axis of a single position does not count, and neither does one a window pins to one position (min == max). SLICE is what the whole amounts to when a picker can read it. */
+export enum SparseDatasetSpec {
+  /** Two axes left free. What a whole sparse dataset ordinarily is. */
+  Matrix = 'MATRIX',
+  /** No axis left free: one value. */
+  Scalar = 'SCALAR',
+  /** One whole-number position pinned on every axis the matrix identifies itself by and on no other, with a layout that makes the read one contiguous range: one value per object, which is what a SPARSE colour or filter picker entry reads. Never true of a whole dataset. */
+  Slice = 'SLICE',
+  /** Three or more axes left free. */
+  Tensor = 'TENSOR',
+  /** One axis left free: one value per position along it -- one feature across every object, or one object's whole profile. */
+  Vector = 'VECTOR'
+}
+
 /** One stored layout of a sparse matrix: an anndata-spelled group under `layouts/<encoding>`, holding `data`, `indices` and `indptr`. Read it with two requests -- `indptr[i:i+2]` at the position, then the range those two offsets name in `indices` and `data`. */
 export type SparseLayout = {
   __typename?: 'SparseLayout';
@@ -8809,7 +8732,7 @@ export type SparseLens = Lens & {
   createdThroughBy?: Maybe<User>;
   /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
   creator?: Maybe<User>;
-  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's whole lens' while it has none. A container's nomination is its whole lens', so a whole lens answers for the container. A nomination, not a derivation */
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
@@ -8818,9 +8741,11 @@ export type SparseLens = Lens & {
   kind: LensKind;
   /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
   name?: Maybe<Scalars['String']['output']>;
-  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
   sparseDataset: SparseDataset;
+  /** What this selection structurally is: its matrix's `spec` vocabulary, read over what its windows leave free. Materialized when the lens is made, and what the `sparseSpec` filter reads. An axis a window pins to one position (min == max) no longer counts, so one feature of a MATRIX is a VECTOR -- and a SLICE when it pins exactly the axes the matrix identifies itself by and a layout makes the read contiguous, which is what a SPARSE colour or filter picker entry accepts */
+  spec: Array<SparseDatasetSpec>;
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
 };
@@ -9009,6 +8934,8 @@ export type TableDataset = {
   referencedBy: Array<Column>;
   /** The files this table dataset was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete */
   sourceFiles: Array<FileLink>;
+  /** What this table structurally is, materialized at creation from its declared columns: the one placement member its SPACE coordinate columns denote (RECORDS for none, then POINTS_1D, POINTS_2D, POINTS_3D, POINTS_ND), then a modifier per declared fact (TIMED, TRACKED, GROUPED, KEYED, NODE_TABLE, EDGE_TABLE), then SERIES for a table that is one value against one measured coordinate. A tracking result is [POINTS_2D, TIMED, TRACKED]; a table of per-object measurements keyed to a label mask is [RECORDS, KEYED]; a readout over time is [RECORDS, TIMED, SERIES]. Declared, not measured: the server never scans the rows, so TIMED says a TIME coordinate column exists, not that the rows span more than one instant */
+  spec: Array<TableDatasetSpec>;
   /** The Parquet store holding the rows. Request an access grant from it and read the Parquet directly */
   store: ParquetStore;
 };
@@ -9107,12 +9034,42 @@ export type TableDatasetFilter = {
   placeableIn?: InputMaybe<Scalars['ID']['input']>;
   /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
+  /** Filter to tables satisfying every one of these specs, e.g. [POINTS_3D, TRACKED] for 3D tracks, or [SERIES] for a value against a single measured coordinate, which a chart draws without an axis to choose. Materialized at creation from the declared columns: one placement member (by how many SPACE coordinate columns the table has) plus a modifier per declared fact. Declared, not measured -- TIMED says a TIME coordinate column exists. Two placement members together match nothing. `hasColumnRole` is the raw form */
+  spec?: InputMaybe<Array<TableDatasetSpec>>;
 };
 
 export type TableDatasetOrder =
   { createdAt: Ordering; id?: never; name?: never; }
   |  { createdAt?: never; id: Ordering; name?: never; }
   |  { createdAt?: never; id?: never; name: Ordering; };
+
+/** What a table structurally is, materialized from its declared columns at creation; a table lens answers the same vocabulary over what its windows leave free -- a coordinate column a window pins to one value (min == max) no longer counts, so one frame of a tracking result is not TIMED. Specs stack: a tracking result is POINTS_2D, TIMED and TRACKED at once. Exactly one placement member (RECORDS/POINTS_1D/POINTS_2D/POINTS_3D/POINTS_ND) ever holds; the others are modifiers, one per fact the schema declares, and SERIES for a table that is one value against one measured coordinate. Declared, not measured: where an array's spec counts an axis only when it has more than one position, a table's is read off its schema alone, because the server never scans the rows. */
+export enum TableDatasetSpec {
+  /** Two INDEX coordinate columns hold node ids of one network collection: one row per edge, (source, target) in column order. */
+  EdgeTable = 'EDGE_TABLE',
+  /** Declares a GROUP_ID column: rows group into connected objects that are not trajectories -- the nodes of one arbor, the points of one cluster. */
+  Grouped = 'GROUPED',
+  /** A column's values identify rows of another table (`Column.references`): a foreign key out of this table, or the table an INDEX coordinate enumerates. */
+  Keyed = 'KEYED',
+  /** One INDEX coordinate column holds the node ids of a network collection: one row per node. */
+  NodeTable = 'NODE_TABLE',
+  /** One SPACE coordinate column: positions along a line. */
+  Points_1D = 'POINTS_1D',
+  /** Two SPACE coordinate columns: points in a plane. The least a point layer draws. */
+  Points_2D = 'POINTS_2D',
+  /** Three SPACE coordinate columns: points in a volume. */
+  Points_3D = 'POINTS_3D',
+  /** Four or more SPACE coordinate columns. */
+  PointsNd = 'POINTS_ND',
+  /** No SPACE coordinate column: the rows are records rather than positions -- one per object with its measurements. Nothing places them in a scene. */
+  Records = 'RECORDS',
+  /** Exactly one measured coordinate column (SPACE or TIME) and at least one numeric ATTRIBUTE column: a value against a position, what a chart draws as a SERIES layer with nothing left to choose but the value. Not the only table a chart can draw -- one with several measured coordinates is drawn along whichever the chart's axis is registered to -- and it says nothing about placement: whether a given chart can draw it depends on what is registered. */
+  Series = 'SERIES',
+  /** Declares a TIME coordinate column: each row sits at an instant. */
+  Timed = 'TIMED',
+  /** Declares a TRACK_ID column: rows group into trajectories. With POINTS_2D or more, what a track layer draws. */
+  Tracked = 'TRACKED'
+}
 
 /** The fields a TABLE identification reads. Published for codegen; the wire type is the flat IdentificationInput */
 export type TableIdentifiesInput = {
@@ -9135,7 +9092,7 @@ export type TableLens = Lens & {
   createdThroughBy?: Maybe<User>;
   /** Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing */
   creator?: Maybe<User>;
-  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's while it has none. A whole array lens answers with its dataset's, because it *is* the dataset looked at whole and a second nomination could only disagree; no other container nominates a scene, so a whole lens over one holds the nomination itself. A nomination, not a derivation */
+  /** The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's whole lens' while it has none. A container's nomination is its whole lens', so a whole lens answers for the container. A nomination, not a derivation */
   defaultScene?: Maybe<Scene>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
@@ -9144,8 +9101,10 @@ export type TableLens = Lens & {
   kind: LensKind;
   /** What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place */
   name?: Maybe<Scalars['String']['output']>;
-  /** The scenes this lens is rendered in: those with a layer drawing through it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. One row per selection, so a whole lens answers for the whole container and a window or a crop for itself; scenes that show another selection are that selection's to report */
+  /** The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report */
   scenes: Array<Scene>;
+  /** What this selection structurally is: its table's `spec` vocabulary, read over what its windows leave free. Materialized when the lens is made, and what the `tableSpec` filter reads. A coordinate column a window pins to one value (min == max) no longer counts: one frame of a [POINTS_2D, TIMED, TRACKED] table is [POINTS_2D, TRACKED], and one z-plane of a POINTS_3D table is POINTS_2D. A window that only bounds changes nothing -- the server never scans the rows, so it cannot say they stopped spreading. The whole lens answers what its table does */
+  spec: Array<TableDatasetSpec>;
   tableDataset: TableDataset;
   /** The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens */
   windows: Array<Window>;
@@ -9713,8 +9672,6 @@ export type UpdateIntensityLayerInput = {
   colormap?: InputMaybe<ColorMap>;
   gamma?: InputMaybe<Scalars['Float']['input']>;
   id: Scalars['ID']['input'];
-  intensityAxis?: InputMaybe<Scalars['String']['input']>;
-  intensityIndex?: InputMaybe<Scalars['Int']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
@@ -9731,7 +9688,7 @@ export type UpdateLabelLayerInput = {
   visible?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-/** Input type for creating an image from an array-like object */
+/** Input for updating an image layer. Every field is a patch: what is not sent keeps its current value */
 export type UpdateLayerInput = {
   blending?: InputMaybe<Blending>;
   id: Scalars['ID']['input'];
@@ -9822,8 +9779,6 @@ export type UpdatePhasorLayerInput = {
   blending?: InputMaybe<Blending>;
   harmonic?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['ID']['input'];
-  intensityAxis?: InputMaybe<Scalars['String']['input']>;
-  intensityIndex?: InputMaybe<Scalars['Int']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
@@ -9849,16 +9804,15 @@ export type UpdatePointLayerInput = {
 
 /** Update an RGB layer's render settings. Every field is a patch: what is not sent keeps its current value */
 export type UpdateRgbLayerInput = {
-  blueIndex?: InputMaybe<Scalars['Int']['input']>;
+  blueLens?: InputMaybe<Scalars['ID']['input']>;
   climMax?: InputMaybe<Scalars['Float']['input']>;
   climMin?: InputMaybe<Scalars['Float']['input']>;
-  greenIndex?: InputMaybe<Scalars['Int']['input']>;
+  greenLens?: InputMaybe<Scalars['ID']['input']>;
   id: Scalars['ID']['input'];
-  intensityAxis?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   opacity?: InputMaybe<Scalars['Float']['input']>;
   order?: InputMaybe<Scalars['Int']['input']>;
-  redIndex?: InputMaybe<Scalars['Int']['input']>;
+  redLens?: InputMaybe<Scalars['ID']['input']>;
   visible?: InputMaybe<Scalars['Boolean']['input']>;
   whiteBalance?: InputMaybe<Array<Scalars['Float']['input']>>;
 };
@@ -10262,7 +10216,7 @@ export type DatasetLineageFragment = { __typename?: 'ArrayDataset', id: string, 
     & DerivationEdge_UnmappableTransformation_Fragment
   )>, sourceFiles: Array<{ __typename?: 'FileLink', id: string, file: { __typename?: 'File', id: string, contentType?: string | null } }> };
 
-type AddLayerCandidate_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string, description?: string | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
+type AddLayerCandidate_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string, description?: string | null, fullLens?: { __typename?: 'AnnotationLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
     { __typename?: 'AffineTransformation' }
     & DerivationEdge_AffineTransformation_Fragment
   ) | (
@@ -10304,14 +10258,14 @@ type AddLayerCandidate_ArrayDataset_Fragment = (
 type AddLayerCandidate_ArrayLens_Fragment = { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, lensName?: string | null, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
-  )>, lensSpace?: { __typename?: 'CoordinateSystem', id: string, axes: Array<{ __typename?: 'Axis', name: string, type: AxisType, order: number }> } | null, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null, dataset: (
+  )>, lensSpace?: { __typename?: 'CoordinateSystem', id: string } | null, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null, dataset: (
     { __typename?: 'ArrayDataset' }
     & DatasetLineageFragment
   ) };
 
 type AddLayerCandidate_DataArray_Fragment = { __typename: 'DataArray', id: string, level: number, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null };
 
-type AddLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, version: string, specVersion: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
+type AddLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, version: string, specVersion: string, fullLens?: { __typename?: 'MeshLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
     { __typename?: 'AffineTransformation' }
     & DerivationEdge_AffineTransformation_Fragment
   ) | (
@@ -10345,7 +10299,7 @@ type AddLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection',
 
 type AddLayerCandidate_MeshLens_Fragment = { __typename: 'MeshLens' };
 
-type AddLayerCandidate_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, version: string, specVersion: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
+type AddLayerCandidate_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, version: string, specVersion: string, fullLens?: { __typename?: 'NetworkLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
     { __typename?: 'AffineTransformation' }
     & DerivationEdge_AffineTransformation_Fragment
   ) | (
@@ -10384,7 +10338,7 @@ type AddLayerCandidate_SparseDataset_Fragment = { __typename: 'SparseDataset', i
 type AddLayerCandidate_SparseLens_Fragment = { __typename: 'SparseLens' };
 
 type AddLayerCandidate_TableDataset_Fragment = (
-  { __typename: 'TableDataset', columns: Array<(
+  { __typename: 'TableDataset', fullLens?: { __typename?: 'TableLens', id: string } | null, columns: Array<(
     { __typename?: 'Column' }
     & TableDatasetColumnFragment
   )>, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
@@ -10425,7 +10379,10 @@ type AddLayerCandidate_TableLens_Fragment = { __typename: 'TableLens' };
 
 export type AddLayerCandidateFragment = AddLayerCandidate_AnnotationCollection_Fragment | AddLayerCandidate_AnnotationLens_Fragment | AddLayerCandidate_ArrayDataset_Fragment | AddLayerCandidate_ArrayLens_Fragment | AddLayerCandidate_DataArray_Fragment | AddLayerCandidate_MeshCollection_Fragment | AddLayerCandidate_MeshLens_Fragment | AddLayerCandidate_NetworkCollection_Fragment | AddLayerCandidate_NetworkLens_Fragment | AddLayerCandidate_SparseDataset_Fragment | AddLayerCandidate_SparseLens_Fragment | AddLayerCandidate_TableDataset_Fragment | AddLayerCandidate_TableLens_Fragment;
 
-export type AddLayerStagedLensFragment = { __typename?: 'ArrayLens', id: string, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string } | null, dataset: { __typename?: 'ArrayDataset', id: string, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string } | null } };
+export type AddLayerStagedLensFragment = { __typename?: 'ArrayLens', id: string, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string } | null, slices: Array<(
+    { __typename?: 'Slice' }
+    & DimSliceFragment
+  )>, dataset: { __typename?: 'ArrayDataset', id: string, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string } | null } };
 
 type AddLayerStagedLayer_AnnotationLayer_Fragment = { __typename: 'AnnotationLayer', id: string, name?: string | null, blending: Blending, annotationCollection: { __typename?: 'AnnotationCollection', id: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string } } };
 
@@ -10434,7 +10391,7 @@ type AddLayerStagedLayer_ImageLayer_Fragment = { __typename: 'ImageLayer', id: s
     & AddLayerStagedLensFragment
   ) };
 
-type AddLayerStagedLayer_IntensityLayer_Fragment = { __typename: 'IntensityLayer', intensityIndex: number, colormap: ColorMap, climMin?: number | null, climMax?: number | null, gamma?: number | null, id: string, name?: string | null, blending: Blending, lens: (
+type AddLayerStagedLayer_IntensityLayer_Fragment = { __typename: 'IntensityLayer', colormap: ColorMap, climMin?: number | null, climMax?: number | null, gamma?: number | null, id: string, name?: string | null, blending: Blending, lens: (
     { __typename?: 'ArrayLens' }
     & AddLayerStagedLensFragment
   ) };
@@ -10863,7 +10820,7 @@ export type ListChartFragment = { __typename?: 'Chart', descriptors: any, id: st
     & AxisFragment
   ) };
 
-type ChartLayerCandidate_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string };
+type ChartLayerCandidate_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string, fullLens?: { __typename?: 'AnnotationLens', id: string } | null };
 
 type ChartLayerCandidate_AnnotationLens_Fragment = { __typename: 'AnnotationLens' };
 
@@ -10891,7 +10848,7 @@ type ChartLayerCandidate_SparseDataset_Fragment = { __typename: 'SparseDataset' 
 
 type ChartLayerCandidate_SparseLens_Fragment = { __typename: 'SparseLens' };
 
-type ChartLayerCandidate_TableDataset_Fragment = { __typename: 'TableDataset', id: string, name: string, columns: Array<(
+type ChartLayerCandidate_TableDataset_Fragment = { __typename: 'TableDataset', id: string, name: string, fullLens?: { __typename?: 'TableLens', id: string } | null, columns: Array<(
     { __typename?: 'Column' }
     & TableDatasetColumnFragment
   )> };
@@ -11251,19 +11208,19 @@ export type ListFolderFragment = { __typename?: 'Folder', id: string, name: stri
 
 export type TransferFunctionFragment = { __typename?: 'TransferFunction', climMin?: number | null, climMax?: number | null, colormap?: ColorMap | null, color?: Array<number> | null, gamma?: number | null, opacity?: number | null, invert?: boolean | null, stops?: Array<{ __typename?: 'LookupStop', position: number, value: number }> | null };
 
-export type LabelColorByFragment = { __typename?: 'LabelColorBy', table?: string | null, column?: string | null, colormap?: ColorMap | null, min?: number | null, max?: number | null, label?: string | null, kind: ColorSourceKind, dataset?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }>, at: Array<{ __typename?: 'AxisPosition', axis: string, value: number }> };
+export type LabelColorByFragment = { __typename?: 'LabelColorBy', table?: string | null, column?: string | null, colormap?: ColorMap | null, min?: number | null, max?: number | null, label?: string | null, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> };
 
-export type LabelFilterByFragment = { __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, dataset?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }>, at: Array<{ __typename?: 'AxisPosition', axis: string, value: number }> };
+export type LabelFilterByFragment = { __typename?: 'LabelFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> };
 
-export type MeshColorByFragment = { __typename?: 'MeshColorBy', table?: string | null, column?: string | null, colormap?: ColorMap | null, min?: number | null, max?: number | null, label?: string | null, kind: ColorSourceKind, dataset?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }>, at: Array<{ __typename?: 'AxisPosition', axis: string, value: number }> };
+export type MeshColorByFragment = { __typename?: 'MeshColorBy', table?: string | null, column?: string | null, colormap?: ColorMap | null, min?: number | null, max?: number | null, label?: string | null, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> };
 
-export type MeshFilterByFragment = { __typename?: 'MeshFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, dataset?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }>, at: Array<{ __typename?: 'AxisPosition', axis: string, value: number }> };
+export type MeshFilterByFragment = { __typename?: 'MeshFilterBy', table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, kind: ColorSourceKind, lens?: string | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> };
 
-export type NetworkColorByFragment = { __typename?: 'NetworkColorBy', kind: ColorSourceKind, table?: string | null, column?: string | null, colormap?: ColorMap | null, min?: number | null, max?: number | null, label?: string | null, dataset?: string | null, attribute?: string | null, target?: GraphTarget | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }>, at: Array<{ __typename?: 'AxisPosition', axis: string, value: number }> };
+export type NetworkColorByFragment = { __typename?: 'NetworkColorBy', kind: ColorSourceKind, table?: string | null, column?: string | null, colormap?: ColorMap | null, min?: number | null, max?: number | null, label?: string | null, lens?: string | null, attribute?: string | null, target?: GraphTarget | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> };
 
-export type NetworkFilterByFragment = { __typename?: 'NetworkFilterBy', kind: ColorSourceKind, table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, dataset?: string | null, attribute?: string | null, target?: GraphTarget | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }>, at: Array<{ __typename?: 'AxisPosition', axis: string, value: number }> };
+export type NetworkFilterByFragment = { __typename?: 'NetworkFilterBy', kind: ColorSourceKind, table?: string | null, column?: string | null, label?: string | null, min?: number | null, max?: number | null, values?: Array<string> | null, exclude: boolean, lens?: string | null, attribute?: string | null, target?: GraphTarget | null, joinPath: Array<{ __typename?: 'JoinStep', table: string, column: string }> };
 
-export type LabelRenderFragment = { __typename?: 'LabelRender', intensityAxis?: string | null, intensityIndex: number, seed: number, background: number, opacity?: number | null, contour: boolean, contourWidth?: number | null, selected: Array<number>, selectionColor?: Array<number> | null, showUnselected: boolean, activeColorBy?: number | null, activeFilterBys: Array<number>, colorBys: Array<(
+export type LabelRenderFragment = { __typename?: 'LabelRender', seed: number, background: number, opacity?: number | null, contour: boolean, contourWidth?: number | null, selected: Array<number>, selectionColor?: Array<number> | null, showUnselected: boolean, activeColorBy?: number | null, activeFilterBys: Array<number>, colorBys: Array<(
     { __typename?: 'LabelColorBy' }
     & LabelColorByFragment
   )>, filterBys: Array<(
@@ -11271,7 +11228,7 @@ export type LabelRenderFragment = { __typename?: 'LabelRender', intensityAxis?: 
     & LabelFilterByFragment
   )> };
 
-export type ChannelSourceNodeFragment = { __typename?: 'ChannelSourceNode', intensityAxis?: string | null, intensityIndex: number, visible: boolean, transfer: (
+export type ChannelSourceNodeFragment = { __typename?: 'ChannelSourceNode', lens?: string | null, visible: boolean, transfer: (
     { __typename?: 'TransferFunction' }
     & TransferFunctionFragment
   ) };
@@ -11286,12 +11243,12 @@ export type PhasorTransferFragment = { __typename?: 'PhasorTransfer', colormap: 
     & PhasorCursorFragment
   )> };
 
-export type PhasorNodeFragment = { __typename?: 'PhasorNode', phasorAxis: string, harmonic: number, intensityAxis?: string | null, intensityIndex: number, visible: boolean, phasorTransfer: (
+export type PhasorNodeFragment = { __typename?: 'PhasorNode', phasorAxis: string, harmonic: number, lens?: string | null, visible: boolean, phasorTransfer: (
     { __typename?: 'PhasorTransfer' }
     & PhasorTransferFragment
   ) };
 
-export type PhasorRenderFragment = { __typename?: 'PhasorRender', phasorAxis: string, intensityAxis?: string | null, intensityIndex: number, harmonic: number, transfer: (
+export type PhasorRenderFragment = { __typename?: 'PhasorRender', phasorAxis: string, harmonic: number, transfer: (
     { __typename?: 'PhasorTransfer' }
     & PhasorTransferFragment
   ) };
@@ -11429,7 +11386,7 @@ type SceneLayer_ImageLayer_Fragment = { __typename: 'ImageLayer', id: string, ki
     & PlacementStepFragment
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
 
-type SceneLayer_IntensityLayer_Fragment = { __typename: 'IntensityLayer', intensityAxis?: string | null, intensityIndex: number, color?: Array<number> | null, climMin?: number | null, climMax?: number | null, gamma?: number | null, projectionMode?: ProjectionMode | null, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, intensityColormap: ColorMap, lens: (
+type SceneLayer_IntensityLayer_Fragment = { __typename: 'IntensityLayer', color?: Array<number> | null, climMin?: number | null, climMax?: number | null, gamma?: number | null, projectionMode?: ProjectionMode | null, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, intensityColormap: ColorMap, lens: (
     { __typename?: 'ArrayLens' }
     & SceneLensFragment
   ), renderAxes: (
@@ -11508,7 +11465,7 @@ type SceneLayer_PhasorLayer_Fragment = { __typename: 'PhasorLayer', id: string, 
     & PlacementStepFragment
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
 
-type SceneLayer_PointLayer_Fragment = { __typename: 'PointLayer', xColumn?: string | null, yColumn?: string | null, zColumn?: string | null, tColumn?: string | null, sizeColumn?: string | null, idColumn?: string | null, pointSize?: number | null, colormap?: ColorMap | null, colorColumn?: string | null, activeColorBy?: number | null, activeFilterBys: Array<number>, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
+type SceneLayer_PointLayer_Fragment = { __typename: 'PointLayer', xColumn?: string | null, yColumn?: string | null, zColumn?: string | null, tColumn?: string | null, sizeColumn?: string | null, idColumn?: string | null, pointSize?: number | null, colormap?: ColorMap | null, activeColorBy?: number | null, activeFilterBys: Array<number>, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
     { __typename?: 'TableDataset' }
     & TableDatasetFragment
   ), lens: (
@@ -11528,12 +11485,21 @@ type SceneLayer_PointLayer_Fragment = { __typename: 'PointLayer', xColumn?: stri
     & PlacementStepFragment
   )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
 
-type SceneLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', intensityAxis?: string | null, redIndex: number, greenIndex: number, blueIndex: number, climMin?: number | null, climMax?: number | null, whiteBalance?: Array<number> | null, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
+type SceneLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', climMin?: number | null, climMax?: number | null, whiteBalance?: Array<number> | null, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
     { __typename?: 'ArrayLens' }
     & SceneLensFragment
   ), renderAxes: (
     { __typename?: 'RenderAxes' }
     & LayerRenderAxesFragment
+  ), redLens: (
+    { __typename?: 'ArrayLens' }
+    & ChannelLensFragment
+  ), greenLens: (
+    { __typename?: 'ArrayLens' }
+    & ChannelLensFragment
+  ), blueLens: (
+    { __typename?: 'ArrayLens' }
+    & ChannelLensFragment
   ), pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
@@ -11608,7 +11574,7 @@ export type SceneLensFragment = { __typename: 'ArrayLens', descriptors: any, id:
   ) | null, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
-  )>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
+  )>, dataset: { __typename?: 'ArrayDataset', id: string, name: string, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, fullLens?: { __typename?: 'ArrayLens', id: string, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, valueHistogram?: { __typename?: 'ValueHistogram', id: string, min?: number | null, max?: number | null } | null }> } | null, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, chunkShape: Array<number>, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
         { __typename?: 'AffineTransformation' }
         & Transformation_AffineTransformation_Fragment
       ) | (
@@ -11641,12 +11607,51 @@ export type SceneLensFragment = { __typename: 'ArrayLens', descriptors: any, id:
       ) | null, store: (
         { __typename?: 'ZarrStore' }
         & ZarrStoreFragment
-      ) }> }, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, valueHistogram?: { __typename?: 'ValueHistogram', bins: Array<number>, histogram: Array<number>, min?: number | null, max?: number | null, p1?: number | null, p99?: number | null } | null, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null, lightGraph?: { __typename?: 'LightPath', graph: (
+      ) }> }, activeAnchors: Array<{ __typename?: 'CoordinateAnchor', id: string, coordinates: any, valueHistogram?: { __typename?: 'ValueHistogram', id: string, bins: Array<number>, histogram: Array<number>, min?: number | null, max?: number | null, p1?: number | null, p99?: number | null } | null, channelLabel?: { __typename?: 'ChannelLabel', label: string } | null, lightGraph?: { __typename?: 'LightPath', graph: (
         { __typename?: 'LightpathGraph' }
         & LightpathGraphFragment
       ) } | null }> };
 
 export type LensWindowFragment = { __typename?: 'Window', axis: string, min?: number | null, max?: number | null };
+
+export type ChannelLensFragment = { __typename?: 'ArrayLens', id: string, slices: Array<(
+    { __typename?: 'Slice' }
+    & DimSliceFragment
+  )> };
+
+type LensSelection_AnnotationLens_Fragment = { __typename: 'AnnotationLens', id: string, annotationCollection: { __typename?: 'AnnotationCollection', id: string } };
+
+type LensSelection_ArrayLens_Fragment = { __typename: 'ArrayLens', id: string, slices: Array<(
+    { __typename?: 'Slice' }
+    & DimSliceFragment
+  )>, dataset: { __typename?: 'ArrayDataset', id: string } };
+
+type LensSelection_MeshLens_Fragment = { __typename: 'MeshLens', id: string, meshCollection: { __typename?: 'MeshCollection', id: string } };
+
+type LensSelection_NetworkLens_Fragment = { __typename: 'NetworkLens', id: string, networkCollection: { __typename?: 'NetworkCollection', id: string } };
+
+type LensSelection_SparseLens_Fragment = { __typename: 'SparseLens', id: string, windows: Array<(
+    { __typename?: 'Window' }
+    & LensWindowFragment
+  )>, sparseDataset: { __typename?: 'SparseDataset', id: string } };
+
+type LensSelection_TableLens_Fragment = { __typename: 'TableLens', id: string, tableDataset: { __typename?: 'TableDataset', id: string } };
+
+export type LensSelectionFragment = LensSelection_AnnotationLens_Fragment | LensSelection_ArrayLens_Fragment | LensSelection_MeshLens_Fragment | LensSelection_NetworkLens_Fragment | LensSelection_SparseLens_Fragment | LensSelection_TableLens_Fragment;
+
+type LensSpec_AnnotationLens_Fragment = { __typename?: 'AnnotationLens' };
+
+type LensSpec_ArrayLens_Fragment = { __typename?: 'ArrayLens', arraySpec: Array<ArrayDatasetSpec> };
+
+type LensSpec_MeshLens_Fragment = { __typename?: 'MeshLens' };
+
+type LensSpec_NetworkLens_Fragment = { __typename?: 'NetworkLens' };
+
+type LensSpec_SparseLens_Fragment = { __typename?: 'SparseLens', sparseSpec: Array<SparseDatasetSpec> };
+
+type LensSpec_TableLens_Fragment = { __typename?: 'TableLens', tableSpec: Array<TableDatasetSpec> };
+
+export type LensSpecFragment = LensSpec_AnnotationLens_Fragment | LensSpec_ArrayLens_Fragment | LensSpec_MeshLens_Fragment | LensSpec_NetworkLens_Fragment | LensSpec_SparseLens_Fragment | LensSpec_TableLens_Fragment;
 
 type LensCore_AnnotationLens_Fragment = { __typename: 'AnnotationLens', descriptors: any, id: string, name?: string | null, kind: LensKind, createdAt: any, creator?: { __typename?: 'User', sub: string } | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, defaultScene?: (
     { __typename?: 'Scene' }
@@ -11713,9 +11718,13 @@ type LensSubject_TableLens_Fragment = { __typename: 'TableLens', windows: Array<
 export type LensSubjectFragment = LensSubject_AnnotationLens_Fragment | LensSubject_ArrayLens_Fragment | LensSubject_MeshLens_Fragment | LensSubject_NetworkLens_Fragment | LensSubject_SparseLens_Fragment | LensSubject_TableLens_Fragment;
 
 type DetailLens_AnnotationLens_Fragment = (
-  { __typename?: 'AnnotationLens' }
+  { __typename?: 'AnnotationLens', scenes: Array<(
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  )> }
   & LensCore_AnnotationLens_Fragment
   & LensSubject_AnnotationLens_Fragment
+  & LensSpec_AnnotationLens_Fragment
 );
 
 type DetailLens_ArrayLens_Fragment = (
@@ -11749,39 +11758,56 @@ type DetailLens_ArrayLens_Fragment = (
   ) | (
     { __typename?: 'UnmappableTransformation' }
     & Transformation_UnmappableTransformation_Fragment
-  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, fullLens?: { __typename?: 'ArrayLens', id: string } | null }, scenes: Array<(
-    { __typename?: 'Scene' }
-    & ListSceneFragment
-  )>, derivedDatasets: Array<(
+  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, fullLens?: { __typename?: 'ArrayLens', id: string } | null }, derivedDatasets: Array<(
     { __typename?: 'ArrayDataset' }
     & DerivedDatasetFragment
+  )>, scenes: Array<(
+    { __typename?: 'Scene' }
+    & ListSceneFragment
   )> }
   & LensCore_ArrayLens_Fragment
   & LensSubject_ArrayLens_Fragment
+  & LensSpec_ArrayLens_Fragment
 );
 
 type DetailLens_MeshLens_Fragment = (
-  { __typename?: 'MeshLens' }
+  { __typename?: 'MeshLens', scenes: Array<(
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  )> }
   & LensCore_MeshLens_Fragment
   & LensSubject_MeshLens_Fragment
+  & LensSpec_MeshLens_Fragment
 );
 
 type DetailLens_NetworkLens_Fragment = (
-  { __typename?: 'NetworkLens' }
+  { __typename?: 'NetworkLens', scenes: Array<(
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  )> }
   & LensCore_NetworkLens_Fragment
   & LensSubject_NetworkLens_Fragment
+  & LensSpec_NetworkLens_Fragment
 );
 
 type DetailLens_SparseLens_Fragment = (
-  { __typename?: 'SparseLens' }
+  { __typename?: 'SparseLens', scenes: Array<(
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  )> }
   & LensCore_SparseLens_Fragment
   & LensSubject_SparseLens_Fragment
+  & LensSpec_SparseLens_Fragment
 );
 
 type DetailLens_TableLens_Fragment = (
-  { __typename?: 'TableLens' }
+  { __typename?: 'TableLens', scenes: Array<(
+    { __typename?: 'Scene' }
+    & ListSceneFragment
+  )> }
   & LensCore_TableLens_Fragment
   & LensSubject_TableLens_Fragment
+  & LensSpec_TableLens_Fragment
 );
 
 export type DetailLensFragment = DetailLens_AnnotationLens_Fragment | DetailLens_ArrayLens_Fragment | DetailLens_MeshLens_Fragment | DetailLens_NetworkLens_Fragment | DetailLens_SparseLens_Fragment | DetailLens_TableLens_Fragment;
@@ -11790,39 +11816,45 @@ type ListLens_AnnotationLens_Fragment = (
   { __typename?: 'AnnotationLens' }
   & LensCore_AnnotationLens_Fragment
   & LensSubject_AnnotationLens_Fragment
+  & LensSpec_AnnotationLens_Fragment
 );
 
 type ListLens_ArrayLens_Fragment = (
   { __typename?: 'ArrayLens', latestSnapshot?: (
     { __typename?: 'SceneSnapshot' }
     & SceneSnapshotFragment
-  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, spec: Array<ArrayDatasetSpec>, multiscale: boolean } }
+  ) | null, dataset: { __typename?: 'ArrayDataset', id: string, multiscale: boolean } }
   & LensCore_ArrayLens_Fragment
   & LensSubject_ArrayLens_Fragment
+  & LensSpec_ArrayLens_Fragment
 );
 
 type ListLens_MeshLens_Fragment = (
   { __typename?: 'MeshLens' }
   & LensCore_MeshLens_Fragment
   & LensSubject_MeshLens_Fragment
+  & LensSpec_MeshLens_Fragment
 );
 
 type ListLens_NetworkLens_Fragment = (
   { __typename?: 'NetworkLens' }
   & LensCore_NetworkLens_Fragment
   & LensSubject_NetworkLens_Fragment
+  & LensSpec_NetworkLens_Fragment
 );
 
 type ListLens_SparseLens_Fragment = (
   { __typename?: 'SparseLens' }
   & LensCore_SparseLens_Fragment
   & LensSubject_SparseLens_Fragment
+  & LensSpec_SparseLens_Fragment
 );
 
 type ListLens_TableLens_Fragment = (
   { __typename?: 'TableLens' }
   & LensCore_TableLens_Fragment
   & LensSubject_TableLens_Fragment
+  & LensSpec_TableLens_Fragment
 );
 
 export type ListLensFragment = ListLens_AnnotationLens_Fragment | ListLens_ArrayLens_Fragment | ListLens_MeshLens_Fragment | ListLens_NetworkLens_Fragment | ListLens_SparseLens_Fragment | ListLens_TableLens_Fragment;
@@ -12984,16 +13016,6 @@ export type UpdateVectorLayerMutation = { __typename?: 'Mutation', updateVectorL
     & SceneLayer_VectorLayer_Fragment
   ) };
 
-export type CreateLensMutationVariables = Exact<{
-  input: CreateLensInput;
-}>;
-
-
-export type CreateLensMutation = { __typename?: 'Mutation', createLens: (
-    { __typename?: 'ArrayLens' }
-    & SceneLensFragment
-  ) };
-
 export type CreateListLensMutationVariables = Exact<{
   input: CreateLensInput;
 }>;
@@ -13069,13 +13091,73 @@ export type CreateAnnotationLensMutation = { __typename?: 'Mutation', createAnno
     & ListLens_AnnotationLens_Fragment
   ) };
 
+export type EnsureArrayLensMutationVariables = Exact<{
+  input: CreateLensInput;
+}>;
+
+
+export type EnsureArrayLensMutation = { __typename?: 'Mutation', createLens: (
+    { __typename?: 'ArrayLens' }
+    & LensSelection_ArrayLens_Fragment
+  ) };
+
+export type EnsureTableLensMutationVariables = Exact<{
+  input: CreateTableLensInput;
+}>;
+
+
+export type EnsureTableLensMutation = { __typename?: 'Mutation', createTableLens: (
+    { __typename?: 'TableLens' }
+    & LensSelection_TableLens_Fragment
+  ) };
+
+export type EnsureSparseLensMutationVariables = Exact<{
+  input: CreateSparseLensInput;
+}>;
+
+
+export type EnsureSparseLensMutation = { __typename?: 'Mutation', createSparseLens: (
+    { __typename?: 'SparseLens' }
+    & LensSelection_SparseLens_Fragment
+  ) };
+
+export type EnsureMeshLensMutationVariables = Exact<{
+  input: CreateMeshLensInput;
+}>;
+
+
+export type EnsureMeshLensMutation = { __typename?: 'Mutation', createMeshLens: (
+    { __typename?: 'MeshLens' }
+    & LensSelection_MeshLens_Fragment
+  ) };
+
+export type EnsureNetworkLensMutationVariables = Exact<{
+  input: CreateNetworkLensInput;
+}>;
+
+
+export type EnsureNetworkLensMutation = { __typename?: 'Mutation', createNetworkLens: (
+    { __typename?: 'NetworkLens' }
+    & LensSelection_NetworkLens_Fragment
+  ) };
+
+export type EnsureAnnotationLensMutationVariables = Exact<{
+  input: CreateAnnotationLensInput;
+}>;
+
+
+export type EnsureAnnotationLensMutation = { __typename?: 'Mutation', createAnnotationLens: (
+    { __typename?: 'AnnotationLens' }
+    & LensSelection_AnnotationLens_Fragment
+  ) };
+
 export type CreateMeshCollectionMutationVariables = Exact<{
   input: CreateMeshCollectionInput;
 }>;
 
 
 export type CreateMeshCollectionMutation = { __typename?: 'Mutation', createMeshCollection: (
-    { __typename?: 'MeshCollection' }
+    { __typename?: 'MeshCollection', fullLens?: { __typename?: 'MeshLens', id: string } | null }
     & MeshCollectionFragment
   ) };
 
@@ -13340,7 +13422,10 @@ export type AddLayerLensCapabilitiesQueryVariables = Exact<{
 }>;
 
 
-export type AddLayerLensCapabilitiesQuery = { __typename?: 'Query', drawable: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, labels: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, phasor: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, vector: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }> };
+export type AddLayerLensCapabilitiesQuery = { __typename?: 'Query', drawable: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string, suggestedRenderAxes: (
+      { __typename?: 'RenderAxes' }
+      & LayerRenderAxesFragment
+    ) } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, labels: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, phasor: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }>, rgb: Array<{ __typename?: 'AnnotationLens', id: string } | { __typename?: 'ArrayLens', id: string } | { __typename?: 'MeshLens', id: string } | { __typename?: 'NetworkLens', id: string } | { __typename?: 'SparseLens', id: string } | { __typename?: 'TableLens', id: string }> };
 
 export type AddLayerLineageQueryVariables = Exact<{
   coordinateSystem: Scalars['ID']['input'];
@@ -15100,15 +15185,31 @@ export type GetLensAnchorsQuery = { __typename?: 'Query', lens: { __typename?: '
       & FullCoordinateAnchorFragment
     )> } };
 
-export type ListLensesForDatasetQueryVariables = Exact<{
-  dataset: Scalars['ID']['input'];
+export type GetLensSelectionsQueryVariables = Exact<{
+  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  limit: Scalars['Int']['input'];
 }>;
 
 
-export type ListLensesForDatasetQuery = { __typename?: 'Query', lenses: Array<{ __typename?: 'AnnotationLens', id: string, name?: string | null } | { __typename?: 'ArrayLens', id: string, name?: string | null, slices: Array<(
-      { __typename?: 'Slice' }
-      & DimSliceFragment
-    )> } | { __typename?: 'MeshLens', id: string, name?: string | null } | { __typename?: 'NetworkLens', id: string, name?: string | null } | { __typename?: 'SparseLens', id: string, name?: string | null } | { __typename?: 'TableLens', id: string, name?: string | null }> };
+export type GetLensSelectionsQuery = { __typename?: 'Query', lenses: Array<(
+    { __typename?: 'AnnotationLens' }
+    & LensSelection_AnnotationLens_Fragment
+  ) | (
+    { __typename?: 'ArrayLens' }
+    & LensSelection_ArrayLens_Fragment
+  ) | (
+    { __typename?: 'MeshLens' }
+    & LensSelection_MeshLens_Fragment
+  ) | (
+    { __typename?: 'NetworkLens' }
+    & LensSelection_NetworkLens_Fragment
+  ) | (
+    { __typename?: 'SparseLens' }
+    & LensSelection_SparseLens_Fragment
+  ) | (
+    { __typename?: 'TableLens' }
+    & LensSelection_TableLens_Fragment
+  )> };
 
 export type GetLensQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -15495,11 +15596,22 @@ export type WatchLensesSubscription = { __typename?: 'Subscription', lenses: { _
       & ListLens_TableLens_Fragment
     ) | null } };
 
+export const DimSliceFragmentDoc = gql`
+    fragment DimSlice on Slice {
+  axis
+  start
+  stop
+  step
+}
+    `;
 export const AddLayerStagedLensFragmentDoc = gql`
     fragment AddLayerStagedLens on ArrayLens {
   id
   coordinateSystem {
     id
+  }
+  slices {
+    ...DimSlice
   }
   dataset {
     id
@@ -15508,7 +15620,7 @@ export const AddLayerStagedLensFragmentDoc = gql`
     }
   }
 }
-    `;
+    ${DimSliceFragmentDoc}`;
 export const AddLayerStagedLayerFragmentDoc = gql`
     fragment AddLayerStagedLayer on Layer {
   __typename
@@ -15524,7 +15636,6 @@ export const AddLayerStagedLayerFragmentDoc = gql`
     lens {
       ...AddLayerStagedLens
     }
-    intensityIndex
     colormap
     climMin
     climMax
@@ -15725,14 +15836,6 @@ export const AddLayerLineageNodeFragmentDoc = gql`
   }
 }
     ${DatasetLineageFragmentDoc}`;
-export const DimSliceFragmentDoc = gql`
-    fragment DimSlice on Slice {
-  axis
-  start
-  stop
-  step
-}
-    `;
 export const ListTableDatasetFragmentDoc = gql`
     fragment ListTableDataset on TableDataset {
   id
@@ -15774,11 +15877,6 @@ export const AddLayerCandidateFragmentDoc = gql`
     }
     lensSpace: coordinateSystem {
       id
-      axes {
-        name
-        type
-        order
-      }
     }
     toParent {
       id
@@ -15789,6 +15887,9 @@ export const AddLayerCandidateFragmentDoc = gql`
   }
   ... on TableDataset {
     ...ListTableDataset
+    fullLens {
+      id
+    }
     columns {
       ...TableDatasetColumn
     }
@@ -15803,6 +15904,9 @@ export const AddLayerCandidateFragmentDoc = gql`
     id
     version
     specVersion
+    fullLens {
+      id
+    }
     coordinateSystem {
       id
     }
@@ -15814,6 +15918,9 @@ export const AddLayerCandidateFragmentDoc = gql`
     id
     name
     description
+    fullLens {
+      id
+    }
     coordinateSystem {
       id
     }
@@ -15835,6 +15942,9 @@ export const AddLayerCandidateFragmentDoc = gql`
     id
     version
     specVersion
+    fullLens {
+      id
+    }
     coordinateSystem {
       id
     }
@@ -16889,11 +16999,7 @@ export const LabelFilterByFragmentDoc = gql`
   values
   exclude
   kind
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
 }
     `;
 export const ChartSeriesLayerFragmentDoc = gql`
@@ -17019,6 +17125,9 @@ export const ChartLayerCandidateFragmentDoc = gql`
   ... on TableDataset {
     id
     name
+    fullLens {
+      id
+    }
     columns {
       ...TableDatasetColumn
     }
@@ -17026,6 +17135,9 @@ export const ChartLayerCandidateFragmentDoc = gql`
   ... on AnnotationCollection {
     id
     name
+    fullLens {
+      id
+    }
   }
 }
     ${DimSliceFragmentDoc}
@@ -17323,6 +17435,49 @@ export const FolderFragmentDoc = gql`
     ${ProvenanceEntryFragmentDoc}
 ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}`;
+export const LensSelectionFragmentDoc = gql`
+    fragment LensSelection on Lens {
+  __typename
+  id
+  ... on ArrayLens {
+    slices {
+      ...DimSlice
+    }
+    dataset {
+      id
+    }
+  }
+  ... on SparseLens {
+    windows {
+      ...LensWindow
+    }
+    sparseDataset {
+      id
+    }
+  }
+  ... on TableLens {
+    tableDataset {
+      id
+    }
+  }
+  ... on MeshLens {
+    meshCollection {
+      id
+    }
+  }
+  ... on NetworkLens {
+    networkCollection {
+      id
+    }
+  }
+  ... on AnnotationLens {
+    annotationCollection {
+      id
+    }
+  }
+}
+    ${DimSliceFragmentDoc}
+${LensWindowFragmentDoc}`;
 export const LensCoreFragmentDoc = gql`
     fragment LensCore on Lens {
   __typename
@@ -17343,6 +17498,19 @@ export const LensCoreFragmentDoc = gql`
   }
 }
     ${ListSceneFragmentDoc}`;
+export const LensSpecFragmentDoc = gql`
+    fragment LensSpec on Lens {
+  ... on ArrayLens {
+    arraySpec: spec
+  }
+  ... on TableLens {
+    tableSpec: spec
+  }
+  ... on SparseLens {
+    sparseSpec: spec
+  }
+}
+    `;
 export const ListArrayDatasetFragmentDoc = gql`
     fragment ListArrayDataset on ArrayDataset {
   descriptors
@@ -17386,6 +17554,10 @@ export const DetailLensFragmentDoc = gql`
     fragment DetailLens on Lens {
   ...LensCore
   ...LensSubject
+  ...LensSpec
+  scenes {
+    ...ListScene
+  }
   ... on ArrayLens {
     toParent {
       ...Transformation
@@ -17396,9 +17568,6 @@ export const DetailLensFragmentDoc = gql`
         id
       }
     }
-    scenes {
-      ...ListScene
-    }
     derivedDatasets {
       ...DerivedDataset
     }
@@ -17406,26 +17575,28 @@ export const DetailLensFragmentDoc = gql`
 }
     ${LensCoreFragmentDoc}
 ${LensSubjectFragmentDoc}
-${TransformationFragmentDoc}
+${LensSpecFragmentDoc}
 ${ListSceneFragmentDoc}
+${TransformationFragmentDoc}
 ${DerivedDatasetFragmentDoc}`;
 export const ListLensFragmentDoc = gql`
     fragment ListLens on Lens {
   ...LensCore
   ...LensSubject
+  ...LensSpec
   ... on ArrayLens {
     latestSnapshot {
       ...SceneSnapshot
     }
     dataset {
       id
-      spec
       multiscale
     }
   }
 }
     ${LensCoreFragmentDoc}
 ${LensSubjectFragmentDoc}
+${LensSpecFragmentDoc}
 ${SceneSnapshotFragmentDoc}`;
 export const CameraStateFragmentDoc = gql`
     fragment CameraState on CameraState {
@@ -17529,6 +17700,17 @@ export const SceneLensFragmentDoc = gql`
       id
       name
     }
+    fullLens {
+      id
+      activeAnchors {
+        id
+        valueHistogram {
+          id
+          min
+          max
+        }
+      }
+    }
     dataArrays {
       id
       level
@@ -17550,6 +17732,7 @@ export const SceneLensFragmentDoc = gql`
     id
     coordinates
     valueHistogram {
+      id
       bins
       histogram
       min
@@ -17600,8 +17783,7 @@ export const TransferFunctionFragmentDoc = gql`
     `;
 export const ChannelSourceNodeFragmentDoc = gql`
     fragment ChannelSourceNode on ChannelSourceNode {
-  intensityAxis
-  intensityIndex
+  lens
   visible
   transfer {
     ...TransferFunction
@@ -17640,8 +17822,7 @@ export const PhasorNodeFragmentDoc = gql`
     fragment PhasorNode on PhasorNode {
   phasorAxis
   harmonic
-  intensityAxis
-  intensityIndex
+  lens
   visible
   phasorTransfer: transfer {
     ...PhasorTransfer
@@ -17707,11 +17888,17 @@ export const LayerRenderGraphFragmentDoc = gql`
   }
 }
     ${RenderNodeCommonFragmentDoc}`;
+export const ChannelLensFragmentDoc = gql`
+    fragment ChannelLens on ArrayLens {
+  id
+  slices {
+    ...DimSlice
+  }
+}
+    ${DimSliceFragmentDoc}`;
 export const PhasorRenderFragmentDoc = gql`
     fragment PhasorRender on PhasorRender {
   phasorAxis
-  intensityAxis
-  intensityIndex
   harmonic
   transfer {
     ...PhasorTransfer
@@ -17731,17 +17918,11 @@ export const LabelColorByFragmentDoc = gql`
   max
   label
   kind
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
 }
     `;
 export const LabelRenderFragmentDoc = gql`
     fragment LabelRender on LabelRender {
-  intensityAxis
-  intensityIndex
   seed
   background
   opacity
@@ -17819,11 +18000,7 @@ export const MeshColorByFragmentDoc = gql`
   max
   label
   kind
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
 }
     `;
 export const MeshFilterByFragmentDoc = gql`
@@ -17840,11 +18017,7 @@ export const MeshFilterByFragmentDoc = gql`
   values
   exclude
   kind
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
 }
     `;
 export const NetworkCollectionFragmentDoc = gql`
@@ -17876,11 +18049,7 @@ export const NetworkColorByFragmentDoc = gql`
   min
   max
   label
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
   attribute
   target
 }
@@ -17899,11 +18068,7 @@ export const NetworkFilterByFragmentDoc = gql`
   max
   values
   exclude
-  dataset
-  at {
-    axis
-    value
-  }
+  lens
   attribute
   target
 }
@@ -17945,8 +18110,6 @@ export const SceneLayerFragmentDoc = gql`
     renderAxes {
       ...LayerRenderAxes
     }
-    intensityAxis
-    intensityIndex
     intensityColormap: colormap
     color
     climMin
@@ -17961,10 +18124,15 @@ export const SceneLayerFragmentDoc = gql`
     renderAxes {
       ...LayerRenderAxes
     }
-    intensityAxis
-    redIndex
-    greenIndex
-    blueIndex
+    redLens {
+      ...ChannelLens
+    }
+    greenLens {
+      ...ChannelLens
+    }
+    blueLens {
+      ...ChannelLens
+    }
     climMin
     climMax
     whiteBalance
@@ -18037,7 +18205,6 @@ export const SceneLayerFragmentDoc = gql`
     idColumn
     pointSize
     colormap
-    colorColumn
     activeColorBy
     colorBys {
       ...LabelColorBy
@@ -18122,6 +18289,7 @@ export const SceneLayerFragmentDoc = gql`
 ${SceneLensFragmentDoc}
 ${LayerRenderAxesFragmentDoc}
 ${LayerRenderGraphFragmentDoc}
+${ChannelLensFragmentDoc}
 ${PhasorRenderFragmentDoc}
 ${LabelRenderFragmentDoc}
 ${AnnotationCollectionFragmentDoc}
@@ -20855,39 +21023,6 @@ export function useUpdateVectorLayerMutation(baseOptions?: ApolloReactHooks.Muta
 export type UpdateVectorLayerMutationHookResult = ReturnType<typeof useUpdateVectorLayerMutation>;
 export type UpdateVectorLayerMutationResult = Apollo.MutationResult<UpdateVectorLayerMutation>;
 export type UpdateVectorLayerMutationOptions = Apollo.BaseMutationOptions<UpdateVectorLayerMutation, UpdateVectorLayerMutationVariables>;
-export const CreateLensDocument = gql`
-    mutation CreateLens($input: CreateLensInput!) {
-  createLens(input: $input) {
-    ...SceneLens
-  }
-}
-    ${SceneLensFragmentDoc}`;
-export type CreateLensMutationFn = Apollo.MutationFunction<CreateLensMutation, CreateLensMutationVariables>;
-
-/**
- * __useCreateLensMutation__
- *
- * To run a mutation, you first call `useCreateLensMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateLensMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createLensMutation, { data, loading, error }] = useCreateLensMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useCreateLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateLensMutation, CreateLensMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<CreateLensMutation, CreateLensMutationVariables>(CreateLensDocument, options);
-      }
-export type CreateLensMutationHookResult = ReturnType<typeof useCreateLensMutation>;
-export type CreateLensMutationResult = Apollo.MutationResult<CreateLensMutation>;
-export type CreateLensMutationOptions = Apollo.BaseMutationOptions<CreateLensMutation, CreateLensMutationVariables>;
 export const CreateListLensDocument = gql`
     mutation CreateListLens($input: CreateLensInput!) {
   createLens(input: $input) {
@@ -21152,10 +21287,211 @@ export function useCreateAnnotationLensMutation(baseOptions?: ApolloReactHooks.M
 export type CreateAnnotationLensMutationHookResult = ReturnType<typeof useCreateAnnotationLensMutation>;
 export type CreateAnnotationLensMutationResult = Apollo.MutationResult<CreateAnnotationLensMutation>;
 export type CreateAnnotationLensMutationOptions = Apollo.BaseMutationOptions<CreateAnnotationLensMutation, CreateAnnotationLensMutationVariables>;
+export const EnsureArrayLensDocument = gql`
+    mutation EnsureArrayLens($input: CreateLensInput!) {
+  createLens(input: $input) {
+    ...LensSelection
+  }
+}
+    ${LensSelectionFragmentDoc}`;
+export type EnsureArrayLensMutationFn = Apollo.MutationFunction<EnsureArrayLensMutation, EnsureArrayLensMutationVariables>;
+
+/**
+ * __useEnsureArrayLensMutation__
+ *
+ * To run a mutation, you first call `useEnsureArrayLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEnsureArrayLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [ensureArrayLensMutation, { data, loading, error }] = useEnsureArrayLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useEnsureArrayLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EnsureArrayLensMutation, EnsureArrayLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<EnsureArrayLensMutation, EnsureArrayLensMutationVariables>(EnsureArrayLensDocument, options);
+      }
+export type EnsureArrayLensMutationHookResult = ReturnType<typeof useEnsureArrayLensMutation>;
+export type EnsureArrayLensMutationResult = Apollo.MutationResult<EnsureArrayLensMutation>;
+export type EnsureArrayLensMutationOptions = Apollo.BaseMutationOptions<EnsureArrayLensMutation, EnsureArrayLensMutationVariables>;
+export const EnsureTableLensDocument = gql`
+    mutation EnsureTableLens($input: CreateTableLensInput!) {
+  createTableLens(input: $input) {
+    ...LensSelection
+  }
+}
+    ${LensSelectionFragmentDoc}`;
+export type EnsureTableLensMutationFn = Apollo.MutationFunction<EnsureTableLensMutation, EnsureTableLensMutationVariables>;
+
+/**
+ * __useEnsureTableLensMutation__
+ *
+ * To run a mutation, you first call `useEnsureTableLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEnsureTableLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [ensureTableLensMutation, { data, loading, error }] = useEnsureTableLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useEnsureTableLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EnsureTableLensMutation, EnsureTableLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<EnsureTableLensMutation, EnsureTableLensMutationVariables>(EnsureTableLensDocument, options);
+      }
+export type EnsureTableLensMutationHookResult = ReturnType<typeof useEnsureTableLensMutation>;
+export type EnsureTableLensMutationResult = Apollo.MutationResult<EnsureTableLensMutation>;
+export type EnsureTableLensMutationOptions = Apollo.BaseMutationOptions<EnsureTableLensMutation, EnsureTableLensMutationVariables>;
+export const EnsureSparseLensDocument = gql`
+    mutation EnsureSparseLens($input: CreateSparseLensInput!) {
+  createSparseLens(input: $input) {
+    ...LensSelection
+  }
+}
+    ${LensSelectionFragmentDoc}`;
+export type EnsureSparseLensMutationFn = Apollo.MutationFunction<EnsureSparseLensMutation, EnsureSparseLensMutationVariables>;
+
+/**
+ * __useEnsureSparseLensMutation__
+ *
+ * To run a mutation, you first call `useEnsureSparseLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEnsureSparseLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [ensureSparseLensMutation, { data, loading, error }] = useEnsureSparseLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useEnsureSparseLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EnsureSparseLensMutation, EnsureSparseLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<EnsureSparseLensMutation, EnsureSparseLensMutationVariables>(EnsureSparseLensDocument, options);
+      }
+export type EnsureSparseLensMutationHookResult = ReturnType<typeof useEnsureSparseLensMutation>;
+export type EnsureSparseLensMutationResult = Apollo.MutationResult<EnsureSparseLensMutation>;
+export type EnsureSparseLensMutationOptions = Apollo.BaseMutationOptions<EnsureSparseLensMutation, EnsureSparseLensMutationVariables>;
+export const EnsureMeshLensDocument = gql`
+    mutation EnsureMeshLens($input: CreateMeshLensInput!) {
+  createMeshLens(input: $input) {
+    ...LensSelection
+  }
+}
+    ${LensSelectionFragmentDoc}`;
+export type EnsureMeshLensMutationFn = Apollo.MutationFunction<EnsureMeshLensMutation, EnsureMeshLensMutationVariables>;
+
+/**
+ * __useEnsureMeshLensMutation__
+ *
+ * To run a mutation, you first call `useEnsureMeshLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEnsureMeshLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [ensureMeshLensMutation, { data, loading, error }] = useEnsureMeshLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useEnsureMeshLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EnsureMeshLensMutation, EnsureMeshLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<EnsureMeshLensMutation, EnsureMeshLensMutationVariables>(EnsureMeshLensDocument, options);
+      }
+export type EnsureMeshLensMutationHookResult = ReturnType<typeof useEnsureMeshLensMutation>;
+export type EnsureMeshLensMutationResult = Apollo.MutationResult<EnsureMeshLensMutation>;
+export type EnsureMeshLensMutationOptions = Apollo.BaseMutationOptions<EnsureMeshLensMutation, EnsureMeshLensMutationVariables>;
+export const EnsureNetworkLensDocument = gql`
+    mutation EnsureNetworkLens($input: CreateNetworkLensInput!) {
+  createNetworkLens(input: $input) {
+    ...LensSelection
+  }
+}
+    ${LensSelectionFragmentDoc}`;
+export type EnsureNetworkLensMutationFn = Apollo.MutationFunction<EnsureNetworkLensMutation, EnsureNetworkLensMutationVariables>;
+
+/**
+ * __useEnsureNetworkLensMutation__
+ *
+ * To run a mutation, you first call `useEnsureNetworkLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEnsureNetworkLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [ensureNetworkLensMutation, { data, loading, error }] = useEnsureNetworkLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useEnsureNetworkLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EnsureNetworkLensMutation, EnsureNetworkLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<EnsureNetworkLensMutation, EnsureNetworkLensMutationVariables>(EnsureNetworkLensDocument, options);
+      }
+export type EnsureNetworkLensMutationHookResult = ReturnType<typeof useEnsureNetworkLensMutation>;
+export type EnsureNetworkLensMutationResult = Apollo.MutationResult<EnsureNetworkLensMutation>;
+export type EnsureNetworkLensMutationOptions = Apollo.BaseMutationOptions<EnsureNetworkLensMutation, EnsureNetworkLensMutationVariables>;
+export const EnsureAnnotationLensDocument = gql`
+    mutation EnsureAnnotationLens($input: CreateAnnotationLensInput!) {
+  createAnnotationLens(input: $input) {
+    ...LensSelection
+  }
+}
+    ${LensSelectionFragmentDoc}`;
+export type EnsureAnnotationLensMutationFn = Apollo.MutationFunction<EnsureAnnotationLensMutation, EnsureAnnotationLensMutationVariables>;
+
+/**
+ * __useEnsureAnnotationLensMutation__
+ *
+ * To run a mutation, you first call `useEnsureAnnotationLensMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEnsureAnnotationLensMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [ensureAnnotationLensMutation, { data, loading, error }] = useEnsureAnnotationLensMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useEnsureAnnotationLensMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EnsureAnnotationLensMutation, EnsureAnnotationLensMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<EnsureAnnotationLensMutation, EnsureAnnotationLensMutationVariables>(EnsureAnnotationLensDocument, options);
+      }
+export type EnsureAnnotationLensMutationHookResult = ReturnType<typeof useEnsureAnnotationLensMutation>;
+export type EnsureAnnotationLensMutationResult = Apollo.MutationResult<EnsureAnnotationLensMutation>;
+export type EnsureAnnotationLensMutationOptions = Apollo.BaseMutationOptions<EnsureAnnotationLensMutation, EnsureAnnotationLensMutationVariables>;
 export const CreateMeshCollectionDocument = gql`
     mutation CreateMeshCollection($input: CreateMeshCollectionInput!) {
   createMeshCollection(input: $input) {
     ...MeshCollection
+    fullLens {
+      id
+    }
   }
 }
     ${MeshCollectionFragmentDoc}`;
@@ -21641,6 +21977,11 @@ export const AddLayerLensCapabilitiesDocument = gql`
     query AddLayerLensCapabilities($space: ID!) {
   drawable: lenses(filters: {placeableIn: {space: $space, asLayer: IMAGE}}) {
     id
+    ... on ArrayLens {
+      suggestedRenderAxes {
+        ...LayerRenderAxes
+      }
+    }
   }
   labels: lenses(filters: {placeableIn: {space: $space, asLayer: LABEL}}) {
     id
@@ -21648,11 +21989,11 @@ export const AddLayerLensCapabilitiesDocument = gql`
   phasor: lenses(filters: {placeableIn: {space: $space, asLayer: PHASOR}}) {
     id
   }
-  vector: lenses(filters: {placeableIn: {space: $space, asLayer: VECTOR}}) {
+  rgb: lenses(filters: {placeableIn: {space: $space, asLayer: RGB}}) {
     id
   }
 }
-    `;
+    ${LayerRenderAxesFragmentDoc}`;
 
 /**
  * __useAddLayerLensCapabilitiesQuery__
@@ -23702,47 +24043,42 @@ export function useGetLensAnchorsLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type GetLensAnchorsQueryHookResult = ReturnType<typeof useGetLensAnchorsQuery>;
 export type GetLensAnchorsLazyQueryHookResult = ReturnType<typeof useGetLensAnchorsLazyQuery>;
 export type GetLensAnchorsQueryResult = Apollo.QueryResult<GetLensAnchorsQuery, GetLensAnchorsQueryVariables>;
-export const ListLensesForDatasetDocument = gql`
-    query ListLensesForDataset($dataset: ID!) {
-  lenses(filters: {dataset: $dataset}) {
-    id
-    name
-    ... on ArrayLens {
-      slices {
-        ...DimSlice
-      }
-    }
+export const GetLensSelectionsDocument = gql`
+    query GetLensSelections($ids: [ID!]!, $limit: Int!) {
+  lenses(filters: {ids: $ids}, pagination: {limit: $limit}) {
+    ...LensSelection
   }
 }
-    ${DimSliceFragmentDoc}`;
+    ${LensSelectionFragmentDoc}`;
 
 /**
- * __useListLensesForDatasetQuery__
+ * __useGetLensSelectionsQuery__
  *
- * To run a query within a React component, call `useListLensesForDatasetQuery` and pass it any options that fit your needs.
- * When your component renders, `useListLensesForDatasetQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetLensSelectionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetLensSelectionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useListLensesForDatasetQuery({
+ * const { data, loading, error } = useGetLensSelectionsQuery({
  *   variables: {
- *      dataset: // value for 'dataset'
+ *      ids: // value for 'ids'
+ *      limit: // value for 'limit'
  *   },
  * });
  */
-export function useListLensesForDatasetQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ListLensesForDatasetQuery, ListLensesForDatasetQueryVariables>) {
+export function useGetLensSelectionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetLensSelectionsQuery, GetLensSelectionsQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListLensesForDatasetQuery, ListLensesForDatasetQueryVariables>(ListLensesForDatasetDocument, options);
+        return ApolloReactHooks.useQuery<GetLensSelectionsQuery, GetLensSelectionsQueryVariables>(GetLensSelectionsDocument, options);
       }
-export function useListLensesForDatasetLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListLensesForDatasetQuery, ListLensesForDatasetQueryVariables>) {
+export function useGetLensSelectionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetLensSelectionsQuery, GetLensSelectionsQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListLensesForDatasetQuery, ListLensesForDatasetQueryVariables>(ListLensesForDatasetDocument, options);
+          return ApolloReactHooks.useLazyQuery<GetLensSelectionsQuery, GetLensSelectionsQueryVariables>(GetLensSelectionsDocument, options);
         }
-export type ListLensesForDatasetQueryHookResult = ReturnType<typeof useListLensesForDatasetQuery>;
-export type ListLensesForDatasetLazyQueryHookResult = ReturnType<typeof useListLensesForDatasetLazyQuery>;
-export type ListLensesForDatasetQueryResult = Apollo.QueryResult<ListLensesForDatasetQuery, ListLensesForDatasetQueryVariables>;
+export type GetLensSelectionsQueryHookResult = ReturnType<typeof useGetLensSelectionsQuery>;
+export type GetLensSelectionsLazyQueryHookResult = ReturnType<typeof useGetLensSelectionsLazyQuery>;
+export type GetLensSelectionsQueryResult = Apollo.QueryResult<GetLensSelectionsQuery, GetLensSelectionsQueryVariables>;
 export const GetLensDocument = gql`
     query GetLens($id: ID!) {
   lens(id: $id) {

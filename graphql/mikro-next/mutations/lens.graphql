@@ -1,11 +1,3 @@
-# A lens with no slices views the whole dataset — the same "full lens"
-# createSceneFromCoordinateSystem bootstraps over a dataset's own grid.
-mutation CreateLens($input: CreateLensInput!) {
-  createLens(input: $input) {
-    ...SceneLens
-  }
-}
-
 # The same call for a lens a person cuts by hand. The server hands back the
 # existing lens when this dataset already has one with these slices, so asking
 # twice is safe and the result is always the lens to open.
@@ -59,5 +51,46 @@ mutation CreateNetworkLens($input: CreateNetworkLensInput!) {
 mutation CreateAnnotationLens($input: CreateAnnotationLensInput!) {
   createAnnotationLens(input: $input) {
     ...ListLens
+  }
+}
+
+# The lens FOR a selection, when only its id is wanted: one channel of a
+# dataset to draw, one position of a matrix to colour by, a container's whole
+# lens to make a layer from. The create mutations are idempotent, so this finds
+# the lens that exists or makes it; `LensSelection` keeps the answer to an id
+# and what it selects (`mikro/lib/lenses/lensRegistry.ts`).
+mutation EnsureArrayLens($input: CreateLensInput!) {
+  createLens(input: $input) {
+    ...LensSelection
+  }
+}
+
+mutation EnsureTableLens($input: CreateTableLensInput!) {
+  createTableLens(input: $input) {
+    ...LensSelection
+  }
+}
+
+mutation EnsureSparseLens($input: CreateSparseLensInput!) {
+  createSparseLens(input: $input) {
+    ...LensSelection
+  }
+}
+
+mutation EnsureMeshLens($input: CreateMeshLensInput!) {
+  createMeshLens(input: $input) {
+    ...LensSelection
+  }
+}
+
+mutation EnsureNetworkLens($input: CreateNetworkLensInput!) {
+  createNetworkLens(input: $input) {
+    ...LensSelection
+  }
+}
+
+mutation EnsureAnnotationLens($input: CreateAnnotationLensInput!) {
+  createAnnotationLens(input: $input) {
+    ...LensSelection
   }
 }

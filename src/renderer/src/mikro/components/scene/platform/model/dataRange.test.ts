@@ -101,3 +101,41 @@ describe("dtypeRangeIsWeakProxy", () => {
     }
   });
 });
+
+describe("the pool range is the DATASET's, whichever lens of it a layer draws", () => {
+  const histogram = (min: number, max: number) => ({ valueHistogram: { min, max } });
+  // The dataset's whole lens sees every channel's anchor.
+  const dataset = { fullLens: { activeAnchors: [histogram(0, 500), histogram(12, 30000)] } };
+  // A single-channel lens sees only its own.
+  const channel = (own: { min: number; max: number }) =>
+    ({
+      lens: { activeAnchors: [histogram(own.min, own.max)], dataset },
+    }) as unknown as ImageLayerFragment;
+
+  it("agrees across the channel lenses of one dataset", () => {
+    // `dataRange` is in the pool key: a range that followed each channel's own
+    // anchors would split one image into a pool per channel.
+    expect(resolveLayerDataRange(channel({ min: 0, max: 500 }), "float32")).toEqual([0, 30000]);
+    expect(resolveLayerDataRange(channel({ min: 12, max: 30000 }), "float32")).toEqual([0, 30000]);
+  });
+
+  it("does not fall back to the layer's own anchors when the dataset has none usable", () => {
+    // The whole lens answered, with nothing: that is the dataset's answer, and
+    // every channel must take the same (dtype) range rather than its own.
+    const bare = {
+      lens: {
+        activeAnchors: [histogram(5, 50)],
+        dataset: { fullLens: { activeAnchors: [] } },
+      },
+    } as unknown as ImageLayerFragment;
+    expect(serverHistogramRange(bare)).toBeNull();
+    expect(resolveLayerDataRange(bare, "float32")).toEqual([0, 1]);
+  });
+
+  it("reads the layer's own anchors for a payload that carries no whole lens", () => {
+    const legacy = {
+      lens: { activeAnchors: [histogram(5, 50)], dataset: { fullLens: null } },
+    } as unknown as ImageLayerFragment;
+    expect(resolveLayerDataRange(legacy, "float32")).toEqual([5, 50]);
+  });
+});

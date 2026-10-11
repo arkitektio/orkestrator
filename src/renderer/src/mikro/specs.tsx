@@ -1,16 +1,32 @@
 import {
+  Activity,
   Box,
   Boxes,
+  CircleDot,
   Clock,
+  GitBranch,
+  Grid3x3,
+  Group,
   Hash,
   Image,
+  KeyRound,
   Layers,
   LineChart,
+  ListOrdered,
+  LocateFixed,
+  Minus,
+  MoveUpRight,
+  Route,
+  Rows3,
+  ScatterChart,
+  Scissors,
+  Share2,
+  Timer,
   Waves,
   Zap,
   type LucideIcon
 } from 'lucide-react'
-import { ArrayDatasetSpec } from './api/graphql'
+import { ArrayDatasetSpec, SparseDatasetSpec, TableDatasetSpec } from './api/graphql'
 
 /**
  * The presentable form of ArrayDatasetSpec — what a dataset structurally IS, derived
@@ -84,7 +100,7 @@ export const ADATASET_SPECS: readonly ArrayDatasetSpecEntry[] = [
     short: '3d',
     label: 'Volumes',
     description:
-      'Datasets with three spatial axes: a stack. Holds whenever a z axis is present, even if it carries a single plane.',
+      'Datasets with three spatial axes of more than one position each: a stack. A z axis of a single plane does not make one.',
     icon: Box,
     kind: 'spatial',
     spatialRank: 3
@@ -103,8 +119,7 @@ export const ADATASET_SPECS: readonly ArrayDatasetSpecEntry[] = [
     slug: 'multichannel',
     short: 'multichannel',
     label: 'Multichannel',
-    description:
-      'Datasets carrying a CHANNEL axis. Presence only: a one-channel axis still counts.',
+    description: 'Datasets carrying a CHANNEL axis of more than one channel.',
     icon: Layers,
     kind: 'modifier'
   },
@@ -113,8 +128,7 @@ export const ADATASET_SPECS: readonly ArrayDatasetSpecEntry[] = [
     slug: 'timeseries',
     short: 'timeseries',
     label: 'Timeseries',
-    description:
-      'Datasets carrying a TIME axis — a timelapse. Presence only: a single-frame time axis still counts.',
+    description: 'Datasets carrying a TIME axis of more than one frame — a timelapse.',
     icon: Clock,
     kind: 'modifier'
   },
@@ -135,6 +149,46 @@ export const ADATASET_SPECS: readonly ArrayDatasetSpecEntry[] = [
     label: 'FLIM',
     description: 'Datasets carrying a MICROTIME axis: fluorescence-lifetime arrival-time bins.',
     icon: Zap,
+    kind: 'modifier'
+  },
+  {
+    spec: ArrayDatasetSpec.DisplacementField,
+    slug: 'displacement-field',
+    short: 'flow',
+    label: 'Displacement fields',
+    description:
+      'Datasets whose values are per-point offsets — a flow field, a drift map, a deformation.',
+    icon: MoveUpRight,
+    kind: 'modifier'
+  },
+  {
+    spec: ArrayDatasetSpec.CoordinateField,
+    slug: 'coordinate-field',
+    short: 'coordinates',
+    label: 'Coordinate fields',
+    description:
+      'Datasets whose values are absolute positions — a lookup map, the field of a FIELD edge.',
+    icon: LocateFixed,
+    kind: 'modifier'
+  },
+  {
+    spec: ArrayDatasetSpec.Indexed,
+    slug: 'indexed',
+    short: 'indexed',
+    label: 'Indexed',
+    description:
+      'Datasets carrying an axis that enumerates rather than measures — a stack of per-object crops, a per-object measurement.',
+    icon: ListOrdered,
+    kind: 'modifier'
+  },
+  {
+    spec: ArrayDatasetSpec.Trace,
+    slug: 'trace',
+    short: 'trace',
+    label: 'Traces',
+    description:
+      'Curves along one measured axis — a line profile, a time trace, a decay, a spectrum: what a chart draws whole.',
+    icon: Activity,
     kind: 'modifier'
   }
 ]
@@ -160,6 +214,124 @@ export const spatialSpecOf = (specs: readonly ArrayDatasetSpec[] | undefined) =>
 /** The acquisition modifiers a dataset carries, in catalogue order. */
 export const modifierSpecsOf = (specs: readonly ArrayDatasetSpec[] | undefined) =>
   ADATASET_SPECS.filter((entry) => entry.kind === 'modifier' && specs?.includes(entry.spec))
+
+/**
+ * The same catalogue for the two other containers whose selections have a
+ * structural vocabulary. Display only (a short word and an icon per member):
+ * there are no per-spec pages for tables or matrices, so no slug routes. `kind`
+ * keeps the schema's split — exactly one SHAPE member ever holds (the placement
+ * of a table, the rank of a matrix), and the modifiers stack beside it.
+ */
+export type ContainerSpecEntry<S extends string> = {
+  spec: S
+  /** URL value for a filter. */
+  slug: string
+  /** Lowercase, for a badge on a card. */
+  short: string
+  /** For a filter row. */
+  label: string
+  icon: LucideIcon
+  kind: 'shape' | 'modifier'
+}
+
+export const TDATASET_SPECS: readonly ContainerSpecEntry<TableDatasetSpec>[] = [
+  { spec: TableDatasetSpec.Records, slug: 'records', short: 'records', label: 'Records', icon: Rows3, kind: 'shape' },
+  { spec: TableDatasetSpec.Points_1D, slug: 'points-1d', short: '1d points', label: 'Points along a line', icon: Minus, kind: 'shape' },
+  { spec: TableDatasetSpec.Points_2D, slug: 'points-2d', short: '2d points', label: 'Points in a plane', icon: ScatterChart, kind: 'shape' },
+  { spec: TableDatasetSpec.Points_3D, slug: 'points-3d', short: '3d points', label: 'Points in a volume', icon: Box, kind: 'shape' },
+  { spec: TableDatasetSpec.PointsNd, slug: 'points-nd', short: 'nd points', label: 'Points in four or more axes', icon: Boxes, kind: 'shape' },
+  { spec: TableDatasetSpec.Timed, slug: 'timed', short: 'timed', label: 'Timed', icon: Timer, kind: 'modifier' },
+  { spec: TableDatasetSpec.Tracked, slug: 'tracked', short: 'tracked', label: 'Tracked', icon: Route, kind: 'modifier' },
+  { spec: TableDatasetSpec.Grouped, slug: 'grouped', short: 'grouped', label: 'Grouped', icon: Group, kind: 'modifier' },
+  { spec: TableDatasetSpec.Keyed, slug: 'keyed', short: 'keyed', label: 'Keyed', icon: KeyRound, kind: 'modifier' },
+  { spec: TableDatasetSpec.NodeTable, slug: 'node-table', short: 'nodes', label: 'Node tables', icon: CircleDot, kind: 'modifier' },
+  { spec: TableDatasetSpec.EdgeTable, slug: 'edge-table', short: 'edges', label: 'Edge tables', icon: Share2, kind: 'modifier' },
+  { spec: TableDatasetSpec.Series, slug: 'series', short: 'series', label: 'Series', icon: Activity, kind: 'modifier' }
+]
+
+export const SDATASET_SPECS: readonly ContainerSpecEntry<SparseDatasetSpec>[] = [
+  { spec: SparseDatasetSpec.Scalar, slug: 'scalar', short: 'scalar', label: 'Scalars', icon: Hash, kind: 'shape' },
+  { spec: SparseDatasetSpec.Vector, slug: 'vector', short: 'vector', label: 'Vectors', icon: GitBranch, kind: 'shape' },
+  { spec: SparseDatasetSpec.Matrix, slug: 'matrix', short: 'matrix', label: 'Matrices', icon: Grid3x3, kind: 'shape' },
+  { spec: SparseDatasetSpec.Tensor, slug: 'tensor', short: 'tensor', label: 'Tensors', icon: Boxes, kind: 'shape' },
+  { spec: SparseDatasetSpec.Slice, slug: 'slice', short: 'slice', label: 'Slices', icon: Scissors, kind: 'modifier' }
+]
+
+/** One member of a lens' spec, reduced to what a tile or a filter row shows. */
+export type LensSpecEntry = {
+  spec: string
+  slug: string
+  short: string
+  label: string
+  icon: LucideIcon
+  /** The one member of its kind that ever holds; false for a stacking modifier. */
+  shape: boolean
+}
+
+const ARRAY_LENS_SPECS: readonly LensSpecEntry[] = ADATASET_SPECS.map((entry) => ({
+  spec: entry.spec,
+  slug: entry.slug,
+  short: entry.short,
+  label: entry.label,
+  icon: entry.icon,
+  shape: entry.kind === 'spatial'
+}))
+const containerLensSpecs = (
+  entries: readonly ContainerSpecEntry<string>[]
+): readonly LensSpecEntry[] =>
+  entries.map(({ kind, ...entry }) => ({ ...entry, shape: kind === 'shape' }))
+
+/**
+ * The spec vocabulary of a lens kind, in catalogue order, keyed by the
+ * `LensKind` wire value; empty for the kinds that have none (mesh, network,
+ * annotation).
+ */
+export const LENS_SPECS: Readonly<Record<string, readonly LensSpecEntry[]>> = {
+  ARRAY: ARRAY_LENS_SPECS,
+  TABLE: containerLensSpecs(TDATASET_SPECS),
+  SPARSE: containerLensSpecs(SDATASET_SPECS)
+}
+
+/**
+ * What a lens' SELECTION structurally is, in catalogue order: the lens' own
+ * `spec`, read over what it leaves free, so one plane of a stack is an image
+ * and one frame of a tracking table is no longer timed. Empty for a lens kind
+ * with no spec, and for a member the catalogue does not know yet.
+ */
+export const lensSpecEntries = (lens: object): LensSpecEntry[] => {
+  // The `LensSpec` fragment aliases the field per kind (the three enums cannot
+  // share a response key), so which alias is present says which vocabulary.
+  const read = (key: string) =>
+    (lens as Record<string, readonly string[] | null | undefined>)[key] ?? null
+  const array = read('arraySpec')
+  const table = read('tableSpec')
+  const sparse = read('sparseSpec')
+  const kind = array ? 'ARRAY' : table ? 'TABLE' : sparse ? 'SPARSE' : ''
+  const specs = array ?? table ?? sparse ?? []
+  return (LENS_SPECS[kind] ?? []).filter((entry) => specs.includes(entry.spec))
+}
+
+/**
+ * The `LensFilter` narrowing for a set of spec slugs of one lens kind, or
+ * nothing when the kind has no spec or none is picked. A lens must satisfy
+ * EVERY one, which is how the server reads the three fields.
+ */
+export const lensSpecFilter = (
+  kind: string | null | undefined,
+  slugs: readonly string[]
+): {
+  arraySpec?: ArrayDatasetSpec[]
+  tableSpec?: TableDatasetSpec[]
+  sparseSpec?: SparseDatasetSpec[]
+} => {
+  const picked = (LENS_SPECS[kind ?? ''] ?? [])
+    .filter((entry) => slugs.includes(entry.slug))
+    .map((entry) => entry.spec)
+  if (picked.length === 0) return {}
+  if (kind === 'ARRAY') return { arraySpec: picked as ArrayDatasetSpec[] }
+  if (kind === 'TABLE') return { tableSpec: picked as TableDatasetSpec[] }
+  return { sparseSpec: picked as SparseDatasetSpec[] }
+}
 
 export type ArrayDatasetAxis = { name: string; extent: number }
 

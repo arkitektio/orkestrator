@@ -19,6 +19,7 @@ import {
 } from "../api/graphql";
 import { chartAxisLabel } from "../chartAxis";
 import { lensLabel } from "../lenses";
+import { useLensRegistry } from "../lib/lenses/useLensRegistry";
 import {
   chartCandidates,
   type CandidatesInput,
@@ -137,6 +138,9 @@ export const AddChartLayerForm = (props: {
   const [addSeries, series] = useCreateSeriesChartLayerMutation({ refetchQueries: REFETCH });
   const [addAnnotations, annotations] = useCreateAnnotationChartLayerMutation({ refetchQueries: REFETCH });
   const busy = trace.loading || series.loading || annotations.loading;
+  // A chart layer reads through a LENS; a row for a whole container carries
+  // its whole lens, and the registry finds it when the row did not.
+  const registry = useLensRegistry();
 
   const candidates = useMemo(
     () => (data ? chartCandidates(data.chart as unknown as CandidatesInput) : null),
@@ -210,15 +214,18 @@ export const AddChartLayerForm = (props: {
                   initial={table.id === props.table ? props.valueColumn : null}
                   disabled={busy}
                   onAdd={(valueColumn) =>
-                    add("Series", () =>
+                    add("Series", async () =>
                       addSeries({
                         variables: {
                           input: {
                             chart,
-                            // A lens names its table; the server takes one or the other.
-                            ...(props.lens && table.id === props.table
-                              ? { lens: props.lens }
-                              : { tableDataset: table.id }),
+                            // The lens handed in when it is this table's, else
+                            // the table's whole lens.
+                            lens:
+                              props.lens && table.id === props.table
+                                ? props.lens
+                                : (table.wholeLens ??
+                                  (await registry.ensureWholeLens({ tableDataset: table.id }))),
                             valueColumn,
                           },
                         },
@@ -242,9 +249,18 @@ export const AddChartLayerForm = (props: {
                     variant="outline"
                     disabled={busy || collection.drawn}
                     onClick={() =>
-                      add("Annotations", () =>
+                      add("Annotations", async () =>
                         addAnnotations({
-                          variables: { input: { chart, annotationCollection: collection.id } },
+                          variables: {
+                            input: {
+                              chart,
+                              lens:
+                                collection.wholeLens ??
+                                (await registry.ensureWholeLens({
+                                  annotationCollection: collection.id,
+                                })),
+                            },
+                          },
                         }),
                       )
                     }

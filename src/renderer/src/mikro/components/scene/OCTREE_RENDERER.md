@@ -95,6 +95,49 @@ level-0 `dataArrays` (one with `scaleFactors: null`, one with `[1,1,1,1]`)
 pointing at different stores. Without dedupe the planner planned — and the
 residency manager fetched — the same voxels twice (see pitfall P6).
 
+### 2.1a The channel is a lens, the pool is a dataset (`platform/model/channelLens.ts`)
+
+The server names which channel a layer draws through the layer's **lens**: an
+intensity or phasor layer's lens is its dataset with the channel axis sliced to
+one position, an rgb layer carries three such lenses (`redLens` / `greenLens` /
+`blueLens`), and a render-graph source names one by id. Four channels of one
+acquisition are four lenses with four ids, four slice lists and four anchor
+sets. There is no `intensityIndex` on the wire.
+
+The engine is unchanged by that, and the reason is one boundary:
+`normalizeBrickLayer` (`platform/model/layerModel.ts`).
+
+- **The slice becomes an index.** The channel axis is the layer's
+  `renderAxes.intensity`; the position the lens pins it to is
+  `LayerState.channelPin`, and it lands on the sources as
+  `intensityIndex` — still a level-0 dataset index, still "slab i = channel i"
+  (§2.1), still a shader uniform.
+- **The lens the engine is handed has no channel slice** (`poolLensOf`). A pool
+  holds every channel of its dataset and the fetch never reads a slice on the
+  channel axis, so the slice says nothing about what a brick holds — but
+  `buildSliceSignature` serializes `lens.slices` into the pool key. Left in, one
+  image is a pool per channel: N atlases with the device budget split N ways, N
+  plan traversals, N raymarch passes, and no rgba8 one-tap path. Slices that
+  select a whole axis are dropped for the same reason (one selection, one
+  spelling). A LABEL mask is the exception: it has no intensity axis, so its
+  channel slice stays in the lens as an ordinary collapsed dim.
+- **The value range is the dataset's** (`serverHistogramRange` reads
+  `lens.dataset.fullLens.activeAnchors`). A single-channel lens sees only its
+  own channel's histogram, and `dataRange` is in the pool key too.
+
+`features/bricks/octree/channelLensPool.test.ts` runs the real path from four
+channel-lens fragments to the pool key and requires ONE pool, one plan class and
+the same key as an image layer over the whole lens; its last case puts the
+server's slices back and gets four.
+
+Lenses named by bare id (a graph node's channel, a sparse colouring's position)
+are resolved through the session registry (`mikro/lib/lenses/lensRegistry.ts`).
+`SceneProvider` asks for the unknown ones in one request, started before the
+zarr arrays open and awaited after; a scene whose layers carry their lenses as
+objects — every intensity / rgb / phasor / label scene — sends nothing.
+Editors keep writing `intensityIndex` to the store (the preview never waits)
+and obtain the lens at Save (`ensureChannelLens`, cache-first).
+
 ### 2.2 Node addressing (`features/bricks/octree/nodeAddress.ts`)
 
 A node is one brick on one pyramid level, keyed `"level:bx:by:bz"` on that

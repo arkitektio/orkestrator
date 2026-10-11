@@ -39,6 +39,7 @@ import {
   type NodeKey,
   type NodeKind,
 } from "./spaceGraph";
+import { pinnedIndex, type SliceLike } from "../../lib/lenses/lensSelection";
 
 // ---------------------------------------------------------------------------
 // Vocabulary
@@ -124,13 +125,19 @@ export type Capabilities = {
   drawable: ReadonlySet<string>;
   labels: ReadonlySet<string>;
   /**
-   * Which lenses the server would draw as a phasor / as vectors. Read by the
-   * adapter that fills `LensLike.renderAxes` (`candidateRenderAxes`), not by
-   * the predicates below: a lens the server refuses simply arrives with no
-   * phasor or vector axis.
+   * Which axis of each drawable lens is x, y, z, the channel axis, the phasor
+   * axis and the displacement axis: the server's `suggestedRenderAxes`, what a
+   * layer over the lens WOULD answer before one exists. The adapter that fills
+   * `LensLike.renderAxes` reads it (`candidates.lensCandidateOf`); a lens the
+   * server would not draw has no entry.
    */
+  axes?: ReadonlyMap<string, NonNullable<LensLike["renderAxes"]>>;
+  /** Which lenses the server would draw as a phasor: a lens it refuses arrives
+   *  with no phasor axis. */
   phasor?: ReadonlySet<string>;
-  vector?: ReadonlySet<string>;
+  /** Which lenses have the three channel positions an rgb layer is cut from.
+   *  Absent (an older answer) falls back to the lens' own shape. */
+  rgb?: ReadonlySet<string>;
 } | null;
 
 /** The narrowest lens the structural predicates need. */
@@ -147,6 +154,9 @@ export type LensLike = {
     phasor?: string | null;
   } | null;
   dataset?: { id: string } | null;
+  /** The lens' slices, in dataset index space: what turns a position along the
+   *  lens' channel axis into the dataset index a channel lens is cut at. */
+  slices?: readonly SliceLike[] | null;
 };
 
 export type TableLike = {
@@ -184,6 +194,18 @@ export const isVolumetric = (lens: LensLike): boolean =>
  */
 export const isRgbCapable = (lens: LensLike): boolean =>
   extentOf(lens, lens.renderAxes?.intensity) >= 3;
+
+/**
+ * The DATASET index of the lens' `local`-th position along `axis`.
+ *
+ * A layer names its channel as a lens cut from the dataset, so every channel
+ * index the picker hands on is a dataset index — the two differ only for a lens
+ * that already keeps a sub-range of the axis.
+ */
+const datasetIndexOf = (lens: LensLike, axis: string | null | undefined, local: number): number => {
+  const slice = axis ? (lens.slices ?? []).find((candidate) => candidate.axis === axis) : undefined;
+  return (slice?.start ?? 0) + local * Math.max(1, slice?.step ?? 1);
+};
 
 /**
  * Whether this lens IS a vector field a glyph can draw: a DISPLACEMENT value
@@ -239,7 +261,7 @@ export const inferLensKinds = (
     if (hasPhasorAxis(lens)) kinds.push("PHASOR");
     if (isVolumetric(lens)) kinds.push("VOLUME");
     kinds.push("INTENSITY");
-    if (isRgbCapable(lens)) kinds.push("RGB");
+    if (capabilities?.rgb ? capabilities.rgb.has(lens.id) : isRgbCapable(lens)) kinds.push("RGB");
   }
   if (label && !answered) kinds.push("LABEL");
   return kinds;
@@ -292,6 +314,7 @@ export type Suggestion = {
 };
 
 export type IntensityDefaults = {
+  /** Which channel, as a DATASET index along the lens' channel axis. */
   intensityIndex: number;
   colormap: string;
   blending: string;
@@ -315,6 +338,7 @@ export type PhasorDefaults = {
 
 export type LayerDefaults = {
   intensity?: IntensityDefaults;
+  /** The three planes, as DATASET indices along the lens' channel axis. */
   rgb?: { redIndex: number; greenIndex: number; blueIndex: number };
   phasor?: PhasorDefaults;
 };
@@ -346,7 +370,9 @@ export type StagedLayer = {
   typename: string;
   nodeKey: NodeKey;
   spaceId: string | null;
-  intensityIndex?: number | null;
+  /** The staged lens' slices: an intensity layer's lens is ONE channel of its
+   *  dataset, and the slice on the channel axis says which. */
+  slices?: readonly SliceLike[] | null;
   colormap?: string | null;
   climMin?: number | null;
   climMax?: number | null;
@@ -368,9 +394,9 @@ export type StagedLayerLike = {
   blending?: string | null;
   lens?: {
     coordinateSystem?: { id: string } | null;
+    slices?: readonly SliceLike[] | null;
     dataset: { id: string; intrinsicSystem?: { id: string } | null };
   } | null;
-  intensityIndex?: number | null;
   colormap?: string | null;
   climMin?: number | null;
   climMax?: number | null;
@@ -400,7 +426,7 @@ export const stagedFromLayers = (
       typename: layer.__typename,
       nodeKey: source.nodeKey,
       spaceId: source.spaceId,
-      intensityIndex: layer.intensityIndex,
+      slices: layer.lens?.slices,
       colormap: layer.colormap,
       climMin: layer.climMin,
       climMax: layer.climMax,
@@ -754,16 +780,30 @@ export const CHANNEL_CYCLE: readonly string[] = [
   "WHITE",
 ];
 
-const stagedIntensityLayers = (staged: StagedScene, key: NodeKey) =>
-  staged.layers.filter(
-    (layer) => layer.nodeKey === key && layer.intensityIndex != null,
-  );
+/** A staged intensity layer and the channel it draws, as a dataset index. */
+type StagedChannel = { layer: StagedLayer; channel: number };
+
+/**
+ * The scene's one-channel-at-a-time layers over this dataset, each with the
+ * channel its lens pins along `axis` — the axis is the CANDIDATE's, since a
+ * staged lens does not say which of its slices is the channel one. A lens that
+ * pins nothing there (a single-channel dataset) draws channel 0.
+ */
+const stagedIntensityLayers = (
+  staged: StagedScene,
+  key: NodeKey,
+  axis: string | null | undefined,
+): StagedChannel[] =>
+  staged.layers
+    .filter((layer) => layer.nodeKey === key && layer.typename === "IntensityLayer")
+    .map((layer) => ({ layer, channel: pinnedIndex(layer.slices, axis) ?? 0 }));
 
 /** The channels of this dataset the scene already draws one at a time. */
-const stagedChannelsOf = (staged: StagedScene, key: NodeKey): Set<number> =>
-  new Set(
-    stagedIntensityLayers(staged, key).map((layer) => layer.intensityIndex!),
-  );
+const stagedChannelsOf = (
+  staged: StagedScene,
+  key: NodeKey,
+  axis: string | null | undefined,
+): Set<number> => new Set(stagedIntensityLayers(staged, key, axis).map((entry) => entry.channel));
 
 const lensDefaults = (
   graph: DerivationGraph,
@@ -772,16 +812,23 @@ const lensDefaults = (
   staged: StagedScene,
 ): LayerDefaults => {
   const defaults: LayerDefaults = {};
-  const channels = extentOf(lens, lens.renderAxes?.intensity);
+  const axis = lens.renderAxes?.intensity;
+  const channels = extentOf(lens, axis);
+  /** The dataset index of the lens' `local`-th channel. */
+  const channelAt = (local: number) => datasetIndexOf(lens, axis, local);
 
   // The next channel nobody has staged yet, styled for a composite.
-  const used = node ? stagedChannelsOf(staged, node.key) : new Set<number>();
+  const used = node ? stagedChannelsOf(staged, node.key, axis) : new Set<number>();
   let index = 0;
-  while (channels > 1 && index < channels - 1 && used.has(index)) index += 1;
+  while (channels > 1 && index < channels - 1 && used.has(channelAt(index))) index += 1;
   const intensity: IntensityDefaults =
     channels > 1
-      ? { intensityIndex: index, colormap: CHANNEL_CYCLE[index % CHANNEL_CYCLE.length], blending: "ADDITIVE" }
-      : { intensityIndex: 0, colormap: "GREY", blending: "NORMAL" };
+      ? {
+          intensityIndex: channelAt(index),
+          colormap: CHANNEL_CYCLE[index % CHANNEL_CYCLE.length],
+          blending: "ADDITIVE",
+        }
+      : { intensityIndex: channelAt(0), colormap: "GREY", blending: "NORMAL" };
 
   // A staged layer over the same values already has a look: IDENTICAL means
   // "value statistics transfer across the edge", so contrast limits come with
@@ -793,9 +840,9 @@ const lensDefaults = (
       if (step.edge.valueRelation === "CATEGORIZED") break;
       if (step.edge.valueRelation === "TRANSFORMED") statistics = false;
       if (step.edge.valueRelation == null && step.edge.kind !== "IDENTITY") break;
-      const sibling = stagedIntensityLayers(staged, step.parent.key).find(
-        (layer) => layer.intensityIndex === intensity.intensityIndex && layer.colormap,
-      );
+      const sibling = stagedIntensityLayers(staged, step.parent.key, axis).find(
+        (entry) => entry.channel === intensity.intensityIndex && entry.layer.colormap,
+      )?.layer;
       if (sibling) {
         intensity.colormap = sibling.colormap!;
         intensity.inheritedFrom = sibling.name || step.parent.name;
@@ -812,7 +859,11 @@ const lensDefaults = (
   }
   defaults.intensity = intensity;
 
-  if (isRgbCapable(lens)) defaults.rgb = { redIndex: 0, greenIndex: 1, blueIndex: 2 };
+  // The first three channels the lens keeps. Whether they ARE red, green and
+  // blue is not something an axis can say, which is why RGB is never inferred.
+  if (isRgbCapable(lens)) {
+    defaults.rgb = { redIndex: channelAt(0), greenIndex: channelAt(1), blueIndex: channelAt(2) };
+  }
 
   if (hasPhasorAxis(lens)) {
     // The same first look `newPhasorNode` gives a phasor render node: a hue
@@ -820,8 +871,8 @@ const lensDefaults = (
     defaults.phasor = {
       phasorAxis: lens.renderAxes!.phasor!,
       harmonic: 1,
-      intensityAxis: lens.renderAxes?.intensity ?? null,
-      intensityIndex: 0,
+      intensityAxis: axis ?? null,
+      intensityIndex: channelAt(0),
       colormap: "RAINBOW",
       mode: "PHASE",
       weightByIntensity: true,
@@ -919,11 +970,13 @@ export const relationToScene = (
   node: GraphNode,
   staged: StagedScene,
   channels = 1,
+  /** The candidate's channel axis: which slice of a staged lens is its channel. */
+  channelAxis: string | null = null,
 ): Relation | null => {
   const found: Relation[] = [];
 
   if (staged.nodes.has(node.key)) {
-    const shown = stagedChannelsOf(staged, node.key).size;
+    const shown = stagedChannelsOf(staged, node.key, channelAxis).size;
     if (channels > 1 && shown > 0 && shown < channels) {
       found.push({
         kind: "partial",

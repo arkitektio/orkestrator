@@ -249,11 +249,15 @@ export const stagedIntensity = (
   id,
   name: overrides.name ?? `${datasetId} c${overrides.index ?? 0}`,
   blending: overrides.blending ?? "ADDITIVE",
+  // An intensity layer's lens IS one channel of its dataset: the slice on the
+  // channel axis says which.
   lens: {
     coordinateSystem: { id: overrides.space ?? `grid-${datasetId}` },
+    slices: [
+      { axis: "c", start: overrides.index ?? 0, stop: (overrides.index ?? 0) + 1, step: 1 },
+    ],
     dataset: { id: datasetId, intrinsicSystem: { id: `grid-${datasetId}` } },
   },
-  intensityIndex: overrides.index ?? 0,
   colormap: overrides.colormap ?? "GREEN",
   climMin: overrides.climMin ?? null,
   climMax: overrides.climMax ?? null,

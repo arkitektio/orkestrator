@@ -23,6 +23,8 @@ import {
   type EntriesPatch,
 } from "../../platform/layerui/entrySections";
 import { colorByEntryToInput, filterByEntryToInput } from "../../platform/layerui/columnOptions";
+import { resolveEntryInputs } from "../../platform/layerui/entryInputs";
+import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 
 /**
  * The card for a `LabelLayer` — an array whose values are discrete object ids
@@ -233,6 +235,7 @@ export const LabelLayerCard = memo(
      * and the header's Save button is the one thing that talks to the server.
      */
     const [dirty, setDirty] = useState(false);
+    const registry = useLensRegistry();
 
     /** Picker choices and render toggles: fold locally, mark dirty. */
     const persistSetting = useCallback(
@@ -276,27 +279,36 @@ export const LabelLayerCard = memo(
      * sent — patch semantics per field leave them untouched. The server's
      * normalised answer folds back in, and dirty clears only on success — a
      * failed save keeps the button, not silently drops the edits.
+     *
+     * `resolveEntryInputs` turns each sparse entry's position into the lens the
+     * server names it by; cache-first, so it costs a request only for a
+     * position nobody has picked this session.
      */
     const save = useCallback(() => {
       const current = layerRef.current;
       const render = current.labelRender;
-      updateLabelLayer({
-        variables: {
-          input: {
-            id: layerId,
-            visible: current.visible ?? true,
-            opacity: current.opacity ?? 1,
-            render: {
-              colorBys: (render?.colorBys ?? []).map(colorByEntryToInput),
-              filterBys: (render?.filterBys ?? []).map(filterByEntryToInput),
-              activeColorBy: render?.activeColorBy ?? null,
-              activeFilterBys: [...(render?.activeFilterBys ?? [])],
-              contour: render?.contour ?? false,
-              contourWidth: render?.contourWidth ?? 1,
-            },
-          },
-        },
+      resolveEntryInputs(registry, {
+        colorBys: (render?.colorBys ?? []).map(colorByEntryToInput),
+        filterBys: (render?.filterBys ?? []).map(filterByEntryToInput),
       })
+        .then((entries) =>
+          updateLabelLayer({
+            variables: {
+              input: {
+                id: layerId,
+                visible: current.visible ?? true,
+                opacity: current.opacity ?? 1,
+                render: {
+                  ...entries,
+                  activeColorBy: render?.activeColorBy ?? null,
+                  activeFilterBys: [...(render?.activeFilterBys ?? [])],
+                  contour: render?.contour ?? false,
+                  contourWidth: render?.contourWidth ?? 1,
+                },
+              },
+            },
+          }),
+        )
         .then(({ data }) => {
           const saved = data?.updateLabelLayer.labelRender;
           if (saved) {
@@ -312,7 +324,7 @@ export const LabelLayerCard = memo(
         .catch((error) => {
           console.warn("[label] could not save the layer:", error);
         });
-    }, [layerId, foldRender, updateLabelLayer]);
+    }, [layerId, foldRender, updateLabelLayer, registry]);
 
     /** Memoized because it crosses the sections' memo boundary as an object. */
     const source: ColumnOptionSource = useMemo(

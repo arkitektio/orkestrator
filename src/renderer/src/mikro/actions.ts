@@ -56,6 +56,7 @@ import {
   PutTableDatasetsInFolderMutationVariables,
 } from "@/mikro/api/graphql";
 import { linkBuilder } from "@/core/smart/builder";
+import { lensRegistry } from "@/mikro/lib/lenses/lensRegistry";
 import { sceneRegistrationLink } from "@/mikro/components/registration/entry";
 import {
   Aperture,
@@ -1115,15 +1116,18 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       if (!mikro) {
         throw new Error('Mikro service is not available');
       }
-      // Naming the dataset leaves the lens to the server: which selection of
-      // the array is a trace is its call, as is refusing one that is not.
+      // A trace reads through a lens, and a dataset dropped whole means its
+      // whole lens. Whether that selection IS a trace is the server's call, as
+      // is refusing one that is not.
+      const lenses = lensRegistry(mikro.client);
       for (const dataset of datasets) {
+        const lens = await lenses.ensureArrayLens(dataset.id, []);
         await mikro.client.mutate<
           CreateTraceChartLayerMutation,
           CreateTraceChartLayerMutationVariables
         >({
           mutation: CreateTraceChartLayerDocument,
-          variables: { input: { chart: chart.id, dataset: dataset.id } },
+          variables: { input: { chart: chart.id, lens } },
           refetchQueries: ['GetChart'],
         });
       }

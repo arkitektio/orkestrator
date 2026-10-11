@@ -26,8 +26,7 @@ const GRAPH = {
       {
         __typename: "ChannelSourceNode",
         kind: "channel",
-        intensityAxis: "c",
-        intensityIndex: 0,
+        lens: "lens-c0",
         visible: true,
         transfer: { climMin: 10, climMax: 200, colormap: ColorMap.Grey, gamma: 1 },
       },
@@ -37,8 +36,7 @@ const GRAPH = {
         label: "lifetime",
         phasorAxis: "tau",
         harmonic: 2,
-        intensityAxis: "c",
-        intensityIndex: 0,
+        lens: "lens-c0",
         visible: true,
         phasorTransfer: {
           colormap: ColorMap.Rainbow,
@@ -91,9 +89,11 @@ describe("parseRenderGraph — a phasor node", () => {
   });
 
   it("round-trips back into the LayerNodeInput shape", () => {
-    const input = serializeRenderGraph(graph);
+    const input = serializeRenderGraph(graph, (source) => `lens-c${source.intensityIndex}`);
     const phasor = input.root.children?.[1];
     expect(phasor?.kind).toBe("phasor");
+    // The channel whose photons are counted goes out as its lens.
+    expect(phasor?.lens).toBe("lens-c0");
     expect(phasor?.phasorAxis).toBe("tau");
     expect(phasor?.harmonic).toBe(2);
     // Serialized under the SCHEMA's name (`phasorTransfer` on LayerNodeInput),
