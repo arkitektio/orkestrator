@@ -1,11 +1,12 @@
 import * as React from 'react';
 import BlokRenderer from '@/core/blok/renderer/BlokRenderer';
+import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
 
 type DemoBlokData = {
   id?: string | null;
   /** Typed `ComponentNode` tree from the Blok fragment. */
-  components: ReadonlyArray<unknown>;
+  componentTree?: unknown;
   demoState: unknown;
 };
 
@@ -18,17 +19,19 @@ type DemoBlokRendererProps = Omit<
 
 export const DemoBlokRenderer = (props: DemoBlokRendererProps) => {
   const {blok, surfaceId, ...rendererProps} = props;
-  const {roots, truncatedIds} = useBlokDocument(blok.components);
+  const {roots, truncatedIds} = useBlokDocument(blok.componentTree as unknown[] | null);
 
   return (
-    <BlokRenderer
-      {...rendererProps}
-      surfaceId={surfaceId ?? `${blok.id ?? 'blok'}-demo`}
-      uiComponents={roots}
-      initialState={blok.demoState}
-    >
-      <BlokTruncationNotice truncatedIds={truncatedIds} />
-    </BlokRenderer>
+    <RekuestSceneHost>
+      <BlokRenderer
+        {...rendererProps}
+        surfaceId={surfaceId ?? `${blok.id ?? 'blok'}-demo`}
+        uiComponents={roots}
+        initialState={blok.demoState}
+      >
+        <BlokTruncationNotice truncatedIds={truncatedIds} />
+      </BlokRenderer>
+    </RekuestSceneHost>
   );
 };
 

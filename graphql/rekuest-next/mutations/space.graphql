@@ -16,26 +16,13 @@ mutation DeleteSpace($id: ID!) {
 
 mutation CreatePlacement($input: CreatePlacementInput!) {
   createPlacement(input: $input) {
-    id
-    affineMatrix
-    model {
-        file {
-          ...MediaStore
-        }
-      }
-    }
+    ...SpacePlacement
+  }
 }
 
-mutation UpdatePlacement( $input: UpdatePlacementInput!) {
+mutation UpdatePlacement($input: UpdatePlacementInput!) {
   updatePlacement(input: $input) {
-    id
-    affineMatrix
-      model {
-        file {
-          ...MediaStore
-        }
-      }
-
+    ...SpacePlacement
   }
 }
 

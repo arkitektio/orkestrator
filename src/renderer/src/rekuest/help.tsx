@@ -8,12 +8,14 @@ import { PageHelp } from "@/core/layout/help";
 export const REKUEST_HELP = {
   home: (
     <PageHelp
-      intro="The starting point for running things. It shows every app connected to this server (an “agent”), the tasks that are running or just finished, and the actions those apps offer."
+      intro="The starting point for running things. It shows the apps you connected to this server (your “agents”), the tasks that are running or just finished, and the actions those apps offer."
       steps={[
         <>Look at <b>Your Apps</b> to see which apps are connected. Press <b>Online</b> to hide the ones that are not reachable right now.</>,
-        <>Type into <b>Search apps…</b>, or open <b>Filter</b> and pick <b>By app</b>, <b>By user</b> or <b>By device</b>, to narrow the grid. <b>Clear filters</b> brings everything back.</>,
+        <>Type into <b>Search apps…</b>, or open <b>Filter</b> and pick <b>By app</b> or <b>By device</b>, to narrow the grid.</>,
+        <>The grid starts with your own apps only. Open <b>Filter</b>, then <b>By user</b>, and pick <b>All users</b> or one person to see theirs. Under <b>By type</b>, pick <b>Webhooks</b> or <b>All types</b> to include webhook agents. <b>Clear filters</b> goes back to your own apps.</>,
         <>Click an app card to open the agent and see the actions it can run.</>,
         <>Right-click an app card for its actions, for example <b>Rename / Update Agent</b> or <b>Pin Agent</b>.</>,
+        <>Under <b>Materialized Bloks</b>, click a card to open that view. Each card names the apps it is wired to and how many of them are online.</>,
         <>Scroll down to <b>Ongoing Tasks</b> and <b>Latest Tasks</b> and click a task to follow it.</>,
         <>Hover an action card at the bottom and press its play button to fill in the arguments and run it.</>,
       ]}
@@ -587,28 +589,35 @@ export const REKUEST_HELP = {
   ),
   space: (
     <PageHelp
-      intro="The 3D scene of one space, with every agent placed in it shown as a model or a box."
+      intro="The 3D scene of one space: every app placed in it is shown by its 3D view, live, where it stands."
       steps={[
-        <>Drag in the scene to orbit, and scroll to move closer or further away.</>,
-        <>Click a placement to open the interface panel of its agent next to it. Press <b>Close</b> on the panel to put it away.</>,
-        <>Press <b>Edit</b> in the header to move placements or add new ones.</>,
+        <>Drag in the scene to move the view, hold Shift while dragging to turn it, and scroll to move closer or further away.</>,
+        <>Press <b>Iso</b>, <b>Front</b>, <b>Side</b> or <b>Top</b> at the bottom right to look from that direction and frame everything.</>,
+        <>Click a part of a device to use it, where its view offers that.</>,
+        <>Press <b>Edit</b> in the header to add 3D views or move them.</>,
         <>Open the menu button at the right end of the header and choose <b>Delete Space</b> to remove the space.</>,
       ]}
       tips={[
-        <>The panel shows controls only when a materialized blok was chosen for the placement; otherwise it says there is no preview yet.</>,
+        <>A grey box marked <b>No 3D view</b> is an app that was placed without one. Give it a view in the editor.</>,
       ]}
     />
   ),
   spaceEdit: (
     <PageHelp
-      intro="The editor of a space. Here you place agents in the 3D scene and move them to where they stand."
+      intro="The editor of a space. Here you add the 3D views of your apps to the scene and move them to where the devices stand."
       steps={[
-        <>Drop an agent card onto the scene to add it. In <b>Create Placement</b>, optionally give it a <b>Role</b>, a <b>Materialized Blok</b> and a <b>3D Model</b>, then press <b>Create placement</b>.</>,
-        <>Click a placement to select it, then drag the arrows that appear to move it.</>,
-        <>Press <b>View</b> in the header to go back to the scene without the editing handles.</>,
+        <>Click a view under <b>Add a 3D view</b> to place it. It is put down on a free spot and selected.</>,
+        <>Click a view in the scene, or its row under <b>In this space</b>, to select it.</>,
+        <>With <b>Move</b> chosen, drag the arrows to move the selected view. With <b>Turn</b> chosen, drag the ring to turn it.</>,
+        <>Type into <b>X</b>, <b>Y</b>, <b>Z</b> or <b>Turn</b> in the selected row to place it exactly, in meters and degrees.</>,
+        <>Press <b>Remove</b> in the selected row to take the view out of the space.</>,
+        <>Press <b>View</b> in the header to go back to the live scene.</>,
       ]}
       tips={[
         <>Changes are saved automatically; there is no save button.</>,
+        <><b>Snap</b> moves in steps of 5 cm and turns in steps of 15°. Switch it off to place freely.</>,
+        <>An app stands in a space once. Clicking another view of an app that is already placed shows it with that view instead, on the same spot.</>,
+        <>While editing, clicks select and never reach a device. You can also drop an agent card onto the scene to add its 3D view.</>,
       ]}
     />
   ),

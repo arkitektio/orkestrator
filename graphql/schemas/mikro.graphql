@@ -45,10 +45,8 @@ type AffineTransformation implements Transformation {
   creator: User
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """
   The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
@@ -56,16 +54,14 @@ type AffineTransformation implements Transformation {
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """
   The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
@@ -1289,10 +1285,11 @@ type AttributePlan {
 }
 
 """
-Show a coordinate system without choosing how. A space with exactly one metric, unit-carrying axis becomes a chart; any other space with a time or space axis becomes a scene. Either is bootstrapped from what already resides in the space, with that kind's default policy, and authors no edges. For a say in the kind or the policy, use `createChartFromCoordinateSystem` or `createSceneFromCoordinateSystem`
+Show a coordinate system, or one lens, without choosing how. A space with exactly one metric, unit-carrying axis becomes a chart; any other space with a time or space axis becomes a scene. Over a `coordinateSystem`, either is bootstrapped from what already resides in the space; over a `lens`, it shows that lens' selection and nothing else of its container, the choice read off the space the selection lives in. Both use that kind's default policy and register nothing into any space. Provide exactly one of the two. For a say in the kind or the policy, use `createChartFromCoordinateSystem`, `createSceneFromCoordinateSystem` or `createSceneFromLens`
 """
 input AutoVisualizeInput {
-  coordinateSystem: ID!
+  coordinateSystem: ID = null
+  lens: ID = null
   name: String = null
 }
 
@@ -1630,17 +1627,19 @@ input ByDimensionTransformInput {
 }
 
 """
-A composition of child transformations, each acting on a named subset of the axes
+A map over a named subset of the axes: `inputAxes` onto `outputAxes`, one for one, by a `scale` and/or a `translation`, or by an `affine` -- or by none of them, which is the identity on the named axes. The axes it does not name pass through untouched, which is how a registration crosses a rank boundary: a (c,y,x) dataset placed into a (t,z,y,x) world names y and x and says nothing about t and z
 """
 type ByDimensionTransformation implements Transformation {
+  """
+  The matrix over the named axes, M x (N+1) with rows outermost, in `outputAxes` x `inputAxes` order. Empty when the map is stated per axis or not at all. When present it is the whole map: a `scale` or `translation` beside it is not read
+  """
+  affine: [[Float!]!]!
   createdAt: DateTime!
   creator: User
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """
   The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
@@ -1648,16 +1647,14 @@ type ByDimensionTransformation implements Transformation {
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """
   The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
@@ -1670,14 +1667,19 @@ type ByDimensionTransformation implements Transformation {
   provenanceEntries(pagination: OffsetPaginationInput): [ProvenanceEntry!]!
 
   """
+  The per-axis scale factors over the named axes, in `inputAxes` order. Empty when the map states none -- as `ScaleTransformation.scale` is shaped, so one fragment reads both
+  """
+  scale: [Float!]!
+
+  """
   Where along one axis this edge applies, or null for an edge that holds everywhere -- which is almost every edge. A per-channel correction is scoped to {axis: "c", index: 2}; several such edges over one axis are one piecewise map. A path query crosses a scoped edge only when it fixes that coordinate with `at`
   """
   selector: Selector
 
   """
-  The child transformations. Each carries the `inputAxes` and `outputAxes` it acts on
+  The per-axis offsets over the named axes, in `inputAxes` order. Empty when the map states none
   """
-  transformations: [Transformation!]!
+  translation: [Float!]!
 
   """
   How much this map is actually known: VALIDATED for a map the server derived (or one someone checked), INFERRED for numbers read from metadata, MANUAL for an authored registration, UNKNOWN for one its author marked as a guess. A layer's validity is the weakest edge on its path to world
@@ -2421,7 +2423,7 @@ type CoordinateGraph {
   systems: [CoordinateSystem!]!
 
   """
-  Every top-level edge with both endpoints in `systems`, ordered by ID. The children of a SEQUENCE / BY_DIMENSION wrapper are not listed here; they hang off their wrapper
+  Every edge with both endpoints in `systems`, ordered by ID. A SEQUENCE's steps are part of their edge, not edges of their own
   """
   transformations: [Transformation!]!
 }
@@ -2473,7 +2475,7 @@ type CoordinateSystem {
   provenanceEntries(pagination: OffsetPaginationInput): [ProvenanceEntry!]!
 
   """
-  Every top-level edge landing in this space -- the claims that place something here. They belong to the space, so every scene composing over this system sees the same list, each entry unique for its data-tree, and `layers.pathToWorld` searches exactly these plus the datasets' own facts. On a shared world these are the registrations a client authored; on a container's own grid they are the lens crops and derived children that land in it. Composing the matrices stays the client's job. Not filtered by kind, so a table's own system also lists the FIELD edge of any mask keying it -- that one places nothing (a FIELD has no inverse, so no path walks it backwards); it is a dereference, and `attributePlans` is what reads it
+  Every edge landing in this space -- the claims that place something here. They belong to the space, so every scene composing over this system sees the same list, each entry unique for its data-tree, and `layers.pathToWorld` searches exactly these plus the datasets' own facts. On a shared world these are the registrations a client authored; on a container's own grid they are the lens crops and derived children that land in it. Composing the matrices stays the client's job. Not filtered by kind, so a table's own system also lists the FIELD edge of any mask keying it -- that one places nothing (a FIELD has no inverse, so no path walks it backwards); it is a dereference, and `attributePlans` is what reads it
   """
   registrations: [Transformation!]!
 
@@ -2552,7 +2554,7 @@ input CoordinateSystemOrder @oneOf {
 }
 
 """
-The kind of a transformation a client can author directly: the discriminator of `TransformInput`. SEQUENCE is absent on purpose -- it is a wrapper the ingest builds together with its children (pyramid levels, stepped lenses), never authored empty.
+The kind of a transformation a client can author directly: the discriminator of `TransformInput`. SEQUENCE is absent on purpose -- it is the edge the ingest writes with its steps (pyramid levels, stepped lenses), never authored.
 """
 enum CreatableTransformKind {
   """
@@ -3817,10 +3819,8 @@ type FieldTransformation implements Transformation {
   field: CoordinateSystem
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """
   The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
@@ -3828,16 +3828,14 @@ type FieldTransformation implements Transformation {
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """
   The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
@@ -4795,10 +4793,8 @@ type IdentityTransformation implements Transformation {
   creator: User
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """
   The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
@@ -4806,16 +4802,14 @@ type IdentityTransformation implements Transformation {
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """
   The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
@@ -6064,25 +6058,21 @@ type MapAxisTransformation implements Transformation {
   creator: User
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """The names of the input axes, positionally matched to `outputAxes`"""
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """The names of the output axes, positionally matched to `inputAxes`"""
   outputAxes: [String!]!
@@ -9244,10 +9234,8 @@ type RotationTransformation implements Transformation {
   creator: User
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """
   The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
@@ -9255,16 +9243,14 @@ type RotationTransformation implements Transformation {
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """
   The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
@@ -9420,10 +9406,8 @@ type ScaleTransformation implements Transformation {
   creator: User
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """
   The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
@@ -9431,16 +9415,14 @@ type ScaleTransformation implements Transformation {
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """
   The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
@@ -9703,16 +9685,16 @@ input SelectorInput {
   index: Int!
 }
 
-"""An ordered composition of child transformations, applied first to last"""
+"""
+An ordered composition of steps, applied first to last: one edge, carrying its map as `steps`. The ingest writes one for a stepped lens and for a downsampled pyramid level (a scale, then the half-voxel translation)
+"""
 type SequenceTransformation implements Transformation {
   createdAt: DateTime!
   creator: User
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """
   The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
@@ -9720,16 +9702,14 @@ type SequenceTransformation implements Transformation {
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """
   The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
@@ -9747,9 +9727,9 @@ type SequenceTransformation implements Transformation {
   selector: Selector
 
   """
-  The child transformations, applied first to last. They omit their own input and output: the sequence supplies them
+  The steps, applied first to last, each in the axis order of this edge's input. Composing them is composing the edge
   """
-  transformations: [Transformation!]!
+  steps: [TransformationStep!]!
 
   """
   How much this map is actually known: VALIDATED for a map the server derived (or one someone checked), INFERRED for numbers read from metadata, MANUAL for an authored registration, UNKNOWN for one its author marked as a guess. A layer's validity is the weakest edge on its path to world
@@ -11234,10 +11214,8 @@ interface Transformation {
   creator: User
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """
   The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
@@ -11245,16 +11223,14 @@ interface Transformation {
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """
   The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
@@ -11314,11 +11290,6 @@ input TransformationFilter {
   owner: ID
 
   """
-  Show only top-level edges, excluding the children of SEQUENCE / BY_DIMENSION wrappers
-  """
-  rootsOnly: Boolean
-
-  """
   Filter by how much the edge's map is actually known, e.g. UNKNOWN to list every placement that is still an assumption
   """
   validity: PlacementValidity
@@ -11327,7 +11298,39 @@ input TransformationFilter {
 input TransformationOrder @oneOf {
   createdAt: Ordering
   id: Ordering
-  order: Ordering
+}
+
+"""
+One step of a SEQUENCE transformation: a kind and its parameters, in the axis order of the sequence's input. A step is not an edge -- it has no endpoints, no id and no history of its own -- so it is read here and refined nowhere: the sequence is the ingest's statement of a crop or a pyramid level, derived from the data's own shapes
+"""
+type TransformationStep {
+  """
+  (AFFINE / ROTATION) The matrix, M x (N+1), rows outermost; empty on any other kind
+  """
+  affine: [[Float!]!]!
+
+  """
+  (FIELD) The coordinate system of the array whose values are this step's map
+  """
+  field: CoordinateSystem
+
+  """
+  The kind of this step, which fixes which of the parameters below is read
+  """
+  kind: TransformKind!
+
+  """(UNMAPPABLE) Why nothing corresponds, if the author said"""
+  reason: String
+
+  """
+  (SCALE) The per-axis factors, in the axis order of the sequence's input; empty on any other kind
+  """
+  scale: [Float!]!
+
+  """
+  (TRANSLATION) The per-axis offsets, in the axis order of the sequence's input; empty on any other kind
+  """
+  translation: [Float!]!
 }
 
 """
@@ -11344,10 +11347,8 @@ type TranslationTransformation implements Transformation {
   creator: User
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """
   The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
@@ -11355,16 +11356,14 @@ type TranslationTransformation implements Transformation {
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """
   The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
@@ -11433,10 +11432,8 @@ type UnmappableTransformation implements Transformation {
   creator: User
   id: ID!
 
-  """
-  The system this edge maps from. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  input: CoordinateSystem
+  """The system this edge maps from"""
+  input: CoordinateSystem!
 
   """
   The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
@@ -11444,16 +11441,14 @@ type UnmappableTransformation implements Transformation {
   inputAxes: [String!]!
 
   """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE or BY_DIMENSION is the weakest of its children. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
+  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
   """
   invariance: TransformInvariance!
   kind: TransformKind!
   name: String
 
-  """
-  The system this edge maps to. Null for the child of a SEQUENCE or BY_DIMENSION, which takes its endpoints from the wrapper
-  """
-  output: CoordinateSystem
+  """The system this edge maps to"""
+  output: CoordinateSystem!
 
   """
   The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched

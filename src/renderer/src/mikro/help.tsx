@@ -44,7 +44,7 @@ export const MIKRO_HELP = {
         <>Type into the search field to find a dataset by name.</>,
         <>Open <b>Spec</b> to keep only one kind of data, and <b>Sort</b> to change the order.</>,
         <>Click a dataset to open it in the viewer.</>,
-        <>Right-click a dataset and choose <b>Create Scene</b> to compose a view of it, <b>Calibrate…</b> to give its pixels physical units, or <b>Register Into…</b> to place it in a shared space.</>,
+        <>Right-click a dataset and choose <b>Visualize</b> to view it, <b>Calibrate…</b> to give its pixels physical units, or <b>Register Into…</b> to place it in a shared space.</>,
         <>Right-click and choose <b>Move to Folder</b> to file it away.</>,
       ]}
     />
@@ -55,7 +55,7 @@ export const MIKRO_HELP = {
       steps={[
         <>Type into the search field to find a dataset by name.</>,
         <>Open <b>Sort</b> to change the order.</>,
-        <>Click a dataset to open it, or right-click it for <b>Create Scene</b>, <b>Calibrate…</b>, <b>Register Into…</b> and <b>Move to Folder</b>.</>,
+        <>Click a dataset to open it, or right-click it for <b>Visualize</b>, <b>Calibrate…</b>, <b>Register Into…</b> and <b>Move to Folder</b>.</>,
       ]}
       tips={[
         <>The other kinds are listed in the module’s navigation under “By kind”.</>,
@@ -64,7 +64,7 @@ export const MIKRO_HELP = {
   ),
   arrayDataset: (
     <PageHelp
-      intro="One array dataset, as a container. You do not view or process a dataset directly: you open a lens of it. This page lists its lenses and holds what is true of the dataset as a whole."
+      intro="One array dataset, as a container. Opening a dataset opens its whole array in the viewer; this page is one step up from there (click the name above the viewer’s title). It lists the dataset’s lenses and holds what is true of the dataset as a whole."
       steps={[
         <>Click <b>Whole array</b> under <b>Lenses</b> to open all of the dataset in the viewer.</>,
         <>Click any other lens to open just that part.</>,
@@ -201,7 +201,7 @@ export const MIKRO_HELP = {
         <>Press <b>New Folder</b> to create a sub-folder.</>,
         <>Type into <b>Search</b> to narrow the list, and switch between <b>Grid view</b>, <b>List view</b> and <b>Table view</b> with the toggle next to it.</>,
         <>Drag a dataset, table or file onto a sub-folder and choose the <b>Move … to Folder</b> entry to file it away.</>,
-        <>Right-click any item for its own actions, for example <b>Create Scene</b> on an array dataset.</>,
+        <>Right-click any item for its own actions, for example <b>Visualize</b> on an array dataset.</>,
       ]}
       tips={[
         <>The small link above the title leads back to the parent folder.</>,
@@ -244,7 +244,7 @@ export const MIKRO_HELP = {
         <>Right-click a scene and choose <b>Align Layers…</b> to line its layers up by hand.</>,
       ]}
       tips={[
-        <>New scenes are made from data: right-click an array dataset or a coordinate system and choose <b>Create Scene</b>.</>,
+        <>New scenes are made from data: right-click an array dataset, a lens or a coordinate system and choose <b>Visualize</b>.</>,
       ]}
     />
   ),
@@ -312,7 +312,7 @@ export const MIKRO_HELP = {
     <PageHelp
       intro="A lens is a selection of a container (an array dataset, a table, a sparse dataset, a mesh, a network or an annotation collection): the whole of it, or a part cut out of it. This page is the viewer for one lens, shows the scenes that draw it, and is where you hand it to a task."
       steps={[
-        <>Press <b>Create scene</b> to draw this lens, if it is in no scene yet.</>,
+        <>Press <b>Visualize</b> to draw this lens, if it is in no scene yet.</>,
         <>Pick a scene in the dropdown under the title, and press <b>Make default</b> to open this lens on it from now on.</>,
         <>Press <b>Run on lens</b> in the header to run a task on exactly this selection.</>,
         <>Click the pencil next to the title to name the lens.</>,

@@ -1,4 +1,4 @@
-import type { TransformLike } from "./transformGraph";
+import { childrenOf, type TransformLike } from "./transformGraph";
 
 /**
  * Pyramid level scales, derived from each level's `toParent` edge.
@@ -13,7 +13,7 @@ import type { TransformLike } from "./transformGraph";
 
 /**
  * Absolute per-axis scale (array dim order) declared by a level's `toParent`
- * edge: a bare `ScaleTransformation`, or the Scale child of a Sequence
+ * edge: a bare `ScaleTransformation`, or the Scale step of a Sequence
  * (Sequence[Scale, Translation] is the canonical pyramid-level edge; the
  * translation is the half-voxel downsampling offset, not yet consumed).
  * Identity / pure-translation edges scale nothing (all-1s). Null when the
@@ -25,7 +25,8 @@ export const absoluteLevelScale = (
   dimCount: number,
 ): number[] | null => {
   if (!toParent) return null;
-  const nodes = toParent.transformations?.length ? toParent.transformations : [toParent];
+  const children = childrenOf(toParent);
+  const nodes = children.length ? children : [toParent];
   let scale: number[] | null = null;
   for (const node of nodes) {
     if (!node) continue;

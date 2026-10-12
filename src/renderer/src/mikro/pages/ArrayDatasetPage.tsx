@@ -1,8 +1,9 @@
 import { asDetailQueryRoute } from '@/core/layout/routes/DetailQueryRoute'
 import { useDialog } from '@/core/dialogs/registry'
-import { MikroArrayDataset } from '@/core/linkers'
+import { MikroArrayDataset, MikroLens } from '@/core/linkers'
 import { Button } from '@/core/ui/button'
 import { Plus } from 'lucide-react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useGetArrayDatasetQuery } from '../api/graphql'
 import LensCard from '../components/cards/LensCard'
 import { MoveToFolderButton } from '../components/folder/MoveToFolderButton'
@@ -10,7 +11,29 @@ import { DatasetFacts, DatasetLineage } from '../components/sidebars/DatasetInfo
 import { MIKRO_HELP } from '../help'
 
 /**
- * One array dataset, as what it is: a container.
+ * Opening an array dataset opens the whole array: its `fullLens`, in the lens
+ * workspace. That is what someone following a dataset link came for, so the
+ * dataset's own address forwards there, and the parts cut out of it stay out
+ * of the way until asked for — in the workspace's Lenses tab, or one step up,
+ * on the container page below.
+ *
+ * `replace`, so Back leaves the dataset rather than bouncing off the forward.
+ * A dataset with no whole lens has nowhere to forward to and shows the
+ * container page as it is.
+ */
+export const ArrayDatasetOpenPage = asDetailQueryRoute(useGetArrayDatasetQuery, ({ data }) => {
+  const { search } = useLocation()
+  const whole = data.arrayDataset.fullLens?.id
+  // Same route parameter, same query: answered from the cache.
+  if (!whole) return <ArrayDatasetPage />
+  // The query string travels with it: `?scene=` names the scene to land on.
+  return <Navigate replace to={`${MikroLens.linkBuilder(whole)}${search}`} />
+})
+
+/**
+ * One array dataset, as what it is: a container. Reached from a lens' page,
+ * one step up (`CONTAINER_SUBROUTE` in `lenses`); the dataset's own address opens the
+ * whole array instead.
  *
  * A dataset is not looked at or processed directly — a LENS of it is: the lens
  * that selects all of it, or one that cuts a part out. So this page does not

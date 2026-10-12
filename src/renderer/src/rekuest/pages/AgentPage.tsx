@@ -9,8 +9,10 @@ import { cn } from "@/core/util/utils";
 import { RekuestAgent, RekuestState } from "@/core/linkers";
 import {
   AgentFragment,
+  ComponentContext,
   useAgentQuery,
   useBounceMutation,
+  useListMaterializedBloksQuery,
   usePinAgentMutation,
   WatchImplementationsDocument,
   WatchImplementationsSubscription,
@@ -27,6 +29,7 @@ import {
   hydrateAndInsertAgentTask,
 } from "../lib/taskCache";
 import { AgentHeroScene } from "../components/AgentHeroScene";
+import CheckoutMaterializedBlokRenderer from "../components/CheckoutMaterializedBlokRenderer";
 import { CopyAgentPythonButton } from "../components/copy-agent-python";
 import AgentImplementationCard from "../components/cards/AgentImplementationCard";
 import AgentTaskCard from "../components/cards/AgentTaskCard";
@@ -84,7 +87,36 @@ export const BounceAgentButton = (props: { agent: AgentFragment }) => {
 };
 
 
+/**
+ * The agent's default blok for the scene context, if it declared one.
+ * `settled` is false until that is known, so no other scene is mounted first.
+ */
+const useDefaultSceneBlok = (agent: string) => {
+  const { data, loading } = useListMaterializedBloksQuery({
+    variables: { filters: { agent } },
+  });
+  const id = data?.materializedBloks.find(
+    (blok) => blok.isDefault && blok.blok.context === ComponentContext.Scene,
+  )?.id;
+  return { id, settled: !!data || !loading };
+};
 
+/**
+ * The agent's default scene, on the right of the page. It starts just inside
+ * the content column (620px wide) and its left edge fades to black, so the
+ * two meet in a soft seam rather than the scene running behind the lists.
+ */
+const AgentBackgroundScene = (props: { materializedBlok: string }) => (
+  <div className="absolute inset-y-0 right-0 left-[min(540px,45%)] z-0 bg-black">
+    <CheckoutMaterializedBlokRenderer
+      key={props.materializedBlok}
+      materializedBlokId={props.materializedBlok}
+      surfaceId={props.materializedBlok}
+      chrome="none"
+    />
+    <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-40 bg-[linear-gradient(90deg,black_0%,rgba(0,0,0,0.85)_35%,transparent_100%)]" />
+  </div>
+);
 
 export const AgentPage = asDetailQueryRoute(
   useAgentQuery,
@@ -169,6 +201,7 @@ export const AgentPage = asDetailQueryRoute(
     }, [client, agentId]);
 
     const recentTasks = data.agent.tasks.slice(0, 5);
+    const defaultScene = useDefaultSceneBlok(agentId);
 
     return (
       <RekuestAgent.ModelPage
@@ -243,13 +276,18 @@ export const AgentPage = asDetailQueryRoute(
         <div className="relative h-full w-full overflow-hidden  shadow-[0_30px_120px_-48px_rgba(15,23,42,0.55)]">
 
 
-          <div>
-            {data.agent.placements.map((plc) => (
-              <>{plc.model?.file && <AgentHeroScene placement={plc} />}</>
-
-            ))}
-
-          </div>
+          {defaultScene.id ? (
+            <AgentBackgroundScene materializedBlok={defaultScene.id} />
+          ) : defaultScene.settled && (
+            <div>
+              {data.agent.placements.map(
+                (plc) =>
+                  plc.model?.file && (
+                    <AgentHeroScene key={plc.id} placement={plc} />
+                  ),
+              )}
+            </div>
+          )}
 
           <div className="absolute inset-y-0 left-0 z-20 flex w-full max-w-[620px] items-stretch">
             <div className="flex w-full flex-col justify-between gap-6 p-6">

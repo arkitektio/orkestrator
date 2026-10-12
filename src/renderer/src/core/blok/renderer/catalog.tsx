@@ -1,5 +1,6 @@
 import {RawInspector} from './bloks/inspector/Inspector';
 import {lovekitBlokComponents} from './bloks/lovekit';
+import {sceneBlokComponents} from './bloks/scene';
 import {structureBlokComponents} from './bloks/structure';
 import {shadcnComposableComponents} from './bloks';
 import {standardBlokFunctions} from './functions';
@@ -24,6 +25,12 @@ export const UI_CATALOG_DESCRIPTION =
 
 export const defaultBlokCatalog = createBlokCatalog(
   'https://arkitekt.live/catalogs/v1.json',
-  [...shadcnComposableComponents, ...lovekitBlokComponents, ...structureBlokComponents, RawInspector],
+  [
+    ...shadcnComposableComponents,
+    ...lovekitBlokComponents,
+    ...structureBlokComponents,
+    ...sceneBlokComponents,
+    RawInspector,
+  ],
   standardBlokFunctions,
 );

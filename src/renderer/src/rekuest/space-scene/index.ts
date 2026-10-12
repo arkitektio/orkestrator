@@ -1,2 +1,1 @@
-export { SpaceEditScene, SpaceEditSceneProvider } from "./SpaceEditScene";
-export { SpaceViewScene, SpaceViewSceneProvider } from "./SpaceViewScene";
+export { SpaceEditor, SpaceScene } from "./SpaceScene";

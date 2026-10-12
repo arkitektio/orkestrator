@@ -32,8 +32,96 @@ export type TransformLike = {
   affine?: readonly (readonly number[])[] | null;
   inputAxes?: readonly string[] | null;
   outputAxes?: readonly string[] | null;
+  /** elektro: a composite's map as child edges. */
   transformations?: readonly TransformLike[] | null;
+  /** mikro: a SEQUENCE's map as steps, each in the sequence's input axis order. */
+  steps?: readonly TransformStepLike[] | null;
 } | null;
+
+/** One step of a SEQUENCE: a kind and the parameters that kind reads. */
+export type TransformStepLike = {
+  kind?: string;
+  scale?: readonly number[] | null;
+  translation?: readonly number[] | null;
+  affine?: readonly (readonly number[])[] | null;
+};
+
+const STEP_TYPENAMES: Record<string, string> = {
+  IDENTITY: "IdentityTransformation",
+  SCALE: "ScaleTransformation",
+  TRANSLATION: "TranslationTransformation",
+  MAP_AXIS: "MapAxisTransformation",
+  AFFINE: "AffineTransformation",
+  ROTATION: "RotationTransformation",
+  FIELD: "FieldTransformation",
+  UNMAPPABLE: "UnmappableTransformation",
+};
+
+/**
+ * What a composite edge is made of, as leaves the walkers already read.
+ *
+ * The two services state a composite differently. elektro's carries child
+ * edges (`transformations`), returned as they are. mikro's carries no rows:
+ * a SEQUENCE has `steps`, which name no axes of their own (they are in the
+ * sequence's input axis order, and only the last one lands on its output
+ * names), and a BY_DIMENSION is itself the map over the axes it names — a
+ * `scale` and/or a `translation` (scale first), or an `affine`, or nothing,
+ * which is the identity on those axes. A BY_DIMENSION that states both a scale
+ * and a translation comes back as ONE affine leaf: it is one map, and a reader
+ * that lays children side by side must not see two writers of the same axes.
+ */
+export const childrenOf = (transform: TransformLike): readonly TransformLike[] => {
+  if (!transform) return [];
+  if (transform.transformations) return transform.transformations;
+  const inputAxes = transform.inputAxes ?? [];
+  const outputAxes = transform.outputAxes ?? inputAxes;
+
+  if (transform.steps) {
+    const last = transform.steps.length - 1;
+    return transform.steps.map((step, i) => ({
+      __typename: STEP_TYPENAMES[step.kind ?? ""] ?? step.kind,
+      kind: step.kind,
+      scale: step.scale,
+      translation: step.translation,
+      affine: step.affine,
+      inputAxes,
+      outputAxes: i === last ? outputAxes : inputAxes,
+    }));
+  }
+
+  if (transform.__typename !== "ByDimensionTransformation") return [];
+  const { scale, translation, affine } = transform;
+  const leaf = { inputAxes, outputAxes };
+  if (affine?.length) return [{ ...leaf, __typename: "AffineTransformation", kind: "AFFINE", affine }];
+  const n = inputAxes.length;
+  if (scale?.length === n && translation?.length === n) {
+    return [
+      {
+        ...leaf,
+        __typename: "AffineTransformation",
+        kind: "AFFINE",
+        affine: inputAxes.map((_, r) => [
+          ...inputAxes.map((_, c) => (r === c ? scale[r] : 0)),
+          translation[r],
+        ]),
+      },
+    ];
+  }
+  const leaves: TransformLike[] = [];
+  if (scale?.length) {
+    leaves.push({
+      __typename: "ScaleTransformation",
+      kind: "SCALE",
+      scale,
+      inputAxes,
+      outputAxes: translation?.length ? inputAxes : outputAxes,
+    });
+  }
+  if (translation?.length) {
+    leaves.push({ ...leaf, __typename: "TranslationTransformation", kind: "TRANSLATION", translation });
+  }
+  return leaves.length ? leaves : [{ ...leaf, __typename: "IdentityTransformation", kind: "IDENTITY" }];
+};
 
 export type CoordinateSystemLike = {
   id: string;
@@ -392,7 +480,7 @@ export const evalTransform = (
       // (`toParent` sequences within one dataset). World placements never do —
       // they arrive pre-composed as a flat `asAffine`.
       let m = identity4();
-      for (const child of transform.transformations ?? []) {
+      for (const child of childrenOf(transform)) {
         const cm = evalTransform(
           child,
           child?.inputAxes ?? axesIn,

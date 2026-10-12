@@ -64,6 +64,10 @@ describe("componentInput", () => {
       name: "Box",
       description: null,
       acceptsChildren: true,
+      context: "HTML",
+      childrenContext: null,
+      downstreamOf: [],
+      notDownstreamOf: [],
       props: [
         { key: "children", kind: CatalogValueKind.List, required: false, description: null },
         { key: "onClick", kind: CatalogValueKind.Callback, required: false, description: null },
@@ -76,6 +80,40 @@ describe("componentInput", () => {
   it("reports acceptsChildren false without a children prop", () => {
     const Leaf = createBlokComponent({ name: "Leaf", schema: z.object({}) }, Noop);
     expect(componentInput(Leaf)).toMatchObject({ acceptsChildren: false, props: [] });
+  });
+
+  it("publishes where a component may be placed and the props with a fixed spelling", () => {
+    const Model = createBlokComponent(
+      {
+        name: "Model",
+        acceptsChildren: true,
+        placement: { context: "scene", downstreamOf: ["Scene"] },
+        propKinds: { src: "MODEL_REF", from: "HTTPS_URL" },
+        schema: z.object({ src: z.string(), from: z.string(), id: z.string().optional() }),
+      },
+      Noop,
+    );
+    const Popout = createBlokComponent(
+      {
+        name: "Popout",
+        placement: { context: "scene", childrenContext: "html", downstreamOf: ["Robot", "Model"] },
+        schema: z.object({}),
+      },
+      Noop,
+    );
+
+    const model = componentInput(Model);
+    expect(model).toMatchObject({ context: "SCENE", childrenContext: null, downstreamOf: ["Scene"] });
+    expect(model.props?.map((prop) => [prop.key, prop.kind])).toEqual([
+      ["from", CatalogValueKind.HttpsUrl],
+      ["id", CatalogValueKind.String],
+      ["src", CatalogValueKind.ModelRef],
+    ]);
+    expect(componentInput(Popout)).toMatchObject({
+      context: "SCENE",
+      childrenContext: "HTML",
+      downstreamOf: ["Model", "Robot"],
+    });
   });
 
   it("takes a declared acceptsChildren over the schema's lack of a children prop", () => {

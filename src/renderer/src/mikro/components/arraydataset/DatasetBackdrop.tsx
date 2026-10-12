@@ -8,7 +8,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
-import { Clapperboard, ChevronDown } from "lucide-react";
+import { useVisualizeLens } from "../../lib/visualize";
+import { ChevronDown, Eye } from "lucide-react";
 import {
   GetArrayDatasetQuery,
   useCreateSceneFromCoordinateSystemMutation,
@@ -118,17 +119,23 @@ export const CreateSceneControl = ({
     awaitRefetchQueries: true,
     onCompleted: (result) => onCreated(result.createSceneFromLens.id),
   });
-  const loading = stagingDataset || stagingLens;
+  // The default: the server shows the lens (the page's, or the dataset's whole
+  // one) in its own grid, as whichever composition its axes call for, and
+  // nominates the scene when nothing is nominated yet. Naming another space is
+  // a say in the world, which only the explicit bootstraps below take.
+  const [visualize, visualizing] = useVisualizeLens(onCreated);
+  const shown = lens ?? dataset.fullLens;
+  const loading = stagingDataset || stagingLens || visualizing;
 
   const stage = (coordinateSystem: string) =>
-    lens
+    shown && coordinateSystem === grid?.id
+      ? visualize(shown.id)
+      : lens
       ? createLensScene({
           variables: {
             input: {
               lens: lens.id,
-              // The grid is the server's default world for a lens; naming it
-              // would say nothing.
-              world: coordinateSystem === grid?.id ? undefined : coordinateSystem,
+              world: coordinateSystem,
             },
           },
         })
@@ -143,7 +150,7 @@ export const CreateSceneControl = ({
           },
         });
 
-  const label = loading ? "Creating scene…" : "Create scene";
+  const label = loading ? "Visualizing…" : "Visualize";
 
   // No grid means the dataset has no space of its own yet, so there is nothing
   // to build over and nothing for a registration to have left from either.
@@ -157,7 +164,7 @@ export const CreateSceneControl = ({
         disabled={loading}
         onClick={() => stage(grid.id)}
       >
-        <Clapperboard className="mr-2 h-4 w-4" />
+        <Eye className="mr-2 h-4 w-4" />
         {label}
       </Button>
     );
@@ -167,7 +174,7 @@ export const CreateSceneControl = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button size={size} variant={variant} disabled={loading}>
-          <Clapperboard className="mr-2 h-4 w-4" />
+          <Eye className="mr-2 h-4 w-4" />
           {label}
           <ChevronDown className="ml-2 h-4 w-4" />
         </Button>

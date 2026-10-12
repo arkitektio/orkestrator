@@ -34,9 +34,11 @@ import {
 import { parseAsBoolean, parseAsString, useQueryState } from "@/core/util/hooks/use-search-param-state";
 import { RekuestAgent } from "@/core/linkers";
 import { useStructureOptionList } from "@/core/modules/hooks/useStructureOptions";
-import { ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
+import { useSelf } from "@/core/connection/useSelf";
+import { AgentKind, ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
 import AgentCard from "@/rekuest/components/cards/AgentCard";
 import ActionList from "@/rekuest/components/lists/ActionList";
+import MaterializedBlokList from "@/rekuest/components/lists/MaterializedBlokList";
 import TaskList from "@/rekuest/components/lists/TaskList";
 import { Filter, Loader2, Podcast, Wifi, X } from "lucide-react";
 import { useMemo } from "react";
@@ -45,15 +47,28 @@ import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar
 import { REKUEST_HELP } from "../help";
 
 const ALL = "__all__";
+/** Radio value of the default "mine" choice; the URL just omits `user`. */
+const MINE = "__mine__";
 
+/**
+ * `user` and `kind` have a default that is NOT "everything": null means the
+ * signed-in user's agents / the non-hook ones, and `ALL` lifts the filter.
+ */
 type Filters = {
   user: string | null;
   app: string | null;
   device: string | null;
+  kind: string | null;
+};
+
+const DEFAULT_KIND = AgentKind.Websocket;
+const KIND_LABELS: Record<AgentKind, string> = {
+  [AgentKind.Websocket]: "Apps",
+  [AgentKind.Webhook]: "Webhooks",
 };
 
 /**
- * One dropdown for every server-side agent filter (user / app / device). The
+ * One dropdown for every agent filter (type / user / app / device). The
  * active selections are echoed as badges on the trigger so the reader always
  * knows why the grid looks the way it does.
  */
@@ -69,9 +84,17 @@ const FilterMenu = ({
   const apps = useStructureOptionList("@lok/app", "identifier");
   const devices = useStructureOptionList("@lok/device", "nodeId");
 
-  const userLabel = users.find((u) => u.value === filters.user)?.label;
+  const userLabel =
+    filters.user === ALL
+      ? "Everyone"
+      : filters.user === null
+        ? "Mine"
+        : (users.find((u) => u.value === filters.user)?.label ?? filters.user);
   const deviceLabel = devices.find((d) => d.value === filters.device)?.label;
-  const active = [filters.user, filters.app, filters.device].filter(Boolean).length;
+  const kindLabel =
+    filters.kind === ALL ? "All" : KIND_LABELS[(filters.kind as AgentKind | null) ?? DEFAULT_KIND];
+  // Only what departs from the defaults counts as an active filter.
+  const active = [filters.user, filters.app, filters.device, filters.kind].filter(Boolean).length;
 
   return (
     <DropdownMenu>
@@ -86,6 +109,29 @@ const FilterMenu = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Show apps</DropdownMenuLabel>
+
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <span className="flex-1">By type</span>
+            <span className="ml-2 max-w-24 truncate text-xs text-muted-foreground">
+              {kindLabel}
+            </span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuRadioGroup
+              value={filters.kind ?? DEFAULT_KIND}
+              onValueChange={(v) => onChange({ kind: v === DEFAULT_KIND ? null : v })}
+            >
+              <DropdownMenuRadioItem value={AgentKind.Websocket}>
+                {KIND_LABELS[AgentKind.Websocket]}
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value={AgentKind.Webhook}>
+                {KIND_LABELS[AgentKind.Webhook]}
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value={ALL}>All types</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
 
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
@@ -114,17 +160,16 @@ const FilterMenu = ({
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <span className="flex-1">By user</span>
-            {userLabel && (
-              <span className="ml-2 max-w-24 truncate text-xs text-muted-foreground">
-                {userLabel}
-              </span>
-            )}
+            <span className="ml-2 max-w-24 truncate text-xs text-muted-foreground">
+              {userLabel}
+            </span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="max-h-80 overflow-y-auto">
             <DropdownMenuRadioGroup
-              value={filters.user ?? ALL}
-              onValueChange={(v) => onChange({ user: v === ALL ? null : v })}
+              value={filters.user ?? MINE}
+              onValueChange={(v) => onChange({ user: v === MINE ? null : v })}
             >
+              <DropdownMenuRadioItem value={MINE}>Mine</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value={ALL}>All users</DropdownMenuRadioItem>
               {users.map((u) => (
                 <DropdownMenuRadioItem key={u.value} value={u.value}>
@@ -164,7 +209,7 @@ const FilterMenu = ({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-muted-foreground"
-              onSelect={() => onChange({ user: null, app: null, device: null })}
+              onSelect={() => onChange({ user: null, app: null, device: null, kind: null })}
             >
               Clear filters
             </DropdownMenuItem>
@@ -191,33 +236,53 @@ const Page = () => {
   const [user, setUser] = useQueryState("user", parseAsString);
   const [app, setApp] = useQueryState("app", parseAsString);
   const [device, setDevice] = useQueryState("device", parseAsString);
+  const [kind, setKind] = useQueryState("kind", parseAsString);
   const [onlineOnly, setOnlineOnly] = useQueryState("online", parseAsBoolean.withDefault(false));
 
-  const filters: Filters = { user, app, device };
+  const filters: Filters = { user, app, device, kind };
   const setFilters = (next: Partial<Filters>) => {
     if ("user" in next) setUser(next.user ?? null);
     if ("app" in next) setApp(next.app ?? null);
     if ("device" in next) setDevice(next.device ?? null);
+    if ("kind" in next) setKind(next.kind ?? null);
   };
-  const hasFilter = Boolean(search || user || app || device || onlineOnly);
+  const hasFilter = Boolean(search || user || app || device || kind || onlineOnly);
+
+  // No `user` in the URL means the signed-in user's own agents.
+  const { userId } = useSelf();
+  const userFilter = user === ALL ? null : (user ?? userId);
+  const kindFilter = kind === ALL ? null : (kind ?? DEFAULT_KIND);
 
   const { data, error, refetch } = useAgentsQuery({
     variables: {
       filters: {
         search: search.trim() || undefined,
-        user: user ?? undefined,
+        user: userFilter ?? undefined,
         appIdentifier: app ?? undefined,
         deviceId: device ?? undefined,
       },
       ordering: [{ lastSeen: Ordering.Desc }],
     },
+    // "Mine" before the identity is known would list everyone's agents.
+    skip: user === null && !userId,
   });
 
+  // The server has no kind filter, and a newly connected agent is inserted
+  // into every cached `agents(...)` list (AgentUpdater), so both the type and
+  // the user are narrowed here too.
+  const visible = useMemo(
+    () =>
+      (data?.agents ?? []).filter(
+        (a) =>
+          (!kindFilter || a.kind === kindFilter) && (!userFilter || a.user.sub === userFilter),
+      ),
+    [data, kindFilter, userFilter],
+  );
   const agents = useMemo(() => {
-    const all = sortAgents(data?.agents ?? []);
+    const all = sortAgents(visible);
     return onlineOnly ? all.filter((a) => a.connected) : all;
-  }, [data, onlineOnly]);
-  const onlineCount = data?.agents.filter((a) => a.connected).length ?? 0;
+  }, [visible, onlineOnly]);
+  const onlineCount = visible.filter((a) => a.connected).length;
   const loaded = data !== undefined;
 
   return (
@@ -271,14 +336,15 @@ const Page = () => {
                 Your Apps
               </h1>
               <p className="mt-1 text-muted-foreground">
-                Every app connected to this Rekuest instance. Online apps can run actions right now.
+                The apps you connected to this Rekuest instance. Online apps can run actions right
+                now. Open Filter for other users' apps and webhooks.
               </p>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {loaded && (
                 <span>
                   <span className="font-semibold text-foreground">{onlineCount}</span> online ·{" "}
-                  <span className="font-semibold text-foreground">{data.agents.length}</span> total
+                  <span className="font-semibold text-foreground">{visible.length}</span> total
                 </span>
               )}
               <RekuestAgent.ListLink className={buttonVariants({ variant: "ghost", size: "sm" })}>
@@ -299,7 +365,7 @@ const Page = () => {
                 <EmptyDescription>
                   {hasFilter
                     ? "Try a different search or clear the active filters."
-                    : "Start an Arkitekt app and log it into this instance. It will show up here as soon as it connects."}
+                    : "Start an Arkitekt app and log it into this instance. It will show up here as soon as it connects. Apps of other users and webhooks are under Filter."}
                 </EmptyDescription>
               </EmptyHeader>
               {hasFilter && (
@@ -310,7 +376,7 @@ const Page = () => {
                   onClick={() => {
                     setSearch(null);
                     setOnlineOnly(null);
-                    setFilters({ user: null, app: null, device: null });
+                    setFilters({ user: null, app: null, device: null, kind: null });
                   }}
                 >
                   <X className="h-4 w-4" />
@@ -328,6 +394,10 @@ const Page = () => {
               {(agent) => <AgentCard key={agent.id} item={agent} />}
             </ListRender>
           )}
+        </section>
+
+        <section>
+          <MaterializedBlokList pagination={{ limit: 12 }} />
         </section>
 
         <section className="space-y-6">

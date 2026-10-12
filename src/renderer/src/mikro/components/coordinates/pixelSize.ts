@@ -17,6 +17,8 @@
  * a swap).
  */
 
+import { childrenOf, type TransformLike } from "@/core/data/scene/coords/transformGraph";
+
 export type PixelSizeLeaf = {
   inputAxes?: readonly string[] | null;
   outputAxes?: readonly string[] | null;
@@ -25,13 +27,9 @@ export type PixelSizeLeaf = {
 };
 
 export type PixelSizeEdge =
-  | (PixelSizeLeaf & {
-      /**
-       * A wrapper's children (BY_DIMENSION, SEQUENCE, BIJECTION). The wrapper
-       * itself carries no parameters — see `pixelSizeEntries`.
-       */
-      transformations?: readonly PixelSizeLeaf[] | null;
-    })
+  | (PixelSizeLeaf &
+      /** What a SEQUENCE is made of — see `pixelSizeEntries`. */
+      Pick<NonNullable<TransformLike>, "__typename" | "steps" | "transformations">)
   | null;
 
 /**
@@ -76,10 +74,12 @@ const leafEntries = (
   const outputAxes = leaf.outputAxes ?? [];
 
   const valueAt = (index: number): number | undefined => {
-    if (leaf.scale) return leaf.scale[index];
+    // By length, not presence: a BY_DIMENSION states every parameter, empty
+    // when unset, and an empty `scale` must not hide its `affine`.
+    if (leaf.scale?.length) return leaf.scale[index];
     // Rows are output axes, columns input axes; index i is the same axis
     // pairing on both, so the scale factor is the diagonal entry.
-    if (leaf.affine) return leaf.affine[index]?.[index];
+    if (leaf.affine?.length) return leaf.affine[index]?.[index];
     return undefined;
   };
 
@@ -104,12 +104,11 @@ const leafEntries = (
  * displacement field, a rotation — has no per-axis "pixel size" to state, and
  * returning [] lets the caller say so rather than invent one.
  *
- * A calibration authored through `CalibrateForm` is a BY_DIMENSION edge, and a
- * BY_DIMENSION carries NO parameters of its own — it has only `transformations`,
- * each child naming the axes it acts on. So a wrapper is unwrapped and its
- * children merged: first writer per axis wins, and the result is ordered by the
- * wrapper's own `outputAxes` so the reading order is the physical space's rather
- * than whatever order the children arrive in.
+ * A calibration authored through `CalibrateForm` is a BY_DIMENSION edge, which
+ * carries its `scale` (or `affine`) itself, over the axes it names, and is read
+ * like any leaf. A SEQUENCE carries steps instead; those are unwrapped and
+ * merged: first writer per axis wins, and the result is ordered by the
+ * sequence's own `outputAxes`.
  */
 export const pixelSizeEntries = (
   edge: PixelSizeEdge,
@@ -125,11 +124,12 @@ export const pixelSizeEntries = (
   const direct = leafEntries(edge, axisInfo);
   if (direct.length > 0) return direct;
 
-  const children = edge.transformations ?? [];
+  const children = childrenOf(edge);
   if (children.length === 0) return [];
 
   const byAxis = new Map<string, PixelSizeEntry>();
   for (const child of children) {
+    if (!child) continue;
     for (const entry of leafEntries(child, axisInfo)) {
       if (!byAxis.has(entry.axis)) byAxis.set(entry.axis, entry);
     }

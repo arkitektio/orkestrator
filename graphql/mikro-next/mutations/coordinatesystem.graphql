@@ -21,13 +21,19 @@ mutation CreateCoordinateSystem($input: CreateCoordinateSystemInput!) {
   }
 }
 
-# Show a space without choosing how: the server reads the axes and answers with
-# a chart (exactly one metric, unit-carrying axis) or a scene (any other space
-# with a time or space axis), bootstrapped from what already resides in it. A
-# space that is neither is refused, in prose. Authors no edges.
+# Show a space, or one lens, without choosing how: the server reads the axes and
+# answers with a chart (exactly one metric, unit-carrying axis) or a scene (any
+# other space with a time or space axis). What is neither is refused, in prose.
 #
-# The per-kind bootstraps (`createSceneFromCoordinateSystem`,
-# `createChartFromCoordinateSystem`) stay for a say in the kind or the policy.
+#   coordinateSystem — bootstrapped from what already resides in the space.
+#   lens             — that lens' selection and nothing else of its container;
+#                      this is how a crop or a window is shown, since showing
+#                      its SPACE draws the whole container again. A scene is
+#                      nominated for the lens when it nominates nothing yet.
+#
+# This is the standard way in. The per-kind bootstraps
+# (`createSceneFromCoordinateSystem`, `createChartFromCoordinateSystem`,
+# `createSceneFromLens`) stay for a say in the kind, the policy or the world.
 # Same list fragments as theirs, so nothing here selects `asAffine`.
 mutation AutoVisualize($input: AutoVisualizeInput!) {
   autoVisualize(input: $input) {

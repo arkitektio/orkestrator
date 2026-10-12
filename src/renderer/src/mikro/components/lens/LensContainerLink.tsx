@@ -1,7 +1,7 @@
 import { MikroArrayDataset, MikroSparseDataset, MikroTableDataset } from "@/core/linkers";
 import type { ReactNode } from "react";
 import type { LensSubjectFragment } from "../../api/graphql";
-import { describeLens } from "../../lenses";
+import { CONTAINER_SUBROUTE, describeLens } from "../../lenses";
 
 /**
  * The container a lens selects from, linked where that container has a page.
@@ -24,7 +24,13 @@ export const LensContainerLink = ({
   switch (lens.__typename) {
     case "ArrayLens":
       return (
-        <MikroArrayDataset.DetailLink object={lens.dataset} className={className}>
+        // The dataset's own address opens the whole array; its container page,
+        // where its other lenses are listed, is one subroute further.
+        <MikroArrayDataset.DetailLink
+          object={lens.dataset}
+          subroute={CONTAINER_SUBROUTE}
+          className={className}
+        >
           {content}
         </MikroArrayDataset.DetailLink>
       );

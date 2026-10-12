@@ -21,6 +21,10 @@ fragment CatalogComponent on CatalogComponent {
   name
   description
   acceptsChildren
+  context
+  childrenContext
+  downstreamOf
+  notDownstreamOf
   props {
     ...CatalogProp
   }

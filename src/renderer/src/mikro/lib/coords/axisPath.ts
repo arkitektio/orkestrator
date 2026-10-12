@@ -1,3 +1,4 @@
+import { childrenOf } from "@/core/data/scene/coords/transformGraph";
 import type { PathStep, PathTransformLike } from "./pathTypes";
 
 /**
@@ -94,12 +95,11 @@ const applyTransform = (
     case "ScaleTransformation": {
       const values = readNamed(coords, axesIn);
       if (values === null) return null;
-      // Scale entries follow the edge's own inputAxes order regardless of
-      // walk direction.
-      const paramAxes = transform.inputAxes ?? axesIn;
+      // Scale entries follow the edge's own inputAxes order, and outputAxes
+      // pair with it one for one — so the position is the same walking either
+      // way, also across an edge that renames its axes.
       const scaled = values.map((v, i) => {
-        const p = paramAxes.indexOf(axesIn[i]);
-        const factor = (p !== -1 ? transform.scale?.[p] : undefined) ?? 1;
+        const factor = transform.scale?.[i] ?? 1;
         if (inverted && factor === 0) return NaN;
         return inverted ? v / factor : v * factor;
       });
@@ -109,10 +109,8 @@ const applyTransform = (
     case "TranslationTransformation": {
       const values = readNamed(coords, axesIn);
       if (values === null) return null;
-      const paramAxes = transform.inputAxes ?? axesIn;
       const moved = values.map((v, i) => {
-        const p = paramAxes.indexOf(axesIn[i]);
-        const offset = (p !== -1 ? transform.translation?.[p] : undefined) ?? 0;
+        const offset = transform.translation?.[i] ?? 0;
         return inverted ? v - offset : v + offset;
       });
       return writeNamed(coords, axesIn, axesOut, moved);
@@ -152,7 +150,7 @@ const applyTransform = (
       return writeNamed(coords, edgeOut, edgeIn, solved);
     }
     case "SequenceTransformation": {
-      const children = transform.transformations ?? [];
+      const children = childrenOf(transform);
       const ordered = inverted ? [...children].reverse() : children;
       let current: AxisCoords | null = coords;
       for (const child of ordered) {
@@ -166,10 +164,12 @@ const applyTransform = (
       return current;
     }
     case "ByDimensionTransformation": {
-      // Children act on DISJOINT axis subsets; order is immaterial but we
-      // keep it, and inverting the composite just inverts every child.
+      // The edge's own map over the axes it names, as leaves applied in
+      // order (scale, then translation) — so walking it backwards undoes them
+      // last to first.
+      const children = childrenOf(transform);
       let current: AxisCoords | null = coords;
-      for (const child of transform.transformations ?? []) {
+      for (const child of inverted ? [...children].reverse() : children) {
         current = applyTransform(
           child as PathTransformLike,
           inverted,

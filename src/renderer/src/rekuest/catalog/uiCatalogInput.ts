@@ -4,10 +4,14 @@ import {
   isRequiredField,
   unwrapSchema,
   type BlokCatalog,
+  type BlokComponentContext,
+  type BlokComponentPlacement,
   type BlokFunctionDefinition,
+  type BlokPropKind,
   type BlokFunctionReturnType,
 } from "@/core/blok/renderer/runtime";
 import {
+  ComponentContext,
   CatalogValueKind,
   type CatalogArgumentInput,
   type CatalogComponentInput,
@@ -170,17 +174,34 @@ const operationDescription = (fn: BlokFunctionDefinition, alias?: string): strin
   return parts.join(" ");
 };
 
+const CONTEXT: Record<BlokComponentContext, ComponentContext> = {
+  html: ComponentContext.Html,
+  scene: ComponentContext.Scene,
+};
+
 export const componentInput = (component: {
   name: string;
   schema: z.ZodTypeAny;
   acceptsChildren?: boolean;
+  placement?: BlokComponentPlacement;
+  propKinds?: Readonly<Record<string, BlokPropKind>>;
 }): CatalogComponentInput => {
   const shape = shapeOf(component.schema) ?? {};
+  const placement = component.placement ?? {};
   return {
     name: component.name,
     description: describe(component.schema),
     acceptsChildren: component.acceptsChildren ?? "children" in shape,
-    props: sortByKey(Object.entries(shape).map(([key, schema]) => propInput(key, schema))),
+    context: CONTEXT[placement.context ?? "html"],
+    childrenContext: placement.childrenContext ? CONTEXT[placement.childrenContext] : null,
+    downstreamOf: [...(placement.downstreamOf ?? [])].sort(),
+    notDownstreamOf: [...(placement.notDownstreamOf ?? [])].sort(),
+    props: sortByKey(
+      Object.entries(shape).map(([key, schema]) => {
+        const kind = component.propKinds?.[key];
+        return kind ? { ...propInput(key, schema), kind: kind as CatalogValueKind } : propInput(key, schema);
+      }),
+    ),
   };
 };
 
@@ -242,6 +263,10 @@ type CanonicalCatalog = {
     name: string;
     description: string | null;
     acceptsChildren: boolean;
+    context: string;
+    childrenContext: string | null;
+    downstreamOf: string[];
+    notDownstreamOf: string[];
     props: CanonicalField[];
   }>;
   operations: Array<{
@@ -281,6 +306,10 @@ const canonicalize = (
       name: component.name,
       description: component.description ?? null,
       acceptsChildren: component.acceptsChildren ?? true,
+      context: component.context ?? ComponentContext.Html,
+      childrenContext: component.childrenContext ?? null,
+      downstreamOf: [...(component.downstreamOf ?? [])].sort(),
+      notDownstreamOf: [...(component.notDownstreamOf ?? [])].sort(),
       props: canonicalFields(component.props, false),
     }))
     .sort((left, right) => left.name.localeCompare(right.name)),

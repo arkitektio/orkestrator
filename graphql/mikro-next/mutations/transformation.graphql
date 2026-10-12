@@ -7,7 +7,7 @@
 # a single pass over a single row list (see forms/registration/mapping.ts).
 #
 # Selecting the full Transformation fragment (rather than just an id) puts a
-# complete edge — per-kind parameters and composite children — straight into the
+# complete edge — per-kind parameters and a sequence's steps — straight into the
 # cache, so the coordinate graph redraws without a follow-up round trip.
 mutation CreateTransformation($input: CreateTransformationInput!) {
   createTransformation(input: $input) {

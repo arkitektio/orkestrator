@@ -13,12 +13,6 @@ import {
   CreateSceneFromCoordinateSystemDocument,
   CreateSceneFromCoordinateSystemMutation,
   CreateSceneFromCoordinateSystemMutationVariables,
-  CreateListLensDocument,
-  CreateListLensMutation,
-  CreateListLensMutationVariables,
-  CreateSceneFromLensDocument,
-  CreateSceneFromLensMutation,
-  CreateSceneFromLensMutationVariables,
   DeleteArrayDatasetDocument,
   DeleteChartDocument,
   DeleteFolderDocument,
@@ -35,9 +29,6 @@ import {
   GetChartsDocument,
   GetCoordinateSystemDocument,
   GetFolderDocument,
-  GetTableDatasetSystemDocument,
-  GetTableDatasetSystemQuery,
-  GetTableDatasetSystemQueryVariables,
   GetLensContainersDocument,
   GetLensContainersQuery,
   GetLensContainersQueryVariables,
@@ -110,79 +101,82 @@ const visualizeSystem = async (
   return visualizationLink(visualization);
 };
 
+// The same for one lens: its selection and nothing else of its container. A
+// scene is drawn on the lens' own page, named so it is the one on screen; a
+// chart has its own page.
+const visualizeLens = async (
+  mikro: ModuleServices<"mikro">["mikro"],
+  lens: string,
+): Promise<string> => {
+  const { data } = await mikro.client.mutate<
+    AutoVisualizeMutation,
+    AutoVisualizeMutationVariables
+  >({
+    mutation: AutoVisualizeDocument,
+    variables: { input: { lens } },
+    // The lens' page lists its scenes; awaited so it holds the new one by the
+    // time we land there asking for it. Named, so only the queries on screen
+    // run again: the dataset's, when the lens is an array's.
+    refetchQueries: [GetScenesDocument, GetChartsDocument, 'GetLens', 'GetArrayDataset'],
+    awaitRefetchQueries: true,
+  });
+
+  const visualization = data?.autoVisualize;
+  if (!visualization) {
+    throw new Error('Visualizing returned neither a scene nor a chart');
+  }
+  return visualization.__typename === 'Chart'
+    ? visualizationLink(visualization)
+    : `${linkBuilder('mikro/lenses')(lens)}?scene=${encodeURIComponent(visualization.id)}`;
+};
+
+// What `Visualize` on a container shows: its whole lens, which every container
+// is created with. `ensureWholeLens` names that row rather than minting one.
+const VISUALIZED_CONTAINERS = [
+  ['arrayDataset', 'dataset', '@mikro/arraydataset', 'array dataset', 'one layer per channel, in its own pixel grid'],
+  ['tableDataset', 'tableDataset', '@mikro/tabledataset', 'table dataset', 'a chart along one metric column, a scene over several'],
+  ['meshCollection', 'meshCollection', '@mikro/meshcollection', 'mesh collection', 'its meshes, in their own space'],
+] as const;
+
 export const MIKRO_ACTIONS: Record<string, MikroAction> = {
-  'create-scene-from-arrayDataset': {
-    title: 'Create Scene',
+  // One `Visualize` per container and one for a lens, all through the lens:
+  // the server reads the axes of the space the selection lives in and answers
+  // with a chart or a scene, and refuses in prose what is neither. To render at
+  // physical scale instead, stage the lens from its page, which offers the
+  // spaces it is registered into.
+  ...Object.fromEntries(
+    VISUALIZED_CONTAINERS.map(([key, filterKey, identifier, noun, shown]): [string, MikroAction] => [
+      `visualize-${key}`,
+      {
+        title: 'Visualize',
+        description: `Show this whole ${noun}: ${shown}`,
+        icon: Eye,
+        pinned: true,
+        conditions: [{ type: 'identifier', identifier }, { type: 'nopartner' }],
+        collections: [key],
+        execute: async ({ state, services, navigate }) => {
+          const selected = state.left.find((item) => item.identifier === identifier);
+          if (!selected?.id) {
+            throw new Error(`No ${noun} selected for Visualize action`);
+          }
+          const mikro = services.mikro;
+          if (!mikro) {
+            throw new Error('Mikro service is not available');
+          }
+          const lens = await lensRegistry(mikro.client).ensureWholeLens({ [filterKey]: selected.id });
+          navigate(await visualizeLens(mikro, lens));
+        },
+      },
+    ]),
+  ),
+  // Not a call on the lens' SPACE: showing a space draws whatever lives in it,
+  // which behind a cut is its whole dataset. Naming the lens is what makes the
+  // picture show the cut.
+  'visualize-lens': {
+    title: 'Visualize',
     description:
-      "Bootstrap a renderable scene of this whole array dataset: its whole-array lens, one layer per channel, in its own pixel grid",
-    icon: Clapperboard,
-    pinned: true,
-    conditions: [
-      { type: 'identifier', identifier: '@mikro/arraydataset' },
-      { type: 'nopartner' },
-    ],
-    collections: ['arrayDataset'],
-    execute: async ({ state, services, navigate }) => {
-      const selected = state.left.find(
-        (item) => item.identifier === '@mikro/arraydataset',
-      );
-
-      if (!selected?.id) {
-        throw new Error('No array dataset selected for Create Scene action');
-      }
-
-      const mikro = services.mikro;
-      if (!mikro) {
-        throw new Error('Mikro service is not available');
-      }
-
-      // A dataset is drawn through a lens, and "all of it" is the lens with no
-      // slices. `createLens` hands back the one the dataset already has — every
-      // dataset is created with it — so this names it rather than minting one.
-      // To render at physical scale instead, stage the lens from its page,
-      // which offers the spaces the dataset is registered into.
-      const { data: lensData } = await mikro.client.mutate<
-        CreateListLensMutation,
-        CreateListLensMutationVariables
-      >({
-        mutation: CreateListLensDocument,
-        variables: { input: { dataset: selected.id, slices: [] } },
-      });
-      const lens = lensData?.createLens;
-      if (!lens) {
-        throw new Error('This dataset has no whole-array lens to build a scene of');
-      }
-
-      const { data } = await mikro.client.mutate<
-        CreateSceneFromLensMutation,
-        CreateSceneFromLensMutationVariables
-      >({
-        mutation: CreateSceneFromLensDocument,
-        // `kind` (the layer recipe) is inferred from the dataset's axes, and
-        // only LABEL needs asking for.
-        variables: { input: { lens: lens.id } },
-        refetchQueries: [GetScenesDocument, 'GetLens', 'GetArrayDataset'],
-        awaitRefetchQueries: true,
-      });
-
-      const scene = data?.createSceneFromLens;
-      if (!scene) {
-        throw new Error('Scene creation returned no scene');
-      }
-
-      // The viewer is the lens' page; name the new scene so it is the one on
-      // screen.
-      navigate(`${linkBuilder('mikro/lenses')(lens.id)}?scene=${encodeURIComponent(scene.id)}`);
-    },
-  },
-  // The same for a lens someone already holds. Not a call on the lens' SPACE:
-  // staging a space draws whatever lives in it, which behind a cut is its whole
-  // dataset. Naming the lens is what makes the scene show the cut.
-  'create-scene-from-lens': {
-    title: 'Create Scene',
-    description:
-      'Bootstrap a scene showing just this lens: its selection of the dataset, table, mesh, network or annotation collection, where it was cut from',
-    icon: Clapperboard,
+      'Show just this lens: its selection of the dataset, table, mesh, network or annotation collection, as a chart when it lies along one metric axis, as a scene otherwise',
+    icon: Eye,
     pinned: true,
     conditions: [
       { type: 'identifier', identifier: '@mikro/lens' },
@@ -195,7 +189,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       );
 
       if (!selected?.id) {
-        throw new Error('No lens selected for Create Scene action');
+        throw new Error('No lens selected for Visualize action');
       }
 
       const mikro = services.mikro;
@@ -203,30 +197,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         throw new Error('Mikro service is not available');
       }
 
-      const { data } = await mikro.client.mutate<
-        CreateSceneFromLensMutation,
-        CreateSceneFromLensMutationVariables
-      >({
-        mutation: CreateSceneFromLensDocument,
-        // `kind` (the layer recipe) and `world` are left to the server: the
-        // recipe is inferred from the lens' axes, and the world is the
-        // dataset's own grid, so the cut sits where it was taken from.
-        variables: { input: { lens: selected.id } },
-        // The lens' page lists its scenes; awaited so it holds the new one by
-        // the time we land there asking for it. Named, so only the queries on
-        // screen run again — the dataset's, when the lens is an array's.
-        refetchQueries: [GetScenesDocument, 'GetLens', 'GetArrayDataset'],
-        awaitRefetchQueries: true,
-      });
-
-      const scene = data?.createSceneFromLens;
-      if (!scene) {
-        throw new Error('Scene creation returned no scene');
-      }
-
-      // Stay with the lens — its page is where a lens' scenes are drawn — and
-      // name the new scene so it is the one on screen.
-      navigate(`${linkBuilder('mikro/lenses')(selected.id)}?scene=${encodeURIComponent(scene.id)}`);
+      navigate(await visualizeLens(mikro, selected.id));
     },
   },
   // One dialog behind every selection: from a container it starts at the whole
@@ -380,48 +351,6 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       }
 
       navigate(await visualizeSystem(mikro, selected.id));
-    },
-  },
-  'visualize-tabledataset': {
-    title: 'Visualize',
-    description:
-      'Show this table over its own coordinate columns: as a chart along one metric column, as a scene over several',
-    icon: Eye,
-    conditions: [
-      { type: 'identifier', identifier: '@mikro/tabledataset' },
-      { type: 'nopartner' },
-    ],
-    collections: ['tableDataset'],
-    execute: async ({ state, services, navigate }) => {
-      const selected = state.left.find(
-        (item) => item.identifier === '@mikro/tabledataset',
-      );
-
-      if (!selected?.id) {
-        throw new Error('No table dataset selected for Visualize action');
-      }
-
-      const mikro = services.mikro;
-      if (!mikro) {
-        throw new Error('Mikro service is not available');
-      }
-
-      // `autoVisualize` takes a space, not a table: the one a table owns has
-      // its coordinate columns as axes. A pure measurement table (a single
-      // INDEX axis) is refused by the server, which says why.
-      const { data } = await mikro.client.query<
-        GetTableDatasetSystemQuery,
-        GetTableDatasetSystemQueryVariables
-      >({
-        query: GetTableDatasetSystemDocument,
-        variables: { id: selected.id },
-      });
-      const system = data?.tableDataset.coordinateSystem;
-      if (!system) {
-        throw new Error('This table has no coordinate system to visualize');
-      }
-
-      navigate(await visualizeSystem(mikro, system.id));
     },
   },
   // The two explicit bootstraps: for a say in the kind `Visualize` picks.

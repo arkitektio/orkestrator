@@ -2,7 +2,7 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { RekuestSpace } from "@/core/linkers";
 import { useSpaceQuery } from "@/rekuest/api/graphql";
-import { SpaceViewScene, SpaceViewSceneProvider } from "../space-scene";
+import { SpaceScene } from "../space-scene";
 import { REKUEST_HELP } from "../help";
 
 export const SpacePage = asDetailQueryRoute(useSpaceQuery, ({ data }) => {
@@ -27,20 +27,8 @@ export const SpacePage = asDetailQueryRoute(useSpaceQuery, ({ data }) => {
         </Sidebars>
       }
     >
-      <div className="flex h-full flex-col p-6">
-        <div className="mb-3">
-          <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl cursor-pointer">
-            {data?.space?.name}
-          </h1>
-          <p className="mt-3 text-xl text-muted-foreground max-w-[80%]">
-            {data.space.id}
-          </p>
-        </div>
-        <div className="flex-1 min-h-[500px] rounded-lg border overflow-hidden">
-          <SpaceViewSceneProvider space={data.space}>
-            <SpaceViewScene />
-          </SpaceViewSceneProvider>
-        </div>
+      <div className="h-full min-h-[500px]">
+        <SpaceScene space={data.space} />
       </div>
     </RekuestSpace.ModelPage>
   );

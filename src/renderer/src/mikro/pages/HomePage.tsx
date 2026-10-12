@@ -60,7 +60,7 @@ import { PinnedFolders } from "../components/folder/PinnedFolders";
 import { ChartSectionList } from "../components/lists/ChartList";
 import FolderList from "../components/lists/FolderList";
 import FileList from "../components/lists/FileList";
-import { DataLensList, LensSectionList } from "../components/lists/LensList";
+import { DataLensList } from "../components/lists/LensList";
 import { useLiveLenses } from "../lib/lenses/useLiveLenses";
 import { StatisticsSidebar } from "../components/sidebars/StatisticsSidebar";
 import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
@@ -298,12 +298,6 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
                 derived arrays are listed too. */}
             <DataLensList
               filters={{ sliced: false, ...temporalFilter, ...searchFilter }}
-              ordering={lensOrdering}
-            />
-            {/* What people and tasks cut out of that data, newest first. */}
-            <LensSectionList
-              title="Selections"
-              filters={{ sliced: true, ...temporalFilter, ...searchFilter }}
               ordering={lensOrdering}
             />
             <FolderList

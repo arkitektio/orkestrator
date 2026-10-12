@@ -164,26 +164,29 @@ fragment PlacementStep on PlacementStep {
   inverted
 }
 
-# GraphQL cannot express unbounded recursion, so composite transformations
-# (Sequence / ByDimension / Bijection) are expanded to a fixed depth with
-# leaves inside. Real edges are shallow: a pyramid level is
-# Sequence[Scale, Translation]; a scene registration is
-# ByDimension[Identity | Affine] or a bare Affine.
+# A composite edge is one row and carries its own map: a Sequence its ordered
+# `steps` (a pyramid level is [SCALE, TRANSLATION]), each in the sequence's
+# input axis order and with no id or endpoints of its own; a ByDimension a
+# `scale` and/or `translation`, or an `affine`, over the axes it names — all
+# empty is the identity on them. `childrenOf` (core transformGraph) turns
+# either into the leaves the walkers read.
 fragment Transformation on Transformation {
   ...LeafTransformation
   ... on SequenceTransformation {
-    transformations {
-      ...LeafTransformation
+    steps {
+      kind
+      scale
+      translation
+      affine
+      reason
+      field {
+        ...ListCoordinateSystem
+      }
     }
   }
   ... on ByDimensionTransformation {
-    transformations {
-      ...LeafTransformation
-      ... on SequenceTransformation {
-        transformations {
-          ...LeafTransformation
-        }
-      }
-    }
+    scale
+    translation
+    affine
   }
 }

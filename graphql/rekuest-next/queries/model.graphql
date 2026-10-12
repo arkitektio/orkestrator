@@ -1,0 +1,23 @@
+query StoredModel($ref: String!) {
+  model(ref: $ref) {
+    ...StoredModel
+  }
+}
+
+query MissingModels {
+  missingModels {
+    ...MissingModel
+  }
+}
+
+query ModelPolicy {
+  modelPolicy {
+    ...ModelPolicy
+  }
+}
+
+query BloksForModel($ref: String!) {
+  bloksForModel(ref: $ref) {
+    ...ModelBlok
+  }
+}

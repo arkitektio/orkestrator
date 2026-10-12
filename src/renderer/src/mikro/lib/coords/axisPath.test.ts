@@ -176,6 +176,34 @@ describe("applyStepToCoords", () => {
   });
 });
 
+describe("applyStepToCoords on composites that carry their own map", () => {
+  const byDimension = {
+    __typename: "ByDimensionTransformation",
+    inputAxes: ["x"],
+    outputAxes: ["u"],
+    scale: [2],
+    translation: [1],
+    affine: [],
+  } as PathTransformLike;
+  const sequence = {
+    __typename: "SequenceTransformation",
+    inputAxes: ["x"],
+    outputAxes: ["u"],
+    steps: [
+      { kind: "SCALE", scale: [2], translation: [], affine: [] },
+      { kind: "TRANSLATION", scale: [], translation: [1], affine: [] },
+    ],
+  } as PathTransformLike;
+
+  it.each([
+    ["by-dimension", byDimension],
+    ["sequence", sequence],
+  ])("scales, then translates, and passes the rest through (%s)", (_name, transformation) => {
+    expect(applyStepToCoords({ transformation, inverted: false }, { x: 3, c: 1 })).toEqual({ u: 7, c: 1 });
+    expect(applyStepToCoords({ transformation, inverted: true }, { u: 7, c: 1 })).toEqual({ x: 3, c: 1 });
+  });
+});
+
 describe("applyPathToCoords", () => {
   it("empty path is the identity (locally-rooted plan)", () => {
     expect(applyPathToCoords([], { t: 1, y: 2, x: 3 })).toEqual({ t: 1, y: 2, x: 3 });

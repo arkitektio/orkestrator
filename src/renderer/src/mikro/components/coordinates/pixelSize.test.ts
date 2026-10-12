@@ -204,6 +204,67 @@ describe("pixelSizeEntries through a wrapper edge", () => {
   });
 });
 
+describe("pixelSizeEntries on composites that carry their own map", () => {
+  const axes = [
+    { name: "y", unit: "µm", type: "SPACE" },
+    { name: "x", unit: "µm", type: "SPACE" },
+  ];
+  const expected = [
+    { axis: "y", value: 0.2, unit: "µm", type: "SPACE" },
+    { axis: "x", value: 0.1, unit: "µm", type: "SPACE" },
+  ];
+
+  it("reads a by-dimension's own scale", () => {
+    expect(
+      pixelSizeEntries(
+        {
+          __typename: "ByDimensionTransformation",
+          inputAxes: ["row", "col"],
+          outputAxes: ["y", "x"],
+          scale: [0.2, 0.1],
+          affine: [],
+        },
+        axes,
+      ),
+    ).toEqual(expected);
+  });
+
+  it("does not let an empty scale hide the affine", () => {
+    expect(
+      pixelSizeEntries(
+        {
+          __typename: "ByDimensionTransformation",
+          inputAxes: ["row", "col"],
+          outputAxes: ["y", "x"],
+          scale: [],
+          affine: [
+            [0.2, 0, 5],
+            [0, 0.1, 5],
+          ],
+        },
+        axes,
+      ),
+    ).toEqual(expected);
+  });
+
+  it("reads the scale step of a sequence", () => {
+    expect(
+      pixelSizeEntries(
+        {
+          __typename: "SequenceTransformation",
+          inputAxes: ["row", "col"],
+          outputAxes: ["y", "x"],
+          steps: [
+            { kind: "TRANSLATION", scale: [], translation: [1, 1], affine: [] },
+            { kind: "SCALE", scale: [0.2, 0.1], translation: [], affine: [] },
+          ],
+        },
+        axes,
+      ),
+    ).toEqual(expected);
+  });
+});
+
 describe("spatialPixelSizes", () => {
   // A calibration edge scales EVERY axis it maps. The time step of a timelapse
   // and the bin width of a spectrum are real measurements, but they are not the

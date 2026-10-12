@@ -16,23 +16,25 @@ fragment Placement on Placement {
   affineMatrix
 }
 
+# A placement as a space shows it: the 3D view (a materialized scene blok) that
+# stands in the room, the agent it belongs to, and where it stands.
 fragment SpacePlacement on Placement {
   id
   name
-  model {
-    id
-    file {
-      ...MediaStore
-
-    }
-
-    transferFunction
-  }
+  role
   agent {
     id
+    name
+    connected
   }
   blok {
     id
+    name
+    blok {
+      id
+      name
+      context
+    }
   }
   affineMatrix
 }

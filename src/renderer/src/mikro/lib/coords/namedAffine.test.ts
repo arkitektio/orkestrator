@@ -207,6 +207,30 @@ describe("namedAffineOf", () => {
   });
 });
 
+describe("namedAffineOf on a by-dimension that carries its own map", () => {
+  const edge = { __typename: "ByDimensionTransformation", inputAxes: ["y", "x"], outputAxes: ["v", "u"] };
+
+  it("reads scale and translation as one matrix over the named axes", () => {
+    expect(
+      namedAffineOf({ ...edge, scale: [2, 3], translation: [10, 20], affine: [] })?.matrix,
+    ).toEqual([
+      [2, 0, 10],
+      [0, 3, 20],
+    ]);
+  });
+
+  it("reads an empty one as the identity onto its output names", () => {
+    expect(namedAffineOf({ ...edge, scale: [], translation: [], affine: [] })).toEqual({
+      inputAxes: ["y", "x"],
+      outputAxes: ["v", "u"],
+      matrix: [
+        [1, 0, 0],
+        [0, 1, 0],
+      ],
+    });
+  });
+});
+
 describe("touchedSlots", () => {
   it("is all-false for identity", () => {
     expect(touchedSlots(I4)).toEqual([false, false, false]);

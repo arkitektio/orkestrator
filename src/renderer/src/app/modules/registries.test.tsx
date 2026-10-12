@@ -267,9 +267,7 @@ describe("host registries", () => {
       "create-new-entity",
       "create-new-measurment-category",
       "create-protocol-event-category",
-      "create-scene-from-arrayDataset",
       "create-scene-from-coordinatesystem",
-      "create-scene-from-lens",
       "createElektroWorkspaceFromModel",
       "debugdescribe",
       "delete-backend",
@@ -417,8 +415,11 @@ describe("host registries", () => {
       "revoke_mandate",
       "same-datum",
       "update-mikro-folder",
+      "visualize-arrayDataset",
       "visualize-coordinatesystem",
-      "visualize-tabledataset",
+      "visualize-lens",
+      "visualize-meshCollection",
+      "visualize-tableDataset",
     ]);
   });
 

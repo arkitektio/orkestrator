@@ -143,6 +143,11 @@ declare global {
         openDialogInMain: (request: ForwardedDialog) => void;
       };
       openFilePicker: () => Promise<string | undefined>;
+      fetchModel: (opts: { url: string; maxSize: number; allowPrivate?: boolean }) => Promise<
+        | { ok: true; path: string; ref: string; size: number; bytes: Uint8Array }
+        | { ok: false; code: string; message: string }
+      >;
+      discardModel: (opts: { path: string }) => Promise<void>;
       uploadBigFile: (opts: { uploadId: string; path: string; grant: any; endpointUrl: string }) => Promise<string>;
       cancelBigFile: (opts: { uploadId: string }) => Promise<void>;
       downloadBigFile: (opts: { downloadId: string; grant: any; endpointUrl: string; fileName: string; savePath?: string }) => Promise<string>;

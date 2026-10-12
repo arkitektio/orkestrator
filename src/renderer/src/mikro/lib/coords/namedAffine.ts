@@ -23,7 +23,7 @@
  *
  * Pure: imports nothing generated, so its suite runs in `node`.
  */
-import { invert4, type TransformLike } from "@/core/data/scene/coords/transformGraph";
+import { childrenOf, invert4, type TransformLike } from "@/core/data/scene/coords/transformGraph";
 
 export type NamedAffine = {
   inputAxes: readonly string[];
@@ -178,7 +178,7 @@ export const namedAffineOf = (transform: TransformLike): NamedAffine | null => {
     case "SequenceTransformation":
     case "ByDimensionTransformation": {
       const children: NamedAffine[] = [];
-      for (const child of transform.transformations ?? []) {
+      for (const child of childrenOf(transform)) {
         const evaluated = namedAffineOf(child);
         if (!evaluated) return null;
         children.push(evaluated);

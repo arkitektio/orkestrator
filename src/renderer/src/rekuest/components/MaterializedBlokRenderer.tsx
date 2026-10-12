@@ -9,13 +9,14 @@ import {useAgentLiveState} from '@/rekuest/hooks/useLiveState';
 import {isTerminalEvent, silenceTask, trackTask} from '@/rekuest/lib/taskTracker';
 import {taskUpdateFromEvent} from './blokTaskUpdates';
 import {collectDemandedStateInterfaces} from './blokDemands';
+import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
 
 type MaterializedBlokData = {
   id: string;
   blok: {
     /** Typed `ComponentNode` tree from the Blok fragment. */
-    components: ReadonlyArray<unknown>;
+    componentTree?: unknown;
     demoState: unknown;
     dependencies?: Array<{key: string}> | null;
   };
@@ -180,18 +181,21 @@ const useMaterializedDispatchAction = (
 export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) => {
   const {materializedBlok, ...rendererProps} = props;
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
-  const {roots, truncatedIds} = useBlokDocument(materializedBlok.blok.components);
+  const {roots, truncatedIds} = useBlokDocument(materializedBlok.blok.componentTree as unknown[] | null);
 
   return (
-    <BlokRenderer
-      {...rendererProps}
-      uiComponents={roots}
-      initialState={materializedBlok.blok.demoState}
-      dispatchAction={dispatchAction}
-    >
-      <BlokTruncationNotice truncatedIds={truncatedIds} />
-      <MaterializedBlokRuntimeSync materializedBlok={materializedBlok} roots={roots} />
-    </BlokRenderer>
+    <RekuestSceneHost>
+      <BlokRenderer
+        {...rendererProps}
+        uiComponents={roots}
+        initialState={materializedBlok.blok.demoState}
+        dispatchAction={dispatchAction}
+      >
+        {/* Inside a host's canvas nothing can render the notice's element. */}
+        {rendererProps.embedded ? null : <BlokTruncationNotice truncatedIds={truncatedIds} />}
+        <MaterializedBlokRuntimeSync materializedBlok={materializedBlok} roots={roots} />
+      </BlokRenderer>
+    </RekuestSceneHost>
   );
 };
 

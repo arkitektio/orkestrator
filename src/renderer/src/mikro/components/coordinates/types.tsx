@@ -55,9 +55,6 @@ export type GraphEdge = Edge;
 export const describeTransformation = (
   transformation: AnyTransformation,
 ): string => {
-  const childCount = (composite: AnyTransformation) =>
-    "transformations" in composite ? composite.transformations.length : 0;
-
   const fmt = (n: number) =>
     Number.isInteger(n) ? `${n}` : n.toPrecision(3).replace(/0+$/, "");
 
@@ -87,8 +84,21 @@ export const describeTransformation = (
         ? `unmappable — ${transformation.reason}`
         : "unmappable";
     case "SequenceTransformation":
-      return `sequence of ${childCount(transformation)}`;
-    case "ByDimensionTransformation":
-      return `by dimension (${childCount(transformation)})`;
+      // The leaf fragment (a field's own edges) selects no map.
+      return "steps" in transformation
+        ? `sequence of ${transformation.steps.length}`
+        : "sequence";
+    case "ByDimensionTransformation": {
+      const axes = transformation.outputAxes.join(",");
+      if (!("scale" in transformation)) return `by dimension on ${axes}`;
+      if (transformation.affine.length) return `affine on ${axes}`;
+      const parts = [
+        transformation.scale.length ? `scale ${transformation.scale.map(fmt).join(" · ")}` : null,
+        transformation.translation.length
+          ? `translate ${transformation.translation.map(fmt).join(" · ")}`
+          : null,
+      ].filter(Boolean);
+      return parts.length ? `${parts.join(", ")} on ${axes}` : `identity on ${axes}`;
+    }
   }
 };

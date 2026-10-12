@@ -1,12 +1,9 @@
 # --- Blok component tree -----------------------------------------------------
-# `Blok.components` is the typed `ComponentNode` tree (the raw `uiComponents`
-# JSON is gone). Component props bind static values, data-model paths, agent
-# calls and util calls; `ActionArgument` nests (`utilCall`, `agentCall`,
-# `valueList`, `valueDict`). GraphQL fragments cannot recurse, so arguments are
-# selected to the same fixed depth as port calls (ports.graphql) and the node
-# tree to a fixed number of levels. The leaf level selects `children { id }`
-# only, so a deeper payload is detected client-side (see
-# `rekuest/components/blokDocument.tsx`) instead of silently vanishing.
+# A blok's tree is fetched as `componentTree`: the whole tree as one JSON value
+# in the runtime's own (snake_case) spelling. A selection set cannot recurse,
+# and a scene blok (html > Scene > Model > Popout > html ...) nests past any
+# fixed number of levels. The typed fragments below remain for custom widgets
+# on ports (ports.graphql), whose props are flat.
 
 fragment BlokAgentCallLeaf on AgentCall {
   dependency
@@ -69,74 +66,6 @@ fragment BlokComponentProp on ComponentProp {
   }
 }
 
-fragment BlokNodeFields on ComponentNode {
-  id
-  component
-  props {
-    ...BlokComponentProp
-  }
-}
-
-fragment BlokNodeL8 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    id
-  }
-}
-
-fragment BlokNodeL7 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL8
-  }
-}
-
-fragment BlokNodeL6 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL7
-  }
-}
-
-fragment BlokNodeL5 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL6
-  }
-}
-
-fragment BlokNodeL4 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL5
-  }
-}
-
-fragment BlokNodeL3 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL4
-  }
-}
-
-fragment BlokNodeL2 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL3
-  }
-}
-
-fragment BlokNodeL1 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL2
-  }
-}
-
-fragment BlokComponentTree on ComponentNode {
-  ...BlokNodeL1
-}
-
 fragment BlokDiagnostic on Diagnostic {
   level
   code
@@ -162,9 +91,10 @@ fragment Blok on Blok {
     description
     isRegistered
   }
-  components {
-    ...BlokComponentTree
-  }
+  context
+  forModel
+  forNode
+  componentTree
   demoState
   diagnostics {
     ...BlokDiagnostic
@@ -174,6 +104,7 @@ fragment Blok on Blok {
 fragment MaterializedBlok on MaterializedBlok {
   id
   name
+  isDefault
   createdAt
   blok {
     ...Blok
@@ -195,8 +126,22 @@ fragment ListBlok on Blok {
 
 fragment ListMaterializedBlok on MaterializedBlok {
   id
+  name
+  description
+  isDefault
+  updatedAt
   blok {
     id
     name
+    description
+    context
+  }
+  agentMappings {
+    key
+    agent {
+      id
+      name
+      connected
+    }
   }
 }

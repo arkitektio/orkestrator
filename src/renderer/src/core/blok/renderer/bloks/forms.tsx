@@ -1,3 +1,4 @@
+import * as React from 'react';
 import {Button as ShadButton} from '@/core/ui/button';
 import {ButtonGroup as ShadButtonGroup} from '@/core/ui/button-group';
 import {Calendar as ShadCalendar} from '@/core/ui/calendar';
@@ -70,6 +71,7 @@ import {
   orientationSchema,
   renderChildList,
   renderContent,
+  throttle,
   useControlledValue,
 } from './shared';
 
@@ -406,6 +408,9 @@ export const Switch = createBooleanControl(
   ShadSwitch,
 );
 
+/** How often a slider's `onChange` runs while it is dragged. */
+const SLIDER_CHANGE_INTERVAL_MS = 150;
+
 export const Slider = createBlokComponent(
   {
     name: 'Slider',
@@ -419,7 +424,9 @@ export const Slider = createBlokComponent(
         step: numberSchema.describe('Step size.'),
         disabled: disabledSchema,
         className: classNameSchema,
-        onChange: actionProp('Runs while dragging. Arguments may read $event.'),
+        onChange: actionProp(
+          'Runs while dragging, at most every 150 ms and always with the final value. Arguments may read $event.',
+        ),
         onCommit: actionProp('Runs when the drag ends. Arguments may read $event.'),
       })
       .describe('A slider bound to a numeric value.'),
@@ -437,6 +444,16 @@ export const Slider = createBlokComponent(
     const onChange = useEventAction(blok.onChange);
     const onCommit = useEventAction(blok.onCommit);
 
+    // A drag yields a value per pointer move, and an action is a request to an
+    // agent: the thumb follows the pointer, the action follows at a measured pace.
+    const onChangeRef = React.useRef(onChange);
+    onChangeRef.current = onChange;
+    const sendChange = React.useMemo(
+      () => throttle((next: number) => onChangeRef.current?.(next), SLIDER_CHANGE_INTERVAL_MS),
+      [],
+    );
+    React.useEffect(() => () => sendChange.cancel(), [sendChange]);
+
     const controlled = useControlledValue<number>({
       bind,
       value,
@@ -452,13 +469,19 @@ export const Slider = createBlokComponent(
         max={max ?? 100}
         step={step}
         disabled={disabled === true}
-        className={className}
+        // A slider has no width of its own: in a Column, whose children sit at
+        // their content width, it would collapse. It takes the width on offer.
+        className={cn('min-w-40 self-stretch', className)}
         onValueChange={next => {
           const nextValue = next[0] ?? 0;
           controlled.setValue(nextValue);
-          onChange?.(nextValue);
+          sendChange(nextValue);
         }}
-        onValueCommit={next => onCommit?.(next[0] ?? 0)}
+        onValueCommit={next => {
+          // Where the drag stopped is sent before the commit, never after it.
+          sendChange.flush();
+          onCommit?.(next[0] ?? 0);
+        }}
       />
     );
   },

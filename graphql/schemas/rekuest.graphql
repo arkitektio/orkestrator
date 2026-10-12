@@ -1039,8 +1039,16 @@ input BlockInput {
 type Blok {
   catalog: UICatalog!
 
+  """
+  The whole component tree as one JSON value, in the wire spelling (snake_case keys). Unlike `components` it has no depth limit, which a selection set always has.
+  """
+  componentTree: AnyDefault!
+
   """The typed component tree of this blok."""
   components: [ComponentNode!]!
+
+  """The renderer for this blok's root."""
+  context: ComponentContext!
   creator: User!
 
   """Demo state used to render a preview of this blok without agents."""
@@ -1054,6 +1062,14 @@ type Blok {
   Non-fatal registration findings, e.g. manifest util calls naming operations that neither the base catalog nor this blok's catalog provides.
   """
   diagnostics: [Diagnostic!]!
+
+  """The model reference this blok decorates, if any."""
+  forModel: String
+
+  """
+  The node of `forModel` this blok attaches to; the model's root when null.
+  """
+  forNode: String
   id: ID!
 
   """Materialized bloks that are instances of this blok."""
@@ -1147,6 +1163,16 @@ input BlokImplementationInput {
   components: [ComponentNodeInput!]!
 
   """
+  The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene.
+  """
+  context: ComponentContext! = HTML
+
+  """
+  Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one.
+  """
+  default: Boolean! = false
+
+  """
   An optional JSON-serializable object providing demo state values for this Blok's internal reactive data model, useful for testing and development purposes.
   """
   demoState: JSONSerializable = null
@@ -1158,6 +1184,16 @@ input BlokImplementationInput {
   A human-readable description about this Blok's purpose and functionality.
   """
   description: String = null
+
+  """
+  The model ('sha256:...') this Blok decorates: viewers showing that model offer this Blok at `for_node`. HTML bloks only.
+  """
+  forModel: String = null
+
+  """
+  The node of `for_model` this Blok attaches to; the model's root when absent.
+  """
+  forNode: String = null
 
   """The key of this Blok implementation."""
   key: String!
@@ -1224,8 +1260,12 @@ input CatalogArgumentInput {
 """A component a UI catalog can render."""
 type CatalogComponent {
   acceptsChildren: Boolean!
+  childrenContext: ComponentContext
+  context: ComponentContext!
   description: String
+  downstreamOf: [String!]!
   name: String!
+  notDownstreamOf: [String!]!
   props: [CatalogProp!]!
 }
 
@@ -1234,13 +1274,29 @@ input CatalogComponentInput {
   """Whether ComponentNode.children may be nested under this component."""
   acceptsChildren: Boolean! = true
 
+  """
+  The context in force for this component's children, when it differs from its own: such a component bridges two renderers.
+  """
+  childrenContext: ComponentContext = null
+
+  """The context this component may be placed in."""
+  context: ComponentContext! = HTML
+
   """Human-readable description of the component."""
   description: String = null
+
+  """
+  Component names of which at least one must be an ancestor, at any depth. Empty means no requirement.
+  """
+  downstreamOf: [String!]! = []
 
   """
   The component name a ComponentNode.component (or a custom widget's component) must match.
   """
   name: String!
+
+  """Component names of which none may be an ancestor."""
+  notDownstreamOf: [String!]! = []
 
   """The props this component accepts."""
   props: [CatalogPropInput!]! = []
@@ -1305,8 +1361,10 @@ enum CatalogValueKind {
   CALLBACK
   DICT
   FLOAT
+  HTTPS_URL
   INT
   LIST
+  MODEL_REF
   STRING
 }
 
@@ -1430,6 +1488,14 @@ type Collection {
 }
 
 """
+The renderer a catalog component lives in. A component may only be placed where its context is in force.
+"""
+enum ComponentContext {
+  HTML
+  SCENE
+}
+
+"""
 An abstract structural visual element inside a Blok blueprint manifest.
 """
 type ComponentNode {
@@ -1513,6 +1579,9 @@ input CreateBlokInput {
   """
   components: [ComponentNodeInput!] = null
 
+  """The renderer for the blok's root: HTML, or SCENE for a full 3D view."""
+  context: ComponentContext! = HTML
+
   """
   The initial state of the blok. This is used to set the initial state of the blok when it is materialized.
   """
@@ -1527,6 +1596,14 @@ input CreateBlokInput {
   The description of the blok. This can described the blok and its purpose.
   """
   description: String = null
+
+  """The model ('sha256:...') this blok decorates. HTML bloks only."""
+  forModel: String = null
+
+  """
+  The node of `for_model` this blok attaches to; the model's root when absent.
+  """
+  forNode: String = null
 
   """The name of the Blok, used for identification in the system."""
   name: String!
@@ -1565,6 +1642,25 @@ input CreateHigherOrderImplementationInput {
 
   """The implementation to wrap; its agent hosts the wrapper."""
   lower: ID!
+}
+
+"""
+Record a model that was uploaded with a grant from `requestModelUpload`.
+"""
+input CreateModelInput {
+  """A label for browsing; not part of the model's identity."""
+  name: String = null
+
+  """The reference the uploaded bytes must hash to."""
+  ref: String!
+
+  """
+  The https URL the model was fetched from; absent when the uploader holds the file itself.
+  """
+  source: String = null
+
+  """The store the grant was issued for."""
+  store: MediaLike!
 }
 
 """The input for creating a placement."""
@@ -2891,6 +2987,11 @@ type MaterializedBlok {
   dashboardPlacements(filters: DashboardPlacementFilter, ordering: [DashboardPlacementOrder!]! = [], pagination: OffsetPaginationInput): [DashboardPlacement!]!
   description: String
   id: ID!
+
+  """
+  Whether this is its declaring agent's default blok for the blok's context.
+  """
+  isDefault: Boolean!
   name: String
 
   """Placements of this materialized blok."""
@@ -3046,6 +3147,58 @@ type MessageEffect implements Effect {
   source: String
 }
 
+"""
+A model that registered bloks reference but the organization has not stored.
+"""
+type MissingModel {
+  """The names of the bloks that reference it."""
+  bloks: [String!]!
+  ref: String!
+
+  """
+  The https URL the reference names as its source; null when the blok names none and its app uploads the file.
+  """
+  source: String
+}
+
+"""The limits a model is held to when it is added to the store."""
+type ModelPolicy {
+  """
+  Whether a member who is not an admin may upload a model that a registered blok names. Admins always may.
+  """
+  appUpload: Boolean!
+
+  """The glTF extensions a model may require."""
+  extensions: [String!]!
+  maxAnimations: Int!
+
+  """Largest JSON chunk, in bytes."""
+  maxJson: Int!
+  maxNodes: Int!
+
+  """Largest file, in bytes."""
+  maxSize: Float!
+
+  """
+  Decoded texture memory in bytes (width x height x 4, summed). Checked by clients.
+  """
+  maxTextureMemory: Float!
+
+  """
+  Largest texture side, in pixels. Checked by clients, which decode the images.
+  """
+  maxTextureSize: Int!
+  maxTriangles: Int!
+}
+
+"""What validation counted in a model."""
+type ModelStats {
+  animations: Int!
+  nodes: Int!
+  textures: Int!
+  triangles: Int!
+}
+
 """Root mutation type for executing write operations on the API."""
 type Mutation {
   """Assign a task to an agent."""
@@ -3084,6 +3237,11 @@ type Mutation {
   Deploy a higher-order implementation: a wrapper onto the agent of the implementation it wraps, linked to it.
   """
   createHigherOrderImplementation(input: CreateHigherOrderImplementationInput!): Implementation!
+
+  """
+  Verify a model uploaded with a grant from `requestModelUpload` (its hash, header and JSON chunk) and record it, under the same rule for who may add it. Returns the existing model if the hash is stored already; a refusal carries its code in `extensions.code` and deletes the upload.
+  """
+  createModel(input: CreateModelInput!): ThreeDModel!
 
   """Create a new placement for an agent in a space."""
   createPlacement(input: CreatePlacementInput!): Placement!
@@ -3210,6 +3368,11 @@ type Mutation {
 
   """Upload media and return a URL for access"""
   requestMediaUpload(input: RequestMediaUploadInput!): MediaUploadGrant!
+
+  """
+  A media upload grant for one model, issued if its reference and size pass the policy. An admin may add any model; another member only one that a registered blok names, and only where `modelPolicy.appUpload` is on.
+  """
+  requestModelUpload(input: RequestModelUploadInput!): MediaUploadGrant!
 
   """Resume a paused task."""
   resume(input: ResumeInput!): Task!
@@ -3811,6 +3974,9 @@ type Query {
   """List of UI Blok."""
   bloks: [Blok!]!
 
+  """The html bloks registered to decorate the model of this reference."""
+  bloksForModel(ref: String!): [Blok!]!
+
   """Materialize the latest state for a specific agent"""
   checkout(backwardPatchCount: Int! = 0, forwardPatchCount: Int! = 0, globalRevision: Int = null, sessionId: ID = null, state: ID!, timestamp: DateTime = null): StateValue!
 
@@ -3905,6 +4071,19 @@ type Query {
 
   """All memory shelves."""
   memoryShelves(filters: MemoryShelveFilter, ordering: [MemoryShelveOrder!]! = [], pagination: OffsetPaginationInput): [MemoryShelve!]!
+
+  """
+  Admins only: models that registered bloks reference statically but the organization has not stored, with the URL to fetch each from.
+  """
+  missingModels: [MissingModel!]!
+
+  """
+  The stored model of this reference ('sha256:...') in the caller's organization, or null if it has not been added.
+  """
+  model(ref: String!): ThreeDModel
+
+  """The limits a model is held to when it is added."""
+  modelPolicy: ModelPolicy!
 
   """Find your implementation at a specific interface."""
   myImplementationAt(actionId: ID = null, interface: String = null): Implementation!
@@ -4132,6 +4311,22 @@ input RequestMediaUploadInput {
   contentType: String = null
   fileSize: Int = null
   originalFileName: String!
+}
+
+"""Ask for a grant to upload one model."""
+input RequestModelUploadInput {
+  """A file name for the stored object; the reference when absent."""
+  fileName: String = null
+
+  """
+  The model's reference: 'sha256:' and the hex SHA-256 of its exact bytes.
+  """
+  ref: String!
+
+  """
+  The size of the file in bytes, checked against the policy before a grant is issued.
+  """
+  size: Float!
 }
 
 type Requires {
@@ -6004,6 +6199,25 @@ type ThreeDModel {
   file: MediaStore!
   id: ID!
   name: String!
+
+  """The node names blok bindings can address."""
+  nodes: [String!]!
+
+  """
+  'sha256:' and the hex SHA-256 of the file's exact bytes; null for a model that was never verified.
+  """
+  ref: String
+
+  """The size of the file in bytes, measured by the server."""
+  size: Int
+
+  """
+  The https URL the first upload was fetched from; null when an app uploaded its own file. Informational.
+  """
+  source: String
+
+  """Node, triangle, texture and animation counts found at validation."""
+  stats: ModelStats
   transferFunction: String
   updatedAt: DateTime!
 }

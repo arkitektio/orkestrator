@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  childrenOf,
   composeLayerAffine,
   evalTransform,
   invert4,
@@ -743,5 +744,86 @@ describe("level scale factors from toParent edges", () => {
       DIMS.length,
     );
     expect(factors).toEqual([null, null]);
+  });
+});
+
+// mikro states a composite as ONE row: a sequence's `steps`, a by-dimension's
+// own parameters. elektro still states it as child edges (every fixture above).
+describe("composites that carry their own map (mikro)", () => {
+  const empty = { scale: [], translation: [], affine: [] };
+  const pyramidLevel = {
+    __typename: "SequenceTransformation",
+    inputAxes: DIMS,
+    outputAxes: DIMS,
+    steps: [
+      { kind: "SCALE", ...empty, scale: [1, 1, 2, 4, 4] },
+      { kind: "TRANSLATION", ...empty, translation: [0, 0, 0.5, 1.5, 1.5] },
+    ],
+  };
+
+  it("reads a level's declared scale off a sequence's steps", () => {
+    // Without this the shape-ratio fallback takes over and nothing fails.
+    expect(absoluteLevelScale(pyramidLevel, DIMS.length)).toEqual([1, 1, 2, 4, 4]);
+  });
+
+  it("composes a sequence's steps first to last", () => {
+    const m = evalTransform(pyramidLevel, DIMS, DIMS, SPATIAL);
+    expect(m?.[0]).toEqual([4, 0, 0, 1.5]);
+    expect(m?.[2]).toEqual([0, 0, 2, 0.5]);
+  });
+
+  it("evaluates a sequence that renames its axes", () => {
+    const m = evalTransform(
+      {
+        __typename: "SequenceTransformation",
+        inputAxes: ["row", "col"],
+        outputAxes: ["y", "x"],
+        steps: [
+          { kind: "SCALE", ...empty, scale: [2, 4] },
+          { kind: "TRANSLATION", ...empty, translation: [0.5, 1.5] },
+        ],
+      },
+      ["row", "col"],
+      ["y", "x"],
+      ["col", "row", null],
+      ["x", "y", null],
+    );
+    expect(m?.[0]).toEqual([4, 0, 0, 1.5]);
+    expect(m?.[1]).toEqual([0, 2, 0, 0.5]);
+  });
+
+  it("names a sequence's output axes on its last step only", () => {
+    const leaves = childrenOf({ ...pyramidLevel, inputAxes: ["row"], outputAxes: ["y"] });
+    expect(leaves.map((leaf) => [leaf?.__typename, leaf?.inputAxes, leaf?.outputAxes])).toEqual([
+      ["ScaleTransformation", ["row"], ["row"]],
+      ["TranslationTransformation", ["row"], ["y"]],
+    ]);
+  });
+
+  it("reads a by-dimension's scale and translation as one map, scale first", () => {
+    const edge = {
+      __typename: "ByDimensionTransformation",
+      inputAxes: ["y", "x"],
+      outputAxes: ["y", "x"],
+      ...empty,
+      scale: [2, 3],
+      translation: [10, 20],
+    };
+    expect(childrenOf(edge)).toHaveLength(1);
+    const m = evalTransform(edge, ["y", "x"], ["y", "x"], SPATIAL);
+    expect(m?.[0]).toEqual([3, 0, 0, 20]);
+    expect(m?.[1]).toEqual([0, 2, 0, 10]);
+    expect(m?.[2]).toEqual([0, 0, 1, 0]);
+  });
+
+  it("reads a by-dimension that states nothing as the identity on its axes", () => {
+    const edge = {
+      __typename: "ByDimensionTransformation",
+      inputAxes: ["y", "x"],
+      outputAxes: ["y", "x"],
+      ...empty,
+    };
+    expect(childrenOf(edge).map((leaf) => leaf?.__typename)).toEqual(["IdentityTransformation"]);
+    expect(evalTransform(edge, ["y", "x"], ["y", "x"], SPATIAL)?.[0]).toEqual([1, 0, 0, 0]);
   });
 });

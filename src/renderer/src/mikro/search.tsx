@@ -22,7 +22,9 @@ export const MikroEntitySearch = ({ term, onDone }: { term: string; onDone?: () 
       noArrayDatasets: false,
       noFiles: false,
       noFolders: false,
-      noLenses: false,
+      // Selections stay out of the way: a dataset is found as itself, and its
+      // cuts are listed in its workspace.
+      noLenses: true,
       pagination: { limit: PER_TYPE_LIMIT },
     },
     fetchPolicy: "cache-first",

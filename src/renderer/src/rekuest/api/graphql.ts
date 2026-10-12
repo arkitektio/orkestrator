@@ -891,8 +891,12 @@ export type BlockInput = {
 export type Blok = {
   __typename?: 'Blok';
   catalog: UiCatalog;
+  /** The whole component tree as one JSON value, in the wire spelling (snake_case keys). Unlike `components` it has no depth limit, which a selection set always has. */
+  componentTree: Scalars['AnyDefault']['output'];
   /** The typed component tree of this blok. */
   components: Array<ComponentNode>;
+  /** The renderer for this blok's root. */
+  context: ComponentContext;
   creator: User;
   /** Demo state used to render a preview of this blok without agents. */
   demoState: Scalars['Props']['output'];
@@ -901,6 +905,10 @@ export type Blok = {
   description?: Maybe<Scalars['String']['output']>;
   /** Non-fatal registration findings, e.g. manifest util calls naming operations that neither the base catalog nor this blok's catalog provides. */
   diagnostics: Array<Diagnostic>;
+  /** The model reference this blok decorates, if any. */
+  forModel?: Maybe<Scalars['String']['output']>;
+  /** The node of `forModel` this blok attaches to; the model's root when null. */
+  forNode?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   /** Materialized bloks that are instances of this blok. */
   materializedBloks: Array<MaterializedBlok>;
@@ -981,12 +989,20 @@ export type BlokImplementationInput = {
   catalog?: InputMaybe<Scalars['String']['input']>;
   /** The UI component tree blueprint for this Blok. */
   components: Array<ComponentNodeInput>;
+  /** The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene. */
+  context?: ComponentContext;
+  /** Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one. */
+  default?: Scalars['Boolean']['input'];
   /** An optional JSON-serializable object providing demo state values for this Blok's internal reactive data model, useful for testing and development purposes. */
   demoState?: InputMaybe<Scalars['JSONSerializable']['input']>;
   /** The dependencies required by this Blok. */
   dependencies?: Array<AgentDependencyInput>;
   /** A human-readable description about this Blok's purpose and functionality. */
   description?: InputMaybe<Scalars['String']['input']>;
+  /** The model ('sha256:...') this Blok decorates: viewers showing that model offer this Blok at `for_node`. HTML bloks only. */
+  forModel?: InputMaybe<Scalars['String']['input']>;
+  /** The node of `for_model` this Blok attaches to; the model's root when absent. */
+  forNode?: InputMaybe<Scalars['String']['input']>;
   /** The key of this Blok implementation. */
   key: Scalars['String']['input'];
 };
@@ -1047,8 +1063,12 @@ export type CatalogArgumentInput = {
 export type CatalogComponent = {
   __typename?: 'CatalogComponent';
   acceptsChildren: Scalars['Boolean']['output'];
+  childrenContext?: Maybe<ComponentContext>;
+  context: ComponentContext;
   description?: Maybe<Scalars['String']['output']>;
+  downstreamOf: Array<Scalars['String']['output']>;
   name: Scalars['String']['output'];
+  notDownstreamOf: Array<Scalars['String']['output']>;
   props: Array<CatalogProp>;
 };
 
@@ -1056,10 +1076,18 @@ export type CatalogComponent = {
 export type CatalogComponentInput = {
   /** Whether ComponentNode.children may be nested under this component. */
   acceptsChildren?: Scalars['Boolean']['input'];
+  /** The context in force for this component's children, when it differs from its own: such a component bridges two renderers. */
+  childrenContext?: InputMaybe<ComponentContext>;
+  /** The context this component may be placed in. */
+  context?: ComponentContext;
   /** Human-readable description of the component. */
   description?: InputMaybe<Scalars['String']['input']>;
+  /** Component names of which at least one must be an ancestor, at any depth. Empty means no requirement. */
+  downstreamOf?: Array<Scalars['String']['input']>;
   /** The component name a ComponentNode.component (or a custom widget's component) must match. */
   name: Scalars['String']['input'];
+  /** Component names of which none may be an ancestor. */
+  notDownstreamOf?: Array<Scalars['String']['input']>;
   /** The props this component accepts. */
   props?: Array<CatalogPropInput>;
 };
@@ -1113,8 +1141,10 @@ export enum CatalogValueKind {
   Callback = 'CALLBACK',
   Dict = 'DICT',
   Float = 'FLOAT',
+  HttpsUrl = 'HTTPS_URL',
   Int = 'INT',
   List = 'LIST',
+  ModelRef = 'MODEL_REF',
   String = 'STRING'
 }
 
@@ -1238,6 +1268,12 @@ export type CollectionActionsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
+/** The renderer a catalog component lives in. A component may only be placed where its context is in force. */
+export enum ComponentContext {
+  Html = 'HTML',
+  Scene = 'SCENE'
+}
+
 /** An abstract structural visual element inside a Blok blueprint manifest. */
 export type ComponentNode = {
   __typename?: 'ComponentNode';
@@ -1292,12 +1328,18 @@ export type CreateBlokInput = {
   catalog?: InputMaybe<Scalars['String']['input']>;
   /** The schema of the blok. This can be used to validate the blok input and output. */
   components?: InputMaybe<Array<ComponentNodeInput>>;
+  /** The renderer for the blok's root: HTML, or SCENE for a full 3D view. */
+  context?: ComponentContext;
   /** The initial state of the blok. This is used to set the initial state of the blok when it is materialized. */
   demoState?: InputMaybe<Scalars['Args']['input']>;
   /** The dependencies of the blok. This is used to identify the blok in the system. */
   dependencies?: InputMaybe<Array<AgentDependencyInput>>;
   /** The description of the blok. This can described the blok and its purpose. */
   description?: InputMaybe<Scalars['String']['input']>;
+  /** The model ('sha256:...') this blok decorates. HTML bloks only. */
+  forModel?: InputMaybe<Scalars['String']['input']>;
+  /** The node of `for_model` this blok attaches to; the model's root when absent. */
+  forNode?: InputMaybe<Scalars['String']['input']>;
   /** The name of the Blok, used for identification in the system. */
   name: Scalars['String']['input'];
 };
@@ -1322,6 +1364,18 @@ export type CreateHigherOrderImplementationInput = {
   interface: Scalars['String']['input'];
   /** The implementation to wrap; its agent hosts the wrapper. */
   lower: Scalars['ID']['input'];
+};
+
+/** Record a model that was uploaded with a grant from `requestModelUpload`. */
+export type CreateModelInput = {
+  /** A label for browsing; not part of the model's identity. */
+  name?: InputMaybe<Scalars['String']['input']>;
+  /** The reference the uploaded bytes must hash to. */
+  ref: Scalars['String']['input'];
+  /** The https URL the model was fetched from; absent when the uploader holds the file itself. */
+  source?: InputMaybe<Scalars['String']['input']>;
+  /** The store the grant was issued for. */
+  store: Scalars['MediaLike']['input'];
 };
 
 /** The input for creating a placement. */
@@ -2297,6 +2351,8 @@ export type MaterializedBlok = {
   dashboardPlacements: Array<DashboardPlacement>;
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  /** Whether this is its declaring agent's default blok for the blok's context. */
+  isDefault: Scalars['Boolean']['output'];
   name?: Maybe<Scalars['String']['output']>;
   /** Placements of this materialized blok. */
   placements: Array<Placement>;
@@ -2469,6 +2525,45 @@ export type MessageEffect = Effect & {
   source?: Maybe<Scalars['String']['output']>;
 };
 
+/** A model that registered bloks reference but the organization has not stored. */
+export type MissingModel = {
+  __typename?: 'MissingModel';
+  /** The names of the bloks that reference it. */
+  bloks: Array<Scalars['String']['output']>;
+  ref: Scalars['String']['output'];
+  /** The https URL the reference names as its source; null when the blok names none and its app uploads the file. */
+  source?: Maybe<Scalars['String']['output']>;
+};
+
+/** The limits a model is held to when it is added to the store. */
+export type ModelPolicy = {
+  __typename?: 'ModelPolicy';
+  /** Whether a member who is not an admin may upload a model that a registered blok names. Admins always may. */
+  appUpload: Scalars['Boolean']['output'];
+  /** The glTF extensions a model may require. */
+  extensions: Array<Scalars['String']['output']>;
+  maxAnimations: Scalars['Int']['output'];
+  /** Largest JSON chunk, in bytes. */
+  maxJson: Scalars['Int']['output'];
+  maxNodes: Scalars['Int']['output'];
+  /** Largest file, in bytes. */
+  maxSize: Scalars['Float']['output'];
+  /** Decoded texture memory in bytes (width x height x 4, summed). Checked by clients. */
+  maxTextureMemory: Scalars['Float']['output'];
+  /** Largest texture side, in pixels. Checked by clients, which decode the images. */
+  maxTextureSize: Scalars['Int']['output'];
+  maxTriangles: Scalars['Int']['output'];
+};
+
+/** What validation counted in a model. */
+export type ModelStats = {
+  __typename?: 'ModelStats';
+  animations: Scalars['Int']['output'];
+  nodes: Scalars['Int']['output'];
+  textures: Scalars['Int']['output'];
+  triangles: Scalars['Int']['output'];
+};
+
 /** Root mutation type for executing write operations on the API. */
 export type Mutation = {
   __typename?: 'Mutation';
@@ -2494,6 +2589,8 @@ export type Mutation = {
   createDashboard: Dashboard;
   /** Deploy a higher-order implementation: a wrapper onto the agent of the implementation it wraps, linked to it. */
   createHigherOrderImplementation: Implementation;
+  /** Verify a model uploaded with a grant from `requestModelUpload` (its hash, header and JSON chunk) and record it, under the same rule for who may add it. Returns the existing model if the hash is stored already; a refusal carries its code in `extensions.code` and deletes the upload. */
+  createModel: ThreeDModel;
   /** Create a new placement for an agent in a space. */
   createPlacement: Placement;
   /** Create a recurring assignment of an action. Its next run is planned immediately. */
@@ -2566,6 +2663,8 @@ export type Mutation = {
   requestMediaAccess: MediaAccessGrant;
   /** Upload media and return a URL for access */
   requestMediaUpload: MediaUploadGrant;
+  /** A media upload grant for one model, issued if its reference and size pass the policy. An admin may add any model; another member only one that a registered blok names, and only where `modelPolicy.appUpload` is on. */
+  requestModelUpload: MediaUploadGrant;
   /** Resume a paused task. */
   resume: Task;
   /** Resume a paused probe. Idempotent on finished probes; the agent's Resumed report settles the state. */
@@ -2662,6 +2761,12 @@ export type MutationCreateDashboardArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationCreateHigherOrderImplementationArgs = {
   input: CreateHigherOrderImplementationInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationCreateModelArgs = {
+  input: CreateModelInput;
 };
 
 
@@ -2878,6 +2983,12 @@ export type MutationRequestMediaAccessArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationRequestMediaUploadArgs = {
   input: RequestMediaUploadInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationRequestModelUploadArgs = {
+  input: RequestModelUploadInput;
 };
 
 
@@ -3383,6 +3494,8 @@ export type Query = {
   blok: Blok;
   /** List of UI Blok. */
   bloks: Array<Blok>;
+  /** The html bloks registered to decorate the model of this reference. */
+  bloksForModel: Array<Blok>;
   /** Materialize the latest state for a specific agent */
   checkout: StateValue;
   /** Materialize the latest states for a specific agent */
@@ -3437,6 +3550,12 @@ export type Query = {
   memoryShelve: MemoryShelve;
   /** All memory shelves. */
   memoryShelves: Array<MemoryShelve>;
+  /** Admins only: models that registered bloks reference statically but the organization has not stored, with the URL to fetch each from. */
+  missingModels: Array<MissingModel>;
+  /** The stored model of this reference ('sha256:...') in the caller's organization, or null if it has not been added. */
+  model?: Maybe<ThreeDModel>;
+  /** The limits a model is held to when it is added. */
+  modelPolicy: ModelPolicy;
   /** Find your implementation at a specific interface. */
   myImplementationAt: Implementation;
   /** Fetch the root tasks this client created (caller-scoped). */
@@ -3591,6 +3710,11 @@ export type QueryAgentsArgs = {
 
 export type QueryBlokArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryBloksForModelArgs = {
+  ref: Scalars['String']['input'];
 };
 
 
@@ -3755,6 +3879,11 @@ export type QueryMemoryShelvesArgs = {
   filters?: InputMaybe<MemoryShelveFilter>;
   ordering?: Array<MemoryShelveOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryModelArgs = {
+  ref: Scalars['String']['input'];
 };
 
 
@@ -4085,6 +4214,16 @@ export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
   fileSize?: InputMaybe<Scalars['Int']['input']>;
   originalFileName: Scalars['String']['input'];
+};
+
+/** Ask for a grant to upload one model. */
+export type RequestModelUploadInput = {
+  /** A file name for the stored object; the reference when absent. */
+  fileName?: InputMaybe<Scalars['String']['input']>;
+  /** The model's reference: 'sha256:' and the hex SHA-256 of its exact bytes. */
+  ref: Scalars['String']['input'];
+  /** The size of the file in bytes, checked against the policy before a grant is issued. */
+  size: Scalars['Float']['input'];
 };
 
 export type Requires = {
@@ -5596,6 +5735,16 @@ export type ThreeDModel = {
   file: MediaStore;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+  /** The node names blok bindings can address. */
+  nodes: Array<Scalars['String']['output']>;
+  /** 'sha256:' and the hex SHA-256 of the file's exact bytes; null for a model that was never verified. */
+  ref?: Maybe<Scalars['String']['output']>;
+  /** The size of the file in bytes, measured by the server. */
+  size?: Maybe<Scalars['Int']['output']>;
+  /** The https URL the first upload was fetched from; null when an app uploaded its own file. Informational. */
+  source?: Maybe<Scalars['String']['output']>;
+  /** Node, triangle, texture and animation counts found at validation. */
+  stats?: Maybe<ModelStats>;
   transferFunction?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
 };
@@ -6256,7 +6405,7 @@ export type AgentFragment = { __typename?: 'Agent', id: string, hash: string, bl
     & AgentPlacementFragment
   )> };
 
-export type ListAgentFragment = { __typename?: 'Agent', id: string, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null };
+export type ListAgentFragment = { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null };
 
 export type SearchAgentFragment = { __typename?: 'Agent', id: string, name: string, connected: boolean, blocked: boolean, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string } };
 
@@ -6376,98 +6525,24 @@ export type BlokComponentPropFragment = { __typename?: 'ComponentProp', key: str
       & BlokArgumentFragment
     )> | null } | null };
 
-export type BlokNodeFieldsFragment = { __typename?: 'ComponentNode', id: string, component: string, props?: Array<(
-    { __typename?: 'ComponentProp' }
-    & BlokComponentPropFragment
-  )> | null };
-
-export type BlokNodeL8Fragment = (
-  { __typename?: 'ComponentNode', children?: Array<{ __typename?: 'ComponentNode', id: string }> | null }
-  & BlokNodeFieldsFragment
-);
-
-export type BlokNodeL7Fragment = (
-  { __typename?: 'ComponentNode', children?: Array<(
-    { __typename?: 'ComponentNode' }
-    & BlokNodeL8Fragment
-  )> | null }
-  & BlokNodeFieldsFragment
-);
-
-export type BlokNodeL6Fragment = (
-  { __typename?: 'ComponentNode', children?: Array<(
-    { __typename?: 'ComponentNode' }
-    & BlokNodeL7Fragment
-  )> | null }
-  & BlokNodeFieldsFragment
-);
-
-export type BlokNodeL5Fragment = (
-  { __typename?: 'ComponentNode', children?: Array<(
-    { __typename?: 'ComponentNode' }
-    & BlokNodeL6Fragment
-  )> | null }
-  & BlokNodeFieldsFragment
-);
-
-export type BlokNodeL4Fragment = (
-  { __typename?: 'ComponentNode', children?: Array<(
-    { __typename?: 'ComponentNode' }
-    & BlokNodeL5Fragment
-  )> | null }
-  & BlokNodeFieldsFragment
-);
-
-export type BlokNodeL3Fragment = (
-  { __typename?: 'ComponentNode', children?: Array<(
-    { __typename?: 'ComponentNode' }
-    & BlokNodeL4Fragment
-  )> | null }
-  & BlokNodeFieldsFragment
-);
-
-export type BlokNodeL2Fragment = (
-  { __typename?: 'ComponentNode', children?: Array<(
-    { __typename?: 'ComponentNode' }
-    & BlokNodeL3Fragment
-  )> | null }
-  & BlokNodeFieldsFragment
-);
-
-export type BlokNodeL1Fragment = (
-  { __typename?: 'ComponentNode', children?: Array<(
-    { __typename?: 'ComponentNode' }
-    & BlokNodeL2Fragment
-  )> | null }
-  & BlokNodeFieldsFragment
-);
-
-export type BlokComponentTreeFragment = (
-  { __typename?: 'ComponentNode' }
-  & BlokNodeL1Fragment
-);
-
 export type BlokDiagnosticFragment = { __typename?: 'Diagnostic', level: DiagnosticLevel, code: string, message: string, path?: string | null };
 
-export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, demoState: any, materializedBloks: Array<(
+export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, demoState: any, materializedBloks: Array<(
     { __typename?: 'MaterializedBlok' }
     & ListMaterializedBlokFragment
-  )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, components: Array<(
-    { __typename?: 'ComponentNode' }
-    & BlokComponentTreeFragment
-  )>, diagnostics: Array<(
+  )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, diagnostics: Array<(
     { __typename?: 'Diagnostic' }
     & BlokDiagnosticFragment
   )> };
 
-export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, createdAt: any, blok: (
+export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, isDefault: boolean, createdAt: any, blok: (
     { __typename?: 'Blok' }
     & BlokFragment
   ), agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string };
 
-export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, blok: { __typename?: 'Blok', id: string, name: string } };
+export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type ClientFragment = { __typename?: 'Client', id: string, clientId: string };
 
@@ -6599,15 +6674,26 @@ export type MemoryShelveFragment = { __typename?: 'MemoryShelve', id: string, na
 
 export type ListMemoryShelveFragment = { __typename?: 'MemoryShelve', id: string, name: string, agent: { __typename?: 'Agent', name: string } };
 
+export type StoredModelFragment = { __typename?: 'ThreeDModel', id: string, name: string, ref?: string | null, source?: string | null, size?: number | null, nodes: Array<string>, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: (
+    { __typename?: 'MediaStore' }
+    & MediaStoreFragment
+  ) };
+
+export type ModelPolicyFragment = { __typename?: 'ModelPolicy', maxSize: number, maxJson: number, maxNodes: number, maxTriangles: number, maxTextureSize: number, maxTextureMemory: number, maxAnimations: number, extensions: Array<string> };
+
+export type MissingModelFragment = { __typename?: 'MissingModel', ref: string, source?: string | null, bloks: Array<string> };
+
+export type ModelBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, forNode?: string | null, materializedBloks: Array<(
+    { __typename?: 'MaterializedBlok' }
+    & ListMaterializedBlokFragment
+  )> };
+
 export type PlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, model?: { __typename?: 'ThreeDModel', id: string, transferFunction?: string | null, file: (
       { __typename?: 'MediaStore' }
       & MediaStoreFragment
     ) } | null, agent: { __typename?: 'Agent', id: string } };
 
-export type SpacePlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, model?: { __typename?: 'ThreeDModel', id: string, transferFunction?: string | null, file: (
-      { __typename?: 'MediaStore' }
-      & MediaStoreFragment
-    ) } | null, agent: { __typename?: 'Agent', id: string }, blok?: { __typename?: 'MaterializedBlok', id: string } | null };
+export type SpacePlacementFragment = { __typename?: 'Placement', id: string, name: string, role: string, affineMatrix?: any | null, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean }, blok?: { __typename?: 'MaterializedBlok', id: string, name?: string | null, blok: { __typename?: 'Blok', id: string, name: string, context: ComponentContext } } | null };
 
 export type AgentPlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, model?: { __typename?: 'ThreeDModel', id: string, transferFunction?: string | null, file: (
       { __typename?: 'MediaStore' }
@@ -7276,7 +7362,7 @@ export type CatalogPropFragment = { __typename?: 'CatalogProp', key: string, kin
 
 export type CatalogArgumentFragment = { __typename?: 'CatalogArgument', key: string, kind: CatalogValueKind, required: boolean, description?: string | null };
 
-export type CatalogComponentFragment = { __typename?: 'CatalogComponent', name: string, description?: string | null, acceptsChildren: boolean, props: Array<(
+export type CatalogComponentFragment = { __typename?: 'CatalogComponent', name: string, description?: string | null, acceptsChildren: boolean, context: ComponentContext, childrenContext?: ComponentContext | null, downstreamOf: Array<string>, notDownstreamOf: Array<string>, props: Array<(
     { __typename?: 'CatalogProp' }
     & CatalogPropFragment
   )> };
@@ -7649,6 +7735,26 @@ export type RequestMediaAccessMutation = { __typename?: 'Mutation', requestMedia
     & MediaAccessGrantFragment
   ) };
 
+export type RequestModelUploadMutationVariables = Exact<{
+  input: RequestModelUploadInput;
+}>;
+
+
+export type RequestModelUploadMutation = { __typename?: 'Mutation', requestModelUpload: (
+    { __typename?: 'MediaUploadGrant' }
+    & MediaUploadGrantFragment
+  ) };
+
+export type CreateModelMutationVariables = Exact<{
+  input: CreateModelInput;
+}>;
+
+
+export type CreateModelMutation = { __typename?: 'Mutation', createModel: (
+    { __typename?: 'ThreeDModel' }
+    & StoredModelFragment
+  ) };
+
 export type StartProbeMutationVariables = Exact<{
   input: ProbeInput;
 }>;
@@ -7748,20 +7854,20 @@ export type CreatePlacementMutationVariables = Exact<{
 }>;
 
 
-export type CreatePlacementMutation = { __typename?: 'Mutation', createPlacement: { __typename?: 'Placement', id: string, affineMatrix?: any | null, model?: { __typename?: 'ThreeDModel', file: (
-        { __typename?: 'MediaStore' }
-        & MediaStoreFragment
-      ) } | null } };
+export type CreatePlacementMutation = { __typename?: 'Mutation', createPlacement: (
+    { __typename?: 'Placement' }
+    & SpacePlacementFragment
+  ) };
 
 export type UpdatePlacementMutationVariables = Exact<{
   input: UpdatePlacementInput;
 }>;
 
 
-export type UpdatePlacementMutation = { __typename?: 'Mutation', updatePlacement: { __typename?: 'Placement', id: string, affineMatrix?: any | null, model?: { __typename?: 'ThreeDModel', file: (
-        { __typename?: 'MediaStore' }
-        & MediaStoreFragment
-      ) } | null } };
+export type UpdatePlacementMutation = { __typename?: 'Mutation', updatePlacement: (
+    { __typename?: 'Placement' }
+    & SpacePlacementFragment
+  ) };
 
 export type DeletePlacementMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -8502,6 +8608,42 @@ export type MemoryShelveQuery = { __typename?: 'Query', memoryShelve: (
     { __typename?: 'MemoryShelve' }
     & MemoryShelveFragment
   ) };
+
+export type StoredModelQueryVariables = Exact<{
+  ref: Scalars['String']['input'];
+}>;
+
+
+export type StoredModelQuery = { __typename?: 'Query', model?: (
+    { __typename?: 'ThreeDModel' }
+    & StoredModelFragment
+  ) | null };
+
+export type MissingModelsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MissingModelsQuery = { __typename?: 'Query', missingModels: Array<(
+    { __typename?: 'MissingModel' }
+    & MissingModelFragment
+  )> };
+
+export type ModelPolicyQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ModelPolicyQuery = { __typename?: 'Query', modelPolicy: (
+    { __typename?: 'ModelPolicy' }
+    & ModelPolicyFragment
+  ) };
+
+export type BloksForModelQueryVariables = Exact<{
+  ref: Scalars['String']['input'];
+}>;
+
+
+export type BloksForModelQuery = { __typename?: 'Query', bloksForModel: Array<(
+    { __typename?: 'Blok' }
+    & ModelBlokFragment
+  )> };
 
 export type PlacementsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -10380,97 +10522,26 @@ export const ListClientFragmentDoc = gql`
 export const ListMaterializedBlokFragmentDoc = gql`
     fragment ListMaterializedBlok on MaterializedBlok {
   id
+  name
+  description
+  isDefault
+  updatedAt
   blok {
     id
     name
+    description
+    context
+  }
+  agentMappings {
+    key
+    agent {
+      id
+      name
+      connected
+    }
   }
 }
     `;
-export const BlokNodeFieldsFragmentDoc = gql`
-    fragment BlokNodeFields on ComponentNode {
-  id
-  component
-  props {
-    ...BlokComponentProp
-  }
-}
-    ${BlokComponentPropFragmentDoc}`;
-export const BlokNodeL8FragmentDoc = gql`
-    fragment BlokNodeL8 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    id
-  }
-}
-    ${BlokNodeFieldsFragmentDoc}`;
-export const BlokNodeL7FragmentDoc = gql`
-    fragment BlokNodeL7 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL8
-  }
-}
-    ${BlokNodeFieldsFragmentDoc}
-${BlokNodeL8FragmentDoc}`;
-export const BlokNodeL6FragmentDoc = gql`
-    fragment BlokNodeL6 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL7
-  }
-}
-    ${BlokNodeFieldsFragmentDoc}
-${BlokNodeL7FragmentDoc}`;
-export const BlokNodeL5FragmentDoc = gql`
-    fragment BlokNodeL5 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL6
-  }
-}
-    ${BlokNodeFieldsFragmentDoc}
-${BlokNodeL6FragmentDoc}`;
-export const BlokNodeL4FragmentDoc = gql`
-    fragment BlokNodeL4 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL5
-  }
-}
-    ${BlokNodeFieldsFragmentDoc}
-${BlokNodeL5FragmentDoc}`;
-export const BlokNodeL3FragmentDoc = gql`
-    fragment BlokNodeL3 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL4
-  }
-}
-    ${BlokNodeFieldsFragmentDoc}
-${BlokNodeL4FragmentDoc}`;
-export const BlokNodeL2FragmentDoc = gql`
-    fragment BlokNodeL2 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL3
-  }
-}
-    ${BlokNodeFieldsFragmentDoc}
-${BlokNodeL3FragmentDoc}`;
-export const BlokNodeL1FragmentDoc = gql`
-    fragment BlokNodeL1 on ComponentNode {
-  ...BlokNodeFields
-  children {
-    ...BlokNodeL2
-  }
-}
-    ${BlokNodeFieldsFragmentDoc}
-${BlokNodeL2FragmentDoc}`;
-export const BlokComponentTreeFragmentDoc = gql`
-    fragment BlokComponentTree on ComponentNode {
-  ...BlokNodeL1
-}
-    ${BlokNodeL1FragmentDoc}`;
 export const BlokDiagnosticFragmentDoc = gql`
     fragment BlokDiagnostic on Diagnostic {
   level
@@ -10498,21 +10569,22 @@ export const BlokFragmentDoc = gql`
     description
     isRegistered
   }
-  components {
-    ...BlokComponentTree
-  }
+  context
+  forModel
+  forNode
+  componentTree
   demoState
   diagnostics {
     ...BlokDiagnostic
   }
 }
     ${ListMaterializedBlokFragmentDoc}
-${BlokComponentTreeFragmentDoc}
 ${BlokDiagnosticFragmentDoc}`;
 export const MaterializedBlokFragmentDoc = gql`
     fragment MaterializedBlok on MaterializedBlok {
   id
   name
+  isDefault
   createdAt
   blok {
     ...Blok
@@ -10604,6 +10676,7 @@ export const DependencyTreeNodeFragmentDoc = gql`
 export const ListAgentFragmentDoc = gql`
     fragment ListAgent on Agent {
   id
+  kind
   active
   connected
   name
@@ -10825,6 +10898,55 @@ export const ListMemoryShelveFragmentDoc = gql`
   name
 }
     `;
+export const StoredModelFragmentDoc = gql`
+    fragment StoredModel on ThreeDModel {
+  id
+  name
+  ref
+  source
+  size
+  nodes
+  stats {
+    nodes
+    triangles
+    textures
+    animations
+  }
+  file {
+    ...MediaStore
+  }
+}
+    ${MediaStoreFragmentDoc}`;
+export const ModelPolicyFragmentDoc = gql`
+    fragment ModelPolicy on ModelPolicy {
+  maxSize
+  maxJson
+  maxNodes
+  maxTriangles
+  maxTextureSize
+  maxTextureMemory
+  maxAnimations
+  extensions
+}
+    `;
+export const MissingModelFragmentDoc = gql`
+    fragment MissingModel on MissingModel {
+  ref
+  source
+  bloks
+}
+    `;
+export const ModelBlokFragmentDoc = gql`
+    fragment ModelBlok on Blok {
+  id
+  name
+  description
+  forNode
+  materializedBloks {
+    ...ListMaterializedBlok
+  }
+}
+    ${ListMaterializedBlokFragmentDoc}`;
 export const PlacementFragmentDoc = gql`
     fragment Placement on Placement {
   id
@@ -11253,22 +11375,24 @@ export const SpacePlacementFragmentDoc = gql`
     fragment SpacePlacement on Placement {
   id
   name
-  model {
-    id
-    file {
-      ...MediaStore
-    }
-    transferFunction
-  }
+  role
   agent {
     id
+    name
+    connected
   }
   blok {
     id
+    name
+    blok {
+      id
+      name
+      context
+    }
   }
   affineMatrix
 }
-    ${MediaStoreFragmentDoc}`;
+    `;
 export const SpaceFragmentDoc = gql`
     fragment Space on Space {
   id
@@ -11794,6 +11918,10 @@ export const CatalogComponentFragmentDoc = gql`
   name
   description
   acceptsChildren
+  context
+  childrenContext
+  downstreamOf
+  notDownstreamOf
   props {
     ...CatalogProp
   }
@@ -13110,6 +13238,72 @@ export function useRequestMediaAccessMutation(baseOptions?: ApolloReactHooks.Mut
 export type RequestMediaAccessMutationHookResult = ReturnType<typeof useRequestMediaAccessMutation>;
 export type RequestMediaAccessMutationResult = Apollo.MutationResult<RequestMediaAccessMutation>;
 export type RequestMediaAccessMutationOptions = Apollo.BaseMutationOptions<RequestMediaAccessMutation, RequestMediaAccessMutationVariables>;
+export const RequestModelUploadDocument = gql`
+    mutation RequestModelUpload($input: RequestModelUploadInput!) {
+  requestModelUpload(input: $input) {
+    ...MediaUploadGrant
+  }
+}
+    ${MediaUploadGrantFragmentDoc}`;
+export type RequestModelUploadMutationFn = Apollo.MutationFunction<RequestModelUploadMutation, RequestModelUploadMutationVariables>;
+
+/**
+ * __useRequestModelUploadMutation__
+ *
+ * To run a mutation, you first call `useRequestModelUploadMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestModelUploadMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestModelUploadMutation, { data, loading, error }] = useRequestModelUploadMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRequestModelUploadMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RequestModelUploadMutation, RequestModelUploadMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RequestModelUploadMutation, RequestModelUploadMutationVariables>(RequestModelUploadDocument, options);
+      }
+export type RequestModelUploadMutationHookResult = ReturnType<typeof useRequestModelUploadMutation>;
+export type RequestModelUploadMutationResult = Apollo.MutationResult<RequestModelUploadMutation>;
+export type RequestModelUploadMutationOptions = Apollo.BaseMutationOptions<RequestModelUploadMutation, RequestModelUploadMutationVariables>;
+export const CreateModelDocument = gql`
+    mutation CreateModel($input: CreateModelInput!) {
+  createModel(input: $input) {
+    ...StoredModel
+  }
+}
+    ${StoredModelFragmentDoc}`;
+export type CreateModelMutationFn = Apollo.MutationFunction<CreateModelMutation, CreateModelMutationVariables>;
+
+/**
+ * __useCreateModelMutation__
+ *
+ * To run a mutation, you first call `useCreateModelMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateModelMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createModelMutation, { data, loading, error }] = useCreateModelMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateModelMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateModelMutation, CreateModelMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateModelMutation, CreateModelMutationVariables>(CreateModelDocument, options);
+      }
+export type CreateModelMutationHookResult = ReturnType<typeof useCreateModelMutation>;
+export type CreateModelMutationResult = Apollo.MutationResult<CreateModelMutation>;
+export type CreateModelMutationOptions = Apollo.BaseMutationOptions<CreateModelMutation, CreateModelMutationVariables>;
 export const StartProbeDocument = gql`
     mutation StartProbe($input: ProbeInput!) {
   probe(input: $input) {
@@ -13439,16 +13633,10 @@ export type DeleteSpaceMutationOptions = Apollo.BaseMutationOptions<DeleteSpaceM
 export const CreatePlacementDocument = gql`
     mutation CreatePlacement($input: CreatePlacementInput!) {
   createPlacement(input: $input) {
-    id
-    affineMatrix
-    model {
-      file {
-        ...MediaStore
-      }
-    }
+    ...SpacePlacement
   }
 }
-    ${MediaStoreFragmentDoc}`;
+    ${SpacePlacementFragmentDoc}`;
 export type CreatePlacementMutationFn = Apollo.MutationFunction<CreatePlacementMutation, CreatePlacementMutationVariables>;
 
 /**
@@ -13478,16 +13666,10 @@ export type CreatePlacementMutationOptions = Apollo.BaseMutationOptions<CreatePl
 export const UpdatePlacementDocument = gql`
     mutation UpdatePlacement($input: UpdatePlacementInput!) {
   updatePlacement(input: $input) {
-    id
-    affineMatrix
-    model {
-      file {
-        ...MediaStore
-      }
-    }
+    ...SpacePlacement
   }
 }
-    ${MediaStoreFragmentDoc}`;
+    ${SpacePlacementFragmentDoc}`;
 export type UpdatePlacementMutationFn = Apollo.MutationFunction<UpdatePlacementMutation, UpdatePlacementMutationVariables>;
 
 /**
@@ -16225,6 +16407,144 @@ export function useMemoryShelveLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type MemoryShelveQueryHookResult = ReturnType<typeof useMemoryShelveQuery>;
 export type MemoryShelveLazyQueryHookResult = ReturnType<typeof useMemoryShelveLazyQuery>;
 export type MemoryShelveQueryResult = Apollo.QueryResult<MemoryShelveQuery, MemoryShelveQueryVariables>;
+export const StoredModelDocument = gql`
+    query StoredModel($ref: String!) {
+  model(ref: $ref) {
+    ...StoredModel
+  }
+}
+    ${StoredModelFragmentDoc}`;
+
+/**
+ * __useStoredModelQuery__
+ *
+ * To run a query within a React component, call `useStoredModelQuery` and pass it any options that fit your needs.
+ * When your component renders, `useStoredModelQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useStoredModelQuery({
+ *   variables: {
+ *      ref: // value for 'ref'
+ *   },
+ * });
+ */
+export function useStoredModelQuery(baseOptions: ApolloReactHooks.QueryHookOptions<StoredModelQuery, StoredModelQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<StoredModelQuery, StoredModelQueryVariables>(StoredModelDocument, options);
+      }
+export function useStoredModelLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<StoredModelQuery, StoredModelQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<StoredModelQuery, StoredModelQueryVariables>(StoredModelDocument, options);
+        }
+export type StoredModelQueryHookResult = ReturnType<typeof useStoredModelQuery>;
+export type StoredModelLazyQueryHookResult = ReturnType<typeof useStoredModelLazyQuery>;
+export type StoredModelQueryResult = Apollo.QueryResult<StoredModelQuery, StoredModelQueryVariables>;
+export const MissingModelsDocument = gql`
+    query MissingModels {
+  missingModels {
+    ...MissingModel
+  }
+}
+    ${MissingModelFragmentDoc}`;
+
+/**
+ * __useMissingModelsQuery__
+ *
+ * To run a query within a React component, call `useMissingModelsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useMissingModelsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useMissingModelsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useMissingModelsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<MissingModelsQuery, MissingModelsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<MissingModelsQuery, MissingModelsQueryVariables>(MissingModelsDocument, options);
+      }
+export function useMissingModelsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<MissingModelsQuery, MissingModelsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<MissingModelsQuery, MissingModelsQueryVariables>(MissingModelsDocument, options);
+        }
+export type MissingModelsQueryHookResult = ReturnType<typeof useMissingModelsQuery>;
+export type MissingModelsLazyQueryHookResult = ReturnType<typeof useMissingModelsLazyQuery>;
+export type MissingModelsQueryResult = Apollo.QueryResult<MissingModelsQuery, MissingModelsQueryVariables>;
+export const ModelPolicyDocument = gql`
+    query ModelPolicy {
+  modelPolicy {
+    ...ModelPolicy
+  }
+}
+    ${ModelPolicyFragmentDoc}`;
+
+/**
+ * __useModelPolicyQuery__
+ *
+ * To run a query within a React component, call `useModelPolicyQuery` and pass it any options that fit your needs.
+ * When your component renders, `useModelPolicyQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useModelPolicyQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useModelPolicyQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ModelPolicyQuery, ModelPolicyQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ModelPolicyQuery, ModelPolicyQueryVariables>(ModelPolicyDocument, options);
+      }
+export function useModelPolicyLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ModelPolicyQuery, ModelPolicyQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ModelPolicyQuery, ModelPolicyQueryVariables>(ModelPolicyDocument, options);
+        }
+export type ModelPolicyQueryHookResult = ReturnType<typeof useModelPolicyQuery>;
+export type ModelPolicyLazyQueryHookResult = ReturnType<typeof useModelPolicyLazyQuery>;
+export type ModelPolicyQueryResult = Apollo.QueryResult<ModelPolicyQuery, ModelPolicyQueryVariables>;
+export const BloksForModelDocument = gql`
+    query BloksForModel($ref: String!) {
+  bloksForModel(ref: $ref) {
+    ...ModelBlok
+  }
+}
+    ${ModelBlokFragmentDoc}`;
+
+/**
+ * __useBloksForModelQuery__
+ *
+ * To run a query within a React component, call `useBloksForModelQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBloksForModelQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBloksForModelQuery({
+ *   variables: {
+ *      ref: // value for 'ref'
+ *   },
+ * });
+ */
+export function useBloksForModelQuery(baseOptions: ApolloReactHooks.QueryHookOptions<BloksForModelQuery, BloksForModelQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BloksForModelQuery, BloksForModelQueryVariables>(BloksForModelDocument, options);
+      }
+export function useBloksForModelLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BloksForModelQuery, BloksForModelQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BloksForModelQuery, BloksForModelQueryVariables>(BloksForModelDocument, options);
+        }
+export type BloksForModelQueryHookResult = ReturnType<typeof useBloksForModelQuery>;
+export type BloksForModelLazyQueryHookResult = ReturnType<typeof useBloksForModelLazyQuery>;
+export type BloksForModelQueryResult = Apollo.QueryResult<BloksForModelQuery, BloksForModelQueryVariables>;
 export const PlacementsDocument = gql`
     query Placements($pagination: OffsetPaginationInput, $filters: PlacementFilter, $ordering: [PlacementOrder!]) {
   placements(ordering: $ordering, pagination: $pagination, filters: $filters) {

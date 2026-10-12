@@ -8,19 +8,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
-import { ChevronDown, Clapperboard } from "lucide-react";
+import { ChevronDown, Eye } from "lucide-react";
 import { DetailLensFragment, useCreateSceneFromLensMutation } from "../../api/graphql";
 import { describeLens, isWholeLens } from "../../lenses";
+import { useVisualizeLens } from "../../lib/visualize";
 import { useGridWorlds } from "../arraydataset/DatasetBackdrop";
 
 /**
- * Create a scene of a lens that is not an array: a table, a sparse matrix, a
- * mesh, a network or an annotation collection, whole or windowed.
+ * Visualize a lens that is not an array: a table, a sparse matrix, a mesh, a
+ * network or an annotation collection, whole or windowed. The server picks a
+ * chart or a scene from the axes of the lens' own space.
  *
  * The array twin is `CreateSceneControl` (`arraydataset/DatasetBackdrop.tsx`),
- * which also knows how to stage a dataset with no lens at all. Here the only
- * question is which space: the container's own is the server's default, and a
- * menu appears only when it is registered into others.
+ * which also knows how to stage a dataset with no lens at all. A menu appears
+ * only when the lens is registered into other spaces: composing it THERE is a
+ * say in the world, which is the explicit scene bootstrap's.
  */
 const CreateLensSceneControl = ({
   lens,
@@ -32,7 +34,8 @@ const CreateLensSceneControl = ({
   const own = lens.coordinateSystem;
   const worlds = useGridWorlds(own?.id);
 
-  const [createScene, { loading }] = useCreateSceneFromLensMutation({
+  const [visualize, visualizing] = useVisualizeLens(onCreated);
+  const [createScene, { loading: staging }] = useCreateSceneFromLensMutation({
     // The lens nominates its first scene, and that nomination is all this kind
     // of lens can list — awaited, so the page finds the scene it is told about.
     refetchQueries: ["GetLens"],
@@ -40,15 +43,18 @@ const CreateLensSceneControl = ({
     onCompleted: (result) => onCreated(result.createSceneFromLens.id),
   });
 
+  const loading = visualizing || staging;
   const stage = (world?: string) =>
-    createScene({ variables: { input: { lens: lens.id, world } } });
+    world
+      ? createScene({ variables: { input: { lens: lens.id, world } } })
+      : visualize(lens.id);
 
-  const label = loading ? "Creating scene…" : "Create scene";
+  const label = loading ? "Visualizing…" : "Visualize";
 
   if (worlds.length === 0) {
     return (
       <Button disabled={loading} onClick={() => stage()}>
-        <Clapperboard className="mr-2 h-4 w-4" />
+        <Eye className="mr-2 h-4 w-4" />
         {label}
       </Button>
     );
@@ -58,7 +64,7 @@ const CreateLensSceneControl = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button disabled={loading}>
-          <Clapperboard className="mr-2 h-4 w-4" />
+          <Eye className="mr-2 h-4 w-4" />
           {label}
           <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
@@ -111,8 +117,8 @@ export const LensBackdrop = ({
 
         <p className="text-sm text-muted-foreground">
           {isWholeLens(lens)
-            ? "Not rendered in any scene yet. A scene composes it into a world, which is what the viewer draws."
-            : "This lens is not rendered in any scene yet. A scene of it draws just the part its windows keep."}
+            ? "Not shown anywhere yet. Visualizing it makes a chart or a scene, whichever its axes call for."
+            : "This lens is not shown anywhere yet. Visualizing it draws just the part its windows keep."}
         </p>
 
         <CreateLensSceneControl lens={lens} onCreated={onSceneCreated} />
