@@ -1,7 +1,8 @@
 import { dragZoneDoubleClick, getChromeMode, useWindowState } from "@/core/util/platform";
 import { cn } from "@/core/util/utils";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 
+import { publishTitleBarRevealed, useTopEdgeReveal } from "./useTopEdgeReveal";
 import { WindowControls } from "./WindowControls";
 
 /**
@@ -11,6 +12,8 @@ import { WindowControls } from "./WindowControls";
  * strip and no system caption (Windows hides it, Linux is frameless). Push the pointer against the top edge
  * and this bar slides down, nudging everything below it, with the window buttons
  * in it and the whole strip draggable; move down past it and it collapses again.
+ * While it is open each page wears a notch on its top edge, rising into the
+ * bar: close the page, or open it in a window of its own (`PageEdgeBar`).
  *
  * On Windows this is what replaced the Windows Controls Overlay. WCO's buttons are drawn
  * by the OS and cannot be hidden — `setTitleBarOverlay({ height: 0 })` clamps to
@@ -21,18 +24,8 @@ import { WindowControls } from "./WindowControls";
  * flyout. On Linux it replaced buttons that sat inline in the rail's chrome
  * row, so both platforms now wear the same chrome.
  *
- * ## Why the open/close state is not plain hover
- *
- * The bar is a drag region, and `-webkit-app-region: drag` does not merely
- * swallow clicks: the pointer is not SEEN over it at all. A bar that watched its
- * own `mouseleave` therefore shut the moment the pointer arrived on it — the
- * user could never reach the buttons. So:
- *
- * - it OPENS from a sentinel, a few pixels of `app-no-drag` overhanging the top
- *   of the page, which is the one place up here that does get pointer events;
- * - it CLOSES on a document-level move that lands clearly BELOW it. No events
- *   while the pointer is on the bar means "still on the bar", which is exactly
- *   the behaviour wanted.
+ * The open/close state is not plain hover, and is shared with macOS's
+ * `PageEdgeBar`: see `useTopEdgeReveal`.
  */
 
 /** How far the bar pushes the app down when open. */
@@ -44,75 +37,16 @@ export const AUTO_HIDE_BAR_HEIGHT = 32;
  */
 const SENTINEL_HEIGHT = 6;
 
-/**
- * How far below the open bar the pointer must be before it closes. Without the
- * slack a pointer skimming the bar's lower edge — or the row of pixels the
- * closing animation is passing through — would chatter it open and shut.
- */
-const CLOSE_SLACK = 8;
-
-/**
- * Grace before a focus-out closes it, so tabbing from one window button to the
- * next does not collapse the bar between them.
- */
-const BLUR_DELAY_MS = 120;
-
 export const AutoHideTitleBar = () => {
   const mode = getChromeMode();
   const { maximized } = useWindowState();
-  const [revealed, setRevealed] = useState(false);
-  // A timer handle, which is what a ref is actually for — unlike `revealed`,
-  // nothing renders from it. These four are plain functions: the component has
-  // exactly one piece of state and re-renders almost never, so the `useCallback`
-  // chain they used to be existed only to satisfy the dependency arrays it had
-  // itself created.
-  const closeTimer = useRef<number | null>(null);
+  const { revealed, reveal, hideSoon } = useTopEdgeReveal(AUTO_HIDE_BAR_HEIGHT);
 
-  const cancelClose = () => {
-    if (closeTimer.current !== null) {
-      window.clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  };
-
-  const reveal = () => {
-    cancelClose();
-    setRevealed(true);
-  };
-
-  const hideSoon = () => {
-    cancelClose();
-    closeTimer.current = window.setTimeout(() => setRevealed(false), BLUR_DELAY_MS);
-  };
-
-  // A pending close must not fire into an unmounted component.
-  useEffect(() => cancelClose, []);
-
-  // The close half of the gesture, and the ONLY thing allowed to close it: a
-  // move that landed clearly below the bar.
-  //
-  // Nothing else is trustworthy up here. Moving onto the bar hands the pointer
-  // to the OS as a caption drag, and the page is told about that as a
-  // `mouseleave` on the document with no related target — indistinguishable
-  // from the pointer leaving the window. Closing on that flickered: the bar
-  // collapsed, which dropped the pointer back onto the sentinel, which reopened
-  // it, forever. Silence now means "still on the bar", which is the truth far
-  // more often than not; and a pointer that really did leave the window closes
-  // the bar on its first move back into the page.
+  // The page's notch shows itself with the bar, from the page's own column
+  // (`PageEdgeBar`); a bar that is gone is a bar that is shut.
   useEffect(() => {
-    if (!revealed) return;
-
-    const onMove = (event: MouseEvent) => {
-      if (event.clientY <= AUTO_HIDE_BAR_HEIGHT + CLOSE_SLACK) return;
-      if (closeTimer.current !== null) {
-        window.clearTimeout(closeTimer.current);
-        closeTimer.current = null;
-      }
-      setRevealed(false);
-    };
-
-    document.addEventListener("mousemove", onMove);
-    return () => document.removeEventListener("mousemove", onMove);
+    publishTitleBarRevealed(revealed);
+    return () => publishTitleBarRevealed(false);
   }, [revealed]);
 
   if (mode !== "autohide") {

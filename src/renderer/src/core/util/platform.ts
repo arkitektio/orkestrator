@@ -15,11 +15,13 @@ export type Platform = "darwin" | "win32" | "linux" | "web";
 
 /**
  * `"mac"`     — real traffic lights (`hiddenInset`); reserve a left gutter, draw
- *               no buttons of our own.
+ *               no buttons of our own. The page still ducks away from the top
+ *               edge, uncovering a drag strip and the page's own notch
+ *               (`PageEdgeBar`).
  * `"autohide"` — Windows (no caption, no Controls Overlay) and Linux
  *               (frameless). The page fills the window and our own buttons live
  *               in a bar that slides down when the pointer touches the top edge
- *               (`AutoHideTitleBar`).
+ *               (`AutoHideTitleBar`), each page's notch (`PageEdgeBar`) with it.
  * `"none"`    — a browser tab; there is no frame of ours to draw.
  */
 export type ChromeMode = "mac" | "autohide" | "none";

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { unstable_HistoryRouter as HistoryRouter, useLocation } from "react-router-dom";
 import useReactRouterBreadcrumbs from "use-react-router-breadcrumbs";
 
@@ -7,12 +7,12 @@ import { cn } from "@/core/util/utils";
 
 import { RouterBoundary } from "./RouterBoundary";
 import { SplitDivider } from "./SplitDivider";
-import { loadSplitRatio } from "./splitRatio";
 import { TabIdContext } from "./TabContext";
 import { TabLayoutContext } from "./TabLayoutContext";
 import { TabPaneContext, type TabPane } from "./TabPaneContext";
 import { TabVisibilityContext } from "./TabVisibilityContext";
 import { useActiveTabId, useSplit, useTabActions, useWarmTabs } from "./TabsProvider";
+import { setSplitRatio, useSplitRatio } from "./useSplitRatio";
 
 /**
  * Names a tab after the page it is showing.
@@ -72,7 +72,7 @@ export const TabOutlet = ({ routes }: { routes: React.ReactNode }) => {
   const activeId = useActiveTabId();
   const split = useSplit();
   const { focus } = useTabActions();
-  const [ratio, setRatio] = useState(loadSplitRatio);
+  const ratio = useSplitRatio();
 
   const paneOf = (id: string): TabPane | null =>
     split ? (split.left === id ? "left" : split.right === id ? "right" : null) : null;
@@ -136,7 +136,7 @@ export const TabOutlet = ({ routes }: { routes: React.ReactNode }) => {
           </div>
         );
       })}
-      {split && <SplitDivider ratio={ratio} onChange={setRatio} />}
+      {split && <SplitDivider ratio={ratio} onChange={setSplitRatio} />}
     </>
   );
 };
