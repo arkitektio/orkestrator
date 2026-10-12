@@ -14,6 +14,7 @@ import { buildAffineMatrix } from "../../platform/coords/worldTransform";
 
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import { slabBaseZOf, useBrickLayer, useBrickPlaneProbe } from "../bricks/layers/useBrickPlaneProbe";
+import { useCropClipUniforms } from "../bricks/layers/useCropClipUniforms";
 import {
   useBrickMaterialBundle,
   usePlaneTraversalUniforms,
@@ -82,6 +83,8 @@ export const BrickLabelPlaneLayer = ({ layerId }: { layerId: string }) => {
     updateLabelNodes(bundle.nodes, labelData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundle, labelSignature, planTargetLevel, slabBaseZ]);
+
+  useCropClipUniforms(bundle?.nodes, layer?.affineMatrix, pool?.geometry.levels[0].spatialShape);
 
   // The traversal contract, shared with the other plane material.
   usePlaneTraversalUniforms(bundle?.nodes, {

@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
 import { CollectionDriver, type DrivableCollection } from "./collectionDriver";
+import type { CropBox } from "../coords/cropBox";
 
 /**
  * The cadence contract. None of this was asserted while it lived as effects in
@@ -13,6 +14,7 @@ const makeTarget = (indexGate?: Promise<void>) => {
   const calls = {
     plans: 0,
     slabs: [] as unknown[],
+    crops: [] as unknown[],
     matrices: [] as unknown[],
     visibility: [] as boolean[],
   };
@@ -23,6 +25,7 @@ const makeTarget = (indexGate?: Promise<void>) => {
     },
     setVoxelToWorld: (m) => calls.matrices.push(m),
     setSlabClip: (s) => calls.slabs.push(s),
+    setCropClip: (b) => calls.crops.push(b),
     setVisible: (v) => calls.visibility.push(v),
     getPlanConfig: () => ({ pixelBudget: 4 }),
   };
@@ -36,7 +39,11 @@ const makeEnv = () => {
     cameraPose: { isPerspective: true, fovY: 1, position: [0, 0, 0] as readonly number[] },
     cameraMoving: false,
   }));
-  const viewerApi = createStore(() => ({ currentZ: 0, worldUnitsPerPixel: 0.01 }));
+  const viewerApi = createStore(() => ({
+    currentZ: 0,
+    worldUnitsPerPixel: 0.01,
+    cropBox: null as CropBox | null,
+  }));
   const invalidate = vi.fn();
   return { viewApi, viewerApi, invalidate, logTag: "[test]" };
 };
@@ -236,6 +243,22 @@ describe("CollectionDriver", () => {
     d.update({ visible: true });
     expect(calls.plans).toBe(plans);
     expect(calls.visibility.length).toBe(visibility);
+  });
+
+  it("follows the crop box off the store, without replanning", async () => {
+    const { target, calls } = makeTarget();
+    const env = makeEnv();
+    const d = new CollectionDriver(target, env, { matrix: new THREE.Matrix4(), slab: null, visible: true });
+    await flush();
+    expect(calls.crops).toEqual([null]); // bound: whatever is up is applied
+    const plans = calls.plans;
+    const box: CropBox = { min: [0, 0, 0], max: [1, 1, 1] };
+    env.viewerApi.setState({ cropBox: box });
+    expect(calls.crops.at(-1)).toBe(box);
+    expect(calls.plans).toBe(plans);
+    d.dispose();
+    env.viewerApi.setState({ cropBox: null });
+    expect(calls.crops.at(-1)).toBe(box);
   });
 
   it("update() pushes placement and slab through", async () => {

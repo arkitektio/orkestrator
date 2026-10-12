@@ -20,10 +20,13 @@ import {
   type UniformNodeLike,
 } from "../bricks/gpu/brickNodeMaterials";
 import {
+  emitPlaneClipDiscard,
   emitVolumeRayBounds,
+  makeClipUniforms,
   makeVolumeRayNodes,
   makeVolumeRayUniforms,
   MAX_RAY_STEPS,
+  type ClipUniformNodes,
 } from "../bricks/gpu/volumeRayNodes";
 import type { LabelUniformData } from "./labelUniforms";
 
@@ -87,7 +90,7 @@ const {
  */
 
 /** Public shape of the label material's own uniform nodes. */
-export type LabelMaterialNodes = TraversalNodesPublic & {
+export type LabelMaterialNodes = TraversalNodesPublic & ClipUniformNodes & {
   uDesiredLevel: UniformNodeLike<number>;
   uSlabBaseZ: UniformNodeLike<number>;
   uBaseShape: UniformNodeLike<THREE.Vector3>;
@@ -268,6 +271,7 @@ export function createLabelPlaneNodeMaterial(
   /** INTEGER base slab z — the slab-mode resolve does the per-level floor +
    * recenter itself (see emitResolveBrickResidency), so no +0.5 here. */
   const uSlabBaseZ = uniform(0, "float");
+  const clip = makeClipUniforms();
   const uBaseShape = uniform(new THREE.Vector3(1, 1, 1), "vec3");
   const uSeed = uniform(labelData.seed, "float");
   const uBackground = uniform(labelData.background, "float");
@@ -304,6 +308,7 @@ export function createLabelPlaneNodeMaterial(
       uv().y.mul(uBaseShape.y),
       uSlabBaseZ,
     ).toVar("lblBaseVoxel");
+    emitPlaneClipDiscard(baseVoxel, clip);
 
     const resolved = emitResolveBrickResidency(t, baseVoxel, uDesiredLevel, {
       slabZ: true,
@@ -392,6 +397,7 @@ export function createLabelPlaneNodeMaterial(
     material,
     nodes: {
       ...t,
+      ...clip,
       uDesiredLevel,
       uSlabBaseZ,
       uBaseShape,
@@ -537,7 +543,7 @@ export function setLabelColorStyle(
 // ---------------------------------------------------------------- 3D --------
 
 /** Public shape of the label VOLUME material's own uniform nodes. */
-export type LabelVolumeMaterialNodes = TraversalNodesPublic & {
+export type LabelVolumeMaterialNodes = TraversalNodesPublic & ClipUniformNodes & {
   uBaseShape: UniformNodeLike<THREE.Vector3>;
   uDesiredLevel: UniformNodeLike<number>;
   uLodBias: UniformNodeLike<number>;
@@ -793,6 +799,8 @@ export function createLabelVolumeNodeMaterial(
       uLodBias: rayUniforms.uLodBias,
       uPxPerVoxelAtUnitDist: rayUniforms.uPxPerVoxelAtUnitDist,
       uVoxelWorldSize: rayUniforms.uVoxelWorldSize,
+      uClipMin: rayUniforms.uClipMin,
+      uClipMax: rayUniforms.uClipMax,
       uStepScale,
       uMaxSteps,
       uSeed,

@@ -43,6 +43,16 @@ export const SCENE_SHORTCUTS: SceneShortcutGroup[] = [
     ],
   },
   {
+    title: "Crop the scene",
+    shortcuts: [
+      { keys: ["S"], description: "Start a crop box at the cursor" },
+      { keys: ["click"], description: "Fix the rectangle, then again to apply" },
+      { keys: ["scroll"], description: "Grow or shrink the box through Z" },
+      { keys: ["Esc"], description: "Cancel the box being drawn" },
+      { keys: ["Shift", "S"], description: "Remove the crop box" },
+    ],
+  },
+  {
     title: "Tools",
     shortcuts: [
       { keys: ["A"], description: "Hold to annotate" },

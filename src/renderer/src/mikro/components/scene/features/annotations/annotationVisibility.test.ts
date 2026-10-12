@@ -10,6 +10,7 @@ import {
 } from "./annotationVisibility";
 import { finestLayerZStep, physicalToVoxelZStrict, sceneZExtent } from "../../platform/coords/worldTransform";
 import type { LayerState } from "../../platform/model/layerModel";
+import type { CropBox } from "../../platform/coords/cropBox";
 
 /**
  * A c/t/z/y/x layer with 8 z slices at 1 µm spacing (identity affine): x/y/z
@@ -213,6 +214,29 @@ describe("isAnnotationInView", () => {
         { coverages, plane },
       ),
     ).toBe(false);
+  });
+
+  it("hides a shape that does not reach into the crop box, in 3D too", () => {
+    const cropBox: CropBox = { min: [0, 0, 0], max: [10, 10, 5] };
+    const view = { coverages: coveragesAt(4), plane: null, cropBox };
+    const inside = { minX: 2, maxX: 4, minY: 2, maxY: 4 };
+    expect(isAnnotationInView({ zSpan: { min: 1, max: 1 }, bounds: inside }, view)).toBe(true);
+    // Beside the box.
+    expect(
+      isAnnotationInView(
+        { zSpan: { min: 1, max: 1 }, bounds: { minX: 20, maxX: 22, minY: 2, maxY: 4 } },
+        view,
+      ),
+    ).toBe(false);
+    // Above it.
+    expect(isAnnotationInView({ zSpan: { min: 7, max: 8 }, bounds: inside }, view)).toBe(false);
+    // Straddling a face stays whole.
+    expect(
+      isAnnotationInView(
+        { zSpan: { min: 1, max: 1 }, bounds: { minX: 8, maxX: 14, minY: 2, maxY: 4 } },
+        view,
+      ),
+    ).toBe(true);
   });
 
   it("ignores the shape's z where there is no plane (3D, or a scene with no z)", () => {

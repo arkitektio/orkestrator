@@ -12,8 +12,8 @@ import type { ViewState } from "../stores/viewStore";
 
 /**
  * Store-level driver for the visibility computation (`platform/visibility/visibility.ts`).
- * Subscribes to the camera matrix (viewStore), the registered trackables
- * (viewerStore) and the layer list (sceneStore), coalesces any burst of
+ * Subscribes to the camera matrix (viewStore), the registered trackables and
+ * the crop box (viewerStore) and the layer list (sceneStore), coalesces any burst of
  * changes into ONE recompute per animation frame, and writes results back to
  * the viewer store only when they actually changed — so consumers like
  * `PlaneLayer.updateChunks` don't re-run on camera settles that didn't move
@@ -55,6 +55,7 @@ export function startVisibilityTracking({
       trackables: viewerState.trackables,
       layers: sceneStore.getState().layers,
       coordinateSystem: cameraPose?.coordinateSystem,
+      cropBox: viewerState.cropBox,
     });
 
     // Write-if-changed: skipping no-op writes keeps every subscriber of
@@ -107,9 +108,11 @@ export function startVisibilityTracking({
   });
 
   let lastTrackables = viewerStore.getState().trackables;
+  let lastCropBox = viewerStore.getState().cropBox;
   const unsubscribeViewer = viewerStore.subscribe((state) => {
-    if (state.trackables !== lastTrackables) {
+    if (state.trackables !== lastTrackables || state.cropBox !== lastCropBox) {
       lastTrackables = state.trackables;
+      lastCropBox = state.cropBox;
       schedule();
     }
   });

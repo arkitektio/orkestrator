@@ -78,9 +78,61 @@ export type VolumeRayUniforms = {
   uLodBias: any;
   uPxPerVoxelAtUnitDist: any;
   uVoxelWorldSize: any;
+  uClipMin: any;
+  uClipMax: any;
+};
+
+/** Past any volume: the crop uniforms' resting value, where they clip nothing. */
+export const CLIP_UNBOUNDED = 1e30;
+
+/**
+ * The layer's share of the crop box, in base voxels (`cropBoxToVoxelAabb`) —
+ * the SAME box the planner clamps to, so the shader never samples where the
+ * planner did not load. Resting at ±`CLIP_UNBOUNDED` (no crop); a layer wholly
+ * outside the box gets `min > max`, which discards every fragment. Driven by
+ * `useCropClipUniforms`.
+ */
+export type ClipUniforms = { uClipMin: any; uClipMax: any };
+
+/** The typed, consumer-facing view (see `UniformNodeLike`). */
+export type ClipUniformNodes = {
+  uClipMin: { value: THREE.Vector3 };
+  uClipMax: { value: THREE.Vector3 };
+};
+
+export const makeClipUniforms = (): ClipUniforms => ({
+  uClipMin: TSL.uniform(
+    new THREE.Vector3(-CLIP_UNBOUNDED, -CLIP_UNBOUNDED, -CLIP_UNBOUNDED),
+    "vec3",
+  ),
+  uClipMax: TSL.uniform(
+    new THREE.Vector3(CLIP_UNBOUNDED, CLIP_UNBOUNDED, CLIP_UNBOUNDED),
+    "vec3",
+  ),
+});
+
+/**
+ * The flat view's half of the crop: discard a plane fragment outside the box.
+ * `baseVoxel.z` is the INTEGER slab, which occupies `[z, z + 1)` — the same
+ * overlap test `planLayerNodes` uses to drop the slab from the plan.
+ */
+export const emitPlaneClipDiscard = (baseVoxel: any, u: ClipUniforms): void => {
+  const lo = vec3(u.uClipMin);
+  const hi = vec3(u.uClipMax);
+  const p = vec3(baseVoxel);
+  TSL.Discard(
+    p.x
+      .lessThan(lo.x)
+      .or(p.x.greaterThan(hi.x))
+      .or(p.y.lessThan(lo.y))
+      .or(p.y.greaterThan(hi.y))
+      .or(p.z.add(1.0).lessThanEqual(lo.z))
+      .or(p.z.greaterThanEqual(hi.z)),
+  );
 };
 
 export const makeVolumeRayUniforms = (): VolumeRayUniforms => ({
+  ...makeClipUniforms(),
   uBaseShape: TSL.uniform(new THREE.Vector3(1, 1, 1), "vec3"),
   uDesiredLevel: TSL.uniform(0, "int"),
   uLodBias: TSL.uniform(1, "float"),
@@ -198,7 +250,7 @@ export type VolumeRayBounds = {
 };
 
 /**
- * Emit the ray ∩ [0, baseShape] slab test into the CURRENT scope, discarding the
+ * Emit the ray ∩ ([0, baseShape] ∩ crop box) slab test into the CURRENT scope, discarding the
  * fragment when the ray misses the volume.
  *
  * A plain emitter rather than a TSL `Fn` for the same reason
@@ -215,8 +267,21 @@ export const emitVolumeRayBounds = (
   const safeDir = sign(dirB).mul(max(dirB.abs(), vec3(1e-6)));
   const invD = vec3(1.0).div(safeDir).toVar();
 
-  const t0 = vec3(0.0).sub(originB).mul(invD);
-  const t1v = vec3(u.uBaseShape).sub(originB).mul(invD);
+  // The marched box is the volume cut down to the crop box (resting uniforms
+  // leave exactly [0, baseShape]). An inverted box is a layer outside the crop;
+  // it has to be rejected here, because the min/max below would read it as a
+  // valid slab the other way round.
+  const boxLo = max(vec3(0.0), vec3(u.uClipMin)).toVar();
+  const boxHi = min(vec3(u.uBaseShape), vec3(u.uClipMax)).toVar();
+  TSL.Discard(
+    boxLo.x
+      .greaterThan(boxHi.x)
+      .or(boxLo.y.greaterThan(boxHi.y))
+      .or(boxLo.z.greaterThan(boxHi.z)),
+  );
+
+  const t0 = boxLo.sub(originB).mul(invD);
+  const t1v = boxHi.sub(originB).mul(invD);
   const tminv = min(t0, t1v);
   const tmaxv = max(t0, t1v);
   const boundsX = max(max(tminv.x, tminv.y), tminv.z).toVar();

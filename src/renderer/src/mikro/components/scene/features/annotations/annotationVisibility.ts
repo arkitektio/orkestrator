@@ -5,6 +5,7 @@ import {
   type LayerCoverage,
 } from "./anchorVisibility";
 import { affineToMatrix4, physicalToVoxelZStrict } from "../../platform/coords/worldTransform";
+import { cropBoxOverlaps, type CropBox } from "../../platform/coords/cropBox";
 
 /**
  * Which of a collection's shapes the scene is showing RIGHT NOW.
@@ -176,10 +177,30 @@ export function isAnnotationInView(
     coordinates?: readonly PinnedCoordinate[] | null;
     /** The shape's vectors in WORLD µm — collection space through the layer's affine. */
     zSpan: ZSpan | null;
+    /** The shape's WORLD x/y footprint — only read under a crop box. */
+    bounds?: { minX: number; maxX: number; minY: number; maxY: number } | null;
   },
-  view: { coverages: readonly LayerCoverage[]; plane: ScenePlane | null },
+  view: {
+    coverages: readonly LayerCoverage[];
+    plane: ScenePlane | null;
+    /** The crop box: a shape that does not reach into it is hidden. A shape
+     * that straddles a face stays whole — it is a mark, not data to cut. */
+    cropBox?: CropBox | null;
+  },
 ): boolean {
   if (!pinsSatisfied(annotation.coordinates, view.coverages)) return false;
+  if (view.cropBox && annotation.bounds) {
+    const z = annotation.zSpan ?? { min: -Infinity, max: Infinity };
+    if (
+      !cropBoxOverlaps(
+        view.cropBox,
+        [annotation.bounds.minX, annotation.bounds.minY, z.min],
+        [annotation.bounds.maxX, annotation.bounds.maxY, z.max],
+      )
+    ) {
+      return false;
+    }
+  }
   if (!view.plane) return true;
   return intersectsPlane(annotation.zSpan, view.plane.z, view.plane.slabThickness);
 }

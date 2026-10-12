@@ -10,7 +10,8 @@ import { coldOpenTimeline } from "../../../platform/perf/coldOpenTimeline";
 import { climToUnit } from "../../../platform/model/dataRange";
 import { identityOf } from "../../../platform/model/objectIdentity";
 import { layerIndexOf, layerPlanSignature } from "../../../platform/model/layerPlanKey";
-import { intersectLocalVolumeBox } from "../probeMath";
+import { intersectLocalVolumeBox, localCropClip } from "../probeMath";
+import { useCropClipUniforms } from "./useCropClipUniforms";
 import { resolveProbeStrategy } from "../../../platform/probe/probeModes";
 import {
   clickProbeEnabled,
@@ -613,6 +614,8 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
     invalidate();
   }, [bundle, pool, poolsVersion, invalidate, viewerStoreApi]);
 
+  useCropClipUniforms(bundle?.nodes, layer?.affineMatrix, pool?.geometry.levels[0].spatialShape);
+
   useVolumeRayUniforms(bundle?.nodes, {
     // The FINEST level any member planned: residency is shared and the walk goes
     // coarser from here, so this is the finest data actually resident.
@@ -662,7 +665,14 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
       .copy(ray.direction)
       .transformDirection(inverseMatrix)
       .normalize();
-    const bounds = intersectLocalVolumeBox(localOrigin, localDirection);
+    // The probe reads only what the crop box leaves on screen (P12).
+    const clip = localCropClip(
+      state.cropBox,
+      affineMatrix,
+      pool.geometry.levels[0].spatialShape,
+    );
+    if (clip === "outside") return null;
+    const bounds = intersectLocalVolumeBox(localOrigin, localDirection, clip);
     if (!bounds) return null;
     perfMonitor.markProbe(); // no-op unless a perf recording is armed
 

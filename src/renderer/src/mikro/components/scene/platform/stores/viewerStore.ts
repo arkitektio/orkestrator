@@ -5,6 +5,7 @@ import { createDimsSlice, type DimsSlice } from "./viewer/dimsSlice";
 import { createArraySlice, type ArraySlice } from "./viewer/arraySlice";
 import { createProbeSlice, type ProbeSlice } from "./viewer/probeSlice";
 import { createBudgetSlice, type BudgetSlice } from "./viewer/budgetSlice";
+import { createCropSlice, type CropSlice } from "./viewer/cropSlice";
 import { createScopedStoreHooks } from "@/core/util/createScopedStore"
 import { RefObject } from "react";
 import * as THREE from 'three';
@@ -125,7 +126,8 @@ export interface ViewerState
     DimsSlice,
     ArraySlice,
     ProbeSlice,
-    BudgetSlice {
+    BudgetSlice,
+    CropSlice {
   /* Every member now belongs to a slice. Feature-owned slices (bricks,
    * meshes) are registered by SceneProvider and reached through their own
    * hooks — see `makeViewerSliceHooks`. */
@@ -142,6 +144,7 @@ function createViewerStoreInternal(
     ...createArraySlice(arraysByStoreId),
     ...createProbeSlice(set),
     ...createBudgetSlice(set),
+    ...createCropSlice(set),
     // Feature-owned slices, supplied by SceneProvider. `platform/` cannot
     // import them, so composition happens at the shell.
     ...Object.assign({}, ...extraSlices.map((slice) => slice(set as never, get as never))),

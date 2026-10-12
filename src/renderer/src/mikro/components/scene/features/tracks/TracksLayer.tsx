@@ -42,6 +42,7 @@ import { useSceneStore } from "../../platform/stores/sceneStore";
 import { usePublishDimExtents } from "../../platform/stores/useLayerDimExtents";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { createTrackMaterial, setTrackPalette } from "./tracksMaterial";
+import { bindCropUniforms } from "../../platform/gpu/cropNodes";
 import {
   isTrackLoadError,
   loadTrackGeometry,
@@ -273,6 +274,12 @@ const TrackLines = ({ layer }: { layer: TrackLayerView }) => {
       },
     );
   }, [bundle, geometry, tailWindow, invalidate, viewerApi]);
+
+  // The crop box: segments outside it fade to nothing in the material.
+  useEffect(
+    () => bindCropUniforms(viewerApi, bundle.nodes, invalidate),
+    [bundle, viewerApi, invalidate],
+  );
 
   /**
    * Publish the observed time span so a T slider can exist at all.

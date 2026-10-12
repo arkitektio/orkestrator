@@ -29,6 +29,7 @@ import {
   useBrickMaterialBundle,
   usePlaneTraversalUniforms,
 } from "./useBrickMaterialBundle";
+import { useCropClipUniforms } from "./useCropClipUniforms";
 import { useBrickStore } from "../store/brickSlice";
 
 /**
@@ -336,6 +337,8 @@ export const BrickPlaneLayer = ({ layerId }: { layerId: string }) => {
     slabBaseZ,
     isDebug,
   ]);
+
+  useCropClipUniforms(bundle?.nodes, layer?.affineMatrix, pool?.geometry.levels[0].spatialShape);
 
   // The traversal contract, shared with the other plane material.
   usePlaneTraversalUniforms(bundle?.nodes, {

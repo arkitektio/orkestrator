@@ -70,10 +70,13 @@ import { MAX_RAY_STEPS_CEILING } from "../../../platform/quality/qualityGovernor
 import { NameScope } from "./tslNames";
 import { ensureAggregate } from "./pageTableTexture";
 import {
+  emitPlaneClipDiscard,
   emitVolumeRayBounds,
+  makeClipUniforms,
   makeVolumeRayNodes,
   makeVolumeRayUniforms,
   MAX_RAY_STEPS as SHARED_MAX_RAY_STEPS,
+  type ClipUniformNodes,
 } from "./volumeRayNodes";
 import type { LayerBrickPool } from "../residency/brickResidency";
 import {
@@ -1481,7 +1484,8 @@ export const commonMaterialSettings = (material: NodeMaterial) => {
 // ---------------------------------------------------------------------------
 
 export type PlaneMaterialNodes = TraversalNodesPublic &
-  ChannelNodesPublic & {
+  ChannelNodesPublic &
+  ClipUniformNodes & {
     uDesiredLevel: UniformNodeLike<number>;
     uSlabBaseZ: UniformNodeLike<number>;
     uBaseShape: UniformNodeLike<THREE.Vector3>;
@@ -1508,6 +1512,7 @@ export function createPlaneNodeMaterial(
   /** INTEGER base slab z — the slab-mode resolve does the per-level floor +
    * recenter itself (see emitResolveBrickResidency), so no +0.5 here. */
   const uSlabBaseZ = uniform(0, "float");
+  const clip = makeClipUniforms();
   const uBaseShape = uniform(new THREE.Vector3(1, 1, 1), "vec3");
 
   const material = new NodeMaterial();
@@ -1529,6 +1534,7 @@ export function createPlaneNodeMaterial(
       uv().y.mul(uBaseShape.y),
       uSlabBaseZ,
     ).toVar("pxBaseVoxel");
+    emitPlaneClipDiscard(baseVoxel, clip);
 
     const accum = select(
       int(c.blendMode).equal(1),
@@ -1575,7 +1581,7 @@ export function createPlaneNodeMaterial(
 
   return {
     material,
-    nodes: { ...t, ...c, uDesiredLevel, uSlabBaseZ, uBaseShape } as PlaneMaterialNodes,
+    nodes: { ...t, ...c, ...clip, uDesiredLevel, uSlabBaseZ, uBaseShape } as PlaneMaterialNodes,
   };
 }
 
@@ -1585,6 +1591,7 @@ export function createPlaneNodeMaterial(
 
 export type VolumeMaterialNodes = TraversalNodesPublic &
   ChannelNodesPublic &
+  ClipUniformNodes &
   CinematicUniforms & {
     uDesiredLevel: UniformNodeLike<number>;
     uLodBias: UniformNodeLike<number>;
@@ -2706,6 +2713,8 @@ export function createVolumeNodeMaterial(
       uLodBias,
       uPxPerVoxelAtUnitDist,
       uVoxelWorldSize: rayUniforms.uVoxelWorldSize,
+      uClipMin: rayUniforms.uClipMin,
+      uClipMax: rayUniforms.uClipMax,
       uStepScale,
       uMaxSteps,
       uSmoothThreshold,

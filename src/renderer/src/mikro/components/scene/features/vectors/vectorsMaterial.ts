@@ -33,6 +33,11 @@ import * as THREE from "three";
 import { MeshBasicNodeMaterial, StorageInstancedBufferAttribute } from "three/webgpu";
 import * as TSLTyped from "three/tsl";
 import {
+  createCropUniforms,
+  insideCropBox,
+  type CropUniformNodes,
+} from "../../platform/gpu/cropNodes";
+import {
   createMeasureAppearance,
   disposeMeasurePalette,
   identityPaletteTexture,
@@ -66,7 +71,7 @@ const {
 
 export type VectorGlyphKind = "arrow" | "line" | "cone";
 
-export type VectorMaterialNodes = MeasureAppearanceNodes & {
+export type VectorMaterialNodes = MeasureAppearanceNodes & CropUniformNodes & {
   /** Drawn length per unit of magnitude, in the DATA's voxel units (the layer affine maps to world). */
   uGlyphScale: any;
   /** Radial width as a fraction of the drawn length. */
@@ -116,6 +121,7 @@ export const createVectorMaterial = (capacity: number): VectorMaterialBundle => 
     uOpacity: uniform(1, "float"),
     uFlatColor: uniform(new THREE.Color(1, 1, 1)),
     ...createMeasureAppearance(1),
+    ...createCropUniforms(),
   };
 
   const paletteIdentity = identityPaletteTexture();
@@ -143,7 +149,10 @@ export const createVectorMaterial = (capacity: number): VectorMaterialBundle => 
 
     // A zero vector collapses to a point rather than being skipped — the same
     // choice the network makes for a zero-length edge.
-    const drawn = len.mul(nodes.uGlyphScale).mul(select(valid, float(1), float(0)));
+    // A glyph anchored outside the crop box collapses the same way: the whole
+    // arrow goes, never half of one.
+    const shown = valid.and(insideCropBox(centre, nodes));
+    const drawn = len.mul(nodes.uGlyphScale).mul(select(shown, float(1), float(0)));
     const width = drawn.mul(nodes.uThickness);
 
     const local = positionGeometry;

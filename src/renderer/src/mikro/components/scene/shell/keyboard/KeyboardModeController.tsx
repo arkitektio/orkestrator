@@ -66,6 +66,24 @@ export const KeyboardModeController = () => {
 
       const key = e.key.toLowerCase();
 
+      // The crop box. Shift+S first: the key is lowercased, so below it would
+      // read as DESIGN's Stamp.
+      const crop = viewerStoreApi.getState();
+      if (key === "s" && e.shiftKey) {
+        crop.clearCrop();
+        return;
+      }
+      if (crop.cropPhase !== "idle") {
+        if (key === "escape") {
+          crop.cancelCrop();
+          return;
+        }
+        if (key === "enter" && crop.cropPhase === "depth") {
+          crop.commitCrop();
+          return;
+        }
+      }
+
       if (modeApi.getState().interactionMode === "DESIGN") {
         const designKey = designToolByKey(key);
         if (designKey) {
@@ -73,6 +91,15 @@ export const KeyboardModeController = () => {
           modeApi.getState().selectDesignTool(designKey.id, true);
           return;
         }
+      }
+
+      // `s`: draw a crop box, starting under the cursor. A one-shot, not a
+      // hold — the gesture runs on through a click and the wheel
+      // (`features/crop/CropBoxGesture.tsx`). After the DESIGN lookup above, so
+      // there it stays the Stamp tool.
+      if (key === "s") {
+        crop.beginCrop();
+        return;
       }
 
       const next = HOLD_MODES[key];

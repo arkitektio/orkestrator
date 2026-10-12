@@ -12,7 +12,8 @@ import { buildAffineMatrix } from "../../platform/coords/worldTransform";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import { useBrickLayer } from "../bricks/layers/useBrickPlaneProbe";
-import { intersectLocalVolumeBox } from "../bricks/probeMath";
+import { intersectLocalVolumeBox, localCropClip } from "../bricks/probeMath";
+import { useCropClipUniforms } from "../bricks/layers/useCropClipUniforms";
 import { marchResidentBricks } from "../bricks/octree/brickSampling";
 import { useBrushSkeletonStoreApi } from "../annotations/enhancers/brushSkeletonStore";
 import { DESIGN_TOOL_GESTURES, useModeStore } from "../../platform/stores/modeStore";
@@ -147,6 +148,7 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundle, labelSignature, invalidate]);
 
+  useCropClipUniforms(bundle?.nodes, layer?.affineMatrix, pool?.geometry.levels[0].spatialShape);
   useVolumeRayUniforms(bundle?.nodes, {
     desiredLevel: planTargetLevel,
     worldMatrix: affineMatrix,
@@ -177,7 +179,14 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
     const inverseMatrix = new THREE.Matrix4().copy(mesh.matrixWorld).invert();
     const localOrigin = ray.origin.clone().applyMatrix4(inverseMatrix);
     const localDirection = ray.direction.clone().transformDirection(inverseMatrix).normalize();
-    const bounds = intersectLocalVolumeBox(localOrigin, localDirection);
+    // The probe reads only what the crop box leaves on screen (P12).
+    const clip = localCropClip(
+      viewerStoreApi.getState().cropBox,
+      affineMatrix,
+      pool.geometry.levels[0].spatialShape,
+    );
+    if (clip === "outside") return null;
+    const bounds = intersectLocalVolumeBox(localOrigin, localDirection, clip);
     if (!bounds) return null;
     perfMonitor.markProbe(); // no-op unless a perf recording is armed
     const baseLevel = pool.geometry.levels[0];

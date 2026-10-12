@@ -2,6 +2,12 @@ import * as THREE from "three";
 import { ClippingGroup } from "three/webgpu";
 
 import { createSlabPlanes, updateSlabPlanes } from "../coords/slabClip";
+import {
+  CROP_PLANE_FAR,
+  createCropPlanes,
+  updateCropPlanes,
+  type CropBox,
+} from "../coords/cropBox";
 
 /**
  * The part of a LOD-Parquet collection MANAGER that both formats spelled out
@@ -60,10 +66,18 @@ export abstract class CollectionManagerBase<Row, Index> {
   /** Order and pairing from `platform/coords/slabClip.ts`. */
   private readonly clipPlanes = createSlabPlanes();
   private slab: SlabClip = null;
+  /** The crop box's six planes (`platform/coords/cropBox.ts`). On the group
+   *  for good, parked far away without a crop: the plane COUNT never changes. */
+  private readonly cropPlanes = createCropPlanes();
+  private cropping = false;
 
   constructor(private readonly hooks: CollectionManagerHooks) {
-    this.group.clippingPlanes = [...this.clipPlanes];
-    this.group.enabled = false; // slab mode only (setSlabClip)
+    // An idle slab clips nothing (see `setSlabClip`) — from the start, since
+    // the crop box can enable the group before any slab was ever set.
+    this.clipPlanes[0].constant = CROP_PLANE_FAR;
+    this.clipPlanes[1].constant = CROP_PLANE_FAR;
+    this.group.clippingPlanes = [...this.clipPlanes, ...this.cropPlanes];
+    this.group.enabled = false; // slab and/or crop (setSlabClip, setCropClip)
     // The group's matrix is written directly by `setVoxelToWorld`, so three
     // must not recompose it from position/quaternion/scale.
     this.group.matrixAutoUpdate = false;
@@ -155,18 +169,36 @@ export abstract class CollectionManagerBase<Row, Index> {
   /**
    * Clip to a world-z window around the displayed slice; `null` restores 3D.
    * A z-scrub with the slab already on mutates only the plane constants — no
-   * allocation, no pipeline rebuild. The ON/OFF edge toggles `enabled` and
-   * calls `onSlabModeChanged`.
+   * allocation, no pipeline rebuild. The ON/OFF edge calls
+   * `onSlabModeChanged`; `enabled` holds while the slab OR the crop box clips.
    */
   setSlabClip(slab: SlabClip): void {
     const wasClipping = this.slab !== null;
     this.slab = slab ? { ...slab } : null;
     if (slab) updateSlabPlanes(this.clipPlanes, slab);
-    const clipping = slab !== null;
-    if (clipping !== wasClipping) {
-      this.group.enabled = clipping;
-      this.onSlabModeChanged(clipping);
+    else {
+      // The group may stay enabled for the crop box, so an idle slab has to
+      // clip nothing rather than keep its last window.
+      this.clipPlanes[0].constant = CROP_PLANE_FAR;
+      this.clipPlanes[1].constant = CROP_PLANE_FAR;
     }
+    const clipping = slab !== null;
+    this.group.enabled = clipping || this.cropping;
+    if (clipping !== wasClipping) this.onSlabModeChanged(clipping);
+    this.invalidate();
+  }
+
+  // --- the crop box -------------------------------------------------------
+
+  /**
+   * Clip to the crop box (world); `null` removes the clip. Moving the box
+   * mutates plane constants only. Independent of the slab: both sets of planes
+   * are on the group, and it clips while either is in force.
+   */
+  setCropClip(box: CropBox | null): void {
+    updateCropPlanes(this.cropPlanes, box);
+    this.cropping = box !== null;
+    this.group.enabled = this.cropping || this.slab !== null;
     this.invalidate();
   }
 

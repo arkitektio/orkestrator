@@ -8,6 +8,7 @@ const probeGeometryScratch = {
 };
 
 import { buildAffineMatrix } from "../../../platform/coords/worldTransform";
+import { cropBoxToVoxelAabb } from "../../../platform/coords/cropBox";
 import {
   buildSliceMap,
   resolveSpatialSelection,
@@ -286,6 +287,34 @@ export const useBrickPlaneProbe = ({
         Math.min(baseShape[1] - 1, Math.floor(clampedV * baseShape[1])),
         Math.max(0, Math.min(baseShape[2] - 1, baseZ)),
       ];
+
+      // Outside the crop box the plane discards its fragments, so there is
+      // nothing here to read (P12). The SAME voxel box and the same test as the
+      // shader's `emitPlaneClipDiscard`: the point in x/y, the slab `[z, z+1)`.
+      const cropBox = viewerStoreApi.getState().cropBox;
+      if (cropBox) {
+        const clip = cropBoxToVoxelAabb(
+          cropBox,
+          probeGeometryScratch.matrix.copy(buildAffineMatrix(layer)).invert(),
+          baseShape,
+        );
+        const px = clampedU * baseShape[0];
+        const py = clampedV * baseShape[1];
+        if (
+          !clip ||
+          px < clip.min[0] ||
+          px > clip.max[0] ||
+          py < clip.min[1] ||
+          py > clip.max[1] ||
+          voxelIndex[2] + 1 <= clip.min[2] ||
+          voxelIndex[2] >= clip.max[2]
+        ) {
+          if (currentProbe?.layerId === layer.id) {
+            viewerStoreApi.getState().setProbedCoordinate(null);
+          }
+          return;
+        }
+      }
 
       perfMonitor.markProbe(); // no-op unless a perf recording is armed
       const resident = brickSystem?.sampleResidentEx(layer.id, voxelIndex, levelIndex) ?? null;

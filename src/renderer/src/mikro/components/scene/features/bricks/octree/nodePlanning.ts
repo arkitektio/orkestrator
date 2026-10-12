@@ -218,6 +218,18 @@ export type PlanLayerNodesInput = {
   /** Scene-wide dim-slider selections (t, tau, …) — signature input only. */
   dimSelections?: Record<string, number>;
   /**
+   * The layer's share of the crop box, in base voxels
+   * (`cropBoxToVoxelAabb`); `"outside"` when the layer lies wholly outside the
+   * box, null/absent when there is no crop.
+   *
+   * Nothing outside it is planned — not as prefetch margin, not as a root.
+   * That is only sound because the shader marches the SAME box
+   * (`uClipMin`/`uClipMax`): it never samples where a coarse brick is
+   * missing, so the fallback invariant of P18 holds inside the box, which is
+   * all that is drawn.
+   */
+  clipBox?: VoxelBox | "outside" | null;
+  /**
    * Slack in the 3D frustum test, as a fraction of each node's own extent —
    * the anti-flicker hysteresis band. Defaults to `FRUSTUM_CULL_MARGIN`; 0 is
    * the strict test. Injectable so the invariant that MATTERS can be asserted
@@ -449,6 +461,11 @@ const boxCenter = (box: VoxelBox): Vec3 => [
   (box.min[2] + box.max[2]) / 2,
 ];
 
+const intersectBoxes = (a: VoxelBox, b: VoxelBox): VoxelBox => ({
+  min: [Math.max(a.min[0], b.min[0]), Math.max(a.min[1], b.min[1]), Math.max(a.min[2], b.min[2])],
+  max: [Math.min(a.max[0], b.max[0]), Math.min(a.max[1], b.max[1]), Math.min(a.max[2], b.max[2])],
+});
+
 const boxesOverlap = (a: VoxelBox, b: VoxelBox): boolean =>
   a.min[0] < b.max[0] && b.min[0] < a.max[0] &&
   a.min[1] < b.max[1] && b.min[1] < a.max[1] &&
@@ -464,6 +481,7 @@ export function planLayerNodes({
   lodBias,
   currentZ,
   dimSelections,
+  clipBox = null,
   frustumCullMargin = FRUSTUM_CULL_MARGIN,
   maxPlanBytes = Number.POSITIVE_INFINITY,
   decodeFloorBytes,
@@ -576,6 +594,16 @@ export function planLayerNodes({
     // Slider outside this layer's stack: render nothing.
     return empty(coarsest, null);
   }
+  if (clipBox === "outside") return empty(coarsest, null);
+  if (
+    clipBox &&
+    mode === "2D" &&
+    typeof baseSlabZ === "number" &&
+    (baseSlabZ + 1 <= clipBox.min[2] || baseSlabZ >= clipBox.max[2])
+  ) {
+    // The displayed slice is outside the crop box: the plane discards all of it.
+    return empty(coarsest, null);
+  }
 
   // Truncated pyramids can lose tail slices at coarse levels (81 base slices
   // → z shape 2 at scale 32 covers only base z < 64). For a slab beyond that
@@ -620,6 +648,14 @@ export function planLayerNodes({
         Math.min(baseShape[2], sz[1]),
       ],
     };
+  }
+  if (clipBox) {
+    // AFTER the margin: the prefetch band above would otherwise reach a
+    // quarter of the view range past the box on every side. The strict box is
+    // clamped too, so what counts as on-screen never depends on the margin
+    // (P26). No view range yet → the box itself is the visible region.
+    visibleBox = visibleBox ? intersectBoxes(visibleBox, clipBox) : clipBox;
+    if (strictBox) strictBox = intersectBoxes(strictBox, clipBox);
   }
 
   // --- Budget floor on refinement -------------------------------------------

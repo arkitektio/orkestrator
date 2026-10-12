@@ -121,6 +121,34 @@ describe("CollectionManagerBase slab clip", () => {
     expect(bottom.distanceToPoint(new THREE.Vector3(0, 0, 17))).toBeLessThan(0);
   });
 
+  it("clips to the crop box with or without the slab, and never changes the plane count", () => {
+    const { manager } = make();
+    const planes = manager.group.clippingPlanes;
+    expect(planes).toHaveLength(8);
+    const kept = (x: number, y: number, z: number) =>
+      planes.every((plane) => plane.distanceToPoint(new THREE.Vector3(x, y, z)) >= 0);
+
+    manager.setCropClip({ min: [0, 0, 0], max: [10, 10, 10] });
+    expect(manager.group.enabled).toBe(true);
+    expect(manager.slabEdges).toEqual([]); // the crop is not slab mode
+    expect(kept(5, 5, 5)).toBe(true);
+    expect(kept(11, 5, 5)).toBe(false);
+
+    manager.setSlabClip({ z: 5, thickness: 2 });
+    expect(kept(5, 5, 5)).toBe(true);
+    expect(kept(5, 5, 8)).toBe(false); // inside the box, outside the slab
+
+    // The slab going away must not leave its last window behind.
+    manager.setSlabClip(null);
+    expect(manager.group.enabled).toBe(true);
+    expect(kept(5, 5, 8)).toBe(true);
+
+    manager.setCropClip(null);
+    expect(manager.group.enabled).toBe(false);
+    expect(manager.group.clippingPlanes).toBe(planes);
+    expect(planes).toHaveLength(8);
+  });
+
   it("returns a copy of the slab", () => {
     const { manager } = make();
     manager.setSlabClip({ z: 1, thickness: 1 });

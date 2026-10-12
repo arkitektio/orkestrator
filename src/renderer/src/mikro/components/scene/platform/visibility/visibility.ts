@@ -6,6 +6,7 @@ import {
   type FrustumClipCoordinateSystem,
 } from "./frustumClip";
 import type { LayerState } from "../model/layerModel";
+import { cropBoxToVoxelAabb, type CropBox } from "../coords/cropBox";
 
 /**
  * Pure per-layer visibility computation: frustum-test every trackable and,
@@ -39,6 +40,9 @@ export type SceneVisibilityInput = {
    * Defaults to WebGL ([-1,1]); the production tracker passes the camera's
    * actual convention (WebGPU, [0,1]). */
   coordinateSystem?: number;
+  /** The crop box (world). A layer's range is what the camera sees of the
+   * layer INSIDE it; a layer wholly outside it has no range. */
+  cropBox?: CropBox | null;
 };
 
 export type SceneVisibilityResult = {
@@ -62,6 +66,7 @@ export function computeSceneVisibility({
   trackables,
   layers,
   coordinateSystem = THREE.WebGLCoordinateSystem,
+  cropBox = null,
 }: SceneVisibilityInput): SceneVisibilityResult {
   frustum.setFromProjectionMatrix(
     projScreenMatrix,
@@ -89,7 +94,13 @@ export function computeSceneVisibility({
     const layer = layerById.get(trackable.id);
     if (!layer) continue;
 
-    const range = computeLayerViewRange(layer, projScreenMatrix, viewportSize, coordinateSystem);
+    const range = computeLayerViewRange(
+      layer,
+      projScreenMatrix,
+      viewportSize,
+      coordinateSystem,
+      cropBox,
+    );
     if (range) ranges[trackable.id] = range;
   }
 
@@ -112,11 +123,23 @@ const cachedAffineMatrix = (raw: number[][] | null | undefined): THREE.Matrix4 =
   return matrix;
 };
 
+/** The inverse, cached the same way — read only while a crop box is up. */
+const inverseAffineCache = new WeakMap<THREE.Matrix4, THREE.Matrix4>();
+const cachedInverseAffine = (affine: THREE.Matrix4): THREE.Matrix4 => {
+  let inverse = inverseAffineCache.get(affine);
+  if (!inverse) {
+    inverse = affine.clone().invert();
+    inverseAffineCache.set(affine, inverse);
+  }
+  return inverse;
+};
+
 function computeLayerViewRange(
   layer: LayerState,
   projScreenMatrix: THREE.Matrix4,
   viewportSize: { width: number; height: number },
   coordinateSystem: number,
+  cropBox: CropBox | null,
 ): LayerViewRange | null {
   const affine = cachedAffineMatrix(layer.affineMatrix);
 
@@ -133,11 +156,19 @@ function computeLayerViewRange(
   // affine), which under a perspective camera near/inside the volume
   // degenerated to ~the whole dataset and inflated further under tilt —
   // see frustumClip.ts for the failure modes this fixes.
+  //
+  // Under a crop box the layer box is first cut down to the layer's share of
+  // it (`cropBoxToVoxelAabb` — the SAME AABB the planner clamps to and the
+  // shader marches), so the range is what the camera sees of the crop.
+  const cropped = cropBox
+    ? cropBoxToVoxelAabb(cropBox, cachedInverseAffine(affine), [xMax, yMax, zMax])
+    : null;
+  if (cropBox && !cropped) return null;
   voxelToClip.multiplyMatrices(projScreenMatrix, affine);
   const hit = frustumBoxIntersectionAabb(
     voxelToClip,
-    [0, 0, 0],
-    [xMax, yMax, zMax],
+    cropped ? cropped.min : [0, 0, 0],
+    cropped ? cropped.max : [xMax, yMax, zMax],
     localBox,
     coordinateSystem as FrustumClipCoordinateSystem,
   );

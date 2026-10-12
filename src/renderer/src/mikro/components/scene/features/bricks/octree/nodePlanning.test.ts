@@ -131,6 +131,75 @@ describe("planLayerNodes (2D quadtree)", () => {
   });
 });
 
+describe("planLayerNodes under a crop box", () => {
+  // Ends ON a brick boundary of the 512² image, so a brick is either inside
+  // the box or wholly beside it.
+  const box = { min: [0, 0, 0], max: [256, 256, 1] } as const;
+  const cropped = (clipBox: Parameters<typeof planLayerNodes>[0]["clipBox"], viewRange = FULL_VIEW) =>
+    planLayerNodes({
+      layer: makeLayer(),
+      geometry: flatGeo,
+      spec: flatSpec,
+      mode: "2D",
+      viewRange,
+      clipBox,
+      camera: null,
+      lodBias: 1,
+      currentZ: 0,
+    });
+  const overlapsBox = (plan: ReturnType<typeof planLayerNodes>) =>
+    plan.nodes.every((node) => {
+      const b = nodeBaseBox(flatGeo, flatSpec, node.level, node.coords);
+      return b.min[0] < box.max[0] && b.min[1] < box.max[1];
+    });
+
+  it("plans nothing outside the box — not even as prefetch margin", () => {
+    // The view range already ends at the box; without the clamp the 25%
+    // prefetch band would reach a quarter of it further on every side.
+    const viewRange: LayerViewRange = { xRange: [0, 256], yRange: [0, 256], zRange: null, scale: 2 };
+    const without = planLayerNodes({
+      layer: makeLayer(),
+      geometry: flatGeo,
+      spec: flatSpec,
+      mode: "2D",
+      viewRange,
+      camera: null,
+      lodBias: 1,
+      currentZ: 0,
+    });
+    const plan = cropped({ min: [...box.min], max: [...box.max] }, viewRange);
+    expect(plan.nodes.length).toBeGreaterThan(0);
+    expect(overlapsBox(plan)).toBe(true);
+    expect(overlapsBox(without)).toBe(false); // the margin the clamp removes
+  });
+
+  it("still loads the coarse root that overlaps the box (P18)", () => {
+    const plan = cropped({ min: [...box.min], max: [...box.max] });
+    const coarsest = flatGeo.levels.length - 1;
+    expect(plan.nodes.some((node) => node.level === coarsest)).toBe(true);
+  });
+
+  it("plans nothing at all for a layer outside the box", () => {
+    expect(cropped("outside").nodes).toEqual([]);
+  });
+
+  it("uses the box as the visible region before any view range exists", () => {
+    const plan = planLayerNodes({
+      layer: makeLayer(),
+      geometry: flatGeo,
+      spec: flatSpec,
+      mode: "2D",
+      viewRange: undefined,
+      clipBox: { min: [...box.min], max: [...box.max] },
+      camera: null,
+      lodBias: 1,
+      currentZ: 0,
+    });
+    expect(plan.nodes.length).toBeGreaterThan(0);
+    expect(overlapsBox(plan)).toBe(true);
+  });
+});
+
 describe("slabLevelZ (planner ↔ shader slab convention)", () => {
   it("floors the base z, NOT the slab center, at non-integer z scales", () => {
     // Real pyramid (38 z slices → 9): scale 38/9 ≈ 4.222. The shader used to
@@ -221,6 +290,14 @@ describe("planLayerNodes (2D z slabs)", () => {
     expect(p.slabZ).toBe(2);
     expect(p.nodes.length).toBeGreaterThan(0);
     expect(p.nodes.every((n) => n.coords[2] === 2)).toBe(true);
+  });
+
+  it("renders nothing when the displayed slab is outside the crop box", () => {
+    const base = { layer, geometry: geo, spec, mode: "2D" as const, viewRange: FULL_VIEW, camera: null, lodBias: 1 };
+    const clipBox = { min: [0, 0, 0] as [number, number, number], max: [512, 512, 2] as [number, number, number] };
+    // Slab 1 occupies [1, 2): inside. Slab 2 occupies [2, 3): outside.
+    expect(planLayerNodes({ ...base, currentZ: 1, clipBox }).nodes.length).toBeGreaterThan(0);
+    expect(planLayerNodes({ ...base, currentZ: 2, clipBox }).nodes).toEqual([]);
   });
 
   it("renders nothing when the slider is outside the stack", () => {

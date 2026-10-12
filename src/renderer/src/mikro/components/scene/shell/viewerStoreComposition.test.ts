@@ -11,7 +11,7 @@ const build = () =>
  * The composed viewer store's shape, pinned.
  *
  * Lives in `shell/` because the shell is what composes the store: platform
- * contributes six slices, and the bricks and meshes features contribute their
+ * contributes seven slices, and the bricks and meshes features contribute their
  * own. Asserting the shape anywhere else would assert an incomplete store.
  *
  * This exists for the slice carve: a single 79-member object literal is being
@@ -50,7 +50,10 @@ const EXPECTED_KEYS = [
   "setUnplannableLayers", "setVisible", "setWorldUnitsPerPixel", "showLodReadout",
   "showScaleBar", "showScaleGrid", "showSceneAxis", "trackables",
   "unplannableLayers", "unregister", "viewSnapshot", "visibleLayers",
-  "volumeCompositorReport", "volumeInputs", "worldUnitsPerPixel",] as const;
+  "volumeCompositorReport", "volumeInputs", "worldUnitsPerPixel",
+  "cropBox", "cropPhase", "cropBoxBefore", "beginCrop", "fixCropRect",
+  "setCropBox", "commitCrop", "cancelCrop", "clearCrop",
+  "cropNotice", "refuseCrop", "clearCropNotice",] as const;
 
 describe("viewerStore shape", () => {
   it("exposes exactly the expected members", () => {

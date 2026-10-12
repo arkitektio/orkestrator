@@ -353,6 +353,14 @@ correct.
 `buildSliceSignature` keeps its exact semantics (axis mapping + non-spatial
 slices; `currentZ` deliberately excluded — see OCTREE_RENDERER.md P15).
 
+The viewer's own **crop box** (`s`, OCTREE_RENDERER.md §2.12) is not a lens and
+does not close that hole: it is a session-only WORLD-space, axis-aligned box,
+taken into each layer's voxel space as an AABB (`platform/coords/cropBox.ts`) —
+exact for an axis-aligned affine, conservative for a rotated one. It does add
+the clamp point a spatial lens crop would use (`planLayerNodes`' `clipBox`).
+Its z faces sit on slice boundaries: slice `k` occupies
+`[min + k·step, min + (k+1)·step)`.
+
 ### 3.4 Annotations (the old ROIs)
 
 An `Annotation` is **collection**-anchored, not CS-anchored and not

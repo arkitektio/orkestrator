@@ -875,6 +875,64 @@ include the rind). Stats `coreBricks` / `haloRefines`; per-pool report
 normalization**, sampling through `sampleResident` (the CPU brick mirrors).
 Keep the two in sync when touching either.
 
+### 2.12 The crop box (`platform/coords/cropBox.ts`, `features/crop/`)
+
+`s` draws a WORLD-space, axis-aligned box (rectangle, click, wheel for depth,
+click). Outside it nothing is drawn, and image and label volumes are not
+PLANNED — which is nearly, not exactly, "not fetched": the 2D z±1 slab
+prefetch (`adjacentPrefetch.ts`) still warms the neighbouring slices of the
+planned bricks, box or no box, and coarsest bricks already resident stay
+pinned. Session-only: `viewerStore.cropBox` (`platform/stores/viewer/cropSlice.ts`),
+never a lens, never sent to the server.
+
+**One voxel box per layer, computed once.** `cropBoxToVoxelAabb(box, worldToVoxel,
+shape)` is the AABB of the box's eight corners in the layer's voxel space, cut
+to the layer. Four consumers read that same function, and they must:
+
+| Consumer | Where | What it does with the box |
+| --- | --- | --- |
+| Visibility | `platform/visibility/visibility.ts` | frustum ∩ box instead of frustum ∩ layer |
+| Planner | `nodePlanTracker` → `planLayerNodes({ clipBox })` | clamps `visibleBox` AND `strictBox` |
+| Shader | `uClipMin` / `uClipMax`, `useCropClipUniforms` | ray entry/exit (3D), fragment discard (2D) |
+| CPU probe | `localCropClip` (`features/bricks/probeMath.ts`) | clips the march |
+
+Rules that are easy to break:
+
+- **Clamp AFTER the prefetch margin.** `planLayerNodes` expands the view range
+  by `PREFETCH_MARGIN` before building `visibleBox`; narrowing the view range
+  alone still fetches a quarter of it past the box
+  (`nodePlanning.test.ts`, "not even as prefetch margin").
+- **Roots outside the box are not planned.** That bends P18 ("the coarsest
+  level covers everything") and is sound only because the shader marches the
+  identical box — it never samples where a coarse brick is missing. Do not
+  filter roots without the uniform pair, or the other way round.
+- **Not in the plan signature.** The box is scene-wide and the affine already
+  is in `buildPlanInputSignature`, so one voxel box serves a whole equivalence
+  class. A per-layer crop would have to enter the signature.
+- **The uniforms rest at ±`CLIP_UNBOUNDED`**, so no material has an "is there a
+  crop" branch and no call site has to set them next to `uBaseShape`. An
+  inverted pair means "layer outside the box" and is discarded explicitly —
+  the slab test's min/max would otherwise read it as a valid box.
+- **`volumeInputs.bump("crop-box")`** on every uniform write, or the
+  compositor serves its cached frame.
+- **The rectangle being dragged is not in the store.** `cropBox` is written by
+  the click that fixes it and then once per whole wheel step; a per-move write
+  would replan per pointer event (P9, P30).
+- **Rotated layers are cropped conservatively**: the voxel AABB of a rotated
+  box is larger than the box. Never short, sometimes generous at the corners.
+
+The other layer kinds hide without loading less (their data is already in
+memory): meshes and networks through six more planes on the manager's
+`ClippingGroup` (`setCropClip`; the planes are permanent and parked at
+`CROP_PLANE_FAR`, because a plane-count change rebuilds pipelines), points
+through the cull box (`cropCullBox`, applied after the slack for the same
+reason as the prefetch margin), annotations through `isAnnotationInView`, and
+vectors and tracks through a world-space test in their own materials
+(`platform/gpu/cropNodes.ts` — a `ClippingGroup` clips on the TEMPLATE
+position of an instanced glyph, not where the instance is drawn). The volume
+proxy must never go under a `ClippingGroup`: it renders `BackSide` and derives
+its entry in the shader.
+
 ---
 
 ## 3. File map

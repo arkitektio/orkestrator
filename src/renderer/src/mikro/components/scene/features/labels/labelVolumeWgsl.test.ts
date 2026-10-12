@@ -4,7 +4,7 @@ import {
   fragmentWgsl,
   makeTestPool,
 } from "../bricks/gpu/__testing__/wgslHarness";
-import { createLabelVolumeNodeMaterial } from "./labelNodeMaterials";
+import { createLabelPlaneNodeMaterial, createLabelVolumeNodeMaterial } from "./labelNodeMaterials";
 import type { LabelUniformData } from "./labelUniforms";
 
 /**
@@ -35,5 +35,15 @@ describe("label raymarcher WGSL", () => {
     const wgsl = fragmentWgsl(material);
     expect(wgsl).toContain("fn main");
     expect(wgsl).toContain("lblRcLvl");
+  });
+
+  it("builds the 2D label plane, crop discard included", () => {
+    const pool = makeTestPool(1, "uint32");
+    const { material } = createLabelPlaneNodeMaterial(
+      pool,
+      { minValue: 0, maxValue: 65535 },
+      LABEL_DATA,
+    );
+    expect(fragmentWgsl(material)).toContain("lblBaseVoxel");
   });
 });

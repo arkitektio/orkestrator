@@ -4,6 +4,7 @@ import * as THREE from "three";
 import {
   EMPTY_CULL_BOX,
   UNBOUNDED_CULL_BOX,
+  cropCullBox,
   inverseGainBound,
   pointCullBox,
   pointDataBounds,
@@ -143,5 +144,39 @@ describe("pointCullBox", () => {
     expect(
       pointCullBox({ ...base, model: new THREE.Matrix4().makeScale(1, 1, 0), dataBounds: cloud }),
     ).toBe(UNBOUNDED_CULL_BOX);
+  });
+});
+
+describe("cropCullBox", () => {
+  const crop = { min: [10, 10, 0], max: [20, 20, 5] } as { min: [number, number, number]; max: [number, number, number] };
+
+  it("leaves the box alone without a crop", () => {
+    const box = { min: [0, 0, 0], max: [1, 1, 1] } as typeof crop;
+    expect(cropCullBox(box, null, new THREE.Matrix4())).toBe(box);
+  });
+
+  it("cuts a view box that includes its slack back to the crop", () => {
+    // What `pointCullBox` hands over: the visible region, padded by the slack.
+    const padded = { min: [-25, -25, -1], max: [125, 125, 6] } as typeof crop;
+    const box = cropCullBox(padded, crop, new THREE.Matrix4());
+    expect(survives(box, [15, 15, 2])).toBe(true);
+    expect(survives(box, [21, 15, 2])).toBe(false); // on screen, inside the slack, outside the crop
+  });
+
+  it("crops an unbounded box too — while the camera moves", () => {
+    const box = cropCullBox(UNBOUNDED_CULL_BOX, crop, new THREE.Matrix4());
+    expect(box).toEqual(crop);
+  });
+
+  it("takes the crop into the data's own space", () => {
+    // data → world: x' = 2x
+    const box = cropCullBox(UNBOUNDED_CULL_BOX, crop, new THREE.Matrix4().makeScale(2, 1, 1));
+    expect(box.min[0]).toBeCloseTo(5);
+    expect(box.max[0]).toBeCloseTo(10);
+  });
+
+  it("is empty when the view and the crop do not meet", () => {
+    const elsewhere = { min: [50, 50, 0], max: [60, 60, 1] } as typeof crop;
+    expect(cropCullBox(elsewhere, crop, new THREE.Matrix4())).toBe(EMPTY_CULL_BOX);
   });
 });

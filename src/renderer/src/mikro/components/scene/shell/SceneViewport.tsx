@@ -62,6 +62,8 @@ import { ZSliderPanel } from "./chrome/ZSliderPanel";
 import { WebGPUUnavailableError } from "@/core/data/scene/gpu/webgpuSupport";
 import { useModeStore } from "../platform/stores/modeStore";
 import { useViewerStore } from "../platform/stores/viewerStore";
+import { CropBoxGesture } from "../features/crop/CropBoxGesture";
+import { CropChip } from "../features/crop/CropChip";
 
 /**
  * R3F's default event manager raycasts the ENTIRE interaction set for every
@@ -399,6 +401,8 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
           <ScaleGrid />
 
           <SceneModeContent />
+          {/* The crop box: its `s` gesture and its outline, in 2D and 3D. */}
+          <CropBoxGesture />
 
           {props.inCanvas}
 
@@ -449,6 +453,7 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
               `features/annotations/ProbeMetadata.tsx`). */}
           <SceneModeControls />
 
+          <CropChip />
           <RoiToolbar />
           <MeshDesignToolbar />
           {/* Last, and the only overlay that covers the canvas: on top of

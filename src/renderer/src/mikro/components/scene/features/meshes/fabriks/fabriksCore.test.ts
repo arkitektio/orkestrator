@@ -667,7 +667,8 @@ describe("FabriksCollectionManager against the raw fixture", () => {
     // Clipping rides the GROUP: the WebGPU node path only reads planes from
     // a ClippingGroup, never from material.clippingPlanes.
     expect(manager.group.enabled).toBe(true);
-    expect(manager.group.clippingPlanes).toHaveLength(2);
+    // The slab's two planes, then the crop box's six (parked without a crop).
+    expect(manager.group.clippingPlanes).toHaveLength(8);
     expect(manager.group.clippingPlanes[0].constant).toBe(13); // keeps z ≤ 13
     expect(manager.group.clippingPlanes[1].constant).toBe(-11); // keeps z ≥ 11
 

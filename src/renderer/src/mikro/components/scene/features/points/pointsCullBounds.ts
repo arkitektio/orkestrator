@@ -28,6 +28,7 @@ import {
   frustumBoxIntersectionAabb,
   type FrustumClipCoordinateSystem,
 } from "../../platform/visibility/frustumClip";
+import type { CropBox } from "../../platform/coords/cropBox";
 
 export type CullBox = {
   min: [number, number, number];
@@ -155,6 +156,53 @@ export const pointCullBox = ({
     min[axis] -= pad;
     max[axis] += pad;
     if (!Number.isFinite(min[axis]) || !Number.isFinite(max[axis])) return UNBOUNDED_CULL_BOX;
+  }
+  return { min, max };
+};
+
+const cropInverse = new THREE.Matrix4();
+const cropCorner = new THREE.Vector3();
+
+/**
+ * Cut a cull box down to the crop box (world), in the data's own space.
+ *
+ * Applied to the FINISHED box, slack included: the slack widens the view box so
+ * the edge of the screen does not pop, and widening the crop the same way would
+ * draw points a quarter of the view outside it. Also applied to an unbounded
+ * box — the crop holds while the camera moves and before the bounds are known.
+ *
+ * The crop is the AABB of the box's corners in data space, so it is exact for
+ * an axis-aligned placement and conservative for a rotated one, like every
+ * other consumer of the box (`platform/coords/cropBox.ts`).
+ */
+export const cropCullBox = (
+  box: CullBox,
+  cropBox: CropBox | null,
+  model: THREE.Matrix4,
+): CullBox => {
+  if (!cropBox) return box;
+  cropInverse.copy(model).invert();
+  if (!Number.isFinite(cropInverse.determinant())) return box;
+  const min: [number, number, number] = [Infinity, Infinity, Infinity];
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < 8; i++) {
+    cropCorner
+      .set(
+        i & 1 ? cropBox.max[0] : cropBox.min[0],
+        i & 2 ? cropBox.max[1] : cropBox.min[1],
+        i & 4 ? cropBox.max[2] : cropBox.min[2],
+      )
+      .applyMatrix4(cropInverse);
+    const c = [cropCorner.x, cropCorner.y, cropCorner.z];
+    for (let axis = 0; axis < 3; axis++) {
+      if (c[axis] < min[axis]) min[axis] = c[axis];
+      if (c[axis] > max[axis]) max[axis] = c[axis];
+    }
+  }
+  for (let axis = 0; axis < 3; axis++) {
+    min[axis] = Math.max(min[axis], box.min[axis]);
+    max[axis] = Math.min(max[axis], box.max[axis]);
+    if (min[axis] > max[axis]) return EMPTY_CULL_BOX;
   }
   return { min, max };
 };

@@ -2,6 +2,7 @@ import type * as THREE from "three";
 import type { StoreApi } from "zustand";
 
 import { bindField } from "@/core/data/scene/stores/bindStore";
+import type { CropBox } from "../coords/cropBox";
 import {
   deriveCollectionPlanView,
   type CollectionPlanView,
@@ -55,6 +56,8 @@ export interface DrivableCollection {
   updatePlan(view: CollectionPlanView): unknown;
   setVoxelToWorld(matrix: THREE.Matrix4): void;
   setSlabClip(slab: { z: number; thickness: number } | null): void;
+  /** The crop box (world), or null for none. */
+  setCropClip(box: CropBox | null): void;
   /** Show/hide the collection's group. Managers may stop planning while
    *  hidden — the driver replans on the show edge, so they need not. */
   setVisible(visible: boolean): void;
@@ -63,7 +66,11 @@ export interface DrivableCollection {
 
 export type CollectionEnvironment = {
   viewApi: StoreApi<PlanViewState & { cameraMoving: boolean }>;
-  viewerApi: StoreApi<{ currentZ: number; worldUnitsPerPixel: number }>;
+  viewerApi: StoreApi<{
+    currentZ: number;
+    worldUnitsPerPixel: number;
+    cropBox: CropBox | null;
+  }>;
   invalidate: () => void;
   /** `[fabriks]` / `[konnektion]`, for the index-load failure. */
   logTag: string;
@@ -119,6 +126,17 @@ export class CollectionDriver<M extends DrivableCollection> {
         (moving, previous) => {
           if (previous && !moving) this.plan();
         },
+      ),
+    );
+
+    // The crop box, in 2D and 3D alike. Bound, not pushed down: it moves per
+    // wheel notch and must not re-render the layer. The first call applies
+    // whatever box is already up.
+    this.unsubscribes.push(
+      bindField(
+        this.env.viewerApi,
+        (state) => state.cropBox,
+        (box) => this.target.setCropClip(box),
       ),
     );
 

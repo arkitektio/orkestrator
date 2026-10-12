@@ -27,6 +27,7 @@ import { collapsibleLensDims } from "../../platform/model/dimExtents";
 import { createSettler } from "@/core/data/scene/perf/settle";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
+import { bindCropUniforms } from "../../platform/gpu/cropNodes";
 import { composeLayerAffine } from "@/core/data/scene/coords/transformGraph";
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { paletteRowFor, DEFAULT_MEASURE_COLORMAP } from "../../platform/attributes/valueLut";
@@ -189,6 +190,12 @@ const VectorField = ({ layer }: { layer: VectorLayerFragment }) => {
       setBundle(null);
     };
   }, [field]);
+
+  // The crop box: glyphs anchored outside it collapse in the material.
+  useEffect(() => {
+    if (!bundle) return;
+    return bindCropUniforms(viewerApi, bundle.nodes, invalidate);
+  }, [bundle, viewerApi, invalidate]);
 
   // ------------------------------------------------------------------ appearance
   // Uniform writes and a 1 KB palette row; never a buffer.

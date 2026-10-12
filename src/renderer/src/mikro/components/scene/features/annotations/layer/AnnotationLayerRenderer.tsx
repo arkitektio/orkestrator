@@ -125,6 +125,9 @@ const AnnotationCollectionGroup = ({
   );
   const dimSelections = useViewerStore((s) => s.dimSelections);
   const currentZ = useViewerStore((s) => s.currentZ);
+  // Moves once per whole wheel step while the box's depth is being set — the
+  // z-scrub's cadence, which this component already follows through `currentZ`.
+  const cropBox = useViewerStore((s) => s.cropBox);
   const displayMode = useModeStore((s) => s.displayMode);
   const interactionMode = useModeStore((s) => s.interactionMode);
   const selectedRois = useRoiSelectionStore((s) => s.selectedRois);
@@ -213,11 +216,15 @@ const AnnotationCollectionGroup = ({
     () =>
       shownEntries(placed, (entry) =>
         isAnnotationInView(
-          { coordinates: entry.annotation.coordinates, zSpan: entry.zSpan },
-          { coverages, plane },
+          {
+            coordinates: entry.annotation.coordinates,
+            zSpan: entry.zSpan,
+            bounds: entry.bounds,
+          },
+          { coverages, plane, cropBox },
         ),
       ),
-    [placed, coverages, plane],
+    [placed, coverages, plane, cropBox],
   );
 
   // Hand over from the local preview once the persisted copy is actually

@@ -48,6 +48,7 @@ import {
   type PointScatter,
 } from "./pointsCompute";
 import {
+  cropCullBox,
   pointCullBox,
   pointDataBounds,
   sameCullBox,
@@ -75,6 +76,7 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
   const renderer = useThree((state) => state.gl) as unknown as {
     computeAsync: (node: unknown) => Promise<void>;
   };
+  const viewerApi = useViewerStoreApi();
   // The live camera, read at cull time rather than subscribed to.
   const getThree = useThree((state) => state.get);
   const service = useAttributeServiceOrNull();
@@ -355,20 +357,29 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
    */
   const viewCullBox = useCallback((): CullBox => {
     const group = groupRef.current;
-    if (!group || viewApi.getState().cameraMoving) return UNBOUNDED_CULL_BOX;
-    const camera = getThree().camera;
+    if (!group) return UNBOUNDED_CULL_BOX;
     group.updateWorldMatrix(true, false);
-    return pointCullBox({
-      viewProjection: viewProjectionRef.current.multiplyMatrices(
-        camera.projectionMatrix,
-        camera.matrixWorldInverse,
-      ),
-      model: group.matrixWorld,
-      dataBounds,
-      pointSize: pointSizeRef.current,
-      coordinateSystem: camera.coordinateSystem as FrustumClipCoordinateSystem,
-    });
-  }, [viewApi, getThree, dataBounds]);
+    // The crop box holds whatever the view box does — moving camera included.
+    const cropBox = viewerApi.getState().cropBox;
+    if (viewApi.getState().cameraMoving) {
+      return cropCullBox(UNBOUNDED_CULL_BOX, cropBox, group.matrixWorld);
+    }
+    const camera = getThree().camera;
+    return cropCullBox(
+      pointCullBox({
+        viewProjection: viewProjectionRef.current.multiplyMatrices(
+          camera.projectionMatrix,
+          camera.matrixWorldInverse,
+        ),
+        model: group.matrixWorld,
+        dataBounds,
+        pointSize: pointSizeRef.current,
+        coordinateSystem: camera.coordinateSystem as FrustumClipCoordinateSystem,
+      }),
+      cropBox,
+      group.matrixWorld,
+    );
+  }, [viewApi, viewerApi, getThree, dataBounds]);
 
   /** Writes the box into the cull uniforms; true when it moved. */
   const applyCullBox = useCallback(
@@ -520,6 +531,18 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
     });
   }, [bundle, viewApi, applyCullBox, viewCullBox, renderer, invalidate]);
 
+  // The crop box moving is a cull input like the view: re-run, off React.
+  useEffect(() => {
+    if (!bundle) return;
+    return bindField(
+      viewerApi,
+      (state) => state.cropBox,
+      (_box, previous) => {
+        if (previous !== undefined) runCull();
+      },
+    );
+  }, [bundle, viewerApi, runCull]);
+
   /**
    * The timepoint, read IMPERATIVELY, exactly as the tracks layer reads it.
    *
@@ -534,7 +557,6 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
    * selection every timepoint is shown — a layer whose slider has never moved
    * must not open empty.
    */
-  const viewerApi = useViewerStoreApi();
   useEffect(() => {
     const culling = cullRef.current;
     const timeline = geometry?.timeline ?? null;

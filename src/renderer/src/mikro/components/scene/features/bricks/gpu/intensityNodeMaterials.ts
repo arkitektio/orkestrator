@@ -19,6 +19,7 @@ import {
   type TraversalNodesPublic,
   type UniformNodeLike,
 } from "./brickNodeMaterials";
+import { emitPlaneClipDiscard, makeClipUniforms, type ClipUniformNodes } from "./volumeRayNodes";
 import type { LayerBrickPool } from "../residency/brickResidency";
 import { INTENSITY_ATLAS_ROW, type IntensityUniformData } from "./intensityUniforms";
 import type { RgbUniformData } from "./rgbUniforms";
@@ -72,6 +73,8 @@ export type IntensityPlaneNodes = TraversalNodesPublic & {
   /** Atlas-slab index of the single source's channel. */
   uSlab: UniformNodeLike<number>;
   uDesiredLevel: UniformNodeLike<number>;
+  uClipMin: ClipUniformNodes["uClipMin"];
+  uClipMax: ClipUniformNodes["uClipMax"];
   uSlabBaseZ: UniformNodeLike<number>;
   uBaseShape: UniformNodeLike<THREE.Vector3>;
 };
@@ -155,6 +158,7 @@ export function createIntensityPlaneMaterial(
   /** INTEGER base slab z — the slab-mode resolve does the per-level floor +
    * recenter itself (see emitResolveBrickResidency), so no +0.5 here. */
   const uSlabBaseZ = uniform(0, "float");
+  const clip = makeClipUniforms();
   const uBaseShape = uniform(new THREE.Vector3(1, 1, 1), "vec3");
 
   const material = new NodeMaterial();
@@ -167,6 +171,7 @@ export function createIntensityPlaneMaterial(
       uv().y.mul(uBaseShape.y),
       uSlabBaseZ,
     ).toVar("pxBaseVoxel");
+    emitPlaneClipDiscard(baseVoxel, clip);
 
     const accum = vec3(0.0).toVar("accum");
 
@@ -189,7 +194,7 @@ export function createIntensityPlaneMaterial(
 
   return {
     material,
-    nodes: { ...t, ...n, uDesiredLevel, uSlabBaseZ, uBaseShape } as IntensityPlaneNodes,
+    nodes: { ...t, ...n, ...clip, uDesiredLevel, uSlabBaseZ, uBaseShape } as IntensityPlaneNodes,
   };
 }
 
@@ -213,6 +218,8 @@ export type RgbPlaneNodes = TraversalNodesPublic & {
   uSlabG: UniformNodeLike<number>;
   uSlabB: UniformNodeLike<number>;
   uDesiredLevel: UniformNodeLike<number>;
+  uClipMin: ClipUniformNodes["uClipMin"];
+  uClipMax: ClipUniformNodes["uClipMax"];
   uSlabBaseZ: UniformNodeLike<number>;
   uBaseShape: UniformNodeLike<THREE.Vector3>;
 };
@@ -289,6 +296,7 @@ export function createRgbPlaneMaterial(
 
   const uDesiredLevel = uniform(0, "int");
   const uSlabBaseZ = uniform(0, "float");
+  const clip = makeClipUniforms();
   const uBaseShape = uniform(new THREE.Vector3(1, 1, 1), "vec3");
 
   const material = new NodeMaterial();
@@ -301,6 +309,7 @@ export function createRgbPlaneMaterial(
       uv().y.mul(uBaseShape.y),
       uSlabBaseZ,
     ).toVar("pxBaseVoxel");
+    emitPlaneClipDiscard(baseVoxel, clip);
 
     const accum = vec3(0.0).toVar("accum");
 
@@ -318,6 +327,6 @@ export function createRgbPlaneMaterial(
 
   return {
     material,
-    nodes: { ...t, ...n, uDesiredLevel, uSlabBaseZ, uBaseShape } as RgbPlaneNodes,
+    nodes: { ...t, ...n, ...clip, uDesiredLevel, uSlabBaseZ, uBaseShape } as RgbPlaneNodes,
   };
 }

@@ -256,6 +256,7 @@ export const MIKRO_HELP = {
         <>Open the <b>Layers</b> tab of the sidebar to show or hide layers and change their contrast and channels.</>,
         <>Hold <b>A</b> and draw to annotate; the shapes are listed in the <b>Annotations</b> tab.</>,
         <>Hold <b>P</b> to probe the value under the cursor, and click to pin a probe point; the <b>Probe</b> tab of the sidebar shows the readings and compares the pinned points.</>,
+        <>Press <b>S</b> to crop the scene to a box: move to the opposite corner and click, scroll to set its depth, and click again. Only what is inside is loaded and shown; <b>Show all</b> brings the rest back.</>,
         <>Open the menu button at the right end of the page header and choose <b>Add Layer</b> to bring more data in, or <b>Align Layers…</b> to line layers up.</>,
         <>Open the <b>Animations</b> tab to build a camera tour: a sequence of stops the camera travels between.</>,
       ]}

@@ -34,6 +34,7 @@ import {
   type NodeCamera,
 } from "../octree/nodePlanning";
 import { buildAffineMatrix, voxelWorldSizeOf } from "../../../platform/coords/worldTransform";
+import { cropBoxToVoxelAabb } from "../../../platform/coords/cropBox";
 import type { ModeState } from "../../../platform/stores/modeStore";
 import type { SceneState } from "../../../platform/stores/sceneStore";
 import type { ViewerState } from "../../../platform/stores/viewerStore";
@@ -88,6 +89,7 @@ const scheduleFrame: (callback: () => void) => void =
 // Frustum and a Vector3 per LAYER per replan was pure allocation churn.
 const scratchVoxelVP = new THREE.Matrix4();
 const scratchVoxelInverse = new THREE.Matrix4();
+const scratchCropInverse = new THREE.Matrix4();
 const scratchFrustum = new THREE.Frustum();
 const scratchCameraPosition = new THREE.Vector3();
 const scratchInverseVP = new THREE.Matrix4();
@@ -423,12 +425,23 @@ export function startNodePlanTracking({
         prevRepresentative !== null &&
         prevRepresentative.mode === mode &&
         prevRepresentative.sliceSignature === buildSliceSignature(layer, viewerState.dimSelections);
+      // The crop box is scene-wide and the affine is part of the class
+      // signature, so one voxel box serves every member of the class.
+      const cropBox = viewerState.cropBox;
+      const clipBox = cropBox
+        ? (cropBoxToVoxelAabb(
+            cropBox,
+            scratchCropInverse.copy(buildAffineMatrix(layer)).invert(),
+            geometry.levels[0].spatialShape,
+          ) ?? ("outside" as const))
+        : null;
       const next = planLayerNodes({
         layer,
         geometry,
         spec,
         mode,
         viewRange: viewerState.layerViewRanges[layer.id],
+        clipBox,
         camera,
         lodBias: viewerState.lodBias,
         currentZ: viewerState.currentZ,
@@ -542,6 +555,7 @@ export function startNodePlanTracking({
   const initialViewer = viewerStore.getState();
   let lastViewRanges = initialViewer.layerViewRanges;
   let lastViewSnapshot = initialViewer.viewSnapshot;
+  let lastCropBox = initialViewer.cropBox;
   let lastLodBias = initialViewer.lodBias;
   let lastCurrentZ = initialViewer.currentZ;
   let lastDimSelections = initialViewer.dimSelections;
@@ -554,12 +568,16 @@ export function startNodePlanTracking({
       // replan BEFORE visibility publishes, which would otherwise be the
       // last word despite consuming the previous snapshot.
       state.viewSnapshot !== lastViewSnapshot ||
+      // Usually arrives with new ranges, but a box edge moving OUTSIDE the
+      // frustum changes no range and still changes the prefetch band.
+      state.cropBox !== lastCropBox ||
       state.lodBias !== lastLodBias ||
       state.currentZ !== lastCurrentZ ||
       state.dimSelections !== lastDimSelections
     ) {
       lastViewRanges = state.layerViewRanges;
       lastViewSnapshot = state.viewSnapshot;
+      lastCropBox = state.cropBox;
       lastLodBias = state.lodBias;
       lastCurrentZ = state.currentZ;
       lastDimSelections = state.dimSelections;

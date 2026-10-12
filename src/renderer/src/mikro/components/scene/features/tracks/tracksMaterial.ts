@@ -49,7 +49,7 @@ import * as TSLTyped from "three/tsl";
 // GRAPH is typed dynamically; this module's PUBLIC surface — the uniform-node
 // record the layer writes to — is hand-typed below.
 const TSL = TSLTyped as any;
-const { Fn, attribute, clamp, float, max, mix, texture, uniform, vec3 } = TSL;
+const { Fn, attribute, clamp, float, max, mix, texture, uniform, varying, vec3 } = TSL;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 import {
@@ -60,13 +60,18 @@ import {
   setMeasurePalette,
   type MeasureAppearanceNodes,
 } from "../../platform/gpu/measurePalette";
+import {
+  createCropUniforms,
+  insideCropBox,
+  type CropUniformNodes,
+} from "../../platform/gpu/cropNodes";
 
 /**
  * The uniform nodes the layer component writes to. `any` for the reason the
  * label material gives: a TSL uniform node carries the whole operator surface at
  * runtime, and a `{ value }` type only ever described the slot a setter writes.
  */
-export type TrackMaterialNodes = MeasureAppearanceNodes & {
+export type TrackMaterialNodes = MeasureAppearanceNodes & CropUniformNodes & {
   /** The scene's current timepoint, in the track table's own t units. */
   uCurrentT: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   /** Tail length in those same units. **Zero or less draws every segment.** */
@@ -122,6 +127,7 @@ export const createTrackMaterial = (options: {
     uCurrentT: uniform(0),
     uTailWindow: uniform(0),
     ...createMeasureAppearance(options.colorize ? 1 : 0),
+    ...createCropUniforms(),
     uOpacity: uniform(1),
     palette: texture(base),
     identityPalette: base,
@@ -132,6 +138,17 @@ export const createTrackMaterial = (options: {
   // so "has this segment happened" is one comparison.
   const instanceT = attribute("instanceT", "float");
   const instanceValue = attribute("instanceValue", "float");
+
+  // The crop box, per SEGMENT: drawn only while both of its ends are inside.
+  // Evaluated in the vertex stage off the fat-line geometry's own endpoint
+  // attributes and carried flat — the fragment has no world position of its
+  // own to test (`platform/gpu/cropNodes.ts`).
+  const segmentInCrop = varying(
+    insideCropBox(attribute("instanceStart", "vec3"), nodes)
+      .and(insideCropBox(attribute("instanceEnd", "vec3"), nodes))
+      .select(float(1.0), float(0.0)),
+    "vSegmentInCrop",
+  );
 
   material.lineColorNode = Fn(() => {
     const mapped = measureRampColor(instanceValue, nodes, nodes.palette);
@@ -153,7 +170,7 @@ export const createTrackMaterial = (options: {
     // A non-positive window is the "no tail" sentinel — an untimed track, or a
     // layer whose tail is switched off. Draw the trajectory whole.
     const tail = nodes.uTailWindow.greaterThan(0.0).select(arrived, float(1.0));
-    return tail.mul(nodes.uOpacity);
+    return tail.mul(nodes.uOpacity).mul(segmentInCrop);
   })();
 
   return {

@@ -140,6 +140,29 @@ describe("computeSceneVisibility", () => {
     expect(range.yRange[1]).toBeLessThan(1000);
   });
 
+  it("reports only what the camera sees of the crop box", () => {
+    const { ranges } = computeSceneVisibility({
+      projScreenMatrix: makeProjScreenMatrix(50, 25, 100, 50), // whole layer in view
+      viewportSize: { width: 200, height: 100 },
+      trackables: [makeTrackable()],
+      layers: [makeLayer()],
+      cropBox: { min: [20, 10, -5], max: [60, 30, 5] },
+    });
+    expect(ranges[LAYER_ID].xRange).toEqual([20, 60]);
+    expect(ranges[LAYER_ID].yRange).toEqual([10, 30]);
+  });
+
+  it("gives a layer outside the crop box no range at all", () => {
+    const { ranges } = computeSceneVisibility({
+      projScreenMatrix: makeProjScreenMatrix(50, 25, 100, 50),
+      viewportSize: { width: 200, height: 100 },
+      trackables: [makeTrackable()],
+      layers: [makeLayer()],
+      cropBox: { min: [200, 0, -5], max: [300, 50, 5] },
+    });
+    expect(ranges[LAYER_ID]).toBeUndefined();
+  });
+
   it("excludes off-screen trackables entirely", () => {
     const { visibleIds, ranges } = computeSceneVisibility({
       projScreenMatrix: makeProjScreenMatrix(1000, 0, 50, 50),
