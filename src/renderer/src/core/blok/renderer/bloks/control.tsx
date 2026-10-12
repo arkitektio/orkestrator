@@ -60,6 +60,7 @@ const ForeachIteration = (props: {
 export const Foreach = createBlokComponent(
   {
     name: 'foreach',
+    acceptsChildren: true,
     schema: z
       .object({
         items: z

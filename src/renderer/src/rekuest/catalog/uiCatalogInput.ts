@@ -173,12 +173,13 @@ const operationDescription = (fn: BlokFunctionDefinition, alias?: string): strin
 export const componentInput = (component: {
   name: string;
   schema: z.ZodTypeAny;
+  acceptsChildren?: boolean;
 }): CatalogComponentInput => {
   const shape = shapeOf(component.schema) ?? {};
   return {
     name: component.name,
     description: describe(component.schema),
-    acceptsChildren: "children" in shape,
+    acceptsChildren: component.acceptsChildren ?? "children" in shape,
     props: sortByKey(Object.entries(shape).map(([key, schema]) => propInput(key, schema))),
   };
 };

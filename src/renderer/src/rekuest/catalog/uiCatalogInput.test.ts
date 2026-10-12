@@ -77,6 +77,11 @@ describe("componentInput", () => {
     const Leaf = createBlokComponent({ name: "Leaf", schema: z.object({}) }, Noop);
     expect(componentInput(Leaf)).toMatchObject({ acceptsChildren: false, props: [] });
   });
+
+  it("takes a declared acceptsChildren over the schema's lack of a children prop", () => {
+    const Loop = createBlokComponent({ name: "Loop", acceptsChildren: true, schema: z.object({}) }, Noop);
+    expect(componentInput(Loop)).toMatchObject({ acceptsChildren: true, props: [] });
+  });
 });
 
 describe("operationInputs", () => {

@@ -12,15 +12,18 @@ export type BlokRenderArgs<TSchema extends BlokObjectSchema = BlokObjectSchema> 
 export type BlokComponentDefinition = {
   name: string;
   schema: BlokObjectSchema;
+  /** Set when the component renders declared children its schema has no `children` prop for. */
+  acceptsChildren?: boolean;
   render: React.ComponentType<BlokRenderArgs>;
 };
 
 export const createBlokComponent = <TSchema extends BlokObjectSchema>(
-  api: {name: string; schema: TSchema},
+  api: {name: string; schema: TSchema; acceptsChildren?: boolean},
   render: React.ComponentType<BlokRenderArgs<TSchema>>,
 ): BlokComponentDefinition => ({
   name: api.name,
   schema: api.schema,
+  acceptsChildren: api.acceptsChildren,
   render: render as React.ComponentType<BlokRenderArgs>,
 });
 
