@@ -288,15 +288,15 @@ fragment LensSubject on Lens {
       name
     }
   }
-  # Mesh and network collections have no name of their own: `version` is all
-  # they can honestly show.
+  # Mesh and network collections are optionally named: `label` is the name, or
+  # the store's key when there is none.
   ... on MeshLens {
     windows {
       ...LensWindow
     }
     meshCollection {
       id
-      version
+      label
     }
   }
   ... on NetworkLens {
@@ -305,7 +305,7 @@ fragment LensSubject on Lens {
     }
     networkCollection {
       id
-      version
+      label
     }
   }
   ... on AnnotationLens {

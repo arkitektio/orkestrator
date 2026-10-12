@@ -42,10 +42,11 @@ describe("residentName", () => {
     );
   });
 
-  it("names a mesh collection by its version", () => {
-    expect(residentName({ __typename: "MeshCollection", version: "v3" })).toBe(
-      "mesh collection v3",
+  it("names a mesh collection by its label", () => {
+    expect(residentName({ __typename: "MeshCollection", label: "cells" })).toBe(
+      "cells",
     );
+    expect(residentName({ __typename: "MeshCollection" })).toBe("a mesh collection");
   });
 
   it("falls back to the typename when the member carries no label", () => {

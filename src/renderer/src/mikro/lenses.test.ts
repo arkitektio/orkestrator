@@ -35,7 +35,7 @@ const meshLens = (windows: { axis: string; min?: number | null; max?: number | n
   ({
     __typename: "MeshLens",
     windows,
-    meshCollection: { id: "mc-1", version: "0.3" },
+    meshCollection: { id: "mc-1", label: "cells" },
   }) as LensSubjectFragment;
 
 describe("windowSummary", () => {
@@ -80,10 +80,10 @@ describe("describeLens", () => {
     expect(described.container).toEqual(expect.objectContaining({ id: "ds-1", name: "dapi.zarr" }));
   });
 
-  it("names a nameless container by its version", () => {
+  it("names an optionally named container by its label", () => {
     expect(describeLens(meshLens()).container).toEqual({
       id: "mc-1",
-      name: "Mesh collection 0.3",
+      name: "cells",
     });
   });
 });
@@ -116,7 +116,7 @@ describe("lensHeadline", () => {
     expect(lensHeadline(arrayLens())).toEqual({ title: "dapi.zarr", subline: "Whole array" });
     expect(lensHeadline(tableLens())).toEqual({ title: "spots", subline: "Whole table" });
     expect(lensHeadline(meshLens())).toEqual({
-      title: "Mesh collection 0.3",
+      title: "cells",
       subline: "Whole mesh collection",
     });
   });

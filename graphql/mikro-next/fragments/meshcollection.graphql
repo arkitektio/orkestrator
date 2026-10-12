@@ -1,4 +1,4 @@
-# A MeshCollection is a DATASET, not a shape: the API node carries version,
+# A MeshCollection is a DATASET, not a shape: the API node carries a label,
 # coordinate system and the fabriks STORE — one prefix holding `fabriks.json`,
 # both catalogs and every octree level. The individual meshes are ROWS in the
 # Parquet files under that prefix, reached client-side by row group. There is
@@ -8,7 +8,9 @@
 # declared through the API, so they describe what was actually written.
 fragment MeshCollection on MeshCollection {
   id
-  version
+  # Optional. `label` is this, or the store's key when there is none.
+  name
+  label
   specVersion
   coordinateSystem {
     ...CoordinateSystem

@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import {
   AxisType,
   GetChartsDocument,
+  GetCoordinateSystemDocument,
   useCoordinateSystemOptionsLazyQuery,
   useCreateChartMutation,
 } from "../api/graphql";
@@ -45,7 +46,8 @@ const AXIS_TYPE_OPTIONS = [
 export const CreateChartForm = (props: { coordinateSystem?: string }) => {
   const navigate = useNavigate();
   const [createChart] = useCreateChartMutation({
-    refetchQueries: [GetChartsDocument],
+    // A chart over an existing space also joins that system's Visualizations tab.
+    refetchQueries: [GetChartsDocument, GetCoordinateSystemDocument],
   });
   const [searchSystems] = useCoordinateSystemOptionsLazyQuery();
   const [world, setWorld] = useState<"existing" | "new">(

@@ -389,21 +389,20 @@ export const buildSections = (input: {
             key: `MeshCollection:${resident.id}`,
             mesh: resident,
             name: residentName(resident),
-            secondary: `spec ${resident.specVersion}`,
+            secondary: resident.specVersion ? `spec ${resident.specVersion}` : undefined,
             space: spaceRef,
             ...relate(resident),
           });
           break;
-        // A konnektion collection. Nameless like a mesh collection, so the row
-        // shows the version and the spec — which is what `residentName` already
-        // assumes for both.
+        // A konnektion collection. Optionally named like a mesh collection, so
+        // the row shows its label and the spec.
         case "NetworkCollection":
           networks.push({
             kind: "network",
             key: `NetworkCollection:${resident.id}`,
             network: resident,
             name: residentName(resident),
-            secondary: `spec ${resident.specVersion}`,
+            secondary: resident.specVersion ? `spec ${resident.specVersion}` : undefined,
             space: spaceRef,
             ...relate(resident),
           });

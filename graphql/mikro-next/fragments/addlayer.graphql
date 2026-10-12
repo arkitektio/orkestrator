@@ -130,11 +130,11 @@ fragment AddLayerCandidate on Resident {
       ...DerivationEdge
     }
   }
-  # A MeshCollection has no name of its own — `version` is all it can honestly
-  # show, which is what `residentName` already assumes.
+  # A MeshCollection's name is optional — `label` is that or its store's key,
+  # which is what `residentName` shows.
   ... on MeshCollection {
     id
-    version
+    label
     specVersion
     fullLens {
       id
@@ -174,10 +174,10 @@ fragment AddLayerCandidate on Resident {
     }
   }
   # A konnektion collection — a traced arbor, a vessel tree, a connectome.
-  # Nameless like a MeshCollection, so the picker shows the version and the spec.
+  # Optionally named like a MeshCollection, so the picker shows the label and the spec.
   ... on NetworkCollection {
     id
-    version
+    label
     specVersion
     fullLens {
       id
@@ -360,7 +360,7 @@ fragment AddLayerLineageNode on Resident {
   }
   ... on MeshCollection {
     id
-    version
+    label
     coordinateSystem {
       id
     }
@@ -370,7 +370,7 @@ fragment AddLayerLineageNode on Resident {
   }
   ... on NetworkCollection {
     id
-    version
+    label
     coordinateSystem {
       id
     }

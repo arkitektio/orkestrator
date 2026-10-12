@@ -133,7 +133,8 @@ export type SculptVariant = "inflate" | "deflate" | "smooth";
 
 export type DesignOrigin = {
   collectionId: string;
-  version: string;
+  /** What the source collection is called: its name, or its store's key. */
+  label: string;
   /** The scene layer showing the source collection — hidden on commit so the
    * old and the new version never render on top of each other. */
   layerId?: string;

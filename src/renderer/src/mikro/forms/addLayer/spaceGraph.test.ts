@@ -167,7 +167,7 @@ describe("graphFromComponent — the children tree", () => {
       space("space-m", [mesh("m")]),
     ]);
     expect(graph.nodes.get("TableDataset:t")?.columnRoles).toEqual(["COORDINATE", "TRACK_ID"]);
-    expect(graph.nodes.get("MeshCollection:m")?.name).toBe("mesh collection 1");
+    expect(graph.nodes.get("MeshCollection:m")?.name).toBe("1");
     expect(ownerOf(graph, "space-m")?.kind).toBe("mesh");
   });
 

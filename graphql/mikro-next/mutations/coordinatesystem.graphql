@@ -20,3 +20,25 @@ mutation CreateCoordinateSystem($input: CreateCoordinateSystemInput!) {
     ...CoordinateSystem
   }
 }
+
+# Show a space without choosing how: the server reads the axes and answers with
+# a chart (exactly one metric, unit-carrying axis) or a scene (any other space
+# with a time or space axis), bootstrapped from what already resides in it. A
+# space that is neither is refused, in prose. Authors no edges.
+#
+# The per-kind bootstraps (`createSceneFromCoordinateSystem`,
+# `createChartFromCoordinateSystem`) stay for a say in the kind or the policy.
+# Same list fragments as theirs, so nothing here selects `asAffine`.
+mutation AutoVisualize($input: AutoVisualizeInput!) {
+  autoVisualize(input: $input) {
+    __typename
+    id
+    name
+    ... on Scene {
+      ...ListScene
+    }
+    ... on Chart {
+      ...ListChart
+    }
+  }
+}

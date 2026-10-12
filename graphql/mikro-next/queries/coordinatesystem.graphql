@@ -1,11 +1,18 @@
 query GetCoordinateSystem($id: ID!) {
   coordinateSystem(id: $id) {
     ...CoordinateSystem
-    # The scenes worlded on this system (inverse of Scene.worldCoordinateSystem).
-    # A space is adopted, never owned: several scenes may share one, and it
-    # outlives each of them.
-    scenes {
-      ...ListScene
+    # Everything worlded on this system, of either kind: its scenes, then its
+    # charts (inverse of Visualization.worldCoordinateSystem). A space is
+    # adopted, never owned: several may share one, and it outlives each of them.
+    visualizations {
+      __typename
+      id
+      ... on Scene {
+        ...ListScene
+      }
+      ... on Chart {
+        ...ListChart
+      }
     }
   }
 }
@@ -109,16 +116,34 @@ query CoordinateSystemOptions($search: String, $values: [ID!]) {
 
 # Step-1 candidates for the registration source picker.
 #
-# MeshCollections are deliberately absent: MeshCollectionFilter has no `search`
-# and MeshCollection has no `name`, so there is nothing to list or search them
-# by — and there is no @mikro/meshcollection linker either, so nothing can drag
-# one. They are reachable only once both of those exist.
+# Mesh and network collections are searched by their label (`search` matches
+# the name or, for an unnamed one, the store's key). Each owns exactly one
+# system, selected here so picking a collection needs no second hop. There is
+# no @mikro/meshcollection linker, so this picker is the only way to name one.
 query RegisterSourceCandidates($search: String) {
   arrayDatasets(filters: { search: $search }, pagination: { limit: 20 }) {
     ...ListArrayDataset
   }
   tableDatasets(filters: { search: $search }, pagination: { limit: 20 }) {
     ...ListTableDataset
+  }
+  meshCollections(filters: { search: $search }, pagination: { limit: 20 }) {
+    id
+    name
+    label
+    coordinateSystem {
+      id
+      name
+    }
+  }
+  networkCollections(filters: { search: $search }, pagination: { limit: 20 }) {
+    id
+    name
+    label
+    coordinateSystem {
+      id
+      name
+    }
   }
 }
 

@@ -30,7 +30,7 @@ export const CommitMeshDesignDialog = ({ sceneId, world, meshes, origin, onProgr
   const client = useMikro();
   const datalayer = useDatalayerEndpoint();
   const { closeDialog } = useDialog();
-  const [version, setVersion] = useState(() => new Date().toISOString().slice(0, 19).replace("T", " "));
+  const [name, setName] = useState("");
   const [progress, setProgress] = useState<CommitProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
@@ -58,7 +58,7 @@ export const CommitMeshDesignDialog = ({ sceneId, world, meshes, origin, onProgr
         world,
         meshes,
         origin,
-        version,
+        name,
         onProgress: report,
         signal: abort.current.signal,
       });
@@ -79,11 +79,11 @@ export const CommitMeshDesignDialog = ({ sceneId, world, meshes, origin, onProgr
   return (
     <div className="flex flex-col gap-3 p-1">
       <div>
-        <h3 className="text-sm font-semibold">{origin ? "Commit as a new version" : "Commit mesh collection"}</h3>
+        <h3 className="text-sm font-semibold">{origin ? "Commit as a new collection" : "Commit mesh collection"}</h3>
         <p className="text-xs text-muted-foreground">
           {meshes.length} mesh{meshes.length === 1 ? "" : "es"}, {triangles.toLocaleString()} triangles, baked into one fabriks
           collection and added to this scene as a mesh layer.
-          {origin ? ` Derived from collection ${origin.collectionId} (${origin.version}).` : ""}
+          {origin ? ` Derived from ${origin.label}.` : ""}
         </p>
         {triangles > DESIGN_TRIANGLE_BUDGET && (
           <p className="text-xs text-amber-300/90">
@@ -92,8 +92,13 @@ export const CommitMeshDesignDialog = ({ sceneId, world, meshes, origin, onProgr
         )}
       </div>
       <label className="flex flex-col gap-1 text-xs">
-        Version
-        <Input value={version} onChange={(event) => setVersion(event.target.value)} disabled={busy} />
+        Name
+        <Input
+          value={name}
+          placeholder="Optional"
+          onChange={(event) => setName(event.target.value)}
+          disabled={busy}
+        />
       </label>
       <div className="max-h-40 overflow-y-auto rounded border border-white/10 text-xs">
         {meshes.map((mesh) => (
@@ -118,7 +123,7 @@ export const CommitMeshDesignDialog = ({ sceneId, world, meshes, origin, onProgr
         <Button variant="outline" size="sm" onClick={() => closeDialog()} disabled={busy}>
           Cancel
         </Button>
-        <Button size="sm" onClick={() => void commit()} disabled={busy || meshes.length === 0 || !version.trim()}>
+        <Button size="sm" onClick={() => void commit()} disabled={busy || meshes.length === 0}>
           {busy ? "Committing…" : "Commit"}
         </Button>
       </div>

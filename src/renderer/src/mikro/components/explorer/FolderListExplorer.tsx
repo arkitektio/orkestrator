@@ -137,9 +137,9 @@ const KIND_ORDER: Record<ExplorerKind, number> = {
   File: 5,
 };
 
-/** A mesh collection has no name of its own, only a version. */
+/** A mesh collection's name is optional: its label is that, or its store's key. */
 const itemName = (item: ExplorerItem) =>
-  item.__typename === "MeshCollection" ? `Meshes ${item.version}` : item.name;
+  item.__typename === "MeshCollection" ? item.label : item.name;
 
 const formatFileSize = (fileSizeInBytes?: number | null) => {
   if (!fileSizeInBytes) return "-";
@@ -201,7 +201,7 @@ const getItemMeta = (item: ExplorerItem): React.ReactNode => {
     case "TableDataset":
       return item.description || item.axisNames.join(" × ");
     case "MeshCollection":
-      return `Mesh collection ${item.version}`;
+      return "Mesh collection";
     case "AnnotationCollection":
       return "Annotation collection";
     case "File":

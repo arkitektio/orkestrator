@@ -417,6 +417,8 @@ describe("host registries", () => {
       "revoke_mandate",
       "same-datum",
       "update-mikro-folder",
+      "visualize-coordinatesystem",
+      "visualize-tabledataset",
     ]);
   });
 

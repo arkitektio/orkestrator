@@ -544,7 +544,7 @@ const NetworkCollectionGroup = ({
         values: [{ channel: 0, value: objectId }],
         provenance: { source: "exact", level: 0 },
         dtype: "uint32",
-        sliceSignature: `network:${collection.version ?? "0"}`,
+        sliceSignature: `network:${collection.id}`,
       });
     const patchSelection = (objectId: number | null) => {
       const current = viewerApi.getState().meshSelection;

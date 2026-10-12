@@ -44,8 +44,8 @@ fragment ListFile on File {
 # multi-series LIF has one link per series, and without it two rows to the same
 # file read as a duplicate.
 #
-# MeshCollection has no `name` in the schema (id/version/specVersion only), so
-# its label has to be synthesized client-side; that is what `version` is for.
+# A MeshCollection's `name` is optional, so it is shown by `label`: the name,
+# or its store's key when it has none.
 fragment FileLink on FileLink {
   id
   direction
@@ -64,7 +64,7 @@ fragment FileLink on FileLink {
     }
     ... on MeshCollection {
       id
-      version
+      label
     }
     ... on AnnotationCollection {
       id

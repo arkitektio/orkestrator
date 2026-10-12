@@ -125,7 +125,7 @@ const table = (id: string, roles: ColumnRole[]): Candidate => ({
 const mesh = (id: string): Candidate => ({
   __typename: "MeshCollection",
   id,
-  version: "2",
+  label: "2",
   specVersion: "0.1",
   coordinateSystem: { id: `space-${id}` },
   derivedFrom: [],

@@ -249,7 +249,7 @@ export const NetworkLayerCard = memo(
       <LayerCardShell
         icon={<Share2 className="h-3 w-3 text-emerald-300" />}
         tile="bg-emerald-400/15"
-        title={layer.name?.trim() || `Network ${collection?.version ?? layer.id}`}
+        title={layer.name?.trim() || collection?.label || `Network ${layer.id}`}
         hidden={hidden}
         expanded={expanded}
         onToggle={() => onSelect(layer.id, expanded)}

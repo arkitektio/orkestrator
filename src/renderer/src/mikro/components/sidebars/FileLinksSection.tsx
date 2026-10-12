@@ -23,13 +23,13 @@ type QueryContainer = FileLinkFragment["container"];
 
 /**
  * What a container is CALLED, which the union does not answer uniformly:
- * `MeshCollection` has no `name` field in the schema at all (id, version and
- * specVersion only), so its label has to be built rather than read.
+ * a `MeshCollection`'s name is optional, so it answers `label` (the name, or
+ * its store's key) where the others answer `name`.
  */
 const containerLabel = (container: QueryContainer): string => {
   switch (container.__typename) {
     case "MeshCollection":
-      return `Mesh collection · v${container.version}`;
+      return container.label;
     default:
       return container.name;
   }

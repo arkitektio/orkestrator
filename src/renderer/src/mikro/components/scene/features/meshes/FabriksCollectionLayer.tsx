@@ -160,7 +160,7 @@ const FabriksCollectionGroup = ({
 
   // Opening reads fabriks.json and nothing else; the catalogs come with the
   // first plan. Collections are immutable per version, so the open survives as
-  // long as (collection, version).
+  // long as the collection.
   const [opened, setOpened] = useState<FabriksCollection | null>(null);
   useEffect(() => {
     if (!datalayer) return; // no endpoint configured: nothing to read from
@@ -548,7 +548,7 @@ const FabriksCollectionGroup = ({
         values: [{ channel: 0, value: objectId }],
         provenance: { source: "exact", level: 0 },
         dtype: "uint32",
-        sliceSignature: `mesh:${collection.version ?? "0"}`,
+        sliceSignature: `mesh:${collection.id}`,
       });
 
     const patchSelection = (entry: NonNullable<ReturnType<typeof manager.peekOrdinal>>) => {

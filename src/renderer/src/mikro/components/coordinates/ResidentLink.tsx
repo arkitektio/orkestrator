@@ -110,8 +110,8 @@ export const ResidentLink = (props: {
         </MikroLens.DetailLink>
       );
     default:
-      // AnnotationCollection names itself; DataArray has only a level and
-      // MeshCollection only a version — `residentName` already knows how to
+      // AnnotationCollection names itself; DataArray has only a level and a
+      // MeshCollection its label — `residentName` already knows how to
       // phrase all three.
       return <span className={className}>{residentName(resident)}</span>;
   }

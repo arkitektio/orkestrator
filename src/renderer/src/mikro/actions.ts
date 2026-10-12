@@ -1,6 +1,9 @@
 import { buildDeleteAction } from "@/core/smart/localactions/builders/deleteAction";
 import type { ModuleServices } from "@/core/connection/arkitekt/host";
 import {
+  AutoVisualizeDocument,
+  AutoVisualizeMutation,
+  AutoVisualizeMutationVariables,
   CreateChartFromCoordinateSystemDocument,
   CreateChartFromCoordinateSystemMutation,
   CreateChartFromCoordinateSystemMutationVariables,
@@ -32,6 +35,9 @@ import {
   GetChartsDocument,
   GetCoordinateSystemDocument,
   GetFolderDocument,
+  GetTableDatasetSystemDocument,
+  GetTableDatasetSystemQuery,
+  GetTableDatasetSystemQueryVariables,
   GetLensContainersDocument,
   GetLensContainersQuery,
   GetLensContainersQueryVariables,
@@ -58,11 +64,13 @@ import {
 import { linkBuilder } from "@/core/smart/builder";
 import { lensRegistry } from "@/mikro/lib/lenses/lensRegistry";
 import { sceneRegistrationLink } from "@/mikro/components/registration/entry";
+import { visualizationLink } from "@/mikro/lib/visualize";
 import {
   Aperture,
   Boxes,
   ChartSpline,
   Clapperboard,
+  Eye,
   File,
   FolderInput,
   Table2,
@@ -77,6 +85,30 @@ import { Action } from "@/core/smart/localactions/LocalActionProvider";
 import { getRefetchableQueriesForEntities } from "@/core/smart/localactions/helpers/refetch";
 
 type MikroAction = Action<ModuleServices<"mikro">>;
+
+// Show a space as whichever composition its axes call for, and answer with
+// where it opens. The server decides between a chart and a scene, and refuses
+// in prose a space that is neither: that refusal is the message the user sees.
+const visualizeSystem = async (
+  mikro: ModuleServices<"mikro">["mikro"],
+  coordinateSystem: string,
+): Promise<string> => {
+  const { data } = await mikro.client.mutate<
+    AutoVisualizeMutation,
+    AutoVisualizeMutationVariables
+  >({
+    mutation: AutoVisualizeDocument,
+    variables: { input: { coordinateSystem } },
+    // Either list may have grown, and the system's page lists both kinds.
+    refetchQueries: [GetScenesDocument, GetChartsDocument, GetCoordinateSystemDocument],
+  });
+
+  const visualization = data?.autoVisualize;
+  if (!visualization) {
+    throw new Error('Visualizing returned neither a scene nor a chart');
+  }
+  return visualizationLink(visualization);
+};
 
 export const MIKRO_ACTIONS: Record<string, MikroAction> = {
   'create-scene-from-arrayDataset': {
@@ -322,12 +354,82 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       dialog.openDialog('renamelens', { lens: selected.id }, { size: 'small' });
     },
   },
+  'visualize-coordinatesystem': {
+    title: 'Visualize',
+    description:
+      'Show what already resides in this coordinate system: as a chart when it has one metric axis, as a scene otherwise',
+    icon: Eye,
+    pinned: true,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/coordinatesystem' },
+      { type: 'nopartner' },
+    ],
+    collections: ['coordinatesystem'],
+    execute: async ({ state, services, navigate }) => {
+      const selected = state.left.find(
+        (item) => item.identifier === '@mikro/coordinatesystem',
+      );
+
+      if (!selected?.id) {
+        throw new Error('No coordinate system selected for Visualize action');
+      }
+
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+
+      navigate(await visualizeSystem(mikro, selected.id));
+    },
+  },
+  'visualize-tabledataset': {
+    title: 'Visualize',
+    description:
+      'Show this table over its own coordinate columns: as a chart along one metric column, as a scene over several',
+    icon: Eye,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/tabledataset' },
+      { type: 'nopartner' },
+    ],
+    collections: ['tableDataset'],
+    execute: async ({ state, services, navigate }) => {
+      const selected = state.left.find(
+        (item) => item.identifier === '@mikro/tabledataset',
+      );
+
+      if (!selected?.id) {
+        throw new Error('No table dataset selected for Visualize action');
+      }
+
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+
+      // `autoVisualize` takes a space, not a table: the one a table owns has
+      // its coordinate columns as axes. A pure measurement table (a single
+      // INDEX axis) is refused by the server, which says why.
+      const { data } = await mikro.client.query<
+        GetTableDatasetSystemQuery,
+        GetTableDatasetSystemQueryVariables
+      >({
+        query: GetTableDatasetSystemDocument,
+        variables: { id: selected.id },
+      });
+      const system = data?.tableDataset.coordinateSystem;
+      if (!system) {
+        throw new Error('This table has no coordinate system to visualize');
+      }
+
+      navigate(await visualizeSystem(mikro, system.id));
+    },
+  },
+  // The two explicit bootstraps: for a say in the kind `Visualize` picks.
   'create-scene-from-coordinatesystem': {
     title: 'Create Scene',
     description:
       'Mirror this coordinate system into a new scene, materializing the sources registered into it as layers',
     icon: Clapperboard,
-    pinned: true,
     conditions: [
       { type: 'identifier', identifier: '@mikro/coordinatesystem' },
       { type: 'nopartner' },
@@ -392,9 +494,9 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         throw new Error('Mikro service is not available');
       }
 
-      // A chart is laid out along ONE metric axis, and the schema has no way
-      // to ask up front whether this system is such a space: the server
-      // decides, and its refusal is the message the user sees.
+      // A chart is laid out along ONE metric axis. Whether this system is
+      // such a space is the server's call (`Visualize` asks it to choose);
+      // here the kind is insisted on, so its refusal is the message shown.
       const { data } = await mikro.client.mutate<
         CreateChartFromCoordinateSystemMutation,
         CreateChartFromCoordinateSystemMutationVariables
@@ -402,7 +504,9 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         mutation: CreateChartFromCoordinateSystemDocument,
         // `policy` is left to the server default (the nchildren cap).
         variables: { input: { coordinateSystem: selected.id } },
-        refetchQueries: [GetChartsDocument],
+        // The global chart list, and the system's page: its Visualizations
+        // tab lists exactly this inverse relation.
+        refetchQueries: [GetChartsDocument, GetCoordinateSystemDocument],
       });
 
       const chart = data?.createChartFromCoordinateSystem;

@@ -83,7 +83,7 @@ export const MIKRO_HELP = {
       intro="Coordinate systems are the spaces your data lives in: a dataset’s own pixel grid, the calibrated physical space derived from it, and the shared world spaces that scenes are built over."
       steps={[
         <>Click a coordinate system to see what is registered into it and what it maps into.</>,
-        <>Right-click one and choose <b>Create Scene</b> to view everything registered into it together.</>,
+        <>Right-click one and choose <b>Visualize</b> to view what resides in it: as a chart when it has a single measured axis, as a scene otherwise.</>,
         <>Right-click one and choose <b>Register…</b> to place a dataset, a table or another space into it.</>,
         <>Drag an array dataset or a table dataset onto a coordinate system and choose <b>Register Dataset Here</b> or <b>Register Table Here</b>.</>,
       ]}
@@ -97,7 +97,8 @@ export const MIKRO_HELP = {
         <>On a space that holds no data of its own, press <b>Register…</b> to place a dataset, a table or another space into it.</>,
         <>On a dataset’s own space, press <b>Calibrate…</b> to give its pixels physical units.</>,
         <>Open the <b>Registrations</b> tab of the sidebar to see every connection as a table, one direction each.</>,
-        <>Open the <b>Scenes</b> tab to find the scenes that use this space as their world.</>,
+        <>Press <b>Visualize</b> to show what resides in this space as a chart or a scene, whichever fits its axes.</>,
+        <>Open the <b>Visualizations</b> tab to find the scenes and charts that use this space as their world.</>,
       ]}
       tips={[
         <>A red badge counts placements that are assumed rather than measured. Check those before trusting distances.</>,

@@ -2168,15 +2168,15 @@ export type CreateLensInput = {
   slices?: InputMaybe<Array<SliceInput>>;
 };
 
-/** Input for registering an immutable, versioned mesh collection. The collection gets a coordinate system of its own, and an edge relates it to the space the meshes were extracted from */
+/** Input for registering an immutable mesh collection. The collection gets a coordinate system of its own, and an edge relates it to the space the meshes were extracted from */
 export type CreateMeshCollectionInput = {
   axes: Array<AxisInput>;
   derivedFrom?: InputMaybe<Array<DerivedFromInput>>;
   folder?: InputMaybe<Scalars['ID']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
   provenanceMetadata?: InputMaybe<Scalars['Any']['input']>;
   sourceFiles?: InputMaybe<Array<SourceFileInput>>;
   store: Scalars['FabriksLike']['input'];
-  version: Scalars['String']['input'];
 };
 
 /** Create a layer that renders a mesh collection (surface reconstructions / isosurfaces) in a scene. The collection's own coordinate system is the layer's space, so it must already have a path to the scene's world */
@@ -2207,15 +2207,15 @@ export type CreateMeshLensInput = {
   windows?: InputMaybe<Array<WindowInput>>;
 };
 
-/** Input for registering an immutable, versioned network collection. The collection gets a coordinate system of its own, and an edge relates it to the space the network was traced in */
+/** Input for registering an immutable network collection. The collection gets a coordinate system of its own, and an edge relates it to the space the network was traced in */
 export type CreateNetworkCollectionInput = {
   axes: Array<AxisInput>;
   derivedFrom?: InputMaybe<Array<DerivedFromInput>>;
   folder?: InputMaybe<Scalars['ID']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
   provenanceMetadata?: InputMaybe<Scalars['Any']['input']>;
   sourceFiles?: InputMaybe<Array<SourceFileInput>>;
   store: Scalars['KonnektionLike']['input'];
-  version: Scalars['String']['input'];
 };
 
 /** Input for drawing a network collection -- a traced arbor, a vessel tree, a connectome -- in a scene. Its segments are drawn as camera-facing quads rather than GL lines, which is what makes a width in scene units meaningful at all */
@@ -4449,7 +4449,7 @@ export type LensFilter = {
   owner?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to lenses placeable into a coordinate system: those whose space reaches it across steps that compose into one affine map, walking the transformation edges. Takes a *space*, not a scene -- pass `scene.worldCoordinateSystem.id` to ask it of a scene. `derivedOnly` and `asLayer` narrow the answer for a particular picker; with neither, this is the whole set layer creation would accept */
   placeableIn?: InputMaybe<LensPlaceableFilter>;
-  /** Search by the lens' own name or, since most lenses have none and are known by their container's, by its container's label: the name of a dataset, table, sparse dataset or annotation collection, the version of a mesh or network collection (case-insensitive substring) */
+  /** Search by the lens' own name or, since most lenses have none and are known by their container's, by its container's label: the name of a dataset, table, sparse dataset or annotation collection, the name or store key of a mesh or network collection (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter by whether the lens cuts anything out of its container. True keeps the crops, sub-volumes and windows; false the whole lenses, one per container -- a list meant for people usually wants true */
   sliced?: InputMaybe<Scalars['Boolean']['input']>;
@@ -4754,7 +4754,7 @@ export type MembershipFoldersArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** An immutable, versioned collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
+/** An immutable collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
 export type MeshCollection = {
   __typename?: 'MeshCollection';
   /** Every column this collection's objects can be coloured or filtered by, with the control each one's role admits -- the same set `createMeshLayer(colorBys:)` and `filterBys` accept. The nested form of the `colorByOptions` root query, which is where the search, narrowing and paging live; this one hands back the whole list. It walks the coordinate graph once per collection, so read it on a collection, not across a page of them */
@@ -4776,36 +4776,39 @@ export type MeshCollection = {
   /** The octree grid, as read from the store's manifest. Its `cellSize` is in voxels, one size per vertex component -- the same order the catalog's bbox columns use, which is not necessarily the coordinate system's axis order */
   grid: Scalars['Any']['output'];
   id: Scalars['ID']['output'];
+  /** What to call this collection: its name, or its store's key when it has none */
+  label: Scalars['String']['output'];
   /** The lenses over this mesh collection, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens` */
   lenses: Array<MeshLens>;
+  name?: Maybe<Scalars['String']['output']>;
   /** The files this mesh collection was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete */
   sourceFiles: Array<FileLink>;
-  specVersion: Scalars['String']['output'];
+  /** The format version this collection's store conforms to, read off the store's manifest and namespaced (`fabriks/1`). Null while the store has not been read */
+  specVersion?: Maybe<Scalars['String']['output']>;
   /** The **fabriks store** holding this collection: one prefix with `fabriks.json`, both catalogs and every octree level. Ask it for a single access grant and you can read all of it -- the manifest, the indexes and the geometry. Its `grid` and `encoding` were read from that manifest rather than declared through this API, so they describe what was actually written. Never null: a collection whose bytes are not addressable is not a collection */
   store: FabriksStore;
-  version: Scalars['String']['output'];
 };
 
 
-/** An immutable, versioned collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
+/** An immutable collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
 export type MeshCollectionColorByOptionsArgs = {
   maxJoinDepth?: Scalars['Int']['input'];
 };
 
 
-/** An immutable, versioned collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
+/** An immutable collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
 export type MeshCollectionExportsArgs = {
   filters?: InputMaybe<FileLinkFilter>;
 };
 
 
-/** An immutable, versioned collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
+/** An immutable collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
 export type MeshCollectionLensesArgs = {
   windowed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
-/** An immutable, versioned collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
+/** An immutable collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL */
 export type MeshCollectionSourceFilesArgs = {
   filters?: InputMaybe<FileLinkFilter>;
 };
@@ -4846,9 +4849,11 @@ export type MeshCollectionFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
-  version?: InputMaybe<StrFilterLookup>;
+  /** Search by the collection's label: its name, or its store's key (case-insensitive substring) */
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** The fields a MESH_COLLECTION identification reads. Published for codegen; the wire type is the flat IdentificationInput */
@@ -4927,7 +4932,7 @@ export type MeshLayer = Layer & {
   blending: Blending;
   /** The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens */
   clip: Array<Window>;
-  /** The versioned, coordinate-system-anchored mesh collection this layer renders: the container of the lens. Its geometry is fetched from the collection's Parquet catalog, not through this API */
+  /** The immutable, coordinate-system-anchored mesh collection this layer renders: the container of the lens. Its geometry is fetched from the collection's Parquet catalog, not through this API */
   collection?: Maybe<MeshCollection>;
   /**
    * The colouring currently drawn: `colorBys[activeColorBy]`, or null when nothing is selected. Derived, never stored -- there is one copy of the choice, and it is the index
@@ -5153,13 +5158,13 @@ export type Mutation = {
   createLayer: ImageLayer;
   /** The array lens making a selection over a dataset by slices: the one that exists for that selection, or a new one with its coordinate system and its edge back into the dataset's grid */
   createLens: ArrayLens;
-  /** Register an immutable, versioned mesh collection against a coordinate system */
+  /** Register an immutable mesh collection against a coordinate system */
   createMeshCollection: MeshCollection;
   /** Create a layer that renders a 3D mesh (surface reconstruction / isosurface) in a scene */
   createMeshLayer: MeshLayer;
   /** The lens keeping these windows of a mesh collection's own space: the one that exists, or a new one */
   createMeshLens: MeshLens;
-  /** Register an immutable, versioned network collection from an uploaded konnektion store, in a coordinate system of its own */
+  /** Register an immutable network collection from an uploaded konnektion store, in a coordinate system of its own */
   createNetworkCollection: NetworkCollection;
   /** Create a layer that renders a node/edge network -- a traced arbor, a vessel tree, a connectome -- in a scene */
   createNetworkLayer: NetworkLayer;
@@ -6074,7 +6079,7 @@ export type MutationUpdateVectorLayerArgs = {
   input: UpdateVectorLayerInput;
 };
 
-/** An immutable, versioned collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
+/** An immutable collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
 export type NetworkCollection = {
   __typename?: 'NetworkCollection';
   /** Everything a layer over this collection can be coloured or filtered by -- the same set `createNetworkLayer(colorBys:)` and `filterBys` accept. The graph attributes the collection itself carries come first (Strahler order, degree, depth, component, a stored radius, a writer's own column -- per node), then every reachable table column and sparse slice (per object). The nested form of the `networkColorByOptions` root query, which is where the search, narrowing and paging live; this one hands back the whole list. It walks the coordinate graph once per collection, so read it on a collection, not across a page of them */
@@ -6096,36 +6101,39 @@ export type NetworkCollection = {
   /** The octree grid, as read from the store's manifest. Its `cellSize` is in voxels, one size per position component -- the same order the catalog's bbox columns use, which is not necessarily the coordinate system's axis order */
   grid: Scalars['Any']['output'];
   id: Scalars['ID']['output'];
+  /** What to call this collection: its name, or its store's key when it has none */
+  label: Scalars['String']['output'];
   /** The lenses over this network collection, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens` */
   lenses: Array<NetworkLens>;
+  name?: Maybe<Scalars['String']['output']>;
   /** The files this network collection was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete */
   sourceFiles: Array<FileLink>;
-  specVersion: Scalars['String']['output'];
+  /** The format version this collection's store conforms to, read off the store's manifest and namespaced (`konnektion/1`). Null while the store has not been read */
+  specVersion?: Maybe<Scalars['String']['output']>;
   /** The **konnektion store** holding this collection: one prefix with `konnektion.json`, both catalogs and every octree level. Ask it for a single access grant and you can read all of it -- the manifest, the indexes and the geometry. Its `grid` and `encoding` were read from that manifest rather than declared through this API, so they describe what was actually written. Never null: a collection whose bytes are not addressable is not a collection */
   store: KonnektionStore;
-  version: Scalars['String']['output'];
 };
 
 
-/** An immutable, versioned collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
+/** An immutable collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
 export type NetworkCollectionColorByOptionsArgs = {
   maxJoinDepth?: Scalars['Int']['input'];
 };
 
 
-/** An immutable, versioned collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
+/** An immutable collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
 export type NetworkCollectionExportsArgs = {
   filters?: InputMaybe<FileLinkFilter>;
 };
 
 
-/** An immutable, versioned collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
+/** An immutable collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
 export type NetworkCollectionLensesArgs = {
   windowed?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
-/** An immutable, versioned collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
+/** An immutable collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL */
 export type NetworkCollectionSourceFilesArgs = {
   filters?: InputMaybe<FileLinkFilter>;
 };
@@ -6150,9 +6158,11 @@ export type NetworkCollectionFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
-  version?: InputMaybe<StrFilterLookup>;
+  /** Search by the collection's label: its name, or its store's key (case-insensitive substring) */
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** The fields a NETWORK_COLLECTION identification reads. Published for codegen; the wire type is the flat IdentificationInput */
@@ -6245,7 +6255,7 @@ export type NetworkLayer = Layer & {
   blending: Blending;
   /** The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens */
   clip: Array<Window>;
-  /** The versioned, coordinate-system-anchored network collection this layer renders: the container of the lens. Its nodes and edges are fetched from the collection's Parquet catalog, not through this API */
+  /** The immutable, coordinate-system-anchored network collection this layer renders: the container of the lens. Its nodes and edges are fetched from the collection's Parquet catalog, not through this API */
   collection?: Maybe<NetworkCollection>;
   /** The colourings this layer offers, in the order a picker should show them. A COLUMN or SPARSE entry colours whole objects, already checked reachable; a GRAPH entry colours per node, by a value the collection itself carries, already checked against its manifest. Empty means there is nothing to pick and the material color is the rendering */
   colorBys: Array<NetworkColorBy>;
@@ -7326,7 +7336,7 @@ export type Query = {
   members: Array<Membership>;
   /** Get a single mesh collection by ID */
   meshCollection: MeshCollection;
-  /** List mesh collections (immutable, versioned Parquet-backed mesh sets, each in a coordinate system of its own) */
+  /** List mesh collections (immutable Parquet-backed mesh sets, each in a coordinate system of its own) */
   meshCollections: Array<MeshCollection>;
   /** List files created by the current user */
   myfiles: Array<File>;
@@ -7336,7 +7346,7 @@ export type Query = {
   nearestAnnotations: Array<Annotation>;
   /** Get a single network collection by ID */
   networkCollection: NetworkCollection;
-  /** List network collections (immutable, versioned Parquet-backed node/edge networks, each in a coordinate system of its own) */
+  /** List network collections (immutable Parquet-backed node/edge networks, each in a coordinate system of its own) */
   networkCollections: Array<NetworkCollection>;
   /** Everything a network layer over one collection can be coloured or filtered by. **The set this returns is exactly the set `createNetworkLayer(colorBys:)` and `filterBys` accept.** Two halves in one list: the GRAPH options first -- the per-node values the collection itself carries (Strahler order, degree, depth, component, a stored radius, a writer's own column), named by `graphAttribute` and always MEASURE -- then the COLUMN and SPARSE options from the shared reachability walk, rooted at depth zero so only tables keyed by this collection's **object** ids (via `createTableDataset(keyedBy: {kind: NETWORK_COLLECTION})`) are offered; the wider fact walk would offer the source image's mask-keyed tables, joins an object id cannot execute. Same arguments, same `joinPath` to pass back, same no-values rule as every other options query */
   networkColorByOptions: Array<ColorByOption>;
@@ -10265,7 +10275,7 @@ type AddLayerCandidate_ArrayLens_Fragment = { __typename: 'ArrayLens', id: strin
 
 type AddLayerCandidate_DataArray_Fragment = { __typename: 'DataArray', id: string, level: number, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null };
 
-type AddLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, version: string, specVersion: string, fullLens?: { __typename?: 'MeshLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
+type AddLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, label: string, specVersion?: string | null, fullLens?: { __typename?: 'MeshLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
     { __typename?: 'AffineTransformation' }
     & DerivationEdge_AffineTransformation_Fragment
   ) | (
@@ -10299,7 +10309,7 @@ type AddLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection',
 
 type AddLayerCandidate_MeshLens_Fragment = { __typename: 'MeshLens' };
 
-type AddLayerCandidate_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, version: string, specVersion: string, fullLens?: { __typename?: 'NetworkLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
+type AddLayerCandidate_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, label: string, specVersion?: string | null, fullLens?: { __typename?: 'NetworkLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
     { __typename?: 'AffineTransformation' }
     & DerivationEdge_AffineTransformation_Fragment
   ) | (
@@ -10467,11 +10477,11 @@ type AddLayerLineageNode_ArrayLens_Fragment = { __typename: 'ArrayLens' };
 
 type AddLayerLineageNode_DataArray_Fragment = { __typename: 'DataArray' };
 
-type AddLayerLineageNode_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, version: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
+type AddLayerLineageNode_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, label: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
 
 type AddLayerLineageNode_MeshLens_Fragment = { __typename: 'MeshLens' };
 
-type AddLayerLineageNode_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, version: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
+type AddLayerLineageNode_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, label: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
 
 type AddLayerLineageNode_NetworkLens_Fragment = { __typename: 'NetworkLens' };
 
@@ -10877,14 +10887,14 @@ type Resident_ArrayLens_Fragment = (
 
 type Resident_DataArray_Fragment = { __typename: 'DataArray', id: string, level: number };
 
-type Resident_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, version: string };
+type Resident_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, label: string };
 
 type Resident_MeshLens_Fragment = (
   { __typename: 'MeshLens', id: string }
   & LensSubject_MeshLens_Fragment
 );
 
-type Resident_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, version: string };
+type Resident_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, label: string };
 
 type Resident_NetworkLens_Fragment = (
   { __typename: 'NetworkLens', id: string }
@@ -11188,7 +11198,7 @@ export type FileFragment = { __typename?: 'File', descriptors: any, id: string, 
 
 export type ListFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
 
-export type FileLinkFragment = { __typename?: 'FileLink', id: string, direction: FileLinkDirection, seriesIdentifier?: string | null, valueRelation?: ValueRelation | null, createdAt: any, container: { __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'MeshCollection', id: string, version: string } | { __typename: 'TableDataset', id: string, name: string } };
+export type FileLinkFragment = { __typename?: 'FileLink', id: string, direction: FileLinkDirection, seriesIdentifier?: string | null, valueRelation?: ValueRelation | null, createdAt: any, container: { __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'TableDataset', id: string, name: string } };
 
 export type FolderFragment = { __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean, pinned: boolean, createdAt: any, tags: Array<string>, provenanceEntries: Array<(
     { __typename?: 'ProvenanceEntry' }
@@ -11698,12 +11708,12 @@ type LensSubject_ArrayLens_Fragment = { __typename: 'ArrayLens', shape: Array<nu
 type LensSubject_MeshLens_Fragment = { __typename: 'MeshLens', windows: Array<(
     { __typename?: 'Window' }
     & LensWindowFragment
-  )>, meshCollection: { __typename?: 'MeshCollection', id: string, version: string } };
+  )>, meshCollection: { __typename?: 'MeshCollection', id: string, label: string } };
 
 type LensSubject_NetworkLens_Fragment = { __typename: 'NetworkLens', windows: Array<(
     { __typename?: 'Window' }
     & LensWindowFragment
-  )>, networkCollection: { __typename?: 'NetworkCollection', id: string, version: string } };
+  )>, networkCollection: { __typename?: 'NetworkCollection', id: string, label: string } };
 
 type LensSubject_SparseLens_Fragment = { __typename: 'SparseLens', windows: Array<(
     { __typename?: 'Window' }
@@ -12146,7 +12156,7 @@ export type LightpathGraphFragment = { __typename?: 'LightpathGraph', elements: 
     & LightEdgeFragment
   )> };
 
-export type MeshCollectionFragment = { __typename?: 'MeshCollection', id: string, version: string, specVersion: string, grid: any, encoding: any, coordinateSystem: (
+export type MeshCollectionFragment = { __typename?: 'MeshCollection', id: string, name?: string | null, label: string, specVersion?: string | null, grid: any, encoding: any, coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
     & CoordinateSystemFragment
   ), store: (
@@ -12154,7 +12164,7 @@ export type MeshCollectionFragment = { __typename?: 'MeshCollection', id: string
     & FabriksStoreFragment
   ) };
 
-export type NetworkCollectionFragment = { __typename?: 'NetworkCollection', id: string, version: string, specVersion: string, grid: any, encoding: any, coordinateSystem: (
+export type NetworkCollectionFragment = { __typename?: 'NetworkCollection', id: string, name?: string | null, label: string, specVersion?: string | null, grid: any, encoding: any, coordinateSystem: (
     { __typename?: 'CoordinateSystem' }
     & CoordinateSystemFragment
   ), store: (
@@ -12469,6 +12479,19 @@ export type CreateCoordinateSystemMutationVariables = Exact<{
 export type CreateCoordinateSystemMutation = { __typename?: 'Mutation', createCoordinateSystem: (
     { __typename?: 'CoordinateSystem' }
     & CoordinateSystemFragment
+  ) };
+
+export type AutoVisualizeMutationVariables = Exact<{
+  input: AutoVisualizeInput;
+}>;
+
+
+export type AutoVisualizeMutation = { __typename?: 'Mutation', autoVisualize: (
+    { __typename: 'Chart', id: string, name: string }
+    & ListChartFragment
+  ) | (
+    { __typename: 'Scene', id: string, name: string }
+    & ListSceneFragment
   ) };
 
 export type RequestBigfileUploadMutationVariables = Exact<{
@@ -14663,7 +14686,7 @@ export type ChildrenQuery = { __typename?: 'Query', children: Array<{ __typename
   ) | (
     { __typename?: 'Folder' }
     & ListFolderFragment
-  ) | { __typename?: 'MeshCollection', id: string, version: string } | (
+  ) | { __typename?: 'MeshCollection', id: string, label: string } | (
     { __typename?: 'TableDataset' }
     & ListTableDatasetFragment
   )> };
@@ -14794,8 +14817,11 @@ export type GetCoordinateSystemQueryVariables = Exact<{
 
 
 export type GetCoordinateSystemQuery = { __typename?: 'Query', coordinateSystem: (
-    { __typename?: 'CoordinateSystem', scenes: Array<(
-      { __typename?: 'Scene' }
+    { __typename?: 'CoordinateSystem', visualizations: Array<(
+      { __typename: 'Chart', id: string }
+      & ListChartFragment
+    ) | (
+      { __typename: 'Scene', id: string }
       & ListSceneFragment
     )> }
     & CoordinateSystemFragment
@@ -14920,7 +14946,7 @@ export type RegisterSourceCandidatesQuery = { __typename?: 'Query', arrayDataset
   )>, tableDatasets: Array<(
     { __typename?: 'TableDataset' }
     & ListTableDatasetFragment
-  )> };
+  )>, meshCollections: Array<{ __typename?: 'MeshCollection', id: string, name?: string | null, label: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string } }>, networkCollections: Array<{ __typename?: 'NetworkCollection', id: string, name?: string | null, label: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string, name: string } }> };
 
 export type GetRegistrationEdgeQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -15796,7 +15822,7 @@ export const AddLayerLineageNodeFragmentDoc = gql`
   }
   ... on MeshCollection {
     id
-    version
+    label
     coordinateSystem {
       id
     }
@@ -15806,7 +15832,7 @@ export const AddLayerLineageNodeFragmentDoc = gql`
   }
   ... on NetworkCollection {
     id
-    version
+    label
     coordinateSystem {
       id
     }
@@ -15902,7 +15928,7 @@ export const AddLayerCandidateFragmentDoc = gql`
   }
   ... on MeshCollection {
     id
-    version
+    label
     specVersion
     fullLens {
       id
@@ -15940,7 +15966,7 @@ export const AddLayerCandidateFragmentDoc = gql`
   }
   ... on NetworkCollection {
     id
-    version
+    label
     specVersion
     fullLens {
       id
@@ -16343,7 +16369,7 @@ export const LensSubjectFragmentDoc = gql`
     }
     meshCollection {
       id
-      version
+      label
     }
   }
   ... on NetworkLens {
@@ -16352,7 +16378,7 @@ export const LensSubjectFragmentDoc = gql`
     }
     networkCollection {
       id
-      version
+      label
     }
   }
   ... on AnnotationLens {
@@ -16384,7 +16410,7 @@ export const ResidentFragmentDoc = gql`
   }
   ... on MeshCollection {
     id
-    version
+    label
   }
   ... on Lens {
     id
@@ -16400,7 +16426,7 @@ export const ResidentFragmentDoc = gql`
   }
   ... on NetworkCollection {
     id
-    version
+    label
   }
 }
     ${LensSubjectFragmentDoc}`;
@@ -17378,7 +17404,7 @@ export const FileLinkFragmentDoc = gql`
     }
     ... on MeshCollection {
       id
-      version
+      label
     }
     ... on AnnotationCollection {
       id
@@ -17974,7 +18000,8 @@ ${CoordinateSystemFragmentDoc}`;
 export const MeshCollectionFragmentDoc = gql`
     fragment MeshCollection on MeshCollection {
   id
-  version
+  name
+  label
   specVersion
   coordinateSystem {
     ...CoordinateSystem
@@ -18023,7 +18050,8 @@ export const MeshFilterByFragmentDoc = gql`
 export const NetworkCollectionFragmentDoc = gql`
     fragment NetworkCollection on NetworkCollection {
   id
-  version
+  name
+  label
   specVersion
   coordinateSystem {
     ...CoordinateSystem
@@ -19197,6 +19225,48 @@ export function useCreateCoordinateSystemMutation(baseOptions?: ApolloReactHooks
 export type CreateCoordinateSystemMutationHookResult = ReturnType<typeof useCreateCoordinateSystemMutation>;
 export type CreateCoordinateSystemMutationResult = Apollo.MutationResult<CreateCoordinateSystemMutation>;
 export type CreateCoordinateSystemMutationOptions = Apollo.BaseMutationOptions<CreateCoordinateSystemMutation, CreateCoordinateSystemMutationVariables>;
+export const AutoVisualizeDocument = gql`
+    mutation AutoVisualize($input: AutoVisualizeInput!) {
+  autoVisualize(input: $input) {
+    __typename
+    id
+    name
+    ... on Scene {
+      ...ListScene
+    }
+    ... on Chart {
+      ...ListChart
+    }
+  }
+}
+    ${ListSceneFragmentDoc}
+${ListChartFragmentDoc}`;
+export type AutoVisualizeMutationFn = Apollo.MutationFunction<AutoVisualizeMutation, AutoVisualizeMutationVariables>;
+
+/**
+ * __useAutoVisualizeMutation__
+ *
+ * To run a mutation, you first call `useAutoVisualizeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAutoVisualizeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [autoVisualizeMutation, { data, loading, error }] = useAutoVisualizeMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAutoVisualizeMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AutoVisualizeMutation, AutoVisualizeMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AutoVisualizeMutation, AutoVisualizeMutationVariables>(AutoVisualizeDocument, options);
+      }
+export type AutoVisualizeMutationHookResult = ReturnType<typeof useAutoVisualizeMutation>;
+export type AutoVisualizeMutationResult = Apollo.MutationResult<AutoVisualizeMutation>;
+export type AutoVisualizeMutationOptions = Apollo.BaseMutationOptions<AutoVisualizeMutation, AutoVisualizeMutationVariables>;
 export const RequestBigfileUploadDocument = gql`
     mutation RequestBigfileUpload($input: RequestBigFileUploadInput!) {
   requestBigfileUpload(input: $input) {
@@ -22858,7 +22928,7 @@ export const ChildrenDocument = gql`
     ...ListTableDataset
     ... on MeshCollection {
       id
-      version
+      label
     }
     ... on AnnotationCollection {
       id
@@ -23150,13 +23220,21 @@ export const GetCoordinateSystemDocument = gql`
     query GetCoordinateSystem($id: ID!) {
   coordinateSystem(id: $id) {
     ...CoordinateSystem
-    scenes {
-      ...ListScene
+    visualizations {
+      __typename
+      id
+      ... on Scene {
+        ...ListScene
+      }
+      ... on Chart {
+        ...ListChart
+      }
     }
   }
 }
     ${CoordinateSystemFragmentDoc}
-${ListSceneFragmentDoc}`;
+${ListSceneFragmentDoc}
+${ListChartFragmentDoc}`;
 
 /**
  * __useGetCoordinateSystemQuery__
@@ -23470,6 +23548,24 @@ export const RegisterSourceCandidatesDocument = gql`
   }
   tableDatasets(filters: {search: $search}, pagination: {limit: 20}) {
     ...ListTableDataset
+  }
+  meshCollections(filters: {search: $search}, pagination: {limit: 20}) {
+    id
+    name
+    label
+    coordinateSystem {
+      id
+      name
+    }
+  }
+  networkCollections(filters: {search: $search}, pagination: {limit: 20}) {
+    id
+    name
+    label
+    coordinateSystem {
+      id
+      name
+    }
   }
 }
     ${ListArrayDatasetFragmentDoc}

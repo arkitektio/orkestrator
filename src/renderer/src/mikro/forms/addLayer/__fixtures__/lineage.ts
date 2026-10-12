@@ -139,7 +139,7 @@ export const mesh = (
 ): ResidentLike => ({
   __typename: "MeshCollection",
   id,
-  version: "1",
+  label: "1",
   coordinateSystem: { id: overrides.space ?? `space-${id}` },
   derivedFrom: overrides.derivedFrom ?? [],
 });
@@ -150,7 +150,7 @@ export const network = (
 ): ResidentLike => ({
   __typename: "NetworkCollection",
   id,
-  version: "1",
+  label: "1",
   coordinateSystem: { id: overrides.space ?? `space-${id}` },
   derivedFrom: overrides.derivedFrom ?? [],
 });

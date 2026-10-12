@@ -28,10 +28,10 @@ query Children($id: ID!, $pagination: ChildrenPaginationInput, $filters: FolderC
       }
     }
     ...ListTableDataset
-    # A mesh collection carries no name — it is identified by its version.
+    # A mesh collection's name is optional — `label` is that, or its store's key.
     ... on MeshCollection {
       id
-      version
+      label
     }
     ... on AnnotationCollection {
       id

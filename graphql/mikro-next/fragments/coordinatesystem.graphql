@@ -43,7 +43,7 @@ fragment Resident on Resident {
   }
   ... on MeshCollection {
     id
-    version
+    label
   }
   ... on Lens {
     id
@@ -61,11 +61,11 @@ fragment Resident on Resident {
     name
   }
   # Same story as SparseDataset above, and the same failure mode if it is
-  # omitted. A NetworkCollection has no name of its own, so `version` is all it
-  # can honestly show — exactly as MeshCollection does.
+  # omitted. A NetworkCollection's name is optional, so `label` (the name, or
+  # its store's key) is what it shows — exactly as MeshCollection does.
   ... on NetworkCollection {
     id
-    version
+    label
   }
 }
 

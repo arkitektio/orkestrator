@@ -1,17 +1,23 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
+import { toast } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { MikroCoordinateSystem } from "@/core/linkers";
-import { Ruler, Waypoints } from "lucide-react";
+import { Eye, Ruler, Waypoints } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import {
+  GetChartsDocument,
+  GetCoordinateSystemDocument,
+  GetScenesDocument,
+  useAutoVisualizeMutation,
   useGetCoordinateGraphQuery,
   useGetCoordinateSystemQuery,
 } from "../api/graphql";
+import ChartCard from "../components/cards/ChartCard";
 import SceneCard from "../components/cards/SceneCard";
-import { ChartSectionList } from "../components/lists/ChartList";
 import CoordinateGraphView, {
   DEFAULT_MAX_DEPTH,
 } from "../components/coordinates/CoordinateGraphView";
@@ -21,6 +27,7 @@ import { AnyTransformation } from "../components/coordinates/types";
 import { CoordinateSystemInfoSidebar } from "../components/sidebars/CoordinateSystemInfoSidebar";
 import { CoordinateSystemProvenanceSidebar } from "../components/sidebars/CoordinateSystemProvenanceSidebar";
 import { MIKRO_HELP } from "../help";
+import { visualizationLink } from "../lib/visualize";
 
 /**
  * A coordinate system's page, laid out like `ArrayDatasetPage`: the picture fills
@@ -36,7 +43,7 @@ import { MIKRO_HELP } from "../help";
  * asks one of two questions:
  *
  *   nothing lives here   what is registered into me, how much do we trust it,
- *                        and which scenes have adopted me as their world?
+ *                        and what has adopted me as its world?
  *   something lives here who lives here, what reaches me, and what I map into?
  */
 export const CoordinateSystemPage = asDetailQueryRoute(
@@ -44,6 +51,30 @@ export const CoordinateSystemPage = asDetailQueryRoute(
   ({ data }) => {
     const system = data.coordinateSystem;
     const { openDialog } = useDialog();
+    const navigate = useNavigate();
+
+    // The server reads the axes and answers with a chart or a scene; a space
+    // that is neither is refused, and its prose is the toast. A toast because
+    // the button sits both in the header and in the rail.
+    const [visualize, { loading: visualizing }] =
+      useAutoVisualizeMutation({
+        variables: { input: { coordinateSystem: system.id } },
+        refetchQueries: [GetScenesDocument, GetChartsDocument, GetCoordinateSystemDocument],
+        onCompleted: (result) => navigate(visualizationLink(result.autoVisualize)),
+        onError: (error) => toast.error(error.message),
+      });
+
+    const visualizeButton = (
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={visualizing}
+        onClick={() => visualize()}
+      >
+        <Eye className="mr-2 h-4 w-4" />
+        {visualizing ? "Visualizing…" : "Visualize"}
+      </Button>
+    );
 
     // The same query CoordinateGraphView fires on the stage — Apollo dedupes
     // it, so the edges cost nothing extra. The list queries deliberately cannot
@@ -112,7 +143,12 @@ export const CoordinateSystemPage = asDetailQueryRoute(
         variant="black"
         overlay
         actions={<MikroCoordinateSystem.Actions object={system} />}
-        pageActions={isFrame ? registerButton : calibrateButton}
+        pageActions={
+          <>
+            {visualizeButton}
+            {isFrame ? registerButton : calibrateButton}
+          </>
+        }
         additionalSidebars={
           <>
             <Sidebars.Tab label="Info">
@@ -158,29 +194,34 @@ export const CoordinateSystemPage = asDetailQueryRoute(
                 </div>
               </div>
             </Sidebars.Tab>
-            {/* A space is adopted, never owned: several scenes may share one,
-                and it outlives each of them. */}
-            <Sidebars.Tab label="Scenes">
+            {/* A space is adopted, never owned: several scenes and charts may
+                share one, and it outlives each of them. */}
+            <Sidebars.Tab label="Visualizations">
               <div className="flex flex-col gap-2 overflow-y-auto p-4">
                 <div className="flex flex-row items-baseline justify-between gap-2">
                   <div className="text-xs font-semibold">Worlded here</div>
                   <span className="text-xs tabular-nums text-muted-foreground">
-                    {system.scenes.length}
+                    {system.visualizations.length}
                   </span>
                 </div>
-                {system.scenes.length === 0 ? (
-                  <span className="text-xs text-muted-foreground">
-                    No scenes use this coordinate system as their world yet.
-                  </span>
+                {system.visualizations.length === 0 ? (
+                  <>
+                    <span className="text-xs text-muted-foreground">
+                      No scene or chart uses this coordinate system as its world yet.
+                    </span>
+                    {visualizeButton}
+                  </>
                 ) : (
                   <div className="grid grid-cols-1 gap-2">
-                    {system.scenes.map((scene) => (
-                      <SceneCard key={scene.id} scene={scene} />
-                    ))}
+                    {system.visualizations.map((visualization) =>
+                      visualization.__typename === "Chart" ? (
+                        <ChartCard key={`chart-${visualization.id}`} item={visualization} />
+                      ) : (
+                        <SceneCard key={`scene-${visualization.id}`} scene={visualization} />
+                      ),
+                    )}
                   </div>
                 )}
-                {/* Charts adopt a space the same way; nothing when there are none. */}
-                <ChartSectionList filters={{ coordinateSystem: system.id }} />
               </div>
             </Sidebars.Tab>
             <Sidebars.Tab label="Provenance">
@@ -224,7 +265,7 @@ export const CoordinateSystemPage = asDetailQueryRoute(
                 className="font-sans text-[0.625rem]"
                 title={
                   isFrame
-                    ? "Nothing lives in this space. Sources register into it and scenes adopt it as their world; it outlives every scene over it."
+                    ? "Nothing lives in this space. Sources register into it and scenes and charts adopt it as their world; it outlives each of them."
                     : "The data living in this space."
                 }
               >

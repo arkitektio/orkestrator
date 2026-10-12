@@ -152,8 +152,8 @@ export type ResidentLike =
       derivedFrom?: readonly EdgeLike[];
       columns?: readonly { role: string }[];
     } & Spaced)
-  | ({ __typename: "MeshCollection"; id: string; version: string; derivedFrom?: readonly EdgeLike[] } & Spaced)
-  | ({ __typename: "NetworkCollection"; id: string; version: string; derivedFrom?: readonly EdgeLike[] } & Spaced)
+  | ({ __typename: "MeshCollection"; id: string; label: string; derivedFrom?: readonly EdgeLike[] } & Spaced)
+  | ({ __typename: "NetworkCollection"; id: string; label: string; derivedFrom?: readonly EdgeLike[] } & Spaced)
   | ({ __typename: "AnnotationCollection"; id: string; name: string; derivedFrom?: readonly EdgeLike[] } & Spaced)
   | ({ __typename: "SparseDataset"; id: string; name: string; derivedFrom?: readonly EdgeLike[] } & Spaced)
   | { __typename: "DataArray"; id: string; level: number; toParent?: { id: string } | null }
@@ -198,7 +198,7 @@ export type LineageNodeLike =
   | ({
       __typename: "MeshCollection" | "NetworkCollection";
       id: string;
-      version: string;
+      label: string;
       derivedFrom?: readonly { id: string }[];
     } & Spaced)
   | { __typename: string };
@@ -237,11 +237,6 @@ const KIND_LABEL: Record<NodeKind, string> = {
   annotation: "annotations",
   sparse: "sparse dataset",
 };
-
-// The same naming `residentName` gives a picker row: a mesh or a network has
-// only a version to show.
-const collectionName = (kind: NodeKind, version: string) =>
-  `${KIND_LABEL[kind]} ${version}`.trim();
 
 export const emptyGraph = (): DerivationGraph => ({
   spaces: new Map(),
@@ -378,7 +373,8 @@ const addCollection = (
     __typename: string;
     id: string;
     name?: string;
-    version?: string;
+    /** A mesh or network collection: its name, or its store's key. */
+    label?: string;
     derivedFrom?: readonly EdgeLike[];
     columns?: readonly { role: string }[];
   } & Spaced,
@@ -390,7 +386,7 @@ const addCollection = (
     key: nodeKeyOf(resident),
     kind,
     id: resident.id,
-    name: resident.name ?? collectionName(kind, resident.version ?? ""),
+    name: resident.name ?? resident.label ?? KIND_LABEL[kind],
     columnRoles: resident.columns?.map((column) => column.role),
     spaces: [
       ...(resident.coordinateSystem ? [resident.coordinateSystem.id] : []),

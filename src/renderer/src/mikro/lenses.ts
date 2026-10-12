@@ -219,13 +219,13 @@ const containerOf = (lens: LensSubjectFragment): LensDescription["container"] =>
       return lens.tableDataset;
     case "SparseLens":
       return lens.sparseDataset;
-    // Nameless containers: the version is all they can honestly show.
+    // Optionally named containers: `label` is the name, or the store's key.
     case "MeshLens":
-      return { id: lens.meshCollection.id, name: `Mesh collection ${lens.meshCollection.version}` };
+      return { id: lens.meshCollection.id, name: lens.meshCollection.label };
     case "NetworkLens":
       return {
         id: lens.networkCollection.id,
-        name: `Network collection ${lens.networkCollection.version}`,
+        name: lens.networkCollection.label,
       };
     case "AnnotationLens":
       return lens.annotationCollection;

@@ -2834,16 +2834,16 @@ input CreateLensInput {
 }
 
 """
-Input for registering an immutable, versioned mesh collection. The collection gets a coordinate system of its own, and an edge relates it to the space the meshes were extracted from
+Input for registering an immutable mesh collection. The collection gets a coordinate system of its own, and an edge relates it to the space the meshes were extracted from
 """
 input CreateMeshCollectionInput {
   axes: [AxisInput!]!
   derivedFrom: [DerivedFromInput!] = null
   folder: ID = null
+  name: String = null
   provenanceMetadata: Any = null
   sourceFiles: [SourceFileInput!] = null
   store: FabriksLike!
-  version: String!
 }
 
 """
@@ -2885,16 +2885,16 @@ input CreateMeshLensInput {
 }
 
 """
-Input for registering an immutable, versioned network collection. The collection gets a coordinate system of its own, and an edge relates it to the space the network was traced in
+Input for registering an immutable network collection. The collection gets a coordinate system of its own, and an edge relates it to the space the network was traced in
 """
 input CreateNetworkCollectionInput {
   axes: [AxisInput!]!
   derivedFrom: [DerivedFromInput!] = null
   folder: ID = null
+  name: String = null
   provenanceMetadata: Any = null
   sourceFiles: [SourceFileInput!] = null
   store: KonnektionLike!
-  version: String!
 }
 
 """
@@ -5793,7 +5793,7 @@ input LensFilter {
   placeableIn: LensPlaceableFilter
 
   """
-  Search by the lens' own name or, since most lenses have none and are known by their container's, by its container's label: the name of a dataset, table, sparse dataset or annotation collection, the version of a mesh or network collection (case-insensitive substring)
+  Search by the lens' own name or, since most lenses have none and are known by their container's, by its container's label: the name of a dataset, table, sparse dataset or annotation collection, the name or store key of a mesh or network collection (case-insensitive substring)
   """
   search: String
 
@@ -6183,7 +6183,7 @@ type Membership {
 }
 
 """
-An immutable, versioned collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL
+An immutable collection of meshes, stored as one fabriks prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating meshes through GraphQL
 """
 type MeshCollection {
   """
@@ -6233,21 +6233,30 @@ type MeshCollection {
   id: ID!
 
   """
+  What to call this collection: its name, or its store's key when it has none
+  """
+  label: String!
+
+  """
   The lenses over this mesh collection, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens`
   """
   lenses(windowed: Boolean = null): [MeshLens!]!
+  name: String
 
   """
   The files this mesh collection was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete
   """
   sourceFiles(filters: FileLinkFilter): [FileLink!]!
-  specVersion: String!
+
+  """
+  The format version this collection's store conforms to, read off the store's manifest and namespaced (`fabriks/1`). Null while the store has not been read
+  """
+  specVersion: String
 
   """
   The **fabriks store** holding this collection: one prefix with `fabriks.json`, both catalogs and every octree level. Ask it for a single access grant and you can read all of it -- the manifest, the indexes and the geometry. Its `grid` and `encoding` were read from that manifest rather than declared through this API, so they describe what was actually written. Never null: a collection whose bytes are not addressable is not a collection
   """
   store: FabriksStore!
-  version: String!
 }
 
 """
@@ -6301,10 +6310,15 @@ input MeshCollectionFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+  name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
   owner: ID
-  version: StrFilterLookup
+
+  """
+  Search by the collection's label: its name, or its store's key (case-insensitive substring)
+  """
+  search: String
 }
 
 """
@@ -6405,7 +6419,7 @@ type MeshLayer implements Layer {
   clip: [Window!]!
 
   """
-  The versioned, coordinate-system-anchored mesh collection this layer renders: the container of the lens. Its geometry is fetched from the collection's Parquet catalog, not through this API
+  The immutable, coordinate-system-anchored mesh collection this layer renders: the container of the lens. Its geometry is fetched from the collection's Parquet catalog, not through this API
   """
   collection: MeshCollection
 
@@ -6744,9 +6758,7 @@ type Mutation {
   """
   createLens(input: CreateLensInput!): ArrayLens!
 
-  """
-  Register an immutable, versioned mesh collection against a coordinate system
-  """
+  """Register an immutable mesh collection against a coordinate system"""
   createMeshCollection(input: CreateMeshCollectionInput!): MeshCollection!
 
   """
@@ -6760,7 +6772,7 @@ type Mutation {
   createMeshLens(input: CreateMeshLensInput!): MeshLens!
 
   """
-  Register an immutable, versioned network collection from an uploaded konnektion store, in a coordinate system of its own
+  Register an immutable network collection from an uploaded konnektion store, in a coordinate system of its own
   """
   createNetworkCollection(input: CreateNetworkCollectionInput!): NetworkCollection!
 
@@ -7237,7 +7249,7 @@ type Mutation {
 }
 
 """
-An immutable, versioned collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL
+An immutable collection of networks, stored as one konnektion prefix. Ask its `store` for an access grant and query the Parquet directly (e.g. with DuckDB) rather than paginating nodes through GraphQL
 """
 type NetworkCollection {
   """
@@ -7287,21 +7299,30 @@ type NetworkCollection {
   id: ID!
 
   """
+  What to call this collection: its name, or its store's key when it has none
+  """
+  label: String!
+
+  """
   The lenses over this network collection, oldest first: its whole lens and every window someone has cut. `windowed: true` keeps the windows, `windowed: false` the whole lens, which is also `fullLens`
   """
   lenses(windowed: Boolean = null): [NetworkLens!]!
+  name: String
 
   """
   The files this network collection was converted from -- the CZI a converter read to write these arrays, named per series. **Read this alongside `derivedFrom`, not instead of it**: `derivedFrom` says which *data* this was computed from and relates two coordinate systems, while this says which *bytes* it was read out of and relates to no space at all, because a file has none. Both can be non-empty and complete
   """
   sourceFiles(filters: FileLinkFilter): [FileLink!]!
-  specVersion: String!
+
+  """
+  The format version this collection's store conforms to, read off the store's manifest and namespaced (`konnektion/1`). Null while the store has not been read
+  """
+  specVersion: String
 
   """
   The **konnektion store** holding this collection: one prefix with `konnektion.json`, both catalogs and every octree level. Ask it for a single access grant and you can read all of it -- the manifest, the indexes and the geometry. Its `grid` and `encoding` were read from that manifest rather than declared through this API, so they describe what was actually written. Never null: a collection whose bytes are not addressable is not a collection
   """
   store: KonnektionStore!
-  version: String!
 }
 
 input NetworkCollectionFilter {
@@ -7335,10 +7356,15 @@ input NetworkCollectionFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+  name: StrFilterLookup
 
   """Filter by the creator's subject ID"""
   owner: ID
-  version: StrFilterLookup
+
+  """
+  Search by the collection's label: its name, or its store's key (case-insensitive substring)
+  """
+  search: String
 }
 
 """
@@ -7455,7 +7481,7 @@ type NetworkLayer implements Layer {
   clip: [Window!]!
 
   """
-  The versioned, coordinate-system-anchored network collection this layer renders: the container of the lens. Its nodes and edges are fetched from the collection's Parquet catalog, not through this API
+  The immutable, coordinate-system-anchored network collection this layer renders: the container of the lens. Its nodes and edges are fetched from the collection's Parquet catalog, not through this API
   """
   collection: NetworkCollection
 
@@ -8877,7 +8903,7 @@ type Query {
   meshCollection(id: ID!): MeshCollection!
 
   """
-  List mesh collections (immutable, versioned Parquet-backed mesh sets, each in a coordinate system of its own)
+  List mesh collections (immutable Parquet-backed mesh sets, each in a coordinate system of its own)
   """
   meshCollections(filters: MeshCollectionFilter, pagination: OffsetPaginationInput): [MeshCollection!]!
 
@@ -8896,7 +8922,7 @@ type Query {
   networkCollection(id: ID!): NetworkCollection!
 
   """
-  List network collections (immutable, versioned Parquet-backed node/edge networks, each in a coordinate system of its own)
+  List network collections (immutable Parquet-backed node/edge networks, each in a coordinate system of its own)
   """
   networkCollections(filters: NetworkCollectionFilter, pagination: OffsetPaginationInput): [NetworkCollection!]!
 

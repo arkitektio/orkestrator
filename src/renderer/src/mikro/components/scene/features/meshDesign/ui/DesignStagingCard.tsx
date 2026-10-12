@@ -162,7 +162,7 @@ export const DesignStagingCard = () => {
       </div>
       {origin && (
         <span className="text-[10px] text-muted-foreground" title="Committing writes a NEW collection derived from this one">
-          editing {origin.collectionId} ({origin.version})
+          editing {origin.label}
         </span>
       )}
       {meshes.length === 0 ? (
@@ -191,9 +191,9 @@ export const DesignStagingCard = () => {
                 origin: designApi.getState().origin,
                 onProgress: (progress) => designApi.getState().setStatus(progress.status, progress.message),
                 onCommitted: () => {
-                  // A new version replaces the old on screen: hide the layer
+                  // The new collection replaces the old on screen: hide the layer
                   // this session was loaded from (session-local; the server
-                  // keeps both versions).
+                  // keeps both collections).
                   const source = designApi.getState().origin?.layerId;
                   if (source) patchSceneLayer(source, { visible: false });
                   designApi.getState().reset();
@@ -204,7 +204,7 @@ export const DesignStagingCard = () => {
             );
           }}
         >
-          {committing ? "Committing…" : origin ? "Commit as new version" : "Commit collection"}
+          {committing ? "Committing…" : origin ? "Commit as new collection" : "Commit collection"}
         </Button>
         <Button size="xs" variant="ghost" className="h-6 w-6 p-0" title="Undo the last step (⌘Z)" disabled={committing || !canUndo} onClick={undo}>
           <Undo2 className="h-3.5 w-3.5" />

@@ -1,4 +1,4 @@
-# A NetworkCollection is a DATASET, not a graph: the API node carries version,
+# A NetworkCollection is a DATASET, not a graph: the API node carries a label,
 # coordinate system and the konnektion STORE -- one prefix holding
 # `konnektion.json`, both catalogs and every octree level. The individual nodes
 # and edges are ROWS in the Parquet files under that prefix, reached
@@ -12,7 +12,9 @@
 # only validation they get.
 fragment NetworkCollection on NetworkCollection {
   id
-  version
+  # Optional. `label` is this, or the store's key when there is none.
+  name
+  label
   specVersion
   coordinateSystem {
     ...CoordinateSystem

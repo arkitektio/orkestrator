@@ -67,7 +67,10 @@ const PickerRow = (props: {
 );
 
 /** Step 1: what are we registering? */
-const SourcePicker = (props: { onPick: (ref: RegisterSourceRef) => void }) => {
+const SourcePicker = (props: {
+  /** `context` names the picked data when the ref is already one of its systems. */
+  onPick: (ref: RegisterSourceRef, context?: string) => void;
+}) => {
   const [search, setSearch] = useState("");
   const { data, loading } = useRegisterSourceCandidatesQuery({
     variables: { search: search || undefined },
@@ -75,11 +78,16 @@ const SourcePicker = (props: { onPick: (ref: RegisterSourceRef) => void }) => {
 
   const datasets = data?.arrayDatasets ?? [];
   const tables = data?.tableDatasets ?? [];
+  // A collection owns exactly one system, so a pick resolves to it outright.
+  const collections = [
+    { title: "Mesh collections", rows: data?.meshCollections ?? [] },
+    { title: "Network collections", rows: data?.networkCollections ?? [] },
+  ];
 
   return (
     <>
       <Input
-        placeholder="Search datasets and tables…"
+        placeholder="Search datasets, tables and collections…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -117,6 +125,31 @@ const SourcePicker = (props: { onPick: (ref: RegisterSourceRef) => void }) => {
             <div className="text-xs text-muted-foreground">No tables found</div>
           )}
         </div>
+        {/* Nothing when there are none: most deployments hold neither. */}
+        {collections.map(
+          ({ title, rows }) =>
+            rows.length > 0 && (
+              <div key={title} className="flex flex-col gap-1">
+                <div className="text-xs font-medium uppercase text-muted-foreground">
+                  {title}
+                </div>
+                {rows.map((collection) => (
+                  <PickerRow
+                    key={collection.id}
+                    name={collection.label}
+                    // Unnamed, the label is the store's key: say so.
+                    secondary={collection.name ? null : "Unnamed"}
+                    onClick={() =>
+                      props.onPick(
+                        { kind: "coordinatesystem", id: collection.coordinateSystem.id },
+                        collection.label,
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            ),
+        )}
       </div>
     </>
   );
@@ -332,9 +365,10 @@ const RegisterFormInner = (props: RegisterFormProps) => {
 
       {step === "source" && (
         <SourcePicker
-          onPick={(ref) => {
+          onPick={(ref, context) => {
             setSourceRef(ref);
             if (ref.kind === "coordinatesystem") setSourceSystem(ref.id);
+            if (context) setSourceContext(context);
           }}
         />
       )}

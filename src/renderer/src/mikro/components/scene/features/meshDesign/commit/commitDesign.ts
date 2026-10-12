@@ -52,7 +52,7 @@ export type CommitProgress =
   | { status: DesignStatus; message: string | null }
   | { status: "uploading"; message: string | null; upload: FabriksUploadProgress };
 
-export type CommitResult = { collectionId: string; layerId: string; version: string };
+export type CommitResult = { collectionId: string; layerId: string; label: string };
 
 /** Above this quantization step (voxels) a single cell is too coarse to be worth the seamless normals. */
 export const SINGLE_CELL_MAX_QUANTIZATION = 0.05;
@@ -79,7 +79,8 @@ export async function commitMeshDesign(opts: {
   world: WorldSystemLike;
   meshes: readonly DesignMesh[];
   origin: DesignOrigin | null;
-  version?: string;
+  /** What to call the collection. Optional: unnamed, it is labelled by its store's key. */
+  name?: string;
   onProgress?: (progress: CommitProgress) => void;
   signal?: AbortSignal;
 }): Promise<CommitResult> {
@@ -89,7 +90,6 @@ export async function commitMeshDesign(opts: {
   if (axisNames.length !== 3) {
     throw new Error(`The scene's world declares ${axisNames.length} spatial axes; a mesh collection needs three.`);
   }
-  const version = opts.version ?? new Date().toISOString();
 
   onProgress?.({ status: "baking", message: "Baking the collection…" });
   // One cell when the uint16 quantization stays below 0.05 voxel (extents up
@@ -114,7 +114,7 @@ export async function commitMeshDesign(opts: {
       input: {
         axes: axisNames.map((name) => ({ name, type: AxisType.Space })),
         store: storeId,
-        version,
+        name: opts.name?.trim() || undefined,
         derivedFrom: [
           {
             kind: DerivationSourceKind.CoordinateSystem,
@@ -173,5 +173,5 @@ export async function commitMeshDesign(opts: {
   const layerId = layer.data?.createMeshLayer?.id;
   if (!layerId) throw new Error("The collection was registered but the scene refused a layer for it.");
 
-  return { collectionId: collection.id, layerId, version };
+  return { collectionId: collection.id, layerId, label: collection.label };
 }

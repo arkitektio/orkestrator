@@ -38,7 +38,8 @@ export const isReferenceFrame = (system: InhabitedLike): boolean =>
  *
  * A lens is named by the container it selects from; a DataArray has
  * neither a name nor a back-reference to its dataset, so a pyramid level can
- * name only its level; a MeshCollection has only a version. Takes the widened
+ * name only its level; a mesh or network collection answers its `label` (its
+ * name, or its store's key). Takes the widened
  * fragment shape rather than the generated union so the fields it reaches for
  * are optional — a caller holding only `{ __typename }` still gets a sane
  * answer instead of a crash.
@@ -47,7 +48,7 @@ export const residentName = (
   resident: ResidentLike & {
     name?: string | null;
     level?: number | null;
-    version?: string | null;
+    label?: string | null;
     dataset?: { name?: string | null } | null;
     tableDataset?: { name?: string | null } | null;
     sparseDataset?: { name?: string | null } | null;
@@ -66,7 +67,7 @@ export const residentName = (
         resident.annotationCollection?.name;
       return container ? `a lens of ${container}` : "a lens";
     }
-    // Their collections are nameless, so the lens can only say what it is.
+    // The lens fragment carries no collection label here, so it says what it is.
     case "MeshLens":
       return "a lens of a mesh collection";
     case "NetworkLens":
@@ -74,7 +75,9 @@ export const residentName = (
     case "DataArray":
       return `pyramid level ${resident.level ?? "?"}`;
     case "MeshCollection":
-      return `mesh collection ${resident.version ?? ""}`.trim();
+      return resident.label ?? "a mesh collection";
+    case "NetworkCollection":
+      return resident.label ?? "a network collection";
     default:
       return resident.name ?? resident.__typename;
   }

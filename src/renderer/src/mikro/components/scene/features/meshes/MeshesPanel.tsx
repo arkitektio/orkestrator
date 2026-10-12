@@ -335,7 +335,7 @@ const MeshLayerSection = ({
           source: { kind: "imported", collectionId: collection.id, objectId: item.objectId },
         });
       }
-      design.setOrigin({ collectionId: collection.id, version: collection.version, layerId: layer.id });
+      design.setOrigin({ collectionId: collection.id, label: collection.label, layerId: layer.id });
       setInteractionMode("DESIGN");
     } catch (reason) {
       console.warn(`[fabriks] cannot load ${collection.id} into the designer:`, reason);
