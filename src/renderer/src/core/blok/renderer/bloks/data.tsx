@@ -63,6 +63,7 @@ import {
 } from 'recharts';
 import * as z from 'zod';
 import {BlokPropSchemas, createBlokComponent, useAction, useBlok, useValue} from '../runtime';
+import {useAssetImageUrl} from '../assets';
 import {iconNameSchema, renderIcon} from './icons';
 import {
   actionProp,
@@ -408,7 +409,9 @@ export const Avatar = createBlokComponent(
     name: 'Avatar',
     schema: z
       .object({
-        src: BlokPropSchemas.DynamicString.optional().describe('Image URL.'),
+        src: BlokPropSchemas.DynamicString.optional().describe(
+          'Image URL, or an image its app registered as an asset: "@self.assets.logo".',
+        ),
         alt: BlokPropSchemas.DynamicString.optional().describe('Alternative text.'),
         fallback: BlokPropSchemas.DynamicString.optional().describe(
           'Initials shown while the image is missing.',
@@ -420,7 +423,9 @@ export const Avatar = createBlokComponent(
   },
   ({component, schema}) => {
     const blok = useBlok(component, schema);
-    const src = useValue(blok.src);
+    const url = useValue(blok.src);
+    const asset = useAssetImageUrl(component, 'src');
+    const src = asset.named ? asset.url : url;
     const alt = useValue(blok.alt);
     const fallback = useValue(blok.fallback);
     const size = useValue(blok.size);

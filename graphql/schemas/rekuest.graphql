@@ -392,6 +392,9 @@ type Agent {
   """The app this agent belongs to."""
   app: App!
 
+  """The files the agent brings, by the name its bloks call them."""
+  assets: [AgentAsset!]!
+
   """Get the count of implementations available on this agent."""
   blocked: Boolean!
 
@@ -479,6 +482,29 @@ type Agent {
 
   """The user this agent belongs to."""
   user: User!
+}
+
+"""
+A file an agent brings, under the name its bloks call it by (`@<dependency>.assets.<name>`).
+"""
+type AgentAsset {
+  """The stored file, once the agent has uploaded it; null until then."""
+  asset: Asset
+  id: ID!
+
+  """What the agent says the file is."""
+  kind: AssetKind!
+
+  """The name bloks refer to the asset by."""
+  name: String!
+
+  """
+  'sha256:' and the hex SHA-256 of the file's exact bytes, as the agent declares it.
+  """
+  ref: String!
+
+  """The size of the file in bytes, as the agent declares it."""
+  size: Int!
 }
 
 """
@@ -831,6 +857,71 @@ input ArgPortInput {
 
 """The `Args` scalar type represents a Dictionary of arguments"""
 scalar Args
+
+"""A verified file the organization holds, stored once by its content."""
+type Asset {
+  createdAt: DateTime!
+  file: MediaStore!
+
+  """An image's height in pixels. Null for other kinds."""
+  height: Int
+  id: ID!
+
+  """What the file is."""
+  kind: AssetKind!
+
+  """
+  A 3D model's node names: what blok bindings can address. Empty for other kinds.
+  """
+  nodes: [String!]!
+
+  """'sha256:' and the hex SHA-256 of the file's exact bytes."""
+  ref: String!
+
+  """The size of the file in bytes, measured by the server."""
+  size: Int!
+
+  """
+  A 3D model's node, triangle, texture and animation counts. Null for other kinds.
+  """
+  stats: ModelStats
+
+  """An image's width in pixels. Null for other kinds."""
+  width: Int
+}
+
+"""
+A file an agent brings with it: the name its bloks call it by, and what the bytes are.
+"""
+input AssetInput {
+  """What the file is."""
+  kind: AssetKind!
+
+  """
+  The name bloks refer to the asset by, as in `@self.assets.<name>`. Unique within the agent.
+  """
+  name: String!
+
+  """'sha256:' and the hex SHA-256 of the file's exact bytes."""
+  ref: String!
+
+  """The size of the file in bytes."""
+  size: Int!
+}
+
+"""
+What a file an agent brings with it is: a 3D model (a binary glTF file) or an image (PNG, JPEG or WebP).
+"""
+enum AssetKind {
+  IMAGE
+  MODEL_3D
+}
+
+"""The limits each kind of asset is held to."""
+type AssetPolicy {
+  image: ImagePolicy!
+  model: ModelPolicy!
+}
 
 """
 The input for assigning args to a action. A GraphQL assign is a ROOT by definition — children are created only over the agent socket (AssignRequest, where parent is mandatory) and by server-internal paths like init hooks, so parent/dependency/method are deliberately absent here.
@@ -1357,14 +1448,13 @@ The kind of value a catalog component prop accepts or a catalog operation argume
 """
 enum CatalogValueKind {
   ANY
+  ASSET
   BOOL
   CALLBACK
   DICT
   FLOAT
-  HTTPS_URL
   INT
   LIST
-  MODEL_REF
   STRING
 }
 
@@ -1569,6 +1659,17 @@ input ComponentPropInput {
   utilCall: UtilCallInput = null
 }
 
+"""
+Record an asset that was uploaded with a grant from `requestAssetUpload`.
+"""
+input CreateAssetInput {
+  """The reference the uploaded bytes must hash to."""
+  ref: String!
+
+  """The store the grant was issued for."""
+  store: MediaLike!
+}
+
 """The input for creating a blok."""
 input CreateBlokInput {
   """The universal id"""
@@ -1642,25 +1743,6 @@ input CreateHigherOrderImplementationInput {
 
   """The implementation to wrap; its agent hosts the wrapper."""
   lower: ID!
-}
-
-"""
-Record a model that was uploaded with a grant from `requestModelUpload`.
-"""
-input CreateModelInput {
-  """A label for browsing; not part of the model's identity."""
-  name: String = null
-
-  """The reference the uploaded bytes must hash to."""
-  ref: String!
-
-  """
-  The https URL the model was fetched from; absent when the uploader holds the file itself.
-  """
-  source: String = null
-
-  """The store the grant was issued for."""
-  store: MediaLike!
 }
 
 """The input for creating a placement."""
@@ -2552,10 +2634,27 @@ The `Identifier` scalar is a structure identifier of the form `@package/key` (e.
 """
 scalar Identifier
 
+"""The limits an image is held to when it is added to the store."""
+type ImagePolicy {
+  """The formats an image may be in."""
+  formats: [String!]!
+
+  """Largest width or height, in pixels."""
+  maxSide: Int!
+
+  """Largest file, in bytes."""
+  maxSize: Float!
+}
+
 """
 Implement an agent with the given implementations, states and locks. This will create the agent if it doesn't exist and update it if it does exist.
 """
 input ImplementAgentInput {
+  """
+  The files the agent brings with it, by name. The agent uploads the ones the server does not hold yet.
+  """
+  assets: [AssetInput!] = null
+
   """
   The blocks of the agent. This is used to specify the initial blocks of the agent
   """
@@ -3147,27 +3246,8 @@ type MessageEffect implements Effect {
   source: String
 }
 
-"""
-A model that registered bloks reference but the organization has not stored.
-"""
-type MissingModel {
-  """The names of the bloks that reference it."""
-  bloks: [String!]!
-  ref: String!
-
-  """
-  The https URL the reference names as its source; null when the blok names none and its app uploads the file.
-  """
-  source: String
-}
-
-"""The limits a model is held to when it is added to the store."""
+"""The limits a 3D model is held to when it is added to the store."""
 type ModelPolicy {
-  """
-  Whether a member who is not an admin may upload a model that a registered blok names. Admins always may.
-  """
-  appUpload: Boolean!
-
   """The glTF extensions a model may require."""
   extensions: [String!]!
   maxAnimations: Int!
@@ -3191,7 +3271,7 @@ type ModelPolicy {
   maxTriangles: Int!
 }
 
-"""What validation counted in a model."""
+"""What validation counted in a 3D model."""
 type ModelStats {
   animations: Int!
   nodes: Int!
@@ -3227,6 +3307,11 @@ type Mutation {
   """Collect results from a task."""
   collect(input: CollectInput!): [String!]!
 
+  """
+  Verify an asset uploaded with a grant from `requestAssetUpload` (its hash and the rules of its kind) and record it. Returns the existing asset if the hash is stored already; a refusal carries its code in `extensions.code` and deletes the upload.
+  """
+  createAsset(input: CreateAssetInput!): Asset!
+
   """Create a user interface panel."""
   createBlok(input: CreateBlokInput!): Blok!
 
@@ -3237,11 +3322,6 @@ type Mutation {
   Deploy a higher-order implementation: a wrapper onto the agent of the implementation it wraps, linked to it.
   """
   createHigherOrderImplementation(input: CreateHigherOrderImplementationInput!): Implementation!
-
-  """
-  Verify a model uploaded with a grant from `requestModelUpload` (its hash, header and JSON chunk) and record it, under the same rule for who may add it. Returns the existing model if the hash is stored already; a refusal carries its code in `extensions.code` and deletes the upload.
-  """
-  createModel(input: CreateModelInput!): ThreeDModel!
 
   """Create a new placement for an agent in a space."""
   createPlacement(input: CreatePlacementInput!): Placement!
@@ -3363,16 +3443,16 @@ type Mutation {
   """
   registerUiCatalog(input: RegisterUiCatalogInput!): UICatalog!
 
+  """
+  A media upload grant for one asset. Issued only for a file the caller's own agent declares (it registered with it), and only if its size passes the policy.
+  """
+  requestAssetUpload(input: RequestAssetUploadInput!): MediaUploadGrant!
+
   """Request temporary S3 read credentials for a media file"""
   requestMediaAccess(input: RequestMediaAccessInput!): MediaAccessGrant!
 
   """Upload media and return a URL for access"""
   requestMediaUpload(input: RequestMediaUploadInput!): MediaUploadGrant!
-
-  """
-  A media upload grant for one model, issued if its reference and size pass the policy. An admin may add any model; another member only one that a registered blok names, and only where `modelPolicy.appUpload` is on.
-  """
-  requestModelUpload(input: RequestModelUploadInput!): MediaUploadGrant!
 
   """Resume a paused task."""
   resume(input: ResumeInput!): Task!
@@ -3964,6 +4044,14 @@ type Query {
   agents(filters: AgentFilter, ordering: [AgentOrder!]! = [], pagination: OffsetPaginationInput): [Agent!]!
 
   """
+  The stored asset of this reference ('sha256:...') in the caller's organization, or null if no agent has uploaded it.
+  """
+  asset(ref: String!): Asset
+
+  """The limits each kind of asset is held to when it is added."""
+  assetPolicy: AssetPolicy!
+
+  """
   The built-in base catalog every definition and blok is validated against before any registered UI catalog (virtual: shipped with the server, not registered).
   """
   baseCatalog: BaseCatalog!
@@ -4071,19 +4159,6 @@ type Query {
 
   """All memory shelves."""
   memoryShelves(filters: MemoryShelveFilter, ordering: [MemoryShelveOrder!]! = [], pagination: OffsetPaginationInput): [MemoryShelve!]!
-
-  """
-  Admins only: models that registered bloks reference statically but the organization has not stored, with the URL to fetch each from.
-  """
-  missingModels: [MissingModel!]!
-
-  """
-  The stored model of this reference ('sha256:...') in the caller's organization, or null if it has not been added.
-  """
-  model(ref: String!): ThreeDModel
-
-  """The limits a model is held to when it is added."""
-  modelPolicy: ModelPolicy!
 
   """Find your implementation at a specific interface."""
   myImplementationAt(actionId: ID = null, interface: String = null): Implementation!
@@ -4303,6 +4378,14 @@ type Release {
   version: String!
 }
 
+"""Ask for a grant to upload one asset the caller's agent declares."""
+input RequestAssetUploadInput {
+  """
+  The asset's reference, as the agent declared it: 'sha256:' and the hex SHA-256 of its exact bytes.
+  """
+  ref: String!
+}
+
 input RequestMediaAccessInput {
   storeId: String!
 }
@@ -4311,22 +4394,6 @@ input RequestMediaUploadInput {
   contentType: String = null
   fileSize: Int = null
   originalFileName: String!
-}
-
-"""Ask for a grant to upload one model."""
-input RequestModelUploadInput {
-  """A file name for the stored object; the reference when absent."""
-  fileName: String = null
-
-  """
-  The model's reference: 'sha256:' and the hex SHA-256 of its exact bytes.
-  """
-  ref: String!
-
-  """
-  The size of the file in bytes, checked against the policy before a grant is issued.
-  """
-  size: Float!
 }
 
 type Requires {
@@ -6199,25 +6266,6 @@ type ThreeDModel {
   file: MediaStore!
   id: ID!
   name: String!
-
-  """The node names blok bindings can address."""
-  nodes: [String!]!
-
-  """
-  'sha256:' and the hex SHA-256 of the file's exact bytes; null for a model that was never verified.
-  """
-  ref: String
-
-  """The size of the file in bytes, measured by the server."""
-  size: Int
-
-  """
-  The https URL the first upload was fetched from; null when an app uploaded its own file. Informational.
-  """
-  source: String
-
-  """Node, triangle, texture and animation counts found at validation."""
-  stats: ModelStats
   transferFunction: String
   updatedAt: DateTime!
 }

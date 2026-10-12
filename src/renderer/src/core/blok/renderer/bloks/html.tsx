@@ -8,6 +8,7 @@ import {
   useBlok,
   useValue,
 } from '../runtime';
+import {useAssetImageUrl} from '../assets';
 import {
   actionProp,
   boolSchema,
@@ -214,7 +215,9 @@ export const Img = createBlokComponent(
     name: 'img',
     schema: z
       .object({
-        src: BlokPropSchemas.DynamicString.optional().describe('Image URL.'),
+        src: BlokPropSchemas.DynamicString.optional().describe(
+          'Image URL, or an image its app registered as an asset: "@self.assets.logo".',
+        ),
         alt: BlokPropSchemas.DynamicString.optional().describe('Alternative text.'),
         blurhash: BlokPropSchemas.DynamicString.optional().describe(
           'Blurhash shown while the image loads.',
@@ -230,7 +233,9 @@ export const Img = createBlokComponent(
   },
   ({component, schema}) => {
     const blok = useBlok(component, schema);
-    const src = useValue(blok.src);
+    const url = useValue(blok.src);
+    const asset = useAssetImageUrl(component, 'src');
+    const src = asset.named ? asset.url : url;
     const alt = useValue(blok.alt);
     const blurhash = useValue(blok.blurhash);
     const className = useValue(blok.className);

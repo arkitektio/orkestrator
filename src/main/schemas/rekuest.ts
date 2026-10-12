@@ -414,6 +414,8 @@ export type Agent = {
   agentMappings: Array<BlokAgentMapping>;
   /** The app this agent belongs to. */
   app: App;
+  /** The files the agent brings, by the name its bloks call them. */
+  assets: Array<AgentAsset>;
   /** Get the count of implementations available on this agent. */
   blocked: Scalars['Boolean']['output'];
   /** The client (app instance) this agent runs as. */
@@ -524,6 +526,22 @@ export type AgentTriggersArgs = {
   filters?: InputMaybe<TriggerFilter>;
   ordering?: Array<TriggerOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** A file an agent brings, under the name its bloks call it by (`@<dependency>.assets.<name>`). */
+export type AgentAsset = {
+  __typename?: 'AgentAsset';
+  /** The stored file, once the agent has uploaded it; null until then. */
+  asset?: Maybe<Asset>;
+  id: Scalars['ID']['output'];
+  /** What the agent says the file is. */
+  kind: AssetKind;
+  /** The name bloks refer to the asset by. */
+  name: Scalars['String']['output'];
+  /** 'sha256:' and the hex SHA-256 of the file's exact bytes, as the agent declares it. */
+  ref: Scalars['String']['output'];
+  /** The size of the file in bytes, as the agent declares it. */
+  size: Scalars['Int']['output'];
 };
 
 /** Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest. */
@@ -768,6 +786,53 @@ export type ArgPortInput = {
   validators?: InputMaybe<Array<ValidatorInput>>;
   /** The assign widget to use for this port, discriminated by `kind`. */
   widget?: InputMaybe<AssignWidgetInput>;
+};
+
+/** A verified file the organization holds, stored once by its content. */
+export type Asset = {
+  __typename?: 'Asset';
+  createdAt: Scalars['DateTime']['output'];
+  file: MediaStore;
+  /** An image's height in pixels. Null for other kinds. */
+  height?: Maybe<Scalars['Int']['output']>;
+  id: Scalars['ID']['output'];
+  /** What the file is. */
+  kind: AssetKind;
+  /** A 3D model's node names: what blok bindings can address. Empty for other kinds. */
+  nodes: Array<Scalars['String']['output']>;
+  /** 'sha256:' and the hex SHA-256 of the file's exact bytes. */
+  ref: Scalars['String']['output'];
+  /** The size of the file in bytes, measured by the server. */
+  size: Scalars['Int']['output'];
+  /** A 3D model's node, triangle, texture and animation counts. Null for other kinds. */
+  stats?: Maybe<ModelStats>;
+  /** An image's width in pixels. Null for other kinds. */
+  width?: Maybe<Scalars['Int']['output']>;
+};
+
+/** A file an agent brings with it: the name its bloks call it by, and what the bytes are. */
+export type AssetInput = {
+  /** What the file is. */
+  kind: AssetKind;
+  /** The name bloks refer to the asset by, as in `@self.assets.<name>`. Unique within the agent. */
+  name: Scalars['String']['input'];
+  /** 'sha256:' and the hex SHA-256 of the file's exact bytes. */
+  ref: Scalars['String']['input'];
+  /** The size of the file in bytes. */
+  size: Scalars['Int']['input'];
+};
+
+/** What a file an agent brings with it is: a 3D model (a binary glTF file) or an image (PNG, JPEG or WebP). */
+export enum AssetKind {
+  Image = 'IMAGE',
+  Model_3D = 'MODEL_3D'
+}
+
+/** The limits each kind of asset is held to. */
+export type AssetPolicy = {
+  __typename?: 'AssetPolicy';
+  image: ImagePolicy;
+  model: ModelPolicy;
 };
 
 /** The input for assigning args to a action. A GraphQL assign is a ROOT by definition — children are created only over the agent socket (AssignRequest, where parent is mandatory) and by server-internal paths like init hooks, so parent/dependency/method are deliberately absent here. */
@@ -1136,14 +1201,13 @@ export type CatalogPropInput = {
 /** The kind of value a catalog component prop accepts or a catalog operation argument/return carries. */
 export enum CatalogValueKind {
   Any = 'ANY',
+  Asset = 'ASSET',
   Bool = 'BOOL',
   Callback = 'CALLBACK',
   Dict = 'DICT',
   Float = 'FLOAT',
-  HttpsUrl = 'HTTPS_URL',
   Int = 'INT',
   List = 'LIST',
-  ModelRef = 'MODEL_REF',
   String = 'STRING'
 }
 
@@ -1321,6 +1385,14 @@ export type ComponentPropInput = {
   utilCall?: InputMaybe<UtilCallInput>;
 };
 
+/** Record an asset that was uploaded with a grant from `requestAssetUpload`. */
+export type CreateAssetInput = {
+  /** The reference the uploaded bytes must hash to. */
+  ref: Scalars['String']['input'];
+  /** The store the grant was issued for. */
+  store: Scalars['MediaLike']['input'];
+};
+
 /** The input for creating a blok. */
 export type CreateBlokInput = {
   /** The universal id */
@@ -1363,18 +1435,6 @@ export type CreateHigherOrderImplementationInput = {
   interface: Scalars['String']['input'];
   /** The implementation to wrap; its agent hosts the wrapper. */
   lower: Scalars['ID']['input'];
-};
-
-/** Record a model that was uploaded with a grant from `requestModelUpload`. */
-export type CreateModelInput = {
-  /** A label for browsing; not part of the model's identity. */
-  name?: InputMaybe<Scalars['String']['input']>;
-  /** The reference the uploaded bytes must hash to. */
-  ref: Scalars['String']['input'];
-  /** The https URL the model was fetched from; absent when the uploader holds the file itself. */
-  source?: InputMaybe<Scalars['String']['input']>;
-  /** The store the grant was issued for. */
-  store: Scalars['MediaLike']['input'];
 };
 
 /** The input for creating a placement. */
@@ -2036,8 +2096,21 @@ export type HostedStructureOrder =
   { identifier: Ordering; label?: never; }
   |  { identifier?: never; label: Ordering; };
 
+/** The limits an image is held to when it is added to the store. */
+export type ImagePolicy = {
+  __typename?: 'ImagePolicy';
+  /** The formats an image may be in. */
+  formats: Array<Scalars['String']['output']>;
+  /** Largest width or height, in pixels. */
+  maxSide: Scalars['Int']['output'];
+  /** Largest file, in bytes. */
+  maxSize: Scalars['Float']['output'];
+};
+
 /** Implement an agent with the given implementations, states and locks. This will create the agent if it doesn't exist and update it if it does exist. */
 export type ImplementAgentInput = {
+  /** The files the agent brings with it, by name. The agent uploads the ones the server does not hold yet. */
+  assets?: InputMaybe<Array<AssetInput>>;
   /** The blocks of the agent. This is used to specify the initial blocks of the agent */
   bloks?: InputMaybe<Array<BlokImplementationInput>>;
   /** What this agent is, in a sentence. Omitting it leaves whatever the agent already has, unlike `name`, which falls back to the client id. */
@@ -2524,21 +2597,9 @@ export type MessageEffect = Effect & {
   source?: Maybe<Scalars['String']['output']>;
 };
 
-/** A model that registered bloks reference but the organization has not stored. */
-export type MissingModel = {
-  __typename?: 'MissingModel';
-  /** The names of the bloks that reference it. */
-  bloks: Array<Scalars['String']['output']>;
-  ref: Scalars['String']['output'];
-  /** The https URL the reference names as its source; null when the blok names none and its app uploads the file. */
-  source?: Maybe<Scalars['String']['output']>;
-};
-
-/** The limits a model is held to when it is added to the store. */
+/** The limits a 3D model is held to when it is added to the store. */
 export type ModelPolicy = {
   __typename?: 'ModelPolicy';
-  /** Whether a member who is not an admin may upload a model that a registered blok names. Admins always may. */
-  appUpload: Scalars['Boolean']['output'];
   /** The glTF extensions a model may require. */
   extensions: Array<Scalars['String']['output']>;
   maxAnimations: Scalars['Int']['output'];
@@ -2554,7 +2615,7 @@ export type ModelPolicy = {
   maxTriangles: Scalars['Int']['output'];
 };
 
-/** What validation counted in a model. */
+/** What validation counted in a 3D model. */
 export type ModelStats = {
   __typename?: 'ModelStats';
   animations: Scalars['Int']['output'];
@@ -2582,14 +2643,14 @@ export type Mutation = {
   cleanupActions: Scalars['Int']['output'];
   /** Collect results from a task. */
   collect: Array<Scalars['String']['output']>;
+  /** Verify an asset uploaded with a grant from `requestAssetUpload` (its hash and the rules of its kind) and record it. Returns the existing asset if the hash is stored already; a refusal carries its code in `extensions.code` and deletes the upload. */
+  createAsset: Asset;
   /** Create a user interface panel. */
   createBlok: Blok;
   /** Create a dashboard layout. */
   createDashboard: Dashboard;
   /** Deploy a higher-order implementation: a wrapper onto the agent of the implementation it wraps, linked to it. */
   createHigherOrderImplementation: Implementation;
-  /** Verify a model uploaded with a grant from `requestModelUpload` (its hash, header and JSON chunk) and record it, under the same rule for who may add it. Returns the existing model if the hash is stored already; a refusal carries its code in `extensions.code` and deletes the upload. */
-  createModel: ThreeDModel;
   /** Create a new placement for an agent in a space. */
   createPlacement: Placement;
   /** Create a recurring assignment of an action. Its next run is planned immediately. */
@@ -2658,12 +2719,12 @@ export type Mutation = {
   probe: Probe;
   /** Register the components and operations a UI app can render and evaluate (upsert by name in the caller's organization). Bloks and definitions that name the catalog are validated against it. */
   registerUiCatalog: UiCatalog;
+  /** A media upload grant for one asset. Issued only for a file the caller's own agent declares (it registered with it), and only if its size passes the policy. */
+  requestAssetUpload: MediaUploadGrant;
   /** Request temporary S3 read credentials for a media file */
   requestMediaAccess: MediaAccessGrant;
   /** Upload media and return a URL for access */
   requestMediaUpload: MediaUploadGrant;
-  /** A media upload grant for one model, issued if its reference and size pass the policy. An admin may add any model; another member only one that a registered blok names, and only where `modelPolicy.appUpload` is on. */
-  requestModelUpload: MediaUploadGrant;
   /** Resume a paused task. */
   resume: Task;
   /** Resume a paused probe. Idempotent on finished probes; the agent's Resumed report settles the state. */
@@ -2746,6 +2807,12 @@ export type MutationCollectArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationCreateAssetArgs = {
+  input: CreateAssetInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationCreateBlokArgs = {
   input: CreateBlokInput;
 };
@@ -2760,12 +2827,6 @@ export type MutationCreateDashboardArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationCreateHigherOrderImplementationArgs = {
   input: CreateHigherOrderImplementationInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationCreateModelArgs = {
-  input: CreateModelInput;
 };
 
 
@@ -2974,6 +3035,12 @@ export type MutationRegisterUiCatalogArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationRequestAssetUploadArgs = {
+  input: RequestAssetUploadInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationRequestMediaAccessArgs = {
   input: RequestMediaAccessInput;
 };
@@ -2982,12 +3049,6 @@ export type MutationRequestMediaAccessArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationRequestMediaUploadArgs = {
   input: RequestMediaUploadInput;
-};
-
-
-/** Root mutation type for executing write operations on the API. */
-export type MutationRequestModelUploadArgs = {
-  input: RequestModelUploadInput;
 };
 
 
@@ -3487,6 +3548,10 @@ export type Query = {
   agent: Agent;
   /** Retrieve all compute agents. */
   agents: Array<Agent>;
+  /** The stored asset of this reference ('sha256:...') in the caller's organization, or null if no agent has uploaded it. */
+  asset?: Maybe<Asset>;
+  /** The limits each kind of asset is held to when it is added. */
+  assetPolicy: AssetPolicy;
   /** The built-in base catalog every definition and blok is validated against before any registered UI catalog (virtual: shipped with the server, not registered). */
   baseCatalog: BaseCatalog;
   /** Get a blok by ID. */
@@ -3549,12 +3614,6 @@ export type Query = {
   memoryShelve: MemoryShelve;
   /** All memory shelves. */
   memoryShelves: Array<MemoryShelve>;
-  /** Admins only: models that registered bloks reference statically but the organization has not stored, with the URL to fetch each from. */
-  missingModels: Array<MissingModel>;
-  /** The stored model of this reference ('sha256:...') in the caller's organization, or null if it has not been added. */
-  model?: Maybe<ThreeDModel>;
-  /** The limits a model is held to when it is added. */
-  modelPolicy: ModelPolicy;
   /** Find your implementation at a specific interface. */
   myImplementationAt: Implementation;
   /** Fetch the root tasks this client created (caller-scoped). */
@@ -3704,6 +3763,11 @@ export type QueryAgentsArgs = {
   filters?: InputMaybe<AgentFilter>;
   ordering?: Array<AgentOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryAssetArgs = {
+  ref: Scalars['String']['input'];
 };
 
 
@@ -3878,11 +3942,6 @@ export type QueryMemoryShelvesArgs = {
   filters?: InputMaybe<MemoryShelveFilter>;
   ordering?: Array<MemoryShelveOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-export type QueryModelArgs = {
-  ref: Scalars['String']['input'];
 };
 
 
@@ -4205,6 +4264,12 @@ export type Release = {
   version: Scalars['String']['output'];
 };
 
+/** Ask for a grant to upload one asset the caller's agent declares. */
+export type RequestAssetUploadInput = {
+  /** The asset's reference, as the agent declared it: 'sha256:' and the hex SHA-256 of its exact bytes. */
+  ref: Scalars['String']['input'];
+};
+
 export type RequestMediaAccessInput = {
   storeId: Scalars['String']['input'];
 };
@@ -4213,16 +4278,6 @@ export type RequestMediaUploadInput = {
   contentType?: InputMaybe<Scalars['String']['input']>;
   fileSize?: InputMaybe<Scalars['Int']['input']>;
   originalFileName: Scalars['String']['input'];
-};
-
-/** Ask for a grant to upload one model. */
-export type RequestModelUploadInput = {
-  /** A file name for the stored object; the reference when absent. */
-  fileName?: InputMaybe<Scalars['String']['input']>;
-  /** The model's reference: 'sha256:' and the hex SHA-256 of its exact bytes. */
-  ref: Scalars['String']['input'];
-  /** The size of the file in bytes, checked against the policy before a grant is issued. */
-  size: Scalars['Float']['input'];
 };
 
 export type Requires = {
@@ -5734,16 +5789,6 @@ export type ThreeDModel = {
   file: MediaStore;
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
-  /** The node names blok bindings can address. */
-  nodes: Array<Scalars['String']['output']>;
-  /** 'sha256:' and the hex SHA-256 of the file's exact bytes; null for a model that was never verified. */
-  ref?: Maybe<Scalars['String']['output']>;
-  /** The size of the file in bytes, measured by the server. */
-  size?: Maybe<Scalars['Int']['output']>;
-  /** The https URL the first upload was fetched from; null when an app uploaded its own file. Informational. */
-  source?: Maybe<Scalars['String']['output']>;
-  /** Node, triangle, texture and animation counts found at validation. */
-  stats?: Maybe<ModelStats>;
   transferFunction?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
 };
@@ -6375,6 +6420,14 @@ export type AgentChangeEventFragment = { __typename?: 'AgentChangeEvent', delete
 
 export type HoverAgentFragment = { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> };
 
+export type StoredAssetFragment = { __typename?: 'Asset', id: string, ref: string, kind: AssetKind, size: number, nodes: Array<string>, width?: number | null, height?: number | null, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: { __typename?: 'MediaStore', id: string, key: string, bucket: string } };
+
+export type AgentAssetFragment = { __typename?: 'AgentAsset', id: string, name: string, kind: AssetKind, ref: string, size: number, asset?: { __typename?: 'Asset', id: string, ref: string, kind: AssetKind, size: number, nodes: Array<string>, width?: number | null, height?: number | null, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null };
+
+export type ModelPolicyFragment = { __typename?: 'ModelPolicy', maxSize: number, maxJson: number, maxNodes: number, maxTriangles: number, maxTextureSize: number, maxTextureMemory: number, maxAnimations: number, extensions: Array<string> };
+
+export type ModelBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, forNode?: string | null, materializedBloks: Array<{ __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> }> };
+
 export type ListScheduleFragment = { __typename?: 'Schedule', id: string, name: string, enabled: boolean, cron?: string | null, intervalSeconds?: number | null, timezone: string, consecutiveFailures: number, lastError?: string | null, description?: string | null, runCount: number, lastRunAt?: any | null, lastErrorAt?: any | null, exhausted: boolean, endsAt?: any | null, maxRuns?: number | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null, nextRun?: { __typename?: 'Task', id: string, notBefore?: any | null, latestEventKind: TaskEventKind, isDone: boolean } | null };
 
 export type DetailScheduleFragment = { __typename?: 'Schedule', args: any, interface?: string | null, ephemeralRuns: boolean, overlap: ScheduleOverlap, catchUp: boolean, lastFiredAt?: any | null, upcoming: Array<any>, wireKey?: string | null, createdAt: any, updatedAt: any, id: string, name: string, enabled: boolean, cron?: string | null, intervalSeconds?: number | null, timezone: string, consecutiveFailures: number, lastError?: string | null, description?: string | null, runCount: number, lastRunAt?: any | null, lastErrorAt?: any | null, exhausted: boolean, endsAt?: any | null, maxRuns?: number | null, wiregram?: { __typename?: 'Wiregram', id: string, name: string } | null, caller: { __typename?: 'Caller', id: string, user: { __typename?: 'User', id: string, sub: string } }, runs: Array<{ __typename?: 'Task', id: string, reference?: string | null, latestEventKind: TaskEventKind, isDone: boolean, finishedAt?: any | null, createdAt: any, action: { __typename?: 'Action', id: string, name: string }, implementation?: { __typename?: 'Implementation', id: string, interface: string } | null, agent?: { __typename?: 'Agent', id: string, name: string } | null, events: Array<{ __typename?: 'TaskEvent', id: string, kind: TaskEventKind, progress?: number | null, message?: string | null, createdAt: any }> }>, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null, nextRun?: { __typename?: 'Task', id: string, notBefore?: any | null, latestEventKind: TaskEventKind, isDone: boolean } | null };
@@ -6477,14 +6530,6 @@ export type InstallerImplementationFragment = { __typename?: 'Implementation', i
 export type MemoryShelveFragment = { __typename?: 'MemoryShelve', id: string, name: string, agent: { __typename?: 'Agent', name: string }, drawers: Array<{ __typename?: 'MemoryDrawer', id: string, label: string, description?: string | null, resourceId: string }> };
 
 export type ListMemoryShelveFragment = { __typename?: 'MemoryShelve', id: string, name: string, agent: { __typename?: 'Agent', name: string } };
-
-export type StoredModelFragment = { __typename?: 'ThreeDModel', id: string, name: string, ref?: string | null, source?: string | null, size?: number | null, nodes: Array<string>, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: { __typename?: 'MediaStore', id: string, key: string, bucket: string } };
-
-export type ModelPolicyFragment = { __typename?: 'ModelPolicy', maxSize: number, maxJson: number, maxNodes: number, maxTriangles: number, maxTextureSize: number, maxTextureMemory: number, maxAnimations: number, extensions: Array<string> };
-
-export type MissingModelFragment = { __typename?: 'MissingModel', ref: string, source?: string | null, bloks: Array<string> };
-
-export type ModelBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, forNode?: string | null, materializedBloks: Array<{ __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> }> };
 
 export type PlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, model?: { __typename?: 'ThreeDModel', id: string, transferFunction?: string | null, file: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, agent: { __typename?: 'Agent', id: string } };
 
@@ -6960,20 +7005,6 @@ export type RequestMediaAccessMutationVariables = Exact<{
 
 export type RequestMediaAccessMutation = { __typename?: 'Mutation', requestMediaAccess: { __typename?: 'MediaAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, path: string, key: string, bucket: string } };
 
-export type RequestModelUploadMutationVariables = Exact<{
-  input: RequestModelUploadInput;
-}>;
-
-
-export type RequestModelUploadMutation = { __typename?: 'Mutation', requestModelUpload: { __typename?: 'MediaUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, maxBytes: number, store: string } };
-
-export type CreateModelMutationVariables = Exact<{
-  input: CreateModelInput;
-}>;
-
-
-export type CreateModelMutation = { __typename?: 'Mutation', createModel: { __typename?: 'ThreeDModel', id: string, name: string, ref?: string | null, source?: string | null, size?: number | null, nodes: Array<string>, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } };
-
 export type StartProbeMutationVariables = Exact<{
   input: ProbeInput;
 }>;
@@ -7262,6 +7293,25 @@ export type HoverAgentQueryVariables = Exact<{
 
 
 export type HoverAgentQuery = { __typename?: 'Query', agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> } };
+
+export type AgentAssetsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type AgentAssetsQuery = { __typename?: 'Query', agent: { __typename?: 'Agent', id: string, assets: Array<{ __typename?: 'AgentAsset', id: string, name: string, kind: AssetKind, ref: string, size: number, asset?: { __typename?: 'Asset', id: string, ref: string, kind: AssetKind, size: number, nodes: Array<string>, width?: number | null, height?: number | null, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null }> } };
+
+export type AssetPolicyQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AssetPolicyQuery = { __typename?: 'Query', assetPolicy: { __typename?: 'AssetPolicy', model: { __typename?: 'ModelPolicy', maxSize: number, maxJson: number, maxNodes: number, maxTriangles: number, maxTextureSize: number, maxTextureMemory: number, maxAnimations: number, extensions: Array<string> }, image: { __typename?: 'ImagePolicy', maxSize: number, maxSide: number, formats: Array<string> } } };
+
+export type BloksForModelQueryVariables = Exact<{
+  ref: Scalars['String']['input'];
+}>;
+
+
+export type BloksForModelQuery = { __typename?: 'Query', bloksForModel: Array<{ __typename?: 'Blok', id: string, name: string, description?: string | null, forNode?: string | null, materializedBloks: Array<{ __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> }> }> };
 
 export type ListSchedulesQueryVariables = Exact<{
   filters?: InputMaybe<ScheduleFilter>;
@@ -7623,30 +7673,6 @@ export type MemoryShelveQueryVariables = Exact<{
 
 
 export type MemoryShelveQuery = { __typename?: 'Query', memoryShelve: { __typename?: 'MemoryShelve', id: string, name: string, agent: { __typename?: 'Agent', name: string }, drawers: Array<{ __typename?: 'MemoryDrawer', id: string, label: string, description?: string | null, resourceId: string }> } };
-
-export type StoredModelQueryVariables = Exact<{
-  ref: Scalars['String']['input'];
-}>;
-
-
-export type StoredModelQuery = { __typename?: 'Query', model?: { __typename?: 'ThreeDModel', id: string, name: string, ref?: string | null, source?: string | null, size?: number | null, nodes: Array<string>, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null };
-
-export type MissingModelsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type MissingModelsQuery = { __typename?: 'Query', missingModels: Array<{ __typename?: 'MissingModel', ref: string, source?: string | null, bloks: Array<string> }> };
-
-export type ModelPolicyQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type ModelPolicyQuery = { __typename?: 'Query', modelPolicy: { __typename?: 'ModelPolicy', maxSize: number, maxJson: number, maxNodes: number, maxTriangles: number, maxTextureSize: number, maxTextureMemory: number, maxAnimations: number, extensions: Array<string> } };
-
-export type BloksForModelQueryVariables = Exact<{
-  ref: Scalars['String']['input'];
-}>;
-
-
-export type BloksForModelQuery = { __typename?: 'Query', bloksForModel: Array<{ __typename?: 'Blok', id: string, name: string, description?: string | null, forNode?: string | null, materializedBloks: Array<{ __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> }> }> };
 
 export type PlacementsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -9021,6 +9047,84 @@ export const HoverAgentFragmentDoc = gql`
   }
 }
     `;
+export const StoredAssetFragmentDoc = gql`
+    fragment StoredAsset on Asset {
+  id
+  ref
+  kind
+  size
+  nodes
+  stats {
+    nodes
+    triangles
+    textures
+    animations
+  }
+  width
+  height
+  file {
+    ...MediaStore
+  }
+}
+    ${MediaStoreFragmentDoc}`;
+export const AgentAssetFragmentDoc = gql`
+    fragment AgentAsset on AgentAsset {
+  id
+  name
+  kind
+  ref
+  size
+  asset {
+    ...StoredAsset
+  }
+}
+    ${StoredAssetFragmentDoc}`;
+export const ModelPolicyFragmentDoc = gql`
+    fragment ModelPolicy on ModelPolicy {
+  maxSize
+  maxJson
+  maxNodes
+  maxTriangles
+  maxTextureSize
+  maxTextureMemory
+  maxAnimations
+  extensions
+}
+    `;
+export const ListMaterializedBlokFragmentDoc = gql`
+    fragment ListMaterializedBlok on MaterializedBlok {
+  id
+  name
+  description
+  isDefault
+  updatedAt
+  blok {
+    id
+    name
+    description
+    context
+  }
+  agentMappings {
+    key
+    agent {
+      id
+      name
+      connected
+    }
+  }
+}
+    `;
+export const ModelBlokFragmentDoc = gql`
+    fragment ModelBlok on Blok {
+  id
+  name
+  description
+  forNode
+  materializedBloks {
+    ...ListMaterializedBlok
+  }
+}
+    ${ListMaterializedBlokFragmentDoc}`;
 export const ListScheduleFragmentDoc = gql`
     fragment ListSchedule on Schedule {
   id
@@ -9356,29 +9460,6 @@ export const ListClientFragmentDoc = gql`
     app {
       id
       identifier
-    }
-  }
-}
-    `;
-export const ListMaterializedBlokFragmentDoc = gql`
-    fragment ListMaterializedBlok on MaterializedBlok {
-  id
-  name
-  description
-  isDefault
-  updatedAt
-  blok {
-    id
-    name
-    description
-    context
-  }
-  agentMappings {
-    key
-    agent {
-      id
-      name
-      connected
     }
   }
 }
@@ -9739,55 +9820,6 @@ export const ListMemoryShelveFragmentDoc = gql`
   name
 }
     `;
-export const StoredModelFragmentDoc = gql`
-    fragment StoredModel on ThreeDModel {
-  id
-  name
-  ref
-  source
-  size
-  nodes
-  stats {
-    nodes
-    triangles
-    textures
-    animations
-  }
-  file {
-    ...MediaStore
-  }
-}
-    ${MediaStoreFragmentDoc}`;
-export const ModelPolicyFragmentDoc = gql`
-    fragment ModelPolicy on ModelPolicy {
-  maxSize
-  maxJson
-  maxNodes
-  maxTriangles
-  maxTextureSize
-  maxTextureMemory
-  maxAnimations
-  extensions
-}
-    `;
-export const MissingModelFragmentDoc = gql`
-    fragment MissingModel on MissingModel {
-  ref
-  source
-  bloks
-}
-    `;
-export const ModelBlokFragmentDoc = gql`
-    fragment ModelBlok on Blok {
-  id
-  name
-  description
-  forNode
-  materializedBloks {
-    ...ListMaterializedBlok
-  }
-}
-    ${ListMaterializedBlokFragmentDoc}`;
 export const PlacementFragmentDoc = gql`
     fragment Placement on Placement {
   id
@@ -11063,20 +11095,6 @@ export const RequestMediaAccessDocument = gql`
   }
 }
     ${MediaAccessGrantFragmentDoc}`;
-export const RequestModelUploadDocument = gql`
-    mutation RequestModelUpload($input: RequestModelUploadInput!) {
-  requestModelUpload(input: $input) {
-    ...MediaUploadGrant
-  }
-}
-    ${MediaUploadGrantFragmentDoc}`;
-export const CreateModelDocument = gql`
-    mutation CreateModel($input: CreateModelInput!) {
-  createModel(input: $input) {
-    ...StoredModel
-  }
-}
-    ${StoredModelFragmentDoc}`;
 export const StartProbeDocument = gql`
     mutation StartProbe($input: ProbeInput!) {
   probe(input: $input) {
@@ -11362,6 +11380,37 @@ export const HoverAgentDocument = gql`
   }
 }
     ${HoverAgentFragmentDoc}`;
+export const AgentAssetsDocument = gql`
+    query AgentAssets($id: ID!) {
+  agent(id: $id) {
+    id
+    assets {
+      ...AgentAsset
+    }
+  }
+}
+    ${AgentAssetFragmentDoc}`;
+export const AssetPolicyDocument = gql`
+    query AssetPolicy {
+  assetPolicy {
+    model {
+      ...ModelPolicy
+    }
+    image {
+      maxSize
+      maxSide
+      formats
+    }
+  }
+}
+    ${ModelPolicyFragmentDoc}`;
+export const BloksForModelDocument = gql`
+    query BloksForModel($ref: String!) {
+  bloksForModel(ref: $ref) {
+    ...ModelBlok
+  }
+}
+    ${ModelBlokFragmentDoc}`;
 export const ListSchedulesDocument = gql`
     query ListSchedules($filters: ScheduleFilter, $ordering: [ScheduleOrder!] = [], $pagination: OffsetPaginationInput) {
   schedules(filters: $filters, ordering: $ordering, pagination: $pagination) {
@@ -11770,34 +11819,6 @@ export const MemoryShelveDocument = gql`
   }
 }
     ${MemoryShelveFragmentDoc}`;
-export const StoredModelDocument = gql`
-    query StoredModel($ref: String!) {
-  model(ref: $ref) {
-    ...StoredModel
-  }
-}
-    ${StoredModelFragmentDoc}`;
-export const MissingModelsDocument = gql`
-    query MissingModels {
-  missingModels {
-    ...MissingModel
-  }
-}
-    ${MissingModelFragmentDoc}`;
-export const ModelPolicyDocument = gql`
-    query ModelPolicy {
-  modelPolicy {
-    ...ModelPolicy
-  }
-}
-    ${ModelPolicyFragmentDoc}`;
-export const BloksForModelDocument = gql`
-    query BloksForModel($ref: String!) {
-  bloksForModel(ref: $ref) {
-    ...ModelBlok
-  }
-}
-    ${ModelBlokFragmentDoc}`;
 export const PlacementsDocument = gql`
     query Placements($pagination: OffsetPaginationInput, $filters: PlacementFilter, $ordering: [PlacementOrder!]) {
   placements(ordering: $ordering, pagination: $pagination, filters: $filters) {
@@ -12349,12 +12370,6 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     RequestMediaAccess(variables: RequestMediaAccessMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RequestMediaAccessMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<RequestMediaAccessMutation>({ document: RequestMediaAccessDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RequestMediaAccess', 'mutation', variables);
     },
-    RequestModelUpload(variables: RequestModelUploadMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RequestModelUploadMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<RequestModelUploadMutation>({ document: RequestModelUploadDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RequestModelUpload', 'mutation', variables);
-    },
-    CreateModel(variables: CreateModelMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateModelMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<CreateModelMutation>({ document: CreateModelDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateModel', 'mutation', variables);
-    },
     StartProbe(variables: StartProbeMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<StartProbeMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<StartProbeMutation>({ document: StartProbeDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'StartProbe', 'mutation', variables);
     },
@@ -12468,6 +12483,15 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     HoverAgent(variables: HoverAgentQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<HoverAgentQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<HoverAgentQuery>({ document: HoverAgentDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'HoverAgent', 'query', variables);
+    },
+    AgentAssets(variables: AgentAssetsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AgentAssetsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<AgentAssetsQuery>({ document: AgentAssetsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AgentAssets', 'query', variables);
+    },
+    AssetPolicy(variables?: AssetPolicyQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AssetPolicyQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<AssetPolicyQuery>({ document: AssetPolicyDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AssetPolicy', 'query', variables);
+    },
+    BloksForModel(variables: BloksForModelQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<BloksForModelQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<BloksForModelQuery>({ document: BloksForModelDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'BloksForModel', 'query', variables);
     },
     ListSchedules(variables?: ListSchedulesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ListSchedulesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<ListSchedulesQuery>({ document: ListSchedulesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ListSchedules', 'query', variables);
@@ -12609,18 +12633,6 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     MemoryShelve(variables: MemoryShelveQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MemoryShelveQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<MemoryShelveQuery>({ document: MemoryShelveDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MemoryShelve', 'query', variables);
-    },
-    StoredModel(variables: StoredModelQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<StoredModelQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<StoredModelQuery>({ document: StoredModelDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'StoredModel', 'query', variables);
-    },
-    MissingModels(variables?: MissingModelsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MissingModelsQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<MissingModelsQuery>({ document: MissingModelsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MissingModels', 'query', variables);
-    },
-    ModelPolicy(variables?: ModelPolicyQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ModelPolicyQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<ModelPolicyQuery>({ document: ModelPolicyDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ModelPolicy', 'query', variables);
-    },
-    BloksForModel(variables: BloksForModelQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<BloksForModelQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<BloksForModelQuery>({ document: BloksForModelDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'BloksForModel', 'query', variables);
     },
     Placements(variables?: PlacementsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<PlacementsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<PlacementsQuery>({ document: PlacementsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'Placements', 'query', variables);

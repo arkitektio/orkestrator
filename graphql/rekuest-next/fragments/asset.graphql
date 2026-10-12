@@ -1,0 +1,54 @@
+# Assets: the files an agent brings, stored once per organization under the SHA-256
+# of their exact bytes. `file` is the media store the bytes are read from.
+
+fragment StoredAsset on Asset {
+  id
+  ref
+  kind
+  size
+  nodes
+  stats {
+    nodes
+    triangles
+    textures
+    animations
+  }
+  width
+  height
+  file {
+    ...MediaStore
+  }
+}
+
+# A file under the name its agent's bloks call it by; `asset` is null until the agent uploaded it.
+fragment AgentAsset on AgentAsset {
+  id
+  name
+  kind
+  ref
+  size
+  asset {
+    ...StoredAsset
+  }
+}
+
+fragment ModelPolicy on ModelPolicy {
+  maxSize
+  maxJson
+  maxNodes
+  maxTriangles
+  maxTextureSize
+  maxTextureMemory
+  maxAnimations
+  extensions
+}
+
+fragment ModelBlok on Blok {
+  id
+  name
+  description
+  forNode
+  materializedBloks {
+    ...ListMaterializedBlok
+  }
+}

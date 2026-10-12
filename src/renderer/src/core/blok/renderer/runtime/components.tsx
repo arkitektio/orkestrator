@@ -28,8 +28,8 @@ export type BlokComponentPlacement = {
   notDownstreamOf?: readonly string[];
 };
 
-/** Props whose static value has a fixed spelling the server checks at registration. */
-export type BlokPropKind = 'MODEL_REF' | 'HTTPS_URL';
+/** Props the server holds to more than their shape: an `ASSET` prop names a file its app registered. */
+export type BlokPropKind = 'ASSET';
 
 type BlokComponentApi = {
   /** Set when the component renders declared children its schema has no `children` prop for. */

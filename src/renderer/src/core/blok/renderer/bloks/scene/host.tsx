@@ -4,29 +4,11 @@ import type {ModelPolicy} from '@/core/model/glb';
 /**
  * What a scene needs from the app that hosts it.
  *
- * The blok core knows how to show a model; it does not know where models are
- * stored, who may add one, or how a named blok is found. A host (rekuest, in
- * the app) answers those through this context. Without a host a scene still
- * renders, with a placeholder where each model would be.
+ * The blok core knows how to show a model; it does not know which bloks
+ * decorate one or how a named blok is found. A host (rekuest, in the app)
+ * answers those through this context. Where a model's file comes from is the
+ * asset host's (`../../assets`).
  */
-
-export type BlokModelSource =
-  | {status: 'loading'}
-  /** The model is stored: `load` returns its bytes, which the scene verifies against the reference. */
-  | {status: 'ready'; load: () => Promise<Uint8Array>}
-  /**
-   * The organization has not stored the model. An admin can add it from its source;
-   * one that names no source (`sourceHost` is `null`) is uploaded by its app.
-   */
-  | {
-      status: 'missing';
-      sourceHost: string | null;
-      canAdd: boolean;
-      add?: () => void;
-      adding?: boolean;
-      error?: string;
-    }
-  | {status: 'refused'; reason: string};
 
 /** A blok another app registered for a model: shown at `node` when that node is clicked. */
 export type BlokModelDecoration = {
@@ -37,8 +19,6 @@ export type BlokModelDecoration = {
 };
 
 export type BlokSceneHost = {
-  /** Where the bytes of `ref` come from. A hook: called once per model, unconditionally. */
-  useModelSource: (ref: string, from: string) => BlokModelSource;
   /** The bloks registered for `ref`. A hook. */
   useModelDecorations: (ref: string) => readonly BlokModelDecoration[];
   /** Render the html blok registered under `name`, for `OnClick open=`. */
@@ -50,7 +30,6 @@ export type BlokSceneHost = {
 const NO_DECORATIONS: readonly BlokModelDecoration[] = Object.freeze([]);
 
 const DETACHED_HOST: BlokSceneHost = {
-  useModelSource: () => ({status: 'refused', reason: 'This view has no model store.'}),
   useModelDecorations: () => NO_DECORATIONS,
   renderBlok: () => null,
 };

@@ -2,7 +2,6 @@ import * as React from 'react';
 import * as THREE from 'three';
 import * as z from 'zod';
 import {useFrame, type ThreeEvent} from '@react-three/fiber';
-import {isModelRef} from '@/core/model/glb';
 import {resolveJoints} from '@/core/model/joints';
 import {initialMotion, stepMotion, type MotionState} from '@/core/model/motion';
 import {parseVector, toBaseUnit} from '@/core/model/units';
@@ -25,19 +24,14 @@ import {
   type Clickable,
   type ModelContextValue,
 } from './context';
-import {useBlokSceneHost, useBlokSceneInert, type BlokModelDecoration, type BlokModelSource} from './host';
+import {ASSET_KIND_LABELS, useBlokAsset} from '../../assets';
+import {useBlokSceneHost, useBlokSceneInert, type BlokModelDecoration} from './host';
 import {instantiate, loadModel, type ModelInstance} from './loadModel';
 
 const modelShape = {
   src: z
     .string()
-    .describe("The model's reference: 'sha256:' and the hex SHA-256 of the exact bytes of its GLB file."),
-  from: z
-    .string()
-    .optional()
-    .describe(
-      'The https URL the model can be fetched from when the organization has not stored it yet. Left out when the app uploads the model itself.',
-    ),
+    .describe('The 3D model to show: an asset its app registered, as in "@self.assets.scope".'),
   id: describedString('A name other models in the scene address this one by, as in to="arm:tool0".'),
   origin: describedString('Where the model sits in the scene, as "x y z" in meters.'),
   rotation: describedString('How the model is turned, as "x y z" Euler angles in radians.'),
@@ -79,52 +73,11 @@ const robotSchema = z
 
 const PLACEHOLDER_SIZE = 0.12;
 
-const isStatic = (component: BlokComponentNode, key: string): boolean => {
-  const prop = component.props?.find(candidate => candidate.key === key);
-  return prop !== undefined && prop.static_value !== undefined && prop.static_value !== null;
-};
-
-const describeSource = (source: BlokModelSource, loadError: string | undefined): string | null => {
-  if (loadError) return loadError;
-  if (source.status === 'loading') return 'Loading model…';
-  if (source.status === 'refused') return source.reason;
-  if (source.status === 'missing') return 'This model has not been added yet.';
-  return null;
-};
-
-const MissingModelCard = ({source, reason}: {source: BlokModelSource; reason: string}) => (
-  <div className="flex flex-col gap-2">
-    <div>{reason}</div>
-    {source.status === 'missing' ? (
-      <>
-        <div className="text-xs text-muted-foreground">
-          {source.sourceHost === null
-            ? 'Its app uploads it when it runs.'
-            : source.canAdd
-              ? `It will be fetched from ${source.sourceHost}.`
-              : 'An admin of your organization can add it.'}
-        </div>
-        {source.error ? <div className="text-xs text-destructive">{source.error}</div> : null}
-        {source.canAdd && source.add ? (
-          <button
-            type="button"
-            disabled={source.adding}
-            onClick={source.add}
-            className="self-start rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-60"
-          >
-            {source.adding ? 'Adding…' : 'Add model'}
-          </button>
-        ) : null}
-      </>
-    ) : null}
-  </div>
-);
-
 /** What stands where a model would be, saying why it is not there. */
-const Placeholder = ({source, reason}: {source: BlokModelSource; reason: string}) => {
+const Placeholder = ({reason}: {reason: string}) => {
   const mesh = React.useRef<THREE.Mesh>(null);
   const anchor = React.useCallback(() => mesh.current, []);
-  const content = React.useMemo(() => <MissingModelCard source={source} reason={reason} />, [reason, source]);
+  const content = React.useMemo(() => <div>{reason}</div>, [reason]);
   useSceneOverlay({visible: true, anchor, content, mode: 'popout'});
   return (
     <mesh ref={mesh} position={[0, PLACEHOLDER_SIZE / 2, 0]}>
@@ -499,65 +452,63 @@ const LoadedModel = ({
 
 const ModelBody = ({component, buildChild, robot}: Pick<BlokRenderArgs, 'component' | 'buildChild'> & {robot: boolean}) => {
   const blok = useBlok(component, modelSchema);
-  const src = useValue(blok.src) ?? '';
-  const from = useValue(blok.from) ?? '';
   const id = useValue(blok.id);
   const origin = parseVector(useValue(blok.origin)) ?? [0, 0, 0];
   const rotation = parseVector(useValue(blok.rotation)) ?? [0, 0, 0];
   const scale = useValue(blok.scale) ?? 1;
   const host = useBlokSceneHost();
+  const asset = useBlokAsset(component, 'src');
 
-  // A reference names its content and, unless the app uploads the model itself, where to
-  // get it; in this version both are written in the blok, so an admin sees the host a
-  // model is fetched from before it is fetched.
-  const hasFrom = component.props?.some(prop => prop.key === 'from') ?? false;
-  const invalid = !isStatic(component, 'src') || (hasFrom && !isStatic(component, 'from'))
-    ? 'A model reference bound to state is not supported yet: write src and from in the blok.'
-    : !isModelRef(src)
-      ? `'${src}' is not a model reference.`
-      : hasFrom && !from.startsWith('https://')
-        ? 'A model is fetched from an https URL.'
-        : null;
-  const source = host.useModelSource(invalid ? '' : src, invalid ? '' : from);
-  const load = source.status === 'ready' ? source.load : null;
+  const ready = asset?.status === 'ready' && asset.kind === 'MODEL_3D' ? asset : null;
+  const reference = ready?.ref ?? '';
+  const load = ready?.load ?? null;
 
   const [loaded, setLoaded] = React.useState<{reference: string; instance?: ModelInstance; error?: string}>({
     reference: '',
   });
   React.useEffect(() => {
-    if (!load || invalid) return;
+    if (!load) return;
     let live = true;
-    loadModel(src, load, host.policy).then(
-      model => live && setLoaded({reference: src, instance: instantiate(model)}),
-      (error: Error) => live && setLoaded({reference: src, error: error.message}),
+    loadModel(reference, load, host.policy).then(
+      model => live && setLoaded({reference, instance: instantiate(model)}),
+      (error: Error) => live && setLoaded({reference, error: error.message}),
     );
     return () => {
       live = false;
     };
-  }, [host.policy, invalid, load, src]);
+  }, [host.policy, load, reference]);
 
-  const instance = load && !invalid && loaded.reference === src ? loaded.instance : undefined;
-  const reason = invalid ?? describeSource(source, loaded.reference === src ? loaded.error : undefined) ?? 'Loading model…';
+  const current = load && loaded.reference === reference ? loaded : undefined;
+  const reason =
+    asset === null
+      ? 'A model names an asset its app registered: src="@self.assets.<name>".'
+      : asset.status === 'unknown'
+        ? asset.reason
+        : asset.status === 'awaited'
+          ? 'This model has not been uploaded yet. Its app uploads it when it runs.'
+          : asset.status === 'ready' && asset.kind !== 'MODEL_3D'
+            ? `This asset is a ${ASSET_KIND_LABELS[asset.kind]}, not a 3D model.`
+            : (current?.error ?? 'Loading model…');
 
   return (
     <group position={origin} rotation={rotation} scale={scale}>
-      {instance ? (
+      {current?.instance ? (
         <LoadedModel
           component={component}
           buildChild={buildChild}
-          instance={instance}
+          instance={current.instance}
           id={id}
-          reference={src}
+          reference={reference}
           robot={robot}
         />
       ) : (
-        <Placeholder source={invalid ? {status: 'refused', reason: invalid} : source} reason={reason} />
+        <Placeholder reason={reason} />
       )}
     </group>
   );
 };
 
-const MODEL_PROP_KINDS = {src: 'MODEL_REF', from: 'HTTPS_URL'} as const;
+const MODEL_PROP_KINDS = {src: 'ASSET'} as const;
 
 export const ModelBlok = createBlokComponent(
   {

@@ -24,21 +24,6 @@ describe('a scene blok from the Python client', () => {
     );
   });
 
-  it('takes a model that names no source: its app uploads it', () => {
-    const src = 'sha256:' + 'a'.repeat(64);
-    const {roots} = normalizeBlokComponentTree([
-      {
-        id: 'scene',
-        component: 'Scene',
-        children: [{id: 'scope', component: 'Model', props: [{key: 'src', static_value: src}]}],
-      },
-    ]);
-
-    const preflight = preflightBlokDocument(roots, defaultBlokCatalog);
-    expect(preflight.errors).toEqual([]);
-    expect(preflight.invalidNodes.size).toBe(0);
-  });
-
   it('carries the handler arguments as event paths', () => {
     const robot = (tree[0].children ?? []).find(node => node.component === 'Robot');
     const handler = robot?.props?.find(prop => prop.key === 'onJointChange');

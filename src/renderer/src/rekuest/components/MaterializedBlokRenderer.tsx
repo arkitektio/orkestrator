@@ -9,6 +9,7 @@ import {useAgentLiveState} from '@/rekuest/hooks/useLiveState';
 import {isTerminalEvent, silenceTask, trackTask} from '@/rekuest/lib/taskTracker';
 import {taskUpdateFromEvent} from './blokTaskUpdates';
 import {collectDemandedStateInterfaces} from './blokDemands';
+import {RekuestAssetHost} from '@/rekuest/scene/RekuestAssetHost';
 import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
 
@@ -182,9 +183,14 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
   const {materializedBlok, ...rendererProps} = props;
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
   const {roots, truncatedIds} = useBlokDocument(materializedBlok.blok.componentTree as unknown[] | null);
+  const boundAgents = React.useMemo(
+    () => new Map(materializedBlok.agentMappings.map(mapping => [mapping.key, mapping.agent.id] as const)),
+    [materializedBlok.agentMappings],
+  );
 
   return (
     <RekuestSceneHost>
+     <RekuestAssetHost agents={boundAgents}>
       <BlokRenderer
         {...rendererProps}
         uiComponents={roots}
@@ -195,6 +201,7 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
         {rendererProps.embedded ? null : <BlokTruncationNotice truncatedIds={truncatedIds} />}
         <MaterializedBlokRuntimeSync materializedBlok={materializedBlok} roots={roots} />
       </BlokRenderer>
+     </RekuestAssetHost>
     </RekuestSceneHost>
   );
 };

@@ -82,14 +82,14 @@ describe("componentInput", () => {
     expect(componentInput(Leaf)).toMatchObject({ acceptsChildren: false, props: [] });
   });
 
-  it("publishes where a component may be placed and the props with a fixed spelling", () => {
+  it("publishes where a component may be placed and the props that name an asset", () => {
     const Model = createBlokComponent(
       {
         name: "Model",
         acceptsChildren: true,
         placement: { context: "scene", downstreamOf: ["Scene"] },
-        propKinds: { src: "MODEL_REF", from: "HTTPS_URL" },
-        schema: z.object({ src: z.string(), from: z.string(), id: z.string().optional() }),
+        propKinds: { src: "ASSET" },
+        schema: z.object({ src: z.string(), id: z.string().optional() }),
       },
       Noop,
     );
@@ -105,9 +105,8 @@ describe("componentInput", () => {
     const model = componentInput(Model);
     expect(model).toMatchObject({ context: "SCENE", childrenContext: null, downstreamOf: ["Scene"] });
     expect(model.props?.map((prop) => [prop.key, prop.kind])).toEqual([
-      ["from", CatalogValueKind.HttpsUrl],
       ["id", CatalogValueKind.String],
-      ["src", CatalogValueKind.ModelRef],
+      ["src", CatalogValueKind.Asset],
     ]);
     expect(componentInput(Popout)).toMatchObject({
       context: "SCENE",

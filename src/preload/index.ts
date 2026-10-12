@@ -160,9 +160,6 @@ const api = {
     hardware?: string[];
   }) => ipcRenderer.invoke("arkitekt.reportIssue", opts),
   openFilePicker: () => ipcRenderer.invoke("dialog:openFile"),
-  /** Fetch a model from the URL a blok names: hashed while downloading, kept in a temporary file. */
-  fetchModel: (opts: { url: string; maxSize: number; allowPrivate?: boolean }) => ipcRenderer.invoke("model:fetch", opts),
-  discardModel: (opts: { path: string }) => ipcRenderer.invoke("model:discard", opts),
   uploadBigFile: (opts: { uploadId: string; path: string; grant: any; endpointUrl: string }) => ipcRenderer.invoke("upload:bigFile", opts),
   cancelBigFile: (opts: { uploadId: string; }) => ipcRenderer.invoke("upload:cancel", opts),
   downloadBigFile: (opts: { downloadId: string; grant: any; endpointUrl: string; fileName: string; savePath?: string; }) => ipcRenderer.invoke("download:bigFile", opts),

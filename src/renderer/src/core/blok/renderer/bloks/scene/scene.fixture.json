@@ -9,11 +9,11 @@
     "props": [
      {
       "key": "src",
-      "static_value": "sha256:9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f"
-     },
-     {
-      "key": "from",
-      "static_value": "https://models.example.org/scope-v3.glb"
+      "static_value": null,
+      "dynamic_value": {
+       "literal": null,
+       "path": "self.assets.scope"
+      }
      }
     ],
     "children": [
@@ -125,11 +125,11 @@
     "props": [
      {
       "key": "src",
-      "static_value": "sha256:9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f"
-     },
-     {
-      "key": "from",
-      "static_value": "https://vendor.example/arm.glb"
+      "static_value": null,
+      "dynamic_value": {
+       "literal": null,
+       "path": "self.assets.arm"
+      }
      },
      {
       "key": "origin",
