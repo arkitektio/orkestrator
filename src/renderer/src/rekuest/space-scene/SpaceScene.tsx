@@ -178,10 +178,13 @@ const Hint = ({children}: {children: React.ReactNode}) => (
 const Room = ({
   placements,
   editing,
+  inert = false,
   overlay,
 }: {
   placements: readonly SpacePlacementFragment[];
   editing?: Editing;
+  /** Whether the devices ignore the pointer although nothing is being arranged. */
+  inert?: boolean;
   overlay?: React.ReactNode;
 }) => (
   <SceneSurface
@@ -191,7 +194,7 @@ const Room = ({
     }}
     overlay={overlay}
   >
-    <BlokSceneInertProvider value={Boolean(editing)}>
+    <BlokSceneInertProvider value={Boolean(editing) || inert}>
       {placements.map(placement => (
         <Placed key={placement.id} placement={placement} editing={editing} />
       ))}
@@ -199,17 +202,35 @@ const Room = ({
   </SceneSurface>
 );
 
-/** The room as it is: every 3D view live, where it was placed. */
-export const SpaceScene = ({space}: {space: SpaceFragment}) => (
+/**
+ * The room as it is: every 3D view where it was placed, live unless a travel
+ * provider around it says otherwise.
+ *
+ * `overlay` is the host's own HTML over the scene. `readOnly` is a room to
+ * look at: the devices ignore the pointer, so nothing in it can be run.
+ */
+export const SpaceScene = ({
+  space,
+  overlay,
+  readOnly = false,
+}: {
+  space: SpaceFragment;
+  overlay?: React.ReactNode;
+  readOnly?: boolean;
+}) => (
   <RekuestSceneHost>
     <Room
       placements={space.placements}
+      inert={readOnly}
       overlay={
-        space.placements.length === 0 ? (
-          <Hint>
-            Nothing stands in this space yet. Press <b>Edit</b> to add 3D views.
-          </Hint>
-        ) : null
+        <>
+          {space.placements.length === 0 ? (
+            <Hint>
+              Nothing stands in this space yet. Press <b>Edit</b> to add 3D views.
+            </Hint>
+          ) : null}
+          {overlay}
+        </>
       }
     />
   </RekuestSceneHost>

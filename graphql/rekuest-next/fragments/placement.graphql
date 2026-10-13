@@ -53,6 +53,7 @@ fragment AgentPlacement on Placement {
   }
   space {
     id
+    name
   }
 
 

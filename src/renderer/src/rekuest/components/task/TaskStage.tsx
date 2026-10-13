@@ -1,14 +1,15 @@
 import { cn } from "@/core/util/utils";
 import { PageSections } from "@/core/layout/PageSections";
 import { DetailTaskFragment, TaskEventKind } from "@/rekuest/api/graphql";
-import { TaskSpaceScene } from "@/rekuest/components/spaces/task/SpaceScene";
 import { LiveTicker } from "@/rekuest/components/spaces/task/LiveTicker";
 import { LiveStatusStrip } from "@/rekuest/components/spaces/task/panels/LiveStatusStrip";
+import { TimeSlider } from "@/rekuest/components/spaces/task/panels/TimeSlider";
 import {
   createSpaceViewStore,
   SpaceViewStoreContext,
 } from "@/rekuest/components/spaces/task/store";
-import type {} from "@react-three/fiber";
+import { TaskRooms, TaskTravel } from "@/rekuest/components/spaces/task/TaskRoom";
+import { taskRooms } from "@/rekuest/components/spaces/task/taskRooms";
 import { useEffect, useState } from "react";
 import { TaskResultSection } from "./TaskEventLog";
 import { LaneTaskEvent } from "./lane/selection";
@@ -27,10 +28,8 @@ export const stageTabs = (task: DetailTaskFragment): StageTab[] => {
   if (task.implementation?.higherOrderFor?.action?.key === "run_flow") {
     tabs.push("flow");
   }
-  if (
-    (task.children?.length ?? 0) > 0 ||
-    (task.resolvedDependencies?.length ?? 0) > 0
-  ) {
+  // Only when one of its agents stands somewhere: there is no room to show otherwise.
+  if (taskRooms(task).length > 0) {
     tabs.push("space");
   }
   if (
@@ -43,8 +42,9 @@ export const stageTabs = (task: DetailTaskFragment): StageTab[] => {
 };
 
 /**
- * The 3D delegation space, following the task. `focusTime` scrubs it to what
- * the lane selected.
+ * The rooms the task's agents stand in, as they are while the task is
+ * followed live and as they were at the slider's moment otherwise.
+ * `focusTime` moves the slider to what the lane selected.
  */
 const SpaceStage = (props: {
   task: DetailTaskFragment;
@@ -54,7 +54,7 @@ const SpaceStage = (props: {
   const [store] = useState(() => createSpaceViewStore(task));
 
   useEffect(() => {
-    store.getState().refreshTimeline(task);
+    store.getState().refreshTask(task);
   }, [store, task]);
 
   useEffect(() => {
@@ -67,8 +67,11 @@ const SpaceStage = (props: {
       <div className="flex h-full min-h-0 flex-col gap-1">
         <LiveStatusStrip />
         <div className="min-h-0 flex-1">
-          <TaskSpaceScene />
+          <TaskTravel>
+            <TaskRooms />
+          </TaskTravel>
         </div>
+        <TimeSlider />
       </div>
     </SpaceViewStoreContext.Provider>
   );
@@ -76,7 +79,7 @@ const SpaceStage = (props: {
 
 /**
  * The big view above the lane: the fluss run for a flow task (drawn by fluss
- * through the `main` page-section slot), the delegation space, or the result
+ * through the `main` page-section slot), the rooms its agents stand in, or the result
  * large. Only the active view is mounted, so no canvas lives while it is
  * hidden.
  */

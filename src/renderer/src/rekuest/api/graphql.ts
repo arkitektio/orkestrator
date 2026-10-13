@@ -532,7 +532,7 @@ export type AgentTriggersArgs = {
 /** A file an agent brings, under the name its bloks call it by (`@<dependency>.assets.<name>`). */
 export type AgentAsset = {
   __typename?: 'AgentAsset';
-  /** The stored file, once the agent has uploaded it; null until then. */
+  /** The stored file, once it was uploaded; null until then. */
   asset?: Maybe<Asset>;
   id: Scalars['ID']['output'];
   /** What the agent says the file is. */
@@ -541,8 +541,10 @@ export type AgentAsset = {
   name: Scalars['String']['output'];
   /** 'sha256:' and the hex SHA-256 of the file's exact bytes, as the agent declares it. */
   ref: Scalars['String']['output'];
-  /** The size of the file in bytes, as the agent declares it. */
-  size: Scalars['Int']['output'];
+  /** The size of the file in bytes, as the agent declares it; null for a file it does not hold. */
+  size?: Maybe<Scalars['Int']['output']>;
+  /** The https URL the file can be fetched from, for a file the agent does not hold: an admin's client fetches and uploads it. */
+  source?: Maybe<Scalars['String']['output']>;
 };
 
 /** Defines a callback that routes user interactions directly to an Arkitekt Agent via Rekuest. */
@@ -819,8 +821,10 @@ export type AssetInput = {
   name: Scalars['String']['input'];
   /** 'sha256:' and the hex SHA-256 of the file's exact bytes. */
   ref: Scalars['String']['input'];
-  /** The size of the file in bytes. */
-  size: Scalars['Int']['input'];
+  /** The size of the file in bytes. Required unless the asset names a `source`: an agent knows the size of a file it holds. */
+  size?: InputMaybe<Scalars['Int']['input']>;
+  /** The https URL the file can be fetched from. Given instead of holding the file: the agent uploads nothing, an admin's client fetches it. */
+  source?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** What a file an agent brings with it is: a 3D model (a binary glTF file) or an image (PNG, JPEG or WebP). */
@@ -1401,7 +1405,7 @@ export type CreateBlokInput = {
   /** The schema of the blok. This can be used to validate the blok input and output. */
   components?: InputMaybe<Array<ComponentNodeInput>>;
   /** The renderer for the blok's root: HTML, or SCENE for a full 3D view. */
-  context?: ComponentContext;
+  context?: InputMaybe<ComponentContext>;
   /** The initial state of the blok. This is used to set the initial state of the blok when it is materialized. */
   demoState?: InputMaybe<Scalars['Args']['input']>;
   /** The dependencies of the blok. This is used to identify the blok in the system. */
@@ -2720,7 +2724,7 @@ export type Mutation = {
   probe: Probe;
   /** Register the components and operations a UI app can render and evaluate (upsert by name in the caller's organization). Bloks and definitions that name the catalog are validated against it. */
   registerUiCatalog: UiCatalog;
-  /** A media upload grant for one asset. Issued only for a file the caller's own agent declares (it registered with it), and only if its size passes the policy. */
+  /** A media upload grant for one asset. Issued for a file the caller's own agent declares (it registered with it), or, to an admin, for a file an agent of the organization names a source for; and only if its size passes the policy. */
   requestAssetUpload: MediaUploadGrant;
   /** Request temporary S3 read credentials for a media file */
   requestMediaAccess: MediaAccessGrant;
@@ -4265,10 +4269,12 @@ export type Release = {
   version: Scalars['String']['output'];
 };
 
-/** Ask for a grant to upload one asset the caller's agent declares. */
+/** Ask for a grant to upload one asset: one the caller's agent declares, or, for an admin, one an agent of the organization names a source for. */
 export type RequestAssetUploadInput = {
   /** The asset's reference, as the agent declared it: 'sha256:' and the hex SHA-256 of its exact bytes. */
   ref: Scalars['String']['input'];
+  /** The size of the fetched file in bytes, for an asset declared without one. Ignored when the declaration has a size. */
+  size?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type RequestMediaAccessInput = {
@@ -6471,7 +6477,7 @@ export type StoredAssetFragment = { __typename?: 'Asset', id: string, ref: strin
     & MediaStoreFragment
   ) };
 
-export type AgentAssetFragment = { __typename?: 'AgentAsset', id: string, name: string, kind: AssetKind, ref: string, size: number, asset?: (
+export type AgentAssetFragment = { __typename?: 'AgentAsset', id: string, name: string, kind: AssetKind, ref: string, size?: number | null, asset?: (
     { __typename?: 'Asset' }
     & StoredAssetFragment
   ) | null };
@@ -6746,7 +6752,7 @@ export type SpacePlacementFragment = { __typename?: 'Placement', id: string, nam
 export type AgentPlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null, model?: { __typename?: 'ThreeDModel', id: string, transferFunction?: string | null, file: (
       { __typename?: 'MediaStore' }
       & MediaStoreFragment
-    ) } | null, space: { __typename?: 'Space', id: string } };
+    ) } | null, space: { __typename?: 'Space', id: string, name: string } };
 
 export type ListPlacementFragment = { __typename?: 'Placement', id: string, name: string, affineMatrix?: any | null };
 
@@ -7253,7 +7259,7 @@ export type StateFragment = { __typename?: 'State', id: string, interface: strin
 
 export type StateEventFragment = { __typename?: 'State', id: string, updatedAt: any };
 
-export type PatchFragment = { __typename?: 'Patch', id: string, op: string, path: string, value: any, interface: string };
+export type PatchFragment = { __typename?: 'Patch', id: string, op: string, path: string, value: any, interface: string, timestamp: any, globalFutureRevision: number };
 
 export type StatePatchEventFragment = { __typename?: 'StatePatchEvent', stateId: string, agentId: string, op: string, path: string, value: any, globalRevision: number, sessionId?: string | null, timestamp?: any | null, interface: string };
 
@@ -10083,6 +10089,7 @@ export const AgentPlacementFragmentDoc = gql`
   }
   space {
     id
+    name
   }
   affineMatrix
 }
@@ -11447,6 +11454,8 @@ export const PatchFragmentDoc = gql`
   path
   value
   interface
+  timestamp
+  globalFutureRevision
 }
     `;
 export const StatePatchEventFragmentDoc = gql`

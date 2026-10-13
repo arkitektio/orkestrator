@@ -1,12 +1,14 @@
 import { buildAssignInput } from "@/rekuest/assign";
 import * as React from 'react';
 import BlokRenderer from '@/core/blok/renderer/BlokRenderer';
-import {useBlokRuntime, type BlokDispatchActionHandler} from '@/core/blok/renderer/runtime';
+import {type BlokDispatchActionHandler, type BlokRefuseActionHandler} from '@/core/blok/renderer/runtime';
 import {formatApolloError} from '@/core/connection/graphql/errorHandler';
+import {toast} from '@/core/notify';
 import {v4 as uuidv4} from 'uuid';
 import {useAssign} from '@/rekuest/hooks/useAssign';
-import {useAgentLiveState} from '@/rekuest/hooks/useLiveState';
 import {isTerminalEvent, silenceTask, trackTask} from '@/rekuest/lib/taskTracker';
+import {useBlokTravelSource} from '@/rekuest/travel/context';
+import {BlokStateSync} from './blokStateSync';
 import {taskUpdateFromEvent} from './blokTaskUpdates';
 import {collectDemandedStateInterfaces} from './blokDemands';
 import {RekuestAssetHost} from '@/rekuest/scene/RekuestAssetHost';
@@ -31,53 +33,9 @@ type MaterializedBlokData = {
 
 type MaterializedBlokRendererProps = Omit<
   React.ComponentProps<typeof BlokRenderer>,
-  'uiComponents' | 'initialState' | 'dispatchAction' | 'children'
+  'uiComponents' | 'initialState' | 'dispatchAction' | 'refuseAction' | 'children'
 > & {
   materializedBlok: MaterializedBlokData;
-};
-
-const MaterializedDependencyInterfaceSync = (props: {
-  dependencyKey: string;
-  stateInterface: string;
-  agentId: string;
-}) => {
-  const {agentId, dependencyKey, stateInterface} = props;
-  const {value, revision} = useAgentLiveState({agentID: agentId, stateInterface});
-  const setRuntimeValue = useBlokRuntime(state => state.setRuntimeValue);
-  const clearRuntimeValue = useBlokRuntime(state => state.clearRuntimeValue);
-  const setAgentMappingStateUpdate = useBlokRuntime(state => state.setAgentMappingStateUpdate);
-  const clearAgentMappingStateUpdate = useBlokRuntime(state => state.clearAgentMappingStateUpdate);
-  const runtimePath = `${dependencyKey}/${stateInterface}`;
-
-  // Write on every update, clear only when the binding itself goes away.
-  // Clearing between updates would flash the demo state back for a frame.
-  React.useEffect(() => {
-    if (value == null) {
-      return;
-    }
-
-    setRuntimeValue(runtimePath, value);
-    setAgentMappingStateUpdate(dependencyKey, agentId, stateInterface, value, revision);
-  }, [
-    agentId,
-    dependencyKey,
-    revision,
-    runtimePath,
-    setAgentMappingStateUpdate,
-    setRuntimeValue,
-    stateInterface,
-    value,
-  ]);
-
-  React.useEffect(
-    () => () => {
-      clearRuntimeValue(runtimePath);
-      clearAgentMappingStateUpdate(dependencyKey, stateInterface);
-    },
-    [agentId, clearAgentMappingStateUpdate, clearRuntimeValue, dependencyKey, runtimePath, stateInterface],
-  );
-
-  return null;
 };
 
 const MaterializedBlokRuntimeSync = (props: {
@@ -103,7 +61,7 @@ const MaterializedBlokRuntimeSync = (props: {
         }
 
         return [...interfaces].map(stateInterface => (
-          <MaterializedDependencyInterfaceSync
+          <BlokStateSync
             key={`${mapping.key}-${mapping.agent.id}-${stateInterface}`}
             dependencyKey={mapping.key}
             stateInterface={stateInterface}
@@ -179,9 +137,19 @@ const useMaterializedDispatchAction = (
   );
 };
 
+/**
+ * The past cannot be acted on: while the blok shows a moment from it, its
+ * agent calls are dropped before they start, with one notice that says why.
+ */
+const refuseWhileTravelling: BlokRefuseActionHandler = () => {
+  toast.info('Viewing the past: actions are paused.', {id: 'blok-travel-paused'});
+  return true;
+};
+
 export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) => {
   const {materializedBlok, ...rendererProps} = props;
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
+  const travelling = useBlokTravelSource() !== null;
   const {roots, truncatedIds} = useBlokDocument(materializedBlok.blok.componentTree as unknown[] | null);
   const boundAgents = React.useMemo(
     () => new Map(materializedBlok.agentMappings.map(mapping => [mapping.key, mapping.agent.id] as const)),
@@ -196,6 +164,7 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
         uiComponents={roots}
         initialState={materializedBlok.blok.demoState}
         dispatchAction={dispatchAction}
+        refuseAction={travelling ? refuseWhileTravelling : undefined}
       >
         {/* Inside a host's canvas nothing can render the notice's element. */}
         {rendererProps.embedded ? null : <BlokTruncationNotice truncatedIds={truncatedIds} />}

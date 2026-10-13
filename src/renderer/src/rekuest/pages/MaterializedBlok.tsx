@@ -2,6 +2,7 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { registry } from "@/core/smart/localactions/registry";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { LocalActionButton } from "@/core/ui/localactionbutton";
+import { PageAction } from "@/core/ui/page-action";
 import {
   RekuestAgent,
   RekuestBlok,
@@ -9,6 +10,11 @@ import {
 } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
 import MaterializedBlokRenderer from "@/rekuest/components/MaterializedBlokRenderer";
+import { BlokTravelProvider } from "@/rekuest/travel/context";
+import { TravelBar } from "@/rekuest/travel/TravelBar";
+import { useBlokTravel } from "@/rekuest/travel/useBlokTravel";
+import { History } from "lucide-react";
+import { useMemo } from "react";
 import { MaterializedBlokFragment, useMaterializedBlokQuery } from "../api/graphql";
 import { REKUEST_HELP } from "../help";
 
@@ -82,6 +88,17 @@ const BindingsSidebar = ({ materializedBlok }: { materializedBlok: MaterializedB
 
 export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery, ({ data }) => {
   const materializedBlok = data.materializedBlok;
+  const travel = useBlokTravel();
+  const agentNames = useMemo(
+    () =>
+      new Map(
+        materializedBlok.agentMappings.map((mapping) => [
+          mapping.agent.id,
+          mapping.agent.name || mapping.key,
+        ]),
+      ),
+    [materializedBlok.agentMappings],
+  );
 
   return (
     <RekuestMaterializedBlok.ModelPage
@@ -89,18 +106,29 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
       help={REKUEST_HELP.materializedBlok}
       object={materializedBlok}
       pageActions={(
-        <LocalActionButton
-          name={"rekuest-delete-materialized-blok" as keyof typeof registry}
-          state={{
-            left: [
-              {
-                identifier: '@rekuest/materialized_blok',
-                id: materializedBlok.id,
-              },
-            ],
-            isCommand: false,
-          }}
-        />
+        <>
+          <PageAction
+            size="sm"
+            variant={travel.open ? "secondary" : "outline"}
+            onClick={travel.toggle}
+            title={travel.open ? "Back to live, and hide the history bar" : "Show this blok as it was at an earlier time"}
+          >
+            <History className="h-4 w-4" />
+            History
+          </PageAction>
+          <LocalActionButton
+            name={"rekuest-delete-materialized-blok" as keyof typeof registry}
+            state={{
+              left: [
+                {
+                  identifier: '@rekuest/materialized_blok',
+                  id: materializedBlok.id,
+                },
+              ],
+              isCommand: false,
+            }}
+          />
+        </>
       )}
       sidebars={
         <Sidebars>
@@ -113,13 +141,17 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
       <div className="flex h-full w-full flex-col p-3">
         <BindingNotice materializedBlok={materializedBlok} />
         <div className="min-h-0 flex-1">
-          <MaterializedBlokRenderer
-            key={materializedBlok.id}
-            materializedBlok={materializedBlok}
-            surfaceId={materializedBlok.id}
-            chrome="minimal"
-          />
+          {/* Around the renderer, not in it: the cards a scene opens are bloks of their own and follow the same clock. */}
+          <BlokTravelProvider source={travel.source}>
+            <MaterializedBlokRenderer
+              key={materializedBlok.id}
+              materializedBlok={materializedBlok}
+              surfaceId={materializedBlok.id}
+              chrome="minimal"
+            />
+          </BlokTravelProvider>
         </div>
+        {travel.open && <TravelBar travel={travel} names={agentNames} className="mt-2 shrink-0" />}
       </div>
     </RekuestMaterializedBlok.ModelPage>
   );

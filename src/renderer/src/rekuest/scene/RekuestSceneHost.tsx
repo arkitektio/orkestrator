@@ -14,13 +14,13 @@ import {useAssetPolicyQuery, useBloksForModelQuery, useListMaterializedBloksQuer
  */
 
 /** Lazy: `MaterializedBlokRenderer` wraps itself in this host, so the import is a cycle until render time. */
-const CheckoutMaterializedBlokRenderer = React.lazy(
-  () => import('@/rekuest/components/CheckoutMaterializedBlokRenderer'),
+const MaterializedBlokById = React.lazy(
+  () => import('@/rekuest/components/MaterializedBlokById'),
 );
 
 const MaterializedBlokCard = ({id}: {id: string}) => (
   <React.Suspense fallback={null}>
-    <CheckoutMaterializedBlokRenderer materializedBlokId={id} />
+    <MaterializedBlokById materializedBlokId={id} />
   </React.Suspense>
 );
 

@@ -22,6 +22,8 @@ fragment Patch on Patch {
   path
   value
   interface
+  timestamp
+  globalFutureRevision
 }
 
 fragment StatePatchEvent on StatePatchEvent {

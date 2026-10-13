@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { srgbToOklch } from "./oklch";
 
-/** The forward conversion from `rekuest/.../brandColors.ts`, inlined so the
- * round-trip test does not depend on that module's exports (it only exports the
- * composed `computeBrandColors`). Same coefficients CSS `oklch()` uses. */
+/** The forward conversion, with the coefficients CSS `oklch()` uses. */
 const oklchToSrgb = (L: number, C: number, H: number): [number, number, number] => {
   const h = (H * Math.PI) / 180;
   const a = C * Math.cos(h);

@@ -2,12 +2,13 @@ import * as React from 'react';
 import * as THREE from 'three';
 import * as z from 'zod';
 import {useFrame} from '@react-three/fiber';
-import {initialMotion, stepMotion, type MotionState} from '@/core/model/motion';
+import {clipMotion, initialMotion, stepMotion, stillMotion, type MotionState} from '@/core/model/motion';
 import {parseAxis, toBaseUnit, wavelengthToColor, type Dimension} from '@/core/model/units';
 import {parseNodeAddress} from '@/core/model/writers';
 import {createBlokComponent, useBlok, useValue, type BlokComponentPlacement} from '../../runtime';
 import {describedString} from '../shared/schemas';
 import {useModel, useSceneModelKey, useSceneNotice, useSceneState, type ModelContextValue} from './context';
+import {useBlokSceneStill} from './host';
 import {ownMaterials} from './loadModel';
 
 /** Every binding sits somewhere under the model whose nodes it names. */
@@ -105,19 +106,18 @@ const useMotionBinding = (
           : null;
   useSceneNotice(problem ? `Cannot move '${props.node}'` : null, problem ?? undefined);
 
-  const input = React.useMemo(
-    () =>
-      measured?.ok
-        ? {
-            value: measured.value * scale + offset,
-            target: target?.ok ? target.value * scale + offset : undefined,
-            speed: props.speed,
-            duration: props.duration,
-            smooth: props.smooth,
-          }
-        : undefined,
-    [measured, offset, props.duration, props.smooth, props.speed, scale, target],
-  );
+  const still = useBlokSceneStill();
+  const input = React.useMemo(() => {
+    if (!measured?.ok) return undefined;
+    const moving = {
+      value: measured.value * scale + offset,
+      target: target?.ok ? target.value * scale + offset : undefined,
+      speed: props.speed,
+      duration: props.duration,
+      smooth: props.smooth,
+    };
+    return still ? stillMotion(moving) : moving;
+  }, [measured, offset, props.duration, props.smooth, props.speed, scale, still, target]);
   const state = React.useRef<MotionState | undefined>(undefined);
   const gain = props.gain ?? 1;
 
@@ -398,6 +398,7 @@ export const AnimateBlok = createBlokComponent({name: 'Animate', placement: IN_M
     [model, playback],
   );
 
+  const still = useBlokSceneStill();
   const state = React.useRef<MotionState | undefined>(undefined);
   // A clip bound to state can change: the new clip starts from its own position, not
   // from where the previous one was left.
@@ -406,12 +407,7 @@ export const AnimateBlok = createBlokComponent({name: 'Animate', placement: IN_M
   }, [playback]);
   useFrame((_state, delta) => {
     if (!playback || !clip) return;
-    const seconds = (position: number) => (time !== undefined ? position : position * clip.duration);
-    const input = {
-      value: seconds(time ?? progress ?? 0),
-      target: animateTo === undefined ? undefined : seconds(animateTo),
-      duration,
-    };
+    const input = clipMotion({time, progress, animateTo, duration}, clip.duration, still);
     state.current = stepMotion(state.current ?? initialMotion(input), input, Math.min(delta, 0.1));
     playback.action.time = Math.min(Math.max(state.current.displayed, 0), clip.duration);
     playback.mixer.update(0);

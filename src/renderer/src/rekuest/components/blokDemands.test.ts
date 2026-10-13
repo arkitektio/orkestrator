@@ -29,6 +29,23 @@ describe('collectDemandedStateInterfaces', () => {
     });
   });
 
+  it('does not take a file the agent brings for one of its states', () => {
+    const roots = [
+      {
+        id: 'root',
+        component: 'Model',
+        props: [
+          {key: 'src', dynamic_value: {path: 'self.assets.scope'}},
+          {key: 'value', dynamic_value: {path: 'self.Stage.x'}},
+        ],
+      },
+    ];
+
+    expect(toObject(collectDemandedStateInterfaces(roots, new Set(['self'])))).toEqual({
+      self: ['Stage'],
+    });
+  });
+
   it('walks nested action arguments and children', () => {
     const roots = [
       {

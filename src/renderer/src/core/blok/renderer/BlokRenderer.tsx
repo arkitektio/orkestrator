@@ -16,6 +16,7 @@ import {
   type BlokNodeErrorProps,
   type BlokDispatchActionHandler,
   type BlokInvokeFunctionHandler,
+  type BlokRefuseActionHandler,
   type BlokTree,
 } from './runtime';
 
@@ -27,6 +28,8 @@ type BlokRendererProps = {
   catalog?: BlokCatalog;
   invokeFunction?: BlokInvokeFunctionHandler;
   dispatchAction?: BlokDispatchActionHandler;
+  /** Drops the agent calls it answers `true` for, before they start. */
+  refuseAction?: BlokRefuseActionHandler;
   /** `none` draws no frame at all and lets a scene fill the surface: the blok is a backdrop. */
   chrome?: 'default' | 'minimal' | 'none';
   sizing?: 'fill' | 'intrinsic';
@@ -78,6 +81,7 @@ export default function BlokRenderer({
   catalog = defaultBlokCatalog,
   invokeFunction,
   dispatchAction,
+  refuseAction,
   chrome = 'default',
   sizing = 'fill',
   embedded = false,
@@ -125,6 +129,7 @@ export default function BlokRenderer({
       initialDataModel: initialState,
       invokeFunction: resolvedInvokeFunction,
       dispatchAction: resolvedDispatchAction,
+      refuseAction,
     }),
   );
 
@@ -139,6 +144,10 @@ export default function BlokRenderer({
   useEffect(() => {
     runtimeStore.getState().setDispatchAction(resolvedDispatchAction);
   }, [resolvedDispatchAction, runtimeStore]);
+
+  useEffect(() => {
+    runtimeStore.getState().setRefuseAction(refuseAction);
+  }, [refuseAction, runtimeStore]);
 
   // Swapping the payload in place must not carry the previous blok's local
   // edits — the paths they were written against no longer mean the same thing.

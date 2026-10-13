@@ -178,6 +178,7 @@ const createLiveResolutionContext = (
     observe
       ? store.getState().dispatchAction(action, component, observe)
       : store.getState().dispatchAction(action, component),
+  refuseAction: (action, component) => store.getState().refuseAction?.(action, component) ?? false,
   bindTask: name => bindTask(store, name),
 });
 

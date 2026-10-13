@@ -133,6 +133,17 @@ export type BlokDispatchActionHandler = (
 ) => void | Promise<unknown>;
 
 /**
+ * Asked before an agent call starts. A host that answers `true` has the call
+ * dropped: nothing is dispatched, and a task bound to the call keeps the run
+ * it last showed. This is how a host shows a blok it must not act through
+ * (a moment in the past).
+ */
+export type BlokRefuseActionHandler = (
+  action: BlokResolvedAgentCall,
+  component: BlokComponentNode,
+) => boolean;
+
+/**
  * Lexical scope introduced by `foreach` and by a child's `basePath`.
  *
  * - `aliases` maps a scope name to an absolute data-model path. Reads *and*
@@ -165,6 +176,8 @@ export type BlokResolutionContext = {
   resolvePath: (path: string) => string;
   invokeFunction: BlokInvokeFunctionHandler;
   dispatchAction: BlokDispatchActionHandler;
+  /** Whether the host drops this agent call. Asked before anything starts. */
+  refuseAction?: BlokRefuseActionHandler;
   /**
    * Starts a run under a name a call is bound to. Only the live context of an
    * event handler has one: nothing is dispatched while rendering.
@@ -179,6 +192,7 @@ export type BlokRuntimeContext = {
   agentMappingStateUpdates: BlokAgentMappingStateUpdates;
   invokeFunction: BlokInvokeFunctionHandler;
   dispatchAction: BlokDispatchActionHandler;
+  refuseAction: BlokRefuseActionHandler | undefined;
   setInitialDataModel: (dataModel: unknown) => void;
   resetRuntimeValues: () => void;
   setRuntimeValue: (path: string, value: unknown) => void;
@@ -194,6 +208,7 @@ export type BlokRuntimeContext = {
   clearAgentMappingStateUpdate: (mappingKey: string, stateInterface: string) => void;
   setInvokeFunction: (invokeFunction: BlokInvokeFunctionHandler) => void;
   setDispatchAction: (dispatchAction: BlokDispatchActionHandler) => void;
+  setRefuseAction: (refuseAction: BlokRefuseActionHandler | undefined) => void;
 };
 
 export type BlokObjectSchema = z.ZodObject<Record<string, z.ZodTypeAny>>;

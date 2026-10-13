@@ -1,12 +1,10 @@
 /**
  * sRGB → OKLCh.
  *
- * The exact inverse of the OKLCh → sRGB conversion in
- * `rekuest/components/spaces/task/elements/brandColors.ts`, which is itself the
- * conversion CSS `oklch()` performs. Needed because the app's theme is
- * parameterised by an OKLCh hue, so anything that wants to DERIVE a theme from
- * an existing color (a colormap sample, a channel's base color) has to get back
- * into that space first.
+ * The exact inverse of the OKLCh → sRGB conversion CSS `oklch()` performs.
+ * Needed because the app's theme is parameterised by an OKLCh hue, so anything
+ * that wants to DERIVE a theme from an existing color (a colormap sample, a
+ * channel's base color) has to get back into that space first.
  */
 
 export type Oklch = {

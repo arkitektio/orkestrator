@@ -35,7 +35,8 @@ const BlokAssetHostContext = React.createContext<BlokAssetHost>(DETACHED_HOST);
 
 export const BlokAssetHostProvider = BlokAssetHostContext.Provider;
 
-const ASSETS_SEGMENT = 'assets';
+/** The segment after the dependency that names a file the agent brings instead of one of its states. */
+export const ASSETS_SEGMENT = 'assets';
 
 export const ASSET_KIND_LABELS: Record<BlokAssetKind, string> = {MODEL_3D: '3D model', IMAGE: 'image'};
 

@@ -74,17 +74,41 @@ type Entry = {
   frame: unknown | null;
 };
 
-const defaultSchedule = (callback: () => void): unknown =>
+export const defaultSchedule = (callback: () => void): unknown =>
   typeof requestAnimationFrame === "function"
     ? requestAnimationFrame(() => callback())
     : setTimeout(callback, 16);
 
-const defaultCancel = (handle: unknown) => {
+export const defaultCancel = (handle: unknown) => {
   if (typeof cancelAnimationFrame === "function" && typeof handle === "number") {
     cancelAnimationFrame(handle);
   } else {
     clearTimeout(handle as ReturnType<typeof setTimeout>);
   }
+};
+
+/**
+ * Apply `ops` to `doc` without touching it: the first patch clones (the
+ * published value and the network snapshot must stay untouched), the rest
+ * mutate that one clone in place — one deep copy per call instead of one per
+ * patch. A patch that does not apply is dropped, the rest still land.
+ */
+export const applyStateOps = (
+  doc: LiveStateValue | null,
+  ops: readonly Operation[],
+): LiveStateValue | null => {
+  if (doc === null) return null;
+  let next = doc;
+  let owned = false;
+  for (const op of ops) {
+    try {
+      next = applyPatch(next, [op], false, owned).newDocument;
+      owned = true;
+    } catch (error) {
+      console.warn("[liveState] dropping patch that failed to apply:", op, error);
+    }
+  }
+  return next;
 };
 
 export const createLiveStateStore = <C>(options: LiveStateStoreOptions<C>) => {
@@ -95,22 +119,10 @@ export const createLiveStateStore = <C>(options: LiveStateStoreOptions<C>) => {
   const flush = (entry: Entry) => {
     entry.frame = null;
 
-    let doc =
-      entry.pendingSnapshot !== undefined ? entry.pendingSnapshot : entry.snapshot.value;
-    // The first patch clones (the published value and the network snapshot
-    // must stay untouched); the rest mutate that one clone in place — one
-    // deep copy per frame instead of one per patch.
-    let owned = false;
-    if (doc !== null) {
-      for (const op of entry.pendingOps) {
-        try {
-          doc = applyPatch(doc, [op], false, owned).newDocument;
-          owned = true;
-        } catch (error) {
-          console.warn("[liveState] dropping patch that failed to apply:", op, error);
-        }
-      }
-    }
+    const doc = applyStateOps(
+      entry.pendingSnapshot !== undefined ? entry.pendingSnapshot : entry.snapshot.value,
+      entry.pendingOps,
+    );
 
     entry.pendingSnapshot = undefined;
     entry.pendingOps = [];

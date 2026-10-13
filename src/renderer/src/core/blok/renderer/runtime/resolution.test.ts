@@ -210,6 +210,39 @@ describe("runActionCall", () => {
     expect(dispatchAction.mock.calls[0]).toHaveLength(2);
   });
 
+  it("drops a refused agent call before it binds or dispatches", () => {
+    const bindTask = vi.fn(() => ({observe: vi.fn(), release: vi.fn()}));
+    const dispatchAction = vi.fn();
+    const refuseAction = vi.fn(() => true);
+    const component = {id: "btn", component: "Button"};
+    const actionCall = getPropActionCall({
+      key: "onClick",
+      agent_call: {dependency: "self", operation: "blur"},
+      declares_value: "job",
+    })!;
+
+    const result = runActionCall(actionCall, createContext({}, {dispatchAction, bindTask, refuseAction}), component);
+
+    expect(result).toEqual({ok: true, value: undefined});
+    expect(refuseAction).toHaveBeenCalledWith({dependency: "self", operation: "blur", arguments: {}}, component);
+    expect(bindTask).not.toHaveBeenCalled();
+    expect(dispatchAction).not.toHaveBeenCalled();
+  });
+
+  it("never asks the host about a util call", () => {
+    const invokeFunction = vi.fn(() => ({ok: true as const, value: "logged"}));
+    const refuseAction = vi.fn(() => true);
+
+    runActionCall(
+      {type: "util", call: {operation: "log"}},
+      createContext({}, {invokeFunction, refuseAction}),
+      {id: "btn", component: "Button"},
+    );
+
+    expect(refuseAction).not.toHaveBeenCalled();
+    expect(invokeFunction).toHaveBeenCalled();
+  });
+
   it("allows an effectful util call in action position", () => {
     const invokeFunction = vi.fn(() => ({ok: true as const, value: "logged"}));
 

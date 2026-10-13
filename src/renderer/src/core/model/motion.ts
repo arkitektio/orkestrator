@@ -98,3 +98,37 @@ export const stepMotion = (state: MotionState, input: MotionInput, dt: number): 
       : input.target;
   return next;
 };
+
+/**
+ * The input of a moment rather than of a running device: where the part was
+ * measured, and nowhere it was going. A view of the past shows this, since
+ * playing a move toward a target would show one that is long over.
+ */
+export const stillMotion = (input: MotionInput): MotionInput =>
+  input.target === undefined ? input : {...input, target: undefined};
+
+/** Where an animation clip is shown, and where it is playing to. */
+export type ClipPosition = {
+  /** In seconds. Takes precedence over `progress`. */
+  time?: number;
+  /** From 0 (start) to 1 (end). */
+  progress?: number;
+  /** In the unit of whichever of `time` or `progress` is used. */
+  animateTo?: number;
+  duration?: number;
+};
+
+/**
+ * A clip's position as motion input, in seconds. A still view of a clip that
+ * is only ever played to a position (a door that opens) shows that position:
+ * without it the clip would sit at its start.
+ */
+export const clipMotion = (position: ClipPosition, clipDuration: number, still = false): MotionInput => {
+  const seconds = (at: number) => (position.time !== undefined ? at : at * clipDuration);
+  if (still) return {value: seconds(position.time ?? position.progress ?? position.animateTo ?? 0)};
+  return {
+    value: seconds(position.time ?? position.progress ?? 0),
+    target: position.animateTo === undefined ? undefined : seconds(position.animateTo),
+    duration: position.duration,
+  };
+};

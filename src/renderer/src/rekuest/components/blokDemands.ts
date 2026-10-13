@@ -1,3 +1,4 @@
+import {ASSETS_SEGMENT} from '@/core/blok/renderer/assets';
 import {isRecord, splitPathSegments} from '@/core/blok/renderer/runtime';
 
 const collectArgumentDemandPaths = (
@@ -34,6 +35,10 @@ const collectArgumentDemandPaths = (
  * `self/stage/position` demands interface `stage` of dependency `self` — the
  * agent a blok was registered by is bound under the `self` key like any other
  * dependency. Walks the runtime-shaped (snake_case) tree from `useBlokDocument`.
+ *
+ * `self.assets.<name>` is not one of them: it names a file the agent brings,
+ * which the asset host resolves. There is no such state to watch or to look
+ * up in the past.
  */
 export const collectDemandedStateInterfaces = (
   roots: ReadonlyArray<unknown>,
@@ -45,6 +50,10 @@ export const collectDemandedStateInterfaces = (
     const [dependencyKey, stateInterface] = splitPathSegments(path);
 
     if (!dependencyKey || !stateInterface || !dependencyKeys.has(dependencyKey)) {
+      return;
+    }
+
+    if (stateInterface === ASSETS_SEGMENT) {
       return;
     }
 

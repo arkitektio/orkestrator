@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import * as z from 'zod';
 import {useFrame, type ThreeEvent} from '@react-three/fiber';
 import {resolveJoints} from '@/core/model/joints';
-import {initialMotion, stepMotion, type MotionState} from '@/core/model/motion';
+import {initialMotion, stepMotion, stillMotion, type MotionState} from '@/core/model/motion';
 import {parseVector, toBaseUnit} from '@/core/model/units';
 import {findWriterConflicts} from '@/core/model/writers';
 import {
@@ -25,7 +25,7 @@ import {
   type ModelContextValue,
 } from './context';
 import {ASSET_KIND_LABELS, useBlokAsset} from '../../assets';
-import {useBlokSceneHost, useBlokSceneInert, type BlokModelDecoration} from './host';
+import {useBlokSceneHost, useBlokSceneInert, useBlokSceneStill, type BlokModelDecoration} from './host';
 import {instantiate, loadModel, type ModelInstance} from './loadModel';
 
 const modelShape = {
@@ -269,6 +269,7 @@ const JointDriver = ({
   );
   useSceneNotice(problems.length ? 'Joint values that cannot be converted' : null, problems.join('; '));
 
+  const still = useBlokSceneStill();
   const motion = React.useRef(new Map<string, MotionState>());
   useFrame((_state, delta) => {
     for (const joint of table) {
@@ -276,12 +277,13 @@ const JointDriver = ({
       const rest = node ? model.instance.rest.get(node) : undefined;
       const pose = poses.poses.get(joint.name);
       if (!node || !rest || !pose) continue;
-      const input = {
+      const moving = {
         value: pose.value,
         target: targetPoses.poses.get(joint.name)?.value,
         speed: numberOrMap(speed, joint.name),
         duration: numberOrMap(duration, joint.name),
       };
+      const input = still ? stillMotion(moving) : moving;
       const next = stepMotion(motion.current.get(joint.name) ?? initialMotion(input), input, Math.min(delta, 0.1));
       motion.current.set(joint.name, next);
       axisVector.set(...joint.axis);

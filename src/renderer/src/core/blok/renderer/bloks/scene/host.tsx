@@ -71,3 +71,14 @@ const BlokSceneInertContext = React.createContext(false);
 export const BlokSceneInertProvider = BlokSceneInertContext.Provider;
 
 export const useBlokSceneInert = (): boolean => React.useContext(BlokSceneInertContext);
+
+/**
+ * Whether the scene shows a moment instead of a running device. A host that
+ * shows state from the past sets this: parts then stand where they were
+ * measured, and nothing plays toward where it was going.
+ */
+const BlokSceneStillContext = React.createContext(false);
+
+export const BlokSceneStillProvider = BlokSceneStillContext.Provider;
+
+export const useBlokSceneStill = (): boolean => React.useContext(BlokSceneStillContext);

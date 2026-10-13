@@ -2,7 +2,7 @@ import * as React from 'react';
 import {useMaterializedBlokQuery} from '@/rekuest/api/graphql';
 import MaterializedBlokRenderer from './MaterializedBlokRenderer';
 
-type CheckoutMaterializedBlokRendererProps = Omit<
+type MaterializedBlokByIdProps = Omit<
   React.ComponentProps<typeof MaterializedBlokRenderer>,
   'materializedBlok'
 > & {
@@ -12,8 +12,8 @@ type CheckoutMaterializedBlokRendererProps = Omit<
   emptyFallback?: React.ReactNode;
 };
 
-export const CheckoutMaterializedBlokRenderer = (
-  props: CheckoutMaterializedBlokRendererProps,
+export const MaterializedBlokById = (
+  props: MaterializedBlokByIdProps,
 ) => {
   const {
     materializedBlokId,
@@ -52,4 +52,4 @@ export const CheckoutMaterializedBlokRenderer = (
   );
 };
 
-export default CheckoutMaterializedBlokRenderer;
+export default MaterializedBlokById;

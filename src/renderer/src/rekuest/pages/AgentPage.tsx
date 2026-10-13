@@ -29,7 +29,7 @@ import {
   hydrateAndInsertAgentTask,
 } from "../lib/taskCache";
 import { AgentHeroScene } from "../components/AgentHeroScene";
-import CheckoutMaterializedBlokRenderer from "../components/CheckoutMaterializedBlokRenderer";
+import MaterializedBlokById from "../components/MaterializedBlokById";
 import { CopyAgentPythonButton } from "../components/copy-agent-python";
 import AgentImplementationCard from "../components/cards/AgentImplementationCard";
 import AgentTaskCard from "../components/cards/AgentTaskCard";
@@ -108,7 +108,7 @@ const useDefaultSceneBlok = (agent: string) => {
  */
 const AgentBackgroundScene = (props: { materializedBlok: string }) => (
   <div className="absolute inset-y-0 right-0 left-[min(540px,45%)] z-0 bg-black">
-    <CheckoutMaterializedBlokRenderer
+    <MaterializedBlokById
       key={props.materializedBlok}
       materializedBlokId={props.materializedBlok}
       surfaceId={props.materializedBlok}

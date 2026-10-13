@@ -322,15 +322,20 @@ const runActionCall = (
   }
 
   if (actionCall.type === 'agent') {
-    // A bound call's record starts over before the host is asked, so no step
-    // the host reports can arrive ahead of it.
-    const binding = actionCall.into ? context.bindTask?.(actionCall.into) : undefined;
-    // The value is the host's pending handle (a promise), if it returned one.
     const action = {
       dependency: actionCall.call.dependency,
       operation: actionCall.call.operation,
       arguments: resolvedArguments.value,
     };
+    // Asked first: a refused call must not start its bound record over, or
+    // the result the blok still shows would be wiped for a run that never was.
+    if (context.refuseAction?.(action, component)) {
+      return {ok: true, value: undefined};
+    }
+    // A bound call's record starts over before the host is asked, so no step
+    // the host reports can arrive ahead of it.
+    const binding = actionCall.into ? context.bindTask?.(actionCall.into) : undefined;
+    // The value is the host's pending handle (a promise), if it returned one.
     const pending = binding
       ? context.dispatchAction(action, component, binding.observe)
       : context.dispatchAction(action, component);

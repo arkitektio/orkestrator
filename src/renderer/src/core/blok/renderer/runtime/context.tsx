@@ -6,6 +6,7 @@ import type {
   BlokAgentMappingStateUpdates,
   BlokDispatchActionHandler,
   BlokInvokeFunctionHandler,
+  BlokRefuseActionHandler,
   BlokRuntimeContext,
   BlokRuntimeStore,
 } from './types';
@@ -80,6 +81,7 @@ export const createBlokRuntimeStore = (config?: {
   agentMappingStateUpdates?: BlokAgentMappingStateUpdates;
   invokeFunction?: BlokInvokeFunctionHandler;
   dispatchAction?: BlokDispatchActionHandler;
+  refuseAction?: BlokRefuseActionHandler;
 }): BlokRuntimeStore => {
   const initialDataModel = config?.initialDataModel;
   const initialAgentMappingStateUpdates = config?.agentMappingStateUpdates ?? {};
@@ -93,6 +95,7 @@ export const createBlokRuntimeStore = (config?: {
     agentMappingStateUpdates: initialAgentMappingStateUpdates,
     invokeFunction,
     dispatchAction,
+    refuseAction: config?.refuseAction,
     setInitialDataModel: nextInitialDataModel => {
       set(currentState => {
         if (Object.is(currentState.initialDataModel, nextInitialDataModel)) {
@@ -204,6 +207,9 @@ export const createBlokRuntimeStore = (config?: {
     },
     setDispatchAction: nextDispatchAction => {
       set({dispatchAction: nextDispatchAction});
+    },
+    setRefuseAction: nextRefuseAction => {
+      set({refuseAction: nextRefuseAction});
     },
   }));
 };

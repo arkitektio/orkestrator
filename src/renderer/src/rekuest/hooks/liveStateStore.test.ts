@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  applyStateOps,
   createLiveStateStore,
   EMPTY_LIVE_STATE,
   type LiveStateEvent,
@@ -253,5 +254,27 @@ describe("liveStateStore coalescing", () => {
     vi.advanceTimersByTime(16);
     expect(listener).toHaveBeenCalledTimes(1);
     expect(store.getSnapshot("agent", "iface").value).toEqual({ a: 2 });
+  });
+});
+
+describe("applyStateOps", () => {
+  it("leaves its input untouched and drops an op that does not apply", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const doc = { x: 1, nested: { y: 1 } };
+
+    const next = applyStateOps(doc, [
+      { op: "replace", path: "/x", value: 2 },
+      { op: "replace", path: "/missing/deep", value: 0 },
+      { op: "replace", path: "/nested/y", value: 3 },
+    ]);
+
+    expect(next).toEqual({ x: 2, nested: { y: 3 } });
+    expect(doc).toEqual({ x: 1, nested: { y: 1 } });
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+
+  it("has nothing to patch without a document", () => {
+    expect(applyStateOps(null, [{ op: "replace", path: "/x", value: 2 }])).toBeNull();
   });
 });

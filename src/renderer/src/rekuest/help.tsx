@@ -273,9 +273,11 @@ export const REKUEST_HELP = {
         <>Use the controls in the panel as you would on the device itself.</>,
         <>Open the <b>Bindings</b> tab of the sidebar to see which agent stands behind each part of the blok. Click an agent to open it.</>,
         <>Click the blok name in the <b>Bindings</b> tab to go back to the blok this was made from.</>,
+        <>Press <b>History</b> in the header to see the panel as it was earlier. In the bar below it, drag the slider, press the arrows to go to the change before or after, or press play to let it run on from there. Click the time to jump to another one. Press <b>Go live</b> to return to the present.</>,
         <>Press <b>Delete Materialized Blok</b> to remove it. You are taken back to the list.</>,
       ]}
       tips={[
+        <>While the bar says <b>PAST</b> the panel only shows what was: its controls run nothing.</>,
         <>A yellow notice at the top names what stops the panel from working: a part that is <b>Not bound</b> to any agent, or a bound agent that is offline.</>,
         <>In the <b>Bindings</b> tab a green dot means the agent is connected, a grey one that it is offline.</>,
       ]}
@@ -327,12 +329,14 @@ export const REKUEST_HELP = {
         <>Click a mark or a bar on the lane to read that event or call below it, next to <b>Inputs</b> and the result.</>,
         <>Hold ⌘ or Ctrl and scroll over the lane to zoom in on a moment.</>,
         <>Press <b>Stage</b> to show or hide the large view above the lane. Depending on the task it offers <b>Flow</b>, <b>Space</b> and <b>Result</b>.</>,
+        <><b>Space</b> shows the space the task's apps stand in. Drag the slider under it, or click a mark on the lane, to see the devices as they stood at that moment; press <b>Go live</b> to follow a running task again.</>,
         <>Press <b>Cancel</b> or <b>Interrupt</b> to stop a task that is still running, and <b>Pause</b> to hold it.</>,
         <>Press <b>Resume</b> on a paused task to let it continue. The arrow next to it offers <b>Step to next breakpoint</b>.</>,
         <>Press <b>Rerun</b> to run the task again with the same inputs. You are taken to the new task.</>,
       ]}
       tips={[
         <>The <b>Log</b> tab of the sidebar holds the complete record line by line; <b>Logs</b> in the header opens it as plain text that is easy to copy.</>,
+        <>The devices in <b>Space</b> are there to look at: nothing in them can be run from the task. They are shown where they are placed today.</>,
         <>Rerunning a lost task can ask for confirmation first: it may have started before its agent disappeared, and so may already have acted on a device.</>,
         <>If a task failed for a reason that looks like a bug, <b>Report Bug</b> opens a report with the task attached.</>,
       ]}
@@ -594,11 +598,13 @@ export const REKUEST_HELP = {
         <>Drag in the scene to move the view, hold Shift while dragging to turn it, and scroll to move closer or further away.</>,
         <>Press <b>Iso</b>, <b>Front</b>, <b>Side</b> or <b>Top</b> at the bottom right to look from that direction and frame everything.</>,
         <>Click a part of a device to use it, where its view offers that.</>,
+        <>Press <b>History</b> in the header to see the space as it was earlier. In the bar over the scene, drag the slider, press the arrows to go to the change before or after, or press play to let it run on from there. Press <b>Go live</b> to return to the present.</>,
         <>Press <b>Edit</b> in the header to add 3D views or move them.</>,
         <>Open the menu button at the right end of the header and choose <b>Delete Space</b> to remove the space.</>,
       ]}
       tips={[
         <>A grey box marked <b>No 3D view</b> is an app that was placed without one. Give it a view in the editor.</>,
+        <>While the bar says <b>PAST</b> every device stands where it stood then, and nothing can be run. The devices are shown where they are placed today.</>,
       ]}
     />
   ),

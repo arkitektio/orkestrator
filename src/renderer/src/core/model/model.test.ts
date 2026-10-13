@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {DEFAULT_MODEL_POLICY, ModelRefused, modelRef, validateModel, type ModelPolicy} from './glb';
 import {resolveJoints} from './joints';
-import {EASE_TAU, initialMotion, stepMotion, type MotionInput} from './motion';
+import {clipMotion, EASE_TAU, initialMotion, stepMotion, stillMotion, type MotionInput} from './motion';
 import {buildGlb, pngHeader, triangleModel} from './testing';
 import {parseAxis, parseVector, toBaseUnit, wavelengthToColor} from './units';
 import {findWriterConflicts, parseNodeAddress} from './writers';
@@ -139,6 +139,27 @@ describe('stepMotion', () => {
     const uncorrected = run(input, 0.5, halfway);
     expect(corrected.displayed).toBeLessThan(uncorrected.displayed);
     expect(run({...input, value: 5}, 2, halfway).displayed).toBe(1);
+  });
+
+  it('stands where it was measured when the view is a moment, not a running device', () => {
+    const moving = {value: 0.2, target: 1, speed: 0.5};
+    expect(stillMotion(moving)).toEqual({value: 0.2, target: undefined, speed: 0.5});
+    expect(run(stillMotion(moving), 3).displayed).toBeCloseTo(0.2, 6);
+    const resting = {value: 0.2};
+    expect(stillMotion(resting)).toBe(resting);
+  });
+});
+
+describe('clipMotion', () => {
+  it('reads progress as a share of the clip and time as seconds', () => {
+    expect(clipMotion({progress: 0.5, animateTo: 1, duration: 2}, 4)).toEqual({value: 2, target: 4, duration: 2});
+    expect(clipMotion({time: 1.5, animateTo: 3}, 4)).toEqual({value: 1.5, target: 3, duration: undefined});
+    expect(clipMotion({}, 4)).toEqual({value: 0, target: undefined, duration: undefined});
+  });
+
+  it('shows where a clip was playing to when the view is still', () => {
+    expect(clipMotion({animateTo: 1, duration: 2}, 4, true)).toEqual({value: 4});
+    expect(clipMotion({progress: 0.25, animateTo: 1}, 4, true)).toEqual({value: 1});
   });
 });
 
