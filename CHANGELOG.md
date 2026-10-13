@@ -1,3 +1,47 @@
+# [3.0.0](https://github.com/arkitektio/orkestrator/compare/v2.20.0...v3.0.0) (2026-10-13)
+
+
+* feat(bank,kuvert)!: bank providers and one host-owned external login flow ([ad9144e](https://github.com/arkitektio/orkestrator/commit/ad9144e76f38d105d4b12c2ef3e15f225cf4e41b))
+* feat(mikro)!: layers name their data through lenses ([012200d](https://github.com/arkitektio/orkestrator/commit/012200da30a5d25b1f084e592adc23bfb5843c1d))
+
+
+### Bug Fixes
+
+* **blok:** a component can declare that it takes children ([be008a0](https://github.com/arkitektio/orkestrator/commit/be008a035fbf65907fecb372ca4e4f96165df409))
+
+
+### Features
+
+* **chrome:** a page's own notch on the window's top edge ([e97a27a](https://github.com/arkitektio/orkestrator/commit/e97a27a635420db097eaf56c438fb90f4fd24ba5))
+* **folder:** add pinning functionality for folders and display pinned folders ([e8ca7cd](https://github.com/arkitektio/orkestrator/commit/e8ca7cd491e08c3770a0055dfce6fefd0d252097))
+* **lightpath:** implement light path layout and model ([65cd597](https://github.com/arkitektio/orkestrator/commit/65cd597f12a7a3524db683efa654613b043fca47))
+* **links:** auth relay, smartlinks and share links through kontrol ([87d873a](https://github.com/arkitektio/orkestrator/commit/87d873a13f64dab6b58bfc5fdb45079ff300a4be))
+* **lovekit:** "Call about this to the side" as its own action ([cdf7b2c](https://github.com/arkitektio/orkestrator/commit/cdf7b2cccc2681a841c8c5b4f0c1c40d7f465ba2))
+* **lovekit:** "Call about this" — LiveKit group calls about a smart model ([d5cf8c7](https://github.com/arkitektio/orkestrator/commit/d5cf8c7bef5f530799c9ffd4a74a3c317f5752c7))
+* **mikro:** charts on a shared plot engine, traces under the probe, and dim playback ([7d99b65](https://github.com/arkitektio/orkestrator/commit/7d99b6553a1a087b96dab0df5850c0f22b6ce23e))
+* **mikro:** lens page as a workspace, brick residency and zarr runner work, describe-structures dialog ([b695587](https://github.com/arkitektio/orkestrator/commit/b695587a979dde02bfcffd06560280cadad70394))
+* **mikro:** lenses over every container kind, with windows and live lists ([ba23b28](https://github.com/arkitektio/orkestrator/commit/ba23b289208efbfd320f359b8af10b6292ec5f60))
+* **mikro:** the annotation hover button grows into a card of what was made from the shape ([fd6eb7e](https://github.com/arkitektio/orkestrator/commit/fd6eb7ec5a7f5494fd8eb8ec5905560d11d193cb))
+* **rekuest,blok:** check out a blok at a moment in the past and travel through it ([2362e7b](https://github.com/arkitektio/orkestrator/commit/2362e7b9214d1226f992c6deae9a3a06ddea82c6))
+* **rekuest,mikro:** 3D scene bloks with models, and visualize one lens ([a49e7e6](https://github.com/arkitektio/orkestrator/commit/a49e7e6835c579b97ff6f18ce4f2050baec033fd))
+* **scene:** crop the scene to a box with S ([34f71f2](https://github.com/arkitektio/orkestrator/commit/34f71f2f5147bc66192bba43b7a156d70d025034))
+* **tabs:** a split can stack, and calls open below; the call names the actual user ([0aee96b](https://github.com/arkitektio/orkestrator/commit/0aee96bb80a217ddaf590fdd044910a2b3d45fe3))
+
+
+### BREAKING CHANGES
+
+* needs the mikro backend whose layers reference data only
+through lenses. An intensity or phasor layer's channel is fixed at
+creation, the render-graph editor's "Intensity dim" input and the rgb
+axis switch are gone, and a label mask has no channel slider.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+* needs the bank and kuvert backends that implement the
+auth contract (completeLink / completeOAuthLink and friends are gone) and
+bank's provider schema.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 # [2.20.0](https://github.com/arkitektio/orkestrator/compare/v2.19.0...v2.20.0) (2026-10-08)
 
 
