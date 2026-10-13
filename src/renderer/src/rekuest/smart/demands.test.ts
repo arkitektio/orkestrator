@@ -131,4 +131,34 @@ describe("descriptors", () => {
     const [args] = buildDemands({ objects: [image("1")] }).single;
     expect(args.matches?.[0]).not.toHaveProperty("descriptors");
   });
+
+  it("pins a two-argument signature when both sides are single, each with its descriptors", () => {
+    // The scene's click menu: f(Annotation, ArrayLens), whatever the args are called.
+    const demands = buildDemands({
+      objects: [{ identifier: "@mikro/annotation", id: "1", descriptors: { "@mikro/annotation_kind": "RECTANGLE" } }],
+      partners: [
+        { identifier: "@mikro/arraylens", id: "2", descriptors: { "@mikro/n_space_axes": 2, "@mikro/n_channels": 1 } },
+      ],
+    });
+    expect(demands.implementation).toEqual({
+      forceArgLength: 2,
+      argMatches: [
+        {
+          at: 0,
+          kind: PortKind.Structure,
+          identifier: "@mikro/annotation",
+          descriptors: [{ key: "@mikro/annotation_kind", value: "RECTANGLE" }],
+        },
+        {
+          at: 1,
+          kind: PortKind.Structure,
+          identifier: "@mikro/arraylens",
+          descriptors: [
+            { key: "@mikro/n_channels", value: 1 },
+            { key: "@mikro/n_space_axes", value: 2 },
+          ],
+        },
+      ],
+    });
+  });
 });

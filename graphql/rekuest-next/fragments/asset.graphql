@@ -20,13 +20,15 @@ fragment StoredAsset on Asset {
   }
 }
 
-# A file under the name its agent's bloks call it by; `asset` is null until the agent uploaded it.
+# A file under the name its agent's bloks call it by; `asset` is null until it was uploaded:
+# by the agent, or, for a file the agent only names a `source` for, by an admin.
 fragment AgentAsset on AgentAsset {
   id
   name
   kind
   ref
   size
+  source
   asset {
     ...StoredAsset
   }

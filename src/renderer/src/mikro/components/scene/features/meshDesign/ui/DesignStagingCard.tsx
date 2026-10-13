@@ -7,7 +7,6 @@ import { useDialog } from "@/core/dialogs/registry";
 import { useModeStore } from "../../../platform/stores/modeStore";
 import { useSceneStore } from "../../../platform/stores/sceneStore";
 import { useBrushSkeletonStoreApi } from "../brush";
-import { commitCandidate } from "../reconstruct/candidate";
 import { simplifyGeometry } from "../ops/simplify";
 import {
   DESIGN_TRIANGLE_BUDGET,
@@ -127,7 +126,6 @@ export const DesignStagingCard = () => {
   const canUndo = useMeshDesignStore((s) => s.history.length > 0);
   const canRedo = useMeshDesignStore((s) => s.future.length > 0);
   const newMesh = useMeshDesignStore((s) => s.newMesh);
-  const hasCandidate = useMeshDesignStore((s) => s.candidate !== null);
   const designApi = useMeshDesignStoreApi();
   const brushApi = useBrushSkeletonStoreApi();
   const sceneId = useSceneStore((s) => s.id);
@@ -174,12 +172,10 @@ export const DesignStagingCard = () => {
         <Button
           size="xs"
           variant="default"
-          disabled={committing || !world || (meshes.length === 0 && !hasCandidate)}
-          onClick={async () => {
+          disabled={committing || !world || meshes.length === 0}
+          onClick={() => {
             if (!world) return;
             brushApi.getState().clear();
-            // A preview still on screen is part of what the user is committing.
-            await commitCandidate(designApi.getState());
             // Dialogs render outside the scene scope: hand the session over
             // as props, take the outcome back through callbacks.
             openDialog(

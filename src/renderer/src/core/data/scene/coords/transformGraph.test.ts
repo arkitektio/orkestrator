@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   childrenOf,
+  composeLatticeAffine,
   composeLayerAffine,
   evalTransform,
   invert4,
@@ -387,6 +388,77 @@ describe("composeLayerAffine", () => {
     const m = composeLayerAffine(SCENE, layer)!;
     // The crop must NOT be double-applied: only the placement's z shift remains.
     expect(m[2][3]).toBeCloseTo(7);
+  });
+
+  describe("composeLatticeAffine (the renderer's corner-anchored lattice)", () => {
+    // A 36 x 1024 x 1024 stack calibrated at 2 µm in z and 0.5 µm in y and x:
+    // the server puts voxel INDEX n at world n * spacing, its centre.
+    const calibrated = (renderAxes?: { x: string; y: string; z?: string | null }) => ({
+      ...makeLayer({
+        pathToWorld: [CALIBRATION_STEP],
+        asAffine: {
+          matrix: [
+            [0, 0, 2, 0, 0, 0], // z
+            [0, 0, 0, 0.5, 0, 0], // y
+            [0, 0, 0, 0, 0.5, 0], // x
+          ],
+          inputAxes: DIMS,
+          outputAxes: ["z", "y", "x"],
+          total: true,
+        },
+      }),
+      ...(renderAxes ? { renderAxes } : {}),
+    });
+    const through = (m: number[][], [x, y, z]: number[]) =>
+      [0, 1, 2].map((row) => m[row][0] * x + m[row][1] * y + m[row][2] * z + m[row][3]);
+
+    it("puts the middle of a voxel's cell where the server puts its index", () => {
+      const lattice = composeLatticeAffine(SCENE, calibrated());
+      const index = composeLayerAffine(SCENE, calibrated())!;
+      expect(through(lattice, [0.5, 0.5, 0.5])).toEqual([0, 0, 0]);
+      // Voxel (x 700, y 410, z 35): its cell's centre is its index's position.
+      expect(through(lattice, [700.5, 410.5, 35.5])).toEqual(through(index, [700, 410, 35]));
+      expect(through(lattice, [700.5, 410.5, 35.5])).toEqual([350, 205, 70]);
+    });
+
+    it("spans half a voxel either side of the end voxels' centres", () => {
+      const lattice = composeLatticeAffine(SCENE, calibrated());
+      // The box a volume renders, a camera fits and a crop clips: [0, shape].
+      expect(through(lattice, [0, 0, 0])).toEqual([-0.25, -0.25, -1]);
+      // The far faces. A click that enters through the top of the stack is
+      // z index 35.5 -- inside the 36 slices -- not 36.
+      expect(through(lattice, [1024, 1024, 36])).toEqual([511.75, 511.75, 71]);
+      expect(through(lattice, [1024, 1024, 36])[2] / 2).toBe(35.5);
+    });
+
+    it("leaves z alone for a layer that renders no z axis", () => {
+      const flat = composeLatticeAffine(SCENE, calibrated({ x: "x", y: "y", z: null }));
+      expect(through(flat, [0.5, 0.5, 0])).toEqual([0, 0, 0]);
+    });
+
+    it("is not what a bare voxel index goes through", () => {
+      // A vector glyph at index n is placed by `composeLayerAffine`, at n * spacing.
+      expect(through(composeLayerAffine(SCENE, calibrated())!, [3, 2, 1])).toEqual([1.5, 1, 2]);
+    });
+
+    it("makes a centre-stated pyramid level an exact scale of the lattice", () => {
+      // The server writes a 2x mean level as scale 2 then translation (2 - 1) / 2:
+      // level index n is base index 2n + 0.5. On lattices (index + 0.5) that is
+      // base = 2 * level with nothing left over, so corner-aligned levels
+      // already ARE that edge and its translation must not be applied again.
+      const edge = evalTransform(
+        level(1, [1, 1, 2, 2, 2], [0, 0, 0.5, 0.5, 0.5]).toParent as never,
+        DIMS,
+        DIMS,
+        SPATIAL,
+      )!;
+      for (const row of [0, 1, 2]) {
+        const ontoBaseLattice = (levelLattice: number) =>
+          edge[row][row] * (levelLattice - 0.5) + edge[row][3] + 0.5;
+        expect(ontoBaseLattice(0)).toBe(0);
+        expect(ontoBaseLattice(7)).toBe(14);
+      }
+    });
   });
 
   it("never walks pathToWorld: without asAffine only the local prefix remains, and it warns", () => {

@@ -26,6 +26,20 @@ const resolveDependencyName = (wanted_path: string, my_path: string[]) => {
 
 let unserializableCounter = 0;
 
+/**
+ * A dependency's value as a query variable. A structure port holds
+ * `{ __identifier, object }` in the form and is known to a service by its id,
+ * so that is what the query is handed (a list of structures, their ids);
+ * anything else goes as it is.
+ */
+export const dependencyVariable = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(dependencyVariable);
+  if (value && typeof value === "object" && "__identifier" in value && "object" in value) {
+    return (value as { object: unknown }).object;
+  }
+  return value;
+};
+
 export const useWidgetDependencies = (props: {
   widget: {
     dependencies?: string[] | null | undefined;
@@ -58,14 +72,17 @@ export const useWidgetDependencies = (props: {
     }
   }, [watched]);
 
+  // Keyed by the dependency's own name: a search query declares one variable
+  // per dependency, under that name.
   const foundValues = useMemo(() => {
     const result: Record<string, unknown> = {};
     watched.forEach((value, index) => {
-      result["arg" + index] = value;
+      const name = dependencies?.[index];
+      if (name) result[name] = dependencyVariable(value);
     });
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedKey]);
+  }, [dependencies, watchedKey]);
 
   const met = useMemo(
     () =>

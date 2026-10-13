@@ -20,8 +20,7 @@ import { ballSurface } from "./ballSurface";
  *    faithful to every bump in the data.
  *
  * A reconstructor never touches the design session: it returns a result,
- * `candidate.ts` turns that into a previewable candidate, and the user's
- * verdict applies it. Adding one = one module + one entry here + its panel
+ * and `apply.ts` puts that into the active mesh. Adding one = one module + one entry here + its panel
  * in `ui/reconstructPanels.tsx` (the `Record` there fails the build without).
  */
 export type ReconstructContext = {
@@ -51,8 +50,6 @@ export type ReconstructResult = (
       spec: StampSpec;
       /** Field resolution the stamp deserves (world units). */
       spacing: number;
-      /** A fitted centerline to draw over the preview. */
-      guide?: Vec3[];
     }
 ) & { level: number; note?: string };
 

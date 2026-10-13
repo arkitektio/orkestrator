@@ -12,11 +12,6 @@ import { bridgeTool } from "./bridgeTool";
 import { liftTool } from "./liftTool";
 import { splitTool } from "./splitTool";
 
-// The gesture capture (`useBrushSkeleton.extract`) accepts a pending
-// candidate before it hands a release to a tool; it reaches that through the
-// registry, its one door into the designer.
-export { commitCandidate } from "../reconstruct/candidate";
-
 /**
  * The design tools — one module per verb, picked in the designer's toolbar.
  *

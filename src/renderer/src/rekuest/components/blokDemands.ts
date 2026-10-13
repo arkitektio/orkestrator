@@ -1,5 +1,6 @@
 import {ASSETS_SEGMENT} from '@/core/blok/renderer/assets';
 import {isRecord, splitPathSegments} from '@/core/blok/renderer/runtime';
+import {LATEST_SEGMENT} from './blokLatestTask';
 
 const collectArgumentDemandPaths = (
   argument: unknown,
@@ -28,6 +29,67 @@ const collectArgumentDemandPaths = (
   if (isRecord(argument.agent_call) && Array.isArray(argument.agent_call.arguments)) {
     argument.agent_call.arguments.forEach(item => collectArgumentDemandPaths(item, registerPath));
   }
+};
+
+const collectDemandPaths = (roots: ReadonlyArray<unknown>, registerPath: (path: string) => void) => {
+  const visitNode = (node: unknown) => {
+    if (!isRecord(node)) {
+      return;
+    }
+
+    if (Array.isArray(node.props)) {
+      node.props.forEach(prop => {
+        if (!isRecord(prop)) {
+          return;
+        }
+
+        if (isRecord(prop.dynamic_value) && typeof prop.dynamic_value.path === 'string') {
+          registerPath(prop.dynamic_value.path);
+        }
+
+        if (isRecord(prop.agent_call) && Array.isArray(prop.agent_call.arguments)) {
+          prop.agent_call.arguments.forEach(argument => collectArgumentDemandPaths(argument, registerPath));
+        }
+
+        if (isRecord(prop.util_call) && Array.isArray(prop.util_call.arguments)) {
+          prop.util_call.arguments.forEach(argument => collectArgumentDemandPaths(argument, registerPath));
+        }
+      });
+    }
+
+    if (Array.isArray(node.children)) {
+      node.children.forEach(visitNode);
+    }
+  };
+
+  roots.forEach(visitNode);
+};
+
+/**
+ * Which names of which bound dependency the blok reads `latest` of: a path
+ * `self/blur/latest/progress` reads the latest task of the action `blur`.
+ * The spelling alone cannot tell that from a state `blur` with a field
+ * `latest`; whoever syncs the value asks the agent which of the two it has.
+ */
+export const collectDemandedLatestTasks = (
+  roots: ReadonlyArray<unknown>,
+  dependencyKeys: ReadonlySet<string>,
+): Map<string, Set<string>> => {
+  const demanded = new Map<string, Set<string>>();
+
+  collectDemandPaths(roots, path => {
+    const [dependencyKey, name, segment] = splitPathSegments(path);
+
+    if (!dependencyKey || !name || segment !== LATEST_SEGMENT || !dependencyKeys.has(dependencyKey)) {
+      return;
+    }
+
+    const names = demanded.get(dependencyKey) ?? new Set<string>();
+    names.add(name);
+    demanded.set(dependencyKey, names);
+  });
+
+  return demanded;
 };
 
 /**
@@ -62,37 +124,7 @@ export const collectDemandedStateInterfaces = (
     demandedInterfaces.set(dependencyKey, interfaces);
   };
 
-  const visitNode = (node: unknown) => {
-    if (!isRecord(node)) {
-      return;
-    }
-
-    if (Array.isArray(node.props)) {
-      node.props.forEach(prop => {
-        if (!isRecord(prop)) {
-          return;
-        }
-
-        if (isRecord(prop.dynamic_value) && typeof prop.dynamic_value.path === 'string') {
-          registerPath(prop.dynamic_value.path);
-        }
-
-        if (isRecord(prop.agent_call) && Array.isArray(prop.agent_call.arguments)) {
-          prop.agent_call.arguments.forEach(argument => collectArgumentDemandPaths(argument, registerPath));
-        }
-
-        if (isRecord(prop.util_call) && Array.isArray(prop.util_call.arguments)) {
-          prop.util_call.arguments.forEach(argument => collectArgumentDemandPaths(argument, registerPath));
-        }
-      });
-    }
-
-    if (Array.isArray(node.children)) {
-      node.children.forEach(visitNode);
-    }
-  };
-
-  roots.forEach(visitNode);
+  collectDemandPaths(roots, registerPath);
 
   return demandedInterfaces;
 };

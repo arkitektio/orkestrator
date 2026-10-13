@@ -10,7 +10,7 @@ import {
   buildLabelUniformData,
   labelDataSignature,
 } from "./labelUniforms";
-import { buildAffineMatrix } from "../../platform/coords/worldTransform";
+import { buildAffineMatrix, sliceToLatticeZ } from "../../platform/coords/worldTransform";
 
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import { slabBaseZOf, useBrickLayer, useBrickPlaneProbe } from "../bricks/layers/useBrickPlaneProbe";
@@ -114,12 +114,13 @@ export const BrickLabelPlaneLayer = ({ layerId }: { layerId: string }) => {
       {...handlers}
     >
       {/* Corner-anchored, exactly as the image plane: the unit quad is offset by
-          half its size so group-local spans [0..shape] and voxel v renders at
-          affine(v) — COORDINATE_SYSTEMS.md "Coordinate conventions". */}
+          half its size so group-local spans the lattice [0..shape], and a
+          stack's plane sits at its first slice's centre —
+          COORDINATE_SYSTEMS.md "Coordinate conventions". */}
       <mesh
         key={pool.structureSignature}
         scale={[totalX, totalY, 1]}
-        position={[totalX / 2, totalY / 2, 0]}
+        position={[totalX / 2, totalY / 2, layer?.zAxis ? sliceToLatticeZ(0) : 0]}
         renderOrder={2}
       >
         <planeGeometry args={[1, 1]} />

@@ -59,6 +59,8 @@ export const registerWatcher = () => {
             });
         },
         {
+            key: "watch_directory",
+            version: "1",
             name: "watch_directory",
             kind: ActionKind.Generator,
             args: [{ key: "path", kind: PortKind.String, nullable: false }],

@@ -55,7 +55,6 @@ export const bridgeTool: DesignTool = {
     const fieldSpacing =
       target?.field?.spacing ?? fieldSpacingFor([tubeRadius / 4, tubeRadius / 4, tubeRadius / 4], brush.detailVoxels);
     const finish = {
-      marcher: brush.marcher,
       polishIterations: brush.polishIterations,
       detailWorld: brush.detailVoxels * Math.max(...extraction.voxelSize),
     };

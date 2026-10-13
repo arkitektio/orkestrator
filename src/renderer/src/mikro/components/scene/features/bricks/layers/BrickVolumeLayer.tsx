@@ -421,7 +421,7 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
 
   // Step sizing from the plan's finest requested level: half a voxel of that
   // level. The actual per-sample step adapts to the LOD sampled at that point
-  // (see stepLen in the shader); the in-shader rayLen/MAX_STEPS floor
+  // (see stepLen in the shader); the in-shader fullRayLen/MAX_STEPS floor
   // guarantees every ray reaches its exit within the loop bound.
   // The per-member COMPILE-TIME specializations, as one key. The material omits
   // the phasor branch for a member without phasor sources, and emits a simple
@@ -994,7 +994,7 @@ export const BrickVolumeLayer = ({ layerId }: { layerId: string }) => {
           `computeSceneVisibility` still measures this layer's own box for the
           planner. Only the rasterization is dropped, which is the whole point. */}
       {/* Corner-anchored: the unit box is offset by half its size so group-
-          local spans [0..shape] and voxel v renders at exactly affine(v) —
+          local spans [0..shape] and lattice point v renders at exactly affine(v) —
           COORDINATE_SYSTEMS.md "Coordinate conventions". */}
       <mesh
         key={pool.structureSignature}

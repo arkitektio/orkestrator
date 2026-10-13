@@ -686,3 +686,39 @@ export function composeLayerAffine(
 
   return isIdentity4(m) ? null : m;
 }
+
+/** Where a voxel's centre sits inside its lattice cell `[k, k + 1)`. */
+export const LATTICE_CENTRE = 0.5;
+
+/**
+ * A raster layer's LATTICE→world affine: what `LayerState.affineMatrix` holds
+ * and every brick mesh, shader and probe renders through.
+ *
+ * The one place the two voxel conventions meet. The server's maps are stated
+ * on voxel CENTRES — index `n` is the middle of voxel `n`, which covers
+ * `[n - 0.5, n + 0.5)` (`core/logic/coords.py`, and every numpy client) — and
+ * `composeLayerAffine` is that map, unchanged. The renderer's lattice is
+ * CORNER-anchored — a layer's local frame spans `[0, shape]`, voxel `k` is
+ * `[k, k + 1)` — because that is what a texture sampler and brick addressing
+ * want. So lattice coordinate `p` is server index `p - 0.5`, on each spatial
+ * axis the layer renders, and that half voxel is composed in here, first.
+ *
+ * Without it an image is drawn half a voxel off everything that is placed by
+ * coordinates rather than by a lattice — meshes, points, annotations, vector
+ * glyphs, the server's own crops — and a vertex picked on the image is stored
+ * half a voxel off the voxel it was picked on.
+ *
+ * A layer with no z render axis is a plane AT its z, not a slab around it, so
+ * its z is left alone. Anything that places by voxel INDEX (the vector glyphs)
+ * wants `composeLayerAffine`, not this.
+ */
+export function composeLatticeAffine(
+  scene: SceneTransformContext,
+  layer: LayerTransformSource,
+): number[][] {
+  const cornerToCentre = identity4();
+  cornerToCentre[0][3] = -LATTICE_CENTRE;
+  cornerToCentre[1][3] = -LATTICE_CENTRE;
+  if (layer.renderAxes.z) cornerToCentre[2][3] = -LATTICE_CENTRE;
+  return mul4(composeLayerAffine(scene, layer) ?? identity4(), cornerToCentre);
+}

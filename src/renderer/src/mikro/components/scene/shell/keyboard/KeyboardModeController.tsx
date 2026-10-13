@@ -74,7 +74,9 @@ export const KeyboardModeController = () => {
         return;
       }
       if (crop.cropPhase !== "idle") {
-        if (key === "escape") {
+        // `s` again leaves the mode it entered. Esc does too, but is heard by
+        // the gesture itself (`CropBoxGesture`): it never bubbles this far.
+        if (key === "s") {
           crop.cancelCrop();
           return;
         }
@@ -93,9 +95,9 @@ export const KeyboardModeController = () => {
         }
       }
 
-      // `s`: draw a crop box, starting under the cursor. A one-shot, not a
-      // hold — the gesture runs on through a click and the wheel
-      // (`features/crop/CropBoxGesture.tsx`). After the DESIGN lookup above, so
+      // `s`: enter the crop mode. Nothing is drawn yet — the box starts with a
+      // click, and the gesture runs on from there
+      // (`features/crop/CropBoxGesture.tsx`). A one-shot, not a hold. After the DESIGN lookup above, so
       // there it stays the Stamp tool.
       if (key === "s") {
         crop.beginCrop();

@@ -189,21 +189,22 @@ export function resolveCollectionMatrix(
   collection: AnnotationCollectionRef,
   transformContext: SceneTransformContext,
 ): THREE.Matrix4 {
-  const names = (collection.coordinateSystem.axes ?? []).map((axis) => axis.name);
-  // Fewer than three axes cannot name an (x, y, z) triple — composing with
-  // undefined axis names would silently misplace; identity is the honest
-  // degradation (same rule as the null path below).
-  if (names.length < 3) {
+  // The collection's SPACE axes, back to front (`spatialAxisTriple`): a plane
+  // has no z, and a channel or time axis is never one. None at all cannot
+  // name a placement — composing with undefined axis names would silently
+  // misplace; identity is the honest degradation (same rule as the null path
+  // below).
+  const spatial = spatialAxisTriple(collection.coordinateSystem);
+  if (spatial[0] === null) {
     if (!warnedCollections.has(collection.id)) {
       warnedCollections.add(collection.id);
       console.warn(
-        `[annotation] collection ${collection.id} declares ${names.length} axes; ` +
-          `three spatial axes are needed for placement — drawing in the collection's own space`,
+        `[annotation] collection ${collection.id} declares no spatial axes; ` +
+          `drawing in the collection's own space`,
       );
     }
     return new THREE.Matrix4().identity();
   }
-  const spatial = [names[names.length - 1], names[names.length - 2], names[names.length - 3]];
   if (!layer.asAffine) {
     // UNREGISTERED, or a path the server could not condense. The renderer
     // does not dispatch such a layer (`isPlaceable`); panels that still ask

@@ -16,11 +16,12 @@ export function worldSampler(extraction: ExtractionContext, level: number): Inte
   const channel = extraction.engineContext.channel;
   const sampleResident = extraction.engineContext.sampleResident;
   return (x, y, z) => {
-    // World → level-0 voxel index: integer indices are sample centers (the
-    // map `centerlineToWorld` inverts), so the nearest sample is a round.
-    const vx = Math.round(m[0] * x + m[4] * y + m[8] * z + m[12]);
-    const vy = Math.round(m[1] * x + m[5] * y + m[9] * z + m[13]);
-    const vz = Math.round(m[2] * x + m[6] * y + m[10] * z + m[14]);
+    // World → level-0 lattice: voxel k is the cell [k, k + 1) (the map
+    // `centerlineToWorld` inverts, whose nodes sit at k + 0.5), so the voxel
+    // a point is in is a floor.
+    const vx = Math.floor(m[0] * x + m[4] * y + m[8] * z + m[12]);
+    const vy = Math.floor(m[1] * x + m[5] * y + m[9] * z + m[13]);
+    const vz = Math.floor(m[2] * x + m[6] * y + m[10] * z + m[14]);
     if (vx < 0 || vy < 0 || vz < 0 || vx >= shape[0] || vy >= shape[1] || vz >= shape[2]) return null;
     const raw = sampleResident([vx, vy, vz], level, channel);
     if (raw === null || !(range > 0)) return null;

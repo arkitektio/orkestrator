@@ -144,6 +144,11 @@ declare global {
       };
       openFilePicker: () => Promise<string | undefined>;
       uploadBigFile: (opts: { uploadId: string; path: string; grant: any; endpointUrl: string }) => Promise<string>;
+      fetchAsset: (opts: { url: string; maxSize: number; allowPrivate?: boolean }) => Promise<
+        | { ok: true; path: string; ref: string; size: number; bytes: Uint8Array }
+        | { ok: false; code: string; message: string }
+      >;
+      discardAsset: (opts: { path: string }) => Promise<void>;
       cancelBigFile: (opts: { uploadId: string }) => Promise<void>;
       downloadBigFile: (opts: { downloadId: string; grant: any; endpointUrl: string; fileName: string; savePath?: string }) => Promise<string>;
       cancelBigFileDownload: (opts: { downloadId: string }) => Promise<void>;

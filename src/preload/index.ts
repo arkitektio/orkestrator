@@ -161,6 +161,9 @@ const api = {
   }) => ipcRenderer.invoke("arkitekt.reportIssue", opts),
   openFilePicker: () => ipcRenderer.invoke("dialog:openFile"),
   uploadBigFile: (opts: { uploadId: string; path: string; grant: any; endpointUrl: string }) => ipcRenderer.invoke("upload:bigFile", opts),
+  /** Fetch an asset from the URL its app names as its source: hashed while downloading, kept in a temporary file. */
+  fetchAsset: (opts: { url: string; maxSize: number; allowPrivate?: boolean }) => ipcRenderer.invoke("asset:fetch", opts),
+  discardAsset: (opts: { path: string }) => ipcRenderer.invoke("asset:discard", opts),
   cancelBigFile: (opts: { uploadId: string; }) => ipcRenderer.invoke("upload:cancel", opts),
   downloadBigFile: (opts: { downloadId: string; grant: any; endpointUrl: string; fileName: string; savePath?: string; }) => ipcRenderer.invoke("download:bigFile", opts),
   cancelBigFileDownload: (opts: { downloadId: string; }) => ipcRenderer.invoke("download:cancel", opts),

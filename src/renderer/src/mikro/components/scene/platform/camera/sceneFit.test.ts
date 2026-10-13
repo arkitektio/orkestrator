@@ -41,7 +41,7 @@ describe("computeSceneWorldBox", () => {
 
   it("anchors a single identity-affine layer at the origin corner", () => {
     // Corner-anchored: shape [z, y, x] = [20, 50, 100] → world box
-    // [0,0,0]..[100,50,20] — voxel v sits at exactly affine(v).
+    // [0,0,0]..[100,50,20] — lattice point v sits at exactly affine(v).
     const box = computeSceneWorldBox([makeLayer({ shape: [20, 50, 100] })])!;
     expect(box.min.toArray()).toEqual([0, 0, 0]);
     expect(box.max.toArray()).toEqual([100, 50, 20]);
@@ -115,7 +115,7 @@ describe("computeSceneWorldBox", () => {
     expect(box.max.toArray()).toEqual([100, 50, 0]);
   });
 
-  it("maps voxel v to exactly affine(v) — the corner-anchored invariant", () => {
+  it("maps lattice point v to exactly affine(v) — the corner-anchored invariant", () => {
     // The load-bearing convention (COORDINATE_SYSTEMS.md): no centering, no
     // flip, nothing between a voxel coordinate and the affine.
     const affine = [

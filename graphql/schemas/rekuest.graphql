@@ -2996,6 +2996,28 @@ input KickInput {
 }
 
 """
+The task an implementation last ran as, with what its record is made of. The first message of `latestTask`, and again whenever a newer task takes its place.
+"""
+type LatestTaskSnapshot {
+  """
+  The task's last PROGRESS, last YIELD and its terminal event, oldest first: enough to say how far it is, what it returned and how it ended.
+  """
+  events: [TaskEventChange!]!
+
+  """
+  The implementation the agent offers under the interface; null if it offers none, and nothing follows then.
+  """
+  implementation: ID
+
+  """
+  The task it last ran as, whoever started it and whether or not it has ended; null if it never ran. (Not `task`: beside `TaskEventChange.task`, an id, one selection could not ask for both.)
+  """
+  latest: TaskChange
+}
+
+union LatestTaskSnapshotTaskChangeTaskEventChange = LatestTaskSnapshot | TaskChange | TaskEventChange
+
+"""
 A resource of an agent that one of its tasks holds at a time: the agent takes it while an implementation that requires it runs.
 """
 type Lock {
@@ -5731,6 +5753,11 @@ type Subscription {
 
   """Subscribe to creation or updates of implementations."""
   implementations(agent: ID!): ImplementationUpdate!
+
+  """
+  The task an agent's action last ran as, whoever started it, kept current. Yields a `LatestTaskSnapshot` first, then that task's events (`TaskEventChange`: progress, results, its end) and, as a `TaskChange`, every task of the action that starts or ends: a started one with a higher id is the latest from then on. A snapshot without an implementation means the agent offers no action under that interface, and nothing follows.
+  """
+  latestTask(agent: ID!, interface: String!): LatestTaskSnapshotTaskChangeTaskEventChange!
 
   """Subscribe to root tasks created by this client (caller-scoped)."""
   mytasks: TaskChangeEvent!

@@ -57,6 +57,7 @@ import { DEBUG_SECTIONS } from "./debugRegistry";
 import { DimSliderPanel } from "./chrome/DimSliderPanel";
 import { StaleProbeReconciler } from "../features/probe/StaleProbeReconciler";
 import { RoiDeleteKeybinding } from "../features/annotations/RoiDeleteKeybinding";
+import { AnnotationActionMenu } from "../features/annotations/hover/AnnotationActionMenu";
 import { HoveredAnnotationButton } from "../features/annotations/hover/HoveredAnnotationButton";
 import { ZSliderPanel } from "./chrome/ZSliderPanel";
 import { WebGPUUnavailableError } from "@/core/data/scene/gpu/webgpuSupport";
@@ -434,9 +435,12 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
               viewport keeps the Backspace-delete keybinding — sidebar tabs
               unmount when inactive, and a keybinding may not go with them. */}
           <RoiDeleteKeybinding />
-          {/* The action button pinned to the hovered annotation — the one
-              overlay that follows a shape rather than a corner. */}
+          {/* The button pinned to the hovered annotation, and the card it
+              grows into — the one overlay that follows a shape rather than a
+              corner. */}
           <HoveredAnnotationButton />
+          {/* The menu a click on a shape opens: what runs on it and the image. */}
+          <AnnotationActionMenu />
           <VisibilityManager />
           <AttributeProbeTracker />
           <ProbePointPinner />

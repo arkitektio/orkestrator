@@ -151,7 +151,7 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
             />
           </BlokTravelProvider>
         </div>
-        {travel.open && <TravelBar travel={travel} names={agentNames} className="mt-2 shrink-0" />}
+        {travel.open && <TravelBar travel={travel} names={agentNames} revisions className="mt-2 shrink-0" />}
       </div>
     </RekuestMaterializedBlok.ModelPage>
   );

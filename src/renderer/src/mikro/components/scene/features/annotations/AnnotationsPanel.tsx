@@ -4,12 +4,12 @@ import { Focus } from "lucide-react";
 import { Button } from "@/core/ui/button";
 import { Card, CardTitle } from "@/core/ui/card";
 import { MikroAnnotation } from "@/core/linkers";
-import { useGetSceneAnnotationsQuery, type SceneAnnotationFragment } from "@/mikro/api/graphql";
+import { type SceneAnnotationFragment } from "@/mikro/api/graphql";
 import {
   resolveCollectionMatrix,
   type AnnotationLayerVariant,
 } from "./annotationBounds";
-import { sceneAnnotationsVariables } from "../../../../lib/annotations/annotationCache";
+import { useSceneAnnotations } from "./sceneVectors";
 import { formatAnnotationMeasure, measureAnnotation } from "./roiMeasure";
 import { unitLabel } from "../../platform/coords/sceneUnits";
 import { useNavigateToAnnotation } from "./useNavigateToAnnotation";
@@ -123,12 +123,9 @@ const SelectedAnnotationCard = ({
   showAttributes: boolean;
 }) => {
   const collectionId = layer?.annotationCollection?.id;
-  const { data } = useGetSceneAnnotationsQuery({
-    variables: sceneAnnotationsVariables(collectionId ?? ""),
-    skip: !collectionId,
-  });
+  const listed = useSceneAnnotations(collectionId);
   const index =
-    data?.annotations?.findIndex((annotation) => annotation.id === roi.id) ?? -1;
+    listed?.findIndex((annotation) => annotation.id === roi.id) ?? -1;
 
   return (
     // Spread: the Smart wrapper wants a JSON-shaped object, and the store's
@@ -159,15 +156,13 @@ const AnnotationLayerSection = ({
   selectedIds: ReadonlySet<string>;
 }) => {
   const collection = layer.annotationCollection!;
-  const { data } = useGetSceneAnnotationsQuery({
-    variables: sceneAnnotationsVariables(collection.id),
-  });
+  const listed = useSceneAnnotations(collection.id);
   const toggleSelectedRoi = useRoiSelectionStore((s) => s.toggleSelectedRoi);
   const navigateToAnnotation = useNavigateToAnnotation();
   const transformContext = useSceneStore((s) => s.transformContext);
   const spatialUnit = useSceneStore((s) => s.spatialUnit);
 
-  const annotations = data?.annotations ?? [];
+  const annotations = listed ?? [];
   const systemId = collection.coordinateSystem.id ?? null;
   const axisNames = useMemo(
     () => (collection.coordinateSystem.axes ?? []).map((axis) => axis.name),

@@ -167,6 +167,20 @@ describe("hoveredRoi", () => {
     expect(store.getState().hoveredRoi?.id).toBe("ann:1");
   });
 
+  it("a held hover is not taken over by another shape; released, the next move takes it", () => {
+    const store = createRoiSelectionStore();
+    store.getState().hoverRoi(roi("ann:1", "layer:a"), [1, 2, 3]);
+    store.getState().holdHover(true);
+
+    store.getState().hoverRoi(roi("ann:2", "layer:a"), [9, 9, 9]);
+    expect(store.getState().hoveredRoi?.id).toBe("ann:1");
+    expect(store.getState().hoverPoint()).toEqual([1, 2, 3]);
+
+    store.getState().holdHover(false);
+    store.getState().hoverRoi(roi("ann:2", "layer:a"), [9, 9, 9]);
+    expect(store.getState().hoveredRoi?.id).toBe("ann:2");
+  });
+
   it("a release without a hold is a no-op (a departing button must not clear)", () => {
     const store = createRoiSelectionStore();
     store.getState().hoverRoi(roi("ann:1", "layer:a"));
@@ -184,5 +198,31 @@ describe("hoveredRoi", () => {
     store.getState().hoverRoi(roi("ann:2", "layer:b"));
     store.getState().clearVisibleLayerRois("layer:b");
     expect(store.getState().hoveredRoi).toBeNull();
+  });
+});
+
+/** The click menu's target: one shape and where it was clicked. */
+describe("menuRoi", () => {
+  it("opens on a shape at the clicked point, and closes", () => {
+    const store = createRoiSelectionStore();
+    store.getState().openRoiMenu(roi("ann:1", "layer:a"), [1, 2, 3]);
+    expect(store.getState().menuRoi).toEqual({ roi: roi("ann:1", "layer:a"), point: [1, 2, 3] });
+
+    store.getState().openRoiMenu(roi("ann:2", "layer:a"));
+    expect(store.getState().menuRoi).toEqual({ roi: roi("ann:2", "layer:a"), point: null });
+
+    store.getState().closeRoiMenu();
+    expect(store.getState().menuRoi).toBeNull();
+  });
+
+  it("closes with its layer", () => {
+    const store = createRoiSelectionStore();
+    store.getState().openRoiMenu(roi("ann:1", "layer:a"));
+    store.getState().dropLayerSelections(["layer:a"]);
+    expect(store.getState().menuRoi).toBeNull();
+
+    store.getState().openRoiMenu(roi("ann:2", "layer:b"));
+    store.getState().clearVisibleLayerRois("layer:b");
+    expect(store.getState().menuRoi).toBeNull();
   });
 });

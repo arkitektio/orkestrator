@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 // Only the PortKind enum is needed; the generated module drags in the Apollo
 // client and `window`.
 vi.mock("@/rekuest/api/graphql", () => ({
-  PortKind: { String: "STRING", Interface: "INTERFACE", Dict: "DICT" },
+  PortKind: { String: "STRING", Interface: "INTERFACE", Dict: "DICT", Structure: "STRUCTURE" },
 }));
 
 import { PortKind } from "@/rekuest/api/graphql";
@@ -67,5 +67,68 @@ describe("WidgetRegistry widget selection", () => {
         false,
       ),
     ).toBe(Unknown);
+  });
+});
+
+describe("the picker of structure ports", () => {
+  const Search = () => null;
+  const Custom = () => null;
+  const StructureFallback = () => null;
+  const Picker = () => null;
+
+  const withPicker = new WidgetRegistry(Unknown, UnknownReturn, UnknownEffect);
+  withPicker.registerInputWidgetFallback(PortKind.Structure, StructureFallback);
+  withPicker.registerInputWidget("SearchAssignWidget", Search);
+  withPicker.registerInputWidget("CustomAssignWidget", Custom);
+  withPicker.setStructurePicker({
+    widget: Picker,
+    canPick: (identifier) => identifier === "@mikro/arraydataset",
+  });
+
+  const lens = (widget?: Record<string, unknown>) =>
+    arg({ kind: PortKind.Structure, identifier: "@mikro/arraylens", widget });
+
+  it("draws a structure port's search, with or without dependencies", () => {
+    const plain = { __typename: "SearchAssignWidget", dependencies: [], filters: null };
+    expect(withPicker.getInputWidgetForPort(lens(plain))).toBe(Picker);
+    const dependent = { __typename: "SearchAssignWidget", dependencies: ["path"], filters: null };
+    expect(withPicker.getInputWidgetForPort(lens(dependent))).toBe(Picker);
+  });
+
+  it("leaves a search with filter ports to the search widget, which draws them", () => {
+    const filtered = { __typename: "SearchAssignWidget", dependencies: [], filters: [{ key: "stage" }] };
+    expect(withPicker.getInputWidgetForPort(lens(filtered))).toBe(Search);
+  });
+
+  it("leaves a catalog widget the author declared to its own renderer", () => {
+    expect(withPicker.getInputWidgetForPort(lens({ __typename: "CustomAssignWidget" }))).toBe(Custom);
+  });
+
+  it("fills a port with no widget only when its structure can be picked without a query", () => {
+    const dataset = arg({ kind: PortKind.Structure, identifier: "@mikro/arraydataset" });
+    expect(withPicker.getInputWidgetForPort(dataset)).toBe(Picker);
+    expect(withPicker.getInputWidgetForPort(lens())).toBe(StructureFallback);
+  });
+
+  it("never takes a port that is not a structure", () => {
+    const text = arg({ kind: PortKind.String, widget: { __typename: "SearchAssignWidget" } });
+    expect(withPicker.getInputWidgetForPort(text)).toBe(Search);
+  });
+
+  it("can be asked what the port would get without it, which is what the picker falls back to", () => {
+    const plain = { __typename: "SearchAssignWidget", dependencies: [], filters: null };
+    expect(withPicker.getInputWidgetForPort(lens(plain), true, false)).toBe(Search);
+    const dataset = arg({ kind: PortKind.Structure, identifier: "@mikro/arraydataset" });
+    expect(withPicker.getInputWidgetForPort(dataset, true, false)).toBe(StructureFallback);
+  });
+
+  it("asks on every lookup, so a module installed later is found", () => {
+    const late = new WidgetRegistry(Unknown, UnknownReturn, UnknownEffect);
+    late.registerInputWidgetFallback(PortKind.Structure, StructureFallback);
+    const pickable = new Set<string>();
+    late.setStructurePicker({ widget: Picker, canPick: (identifier) => pickable.has(identifier) });
+    expect(late.getInputWidgetForPort(lens())).toBe(StructureFallback);
+    pickable.add("@mikro/arraylens");
+    expect(late.getInputWidgetForPort(lens())).toBe(Picker);
   });
 });

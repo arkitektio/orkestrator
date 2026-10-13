@@ -2,10 +2,12 @@ import type { SliceSet } from "./sliceTypes";
 import { sameCropBox, type CropBox } from "../../coords/cropBox";
 
 /**
- * Where the crop gesture stands: `rect` while the rectangle follows the cursor,
- * `depth` once it is fixed and the wheel sets its thickness.
+ * Where the crop gesture stands: `arm` once `s` has entered the mode and the
+ * first corner is still to be clicked, `rect` while the rectangle follows the
+ * cursor, `depth` once it is fixed and moving the pointer up and down sets its
+ * thickness.
  */
-export type CropPhase = "idle" | "rect" | "depth";
+export type CropPhase = "idle" | "arm" | "rect" | "depth";
 
 /**
  * The crop box (`platform/coords/cropBox.ts`) and the gesture that draws it.
@@ -13,8 +15,9 @@ export type CropPhase = "idle" | "rect" | "depth";
  */
 export interface CropSlice {
   /**
-   * The APPLIED box: what is loaded and drawn. It moves once per wheel step
-   * during the depth phase — the z-scrub's cadence — so render-plane consumers
+   * The APPLIED box: what is loaded and drawn. During the depth phase it moves
+   * when the pointer comes to rest on a new depth — never per pointer event
+   * (the gesture holds the box back, see `CropBoxGesture`) — so render-plane consumers
    * (uniforms, clip planes, the planner) bind to it with a vanilla `subscribe`;
    * the one React reader is the annotation layer, which already re-filters at
    * that cadence for `currentZ`.
@@ -37,9 +40,11 @@ export interface CropSlice {
   /** The gesture could not start: back to idle, with the reason. */
   refuseCrop: (reason: "edge-on") => void;
   clearCropNotice: () => void;
-  /** `s`: start drawing. The applied box stays up until the rectangle is fixed. */
+  /** `s`: enter the mode. Nothing is anchored yet, and the applied box stays up until a rectangle is fixed. */
   beginCrop: () => void;
-  /** The rectangle is fixed: apply `box` and hand the wheel to its depth. */
+  /** The first click: the corner is set, the rectangle follows the cursor. */
+  anchorCrop: () => void;
+  /** The rectangle is fixed: apply `box`; its depth follows the pointer from here. */
   fixCropRect: (box: CropBox) => void;
   /** Depth phase only (no-op set otherwise, and for a value-equal box). */
   setCropBox: (box: CropBox) => void;
@@ -57,9 +62,10 @@ export const createCropSlice = (set: SliceSet<CropSlice>): CropSlice => ({
   beginCrop: () =>
     set((state) =>
       state.cropPhase === "idle"
-        ? { cropPhase: "rect", cropBoxBefore: state.cropBox, cropNotice: null }
+        ? { cropPhase: "arm", cropBoxBefore: state.cropBox, cropNotice: null }
         : state,
     ),
+  anchorCrop: () => set((state) => (state.cropPhase === "arm" ? { cropPhase: "rect" } : state)),
   cropNotice: null,
   refuseCrop: (reason) =>
     set((state) => ({

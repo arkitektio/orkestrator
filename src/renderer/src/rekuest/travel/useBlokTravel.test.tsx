@@ -27,6 +27,7 @@ const makeFake = () => {
     nextChangeAt: null,
     missing: [],
     error: null,
+    revision: null,
   };
   const listeners = new Set<() => void>();
   const set = (next: Partial<TravelClock>) => {
@@ -43,7 +44,21 @@ const makeFake = () => {
       };
     },
     getClock: () => clock,
-    seek: vi.fn((at: number, _immediate?: boolean) => set({ at })),
+    seek: vi.fn((at: number, _immediate?: boolean) => set({ at, revision: null })),
+    // Stands on the revision at once, in the session asked for (or one of its own).
+    seekRevision: vi.fn((agentId: string, position?: { revision: number; sessionId?: string | null }, _immediate?: boolean) =>
+      set({
+        revision: {
+          agentId,
+          sessionId: position?.sessionId ?? "session-1",
+          revision: position?.revision ?? 7,
+          last: 20,
+          hasPrev: true,
+          hasNext: true,
+          changes: [],
+        },
+      }),
+    ),
     step: vi.fn(),
     play: vi.fn(() => set({ playing: true })),
     pause: vi.fn(() => set({ playing: false })),
@@ -173,6 +188,113 @@ describe("useTravelController", () => {
     // The bar stays: it now says LIVE, and is where to go back from again.
     expect(travel().open).toBe(true);
     expect(travel().travelling).toBe(false);
+  });
+
+  it("opens on the revision the URL holds, in its session", async () => {
+    const { travel, source } = mount("/blok?rev=12&agent=7&session=abc");
+    await flush();
+
+    expect(source.seekRevision).toHaveBeenCalledWith("7", { revision: 12, sessionId: "abc" });
+    expect(source.seek).not.toHaveBeenCalled();
+    expect(travel().mode).toBe("revisions");
+    expect(travel().revisionAgent).toBe("7");
+    expect(travel().travelling).toBe(true);
+    expect(travel().open).toBe(true);
+  });
+
+  it("switches to revisions where it stands, and writes the revision instead of the moment", async () => {
+    const { travel, params, source } = mount("/blok?tab=bindings");
+    act(() => travel().commit(PAST));
+    await flush();
+
+    act(() => travel().setMode("revisions", "7"));
+    await flush();
+    expect(source.seekRevision).toHaveBeenCalledWith("7");
+    expect(travel().mode).toBe("revisions");
+    expect(params().get("rev")).toBe("7");
+    expect(params().get("agent")).toBe("7");
+    expect(params().get("session")).toBe("session-1");
+    expect(params().get("at")).toBeNull();
+    expect(params().get("tab")).toBe("bindings");
+    // Reading its own write back moves nothing.
+    expect(source.seekRevision).toHaveBeenCalledTimes(1);
+  });
+
+  it("writes nothing for a revision that is not answered yet", async () => {
+    const { travel, params, source, set } = mount("/blok");
+    act(() => travel().commit(PAST));
+    await flush();
+    source.seekRevision.mockImplementationOnce((agentId: string) =>
+      set({ phase: "loading", revision: { agentId, sessionId: null, revision: null, last: null, hasPrev: false, hasNext: false, changes: [] } }),
+    );
+    act(() => travel().setMode("revisions", "7"));
+    await flush();
+    expect(params().get("at")).toBe(iso(PAST));
+
+    act(() => set({ phase: "ready", revision: { agentId: "7", sessionId: "s", revision: 3, last: 9, hasPrev: true, hasNext: true, changes: [] } }));
+    await flush();
+    expect(params().get("rev")).toBe("3");
+    expect(params().get("session")).toBe("s");
+  });
+
+  it("checks out a revision by its number and goes back to the clock at its moment", async () => {
+    const { travel, params, source, set } = mount("/blok");
+    act(() => travel().commit(PAST));
+    act(() => travel().setMode("revisions", "7"));
+    await flush();
+
+    act(() => travel().checkoutRevision(40));
+    await flush();
+    expect(source.seekRevision).toHaveBeenLastCalledWith("7", { revision: 40 });
+    expect(params().get("rev")).toBe("40");
+
+    act(() => set({ at: PAST - 5000 }));
+    act(() => travel().setMode("time"));
+    await flush();
+    expect(source.seek).toHaveBeenLastCalledWith(PAST - 5000, true);
+    expect(travel().mode).toBe("time");
+    expect(params().get("at")).toBe(iso(PAST - 5000));
+    expect(params().get("rev")).toBeNull();
+    expect(params().get("agent")).toBeNull();
+    expect(params().get("session")).toBeNull();
+  });
+
+  it("checks a revision out of the agent's latest session when it was live", async () => {
+    const { travel, source } = mount("/blok?rev=12&agent=7&session=old");
+    await flush();
+    act(() => travel().goLive());
+    await flush();
+
+    act(() => travel().checkoutRevision(12));
+    expect(source.seekRevision).toHaveBeenLastCalledWith("7", { revision: 12, sessionId: null });
+    expect(travel().travelling).toBe(true);
+  });
+
+  it("leaves the URL alone while the revision slider is dragged, and writes it when let go", async () => {
+    const { travel, params, source } = mount("/blok?rev=12&agent=7&session=abc");
+    await flush();
+
+    act(() => travel().scrubRevision(15));
+    await flush();
+    expect(source.seekRevision).toHaveBeenLastCalledWith("7", { revision: 15 }, false);
+    expect(params().get("rev")).toBe("12");
+
+    act(() => travel().checkoutRevision(15));
+    await flush();
+    expect(source.seekRevision).toHaveBeenLastCalledWith("7", { revision: 15 });
+    expect(params().get("rev")).toBe("15");
+  });
+
+  it("stays live when revisions are chosen, and steps back from the agent's latest", async () => {
+    const { travel, source } = mount("/blok");
+    act(() => travel().setMode("revisions", "7"));
+    expect(travel().travelling).toBe(false);
+    expect(source.seekRevision).not.toHaveBeenCalled();
+
+    act(() => travel().step(-1));
+    expect(source.seekRevision).toHaveBeenCalledWith("7");
+    expect(source.step).toHaveBeenCalledWith(-1);
+    expect(travel().travelling).toBe(true);
   });
 
   it("goes live when the bar is closed: a past nobody can see is a trap", async () => {

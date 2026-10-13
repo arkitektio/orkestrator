@@ -7,7 +7,7 @@ const probeGeometryScratch = {
   point: new THREE.Vector3(),
 };
 
-import { buildAffineMatrix } from "../../../platform/coords/worldTransform";
+import { buildAffineMatrix, latticeZToSlice } from "../../../platform/coords/worldTransform";
 import { cropBoxToVoxelAabb } from "../../../platform/coords/cropBox";
 import {
   buildSliceMap,
@@ -172,7 +172,7 @@ export const useBrickPlaneProbe = ({
     if (currentZ !== undefined && Number.isFinite(currentZ)) {
       const inv = probeGeometryScratch.matrix.copy(buildAffineMatrix(layer)).invert();
       const pt = probeGeometryScratch.point.set(0, 0, currentZ).applyMatrix4(inv);
-      const zIndex = Math.max(0, Math.min(shapeZ - 1, Math.round(pt.z / scaleZ)));
+      const zIndex = Math.max(0, Math.min(shapeZ - 1, latticeZToSlice(pt.z / scaleZ)));
       zSelection = { start: zIndex, step: 1, length: 1 };
     }
 

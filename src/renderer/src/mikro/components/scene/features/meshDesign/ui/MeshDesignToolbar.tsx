@@ -7,21 +7,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
 import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { isTypingTarget } from "../../../platform/input/keyboardTarget";
 import { DESIGN_TOOL_GESTURES, useModeStore } from "../../../platform/stores/modeStore";
-import { useSceneStoreApi } from "../../../platform/stores/sceneStore";
 import { useBrushSkeletonStoreApi } from "../brush";
 import { ParamRow } from "../../annotations/enhancers/shared/ParamRow";
-import { useRoiSelectionStoreApi } from "../../annotations/roiSelectionStore";
-import { commitCandidate } from "../reconstruct/candidate";
-import { loftSelectedPolygons } from "../tools/loftAction";
 import { DESIGN_TOOLS, designToolById } from "../tools/registry";
-import { tubeFromSelectedPath } from "../tools/tubeFromPathAction";
 import {
   useMeshDesignStore,
   useMeshDesignStoreApi,
@@ -51,7 +45,7 @@ const MORE_TOOLS = DESIGN_TOOLS.filter((tool) => tool.group === "more");
 const panelClass =
   "pointer-events-auto flex flex-col gap-1 rounded-md bg-background/80 px-2 py-1.5 shadow-md backdrop-blur-sm";
 
-/** The panel of an editing tool: its one or two knobs, no verdict. */
+/** The panel of an editing tool: its one or two knobs. */
 const EditToolPanel = ({ tool }: { tool: "carve" | "sculpt" | "stamp" | "bridge" }) => {
   const stampShape = useMeshDesignStore((s) => s.stampShape);
   const setStampShape = useMeshDesignStore((s) => s.setStampShape);
@@ -99,11 +93,8 @@ export const MeshDesignToolbar = () => {
   const selectDesignTool = useModeStore((s) => s.selectDesignTool);
   const heldTool = useModeStore((s) => s.designTool);
   const message = useMeshDesignStore((s) => s.message);
-  const hasCandidate = useMeshDesignStore((s) => s.candidate !== null);
   const designApi = useMeshDesignStoreApi();
   const brushApi = useBrushSkeletonStoreApi();
-  const sceneApi = useSceneStoreApi();
-  const roiSelectionApi = useRoiSelectionStoreApi();
 
   const inDesign = interactionMode === "DESIGN";
 
@@ -117,24 +108,15 @@ export const MeshDesignToolbar = () => {
       const design = designApi.getState();
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
-        // The preview is the most recent act: undo takes it back first.
-        if (design.candidate && !event.shiftKey) design.setCandidate(null);
-        else if (event.shiftKey) design.redo();
+        if (event.shiftKey) design.redo();
         else design.undo();
         return;
       }
       if (event.metaKey || event.ctrlKey || event.altKey) return;
-      if (event.key === "Enter" && design.candidate) {
-        // Also keeps a focused panel button from being "clicked" by it.
-        event.preventDefault();
-        void commitCandidate(design);
-        return;
-      }
       if (event.key === "Escape") {
         // A gesture in flight is the stroke session's to cancel.
         if (brushApi.getState().status !== "idle") return;
-        if (design.candidate) design.setCandidate(null);
-        else if (design.pendingPoint) design.setPendingPoint(null);
+        if (design.pendingPoint) design.setPendingPoint(null);
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -149,17 +131,6 @@ export const MeshDesignToolbar = () => {
   // strokes need the volume, surface gestures the 3D overlay.
   const needs3D = tool !== undefined && displayMode !== "3D" && DESIGN_TOOL_GESTURES[tool.id] !== "volume-click";
 
-  /** Loft / tube-from-path are one-shot actions on the annotation selection. */
-  const runAction = async (action: typeof loftSelectedPolygons) => {
-    await commitCandidate(designApi.getState());
-    await action(
-      designApi.getState(),
-      brushApi.getState(),
-      sceneApi.getState(),
-      roiSelectionApi.getState().selectedRois,
-    );
-  };
-
   return (
     <div className="absolute bottom-12 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-1">
       {selectedTool === "trace" && <ReconstructPanel gesture="stroke" />}
@@ -168,68 +139,60 @@ export const MeshDesignToolbar = () => {
         selectedTool === "sculpt" ||
         selectedTool === "stamp" ||
         selectedTool === "bridge") && <EditToolPanel tool={selectedTool} />}
-      <span className="text-[10px] text-white/50">
-        {message ? (
-          <span className="text-amber-300/90">{message}</span>
-        ) : needs3D ? (
-          <span className="text-amber-300/90">{`${tool.label} works in the 3D view`}</span>
-        ) : heldTool && tool ? (
-          <span className="text-emerald-300/90">{tool.hint}</span>
-        ) : tool ? (
-          `Hold ${tool.key.toUpperCase()} — ${tool.hint.charAt(0).toLowerCase()}${tool.hint.slice(1)}${hasCandidate ? " · ↵ adds the preview" : ""}`
-        ) : (
-          "Navigate freely — hold a tool's key to use it"
-        )}
-      </span>
-      <ButtonGroup>
-        {PRIMARY_TOOLS.map(({ id, label, key, icon: Icon, shortcut }) => (
-          <Button
-            key={id}
-            variant={heldTool === id ? "default" : selectedTool === id ? "secondary" : "outline"}
-            size="xs"
-            onClick={() => selectDesignTool(id)}
-            title={`${shortcut.description} — hold ${key.toUpperCase()}`}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            <span className="text-[10px]">{label}</span>
-            <span className="text-[9px] opacity-60">{key.toUpperCase()}</span>
-          </Button>
-        ))}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+      {/* The frosted pill is what keeps the bar legible over a bright image:
+          it dims and blurs what is behind it, so white-on-translucent still
+          reads on a white RGB frame and all but disappears on a dark one. */}
+      <div className="pointer-events-auto flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-black/50 px-2 pb-1.5 pt-1 shadow-lg shadow-black/20 backdrop-blur-xl backdrop-brightness-75 backdrop-saturate-150">
+        <span className="text-[10px] text-white/70">
+          {message ? (
+            <span className="text-amber-300/90">{message}</span>
+          ) : needs3D ? (
+            <span className="text-amber-300/90">{`${tool.label} works in the 3D view`}</span>
+          ) : heldTool && tool ? (
+            <span className="text-emerald-300/90">{tool.hint}</span>
+          ) : tool ? (
+            `Hold ${tool.key.toUpperCase()} — ${tool.hint.charAt(0).toLowerCase()}${tool.hint.slice(1)}`
+          ) : (
+            "Navigate freely — hold a tool's key to use it"
+          )}
+        </span>
+        <ButtonGroup>
+          {PRIMARY_TOOLS.map(({ id, label, key, icon: Icon, shortcut }) => (
             <Button
-              variant={moreTool && heldTool === moreTool.id ? "default" : moreTool ? "secondary" : "outline"}
+              key={id}
+              variant={heldTool === id ? "default" : selectedTool === id ? "secondary" : "outline"}
               size="xs"
-              title="More tools and actions"
+              onClick={() => selectDesignTool(id)}
+              title={`${shortcut.description} — hold ${key.toUpperCase()}`}
             >
-              {moreTool ? <moreTool.icon className="h-3.5 w-3.5" /> : <Ellipsis className="h-3.5 w-3.5" />}
-              <span className="text-[10px]">{moreTool?.label ?? "More"}</span>
+              <Icon className="h-3.5 w-3.5" />
+              <span className="text-[10px]">{label}</span>
+              <span className="text-[9px] opacity-60">{key.toUpperCase()}</span>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="end">
-            {MORE_TOOLS.map(({ id, label, key, icon: Icon, shortcut }) => (
-              <DropdownMenuItem key={id} onSelect={() => selectDesignTool(id)} title={shortcut.description}>
-                <Icon className="h-3.5 w-3.5" />
-                {label}
-                <DropdownMenuShortcut>{key.toUpperCase()}</DropdownMenuShortcut>
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => void runAction(loftSelectedPolygons)}
-              title="Loft the selected polygon annotations (traced on different slices) into a mesh"
-            >
-              Loft selected polygons
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => void runAction(tubeFromSelectedPath)}
-              title="Sweep the selected path annotation into a tube at the tool radius"
-            >
-              Tube from selected path
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </ButtonGroup>
+          ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant={moreTool && heldTool === moreTool.id ? "default" : moreTool ? "secondary" : "outline"}
+                size="xs"
+                title="More tools"
+              >
+                {moreTool ? <moreTool.icon className="h-3.5 w-3.5" /> : <Ellipsis className="h-3.5 w-3.5" />}
+                <span className="text-[10px]">{moreTool?.label ?? "More"}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="end">
+              {MORE_TOOLS.map(({ id, label, key, icon: Icon, shortcut }) => (
+                <DropdownMenuItem key={id} onSelect={() => selectDesignTool(id)} title={shortcut.description}>
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                  <DropdownMenuShortcut>{key.toUpperCase()}</DropdownMenuShortcut>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </ButtonGroup>
+      </div>
     </div>
   );
 };

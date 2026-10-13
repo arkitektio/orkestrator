@@ -61,17 +61,22 @@ export type CenterVoxelQuery = {
   baseShape: Vec3;
   /**
    * 2D only: base-voxel z of the displayed slab (`LayerNodePlan.slabZ`). The
-   * plane's geometry always sits at group-local z = 0 — the slab is a texture
-   * lookup, not a position — so the hit point cannot supply this.
+   * plane's geometry always sits at one group-local z (`planeZ`) — the slab is
+   * a texture lookup, not a position — so the hit point cannot supply this.
    */
   slabZ?: number | null;
+  /**
+   * 2D only: the group-local z of the plane's quad (`BrickPlaneLayer`): a
+   * stack's first slice centre, 0 for a layer with no z axis.
+   */
+  planeZ?: number;
 };
 
 /**
  * The base-level voxel the center pixel looks at, or null when the center of
  * the screen is not over this layer's data.
  *
- * 2D takes the plane at group-local z = 0 (`BrickPlaneLayer`'s quad); 3D takes
+ * 2D takes the plane at group-local `planeZ` (`BrickPlaneLayer`'s quad); 3D takes
  * the ENTRY point of the ray into the layer's box. Entry rather than "first
  * visible sample": the shader's `desiredLevelAt` is monotone non-finer along a
  * forward ray (see `features/bricks/shaderspec/raymarchStep.ts`), so the entry point is where the
@@ -92,7 +97,7 @@ export function centerBaseVoxel(query: CenterVoxelQuery): Vec3 | null {
 
   if (mode === "2D") {
     if (Math.abs(direction.z) < 1e-9) return null; // ray parallel to the quad
-    const t = -origin.z / direction.z;
+    const t = ((query.planeZ ?? 0) - origin.z) / direction.z;
     if (t < 0) return null; // the plane is behind the camera
     const x = origin.x + t * direction.x;
     const y = origin.y + t * direction.y;

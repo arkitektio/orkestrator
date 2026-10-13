@@ -11,8 +11,8 @@ describe("splitField", () => {
     field = applyStamp(field, sphereStamp([3, 0, 0], 4), "add");
     const parts = splitField(field, [-4, 0, 0], [4, 0, 0]);
     expect(parts).not.toBeNull();
-    const a = marchField(parts!.a, "cubes");
-    const b = marchField(parts!.b, "cubes");
+    const a = marchField(parts!.a);
+    const b = marchField(parts!.b);
     expect(a.indices.length).toBeGreaterThan(0);
     expect(b.indices.length).toBeGreaterThan(0);
     // Each half stays on its own side (allowing the shared waist).

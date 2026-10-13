@@ -52,7 +52,7 @@ export type SceneCameraFrame = {
 /**
  * three-space → world µm.
  *
- * Identity by construction: layers render corner-anchored at `affine(v)`,
+ * Identity by construction: layers render corner-anchored, lattice point `v` at `affine(v)`,
  * which IS world µm — there is no client-side centering left to invert. The
  * function survives (rather than inlining identity at the call sites) so a
  * future scene-root transform has exactly one place to land.
@@ -144,8 +144,9 @@ const readTarget = (frame: CameraFrame): THREE.Vector3 =>
  * What the viewer holds outside the camera but inside the pose.
  *
  * `currentZ` is the flat view's SLICE, and it is already world µm — the
- * ZSlider works in `voxelToPhysicalZ` space, i.e. the layer affine applied to
- * a voxel z with no centering, which is exactly the world z this pose stores.
+ * ZSlider works in `voxelToPhysicalZ` space, i.e. the world z of a slice's
+ * centre (where the server puts that index), which is exactly the world z
+ * this pose stores.
  * So in 2D the z axis of a pose is the slice, not the camera target: an
  * orthographic camera looking down z does not change what it shows when its
  * target's z moves, and a flat tour through a stack is a tour through slices.

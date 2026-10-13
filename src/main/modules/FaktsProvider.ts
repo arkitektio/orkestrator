@@ -1,6 +1,5 @@
 import EventEmitter from 'events';
 import { readFileSync, watch } from 'fs';
-import { resolve } from 'path';
 
 export interface FaktsConfig {
     s3Endpoint?: string;

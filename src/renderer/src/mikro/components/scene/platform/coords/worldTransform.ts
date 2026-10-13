@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { LATTICE_CENTRE } from "@/core/data/scene/coords/transformGraph";
 import type { LayerState } from "../model/layerModel";
 
 /**
@@ -45,7 +46,13 @@ export function affineToMatrix4(raw: number[][] | null | undefined): THREE.Matri
   return mat;
 }
 
-/** Build a THREE.Matrix4 from the layer's composed affine (x,y,z convention) */
+/**
+ * Build a THREE.Matrix4 from the layer's composed affine (x,y,z convention).
+ *
+ * It takes LATTICE coordinates — the corner-anchored `[0, shape]` the layer
+ * renders (`composeLatticeAffine`) — so a slice INDEX goes through
+ * `sliceToLatticeZ` first and a lattice z comes back through `latticeZToSlice`.
+ */
 export function buildAffineMatrix(layer: LayerState): THREE.Matrix4 {
   return affineToMatrix4(layer.affineMatrix);
 }
@@ -79,12 +86,22 @@ export function getLayerZSize(layer: LayerState): number | null {
   return layer.lens.shape[idx] ?? null;
 }
 
-/** Convert a voxel Z coordinate to physical Z using the affine matrix */
+/** Lattice z of slice `k`'s centre: the middle of its cell `[k, k + 1)`. */
+export const sliceToLatticeZ = (slice: number): number => slice + LATTICE_CENTRE;
+
+/** The slice whose cell `[k, k + 1)` holds a lattice z. Not clamped to the stack. */
+export const latticeZToSlice = (latticeZ: number): number => Math.floor(latticeZ);
+
+/**
+ * World z of a slice: its CENTRE, which is where the server puts index
+ * `voxelZ` — so the flat view's `currentZ` on slice `k` is the z a shape
+ * drawn there is stored at. Read down the first voxel's column.
+ */
 export function voxelToPhysicalZ(
   affine: THREE.Matrix4,
   voxelZ: number,
 ): number {
-  const pt = new THREE.Vector3(0, 0, voxelZ);
+  const pt = new THREE.Vector3(LATTICE_CENTRE, LATTICE_CENTRE, sliceToLatticeZ(voxelZ));
   pt.applyMatrix4(affine);
   return pt.z;
 }
@@ -182,7 +199,7 @@ export function physicalToVoxelZ(
   const inv = affine.clone().invert();
   const pt = new THREE.Vector3(0, 0, physicalZ);
   pt.applyMatrix4(inv);
-  return Math.max(0, Math.min(maxVoxelZ, Math.round(pt.z)));
+  return Math.max(0, Math.min(maxVoxelZ, latticeZToSlice(pt.z)));
 }
 
 /**
@@ -199,6 +216,7 @@ export function physicalToVoxelZStrict(
 ): number | null {
   const inv = affine.clone().invert();
   const pt = new THREE.Vector3(0, 0, physicalZ).applyMatrix4(inv);
-  if (pt.z < -0.5 || pt.z > maxVoxelZ + 0.5) return null;
-  return Math.max(0, Math.min(maxVoxelZ, Math.round(pt.z)));
+  // The stack is the lattice `[0, slices]`: half a voxel past either end slice's centre.
+  if (pt.z < 0 || pt.z > maxVoxelZ + 1) return null;
+  return Math.max(0, Math.min(maxVoxelZ, latticeZToSlice(pt.z)));
 }

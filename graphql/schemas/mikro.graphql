@@ -41,6 +41,11 @@ type AffineTransformation implements Transformation {
   The affine matrix, M x (N+1), rows outermost. The last column is the translation
   """
   affine: [[Float!]!]!
+
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
   id: ID!
@@ -240,7 +245,22 @@ type Annotation {
   The user that drew this annotation, or null when that user is gone or a client created it without one
   """
   creator: User
+
+  """
+  The lenses cut to this annotation with `createLens(annotation:)`, oldest cut first. A record of the act, not a relation in space: a lens is immutable and a shape is not, so moving the shape afterwards leaves these where they were cut -- `lenses(filters: {overlapsAnnotation})` is the question about where things are now. One lens may be listed by several shapes, since a lens is one row per selection. What was *computed* from the shape is `derivedResidents`
+  """
+  derivedLenses: [ArrayLens!]!
+
+  """
+  Everything computed from this annotation, whatever kind of container it is: the data whose `derivedFrom` named this shape as an ANNOTATION source -- a crop written out as a dataset, an image straightened along a path, a table measured inside an ROI. The other end of those edges, exactly as `ArrayDataset.derivedResidents` is, and as kind-blind: the shape is usually named with no transform. A record of the act: editing the shape afterwards changes none of it. The edge itself, with the lens the pixels came from beside it, is on each child's own `derivedFrom`
+  """
+  derivedResidents: [Resident!]!
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """The fill color of the geometry, as RGBA, or null for no fill"""
   fillColor: [Int!]
@@ -460,6 +480,16 @@ input AnnotationCollectionOrder @oneOf {
 }
 
 """
+The fields an ANNOTATION derivation reads. Published for codegen; the wire type is the flat DerivedFromInput
+"""
+input AnnotationDerivedFromInput {
+  annotation: ID!
+  kind: DerivationSourceKind! = ANNOTATION
+  transform: TransformInput = null
+  valueRelation: ValueRelation = null
+}
+
+"""
 One change to an annotation collection. Exactly one field is set per event
 """
 type AnnotationEvent {
@@ -513,6 +543,11 @@ input AnnotationFilter {
   Filter to annotations pinned to every one of these coordinates, e.g. [{name: 't', value: 3}]. GIN-backed containment on the stored coordinate dict; an annotation that spans a coordinate does not match a pin on it
   """
   pinnedTo: [CoordinateInput!]
+
+  """
+  Filter to the annotations satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL: `@mikro/annotation_kind` is the kind (named as the descriptor names it, e.g. PATH) and the axis counts are those of the collection's drawing space. A key annotations do not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
 
   """Search by name (case-insensitive substring)"""
   search: String
@@ -686,6 +721,11 @@ type AnnotationLens implements Lens {
   What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows
   """
   kind: LensKind!
+
+  """
+  What to call this lens in a list, never empty: its `name` when it has one, else its container's name followed by what it selects of it (`cells.zarr · c[0:1]`); a whole lens is called by its container. What a picker shows for an option
+  """
+  label: String!
 
   """
   What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
@@ -982,6 +1022,11 @@ input ArrayDatasetFilter {
   placeableIn: ID
 
   """
+  Filter to the datasets satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored at creation, and `@mikro/value_kind` from the dataset's primary derivation. A key datasets do not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
+
+  """
   Filter to datasets rendered in this scene, through their lenses' layers. What is actually staged there -- for what merely could be, use `placeableIn`
   """
   scene: ID
@@ -1170,6 +1215,11 @@ type ArrayLens implements Lens {
   kind: LensKind!
 
   """
+  What to call this lens in a list, never empty: its `name` when it has one, else its container's name followed by what it selects of it (`cells.zarr · c[0:1]`); a whole lens is called by its container. What a picker shows for an option
+  """
+  label: String!
+
+  """
   The most recent picture of this lens' `defaultScene` -- the tile to put on this lens. A lens that nominates a scene shows that one; a crop that nominates nothing shows its dataset's (its whole lens'), so a crop nobody has staged yet still has a picture. Null when neither nominates a scene
   """
   latestSnapshot: SceneSnapshot
@@ -1214,7 +1264,7 @@ type ArrayLens implements Lens {
 }
 
 """
-The `ArrayLike` scalar type represents a reference to a store previously created by the user n a datalayer
+The `ArrayLike` scalar type represents a reference to a store previously created by the user on a datalayer
 """
 scalar ArrayLike
 
@@ -1634,6 +1684,11 @@ type ByDimensionTransformation implements Transformation {
   The matrix over the named axes, M x (N+1) with rows outermost, in `outputAxes` x `inputAxes` order. Empty when the map is stated per axis or not at all. When present it is the whole map: a `scale` or `translation` beside it is not read
   """
   affine: [[Float!]!]!
+
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
   id: ID!
@@ -2039,7 +2094,7 @@ One column a layer may be coloured or filtered by, and how it is reached. Both p
 """
 type ColorByOption {
   """
-  (SPARSE) The axes a position is named along -- the ones the matrix identifies itself, never the one the source's ids index. **Name a position along every one of them**: a rank-two matrix has one, a rank-three matrix two, and an `at` that names a different set is refused. **One option per matrix, never per position**: a matrix with 19 059 features has 19 059 of those, and the picker offers the axes while the client picks the positions out of the tables they reference, which it already holds access grants for. Offered when at least one of these axes has a stored layout, which is what makes the read one contiguous slice rather than a scan
+  (SPARSE) The axes a position is named along -- the ones the matrix identifies itself, never the one the source's ids index. **Name a position along every one of them**: a rank-two matrix has one, a rank-three matrix two, and a lens that pins a different set is refused. **One option per matrix, never per position**: a matrix with 19 059 features has 19 059 of those, and the picker offers the axes while the client picks the positions out of the tables they reference, which it already holds access grants for. Offered when at least one of these axes has a stored layout, which is what makes the read one contiguous slice rather than a scan
   """
   axes: [String!]!
 
@@ -2191,7 +2246,7 @@ enum ColorSourceKind {
   GRAPH
 
   """
-  One slice of a sparse matrix the source's ids index, reached by `dataset` and the position `at`. Always measured: a slice is a value per object, so it takes a colormap and never a class map.
+  One slice of a sparse matrix the source's ids index, reached by `lens`: a sparse lens whose windows pin one position on every axis the matrix identifies itself by. Always measured: a slice is a value per object, so it takes a colormap and never a class map.
   """
   SPARSE
 }
@@ -2411,7 +2466,7 @@ input CoordinateAnchorInput {
 }
 
 """
-The connected component of the coordinate graph around one system: every coordinate system it relates to, and every top-level edge between them. Reachability is undirected -- an edge pointing *into* the system you started from (the edge into a physical space, say) relates to it just as much as one pointing out -- but every edge is returned in its true stored direction, so composing a path is still the client's job and still needs the inversions flagged
+The connected component of the coordinate graph around one system: every coordinate system it relates to, and every edge between them. Reachability is undirected -- an edge pointing *into* the system you started from (the edge into a physical space, say) relates to it just as much as one pointing out -- but every edge is returned in its true stored direction, so composing a path is still the client's job and still needs the inversions flagged
 """
 type CoordinateGraph {
   """The coordinate system the walk started from"""
@@ -2807,7 +2862,7 @@ Input for the lens making a selection over an array dataset -- or within one of 
 """
 input CreateLensInput {
   """
-  In place of `slices`: an annotation, cut to the voxels under its stored box (crop to the ROI). With `dataset` only
+  In place of `slices`: an annotation, cut to the voxels under its stored box (crop to the ROI). With `dataset`, of the whole dataset; with `lens`, what that lens selects under the box. The cut is recorded: the annotation lists the lens as one of its `derivedLenses`
   """
   annotation: ID = null
 
@@ -3450,6 +3505,11 @@ input DeleteTransformationInput {
 Which kind of thing a derivation names as the source its data was computed from: the discriminator of `DerivedFromInput`. The edge itself is the same whichever is chosen -- child space in, source space out -- so a table named as TABLE_DATASET and the same table named as COORDINATE_SYSTEM write the identical row; the read side reports what lives at the far end through `CoordinateSystem.residents`, not which member was used to say it
 """
 enum DerivationSourceKind {
+  """
+  One shape of an annotation collection: the data was computed along it or within it -- a crop to an ROI, an image straightened along a path. The ANNOTATION_COLLECTION arm on the shape's collection, and which shape: the edge lands in the collection's drawing space and carries the annotation, so two shapes of one collection are two sources. Usually named second, behind the lens the pixels came from, and usually without a transform: the shape is why the data is what it is, not where it sits.
+  """
+  ANNOTATION
+
   """An annotation collection, through the space its shapes are drawn in."""
   ANNOTATION_COLLECTION
 
@@ -3481,6 +3541,11 @@ enum DerivationSourceKind {
 Where this data came from, as a discriminated union: `kind` selects which sort of source is being named, and only that member's id field is read -- any other is rejected. The member inputs annotated `@unionElementOf(union: "DerivedFromInput")` say which field each kind reads. Direction is always this data -> its source
 """
 input DerivedFromInput {
+  """
+  (ANNOTATION) The shape this data was computed along or within -- the ROI a crop was cut to, the path an image was straightened along. The edge lands in its collection's drawing space and names the shape
+  """
+  annotation: ID = null
+
   """
   (ANNOTATION_COLLECTION) The annotation collection this data was computed from
   """
@@ -3523,6 +3588,39 @@ input DerivedFromInput {
   What the derivation did to the *values* -- orthogonal to the transform's `kind`, which only says where the data sits: IDENTICAL for a crop or reorder (statistics transfer), TRANSFORMED for a deconvolution, a normalization, or a table of measurements read off an image, CATEGORIZED for a threshold or segmentation (values became labels -- a bootstrapped scene then renders as a label map). Omit when unstated; the algorithm itself belongs to task provenance
   """
   valueRelation: ValueRelation = null
+}
+
+"""
+One constraint on an object's descriptors, in the shape a rekuest port states its `requires` in -- so a picker hands a port's constraints on unchanged. `key` is one of the keys the structure declares (e.g. `@mikro/n_space_axes`); a key it does not declare is refused.
+"""
+input DescriptorConstraintInput {
+  """The descriptor key, e.g. `@mikro/n_space_axes`"""
+  key: String!
+
+  """
+  How the object's value is compared with `value`. MATCHES is equality, as EQUALS is
+  """
+  operator: DescriptorOperator!
+
+  """
+  The value compared against: a number for GTE and LTE, a list for IN and NOT_IN, true or false for EXISTS, the member looked for with CONTAINS
+  """
+  value: JSON = null
+}
+
+"""
+How a descriptor constraint compares the object's value with the stated one. The operators a rekuest port's `requires` and `provides` are written in, with the same meaning.
+"""
+enum DescriptorOperator {
+  CONTAINS
+  EQUALS
+  EXISTS
+  GTE
+  IN
+  LTE
+  MATCHES
+  NOT_EQUALS
+  NOT_IN
 }
 
 """
@@ -3810,6 +3908,10 @@ input FieldTransformInput {
 A non-affine map given by the values of an array rather than by a formula. The array is a `field`: a node of this graph, not a payload on this edge, so it keeps its own lineage and its axes say what its numbers mean. It has no closed-form inverse, so a placement path never walks it backwards
 """
 type FieldTransformation implements Transformation {
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
 
@@ -4028,7 +4130,7 @@ input FileFilter {
 }
 
 """
-The `FileLike` scalar type represents a reference to a big file storage previously created by the user n a datalayer
+The `FileLike` scalar type represents a reference to a big file storage previously created by the user on a datalayer
 """
 scalar FileLike
 
@@ -4216,7 +4318,7 @@ One column a layer may be filtered by, and how it is reached. The same set the c
 """
 type FilterByOption {
   """
-  (SPARSE) The axes a position is named along -- the ones the matrix identifies itself, never the one the source's ids index. **Name a position along every one of them**: a rank-two matrix has one, a rank-three matrix two, and an `at` that names a different set is refused. **One option per matrix, never per position**: a matrix with 19 059 features has 19 059 of those, and the picker offers the axes while the client picks the positions out of the tables they reference, which it already holds access grants for. Offered when at least one of these axes has a stored layout, which is what makes the read one contiguous slice rather than a scan
+  (SPARSE) The axes a position is named along -- the ones the matrix identifies itself, never the one the source's ids index. **Name a position along every one of them**: a rank-two matrix has one, a rank-three matrix two, and a lens that pins a different set is refused. **One option per matrix, never per position**: a matrix with 19 059 features has 19 059 of those, and the picker offers the axes while the client picks the positions out of the tables they reference, which it already holds access grants for. Offered when at least one of these axes has a stored layout, which is what makes the read one contiguous slice rather than a scan
   """
   axes: [String!]!
 
@@ -4789,6 +4891,10 @@ input IdentityTransformInput {
 
 """The identity map: input and output coordinates are the same"""
 type IdentityTransformation implements Transformation {
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
   id: ID!
@@ -4843,7 +4949,7 @@ type IdentityTransformation implements Transformation {
 }
 
 """
-The `ImageFileLike` scalar type represents a reference to a snapshot image previously created by the user n a datalayer
+The `ImageFileLike` scalar type represents a reference to a snapshot image previously created by the user on a datalayer
 """
 scalar ImageFileLike
 
@@ -5634,6 +5740,11 @@ interface Lens {
   kind: LensKind!
 
   """
+  What to call this lens in a list, never empty: its `name` when it has one, else its container's name followed by what it selects of it (`cells.zarr · c[0:1]`); a whole lens is called by its container. What a picker shows for an option
+  """
+  label: String!
+
+  """
   What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
   """
   name: String
@@ -5785,6 +5896,16 @@ input LensFilter {
   Filter to lenses placeable into a coordinate system: those whose space reaches it across steps that compose into one affine map, walking the transformation edges. Takes a *space*, not a scene -- pass `scene.worldCoordinateSystem.id` to ask it of a scene. `derivedOnly` and `asLayer` narrow the answer for a particular picker; with neither, this is the whole set layer creation would accept
   """
   placeableIn: LensPlaceableFilter
+
+  """
+  Filter to the lenses co-registered with this annotation: lenses over the dataset it was drawn on, and lenses over any other dataset registered into a space its collection reaches, walking the transformation edges. The candidates `overlapsAnnotation` compares the shape against, without the comparison -- so a crop the shape lies outside of is still returned. What a picker offers once an annotation is chosen. The lenses over the annotation's own collection are always among them; an annotation whose collection has no edge out of its drawing space reaches no other
+  """
+  reachableFrom: ID
+
+  """
+  Filter to the lenses satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored when the lens was made. `@mikro/value_kind` is asked of array lenses only and `@mikro/n_annotations` of whole annotation lenses only (a windowed one counts by geometry and is left out). A key lenses do not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
 
   """
   Search by the lens' own name or, since most lenses have none and are known by their container's, by its container's label: the name of a dataset, table, sparse dataset or annotation collection, the name or store key of a mesh or network collection (case-insensitive substring)
@@ -6000,7 +6121,7 @@ type LookupStep {
   keyHeld: String
 
   """
-  (ARRAY) The held id as a position along `keyAxis`. A matrix axis *is* the row ids; a dense array's positions relate to them by whatever its derivation edge states (`cell_id = cell + 1`), and this is that edge already inverted. Do not re-derive it from the edge's children
+  (ARRAY) The held id as a position along `keyAxis`. A matrix axis *is* the row ids; a dense array's positions relate to them by whatever its derivation edge states (`cell_id = cell + 1`), and this is that edge already inverted. Do not re-derive it from the edge's steps
   """
   keyMap: KeyMap
 
@@ -6054,6 +6175,10 @@ input MapAxisTransformInput {
 A permutation of axes, mapping each input axis to an output axis by name
 """
 type MapAxisTransformation implements Transformation {
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
   id: ID!
@@ -6506,6 +6631,11 @@ type MeshLens implements Lens {
   What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows
   """
   kind: LensKind!
+
+  """
+  What to call this lens in a list, never empty: its `name` when it has one, else its container's name followed by what it selects of it (`cells.zarr · c[0:1]`); a whole lens is called by its container. What a picker shows for an option
+  """
+  label: String!
   meshCollection: MeshCollection!
 
   """
@@ -7588,6 +7718,11 @@ type NetworkLens implements Lens {
   kind: LensKind!
 
   """
+  What to call this lens in a list, never empty: its `name` when it has one, else its container's name followed by what it selects of it (`cells.zarr · c[0:1]`); a whole lens is called by its container. What a picker shows for an option
+  """
+  label: String!
+
+  """
   What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
   """
   name: String
@@ -8026,7 +8161,7 @@ type ParquetAccessGrant {
 }
 
 """
-The `ParquetLike` scalar type represents a reference to a parquet objected stored previously created by the user on a datalayer
+The `ParquetLike` scalar type represents a reference to a parquet object previously created by the user on a datalayer
 """
 scalar ParquetLike
 
@@ -8818,7 +8953,7 @@ type Query {
   coordinateAnchors(filters: CoordinateAnchorFilter, pagination: OffsetPaginationInput): [CoordinateAnchor!]!
 
   """
-  Walk the coordinate graph out from one system: every coordinate system it reaches and every top-level edge between them. Reachability is undirected (an edge pointing into the system relates to it as much as one pointing out), the edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not
+  Walk the coordinate graph out from one system: every coordinate system it reaches and every edge between them. Reachability is undirected (an edge pointing into the system relates to it as much as one pointing out), the edges keep their true direction, and nothing is composed -- what the list queries cannot answer is 'which edges relate to *this* one', because relatedness is transitive and a filter is not
   """
   coordinateGraph(coordinateSystem: ID!, maxDepth: Int = null): CoordinateGraph!
 
@@ -9230,6 +9365,11 @@ input RotationTransformInput {
 type RotationTransformation implements Transformation {
   """The rotation matrix"""
   affine: [[Float!]!]!
+
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
   id: ID!
@@ -9402,6 +9542,10 @@ input ScaleTransformInput {
 
 """A per-axis multiplication, with one entry per input axis"""
 type ScaleTransformation implements Transformation {
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
   id: ID!
@@ -9689,6 +9833,10 @@ input SelectorInput {
 An ordered composition of steps, applied first to last: one edge, carrying its map as `steps`. The ingest writes one for a stepped lens and for a downsampled pyramid level (a scale, then the half-voxel translation)
 """
 type SequenceTransformation implements Transformation {
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
   id: ID!
@@ -10321,6 +10469,11 @@ type SparseLens implements Lens {
   kind: LensKind!
 
   """
+  What to call this lens in a list, never empty: its `name` when it has one, else its container's name followed by what it selects of it (`cells.zarr · c[0:1]`); a whole lens is called by its container. What a picker shows for an option
+  """
+  label: String!
+
+  """
   What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
   """
   name: String
@@ -10800,6 +10953,11 @@ type TableLens implements Lens {
   kind: LensKind!
 
   """
+  What to call this lens in a list, never empty: its `name` when it has one, else its container's name followed by what it selects of it (`cells.zarr · c[0:1]`); a whole lens is called by its container. What a picker shows for an option
+  """
+  label: String!
+
+  """
   What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
   """
   name: String
@@ -11156,7 +11314,7 @@ enum TransformKind {
   AFFINE
 
   """
-  A composition of child transformations, each acting on a named subset of the axes.
+  A map acting on a named subset of the axes, and the identity on the rest.
   """
   BY_DIMENSION
 
@@ -11180,7 +11338,7 @@ enum TransformKind {
   SCALE
 
   """
-  An ordered composition of child transformations, applied first to last.
+  An ordered composition of steps, applied first to last. The steps are carried on the edge itself.
   """
   SEQUENCE
 
@@ -11210,6 +11368,10 @@ enum TransformKindChoices {
 A directed edge of the coordinate graph, mapping `input` to `output`. Direction is always forward. The concrete kind (Scale, Translation, Affine, Sequence, ...) carries the parameters
 """
 interface Transformation {
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
   id: ID!
@@ -11343,6 +11505,10 @@ input TranslationTransformInput {
 
 """A per-axis offset, with one entry per input axis"""
 type TranslationTransformation implements Transformation {
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
   id: ID!
@@ -11428,6 +11594,10 @@ input UnmappableTransformInput {
 A declared NON-correspondence: the two systems are related -- one was computed from the other -- and no point of either maps to a point of the other. It has no parameters, no rank and no matrix, and no placement search will walk it, in either direction. This is what a per-object measurement table's relation to the image it was measured from looks like
 """
 type UnmappableTransformation implements Transformation {
+  """
+  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  """
+  annotation: Annotation
   createdAt: DateTime!
   creator: User
   id: ID!
@@ -11992,7 +12162,7 @@ enum VectorGlyph {
 }
 
 """
-A vector-valued lens -- an optical flow, a deformation field, an orientation map -- drawn as glyphs sampled from the grid. The sixth lens-backed kind, and the value domain is what earns it one, for LabelLayer's reason: the lens carries a DISPLACEMENT axis whose positions are the components of a per-point offset, so the axis is read as geometry, and none of the intensity vocabulary (a channel index, a gamma, a projection) survives that. Which axis holds the components is derived (`vectorAxis`), never stored -- a per-layer copy could disagree with the axes themselves. What the layer carries is honestly view state: a glyph style, a sampling stride, a magnitude scale and a magnitude colormap window, and two layers over one field may disagree about all of it -- a coarse overview beside a dense inset.
+A vector-valued lens -- an optical flow, a deformation field, an orientation map -- drawn as glyphs sampled from the grid. The sixth lens-backed kind, and the value domain is what earns it one, for LabelLayer's reason: the lens carries a DISPLACEMENT axis whose positions are the components of a per-point offset, so the axis is read as geometry, and none of the intensity vocabulary (a channel, a gamma, a projection) survives that. Which axis holds the components is derived (`vectorAxis`), never stored -- a per-layer copy could disagree with the axes themselves. What the layer carries is honestly view state: a glyph style, a sampling stride, a magnitude scale and a magnitude colormap window, and two layers over one field may disagree about all of it -- a coarse overview beside a dense inset.
 """
 type VectorLayer implements Layer {
   """

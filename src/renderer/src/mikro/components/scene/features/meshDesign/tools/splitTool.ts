@@ -1,9 +1,8 @@
 import { Split } from "lucide-react";
 
-import { meshToField } from "../field/sculptField";
 import { splitField } from "../field/split";
 import { designDispatcher } from "../worker/designDispatcher";
-import { fieldSpacingFor, finishFor } from "./context";
+import { baseFor, fieldSpacingFor, finishFor } from "./context";
 import type { BrushSkeletonState } from "../brush";
 import type { DesignMesh, MeshDesignState } from "../store/meshDesignStore";
 import type { DesignTool } from "./registry";
@@ -34,7 +33,13 @@ export async function applySplit(
   seedB: Vec3,
 ): Promise<boolean> {
   const fieldSpacing = target.field?.spacing ?? fieldSpacingFor([1, 1, 1], brush.detailVoxels);
-  const field = target.field ?? meshToField(target.original, fieldSpacing);
+  // A mesh without a field gets one from the worker first — voxelizing is
+  // not main-thread work.
+  const field =
+    target.field ??
+    (await designDispatcher().run({ base: baseFor(target, fieldSpacing), ops: [], finish: finishFor(brush, fieldSpacing) }))
+      ?.field;
+  if (!field) return false;
   const parts = splitField(field, seedA, seedB);
   if (!parts) return false;
   // The watershed itself stays here (it needs the whole field in hand and

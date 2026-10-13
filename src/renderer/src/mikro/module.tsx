@@ -25,6 +25,16 @@ import { MIKRO_PROFILE_SECTIONS } from "./profile/sections";
 import { MikroEntitySearch } from "./search";
 import { ArrayDatasetViewer, SceneViewer } from "./viewers";
 
+/** The six structures a lens port is typed on, one per kind of container. */
+const LENS_IDENTIFIERS = [
+  "@mikro/arraylens",
+  "@mikro/tablelens",
+  "@mikro/sparselens",
+  "@mikro/meshlens",
+  "@mikro/networklens",
+  "@mikro/annotationlens",
+];
+
 export const MIKRO_MODULE = defineModule({
   manifest,
   serviceKey: service.key,
@@ -40,6 +50,9 @@ export const MIKRO_MODULE = defineModule({
       "@mikro/sparsedataset": SparseDatasetDisplay,
       "@mikro/annotation": AnnotationDisplay,
       "@mikro/lens": LensDisplay,
+      // The six structures a port is actually typed on: `@mikro/lens` is this
+      // app's own name for any of them and no action returns it.
+      ...Object.fromEntries(LENS_IDENTIFIERS.map((identifier) => [identifier, LensDisplay])),
       "@mikro/chart": ChartDisplay,
     },
     viewers: {

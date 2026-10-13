@@ -9,8 +9,8 @@ import { useMeshDesignStore, type ReconstructorId } from "../store/meshDesignSto
 /**
  * The reconstructors' own knobs — one small panel each, keyed by id. A
  * `Record` (not a list) so a reconstructor added to `reconstruct/registry`
- * without a panel fails the build. Panels only edit settings; running,
- * re-running and the verdict belong to `ReconstructPanel`, which hosts them.
+ * without a panel fails the build. Panels only edit settings; running
+ * and re-running belong to `ReconstructPanel`, which hosts them.
  */
 
 /** The search radius every gesture tool shares (the brush store's). */

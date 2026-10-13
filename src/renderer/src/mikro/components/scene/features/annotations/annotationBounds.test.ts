@@ -158,7 +158,10 @@ describe("resolveCollectionMatrix (annotations)", () => {
   const collection = (id: string, axes: string[]): AnnotationCollectionRef =>
     ({
       id,
-      coordinateSystem: { id: `cs:${id}`, axes: axes.map((name) => ({ name })) },
+      coordinateSystem: {
+        id: `cs:${id}`,
+        axes: axes.map((name, order) => ({ name, type: "SPACE", order })),
+      },
     }) as unknown as AnnotationCollectionRef;
   const layerWith = (asAffine: unknown): AnnotationLayerVariant =>
     ({ __typename: "AnnotationLayer", id: "layer:1", asAffine }) as unknown as AnnotationLayerVariant;

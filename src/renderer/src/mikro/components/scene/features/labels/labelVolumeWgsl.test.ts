@@ -35,6 +35,8 @@ describe("label raymarcher WGSL", () => {
     const wgsl = fragmentWgsl(material);
     expect(wgsl).toContain("fn main");
     expect(wgsl).toContain("lblRcLvl");
+    // A crop box shortens the march: the stride floor is the UNCROPPED ray's.
+    expect(wgsl).toContain("fullRayLen");
   });
 
   it("builds the 2D label plane, crop discard included", () => {

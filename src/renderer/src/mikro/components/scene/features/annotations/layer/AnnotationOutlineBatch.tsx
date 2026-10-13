@@ -10,6 +10,7 @@ import { raycastNearestOnly } from "../../../platform/draw/linePicking";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { batchColors, roiForSegment, type OutlineBatch } from "../annotationBatch";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
+import { clickPointOf } from "../hover/annotationActionTarget";
 
 /**
  * One merged fat-line draw for a batch of shape outlines. Picking maps the
@@ -39,7 +40,7 @@ export const AnnotationOutlineBatch = ({
   /** The hovered roi when it belongs to this layer — a color-only pass too. */
   hoveredId: string | null;
   selectable: boolean;
-  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean) => void;
+  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => void;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
   hoverable: boolean;
   /** Per move over a shape; the store dedupes by id (state changes on enter/leave). */
@@ -119,7 +120,7 @@ export const AnnotationOutlineBatch = ({
         const roi = roiForSegment(batch.ranges, event.faceIndex);
         if (!roi) return;
         event.stopPropagation();
-        onSelectRoi(roi, event.nativeEvent.shiftKey);
+        onSelectRoi(roi, event.nativeEvent.shiftKey, clickPointOf(event));
       }
     : undefined;
 

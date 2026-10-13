@@ -342,7 +342,7 @@ export function startNodePlanTracking({
 
       let camera: NodeCamera | null = null;
       if (mode === "3D" && viewProjectionMatrix) {
-        // Corner-anchored: voxel v sits at affine(v), so the frustum/camera
+        // Corner-anchored: lattice point v sits at affine(v), so the frustum/camera
         // math below runs in plain voxel space.
         const voxelToWorld = buildAffineMatrix(layer);
         // World-metric LOD: hand the planner the per-axis world voxel size

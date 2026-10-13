@@ -116,7 +116,6 @@ export const liftTool: DesignTool = {
 
     const target = targetMesh(ctx.design);
     const finish = {
-      marcher: brush.marcher,
       polishIterations: Math.max(brush.polishIterations, 6), // a binary lift NEEDS polish
       detailWorld: brush.detailVoxels * spacing,
     };

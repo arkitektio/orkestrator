@@ -12,15 +12,21 @@ describe("crop slice", () => {
   it("does not apply anything while the rectangle is being drawn", () => {
     const store = build();
     store.getState().beginCrop();
+    // `s` only enters the mode: the first corner is a click.
+    expect(store.getState().cropPhase).toBe("arm");
+    store.getState().fixCropRect(a); // nothing anchored yet
+    expect(store.getState().cropBox).toBeNull();
+    store.getState().anchorCrop();
     expect(store.getState().cropPhase).toBe("rect");
     expect(store.getState().cropBox).toBeNull();
     store.getState().setCropBox(a); // not in the depth phase
     expect(store.getState().cropBox).toBeNull();
   });
 
-  it("applies the box when the rectangle is fixed, then follows the wheel", () => {
+  it("applies the box when the rectangle is fixed, then follows the depth", () => {
     const store = build();
     store.getState().beginCrop();
+    store.getState().anchorCrop();
     store.getState().fixCropRect(a);
     expect(store.getState().cropPhase).toBe("depth");
     expect(store.getState().cropBox).toBe(a);
@@ -34,22 +40,26 @@ describe("crop slice", () => {
   it("keeps the box's identity for a value-equal write", () => {
     const store = build();
     store.getState().beginCrop();
+    store.getState().anchorCrop();
     store.getState().fixCropRect(a);
     store.getState().setCropBox({ min: [0, 0, 0], max: [10, 10, 1] });
     expect(store.getState().cropBox).toBe(a);
   });
 
-  it("restores the previous box on cancel, from either phase", () => {
+  it("restores the previous box on cancel, from any phase", () => {
     const store = build();
     store.getState().beginCrop();
+    store.getState().anchorCrop();
     store.getState().fixCropRect(a);
     store.getState().commitCrop();
 
     store.getState().beginCrop();
     store.getState().cancelCrop();
     expect(store.getState().cropBox).toBe(a);
+    expect(store.getState().cropPhase).toBe("idle");
 
     store.getState().beginCrop();
+    store.getState().anchorCrop();
     store.getState().fixCropRect(b);
     store.getState().cancelCrop();
     expect(store.getState().cropBox).toBe(a);
@@ -59,6 +69,7 @@ describe("crop slice", () => {
   it("clears the box", () => {
     const store = build();
     store.getState().beginCrop();
+    store.getState().anchorCrop();
     store.getState().fixCropRect(a);
     store.getState().clearCrop();
     expect(store.getState().cropBox).toBeNull();

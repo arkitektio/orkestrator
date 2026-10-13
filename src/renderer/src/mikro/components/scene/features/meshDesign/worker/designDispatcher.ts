@@ -1,9 +1,11 @@
+import { bakeDesign, type DesignBake, type DesignBakeMesh } from "../commit/bakeDesign";
 import { runDesignJob, type DesignJob, type DesignJobResult } from "./designJob";
 import type { DesignWorkerRequest, DesignWorkerResponse } from "./design-worker";
 
 /**
- * Dispatcher for the designer's geometry jobs: one Web Worker, so a
- * reconstruction's field / march / polish / simplify never blocks a frame.
+ * Dispatcher for the designer's heavy work: one Web Worker, so neither a
+ * reconstruction's field / march / polish / simplify nor a commit's bake
+ * ever blocks a frame.
  *
  * ONE worker, one job at a time, on purpose. A session's jobs are a chain —
  * each edit starts from the field the previous one produced — so running two
@@ -29,6 +31,8 @@ export type DesignJobOptions = {
 export type DesignDispatcher = {
   /** Null = dropped while queued (`superseded`). Rejects on a worker error. */
   run(job: DesignJob, options?: DesignJobOptions): Promise<DesignJobResult | null>;
+  /** Bake the meshes into a fabriks prefix (a commit). Queues behind the jobs. */
+  bake(meshes: DesignBakeMesh[]): Promise<DesignBake>;
   dispose(): void;
 };
 
@@ -36,6 +40,7 @@ export type DesignDispatcher = {
 export function createSyncDesignDispatcher(): DesignDispatcher {
   return {
     run: async (job, options) => (options?.superseded?.() ? null : runDesignJob(job)),
+    bake: async (meshes) => bakeDesign(meshes),
     dispose: () => {},
   };
 }
@@ -45,11 +50,16 @@ const spawnDesignWorker = (): Worker =>
   // bundles the worker entry (same pattern as the fabriks decode worker).
   new Worker(new URL("./design-worker.js", import.meta.url), { type: "module" });
 
+/** `Omit` that keeps the request a union of its two shapes. */
+type WithoutId<T> = T extends unknown ? Omit<T, "id"> : never;
+
 type Queued = {
   id: number;
-  job: DesignJob;
+  request: WithoutId<DesignWorkerRequest>;
   superseded: (() => boolean) | undefined;
-  resolve: (result: DesignJobResult | null) => void;
+  /** The same work on this thread, when there is no worker to be had. */
+  local: () => Promise<DesignJobResult | DesignBake>;
+  resolve: (result: DesignJobResult | DesignBake | null) => void;
   reject: (error: Error) => void;
 };
 
@@ -75,7 +85,7 @@ export function createWorkerDesignDispatcher(spawn: () => Worker = spawnDesignWo
         const current = running;
         if (!current || event.data.id !== current.id) return;
         if ("error" in event.data) current.reject(new Error(event.data.error));
-        else current.resolve(event.data.result);
+        else current.resolve("baked" in event.data ? event.data.baked : event.data.result);
         finish();
       };
       created.onerror = (event) => {
@@ -100,29 +110,42 @@ export function createWorkerDesignDispatcher(spawn: () => Worker = spawnDesignWo
       if (!target) {
         // No worker to be had: do it here rather than not at all.
         running = next;
-        void runDesignJob(next.job)
+        void next
+          .local()
           .then(next.resolve, (error) => next.reject(error instanceof Error ? error : new Error(String(error))))
           .finally(finish);
         return;
       }
       running = next;
-      const message: DesignWorkerRequest = { id: next.id, job: next.job };
-      // NO transfer list: the job's field and geometry still belong to the
-      // session (and to its undo snapshots). The clone is the price.
+      const message = { id: next.id, ...next.request } as DesignWorkerRequest;
+      // NO transfer list: the request's field and geometry still belong to
+      // the session (and to its undo snapshots). The clone is the price.
       target.postMessage(message);
     }
   };
 
+  const enqueue = <T extends DesignJobResult | DesignBake>(
+    request: Queued["request"],
+    local: () => Promise<T>,
+    superseded?: () => boolean,
+  ) =>
+    new Promise<T | null>((resolve, reject) => {
+      if (disposed) {
+        reject(new Error("design dispatcher disposed"));
+        return;
+      }
+      queue.push({ id: nextId++, request, superseded, local, resolve: resolve as Queued["resolve"], reject });
+      pump();
+    });
+
   return {
-    run: (job, options) =>
-      new Promise<DesignJobResult | null>((resolve, reject) => {
-        if (disposed) {
-          reject(new Error("design dispatcher disposed"));
-          return;
-        }
-        queue.push({ id: nextId++, job, superseded: options?.superseded, resolve, reject });
-        pump();
-      }),
+    run: (job, options) => enqueue({ job }, () => runDesignJob(job), options?.superseded),
+    bake: async (meshes) => {
+      const baked = await enqueue({ bake: meshes }, async () => bakeDesign(meshes));
+      // Only a disposed dispatcher answers null to a bake: nothing supersedes one.
+      if (!baked) throw new Error("design dispatcher disposed");
+      return baked;
+    },
     dispose: () => {
       disposed = true;
       worker?.terminate();

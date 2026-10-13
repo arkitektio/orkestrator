@@ -53,10 +53,18 @@ export const writeTaskEventToCache = (
         if (list.some((ref) => readField("id", ref) === synth.id)) {
           return list;
         }
-        // Write the nested task back-ref as id-only so Apollo's merge never
-        // clobbers the real `reference` already on the normalized Task entity.
+        // The event's back-ref to its task is written as a REFERENCE to the
+        // normalized `Task:<id>`, never as an object. `toReference(…, true)`
+        // stores the event's fields as they are — it does not normalize what
+        // is nested in them — so an id-only object here stayed an embedded
+        // `{ id }` with no `reference`. Every query selecting
+        // `events { task { reference } }` (the global `MyTasks` list among
+        // them) then read as INCOMPLETE, and Apollo answered by refetching it
+        // from the network: one request per event, and on a terminal event a
+        // list the server had already dropped the task from — a task that
+        // failed disappeared from the rail island the moment it did.
         const ref = toReference(
-          { ...synth, task: { __typename: "Task", id: event.task } },
+          { ...synth, task: toReference({ __typename: "Task", id: event.task }) },
           true,
         );
         return ref ? [ref, ...list] : list;

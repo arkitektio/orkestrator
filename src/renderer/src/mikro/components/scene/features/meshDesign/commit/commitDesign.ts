@@ -11,10 +11,10 @@ import {
 } from "@/mikro/api/graphql";
 import type { MikroClient } from "@/core/data/zarr/store/types";
 import { lensRegistry } from "@/mikro/lib/lenses/lensRegistry";
-import { buildFabriksPrefix } from "../../meshes/fabriks/writer/fabriksPrefix";
-import type { BakeMesh } from "../../meshes/fabriks/writer/fabriksBake";
 import { uploadFabriksPrefix, type FabriksUploadProgress } from "../../meshes/fabriks/writer/fabriksUpload";
 import type { DesignMesh, DesignOrigin, DesignStatus } from "../store/meshDesignStore";
+import { designDispatcher } from "../worker/designDispatcher";
+import type { DesignBakeMesh } from "./bakeDesign";
 
 /**
  * Commit a design session: bake → upload → register → add a layer.
@@ -22,9 +22,10 @@ import type { DesignMesh, DesignOrigin, DesignStatus } from "../store/meshDesign
  * ## Where the collection lands
  *
  * Designed meshes are in scene WORLD coordinates with THREE's (x, y, z) as
- * their components. The bake translates them into a non-negative voxel
- * frame; this module records that translation as the collection's placement
- * so it renders exactly where it was designed:
+ * their components. The bake (`bakeDesign.ts`, in the design worker — it is
+ * seconds of clipping and encoding) translates them into a non-negative
+ * voxel frame; this module records that translation as the collection's
+ * placement so it renders exactly where it was designed:
  *
  *  - The collection's coordinate system copies the world's SPACE axes in the
  *    world's own order. `collectionSpatialAxes` reads slots back to front —
@@ -32,9 +33,10 @@ import type { DesignMesh, DesignOrigin, DesignStatus } from "../store/meshDesign
  *    annotation collection (registered into the world by identity, vectors
  *    read as THREE xyz) already relies on. So slot 0 ↔ last world axis ↔
  *    THREE x, consistently with everything else in the scene.
- *  - `derivedFrom` carries ONE mappable edge, a TRANSLATION from the
- *    collection's space into the world (`world = voxel + offset`), with the
- *    per-axis offsets in the axes' declared order.
+ *  - `derivedFrom` carries ONE mappable edge from the collection's space
+ *    into the world (`world = voxel + offset`): a BY_DIMENSION naming the
+ *    space axes on both sides, with the per-axis offsets in the axes'
+ *    declared order (`placementTransform`).
  *  - An edit-and-commit adds a second, lineage-only edge to the collection
  *    it was loaded from.
  *
@@ -54,9 +56,6 @@ export type CommitProgress =
 
 export type CommitResult = { collectionId: string; layerId: string; label: string };
 
-/** Above this quantization step (voxels) a single cell is too coarse to be worth the seamless normals. */
-export const SINGLE_CELL_MAX_QUANTIZATION = 0.05;
-
 const worldSpaceAxes = (world: WorldSystemLike): string[] => {
   const axes = world.axes ?? [];
   const ordered = axes.some((axis) => axis.order != null)
@@ -69,7 +68,25 @@ const worldSpaceAxes = (world: WorldSystemLike): string[] => {
 export const translationForAxes = (axisNames: readonly string[], offset: readonly [number, number, number]): number[] =>
   axisNames.map((_, i) => offset[axisNames.length - 1 - i] ?? 0);
 
-export const toBakeMeshes = (meshes: readonly DesignMesh[]): BakeMesh[] =>
+/**
+ * The edge that places the collection in the world: the bake's translation,
+ * over the world's SPACE axes.
+ *
+ * BY_DIMENSION, not TRANSLATION. A TRANSLATION carries one number per input
+ * axis and nothing else — the server refuses it with axis names attached
+ * ("does not read `inputAxes`"), and without them it is square, so it cannot
+ * reach a world that also has a time or a channel axis. A BY_DIMENSION names
+ * the axes it acts on and leaves the rest of the world untouched, which is
+ * exactly what placing a three-axis collection means.
+ */
+export const placementTransform = (axisNames: readonly string[], offset: readonly [number, number, number]) => ({
+  kind: CreatableTransformKind.ByDimension,
+  translation: translationForAxes(axisNames, offset),
+  inputAxes: [...axisNames],
+  outputAxes: [...axisNames],
+});
+
+export const toBakeMeshes = (meshes: readonly DesignMesh[]): DesignBakeMesh[] =>
   meshes.map((mesh) => ({ objectId: mesh.objectId, positions: mesh.current.positions, indices: mesh.current.indices }));
 
 export async function commitMeshDesign(opts: {
@@ -92,17 +109,11 @@ export async function commitMeshDesign(opts: {
   }
 
   onProgress?.({ status: "baking", message: "Baking the collection…" });
-  // One cell when the uint16 quantization stays below 0.05 voxel (extents up
-  // to ~3,000 voxels): objects then never straddle a cell border, so the
-  // reader's per-cell smooth normals are seamless. Larger designs fall back
-  // to the culling-friendly auto grid.
-  const bakeMeshes = toBakeMeshes(meshes);
-  let prefix = buildFabriksPrefix(bakeMeshes, { cells: "single" });
-  const cellMode = prefix.baked.quantizationVoxels <= SINGLE_CELL_MAX_QUANTIZATION ? "single" : "auto";
-  if (cellMode === "auto") prefix = buildFabriksPrefix(bakeMeshes);
+  const bake = await designDispatcher().bake(toBakeMeshes(meshes));
+  if (opts.signal?.aborted) throw new Error("Commit cancelled");
 
-  onProgress?.({ status: "uploading", message: "Uploading…", upload: { done: 0, total: prefix.files.size, bytesDone: 0, bytesTotal: prefix.totalBytes } });
-  const storeId = await uploadFabriksPrefix(client, datalayer, prefix.files, {
+  onProgress?.({ status: "uploading", message: "Uploading…", upload: { done: 0, total: bake.files.size, bytesDone: 0, bytesTotal: bake.totalBytes } });
+  const storeId = await uploadFabriksPrefix(client, datalayer, bake.files, {
     signal: opts.signal,
     onProgress: (upload) => onProgress?.({ status: "uploading", message: "Uploading…", upload }),
   });
@@ -119,12 +130,7 @@ export async function commitMeshDesign(opts: {
           {
             kind: DerivationSourceKind.CoordinateSystem,
             coordinateSystem: world.id,
-            transform: {
-              kind: CreatableTransformKind.Translation,
-              translation: translationForAxes(axisNames, prefix.baked.offset),
-              inputAxes: axisNames,
-              outputAxes: axisNames,
-            },
+            transform: placementTransform(axisNames, bake.offset),
             valueRelation: ValueRelation.Identical,
           },
           ...(origin
@@ -142,9 +148,9 @@ export async function commitMeshDesign(opts: {
           lod: "none",
           needsConsolidation: true,
           levels: 1,
-          cellSize: prefix.baked.grid.cellSize,
-          cells: cellMode,
-          quantizationVoxels: prefix.baked.quantizationVoxels,
+          cellSize: bake.cellSize,
+          cells: bake.cells,
+          quantizationVoxels: bake.quantizationVoxels,
           objects: meshes.map((mesh) => ({ objectId: mesh.objectId, name: mesh.name, source: mesh.source, simplifyRatio: mesh.simplifyRatio })),
           ...(origin ? { editedFrom: origin } : {}),
         },

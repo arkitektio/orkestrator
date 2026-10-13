@@ -13,13 +13,26 @@ import type { LayerState } from "../../platform/model/layerModel";
 import type { CropBox } from "../../platform/coords/cropBox";
 
 /**
- * A c/t/z/y/x layer with 8 z slices at 1 µm spacing (identity affine): x/y/z
- * rendered, c the intensity axis with channels 0 and 1 visible, t collapsible.
+ * A layer's affine as `composeLatticeAffine` hands it over, for a stack whose
+ * slice `k` the server places at world z `origin + k * spacing`: the lattice is
+ * corner-anchored, so slice 0's CENTRE is half a cell in.
+ */
+const latticeAffine = (spacing = 1, origin = 0): number[][] => [
+  [1, 0, 0, -0.5],
+  [0, 1, 0, -0.5],
+  [0, 0, spacing, origin - spacing / 2],
+  [0, 0, 0, 1],
+];
+
+/**
+ * A c/t/z/y/x layer with 8 z slices at 1 µm spacing, slice k at world z = k:
+ * x/y/z rendered, c the intensity axis with channels 0 and 1 visible, t
+ * collapsible.
  */
 const layerWith = (overrides: Partial<CoverageLayer> = {}): CoverageLayer => ({
   visible: true,
   zAxis: "z",
-  affineMatrix: null,
+  affineMatrix: latticeAffine(),
   intensityAxis: "c",
   phasorAxis: null,
   channels: [
@@ -253,12 +266,7 @@ describe("sceneZExtent", () => {
   const zLayer = (zSize: number, spacing: number): LayerState =>
     ({
       zAxis: "z",
-      affineMatrix: [
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, spacing, 0],
-        [0, 0, 0, 1],
-      ],
+      affineMatrix: latticeAffine(spacing),
       lens: { axisNames: ["z", "y", "x"], shape: [zSize, 512, 512] },
     }) as unknown as LayerState;
 
@@ -283,12 +291,7 @@ describe("finestLayerZStep (the visibility slab's thickness)", () => {
   const zLayer = (zSize: number, spacing: number): LayerState =>
     ({
       zAxis: "z",
-      affineMatrix: [
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, spacing, 0],
-        [0, 0, 0, 1],
-      ],
+      affineMatrix: latticeAffine(spacing),
       lens: { axisNames: ["z", "y", "x"], shape: [zSize, 512, 512] },
     }) as unknown as LayerState;
 
@@ -302,12 +305,19 @@ describe("finestLayerZStep (the visibility slab's thickness)", () => {
 });
 
 describe("physicalToVoxelZStrict", () => {
-  const identity = new THREE.Matrix4();
-  it("rounds in range, refuses out of range instead of clamping", () => {
-    expect(physicalToVoxelZStrict(identity, 3.4, 7)).toBe(3);
-    expect(physicalToVoxelZStrict(identity, 7.4, 7)).toBe(7);
-    expect(physicalToVoxelZStrict(identity, 9, 7)).toBeNull();
-    expect(physicalToVoxelZStrict(identity, -1, 7)).toBeNull();
+  const stack = new THREE.Matrix4().set(1, 0, 0, -0.5, 0, 1, 0, -0.5, 0, 0, 1, -0.5, 0, 0, 0, 1);
+  it("takes the nearest slice in range, refuses out of range instead of clamping", () => {
+    expect(physicalToVoxelZStrict(stack, 3.4, 7)).toBe(3);
+    expect(physicalToVoxelZStrict(stack, 3.6, 7)).toBe(4);
+    expect(physicalToVoxelZStrict(stack, 7.4, 7)).toBe(7);
+    expect(physicalToVoxelZStrict(stack, 9, 7)).toBeNull();
+    expect(physicalToVoxelZStrict(stack, -1, 7)).toBeNull();
+  });
+
+  it("ends half a voxel past the end slices' centres", () => {
+    expect(physicalToVoxelZStrict(stack, -0.4, 7)).toBe(0);
+    expect(physicalToVoxelZStrict(stack, -0.6, 7)).toBeNull();
+    expect(physicalToVoxelZStrict(stack, 7.6, 7)).toBeNull();
   });
 });
 
@@ -315,12 +325,7 @@ describe("z pins against a plane OUTSIDE the layer's stack", () => {
   it("reads UNMET instead of 'met at the clamped end slice'", () => {
     // Stack shifted to world z 100..107; a plane at 500 is far past it.
     const shifted = layerWith({
-      affineMatrix: [
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 1, 100],
-        [0, 0, 0, 1],
-      ],
+      affineMatrix: latticeAffine(1, 100),
     });
     const far = sceneCoverages([shifted], { t: 5 }, 500);
     expect(pinsSatisfied([{ name: "z", value: 7 }], far)).toBe(false);

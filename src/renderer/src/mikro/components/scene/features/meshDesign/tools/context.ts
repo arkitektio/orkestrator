@@ -18,7 +18,7 @@ export type DesignToolRunContext = {
   extraction: ExtractionContext | null;
   /** Snapshot of the brush store (settings + gesture bookkeeping). */
   brush: BrushSkeletonState;
-  /** Snapshot of the session, taken AFTER any pending candidate was accepted. */
+  /** Snapshot of the session. */
   design: MeshDesignState;
   /** True when a newer gesture took over — abandon silently. */
   stale: () => boolean;
@@ -38,7 +38,11 @@ export const targetMesh = (design: MeshDesignState): DesignMesh | undefined =>
 export const fieldSpacingFor = (spacing: Vec3 | readonly number[], detailVoxels: number): number =>
   Math.max(...spacing) * Math.min(1, Math.max(0.25, detailVoxels));
 
-/** Where an edit of `target` starts: its field, or its mesh voxelized at `spacing`. */
+/**
+ * Where an edit of `target` starts: its field, or — for a mesh that has none
+ * yet (a lone reconstructed surface, an import) — the mesh voxelized at
+ * `spacing`, which the job does from a lightly simplified copy.
+ */
 export const baseFor = (target: DesignMesh, spacing: number): DesignJob["base"] =>
   target.field
     ? { kind: "field", field: target.field }
@@ -46,10 +50,9 @@ export const baseFor = (target: DesignMesh, spacing: number): DesignJob["base"] 
 
 /** The shared finishing settings of an edit at `spacing` (world units per cell). */
 export const finishFor = (
-  brush: Pick<BrushSkeletonState, "marcher" | "polishIterations" | "detailVoxels">,
+  brush: Pick<BrushSkeletonState, "polishIterations" | "detailVoxels">,
   spacing: number,
 ): DesignJob["finish"] => ({
-  marcher: brush.marcher,
   polishIterations: brush.polishIterations,
   detailWorld: brush.detailVoxels * spacing,
 });

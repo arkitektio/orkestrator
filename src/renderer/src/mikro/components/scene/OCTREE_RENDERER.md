@@ -418,7 +418,7 @@ screen-centering the refinement set beyond distance-LOD (H3 —
 repivot debounce.
 
 Culling happens in **layer voxel space**: the world frustum is pulled through
-`buildAffineMatrix(layer)⁻¹` (corner-anchored — voxel v sits at affine(v),
+`buildAffineMatrix(layer)⁻¹` (corner-anchored — lattice point v sits at affine(v),
 COORDINATE_SYSTEMS.md §0) so the per-node test is a cheap AABB check
 on the node's voxel box. 2D restricts the DFS to a single z-slab quadtree at
 `resolveLevelZ(level)`.
@@ -877,8 +877,9 @@ Keep the two in sync when touching either.
 
 ### 2.12 The crop box (`platform/coords/cropBox.ts`, `features/crop/`)
 
-`s` draws a WORLD-space, axis-aligned box (rectangle, click, wheel for depth,
-click). Outside it nothing is drawn, and image and label volumes are not
+`s` enters the crop mode; the box itself is WORLD-space and axis-aligned,
+drawn with three clicks (first corner, opposite corner, then the depth, which
+follows the pointer up and down in between). Outside it nothing is drawn, and image and label volumes are not
 PLANNED — which is nearly, not exactly, "not fetched": the 2D z±1 slab
 prefetch (`adjacentPrefetch.ts`) still warms the neighbouring slices of the
 planned bricks, box or no box, and coarsest bricks already resident stay
@@ -893,7 +894,7 @@ to the layer. Four consumers read that same function, and they must:
 | --- | --- | --- |
 | Visibility | `platform/visibility/visibility.ts` | frustum ∩ box instead of frustum ∩ layer |
 | Planner | `nodePlanTracker` → `planLayerNodes({ clipBox })` | clamps `visibleBox` AND `strictBox` |
-| Shader | `uClipMin` / `uClipMax`, `useCropClipUniforms` | ray entry/exit (3D), fragment discard (2D) |
+| Shader | `uClipMin` / `uClipMax`, `useCropClipUniforms` | proxy vertices + ray entry/exit (3D), fragment discard (2D) |
 | CPU probe | `localCropClip` (`features/bricks/probeMath.ts`) | clips the march |
 
 Rules that are easy to break:
@@ -916,10 +917,22 @@ Rules that are easy to break:
 - **`volumeInputs.bump("crop-box")`** on every uniform write, or the
   compositor serves its cached frame.
 - **The rectangle being dragged is not in the store.** `cropBox` is written by
-  the click that fixes it and then once per whole wheel step; a per-move write
+  the click that fixes it and then when the pointer RESTS on a new depth
+  (`DEPTH_SETTLE_MS`); the outline alone follows every move. A per-move write
   would replan per pointer event (P9, P30).
 - **Rotated layers are cropped conservatively**: the voxel AABB of a rotated
   box is larger than the box. Never short, sometimes generous at the corners.
+- **A crop must cost less, not sample more.** Two rules keep it so, both in
+  `volumeRayNodes.ts`. The stride floor is `fullRayLen / uMaxSteps` — the ray
+  through the WHOLE volume — so a cropped ray takes its share of the step
+  ceiling at the uncropped stride; from the cropped `rayLen` every ray pinned
+  at the ceiling stayed pinned and the crop bought density instead of frame
+  time. And the proxy box's vertices are moved onto the box
+  (`clippedPosition`, the material's `positionNode`), so only its footprint is
+  rasterized: a WGSL `discard` does not end the fragment, it only drops the
+  write. `vDirection` is taken from the moved vertex. The planner still spends
+  the smaller box on finer levels (the budget floor prices the VISIBLE box);
+  that is deliberate, and bounded by the same floor.
 
 The other layer kinds hide without loading less (their data is already in
 memory): meshes and networks through six more planes on the manager's
@@ -1134,7 +1147,7 @@ the dtype range. Note `autoRange` itself is re-derived OUTSIDE the range branch 
 the policy can flip without the range moving.
 
 **P12 — Guard the coordinate frames.** Every frame is corner-anchored
-(COORDINATE_SYSTEMS.md §0): voxel v sits at world `affine(v)`, no centering,
+(COORDINATE_SYSTEMS.md §0): lattice point v sits at world `affine(v)`, no centering,
 no flip, in 2D and 3D alike. A frame mismatch produces plans that look
 plausible but cull/fetch the wrong region; the raymarcher's `toBaseVoxel` and
 the CPU probe/trace/visibility mirrors must stay in lockstep with the mesh

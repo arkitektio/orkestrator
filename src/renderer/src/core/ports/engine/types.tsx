@@ -158,6 +158,7 @@ export interface WidgetRegistryType {
   getInputWidgetForPort: (
     port: MappablePort,
     allowFallback?: boolean,
+    allowPicker?: boolean,
   ) => React.FC<InputWidgetProps>;
   getEffectWidget: (effect: PortEffectTypes) => React.FC<EffectWidgetProps>;
 }

@@ -468,3 +468,240 @@ describe("travelSource playback", () => {
     expect(source.getSnapshot("a", "Stage").value).toEqual({ x: 1 });
   });
 });
+
+describe("travelSource revisions", () => {
+  /** Revision `n` of session `s`, recorded `n` seconds after BASE (unless told otherwise). */
+  const rev = (n: number, value: unknown, ms = BASE + n * 1000, stateInterface = "arm"): TravelPatch => ({
+    ...patch(stateInterface, "/x", value, ms, n),
+    sessionId: "s",
+  });
+
+  it("checks out below the revision asked for, and steps back and on without asking", async () => {
+    const { source, calls } = makeSource();
+    source.acquire("a", "arm", () => {});
+    await settle();
+    calls.length = 0;
+
+    source.seekRevision("a", { revision: 10, sessionId: "s" });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].agentId).toBe("a");
+    expect(calls[0].request.revision).toEqual({ globalRevision: 8, sessionId: "s" });
+    expect(source.getClock().phase).toBe("loading");
+
+    calls[0].resolve(answer({ arm: { x: 8 } }, [rev(9, 9), rev(10, 10), rev(11, 11)], [rev(7, 7), rev(8, 8)]));
+    await settle();
+
+    expect(source.getSnapshot("a", "arm")).toMatchObject({ value: { x: 10 }, revision: 10, known: true });
+    expect(source.getClock()).toMatchObject({
+      phase: "ready",
+      at: BASE + 10_000,
+      revision: {
+        agentId: "a",
+        sessionId: "s",
+        revision: 10,
+        hasPrev: true,
+        hasNext: true,
+        changes: [{ interface: "arm", op: "replace", path: "/x" }],
+      },
+    });
+
+    source.step(-1);
+    expect(source.getSnapshot("a", "arm").value).toEqual({ x: 9 });
+    source.step(-1);
+    // The revision the checkout was taken at: what it changed is among the changes before it.
+    expect(source.getSnapshot("a", "arm").value).toEqual({ x: 8 });
+    expect(source.getClock()).toMatchObject({ at: BASE + 8000, revision: { revision: 8, hasPrev: true } });
+    source.step(1);
+    source.step(1);
+    source.step(1);
+    expect(source.getSnapshot("a", "arm").value).toEqual({ x: 11 });
+    // A window that came back short holds the session's last revision.
+    expect(source.getClock().revision).toMatchObject({ revision: 11, hasNext: false });
+    source.step(1);
+    expect(source.getClock().revision?.revision).toBe(11);
+    expect(calls).toHaveLength(1);
+
+    // Below the checkout it asks again, for the revision the server told of.
+    source.seekRevision("a", { revision: 8 });
+    source.step(-1);
+    expect(calls).toHaveLength(2);
+    expect(calls[1].request.revision).toEqual({ globalRevision: 5, sessionId: "s" });
+  });
+
+  it("tells two revisions of one millisecond apart", async () => {
+    const { source, calls } = makeSource();
+    source.acquire("a", "arm", () => {});
+    await settle();
+    calls.length = 0;
+
+    source.seekRevision("a", { revision: 2, sessionId: "s" });
+    calls[0].resolve(answer({ arm: { x: 0 } }, [rev(1, 1, BASE), rev(2, 2, BASE), rev(3, 3, BASE)]));
+    await settle();
+
+    expect(calls[0].request.revision).toEqual({ globalRevision: 0, sessionId: "s" });
+    expect(source.getSnapshot("a", "arm").value).toEqual({ x: 2 });
+    source.step(-1);
+    expect(source.getSnapshot("a", "arm").value).toEqual({ x: 1 });
+    source.step(-1);
+    // The start of the session: nothing before it, and nothing it changed.
+    expect(source.getSnapshot("a", "arm").value).toEqual({ x: 0 });
+    expect(source.getClock().revision).toMatchObject({ revision: 0, hasPrev: false, changes: [] });
+  });
+
+  it("finds the revision and the session the agent is at where the clock stands", async () => {
+    const { source, calls } = makeSource();
+    source.acquire("a", "arm", () => {});
+    source.seek(BASE, true);
+    await settle();
+    calls.length = 0;
+
+    source.seekRevision("a");
+    expect(calls[0].request).toMatchObject({ timestamp: BASE, revision: { globalRevision: null, sessionId: null } });
+    expect(source.getClock().revision).toMatchObject({ agentId: "a", revision: null, sessionId: null });
+
+    calls[0].resolve(answer({ arm: { x: 5 } }, [rev(6, 6)], [rev(4, 4, BASE - 2000), rev(5, 5, BASE - 1000)]));
+    await settle();
+    expect(source.getClock()).toMatchObject({ at: BASE - 1000, revision: { revision: 5, sessionId: "s" } });
+    expect(source.getSnapshot("a", "arm").value).toEqual({ x: 5 });
+  });
+
+  it("lands on the latest revision before one the session does not have", async () => {
+    const { source, calls } = makeSource();
+    source.acquire("a", "arm", () => {});
+    await settle();
+    calls.length = 0;
+
+    // Past the end of the session.
+    source.seekRevision("a", { revision: 900, sessionId: "s" });
+    calls[0].resolve(answer({ arm: { x: 12 } }, [], [rev(11, 11), rev(12, 12)]));
+    await settle();
+    expect(source.getClock().revision).toMatchObject({ revision: 12, hasNext: false, hasPrev: true });
+    expect(calls).toHaveLength(1);
+
+    // A step never lands in a gap: 12 is followed by 15.
+    source.seekRevision("a", { revision: 14, sessionId: "s" });
+    calls[1].resolve(answer({ arm: { x: 12 } }, [rev(15, 15)], [rev(12, 12)]));
+    await settle();
+    expect(source.getClock().revision?.revision).toBe(12);
+    source.step(1);
+    expect(source.getClock().revision?.revision).toBe(15);
+  });
+
+  it("asks for the next window at the end of a full one, and takes the step when it is there", async () => {
+    const { source, calls } = makeSource();
+    source.acquire("a", "arm", () => {});
+    await settle();
+    calls.length = 0;
+
+    source.seekRevision("a", { revision: 4, sessionId: "s" });
+    calls[0].resolve(answer({ arm: { x: 2 } }, [rev(3, 3), rev(4, 4), rev(5, 5), rev(6, 6)], [rev(2, 2)]));
+    await settle();
+    source.step(1);
+    source.step(1);
+    expect(source.getClock().revision).toMatchObject({ revision: 6, hasNext: true });
+    expect(calls).toHaveLength(1);
+
+    source.step(1);
+    expect(calls).toHaveLength(2);
+    expect(calls[1].request.revision).toEqual({ globalRevision: 4, sessionId: "s" });
+    // What is shown stays until the window is there.
+    expect(source.getSnapshot("a", "arm").value).toEqual({ x: 6 });
+    calls[1].resolve(answer({ arm: { x: 4 } }, [rev(5, 5), rev(6, 6), rev(7, 7)], [rev(4, 4)]));
+    await settle();
+    expect(source.getClock().revision).toMatchObject({ revision: 7, hasNext: false });
+    expect(source.getSnapshot("a", "arm").value).toEqual({ x: 7 });
+  });
+
+  it("takes every other agent to the moment of the revision, and back to the clock on a seek", async () => {
+    const { source, calls } = makeSource();
+    source.acquire("a", "arm", () => {});
+    source.acquire("b", "stage", () => {});
+    await settle();
+    calls.length = 0;
+
+    source.seekRevision("a", { revision: 3, sessionId: "s" });
+    expect(calls.map((call) => call.agentId)).toEqual(["a"]);
+    calls[0].resolve(answer({ arm: { x: 1 } }, [rev(2, 2), rev(3, 3)], [rev(1, 1)]));
+    await settle();
+
+    // "b" has no revision to stand on: it is asked for the moment "a" changed.
+    expect(calls).toHaveLength(2);
+    expect(calls[1].agentId).toBe("b");
+    expect(calls[1].request.timestamp).toBe(BASE + 3000);
+    expect(calls[1].request.revision).toBeUndefined();
+    calls[1].resolve(answer({ stage: { y: 1 } }));
+    await settle();
+    expect(source.getClock().phase).toBe("ready");
+    expect(source.getSnapshot("b", "stage").value).toEqual({ y: 1 });
+
+    source.seek(BASE + 2500, true);
+    expect(source.getClock().revision).toBeNull();
+    // "a" follows the clock again, so its checkout at a revision no longer answers.
+    const again = calls.slice(2).find((call) => call.agentId === "a");
+    expect(again?.request).toMatchObject({ timestamp: BASE + 2500 });
+    expect(again?.request.revision).toBeUndefined();
+  });
+
+  it("says how far the session reaches, and debounces a dragged slider", async () => {
+    const ends: Array<(last: number | null) => void> = [];
+    const sessionEnd = vi.fn(() => new Promise<number | null>((resolve) => ends.push(resolve)));
+    const { source, calls, runTimers } = makeSource({ sessionEnd });
+
+    source.seekRevision("a", { revision: 4, sessionId: "s" });
+    source.acquire("a", "arm", () => {});
+    expect(calls).toHaveLength(1);
+    calls[0].resolve(answer({ arm: { x: 2 } }, [rev(3, 3), rev(4, 4), rev(5, 5), rev(6, 6)], [rev(2, 2)]));
+    await settle();
+    // A full window does not say where the session ends: that is asked, once.
+    expect(source.getClock().revision?.last).toBeNull();
+    expect(sessionEnd).toHaveBeenCalledWith("a", "s");
+    ends[0](40);
+    await settle();
+    expect(source.getClock().revision?.last).toBe(40);
+
+    // Dragged: inside the window it shows at once, outside it waits for the hand to rest.
+    source.seekRevision("a", { revision: 5 }, false);
+    expect(source.getSnapshot("a", "arm").value).toEqual({ x: 5 });
+    source.seekRevision("a", { revision: 20 }, false);
+    source.seekRevision("a", { revision: 30 }, false);
+    expect(calls).toHaveLength(1);
+    runTimers();
+    expect(calls).toHaveLength(2);
+    expect(calls[1].request.revision).toEqual({ globalRevision: 28, sessionId: "s" });
+
+    // The session has grown since it was measured: a window that ends short says so.
+    calls[1].resolve(answer({ arm: { x: 28 } }, [rev(29, 29), rev(30, 30), rev(42, 42)], [rev(28, 28)]));
+    await settle();
+    expect(source.getClock().revision).toMatchObject({ revision: 30, last: 42 });
+    expect(sessionEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it("steps an agent no blok watches, and lets it go when the clock takes over", async () => {
+    const { source, calls } = makeSource();
+    source.seekRevision("a", { revision: 1, sessionId: "s" });
+    expect(calls).toHaveLength(1);
+    calls[0].resolve(answer({ arm: { x: 0 } }, [rev(1, 1), rev(2, 2)]));
+    await settle();
+    expect(source.getClock()).toMatchObject({ phase: "ready", missing: [], revision: { revision: 1, hasNext: true } });
+
+    source.seek(BASE, true);
+    expect(source.getClock()).toMatchObject({ phase: "ready", revision: null });
+    expect(calls).toHaveLength(1);
+  });
+
+  it("checks out the revision itself when the session does not reach below it", async () => {
+    const { source, calls } = makeSource();
+    source.seekRevision("a", { revision: 3, sessionId: "s" });
+    expect(calls[0].request.revision).toEqual({ globalRevision: 1, sessionId: "s" });
+    calls[0].reject(new Error("No snapshot found for state 1"));
+    await settle();
+
+    expect(calls).toHaveLength(2);
+    expect(calls[1].request.revision).toEqual({ globalRevision: 3, sessionId: "s" });
+    calls[1].reject(new Error("No snapshot found for state 1"));
+    await settle();
+    // Nothing there either: said once, not asked for ever.
+    expect(source.getClock()).toMatchObject({ missing: ["a"], error: "No snapshot found for state 1" });
+    expect(calls).toHaveLength(2);
+  });
+});

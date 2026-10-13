@@ -17,6 +17,74 @@ query GetAnnotationCreator($id: ID!) {
   }
 }
 
+# What one shape is and what was made from it, for the card the scene's hover
+# button opens into. Asked for when the card opens, never on hover and never
+# on `SceneAnnotation`: `derivedResidents` walks the derivation edges naming
+# the shape. Both lists are a record of the act, not of where things are now —
+# a lens cut to the shape (`createLens(annotation:)`), and the data whose
+# `derivedFrom` named it as an ANNOTATION source (a crop, a straightening).
+query GetAnnotationInfo($id: ID!) {
+  annotation(id: $id) {
+    id
+    kind
+    description
+    creator {
+      sub
+    }
+    collection {
+      id
+      name
+    }
+    coordinates {
+      name
+      value
+    }
+    derivedLenses {
+      id
+      label
+      shape
+    }
+    derivedResidents {
+      __typename
+      ... on ArrayDataset {
+        id
+        name
+      }
+      ... on TableDataset {
+        id
+        name
+      }
+      ... on SparseDataset {
+        id
+        name
+      }
+      ... on AnnotationCollection {
+        id
+        name
+      }
+      ... on MeshCollection {
+        id
+        label
+      }
+      ... on NetworkCollection {
+        id
+        label
+      }
+    }
+  }
+}
+
+# What one shape PROVIDES to an action's port (`@mikro/annotation_kind`, the
+# axis counts of its collection's space), for the scene's click menu. Per
+# clicked shape, never on `SceneAnnotation`: the server reads the collection's
+# axes to answer it, and that fragment ships every shape of every layer.
+query GetAnnotationDescriptors($id: ID!) {
+  annotation(id: $id) {
+    id
+    descriptors
+  }
+}
+
 # The renderer's list: one entry per collection, fetched ONCE per mounted
 # scene and shared by the AnnotationLayer, its card and the annotations panel
 # (same variables, so Apollo serves all three from one cache entry). It is

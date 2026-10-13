@@ -45,6 +45,14 @@ export const parseAsString = createParser<string>({
   serialize: (value) => value,
 });
 
+export const parseAsInteger = createParser<number>({
+  parse: (raw) => {
+    const value = Number.parseInt(raw, 10);
+    return Number.isNaN(value) ? null : value;
+  },
+  serialize: (value) => String(Math.round(value)),
+});
+
 export const parseAsBoolean = createParser<boolean>({
   parse: (raw) => (raw === "true" ? true : raw === "false" ? false : null),
   serialize: (value) => String(value),

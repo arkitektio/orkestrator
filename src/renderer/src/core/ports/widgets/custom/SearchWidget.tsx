@@ -30,8 +30,7 @@ import {
   PopoverTrigger,
 } from "@/core/ui/popover";
 import { cn, notEmpty } from "@/core/util/utils";
-import { gql } from "@apollo/client";
-import type { OperationDefinitionNode } from "graphql";
+import { portRequires, queryDeclaresRequires, queryVariables } from "@/core/ports/engine/constraints";
 import { AlertCircle, ChevronsUpDown, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext } from "react-hook-form";
@@ -114,17 +113,8 @@ export const PAGE_SIZE = 25;
 
 /** A query opts into pagination by declaring optional $limit / $offset Int variables. */
 export const queryDeclaresPagination = (query: string): boolean => {
-  try {
-    const document = gql(query);
-    const operation = document.definitions.find(
-      (d): d is OperationDefinitionNode => d.kind === "OperationDefinition",
-    );
-    const variableNames =
-      operation?.variableDefinitions?.map((v) => v.variable.name.value) || [];
-    return variableNames.includes("limit") && variableNames.includes("offset");
-  } catch {
-    return false;
-  }
+  const variableNames = queryVariables(query);
+  return variableNames.includes("limit") && variableNames.includes("offset");
 };
 
 export type SearchFieldProps = {
@@ -160,6 +150,13 @@ export const SearchWidget = (
     path: props.path,
   });
 
+  // The port's own constraints, for a query that asks for them: the service
+  // then offers only what this port accepts. Keyed by content, since the port
+  // object's identity is not stable across renders of every form.
+  const requiresKey = queryDeclaresRequires(thequery)
+    ? JSON.stringify(portRequires(props.port))
+    : undefined;
+
   const search = useCallback(
     async (searching: SearchOptions) => {
       if (!theward.search) throw new Error("Ward does not support search");
@@ -167,12 +164,16 @@ export const SearchWidget = (
 
       const options = await theward.search({
         query: thequery,
-        variables: { ...searching, ...values },
+        variables: {
+          ...searching,
+          ...(requiresKey !== undefined ? { requires: JSON.parse(requiresKey) } : {}),
+          ...values,
+        },
       });
 
       return options;
     },
-    [theward, thequery, values, met],
+    [theward, thequery, values, met, requiresKey],
   );
 
   const form = useFormContext();

@@ -8,6 +8,7 @@ import { getVectorPoint } from "../annotationBounds";
 import { drawsOwnMesh } from "../annotationBatch";
 import { resolveStyle } from "../annotationStyle";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
+import { clickPointOf } from "../hover/annotationActionTarget";
 import { useSharedBasicMaterial } from "./sharedBasicMaterial";
 
 /**
@@ -38,7 +39,7 @@ export type AnnotationShapeProps = {
   isHovered: boolean;
   /** False in PROBE mode, so a shape can't swallow the click meant for a probe. */
   selectable: boolean;
-  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean) => void;
+  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => void;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
   hoverable: boolean;
   /** Per move over the shape; the store dedupes by id (state changes on enter/leave). */
@@ -117,7 +118,7 @@ export const AnnotationShape = memo(function AnnotationShape({
   const handleSelect = selectable
     ? (event: ThreeEvent<MouseEvent>) => {
         event.stopPropagation();
-        onSelectRoi(roi, event.nativeEvent.shiftKey);
+        onSelectRoi(roi, event.nativeEvent.shiftKey, clickPointOf(event));
       }
     : undefined;
 

@@ -1,13 +1,14 @@
 import { Spline } from "lucide-react";
 
-import { reconstructToCandidate } from "../reconstruct/run";
+import { reconstruct } from "../reconstruct/run";
 import type { DesignToolRunContext } from "./context";
 import type { DesignTool } from "./registry";
 
 /**
  * C — trace: paint along a structure; the reconstructor picked for strokes
  * (`reconstruct/registry` — a fitted tube, or the data's own surface) turns
- * it into a candidate mesh that waits for accept / discard.
+ * it into a mesh, added to the active one at once and tunable until the next
+ * act.
  */
 export const traceTool: DesignTool = {
   id: "trace",
@@ -19,7 +20,7 @@ export const traceTool: DesignTool = {
   hint: "Drag along a structure to reconstruct it",
   shortcut: { keys: ["C", "drag"], description: "Trace: drag along a structure to reconstruct a tube" },
   async run(ctx: DesignToolRunContext) {
-    const outcome = await reconstructToCandidate({
+    const outcome = await reconstruct({
       gestureKind: "stroke",
       gesture: ctx.stroke,
       layerId: ctx.layerId,

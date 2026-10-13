@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {collectDemandedStateInterfaces} from './blokDemands';
+import {collectDemandedLatestTasks, collectDemandedStateInterfaces} from './blokDemands';
 
 const toObject = (demands: Map<string, Set<string>>) =>
   Object.fromEntries([...demands].map(([key, interfaces]) => [key, [...interfaces].sort()]));
@@ -99,5 +99,40 @@ describe('collectDemandedStateInterfaces', () => {
     ];
 
     expect(toObject(collectDemandedStateInterfaces(roots, new Set(['self'])))).toEqual({});
+  });
+});
+
+describe('collectDemandedLatestTasks', () => {
+  const roots = [
+    {
+      id: 'root',
+      component: 'Row',
+      props: [],
+      children: [
+        {id: 'bar', component: 'Progress', props: [{key: 'value', dynamic_value: {path: 'self.blur.latest.progress'}}]},
+        {
+          id: 'badge',
+          component: 'Badge',
+          props: [
+            {
+              key: 'text',
+              util_call: {operation: 'concat', arguments: [{key: '0', value_path: 'self/segment/latest/message'}]},
+            },
+          ],
+        },
+        {id: 'stage', component: 'Text', props: [{key: 'text', dynamic_value: {path: 'self.stage.position'}}]},
+        {id: 'local', component: 'Text', props: [{key: 'text', dynamic_value: {path: 'form.blur.latest'}}]},
+      ],
+    },
+  ];
+
+  it('names every action whose latest task is read, in either path spelling', () => {
+    expect(toObject(collectDemandedLatestTasks(roots, new Set(['self'])))).toEqual({self: ['blur', 'segment']});
+  });
+
+  it('leaves the name among the state interfaces: only the agent can tell which it is', () => {
+    expect(toObject(collectDemandedStateInterfaces(roots, new Set(['self'])))).toEqual({
+      self: ['blur', 'segment', 'stage'],
+    });
   });
 });

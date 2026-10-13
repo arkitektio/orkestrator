@@ -49,7 +49,7 @@ export const GeneralPage = () => (
           <SwitchField
             name="experimentAnnotationHover"
             label="Annotation hover button"
-            description="Pin an action button to the annotation under the pointer in a scene"
+            description="Pin a button to the annotation under the pointer in a scene; a click opens what is known about the shape, and its actions"
           />
           <SwitchField
             name="experimentTaskIsland"

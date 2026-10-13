@@ -1,8 +1,8 @@
 # The mesh designer (`features/meshDesign`)
 
 DESIGN mode builds fabriks mesh collections interactively. You pick a tool in
-the in-viewport toolbar, gesture on the data, and look at a PREVIEW before
-anything joins a mesh. Meshes accumulate in a SESSION and commit together as
+the in-viewport toolbar and gesture on the data; what the gesture builds joins
+the active mesh at once. Meshes accumulate in a SESSION and commit together as
 ONE single-level fabriks collection (`commit/commitDesign.ts`); editing a
 committed collection loads its objects back and commits a new version
 `derivedFrom` the old.
@@ -15,17 +15,18 @@ committed collection loads its objects back and commits a new version
    camera. Clicking a toolbar button (or tapping the key) only SELECTS the
    tool, which shows its panel (`modeStore.selectedDesignTool`).
 2. **Gesture** — with the key held, drag along a structure (Trace, C) or
-   click one (Seed, V).
-3. **Tune the preview** — the result appears as an amber CANDIDATE. Moving
-   any slider, or switching the reconstructor, rebuilds it from the same
-   gesture (once the slider is let go); nothing has to be redrawn.
-4. **Accept** — Enter / *Add* unions it into the active mesh (one undo
-   step); Esc / *Discard* drops it. Starting the next gesture — with any
-   tool — accepts the pending candidate first.
+   click one (Seed, V). The reconstruction is unioned into the active mesh
+   as soon as it is built: one undo step, no preview to accept.
+3. **Tune it** — for as long as it is the newest act, the reconstruction
+   stays live (`store.last`). Moving any slider, or switching the
+   reconstructor, rebuilds it from the same gesture and replaces it in place
+   (once the slider is let go); nothing has to be redrawn. ⌘Z takes it back.
+4. **Move on** — the next gesture, edit or undo ends the tuning. There is
+   nothing to confirm.
 
 The active mesh is the one selected in the sidebar's *Design staging* card
-(or by clicking a mesh while no tool key is held). With nothing
-selected an accepted candidate starts a new mesh.
+(or by clicking a mesh while no tool key is held). With nothing selected a
+reconstruction starts a new mesh.
 
 ## Reconstructors
 
@@ -49,8 +50,8 @@ Adding a reconstructor = one module with a `run(ctx)` returning a
 `RECONSTRUCTORS`, its id in `ReconstructorId` (`store/meshDesignStore.ts`)
 and its knobs in `ui/reconstructPanels.tsx` — a `Record` over the ids, so a
 missing panel fails the build. A reconstructor never touches the session:
-`reconstruct/candidate.ts` turns its result into the candidate
-(`buildCandidate`) and applies the verdict (`commitCandidate`).
+`reconstruct/apply.ts` turns its result into ONE worker job and files what
+comes back (`applyReconstruction`), for a first run and a re-run alike.
 
 ## Editing tools
 
@@ -68,20 +69,20 @@ Every one ends in a single `applySculpt` (one undo step).
     connecting tube.
   - **L lift** — click a LABEL instance (2D plane or 3D label volume) and its
     connected region floods into the design.
-  - **Loft selected polygons** / **Tube from selected path** — one-shot
-    actions on the annotation selection.
 
 ## What runs where
 
-A field is up to 8 M cells, and marching, polishing and simplifying walk the
-whole surface — none of that may run on the main thread.
+A field is up to 8 M cells, and polishing and simplifying walk the whole
+surface — none of that may run on the main thread.
 
 - **Worker** (`worker/`): every tool's tail — voxelize / stamp / union /
   carve → march → polish → simplify → normals. A tool describes it as a
   `DesignJob` (plain data; stamps travel as `StampSpec`, not closures) and
   awaits `designDispatcher().run(job)`. One worker, one job at a time, in
   order: a session's edits are a chain. A queued job whose caller has moved
-  on (`superseded`) is dropped before it starts.
+  on (`superseded`) is dropped before it starts. A commit's BAKE — clipping,
+  quantizing and Parquet-encoding the collection — is the worker's too
+  (`designDispatcher().bake`).
 - **GPU**: the centerline and isosurface extraction (the brush's kernels).
 - **Main thread, time-sliced**: the two fits (`reconstruct/fit/`). They read
   voxels from the resident brick cache, which lives here, so they stay —
@@ -94,18 +95,47 @@ whole surface — none of that may run on the main thread.
 `perf.ts` puts `design:*` User Timing measures around the stages, for a
 DevTools Performance recording.
 
+## What keeps an edit cheap
+
+Every edit ends in the same tail, so the tail is where the time went. Four
+rules hold it down; breaking one is how the designer gets slow again.
+
+- **A mesh has no field until it needs one.** A reconstructed surface that
+  starts a mesh is welded, polished and simplified — nothing more
+  (`DesignJob` `base: soup`). The field is built by the first edit that
+  unions into it or cuts it.
+- **Nothing is voxelized at the data's resolution.** Geometry on its way
+  into a field (a surface being unioned in, a mesh getting its field) is
+  simplified first, to a quarter of the Detail error
+  (`FIELD_INPUT_DETAIL`): signed distance from a few thousand triangles
+  instead of the hundred thousand the extraction emitted. `unionMesh` then
+  only works inside the piece's own box, and dismisses the cells a triangle
+  cannot be near by its plane and its bounding sphere.
+- **A field grows on its lattice.** `ensureContains` extends the grid by
+  whole cells and copies rows; it never resamples (which cost a trilinear
+  read per cell and blurred the surface with every addition) unless the
+  voxel ceiling forces a coarser spacing.
+- **The march walks the content, not the grid** (`field/march.ts`): rows
+  with nothing inside are skipped, and vertices are shared through a
+  per-edge cache, so the mesh comes out indexed and closed with no weld.
+
+For scale — one 135 k-triangle surface, a 4 M-cell field, in vitest: a
+surface starting a mesh ≈ 85 ms, a surface or a fitted tube unioned in ≈
+130–300 ms, a carve ≈ 110 ms. Before these rules each was 1–2 s, twice
+(once for the preview, again to accept it).
+
 ## Submodules
 
 | dir | owns |
 |-----|------|
 | `worker/` | the geometry job (`designJob.ts`, pure), its Web Worker entry and the dispatcher with a same-thread twin for tests |
-| `reconstruct/` | the reconstructor registry and its four modules, the pure fits (`fit/`), the world-space intensity sampler, the candidate build/commit, and the run pipeline shared by a first run and every re-run |
-| `field/` | the SDF core every tool speaks: `sculptField` (grid, march, mesh → signed distance), `stamps` (analytic sphere/box/ellipsoid/oriented ellipsoid/capsule chain/tapered chain/halfspace + `applyStamp`), `loft` (serial-section contours), `split` (two-seed watershed) |
-| `ops/` | geometry post-processing: `weld`, `smoothMesh` (Taubin), `simplify` (meshopt, absolute Detail error), `postProcess` (the shared polish→simplify tail), `sculpt` (legacy triangle ops) |
+| `reconstruct/` | the reconstructor registry and its four modules, the pure fits (`fit/`), the world-space intensity sampler, the job that applies a result (`apply.ts`), and the run pipeline shared by a first run and every re-run |
+| `field/` | the SDF core every tool speaks: `sculptField` (grid, growth, mesh → signed distance), `march` (the field's indexed marching cubes), `stamps` (analytic sphere/box/ellipsoid/oriented ellipsoid/capsule chain/tapered chain/halfspace + `applyStamp`), `split` (two-seed watershed) |
+| `ops/` | geometry post-processing: `weld`, `smoothMesh` (Taubin), `simplify` (meshopt, absolute Detail error), `postProcess` (the shared polish→simplify tail) |
 | `tools/` | one module per tool + `registry.ts`. The toolbar, keys and the `?` overlay derive from the registry — a tool cannot exist half-wired |
-| `ui/` | the toolbar and its panels (`MeshDesignToolbar`, `ReconstructPanel`, `reconstructPanels`), the in-canvas overlay with the candidate preview and the surface/screen gesture hosts (`MeshDesignSession`), the sidebar staging card, the commit dialog |
-| `commit/` | bake → upload → register (`commitDesign`), and the edit-existing loader (`loadCollection`) |
-| `store/` | the session store: meshes (geometry + field), selection, the pending candidate, the reconstructor choice and its params, undo/redo snapshots |
+| `ui/` | the toolbar and its panels (`MeshDesignToolbar`, `ReconstructPanel`, `reconstructPanels`), the in-canvas overlay with the session's meshes and the surface/screen gesture hosts (`MeshDesignSession`), the sidebar staging card, the commit dialog |
+| `commit/` | bake (`bakeDesign`, pure — run by the worker) → upload → register (`commitDesign`), and the edit-existing loader (`loadCollection`) |
+| `store/` | the session store: meshes (geometry + field), selection, the last reconstruction while it is still tunable, the reconstructor choice and its params, undo/redo snapshots |
 | `brush.ts` | the one door into `features/annotations`: the brush's gesture store, extraction engines and their types |
 
 ## Gesture routing

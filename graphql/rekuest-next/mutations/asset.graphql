@@ -1,0 +1,13 @@
+# Adding a file an agent names a source for: an admin's client fetched it and uploads it.
+
+mutation RequestAssetUpload($input: RequestAssetUploadInput!) {
+  requestAssetUpload(input: $input) {
+    ...MediaUploadGrant
+  }
+}
+
+mutation CreateAsset($input: CreateAssetInput!) {
+  createAsset(input: $input) {
+    ...StoredAsset
+  }
+}

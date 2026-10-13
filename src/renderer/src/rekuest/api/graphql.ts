@@ -2343,6 +2343,19 @@ export type KickInput = {
   reason?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** The task an implementation last ran as, with what its record is made of. The first message of `latestTask`, and again whenever a newer task takes its place. */
+export type LatestTaskSnapshot = {
+  __typename?: 'LatestTaskSnapshot';
+  /** The task's last PROGRESS, last YIELD and its terminal event, oldest first: enough to say how far it is, what it returned and how it ended. */
+  events: Array<TaskEventChange>;
+  /** The implementation the agent offers under the interface; null if it offers none, and nothing follows then. */
+  implementation?: Maybe<Scalars['ID']['output']>;
+  /** The task it last ran as, whoever started it and whether or not it has ended; null if it never ran. (Not `task`: beside `TaskEventChange.task`, an id, one selection could not ask for both.) */
+  latest?: Maybe<TaskChange>;
+};
+
+export type LatestTaskSnapshotTaskChangeTaskEventChange = LatestTaskSnapshot | TaskChange | TaskEventChange;
+
 /** A resource of an agent that one of its tasks holds at a time: the agent takes it while an implementation that requires it runs. */
 export type Lock = {
   __typename?: 'Lock';
@@ -5272,6 +5285,8 @@ export type Subscription = {
   implementationChange: Implementation;
   /** Subscribe to creation or updates of implementations. */
   implementations: ImplementationUpdate;
+  /** The task an agent's action last ran as, whoever started it, kept current. Yields a `LatestTaskSnapshot` first, then that task's events (`TaskEventChange`: progress, results, its end) and, as a `TaskChange`, every task of the action that starts or ends: a started one with a higher id is the latest from then on. A snapshot without an implementation means the agent offers no action under that interface, and nothing follows. */
+  latestTask: LatestTaskSnapshotTaskChangeTaskEventChange;
   /** Subscribe to root tasks created by this client (caller-scoped). */
   mytasks: TaskChangeEvent;
   /** Stream the events of one probe (caller-scoped, payload-carrying). Emits a state snapshot first when events already happened. */
@@ -5314,6 +5329,13 @@ export type SubscriptionImplementationChangeArgs = {
 /** Root subscription type for real-time event streams from the system. */
 export type SubscriptionImplementationsArgs = {
   agent: Scalars['ID']['input'];
+};
+
+
+/** Root subscription type for real-time event streams from the system. */
+export type SubscriptionLatestTaskArgs = {
+  agent: Scalars['ID']['input'];
+  interface: Scalars['String']['input'];
 };
 
 
@@ -6477,7 +6499,7 @@ export type StoredAssetFragment = { __typename?: 'Asset', id: string, ref: strin
     & MediaStoreFragment
   ) };
 
-export type AgentAssetFragment = { __typename?: 'AgentAsset', id: string, name: string, kind: AssetKind, ref: string, size?: number | null, asset?: (
+export type AgentAssetFragment = { __typename?: 'AgentAsset', id: string, name: string, kind: AssetKind, ref: string, size?: number | null, source?: string | null, asset?: (
     { __typename?: 'Asset' }
     & StoredAssetFragment
   ) | null };
@@ -6802,7 +6824,7 @@ export type CustomAssignWidgetFragment = { __typename: 'CustomAssignWidget', kin
 
 export type ChoiceAssignWidgetFragment = { __typename: 'ChoiceAssignWidget', kind: AssignWidgetKind, followValue?: string | null, placeholder?: string | null };
 
-export type ArgChildPortDeepFragment = { __typename: 'ArgPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, default?: any | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
+export type ArgChildPortDeepFragment = { __typename: 'ArgPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, default?: any | null, requires?: Array<{ __typename?: 'Requires', key: string, operator: DescriptorOperator, value?: any | null }> | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
     { __typename?: 'ChoiceAssignWidget' }
     & AssignWidget_ChoiceAssignWidget_Fragment
   ) | (
@@ -6823,7 +6845,7 @@ export type ArgChildPortDeepFragment = { __typename: 'ArgPort', kind: PortKind, 
   ) | (
     { __typename?: 'StringAssignWidget' }
     & AssignWidget_StringAssignWidget_Fragment
-  ) | null, children?: Array<{ __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, nullable: boolean, widget?: (
+  ) | null, children?: Array<{ __typename: 'ArgPort', kind: PortKind, key: string, identifier?: any | null, nullable: boolean, requires?: Array<{ __typename?: 'Requires', key: string, operator: DescriptorOperator, value?: any | null }> | null, widget?: (
       { __typename?: 'ChoiceAssignWidget' }
       & AssignWidget_ChoiceAssignWidget_Fragment
     ) | (
@@ -6846,7 +6868,7 @@ export type ArgChildPortDeepFragment = { __typename: 'ArgPort', kind: PortKind, 
       & AssignWidget_StringAssignWidget_Fragment
     ) | null }> | null };
 
-export type ArgChildPortNestedFragment = { __typename: 'ArgPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, default?: any | null, children?: Array<(
+export type ArgChildPortNestedFragment = { __typename: 'ArgPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, default?: any | null, requires?: Array<{ __typename?: 'Requires', key: string, operator: DescriptorOperator, value?: any | null }> | null, children?: Array<(
     { __typename?: 'ArgPort' }
     & ArgChildPortDeepFragment
   )> | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
@@ -6884,7 +6906,7 @@ export type ArgChildPortNestedFragment = { __typename: 'ArgPort', kind: PortKind
     & ValidatorFragment
   )> | null };
 
-export type ArgChildPortFragment = { __typename: 'ArgPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, nullable: boolean, description?: string | null, default?: any | null, children?: Array<(
+export type ArgChildPortFragment = { __typename: 'ArgPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, nullable: boolean, description?: string | null, default?: any | null, requires?: Array<{ __typename?: 'Requires', key: string, operator: DescriptorOperator, value?: any | null }> | null, children?: Array<(
     { __typename?: 'ArgPort' }
     & ArgChildPortNestedFragment
   )> | null, widget?: (
@@ -6922,7 +6944,7 @@ export type ArgChildPortFragment = { __typename: 'ArgPort', kind: PortKind, key:
     & ValidatorFragment
   )> | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null };
 
-export type ReturnChildPortDeepFragment = { __typename: 'ReturnPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
+export type ReturnChildPortDeepFragment = { __typename: 'ReturnPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, provides?: Array<{ __typename?: 'Provides', key: string, operator: DescriptorOperator, value?: any | null }> | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
     { __typename?: 'ChoiceReturnWidget' }
     & ReturnWidget_ChoiceReturnWidget_Fragment
   ) | (
@@ -6936,7 +6958,7 @@ export type ReturnChildPortDeepFragment = { __typename: 'ReturnPort', kind: Port
       & ReturnWidget_CustomReturnWidget_Fragment
     ) | null }> | null };
 
-export type ReturnChildPortNestedFragment = { __typename: 'ReturnPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, children?: Array<(
+export type ReturnChildPortNestedFragment = { __typename: 'ReturnPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, description?: string | null, nullable: boolean, provides?: Array<{ __typename?: 'Provides', key: string, operator: DescriptorOperator, value?: any | null }> | null, children?: Array<(
     { __typename?: 'ReturnPort' }
     & ReturnChildPortDeepFragment
   )> | null, choices?: Array<{ __typename?: 'Choice', value: any, label: string, description?: string | null }> | null, widget?: (
@@ -6956,7 +6978,7 @@ export type ReturnChildPortNestedFragment = { __typename: 'ReturnPort', kind: Po
     & PortEffect_MessageEffect_Fragment
   )> | null };
 
-export type ReturnChildPortFragment = { __typename: 'ReturnPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, nullable: boolean, description?: string | null, children?: Array<(
+export type ReturnChildPortFragment = { __typename: 'ReturnPort', kind: PortKind, key: string, label?: string | null, identifier?: any | null, referenceUnit?: string | null, proposedUnits?: Array<string> | null, dimension?: string | null, nullable: boolean, description?: string | null, provides?: Array<{ __typename?: 'Provides', key: string, operator: DescriptorOperator, value?: any | null }> | null, children?: Array<(
     { __typename?: 'ReturnPort' }
     & ReturnChildPortNestedFragment
   )> | null, widget?: (
@@ -7528,6 +7550,26 @@ export type UnblockMutationVariables = Exact<{
 export type UnblockMutation = { __typename?: 'Mutation', unblock: (
     { __typename?: 'Agent' }
     & AgentFragment
+  ) };
+
+export type RequestAssetUploadMutationVariables = Exact<{
+  input: RequestAssetUploadInput;
+}>;
+
+
+export type RequestAssetUploadMutation = { __typename?: 'Mutation', requestAssetUpload: (
+    { __typename?: 'MediaUploadGrant' }
+    & MediaUploadGrantFragment
+  ) };
+
+export type CreateAssetMutationVariables = Exact<{
+  input: CreateAssetInput;
+}>;
+
+
+export type CreateAssetMutation = { __typename?: 'Mutation', createAsset: (
+    { __typename?: 'Asset' }
+    & StoredAssetFragment
   ) };
 
 export type AssignMutationVariables = Exact<{
@@ -8855,6 +8897,31 @@ export type CheckoutAgentQuery = { __typename?: 'Query', checkoutAgent: { __type
       & PatchFragment
     )> } };
 
+export type CheckoutAgentRevisionQueryVariables = Exact<{
+  agent: Scalars['ID']['input'];
+  globalRevision?: InputMaybe<Scalars['Int']['input']>;
+  timestamp?: InputMaybe<Scalars['DateTime']['input']>;
+  sessionId?: InputMaybe<Scalars['ID']['input']>;
+  forwardPatchCount?: InputMaybe<Scalars['Int']['input']>;
+  backwardPatchCount?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type CheckoutAgentRevisionQuery = { __typename?: 'Query', checkoutAgent: { __typename?: 'AgentWithValues', agentId: string, values: any, globalRevision: number, forwardPatches: Array<(
+      { __typename?: 'Patch', sessionId?: string | null }
+      & PatchFragment
+    )>, backwardPatches: Array<(
+      { __typename?: 'Patch', sessionId?: string | null }
+      & PatchFragment
+    )> } };
+
+export type SessionBoundariesQueryVariables = Exact<{
+  sessionId: Scalars['ID']['input'];
+}>;
+
+
+export type SessionBoundariesQuery = { __typename?: 'Query', sessionBoundaries?: { __typename?: 'SessionBoundary', sessionId: string, startGlobalRevision?: number | null, endGlobalRevision?: number | null } | null };
+
 export type GetStructureQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -9569,6 +9636,11 @@ ${ChoiceReturnWidgetFragmentDoc}`;
 export const ReturnChildPortDeepFragmentDoc = gql`
     fragment ReturnChildPortDeep on ReturnPort {
   __typename
+  provides {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -9601,6 +9673,11 @@ export const ReturnChildPortDeepFragmentDoc = gql`
 export const ReturnChildPortNestedFragmentDoc = gql`
     fragment ReturnChildPortNested on ReturnPort {
   __typename
+  provides {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -9631,6 +9708,11 @@ ${PortEffectFragmentDoc}`;
 export const ReturnChildPortFragmentDoc = gql`
     fragment ReturnChildPort on ReturnPort {
   __typename
+  provides {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -9843,6 +9925,11 @@ ${StateChoiceAssignWidgetFragmentDoc}`;
 export const ArgChildPortDeepFragmentDoc = gql`
     fragment ArgChildPortDeep on ArgPort {
   __typename
+  requires {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -9867,6 +9954,11 @@ export const ArgChildPortDeepFragmentDoc = gql`
     key
     identifier
     nullable
+    requires {
+      key
+      operator
+      value
+    }
     widget {
       ...AssignWidget
     }
@@ -9887,6 +9979,11 @@ export const ValidatorFragmentDoc = gql`
 export const ArgChildPortNestedFragmentDoc = gql`
     fragment ArgChildPortNested on ArgPort {
   __typename
+  requires {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -9922,6 +10019,11 @@ ${ValidatorFragmentDoc}`;
 export const ArgChildPortFragmentDoc = gql`
     fragment ArgChildPort on ArgPort {
   __typename
+  requires {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -10234,6 +10336,7 @@ export const AgentAssetFragmentDoc = gql`
   kind
   ref
   size
+  source
   asset {
     ...StoredAsset
   }
@@ -12363,6 +12466,72 @@ export function useUnblockMutation(baseOptions?: ApolloReactHooks.MutationHookOp
 export type UnblockMutationHookResult = ReturnType<typeof useUnblockMutation>;
 export type UnblockMutationResult = Apollo.MutationResult<UnblockMutation>;
 export type UnblockMutationOptions = Apollo.BaseMutationOptions<UnblockMutation, UnblockMutationVariables>;
+export const RequestAssetUploadDocument = gql`
+    mutation RequestAssetUpload($input: RequestAssetUploadInput!) {
+  requestAssetUpload(input: $input) {
+    ...MediaUploadGrant
+  }
+}
+    ${MediaUploadGrantFragmentDoc}`;
+export type RequestAssetUploadMutationFn = Apollo.MutationFunction<RequestAssetUploadMutation, RequestAssetUploadMutationVariables>;
+
+/**
+ * __useRequestAssetUploadMutation__
+ *
+ * To run a mutation, you first call `useRequestAssetUploadMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRequestAssetUploadMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [requestAssetUploadMutation, { data, loading, error }] = useRequestAssetUploadMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRequestAssetUploadMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RequestAssetUploadMutation, RequestAssetUploadMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RequestAssetUploadMutation, RequestAssetUploadMutationVariables>(RequestAssetUploadDocument, options);
+      }
+export type RequestAssetUploadMutationHookResult = ReturnType<typeof useRequestAssetUploadMutation>;
+export type RequestAssetUploadMutationResult = Apollo.MutationResult<RequestAssetUploadMutation>;
+export type RequestAssetUploadMutationOptions = Apollo.BaseMutationOptions<RequestAssetUploadMutation, RequestAssetUploadMutationVariables>;
+export const CreateAssetDocument = gql`
+    mutation CreateAsset($input: CreateAssetInput!) {
+  createAsset(input: $input) {
+    ...StoredAsset
+  }
+}
+    ${StoredAssetFragmentDoc}`;
+export type CreateAssetMutationFn = Apollo.MutationFunction<CreateAssetMutation, CreateAssetMutationVariables>;
+
+/**
+ * __useCreateAssetMutation__
+ *
+ * To run a mutation, you first call `useCreateAssetMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateAssetMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createAssetMutation, { data, loading, error }] = useCreateAssetMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateAssetMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateAssetMutation, CreateAssetMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateAssetMutation, CreateAssetMutationVariables>(CreateAssetDocument, options);
+      }
+export type CreateAssetMutationHookResult = ReturnType<typeof useCreateAssetMutation>;
+export type CreateAssetMutationResult = Apollo.MutationResult<CreateAssetMutation>;
+export type CreateAssetMutationOptions = Apollo.BaseMutationOptions<CreateAssetMutation, CreateAssetMutationVariables>;
 export const AssignDocument = gql`
     mutation assign($input: AssignInput!) {
   assign(input: $input) {
@@ -17146,6 +17315,100 @@ export function useCheckoutAgentLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type CheckoutAgentQueryHookResult = ReturnType<typeof useCheckoutAgentQuery>;
 export type CheckoutAgentLazyQueryHookResult = ReturnType<typeof useCheckoutAgentLazyQuery>;
 export type CheckoutAgentQueryResult = Apollo.QueryResult<CheckoutAgentQuery, CheckoutAgentQueryVariables>;
+export const CheckoutAgentRevisionDocument = gql`
+    query CheckoutAgentRevision($agent: ID!, $globalRevision: Int, $timestamp: DateTime, $sessionId: ID, $forwardPatchCount: Int, $backwardPatchCount: Int) {
+  checkoutAgent(
+    agent: $agent
+    globalRevision: $globalRevision
+    timestamp: $timestamp
+    sessionId: $sessionId
+    forwardPatchCount: $forwardPatchCount
+    backwardPatchCount: $backwardPatchCount
+  ) {
+    agentId
+    values
+    globalRevision
+    forwardPatches {
+      ...Patch
+      sessionId
+    }
+    backwardPatches {
+      ...Patch
+      sessionId
+    }
+  }
+}
+    ${PatchFragmentDoc}`;
+
+/**
+ * __useCheckoutAgentRevisionQuery__
+ *
+ * To run a query within a React component, call `useCheckoutAgentRevisionQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCheckoutAgentRevisionQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCheckoutAgentRevisionQuery({
+ *   variables: {
+ *      agent: // value for 'agent'
+ *      globalRevision: // value for 'globalRevision'
+ *      timestamp: // value for 'timestamp'
+ *      sessionId: // value for 'sessionId'
+ *      forwardPatchCount: // value for 'forwardPatchCount'
+ *      backwardPatchCount: // value for 'backwardPatchCount'
+ *   },
+ * });
+ */
+export function useCheckoutAgentRevisionQuery(baseOptions: ApolloReactHooks.QueryHookOptions<CheckoutAgentRevisionQuery, CheckoutAgentRevisionQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<CheckoutAgentRevisionQuery, CheckoutAgentRevisionQueryVariables>(CheckoutAgentRevisionDocument, options);
+      }
+export function useCheckoutAgentRevisionLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<CheckoutAgentRevisionQuery, CheckoutAgentRevisionQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<CheckoutAgentRevisionQuery, CheckoutAgentRevisionQueryVariables>(CheckoutAgentRevisionDocument, options);
+        }
+export type CheckoutAgentRevisionQueryHookResult = ReturnType<typeof useCheckoutAgentRevisionQuery>;
+export type CheckoutAgentRevisionLazyQueryHookResult = ReturnType<typeof useCheckoutAgentRevisionLazyQuery>;
+export type CheckoutAgentRevisionQueryResult = Apollo.QueryResult<CheckoutAgentRevisionQuery, CheckoutAgentRevisionQueryVariables>;
+export const SessionBoundariesDocument = gql`
+    query SessionBoundaries($sessionId: ID!) {
+  sessionBoundaries(sessionId: $sessionId) {
+    sessionId
+    startGlobalRevision
+    endGlobalRevision
+  }
+}
+    `;
+
+/**
+ * __useSessionBoundariesQuery__
+ *
+ * To run a query within a React component, call `useSessionBoundariesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSessionBoundariesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSessionBoundariesQuery({
+ *   variables: {
+ *      sessionId: // value for 'sessionId'
+ *   },
+ * });
+ */
+export function useSessionBoundariesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SessionBoundariesQuery, SessionBoundariesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SessionBoundariesQuery, SessionBoundariesQueryVariables>(SessionBoundariesDocument, options);
+      }
+export function useSessionBoundariesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SessionBoundariesQuery, SessionBoundariesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SessionBoundariesQuery, SessionBoundariesQueryVariables>(SessionBoundariesDocument, options);
+        }
+export type SessionBoundariesQueryHookResult = ReturnType<typeof useSessionBoundariesQuery>;
+export type SessionBoundariesLazyQueryHookResult = ReturnType<typeof useSessionBoundariesLazyQuery>;
+export type SessionBoundariesQueryResult = Apollo.QueryResult<SessionBoundariesQuery, SessionBoundariesQueryVariables>;
 export const GetStructureDocument = gql`
     query GetStructure($id: ID!) {
   structure(identifier: $id) {

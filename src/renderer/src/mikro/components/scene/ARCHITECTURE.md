@@ -77,6 +77,16 @@ the one folder other features may import.
 | `animation/` | the camera-tour editor and player |
 | `debug/` | the debug panel chrome and the `DebugSection` contract (features contribute sections via `shell/debugRegistry.ts`) |
 
+**A click on a shape opens `annotations/hover/AnnotationActionMenu`**: the
+rekuest actions whose two leading ports are `(Annotation, ArrayLens)`, in that
+order (Run and Shortcuts allow further arguments, as on every drop). The shape goes out with the descriptors the server answers for
+it (`GetAnnotationDescriptors`, per clicked shape, never on `SceneAnnotation`),
+the lens is the one the probe reads (`effectiveProbeLayerId`) with its own.
+The lens is sent as `@mikro/arraylens`, not the UI's `@mikro/lens`: mikro hosts
+one structure per lens kind and rekuest matches a port's identifier exactly.
+The pairing is `annotationActionTarget.ts`; the full menu of a shape (no
+partner) stays on right-click and the hover button.
+
 ### The registries
 
 Feature-vertical layouts normally collapse where shared UI has to render
@@ -153,10 +163,10 @@ is precisely what turned the old `core/` into a 153-file grab-bag.
   not — both are features. The brush's types and engine functions reach the
   designer through ONE file, `meshDesign/brush.ts`, so the seam is a list
   that can be read; only the React pieces (`ParamRow`,
-  `SurfaceQualityControls`, `useBrushSkeleton`) and the annotation selection
-  (loft / tube-from-path) are imported where they are used.
+  `SurfaceQualityControls`, `useBrushSkeleton`) and the cubes case table the
+  field's own march reads (`field/march.ts`) are imported where they are used.
 - `annotations -> meshDesign` (the brush hook dispatches a DESIGN release to
-  `meshDesign/tools/registry`, accepting a pending reconstruction first) and
+  `meshDesign/tools/registry`) and
   `meshes -> meshDesign` (the Meshes panel's "edit in design" entry): the
   hand-over seams. ANNOTATE no longer hands surfaces over — a brush stroke
   there saves a path, and meshes are only ever built in DESIGN.

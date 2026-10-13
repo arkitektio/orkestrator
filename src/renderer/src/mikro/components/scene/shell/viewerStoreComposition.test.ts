@@ -51,7 +51,7 @@ const EXPECTED_KEYS = [
   "showScaleBar", "showScaleGrid", "showSceneAxis", "trackables",
   "unplannableLayers", "unregister", "viewSnapshot", "visibleLayers",
   "volumeCompositorReport", "volumeInputs", "worldUnitsPerPixel",
-  "cropBox", "cropPhase", "cropBoxBefore", "beginCrop", "fixCropRect",
+  "cropBox", "cropPhase", "cropBoxBefore", "beginCrop", "anchorCrop", "fixCropRect",
   "setCropBox", "commitCrop", "cancelCrop", "clearCrop",
   "cropNotice", "refuseCrop", "clearCropNotice",] as const;
 

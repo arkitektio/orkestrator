@@ -224,4 +224,18 @@ describe("fabriksBake", () => {
       expect(schemaSignature(prefix.files.get(ours)!)).toEqual(schemaSignature(fixture));
     }
   });
+
+  // hyparquet-writer writes `IntType.bitWidth` (thrift i8) as an i32. Its own
+  // reader takes that back, so no round trip here can catch it — but DuckDB,
+  // which the server reads the footer with, refuses the file. The schema must
+  // not ask for the annotation at all (`parquetWrite.ts`, `child_mask`).
+  it("declares no INTEGER logical type, which the writer cannot serialize for a strict reader", () => {
+    const prefix = buildFabriksPrefix(meshes);
+    for (const [path, bytes] of prefix.files) {
+      if (!path.endsWith(".parquet")) continue;
+      const { schema } = parquetMetadata(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+      const integers = schema.filter((s) => s.logical_type?.type === "INTEGER").map((s) => s.name);
+      expect(integers, path).toEqual([]);
+    }
+  });
 });

@@ -8,6 +8,7 @@ import { useRoiSelectionStoreApi } from "./roiSelectionStore";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi, type ViewerState } from "../../platform/stores/viewerStore";
 import { useNavigateToAnnotation } from "./useNavigateToAnnotation";
+import { inSceneOrder } from "./sceneVectors";
 
 /**
  * Opens a scene ON one annotation: selects it (the amber highlight the canvas
@@ -71,7 +72,8 @@ const FocusBody = ({ annotation }: { annotation: DetailAnnotationFragment }) => 
     let unsubscribe: (() => void) | null = null;
 
     const focus = () => {
-      const current = annotationRef.current;
+      // The detail query answers in stored order; the scene reads its own.
+      const current = inSceneOrder(annotationRef.current);
       const system = layer.annotationCollection?.coordinateSystem ?? null;
       // The same SelectedRoi the canvas layer and the annotations panel build:
       // RAW collection-space vectors plus the collection's own system, because

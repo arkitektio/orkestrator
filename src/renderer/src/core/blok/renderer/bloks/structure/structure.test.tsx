@@ -1,26 +1,51 @@
 // @vitest-environment jsdom
-import {cleanup, fireEvent, screen} from '@testing-library/react';
+import {act, cleanup, fireEvent, screen} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import * as z from 'zod';
 
-const options = vi.hoisted(() => ({search: vi.fn(async () => []) as unknown}));
+const loaded = vi.hoisted(() => vi.fn());
+const options = vi.hoisted(() => ({search: vi.fn(async () => [] as {value: string; label: string}[])}));
+const service = vi.hoisted(() => ({
+  run: vi.fn(async (_query: string, _variables: Record<string, unknown>) => ({
+    options: [{value: 7, label: 'cells.zarr', description: 'c[0:1]'}, {value: null}],
+  })),
+}));
 
 vi.mock('@/core/modules/hooks/useStructureOptions', () => ({
   useStructureOptions: (identifier: string) =>
     identifier === '@mikro/arraydataset' ? options.search : undefined,
 }));
+vi.mock('@/core/modules/hooks/useServiceQuery', () => ({
+  useServiceQuery: (ward: string | undefined) => (query: string, variables: Record<string, unknown>) =>
+    service.run(`${ward}:${query}`, variables),
+}));
 // The real one is a popover over cmdk; what matters here is what the blok
-// does with the id it is handed.
-vi.mock('@/core/forms/AsyncCombobox', () => ({
-  AsyncCombobox: (props: {
-    value: string | null | undefined;
+// hands it and does with the id it is handed back.
+vi.mock('@/core/forms/StructurePickerControl', () => ({
+  StructurePickerControl: (props: {
+    value: string | undefined;
     onChange: (value: string | undefined) => void;
+    load: (request: {search?: string; ids?: string[]; limit: number; offset: number}) => Promise<unknown>;
     placeholder?: string;
+    paged?: boolean;
+    requires?: unknown[];
+    scope?: {label: string; active: boolean; onToggle: () => void};
   }) => (
-    <div data-testid="picker" data-value={props.value ?? ''}>
+    <div
+      data-testid="picker"
+      data-value={props.value ?? ''}
+      data-paged={String(props.paged)}
+      data-requires={JSON.stringify(props.requires ?? null)}
+      data-scope={props.scope ? `${props.scope.label}|${props.scope.active}` : ''}
+    >
       {props.placeholder}
       <button onClick={() => props.onChange('42')}>pick</button>
       <button onClick={() => props.onChange(undefined)}>clear</button>
+      <button onClick={() => void props.load({search: 'cells', limit: 25, offset: 0}).then(found => loaded(found))}>
+        list
+      </button>
+      <button onClick={() => void props.load({ids: ['42'], limit: 1, offset: 0})}>resolve</button>
+      {props.scope && <button onClick={props.scope.onToggle}>toggle scope</button>}
     </div>
   ),
 }));
@@ -129,6 +154,116 @@ describe('StructurePicker', () => {
 
     expect(screen.getByText(/No picker available for @nobody\/thing/)).toBeInTheDocument();
     expect(screen.queryByTestId('picker')).toBeNull();
+  });
+});
+
+describe('StructurePicker with a query of its own', () => {
+  const QUERY =
+    'query Lenses($search: String, $values: [ID!], $requires: [DescriptorConstraintInput!], $path: ID, $limit: Int, $offset: Int = 0) { options: lenses(filters: {search: $search, ids: $values, requires: $requires, reachableFrom: $path}, pagination: {limit: $limit, offset: $offset}) { value: id label } }';
+  const PATH = {object: 'a1', __identifier: '@mikro/annotation'};
+  const lensPicker = (query = QUERY, extra: unknown[] = []) => [
+    {
+      id: 'lens',
+      component: 'StructurePicker',
+      props: [
+        {key: 'identifier', static_value: '@mikro/arraylens'},
+        {key: 'bind', static_value: 'value'},
+        {key: 'query', static_value: query},
+        {key: 'ward', static_value: 'mikro'},
+        ...extra,
+      ],
+    },
+  ];
+  const lastRun = () => service.run.mock.calls.at(-1) as [string, Record<string, unknown>];
+
+  it('runs its query on its ward, and reads the candidates off `options`', async () => {
+    service.run.mockClear();
+    loaded.mockClear();
+    renderBlokDocument(catalog, lensPicker(), {value: null, path: null});
+
+    fireEvent.click(screen.getByText('list'));
+    await vi.waitFor(() => expect(loaded).toHaveBeenCalled());
+
+    expect(lastRun()[0]).toBe(`mikro:${QUERY}`);
+    expect(lastRun()[1]).toEqual({search: 'cells', limit: 25, offset: 0, requires: [], path: null});
+    // An entry without a value is no candidate; a number is an id like any other.
+    expect(loaded).toHaveBeenCalledWith([{value: '7', label: 'cells.zarr', description: 'c[0:1]'}]);
+    expect(screen.getByTestId('picker').dataset.paged).toBe('true');
+  });
+
+  it('hands a variable of the query the data of the same name, a structure as its id', () => {
+    service.run.mockClear();
+    renderBlokDocument(catalog, lensPicker(), {value: null, path: PATH});
+
+    fireEvent.click(screen.getByText('list'));
+
+    expect(lastRun()[1]).toMatchObject({path: 'a1'});
+    expect(screen.getByTestId('picker').dataset.scope).toBe('Narrowed by path|true');
+  });
+
+  it('lets the user lift what the variable narrows the list to, and put it back', () => {
+    service.run.mockClear();
+    renderBlokDocument(catalog, lensPicker(), {value: null, path: PATH});
+
+    fireEvent.click(screen.getByText('toggle scope'));
+    fireEvent.click(screen.getByText('list'));
+    expect(lastRun()[1]).toMatchObject({path: null});
+    expect(screen.getByTestId('picker').dataset.scope).toBe('Narrowed by path|false');
+
+    fireEvent.click(screen.getByText('toggle scope'));
+    fireEvent.click(screen.getByText('list'));
+    expect(lastRun()[1]).toMatchObject({path: 'a1'});
+  });
+
+  it('prefers a value given in `variables` over the data of that name', () => {
+    service.run.mockClear();
+    renderBlokDocument(
+      catalog,
+      lensPicker(QUERY, [{key: 'variables', dynamic_value: {path: 'form'}}]),
+      {value: null, path: PATH, form: {path: {object: 'b2', __identifier: '@mikro/annotation'}}},
+    );
+
+    fireEvent.click(screen.getByText('list'));
+
+    expect(lastRun()[1]).toMatchObject({path: 'b2'});
+  });
+
+  it('resolves a held value by its id alone, whatever narrows the list', () => {
+    service.run.mockClear();
+    renderBlokDocument(catalog, lensPicker(), {value: null, path: PATH});
+
+    fireEvent.click(screen.getByText('resolve'));
+
+    expect(lastRun()[1]).toEqual({values: ['42'], limit: 1, offset: 0, path: null});
+  });
+
+  it('waits for a variable the query declares non-null, and never lifts it', () => {
+    service.run.mockClear();
+    const strict = QUERY.replace('$path: ID,', '$path: ID!,');
+    const {store} = renderBlokDocument(catalog, lensPicker(strict), {value: null, path: null});
+
+    expect(screen.getByText('Waiting for: path')).toBeInTheDocument();
+    expect(screen.queryByTestId('picker')).toBeNull();
+
+    act(() => store.getState().setInitialDataModel({value: null, path: PATH}));
+    fireEvent.click(screen.getByText('list'));
+    expect(lastRun()[1]).toMatchObject({path: 'a1'});
+    expect(screen.getByTestId('picker').dataset.scope).toBe('');
+
+    fireEvent.click(screen.getByText('resolve'));
+    expect(lastRun()[1]).toMatchObject({values: ['42'], path: 'a1'});
+  });
+
+  it('sends only what the query declares, and does not page a query that cannot', () => {
+    service.run.mockClear();
+    const plain = 'query S($search: String, $values: [ID!]) { options: things(search: $search, ids: $values) { value: id label: name } }';
+    renderBlokDocument(catalog, lensPicker(plain), {value: null});
+
+    fireEvent.click(screen.getByText('list'));
+
+    expect(lastRun()[1]).toEqual({search: 'cells'});
+    expect(screen.getByTestId('picker').dataset.paged).toBe('false');
+    expect(screen.getByTestId('picker').dataset.scope).toBe('');
   });
 });
 

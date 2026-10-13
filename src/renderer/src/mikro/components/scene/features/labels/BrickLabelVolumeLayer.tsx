@@ -277,7 +277,7 @@ export const BrickLabelVolumeLayer = ({ layerId }: { layerId: string }) => {
   return (
     <group ref={groupRef} matrix={affineMatrix} matrixAutoUpdate={false}>
       {/* Corner-anchored: the unit box is offset by half its size so group-local
-          spans [0..shape] and voxel v renders at exactly affine(v) —
+          spans [0..shape] and lattice point v renders at exactly affine(v) —
           COORDINATE_SYSTEMS.md "Coordinate conventions". `renderOrder` 2 puts the
           mask above an image volume's 1, matching the 2D pair. */}
       {/* NOT tagged VOLUME_PASS_OBJECT: the compositor's offscreen target is

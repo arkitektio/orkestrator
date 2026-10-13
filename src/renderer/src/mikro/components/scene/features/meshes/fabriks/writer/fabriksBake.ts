@@ -319,6 +319,29 @@ const mergeBox = (into: { min: Vec3; max: Vec3 }, box: { min: Vec3; max: Vec3 })
 
 const nextPowerOfTwo = (n: number): number => 2 ** Math.ceil(Math.log2(Math.max(1, n)));
 
+/** The meshes' joint bounds, the translation into the non-negative frame, and the longest extent there. */
+const frameOf = (meshes: readonly BakeMesh[]): { offset: Vec3; extent: number } => {
+  const global = { min: [Infinity, Infinity, Infinity] as Vec3, max: [-Infinity, -Infinity, -Infinity] as Vec3 };
+  for (const mesh of meshes) mergeBox(global, bboxOf(mesh.positions));
+  if (!global.min.every(Number.isFinite)) throw new Error("The meshes carry no vertices.");
+  const offset: Vec3 = [Math.floor(global.min[0]), Math.floor(global.min[1]), Math.floor(global.min[2])];
+  const extent = Math.max(
+    global.max[0] - offset[0],
+    global.max[1] - offset[1],
+    global.max[2] - offset[2],
+    1,
+  );
+  return { offset, extent };
+};
+
+/**
+ * The positional error (voxels) a `cells: "single"` bake of these meshes
+ * would have — from their bounds alone, so a caller can choose between
+ * `"single"` and `"auto"` BEFORE baking instead of baking to find out.
+ */
+export const singleCellQuantization = (meshes: readonly BakeMesh[]): number =>
+  nextPowerOfTwo(frameOf(meshes).extent + 1) / QUANT_MAX;
+
 /** Bake every mesh into single-level fabriks rows. Throws on unusable input. */
 export function bakeFabriksCollection(
   meshes: readonly BakeMesh[],
@@ -340,16 +363,7 @@ export function bakeFabriksCollection(
   const maxIndicesPerCell = options.maxIndicesPerCell ?? DEFAULT_MAX_INDICES_PER_CELL;
 
   // Global bounds → non-negative frame.
-  const global = { min: [Infinity, Infinity, Infinity] as Vec3, max: [-Infinity, -Infinity, -Infinity] as Vec3 };
-  for (const mesh of meshes) mergeBox(global, bboxOf(mesh.positions));
-  if (!global.min.every(Number.isFinite)) throw new Error("The meshes carry no vertices.");
-  const offset: Vec3 = [Math.floor(global.min[0]), Math.floor(global.min[1]), Math.floor(global.min[2])];
-  const extent = Math.max(
-    global.max[0] - offset[0],
-    global.max[1] - offset[1],
-    global.max[2] - offset[2],
-    1,
-  );
+  const { offset, extent } = frameOf(meshes);
 
   // Cell size: given, or a power of two aiming at ~8 cells along the longest
   // axis, then halved until no cell exceeds the index cap. Never below 1 and

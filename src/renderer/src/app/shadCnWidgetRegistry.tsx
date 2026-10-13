@@ -32,6 +32,8 @@ import { StringReturnWidget } from "@/core/ports/widgets/returns/fallbacks/Strin
 import { UnionReturnWidget } from "@/core/ports/widgets/returns/fallbacks/UnionReturnWidget";
 import { PortKind } from "@/rekuest/api/graphql";
 import { WidgetRegistry } from "@/core/ports/engine/Registry";
+import { findOptionSource } from "@/core/modules/registries";
+import { StructurePickerWidget } from "@/core/ports/widgets/custom/StructurePickerWidget";
 import {
   UnknownEffectWidget,
   UnknownInputWidget,
@@ -97,6 +99,14 @@ registry.registerInputWidgetFallback(
   PortKind.Structure,
   StructureWidget,
 );
+
+// A structure port's search is drawn by the catalog's picker, the component
+// an app author names in a CUSTOM widget, and so is a port with no widget
+// whose module answers a search. Asked on every lookup: modules come and go.
+registry.setStructurePicker({
+  widget: StructurePickerWidget,
+  canPick: (identifier) => findOptionSource(identifier) !== undefined,
+});
 
 registry.registerEffectWidget("HideEffect", HideEffectAdapter);
 

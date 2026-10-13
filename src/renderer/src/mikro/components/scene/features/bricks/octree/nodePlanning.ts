@@ -5,7 +5,7 @@ import {
   PREFETCH_MARGIN,
   expandVoxelRange,
 } from "./viewportPlanning";
-import { affineToMatrix4 } from "../../../platform/coords/worldTransform";
+import { affineToMatrix4, latticeZToSlice } from "../../../platform/coords/worldTransform";
 import type { LayerState } from "../../../platform/model/layerModel";
 import type { LayerViewRange } from "../../../platform/visibility/visibility";
 import { atlasKindForGeometry, atlasSlotBytes, decodedBytesPerVoxel } from "./atlasFormat";
@@ -529,7 +529,7 @@ export function planLayerNodes({
   // dtype made the plan and the pool disagree on capacity.
   const slotBytes = atlasSlotBytes(spec, atlasKindForGeometry(geometry));
 
-  // --- 2D slab selection (uncentered z mapping, parity with chunkPlanning) --
+  // --- 2D slab selection: the slice whose lattice cell holds the plane ------
   const layerAffineInverse = affineToMatrix4(layer.affineMatrix).invert();
   const localZ =
     zPos !== -1 && currentZ !== undefined
@@ -541,7 +541,7 @@ export function planLayerNodes({
    * its slab from this by floor-division below. */
   const baseSlabZ = ((): number | "out-of-range" | null => {
     if (localZ === null) return null;
-    const zIndex = Math.round(localZ / levels[0].scale[2]);
+    const zIndex = latticeZToSlice(localZ / levels[0].scale[2]);
     if (zIndex < 0 || zIndex > levels[0].spatialShape[2] - 1) return "out-of-range";
     return zIndex;
   })();

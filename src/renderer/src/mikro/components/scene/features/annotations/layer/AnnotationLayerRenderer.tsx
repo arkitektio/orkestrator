@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { useGetSceneAnnotationsQuery } from "@/mikro/api/graphql";
 
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { finestLayerZStep } from "../../../platform/coords/worldTransform";
@@ -31,7 +30,7 @@ import {
   sectionedInteriorTriangles,
   staticInteriorTriangles,
 } from "../interiorBatch";
-import { sceneAnnotationsVariables } from "../../../../../lib/annotations/annotationCache";
+import { useSceneAnnotations } from "../sceneVectors";
 import { prunedSelections, repairedSelections } from "../selectionRepair";
 import { useLiveSceneAnnotations } from "../../../../../lib/annotations/useLiveSceneAnnotations";
 import { isDrawingTool, useRoiDrawingStore } from "../roiDrawingStore";
@@ -133,6 +132,7 @@ const AnnotationCollectionGroup = ({
   const selectedRois = useRoiSelectionStore((s) => s.selectedRois);
   const selectOnlyRoi = useRoiSelectionStore((s) => s.selectOnlyRoi);
   const toggleSelectedRoi = useRoiSelectionStore((s) => s.toggleSelectedRoi);
+  const openRoiMenu = useRoiSelectionStore((s) => s.openRoiMenu);
   const removeSelectedRoi = useRoiSelectionStore((s) => s.removeSelectedRoi);
   const setVisibleLayerRois = useRoiSelectionStore((s) => s.setVisibleLayerRois);
   const clearVisibleLayerRois = useRoiSelectionStore((s) => s.clearVisibleLayerRois);
@@ -147,9 +147,7 @@ const AnnotationCollectionGroup = ({
   // A scalar (P17): only the drawing/not-drawing answer gates the hover.
   const drawingToolActive = useRoiDrawingStore((s) => isDrawingTool(s.activeTool));
 
-  const { data } = useGetSceneAnnotationsQuery({
-    variables: sceneAnnotationsVariables(collection.id),
-  });
+  const annotations = useSceneAnnotations(collection.id);
 
   const affineMatrix = useMemo(
     () => resolveCollectionMatrix(layer, collection, transformContext),
@@ -158,7 +156,6 @@ const AnnotationCollectionGroup = ({
   /** Inverted once per placement change, NOT per z-scrub tick. */
   const affineInverse = useMemo(() => affineMatrix.clone().invert(), [affineMatrix]);
 
-  const annotations = data?.annotations;
 
   // Lookup identity for the selection store — ONE stable object, the
   // placement cache's second key.
@@ -282,14 +279,18 @@ const AnnotationCollectionGroup = ({
 
   // Identity-stable so the memoized shapes actually skip.
   const onSelectRoi = useCallback(
-    (roi: SelectedRoi, appendSelection: boolean) => {
+    (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => {
       if (appendSelection) {
         toggleSelectedRoi(roi);
         return;
       }
       selectOnlyRoi(roi);
+      // A plain click also opens the shape's action menu where it landed. Not
+      // a shift-click (building a selection), not a drag that ended here (no
+      // point), and not under a drawing tool, where a click places a vertex.
+      if (point && !drawingToolActive) openRoiMenu(roi, point);
     },
-    [selectOnlyRoi, toggleSelectedRoi],
+    [selectOnlyRoi, toggleSelectedRoi, openRoiMenu, drawingToolActive],
   );
 
   // Called per pointer move over a shape; the store dedupes by id, so the

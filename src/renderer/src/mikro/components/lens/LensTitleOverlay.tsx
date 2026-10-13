@@ -16,6 +16,7 @@ import {
 } from '../../api/graphql'
 import { describeLens } from '../../lenses'
 import { baseDtypeOf } from '../../specs'
+import { INVERTED, InvertedText } from './InvertedText'
 import { LensContainerLink } from './LensContainerLink'
 
 type PageDataset = GetArrayDatasetQuery['arrayDataset']
@@ -31,8 +32,17 @@ type PageDataset = GetArrayDatasetQuery['arrayDataset']
  * renderer's chrome nor has to be duplicated when there is no scene to host a
  * column. The technical detail lives in the Info sidebar tab instead.
  *
- * `z-40` clears the viewport's own overlays at `z-30`; the card opts into
- * pointer events on its own, so the canvas stays draggable all around it.
+ * The card opts into pointer events on its own, so the canvas stays draggable
+ * all around it.
+ *
+ * No backing: it reads over any image because it is black over a bright frame
+ * and white over a dark one. The text does that through `InvertedText`, the
+ * icons and controls through the plain inverse (`INVERTED`). Both are blends
+ * against the canvas, which is why this box has NO `z-*` of its own — a
+ * positioned box with one is a stacking context, and a blend stops there. The
+ * pieces carry the `z-40` instead (it clears the viewport's overlays at
+ * `z-30`). Colours in here are whites, never theme tokens: a dark token would
+ * invert to nothing.
  */
 export const LensTitleOverlay = ({
   dataset,
@@ -64,28 +74,30 @@ export const LensTitleOverlay = ({
   const [setDefaultScene, { loading: nominating }] = useSetLensDefaultSceneMutation()
 
   return (
-    <div className="pointer-events-auto absolute left-3 top-3 z-40 flex w-[50%] flex-col gap-2 rounded-lg ">
+    <div className="pointer-events-auto absolute left-6 top-4 flex w-[50%] flex-col gap-2 rounded-lg">
       <div className="flex flex-col gap-0.5">
         {/* Up: the container this lens was cut from, where its siblings, its
             files and its lineage are. Small on purpose — the page is not about
             the dataset. */}
         <LensContainerLink
           lens={lens}
-          className="flex w-fit max-w-full items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
+          className="flex w-fit max-w-full items-center gap-0.5 text-xs"
         >
-          <ChevronLeft className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{container.name}</span>
+          <ChevronLeft className={`-ml-1 h-3.5 w-3.5 shrink-0 ${INVERTED}`} />
+          <InvertedText>{container.name}</InvertedText>
         </LensContainerLink>
 
         {/* The lens leads, at heading weight — this is the page's title, and the
             page has no other. Its name if someone gave it one, else "Whole
             array" or its slices. */}
         <div className="flex items-center gap-1.5">
-          <h1 className="truncate text-3xl font-semibold leading-tight">{title}</h1>
+          <h1 className="min-w-0 text-3xl font-semibold leading-tight">
+            <InvertedText>{title}</InvertedText>
+          </h1>
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+            className={`h-7 w-7 shrink-0 ${INVERTED}`}
             aria-label="Rename lens"
             title="Rename lens"
             onClick={() => openDialog('renamelens', { lens: lens.id }, { size: 'small' })}
@@ -95,12 +107,12 @@ export const LensTitleOverlay = ({
         </div>
 
         {/* What it selects, spelled out — always, whatever it is called. */}
-        <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground w-[50%]">
-          <span className="truncate">{label}</span>
-          {dtype && <span className="shrink-0">{dtype}</span>}
-          {!dataset && <span className="shrink-0 font-sans">{info.label}</span>}
+        <div className="flex items-center gap-2 font-mono text-xs w-[50%]">
+          <InvertedText>{label}</InvertedText>
+          {dtype && <InvertedText className="shrink-0">{dtype}</InvertedText>}
+          {!dataset && <InvertedText className="shrink-0 font-sans">{info.label}</InvertedText>}
           {dataset?.multiscale && (
-            <Badge variant="outline" className="font-sans text-[0.625rem]">
+            <Badge variant="outline" className={`border-white/60 font-sans text-[0.625rem] ${INVERTED}`}>
               multiscale
             </Badge>
           )}
@@ -111,9 +123,9 @@ export const LensTitleOverlay = ({
           which scene is drawn, so it gets the room to show a whole scene name
           rather than being squeezed alongside the heading. */}
       {scenes.length > 0 ? (
-        <div className="flex flex-row items-center gap-2">
+        <div className={`flex flex-row items-center gap-2 ${INVERTED}`}>
           <Select value={activeSceneId} onValueChange={onSelectScene}>
-            <SelectTrigger className="h-7 w-[20%] bg-black">
+            <SelectTrigger className="h-7 w-[20%] border-white/60 bg-transparent dark:bg-transparent">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -145,7 +157,7 @@ export const LensTitleOverlay = ({
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+              className="h-7 gap-1.5 px-2 text-xs text-white hover:text-white"
               disabled={nominating}
               onClick={() =>
                 setDefaultScene({ variables: { lens: lens.id, scene: activeSceneId } })
@@ -157,10 +169,10 @@ export const LensTitleOverlay = ({
           )}
         </div>
       ) : (
-        <span className="truncate text-xs text-muted-foreground">No scenes yet</span>
+        <InvertedText className="text-xs">No scenes yet</InvertedText>
       )}
 
-      {sceneLoading && <span className="text-xs text-muted-foreground">Loading scene…</span>}
+      {sceneLoading && <InvertedText className="text-xs">Loading scene…</InvertedText>}
     </div>
   )
 }

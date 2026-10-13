@@ -18,9 +18,23 @@ export type BlokAsset =
   | {status: 'loading'}
   /** The file is stored: `load` returns its bytes, which hash to `ref`. */
   | {status: 'ready'; ref: string; kind: BlokAssetKind; load: () => Promise<Uint8Array>}
-  /** The app registered the asset and has not uploaded it yet: it does when it runs. */
-  | {status: 'awaited'; kind: BlokAssetKind}
+  /**
+   * The app registered the asset and it is not stored yet. One the app brings it uploads
+   * when it runs. One it only names a `source` for is added by an admin, from that source.
+   */
+  | {status: 'awaited'; kind: BlokAssetKind; source?: BlokAssetSource}
   | {status: 'unknown'; reason: string};
+
+/** Where a file its app does not hold is fetched from, and the viewer's way to add it. */
+export type BlokAssetSource = {
+  /** The host the file is fetched from, shown before anything is fetched. */
+  host: string;
+  /** Whether this viewer may add it. */
+  canAdd: boolean;
+  add?: () => void;
+  adding?: boolean;
+  error?: string;
+};
 
 export type BlokAssetHost = {
   /** The asset `name` of the agent bound to `dependency`. A hook: called unconditionally, with empty strings when a prop names none. */
@@ -88,7 +102,7 @@ const imageUrl = (ref: string, load: () => Promise<Uint8Array>): Promise<string>
 export const useAssetImageUrl = (
   component: BlokComponentNode,
   key: string,
-): {named: boolean; url?: string; problem?: string} => {
+): {named: boolean; url?: string; problem?: string; source?: BlokAssetSource} => {
   const asset = useBlokAsset(component, key);
   const ref = asset?.status === 'ready' && asset.kind === 'IMAGE' ? asset.ref : undefined;
   const load = asset?.status === 'ready' ? asset.load : undefined;
@@ -111,5 +125,31 @@ export const useAssetImageUrl = (
   if (asset.status === 'ready' && asset.kind !== 'IMAGE') {
     return {named: true, problem: `This asset is a ${ASSET_KIND_LABELS[asset.kind]}, not an image.`};
   }
+  if (asset.status === 'awaited') return {named: true, source: asset.source};
   return resolved.ref === ref ? {named: true, url: resolved.url, problem: resolved.problem} : {named: true};
 };
+
+/**
+ * What an awaited asset says about its source: where the file will be fetched
+ * from, and, for whoever may, the way to add it.
+ */
+export const AssetSourceNotice = ({source, kind}: {source: BlokAssetSource; kind: BlokAssetKind}) => (
+  <div className="flex flex-col gap-2">
+    <div className="text-xs text-muted-foreground">
+      {source.canAdd
+        ? `It will be fetched from ${source.host}.`
+        : `An admin of your organization can add it from ${source.host}.`}
+    </div>
+    {source.error ? <div className="text-xs text-destructive">{source.error}</div> : null}
+    {source.canAdd && source.add ? (
+      <button
+        type="button"
+        disabled={source.adding}
+        onClick={source.add}
+        className="self-start rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-60"
+      >
+        {source.adding ? 'Adding…' : `Add ${ASSET_KIND_LABELS[kind]}`}
+      </button>
+    ) : null}
+  </div>
+);

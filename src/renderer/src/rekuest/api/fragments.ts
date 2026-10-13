@@ -24,6 +24,11 @@
       "HideEffect",
       "MessageEffect"
     ],
+    "LatestTaskSnapshotTaskChangeTaskEventChange": [
+      "LatestTaskSnapshot",
+      "TaskChange",
+      "TaskEventChange"
+    ],
     "ReturnWidget": [
       "ChoiceReturnWidget",
       "CustomReturnWidget"

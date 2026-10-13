@@ -487,6 +487,14 @@ export const useChecks = (rawChecks: unknown): BlokChecksState => {
  * path and returns a setter that writes through to the shared data model.
  * Returns `undefined` when the blok is not bound to a path.
  */
+/**
+ * The current values at these data-model paths, re-read when any of them
+ * changes. For a component whose paths are data rather than props: a picker
+ * reading the variables its query names.
+ */
+export const useDataPaths = (paths: ReadonlyArray<string>): ReadonlyMap<string, unknown> =>
+  usePathSnapshot(paths);
+
 export const useBinding = (
   path: string | undefined,
 ): {value: unknown; setValue: (value: unknown) => void} | undefined => {

@@ -6,7 +6,7 @@ import { useModeStoreApi } from "../../../../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../../../../platform/stores/sceneStore";
 import { useBrickStoreApi } from "../../../../bricks/store/brickSlice";
 import { useMeshDesignStoreApi } from "../../../../meshDesign/store/meshDesignStore";
-import { commitCandidate, designToolById } from "../../../../meshDesign/tools/registry";
+import { designToolById } from "../../../../meshDesign/tools/registry";
 import type { DesignToolRunContext } from "../../../../meshDesign/tools/context";
 import { useCreateSceneAnnotation } from "../../../useCreateSceneAnnotation";
 import { useBrushSkeletonStoreApi } from "../../brushSkeletonStore";
@@ -156,10 +156,6 @@ export const useBrushSkeleton = () => {
         return;
       }
       brush.setExtracting();
-      // A reconstruction still awaiting its verdict is accepted by the next
-      // gesture — the session is re-read after, the accept changed it.
-      await commitCandidate(designApi.getState());
-      if (stale()) return;
       const ctx: DesignToolRunContext = {
         stroke,
         layerId: strokeLayerId,

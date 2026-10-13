@@ -20,7 +20,7 @@ import {
 } from "../gpu/intensityNodeMaterials";
 import { buildRgbUniformData } from "../gpu/rgbUniforms";
 import { buildIntensityUniformData, buildIntensityWindow } from "../gpu/intensityUniforms";
-import { buildAffineMatrix } from "../../../platform/coords/worldTransform";
+import { buildAffineMatrix, sliceToLatticeZ } from "../../../platform/coords/worldTransform";
 import { useViewerStore } from "../../../platform/stores/viewerStore";
 import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { getBackendTexture, type SceneRenderer } from "../../../platform/gpu/sceneRenderer";
@@ -396,12 +396,14 @@ export const BrickPlaneLayer = ({ layerId }: { layerId: string }) => {
       {...handlers}
     >
       {/* Corner-anchored: the unit quad is offset by half its size so group-
-          local spans [0..shape] and voxel v renders at exactly affine(v) —
-          COORDINATE_SYSTEMS.md "Coordinate conventions". */}
+          local spans the lattice [0..shape] and voxel v fills the cell
+          [v, v + 1) — COORDINATE_SYSTEMS.md "Coordinate conventions". In z a
+          stack's plane sits at a slice CENTRE, the first one, as it always
+          has; a layer with no z axis has no cell to be the middle of. */}
       <mesh
         key={pool.structureSignature}
         scale={[totalX, totalY, 1]}
-        position={[totalX / 2, totalY / 2, 0]}
+        position={[totalX / 2, totalY / 2, layer?.zAxis ? sliceToLatticeZ(0) : 0]}
         renderOrder={1}
       >
         <planeGeometry args={[1, 1]} />

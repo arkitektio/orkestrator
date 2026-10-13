@@ -25,6 +25,11 @@ export type SmartContextProps = {
    * (`"rekuest.shortcuts"`); see `section.ts`. Default: every registered one.
    */
   sections?: SmartSectionSelection;
+  /**
+   * Focus the search field on open. Default true; off where the menu opens
+   * while a key is still held, whose auto-repeat would type into it.
+   */
+  autoFocus?: boolean;
 };
 
 export type ObjectButtonProps = SmartContextProps &
@@ -35,6 +40,13 @@ export type ObjectButtonProps = SmartContextProps &
     className?: string;
     variant?: "outline" | "default";
     size?: "sm" | "lg" | "icon";
+    /**
+     * Control the popover from outside, for a caller that has to know when
+     * the menu is up (the scene's hover card holds its shape while it is).
+     * Left out, the button opens and closes itself.
+     */
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
   };
 
 /** What a section receives: the menu's props plus the search text. */

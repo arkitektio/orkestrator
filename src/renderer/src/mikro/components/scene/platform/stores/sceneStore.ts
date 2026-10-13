@@ -19,7 +19,7 @@ import {
 import { planDefaultVolumeLods } from "../quality/lodPlanning";
 import { hydrateLayerEntries } from "../attributes/sparseEntry";
 import type { LensLookup } from "@/mikro/lib/lenses/lensSelection";
-import { composeLayerAffine, spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
+import { composeLatticeAffine, spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
 import type { FabriksInstanceColormap } from "../gpu/instanceColormaps";
 
 // Re-exported for the store's many consumers (the model lives in core/).
@@ -313,7 +313,7 @@ export const createSceneStore = ({
             return {
               ...state,
               asAffine,
-              affineMatrix: composeLayerAffine(transformContext, { ...state, asAffine }),
+              affineMatrix: composeLatticeAffine(transformContext, { ...state, asAffine }),
             };
           },
         });

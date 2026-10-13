@@ -70,7 +70,7 @@ export class BigFileDownloadService implements AppModule {
 
     async handleDownload(event: Electron.IpcMainInvokeEvent, args: DownloadArgs) {
         const { downloadId, grant, fileName } = args;
-        const endpoint = grant.datalayer || args.endpointUrl || undefined;
+        const endpoint = args.endpointUrl || undefined;
         const savePath = args.savePath || path.join(app.getPath('downloads'), fileName || 'download');
         const partialPath = `${savePath}.part`;
 

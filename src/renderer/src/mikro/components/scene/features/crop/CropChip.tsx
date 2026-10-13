@@ -9,7 +9,7 @@ const NOTICE_MS = 3500;
 /**
  * The crop box's one piece of chrome: what the gesture expects next while it
  * runs, and a way to remove the box once it is set. Subscribes only to
- * UI-cadence fields — never to the box itself, which moves per wheel step.
+ * UI-cadence fields — never to the box itself, which moves as its depth is set.
  */
 export const CropChip = () => {
   const phase = useViewerStore((s) => s.cropPhase);
@@ -25,13 +25,15 @@ export const CropChip = () => {
   }, [notice, clearCropNotice]);
 
   const hint =
-    phase === "rect"
-      ? "Move to the opposite corner, then click · Esc cancels"
-      : phase === "depth"
-        ? "Scroll to set the depth, then click · Esc cancels"
-        : notice === "edge-on"
-          ? "Tilt the view towards the XY plane to draw a crop box"
-          : null;
+    phase === "arm"
+      ? "Click the first corner of the crop box · Esc cancels"
+      : phase === "rect"
+        ? "Move to the opposite corner, then click · Esc cancels"
+        : phase === "depth"
+          ? "Move up or down to set the depth, then click · Esc cancels"
+          : notice === "edge-on"
+            ? "Tilt the view towards the XY plane to draw a crop box"
+            : null;
 
   if (!hint && !hasBox) return null;
 

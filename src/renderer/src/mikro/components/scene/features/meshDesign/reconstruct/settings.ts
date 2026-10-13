@@ -31,8 +31,9 @@ export const settingsOf = (brush: BrushSkeletonState): ReconstructSettings => ({
 });
 
 /**
- * Everything a candidate was built from, as one comparable string: the panel
- * re-runs the candidate when the live key stops matching the one it carries.
+ * Everything a reconstruction was built from, as one comparable string: the
+ * panel re-runs the last one when the live key stops matching the one it
+ * carries.
  */
 export const reconstructKey = (
   reconstructorId: ReconstructorId,

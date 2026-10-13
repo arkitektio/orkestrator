@@ -1,16 +1,24 @@
 import { buildAssignInput } from "@/rekuest/assign";
 import * as React from 'react';
 import BlokRenderer from '@/core/blok/renderer/BlokRenderer';
-import {type BlokDispatchActionHandler, type BlokRefuseActionHandler} from '@/core/blok/renderer/runtime';
+import {
+  useBlokRuntime,
+  type BlokDispatchActionHandler,
+  type BlokRefuseActionHandler,
+  type BlokTaskRecord,
+} from '@/core/blok/renderer/runtime';
 import {formatApolloError} from '@/core/connection/graphql/errorHandler';
 import {toast} from '@/core/notify';
 import {v4 as uuidv4} from 'uuid';
 import {useAssign} from '@/rekuest/hooks/useAssign';
+import {useLatestTask} from '@/rekuest/hooks/useLatestTask';
 import {isTerminalEvent, silenceTask, trackTask} from '@/rekuest/lib/taskTracker';
 import {useBlokTravelSource} from '@/rekuest/travel/context';
 import {BlokStateSync} from './blokStateSync';
 import {taskUpdateFromEvent} from './blokTaskUpdates';
-import {collectDemandedStateInterfaces} from './blokDemands';
+import {collectDemandedLatestTasks, collectDemandedStateInterfaces} from './blokDemands';
+import {LATEST_SEGMENT, latestTaskRecord, pickLatestTask} from './blokLatestTask';
+import {usePastLatestTasks} from './usePastLatestTasks';
 import {RekuestAssetHost} from '@/rekuest/scene/RekuestAssetHost';
 import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
@@ -38,6 +46,69 @@ type MaterializedBlokRendererProps = Omit<
   materializedBlok: MaterializedBlokData;
 };
 
+const RECORD_FIELDS = ['status', 'running', 'done', 'failed', 'progress', 'message', 'error', 'result', 'returns'] as const;
+
+/** Whether two records say the same. `result` and `returns` are the events' own values, kept by reference. */
+const sameRecord = (a: BlokTaskRecord | undefined, b: BlokTaskRecord): boolean =>
+  a !== undefined && RECORD_FIELDS.every(field => a[field] === b[field]);
+
+/**
+ * Keeps `<dependency>/<action>/latest` on the task the bound agent last ran the
+ * action as, whoever started it. Live, that is what `latestTaskStore` holds for
+ * the agent and the action: one subscription shared by every blok that reads
+ * it, heard of once per frame, and written here only when the task changed.
+ *
+ * Below a travel source it is the task the action last ran as at the source's
+ * moment, with what that task had reported by then. Until that is answered
+ * the path keeps what it shows, like a state does (`BlokStateSync`).
+ *
+ * `name` is an action only if the agent implements it. A state of that name
+ * with a field called `latest` is spelled the same, so until the server has
+ * answered nothing is synced, and where the agent has no such action
+ * `children` (the state sync) takes over.
+ */
+const MaterializedLatestTaskSync = (props: {
+  dependencyKey: string;
+  name: string;
+  agentId: string;
+  children: React.ReactNode;
+}) => {
+  const {agentId, dependencyKey, name} = props;
+  const latest = useLatestTask({agentID: agentId, name});
+  const source = useBlokTravelSource();
+  const setRuntimeValue = useBlokRuntime(state => state.setRuntimeValue);
+  const clearRuntimeValue = useBlokRuntime(state => state.clearRuntimeValue);
+  const runtimePath = `${dependencyKey}/${name}/${LATEST_SEGMENT}`;
+
+  const implementation = latest?.implementation ?? undefined;
+  const past = usePastLatestTasks(source, implementation);
+  const record = React.useMemo(() => {
+    if (!latest || !implementation) return undefined;
+    if (!source) return latest.record;
+    return past ? latestTaskRecord(pickLatestTask(past.tasks, implementation, past.at), past.at) : undefined;
+  }, [implementation, latest, past, source]);
+
+  // Travelling rebuilds the record at every move of the clock: write only what changed.
+  const written = React.useRef<BlokTaskRecord | undefined>(undefined);
+  React.useEffect(() => {
+    if (record === undefined || sameRecord(written.current, record)) return;
+    written.current = record;
+    setRuntimeValue(runtimePath, record);
+  }, [record, runtimePath, setRuntimeValue]);
+
+  React.useEffect(
+    () => () => {
+      written.current = undefined;
+      clearRuntimeValue(runtimePath);
+    },
+    [clearRuntimeValue, runtimePath],
+  );
+
+  // Not answered yet, or an action: the state sync has nothing to do here.
+  if (latest === null || latest.implementation !== null) return null;
+  return <>{props.children}</>;
+};
+
 const MaterializedBlokRuntimeSync = (props: {
   materializedBlok: MaterializedBlokData;
   roots: ReadonlyArray<unknown>;
@@ -50,6 +121,10 @@ const MaterializedBlokRuntimeSync = (props: {
     () => collectDemandedStateInterfaces(props.roots, dependencyKeys),
     [dependencyKeys, props.roots],
   );
+  const demandedLatestTasks = React.useMemo(
+    () => collectDemandedLatestTasks(props.roots, dependencyKeys),
+    [dependencyKeys, props.roots],
+  );
 
   return (
     <>
@@ -60,14 +135,26 @@ const MaterializedBlokRuntimeSync = (props: {
           return [];
         }
 
-        return [...interfaces].map(stateInterface => (
-          <BlokStateSync
-            key={`${mapping.key}-${mapping.agent.id}-${stateInterface}`}
-            dependencyKey={mapping.key}
-            stateInterface={stateInterface}
-            agentId={mapping.agent.id}
-          />
-        ));
+        const latest = demandedLatestTasks.get(mapping.key);
+
+        return [...interfaces].map(stateInterface => {
+          const key = `${mapping.key}-${mapping.agent.id}-${stateInterface}`;
+          const stateSync = (
+            <BlokStateSync
+              key={key}
+              dependencyKey={mapping.key}
+              stateInterface={stateInterface}
+              agentId={mapping.agent.id}
+            />
+          );
+
+          if (!latest?.has(stateInterface)) return stateSync;
+          return (
+            <MaterializedLatestTaskSync key={key} dependencyKey={mapping.key} name={stateInterface} agentId={mapping.agent.id}>
+              {stateSync}
+            </MaterializedLatestTaskSync>
+          );
+        });
       })}
     </>
   );

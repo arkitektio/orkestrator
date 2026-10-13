@@ -4,6 +4,7 @@ import * as THREE from "three";
 import {
   BUTTON_MARGIN,
   buttonOriginFor,
+  cardOriginFor,
   projectTopRightCorner,
   projectWorldPoint,
 } from "./projectRoiBox";
@@ -119,6 +120,37 @@ describe("buttonOriginFor", () => {
     expect(buttonOriginFor({ x: -30, y: 120 }, button, viewport)).toEqual({
       left: BUTTON_MARGIN,
       top: 100 - 24 - BUTTON_MARGIN,
+    });
+  });
+});
+
+describe("cardOriginFor", () => {
+  const button = { width: 24, height: 24 };
+
+  it("is the button's own origin at the button's size", () => {
+    expect(cardOriginFor({ x: 60, y: 50 }, button, button, viewport)).toEqual(
+      buttonOriginFor({ x: 60, y: 50 }, button, viewport),
+    );
+  });
+
+  it("unfolds right and down from where the button was", () => {
+    expect(cardOriginFor({ x: 60, y: 50 }, button, { width: 100, height: 40 }, viewport)).toEqual({
+      left: 60,
+      top: 26,
+    });
+  });
+
+  it("slides inward only as far as the grown card needs", () => {
+    expect(cardOriginFor({ x: 150, y: 90 }, button, { width: 100, height: 60 }, viewport)).toEqual({
+      left: 200 - 100 - BUTTON_MARGIN,
+      top: 100 - 60 - BUTTON_MARGIN,
+    });
+  });
+
+  it("keeps the top-left in the frame when the card is larger than it", () => {
+    expect(cardOriginFor({ x: 60, y: 50 }, button, { width: 400, height: 300 }, viewport)).toEqual({
+      left: BUTTON_MARGIN,
+      top: BUTTON_MARGIN,
     });
   });
 });

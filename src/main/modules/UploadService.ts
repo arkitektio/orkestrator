@@ -1,5 +1,4 @@
 import fs from 'fs/promises';
-import { createReadStream } from 'fs';
 import path from 'path';
 import log from 'electron-log';
 import { FaktsConfig } from './FaktsProvider';
@@ -145,7 +144,7 @@ export class UploadService implements AppModule {
     }
 
     // A mock method based on your code example
-    async _executeFullS3Lifecycle(filePath: string, s3ObjectKey: string, authToken: string | undefined) {
+    async _executeFullS3Lifecycle(filePath: string, s3ObjectKey: string, _authToken: string | undefined) {
           // This should use this.currentConfig.s3Endpoint etc.
           // Omitted full logic to focus on refactoring architecture.
           console.log(`Mocking upload for ${filePath} under ${s3ObjectKey}`);

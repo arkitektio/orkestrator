@@ -3,20 +3,21 @@ import { describe, expect, it } from "vitest";
 import { marchField, meshToField, subtractCapsule, unionMesh } from "../field/sculptField";
 import { applyStamp, capsuleChainStamp, sphereStamp, stampFromSpec, stampToField, type StampSpec } from "../field/stamps";
 import { finishDesignGeometry } from "../ops/postProcess";
+import { simplifyToError } from "../ops/simplify";
 import { createSyncDesignDispatcher, createWorkerDesignDispatcher } from "./designDispatcher";
 import type { DesignWorkerRequest } from "./design-worker";
-import { resultTransfers, runDesignJob, vertexNormals, type DesignJob } from "./designJob";
+import { FIELD_INPUT_DETAIL, resultTransfers, runDesignJob, vertexNormals, type DesignJob } from "./designJob";
 
 // No polish, generous detail: the pipeline's SHAPE is under test.
-const finish = { marcher: "cubes" as const, polishIterations: 0, detailWorld: 0.5 };
+const finish = { polishIterations: 0, detailWorld: 0.5 };
 const ball: StampSpec = { kind: "sphere", center: [0, 0, 0], radius: 4 };
 
 describe("runDesignJob", () => {
   it("a stamp base is the stamp's own field, marched and finished", async () => {
     const result = await runDesignJob({ base: { kind: "stamp", spec: ball, spacing: 0.5 }, ops: [], finish });
     const field = stampToField(sphereStamp([0, 0, 0], 4), 0.5);
-    expect(Array.from(result.field.data)).toEqual(Array.from(field.data));
-    const expected = await finishDesignGeometry(marchField(field, "cubes"), finish);
+    expect(Array.from(result.field!.data)).toEqual(Array.from(field.data));
+    const expected = await finishDesignGeometry(marchField(field), finish);
     expect(Array.from(result.current.positions)).toEqual(Array.from(expected.current.positions));
     expect(result.changed).toBe(false); // no op touched the base
     expect(result.current.normals).toHaveLength(result.current.positions.length);
@@ -24,7 +25,7 @@ describe("runDesignJob", () => {
 
   it("applies each op exactly as the in-thread field functions do", async () => {
     const base = stampToField(sphereStamp([0, 0, 0], 4), 0.5);
-    const piece = marchField(stampToField(sphereStamp([5, 0, 0], 3), 0.5), "cubes");
+    const piece = marchField(stampToField(sphereStamp([5, 0, 0], 3), 0.5));
     const chain: StampSpec = { kind: "capsuleChain", points: [[0, 0, 0], [0, 8, 0]], radius: 1.5 };
     const result = await runDesignJob({
       base: { kind: "field", field: base },
@@ -38,21 +39,46 @@ describe("runDesignJob", () => {
     let expected = unionMesh(base, piece);
     expected = applyStamp(expected, capsuleChainStamp([[0, 0, 0], [0, 8, 0]], 1.5), "add");
     expected = subtractCapsule(expected, [[-6, 0, 0], [6, 0, 0]], 1);
-    expect(result.field.size).toEqual(expected.size);
-    expect(Array.from(result.field.data)).toEqual(Array.from(expected.data));
+    expect(result.field!.size).toEqual(expected.size);
+    expect(Array.from(result.field!.data)).toEqual(Array.from(expected.data));
     expect(result.changed).toBe(true);
   });
 
-  it("voxelizes a mesh base, and unions a field like a mesh", async () => {
-    const mesh = marchField(stampToField(sphereStamp([0, 0, 0], 4), 0.5), "cubes");
+  it("voxelizes a mesh base from a lightly simplified copy, and unions a field like a mesh", async () => {
+    const mesh = marchField(stampToField(sphereStamp([0, 0, 0], 4), 0.5));
     const other = stampToField(sphereStamp([6, 0, 0], 3), 0.5);
     const result = await runDesignJob({
       base: { kind: "mesh", geometry: mesh, spacing: 0.5 },
       ops: [{ type: "unionField", field: other }],
       finish,
     });
-    const expected = unionMesh(meshToField(mesh, 0.5), marchField(other, "cubes"));
-    expect(Array.from(result.field.data)).toEqual(Array.from(expected.data));
+    const light = await simplifyToError(mesh, finish.detailWorld * FIELD_INPUT_DETAIL);
+    expect(light.indices.length).toBeLessThan(mesh.indices.length);
+    const expected = unionMesh(meshToField(light, 0.5), marchField(other));
+    expect(Array.from(result.field!.data)).toEqual(Array.from(expected.data));
+  });
+
+  it("a soup base becomes the mesh as it is — welded and finished, with no field", async () => {
+    const mesh = marchField(stampToField(sphereStamp([0, 0, 0], 4), 0.5));
+    const positions = new Float32Array(mesh.indices.length * 3);
+    for (let i = 0; i < mesh.indices.length; i++) {
+      positions.set(mesh.positions.subarray(mesh.indices[i] * 3, mesh.indices[i] * 3 + 3), i * 3);
+    }
+    const result = await runDesignJob({ base: { kind: "soup", positions }, ops: [], finish });
+    expect(result.field).toBeNull();
+    expect(result.original.indices).toHaveLength(mesh.indices.length); // welded back, nothing lost
+    expect(result.current.indices.length).toBeGreaterThan(0);
+    expect(result.current.normals).toHaveLength(result.current.positions.length);
+    // Unioned into a field instead, the same soup lands where a mesh would.
+    const union = await runDesignJob({
+      base: { kind: "stamp", spec: { kind: "sphere", center: [6, 0, 0], radius: 3 }, spacing: 0.5 },
+      ops: [{ type: "unionSoup", positions }],
+      finish,
+    });
+    expect(union.changed).toBe(true);
+    let min = Infinity;
+    for (let v = 0; v < union.current.positions.length; v += 3) min = Math.min(min, union.current.positions[v]);
+    expect(min).toBeCloseTo(-4, 0);
   });
 
   it("skips the march for an edit that changed nothing, when asked", async () => {

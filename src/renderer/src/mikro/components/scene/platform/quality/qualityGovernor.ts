@@ -332,7 +332,8 @@ export function resolveStepScale(input: {
 /**
  * ADAPTIVE DEPTH: the per-fragment ray-step ceiling for the current activity
  * state. In the zoom+tilt worst case the diagonal ray always runs to the
- * `uMaxSteps` ceiling — the stride floor (`floorDelta = rayLen / uMaxSteps`)
+ * `uMaxSteps` ceiling — the stride floor (`floorDelta = fullRayLen / uMaxSteps`,
+ * the ray through the WHOLE volume: a crop box marches a share of the ceiling)
  * guarantees full-ray coverage whatever the per-sample LOD picks — so the
  * step-SCALE knob does not bound that cost: the CEILING does. While the
  * camera angle is changing (or bricks stream), the ceiling halves and divides

@@ -3,9 +3,7 @@ import * as THREE from "three";
 import { useThree, type ThreeEvent } from "@react-three/fiber";
 
 import { DESIGN_TOOL_GESTURES, useModeStore, useModeStoreApi } from "../../../platform/stores/modeStore";
-import { PreviewLine, type PreviewLineHandle } from "../../../platform/draw/PreviewLine";
 import { useBrushSkeletonStoreApi } from "../brush";
-import { commitCandidate } from "../reconstruct/candidate";
 import type { Vec3 } from "../field/stamps";
 import { useMeshDesignStore, useMeshDesignStoreApi, type DesignMesh } from "../store/meshDesignStore";
 import { targetMesh } from "../tools/context";
@@ -15,10 +13,9 @@ import { applyTrim, planeFromScreenDrag } from "../tools/trimTool";
 import { applySplit } from "../tools/splitTool";
 
 /**
- * The designer's in-canvas overlay: one MUTABLE mesh per design entry, the
- * reconstruction CANDIDATE awaiting its verdict, and the SURFACE and SCREEN
- * gesture hosts (stamp, sculpt, split, trim) — the tools whose pointer never
- * goes through the volume probe.
+ * The designer's in-canvas overlay: one MUTABLE mesh per design entry, and
+ * the SURFACE and SCREEN gesture hosts (stamp, sculpt, split, trim) — the
+ * tools whose pointer never goes through the volume probe.
  *
  * Deliberately not the fabriks `BatchedMesh`: that renderer is append-only
  * and LRU-owned, built for thousands of frozen cells. A design session holds
@@ -149,20 +146,13 @@ const useSurfaceGesture = (): SurfaceGesture | null => {
     };
   }, [controls, dragging]);
 
-  const finish = useCallback(async () => {
+  const finish = useCallback(() => {
     const current = drag.current;
     drag.current = null;
     setDragging(false);
     if (!current) return;
-    // A reconstruction still awaiting its verdict is accepted by the next
-    // gesture, so the tool edits what the user was looking at.
-    const accepted = await commitCandidate(designApi.getState());
     const design = designApi.getState();
     const brush = brushApi.getState();
-    // The drag's target was picked before the accept may have created one.
-    if (accepted && !design.meshes.some((m) => m.id === current.targetId)) {
-      current.targetId = targetMesh(design)?.id ?? null;
-    }
     if (current.tool === "stamp") {
       void applyStampClick(design, brush, current.points[0]).then((ok) => {
         if (!ok) design.setStatus("editing", "Set a radius before stamping");
@@ -203,7 +193,7 @@ const useSurfaceGesture = (): SurfaceGesture | null => {
       if (!gesture || drag.current !== null) return;
       drag.current = { points: [point], targetId: targetMesh(designApi.getState())?.id ?? null, tool: gesture };
       setDragging(true);
-      if (gesture === "stamp" || gesture === "split") void finish(); // clicks, not drags
+      if (gesture === "stamp" || gesture === "split") finish(); // clicks, not drags
     },
     [gesture, designApi, finish],
   );
@@ -223,11 +213,11 @@ const useSurfaceGesture = (): SurfaceGesture | null => {
   // The tool key came up mid-drag: the handlers go with it, so finish here —
   // otherwise the drag (and the suspended camera) would be stranded.
   useEffect(() => {
-    if (!gesture && drag.current) void finish();
+    if (!gesture && drag.current) finish();
   }, [gesture, finish]);
 
   if (!gesture) return null;
-  return { active: dragging, onDown, onMove, onUp: () => void finish() };
+  return { active: dragging, onDown, onMove, onUp: finish };
 };
 
 /** The TRIM screen drag: DOM-level, camera math, one cut on release. */
@@ -265,16 +255,14 @@ const TrimGesture = () => {
       if (!from || modeApi.getState().designTool !== "trim") return;
       const plane = planeFromScreenDrag(camera, from, ndc(event));
       if (!plane) return;
-      void commitCandidate(designApi.getState()).then(() => {
-        const design = designApi.getState();
-        const target = targetMesh(design);
-        if (!target) {
-          design.setStatus("editing", "Nothing to trim — reconstruct or stamp a mesh first");
-          return;
-        }
-        return applyTrim(design, brushApi.getState(), target, plane).then((ok) => {
-          if (!ok) design.setStatus("editing", "The cut missed the mesh");
-        });
+      const design = designApi.getState();
+      const target = targetMesh(design);
+      if (!target) {
+        design.setStatus("editing", "Nothing to trim — reconstruct or stamp a mesh first");
+        return;
+      }
+      void applyTrim(design, brushApi.getState(), target, plane).then((ok) => {
+        if (!ok) design.setStatus("editing", "The cut missed the mesh");
       });
     };
     element.addEventListener("pointerdown", onDown);
@@ -313,59 +301,6 @@ const StampFallbackPlane = ({ surface }: { surface: SurfaceGesture }) => {
   );
 };
 
-/**
- * The reconstruction awaiting accept / discard: amber, so it reads apart
- * from the session's own meshes, and never in the raycast set (P20) — it is
- * something to look at, not to touch. A fitted tube's centerline rides along.
- */
-const CandidateView = () => {
-  const candidate = useMeshDesignStore((s) => s.candidate);
-  const busy = useMeshDesignStore((s) => s.candidateBusy);
-  const guideRef = useRef<PreviewLineHandle | null>(null);
-  const current = candidate?.current ?? null;
-  const geometry = useMemo(() => {
-    if (!current) return null;
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(current.positions, 3));
-    g.setIndex(new THREE.BufferAttribute(current.indices, 1));
-    if (current.normals) g.setAttribute("normal", new THREE.BufferAttribute(current.normals, 3));
-    else g.computeVertexNormals();
-    return g;
-  }, [current]);
-  useEffect(() => () => geometry?.dispose(), [geometry]);
-
-  const guide = candidate?.guide;
-  useEffect(() => {
-    if (guide && guide.length >= 2) guideRef.current?.setPoints(guide.map((p) => [p[0], p[1], p[2]]));
-    else guideRef.current?.clear();
-  }, [guide]);
-
-  return (
-    <>
-      <PreviewLine ref={guideRef} color="#fde68a" lineWidth={2} capacity={512} />
-      {geometry && (
-        <group>
-          {/* depthTest OFF, like the stroke preview: the volume box spans real
-              depth and would otherwise swallow a surface INSIDE the data. */}
-          <mesh geometry={geometry} renderOrder={11} frustumCulled={false}>
-            <meshStandardMaterial
-              color="#fbbf24"
-              transparent
-              opacity={busy ? 0.2 : 0.4}
-              depthTest={false}
-              depthWrite={false}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-          <mesh geometry={geometry} renderOrder={12} frustumCulled={false}>
-            <meshBasicMaterial color="#fde68a" wireframe transparent opacity={0.2} depthTest={false} />
-          </mesh>
-        </group>
-      )}
-    </>
-  );
-};
-
 export const MeshDesignSession = () => {
   const interactionMode = useModeStore((s) => s.interactionMode);
   const heldTool = useModeStore((s) => s.designTool);
@@ -386,7 +321,6 @@ export const MeshDesignSession = () => {
           surface={surface}
         />
       ))}
-      <CandidateView />
       <TrimGesture />
       {surface && heldTool === "stamp" && <StampFallbackPlane surface={surface} />}
     </>

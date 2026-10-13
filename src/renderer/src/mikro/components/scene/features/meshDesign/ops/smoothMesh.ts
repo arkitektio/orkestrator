@@ -10,6 +10,16 @@ import type { DesignGeometry } from "../store/meshDesignStore";
  * BOUNDARY vertices are pinned: an edge with a single incident triangle is
  * the corridor's clipped border, and moving it would open a seam against
  * the next stroke and defeat the simplifier's `LockBorder`.
+ *
+ * No adjacency structure is built. A pass walks the TRIANGLES and hands each
+ * corner its two partners; on a closed surface every neighbour arrives
+ * exactly twice (once from each triangle on their shared edge), so the
+ * average is the neighbours' average. The border falls out of the same walk:
+ * around an interior vertex every neighbour is reached once along an edge
+ * leaving it and once along an edge arriving at it, so the two (hashed) sums
+ * agree — where they do not, an edge has one triangle only. This runs on the
+ * whole surface after every edit; an edge map per call cost more than the
+ * smoothing itself.
  */
 export type TaubinOptions = {
   iterations: number;
@@ -25,61 +35,57 @@ export function taubinSmooth(geometry: DesignGeometry, options: TaubinOptions): 
   const { indices } = geometry;
   const vertexCount = geometry.positions.length / 3;
 
-  // Adjacency (CSR) and boundary detection from undirected edge counts.
-  const degree = new Uint32Array(vertexCount);
-  const edgeUse = new Map<number, number>();
-  const edgeKey = (a: number, b: number) => (a < b ? a * vertexCount + b : b * vertexCount + a);
+  // Border detection: per vertex, the hashed sum of the neighbours its
+  // outgoing edges lead to against that of the neighbours its incoming edges
+  // come from (uint32 arithmetic; the hash keeps two different neighbour
+  // sets from summing alike).
+  const leaving = new Uint32Array(vertexCount);
+  const arriving = new Uint32Array(vertexCount);
+  const weight = new Uint32Array(vertexCount);
+  const hashOf = (v: number) => Math.imul(v + 1, 0x9e3779b1) >>> 0;
   for (let t = 0; t + 2 < indices.length; t += 3) {
     for (let k = 0; k < 3; k++) {
       const a = indices[t + k];
       const b = indices[t + ((k + 1) % 3)];
-      const key = edgeKey(a, b);
-      const seen = edgeUse.get(key) ?? 0;
-      edgeUse.set(key, seen + 1);
-      if (seen === 0) {
-        degree[a] += 1;
-        degree[b] += 1;
-      }
+      leaving[a] += hashOf(b);
+      arriving[b] += hashOf(a);
+      weight[a] += 1;
+      weight[b] += 1;
     }
   }
-  const offsets = new Uint32Array(vertexCount + 1);
-  for (let v = 0; v < vertexCount; v++) offsets[v + 1] = offsets[v] + degree[v];
-  const neighbours = new Uint32Array(offsets[vertexCount]);
-  const fill = new Uint32Array(vertexCount);
   const pinned = new Uint8Array(vertexCount);
-  for (const [key, uses] of edgeUse) {
-    const a = Math.floor(key / vertexCount);
-    const b = key % vertexCount;
-    neighbours[offsets[a] + fill[a]++] = b;
-    neighbours[offsets[b] + fill[b]++] = a;
-    if (uses === 1) {
-      pinned[a] = 1;
-      pinned[b] = 1;
-    }
-  }
+  for (let v = 0; v < vertexCount; v++) if (leaving[v] !== arriving[v]) pinned[v] = 1;
 
   let current = Float32Array.from(geometry.positions);
   let next = new Float32Array(current.length);
+  const sums = new Float64Array(current.length);
   const pass = (factor: number) => {
+    sums.fill(0);
+    for (let t = 0; t + 2 < indices.length; t += 3) {
+      const a = indices[t] * 3;
+      const b = indices[t + 1] * 3;
+      const c = indices[t + 2] * 3;
+      for (let axis = 0; axis < 3; axis++) {
+        const pa = current[a + axis];
+        const pb = current[b + axis];
+        const pc = current[c + axis];
+        sums[a + axis] += pb + pc;
+        sums[b + axis] += pa + pc;
+        sums[c + axis] += pa + pb;
+      }
+    }
     for (let v = 0; v < vertexCount; v++) {
       const i = v * 3;
-      const n = degree[v];
+      const n = weight[v];
       if (pinned[v] || n === 0) {
         next[i] = current[i];
         next[i + 1] = current[i + 1];
         next[i + 2] = current[i + 2];
         continue;
       }
-      let mx = 0, my = 0, mz = 0;
-      for (let k = offsets[v]; k < offsets[v + 1]; k++) {
-        const j = neighbours[k] * 3;
-        mx += current[j];
-        my += current[j + 1];
-        mz += current[j + 2];
-      }
-      next[i] = current[i] + factor * (mx / n - current[i]);
-      next[i + 1] = current[i + 1] + factor * (my / n - current[i + 1]);
-      next[i + 2] = current[i + 2] + factor * (mz / n - current[i + 2]);
+      next[i] = current[i] + factor * (sums[i] / n - current[i]);
+      next[i + 1] = current[i + 1] + factor * (sums[i + 1] / n - current[i + 1]);
+      next[i + 2] = current[i + 2] + factor * (sums[i + 2] / n - current[i + 2]);
     }
     [current, next] = [next, current];
   };

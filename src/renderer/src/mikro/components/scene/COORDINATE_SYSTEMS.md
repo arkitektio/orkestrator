@@ -24,14 +24,29 @@ never a local fix.
   appending a slab. (Center parametrization is the registration OPTIMIZER's
   business — `T_c·R·T_c⁻¹` conditions fitting well — composed down to an
   origin-anchored affine for storage.)
-- **Half-voxel**: integer index k uses the CORNER/texture convention
-  internally — voxel k spans `[k, k+1)`, its center is `k + 0.5`. This is
-  what the sampler wants, and it makes pyramid levels EXACT scales (with
-  center-based indexing every level needs a half-voxel-ish translation — a
-  live bug class in the NGFF world). Center-convention formats (NGFF, ITK,
-  NIfTI, DICOM put the origin at the pixel center) are converted at exactly
-  ONE boundary — metadata import/export, which is SERVER-side; this client
-  never parses NGFF transform metadata.
+- **Half-voxel**: the renderer's LATTICE uses the CORNER/texture convention
+  — voxel k spans `[k, k+1)`, its center is `k + 0.5`. This is what the
+  sampler wants, and it makes pyramid levels EXACT scales (with center-based
+  indexing every level needs a half-voxel-ish translation — a live bug class
+  in the NGFF world). **The server does not.** Every map it hands out is
+  stated on voxel CENTRES — index `n` is the middle of voxel `n`, which covers
+  `[n - 0.5, n + 0.5)` (`core/logic/coords.py`), the convention numpy, scipy,
+  NGFF and every Python client share — and so is everything placed by
+  coordinates: meshes, points, annotation vertices, crops. The two meet at
+  exactly ONE boundary, client-side: `composeLatticeAffine`
+  (`@/core/data/scene/coords/transformGraph.ts`) composes `T(-0.5)` on the
+  rendered spatial axes in front of the server's placement, so lattice
+  coordinate `p` is server index `p - 0.5`. `LayerState.affineMatrix` is that
+  lattice→world map and nothing else in the renderer adds or removes a half.
+  (Until 2026-10-13 this boundary was assumed to be server-side and did not
+  exist: every image drew half a voxel off its meshes and annotations, and a
+  click on the top face of a 36-slice stack was stored as z = 36.)
+- **A slice INDEX is not a lattice coordinate.** The flat view's z is the one
+  place the renderer speaks in indices: `currentZ` on slice k is the world z
+  of slice k's CENTRE, the z a shape drawn there is stored at. Slice k →
+  lattice goes through `sliceToLatticeZ` (`k + 0.5`), lattice → slice through
+  `latticeZToSlice` (a floor, never a round), both in
+  `platform/coords/worldTransform.ts`. Never write the half inline.
 - **The client composes `pathToWorld` and NOTHING else.** No anchoring one
   layer to another's frame (layers register to world, never array-to-array),
   no shape-derived recentering, no client-injected flips. If a y-down raster
@@ -45,8 +60,9 @@ never a local fix.
   through the IDENTICAL index→physical map as their parent volume — a
   half-voxel mistake floats the mesh off its isosurface, invariant to LOD.
 
-Concretely in code: voxel `v` of a layer renders at world `affine(v)`
-(`buildAffineMatrix` — the plain composed affine), the brick meshes are unit
+Concretely in code: voxel `v` of a layer fills the lattice cell `[v, v+1)`
+and renders at world `affine([v, v+1))` (`buildAffineMatrix` — the composed
+lattice affine), so its centre lands where the server puts index `v`; the brick meshes are unit
 primitives offset by half their size so group-local spans `[0..shape]`, and
 the shader/CPU local→voxel maps carry no flip (`brickNodeMaterials.ts`
 `toBaseVoxel`, the plane material's `baseVoxel`, and their lockstep mirrors in
@@ -227,7 +243,7 @@ have. The migration is an adapter, not a rewrite.
 
 | Derived fact | From | Where | Consumed by |
 | --- | --- | --- | --- |
-| `LayerState.affineMatrix` (voxel→world 4×4, x/y/z rows) | local prefix (`lens.toParent`, level-0 `toParent`) ∘ `pathToWorld` steps | `composeLayerAffine` (`@/mikro/lib/coords/transformGraph.ts`), once per scene load in `normalizeLayer` | `worldTransform.buildAffineMatrix` (the rendered frame — corner-anchored, §0), `nodePlanning` 2D slab inverse, `visibility`, `RoiDrawer` |
+| `LayerState.affineMatrix` (LATTICE→world 4×4, x/y/z rows; §0) | the half-voxel corner→centre shift, then local prefix (`lens.toParent`, level-0 `toParent`) ∘ the server's `asAffine` | `composeLatticeAffine` (`@/core/data/scene/coords/transformGraph.ts`, over `composeLayerAffine`, the index→world map), once per scene load in `normalizeLayer` and again on a placement preview | `worldTransform.buildAffineMatrix` (the rendered frame — corner-anchored, §0), `nodePlanning` 2D slab inverse, `visibility`, `RoiDrawer` |
 | `LayerState.xAxis/yAxis/zAxis/tAxis/intensityAxis` | `lens.renderAxes` | `normalizeLayer` (`platform/model/layerModel.ts`) | `resolveAxisIndices` and ~15 call sites (slice signature, probes, panels) |
 | Relative level factors (old `scaleFactors` semantics) | `toParent` pixel scales, `rel = abs_L / abs_0` (a no-op now that level 0 = 1) | `relativeLevelScaleFactors` / `buildLevelSources` (`platform/coords/levelGeometry.ts`) | level geometry, plan tracker, residency, pool viability, probe geometry |
 | `spatialUnit` | first SPACE axis of the world CS | `sceneStore` | `ScaleBar` |
@@ -319,16 +335,23 @@ affine level edges) fall back cleanly.
 residency manager and pool-viability probe all call it). Do not hand-roll a
 fourth copy.
 
-**Deferred on purpose — per-level TRANSLATION.** `Sequence[Scale,
-Translation]` level edges carry the half-voxel offset introduced by
-downsampling (`(f−1)/2`, in intrinsic pixels). The renderer does not consume it
-yet: sampling assumes corner-aligned levels, which is the pre-migration
-status quo (coarse LODs draw up to half a coarse voxel off — reads as "soft
-when zoomed out"). Consuming it is a LOCKSTEP change across
-`nodeBaseBox`/`slabLevelZ` (planner), `brickNodeMaterials` (TSL sampling
-map), and `brickSampling` (CPU probe march) — see OCTREE_RENDERER.md P15/P14
-for why these three must move together. Recommended shape: apply translation
-exactly in the *sampling* path, keep brick *addressing* corner-aligned.
+**Not consumed, and for a block-centred level not owed — per-level
+TRANSLATION.** `Sequence[Scale, Translation]` level edges carry the half-voxel
+offset a downsample introduces (`(f−1)/2`, in intrinsic pixels). That offset is
+the CENTRE convention's way of writing a block-aligned level: level index `n`
+is base index `f·n + (f−1)/2`. On lattices (`index + 0.5`, §0) the same
+statement is `base = f · level`, a pure scale — which is exactly what
+corner-aligned sampling already assumes. So for a mean/area pyramid the
+renderer is exact without reading the translation, and applying it would count
+the half voxel twice (`transformGraph.test.ts`, "makes a centre-stated pyramid
+level an exact scale of the lattice"). What is still not honoured is a level
+whose translation is NOT `(f−1)/2` — a `nearest` subsample, anchored on the
+block's corner — which draws up to half a coarse voxel off. Honouring that one
+is a LOCKSTEP change across `nodeBaseBox`/`slabLevelZ` (planner),
+`brickNodeMaterials` (TSL sampling map), and `brickSampling` (CPU probe march)
+— see OCTREE_RENDERER.md P15/P14 for why these three must move together.
+Recommended shape: apply the RESIDUAL translation (the edge's minus
+`(f−1)/2`) in the *sampling* path, keep brick *addressing* corner-aligned.
 
 **True-factor pyramids do not nest.** Adjacent levels need not divide evenly
 (z 4→9 is 2.25×; xy floor-halved from an odd size is 2.007×), so `childrenOf`
@@ -398,13 +421,15 @@ layer field.
 
 ## 4. Frames: corner-anchored, pathToWorld is the placement
 
-Every layer renders corner-anchored at its plain affine (§0): voxel `v` of an
-image sits at world `affine(v)`, a mesh coordinate `c` at `pathToWorld(c)`,
-an annotation likewise. Three-space IS world µm — the camera-pose frame map
+Every image renders corner-anchored at its lattice affine (§0): voxel `v` of
+an image fills world `affine([v, v+1))`, a mesh coordinate `c` sits at
+`pathToWorld(c)`, an annotation likewise — and since the lattice affine is the
+server's placement behind a half-voxel shift, the image's voxel CENTRES and
+those coordinates agree. Three-space IS world µm — the camera-pose frame map
 (`cameraState.buildSceneToWorldMatrix`) is the identity, camera fit
-(`sceneFit`) pushes the corners of `[0..shape]` through the plain affine, and
+(`sceneFit`) pushes the corners of `[0..shape]` through the lattice affine, and
 the probe/trace/visibility code reads layer-local coordinates directly as
-voxel indices.
+lattice positions (the voxel is their floor).
 
 One asymmetry that looks like an oversight and is not: the 3D volume
 hover-probes in ANNOTATE mode and the 2D plane does not. Inside a volume there
@@ -483,8 +508,12 @@ data/registration matter, not a client one.
    ratios (`scale·shape == const` invariant). If they don't, the server wrote
    inconsistent `toParent` edges — that's a data bug, surface it, don't
    patch it client-side.
-7. Half-a-coarse-voxel offsets at coarse LOD only: that's the deferred
-   translation (§3.2), not a regression.
+7. Half-a-coarse-voxel offsets at coarse LOD only, on a pyramid that was
+   subsampled rather than averaged: that's the residual level translation
+   (§3.2), not a regression.
+8. An image half a voxel off its meshes/annotations on EVERY axis at every
+   LOD: something bypassed `composeLatticeAffine` (a fifth place composing
+   `LayerState.affineMatrix`), or applied the lattice affine to a bare index.
 
 ---
 

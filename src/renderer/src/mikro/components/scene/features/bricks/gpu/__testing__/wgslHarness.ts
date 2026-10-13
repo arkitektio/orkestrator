@@ -51,7 +51,8 @@ export const makeTestPool = (channelCount: number, dtype = "float32"): LayerBric
   } as unknown as LayerBrickPool;
 };
 
-export const fragmentWgsl = (material: THREE.Material): string => {
+/** Both stages from ONE build: a material's node graph claims its names once and cannot be built twice. */
+export const buildWgsl = (material: THREE.Material): { vertex: string; fragment: string } => {
   // A real renderer object for its node library, output transform and
   // context — never init()'d, so no adapter or device is requested.
   const renderer = new WebGPURenderer();
@@ -65,6 +66,8 @@ export const fragmentWgsl = (material: THREE.Material): string => {
   builder.scene = new THREE.Scene();
   builder.camera = camera;
   builder.build();
-  return builder.fragmentShader as string;
+  return { vertex: builder.vertexShader as string, fragment: builder.fragmentShader as string };
 };
+
+export const fragmentWgsl = (material: THREE.Material): string => buildWgsl(material).fragment;
 

@@ -1,11 +1,8 @@
 import { Button } from "@/core/ui/button";
 import { Eye, EyeOff, Radio, Shapes, Trash2 } from "lucide-react";
 import { memo, useMemo } from "react";
-import {
-  useGetSceneAnnotationsQuery,
-  type SceneLayerFragment,
-} from "@/mikro/api/graphql";
-import { sceneAnnotationsVariables } from "../../../../lib/annotations/annotationCache";
+import { type SceneLayerFragment } from "@/mikro/api/graphql";
+import { useSceneAnnotations } from "./sceneVectors";
 import { useRoiSelectionStore } from "./roiSelectionStore";
 import {
   useSceneStore,
@@ -79,11 +76,7 @@ export const AnnotationLayerCard = memo(
     // written into (`annotationCache.ts`), not a second fetch.
     // It does run on its own when the layer is HIDDEN (the renderer unmounts
     // then) — which is the point: the card still has to say what is in there.
-    const { data } = useGetSceneAnnotationsQuery({
-      variables: sceneAnnotationsVariables(collection?.id ?? ""),
-      skip: !collection,
-    });
-    const annotations = data?.annotations;
+    const annotations = useSceneAnnotations(collection?.id);
 
     const byKind = useMemo(() => {
       const counts = new Map<string, number>();

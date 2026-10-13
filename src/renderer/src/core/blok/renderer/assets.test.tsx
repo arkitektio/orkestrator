@@ -2,7 +2,13 @@
 import * as React from 'react';
 import {act, render, screen} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {assetNamedBy, BlokAssetHostProvider, useAssetImageUrl, type BlokAsset} from './assets';
+import {
+  assetNamedBy,
+  AssetSourceNotice,
+  BlokAssetHostProvider,
+  useAssetImageUrl,
+  type BlokAsset,
+} from './assets';
 import type {BlokComponentNode} from './runtime';
 
 const node = (path?: string, extra: object = {}): BlokComponentNode =>
@@ -92,5 +98,26 @@ describe('an asset named in a blok', () => {
     document.body.innerHTML = '';
     await show(node('self.assets.logo'), {status: 'unknown', reason: 'Its app registers no asset named "logo".'});
     expect(shown()).toEqual({named: true, problem: 'Its app registers no asset named "logo".'});
+  });
+
+  it('carries where an awaited file is fetched from', async () => {
+    await show(node('self.assets.logo'), {status: 'awaited', kind: 'IMAGE', source: {host: 'vendor.example', canAdd: false}});
+    expect(shown()).toEqual({named: true, source: {host: 'vendor.example', canAdd: false}});
+  });
+
+  it('offers the file to whoever may add it, and names the host to everyone', async () => {
+    const add = vi.fn();
+    const {rerender} = render(<AssetSourceNotice kind="MODEL_3D" source={{host: 'vendor.example', canAdd: true, add}} />);
+    expect(screen.getByText('It will be fetched from vendor.example.')).toBeTruthy();
+    screen.getByRole('button', {name: 'Add 3D model'}).click();
+    expect(add).toHaveBeenCalledTimes(1);
+
+    rerender(<AssetSourceNotice kind="MODEL_3D" source={{host: 'vendor.example', canAdd: true, add, adding: true, error: 'big'}} />);
+    expect((screen.getByRole('button', {name: 'Adding…'}) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('big')).toBeTruthy();
+
+    rerender(<AssetSourceNotice kind="IMAGE" source={{host: 'vendor.example', canAdd: false, add}} />);
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.getByText('An admin of your organization can add it from vendor.example.')).toBeTruthy();
   });
 });

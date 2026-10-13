@@ -4,6 +4,7 @@ import { AnnotationKind, type SceneAnnotationFragment } from "@/mikro/api/graphq
 import { cn } from "@/core/util/utils";
 
 import { getAnnotationSelectionPoints } from "../scene/features/annotations/annotationBounds";
+import { inSceneOrder } from "../scene/features/annotations/sceneVectors";
 import {
   DEFAULT_STROKE,
   IMPLIED_FILL_OPACITY,
@@ -20,6 +21,11 @@ import {
  * where it sits. The same `getAnnotationSelectionPoints` the renderer samples
  * with produces the points, so a rectangle reads as a rectangle and an
  * ellipsis as an ellipsis rather than as its two stored corners.
+ *
+ * Vertices are stored in axis order. A shape drawn in space has x LAST
+ * (`sceneVectors.ts`), so it is read back to front; one drawn on a chart has
+ * its horizontal axis first and is read as it is. The annotation's own system
+ * says which, when the fragment carries it.
  */
 
 /**
@@ -42,9 +48,12 @@ export const AnnotationGlyph = ({
 }: {
   // The renderer's lean selection is all the glyph needs, so the browse
   // card's and the detail page's richer fragments both pass as supersets.
-  annotation: SceneAnnotationFragment;
+  annotation: SceneAnnotationFragment & {
+    coordinateSystem?: { axes?: readonly { type: string }[] | null } | null;
+  };
   className?: string;
 }) => {
+  const spatial = annotation.coordinateSystem?.axes?.some((axis) => axis.type === "SPACE") ?? false;
   const stroke = rgbaToStyle(annotation.strokeColor);
   const fill = rgbaToStyle(annotation.fillColor);
   const strokeColor = stroke?.color ?? DEFAULT_STROKE;
@@ -52,7 +61,10 @@ export const AnnotationGlyph = ({
   const points = useMemo(() => {
     // Flattened: the glyph is a plan view, and a volumetric kind's z corners
     // would otherwise fold onto the same xy footprint twice.
-    const sampled = getAnnotationSelectionPoints(annotation, true);
+    const sampled = getAnnotationSelectionPoints(
+      spatial ? inSceneOrder(annotation) : annotation,
+      true,
+    );
     if (sampled.length === 0) return [];
 
     const xs = sampled.map(([x]) => x);
@@ -77,7 +89,7 @@ export const AnnotationGlyph = ({
           (y - minY) * scale + offsetY,
         ] as [number, number],
     );
-  }, [annotation]);
+  }, [annotation, spatial]);
 
   if (points.length === 0) return null;
 

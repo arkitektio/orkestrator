@@ -7,7 +7,7 @@ export class DownloadManager implements AppModule {
     constructor(private ipcTransport: IpcTransport) {}
 
     setup() {
-        this.ipcTransport.handleChannel("download-from-url", async (event, { url }: { url: string }) => {
+        this.ipcTransport.handleChannel("download-from-url", async (_event, { url }: { url: string }) => {
             const win = BrowserWindow.getFocusedWindow();
             if (!win) return { success: false, error: "No active window" };
 

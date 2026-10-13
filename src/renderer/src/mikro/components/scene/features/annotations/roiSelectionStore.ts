@@ -55,7 +55,8 @@ interface RoiSelectionState {
   hoveredRoi: SelectedRoi | null;
   /** Cancels a pending grace clear; sets when the id changed. Cheap enough to
    * call per pointer move — re-asserting is what heals a grace clear that
-   * landed while the pointer was still on the shape. */
+   * landed while the pointer was still on the shape. Ignored for another
+   * shape while the hover is held (`holdHover`). */
   hoverRoi: (roi: SelectedRoi, point?: HoverPoint) => void;
   /**
    * Where the pointer ENTERED the hovered shape, scene world coordinates —
@@ -70,11 +71,21 @@ interface RoiSelectionState {
    */
   unhoverRoi: (roiId: string) => void;
   /**
-   * The overlay's grip: true while the pointer is on the attached button or
-   * its popover is open. Releasing with the pointer on no shape clears after
-   * the grace, like a pointer-out.
+   * The overlay's grip: true while the pointer is on the attached button, or
+   * its card or its menu is open. No other shape takes the hover over while
+   * it is held. Releasing with the pointer on no shape clears after the
+   * grace, like a pointer-out.
    */
   holdHover: (held: boolean) => void;
+  /**
+   * The shape whose action menu is open (`hover/AnnotationActionMenu`), and
+   * where it was clicked, scene world coordinates — the menu opens there.
+   * Null point: the pick surface reported none, and the menu falls back to
+   * the shape's box corner like the hover button does.
+   */
+  menuRoi: { roi: SelectedRoi; point: HoverPoint | null } | null;
+  openRoiMenu: (roi: SelectedRoi, point?: HoverPoint) => void;
+  closeRoiMenu: () => void;
   selectOnlyRoi: (roi: SelectedRoi) => void;
   replaceSelectedRois: (rois: SelectedRoi[]) => void;
   mergeSelectedRois: (rois: SelectedRoi[]) => void;
@@ -123,8 +134,13 @@ export const createRoiSelectionStore = () => {
         visibleRois: {},
         hoveredRoi: null,
         hoverRoi: (roi, point) => {
+          const current = get().hoveredRoi;
+          // A held hover is the overlay's: its card or its menu is open on
+          // that shape, and the pointer crossing another on the way must not
+          // swap the target out from under it.
+          if (held && current && current.id !== roi.id) return;
           cancelGrace();
-          if (get().hoveredRoi?.id === roi.id) return;
+          if (current?.id === roi.id) return;
           enteredAt = point ?? null;
           set((state) => {
             state.hoveredRoi = roi;
@@ -143,6 +159,17 @@ export const createRoiSelectionStore = () => {
             return;
           }
           if (get().hoveredRoi) scheduleClear();
+        },
+        menuRoi: null,
+        openRoiMenu: (roi, point) =>
+          set((state) => {
+            state.menuRoi = { roi, point: point ? [point[0], point[1], point[2]] : null };
+          }),
+        closeRoiMenu: () => {
+          if (get().menuRoi === null) return;
+          set((state) => {
+            state.menuRoi = null;
+          });
         },
         selectOnlyRoi: (roi) =>
           set((state) => {
@@ -186,6 +213,7 @@ export const createRoiSelectionStore = () => {
             // runs on every reconcile that removes a layer.
             if (next.length !== state.selectedRois.length) state.selectedRois = next;
             if (state.hoveredRoi && gone.has(state.hoveredRoi.layerId)) state.hoveredRoi = null;
+            if (state.menuRoi && gone.has(state.menuRoi.roi.layerId)) state.menuRoi = null;
           }),
         setVisibleLayerRois: (layerId, rois) =>
           set((state) => {
@@ -208,6 +236,7 @@ export const createRoiSelectionStore = () => {
             });
             // The layer unmounted: its shapes can no longer report a leave.
             if (state.hoveredRoi?.layerId === layerId) state.hoveredRoi = null;
+            if (state.menuRoi?.roi.layerId === layerId) state.menuRoi = null;
           }),
       };
     }),

@@ -4,7 +4,9 @@ import {
   useCreateAnnotationMutation,
   type CreateAnnotationMutation,
 } from "@/mikro/api/graphql";
+import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
 import { upsertSceneAnnotation } from "../../../../lib/annotations/annotationCache";
+import { inSceneOrder, toStoredVector } from "./sceneVectors";
 import { useRoiSelectionStoreApi } from "./roiSelectionStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 
@@ -13,9 +15,11 @@ export type CreatedSceneAnnotation = CreateAnnotationMutation["createAnnotation"
 /**
  * The one path that persists an annotation into the scene, shared by the
  * shape drawer (`RoiDrawer`), the probe's shift+click save (brick layers) and
- * the probe panel. Vectors are scene WORLD coordinates verbatim — the scene's
+ * the probe panel. Vectors are scene WORLD coordinates — the scene's
  * annotation collection is registered into the world by identity, so there is
- * no world→voxel inversion.
+ * no world→voxel inversion. They are taken and answered as `[x, y, z]` and
+ * sent in the collection's axis order, one component per spatial axis of the
+ * world (`sceneVectors.ts`).
  *
  * A confirmed annotation is auto-selected (single selection), so the selected
  * ROI panel starts its attribute lookups the moment the server answers.
@@ -35,7 +39,13 @@ export const useCreateSceneAnnotation = () => {
       worldVectors: [number, number, number][],
     ): Promise<CreatedSceneAnnotation | null> => {
       try {
-        const { id: sceneId } = sceneStoreApi.getState();
+        const { id: sceneId, transformContext } = sceneStoreApi.getState();
+        // The drawing space copies the world's axes, so the world says how
+        // many components a vertex has: two on a plane, three in a volume.
+        const spaceRank = spatialAxisTriple(transformContext.worldCoordinateSystem).filter(
+          (axis) => axis !== null,
+        ).length;
+        const vectors = worldVectors.map((vector) => toStoredVector(vector, spaceRank || 3));
         const drawsCollection = (collectionId: string | undefined) =>
           sceneStoreApi
             .getState()
@@ -45,9 +55,10 @@ export const useCreateSceneAnnotation = () => {
                 layer.annotationCollection?.id === collectionId,
             );
         const result = await createAnnotation({
-          variables: { input: { scene: sceneId, kind, vectors: worldVectors } },
+          variables: { input: { scene: sceneId, kind, vectors } },
           // The answer IS the new shape: write it into its collection's list
           // instead of fetching the whole list again (`annotationCache.ts`).
+          // In stored order, as the cache holds every shape.
           update: (cache, { data }) => {
             const drawn = data?.createAnnotation;
             if (drawn) upsertSceneAnnotation(cache, drawn.collection.id, drawn);
@@ -61,8 +72,9 @@ export const useCreateSceneAnnotation = () => {
             drawsCollection(data?.createAnnotation.collection.id) ? [] : ["GetScene"],
           awaitRefetchQueries: false,
         });
-        const created = result.data?.createAnnotation ?? null;
-        if (!created) return null;
+        const answered = result.data?.createAnnotation ?? null;
+        if (!answered) return null;
+        const created = inSceneOrder(answered);
 
         // Auto-select the confirmed annotation. On the very first annotation
         // the AnnotationLayer does not exist yet (GetScene refetch in flight)
@@ -85,7 +97,7 @@ export const useCreateSceneAnnotation = () => {
             ? annotationLayer.annotationCollection?.coordinateSystem
             : null) ??
           null;
-        roiSelectionApi.getState().selectOnlyRoi({
+        const roi = {
           id: created.id,
           layerId: annotationLayer?.id ?? "",
           name: created.name,
@@ -94,7 +106,13 @@ export const useCreateSceneAnnotation = () => {
           axisNames: (system?.axes ?? []).map((axis) => axis.name),
           vectors: created.vectors ?? [],
           coordinates: created.coordinates ?? [],
-        });
+        };
+        roiSelectionApi.getState().selectOnlyRoi(roi);
+        // A shape just drawn is the one to act on: open its action menu, as a
+        // click on it would (`hover/AnnotationActionMenu`), at its box corner.
+        // Not for a point: placing points is a run of clicks, and a menu
+        // after each would sit in the way of the next.
+        if (kind !== AnnotationKind.Point) roiSelectionApi.getState().openRoiMenu(roi);
         return created;
       } catch (err) {
         console.error("Failed to create annotation:", err);

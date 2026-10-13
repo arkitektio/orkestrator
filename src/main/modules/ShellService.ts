@@ -12,11 +12,11 @@ export class ShellService implements AppModule {
 
     setup () {
 
-        this.ipcTransport.handleChannel("shell:showItemInFolder", async (event, args: { path: string }) => {
+        this.ipcTransport.handleChannel("shell:showItemInFolder", async (_event, args: { path: string }) => {
             shell.showItemInFolder(args.path);
         });
 
-        this.ipcTransport.handleChannel("shell:openPath", async (event, args: { path: string }) => {
+        this.ipcTransport.handleChannel("shell:openPath", async (_event, args: { path: string }) => {
             return await shell.openPath(args.path);
         });
     }

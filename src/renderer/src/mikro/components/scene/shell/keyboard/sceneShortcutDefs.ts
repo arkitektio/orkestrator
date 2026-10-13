@@ -45,9 +45,9 @@ export const SCENE_SHORTCUTS: SceneShortcutGroup[] = [
   {
     title: "Crop the scene",
     shortcuts: [
-      { keys: ["S"], description: "Start a crop box at the cursor" },
-      { keys: ["click"], description: "Fix the rectangle, then again to apply" },
-      { keys: ["scroll"], description: "Grow or shrink the box through Z" },
+      { keys: ["S"], description: "Enter crop mode (again to leave it)" },
+      { keys: ["click"], description: "Set the first corner, then the opposite one, then apply" },
+      { keys: ["move up / down"], description: "Grow or shrink the box through Z, after the second click" },
       { keys: ["Esc"], description: "Cancel the box being drawn" },
       { keys: ["Shift", "S"], description: "Remove the crop box" },
     ],
@@ -67,9 +67,8 @@ export const SCENE_SHORTCUTS: SceneShortcutGroup[] = [
     shortcuts: [
       // One entry per registered tool — a tool cannot exist half-documented.
       ...DESIGN_TOOLS.map((tool) => tool.shortcut),
-      { keys: ["↵"], description: "Add the previewed reconstruction to the mesh" },
-      { keys: ["Esc"], description: "Discard the preview" },
-      { keys: ["⌘", "Z"], description: "Undo the last step (⇧ redoes)" },
+      { keys: ["Esc"], description: "Forget the first click of a two-click tool" },
+      { keys: ["⌘", "Z"], description: "Undo the last step, a reconstruction included (⇧ redoes)" },
     ],
   },
   {

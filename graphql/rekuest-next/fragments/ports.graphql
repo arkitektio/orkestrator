@@ -110,6 +110,11 @@ fragment ChoiceAssignWidget on ChoiceAssignWidget {
 # a leaf widget.
 fragment ArgChildPortDeep on ArgPort {
   __typename
+  requires {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -134,6 +139,11 @@ fragment ArgChildPortDeep on ArgPort {
     key
     identifier
     nullable
+    requires {
+      key
+      operator
+      value
+    }
     widget {
       ...AssignWidget
     }
@@ -142,6 +152,11 @@ fragment ArgChildPortDeep on ArgPort {
 
 fragment ArgChildPortNested on ArgPort {
   __typename
+  requires {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -173,6 +188,11 @@ fragment ArgChildPortNested on ArgPort {
 
 fragment ArgChildPort on ArgPort {
   __typename
+  requires {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -204,6 +224,11 @@ fragment ArgChildPort on ArgPort {
 
 fragment ReturnChildPortDeep on ReturnPort {
   __typename
+  provides {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -235,6 +260,11 @@ fragment ReturnChildPortDeep on ReturnPort {
 
 fragment ReturnChildPortNested on ReturnPort {
   __typename
+  provides {
+    key
+    operator
+    value
+  }
   kind
   key
   label
@@ -262,6 +292,11 @@ fragment ReturnChildPortNested on ReturnPort {
 
 fragment ReturnChildPort on ReturnPort {
   __typename
+  provides {
+    key
+    operator
+    value
+  }
   kind
   key
   label

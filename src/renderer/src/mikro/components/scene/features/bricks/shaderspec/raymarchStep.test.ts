@@ -327,6 +327,23 @@ describe("directionProjectedPitch (Phase B stride rule)", () => {
     const stepLen = Math.max(floorDelta, directionProjectedPitch([1, 0, 0], [1, 1, 1]));
     expect(stepLen * uMaxSteps).toBeGreaterThanOrEqual(rayLen);
   });
+
+  it("marches a cropped ray in its share of the step ceiling", () => {
+    // The floor comes from the ray through the WHOLE volume, so a crop box
+    // that keeps a quarter of it is crossed in a quarter of the steps, at the
+    // stride the uncropped ray had. From the cropped length it would take the
+    // full ceiling again, four times as densely.
+    const fullRayLen = 3473;
+    const croppedRayLen = fullRayLen / 4;
+    const uMaxSteps = 512;
+    const pitch = directionProjectedPitch([1, 0, 0], [1, 1, 1]);
+    const stepLen = Math.max(fullRayLen / uMaxSteps, pitch);
+    expect(Math.ceil(croppedRayLen / stepLen)).toBe(uMaxSteps / 4);
+    expect(stepLen * uMaxSteps).toBeGreaterThanOrEqual(croppedRayLen);
+    // A ray the pitch already bounds is unchanged: the floor is not what steps it.
+    const short = 200;
+    expect(Math.max(short / uMaxSteps, pitch)).toBe(pitch);
+  });
 });
 
 describe("desiredLevelForDistance (the R4 hop's level-guard argument)", () => {

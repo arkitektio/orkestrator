@@ -16,6 +16,7 @@ import { DownloadManager } from "./modules/DownloadManager";
 import { AppManager } from "./modules/AppManager";
 import { UploadService } from "./modules/UploadService";
 import { BigFileUploadService } from "./modules/BigFileUploadService";
+import { AssetFetchService } from "./modules/AssetFetchService";
 import { BigFileDownloadService } from "./modules/BigFileDownloadService";
 import { session, protocol } from "electron";
 import { createReadStream } from "node:fs";
@@ -215,6 +216,7 @@ appManager.register(downloadManager);
 appManager.register(uploadService);
 appManager.register(bigFileUploadService);
 appManager.register(bigFileDownloadService);
+appManager.register(new AssetFetchService());
 appManager.register(shellService);
 appManager.register(hardwareService);
 appManager.register(factoryResetService);
@@ -242,7 +244,9 @@ function maybeInstallReactDevTools() {
 
   import("electron-devtools-installer")
     .then((installer) => {
-      const install = installer.default?.installExtension || installer.installExtension || installer.default;
+      // CJS/ESM interop: the default export is either the module or the function itself.
+      const interop = installer.default as typeof installer.default & { installExtension?: typeof installer.installExtension };
+      const install = interop?.installExtension || installer.installExtension || installer.default;
       return install(installer.REACT_DEVELOPER_TOOLS, {
         loadExtensionOptions: { allowFileAccess: true },
       });

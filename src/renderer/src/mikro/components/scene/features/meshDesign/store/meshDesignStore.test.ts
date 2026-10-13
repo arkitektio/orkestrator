@@ -12,7 +12,7 @@ describe("meshDesignStore undo/redo", () => {
   it("undoes and redoes sculpt steps, and a new act clears redo", () => {
     const store = createMeshDesignStore();
     const id = store.getState().addMesh({ geometry: geometry(), source });
-    store.getState().applySculpt(id, { field: null as never, original: geometry(2), current: geometry(2), source });
+    store.getState().applySculpt(id, { field: null, original: geometry(2), current: geometry(2), source });
     expect(store.getState().meshes[0].current.indices).toHaveLength(6);
 
     store.getState().undo();
@@ -21,7 +21,7 @@ describe("meshDesignStore undo/redo", () => {
     expect(store.getState().meshes[0].current.indices).toHaveLength(6);
 
     store.getState().undo();
-    store.getState().applySculpt(id, { field: null as never, original: geometry(3), current: geometry(3), source });
+    store.getState().applySculpt(id, { field: null, original: geometry(3), current: geometry(3), source });
     expect(store.getState().future).toHaveLength(0); // a new act clears redo
     store.getState().undo();
     store.getState().undo();
@@ -34,7 +34,7 @@ describe("meshDesignStore undo/redo", () => {
     const store = createMeshDesignStore();
     const id = store.getState().addMesh({ geometry: geometry(), source });
     for (let i = 0; i < UNDO_DEPTH + 5; i++) {
-      store.getState().applySculpt(id, { field: null as never, original: geometry(i + 2), current: geometry(i + 2), source });
+      store.getState().applySculpt(id, { field: null, original: geometry(i + 2), current: geometry(i + 2), source });
     }
     expect(store.getState().history).toHaveLength(UNDO_DEPTH);
   });
@@ -49,30 +49,45 @@ describe("meshDesignStore undo/redo", () => {
   });
 });
 
-describe("meshDesignStore reconstruction candidate", () => {
-  const candidate = (id: number) =>
-    ({ id, gestureKind: "stroke", reconstructorId: "tube-fit", note: null }) as never;
+describe("meshDesignStore last reconstruction", () => {
+  const record = { reconstructorId: "tube-fit", gestureKind: "stroke", gesture: [], layerId: "layer", paramsKey: "a", note: null } as const;
+  const sculpt = (n: number) => ({ field: null, original: geometry(n), current: geometry(n), source });
 
-  it("holds one candidate at a time and showing one clears the busy flag and the message", () => {
+  it("a reconstruction is one undo step, and stays tunable while it is the newest act", () => {
     const store = createMeshDesignStore();
-    store.getState().setStatus("editing", "an old failure");
-    store.getState().setCandidateBusy(true);
-    store.getState().setCandidate(candidate(1));
-    expect(store.getState().candidate?.id).toBe(1);
-    expect(store.getState().candidateBusy).toBe(false);
-    expect(store.getState().message).toBeNull();
-    store.getState().setCandidate(candidate(2));
-    expect(store.getState().candidate?.id).toBe(2);
+    const id = store.getState().applyReconstruction(null, sculpt(1), record);
+    const last = store.getState().last!;
+    expect(last.meshId).toBe(id);
+    expect(last.before).toBeNull(); // it started the mesh
+    expect(store.getState().history).toHaveLength(1);
+
+    // A re-run replaces the result in place: no new undo step.
+    expect(store.getState().retuneReconstruction(last.id, sculpt(2), { ...record, paramsKey: "b" })).toBe(true);
+    expect(store.getState().meshes[0].current.indices).toHaveLength(6);
+    expect(store.getState().last?.paramsKey).toBe("b");
+    expect(store.getState().history).toHaveLength(1);
+    store.getState().undo();
+    expect(store.getState().meshes).toHaveLength(0);
+    expect(store.getState().last).toBeNull();
   });
 
-  it("a candidate is not part of the session: discarding leaves meshes and undo alone", () => {
+  it("remembers the mesh as it was before, so a re-run starts from there", () => {
     const store = createMeshDesignStore();
-    store.getState().addMesh({ geometry: geometry(), source });
-    const { meshes, history } = store.getState();
-    store.getState().setCandidate(candidate(1));
-    store.getState().setCandidate(null);
-    expect(store.getState().meshes).toBe(meshes);
-    expect(store.getState().history).toBe(history);
+    const id = store.getState().addMesh({ geometry: geometry(), source });
+    const before = store.getState().meshes[0];
+    store.getState().applyReconstruction(id, sculpt(2), record);
+    expect(store.getState().last?.before).toBe(before);
+    expect(store.getState().meshes).toHaveLength(1);
+  });
+
+  it("any other act ends it, and a late re-run then applies nothing", () => {
+    const store = createMeshDesignStore();
+    const id = store.getState().applyReconstruction(null, sculpt(1), record);
+    const last = store.getState().last!;
+    store.getState().applySculpt(id, sculpt(3));
+    expect(store.getState().last).toBeNull();
+    expect(store.getState().retuneReconstruction(last.id, sculpt(2), record)).toBe(false);
+    expect(store.getState().meshes[0].current.indices).toHaveLength(9);
   });
 
   it("remembers the reconstructor per gesture and merges params", () => {
@@ -84,10 +99,11 @@ describe("meshDesignStore reconstruction candidate", () => {
     expect(store.getState().reconstructParams.ballShape).toBe("ellipsoid");
   });
 
-  it("reset drops the candidate with the session", () => {
+  it("reset drops it with the session", () => {
     const store = createMeshDesignStore();
-    store.getState().setCandidate(candidate(1));
+    store.getState().applyReconstruction(null, sculpt(1), record);
     store.getState().reset();
-    expect(store.getState().candidate).toBeNull();
+    expect(store.getState().last).toBeNull();
+    expect(store.getState().meshes).toHaveLength(0);
   });
 });

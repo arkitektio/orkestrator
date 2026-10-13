@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boxOutline, rectOutline, wheelSteps } from "./cropGesture";
+import { boxOutline, depthPixelsPerStep, depthSteps, rectOutline } from "./cropGesture";
 
 describe("crop outline", () => {
   it("closes the rectangle at the given height", () => {
@@ -23,22 +23,22 @@ describe("crop outline", () => {
   });
 });
 
-describe("crop wheel steps", () => {
-  it("is one step per mouse notch, whatever its size, growing on scroll up", () => {
-    expect(wheelSteps({ deltaY: -100, deltaMode: 0 }, 0)).toEqual({ steps: 1, remainder: 0 });
-    expect(wheelSteps({ deltaY: 120, deltaMode: 0 }, 0)).toEqual({ steps: -1, remainder: 0 });
-    expect(wheelSteps({ deltaY: -3, deltaMode: 1 }, 0)).toEqual({ steps: 1, remainder: 0 });
+describe("crop depth from pointer travel", () => {
+  it("grows going up, one slice at where it started and below", () => {
+    expect(depthSteps(500, 500, 10)).toBe(0);
+    expect(depthSteps(500, 470, 10)).toBe(3);
+    expect(depthSteps(500, 620, 10)).toBe(0);
   });
 
-  it("adds a trackpad's crumbs up instead of stepping per event", () => {
-    let remainder = 0;
-    let steps = 0;
-    for (let i = 0; i < 20; i++) {
-      const next = wheelSteps({ deltaY: -4, deltaMode: 0 }, remainder);
-      remainder = next.remainder;
-      steps += next.steps;
-    }
-    expect(steps).toBe(2); // 80 px of travel
-    expect(remainder).toBe(0);
+  it("reaches the whole stack in a fixed share of the canvas", () => {
+    // 200 slices on a 1000 px canvas: 400 px of travel is all of them.
+    const perStep = depthPixelsPerStep(1000, 200);
+    expect(perStep).toBe(2);
+    expect(depthSteps(800, 400, perStep)).toBe(200);
+    // A short stack is not flipped through per pixel, and no stack is a fixed pace.
+    expect(depthPixelsPerStep(1000, 10)).toBe(12);
+    expect(depthPixelsPerStep(1000, 0)).toBe(12);
+    // A very long one still moves a slice per pixel at least.
+    expect(depthPixelsPerStep(1000, 5000)).toBe(1);
   });
 });

@@ -5,6 +5,12 @@ import {
   CheckoutAgentDocument,
   type CheckoutAgentQuery,
   type CheckoutAgentQueryVariables,
+  SessionBoundariesDocument,
+  type SessionBoundariesQuery,
+  type SessionBoundariesQueryVariables,
+  CheckoutAgentRevisionDocument,
+  type CheckoutAgentRevisionQuery,
+  type CheckoutAgentRevisionQueryVariables,
 } from "@/rekuest/api/graphql";
 import { useRekuest } from "@/rekuest/api/hooks";
 import { useAgentLiveState } from "@/rekuest/hooks/useLiveState";
@@ -87,6 +93,26 @@ export const useRekuestTravelSource = (options?: { onReachedLive?: () => void })
     createTravelSource({
       checkout: async (agent, request) => {
         if (!client.current) throw new Error("Rekuest is not connected.");
+        if (request.revision) {
+          // A revision restarts with every session of the agent: never one without the other.
+          const { globalRevision, sessionId } = request.revision;
+          const result = await client.current.query<
+            CheckoutAgentRevisionQuery,
+            CheckoutAgentRevisionQueryVariables
+          >({
+            query: CheckoutAgentRevisionDocument,
+            variables: {
+              agent,
+              ...(globalRevision === null
+                ? { timestamp: new Date(request.timestamp).toISOString() }
+                : { globalRevision, sessionId }),
+              forwardPatchCount: request.forwardPatchCount,
+              backwardPatchCount: request.backwardPatchCount,
+            },
+            fetchPolicy: "no-cache",
+          });
+          return result.data.checkoutAgent;
+        }
         const result = await client.current.query<CheckoutAgentQuery, CheckoutAgentQueryVariables>({
           query: CheckoutAgentDocument,
           variables: {
@@ -99,6 +125,16 @@ export const useRekuestTravelSource = (options?: { onReachedLive?: () => void })
           fetchPolicy: "no-cache",
         });
         return result.data.checkoutAgent;
+      },
+      sessionEnd: async (_agent, sessionId) => {
+        if (!client.current) throw new Error("Rekuest is not connected.");
+        const result = await client.current.query<SessionBoundariesQuery, SessionBoundariesQueryVariables>({
+          query: SessionBoundariesDocument,
+          variables: { sessionId },
+          // A session that is still running grows.
+          fetchPolicy: "no-cache",
+        });
+        return result.data.sessionBoundaries?.endGlobalRevision ?? null;
       },
       onReachedLive: () => onReachedLive.current?.(),
     }),

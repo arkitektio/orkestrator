@@ -6,7 +6,7 @@ import type { ChannelRenderNode } from "../../../platform/model/renderGraph";
 import { buildChannelUniformData } from "./channelUniforms";
 import { buildMergedChannelUniformData } from "./mergedChannelUniforms";
 import { createVolumeNodeMaterial } from "./brickNodeMaterials";
-import { fragmentWgsl, makeTestPool as makePool } from "./__testing__/wgslHarness";
+import { buildWgsl, fragmentWgsl, makeTestPool as makePool } from "./__testing__/wgslHarness";
 
 /**
  * The volume raymarcher's WGSL, built by the backend's own node builder — no
@@ -60,11 +60,19 @@ describe("volume raymarcher WGSL", () => {
       () => 0,
     );
     const { material } = createVolumeNodeMaterial(pool, { minValue: 0, maxValue: 255 }, data, 1);
-    const wgsl = fragmentWgsl(material);
-    if (process.env.DUMP_WGSL) (await import("node:fs")).writeFileSync(process.env.DUMP_WGSL, wgsl);
+    const { fragment: wgsl, vertex } = buildWgsl(material);
+    if (process.env.DUMP_WGSL) {
+      const fs = await import("node:fs");
+      fs.writeFileSync(process.env.DUMP_WGSL, wgsl);
+      fs.writeFileSync(`${process.env.DUMP_WGSL}.vert`, vertex);
+    }
     expect(wgsl).toContain("fn main");
     // The residency walk starts at the desired level, not 0.
     expect(wgsl).toMatch(/for \( var \w*[Ll]vl\w* : i32 = max\(/);
+    // A crop box shortens the march: the stride floor is the UNCROPPED ray's.
+    expect(wgsl).toMatch(/fullRayLen\s*\/\s*max\(/);
+    // And the proxy box is drawn at the crop box: the vertex stage reads it.
+    expect(vertex).toMatch(/min\( max\( \w+, clamp\(/);
   });
 
   it("builds the general (multi-channel, merged) variant", () => {

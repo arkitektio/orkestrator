@@ -1,6 +1,6 @@
 import { GraphQLClient } from "graphql-request";
-import { Assign, FromAgentMessage } from "@/app/agent/message";
-import { DefinitionInput, PortInput, PortKind } from "@/rekuest/api/graphql";
+import type { Assign, FromAgentMessage } from "./message";
+import { ArgPortInput as PortInput, DefinitionInput, PortKind } from "./schemas/rekuest";
 
 
 export type ScalarType<T extends PortKind> =

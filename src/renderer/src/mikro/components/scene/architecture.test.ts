@@ -58,7 +58,7 @@ const KNOWN_SIDEWAYS: Record<string, number> = {
   // edges are the seams where those features hand over to it — the brush hook
   // dispatching a DESIGN release to the tool registry, and the Meshes panel's
   // "edit in design" entry. See ARCHITECTURE.md.
-  "features/meshDesign->features/annotations": 16,
+  "features/meshDesign->features/annotations": 10,
   "features/meshDesign->features/meshes": 7,
   "features/annotations->features/meshDesign": 3,
   "features/meshes->features/meshDesign": 2,

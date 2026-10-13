@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { centerBaseVoxel, centerWorldRay, levelDownsampleFactor } from "./octree/centerLod";
 import { effectiveProbeLayerId } from "../../platform/probe/probeTargeting";
-import { buildAffineMatrix } from "../../platform/coords/worldTransform";
+import { buildAffineMatrix, sliceToLatticeZ } from "../../platform/coords/worldTransform";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewStoreApi } from "../../platform/stores/viewStore";
@@ -105,6 +105,7 @@ export const CenterLodReadout = () => {
         affine: buildAffineMatrix(layer),
         baseShape: base.spatialShape,
         slabZ: plan.slabZ,
+        planeZ: layer.zAxis ? sliceToLatticeZ(0) : 0,
       });
       if (!voxel) return null;
 

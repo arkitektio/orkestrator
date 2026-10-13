@@ -145,17 +145,22 @@ export const updateCropPlanes = (planes: CropPlanes, box: CropBox | null): void 
   }
 };
 
-/** The scene's slice grid along world z: where slices start and how thick one is. */
+/**
+ * The scene's slice grid along world z (`sceneZExtent`): the z of the first and
+ * the last slice's CENTRE, and how thick one slice is.
+ */
 export type CropZGrid = { min: number; max: number; step: number };
 
 /**
  * The box's z range after `steps` wheel steps: the ONE slice the anchor lies
  * in at zero, one more slice on EACH side per step, held inside the stack.
  *
- * Slice-aligned on purpose. Slice `k` occupies `[min + k·step, min + (k+1)·step)`
- * (corner-anchored, like everything else), so a box centred on a slice's own z
- * would straddle two slices and show half of each in 3D. `currentZ` sits
- * exactly ON a slice start, hence the epsilon before the floor.
+ * Slice-aligned on purpose. Slice `k` is drawn around its centre,
+ * `[min + (k - 0.5)·step, min + (k + 0.5)·step)` — the lattice cell
+ * `[k, k + 1)` of COORDINATE_SYSTEMS.md §0, in world z — so the box runs from
+ * face to face and shows whole slices in 3D. `currentZ` sits exactly ON a
+ * slice centre, so the nearest slice is a round and float error cannot tip it
+ * into a neighbour.
  *
  * Without a grid (no layer has a stack) one "slice" is one world unit.
  */
@@ -167,8 +172,8 @@ export const cropZRange = (
   const count = Math.max(0, Math.round(steps));
   if (!grid || !(grid.step > 0)) return [anchorZ - 0.5 - count, anchorZ + 0.5 + count];
   const last = Math.max(0, Math.round((grid.max - grid.min) / grid.step));
-  const slice = Math.min(last, Math.max(0, Math.floor((anchorZ - grid.min) / grid.step + 1e-6)));
+  const slice = Math.min(last, Math.max(0, Math.round((anchorZ - grid.min) / grid.step)));
   const lo = Math.max(0, slice - count);
   const hi = Math.min(last, slice + count);
-  return [grid.min + lo * grid.step, grid.min + (hi + 1) * grid.step];
+  return [grid.min + (lo - 0.5) * grid.step, grid.min + (hi + 0.5) * grid.step];
 };

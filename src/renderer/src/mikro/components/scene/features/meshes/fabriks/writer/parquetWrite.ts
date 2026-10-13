@@ -61,10 +61,13 @@ export const CELL_CATALOG_SCHEMA: SchemaElement[] = [
   ...BBOX(),
   optional("lod_error", "DOUBLE"),
   optional("object_count", "INT32"),
-  optional("child_mask", "INT32", {
-    converted_type: "UINT_8",
-    logical_type: { type: "INTEGER", bitWidth: 8, isSigned: false },
-  }),
+  // The converted type alone, NO `logical_type: INTEGER`: hyparquet-writer
+  // infers thrift types from the JS value and writes `IntType.bitWidth` (an
+  // i8) as an i32. hyparquet reads that back; a strict thrift reader does not
+  // — DuckDB answers `TProtocolException: Invalid data` for the whole footer,
+  // which is how the server refused every designed collection at
+  // `finishFabriksUpload`. UINT_8 is the same annotation in its legacy form.
+  optional("child_mask", "INT32", { converted_type: "UINT_8" }),
   optional("part", "INT32"),
   optional("row_group", "INT32"),
   optional("blob_bytes", "INT64"),

@@ -2,7 +2,7 @@ import type { CropBox } from "../../platform/coords/cropBox";
 import type { OutlinePoint } from "../../platform/model/geometry";
 
 /**
- * The pure half of the crop gesture: the outline's points and the wheel's
+ * The pure half of the crop gesture: the outline's points and the depth's
  * arithmetic. Kept out of the component so both are testable without a canvas.
  */
 
@@ -45,27 +45,28 @@ export const boxOutline = (box: CropBox): OutlinePoint[] => {
   ];
 };
 
-/** Wheel travel that counts as one step: under one mouse notch in every browser. */
-const WHEEL_STEP = 40;
-/** `deltaY` in lines (Firefox with a mouse) → pixels. */
-const LINE_HEIGHT = 16;
+/** Pointer travel per slice when the stack is short: fine enough to pick one slice by hand. */
+const MAX_PX_PER_STEP = 12;
+/** And when it is long: a pixel is the least a hand moves. */
+const MIN_PX_PER_STEP = 1;
+/** The share of the canvas height that reaches the whole stack. */
+const FULL_DEPTH_TRAVEL = 0.4;
 
 /**
- * Whole steps out of a wheel event, and the travel left over.
- *
- * Scrolling UP grows the box, so the sign is flipped. A mouse notch (one event
- * of at least a step's travel) is exactly ONE step however large the browser
- * makes it; a trackpad's stream of small deltas adds up to steps, so 100 events
- * a second do not become 100 slices.
+ * Pointer pixels per depth step: `FULL_DEPTH_TRAVEL` of the canvas grows the
+ * box from one slice to the whole stack (`slices`), so a 600-slice stack does
+ * not need three screens of travel and a 10-slice one does not flip per pixel.
  */
-export const wheelSteps = (
-  event: { deltaY: number; deltaMode: number },
-  remainder: number,
-): { steps: number; remainder: number } => {
-  const delta = -event.deltaY * (event.deltaMode === 1 ? LINE_HEIGHT : 1);
-  if (delta === 0) return { steps: 0, remainder };
-  if (Math.abs(delta) >= WHEEL_STEP) return { steps: Math.sign(delta), remainder: 0 };
-  const total = remainder + delta;
-  const steps = Math.trunc(total / WHEEL_STEP);
-  return { steps, remainder: total - steps * WHEEL_STEP };
+export const depthPixelsPerStep = (canvasHeight: number, slices: number): number => {
+  if (!(slices > 1) || !(canvasHeight > 0)) return MAX_PX_PER_STEP;
+  const perStep = (canvasHeight * FULL_DEPTH_TRAVEL) / slices;
+  return Math.min(MAX_PX_PER_STEP, Math.max(MIN_PX_PER_STEP, perStep));
 };
+
+/**
+ * Depth steps for a pointer at `clientY`, the gesture having entered the depth
+ * phase at `fromY`. Moving UP grows the box (screen y runs down, so the sign is
+ * flipped); below where it started the box is one slice and stays one.
+ */
+export const depthSteps = (fromY: number, clientY: number, pixelsPerStep: number): number =>
+  Math.max(0, Math.round((fromY - clientY) / Math.max(pixelsPerStep, 1e-6)));

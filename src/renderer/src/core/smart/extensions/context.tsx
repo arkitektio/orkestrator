@@ -29,10 +29,10 @@ import type { ObjectButtonProps, SmartContextProps } from "./types";
 import { useAfterFirstPaint } from "./useAfterFirstPaint";
 import { useFirstItemSelection } from "./useFirstItemSelection";
 
-export const ObjectButton = (props: ObjectButtonProps) => {
+export const ObjectButton = ({ open, onOpenChange, ...props }: ObjectButtonProps) => {
   const prefetcher = useSmartPrefetcher();
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger
         // The child is the button: a trigger of its own would nest one.
         asChild
@@ -106,7 +106,7 @@ export const SmartContext = ({
   registry = smartSections(),
   ...props
 }: SmartContextProps & { registry?: SmartSectionRegistry }) => {
-  const { objects, partners, returns, collection, sections, onDone, onError } = props;
+  const { objects, partners, returns, collection, sections, onDone, onError, autoFocus = true } = props;
   const [filter, setFilterValue] = React.useState<string | undefined>(undefined);
   // The raw value narrows the rows on screen at once; the queries run on the
   // debounced copy, so typing does not cost a request per key.
@@ -165,7 +165,7 @@ export const SmartContext = ({
                 setFilterValue(value);
                 selection.repin();
               }}
-              autoFocus
+              autoFocus={autoFocus}
               trailing={
                 plan.some((section) => section.SearchBar)
                   ? plan.map((section) => (

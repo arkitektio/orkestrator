@@ -24,7 +24,7 @@ import {
   type Clickable,
   type ModelContextValue,
 } from './context';
-import {ASSET_KIND_LABELS, useBlokAsset} from '../../assets';
+import {ASSET_KIND_LABELS, AssetSourceNotice, useBlokAsset, type BlokAssetSource} from '../../assets';
 import {useBlokSceneHost, useBlokSceneInert, useBlokSceneStill, type BlokModelDecoration} from './host';
 import {instantiate, loadModel, type ModelInstance} from './loadModel';
 
@@ -74,10 +74,18 @@ const robotSchema = z
 const PLACEHOLDER_SIZE = 0.12;
 
 /** What stands where a model would be, saying why it is not there. */
-const Placeholder = ({reason}: {reason: string}) => {
+const Placeholder = ({reason, source}: {reason: string; source?: BlokAssetSource}) => {
   const mesh = React.useRef<THREE.Mesh>(null);
   const anchor = React.useCallback(() => mesh.current, []);
-  const content = React.useMemo(() => <div>{reason}</div>, [reason]);
+  const content = React.useMemo(
+    () => (
+      <div className="flex flex-col gap-2">
+        <div>{reason}</div>
+        {source ? <AssetSourceNotice source={source} kind="MODEL_3D" /> : null}
+      </div>
+    ),
+    [reason, source],
+  );
   useSceneOverlay({visible: true, anchor, content, mode: 'popout'});
   return (
     <mesh ref={mesh} position={[0, PLACEHOLDER_SIZE / 2, 0]}>
@@ -487,7 +495,9 @@ const ModelBody = ({component, buildChild, robot}: Pick<BlokRenderArgs, 'compone
       : asset.status === 'unknown'
         ? asset.reason
         : asset.status === 'awaited'
-          ? 'This model has not been uploaded yet. Its app uploads it when it runs.'
+          ? asset.source
+            ? 'This model has not been added yet.'
+            : 'This model has not been uploaded yet. Its app uploads it when it runs.'
           : asset.status === 'ready' && asset.kind !== 'MODEL_3D'
             ? `This asset is a ${ASSET_KIND_LABELS[asset.kind]}, not a 3D model.`
             : (current?.error ?? 'Loading model…');
@@ -504,7 +514,7 @@ const ModelBody = ({component, buildChild, robot}: Pick<BlokRenderArgs, 'compone
           robot={robot}
         />
       ) : (
-        <Placeholder reason={reason} />
+        <Placeholder reason={reason} source={asset?.status === 'awaited' ? asset.source : undefined} />
       )}
     </group>
   );

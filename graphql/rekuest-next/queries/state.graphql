@@ -42,3 +42,30 @@ query CheckoutAgent($agent: ID!, $globalRevision: Int , $timestamp: DateTime, $s
     }
   }
 }
+
+# The checkout behind stepping an agent by revision: a revision only means
+# something inside one session, so every patch names its own.
+query CheckoutAgentRevision($agent: ID!, $globalRevision: Int, $timestamp: DateTime, $sessionId: ID, $forwardPatchCount: Int, $backwardPatchCount: Int) {
+  checkoutAgent(agent: $agent, globalRevision: $globalRevision, timestamp: $timestamp, sessionId: $sessionId, forwardPatchCount: $forwardPatchCount, backwardPatchCount: $backwardPatchCount) {
+    agentId
+    values
+    globalRevision
+    forwardPatches {
+     ...Patch
+     sessionId
+    }
+    backwardPatches {
+     ...Patch
+     sessionId
+    }
+  }
+}
+
+# How far the revisions of one session reach: the range of the revision slider.
+query SessionBoundaries($sessionId: ID!) {
+  sessionBoundaries(sessionId: $sessionId) {
+    sessionId
+    startGlobalRevision
+    endGlobalRevision
+  }
+}

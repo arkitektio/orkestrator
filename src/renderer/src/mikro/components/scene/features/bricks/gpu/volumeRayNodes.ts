@@ -141,6 +141,12 @@ export const makeVolumeRayUniforms = (): VolumeRayUniforms => ({
 });
 
 export type VolumeRayNodes = {
+  /**
+   * The proxy box's vertex, moved onto the crop box: the material's
+   * `positionNode`. Only the box's footprint is rasterized then, instead of
+   * the whole volume's with everything outside the box discarded per fragment.
+   */
+  clippedPosition: any;
   /** Camera in object space, interpolated per fragment. */
   vOrigin: any;
   /** Object-space direction from the camera toward this fragment's vertex. */
@@ -164,7 +170,17 @@ export const makeVolumeRayNodes = (t: any, u: VolumeRayUniforms): VolumeRayNodes
     modelWorldMatrixInverse.mul(vec4(cameraPosition, 1.0)).xyz,
     "vOrigin",
   );
-  const vDirection = varying(positionGeometry.sub(vOrigin), "vDirection");
+  // The unit box cut down to the crop box, in the box's own [-0.5, 0.5]
+  // parameterization (the inverse of `toBaseVoxel` below). The resting
+  // uniforms clamp to ±0.5 and move nothing; an inverted pair (a layer outside
+  // the box) collapses every vertex onto one corner, which draws nothing.
+  // Spelled min(max()) because WGSL's `clamp` is undefined for low > high.
+  const clipLo = TSL.clamp(vec3(u.uClipMin).div(u.uBaseShape).sub(0.5), -0.5, 0.5);
+  const clipHi = TSL.clamp(vec3(u.uClipMax).div(u.uBaseShape).sub(0.5), -0.5, 0.5);
+  const clippedPosition = min(max(positionGeometry, clipLo), clipHi);
+  // From the vertex where it is DRAWN: any point on the fragment's ray gives
+  // the same direction, but the undisplaced one is not on that ray.
+  const vDirection = varying(clippedPosition.sub(vOrigin), "vDirection");
 
   // Corner-anchored, no flip: the mesh is positioned so group-local spans
   // [0..shape], and this map only undoes the unit-box parameterization
@@ -233,7 +249,7 @@ export const makeVolumeRayNodes = (t: any, u: VolumeRayUniforms): VolumeRayNodes
     return max(min(tf.x, min(tf.y, tf.z)), 0.0);
   });
 
-  return { vOrigin, vDirection, toBaseVoxel, desiredLevelAt, brickExitRel };
+  return { clippedPosition, vOrigin, vDirection, toBaseVoxel, desiredLevelAt, brickExitRel };
 };
 
 /** The ray's entry/exit along itself, in base-voxel space. */
@@ -247,6 +263,14 @@ export type VolumeRayBounds = {
   boundsY: any;
   /** Exit − entry, floored away from zero. */
   rayLen: any;
+  /**
+   * The same ray's length through the WHOLE volume, crop or not (never shorter
+   * than `rayLen`). The stride floor is taken from this one, so a cropped ray
+   * is stepped as densely as the uncropped ray was and costs its share of the
+   * step budget — from `rayLen` it would spend the full budget on a shorter
+   * ray, and a crop would buy sample density instead of frame time.
+   */
+  fullRayLen: any;
 };
 
 /**
@@ -291,5 +315,15 @@ export const emitVolumeRayBounds = (
   boundsX.assign(max(boundsX, 0.0));
 
   const rayLen = max(boundsY.sub(boundsX), 0.00001);
-  return { originB, dirB, invD, boundsX, boundsY, rayLen };
+
+  // The uncropped slab, entry clamped the same way. With the resting uniforms
+  // it is `rayLen` itself.
+  const f0 = vec3(0.0).sub(originB).mul(invD);
+  const f1 = vec3(u.uBaseShape).sub(originB).mul(invD);
+  const fmin = min(f0, f1);
+  const fmax = max(f0, f1);
+  const fullNear = max(max(max(fmin.x, fmin.y), fmin.z), 0.0);
+  const fullFar = min(min(fmax.x, fmax.y), fmax.z);
+  const fullRayLen = max(fullFar.sub(fullNear), rayLen).toVar("fullRayLen");
+  return { originB, dirB, invD, boundsX, boundsY, rayLen, fullRayLen };
 };

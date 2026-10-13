@@ -1,9 +1,7 @@
 import { createStore } from "zustand/vanilla";
 import { createScopedStoreHooks } from "@/core/util/createScopedStore";
-import { eraseNearPolyline, mergeGeometry, type Vec3 } from "../ops/sculpt";
 import type { SculptField } from "../field/sculptField";
-import type { StampSpec } from "../field/stamps";
-import type { MarcherId } from "../brush";
+import type { Vec3 } from "../field/stamps";
 
 /**
  * The mesh DESIGN session: meshes extracted from the volume, waiting to be
@@ -53,8 +51,10 @@ export type DesignMesh = {
   /** Hue in degrees, for the overlay's per-mesh colour. */
   hue: number;
   /**
-   * The sculpting field the strokes accumulate into (`sculptField.ts`).
-   * Null until the first sculpt op; built lazily from `original` then.
+   * The signed-distance field the edits accumulate into (`sculptField.ts`).
+   * Null for a mesh nothing has been unioned into or carved out of yet — a
+   * lone reconstructed surface, an import; built from `current` by the first
+   * edit that needs it.
    */
   field: SculptField | null;
 };
@@ -98,32 +98,38 @@ export const DEFAULT_RECONSTRUCT_PARAMS: ReconstructParams = {
 };
 
 /**
- * A reconstruction awaiting its verdict. It is a complete standalone mesh
- * (`field` / `original` / `current`, exactly what `applySculpt` takes), so
- * accepting it into an empty target costs nothing; `piece` is what gets
- * unioned when there IS a target. `gesture` is a copy of what the user drew —
- * a slider move re-runs the reconstructor on it.
+ * The reconstruction that was applied LAST, for as long as it is the newest
+ * act of the session.
+ *
+ * A reconstruction goes straight into the mesh — there is no preview to
+ * accept. This record is what still lets it be TUNED: while it stands, a
+ * slider move re-runs the reconstructor on the same gesture and replaces the
+ * result in place (`reconstruct/apply.ts`), starting again from `before`.
+ * Any other act ends it, and Undo removes the reconstruction like any step.
  */
-export type DesignCandidate = {
+export type LastReconstruction = {
   id: number;
   reconstructorId: ReconstructorId;
   gestureKind: ReconstructGesture;
+  /** A copy of what the user drew — what a re-run reconstructs again. */
   gesture: { world: Vec3; voxel: Vec3 }[];
   layerId: string;
-  level: number;
   /** The settings it was built with (`reconstruct/settings.ts`). */
   paramsKey: string;
-  field: SculptField;
-  original: DesignGeometry;
-  current: DesignGeometry;
-  piece: { kind: "surface"; geometry: DesignGeometry } | { kind: "stamp"; spec: StampSpec };
-  sourceKind: "tube" | "blob";
-  /** How the union is re-marched when it is accepted into an existing mesh. */
-  finish: { marcher: MarcherId; polishIterations: number; detailWorld: number };
-  /** A fitted centerline, drawn over the preview. */
-  guide?: Vec3[];
+  /** The mesh it went into. */
+  meshId: string;
+  /** That mesh as it was before; null when the reconstruction started it. */
+  before: DesignMesh | null;
   /** What the reconstructor wants the user to know (a degradation, a size). */
   note: string | null;
+};
+
+/** What a tool hands the session when an edit lands. */
+export type DesignSculpt = {
+  field: SculptField | null;
+  original: DesignGeometry;
+  current: DesignGeometry;
+  source: DesignMeshSource;
 };
 
 export type DesignStatus = "idle" | "editing" | "baking" | "uploading" | "committing" | "error";
@@ -158,10 +164,10 @@ export interface MeshDesignState {
   sculptVariant: SculptVariant;
   /** A two-click tool's parked first point (bridge, split). */
   pendingPoint: { world: Vec3; voxel: Vec3 } | null;
-  /** The reconstruction awaiting accept / discard, if any. */
-  candidate: DesignCandidate | null;
-  /** A re-run of the candidate is in flight (a slider moved). */
-  candidateBusy: boolean;
+  /** The newest act, when it was a reconstruction: still tunable. */
+  last: LastReconstruction | null;
+  /** A re-run of `last` is in flight (a slider moved). */
+  retuning: boolean;
   /** The reconstructor picked per gesture; sticky across strokes. */
   reconstructors: Record<ReconstructGesture, ReconstructorId>;
   reconstructParams: ReconstructParams;
@@ -173,32 +179,38 @@ export interface MeshDesignState {
     source: DesignMeshSource;
     objectId?: number;
   }) => string;
-  /**
-   * Brush ADD: append a stroke's surface to mesh `id`, or to a new mesh when
-   * `id` is null / unknown. Returns the mesh that received it. Appending
-   * resets any simplification — it always restarts from the full geometry.
-   */
-  appendGeometry: (id: string | null, geometry: DesignGeometry, source: DesignMeshSource) => string;
-  /** Brush ERASE: drop the triangles within `radius` of the stroke from mesh `id`. */
-  eraseFromMesh: (id: string, stroke: readonly Vec3[], radius: number) => void;
   /** Start an empty mesh and select it — the next C/V stroke goes there. */
   newMesh: () => string;
   /**
-   * A sculpt landed: the mesh's new field and geometry in one step. Null
+   * An edit landed: the mesh's new field and geometry in one step. Null
    * `id` (or an unknown one) starts a new mesh. Returns the mesh id.
    */
-  applySculpt: (
+  applySculpt: (id: string | null, sculpt: DesignSculpt) => string;
+  /**
+   * A reconstruction landed: `applySculpt`, and it becomes `last` — tunable
+   * until the next act.
+   */
+  applyReconstruction: (
     id: string | null,
-    sculpt: { field: SculptField; original: DesignGeometry; current: DesignGeometry; source: DesignMeshSource },
+    sculpt: DesignSculpt,
+    record: Omit<LastReconstruction, "id" | "meshId" | "before">,
   ) => string;
+  /**
+   * A re-run of `last` landed: its mesh takes the new result IN PLACE — no
+   * new undo step, the one the reconstruction made still removes it. False
+   * when `last` has moved on meanwhile (nothing is applied).
+   */
+  retuneReconstruction: (
+    lastId: number,
+    sculpt: DesignSculpt,
+    patch: Pick<LastReconstruction, "reconstructorId" | "paramsKey" | "note">,
+  ) => boolean;
   undo: () => void;
   redo: () => void;
   setStampShape: (shape: StampShape) => void;
   setSculptVariant: (variant: SculptVariant) => void;
   setPendingPoint: (point: { world: Vec3; voxel: Vec3 } | null) => void;
-  /** Show a reconstruction for a verdict (replaces the previous one). */
-  setCandidate: (candidate: DesignCandidate | null) => void;
-  setCandidateBusy: (busy: boolean) => void;
+  setRetuning: (retuning: boolean) => void;
   setReconstructor: (gesture: ReconstructGesture, id: ReconstructorId) => void;
   setReconstructParams: (patch: Partial<ReconstructParams>) => void;
   removeMesh: (id: string) => void;
@@ -229,10 +241,15 @@ export const DESIGN_TRIANGLE_BUDGET = 2_000_000;
 const GOLDEN_ANGLE = 137.508;
 
 let sessionCounter = 0;
+let reconstructionCounter = 0;
+
+/** A mesh that holds nothing yet (`newMesh`): what lands in it IS the mesh. */
+export const isEmptyMesh = (mesh: DesignMesh): boolean => !mesh.field && mesh.original.indices.length === 0;
 
 export const createMeshDesignStore = () =>
   createStore<MeshDesignState>()((set, get) => {
-    /** Push the current meshes onto the undo stack; a new act clears redo. */
+    /** Push the current meshes onto the undo stack; a new act clears redo
+     * and is, from now on, the newest one (`last` no longer is). */
     const snapshot = () => {
       const state = get();
       set({
@@ -241,6 +258,7 @@ export const createMeshDesignStore = () =>
           { meshes: state.meshes, selectedId: state.selectedId, nextObjectId: state.nextObjectId },
         ],
         future: [],
+        last: null,
       });
     };
     return {
@@ -255,8 +273,8 @@ export const createMeshDesignStore = () =>
     stampShape: "sphere" as StampShape,
     sculptVariant: "inflate" as SculptVariant,
     pendingPoint: null,
-    candidate: null,
-    candidateBusy: false,
+    last: null,
+    retuning: false,
     reconstructors: { stroke: "tube-fit", click: "ball-fit" } as Record<ReconstructGesture, ReconstructorId>,
     reconstructParams: DEFAULT_RECONSTRUCT_PARAMS,
 
@@ -285,33 +303,6 @@ export const createMeshDesignStore = () =>
         nextObjectId: Math.max(state.nextObjectId, assigned + 1),
       });
       return id;
-    },
-    appendGeometry: (id, geometry, source) => {
-      snapshot();
-      const state = get();
-      const target = id ? state.meshes.find((mesh) => mesh.id === id) : undefined;
-      if (!target) return state.addMesh({ geometry, source });
-      const merged = mergeGeometry(target.original, geometry);
-      set({
-        meshes: state.meshes.map((mesh) =>
-          mesh.id === target.id ? { ...mesh, original: merged, current: merged, simplifyRatio: 1 } : mesh,
-        ),
-        selectedId: target.id,
-        status: "editing",
-        message: null,
-      });
-      return target.id;
-    },
-    eraseFromMesh: (id, stroke, radius) => {
-      snapshot();
-      set((state) => ({
-        meshes: state.meshes.map((mesh) => {
-          if (mesh.id !== id) return mesh;
-          const original = eraseNearPolyline(mesh.original, stroke, radius);
-          if (original === mesh.original) return mesh;
-          return { ...mesh, original, current: original, simplifyRatio: 1 };
-        }),
-      }));
     },
     newMesh: () => {
       const state = get();
@@ -347,8 +338,7 @@ export const createMeshDesignStore = () =>
     setStampShape: (stampShape) => set({ stampShape }),
     setSculptVariant: (sculptVariant) => set({ sculptVariant }),
     setPendingPoint: (pendingPoint) => set({ pendingPoint }),
-    setCandidate: (candidate) => set({ candidate, candidateBusy: false, message: null }),
-    setCandidateBusy: (candidateBusy) => set({ candidateBusy }),
+    setRetuning: (retuning) => set({ retuning }),
     setReconstructor: (gesture, id) =>
       set((state) => ({ reconstructors: { ...state.reconstructors, [gesture]: id } })),
     setReconstructParams: (patch) =>
@@ -380,6 +370,28 @@ export const createMeshDesignStore = () =>
       });
       return target.id;
     },
+    applyReconstruction: (id, sculpt, record) => {
+      const state = get();
+      const before = (id ? state.meshes.find((mesh) => mesh.id === id) : undefined) ?? null;
+      const meshId = state.applySculpt(id, sculpt);
+      set({ last: { ...record, id: ++reconstructionCounter, meshId, before } });
+      return meshId;
+    },
+    retuneReconstruction: (lastId, sculpt, patch) => {
+      const state = get();
+      const last = state.last;
+      if (!last || last.id !== lastId || !state.meshes.some((mesh) => mesh.id === last.meshId)) return false;
+      set({
+        meshes: state.meshes.map((mesh) =>
+          mesh.id === last.meshId
+            ? { ...mesh, field: sculpt.field, original: sculpt.original, current: sculpt.current, source: sculpt.source, simplifyRatio: 1 }
+            : mesh,
+        ),
+        last: { ...last, ...patch },
+        message: null,
+      });
+      return true;
+    },
     undo: () => {
       const state = get();
       const last = state.history.at(-1);
@@ -392,6 +404,7 @@ export const createMeshDesignStore = () =>
         nextObjectId: last.nextObjectId,
         status: last.meshes.length > 0 ? "editing" : "idle",
         message: null,
+        last: null,
       });
     },
     redo: () => {
@@ -406,6 +419,7 @@ export const createMeshDesignStore = () =>
         nextObjectId: next.nextObjectId,
         status: next.meshes.length > 0 ? "editing" : "idle",
         message: null,
+        last: null,
       });
     },
     reset: () =>
@@ -418,8 +432,8 @@ export const createMeshDesignStore = () =>
         nextObjectId: 1,
         history: [],
         future: [],
-        candidate: null,
-        candidateBusy: false,
+        last: null,
+        retuning: false,
         pendingPoint: null,
       }),
     };

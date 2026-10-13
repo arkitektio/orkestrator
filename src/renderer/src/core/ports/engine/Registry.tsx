@@ -65,6 +65,28 @@ export class HookRegistry {
   }
 }
 
+/**
+ * The picker of structure ports: what renders a port's search, and what a
+ * port with no widget gets when its structure can be picked anyway (a module
+ * answers for it). A predicate rather than a list: modules come and go.
+ */
+export type StructurePicker = {
+  widget: React.FC<InputWidgetProps>;
+  canPick: (identifier: string) => boolean;
+};
+
+/**
+ * Whether the picker takes this structure port. A SEARCH widget is a query
+ * and a ward, which is exactly what the picker runs; one with filter ports is
+ * left to the search widget, which is what draws those. A port with no widget
+ * is taken when its structure can be picked without a query.
+ */
+export const takenByPicker = (port: ArgPort, picker: StructurePicker): boolean => {
+  if (port?.kind !== PortKind.Structure || !port.identifier) return false;
+  if (!port.widget) return picker.canPick(port.identifier);
+  return port.widget.__typename === "SearchAssignWidget" && !port.widget.filters?.length;
+};
+
 export class WidgetRegistry {
   portTypeInputFallbackMap: {
     [ward_key: string]: React.FC<InputWidgetProps>;
@@ -81,6 +103,7 @@ export class WidgetRegistry {
   effectWidgetMap: {
     [effect_type: string]: React.FC<EffectWidgetProps>;
   };
+  structurePicker: StructurePicker | undefined;
   ward_registry: WardRegistry;
   hook_registry: HookRegistry;
   unknownEffectWidget: React.FC<EffectWidgetProps>;
@@ -97,6 +120,7 @@ export class WidgetRegistry {
     this.portTypeReturnFallbackMap = {};
     this.typeReturnWidgetMap = {};
     this.effectWidgetMap = {};
+    this.structurePicker = undefined;
     this.ward_registry = new WardRegistry();
     this.hook_registry = new HookRegistry();
     this.unknownInputWidget = unknownInputWidget;
@@ -139,16 +163,29 @@ export class WidgetRegistry {
     return this.effectWidgetMap[x] || this.unknownEffectWidget;
   }
 
+  /** The default picker of structure ports, and the structures it can pick. */
+  public setStructurePicker(picker: StructurePicker): void {
+    this.structurePicker = picker;
+  }
+
   /**
-   * Widget by the port's annotated widget typename, else by port kind, else
-   * the unknown-widget box. A typename the client does not implement (e.g. a
-   * server-side default it has no special rendering for) must degrade to the
-   * kind fallback, not to a registry error.
+   * A structure port the picker takes (`takenByPicker`) gets the picker.
+   * Otherwise: widget by the port's annotated widget typename, else by port
+   * kind, else the unknown-widget box. A typename the client does not
+   * implement (e.g. a server-side default it has no special rendering for)
+   * must degrade to the kind fallback, not to a registry error.
+   *
+   * `allowPicker: false` asks what the port would get without the picker,
+   * which is what the picker itself falls back to.
    */
   public getInputWidgetForPort(
     port: ArgPort,
     allowFallback: boolean = true,
+    allowPicker: boolean = true,
   ): React.FC<InputWidgetProps> {
+    if (allowPicker && this.structurePicker && takenByPicker(port, this.structurePicker)) {
+      return this.structurePicker.widget;
+    }
     const typename = port?.widget?.__typename;
     const byType = typename ? this.typeInputWidgetMap[typename] : undefined;
     if (byType) return byType;

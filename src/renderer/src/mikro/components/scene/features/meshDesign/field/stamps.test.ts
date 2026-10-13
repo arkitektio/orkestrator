@@ -31,14 +31,14 @@ const signedVolume = (g: DesignGeometry): number => {
 describe("stamps", () => {
   it("a sphere stamp marches to the right volume", () => {
     const field = stampToField(sphereStamp([0, 0, 0], 6), 0.4);
-    const out = marchField(field, "cubes");
+    const out = marchField(field);
     const analytic = (4 / 3) * Math.PI * 6 ** 3;
     expect(Math.abs(signedVolume(out) - analytic) / analytic).toBeLessThan(0.05);
   });
 
   it("a box stamp marches to the right volume and stays inside its bounds", () => {
     const field = stampToField(boxStamp([0, 0, 0], [4, 3, 2]), 0.4);
-    const out = marchField(field, "cubes");
+    const out = marchField(field);
     expect(Math.abs(signedVolume(out) - 8 * 4 * 3 * 2) / (8 * 4 * 3 * 2)).toBeLessThan(0.06);
     for (let v = 0; v < out.positions.length; v += 3) {
       expect(Math.abs(out.positions[v])).toBeLessThan(4.5);
@@ -48,17 +48,17 @@ describe("stamps", () => {
 
   it("subtracting a capsule chain carves through an added sphere", () => {
     let field = stampToField(sphereStamp([0, 0, 0], 6), 0.4);
-    const before = signedVolume(marchField(field, "cubes"));
+    const before = signedVolume(marchField(field));
     field = applyStamp(field, capsuleChainStamp([[-8, 0, 0], [8, 0, 0]], 2), "subtract");
-    const after = signedVolume(marchField(field, "cubes"));
+    const after = signedVolume(marchField(field));
     expect(after).toBeLessThan(before * 0.95);
   });
 
   it("a halfspace subtract cuts the sphere roughly in half", () => {
     let field = stampToField(sphereStamp([0, 0, 0], 6), 0.4);
-    const before = signedVolume(marchField(field, "cubes"));
+    const before = signedVolume(marchField(field));
     field = applyStamp(field, halfspaceStamp([1, 0, 0], 0), "subtract");
-    const out = marchField(field, "cubes");
+    const out = marchField(field);
     expect(Math.abs(signedVolume(out) - before / 2) / before).toBeLessThan(0.06);
     // The x < 0 half-space is the removed one; the kept hemisphere sits at x >= 0.
     for (let v = 0; v < out.positions.length; v += 3) expect(out.positions[v]).toBeGreaterThan(-0.5);
@@ -119,7 +119,7 @@ describe("stamps", () => {
   });
 
   it("a tapered chain marches to a closed tube of about the right volume", () => {
-    const out = marchField(stampToField(taperedChainStamp([[0, 0, 0], [20, 0, 0]], [2, 4]), 0.4), "cubes");
+    const out = marchField(stampToField(taperedChainStamp([[0, 0, 0], [20, 0, 0]], [2, 4]), 0.4));
     // Frustum between the tangent circles plus the two end caps ≈ the
     // frustum of the two radii over the length plus two half-spheres.
     const frustum = (Math.PI * 20 * (2 * 2 + 2 * 4 + 4 * 4)) / 3;
@@ -146,7 +146,7 @@ describe("stamps", () => {
     expect(stamp.sdf(0, 0, 0)).toBeLessThan(0);
     expect(stamp.max[0]).toBeGreaterThanOrEqual(6 * r - 1e-9);
     expect(stamp.max[0]).toBeLessThan(6);
-    const out = marchField(stampToField(stamp, 0.25), "cubes");
+    const out = marchField(stampToField(stamp, 0.25));
     const analytic = (4 / 3) * Math.PI * 6 * 2 * 1;
     expect(Math.abs(signedVolume(out) - analytic) / analytic).toBeLessThan(0.1);
   });

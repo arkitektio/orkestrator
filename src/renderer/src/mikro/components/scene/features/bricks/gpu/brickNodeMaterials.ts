@@ -1934,19 +1934,23 @@ export function createVolumeNodeMaterial(
 
   // The ray, the base-voxel map, the per-sample LOD pick and the empty-space hop
   // — shared with the label raymarcher (`volumeRayNodes.ts`).
-  const { vOrigin, vDirection, toBaseVoxel, desiredLevelAt, brickExitRel } =
+  const { clippedPosition, vOrigin, vDirection, toBaseVoxel, desiredLevelAt, brickExitRel } =
     makeVolumeRayNodes(t, rayUniforms);
+  // The proxy box is drawn at the crop box, not at the whole volume.
+  material.positionNode = clippedPosition;
 
   material.fragmentNode = Fn(() => {
     // Ray ∩ [0, baseShape]; discards the fragment when the ray misses.
-    const { originB, dirB, invD, boundsX, boundsY, rayLen } = emitVolumeRayBounds(
-      { vOrigin, vDirection, toBaseVoxel, desiredLevelAt, brickExitRel },
+    const { originB, dirB, invD, boundsX, boundsY, rayLen, fullRayLen } = emitVolumeRayBounds(
+      { clippedPosition, vOrigin, vDirection, toBaseVoxel, desiredLevelAt, brickExitRel },
       rayUniforms,
     );
     // Termination guarantee: uMaxSteps steps of at least this size always
     // cross the ray, whatever the per-sample LOD picks — a lower tier cap
-    // trades step density for the same full-ray coverage.
-    const floorDelta = rayLen.div(max(float(uMaxSteps), 1.0));
+    // trades step density for the same full-ray coverage. Taken from the
+    // UNCROPPED ray, which the marched one is never longer than: a crop box
+    // then shortens the march instead of tightening the stride.
+    const floorDelta = fullRayLen.div(max(float(uMaxSteps), 1.0));
 
     // Marching pitch per level (CPU mirror:
     // features/bricks/shaderspec/raymarchStep.ts `directionProjectedPitch` —

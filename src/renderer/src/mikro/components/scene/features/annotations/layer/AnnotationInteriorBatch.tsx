@@ -6,6 +6,7 @@ import { perfMonitor } from "../../../platform/perf/perfMonitor";
 import { roiForSegment } from "../annotationBatch";
 import { interiorColors, type InteriorBatch } from "../interiorBatch";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
+import { clickPointOf } from "../hover/annotationActionTarget";
 
 /**
  * One merged interior mesh for a batch of flat shapes (rectangles, ellipses,
@@ -33,7 +34,7 @@ export const AnnotationInteriorBatch = ({
   batch: InteriorBatch<SelectedRoi>;
   selectedIds: ReadonlySet<string>;
   selectable: boolean;
-  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean) => void;
+  onSelectRoi: (roi: SelectedRoi, appendSelection: boolean, point?: HoverPoint) => void;
   /** Arms the hover handlers (`annotationHoverEnabled`) — the raycast gate. */
   hoverable: boolean;
   /** Per move over a shape; the store dedupes by id (state changes on enter/leave). */
@@ -85,7 +86,7 @@ export const AnnotationInteriorBatch = ({
         const roi = roiForSegment(batch.ranges, event.faceIndex);
         if (!roi) return;
         event.stopPropagation();
-        onSelectRoi(roi, event.nativeEvent.shiftKey);
+        onSelectRoi(roi, event.nativeEvent.shiftKey, clickPointOf(event));
       }
     : undefined;
 

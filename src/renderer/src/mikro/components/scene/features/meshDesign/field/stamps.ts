@@ -69,7 +69,7 @@ const segmentDistance = (x: number, y: number, z: number, a: Vec3, b: Vec3): num
   return Math.hypot(x - a[0] - abx * t, y - a[1] - aby * t, z - a[2] - abz * t);
 };
 
-/** A polyline swept by a sphere — the bridge's and the tube-from-path's body. */
+/** A polyline swept by a sphere — the bridge's body, and the inflate brush's. */
 export const capsuleChainStamp = (points: readonly Vec3[], radius: number): Stamp => {
   const min: [number, number, number] = [Infinity, Infinity, Infinity];
   const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
@@ -296,7 +296,7 @@ export function applyStamp(field: SculptField, stamp: Stamp, mode: "add" | "subt
           const current = (data ?? target.data)[i];
           const next = mode === "add" ? Math.min(current, clamped) : Math.max(current, clamped);
           if (next !== current) {
-            if (!data) data = Float32Array.from(target.data);
+            if (!data) data = target.data.slice();
             data[i] = next;
             changed = true;
           }
@@ -343,7 +343,7 @@ export function smoothInSphere(field: SculptField, center: Vec3, radius: number)
           (field.data[i - 1] + field.data[i + 1] + field.data[i - nx] + field.data[i + nx] + field.data[i - nx * ny] + field.data[i + nx * ny]) / 6;
         const next = field.data[i] + 0.5 * (mean - field.data[i]);
         if (next !== field.data[i]) {
-          if (!data) data = Float32Array.from(field.data);
+          if (!data) data = field.data.slice();
           data[i] = next;
         }
       }

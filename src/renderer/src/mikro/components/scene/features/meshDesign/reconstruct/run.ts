@@ -1,7 +1,7 @@
 import type { ExtractionContext, BrushSkeletonState, TubeSurface, BrushSample } from "../brush";
-import type { MeshDesignState, ReconstructGesture } from "../store/meshDesignStore";
+import type { LastReconstruction, MeshDesignState, ReconstructGesture } from "../store/meshDesignStore";
 import { timed } from "../perf";
-import { buildCandidate } from "./candidate";
+import { applyReconstruction } from "./apply";
 import { reconstructorById } from "./registry";
 import { reconstructKey, settingsOf } from "./settings";
 
@@ -9,12 +9,13 @@ import { reconstructKey, settingsOf } from "./settings";
 export type ReconstructOutcome = { ok: true } | { ok: false; message: string } | null;
 
 /**
- * One reconstruction, gesture → candidate: run the reconstructor picked for
- * this gesture, build its preview, put it up for a verdict. Shared by the
- * first run (a tool's `run`, on release) and every re-run (a slider moved —
- * `useReconstructRerun`), so the two cannot produce different candidates.
+ * One reconstruction, gesture → mesh: run the reconstructor picked for this
+ * gesture and put its result into the session. Shared by the first run (a
+ * tool's `run`, on release) and every re-run (a slider moved —
+ * `useReconstructRerun`, which passes the reconstruction it is re-tuning),
+ * so the two cannot produce different meshes.
  */
-export async function reconstructToCandidate(input: {
+export async function reconstruct(input: {
   gestureKind: ReconstructGesture;
   gesture: readonly BrushSample[];
   layerId: string;
@@ -24,6 +25,8 @@ export async function reconstructToCandidate(input: {
   design: MeshDesignState;
   stale: () => boolean;
   publishLive: (tube: TubeSurface) => void;
+  /** Set on a re-run: the reconstruction whose result this one replaces. */
+  retune?: LastReconstruction;
 }): Promise<ReconstructOutcome> {
   const { design, extraction, stale } = input;
   if (!extraction) return { ok: false, message: "The gesture's layer is no longer in the scene" };
@@ -47,18 +50,20 @@ export async function reconstructToCandidate(input: {
       }),
     );
     if (!result || stale()) return null;
-    const candidate = await timed("candidate:build", () => buildCandidate(result, {
-      reconstructor,
-      gestureKind: input.gestureKind,
-      gesture,
-      layerId: input.layerId,
-      paramsKey: reconstructKey(reconstructor.id, settings, params),
-      settings,
-      superseded: stale,
-    }));
+    const applied = await timed("reconstruct:apply", () =>
+      applyReconstruction(design, result, {
+        reconstructor,
+        gestureKind: input.gestureKind,
+        gesture,
+        layerId: input.layerId,
+        paramsKey: reconstructKey(reconstructor.id, settings, params),
+        settings,
+        retune: input.retune,
+        superseded: stale,
+      }),
+    );
     if (stale()) return null;
-    if (!candidate) return { ok: false, message: "The reconstruction collapsed to nothing" };
-    design.setCandidate(candidate);
+    if (!applied) return { ok: false, message: "The reconstruction collapsed to nothing" };
     return { ok: true };
   } catch (error) {
     if (stale()) return null;

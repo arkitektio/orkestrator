@@ -382,35 +382,36 @@ export const AnimateBlok = createBlokComponent({name: 'Animate', placement: IN_M
   );
   useSceneNotice(clipName && !clip ? 'Unknown animation clip' : null, `The model has no clip '${clipName}'.`);
 
-  const playback = React.useMemo(() => {
-    if (!clip) return undefined;
-    const mixer = new THREE.AnimationMixer(model.instance.root);
+  // Started in the effect that also stops it: a memo would start the clip once, and the
+  // first cleanup (React runs effects twice in development) would stop it for good.
+  const playback = React.useRef<{mixer: THREE.AnimationMixer; action: THREE.AnimationAction} | undefined>(undefined);
+  const state = React.useRef<MotionState | undefined>(undefined);
+  React.useEffect(() => {
+    if (!clip) return;
+    const root = model.instance.root;
+    const mixer = new THREE.AnimationMixer(root);
     const action = mixer.clipAction(clip);
     action.play();
     action.paused = true;
-    return {mixer, action};
+    playback.current = {mixer, action};
+    // A clip bound to state can change: the new clip starts from its own position, not
+    // from where the previous one was left.
+    state.current = undefined;
+    return () => {
+      playback.current = undefined;
+      mixer.stopAllAction();
+      mixer.uncacheRoot(root);
+    };
   }, [clip, model]);
-  React.useEffect(
-    () => () => {
-      playback?.mixer.stopAllAction();
-      playback?.mixer.uncacheRoot(model.instance.root);
-    },
-    [model, playback],
-  );
 
   const still = useBlokSceneStill();
-  const state = React.useRef<MotionState | undefined>(undefined);
-  // A clip bound to state can change: the new clip starts from its own position, not
-  // from where the previous one was left.
-  React.useEffect(() => {
-    state.current = undefined;
-  }, [playback]);
   useFrame((_state, delta) => {
-    if (!playback || !clip) return;
+    const playing = playback.current;
+    if (!playing || !clip) return;
     const input = clipMotion({time, progress, animateTo, duration}, clip.duration, still);
     state.current = stepMotion(state.current ?? initialMotion(input), input, Math.min(delta, 0.1));
-    playback.action.time = Math.min(Math.max(state.current.displayed, 0), clip.duration);
-    playback.mixer.update(0);
+    playing.action.time = Math.min(Math.max(state.current.displayed, 0), clip.duration);
+    playing.mixer.update(0);
   });
   return null;
 });

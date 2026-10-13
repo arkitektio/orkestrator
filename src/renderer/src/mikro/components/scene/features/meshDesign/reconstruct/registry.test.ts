@@ -26,7 +26,7 @@ describe("reconstructor registry", () => {
     expect(reconstructorById(reconstructors.click)?.gesture).toBe("click");
   });
 
-  it("keys a candidate on the reconstructor and on every setting", () => {
+  it("keys a reconstruction on the reconstructor and on every setting", () => {
     const settings = {
       radiusWorld: 2,
       weights: { intensity: 1 } as never,

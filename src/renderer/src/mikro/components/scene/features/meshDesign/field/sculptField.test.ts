@@ -52,7 +52,7 @@ describe("sculptField", () => {
   it("round-trips one closed mesh through the field within the grid's fidelity", () => {
     const sphere = sphereMesh(6, [0, 0, 0]);
     const field = meshToField(sphere, 0.5);
-    const out = marchField(field, "cubes");
+    const out = marchField(field);
     expect(isWatertight(out)).toBe(true);
     expect(Math.abs(signedVolume(out) - SPHERE_VOLUME(6)) / SPHERE_VOLUME(6)).toBeLessThan(0.1);
   });
@@ -62,7 +62,7 @@ describe("sculptField", () => {
     const b = sphereMesh(5, [4, 0, 0]);
     let field = meshToField(a, 0.5);
     field = unionMesh(field, b);
-    const out = marchField(field, "cubes");
+    const out = marchField(field);
     expect(isWatertight(out)).toBe(true);
     const volume = signedVolume(out);
     // Union < sum (they overlap), > either alone.
@@ -86,7 +86,7 @@ describe("sculptField", () => {
     const before = field.size[0];
     field = unionMesh(field, b);
     expect(field.size[0]).toBeGreaterThan(before);
-    const out = marchField(field, "cubes");
+    const out = marchField(field);
     expect(isWatertight(out)).toBe(true);
     expect(Math.abs(signedVolume(out) - 2 * SPHERE_VOLUME(3)) / (2 * SPHERE_VOLUME(3))).toBeLessThan(0.15);
   });
@@ -96,9 +96,9 @@ describe("sculptField", () => {
     const field = meshToField(sphere, 0.5);
     const carved = subtractCapsule(field, [[-8, 0, 0], [8, 0, 0]], 2);
     expect(carved).not.toBe(field);
-    const out = marchField(carved, "cubes");
+    const out = marchField(carved);
     expect(isWatertight(out)).toBe(true);
-    expect(signedVolume(out)).toBeLessThan(signedVolume(marchField(field, "cubes")) * 0.95);
+    expect(signedVolume(out)).toBeLessThan(signedVolume(marchField(field)) * 0.95);
     // The axis is now outside the surface: no vertex remains near the core.
     const p = out.positions;
     for (let v = 0; v < p.length; v += 3) {

@@ -72,7 +72,6 @@ export const tubeFit: Reconstructor = {
       // A quarter of the typical radius resolves a round cross-section; never
       // finer than half a voxel, which is all the measurement supports.
       spacing: Math.max(finest / 2, typical / 4),
-      guide: fit.centers,
       level: picked.level,
       note: notes.length > 0 ? notes.join("; ") : undefined,
     };

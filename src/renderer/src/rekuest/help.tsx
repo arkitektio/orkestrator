@@ -274,10 +274,12 @@ export const REKUEST_HELP = {
         <>Open the <b>Bindings</b> tab of the sidebar to see which agent stands behind each part of the blok. Click an agent to open it.</>,
         <>Click the blok name in the <b>Bindings</b> tab to go back to the blok this was made from.</>,
         <>Press <b>History</b> in the header to see the panel as it was earlier. In the bar below it, drag the slider, press the arrows to go to the change before or after, or press play to let it run on from there. Click the time to jump to another one. Press <b>Go live</b> to return to the present.</>,
+        <>Press <b>Revisions</b> in that bar to go through the past one recorded change of an agent at a time instead: the arrows go to the revision before or after, the slider runs over all revisions since the agent started, and typing a number into <b>Revision</b> and pressing Enter goes straight to it. With more than one agent, choose whose revisions to step through. Press <b>Time</b> to get the slider back.</>,
         <>Press <b>Delete Materialized Blok</b> to remove it. You are taken back to the list.</>,
       ]}
       tips={[
         <>While the bar says <b>PAST</b> the panel only shows what was: its controls run nothing.</>,
+        <>A revision number counts within one run of an agent and starts again when the agent restarts. The other agents are shown as they were at the moment of the revision.</>,
         <>A yellow notice at the top names what stops the panel from working: a part that is <b>Not bound</b> to any agent, or a bound agent that is offline.</>,
         <>In the <b>Bindings</b> tab a green dot means the agent is connected, a grey one that it is offline.</>,
       ]}

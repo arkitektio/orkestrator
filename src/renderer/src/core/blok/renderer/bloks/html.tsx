@@ -8,7 +8,7 @@ import {
   useBlok,
   useValue,
 } from '../runtime';
-import {useAssetImageUrl} from '../assets';
+import {AssetSourceNotice, useAssetImageUrl} from '../assets';
 import {
   actionProp,
   boolSchema,
@@ -246,7 +246,8 @@ export const Img = createBlokComponent(
     const radius = useValue(blok.radius);
 
     if (!src) {
-      return null;
+      // An image its app only says where to fetch: whoever may add it is offered to.
+      return asset.source ? <AssetSourceNotice source={asset.source} kind="IMAGE" /> : null;
     }
 
     return (

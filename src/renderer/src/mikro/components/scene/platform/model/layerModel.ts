@@ -28,7 +28,7 @@ import {
 } from "./renderGraph";
 import { resolveIntensityAxis, resolvePhasorAxis } from "./dims";
 import { readGains } from "./whiteBalanceGains";
-import { composeLayerAffine, type SceneTransformContext } from "@/core/data/scene/coords/transformGraph";
+import { composeLatticeAffine, type SceneTransformContext } from "@/core/data/scene/coords/transformGraph";
 import { pinnedIndex, type LensLookup } from "@/mikro/lib/lenses/lensSelection";
 import { poolLensOf } from "./channelLens";
 
@@ -187,9 +187,13 @@ export type LayerState = Omit<ImageLayerFragment, "__typename"> & {
   defaultVolumeLOD?: number | null;
   visible?: boolean;
   /**
-   * Voxel→world spatial affine (x, y, z rows), composed CLIENT-SIDE from the
-   * scene's coordinate-transformation graph (`transformGraph.ts`) — the server
-   * no longer carries a flat `affineMatrix` on layers. Null = identity.
+   * LATTICE→world spatial affine (x, y, z rows), composed CLIENT-SIDE from the
+   * scene's coordinate-transformation graph (`composeLatticeAffine`) — the
+   * server no longer carries a flat `affineMatrix` on layers. Null = identity.
+   *
+   * Its input is the corner-anchored lattice the layer renders, `[0, shape]`:
+   * voxel `k` is the cell `[k, k + 1)` and its centre, `k + 0.5`, lands where
+   * the server puts index `k`. Never apply it to a bare voxel index.
    */
   affineMatrix: number[][] | null;
   /**
@@ -359,7 +363,7 @@ export const normalizeLayer = (
     colormap: transfer?.colormap ?? null,
     color: transfer?.color ?? null,
     gamma: transfer?.gamma ?? null,
-    affineMatrix: composeLayerAffine(scene, layer),
+    affineMatrix: composeLatticeAffine(scene, layer),
     xAxis: renderAxes?.x ?? null,
     yAxis: renderAxes?.y ?? null,
     zAxis: renderAxes?.z ?? null,
@@ -448,7 +452,7 @@ export const normalizeLabelLayer = (
     colormap: null,
     color: null,
     gamma: null,
-    affineMatrix: composeLayerAffine(scene, layer),
+    affineMatrix: composeLatticeAffine(scene, layer),
     xAxis: renderAxes?.x ?? null,
     yAxis: renderAxes?.y ?? null,
     zAxis: renderAxes?.z ?? null,
@@ -509,7 +513,7 @@ const lensLayerCommon = (
     intensityAxis: channel.axis,
     // The RAW layer: the affine is composed from the lens' own placement edges
     // and reduces to the spatial axes, so the channel slice never reaches it.
-    affineMatrix: composeLayerAffine(scene, layer),
+    affineMatrix: composeLatticeAffine(scene, layer),
     xAxis: renderAxes?.x ?? null,
     yAxis: renderAxes?.y ?? null,
     zAxis: renderAxes?.z ?? null,

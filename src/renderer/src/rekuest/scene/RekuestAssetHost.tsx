@@ -1,9 +1,30 @@
 import * as React from 'react';
-import {BlokAssetHostProvider, type BlokAsset, type BlokAssetHost} from '@/core/blok/renderer/assets';
+import {
+  BlokAssetHostProvider,
+  type BlokAsset,
+  type BlokAssetHost,
+  type BlokAssetSource,
+} from '@/core/blok/renderer/assets';
 import {useDatalayerEndpoint} from '@/core/connection/arkitekt/host';
-import {useAgentAssetsQuery, type MediaStoreFragment} from '@/rekuest/api/graphql';
+import {ADMIN_ROLE, useHasRoles} from '@/core/connection/roles';
+import {DEFAULT_MODEL_POLICY} from '@/core/model/glb';
+import {
+  AgentAssetsDocument,
+  AssetPolicyDocument,
+  CreateAssetDocument,
+  RequestAssetUploadDocument,
+  useAgentAssetsQuery,
+  type AgentAssetFragment,
+  type AssetPolicyQuery,
+  type CreateAssetMutation,
+  type CreateAssetMutationVariables,
+  type MediaStoreFragment,
+  type RequestAssetUploadMutation,
+  type RequestAssetUploadMutationVariables,
+} from '@/rekuest/api/graphql';
 import {useRekuest} from '@/rekuest/api/hooks';
 import {getRekuestMediaUrl} from '@/rekuest/datalayer/rekuestAccess';
+import {addAsset, AddAssetError, type AssetLimits} from './addAsset';
 
 /**
  * rekuest as the host of a blok's assets: `@<dependency>.assets.<name>` is the
@@ -12,7 +33,88 @@ import {getRekuestMediaUrl} from '@/rekuest/datalayer/rekuestAccess';
  * An agent declares its assets when it registers and uploads them right after,
  * so a blok can be shown before its files are there: the asset is then awaited,
  * and asked for again until it arrives.
+ *
+ * A file the agent does not hold it names a source for instead. That one no app
+ * uploads: an admin's client fetches it from the source and adds it, here.
  */
+
+/** Bytes this client already holds and verified, by reference: an admin renders what it just added. */
+const heldBytes = new Map<string, Uint8Array>();
+
+const hostOf = (source: string): string => {
+  try {
+    return new URL(source).hostname;
+  } catch {
+    return source;
+  }
+};
+
+/**
+ * The way to add the file `declared` names a source for, for whoever may.
+ * A hook: called for every asset, with `undefined` where there is nothing to add.
+ */
+const useAssetSource = (declared: AgentAssetFragment | undefined): BlokAssetSource | undefined => {
+  const client = useRekuest();
+  const endpoint = useDatalayerEndpoint();
+  const isAdmin = useHasRoles(ADMIN_ROLE);
+  const [adding, setAdding] = React.useState(false);
+  const [failure, setFailure] = React.useState<string | undefined>(undefined);
+  const ref = declared?.ref;
+  const kind = declared?.kind;
+  const source = declared && !declared.asset ? (declared.source ?? undefined) : undefined;
+
+  const add = React.useCallback(() => {
+    if (!ref || !source) return;
+    if (!endpoint || !window.api?.fetchAsset) {
+      setFailure('Files can only be added from the desktop app.');
+      return;
+    }
+    setAdding(true);
+    setFailure(undefined);
+    addAsset(ref, source, {
+      limits: async (): Promise<AssetLimits> => {
+        const result = await client.query<AssetPolicyQuery>({query: AssetPolicyDocument});
+        const policy = result.data.assetPolicy;
+        return kind === 'MODEL_3D'
+          ? {maxSize: policy.model.maxSize, model: {...DEFAULT_MODEL_POLICY, ...policy.model}}
+          : {maxSize: policy.image.maxSize};
+      },
+      fetch: opts => window.api.fetchAsset(opts),
+      confirmPrivateHost: async host =>
+        window.confirm(`${host} is an address inside this network. Fetch the file from it?`),
+      requestUpload: async (reference, size) => {
+        const result = await client.mutate<RequestAssetUploadMutation, RequestAssetUploadMutationVariables>({
+          mutation: RequestAssetUploadDocument,
+          variables: {input: {ref: reference, size}},
+        });
+        const grant = result.data?.requestAssetUpload;
+        if (!grant) throw new AddAssetError('upload_failed', 'The server issued no upload grant.');
+        return {store: grant.store, grant};
+      },
+      upload: async (path, grant) => {
+        await window.api.uploadBigFile({uploadId: crypto.randomUUID(), path, grant, endpointUrl: endpoint});
+      },
+      create: async (reference, store) => {
+        await client.mutate<CreateAssetMutation, CreateAssetMutationVariables>({
+          mutation: CreateAssetDocument,
+          variables: {input: {ref: reference, store}},
+          refetchQueries: [AgentAssetsDocument],
+        });
+      },
+      discard: path => window.api.discardAsset({path}),
+    })
+      .then(bytes => {
+        heldBytes.set(ref, bytes);
+      })
+      .catch((problem: Error) => setFailure(problem.message))
+      .finally(() => setAdding(false));
+  }, [client, endpoint, kind, ref, source]);
+
+  return React.useMemo(
+    () => (source ? {host: hostOf(source), canAdd: isAdmin, add, adding, error: failure} : undefined),
+    [add, adding, failure, isAdmin, source],
+  );
+};
 
 const AWAITED_ASSET_POLL_MS = 5000;
 
@@ -37,22 +139,27 @@ const useAsset = (dependency: string, name: string): BlokAsset => {
     return stopPolling;
   }, [awaited, startPolling, stopPolling]);
 
+  const source = useAssetSource(declared);
+  const stored = declared?.asset?.ref;
+
   const load = React.useCallback(async (): Promise<Uint8Array> => {
+    const held = stored ? heldBytes.get(stored) : undefined;
+    if (held) return held;
     if (!file || !endpoint) throw new Error('The asset store is not reachable.');
     const response = await fetch(await getRekuestMediaUrl(file, client, endpoint));
     if (!response.ok) throw new Error(`The asset store answered ${response.status}.`);
     return new Uint8Array(await response.arrayBuffer());
-  }, [client, endpoint, file]);
+  }, [client, endpoint, file, stored]);
 
   return React.useMemo<BlokAsset>(() => {
     if (!name) return {status: 'unknown', reason: 'No asset is named.'};
     if (!agent) return {status: 'unknown', reason: `"${dependency}" is not bound to an agent.`};
     if (declared?.asset) return {status: 'ready', ref: declared.asset.ref, kind: declared.asset.kind, load};
-    if (declared) return {status: 'awaited', kind: declared.kind};
+    if (declared) return {status: 'awaited', kind: declared.kind, source};
     if (loading) return {status: 'loading'};
     if (error) return {status: 'unknown', reason: `The asset store could not be asked: ${error.message}`};
     return {status: 'unknown', reason: `Its app registers no asset named "${name}".`};
-  }, [agent, declared, dependency, error, load, loading, name]);
+  }, [agent, declared, dependency, error, load, loading, name, source]);
 };
 
 const HOST: BlokAssetHost = {useAsset};

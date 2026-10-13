@@ -650,16 +650,19 @@ export function createLabelVolumeNodeMaterial(
   // the mask would blink out exactly when you zoom into it. The ray is
   // unaffected: its origin is the camera and its entry comes from the slab test.
   material.side = THREE.BackSide;
+  // The proxy box is drawn at the crop box, not at the whole volume.
+  material.positionNode = rays.clippedPosition;
 
   material.fragmentNode = Fn(() => {
-    const { originB, dirB, invD, boundsX, boundsY, rayLen } = emitVolumeRayBounds(
+    const { originB, dirB, invD, boundsX, boundsY, fullRayLen } = emitVolumeRayBounds(
       rays,
       rayUniforms,
     );
 
     // Termination guarantee: uMaxSteps steps of at least this size always cross
-    // the ray, whatever the per-sample LOD picks.
-    const floorDelta = rayLen.div(max(float(uMaxSteps), 1.0));
+    // the ray, whatever the per-sample LOD picks. From the UNCROPPED ray (see
+    // `fullRayLen`): a crop box shortens the march, it does not tighten the stride.
+    const floorDelta = fullRayLen.div(max(float(uMaxSteps), 1.0));
     // NO jitter, deliberately unlike the intensity raymarcher. There it
     // dithers away the banding an accumulating projection shows at coarse
     // steps. Here the result is a hard SURFACE, and jittering the start would

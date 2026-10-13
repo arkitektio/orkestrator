@@ -6,40 +6,33 @@ import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
 import { useBrushSkeletonStore, useBrushSkeletonStoreApi } from "../brush";
 import { ParamRow } from "../../annotations/enhancers/shared/ParamRow";
 import { SurfaceQualityControls } from "../../annotations/enhancers/shared/SurfaceQualityControls";
-import { commitCandidate } from "../reconstruct/candidate";
 import { reconstructorById, reconstructorsFor } from "../reconstruct/registry";
 import { reconstructKey } from "../reconstruct/settings";
 import { useReconstructRerun } from "../reconstruct/useReconstructRerun";
-import {
-  useMeshDesignStore,
-  useMeshDesignStoreApi,
-  type ReconstructGesture,
-  type ReconstructorId,
-} from "../store/meshDesignStore";
+import { useMeshDesignStore, type ReconstructGesture, type ReconstructorId } from "../store/meshDesignStore";
 import { RECONSTRUCTOR_PANELS } from "./reconstructPanels";
 
-/** How long the settings must rest before the candidate is rebuilt. */
+/** How long the settings must rest before the reconstruction is rebuilt. */
 const RERUN_DEBOUNCE_MS = 300;
 
 /**
  * The panel of the two reconstruct tools (trace / seed): which reconstructor
- * turns the gesture into a mesh, that reconstructor's knobs, and the verdict
- * on the candidate it produced.
+ * turns the gesture into a mesh, and that reconstructor's knobs.
  *
- * The candidate is LIVE: it carries the settings it was built with
- * (`paramsKey`), and whenever the settings on screen stop matching — a
- * slider moved, another reconstructor was picked — it is rebuilt from the
- * same gesture. So the loop is "gesture once, tune until it fits, accept".
- * The rebuild waits for the pointer to come UP: a slider being dragged
+ * A reconstruction is added the moment it is built, and stays LIVE until the
+ * next act: it carries the settings it was built with (`paramsKey`), and
+ * whenever the settings on screen stop matching — a slider moved, another
+ * reconstructor was picked — it is rebuilt from the same gesture, in place.
+ * So the loop is "gesture once, tune until it fits, move on"; ⌘Z takes it
+ * back. The rebuild waits for the pointer to come UP: a slider being dragged
  * updates its readout live, and reconstructs once, where it was let go.
  */
 export const ReconstructPanel = ({ gesture }: { gesture: ReconstructGesture }) => {
   const selected = useMeshDesignStore((s) => s.reconstructors[gesture]);
   const setReconstructor = useMeshDesignStore((s) => s.setReconstructor);
   const params = useMeshDesignStore((s) => s.reconstructParams);
-  const candidate = useMeshDesignStore((s) => (s.candidate?.gestureKind === gesture ? s.candidate : null));
-  const busy = useMeshDesignStore((s) => s.candidateBusy);
-  const designApi = useMeshDesignStoreApi();
+  const last = useMeshDesignStore((s) => (s.last?.gestureKind === gesture ? s.last : null));
+  const busy = useMeshDesignStore((s) => s.retuning);
   const status = useBrushSkeletonStore((s) => s.status);
   const brushMessage = useBrushSkeletonStore((s) => s.message);
   // A failed gesture is still in the brush store: after moving a slider it
@@ -83,12 +76,12 @@ export const ReconstructPanel = ({ gesture }: { gesture: ReconstructGesture }) =
   const rerun = useReconstructRerun();
   const [advanced, setAdvanced] = useState(false);
 
-  const candidateKey = candidate?.paramsKey ?? null;
+  const builtKey = last?.paramsKey ?? null;
   useEffect(() => {
-    if (pressing || candidateKey === null || candidateKey === liveKey) return;
+    if (pressing || builtKey === null || builtKey === liveKey) return;
     const timer = window.setTimeout(() => void rerun(), RERUN_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [pressing, candidateKey, liveKey, rerun]);
+  }, [pressing, builtKey, liveKey, rerun]);
 
   const options = reconstructorsFor(gesture);
   const reconstructor = reconstructorById(selected);
@@ -131,37 +124,19 @@ export const ReconstructPanel = ({ gesture }: { gesture: ReconstructGesture }) =
         Surface quality
       </button>
       {advanced && <SurfaceQualityControls />}
-      {candidate && (
-        <div className="flex items-center gap-1">
-          <Button
-            size="xs"
-            variant="default"
-            disabled={busy}
-            onClick={() => void commitCandidate(designApi.getState())}
-            title="Add the preview to the mesh (Enter)"
-          >
-            Add ↵
-          </Button>
-          <Button
-            size="xs"
-            variant="outline"
-            disabled={busy}
-            onClick={() => void rerun()}
-            title="Reconstruct again from the same gesture — e.g. after more data streamed in"
-          >
-            Re-run
-          </Button>
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={() => designApi.getState().setCandidate(null)}
-            title="Drop the preview (Esc)"
-          >
-            Discard
-          </Button>
-        </div>
+      {last && (
+        <Button
+          size="xs"
+          variant="outline"
+          className="self-start"
+          disabled={busy}
+          onClick={() => void rerun()}
+          title="Reconstruct again from the same gesture — e.g. after more data streamed in"
+        >
+          Re-run
+        </Button>
       )}
-      {canRetry && !candidate && (
+      {canRetry && !last && (
         <Button
           size="xs"
           variant="outline"
@@ -179,10 +154,10 @@ export const ReconstructPanel = ({ gesture }: { gesture: ReconstructGesture }) =
           "Release to reconstruct"
         ) : working ? (
           "Reconstructing…"
-        ) : candidate ? (
+        ) : last ? (
           <>
-            {`Preview: ${(candidate.current.indices.length / 3).toLocaleString()} triangles — tune it, then Add`}
-            {candidate.note && <span className="block text-amber-300/90">{candidate.note}</span>}
+            Added — move a slider to refit it, ⌘Z takes it back
+            {last.note && <span className="block text-amber-300/90">{last.note}</span>}
           </>
         ) : (
           reconstructor?.description

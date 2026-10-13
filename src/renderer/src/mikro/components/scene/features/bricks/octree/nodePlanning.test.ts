@@ -276,6 +276,39 @@ describe("planLayerNodes (2D z slabs)", () => {
   const geo = buildLayerLevelGeometry(["z", "y", "x", "c"], layer, zLevels)!;
   const spec = resolveBrickSpec(geo, "2D");
 
+  it("shows the slice whose centre the plane is nearest to", () => {
+    // Three slices 2 µm apart, slice k at world z = 2k: the affine the layer
+    // carries is the corner-anchored lattice's, half a cell ahead of the index.
+    const placed = {
+      ...layer,
+      affineMatrix: [
+        [1, 0, 0, -0.5],
+        [0, 1, 0, -0.5],
+        [0, 0, 2, -1],
+        [0, 0, 0, 1],
+      ],
+    } as LayerState;
+    const slabAt = (currentZ: number) =>
+      planLayerNodes({
+        layer: placed,
+        geometry: geo,
+        spec,
+        mode: "2D",
+        viewRange: FULL_VIEW,
+        camera: null,
+        lodBias: 1,
+        currentZ,
+      }).slabZ;
+    expect([0, 2, 4].map(slabAt)).toEqual([0, 1, 2]);
+    expect([1.1, 2.9].map(slabAt)).toEqual([1, 1]);
+    expect(slabAt(3.1)).toBe(2);
+    // Half a slice past the end slices' centres the plane is off the stack.
+    expect(slabAt(-0.9)).toBe(0);
+    expect(slabAt(-1.1)).toBeNull();
+    expect(slabAt(4.9)).toBe(2);
+    expect(slabAt(5.1)).toBeNull();
+  });
+
   it("plans bricks of the selected slab only", () => {
     const p = planLayerNodes({
       layer,

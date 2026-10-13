@@ -79,35 +79,40 @@ export const RoiToolbar = () => {
           straight edge where a traced one was asked for has to say why, or the
           enhancer reads as broken. (The brush panel carries its own status
           line, so its messages are not repeated here.) */}
-      <span className="text-[10px] text-white/50">
-        {enhancerMessage && isEnhanceableTool(activeTool) ? (
-          <span className="text-amber-300/90">{enhancerMessage}</span>
-        ) : isEnhanceableTool(activeTool) && vectorEnhance ? (
-          "Click points — each edge follows the data. Double-click to finish"
-        ) : activeTool === "SELECT" ? (
-          "Drag to select annotations"
-        ) : activeTool === "BRUSH" ? (
-          "Drag over the volume to paint a stroke along the structure"
-        ) : displayMode === "3D" ? (
-          "Click the volume to place each point — probed onto the data"
-        ) : (
-          "Drawing annotations on the scene"
-        )}
-      </span>
-      <ButtonGroup>
-        {tools.map(({ tool, label, icon: Icon }) => (
-          <Button
-            key={tool}
-            variant={activeTool === tool ? "default" : "outline"}
-            size="xs"
-            onClick={() => setActiveTool(tool)}
-            title={label}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            <span className="text-[10px]">{label}</span>
-          </Button>
-        ))}
-      </ButtonGroup>
+      {/* The frosted pill is what keeps the bar legible over a bright image:
+          it dims and blurs what is behind it, so white-on-translucent still
+          reads on a white RGB frame and all but disappears on a dark one. */}
+      <div className="pointer-events-auto flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-black/50 px-2 pb-1.5 pt-1 shadow-lg shadow-black/20 backdrop-blur-xl backdrop-brightness-75 backdrop-saturate-150">
+        <span className="text-[10px] text-white/70">
+          {enhancerMessage && isEnhanceableTool(activeTool) ? (
+            <span className="text-amber-300/90">{enhancerMessage}</span>
+          ) : isEnhanceableTool(activeTool) && vectorEnhance ? (
+            "Click points — each edge follows the data. Double-click to finish"
+          ) : activeTool === "SELECT" ? (
+            "Drag to select annotations"
+          ) : activeTool === "BRUSH" ? (
+            "Drag over the volume to paint a stroke along the structure"
+          ) : displayMode === "3D" ? (
+            "Click the volume to place each point — probed onto the data"
+          ) : (
+            "Drawing annotations on the scene"
+          )}
+        </span>
+        <ButtonGroup>
+          {tools.map(({ tool, label, icon: Icon }) => (
+            <Button
+              key={tool}
+              variant={activeTool === tool ? "default" : "outline"}
+              size="xs"
+              onClick={() => setActiveTool(tool)}
+              title={label}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              <span className="text-[10px]">{label}</span>
+            </Button>
+          ))}
+        </ButtonGroup>
+      </div>
     </div>
   );
 };

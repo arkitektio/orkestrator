@@ -96,24 +96,25 @@ describe("crop clip planes", () => {
 });
 
 describe("crop z range", () => {
-  // 11 slices of 2 µm starting at z = 0: slice k spans [2k, 2k + 2).
   const grid = { min: 0, max: 20, step: 2 };
 
-  it("starts as the one slice the anchor lies in", () => {
-    expect(cropZRange(10, 0, grid)).toEqual([10, 12]); // exactly on slice 5
-    expect(cropZRange(11.9, 0, grid)).toEqual([10, 12]);
-    // currentZ carries float error; it must not fall into the slice below.
-    expect(cropZRange(10 - 1e-9, 0, grid)).toEqual([10, 12]);
+  // Eleven slices 2 apart, their centres at 0, 2 .. 20: slice 5 is drawn over [9, 11).
+  it("starts as the one slice the anchor lies in, face to face", () => {
+    expect(cropZRange(10, 0, grid)).toEqual([9, 11]); // exactly on slice 5
+    expect(cropZRange(10.9, 0, grid)).toEqual([9, 11]);
+    expect(cropZRange(9.1, 0, grid)).toEqual([9, 11]);
+    // currentZ carries float error; it must not fall into a neighbour.
+    expect(cropZRange(10 - 1e-9, 0, grid)).toEqual([9, 11]);
   });
 
   it("grows a slice per step on each side", () => {
-    expect(cropZRange(10, 3, grid)).toEqual([4, 18]);
+    expect(cropZRange(10, 3, grid)).toEqual([3, 17]);
   });
 
-  it("stops at the stack and never goes below one slice", () => {
-    expect(cropZRange(10, 50, grid)).toEqual([0, 22]);
-    expect(cropZRange(10, -4, grid)).toEqual([10, 12]);
-    expect(cropZRange(500, 0, grid)).toEqual([20, 22]);
+  it("stops at the stack's faces and never goes below one slice", () => {
+    expect(cropZRange(10, 50, grid)).toEqual([-1, 21]);
+    expect(cropZRange(10, -4, grid)).toEqual([9, 11]);
+    expect(cropZRange(500, 0, grid)).toEqual([19, 21]);
   });
 
   it("uses unit slices when the scene has no stack", () => {

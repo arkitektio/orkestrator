@@ -7,6 +7,7 @@ import { SearchAssignWidgetFragment } from "@/rekuest/api/graphql";
 import useWidgetDependencies from "@/core/ports/engine/useWidgetDependencies";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { InputWidgetProps } from "@/core/ports/engine/types";
+import { portRequires, queryDeclaresRequires } from "@/core/ports/engine/constraints";
 import { pathToName } from "@/core/ports/engine/utils";
 import { CheckIcon } from "@radix-ui/react-icons";
 
@@ -155,17 +156,27 @@ export const ListSearchWidget = (
     path: props.path,
   });
 
+  // What each item must be is stated on the child port, so those are the
+  // constraints a query asking for `$requires` is handed.
+  const requiresKey = queryDeclaresRequires(query)
+    ? JSON.stringify(portRequires(props.port.children?.at(0)))
+    : undefined;
+
   const search = useCallback(
     async (searching: SearchOptions) => {
       if (!theward.search) throw new Error("Ward does not support search");
       if (!met) throw new Error("Dependencies not met");
       const options = await theward.search({
         query: query,
-        variables: { ...searching, ...values },
+        variables: {
+          ...searching,
+          ...(requiresKey !== undefined ? { requires: JSON.parse(requiresKey) } : {}),
+          ...values,
+        },
       });
       return options;
     },
-    [theward, query, values, met],
+    [theward, query, values, met, requiresKey],
   );
 
   const form = useFormContext();

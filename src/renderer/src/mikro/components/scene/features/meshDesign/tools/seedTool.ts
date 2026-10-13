@@ -1,13 +1,13 @@
 import { CircleDot } from "lucide-react";
 
-import { reconstructToCandidate } from "../reconstruct/run";
+import { reconstruct } from "../reconstruct/run";
 import type { DesignToolRunContext } from "./context";
 import type { DesignTool } from "./registry";
 
 /**
  * V — seed: click a structure; the reconstructor picked for clicks
  * (`reconstruct/registry` — a fitted ball, or the data's own surface grown
- * around the click) turns it into a candidate mesh awaiting its verdict.
+ * around the click) turns it into a mesh, added to the active one at once.
  */
 export const seedTool: DesignTool = {
   id: "seed",
@@ -19,7 +19,7 @@ export const seedTool: DesignTool = {
   hint: "Click a structure to reconstruct it",
   shortcut: { keys: ["V", "click"], description: "Seed: click a structure to reconstruct a ball" },
   async run(ctx: DesignToolRunContext) {
-    const outcome = await reconstructToCandidate({
+    const outcome = await reconstruct({
       gestureKind: "click",
       gesture: ctx.stroke,
       layerId: ctx.layerId,

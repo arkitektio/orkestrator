@@ -14,13 +14,21 @@ import {
 } from "../../platform/coords/cropBox";
 import { sceneZExtent } from "../../platform/coords/worldTransform";
 import { PreviewLine, type PreviewLineHandle } from "../../platform/draw/PreviewLine";
+import { isTypingTarget } from "../../platform/input/keyboardTarget";
 import { useModeStore } from "../../platform/stores/modeStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore, useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { gatherLayerWorldBoxes } from "../../platform/visibility/layerBoxes";
-import { rectOutline, boxOutline, wheelSteps, EDGE_ON_LIMIT } from "./cropGesture";
+import { rectOutline, boxOutline, depthPixelsPerStep, depthSteps, EDGE_ON_LIMIT } from "./cropGesture";
 
 const OUTLINE_COLOR = "#f5c84c";
+
+/**
+ * How long the pointer rests on a depth before the box is applied there. The
+ * outline follows every move; the scene behind it replans, and a replan per
+ * pointer event is what P9 and P30 are about.
+ */
+const DEPTH_SETTLE_MS = 90;
 
 /** What one gesture remembers between its events. Never React state. */
 type Session = {
@@ -28,10 +36,12 @@ type Session = {
   anchor: CropVec3;
   /** The opposite corner under the cursor; null until the pointer has moved. */
   corner: CropVec3 | null;
-  /** Wheel steps taken in the depth phase. */
+  /** Depth steps the pointer stands on in the depth phase. */
   steps: number;
-  /** Unspent wheel travel (trackpads deliver it in crumbs). */
-  wheelRemainder: number;
+  /** The pointer's y where the depth is one slice: where the rectangle was fixed. */
+  depthFromY: number;
+  /** Pointer pixels per depth step, fixed when the depth phase starts. */
+  pixelsPerStep: number;
   grid: CropZGrid | null;
   /** Where the content is, to keep an oblique 3D ray from running to the horizon. */
   reach: THREE.Box3 | null;
@@ -40,20 +50,20 @@ type Session = {
 /**
  * The crop gesture and the box's outline.
  *
- * `s` (bound in `KeyboardModeController`) moves `cropPhase` to `rect`; this
- * component does the rest: it anchors the first corner under the cursor, lets
- * the rectangle follow the pointer on the world XY plane through it, applies
- * the box on the first click, grows it through z on the wheel, and commits on
- * the second click.
+ * `s` (bound in `KeyboardModeController`) only enters the mode (`cropPhase`
+ * `arm`); this component does the rest, in three clicks: the first anchors a
+ * corner where it lands, the rectangle then follows the pointer on the world
+ * XY plane through it, the second click applies the box, moving the pointer up
+ * and down grows and shrinks it through z, and the third click commits.
  *
  * ## Plain DOM listeners, attached only while a gesture runs
  *
  * No R3F pointer props: a handler on an object is what puts it in the raycast
  * set (P20), and this needs no object — the rectangle lives on a mathematical
- * plane. The listeners are capture-phase on `window`, so the gesture's two
- * clicks and its wheel never reach the camera controls, the probe, or a mesh's
- * click handler. Right and middle drags pass through untouched: the view stays
- * free while the box is being sized.
+ * plane. The listeners are capture-phase on `window`, so the gesture's clicks
+ * never reach the camera controls, the probe, or a mesh's click handler. The
+ * wheel and right and middle drags pass through untouched: the view stays free
+ * while the box is being sized, and a drag does not move the depth.
  *
  * ## The moving rectangle is not in the store
  *
@@ -72,40 +82,24 @@ export const CropBoxGesture = () => {
 
   const lineRef = useRef<PreviewLineHandle>(null);
   const sessionRef = useRef<Session | null>(null);
-  /** Last pointer position over the canvas, so `s` knows where the cursor is. */
-  const cursorRef = useRef<{ x: number; y: number } | null>(null);
   /** When the gesture last took a click — see the dblclick guard. */
   const lastClickRef = useRef(Number.NEGATIVE_INFINITY);
 
-  // The cursor, tracked cheaply and always: a keypress carries no position.
-  // No raycast here — that happens once, when `s` is pressed.
+  // The gesture's clicks can land within a double-click's window; the
+  // synthesized dblclick arrives AFTER the gesture has gone idle and would
+  // recenter the camera (`DoubleClickRecenter`).
   useEffect(() => {
-    const element = gl.domElement;
-    const onMove = (event: PointerEvent) => {
-      cursorRef.current = { x: event.clientX, y: event.clientY };
-    };
-    const onLeave = () => {
-      cursorRef.current = null;
-    };
-    // The gesture's two clicks can land within a double-click's window; the
-    // synthesized dblclick arrives AFTER the gesture has gone idle and would
-    // recenter the camera (`DoubleClickRecenter`).
     const onDoubleClick = (event: MouseEvent) => {
       if (performance.now() - lastClickRef.current < 600) event.stopPropagation();
     };
-    element.addEventListener("pointermove", onMove, { passive: true });
-    element.addEventListener("pointerleave", onLeave, { passive: true });
     window.addEventListener("dblclick", onDoubleClick, true);
-    return () => {
-      element.removeEventListener("pointermove", onMove);
-      element.removeEventListener("pointerleave", onLeave);
-      window.removeEventListener("dblclick", onDoubleClick, true);
-    };
-  }, [gl]);
+    return () => window.removeEventListener("dblclick", onDoubleClick, true);
+  }, []);
 
-  // The outline of the APPLIED box, whenever no rectangle is being dragged.
+  // The outline of the APPLIED box, whenever the gesture is not drawing its
+  // own: the rectangle under the cursor, or the depth the pointer stands on.
   useEffect(() => {
-    if (phase === "rect") return;
+    if (phase === "rect" || phase === "depth") return;
     const draw = (box: CropBox | null) => {
       if (!box) lineRef.current?.clear();
       else lineRef.current?.setPoints(flat ? rectOutline(box.min, box.max, 0) : boxOutline(box));
@@ -144,21 +138,14 @@ export const CropBoxGesture = () => {
       return [hit.x, hit.y, z];
     };
 
-    // --- start: fix the first corner under the cursor -----------------------
-    if (phase === "rect" && !sessionRef.current) {
-      const cursor = cursorRef.current;
+    /** The first click: fix a corner where it landed. False when there is none to fix. */
+    const anchorAt = (clientX: number, clientY: number): boolean => {
       const viewer = viewerApi.getState();
-      // `s` is heard window-wide, but the box starts under the cursor: with the
-      // pointer over a panel (or another scene) there is no corner to fix.
-      if (!cursor) {
-        viewer.cancelCrop();
-        return;
-      }
-      const ray = rayAt(cursor.x, cursor.y);
+      const ray = rayAt(clientX, clientY);
       // A rectangle on the XY plane cannot be pointed at from along that plane.
       if (!ray || Math.abs(ray.direction.z) < EDGE_ON_LIMIT) {
         viewer.refuseCrop("edge-on");
-        return;
+        return false;
       }
 
       const boxes: THREE.Box3[] = [];
@@ -183,26 +170,25 @@ export const CropBoxGesture = () => {
       const anchor = onPlane(ray, anchorZ);
       if (!anchor) {
         viewer.refuseCrop("edge-on");
-        return;
+        return false;
       }
       sessionRef.current = {
         anchor,
         corner: null,
         steps: 0,
-        wheelRemainder: 0,
+        depthFromY: clientY,
+        pixelsPerStep: depthPixelsPerStep(0, 0),
         grid: sceneZExtent(sceneApi.getState().layers),
         reach,
       };
       lineRef.current?.clear();
-    }
-
-    const session = sessionRef.current;
-    if (!session) return;
+      return true;
+    };
 
     const onCanvas = (event: Event) =>
       event.target instanceof Node && (event.target === element || element.contains(event.target));
 
-    const boxOf = (corner: CropVec3, steps: number): CropBox => {
+    const boxOf = (session: Session, corner: CropVec3, steps: number): CropBox => {
       const [z0, z1] = cropZRange(session.anchor[2], steps, session.grid);
       return cropBoxFromCorners(
         [session.anchor[0], session.anchor[1], z0],
@@ -210,8 +196,20 @@ export const CropBoxGesture = () => {
       );
     };
 
-    const onPointerMove = (event: PointerEvent) => {
-      if (viewerApi.getState().cropPhase !== "rect") return;
+    // The depth the pointer stands on reaches the store once it rests there.
+    let settle: ReturnType<typeof setTimeout> | null = null;
+    const applyDepth = () => {
+      if (settle !== null) {
+        clearTimeout(settle);
+        settle = null;
+      }
+      const session = sessionRef.current;
+      if (!session?.corner) return;
+      viewerApi.getState().setCropBox(boxOf(session, session.corner, session.steps));
+      invalidate();
+    };
+
+    const followRect = (session: Session, event: PointerEvent) => {
       const ray = rayAt(event.clientX, event.clientY);
       const point = ray ? onPlane(ray, session.anchor[2]) : null;
       if (!point) return; // above the horizon: keep the last corner
@@ -225,6 +223,34 @@ export const CropBoxGesture = () => {
       lineRef.current?.setPoints(
         rectOutline(session.anchor, point, flat ? 0 : session.anchor[2]),
       );
+      invalidate();
+    };
+
+    const followDepth = (session: Session, event: PointerEvent) => {
+      if (!session.corner) return;
+      if (event.buttons !== 0) {
+        // A drag moves the VIEW (right, middle): the depth stays where it is,
+        // and goes on from wherever the drag lets go.
+        session.depthFromY = event.clientY + session.steps * session.pixelsPerStep;
+        return;
+      }
+      const steps = depthSteps(session.depthFromY, event.clientY, session.pixelsPerStep);
+      if (steps === session.steps) return;
+      session.steps = steps;
+      const box = boxOf(session, session.corner, steps);
+      // The flat view shows the box from above: its outline does not change.
+      if (!flat) lineRef.current?.setPoints(boxOutline(box));
+      invalidate();
+      if (settle !== null) clearTimeout(settle);
+      settle = setTimeout(applyDepth, DEPTH_SETTLE_MS);
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      const session = sessionRef.current;
+      if (!session) return;
+      const current = viewerApi.getState().cropPhase;
+      if (current === "rect") followRect(session, event);
+      else if (current === "depth") followDepth(session, event);
     };
 
     /** Left presses on the canvas are the gesture's; nothing below sees them. */
@@ -238,41 +264,57 @@ export const CropBoxGesture = () => {
       if (!swallow(event)) return;
       lastClickRef.current = performance.now();
       const viewer = viewerApi.getState();
+      if (viewer.cropPhase === "arm") {
+        if (anchorAt(event.clientX, event.clientY)) viewer.anchorCrop();
+        return;
+      }
+      const session = sessionRef.current;
+      if (!session) return;
       if (viewer.cropPhase === "depth") {
+        // Where the pointer stands, not where it last rested.
+        applyDepth();
         viewer.commitCrop();
         return;
       }
       const corner = session.corner;
       // A click before the pointer moved has no rectangle to fix.
       if (!corner || corner[0] === session.anchor[0] || corner[1] === session.anchor[1]) return;
-      viewer.fixCropRect(boxOf(corner, 0));
+      const slices = session.grid && session.grid.step > 0
+        ? Math.round((session.grid.max - session.grid.min) / session.grid.step)
+        : 0;
+      session.steps = 0;
+      session.depthFromY = event.clientY;
+      session.pixelsPerStep = depthPixelsPerStep(element.getBoundingClientRect().height, slices);
+      const box = boxOf(session, corner, 0);
+      // From here the outline is the box the pointer's depth gives, drawn here.
+      if (!flat) lineRef.current?.setPoints(boxOutline(box));
+      viewer.fixCropRect(box);
     };
 
-    const onWheel = (event: WheelEvent) => {
-      const viewer = viewerApi.getState();
-      if (viewer.cropPhase !== "depth" || !onCanvas(event)) return;
-      // The wheel is the box's for this phase: no zoom, no slice step.
-      event.preventDefault();
+    // Esc leaves the mode. Capture-phase, and here rather than with the other
+    // scene keys: the selection box (`core/dnd/selection/SelectionBox`) hears
+    // Escape on `document` and stops it, so a bubble listener on `window`
+    // never sees the key. Stopped in turn — this Esc cancels the box, it does
+    // not also clear the selection.
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isTypingTarget(event.target as { tagName?: string; isContentEditable?: boolean } | null)) return;
       event.stopPropagation();
-      const { steps, remainder } = wheelSteps(event, session.wheelRemainder);
-      session.wheelRemainder = remainder;
-      if (steps === 0 || !session.corner) return;
-      session.steps = Math.max(0, session.steps + steps);
-      viewer.setCropBox(boxOf(session.corner, session.steps));
-      invalidate();
+      viewerApi.getState().cancelCrop();
     };
 
+    window.addEventListener("keydown", onKeyDown, true);
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerdown", swallow, true);
     window.addEventListener("pointerup", swallow, true);
     window.addEventListener("click", onClick, true);
-    window.addEventListener("wheel", onWheel, { capture: true, passive: false });
     return () => {
+      if (settle !== null) clearTimeout(settle);
+      window.removeEventListener("keydown", onKeyDown, true);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerdown", swallow, true);
       window.removeEventListener("pointerup", swallow, true);
       window.removeEventListener("click", onClick, true);
-      window.removeEventListener("wheel", onWheel, true);
     };
   }, [phase, flat, camera, controls, gl, invalidate, viewerApi, sceneApi]);
 
