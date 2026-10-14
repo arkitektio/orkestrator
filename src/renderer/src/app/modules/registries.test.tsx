@@ -82,7 +82,6 @@ describe("host registries", () => {
       "importocirepo",
       "importwiregram",
       "installrelease",
-      "invitetocall",
       "kuvertaddtotask",
       "kuvertcategorize",
       "kuvertcategory",
