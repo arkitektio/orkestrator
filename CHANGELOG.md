@@ -1,3 +1,11 @@
+# [3.2.0](https://github.com/arkitektio/orkestrator/compare/v3.1.0...v3.2.0) (2026-10-14)
+
+
+### Features
+
+* **kabinet:** installable definitions match the selection, and open the install dialog ([8f38def](https://github.com/arkitektio/orkestrator/commit/8f38deffdff4697115912d0ae8d59f67c99ad855))
+* **mikro:** a lens is its kind's structure, never @mikro/lens ([7706044](https://github.com/arkitektio/orkestrator/commit/7706044303ad4417ed06470abf1e09ed2cc3b3a1))
+
 # [3.1.0](https://github.com/arkitektio/orkestrator/compare/v3.0.0...v3.1.0) (2026-10-14)
 
 
