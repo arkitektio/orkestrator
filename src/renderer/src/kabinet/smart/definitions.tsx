@@ -1,47 +1,83 @@
-import { useRekuest } from "@/rekuest/api/hooks";
-import { ListDefinitionFragment } from "@/kabinet/api/graphql";
-import { useHashActionWithProgress } from "@/rekuest/hooks/useHashActionWithProgress";
+import { useDialog } from "@/core/dialogs/registry";
+import {
+  DefinitionReleaseDocument,
+  DefinitionReleaseQuery,
+  DefinitionReleaseQueryVariables,
+  SmartDefinitionFragment,
+} from "@/kabinet/api/graphql";
+import { useKabinet } from "@/kabinet/api/hooks";
 import { Download } from "lucide-react";
 import React from "react";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
-import { KabinetDefinition } from "@/core/linkers";
 
 /** The Installable row; the section is a descriptor in `./sections.tsx`. */
 
-export type InstallAction = {
-  id: string;
-  hash: string;
-  name: string;
-  description?: string | null;
-};
+type DefinitionRelease = NonNullable<
+  DefinitionReleaseQuery["definition"]
+>["flavours"][number]["release"];
 
-export const InstallButton = (props: {
-  definition: ListDefinitionFragment;
-  action: InstallAction;
-  children: React.ReactNode;
-}) => {
-  const client = useRekuest();
-  const { assign, progress, installed } = useHashActionWithProgress({
-    hash: props.action.hash,
-    // Fired from the command palette, which closes on select: without this the
-    // install runs on with no indicator anywhere.
-    notifyGlobally: true,
-    onDone: () => {
-      void client.refetchQueries({ include: ["AllPrimaryActions"] });
-    },
-  });
+/**
+ * The release that brings a definition: its flavours' release, the newest
+ * version when it ships in several (a definition unchanged across versions
+ * keeps its hash, so one row stands for all of them).
+ */
+export const newestRelease = (releases: readonly DefinitionRelease[]): DefinitionRelease | undefined =>
+  releases.reduce<DefinitionRelease | undefined>(
+    (newest, release) =>
+      !newest || release.version.localeCompare(newest.version, undefined, { numeric: true }) > 0
+        ? release
+        : newest,
+    undefined,
+  );
+
+/**
+ * Opens the install dialog for the definition's release: it has you authorize
+ * a deployer app to run it as you, then asks where to deploy it (the store's
+ * `InstallButton` does the same). The menu lists slim definitions; which
+ * release brings one is asked only when the row is chosen.
+ */
+export const InstallDefinitionRow = ({ definition }: { definition: SmartDefinitionFragment }) => {
+  const client = useKabinet();
+  const { openDialog } = useDialog();
+  const [running, setRunning] = React.useState(false);
+  const [failure, setFailure] = React.useState<{ title: string; detail?: string } | null>(null);
+
+  const install = async () => {
+    setRunning(true);
+    setFailure(null);
+    try {
+      const { data } = await client.query<DefinitionReleaseQuery, DefinitionReleaseQueryVariables>({
+        query: DefinitionReleaseDocument,
+        variables: { id: definition.id },
+        fetchPolicy: "cache-first",
+      });
+      const release = newestRelease(
+        data.definition.flavours.map((flavour) => flavour.release),
+      );
+      if (!release) {
+        setFailure({ title: "No release brings this definition" });
+        return;
+      }
+      openDialog("installrelease", { release: release.id }, { className: "max-w-xl" });
+    } catch (error) {
+      setFailure({
+        title: "Could not find its release",
+        detail: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setRunning(false);
+    }
+  };
 
   return (
     <CommandActionRow
-      value={`install-${props.definition.id}-${props.action.id}`}
-      onSelect={() => {
-        void assign({ definition: {object: props.definition.id, __identifier: KabinetDefinition.identifier } });
-      }}
-      title={props.definition.name}
-      description={props.definition.description}
+      value={`install-${definition.id}`}
+      onSelect={() => void install()}
+      title={definition.name}
+      description={definition.description}
       icon={Download}
-      progress={progress}
-      disabled={!installed}
+      running={running}
+      failure={failure}
     />
   );
 };

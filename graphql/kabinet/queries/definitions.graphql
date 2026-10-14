@@ -42,3 +42,27 @@ query AllPrimaryDefinitions(
     ...ListDefinition
   }
 }
+
+query SmartDefinitions(
+  $pagination: OffsetPaginationInput
+  $filters: DefinitionFilter
+  $ordering: [DefinitionOrder!]
+) {
+  definitions(ordering: $ordering, pagination: $pagination, filters: $filters) {
+    ...SmartDefinition
+  }
+}
+
+# The releases that bring a definition, for the install dialog.
+query DefinitionRelease($id: ID!) {
+  definition(id: $id) {
+    id
+    flavours {
+      id
+      release {
+        id
+        version
+      }
+    }
+  }
+}

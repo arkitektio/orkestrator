@@ -39,3 +39,11 @@ fragment ListDefinition on Definition {
     }
   }
 }
+
+# What the smart menu lists: a row's name and line. The release it installs
+# from is asked for when the row is chosen (DefinitionRelease).
+fragment SmartDefinition on Definition {
+  id
+  name
+  description
+}

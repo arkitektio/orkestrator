@@ -912,6 +912,8 @@ export type DefinitionFilter = {
   protocols?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep only pure definitions (their result can be cached), or only impure ones. */
   pure?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<RequiresInput>>;
   /** Keep only definitions with one of these data scopes. */
   scopes?: InputMaybe<Array<ActionScope>>;
   /** Search by text: a case-insensitive substring of the name or the description, or semantic similarity of the query to both. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
@@ -1013,6 +1015,8 @@ export type DeploymentFilter = {
   OR?: InputMaybe<DeploymentFilter>;
   /** Keep only deployments whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<RequiresInput>>;
   /** Case-insensitive search on the deployment name. */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1208,6 +1212,8 @@ export type FlavourFilter = {
   hasDefinitions?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep only flavours whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<RequiresInput>>;
   /** Search by name: a case-insensitive substring, or semantic similarity of the query to the flavour's name and the app it was built from. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1736,6 +1742,8 @@ export type PodFilter = {
   backend?: InputMaybe<Scalars['ID']['input']>;
   /** Keep only pods whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<RequiresInput>>;
   /** Match pods by the name of their backend. */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1944,7 +1952,7 @@ export type Query = {
   /** Return the currently authenticated user. */
   me: User;
   /** Let a backend discover one of its own pods by local identifier. */
-  myPodAt: Pod;
+  myPodAt?: Maybe<Pod>;
   /** Return a single imported OCI repository by its ID. */
   ociRepo: OciRepo;
   /** List all imported OCI repositories visible to the current organization. */
@@ -2262,6 +2270,8 @@ export type ReleaseFilter = {
   identifier?: InputMaybe<Scalars['String']['input']>;
   /** Keep only releases whose ID is in this list. */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<RequiresInput>>;
   /** Case-insensitive search on the release version. */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -2871,6 +2881,8 @@ export type DefinitionFragment = { __typename?: 'Definition', id: string, name: 
   )> };
 
 export type ListDefinitionFragment = { __typename?: 'Definition', id: string, name: string, hash: any, description?: string | null, kind: ActionKind, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } } }> };
+
+export type SmartDefinitionFragment = { __typename?: 'Definition', id: string, name: string, description?: string | null };
 
 export type ListFlavourFragment = { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } }, selectors: Array<{ __typename?: 'CPUSelector' } | (
     { __typename?: 'CudaSelector' }
@@ -3640,6 +3652,25 @@ export type AllPrimaryDefinitionsQuery = { __typename?: 'Query', definitions: Ar
     { __typename?: 'Definition' }
     & ListDefinitionFragment
   )> };
+
+export type SmartDefinitionsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  filters?: InputMaybe<DefinitionFilter>;
+  ordering?: InputMaybe<Array<DefinitionOrder> | DefinitionOrder>;
+}>;
+
+
+export type SmartDefinitionsQuery = { __typename?: 'Query', definitions: Array<(
+    { __typename?: 'Definition' }
+    & SmartDefinitionFragment
+  )> };
+
+export type DefinitionReleaseQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DefinitionReleaseQuery = { __typename?: 'Query', definition: { __typename?: 'Definition', id: string, flavours: Array<{ __typename?: 'Flavour', id: string, release: { __typename?: 'Release', id: string, version: string } }> } };
 
 export type ListFlavoursQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4626,6 +4657,13 @@ export const DefinitionFragmentDoc = gql`
     ${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}
 ${ListFlavourFragmentDoc}`;
+export const SmartDefinitionFragmentDoc = gql`
+    fragment SmartDefinition on Definition {
+  id
+  name
+  description
+}
+    `;
 export const ListDefinitionFragmentDoc = gql`
     fragment ListDefinition on Definition {
   id
@@ -5563,6 +5601,85 @@ export function useAllPrimaryDefinitionsLazyQuery(baseOptions?: ApolloReactHooks
 export type AllPrimaryDefinitionsQueryHookResult = ReturnType<typeof useAllPrimaryDefinitionsQuery>;
 export type AllPrimaryDefinitionsLazyQueryHookResult = ReturnType<typeof useAllPrimaryDefinitionsLazyQuery>;
 export type AllPrimaryDefinitionsQueryResult = Apollo.QueryResult<AllPrimaryDefinitionsQuery, AllPrimaryDefinitionsQueryVariables>;
+export const SmartDefinitionsDocument = gql`
+    query SmartDefinitions($pagination: OffsetPaginationInput, $filters: DefinitionFilter, $ordering: [DefinitionOrder!]) {
+  definitions(ordering: $ordering, pagination: $pagination, filters: $filters) {
+    ...SmartDefinition
+  }
+}
+    ${SmartDefinitionFragmentDoc}`;
+
+/**
+ * __useSmartDefinitionsQuery__
+ *
+ * To run a query within a React component, call `useSmartDefinitionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSmartDefinitionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSmartDefinitionsQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *      filters: // value for 'filters'
+ *      ordering: // value for 'ordering'
+ *   },
+ * });
+ */
+export function useSmartDefinitionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SmartDefinitionsQuery, SmartDefinitionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SmartDefinitionsQuery, SmartDefinitionsQueryVariables>(SmartDefinitionsDocument, options);
+      }
+export function useSmartDefinitionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SmartDefinitionsQuery, SmartDefinitionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SmartDefinitionsQuery, SmartDefinitionsQueryVariables>(SmartDefinitionsDocument, options);
+        }
+export type SmartDefinitionsQueryHookResult = ReturnType<typeof useSmartDefinitionsQuery>;
+export type SmartDefinitionsLazyQueryHookResult = ReturnType<typeof useSmartDefinitionsLazyQuery>;
+export type SmartDefinitionsQueryResult = Apollo.QueryResult<SmartDefinitionsQuery, SmartDefinitionsQueryVariables>;
+export const DefinitionReleaseDocument = gql`
+    query DefinitionRelease($id: ID!) {
+  definition(id: $id) {
+    id
+    flavours {
+      id
+      release {
+        id
+        version
+      }
+    }
+  }
+}
+    `;
+
+/**
+ * __useDefinitionReleaseQuery__
+ *
+ * To run a query within a React component, call `useDefinitionReleaseQuery` and pass it any options that fit your needs.
+ * When your component renders, `useDefinitionReleaseQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useDefinitionReleaseQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDefinitionReleaseQuery(baseOptions: ApolloReactHooks.QueryHookOptions<DefinitionReleaseQuery, DefinitionReleaseQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<DefinitionReleaseQuery, DefinitionReleaseQueryVariables>(DefinitionReleaseDocument, options);
+      }
+export function useDefinitionReleaseLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<DefinitionReleaseQuery, DefinitionReleaseQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<DefinitionReleaseQuery, DefinitionReleaseQueryVariables>(DefinitionReleaseDocument, options);
+        }
+export type DefinitionReleaseQueryHookResult = ReturnType<typeof useDefinitionReleaseQuery>;
+export type DefinitionReleaseLazyQueryHookResult = ReturnType<typeof useDefinitionReleaseLazyQuery>;
+export type DefinitionReleaseQueryResult = Apollo.QueryResult<DefinitionReleaseQuery, DefinitionReleaseQueryVariables>;
 export const ListFlavoursDocument = gql`
     query ListFlavours {
   flavours {

@@ -289,7 +289,7 @@ Input describing a built app image to register (its manifest, image, selectors a
 """
 input AppImageInput {
   appImageId: String!
-  flavourName: String
+  flavourName: String = null
   image: DockerImageInput!
   inspection: InspectionInput!
   manifest: ManifestInput!
@@ -1194,6 +1194,11 @@ input DefinitionFilter {
   """
   pure: Boolean
 
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [RequiresInput!]
+
   """Keep only definitions with one of these data scopes."""
   scopes: [ActionScope!]
 
@@ -1345,6 +1350,11 @@ input DeploymentFilter {
 
   """Keep only deployments whose ID is in this list."""
   ids: [ID!]
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [RequiresInput!]
 
   """Case-insensitive search on the deployment name."""
   search: String
@@ -1589,6 +1599,11 @@ input FlavourFilter {
   ids: [ID!]
 
   """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [RequiresInput!]
+
+  """
   Search by name: a case-insensitive substring, or semantic similarity of the query to the flavour's name and the app it was built from. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
   """
   search: String
@@ -1769,7 +1784,7 @@ input ImplementationInput {
   """
   The interface of the implementation. This is used to group implementations together in the UI
   """
-  interface: String
+  interface: String = null
 
   """
   The locks of the implementation. This is used to specify which resources the implementation needs to run
@@ -1825,7 +1840,7 @@ input InspectionInput {
   implementations: [ImplementationInput!]!
   locks: [LockImplementationInput!]!
   requirements: [RequirementInput!]!
-  size: Int
+  size: Int = null
   states: [StateImplementationInput!]!
 }
 
@@ -2176,6 +2191,11 @@ input PodFilter {
   """Keep only pods whose ID is in this list."""
   ids: [ID!]
 
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [RequiresInput!]
+
   """Match pods by the name of their backend."""
   search: String
 }
@@ -2476,7 +2496,7 @@ type Query {
   me: User!
 
   """Let a backend discover one of its own pods by local identifier."""
-  myPodAt(localId: ID!): Pod!
+  myPodAt(localId: ID!): Pod
 
   """Return a single imported OCI repository by its ID."""
   ociRepo(id: ID!): OciRepo!
@@ -2700,6 +2720,11 @@ input ReleaseFilter {
 
   """Keep only releases whose ID is in this list."""
   ids: [ID!]
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [RequiresInput!]
 
   """Case-insensitive search on the release version."""
   search: String
@@ -3387,10 +3412,10 @@ input UpdateDeploymentInput {
 """Input for updating a pod's status."""
 input UpdatePodInput {
   """The backend-local identifier of the pod to update."""
-  localId: ID
+  localId: ID = null
 
   """The ID of the pod to update; required unless 'local_id' is given."""
-  pod: ID
+  pod: ID = null
 
   """The new status of the pod."""
   status: PodStatus!
