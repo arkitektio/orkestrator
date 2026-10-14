@@ -1,12 +1,10 @@
 import { RekuestGuard } from "@/rekuest/api/hooks";
 import {
-  DetailImplementationFragment,
   ListShortcutFragment,
   AllPrimaryActionsDocument,
   PrimaryActionFragment,
   ShortcutsDocument,
   useAllPrimaryActionsQuery,
-  useImplementationsQuery,
   useShortcutsQuery,
 } from "@/rekuest/api/graphql";
 import { Boxes, PlayCircle, Zap } from "lucide-react";
@@ -18,22 +16,15 @@ import type {
 } from "@/core/smart/extensions/section";
 import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { useStableData } from "@/core/smart/extensions/useStableData";
-import {
-  AssignButton,
-  BatchAssignButton,
-  BatchImplementationAssignButton,
-  ImplementationAssignButton,
-} from "./actions";
-import {
-  actionsVariables,
-  implementationsVariables,
-  shortcutsVariables,
-} from "./queries";
+import { AssignButton, BatchAssignButton } from "./actions";
+import { actionsVariables, shortcutsVariables } from "./queries";
 import { ShortcutButton } from "./shortcuts";
 
 /**
- * The rekuest sections of the smart context menu: Shortcuts, Run,
- * Implementations, and the two batch variants for a multi-selection.
+ * The rekuest sections of the smart context menu: Shortcuts, Run, and Batch
+ * for a multi-selection. No section lists implementations: an action row runs
+ * on whichever agent can take it, and a stateful one with several asks which
+ * (`AssignButton`, the "Run on" picker).
  *
  * Every query runs `cache-and-network` (the menu remounts per open, so cached
  * rows render at once and refresh behind) with `nextFetchPolicy: "cache-first"`
@@ -93,40 +84,7 @@ const useBatchActionItems = (ctx: SmartSectionContext): SectionItems<PrimaryActi
   return { items: stable.data?.actions, status: stable.status, error: stable.error };
 };
 
-const useImplementationItems = (
-  ctx: SmartSectionContext,
-): SectionItems<DetailImplementationFragment> => {
-  const demands = useSmartDemands(ctx);
-  const skip = demands.single.length === 0;
-  const result = useImplementationsQuery({
-    ...QUERY_OPTIONS,
-    variables: implementationsVariables(demands.implementation, { search: ctx.filter }),
-    skip,
-  });
-  const stable = useStableData(result, skip);
-  return { items: stable.data?.implementations, status: stable.status, error: stable.error };
-};
-
-const useBatchImplementationItems = (
-  ctx: SmartSectionContext,
-): SectionItems<DetailImplementationFragment> => {
-  const demands = useSmartDemands(ctx);
-  const skip = demands.objects !== "many";
-  const result = useImplementationsQuery({
-    ...QUERY_OPTIONS,
-    variables: implementationsVariables(demands.batchImplementation, { search: ctx.filter }),
-    skip,
-  });
-  const stable = useStableData(result, skip);
-  return { items: stable.data?.implementations, status: stable.status, error: stable.error };
-};
-
 const actionParts = (action: PrimaryActionFragment) => [action.name, action.description];
-const implementationParts = (implementation: DetailImplementationFragment) => [
-  implementation.action.name,
-  implementation.agent.name,
-  implementation.interface,
-];
 
 export const REKUEST_SHORTCUTS_SECTION: SmartContextSection<ListShortcutFragment> = {
   id: "rekuest.shortcuts",
@@ -178,21 +136,6 @@ export const REKUEST_ACTIONS_SECTION: SmartContextSection<PrimaryActionFragment>
   ],
 };
 
-export const REKUEST_IMPLEMENTATIONS_SECTION: SmartContextSection<DetailImplementationFragment> = {
-  id: "rekuest.implementations",
-  module: "rekuest",
-  title: "Implementations",
-  icon: PlayCircle,
-  priority: 41,
-  tier: "remote",
-  Guard: RekuestGuard,
-  applies: hasSubject,
-  useItems: useImplementationItems,
-  itemKey: (implementation) => implementation.id,
-  searchParts: implementationParts,
-  Row: ({ item, context }) => <ImplementationAssignButton implementation={item} {...context} />,
-};
-
 export const REKUEST_BATCH_ACTIONS_SECTION: SmartContextSection<PrimaryActionFragment> = {
   id: "rekuest.batchActions",
   module: "rekuest",
@@ -208,29 +151,10 @@ export const REKUEST_BATCH_ACTIONS_SECTION: SmartContextSection<PrimaryActionFra
   Row: ({ item, context }) => <BatchAssignButton action={item} {...context} />,
 };
 
-export const REKUEST_BATCH_IMPLEMENTATIONS_SECTION: SmartContextSection<DetailImplementationFragment> = {
-  id: "rekuest.batchImplementations",
-  module: "rekuest",
-  title: "Batch Implementations",
-  icon: Boxes,
-  priority: 43,
-  tier: "remote",
-  Guard: RekuestGuard,
-  applies: (props) => props.objects.length >= 2,
-  useItems: useBatchImplementationItems,
-  itemKey: (implementation) => implementation.id,
-  searchParts: implementationParts,
-  Row: ({ item, context }) => (
-    <BatchImplementationAssignButton implementation={item} {...context} />
-  ),
-};
-
 export const REKUEST_SECTIONS: SmartContextSection<any>[] = [
   REKUEST_SHORTCUTS_SECTION,
   REKUEST_ACTIONS_SECTION,
-  REKUEST_IMPLEMENTATIONS_SECTION,
   REKUEST_BATCH_ACTIONS_SECTION,
-  REKUEST_BATCH_IMPLEMENTATIONS_SECTION,
 ];
 
 /* Standalone forms, for callers that compose sections themselves (the palette). */

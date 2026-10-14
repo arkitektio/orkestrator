@@ -1,6 +1,5 @@
 import { stableJson } from "@/core/smart/structure";
 import {
-  ActionDemandInput,
   DemandKind,
   PortDemandInput,
   PortKind,
@@ -14,8 +13,8 @@ import type { SmartContextProps } from "@/core/smart/extensions/types";
  * The port demands the menu asks the servers with: "an action whose first arg
  * takes one of these, whose second takes one of those, returning that".
  *
- * One builder for every section (rekuest actions, shortcuts, implementations,
- * the batch variants, kabinet definitions) and for their prefetch, so the
+ * One builder for every section (rekuest actions, shortcuts, the batch
+ * variant, kabinet definitions) and for their prefetch, so the
  * variables are byte-identical wherever they are built — the Apollo cache key
  * is the serialised `filters`, and a prefetch only pays off if the later hook
  * reads the same entry. Nothing here emits an `undefined`-valued key.
@@ -34,8 +33,6 @@ export type SmartDemands = {
   single: PortDemandInput[];
   /** objects always as one Structure at arg 0 — the run-per-item form. */
   batch: PortDemandInput[];
-  implementation: ActionDemandInput;
-  batchImplementation: ActionDemandInput;
 };
 
 export const arityOf = (items: readonly unknown[] | undefined): Arity =>
@@ -121,31 +118,6 @@ const returnsDemand = (returns: readonly string[] | undefined): PortDemandInput 
 const present = <T,>(items: (T | null)[]): T[] =>
   items.filter((item): item is T => item !== null);
 
-export const buildImplementationDemand = (
-  demands: readonly PortDemandInput[],
-): ActionDemandInput => {
-  const argMatches = demands
-    .filter((demand) => demand.kind === DemandKind.Args)
-    .flatMap((demand) => demand.matches ?? []);
-  const returnMatches = demands
-    .filter((demand) => demand.kind === DemandKind.Returns)
-    .flatMap((demand) => demand.matches ?? []);
-
-  const forceArgLength = argMatches.length
-    ? Math.max(...argMatches.map((match) => match.at ?? 0)) + 1
-    : undefined;
-  const forceReturnLength = returnMatches.length
-    ? Math.max(...returnMatches.map((match) => match.at ?? 0)) + 1
-    : undefined;
-
-  return {
-    ...(argMatches.length ? { argMatches } : {}),
-    ...(typeof forceArgLength === "number" ? { forceArgLength } : {}),
-    ...(returnMatches.length ? { returnMatches } : {}),
-    ...(typeof forceReturnLength === "number" ? { forceReturnLength } : {}),
-  };
-};
-
 export const buildDemands = (source: DemandSource): SmartDemands => {
   const objectIdentifier = source.objects[0]?.identifier;
   const partnerIdentifier = source.partners?.[0]?.identifier;
@@ -175,8 +147,6 @@ export const buildDemands = (source: DemandSource): SmartDemands => {
     partners,
     single,
     batch,
-    implementation: buildImplementationDemand(single),
-    batchImplementation: buildImplementationDemand(batch),
   };
 };
 

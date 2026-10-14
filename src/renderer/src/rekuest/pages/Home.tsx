@@ -411,7 +411,11 @@ const Page = () => {
             filters={{ isDone: false, rootIsnull: true }}
             order={{ createdAt: Ordering.Desc }}
           />
-          <TaskList />
+          <TaskList
+            filters={{ rootIsnull: true }}
+            order={{ createdAt: Ordering.Desc }}
+            pagination={{ limit: 5 }}
+          />
         </section>
 
         <section>

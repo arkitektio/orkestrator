@@ -20,6 +20,7 @@ import {
   type OpenableReturn,
 } from "./openResult";
 import { bindShortcutKey } from "./shortcutKeybinds";
+import { actionAvailability } from "./actions";
 
 /** The Shortcuts row; the section is a descriptor in `./sections.tsx`. */
 
@@ -181,6 +182,9 @@ export const ShortcutButton = (
       description={props.shortcut.description || (props.shortcut.bindNumber ? `Shortcut ${props.shortcut.bindNumber}` : undefined)}
       icon={Zap}
       progress={progress}
+      running={doing}
+      failure={error ? { title: "Could not run", detail: error } : null}
+      unavailable={actionAvailability(props.shortcut.action)}
       buttons={
         runsDirectly(props.shortcut.args, props) ? (
           <OpenResultButtons
@@ -197,8 +201,6 @@ export const ShortcutButton = (
               {props.shortcut.bindNumber}
             </Badge>
           ) : null}
-          {doing ? <span className="text-xs text-muted-foreground">...</span> : null}
-          {error ? <span className="text-xs text-red-800">{error}</span> : null}
         </span>
       }
     />

@@ -439,9 +439,7 @@ describe("host registries", () => {
       "kraph.entityRelations",
       "kraph.structureRelations",
       "rekuest.actions",
-      "rekuest.implementations",
       "rekuest.batchActions",
-      "rekuest.batchImplementations",
       "kabinet.definitions",
     ]);
   });

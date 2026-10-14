@@ -15,6 +15,11 @@ type Action {
   """Input arguments (ports) for the action."""
   args: [ArgPort!]!
 
+  """
+  Whether an agent that can take this action is connected (or is a webhook agent) right now: `liveImplementations > 0`.
+  """
+  assignable: Boolean!
+
   """Collections to which this action belongs."""
   collections: [Collection!]!
 
@@ -57,6 +62,11 @@ type Action {
 
   """Get the latest completed task for this action."""
   latestTask: Task
+
+  """
+  How many of its implementations sit on an agent that can take work now (connected, or a webhook agent) — one per agent. Kept by the database as agents connect and leave, a moment behind (takt recomputes it on commit); a crashed agent counts until takt's stale sweep notices (seconds).
+  """
+  liveImplementations: Int!
 
   """Name of the action."""
   name: String!
@@ -311,6 +321,11 @@ input ActionFilter {
 
   """Filter using app identifier"""
   appIdentifier: String
+
+  """
+  Whether an agent that can take the action is connected now (`Action.assignable`).
+  """
+  assignable: Boolean
   demands: [PortDemandInput!]
   ids: [ID!]
   inCollection: String
@@ -340,6 +355,10 @@ enum ActionKind {
 }
 
 input ActionOrder @oneOf {
+  """
+  Runnable first (DESC) or last (ASC) by `Action.assignable`. The order the filters set (a `search`'s ranking) is kept as the tie-break, so `search` with this ordering lists runnable matches first, each group still ranked by relevance.
+  """
+  assignable: Ordering
   definedAt: Ordering
   usedAt: Ordering
 }
@@ -623,6 +642,11 @@ input AgentFilter {
 
   """Filter using app identifier"""
   appIdentifier: ID
+
+  """
+  Agents that can receive work now: a webhook agent, or a connected one with a fresh heartbeat (takt's rule).
+  """
+  available: Boolean
   blokDependency: ID
 
   """Filter by client ID of the app the agent is registered to"""
@@ -2824,6 +2848,10 @@ input ImplementationFilter {
   action: ImplementationActionFilter
   actionDemand: ActionDemandInput
   actionHash: ActionHash
+
+  """
+  Whether an agent can run it now: a webhook agent, or a connected one with a fresh heartbeat (takt's rule).
+  """
   active: Boolean
   agent: ImplementationAgentFilter
   ids: [ID!]
@@ -2918,6 +2946,9 @@ type ImplementationMapping {
 }
 
 input ImplementationOrder @oneOf {
+  """
+  Implementations an agent can run now first (DESC), or last (ASC): takt's rule, `liveness.agent_available_q`.
+  """
   active: Ordering
   createdAt: Ordering
 }
@@ -5046,6 +5077,11 @@ input ShortcutFilter {
   DISTINCT: Boolean
   NOT: ShortcutFilter
   OR: ShortcutFilter
+
+  """
+  Whether an agent that can take the shortcut's action is connected now (`Action.assignable`).
+  """
+  assignable: Boolean
   demands: [PortDemandInput!]
   ids: [ID!]
   search: String
@@ -5053,6 +5089,10 @@ input ShortcutFilter {
 }
 
 input ShortcutOrder @oneOf {
+  """
+  Runnable first (DESC) or last (ASC) by the shortcut's `Action.assignable`; the order the filters set is the tie-break.
+  """
+  assignable: Ordering
   name: Ordering
 }
 
