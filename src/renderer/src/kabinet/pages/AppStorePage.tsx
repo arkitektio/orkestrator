@@ -192,9 +192,14 @@ const EmptyStore = () => (
         Add a repository to see apps registered with your organization.
       </p>
     </div>
-    <DialogButton name="createrepo" dialogProps={{}} size="sm">
-      Add a repository
-    </DialogButton>
+    <div className="flex flex-wrap justify-center gap-2">
+      <DialogButton name="createrepo" dialogProps={{}} size="sm">
+        Add a repository
+      </DialogButton>
+      <DialogButton name="importocirepo" dialogProps={{}} size="sm" variant="outline">
+        Import from registry
+      </DialogButton>
+    </div>
   </div>
 );
 
@@ -235,9 +240,14 @@ export const AppStorePage = () => {
       title="App Store"
       help={KABINET_HELP.appStore}
       pageActions={
-        <DialogButton alwaysShow name="createrepo" variant="outline" size="sm" dialogProps={{}}>
-          Add Repo
-        </DialogButton>
+        <>
+          <DialogButton alwaysShow name="createrepo" variant="outline" size="sm" dialogProps={{}}>
+            Add Repo
+          </DialogButton>
+          <DialogButton alwaysShow name="importocirepo" variant="outline" size="sm" dialogProps={{}}>
+            Import from registry
+          </DialogButton>
+        </>
       }
     >
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 p-4 md:p-6">

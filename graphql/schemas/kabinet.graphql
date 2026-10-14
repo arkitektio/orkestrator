@@ -167,9 +167,6 @@ input AgentDependencyInput {
   """
   app: String = null
 
-  """The policy used to pick which instance of the agent to assign to."""
-  assignPolicy: AssignPolicy! = BALANCED
-
   """
   Whether this dependency is auto resolvable or not. If so we will try to automatically resolve it based on the demands specified in the dependency and the capabilities of the available agents in the system. This is used to identify the demand in the system. Attention if any of the dependencies of this agent dependency is not auto resolvable, this dependency will also not be auto resolvable
   """
@@ -251,6 +248,11 @@ scalar AnyDefault
 An application, identified by a globally unique, reverse-domain identifier (e.g. live.arkitekt.app).
 """
 type App {
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
   """
   This app's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
   """
@@ -372,7 +374,7 @@ input ArgPortInput {
   effects: [EffectInput!] = null
 
   """
-  The identifier of a structure port. This is used to uniquely identify a specific type of structure.
+  The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it.
   """
   identifier: String = null
 
@@ -414,14 +416,6 @@ input ArgPortInput {
 
   """The assign widget to use for this port, discriminated by `kind`."""
   widget: AssignWidgetInput = null
-}
-
-enum AssignPolicy {
-  AUTOMATIC
-  BALANCED
-  FASTEST_RESPONSE
-  LEAST_BUSY
-  ROUND_ROBIN
 }
 
 interface AssignWidget {
@@ -1104,6 +1098,11 @@ type Definition {
   description: String
 
   """
+  This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
+  """
   This definition's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
   """
   embedding: Embedding
@@ -1270,7 +1269,7 @@ input DefinitionInput {
   portGroups: [PortGroupInput!]! = []
 
   """
-  Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with a PHYSICAL effect class.
+  Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with IRREVERSIBLE effects.
   """
   pure: Boolean! = false
 
@@ -1315,6 +1314,11 @@ type Deployment {
 
   """The backend this deployment runs on."""
   backend: Backend!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """The flavour that is deployed."""
   flavour: Flavour!
@@ -1445,14 +1449,6 @@ interface Effect {
   source: String
 }
 
-"""
-The effect class of an implementation — declared by the implementation, never the caller. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world (no UPSERT), so an ambiguous failure is terminal and must not be retried.
-"""
-enum EffectClass {
-  NONE
-  PHYSICAL
-}
-
 "\n    An effect is a way to modify a port based on a condition. For example,\n    you could have an effect that hides the port if another port meets a condition,\n    e.g. when the user selects a certain option in a dropdown, another port is hidden.\n\n    The condition is a pure blok UtilCall (`call`) evaluated client-side against the\n    catalog; it must return a boolean deciding whether the effect applies. `dependencies`\n    is the authoritative list of other ports the call may reference (plus `value` for the\n    port's own value).\n    "
 input EffectInput {
   """
@@ -1492,9 +1488,27 @@ enum EffectKind {
 }
 
 """
+What running an implementation again would do to the world. Purely informational: shown to whoever decides about a lost task.
+"""
+enum Effects {
+  IRREVERSIBLE
+  NONE
+  REPEATABLE
+  UNKNOWN
+}
+
+"""
 A stored vector, as `<model id>:<comma-separated floats>` -- e.g. `potion-base-8M:0.0123,-0.0456,...`. The model id is part of the value because vectors from different models are not comparable. Null when the row has no vector yet (it carries no text, or indexing has not caught up with it).
 """
 scalar Embedding
+
+"""
+How an implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies; a PLAIN one's task ends LOST.
+"""
+enum Execution {
+  PLAIN
+  WORKFLOW
+}
 
 """
 A buildable variant of a release: a specific Docker image together with the selectors and requirements needed to run it.
@@ -1510,6 +1524,11 @@ type Flavour {
 
   """The deployments that run this flavour."""
   deployments(filters: DeploymentFilter, ordering: [DeploymentOrder!]! = [], pagination: OffsetPaginationInput): [Deployment!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   This flavour's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
@@ -1549,6 +1568,11 @@ type Flavour {
   The hardware/capability selectors a backend must satisfy to run this flavour.
   """
   selectors: [Selector!]!
+
+  """
+  The imported OCI repository this flavour was read from, if it came from one.
+  """
+  source: OciRepo
 }
 
 """Filter for flavours."""
@@ -1583,6 +1607,11 @@ type GithubRepo {
 
   """The branch that is scanned for app manifests."""
   branch: String!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   This repository's stored vector, as `<model id>:<floats>`. Null until it has been indexed.
@@ -1712,6 +1741,11 @@ A implementation is a blueprint for a action. It is composed of a definition, a 
 """
 input ImplementationInput {
   """
+  A hash of the implementation's code. A workflow is only resumed by an implementation with the same hash.
+  """
+  codeHash: String = null
+
+  """
   The definition of the implementation. This is used to uniquely identify the implementation
   """
   definition: DefinitionInput!
@@ -1720,9 +1754,14 @@ input ImplementationInput {
   dependencies: [AgentDependencyInput!]! = []
 
   """
-  The effect class of this implementation. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world and an ambiguous failure is terminal (never retried). Declared by the implementation here — never by the caller.
+  What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task.
   """
-  effect: EffectClass! = NONE
+  effects: Effects! = UNKNOWN
+
+  """
+  How this implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies.
+  """
+  execution: Execution! = PLAIN
 
   """The instance id of the agent this implementation is bound to."""
   instanceId: String = null
@@ -1768,6 +1807,19 @@ input ImplementationInput {
   tracks: [TrackInput!] = null
 }
 
+"""
+Input for importing an OCI repository, or reading an imported one again.
+"""
+input ImportRepoInput {
+  """
+  The channels to follow besides the releases, e.g. ['main']. Omit to keep what is followed.
+  """
+  channels: [String!] = null
+
+  """The repository, e.g. 'ghcr.io/org/app'. No tag, no digest."""
+  reference: String!
+}
+
 input InspectionInput {
   bloks: [BlokImplementationInput!]! = []
   implementations: [ImplementationInput!]!
@@ -1776,6 +1828,11 @@ input InspectionInput {
   size: Int
   states: [StateImplementationInput!]!
 }
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf).
+"""
+scalar JSON @specifiedBy(url: "https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf")
 
 """
 The `JSONSerializable` scalar type represents a JSON-serializable value.
@@ -1860,9 +1917,7 @@ type LogDump {
 
 input ManifestInput {
   author: String! = "unknown"
-
-  """The entrypoint of the app, defaults to 'app'"""
-  entrypoint: String
+  entrypoint: String = null
   identifier: String!
   logo: String = null
   scopes: [String!]! = []
@@ -1918,6 +1973,11 @@ type Mutation {
   dumpLogs(input: DumpLogsInput!): LogDump!
 
   """
+  Import an OCI repository that carries an app's releases (e.g. ghcr.io/org/app), or read an imported one again.
+  """
+  importRepo(input: ImportRepoInput!): OciRepo!
+
+  """
   Rescan every tracked GitHub repository for new or updated app manifests.
   """
   rescanRepos: [GithubRepo!]!
@@ -1935,6 +1995,42 @@ type Mutation {
 
   """Update the status of an existing pod."""
   updatePod(input: UpdatePodInput!): Pod!
+}
+
+"""
+A repository on an OCI registry that carries an app's releases beside its images. Importing it is how an app is installed.
+"""
+type OciRepo {
+  """When this repository was imported."""
+  addedAt: DateTime!
+
+  """The channels followed besides the releases."""
+  channels: [String!]!
+
+  """The flavours read from this repository."""
+  flavours(filters: FlavourFilter, ordering: [FlavourOrder!]! = [], pagination: OffsetPaginationInput): [Flavour!]!
+  id: ID!
+
+  """The repository, as it was imported."""
+  name: String!
+
+  """The organization that imported this repository."""
+  organization: Organization!
+
+  """The repository as an image reference starts: `registry/repository`."""
+  reference: String!
+
+  """The registry host, e.g. ghcr.io."""
+  registry: String!
+
+  """The repository path on the registry, e.g. org/app."""
+  repository: String!
+
+  """When the registry was last read."""
+  scannedAt: DateTime
+
+  """When this repository was last updated."""
+  updatedAt: DateTime!
 }
 
 input OffsetPaginationInput {
@@ -2030,6 +2126,11 @@ type Pod {
 
   """The deployment this pod is an instance of."""
   deployment: Deployment!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
 
   """The most recent log dump captured from this pod."""
@@ -2277,7 +2378,7 @@ type Provides {
 
 input ProvidesInput {
   """
-  The key of the provision: the path into the object the constraint reads
+  The key of the provision: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes')
   """
   key: String!
 
@@ -2377,6 +2478,14 @@ type Query {
   """Let a backend discover one of its own pods by local identifier."""
   myPodAt(localId: ID!): Pod!
 
+  """Return a single imported OCI repository by its ID."""
+  ociRepo(id: ID!): OciRepo!
+
+  """
+  List all imported OCI repositories visible to the current organization.
+  """
+  ociRepos(pagination: OffsetPaginationInput): [OciRepo!]!
+
   """Return a single pod by its ID."""
   pod(id: ID!): Pod!
 
@@ -2457,8 +2566,18 @@ type Release {
   """Standing approvals to run this release, newest first."""
   approvals(filters: ReleaseApprovalFilter, pagination: OffsetPaginationInput): [ReleaseApproval!]!
 
+  """
+  The channel this is the latest build of. Null for a release proper, which never changes.
+  """
+  channel: String
+
   """The deployments that run a flavour of this release."""
   deployments(filters: DeploymentFilter, ordering: [DeploymentOrder!]! = [], pagination: OffsetPaginationInput): [Deployment!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   Whether every flavour image is addressed by content digest. If not, a rebuild pushed under the same tag is not detected by the approval digest.
@@ -2487,6 +2606,11 @@ type Release {
 
   """The original (upstream) logo URL of this release."""
   originalLogo: String
+
+  """
+  The source revision this release was built from, when its publisher said.
+  """
+  revision: String
 
   """The OAuth2 scopes this release requires."""
   scopes: [String!]!
@@ -2620,7 +2744,7 @@ type Requires {
 
 input RequiresInput {
   """
-  The key of the requirement: the path into the object the constraint reads
+  The key of the requirement: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes')
   """
   key: String!
 
@@ -2715,7 +2839,7 @@ input ReturnPortInput {
   effects: [EffectInput!] = null
 
   """
-  The identifier of a structure port. This is used to uniquely identify a specific type of structure.
+  The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it.
   """
   identifier: String = null
 

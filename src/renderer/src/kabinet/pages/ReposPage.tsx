@@ -20,6 +20,9 @@ const ReposPage = () => {
           <DialogButton alwaysShow name="createrepo" variant="outline" size="sm" dialogProps={{}}>
             Add Repo
           </DialogButton>
+          <DialogButton alwaysShow name="importocirepo" variant="outline" size="sm" dialogProps={{}}>
+            Import from registry
+          </DialogButton>
           <PageAction
             priority={-10}
             onClick={async () => {

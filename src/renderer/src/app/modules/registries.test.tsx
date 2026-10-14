@@ -79,6 +79,7 @@ describe("host registries", () => {
       "exportwiregram",
       "firetrigger",
       "implementationassign",
+      "importocirepo",
       "importwiregram",
       "installrelease",
       "invitetocall",
