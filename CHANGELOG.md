@@ -1,3 +1,15 @@
+# [3.1.0](https://github.com/arkitektio/orkestrator/compare/v3.0.0...v3.1.0) (2026-10-14)
+
+
+### Features
+
+* **kabinet:** import an app's releases from a container registry ([faf7fe2](https://github.com/arkitektio/orkestrator/commit/faf7fe24975acf2a5f3913913f10d515169fa43e))
+* **kraph:** say what a datum measures, with recent terms one click away ([e0dd929](https://github.com/arkitektio/orkestrator/commit/e0dd929cc021ce156bf03160753a456abf187aa5))
+* **lovekit:** invite people to a call from a popout, not a dialog ([946c18b](https://github.com/arkitektio/orkestrator/commit/946c18bcd93200e9b163462634a1c0893772050d))
+* **mikro:** one annotation hover card, with its pair actions as tiles ([4504a04](https://github.com/arkitektio/orkestrator/commit/4504a0474c1cfe188f06c27ce524a37d24d809ee))
+* **rekuest:** runnable actions first, no Implementations sections ([844bd8c](https://github.com/arkitektio/orkestrator/commit/844bd8c89a9840d0ab59e707adf1c5b26c4a28da))
+* **smart:** the menu is parts drawn by a skin ([62b571d](https://github.com/arkitektio/orkestrator/commit/62b571d4ca2fca0f2a118c5780fbeb6261cb0306))
+
 # [3.0.0](https://github.com/arkitektio/orkestrator/compare/v2.20.0...v3.0.0) (2026-10-13)
 
 
