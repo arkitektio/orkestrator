@@ -57,8 +57,7 @@ import { DEBUG_SECTIONS } from "./debugRegistry";
 import { DimSliderPanel } from "./chrome/DimSliderPanel";
 import { StaleProbeReconciler } from "../features/probe/StaleProbeReconciler";
 import { RoiDeleteKeybinding } from "../features/annotations/RoiDeleteKeybinding";
-import { AnnotationActionMenu } from "../features/annotations/hover/AnnotationActionMenu";
-import { HoveredAnnotationButton } from "../features/annotations/hover/HoveredAnnotationButton";
+import { AnnotationHoverCard } from "../features/annotations/hover/AnnotationHoverCard";
 import { ZSliderPanel } from "./chrome/ZSliderPanel";
 import { WebGPUUnavailableError } from "@/core/data/scene/gpu/webgpuSupport";
 import { useModeStore } from "../platform/stores/modeStore";
@@ -435,12 +434,11 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
               viewport keeps the Backspace-delete keybinding — sidebar tabs
               unmount when inactive, and a keybinding may not go with them. */}
           <RoiDeleteKeybinding />
-          {/* The button pinned to the hovered annotation, and the card it
-              grows into — the one overlay that follows a shape rather than a
-              corner. */}
-          <HoveredAnnotationButton />
-          {/* The menu a click on a shape opens: what runs on it and the image. */}
-          <AnnotationActionMenu />
+          {/* The button on the hovered annotation and the card it unfolds
+              into — what is known about the shape and what runs on it with
+              the image; a click on a shape opens the same card. The one
+              overlay that follows a shape rather than a corner. */}
+          <AnnotationHoverCard />
           <VisibilityManager />
           <AttributeProbeTracker />
           <ProbePointPinner />

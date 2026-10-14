@@ -11,23 +11,20 @@ import {
   MikroSparseDataset,
   MikroTableDataset,
 } from "@/core/linkers";
-import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Skeleton } from "@/core/ui/skeleton";
 import { useGetAnnotationInfoQuery, type GetAnnotationInfoQuery } from "@/mikro/api/graphql";
-
-import { indexLabel } from "../../../platform/model/selectionFormat";
-import { useSceneAnnotations } from "../sceneVectors";
 
 type Info = GetAnnotationInfoQuery["annotation"];
 type Resident = Info["derivedResidents"][number];
 
 /**
- * What the hover button's card says about one shape: who drew it, where it
- * sits, and what was MADE from it — the lenses cut to it and the data
+ * What the annotation card (`AnnotationHoverCard`) says about one shape below
+ * its header (which names the author): where it sits, and what was MADE from it — the lenses cut to it and the data
  * computed from it (a crop written out, an image straightened along it).
  *
  * Mounted only while the card is open, so the query (`GetAnnotationInfo`)
- * runs on the click and not on every hover; `cache-and-network`, because the
+ * runs when it unfolds and not on every shape the pointer crosses;
+ * `cache-and-network`, because the
  * usual reason to open it twice is that something was just made from the
  * shape. Both lists are the server's record of the act (`LensCut`, the
  * ANNOTATION source of `derivedFrom`), not a question about where things are
@@ -65,36 +62,19 @@ export const AnnotationInfoCard = ({ id }: { id: string }) => {
 };
 
 const Loaded = ({ info }: { info: Info }) => {
-  // A cache hit: the layer drawing this collection runs the same query. The
-  // index is how a shape is called everywhere else in the scene.
-  const listed = useSceneAnnotations(info.collection.id);
-  const index = listed?.findIndex((annotation) => annotation.id === info.id) ?? -1;
   const lenses = info.derivedLenses;
   const residents = info.derivedResidents.filter(isNamed);
 
   return (
     <div className="flex flex-col gap-2 px-2.5 pb-2.5 pt-1 text-xs">
       {info.description && <p className="whitespace-pre-wrap break-words">{info.description}</p>}
-      <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1">
-        <Fact term="Drawn by">
-          {info.creator ? (
-            <StructureDisplay identifier="@lok/user" id={info.creator.sub} variant="chip" fallback="Unknown user" />
-          ) : (
-            <span className="text-muted-foreground">Nobody on record</span>
-          )}
-        </Fact>
-        <Fact term="Collection">
-          <span className="break-words">
-            {index >= 0 && <span className="text-muted-foreground">{indexLabel(index)} in </span>}
-            {info.collection.name}
-          </span>
-        </Fact>
-        {info.coordinates.length > 0 && (
+      {info.coordinates.length > 0 && (
+        <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1">
           <Fact term="Pinned to">
             {info.coordinates.map((coordinate) => `${coordinate.name} ${coordinate.value}`).join(" · ")}
           </Fact>
-        )}
-      </dl>
+        </dl>
+      )}
 
       {lenses.length > 0 && (
         <Made heading="Cut to this shape">

@@ -21,16 +21,10 @@ vi.mock("@/core/linkers", () => {
     MikroMeshCollection: link("meshcollection"),
   };
 });
-vi.mock("@/core/smart/display/StructureDisplay", () => ({
-  StructureDisplay: ({ id }: { id: string }) => <span>user:{id}</span>,
-}));
 vi.mock("@/core/layout/fallbacks/StatusPage", () => ({
   StatusPage: ({ title }: { title: string }) => <div role="alert">{title}</div>,
 }));
 vi.mock("@/core/layout/fallbacks/statusActions", () => ({ RetryButton: () => null }));
-vi.mock("../sceneVectors", () => ({
-  useSceneAnnotations: () => [{ id: "ann:0" }, { id: "ann:1" }],
-}));
 
 import { AnnotationInfoCard } from "./AnnotationInfoCard";
 
@@ -56,14 +50,14 @@ describe("AnnotationInfoCard", () => {
     expect(container.querySelector("[aria-busy]")).not.toBeNull();
   });
 
-  it("says who drew it, where it sits, and that nothing was made from it", () => {
+  it("says where it sits, and that nothing was made from it", () => {
     infoQuery.mockReturnValue({ data: { annotation } });
     render(<AnnotationInfoCard id="ann:1" />);
 
-    expect(screen.getByText("user:7")).toBeTruthy();
-    // The index it goes by in the scene, from the collection's list.
-    expect(screen.getByText("#2 in")).toBeTruthy();
-    expect(screen.getByText("Somata")).toBeTruthy();
+    // The author is the card's header's, not a row here.
+    expect(screen.queryByText("Drawn by")).toBeNull();
+    // The collection says nothing the scene does not already show.
+    expect(screen.queryByText("Somata")).toBeNull();
     expect(screen.getByText("c 1")).toBeTruthy();
     expect(screen.getByText("Nothing has been cut or computed from this shape yet.")).toBeTruthy();
     expect(screen.queryByText("Cut to this shape")).toBeNull();
@@ -90,7 +84,6 @@ describe("AnnotationInfoCard", () => {
     });
     render(<AnnotationInfoCard id="ann:1" />);
 
-    expect(screen.getByText("Nobody on record")).toBeTruthy();
     expect(screen.getByText("cells.zarr · y[1:5], x[2:7]").getAttribute("href")).toBe("/lens/12");
     expect(screen.getByText("4 × 5")).toBeTruthy();
     expect(screen.getByText("Straightened").getAttribute("href")).toBe("/arraydataset/40");
@@ -110,6 +103,6 @@ describe("AnnotationInfoCard", () => {
     infoQuery.mockReturnValue({ data: { annotation }, error: new Error("boom"), refetch: vi.fn() });
     render(<AnnotationInfoCard id="ann:1" />);
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByText("Somata")).toBeTruthy();
+    expect(screen.getByText("c 1")).toBeTruthy();
   });
 });

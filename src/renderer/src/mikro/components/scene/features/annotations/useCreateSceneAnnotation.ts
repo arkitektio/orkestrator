@@ -108,8 +108,8 @@ export const useCreateSceneAnnotation = () => {
           coordinates: created.coordinates ?? [],
         };
         roiSelectionApi.getState().selectOnlyRoi(roi);
-        // A shape just drawn is the one to act on: open its action menu, as a
-        // click on it would (`hover/AnnotationActionMenu`), at its box corner.
+        // A shape just drawn is the one to act on: open its card, as a click
+        // on it would (`hover/AnnotationHoverCard`), at its box corner.
         // Not for a point: placing points is a run of clicks, and a menu
         // after each would sit in the way of the next.
         if (kind !== AnnotationKind.Point) roiSelectionApi.getState().openRoiMenu(roi);
