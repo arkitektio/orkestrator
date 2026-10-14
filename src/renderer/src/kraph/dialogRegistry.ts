@@ -1,6 +1,7 @@
 import { CreateEntityWithPropertiesDialog } from "./dialogs/CreateEntityWithProperties";
 import { CreateNewMeasurement } from "./dialogs/CreateNewMeasurement";
 import { CreateNewRelation } from "./dialogs/CreateNewRelation";
+import { MeasureTermDialog } from "./dialogs/MeasureTerm";
 import { RelateStructures } from "./dialogs/RelateStructures";
 import { SetAsMeasurement } from "./dialogs/SetAsMeasurement";
 import CreateEntityCategoryForm from "./forms/CreateEntityCategoryForm";
@@ -22,6 +23,7 @@ export const KRAPH_DIALOGS = {
   createnewrelation: CreateNewRelation,
   createnewmeasurement: CreateNewMeasurement,
   setasmeasurement: SetAsMeasurement,
+  measureterm: MeasureTermDialog,
   createentitywithproperties: CreateEntityWithPropertiesDialog,
   createentitycategory: CreateEntityCategoryForm,
   createprotocoleventcategory: CreateProtocolEventCategoryForm,

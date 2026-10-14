@@ -8,7 +8,10 @@ import {
   useAssertStructureRelationExistsMutation,
 } from "@/kraph/api/graphql";
 import { Structure } from "@/core/types";
-import { Network, Ruler } from "lucide-react";
+import { useKraph } from "@/kraph/api/funcs";
+import { measureTerm } from "@/kraph/lib/measureTerm";
+import { useRecentTerms, type RecentTerm } from "@/kraph/lib/recentTerms";
+import { History, Network, Ruler } from "lucide-react";
 import React from "react";
 import { toast } from "@/core/notify";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
@@ -123,6 +126,48 @@ export const CreateMeasurementButton = (props: {
       title={<div className="font-light">{props.category.label}</div>}
       description={props.category.graph.name}
       icon={Ruler}
+    />
+  );
+};
+
+/**
+ * A word you measured something as before, offered again: one click records
+ * the selection measuring a fresh instance of it (`measureTerm`) and moves the
+ * word back to the top of the recents.
+ */
+export const MeasureRecentTermRow = (props: { term: RecentTerm; left: PassDownProps }) => {
+  const client = useKraph();
+  const recents = useRecentTerms();
+  const [running, setRunning] = React.useState(false);
+  const [failure, setFailure] = React.useState<{ title: string; detail?: string } | null>(null);
+  const label = props.term.label || props.term.key;
+
+  const measure = async () => {
+    if (running) return;
+    setRunning(true);
+    setFailure(null);
+    try {
+      await measureTerm(client, props.left.objects, props.term.key);
+      recents.record({ key: props.term.key, label: props.term.label, color: props.term.color });
+      toast.success(`Measures ${label}`);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      setFailure({ title: `Could not measure ${label}`, detail });
+      toast.error(`Could not measure “${label}”: ${detail}`);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <CommandActionRow
+      value={`recent-term-${props.term.key}`}
+      onSelect={measure}
+      title={label}
+      description="measures · recent"
+      icon={History}
+      running={running}
+      failure={failure}
     />
   );
 };
