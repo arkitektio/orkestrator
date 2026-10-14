@@ -285,7 +285,7 @@ const AnnotationCollectionGroup = ({
         return;
       }
       selectOnlyRoi(roi);
-      // A plain click also opens the shape's action menu where it landed. Not
+      // A plain click also opens the shape's card where it landed. Not
       // a shift-click (building a selection), not a drag that ended here (no
       // point), and not under a drawing tool, where a click places a vertex.
       if (point && !drawingToolActive) openRoiMenu(roi, point);

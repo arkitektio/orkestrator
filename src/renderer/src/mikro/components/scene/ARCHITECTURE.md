@@ -77,15 +77,18 @@ the one folder other features may import.
 | `animation/` | the camera-tour editor and player |
 | `debug/` | the debug panel chrome and the `DebugSection` contract (features contribute sections via `shell/debugRegistry.ts`) |
 
-**A click on a shape opens `annotations/hover/AnnotationActionMenu`**: the
-rekuest actions whose two leading ports are `(Annotation, ArrayLens)`, in that
-order (Run and Shortcuts allow further arguments, as on every drop). The shape goes out with the descriptors the server answers for
+**An annotation has one overlay, `annotations/hover/AnnotationHoverCard`**: a
+button on the hovered shape that unfolds (resting on it) or pins (clicking it)
+into a card, opened pinned by a click on the shape or a draw. Under what is
+known about the shape (`AnnotationInfoCard`) it lists
+(`AnnotationPairActions`) the rekuest actions whose two leading ports are
+`(Annotation, ArrayLens)`, in that order (Run and Shortcuts allow further arguments, as on every drop). The shape goes out with the descriptors the server answers for
 it (`GetAnnotationDescriptors`, per clicked shape, never on `SceneAnnotation`),
 the lens is the one the probe reads (`effectiveProbeLayerId`) with its own.
 The lens is sent as `@mikro/arraylens`, not the UI's `@mikro/lens`: mikro hosts
 one structure per lens kind and rekuest matches a port's identifier exactly.
 The pairing is `annotationActionTarget.ts`; the full menu of a shape (no
-partner) stays on right-click and the hover button.
+partner) stays on right-click and the card header's ellipsis.
 
 ### The registries
 

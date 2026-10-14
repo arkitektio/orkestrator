@@ -1,24 +1,26 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { buildDemands } from "@/rekuest/smart/demands";
+import { Ordering } from "@/rekuest/api/graphql";
 import {
   SMART_ACTION_LIMIT,
   SMART_SHORTCUT_LIMIT,
   actionsVariables,
-  implementationsVariables,
   shortcutsVariables,
 } from "./queries";
 
 const demands = buildDemands({ objects: [{ identifier: "@mikro/image", id: "1" }] });
 
 describe("query variables", () => {
-  it("omit an empty search and a missing collection", () => {
+  it("omit an empty search and a missing collection, and ask for what can run first", () => {
     expect(actionsVariables(demands.single, { search: "" })).toEqual({
       filters: { demands: demands.single },
+      ordering: [{ assignable: Ordering.Desc }],
       pagination: { limit: SMART_ACTION_LIMIT },
     });
     expect(shortcutsVariables(demands.single)).toEqual({
       filters: { demands: demands.single },
+      ordering: [{ assignable: Ordering.Desc }],
       pagination: { limit: SMART_SHORTCUT_LIMIT },
     });
   });
@@ -28,10 +30,6 @@ describe("query variables", () => {
       demands: demands.single,
       search: "max",
       inCollection: "c",
-    });
-    expect(implementationsVariables(demands.implementation, { search: "x" }).filters).toEqual({
-      actionDemand: demands.implementation,
-      search: "x",
     });
   });
 

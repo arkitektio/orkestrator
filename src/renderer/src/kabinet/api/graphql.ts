@@ -28,6 +28,8 @@ export type Scalars = {
   Embedding: { input: any; output: any; }
   /** The `Identifier` scalar is a structure identifier of the form `@package/key` (e.g. `@mikro/image`) that types STRUCTURE, MEMORY_STRUCTURE and INTERFACE ports */
   Identifier: { input: any; output: any; }
+  /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf). */
+  JSON: { input: any; output: any; }
   /** The `JSONSerializable` scalar type represents a JSON-serializable value. */
   JSONSerializable: { input: any; output: any; }
   /** The `SearchQuery` scalar is a GraphQL query string a search widget executes against its ward to populate its choices */
@@ -148,8 +150,6 @@ export type AgentDependencyInput = {
   actionDependencies?: InputMaybe<Array<ActionDependencyInput>>;
   /** Which app this dependency corresponds to (i.e. do you want to use a stardist agent for that or imagej agents needs to be a world unique classsifier (reverse domain notation) that identifies the type of agent you want to use, and then we can have multiple agents of the same type running in the system, e.g. startdist could be the app for all agents that correpsond to a startdist instance) */
   app?: InputMaybe<Scalars['String']['input']>;
-  /** The policy used to pick which instance of the agent to assign to. */
-  assignPolicy?: AssignPolicy;
   /** Whether this dependency is auto resolvable or not. If so we will try to automatically resolve it based on the demands specified in the dependency and the capabilities of the available agents in the system. This is used to identify the demand in the system. Attention if any of the dependencies of this agent dependency is not auto resolvable, this dependency will also not be auto resolvable */
   autoResolvable?: Scalars['Boolean']['input'];
   /** A description of the dependency, why it is needed and what it is used for. This can be used to provide more context to users when assigning dependencies. */
@@ -187,6 +187,8 @@ export type AgentProbeInput = {
 /** An application, identified by a globally unique, reverse-domain identifier (e.g. live.arkitekt.app). */
 export type App = {
   __typename?: 'App';
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** This app's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   id: Scalars['ID']['output'];
@@ -286,7 +288,7 @@ export type ArgPortInput = {
   dimension?: InputMaybe<Scalars['String']['input']>;
   /** The effects of the port */
   effects?: InputMaybe<Array<EffectInput>>;
-  /** The identifier of a structure port. This is used to uniquely identify a specific type of structure. */
+  /** The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it. */
   identifier?: InputMaybe<Scalars['String']['input']>;
   /** The key of the port: unique among its siblings, free of '..', not 'value'. LIST/DICT item ports are conventionally keyed '...'. */
   key: Scalars['String']['input'];
@@ -307,14 +309,6 @@ export type ArgPortInput = {
   /** The assign widget to use for this port, discriminated by `kind`. */
   widget?: InputMaybe<AssignWidgetInput>;
 };
-
-export enum AssignPolicy {
-  Automatic = 'AUTOMATIC',
-  Balanced = 'BALANCED',
-  FastestResponse = 'FASTEST_RESPONSE',
-  LeastBusy = 'LEAST_BUSY',
-  RoundRobin = 'ROUND_ROBIN'
-}
 
 export type AssignWidget = {
   followValue?: Maybe<Scalars['String']['output']>;
@@ -809,6 +803,8 @@ export type Definition = {
   definedAt: Scalars['DateTime']['output'];
   /** A human-readable description of this action. */
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** This definition's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The flavours that provide this action. */
@@ -962,7 +958,7 @@ export type DefinitionInput = {
   name: Scalars['String']['input'];
   /** The port groups of the definition. This is used to group ports together in the UI */
   portGroups?: Array<PortGroupInput>;
-  /** Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with a PHYSICAL effect class. */
+  /** Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with IRREVERSIBLE effects. */
   pure?: Scalars['Boolean']['input'];
   /** The returns of the definition. This is the output ports of the definition */
   returns?: Array<ReturnPortInput>;
@@ -996,6 +992,8 @@ export type Deployment = {
   approval?: Maybe<ReleaseApproval>;
   /** The backend this deployment runs on. */
   backend: Backend;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The flavour that is deployed. */
   flavour: Flavour;
   id: Scalars['ID']['output'];
@@ -1100,12 +1098,6 @@ export type Effect = {
   source?: Maybe<Scalars['String']['output']>;
 };
 
-/** The effect class of an implementation — declared by the implementation, never the caller. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world (no UPSERT), so an ambiguous failure is terminal and must not be retried. */
-export enum EffectClass {
-  None = 'NONE',
-  Physical = 'PHYSICAL'
-}
-
 /**
  *
  *     An effect is a way to modify a port based on a condition. For example,
@@ -1140,6 +1132,20 @@ export enum EffectKind {
   Message = 'MESSAGE'
 }
 
+/** What running an implementation again would do to the world. Purely informational: shown to whoever decides about a lost task. */
+export enum Effects {
+  Irreversible = 'IRREVERSIBLE',
+  None = 'NONE',
+  Repeatable = 'REPEATABLE',
+  Unknown = 'UNKNOWN'
+}
+
+/** How an implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies; a PLAIN one's task ends LOST. */
+export enum Execution {
+  Plain = 'PLAIN',
+  Workflow = 'WORKFLOW'
+}
+
 /** A buildable variant of a release: a specific Docker image together with the selectors and requirements needed to run it. */
 export type Flavour = {
   __typename?: 'Flavour';
@@ -1149,6 +1155,8 @@ export type Flavour = {
   definitions: Array<Definition>;
   /** The deployments that run this flavour. */
   deployments: Array<Deployment>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** This flavour's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   id: Scalars['ID']['output'];
@@ -1170,6 +1178,8 @@ export type Flavour = {
   requirements: Array<Requirement>;
   /** The hardware/capability selectors a backend must satisfy to run this flavour. */
   selectors: Array<Selector>;
+  /** The imported OCI repository this flavour was read from, if it came from one. */
+  source?: Maybe<OciRepo>;
 };
 
 
@@ -1212,6 +1222,8 @@ export type GithubRepo = {
   addedAt: Scalars['DateTime']['output'];
   /** The branch that is scanned for app manifests. */
   branch: Scalars['String']['output'];
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** This repository's stored vector, as `<model id>:<floats>`. Null until it has been indexed. */
   embedding?: Maybe<Scalars['Embedding']['output']>;
   /** The flavours discovered by scanning this repository. */
@@ -1347,12 +1359,16 @@ export type HideEffect = Effect & {
 
 /** A implementation is a blueprint for a action. It is composed of a definition, a list of dependencies, and a list of params. */
 export type ImplementationInput = {
+  /** A hash of the implementation's code. A workflow is only resumed by an implementation with the same hash. */
+  codeHash?: InputMaybe<Scalars['String']['input']>;
   /** The definition of the implementation. This is used to uniquely identify the implementation */
   definition: DefinitionInput;
   /** The agent dependencies required by this implementation. */
   dependencies?: Array<AgentDependencyInput>;
-  /** The effect class of this implementation. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world and an ambiguous failure is terminal (never retried). Declared by the implementation here — never by the caller. */
-  effect?: EffectClass;
+  /** What running this implementation again would do to the world. Informational: shown to whoever decides about a lost task. */
+  effects?: Effects;
+  /** How this implementation runs: a WORKFLOW may call other actions and is resumed from its journal when its agent dies. */
+  execution?: Execution;
   /** The instance id of the agent this implementation is bound to. */
   instanceId?: InputMaybe<Scalars['String']['input']>;
   /** The interface of the implementation. This is used to group implementations together in the UI */
@@ -1371,6 +1387,14 @@ export type ImplementationInput = {
   provenanceAudience?: InputMaybe<Array<Scalars['String']['input']>>;
   /** The tracks of the definition. This is used to track values over time during the runtime of an action. This is the state of a dependency */
   tracks?: InputMaybe<Array<TrackInput>>;
+};
+
+/** Input for importing an OCI repository, or reading an imported one again. */
+export type ImportRepoInput = {
+  /** The channels to follow besides the releases, e.g. ['main']. Omit to keep what is followed. */
+  channels?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** The repository, e.g. 'ghcr.io/org/app'. No tag, no digest. */
+  reference: Scalars['String']['input'];
 };
 
 export type InspectionInput = {
@@ -1438,7 +1462,6 @@ export type LogDump = {
 
 export type ManifestInput = {
   author?: Scalars['String']['input'];
-  /** The entrypoint of the app, defaults to 'app' */
   entrypoint?: InputMaybe<Scalars['String']['input']>;
   identifier: Scalars['String']['input'];
   logo?: InputMaybe<Scalars['String']['input']>;
@@ -1479,6 +1502,8 @@ export type Mutation = {
   deletePod: Scalars['ID']['output'];
   /** Attach a captured log dump to a pod. */
   dumpLogs: LogDump;
+  /** Import an OCI repository that carries an app's releases (e.g. ghcr.io/org/app), or read an imported one again. */
+  importRepo: OciRepo;
   /** Rescan every tracked GitHub repository for new or updated app manifests. */
   rescanRepos: Array<GithubRepo>;
   /** Withdraw a release approval. */
@@ -1542,6 +1567,11 @@ export type MutationDumpLogsArgs = {
 };
 
 
+export type MutationImportRepoArgs = {
+  input: ImportRepoInput;
+};
+
+
 export type MutationRevokeApprovalArgs = {
   input: RevokeApprovalInput;
 };
@@ -1559,6 +1589,40 @@ export type MutationUpdateDeploymentArgs = {
 
 export type MutationUpdatePodArgs = {
   input: UpdatePodInput;
+};
+
+/** A repository on an OCI registry that carries an app's releases beside its images. Importing it is how an app is installed. */
+export type OciRepo = {
+  __typename?: 'OciRepo';
+  /** When this repository was imported. */
+  addedAt: Scalars['DateTime']['output'];
+  /** The channels followed besides the releases. */
+  channels: Array<Scalars['String']['output']>;
+  /** The flavours read from this repository. */
+  flavours: Array<Flavour>;
+  id: Scalars['ID']['output'];
+  /** The repository, as it was imported. */
+  name: Scalars['String']['output'];
+  /** The organization that imported this repository. */
+  organization: Organization;
+  /** The repository as an image reference starts: `registry/repository`. */
+  reference: Scalars['String']['output'];
+  /** The registry host, e.g. ghcr.io. */
+  registry: Scalars['String']['output'];
+  /** The repository path on the registry, e.g. org/app. */
+  repository: Scalars['String']['output'];
+  /** When the registry was last read. */
+  scannedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** When this repository was last updated. */
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+
+/** A repository on an OCI registry that carries an app's releases beside its images. Importing it is how an app is installed. */
+export type OciRepoFlavoursArgs = {
+  filters?: InputMaybe<FlavourFilter>;
+  ordering?: Array<FlavourOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 export type OffsetPaginationInput = {
@@ -1636,6 +1700,8 @@ export type Pod = {
   clientId?: Maybe<Scalars['String']['output']>;
   /** The deployment this pod is an instance of. */
   deployment: Deployment;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
   /** The most recent log dump captured from this pod. */
   latestLogDump?: Maybe<LogDump>;
@@ -1808,7 +1874,7 @@ export type Provides = {
 };
 
 export type ProvidesInput = {
-  /** The key of the provision: the path into the object the constraint reads */
+  /** The key of the provision: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes') */
   key: Scalars['String']['input'];
   /** The operator for the provision */
   operator: DescriptorOperator;
@@ -1879,6 +1945,10 @@ export type Query = {
   me: User;
   /** Let a backend discover one of its own pods by local identifier. */
   myPodAt: Pod;
+  /** Return a single imported OCI repository by its ID. */
+  ociRepo: OciRepo;
+  /** List all imported OCI repositories visible to the current organization. */
+  ociRepos: Array<OciRepo>;
   /** Return a single pod by its ID. */
   pod: Pod;
   /** Return the pod that a given agent (client) is running for a deployment. */
@@ -1983,6 +2053,16 @@ export type QueryMyPodAtArgs = {
 };
 
 
+export type QueryOciRepoArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryOciReposArgs = {
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QueryPodArgs = {
   id: Scalars['ID']['input'];
 };
@@ -2065,8 +2145,12 @@ export type Release = {
   approvalDigest: Scalars['String']['output'];
   /** Standing approvals to run this release, newest first. */
   approvals: Array<ReleaseApproval>;
+  /** The channel this is the latest build of. Null for a release proper, which never changes. */
+  channel?: Maybe<Scalars['String']['output']>;
   /** The deployments that run a flavour of this release. */
   deployments: Array<Deployment>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** Whether every flavour image is addressed by content digest. If not, a rebuild pushed under the same tag is not detected by the approval digest. */
   digestPinned: Scalars['Boolean']['output'];
   /** The entrypoint used to start the app. */
@@ -2082,6 +2166,8 @@ export type Release = {
   name: Scalars['String']['output'];
   /** The original (upstream) logo URL of this release. */
   originalLogo?: Maybe<Scalars['String']['output']>;
+  /** The source revision this release was built from, when its publisher said. */
+  revision?: Maybe<Scalars['String']['output']>;
   /** The OAuth2 scopes this release requires. */
   scopes: Array<Scalars['String']['output']>;
   /** The semantic version of this release. */
@@ -2214,7 +2300,7 @@ export type Requires = {
 };
 
 export type RequiresInput = {
-  /** The key of the requirement: the path into the object the constraint reads */
+  /** The key of the requirement: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes') */
   key: Scalars['String']['input'];
   /** The operator for the requirement */
   operator: DescriptorOperator;
@@ -2301,7 +2387,7 @@ export type ReturnPortInput = {
   dimension?: InputMaybe<Scalars['String']['input']>;
   /** The effects of the port */
   effects?: InputMaybe<Array<EffectInput>>;
-  /** The identifier of a structure port. This is used to uniquely identify a specific type of structure. */
+  /** The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it. */
   identifier?: InputMaybe<Scalars['String']['input']>;
   /** The key of the port: unique among its siblings, free of '..', not 'value'. LIST/DICT item ports are conventionally keyed '...'. */
   key: Scalars['String']['input'];
@@ -3433,6 +3519,14 @@ export type ScanRepoMutation = { __typename?: 'Mutation', scanRepo: (
     { __typename?: 'GithubRepo' }
     & RepoFragment
   ) };
+
+export type ImportRepoMutationVariables = Exact<{
+  reference: Scalars['String']['input'];
+  channels?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+}>;
+
+
+export type ImportRepoMutation = { __typename?: 'Mutation', importRepo: { __typename?: 'OciRepo', id: string, name: string, registry: string, repository: string, scannedAt?: any | null, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, release: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', id: string, identifier: string } } }> } };
 
 export type GetAppQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -5025,6 +5119,56 @@ export function useScanRepoMutation(baseOptions?: ApolloReactHooks.MutationHookO
 export type ScanRepoMutationHookResult = ReturnType<typeof useScanRepoMutation>;
 export type ScanRepoMutationResult = Apollo.MutationResult<ScanRepoMutation>;
 export type ScanRepoMutationOptions = Apollo.BaseMutationOptions<ScanRepoMutation, ScanRepoMutationVariables>;
+export const ImportRepoDocument = gql`
+    mutation ImportRepo($reference: String!, $channels: [String!]) {
+  importRepo(input: {reference: $reference, channels: $channels}) {
+    id
+    name
+    registry
+    repository
+    scannedAt
+    flavours {
+      id
+      name
+      release {
+        id
+        version
+        app {
+          id
+          identifier
+        }
+      }
+    }
+  }
+}
+    `;
+export type ImportRepoMutationFn = Apollo.MutationFunction<ImportRepoMutation, ImportRepoMutationVariables>;
+
+/**
+ * __useImportRepoMutation__
+ *
+ * To run a mutation, you first call `useImportRepoMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useImportRepoMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [importRepoMutation, { data, loading, error }] = useImportRepoMutation({
+ *   variables: {
+ *      reference: // value for 'reference'
+ *      channels: // value for 'channels'
+ *   },
+ * });
+ */
+export function useImportRepoMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ImportRepoMutation, ImportRepoMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ImportRepoMutation, ImportRepoMutationVariables>(ImportRepoDocument, options);
+      }
+export type ImportRepoMutationHookResult = ReturnType<typeof useImportRepoMutation>;
+export type ImportRepoMutationResult = Apollo.MutationResult<ImportRepoMutation>;
+export type ImportRepoMutationOptions = Apollo.BaseMutationOptions<ImportRepoMutation, ImportRepoMutationVariables>;
 export const GetAppDocument = gql`
     query GetApp($id: ID!) {
   app(id: $id) {

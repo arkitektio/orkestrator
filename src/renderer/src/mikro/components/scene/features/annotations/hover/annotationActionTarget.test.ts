@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { annotationObject, clickPointOf, probeLensPartner } from "./annotationActionTarget";
+import { annotationObject, clickPointOf, layerLensPartner, pairLayerId } from "./annotationActionTarget";
 
 const image = { "@mikro/n_space_axes": 2, "@mikro/n_channels": 1 };
 const volume = { "@mikro/n_space_axes": 3, "@mikro/n_channels": 2 };
@@ -9,6 +9,9 @@ const layers = [
   { id: "layer:image", lens: { id: "2", name: "DAPI", descriptors: image } },
   { id: "layer:volume", lens: { id: "3", descriptors: volume } },
 ];
+
+const probeLensPartner = (probeLayerId: string | null, shown: typeof layers) =>
+  layerLensPartner(pairLayerId(null, probeLayerId, shown), shown);
 
 describe("annotationActionTarget", () => {
   it("the annotation carries what the server said it provides", () => {
@@ -44,6 +47,12 @@ describe("annotationActionTarget", () => {
   it("nothing to pair with when no layer answers a probe", () => {
     expect(probeLensPartner(null, [])).toBeNull();
     expect(probeLensPartner(null, [layers[0]])).toBeNull();
+  });
+
+  it("a picked layer wins over the probe, hidden or not, while it is in the scene", () => {
+    expect(pairLayerId(null, "layer:volume", layers)).toBe("layer:volume");
+    expect(pairLayerId("layer:hidden", "layer:volume", layers)).toBe("layer:hidden");
+    expect(pairLayerId("layer:gone", null, layers)).toBe("layer:image");
   });
 
   it("a drag that ends on a shape is not a click", () => {

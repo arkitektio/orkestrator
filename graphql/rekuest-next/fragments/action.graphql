@@ -180,6 +180,10 @@ fragment PrimaryAction on Action {
   stateful
   name
   hash
+  # An agent that can take it is connected now: the menu dims the rest and asks for them last.
+  assignable
+  # How many agents could take it now: a stateful action with more than one asks which.
+  liveImplementations
   implementations {
     id
     interface

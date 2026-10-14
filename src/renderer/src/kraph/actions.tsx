@@ -57,6 +57,24 @@ export const NewEntityAction: Action = {
   },
 };
 
+/**
+ * "This datum measures a <word>" — the lookup (recent words first, or a new
+ * one) is the `measureterm` dialog; the recent words also come back as rows
+ * of the menu's Measures section (`smart/sections.tsx`).
+ */
+export const MeasureTermAction: Action = {
+  title: "Measures…",
+  description: "Record what this datum measures, as one of the organization's terms",
+  icon: Ruler,
+  conditions: [{ type: "datum" }, { type: "nopartner" }],
+  execute: async ({ state, dialog }) => {
+    if (!state.left.length) {
+      throw new Error("Nothing selected to measure");
+    }
+    dialog.openDialog("measureterm", { structures: state.left }, { size: "medium" });
+  },
+};
+
 export const LinkStructureToEntityAction: Action = {
   title: "Link Structure to Entity",
   description: "Record that this structure informs the partner entity",
@@ -259,6 +277,7 @@ export const SameAsDatumAction: Action = {
 export const KRAPH_ACTIONS = {
   "create-new-entity": NewEntityAction,
   "link-structure-to-entity": LinkStructureToEntityAction,
+  "measure-term": MeasureTermAction,
   "same-datum": SameAsDatumAction,
   "attest-node": AttestNodeAction,
   "retract-links": RetractLinksAction,

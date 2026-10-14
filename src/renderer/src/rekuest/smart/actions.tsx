@@ -1,12 +1,12 @@
 import { toWire } from "@/core/smart/structure";
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
-import { cn } from "@/core/util/utils";
 import { toast } from "@/core/notify";
 import { assignErrorMessage, notifyAssignError } from "../lib/assignError";
 import { v4 as uuidv4 } from "uuid";
 import React from "react";
 import {
+  AgentKind,
   TaskEventFragment,
   DetailImplementationFragment,
   PortKind,
@@ -32,8 +32,7 @@ import {
 import { useRunOnSubmenu } from "./runOnContext";
 
 /**
- * The rows of the rekuest sections (Run, Implementations, Batch, and the
- * "Run on" picker). The sections themselves — queries, headings, status — are
+ * The rows of the rekuest sections (Run, Batch, and the "Run on" picker). The sections themselves — queries, headings, status — are
  * descriptors in `./sections.tsx`; the demands they ask with live in
  * `../demands.ts`.
  */
@@ -46,6 +45,29 @@ const formatAssignErrorToast = (message: string) => ({
 });
 
 type AssignableAction = PrimaryActionFragment | DetailImplementationFragment["action"];
+
+/**
+ * Whether a row can run right now, as the server answers it — rows that cannot
+ * are drawn receded and asked for last (`queries.ts`). Advisory only: choosing
+ * one still assigns, and takt, which decides, says why it refused. The flag
+ * may be seconds old (an agent connected while the menu was open), and a row
+ * that blocked itself would then refuse something that runs.
+ */
+export const actionAvailability = (action: { assignable: boolean }) =>
+  action.assignable ? null : { reason: "No agent for it is online" };
+
+/** An implementation's agent can take work now: takt's rule (a webhook, or live). */
+export const canTakeWork = (agent: Pick<DetailImplementationFragment["agent"], "kind" | "active">) =>
+  agent.kind === AgentKind.Webhook || agent.active;
+
+/**
+ * A stateful action keeps its state on one agent: when more than one could take
+ * it now, the user says which ("Run on") rather than takt picking one. With one,
+ * takt can only pick that one, and the row just runs.
+ */
+export const needsAgentChoice = (
+  action: Pick<PrimaryActionFragment, "stateful" | "liveImplementations">,
+) => action.stateful && action.liveImplementations > 1;
 
 const buildActionArgs = (
   action: AssignableAction,
@@ -99,10 +121,6 @@ const buildActionArgs = (
 
   return keys;
 };
-
-const getImplementationDescription = (
-  implementation: DetailImplementationFragment,
-) => [implementation.agent.name, implementation.interface].filter(Boolean).join(" • ");
 
 export const DirectImplementationAssignment = (
   props: SmartContextProps & { action: PrimaryActionFragment },
@@ -168,18 +186,31 @@ export const DirectImplementationAssignment = (
     <>
       <div className="flex flex-row text-xs">Run on</div>
       <div className="flex flex-col gap-2">
-        {implementations.data?.implementations.map((implementation) => (
-          <Button
-            key={implementation.id}
-            variant="outline"
-            size="lg"
-            className="flex flex-col gap-1"
-            onClick={() => onTemplateSelect(props.action, implementation)}
-          >
-            <div className="text-md text-foreground">{implementation.agent.name}</div>
-            <div className="text-xs text-muted-foreground">{implementation.interface}</div>
-          </Button>
-        ))}
+        {implementations.data?.implementations.map((implementation) => {
+          // Ordered live first (`active`, takt's rule); an agent that cannot take
+          // work now is shown, not offered.
+          const live = canTakeWork(implementation.agent);
+          return (
+            <Button
+              key={implementation.id}
+              variant="outline"
+              size="lg"
+              className="flex flex-col gap-1"
+              disabled={!live}
+              onClick={() => onTemplateSelect(props.action, implementation)}
+            >
+              <div className="flex items-center gap-2 text-md text-foreground">
+                {implementation.agent.name}
+                {live ? null : (
+                  <span className="rounded border border-border/60 px-1 text-[10px] leading-4 text-muted-foreground">
+                    offline
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground">{implementation.interface}</div>
+            </Button>
+          );
+        })}
         {implementations.data?.implementations.length === 0 ? (
           <div className="text-xs text-muted-foreground">No implementations</div>
         ) : null}
@@ -278,193 +309,6 @@ const useAssignActionProgress = (props: SmartContextProps) => {
   };
 };
 
-export const ImplementationAssignButton = (
-  props: SmartContextProps & { implementation: DetailImplementationFragment },
-) => {
-  const { assign } = useAssign();
-  const { openDialog } = useDialog();
-  const {
-    doing,
-    error,
-    errorFlashActive,
-    progress,
-    setDoing,
-    setError,
-    onEvent,
-    triggerErrorFeedback,
-  } = useAssignActionProgress(props);
-
-  const thenOpen = useOpenResult();
-
-  const conditionalAssign = async (
-    implementation: DetailImplementationFragment,
-    open?: OpenableReturn,
-  ) => {
-    const keys = buildActionArgs(implementation.action, props);
-    if (!keys) {
-      return;
-    }
-
-    const unknownKeys = implementation.action.args.filter(
-      (arg) => arg.key && !keys[arg.key],
-    );
-    if (unknownKeys.length >= 1) {
-      openDialog("implementationassign", {
-        id: implementation.id,
-        args: keys,
-        hidden: keys,
-      });
-      return;
-    }
-
-    const reference = uuidv4();
-    // Tracked locally for the row's own progress bar AND globally: the menu
-    // this row sits in closes on select, so the rail island is the only place
-    // the task can still be watched or cancelled.
-    const untrack = trackTask(reference, open ? thenOpen(open, onEvent) : onEvent, {
-      notifyGlobally: true,
-    });
-
-    try {
-      await assign(buildAssignInput({
-        implementation: implementation.id,
-        args: keys,
-        reference,
-      }));
-
-      setDoing(true);
-      setError(null);
-    } catch (error) {
-      untrack();
-      triggerErrorFeedback(getErrorMessage(error));
-    }
-  };
-
-  const inlineErrorToast = error ? formatAssignErrorToast(error) : null;
-
-  return (
-    <CommandActionRow
-      onSelect={() => conditionalAssign(props.implementation)}
-      value={props.implementation.id}
-      title={props.implementation.action.name}
-      description={getImplementationDescription(props.implementation)}
-      progress={progress}
-      className={cn(
-        doing && "animate-pulse",
-        errorFlashActive &&
-          "bg-red/20 data-selected:bg-red-500/20 text-destructive ring-1 ring-inset ring-destructive/35 transition-colors duration-150",
-      )}
-      trailing={
-        <span className="ml-auto flex items-center gap-2">
-          {inlineErrorToast ? (
-            <span className="max-w-48 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-right text-[10px] leading-tight text-destructive">
-              <span className="block font-medium">{inlineErrorToast.title}</span>
-              <span className="block truncate">{inlineErrorToast.detail}</span>
-            </span>
-          ) : null}
-        </span>
-      }
-      buttons={
-        runsDirectly(props.implementation.action.args, props) ? (
-          <OpenResultButtons
-            returns={props.implementation.action.returns}
-            onRun={(port) => conditionalAssign(props.implementation, port)}
-          />
-        ) : null
-      }
-      icon={PlayCircle}
-    />
-  );
-};
-
-export const BatchImplementationAssignButton = (
-  props: SmartContextProps & { implementation: DetailImplementationFragment },
-) => {
-  const { assign } = useAssign();
-  const { openDialog } = useDialog();
-  const {
-    doing,
-    error,
-    errorFlashActive,
-    progress,
-    setDoing,
-    setError,
-    onEvent,
-    triggerErrorFeedback,
-  } = useAssignActionProgress(props);
-
-  const conditionalAssign = async (
-    implementation: DetailImplementationFragment,
-  ) => {
-    for (const object of props.objects) {
-      const keys = buildActionArgs(implementation.action, {
-        ...props,
-        objects: [object],
-      });
-
-      if (!keys) {
-        return;
-      }
-
-      const unknownKeys = implementation.action.args.filter(
-        (arg) => arg.key && !keys[arg.key],
-      );
-      if (unknownKeys.length >= 1) {
-        openDialog("implementationassign", {
-          id: implementation.id,
-          args: keys,
-          hidden: keys,
-        });
-        return;
-      }
-
-      const reference = uuidv4();
-      const untrack = trackTask(reference, onEvent, { notifyGlobally: true });
-
-      try {
-        await assign(buildAssignInput({
-          implementation: implementation.id,
-          args: keys,
-          reference,
-        }));
-        setDoing(true);
-        setError(null);
-      } catch (error) {
-        untrack();
-        triggerErrorFeedback(getErrorMessage(error));
-      }
-    }
-  };
-
-  const inlineErrorToast = error ? formatAssignErrorToast(error) : null;
-
-  return (
-    <CommandActionRow
-      onSelect={() => conditionalAssign(props.implementation)}
-      value={props.implementation.id}
-      title={props.implementation.action.name}
-      description={getImplementationDescription(props.implementation)}
-      progress={progress}
-      className={cn(
-        doing && "animate-pulse",
-        errorFlashActive &&
-          "bg-destructive/10 text-destructive ring-1 ring-inset ring-destructive/35 transition-colors duration-150",
-      )}
-      trailing={
-        <span className="ml-auto flex items-center gap-2">
-          {inlineErrorToast ? (
-            <span className="max-w-48 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-right text-[10px] leading-tight text-destructive">
-              <span className="block font-medium">{inlineErrorToast.title}</span>
-              <span className="block truncate">{inlineErrorToast.detail}</span>
-            </span>
-          ) : null}
-        </span>
-      }
-      icon={Boxes}
-    />
-  );
-};
-
 /** Right-click on a Run row opens the menu's shared "Run on" picker. */
 const useRunOnRow = (action: PrimaryActionFragment) => {
   const submenu = useRunOnSubmenu();
@@ -487,6 +331,7 @@ export const AssignButton = (
   const { assign } = useAssign();
   const { openDialog } = useDialog();
   const runOn = useRunOnRow(props.action);
+  const submenu = useRunOnSubmenu();
   const {
     doing,
     error,
@@ -539,32 +384,33 @@ export const AssignButton = (
   };
 
   const inlineErrorToast = error ? formatAssignErrorToast(error) : null;
+  // Outside a menu with the picker (no `RunOnSubmenu`) the row runs as before.
+  const choose = needsAgentChoice(props.action) ? submenu : null;
 
   return (
     <CommandActionRow
-      onSelect={() => conditionalAssign(props.action)}
+      onSelect={() =>
+        choose ? choose.openFor({ action: props.action }) : conditionalAssign(props.action)
+      }
       onContextMenu={runOn}
       value={props.action.id}
       title={props.action.name}
       description={props.action.description}
       progress={progress}
-      className={cn(
-        doing && "animate-pulse",
-        errorFlashActive &&
-          "bg-red/20 data-selected:bg-red-500/20 text-destructive ring-1 ring-inset ring-destructive/35 transition-colors duration-150",
-      )}
+      running={doing}
+      flash={errorFlashActive}
+      failure={inlineErrorToast}
+      unavailable={actionAvailability(props.action)}
       trailing={
-        <span className="ml-auto flex items-center gap-2">
-          {inlineErrorToast ? (
-            <span className="max-w-48 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-right text-[10px] leading-tight text-destructive">
-              <span className="block font-medium">{inlineErrorToast.title}</span>
-              <span className="block truncate">{inlineErrorToast.detail}</span>
-            </span>
-          ) : null}
-        </span>
+        choose ? (
+          <span className="shrink-0 text-[10px] text-muted-foreground">
+            Choose agent · {props.action.liveImplementations}
+          </span>
+        ) : undefined
       }
       buttons={
-        runsDirectly(props.action.args, props) ? (
+        // "Run, then open" would skip the choice.
+        !choose && runsDirectly(props.action.args, props) ? (
           <OpenResultButtons
             returns={props.action.returns}
             onRun={(port) => conditionalAssign(props.action, port)}
@@ -665,21 +511,10 @@ export const BatchAssignButton = (
       title={props.action.name}
       description={props.action.description}
       progress={progress}
-      className={cn(
-        doing && "animate-pulse",
-        errorFlashActive &&
-          "bg-destructive/10 text-destructive ring-1 ring-inset ring-destructive/35 transition-colors duration-150",
-      )}
-      trailing={
-        <span className="ml-auto flex items-center gap-2">
-          {inlineErrorToast ? (
-            <span className="max-w-48 rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-right text-[10px] leading-tight text-destructive">
-              <span className="block font-medium">{inlineErrorToast.title}</span>
-              <span className="block truncate">{inlineErrorToast.detail}</span>
-            </span>
-          ) : null}
-        </span>
-      }
+      running={doing}
+      flash={errorFlashActive}
+      failure={inlineErrorToast}
+      unavailable={actionAvailability(props.action)}
       icon={Boxes}
     />
   );

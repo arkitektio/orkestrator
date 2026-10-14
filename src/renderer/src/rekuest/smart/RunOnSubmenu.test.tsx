@@ -15,7 +15,7 @@ vi.mock("./actions", () => ({
 }));
 
 import { RunOnSubmenu } from "./RunOnSubmenu";
-import { useRunOnSubmenu } from "./runOnContext";
+import { rowAnchor, useRunOnSubmenu } from "./runOnContext";
 
 const Row = ({ id }: { id: string }) => {
   const submenu = useRunOnSubmenu();
@@ -54,6 +54,29 @@ describe("RunOnSubmenu", () => {
     // Radix's FocusScope hands focus back on a timer after unmount; how many
     // ticks that takes depends on load, so wait for it rather than count.
     await waitFor(() => expect(screen.getByTestId("search")).toHaveFocus());
+  });
+
+  it("with no pointer (Enter, a click), opens under the row", async () => {
+    const Keyboard = () => {
+      const submenu = useRunOnSubmenu();
+      return (
+        <button type="button" onClick={() => submenu?.openFor({ action: { id: "42" } as never })}>
+          choose
+        </button>
+      );
+    };
+    render(
+      <RunOnSubmenu context={{ objects: [] }}>
+        <div cmdk-item="" data-value="42" data-testid="row-42" />
+        <Keyboard />
+      </RunOnSubmenu>,
+    );
+    const row = screen.getByTestId("row-42");
+    row.getBoundingClientRect = () => ({ left: 30, bottom: 70 }) as DOMRect;
+    expect(rowAnchor("42")).toEqual({ clientX: 30, clientY: 70 });
+
+    fireEvent.click(screen.getByText("choose"));
+    expect(await screen.findByTestId("picker")).toHaveTextContent("42");
   });
 
   it("does nothing outside a submenu", () => {

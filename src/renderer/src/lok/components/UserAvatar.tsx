@@ -13,9 +13,14 @@ export const UserAvatar = (props: { sub: string, className?: string }) => {
     },
   });
 
+  const resolve = useLokResolve();
+
   return (
     <Avatar className={cn(props.className)}>
-
+      <AvatarImage
+        src={resolve(data?.user?.profile.avatar?.presignedUrl) as string | undefined}
+        alt={data?.user?.username}
+      />
       <AvatarFallback>{data?.user.username.slice(0, 2)}</AvatarFallback>
     </Avatar>
   );

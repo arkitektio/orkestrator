@@ -75,6 +75,9 @@ const Page = asParamlessRoute(useHomePageQueryAsHookFunction, ({ data }: { data:
           >
             Add Repo
           </DialogButton>
+          <DialogButton alwaysShow name="importocirepo" variant="outline" size="sm" dialogProps={{}}>
+            Import from registry
+          </DialogButton>
           <PageAction
             priority={-10}
             onClick={async () => {

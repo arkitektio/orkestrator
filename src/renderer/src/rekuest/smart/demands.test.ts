@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { DemandKind, PortKind } from "@/rekuest/api/graphql";
-import { buildDemands, buildImplementationDemand, demandKey } from "./demands";
+import { buildDemands, demandKey } from "./demands";
 
 const image = (id: string) => ({ identifier: "@mikro/image", id });
 const dataset = (id: string) => ({ identifier: "@mikro/folder", id });
@@ -63,29 +63,18 @@ describe("buildDemands", () => {
     });
   });
 
-  it("adds a returns demand and derives the implementation demand lengths", () => {
+  it("adds a returns demand", () => {
     const demands = buildDemands({ objects: [image("1")], partners: [dataset("1")], returns: ["@mikro/metric"] });
     expect(demands.single[2]).toEqual({
       kind: DemandKind.Returns,
       matches: [{ at: 0, kind: PortKind.Structure, identifier: "@mikro/metric" }],
     });
-    expect(demands.implementation).toEqual({
-      argMatches: [
-        { at: 0, kind: PortKind.Structure, identifier: "@mikro/image" },
-        { at: 1, kind: PortKind.Structure, identifier: "@mikro/folder" },
-      ],
-      forceArgLength: 2,
-      returnMatches: [{ at: 0, kind: PortKind.Structure, identifier: "@mikro/metric" }],
-      forceReturnLength: 1,
-    });
-    expect(buildImplementationDemand([])).toEqual({});
   });
 
   it("never emits an undefined-valued key", () => {
     const demands = buildDemands({ objects: [image("1"), image("2")], partners: [dataset("1")] });
     expect(hasUndefined(demands.single)).toBe(false);
     expect(hasUndefined(demands.batch)).toBe(false);
-    expect(hasUndefined(demands.implementation)).toBe(false);
   });
 
   it("builds nothing for no objects", () => {
@@ -132,7 +121,7 @@ describe("descriptors", () => {
     expect(args.matches?.[0]).not.toHaveProperty("descriptors");
   });
 
-  it("pins a two-argument signature when both sides are single, each with its descriptors", () => {
+  it("asks for a two-argument signature when both sides are single, each with its descriptors", () => {
     // The scene's click menu: f(Annotation, ArrayLens), whatever the args are called.
     const demands = buildDemands({
       objects: [{ identifier: "@mikro/annotation", id: "1", descriptors: { "@mikro/annotation_kind": "RECTANGLE" } }],
@@ -140,25 +129,22 @@ describe("descriptors", () => {
         { identifier: "@mikro/arraylens", id: "2", descriptors: { "@mikro/n_space_axes": 2, "@mikro/n_channels": 1 } },
       ],
     });
-    expect(demands.implementation).toEqual({
-      forceArgLength: 2,
-      argMatches: [
-        {
-          at: 0,
-          kind: PortKind.Structure,
-          identifier: "@mikro/annotation",
-          descriptors: [{ key: "@mikro/annotation_kind", value: "RECTANGLE" }],
-        },
-        {
-          at: 1,
-          kind: PortKind.Structure,
-          identifier: "@mikro/arraylens",
-          descriptors: [
-            { key: "@mikro/n_channels", value: 1 },
-            { key: "@mikro/n_space_axes", value: 2 },
-          ],
-        },
-      ],
-    });
+    expect(demands.single.flatMap((demand) => demand.matches ?? [])).toEqual([
+      {
+        at: 0,
+        kind: PortKind.Structure,
+        identifier: "@mikro/annotation",
+        descriptors: [{ key: "@mikro/annotation_kind", value: "RECTANGLE" }],
+      },
+      {
+        at: 1,
+        kind: PortKind.Structure,
+        identifier: "@mikro/arraylens",
+        descriptors: [
+          { key: "@mikro/n_channels", value: 1 },
+          { key: "@mikro/n_space_axes", value: 2 },
+        ],
+      },
+    ]);
   });
 });

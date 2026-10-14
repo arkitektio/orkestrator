@@ -1,6 +1,6 @@
 import { KraphGuard } from "@/kraph/api/funcs";
 import { useDialog } from "@/core/dialogs/registry";
-import { CommandItem } from "@/core/ui/command";
+import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
 import {
   ListCandidateRelationCategoriesQuery,
   ListMeasurementCategoryWithGraphFragment,
@@ -24,9 +24,12 @@ import type {
 } from "@/core/smart/extensions/section";
 import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { useStableData } from "@/core/smart/extensions/useStableData";
+import { smartRegistry } from "@/core/smart/registry";
+import { useRecentTerms, type RecentTerm } from "@/kraph/lib/recentTerms";
 import {
   CreateMeasurementButton,
   EntityRelateButton,
+  MeasureRecentTermRow,
   StructureRelateButton,
 } from "./relations";
 
@@ -66,9 +69,25 @@ const probeStatus = (
 
 /* ---------------------------------------------------------------- measures */
 
-const useMeasurementItems = (
-  ctx: SmartSectionContext,
-): SectionItems<ListMeasurementCategoryWithGraphFragment> => {
+/**
+ * Two kinds of row: the words you last measured a datum as (`MeasureTermAction`
+ * records them; local, so they paint before the query answers) and the
+ * measurement categories the graphs declare for this kind of datum.
+ */
+type MeasurementItem =
+  | { kind: "recent"; term: RecentTerm }
+  | { kind: "category"; category: ListMeasurementCategoryWithGraphFragment };
+
+const recentMatches = (term: RecentTerm, filter: string | undefined) => {
+  if (!filter) return true;
+  const needle = filter.toLowerCase();
+  return (
+    term.key.toLowerCase().includes(needle) ||
+    (term.label ?? "").toLowerCase().includes(needle)
+  );
+};
+
+const useMeasurementItems = (ctx: SmartSectionContext): SectionItems<MeasurementItem> => {
   const firstObject = ctx.objects.at(0);
   const skip = !firstObject || (ctx.partners?.length ?? 0) > 0;
   const result = useListApplicableMeasurementCategoriesQuery({
@@ -80,10 +99,29 @@ const useMeasurementItems = (
     skip,
   });
   const stable = useStableData(result, skip);
-  return { items: stable.data?.measurementCategories, status: stable.status, error: stable.error };
+
+  // The same reach as `MeasureTermAction`: data, with no partner.
+  const recents = useRecentTerms().terms;
+  const measurable = !skip && ctx.objects.every((object) => smartRegistry.isDatum(object.identifier));
+
+  const items = React.useMemo<MeasurementItem[] | undefined>(() => {
+    const recentRows: MeasurementItem[] = measurable
+      ? recents
+          .filter((term) => recentMatches(term, ctx.filter))
+          .map((term) => ({ kind: "recent", term }))
+      : [];
+    const categories = stable.data?.measurementCategories;
+    if (!categories && recentRows.length === 0) return undefined;
+    return [
+      ...recentRows,
+      ...(categories ?? []).map((category) => ({ kind: "category" as const, category })),
+    ];
+  }, [measurable, recents, ctx.filter, stable.data]);
+
+  return { items, status: stable.status, error: stable.error };
 };
 
-export const KRAPH_MEASUREMENTS_SECTION: SmartContextSection<ListMeasurementCategoryWithGraphFragment> = {
+export const KRAPH_MEASUREMENTS_SECTION: SmartContextSection<MeasurementItem> = {
   id: "kraph.measurements",
   module: "kraph",
   title: "Measures",
@@ -93,13 +131,19 @@ export const KRAPH_MEASUREMENTS_SECTION: SmartContextSection<ListMeasurementCate
   Guard: KraphGuard,
   applies: (props) => props.objects.length > 0 && !(props.partners?.length ?? 0),
   useItems: useMeasurementItems,
-  itemKey: (category) => category.id,
-  searchParts: (category) => [category.label, category.graph.name],
-  Row: ({ item, context }) => (
-    <CreateMeasurementButton category={item} left={context}>
-      {item.graph.name}
-    </CreateMeasurementButton>
-  ),
+  itemKey: (item) => (item.kind === "recent" ? `recent:${item.term.key}` : item.category.id),
+  searchParts: (item) =>
+    item.kind === "recent"
+      ? [item.term.label ?? "", item.term.key]
+      : [item.category.label, item.category.graph.name],
+  Row: ({ item, context }) =>
+    item.kind === "recent" ? (
+      <MeasureRecentTermRow term={item.term} left={context} />
+    ) : (
+      <CreateMeasurementButton category={item.category} left={context}>
+        {item.category.graph.name}
+      </CreateMeasurementButton>
+    ),
 };
 
 /* --------------------------------------------------------- entity ↔ entity */
@@ -255,7 +299,7 @@ const useStructureRelationItems = (
 const CreateRelationRow = ({ context }: { context: SmartSectionContext }) => {
   const dialog = useDialog();
   return (
-    <CommandItem
+    <CommandActionRow
       value="no-relation"
       onSelect={() =>
         dialog.openDialog("createnewrelation", {
@@ -263,11 +307,9 @@ const CreateRelationRow = ({ context }: { context: SmartSectionContext }) => {
           right: context.partners || [],
         })
       }
-      className="flex-1"
-    >
-      <GitBranchPlus className="mr-2 h-4 w-4" />
-      Create new Relation
-    </CommandItem>
+      title="Create new Relation"
+      icon={GitBranchPlus}
+    />
   );
 };
 

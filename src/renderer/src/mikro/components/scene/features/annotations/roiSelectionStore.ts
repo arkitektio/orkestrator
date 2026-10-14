@@ -33,7 +33,7 @@ export interface RoiBounds {
 
 export interface VisibleRoi extends SelectedRoi {
   bounds: RoiBounds;
-  /** World z extent — with `bounds`, the box the hover button is pinned to. */
+  /** World z extent — with `bounds`, the box the hover card is pinned to. */
   zSpan: ZSpan;
 }
 
@@ -78,10 +78,11 @@ interface RoiSelectionState {
    */
   holdHover: (held: boolean) => void;
   /**
-   * The shape whose action menu is open (`hover/AnnotationActionMenu`), and
-   * where it was clicked, scene world coordinates — the menu opens there.
-   * Null point: the pick surface reported none, and the menu falls back to
-   * the shape's box corner like the hover button does.
+   * The shape whose card is pinned open (`hover/AnnotationHoverCard`: a
+   * click on the shape, a draw, a click on its button), and where it was
+   * clicked, scene world coordinates — a card that is not already showing
+   * opens there. Null point: the pick surface reported none (a draw), and the
+   * card falls back to the shape's box corner.
    */
   menuRoi: { roi: SelectedRoi; point: HoverPoint | null } | null;
   openRoiMenu: (roi: SelectedRoi, point?: HoverPoint) => void;

@@ -5,8 +5,9 @@ import { effectiveProbeLayerId } from "../../../platform/probe/probeTargeting";
 import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
 
 /**
- * What the click menu of a shape (`AnnotationActionMenu`) asks rekuest with:
- * the annotation as arg 0 and the lens the probe reads as arg 1, each with
+ * What a shape's card (`AnnotationPairActions`) asks rekuest with:
+ * the annotation as arg 0 and a lens as arg 1 — the one the probe reads,
+ * unless the card's "Run with" picker names another layer — each with
  * the descriptors it PROVIDES, so a port's `Requires` narrows both sides
  * ("a rectangle", "a single-channel image"). Pure, so the pairing is testable
  * without a canvas.
@@ -37,18 +38,31 @@ export const annotationObject = (
   });
 
 /**
- * The lens of the layer the probe reads (`effectiveProbeLayerId`: the pin,
- * else the first visible brick layer) — the image the user is "on". Null when
- * no layer can answer a probe; the menu then has nothing to pair the shape
- * with and says so, rather than listing one-argument actions.
+ * The layer a card runs its actions with: the one picked in its "Run with"
+ * picker while that layer is still in the scene — hidden or not, an action
+ * reads the lens, not the pixels on screen — else the probe's.
  */
-export const probeLensPartner = (
+export const pairLayerId = (
+  pickedLayerId: string | null,
   probeLayerId: string | null,
+  layers: readonly { id: string; visible?: boolean }[],
+): string | null =>
+  pickedLayerId !== null && layers.some((layer) => layer.id === pickedLayerId)
+    ? pickedLayerId
+    : effectiveProbeLayerId(probeLayerId, layers);
+
+/**
+ * One layer's lens, as an array lens. Null when the layer is not in the
+ * scene — with `pairLayerId`, when no layer can answer a probe either; the
+ * menu then has nothing to pair the shape with and says so, rather than
+ * listing one-argument actions.
+ */
+export const layerLensPartner = (
+  layerId: string | null,
   layers: readonly ProbeLensLayer[],
   label?: (layerId: string) => string | undefined,
 ): Structure | null => {
-  const targetId = effectiveProbeLayerId(probeLayerId, layers);
-  const layer = layers.find((candidate) => candidate.id === targetId);
+  const layer = layers.find((candidate) => candidate.id === layerId);
   if (!layer) return null;
   return structure(ARRAY_LENS_IDENTIFIER, layer.lens.id, {
     label: label?.(layer.id) ?? layer.lens.name,

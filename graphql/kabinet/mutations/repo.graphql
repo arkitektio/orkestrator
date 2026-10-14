@@ -17,3 +17,27 @@ mutation ScanRepo($id: String!) {
     ...Repo
   }
 }
+
+# An OCI repository (e.g. ghcr.io/org/app) whose tags carry release descriptors.
+# Importing one again reads the registry again.
+mutation ImportRepo($reference: String!, $channels: [String!]) {
+  importRepo(input: { reference: $reference, channels: $channels }) {
+    id
+    name
+    registry
+    repository
+    scannedAt
+    flavours {
+      id
+      name
+      release {
+        id
+        version
+        app {
+          id
+          identifier
+        }
+      }
+    }
+  }
+}

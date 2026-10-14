@@ -52,6 +52,8 @@ export type Action = {
   app: App;
   /** Input arguments (ports) for the action. */
   args: Array<ArgPort>;
+  /** Whether an agent that can take this action is connected (or is a webhook agent) right now: `liveImplementations > 0`. */
+  assignable: Scalars['Boolean']['output'];
   /** Collections to which this action belongs. */
   collections: Array<Collection>;
   /** Timestamp when the action was defined. */
@@ -78,6 +80,8 @@ export type Action = {
   kind: ActionKind;
   /** Get the latest completed task for this action. */
   latestTask?: Maybe<Task>;
+  /** How many of its implementations sit on an agent that can take work now (connected, or a webhook agent) — one per agent. Kept by the database as agents connect and leave, a moment behind (takt recomputes it on commit); a crashed agent counts until takt's stale sweep notices (seconds). */
+  liveImplementations: Scalars['Int']['output'];
   /** Name of the action. */
   name: Scalars['String']['output'];
   /** The organization that owns this action. */
@@ -320,6 +324,8 @@ export type ActionFilter = {
   OR?: InputMaybe<ActionFilter>;
   /** Filter using app identifier */
   appIdentifier?: InputMaybe<Scalars['String']['input']>;
+  /** Whether an agent that can take the action is connected now (`Action.assignable`). */
+  assignable?: InputMaybe<Scalars['Boolean']['input']>;
   demands?: InputMaybe<Array<PortDemandInput>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   inCollection?: InputMaybe<Scalars['String']['input']>;
@@ -341,8 +347,10 @@ export enum ActionKind {
 }
 
 export type ActionOrder =
-  { definedAt: Ordering; usedAt?: never; }
-  |  { definedAt?: never; usedAt: Ordering; };
+  /** Runnable first (DESC) or last (ASC) by `Action.assignable`. The order the filters set (a `search`'s ranking) is kept as the tie-break, so `search` with this ordering lists runnable matches first, each group still ranked by relevance. */
+  { assignable: Ordering; definedAt?: never; usedAt?: never; }
+  |  { assignable?: never; definedAt: Ordering; usedAt?: never; }
+  |  { assignable?: never; definedAt?: never; usedAt: Ordering; };
 
 export enum ActionScope {
   BridgeGlobalToLocal = 'BRIDGE_GLOBAL_TO_LOCAL',
@@ -620,6 +628,8 @@ export type AgentFilter = {
   actionDemands?: InputMaybe<Array<ActionDemandInput>>;
   /** Filter using app identifier */
   appIdentifier?: InputMaybe<Scalars['ID']['input']>;
+  /** Agents that can receive work now: a webhook agent, or a connected one with a fresh heartbeat (takt's rule). */
+  available?: InputMaybe<Scalars['Boolean']['input']>;
   blokDependency?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by client ID of the app the agent is registered to */
   clientId?: InputMaybe<Scalars['String']['input']>;
@@ -2235,6 +2245,7 @@ export type ImplementationFilter = {
   action?: InputMaybe<ImplementationActionFilter>;
   actionDemand?: InputMaybe<ActionDemandInput>;
   actionHash?: InputMaybe<Scalars['ActionHash']['input']>;
+  /** Whether an agent can run it now: a webhook agent, or a connected one with a fresh heartbeat (takt's rule). */
   active?: InputMaybe<Scalars['Boolean']['input']>;
   agent?: InputMaybe<ImplementationAgentFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -2287,6 +2298,7 @@ export type ImplementationMapping = {
 };
 
 export type ImplementationOrder =
+  /** Implementations an agent can run now first (DESC), or last (ASC): takt's rule, `liveness.agent_available_q`. */
   { active: Ordering; createdAt?: never; }
   |  { active?: never; createdAt: Ordering; };
 
@@ -4756,6 +4768,8 @@ export type ShortcutFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ShortcutFilter>;
   OR?: InputMaybe<ShortcutFilter>;
+  /** Whether an agent that can take the shortcut's action is connected now (`Action.assignable`). */
+  assignable?: InputMaybe<Scalars['Boolean']['input']>;
   demands?: InputMaybe<Array<PortDemandInput>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   search?: InputMaybe<Scalars['String']['input']>;
@@ -4763,7 +4777,9 @@ export type ShortcutFilter = {
 };
 
 export type ShortcutOrder =
-  { name: Ordering; };
+  /** Runnable first (DESC) or last (ASC) by the shortcut's `Action.assignable`; the order the filters set is the tie-break. */
+  { assignable: Ordering; name?: never; }
+  |  { assignable?: never; name: Ordering; };
 
 /** Something a service announced: an object of a structure was created, updated or deleted. */
 export type Signal = {
@@ -6449,7 +6465,7 @@ export type DetailActionFragment = (
   & GraphNodeActionFragment
 );
 
-export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, description?: string | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
+export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, assignable: boolean, liveImplementations: number, description?: string | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
 
 export type HoverActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
 
@@ -7259,7 +7275,7 @@ export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: stri
     & ReturnPortFragment
   )> };
 
-export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, action: { __typename?: 'Action', id: string }, args: Array<(
+export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, action: { __typename?: 'Action', id: string, assignable: boolean }, args: Array<(
     { __typename?: 'ArgPort' }
     & ArgPortFragment
   )>, returns: Array<(
@@ -9389,6 +9405,8 @@ export const PrimaryActionFragmentDoc = gql`
   stateful
   name
   hash
+  assignable
+  liveImplementations
   implementations {
     id
     interface
@@ -11494,6 +11512,7 @@ export const ListShortcutFragmentDoc = gql`
   description
   action {
     id
+    assignable
   }
   bindNumber
   savedArgs

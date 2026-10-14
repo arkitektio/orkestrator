@@ -7,10 +7,12 @@ import {
 import React from "react";
 import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { DirectImplementationAssignment } from "./actions";
-import { RunOnApi, RunOnContext, RunOnTarget } from "./runOnContext";
+import { RunOnApi, RunOnContext, RunOnTarget, rowAnchor } from "./runOnContext";
 
 /**
- * The one "Run on" picker of a menu.
+ * The one "Run on" picker of a menu: a right-click on a Run row, and the
+ * selection of a stateful action more than one agent could take (its state
+ * lives on one of them, so the user says which — `AssignButton`).
  *
  * Every Run row used to carry its own Radix `ContextMenu` root — some fifteen
  * component instances and a capture-phase keydown listener per row, the very
@@ -39,13 +41,14 @@ export const RunOnSubmenu = ({
   const api = React.useMemo<RunOnApi>(
     () => ({
       openFor: (next, at) => {
+        const point = at ?? rowAnchor(next.action.id);
         setTarget(next);
         triggerRef.current?.dispatchEvent(
           new MouseEvent("contextmenu", {
             bubbles: true,
             cancelable: true,
-            clientX: at.clientX,
-            clientY: at.clientY,
+            clientX: point.clientX,
+            clientY: point.clientY,
           }),
         );
       },

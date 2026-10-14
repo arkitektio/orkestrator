@@ -1,33 +1,15 @@
-import { smartSections } from "../hostRegistries";
 import { Button } from "@/core/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandInput,
-  CommandList,
-} from "@/core/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/core/ui/popover";
-import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { cn } from "@/core/util/utils";
-import { ArrowRight, PlayIcon } from "lucide-react";
-import React from "react";
-import { describeStructures } from "./describe";
+import { PlayIcon } from "lucide-react";
+import { SmartMenu, useSmartMenu } from "./menu";
 import { useSmartPrefetcher } from "./prefetchContext";
-import { CompactRowsProvider, PinnedSlotProvider } from "./rowPin";
-import { SmartMenuWrappers } from "./SmartMenuWrappers";
-import type { SmartSectionContext } from "./section";
-import { SectionHost, SectionSearchBar } from "./SectionHost";
-import { resolveSections, SmartSectionRegistry } from "./sectionRegistry";
-import { SectionsProgress } from "./SectionsProgress";
-import { createSectionStatusStore, isEmptyResult } from "./sectionStatus";
-import { SectionStatusProvider, useSectionSummary } from "./sectionStatusContext";
+import type { SmartSectionRegistry } from "./sectionRegistry";
 import type { ObjectButtonProps, SmartContextProps } from "./types";
-import { useAfterFirstPaint } from "./useAfterFirstPaint";
-import { useFirstItemSelection } from "./useFirstItemSelection";
 
 export const ObjectButton = ({ open, onOpenChange, ...props }: ObjectButtonProps) => {
   const prefetcher = useSmartPrefetcher();
@@ -65,30 +47,6 @@ export const ObjectButton = ({ open, onOpenChange, ...props }: ObjectButtonProps
 };
 
 /**
- * What the menu is about, when that is not plain from where it opened: a
- * drop ("2 Images → Dataset", as the gesture went) or a selection ("3 Images").
- * One object, right-clicked, needs no telling.
- */
-const SmartContextHeader = ({ objects, partners }: SmartContextProps) => {
-  const dropped = partners && partners.length > 0;
-  if (!dropped && objects.length < 2) {
-    return null;
-  }
-
-  return (
-    <div className="flex min-w-0 items-center gap-1.5 px-2 pb-2 pt-1 text-xs font-medium text-foreground">
-      {dropped && (
-        <>
-          <span className="truncate">{describeStructures(partners)}</span>
-          <ArrowRight aria-hidden className="h-3 w-3 shrink-0 text-muted-foreground" />
-        </>
-      )}
-      <span className="truncate">{describeStructures(objects)}</span>
-    </div>
-  );
-};
-
-/**
  * The smart context menu: every registered section that applies to the
  * selection, in priority order.
  *
@@ -101,100 +59,26 @@ const SmartContextHeader = ({ objects, partners }: SmartContextProps) => {
  * The search field ends in the sections' `SearchBar` buttons (local: Share,
  * Open). Every row carries a pin toggle; pinned rows leave their section for the
  * start of the list, above every section, so the first is the one Enter runs.
+ *
+ * One composition of the menu's parts (`menu.tsx`), drawn with the list
+ * skin; a view that wants another layout or look composes its own.
  */
-export const SmartContext = ({
-  registry = smartSections(),
-  ...props
-}: SmartContextProps & { registry?: SmartSectionRegistry }) => {
-  const { objects, partners, returns, collection, sections, onDone, onError, autoFocus = true } = props;
-  const [filter, setFilterValue] = React.useState<string | undefined>(undefined);
-  // The raw value narrows the rows on screen at once; the queries run on the
-  // debounced copy, so typing does not cost a request per key.
-  const debouncedFilter = useDebounce(filter, 200);
-  const [store] = React.useState(createSectionStatusStore);
-  // Where the sections lift their pinned rows to (`SectionHost`).
-  const [pinnedSlot, setPinnedSlot] = React.useState<HTMLDivElement | null>(null);
-
-  const plan = React.useMemo(
-    () => resolveSections(registry, { objects, partners, returns, collection, sections }),
-    [registry, objects, partners, returns, collection, sections],
-  );
-  const expectedIds = React.useMemo(() => plan.map((section) => section.id), [plan]);
-  const painted = useAfterFirstPaint();
-  const summary = useSectionSummary(store, expectedIds);
-  const selection = useFirstItemSelection([
-    summary.revision,
-    summary.total,
-    debouncedFilter,
-    painted,
-  ]);
-
-  const context = React.useMemo<SmartSectionContext>(
-    () => ({
-      objects,
-      partners,
-      returns,
-      collection,
-      sections,
-      onDone,
-      onError,
-      filter: debouncedFilter,
-      liveFilter: filter,
-      hasSearchBar: true,
-    }),
-    [objects, partners, returns, collection, sections, onDone, onError, debouncedFilter, filter],
-  );
-
+export const SmartContext = (
+  props: SmartContextProps & { registry?: SmartSectionRegistry },
+) => {
+  const menu = useSmartMenu(props);
   return (
-    <SectionStatusProvider store={store}>
-      <SmartMenuWrappers context={props} returnFocusTo={selection.inputRef}>
-        <div ref={selection.rootRef} className="contents">
-          <SmartContextHeader {...props} />
-
-          <Command
-            shouldFilter={false}
-            value={selection.value}
-            onValueChange={selection.setValue}
-            onKeyDown={selection.onKeyDown}
-          >
-            <CommandInput
-              ref={selection.inputRef}
-              placeholder="Search"
-              className="h-10 text-sm"
-              onValueChange={(value) => {
-                setFilterValue(value);
-                selection.repin();
-              }}
-              autoFocus={autoFocus}
-              trailing={
-                plan.some((section) => section.SearchBar)
-                  ? plan.map((section) => (
-                      <SectionSearchBar key={section.id} section={section} context={context} />
-                    ))
-                  : undefined
-              }
-            />
-            <SectionsProgress active={summary.pending} />
-
-            <CommandList className="mt-2" onPointerMove={selection.onPointerMove}>
-              {/* No heading: what is first in the menu is what was pinned. */}
-              <div ref={setPinnedSlot} role="group" aria-label="Pinned actions" />
-              <CompactRowsProvider value>
-                <PinnedSlotProvider value={pinnedSlot}>
-                  {plan.map((section) =>
-                    section.tier === "instant" || painted ? (
-                      <SectionHost key={section.id} section={section} context={context} />
-                    ) : null,
-                  )}
-                </PinnedSlotProvider>
-              </CompactRowsProvider>
-              {isEmptyResult(summary) ? (
-                <CommandEmpty>No Action available</CommandEmpty>
-              ) : null}
-            </CommandList>
-          </Command>
-        </div>
-      </SmartMenuWrappers>
-    </SectionStatusProvider>
+    <SmartMenu.Root menu={menu}>
+      <SmartMenu.Header />
+      <SmartMenu.Body>
+        <SmartMenu.Search />
+        <SmartMenu.Progress />
+        <SmartMenu.List>
+          <SmartMenu.Pinned />
+          <SmartMenu.Sections />
+          <SmartMenu.Empty />
+        </SmartMenu.List>
+      </SmartMenu.Body>
+    </SmartMenu.Root>
   );
 };
