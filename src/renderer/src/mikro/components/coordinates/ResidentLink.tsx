@@ -1,6 +1,6 @@
 import {
   MikroArrayDataset,
-  MikroLens,
+  MikroArrayLens,
   MikroSparseDataset,
   MikroTableDataset,
 } from "@/core/linkers";
@@ -105,9 +105,9 @@ export const ResidentLink = (props: {
     case "NetworkLens":
     case "AnnotationLens":
       return (
-        <MikroLens.DetailLink object={resident} className={className}>
+        <MikroArrayLens.DetailLink object={resident} className={className}>
           a lens of {describeLens(resident).container.name}
-        </MikroLens.DetailLink>
+        </MikroArrayLens.DetailLink>
       );
     default:
       // AnnotationCollection names itself; DataArray has only a level and a

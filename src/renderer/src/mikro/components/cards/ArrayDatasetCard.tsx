@@ -1,6 +1,6 @@
 import React from "react";
 import { HomeCard } from '@/core/ui/home-card'
-import { MikroArrayDataset, MikroLens } from '@/core/linkers'
+import { MikroArrayDataset, MikroArrayLens } from '@/core/linkers'
 import { cn } from '@/core/util/utils'
 import { ListArrayDatasetFragment } from '../../api/graphql'
 import { ArrayDatasetReadout } from './ArrayDatasetReadout'
@@ -47,9 +47,9 @@ const TheCard = ({ item: arrayDataset, fill }: Props) => {
                     with every lens cut from it, is one step up from the
                     viewer. Only a dataset with no pixel grid has no such lens. */}
                 {arrayDataset.fullLens ? (
-                  <MikroLens.DetailLink object={arrayDataset.fullLens}>
+                  <MikroArrayLens.DetailLink object={arrayDataset.fullLens}>
                     {arrayDataset.name}
-                  </MikroLens.DetailLink>
+                  </MikroArrayLens.DetailLink>
                 ) : (
                   <MikroArrayDataset.DetailLink object={arrayDataset}>
                     {arrayDataset.name}

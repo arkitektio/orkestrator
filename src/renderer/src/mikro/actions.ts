@@ -56,6 +56,7 @@ import { linkBuilder } from "@/core/smart/builder";
 import { lensRegistry } from "@/mikro/lib/lenses/lensRegistry";
 import { sceneRegistrationLink } from "@/mikro/components/registration/entry";
 import { visualizationLink } from "@/mikro/lib/visualize";
+import { LENS_IDENTIFIERS, isLensIdentifier } from "@/mikro/lenses";
 import {
   Aperture,
   Boxes,
@@ -179,13 +180,13 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     icon: Eye,
     pinned: true,
     conditions: [
-      { type: 'identifier', identifier: '@mikro/lens' },
+      { type: 'mixture', identifiers: [...LENS_IDENTIFIERS] },
       { type: 'nopartner' },
     ],
     collections: ['lens'],
     execute: async ({ state, services, navigate }) => {
       const selected = state.left.find(
-        (item) => item.identifier === '@mikro/lens',
+        (item) => isLensIdentifier(item.identifier),
       );
 
       if (!selected?.id) {
@@ -229,13 +230,13 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       'Start from this lens\' selection and cut again: a new lens over the same dataset, table or collection',
     icon: ScanSearch,
     conditions: [
-      { type: 'identifier', identifier: '@mikro/lens' },
+      { type: 'mixture', identifiers: [...LENS_IDENTIFIERS] },
       { type: 'nopartner' },
     ],
     collections: ['lens'],
     execute: async ({ state, dialog }) => {
       const selected = state.left.find(
-        (item) => item.identifier === '@mikro/lens',
+        (item) => isLensIdentifier(item.identifier),
       );
       if (!selected?.id) {
         throw new Error('No lens selected for New Lens action');
@@ -311,13 +312,13 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       'Give this lens a name to find it by, or clear the one it has. What it selects does not change',
     icon: Pencil,
     conditions: [
-      { type: 'identifier', identifier: '@mikro/lens' },
+      { type: 'mixture', identifiers: [...LENS_IDENTIFIERS] },
       { type: 'nopartner' },
     ],
     collections: ['lens'],
     execute: async ({ state, dialog }) => {
       const selected = state.left.find(
-        (item) => item.identifier === '@mikro/lens',
+        (item) => isLensIdentifier(item.identifier),
       );
       if (!selected?.id) {
         throw new Error('No lens selected for Rename Lens action');
@@ -618,12 +619,12 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     icon: Layers,
     conditions: [
       { type: 'identifier', identifier: '@mikro/scene' },
-      { type: 'partner', partner: '@mikro/lens' },
+      { type: 'pmixture', identifiers: [...LENS_IDENTIFIERS] },
     ],
     collections: ['scene'],
     execute: async ({ state, dialog }) => {
       const scene = state.left.find((item) => item.identifier === '@mikro/scene');
-      const lens = (state.right ?? []).find((item) => item.identifier === '@mikro/lens');
+      const lens = (state.right ?? []).find((item) => isLensIdentifier(item.identifier));
       if (!scene?.id || !lens?.id) {
         throw new Error('Add as Layer needs both a scene and a lens');
       }
@@ -945,11 +946,11 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     icon: Boxes,
     conditions: [
       { type: 'identifier', identifier: '@mikro/folder' },
-      { type: 'partner', partner: '@mikro/lens' }
+      { type: 'pmixture', identifiers: [...LENS_IDENTIFIERS] }
     ],
     collections: ['folder'],
     execute: async ({ state, services }) => {
-      const lenses = (state.right ?? []).filter((item) => item.identifier === '@mikro/lens')
+      const lenses = (state.right ?? []).filter((item) => isLensIdentifier(item.identifier))
       if (lenses.length === 0) {
         throw new Error('No lenses selected for Move Data to Folder action')
       }
@@ -1075,12 +1076,12 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
     icon: ChartSpline,
     conditions: [
       { type: 'identifier', identifier: '@mikro/chart' },
-      { type: 'partner', partner: '@mikro/lens' },
+      { type: 'pmixture', identifiers: [...LENS_IDENTIFIERS] },
     ],
     collections: ['chart'],
     execute: async ({ state, services, dialog }) => {
       const chart = state.left.find((item) => item.identifier === '@mikro/chart');
-      const lenses = (state.right ?? []).filter((item) => item.identifier === '@mikro/lens');
+      const lenses = (state.right ?? []).filter((item) => isLensIdentifier(item.identifier));
       if (!chart?.id || lenses.length === 0) {
         throw new Error('Draw on Chart needs both a chart and a lens');
       }
@@ -1206,7 +1207,7 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
   }),
   'delete-mikro-lens': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete Lens',
-    identifier: '@mikro/lens',
+    identifier: LENS_IDENTIFIERS,
     description:
       'Delete this selection. What it selects from is untouched. Refused while a layer still draws through it, and for a whole lens, which lives as long as its container',
     service: 'mikro',

@@ -20,7 +20,14 @@ export const manifest: ModuleManifest = {
     { identifier: "@mikro/folder", name: "Folder", datum: true, path: "folders/:id" },
     { identifier: "@mikro/arraydataset", name: "Array Dataset", datum: true, path: "arraydatasets/:id" },
     { identifier: "@mikro/coordinatesystem", name: "Coordinate System", datum: false, path: "coordinatesystems/:id" },
-    { identifier: "@mikro/lens", name: "Lens", datum: false, path: "lenses/:id" },
+    // One structure per kind of lens, all on the lens page: mikro hosts no
+    // structure for "a lens" of any kind, and a port names the kind it takes.
+    { identifier: "@mikro/arraylens", name: "Array Lens", datum: false, path: "lenses/:id" },
+    { identifier: "@mikro/tablelens", name: "Table Lens", datum: false, path: "lenses/:id" },
+    { identifier: "@mikro/sparselens", name: "Sparse Lens", datum: false, path: "lenses/:id" },
+    { identifier: "@mikro/meshlens", name: "Mesh Lens", datum: false, path: "lenses/:id" },
+    { identifier: "@mikro/networklens", name: "Network Lens", datum: false, path: "lenses/:id" },
+    { identifier: "@mikro/annotationlens", name: "Annotation Lens", datum: false, path: "lenses/:id" },
     { identifier: "@mikro/history", name: "History", datum: false, path: "history/:id" },
     { identifier: "@mikro/fluorophore", name: "Fluorophore", datum: false, path: "fluorophores/:id" },
     { identifier: "@mikro/file", name: "File (Mikro)", datum: true, path: "files/:id" },

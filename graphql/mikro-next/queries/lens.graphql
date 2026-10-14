@@ -36,8 +36,8 @@ query GetLensSelections($ids: [ID!]!, $limit: Int!) {
   }
 }
 
-# One lens, for its detail page. Registering `@mikro/lens` as a smart model
-# means the generic "Open" / "Open in new window" local actions
+# One lens, for its detail page. Registering each lens kind
+# (`@mikro/arraylens`, …) as a smart model means the generic "Open" / "Open in new window" local actions
 # (`app/localactions.tsx`) can navigate to it, so the route has to resolve.
 query GetLens($id: ID!) {
   lens(id: $id) {

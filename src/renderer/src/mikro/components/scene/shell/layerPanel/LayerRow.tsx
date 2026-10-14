@@ -1,5 +1,5 @@
 import { Button } from "@/core/ui/button";
-import { MikroLens } from "@/core/linkers";
+import { lensSmart } from "@/core/linkers";
 import { Crosshair, Eye, EyeOff, Focus, Save, Trash2 } from "lucide-react";
 import { LayerState, useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
@@ -230,5 +230,6 @@ export const LayerRow = ({
      subscription, while `useSmartModel` snapshots it per instance — and this
      panel is the one that already froze once. A drop zone is also all the row
      needs; it is not itself draggable. */
-  return <MikroLens.Drop object={{ id: layer.lens.id }}>{row}</MikroLens.Drop>;
+  const LensSmart = lensSmart(layer.lens.__typename);
+  return <LensSmart.Drop object={{ id: layer.lens.id }}>{row}</LensSmart.Drop>;
 };

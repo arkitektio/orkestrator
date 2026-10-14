@@ -6,7 +6,7 @@ import { classifyError } from "@/core/layout/fallbacks/classifyError";
 import { RetryButton } from "@/core/layout/fallbacks/statusActions";
 import {
   MikroArrayDataset,
-  MikroLens,
+  MikroArrayLens,
   MikroMeshCollection,
   MikroSparseDataset,
   MikroTableDataset,
@@ -80,9 +80,9 @@ const Loaded = ({ info }: { info: Info }) => {
         <Made heading="Cut to this shape">
           {lenses.map((lens) => (
             <li key={lens.id} className="flex min-w-0 items-baseline gap-2">
-              <MikroLens.DetailLink object={lens} className="min-w-0 truncate">
+              <MikroArrayLens.DetailLink object={lens} className="min-w-0 truncate">
                 {lens.label}
-              </MikroLens.DetailLink>
+              </MikroArrayLens.DetailLink>
               <span className="shrink-0 tabular-nums text-muted-foreground">{lens.shape.join(" × ")}</span>
             </li>
           ))}

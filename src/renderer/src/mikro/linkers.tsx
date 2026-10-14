@@ -11,7 +11,28 @@ export const MikroRenderedPlot = smartOf(manifest, "@mikro/renderedplot");
 export const MikroFolder = smartOf(manifest, "@mikro/folder");
 export const MikroArrayDataset = smartOf(manifest, "@mikro/arraydataset");
 export const MikroCoordinateSystem = smartOf(manifest, "@mikro/coordinatesystem");
-export const MikroLens = smartOf(manifest, "@mikro/lens");
+// A lens is its kind's structure; every kind opens the one lens page, so a
+// link or page that does not care which kind goes through `MikroArrayLens`.
+export const MikroArrayLens = smartOf(manifest, "@mikro/arraylens");
+export const MikroTableLens = smartOf(manifest, "@mikro/tablelens");
+export const MikroSparseLens = smartOf(manifest, "@mikro/sparselens");
+export const MikroMeshLens = smartOf(manifest, "@mikro/meshlens");
+export const MikroNetworkLens = smartOf(manifest, "@mikro/networklens");
+export const MikroAnnotationLens = smartOf(manifest, "@mikro/annotationlens");
+
+const LENS_SMARTS = {
+  ArrayLens: MikroArrayLens,
+  TableLens: MikroTableLens,
+  SparseLens: MikroSparseLens,
+  MeshLens: MikroMeshLens,
+  NetworkLens: MikroNetworkLens,
+  AnnotationLens: MikroAnnotationLens,
+};
+
+/** The smart object of a lens, by its `__typename`: it hands the lens over as
+ *  its kind, which is what an action's port is typed on. */
+export const lensSmart = (typename: keyof typeof LENS_SMARTS | undefined) =>
+  (typename && LENS_SMARTS[typename]) || MikroArrayLens;
 export const MikroHistory = smartOf(manifest, "@mikro/history");
 export const MikroFluorophore = smartOf(manifest, "@mikro/fluorophore");
 export const MikroFile = smartOf(manifest, "@mikro/file");

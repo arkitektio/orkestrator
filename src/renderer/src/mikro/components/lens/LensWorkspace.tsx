@@ -1,5 +1,5 @@
 import { Sidebars } from "@/core/layout/Sidebars";
-import { MikroLens } from "@/core/linkers";
+import { lensSmart } from "@/core/linkers";
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -118,26 +118,27 @@ export const LensWorkspace = ({
   });
 
   const description = describeLens(lens);
+  const LensSmart = lensSmart(lens.__typename);
 
   return (
     // The provider wraps the WHOLE ModelPage so the Layers sidebar tab (a
     // sibling panel of the content area) reaches the scene stores. Null scene
     // = "no scene selected"; the tab says so instead of listing layers.
     <Scene.Provider scene={sceneData?.scene ?? null}>
-      <MikroLens.ModelPage
+      <LensSmart.ModelPage
         object={lens}
         help={MIKRO_HELP.lens}
         title={`${description.container.name} · ${description.title}`}
         variant="black"
         overlay
-        actions={<MikroLens.Actions object={lens} />}
+        actions={<LensSmart.Actions object={lens} />}
         pageActions={
           // ONE button, and it says what it acts on: everything launched from
           // this page is handed the lens on screen. What is done to the dataset
           // as a whole — filing it, deleting it — is on the dataset's own page.
-          <MikroLens.ObjectButton alwaysShow object={lens}>
+          <LensSmart.ObjectButton alwaysShow object={lens}>
             Run on lens
-          </MikroLens.ObjectButton>
+          </LensSmart.ObjectButton>
         }
         additionalSidebars={
           <>
@@ -216,7 +217,7 @@ export const LensWorkspace = ({
             sceneLoading={sceneLoading}
           />
         </div>
-      </MikroLens.ModelPage>
+      </LensSmart.ModelPage>
     </Scene.Provider>
   );
 };

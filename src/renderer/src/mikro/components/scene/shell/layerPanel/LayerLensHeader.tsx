@@ -1,4 +1,4 @@
-import { MikroLens } from "@/core/linkers";
+import { MikroArrayLens } from "@/core/linkers";
 import type { LayerLensFragment } from "@/mikro/api/graphql";
 import { describeLens, isWholeLens } from "@/mikro/lenses";
 import type { LayerState } from "../../platform/stores/sceneStore";
@@ -19,7 +19,7 @@ export type HeaderLens = LayerState["lens"] | LayerLensFragment;
  * all of it. So the layers of one lens sit under one line naming it, with what
  * it cuts, and the line leads to the lens' own page.
  *
- * A plain link, deliberately not `MikroLens.Smart`: `useSmartModel` snapshots
+ * A plain link, deliberately not `MikroArrayLens.Smart`: `useSmartModel` snapshots
  * the selection store per instance, and this is the panel that already froze
  * once (see `LayerRow`, whose rows are the lens' drop targets).
  */
@@ -49,7 +49,7 @@ export const LayerLensHeader = ({
       : null;
 
   return (
-    <MikroLens.DetailLink
+    <MikroArrayLens.DetailLink
       object={whole ?? lens}
       title={`${container.name} · ${label}`}
       className="col-span-full mt-1.5 flex min-w-0 items-center gap-1.5 px-1 text-[0.625rem] text-white/50 first:mt-0 hover:text-white/90"
@@ -68,6 +68,6 @@ export const LayerLensHeader = ({
           </span>
         )}
       </span>
-    </MikroLens.DetailLink>
+    </MikroArrayLens.DetailLink>
   );
 };

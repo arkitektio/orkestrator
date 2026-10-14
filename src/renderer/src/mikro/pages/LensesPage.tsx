@@ -1,4 +1,4 @@
-import { MikroLens } from "@/core/linkers";
+import { MikroArrayLens } from "@/core/linkers";
 import { useLensFilterBar } from "../components/filter/LensFilterBar";
 import LensList from "../components/lists/LensList";
 import { useLiveLenses } from "../lib/lenses/useLiveLenses";
@@ -17,11 +17,11 @@ const Page = () => {
   useLiveLenses({ kind: kind ?? undefined });
 
   return (
-    <MikroLens.ListPage title="Lenses" pageActions={actions}>
+    <MikroArrayLens.ListPage title="Lenses" pageActions={actions}>
       <div className="p-3">
         <LensList defaultLimit={40} filters={filters} ordering={ordering} />
       </div>
-    </MikroLens.ListPage>
+    </MikroArrayLens.ListPage>
   );
 };
 

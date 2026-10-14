@@ -105,12 +105,15 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
       // 129 list pages with nothing typed is noise, not navigation.
       return [];
     }
+    // Models that share a list page (mikro's six lens kinds) are one row.
+    const seen = new Set<string>();
     return rankByFilter(
       smartRegistry.registeredModels(),
       (model) => [model.name, model.identifier],
       filter,
-      8,
-    );
+    )
+      .filter((model) => !seen.has(model.path) && !!seen.add(model.path))
+      .slice(0, 8);
   }, [filter]);
 
   // Mirrors the pin on the tab's row in the rail, so the same thing is

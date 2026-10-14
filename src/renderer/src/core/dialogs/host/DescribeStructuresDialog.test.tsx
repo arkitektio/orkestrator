@@ -13,7 +13,7 @@ describe("DescribeStructuresDialog", () => {
         <DialogContent>
           <DescribeStructuresDialog
             left={[
-              { identifier: "@mikro/lens", id: "42", label: "My lens", descriptors: { shape: [1, 2, 3] } },
+              { identifier: "@mikro/arraylens", id: "42", label: "My lens", descriptors: { shape: [1, 2, 3] } },
               { identifier: "@kraph/graph", id: "7" },
             ]}
             right={[{ identifier: "@lok/user", id: "u1" }]}
@@ -24,7 +24,7 @@ describe("DescribeStructuresDialog", () => {
 
     expect(screen.getByText("Selected · 2")).toBeTruthy();
     expect(screen.getByText("Partner · 1")).toBeTruthy();
-    expect(screen.getAllByText("@mikro/lens").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("@mikro/arraylens").length).toBeGreaterThan(0);
     expect(screen.getByText("42")).toBeTruthy();
     expect(screen.getAllByText("My lens").length).toBe(2);
     expect(screen.getByText(/"shape"/)).toBeTruthy();

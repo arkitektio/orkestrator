@@ -1,7 +1,7 @@
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { useDialog } from "@/core/dialogs/registry";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
-import { MikroLens } from "@/core/linkers";
+import { MikroArrayLens } from "@/core/linkers";
 import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import {
@@ -216,7 +216,7 @@ const CreateWindowLensFields = ({ lens }: { lens: WindowLens }) => {
       client.refetchQueries({ include: [ListLensesDocument] });
       toast.success("Lens ready");
       closeDialog();
-      navigate(MikroLens.linkBuilder(created.id));
+      navigate(MikroArrayLens.linkBuilder(created.id));
     } catch (error) {
       toast.error(`Error: ${(error as Error).message}`);
     } finally {
@@ -279,7 +279,7 @@ const CreateLensFields = ({ subject }: { subject: Subject }) => {
   const submit = useGraphQLDialog(createLens, {
     successMessage: "Lens ready",
     onSuccess: (data) => {
-      if (data?.createLens) navigate(MikroLens.linkBuilder(data.createLens.id));
+      if (data?.createLens) navigate(MikroArrayLens.linkBuilder(data.createLens.id));
     },
   });
 

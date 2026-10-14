@@ -1,7 +1,7 @@
 import React from "react";
 import { CardTitle } from "@/core/ui/card";
 import { HomeCard } from "@/core/ui/home-card";
-import { MikroLens } from "@/core/linkers";
+import { lensSmart } from "@/core/linkers";
 import { ListLensFragment } from "@/mikro/api/graphql";
 import { Database } from "lucide-react";
 import { describeLens, isWholeLens, lensHeadline, lensSnapshot } from "../../lenses";
@@ -16,8 +16,9 @@ interface Props {
 
 /**
  * A lens as a tile, whatever it selects over. The tile IS the lens: selecting,
- * dragging or right-clicking it hands over `@mikro/lens`, which is what a task
- * is started from. The container's own page (filing, deleting) is the small
+ * dragging or right-clicking it hands over its kind's structure
+ * (`@mikro/arraylens`, …) with its descriptors, which is what a task is started
+ * from and what a port is typed on. The container's own page (filing, deleting) is the small
  * link on the tile.
  *
  * - The whole lens of an array is drawn as the dataset it shows all of: the
@@ -35,6 +36,7 @@ const TheCard = ({ item }: Props) => {
   const { info, label, selection } = describeLens(item);
   const { title, subline } = lensHeadline(item);
   const Icon = info.icon;
+  const LensSmart = lensSmart(item.__typename);
   // What the SELECTION structurally is: one plane of a stack reads "2d", one
   // frame of a tracking table no longer reads "timed". Empty for the kinds that
   // have no such vocabulary.
@@ -43,7 +45,7 @@ const TheCard = ({ item }: Props) => {
     .join(" · ");
 
   return (
-    <MikroLens.Smart object={item} menuButton>
+    <LensSmart.Smart object={item} menuButton>
       <HomeCard className="aspect-square h-auto p-0">
         <SnapshotBackdrop snapshot={lensSnapshot(item)} className="h-full w-full">
           {item.__typename === "ArrayLens" && isWholeLens(item) ? (
@@ -53,7 +55,7 @@ const TheCard = ({ item }: Props) => {
               shape={item.dataset.shape}
               multiscale={item.dataset.multiscale}
               defaultScene={item.defaultScene}
-              title={<MikroLens.DetailLink object={item}>{title}</MikroLens.DetailLink>}
+              title={<LensSmart.DetailLink object={item}>{title}</LensSmart.DetailLink>}
               aside={
                 <LensContainerLink
                   lens={item}
@@ -66,7 +68,7 @@ const TheCard = ({ item }: Props) => {
           ) : (
             <div className="flex h-full flex-col justify-between gap-2 px-3 py-2">
               <CardTitle className="min-w-0 break-words text-sm leading-tight line-clamp-2">
-                <MikroLens.DetailLink object={item}>{title}</MikroLens.DetailLink>
+                <LensSmart.DetailLink object={item}>{title}</LensSmart.DetailLink>
               </CardTitle>
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-1 text-[0.625rem] text-white/80">
@@ -89,7 +91,7 @@ const TheCard = ({ item }: Props) => {
           )}
         </SnapshotBackdrop>
       </HomeCard>
-    </MikroLens.Smart>
+    </LensSmart.Smart>
   );
 };
 

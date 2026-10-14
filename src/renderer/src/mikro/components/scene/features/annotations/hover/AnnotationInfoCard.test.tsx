@@ -14,7 +14,7 @@ vi.mock("@/core/linkers", () => {
     ),
   });
   return {
-    MikroLens: link("lens"),
+    MikroArrayLens: link("lens"),
     MikroArrayDataset: link("arraydataset"),
     MikroTableDataset: link("tabledataset"),
     MikroSparseDataset: link("sparsedataset"),

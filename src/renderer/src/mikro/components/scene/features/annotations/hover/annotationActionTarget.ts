@@ -14,9 +14,8 @@ import type { HoverPoint, SelectedRoi } from "../roiSelectionStore";
  */
 
 /**
- * The identifier an action types a pixel lens with. Deliberately not the UI's
- * `@mikro/lens`: mikro hosts one structure per lens kind and rekuest matches a
- * port's identifier exactly, so `@mikro/lens` would match no port at all.
+ * The identifier an action types a pixel lens with: mikro hosts one structure
+ * per lens kind and rekuest matches a port's identifier exactly.
  */
 export const ARRAY_LENS_IDENTIFIER = "@mikro/arraylens";
 

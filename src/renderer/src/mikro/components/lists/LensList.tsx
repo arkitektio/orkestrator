@@ -1,5 +1,5 @@
 import { createList } from "@/core/layout/createList";
-import { MikroLens } from "@/core/linkers";
+import { MikroArrayLens } from "@/core/linkers";
 import { useListLensesQuery } from "@/mikro/api/graphql";
 import LensCard from "../cards/LensCard";
 
@@ -8,7 +8,7 @@ const shared = {
   dataKey: "lenses",
   ItemComponent: LensCard,
   title: "Lenses",
-  smart: MikroLens,
+  smart: MikroArrayLens,
   minItemWidth: 220,
 } as const;
 

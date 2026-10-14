@@ -48,9 +48,9 @@ export const MikroEntitySearch = ({ term, onDone }: { term: string; onDone?: () 
     })),
     // A lens is found by its name, and shown as that name on its container.
     ...(data?.lenses ?? []).map((lens) => {
-      const { title, container } = describeLens(lens);
+      const { title, container, info } = describeLens(lens);
       return {
-        identifier: "@mikro/lens",
+        identifier: info.identifier,
         id: lens.id,
         label: `${title} · ${container.name}`,
       };

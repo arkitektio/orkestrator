@@ -1,6 +1,6 @@
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { useDialog } from "@/core/dialogs/registry";
-import { MikroLens } from "@/core/linkers";
+import { lensSmart } from "@/core/linkers";
 import { Button } from "@/core/ui/button";
 import { cn } from "@/core/util/utils";
 import { Plus } from "lucide-react";
@@ -87,26 +87,27 @@ const LensRows = ({
     <div className="flex flex-col gap-2 overflow-y-auto p-4">
       {lenses.map((lens) => {
         const { title, label } = describeLens(lens);
+        const LensSmart = lensSmart(lens.__typename);
         return (
-          <MikroLens.Smart key={lens.id} object={lens}>
+          <LensSmart.Smart key={lens.id} object={lens}>
             <div className={rowClass(lens.id === active.id)}>
               <SnapshotBackdrop
                 snapshot={lensSnapshot(lens)}
                 className="h-9 w-9 shrink-0 rounded"
               />
               <div className="flex min-w-0 flex-col">
-                <MikroLens.DetailLink
+                <LensSmart.DetailLink
                   object={lens}
                   className="truncate text-sm font-medium hover:underline"
                 >
                   {title}
-                </MikroLens.DetailLink>
+                </LensSmart.DetailLink>
                 <span className="truncate font-mono text-[0.625rem] text-muted-foreground">
                   {label}
                 </span>
               </div>
             </div>
-          </MikroLens.Smart>
+          </LensSmart.Smart>
         );
       })}
 

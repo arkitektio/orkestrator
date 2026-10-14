@@ -175,7 +175,6 @@ describe("host registries", () => {
       "@mikro/chart",
       "@mikro/file",
       "@mikro/folder",
-      "@mikro/lens",
       "@mikro/meshlens",
       "@mikro/networklens",
       "@mikro/scene",

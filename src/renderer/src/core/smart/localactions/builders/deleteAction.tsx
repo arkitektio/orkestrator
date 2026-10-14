@@ -20,11 +20,17 @@ type DeleteActionServiceKey<TAppOrServices> = Extract<
   string
 >;
 
+/** One structure, or several that the action deletes alike (the kinds of one model). */
+type DeleteTarget = Smart | string | readonly (Smart | string)[];
+
+const identifiersOf = (target: DeleteTarget): string[] =>
+  (Array.isArray(target) ? target : [target]).map(identifierFromSmartOrString);
+
 export type DeleteActionParams<
   TAppOrServices = never,
   TServiceKey extends DeleteActionServiceKey<TAppOrServices> = DeleteActionServiceKey<TAppOrServices>,
 > = {
-  identifier: Smart | string;
+  identifier: DeleteTarget;
   title: string;
   mutation: TypedDocumentNode<unknown, { id: string }>;
   typename: string | string[];
@@ -51,10 +57,9 @@ export const buildDeleteAction = <
   icon: params.icon ?? Trash2,
   pinned: params.pinned,
   conditions: [
-    {
-      type: "identifier",
-      identifier: identifierFromSmartOrString(params.identifier),
-    },
+    Array.isArray(params.identifier)
+      ? { type: "mixture", identifiers: identifiersOf(params.identifier) }
+      : { type: "identifier", identifier: identifierFromSmartOrString(params.identifier as Smart | string) },
     {
       type: "nopartner",
     },
@@ -72,9 +77,9 @@ export const buildDeleteAction = <
     // Only act on the selected structures this action actually applies to. The
     // identifier condition matches when ANY selected item matches, so a mixed
     // selection can include items of other types — never delete those here.
-    const identifier = identifierFromSmartOrString(params.identifier);
+    const identifiers = identifiersOf(params.identifier);
     const targets = state.left.filter(
-      (structure) => structure.identifier === identifier,
+      (structure) => identifiers.includes(structure.identifier),
     );
     const typenames = Array.isArray(params.typename)
       ? params.typename
@@ -129,7 +134,7 @@ export const buildDeleteAction = <
         }
       } catch (error) {
         failures.push({ id, error });
-        console.error(`Failed to ${verb.present.toLowerCase()} ${identifier} ${id}`, error);
+        console.error(`Failed to ${verb.present.toLowerCase()} ${structure.identifier} ${id}`, error);
       } finally {
         done += 1;
         onProgress(Math.round((done / targets.length) * 100));

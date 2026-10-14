@@ -1,6 +1,6 @@
 import { renderQueryState } from "@/core/layout/routes/queryState";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { MikroLens } from "@/core/linkers";
+import { MikroArrayLens } from "@/core/linkers";
 import { Navigate, useLocation } from "react-router-dom";
 
 import { useGetArrayDatasetQuery, useGetLensQuery } from "../api/graphql";
@@ -39,7 +39,7 @@ const ArrayLensPage = ({ lens }: { lens: ArrayDetailLens }) => {
   const whole = lens.dataset.fullLens?.id;
   if (lens.slices.length === 0 && whole && whole !== lens.id) {
     // The query string travels with it: `?scene=` names the scene to land on.
-    return <Navigate replace to={`${MikroLens.linkBuilder(whole)}${search}`} />;
+    return <Navigate replace to={`${MikroArrayLens.linkBuilder(whole)}${search}`} />;
   }
 
   return <LensViewerPage lens={lens} />;

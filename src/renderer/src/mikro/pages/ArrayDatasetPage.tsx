@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from '@/core/layout/routes/DetailQueryRoute'
 import { useDialog } from '@/core/dialogs/registry'
-import { MikroArrayDataset, MikroLens } from '@/core/linkers'
+import { MikroArrayDataset, MikroArrayLens } from '@/core/linkers'
 import { Button } from '@/core/ui/button'
 import { Plus } from 'lucide-react'
 import { Navigate, useLocation } from 'react-router-dom'
@@ -27,7 +27,7 @@ export const ArrayDatasetOpenPage = asDetailQueryRoute(useGetArrayDatasetQuery, 
   // Same route parameter, same query: answered from the cache.
   if (!whole) return <ArrayDatasetPage />
   // The query string travels with it: `?scene=` names the scene to land on.
-  return <Navigate replace to={`${MikroLens.linkBuilder(whole)}${search}`} />
+  return <Navigate replace to={`${MikroArrayLens.linkBuilder(whole)}${search}`} />
 })
 
 /**

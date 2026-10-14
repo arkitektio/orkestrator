@@ -107,8 +107,28 @@ export type LensContainerRef = Pick<
   | "annotationCollection"
 >;
 
+/** The six lens structures, one per kind of container. */
+export const LENS_IDENTIFIERS = [
+  "@mikro/arraylens",
+  "@mikro/tablelens",
+  "@mikro/sparselens",
+  "@mikro/meshlens",
+  "@mikro/networklens",
+  "@mikro/annotationlens",
+] as const;
+
+export type LensIdentifier = (typeof LENS_IDENTIFIERS)[number];
+
+/** Whether a structure is a lens, of whichever kind. */
+export const isLensIdentifier = (identifier: string): identifier is LensIdentifier =>
+  (LENS_IDENTIFIERS as readonly string[]).includes(identifier);
+
 export type LensKindInfo = {
   kind: LensKind;
+  /** The structure mikro hosts for this kind: what a port is typed on, what
+   *  a lens is handed over as (menu, drag, drop) and what its page is filed
+   *  under. There is no structure for "a lens" of any kind. */
+  identifier: LensIdentifier;
   /** The kind as a noun: "Table lens". */
   label: string;
   /** What a lens that cuts nothing is called: the container, looked at whole. */
@@ -123,6 +143,7 @@ export type LensKindInfo = {
 
 export const LENS_KINDS: Record<LensTypename, LensKindInfo> = {
   ArrayLens: {
+    identifier: "@mikro/arraylens",
     kind: KIND.Array,
     label: "Array lens",
     whole: WHOLE_ARRAY,
@@ -131,6 +152,7 @@ export const LENS_KINDS: Record<LensTypename, LensKindInfo> = {
     filterKey: "dataset",
   },
   TableLens: {
+    identifier: "@mikro/tablelens",
     kind: KIND.Table,
     label: "Table lens",
     whole: "Whole table",
@@ -139,6 +161,7 @@ export const LENS_KINDS: Record<LensTypename, LensKindInfo> = {
     filterKey: "tableDataset",
   },
   SparseLens: {
+    identifier: "@mikro/sparselens",
     kind: KIND.Sparse,
     label: "Sparse lens",
     whole: "Whole matrix",
@@ -147,6 +170,7 @@ export const LENS_KINDS: Record<LensTypename, LensKindInfo> = {
     filterKey: "sparseDataset",
   },
   MeshLens: {
+    identifier: "@mikro/meshlens",
     kind: KIND.Mesh,
     label: "Mesh lens",
     whole: "Whole mesh collection",
@@ -155,6 +179,7 @@ export const LENS_KINDS: Record<LensTypename, LensKindInfo> = {
     filterKey: "meshCollection",
   },
   NetworkLens: {
+    identifier: "@mikro/networklens",
     kind: KIND.Network,
     label: "Network lens",
     whole: "Whole network",
@@ -163,6 +188,7 @@ export const LENS_KINDS: Record<LensTypename, LensKindInfo> = {
     filterKey: "networkCollection",
   },
   AnnotationLens: {
+    identifier: "@mikro/annotationlens",
     kind: KIND.Annotation,
     label: "Annotation lens",
     whole: "All annotations",
