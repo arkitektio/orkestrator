@@ -1,10 +1,8 @@
-import { CommandGroup } from "cmdk";
 import React from "react";
 import { createPortal } from "react-dom";
 import { RoleGuard } from "@/core/connection/roles";
 import { useSmartPins } from "./pins";
-import { cn } from "@/core/util/utils";
-import { RowPinProvider, useCompactRows, usePinnedSlot, type RowPin } from "./rowPin";
+import { RowPinProvider, usePinnedSlot, type RowPin } from "./rowPin";
 import type {
   SectionPins,
   SmartContextSection,
@@ -13,6 +11,10 @@ import type {
 } from "./section";
 import { useReportSectionStatus } from "./sectionStatusContext";
 import { useNarrowedRows } from "./useNarrowedRows";
+import { useSmartMenuSkinOverride } from "./skin";
+import { LIST_SKIN } from "./skins/list";
+
+export { SectionHeading } from "./skins/list";
 
 /**
  * Mounts one section of the menu.
@@ -24,7 +26,8 @@ import { useNarrowedRows } from "./useNarrowedRows";
  * status report the menu's progress bar and empty line are derived from, and
  * the pins: every row is told whether it is pinned, and the pinned ones move
  * to the "Pinned" group at the start of the menu. A section is left with its
- * query and its row.
+ * query and its row. How the group and its rows LOOK is the menu's skin
+ * (`skin.tsx`).
  */
 export const SectionHost = <T,>({
   section,
@@ -104,6 +107,7 @@ const SectionBody = <T,>({
   const usePins = section.usePins ?? useSmartPins;
   const pins = usePins(section.id);
   const slot = usePinnedSlot();
+  const Group = (useSmartMenuSkinOverride() ?? LIST_SKIN).Group;
 
   if (!rows || rows.length === 0) {
     return result.status === "error" ? <SectionErrorRow title={section.title} /> : null;
@@ -131,11 +135,9 @@ const SectionBody = <T,>({
     <>
       {slot ? createPortal(pinned.map(renderRow), slot) : null}
       {listed.length > 0 ? (
-        <CommandGroup
-          heading={<SectionHeading icon={section.icon}>{section.title}</SectionHeading>}
-        >
+        <Group heading={section.title} icon={section.icon}>
           {listed.map(renderRow)}
-        </CommandGroup>
+        </Group>
       ) : null}
     </>
   );
@@ -166,31 +168,11 @@ const PinnedRow = ({
 /** With no `searchParts` the rows are not narrowed; the hook still runs once. */
 const untouched = () => [] as const;
 
-export const SectionHeading = ({
-  icon: Icon,
-  children,
-}: {
-  icon?: React.ComponentType<{ className?: string }>;
-  children: React.ReactNode;
-}) => {
-  const compact = useCompactRows();
-  return (
-    <span
-      className={cn(
-        "w-full items-center ml-2 inline-flex",
-        compact
-          ? "gap-1 pt-1 text-[10px] leading-none text-muted-foreground"
-          : "gap-2 text-xs font-light",
-      )}
-    >
-      {Icon ? <Icon className={compact ? "h-2.5 w-2.5" : "h-3.5 w-3.5"} /> : null}
-      <span>{children}</span>
-    </span>
-  );
-};
-
 const SectionErrorRow = ({ title }: { title: React.ReactNode }) => (
-  <span className="font-light text-xs w-full items-center ml-2 inline-flex gap-2 text-destructive">
+  <span
+    data-slot="section-error"
+    className="font-light text-xs w-full items-center ml-2 inline-flex gap-2 text-destructive"
+  >
     <span>{title}</span>
     <span>· Error</span>
   </span>

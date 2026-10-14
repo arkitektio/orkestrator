@@ -148,7 +148,17 @@ the open frame; `remote` = mounts one frame later), `Guard`, `applies(props)`,
   (`extensions/pins.ts`); a section with its own pin store answers through
   `usePins` (local actions). A pin never decides whether a row exists.
 - Callers narrow the menu with `sections={{ only | exclude | palette }}`,
-  never with a new `disableX` prop. A section opts into the ⌘K palette with
+  never with a new `disableX` prop.
+- The look is a **skin**, the layout is **parts**. `SmartContext` is one
+  composition of `useSmartMenu(props)` + `SmartMenu.Root / Body / Header /
+  Search / Progress / List / Pinned / Sections / Empty`
+  (`extensions/menu.tsx`) drawn with `LIST_SKIN`; a view with a look of its
+  own composes the parts it wants and passes a skin (`extensions/skin.tsx`:
+  `Row`, `Group`, list/pinned classes; `TILE_SKIN` is the scene card's).
+  So every row is a `CommandActionRow` (never a raw `CommandItem`) and says
+  its run state as `running` / `failure` / `flash`, not as classes — a
+  custom skin's row renders through `SmartRowItem` to keep Enter, the arrow
+  keys and right-click. A section opts into the ⌘K palette with
   `palette: true` (the palette renders them through `PaletteSections`).
 - Per-row Radix roots are out: machinery that must wrap the whole menu
   (rekuest's single "Run on" picker, outside `<Command>`) is a module
