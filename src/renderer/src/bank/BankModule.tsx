@@ -14,6 +14,7 @@ import ConnectionPage from "./pages/ConnectionPage";
 import ConnectionsPage from "./pages/ConnectionsPage";
 import DiscoverMerchantsPage from "./pages/DiscoverMerchantsPage";
 import HomePage from "./pages/HomePage";
+import DashboardPage from "./pages/DashboardPage";
 import InsightsPage from "./pages/InsightsPage";
 import MerchantPage from "./pages/MerchantPage";
 import MerchantsPage from "./pages/MerchantsPage";
@@ -33,6 +34,7 @@ import TransactionsPage from "./pages/TransactionsPage";
 export const BankModule: React.FC = () => (
   <ModuleLayout>
     <Routes>
+      <Route path="home" element={<DashboardPage />} />
       <Route path="insights" element={<InsightsPage />} />
       <Route path="accounts" element={<AccountsPage />} />
       <Route path="accounts/:id" element={<AccountPage />} />

@@ -18,6 +18,7 @@ export const CommandActionContent = (props: {
   description?: React.ReactNode;
   icon?: React.ComponentType<{ className?: string }> | null;
   svg?: string | null;
+  leading?: React.ReactNode;
   trailing?: React.ReactNode;
 }) => {
   const tooltipContent = props.description ?? props.title;
@@ -28,7 +29,7 @@ export const CommandActionContent = (props: {
       <TooltipTrigger
         className={cn("flex w-full items-center text-left", compact ? "gap-2" : "gap-3")}
       >
-        <CommandActionIcon icon={props.icon} svg={props.svg} />
+        <CommandActionIcon icon={props.icon} svg={props.svg} leading={props.leading} />
         <span className="flex min-w-0 flex-1 flex-col">
           <span
             className={cn("mr-auto flex text-foreground", compact ? "text-xs" : "text-md")}
@@ -108,6 +109,7 @@ const ListRow = (props: SkinRowProps) => {
         ) : props.description}
         icon={props.icon}
         svg={props.svg}
+        leading={props.leading}
         trailing={trailing}
       />
       {props.buttons || pin ? (

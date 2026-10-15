@@ -27,6 +27,8 @@ export type ActionRowProps = {
   description?: React.ReactNode;
   icon?: React.ComponentType<{ className?: string }> | null;
   svg?: string | null;
+  /** A picture of the row's own in the icon's place, e.g. an action's logo. */
+  leading?: React.ReactNode;
   /** 0–100 while something the row started runs. */
   progress?: number | null;
   /** Something the row started is under way. */

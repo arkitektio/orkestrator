@@ -12,6 +12,7 @@ import {
 } from "@/rekuest/api/graphql";
 import { ActionButton } from "@/rekuest/buttons/ActionButton";
 import { AgentStatusDot } from "@/rekuest/components/displays/AgentStatusDot";
+import { ActionLogo } from "@/rekuest/components/logo/ActionLogo";
 import { Availability, deriveAvailability } from "@/rekuest/lib/actionBrowse";
 
 // The catalog selects BrowseAction; every other list (Home, search) selects
@@ -50,12 +51,15 @@ const TheCard = ({ item }: Props) => {
     <RekuestAction.Smart object={item} hover>
       <Card className="group flex h-full flex-col gap-1.5 p-3 ring ring-0 group-data-[selected=true]:ring-1">
         <div className="flex items-baseline justify-between gap-2">
-          <RekuestAction.DetailLink
-            object={item}
-            className="min-w-0 truncate text-sm font-medium leading-tight hover:text-primary transition-colors"
-          >
-            {item.name}
-          </RekuestAction.DetailLink>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <ActionLogo action={item} className="h-4 w-4 self-center" />
+            <RekuestAction.DetailLink
+              object={item}
+              className="min-w-0 truncate text-sm font-medium leading-tight hover:text-primary transition-colors"
+            >
+              {item.name}
+            </RekuestAction.DetailLink>
+          </span>
           <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
             <AgentStatusDot
               status={

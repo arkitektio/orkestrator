@@ -5829,6 +5829,18 @@
             "deprecationReason": null
           },
           {
+            "name": "alreadyDeployed",
+            "description": "Keep only definitions already deployed in their organization (a deployment of one of the flavours that provide them, on one of its backends), or with false only those never deployed there: what is left to install.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "apps",
             "description": "Keep only definitions provided by these apps.",
             "type": {

@@ -8,19 +8,18 @@ import { PageHelp } from "@/core/layout/help";
 export const MIKRO_HELP = {
   home: (
     <PageHelp
-      intro="Your data at a glance. Every dataset, table, mesh, network and annotation collection is one tile under Data, the parts cut out of them follow under Selections, then top-level folders, charts and files. This is the quickest place to bring new data in and to start a task on it."
+      intro="Where to go in Mikro, and what is new. The top lists every Mikro page (the same ones the right-click menu on Mikro's rail icon shows); below are your pinned folders, the most recent data and the most recent files. Each dataset, table, mesh, network and annotation collection is one tile under Recent data."
       steps={[
+        <>Click a page under <b>Data</b>, <b>By kind</b> or <b>Files</b> to browse, search and sort everything of that kind.</>,
         <>Press <b>Upload Files</b> and pick files, or drop files from your computer anywhere on the page, to upload them.</>,
-        <>Use the search field to narrow every list at once by name.</>,
-        <>Open <b>Sort</b> to order by <b>Date created</b> or <b>Name</b>, ascending or descending.</>,
-        <>Set a date range in the header to see only what was created in that period.</>,
+        <>Click the <b>Recent data</b> or <b>Recent files</b> title to open the full list; the arrows beside it page through the newest ones.</>,
         <>Click a tile to open it in the viewer.</>,
         <>Select one or more tiles to start a task on them: each tile is the lens that selects all of its data, and the selection panel and the right-click menu list what can run on it.</>,
-        <>Drag a dataset or table tile onto a folder to file it there. The small database icon on a tile opens the dataset’s own page.</>,
+        <>Drag a dataset or table tile onto a pinned folder to file it there. The small database icon on a tile opens the dataset’s own page.</>,
       ]}
       tips={[
         <>The <b>Statistics</b> tab of the sidebar summarizes how much data you have.</>,
-        <>Derived datasets (masks, results) are listed under Data as well.</>,
+        <>Recent data lists only what was brought in: datasets computed from others (masks, deconvolutions) are left out, and are found on the dataset they came from or in the full list.</>,
       ]}
     />
   ),
@@ -218,6 +217,23 @@ export const MIKRO_HELP = {
       ]}
       tips={[
         <>To upload new files, use <b>Upload Files</b> on the Dashboard, or drop them onto the Dashboard or an open folder.</>,
+      ]}
+    />
+  ),
+  lineage: (
+    <PageHelp
+      intro="How one dataset, file, table or collection came to be and what was made from it. Files and data are tiles; the dashed pills between them are the tasks that made each step, named by the action they ran. Read it left to right: what something was made from is on its left, what was made from it on its right."
+      steps={[
+        <>Press <b>+</b> on the left edge of a tile to show what it was made from, or on its right edge to show what was made from it. The picture grows around the tile you pressed.</>,
+        <>Click a tile or a task to see what it is. From there, its button lists what can be done with it, and <b>Lineage from here</b> makes it the centre of the picture.</>,
+        <>Right-click a tile for the same menu as anywhere else in the app.</>,
+        <>Each tile lists its lenses under its name, the whole one first. A line leaves from the lens that step was computed from. Right-click a lens to run a task on just that lens.</>,
+      ]}
+      tips={[
+        <>A step with no task between two tiles was done by hand. Its line is labelled <b>ingest</b> (a file was read in), <b>export</b> (a file was written out) or <b>derived</b>.</>,
+        <>A dashed line means the data came from there but cannot be placed through it, for example a table of measurements taken from an image.</>,
+        <>The ring marks the object this page was opened for.</>,
+        <>A tile with many lenses lists the ones something was made from and a few more, and says how many it left out.</>,
       ]}
     />
   ),

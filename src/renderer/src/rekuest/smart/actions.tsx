@@ -23,13 +23,17 @@ import {
   ACTIVE_IMPLEMENTATION_ORDERING,
   SMART_IMPLEMENTATION_PAGE_SIZE,
 } from "./queries";
+import { useResultSink } from "@/core/smart/extensions/results";
 import {
   OpenResultButtons,
+  deliverResults,
   runsDirectly,
   useOpenResult,
   type OpenableReturn,
 } from "./openResult";
 import { useRunOnSubmenu } from "./runOnContext";
+import { BlokLogo } from "@/rekuest/components/logo/BlokLogo";
+import { materializeErrorMessage, resolveRun } from "./materialize";
 
 /**
  * The rows of the rekuest sections (Run, Batch, and the "Run on" picker). The sections themselves — queries, headings, status — are
@@ -137,12 +141,21 @@ export const DirectImplementationAssignment = (
   });
   const { assign } = useAssign();
   const { openDialog } = useDialog();
+  const sink = useResultSink();
 
   const onTemplateSelect = async (
     action: PrimaryActionFragment,
     implementation: DetailImplementationFragment,
   ) => {
-    const keys = buildActionArgs(action, props);
+    let run: SmartContextProps;
+    try {
+      run = await resolveRun(props);
+    } catch (error) {
+      // The picker closes as the run starts: there is no row left to mark.
+      toast.error(materializeErrorMessage(error));
+      return;
+    }
+    const keys = buildActionArgs(action, run);
     if (!keys) {
       return;
     }
@@ -163,9 +176,9 @@ export const DirectImplementationAssignment = (
     // is suppressed too and the task runs with no indicator anywhere.
     const untrack = trackTask(
       reference,
-      (event) => {
+      deliverResults(sink, action.returns, (event) => {
         props.onDone?.({ event, kind: "action" });
-      },
+      }),
       { notifyGlobally: true },
     );
 
@@ -218,8 +231,15 @@ export const DirectImplementationAssignment = (
       <Button
         variant="outline"
         className="mt-2"
-        onClick={() => {
-          const firstObject = props.objects[0];
+        onClick={async () => {
+          let run: SmartContextProps;
+          try {
+            run = await resolveRun(props);
+          } catch (error) {
+            toast.error(materializeErrorMessage(error));
+            return;
+          }
+          const firstObject = run.objects[0];
           if (!firstObject) {
             return;
           }
@@ -345,9 +365,22 @@ export const AssignButton = (
     useAssignActionProgress(props);
 
   const thenOpen = useOpenResult();
+  const sink = useResultSink();
 
   const conditionalAssign = async (action: PrimaryActionFragment, open?: OpenableReturn) => {
-    const keys = buildActionArgs(action, props);
+    let run: SmartContextProps = props;
+    if (props.materialize) {
+      // Running while the object it runs on is made.
+      setDoing(true);
+      try {
+        run = await resolveRun(props);
+      } catch (error) {
+        triggerErrorFeedback(materializeErrorMessage(error));
+        return;
+      }
+      setDoing(false);
+    }
+    const keys = buildActionArgs(action, run);
     if (!keys) {
       return;
     }
@@ -363,9 +396,11 @@ export const AssignButton = (
     }
 
     const reference = uuidv4();
-    const untrack = trackTask(reference, open ? thenOpen(open, onEvent) : onEvent, {
-      notifyGlobally: true,
-    });
+    const untrack = trackTask(
+      reference,
+      deliverResults(sink, action.returns, open ? thenOpen(open, onEvent) : onEvent),
+      { notifyGlobally: true },
+    );
 
     try {
       await assign(buildAssignInput({
@@ -418,6 +453,7 @@ export const AssignButton = (
         ) : null
       }
       icon={PlayCircle}
+      leading={props.action.logo ? <BlokLogo blok={props.action.logo} className="h-full w-full" /> : undefined}
     />
   );
 };
@@ -428,6 +464,7 @@ export const BatchAssignButton = (
   const { assign } = useAssign();
   const { openDialog } = useDialog();
   const runOn = useRunOnRow(props.action);
+  const sink = useResultSink();
   const {
     doing,
     error,
@@ -447,19 +484,31 @@ export const BatchAssignButton = (
       return;
     }
 
-    for (const object of props.objects) {
+    let run: SmartContextProps = props;
+    if (props.materialize) {
+      setDoing(true);
+      try {
+        run = await resolveRun(props);
+      } catch (error) {
+        triggerErrorFeedback(materializeErrorMessage(error));
+        return;
+      }
+      setDoing(false);
+    }
+
+    for (const object of run.objects) {
       const keys: Record<string, unknown> = { [key]: toWire(object) };
 
-      if (props.partners && props.partners.length === 1) {
+      if (run.partners && run.partners.length === 1) {
         const partnerKey = action.args?.at(1)?.key;
         if (!partnerKey) {
           toast.error("No key found for partner");
           return;
         }
-        keys[partnerKey] = toWire(props.partners[0]);
+        keys[partnerKey] = toWire(run.partners[0]);
       }
 
-      if (props.partners && props.partners.length > 1) {
+      if (run.partners && run.partners.length > 1) {
         if (action.args.at(1)?.kind !== PortKind.List) {
           toast.error("Should be a list but is not");
           return;
@@ -469,7 +518,7 @@ export const BatchAssignButton = (
           toast.error("No key found for partner");
           return;
         }
-        keys[partnerKey] = props.partners.map((partner) => (toWire(partner)));
+        keys[partnerKey] = run.partners.map((partner) => (toWire(partner)));
       }
 
       const unknownKeys = action.args.filter((arg) => arg.key && !keys[arg.key]);
@@ -483,7 +532,9 @@ export const BatchAssignButton = (
       }
 
       const reference = uuidv4();
-      const untrack = trackTask(reference, onEvent, { notifyGlobally: true });
+      const untrack = trackTask(reference, deliverResults(sink, action.returns, onEvent), {
+        notifyGlobally: true,
+      });
 
       try {
         await assign(buildAssignInput({
@@ -516,6 +567,7 @@ export const BatchAssignButton = (
       failure={inlineErrorToast}
       unavailable={actionAvailability(props.action)}
       icon={Boxes}
+      leading={props.action.logo ? <BlokLogo blok={props.action.logo} className="h-full w-full" /> : undefined}
     />
   );
 };

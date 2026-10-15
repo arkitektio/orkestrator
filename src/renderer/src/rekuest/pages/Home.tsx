@@ -3,7 +3,8 @@ import { PageLayout } from "@/core/layout/PageLayout";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { HelpSidebar } from "@/core/layout/help";
 import { Badge } from "@/core/ui/badge";
-import { Button, buttonVariants } from "@/core/ui/button";
+import { Button } from "@/core/ui/button";
+import { HomeSectionHeading, ModuleHome } from "@/core/layout/ModuleHome";
 import { CollapsibleSearch } from "@/core/ui/collapsible-search";
 import {
   ActionLabel,
@@ -37,7 +38,6 @@ import { useStructureOptionList } from "@/core/modules/hooks/useStructureOptions
 import { useSelf } from "@/core/connection/useSelf";
 import { AgentKind, ListAgentFragment, Ordering, useAgentsQuery } from "@/rekuest/api/graphql";
 import AgentCard from "@/rekuest/components/cards/AgentCard";
-import ActionList from "@/rekuest/components/lists/ActionList";
 import MaterializedBlokList from "@/rekuest/components/lists/MaterializedBlokList";
 import TaskList from "@/rekuest/components/lists/TaskList";
 import { Filter, Loader2, Podcast, Wifi, X } from "lucide-react";
@@ -287,7 +287,7 @@ const Page = () => {
 
   return (
     <PageLayout
-      title="Home"
+      title="Rekuest"
       help={REKUEST_HELP.home}
       pageActions={
         <>
@@ -327,74 +327,70 @@ const Page = () => {
       }
     >
       <OrgTasksUpdater />
-      <div className="space-y-10 p-3">
-        <section className="space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight">
-                <Podcast className="h-8 w-8 text-primary" />
-                Your Apps
-              </h1>
-              <p className="mt-1 text-muted-foreground">
-                The apps you connected to this Rekuest instance. Online apps can run actions right
-                now. Open Filter for other users' apps and webhooks.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {loaded && (
-                <span>
-                  <span className="font-semibold text-foreground">{onlineCount}</span> online ·{" "}
-                  <span className="font-semibold text-foreground">{visible.length}</span> total
-                </span>
-              )}
-              <RekuestAgent.ListLink className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                All agents
-              </RekuestAgent.ListLink>
-            </div>
-          </div>
-
-          {loaded && agents.length === 0 ? (
-            <Empty className="border py-12">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <Podcast />
-                </EmptyMedia>
-                <EmptyTitle>
-                  {hasFilter ? "No apps match your filters" : "No apps connected yet"}
-                </EmptyTitle>
-                <EmptyDescription>
-                  {hasFilter
-                    ? "Try a different search or clear the active filters."
-                    : "Start an Arkitekt app and log it into this instance. It will show up here as soon as it connects. Apps of other users and webhooks are under Filter."}
-                </EmptyDescription>
-              </EmptyHeader>
-              {hasFilter && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => {
-                    setSearch(null);
-                    setOnlineOnly(null);
-                    setFilters({ user: null, app: null, device: null, kind: null });
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                  Clear filters
-                </Button>
-              )}
-            </Empty>
-          ) : (
-            <ListRender
-              array={loaded ? agents : undefined}
-              refetch={refetch}
-              error={error}
-              limit={40}
-            >
-              {(agent) => <AgentCard key={agent.id} item={agent} />}
-            </ListRender>
-          )}
-        </section>
+      <ModuleHome
+        moduleKey="rekuest"
+        title="Rekuest"
+        description="Run what your apps can do: actions, tasks and the apps that carry them out."
+        // The apps come first: what is connected is what can run anything.
+        lead={
+          <section>
+            <HomeSectionHeading className="justify-between">
+              <span>Your apps</span>
+              <span className="flex items-center gap-2 font-normal normal-case tracking-normal">
+                {loaded && (
+                  <span>
+                    <span className="font-semibold text-foreground">{onlineCount}</span> online ·{" "}
+                    <span className="font-semibold text-foreground">{visible.length}</span> total
+                  </span>
+                )}
+                <RekuestAgent.ListLink className="hover:text-foreground">All agents →</RekuestAgent.ListLink>
+              </span>
+            </HomeSectionHeading>
+  
+            {loaded && agents.length === 0 ? (
+              <Empty className="border py-12">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <Podcast />
+                  </EmptyMedia>
+                  <EmptyTitle>
+                    {hasFilter ? "No apps match your filters" : "No apps connected yet"}
+                  </EmptyTitle>
+                  <EmptyDescription>
+                    {hasFilter
+                      ? "Try a different search or clear the active filters."
+                      : "Start an Arkitekt app and log it into this instance. It will show up here as soon as it connects. Apps of other users and webhooks are under Filter."}
+                  </EmptyDescription>
+                </EmptyHeader>
+                {hasFilter && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => {
+                      setSearch(null);
+                      setOnlineOnly(null);
+                      setFilters({ user: null, app: null, device: null, kind: null });
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                    Clear filters
+                  </Button>
+                )}
+              </Empty>
+            ) : (
+              <ListRender
+                array={loaded ? agents : undefined}
+                refetch={refetch}
+                error={error}
+                limit={40}
+              >
+                {(agent) => <AgentCard key={agent.id} item={agent} />}
+              </ListRender>
+            )}
+          </section>
+        }
+      >
 
         <section>
           <MaterializedBlokList pagination={{ limit: 12 }} />
@@ -418,10 +414,7 @@ const Page = () => {
           />
         </section>
 
-        <section>
-          <ActionList />
-        </section>
-      </div>
+      </ModuleHome>
     </PageLayout>
   );
 };

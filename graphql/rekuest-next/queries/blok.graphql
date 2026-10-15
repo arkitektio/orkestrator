@@ -9,3 +9,13 @@ query ListBloks {
     ...ListBlok
   }
 }
+
+# A logo blok's drawing, fetched only when no rendering of its hash is cached.
+query LogoBlok($id: ID!) {
+  blok(id: $id) {
+    id
+    hash
+    componentTree
+    demoState
+  }
+}

@@ -6,13 +6,29 @@ query GetTerm($id: ID!) {
 
 query ListTerms($filters: TermFilter, $pagination: VocabularyPaginationInput) {
   terms(filters: $filters, pagination: $pagination) {
+    ...ExploreTerm
+  }
+}
+
+# The same word under its other kinds: 'AIS' as an entity and 'AIS' as a
+# relation are two terms, and a term page links to its namesakes.
+query TermNamesakes($key: String!) {
+  terms(filters: { keys: [$key] }, pagination: { limit: 20 }) {
     ...ListTerm
   }
 }
 
-query SearchTerms($search: String, $values: [ID!]) {
+# A term's identity is (kind, key): creating one that exists fills it in rather
+# than failing, so the create dialog asks first and offers the existing word.
+query FindTerm($kind: TermKind!, $key: String!) {
+  terms(filters: { kinds: [$kind], keys: [$key] }, pagination: { limit: 1 }) {
+    ...ListTerm
+  }
+}
+
+query SearchTerms($search: String, $values: [ID!], $hidden: Boolean) {
   options: terms(
-    filters: { search: $search, ids: $values }
+    filters: { search: $search, ids: $values, hidden: $hidden }
     pagination: { limit: 10 }
   ) {
     value: id
@@ -21,10 +37,11 @@ query SearchTerms($search: String, $values: [ID!]) {
 }
 
 # One search for every kind — the kind is a variable, so a picker that knows
-# which sort of word it wants does not need its own query.
+# which sort of word it wants does not need its own query. Hidden words are
+# never offered.
 query SearchAssignableTerms($search: String, $kinds: [TermKind!]) {
   terms(
-    filters: { search: $search, kinds: $kinds }
+    filters: { search: $search, kinds: $kinds, hidden: false }
     pagination: { limit: 20 }
   ) {
     ...AssignableTerm
@@ -34,9 +51,13 @@ query SearchAssignableTerms($search: String, $kinds: [TermKind!]) {
 # Claims name a word, so the pickers search term *keys*, not ids — the key is
 # what goes on the wire. A term's identity is (kind, key), so each kind gets its
 # own search: `GraphQLCreatableSearchField` has no way to pass a filter through.
-query SearchEntityTerms($search: String, $values: [String!]) {
+#
+# `$hidden` is not a literal `false`: the same query resolves an already chosen
+# key (`$values`), and a word hidden since must still show its label there.
+# `useOfferedTermSearch` (kraph/lib/terms) sets it on the search path only.
+query SearchEntityTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: { search: $search, keys: $values, kinds: [ENTITY] }
+    filters: { search: $search, keys: $values, kinds: [ENTITY], hidden: $hidden }
     pagination: { limit: 10 }
   ) {
     value: key
@@ -44,9 +65,9 @@ query SearchEntityTerms($search: String, $values: [String!]) {
   }
 }
 
-query SearchProtocolEventTerms($search: String, $values: [String!]) {
+query SearchProtocolEventTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: { search: $search, keys: $values, kinds: [PROTOCOL_EVENT] }
+    filters: { search: $search, keys: $values, kinds: [PROTOCOL_EVENT], hidden: $hidden }
     pagination: { limit: 10 }
   ) {
     value: key
@@ -54,9 +75,9 @@ query SearchProtocolEventTerms($search: String, $values: [String!]) {
   }
 }
 
-query SearchNaturalEventTerms($search: String, $values: [String!]) {
+query SearchNaturalEventTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: { search: $search, keys: $values, kinds: [NATURAL_EVENT] }
+    filters: { search: $search, keys: $values, kinds: [NATURAL_EVENT], hidden: $hidden }
     pagination: { limit: 10 }
   ) {
     value: key
@@ -64,9 +85,9 @@ query SearchNaturalEventTerms($search: String, $values: [String!]) {
   }
 }
 
-query SearchRelationTerms($search: String, $values: [String!]) {
+query SearchRelationTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: { search: $search, keys: $values, kinds: [RELATION] }
+    filters: { search: $search, keys: $values, kinds: [RELATION], hidden: $hidden }
     pagination: { limit: 10 }
   ) {
     value: key
@@ -74,9 +95,9 @@ query SearchRelationTerms($search: String, $values: [String!]) {
   }
 }
 
-query SearchStructureRelationTerms($search: String, $values: [String!]) {
+query SearchStructureRelationTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: { search: $search, keys: $values, kinds: [STRUCTURE_RELATION] }
+    filters: { search: $search, keys: $values, kinds: [STRUCTURE_RELATION], hidden: $hidden }
     pagination: { limit: 10 }
   ) {
     value: key
@@ -84,9 +105,9 @@ query SearchStructureRelationTerms($search: String, $values: [String!]) {
   }
 }
 
-query SearchMeasurementTerms($search: String, $values: [String!]) {
+query SearchMeasurementTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: { search: $search, keys: $values, kinds: [MEASUREMENT] }
+    filters: { search: $search, keys: $values, kinds: [MEASUREMENT], hidden: $hidden }
     pagination: { limit: 10 }
   ) {
     value: key

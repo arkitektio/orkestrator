@@ -8,17 +8,14 @@ import { PageHelp } from "@/core/layout/help";
 export const ELEKTRO_HELP = {
   home: (
     <PageHelp
-      intro="The starting point for electrophysiology and neuron modelling: your most recent datasets (recorded or simulated traces), neuron models and experiments (timelines that draw datasets together) on one page."
+      intro="The starting point for electrophysiology and neuron modelling: every Elektro page, then your most recent datasets (recorded or simulated traces), neuron models and experiments (timelines that draw datasets together)."
       steps={[
+        <>Use the tiles at the top (<b>Experiments</b>, <b>Neuron models</b>, <b>Datasets</b>, …) to browse, search and sort everything of that kind.</>,
         <>Click any card to open that dataset, neuron model or experiment.</>,
-        <>Open the search in the page header and type to narrow all three lists at once.</>,
-        <>Press <b>Sort</b> to order the lists by <b>Date created</b> or <b>ID</b>, <b>Descending</b> or <b>Ascending</b>.</>,
-        <>Pick a date range in the page header to show only what was created in that period.</>,
         <>Right-click a card for its actions, for example <b>Open on Timeline</b> on a dataset or <b>Create Workspace from Model</b> on a neuron model.</>,
       ]}
       tips={[
-        <>Search, sorting and the date range are kept in the page address, so a shared link shows the same view.</>,
-        <>While there are no neuron models and no experiments yet, the page shows a welcome screen instead of the lists.</>,
+        <>While there are no neuron models and no experiments yet, the page shows a short note instead of the lists.</>,
       ]}
     />
   ),

@@ -1,5 +1,8 @@
 fragment ListAction on Action {
   id
+  logo {
+    ...BlokLogo
+  }
   name
   description
   hash
@@ -177,6 +180,9 @@ fragment DetailAction on Action {
 
 fragment PrimaryAction on Action {
   id
+  logo {
+    ...BlokLogo
+  }
   stateful
   name
   hash
@@ -207,6 +213,9 @@ fragment PrimaryAction on Action {
 
 fragment HoverAction on Action {
   id
+  logo {
+    ...BlokLogo
+  }
   name
   description
   kind

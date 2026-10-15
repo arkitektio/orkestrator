@@ -82,6 +82,8 @@ export type Action = {
   latestTask?: Maybe<Task>;
   /** How many of its implementations sit on an agent that can take work now (connected, or a webhook agent) — one per agent. Kept by the database as agents connect and leave, a moment behind (takt recomputes it on commit); a crashed agent counts until takt's stale sweep notices (seconds). */
   liveImplementations: Scalars['Int']['output'];
+  /** A logo that draws this action: that of the implementation most recently registered with one. Each implementation has its own (`Implementation.logo`); an action without one is drawn by its agent's default logo. */
+  logo?: Maybe<Blok>;
   /** Name of the action. */
   name: Scalars['String']['output'];
   /** The organization that owns this action. */
@@ -433,6 +435,8 @@ export type Agent = {
   connected: Scalars['Boolean']['output'];
   /** The name the agent declares for itself, whatever a user calls it. */
   declaredName: Scalars['String']['output'];
+  /** The blok this agent declared as its default for a context, if any: its panel, its scene or its logo. */
+  defaultBlok?: Maybe<MaterializedBlok>;
   /** What this agent is, in a sentence. Client-declared at registration; null for an agent that never declared one. */
   description?: Maybe<Scalars['String']['output']>;
   /** Device associated with the agent, via its client (if any). */
@@ -481,6 +485,12 @@ export type Agent = {
   triggers: Array<Trigger>;
   /** The user this agent belongs to. */
   user: User;
+};
+
+
+/** Represents a compute agent that can execute implementations. */
+export type AgentDefaultBlokArgs = {
+  context: ComponentContext;
 };
 
 
@@ -988,6 +998,8 @@ export type Blok = {
   forModel?: Maybe<Scalars['String']['output']>;
   /** The node of `forModel` this blok attaches to; the model's root when null. */
   forNode?: Maybe<Scalars['String']['output']>;
+  /** A SHA-256 of what the blok renders: its component tree, demo state and context. Two bloks with the same hash draw the same thing, so a client may cache what it rendered under it. */
+  hash: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   /** Materialized bloks that are instances of this blok. */
   materializedBloks: Array<MaterializedBlok>;
@@ -1066,8 +1078,8 @@ export type BlokDependencyFilter = {
 export type BlokImplementationInput = {
   /** The optional catalog name if this Blok should be registered inside a specific namespace in your Electron app's UI component registry. */
   catalog?: InputMaybe<Scalars['String']['input']>;
-  /** The UI component tree blueprint for this Blok. */
-  components: Array<ComponentNodeInput>;
+  /** The UI component tree blueprint for this Blok, unless it is sent as its `source`. */
+  components?: InputMaybe<Array<ComponentNodeInput>>;
   /** The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene. */
   context?: ComponentContext;
   /** Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one. */
@@ -1084,6 +1096,8 @@ export type BlokImplementationInput = {
   forNode?: InputMaybe<Scalars['String']['input']>;
   /** The key of this Blok implementation. */
   key: Scalars['String']['input'];
+  /** The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent. */
+  source?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** The input for bouncing an agent. */
@@ -1146,6 +1160,7 @@ export type CatalogComponent = {
   context: ComponentContext;
   description?: Maybe<Scalars['String']['output']>;
   downstreamOf: Array<Scalars['String']['output']>;
+  inheritsContext: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   notDownstreamOf: Array<Scalars['String']['output']>;
   props: Array<CatalogProp>;
@@ -1163,6 +1178,8 @@ export type CatalogComponentInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   /** Component names of which at least one must be an ancestor, at any depth. Empty means no requirement. */
   downstreamOf?: Array<Scalars['String']['input']>;
+  /** Whether the component may be placed in any context, taking its parent's for itself and its children (control flow such as foreach or if). Its context is then ignored. */
+  inheritsContext?: Scalars['Boolean']['input'];
   /** The component name a ComponentNode.component (or a custom widget's component) must match. */
   name: Scalars['String']['input'];
   /** Component names of which none may be an ancestor. */
@@ -1349,6 +1366,7 @@ export type CollectionActionsArgs = {
 /** The renderer a catalog component lives in. A component may only be placed where its context is in force. */
 export enum ComponentContext {
   Html = 'HTML',
+  Logo = 'LOGO',
   Scene = 'SCENE'
 }
 
@@ -1428,6 +1446,8 @@ export type CreateBlokInput = {
   forNode?: InputMaybe<Scalars['String']['input']>;
   /** The name of the Blok, used for identification in the system. */
   name: Scalars['String']['input'];
+  /** The blok as BSX, which the server parses into `components`: send one of the two. */
+  source?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Input for creating a dashboard, optionally specifying its name and the bloks to include. It is owned by the caller's organization. */
@@ -2169,6 +2189,8 @@ export type Implementation = {
   interface: Scalars['String']['output'];
   /** The agent's locks this implementation takes while it runs. */
   locks: Array<Lock>;
+  /** The agent's logo blok (context LOGO) that draws this implementation's action, if it declared one. */
+  logo?: Maybe<Blok>;
   /** The higher-order implementations that wrap this implementation. */
   lowerOrderImplementations: Array<Implementation>;
   /** States that this implementation manipulates. */
@@ -2273,6 +2295,8 @@ export type ImplementationInput = {
   interface?: InputMaybe<Scalars['String']['input']>;
   /** The locks of the implementation. This is used to specify which resources the implementation needs to run */
   locks?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** The key of the agent's logo blok (context LOGO) that draws this action. */
+  logo?: InputMaybe<Scalars['String']['input']>;
   /** The states that the implementation manipulates. This is used to identify which states are manipulated by the implementation, and can be use to enhance state safety in the system */
   manipulates?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Whether Rekuest should mint a signed provenance token when this implementation is assigned. Default true (provenance-by-default); set false for trivial/internal tasks that never produce external provenance. */
@@ -6097,6 +6121,8 @@ export type UpdateBlokInput = {
   id: Scalars['ID']['input'];
   /** The name of the blok, used for identification in the system. */
   name?: InputMaybe<Scalars['String']['input']>;
+  /** The blok as BSX, which the server parses into the tree it replaces the existing one with: send it or `components`, not both. */
+  source?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Input for updating a dashboard: its name and associated bloks. Ownership cannot be reassigned. */
@@ -6431,7 +6457,10 @@ export type _Service = {
   sdl: Scalars['String']['output'];
 };
 
-export type ListActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
+export type ListActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, scope: ActionScope, stateful: boolean, key: string, version: string, logo?: (
+    { __typename?: 'Blok' }
+    & BlokLogoFragment
+  ) | null, implementations: Array<{ __typename?: 'Implementation', id: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, app: { __typename?: 'App', identifier: string }, latestTask?: { __typename?: 'Task', id: string, args: any } | null };
 
 export type BrowseActionFragment = (
   { __typename?: 'Action', definedAt: any, isDev: boolean, collections: Array<{ __typename?: 'Collection', id: string, name: string }>, protocols: Array<{ __typename?: 'Protocol', id: string, name: string }> }
@@ -6465,9 +6494,15 @@ export type DetailActionFragment = (
   & GraphNodeActionFragment
 );
 
-export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, assignable: boolean, liveImplementations: number, description?: string | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
+export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, assignable: boolean, liveImplementations: number, description?: string | null, logo?: (
+    { __typename?: 'Blok' }
+    & BlokLogoFragment
+  ) | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
 
-export type HoverActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
+export type HoverActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, logo?: (
+    { __typename?: 'Blok' }
+    & BlokLogoFragment
+  ) | null, app: { __typename?: 'App', identifier: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean } }>, tasks: Array<{ __typename?: 'Task', id: string, latestEventKind: TaskEventKind, isDone: boolean, createdAt: any }> };
 
 export type ProtocolAgentFragment = { __typename?: 'Agent', id: string, name: string, app: { __typename?: 'App', identifier: string }, states: Array<(
     { __typename?: 'State' }
@@ -6480,7 +6515,15 @@ export type ProtocolAgentFragment = { __typename?: 'Agent', id: string, name: st
         & ReturnPortFragment
       )> } }> };
 
-export type AgentFragment = { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, implementations: Array<(
+export type BlokLogoFragment = { __typename?: 'Blok', id: string, hash: string };
+
+export type AgentLogoFragment = { __typename?: 'Agent', logo?: { __typename?: 'MaterializedBlok', id: string, blok: (
+      { __typename?: 'Blok' }
+      & BlokLogoFragment
+    ) } | null };
+
+export type AgentFragment = (
+  { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, implementations: Array<(
     { __typename?: 'Implementation' }
     & ListImplementationFragment
   )>, memoryShelve?: { __typename?: 'MemoryShelve', id: string } | null, states: Array<(
@@ -6492,9 +6535,14 @@ export type AgentFragment = { __typename?: 'Agent', id: string, hash: string, bl
   )>, placements: Array<(
     { __typename?: 'Placement' }
     & AgentPlacementFragment
-  )> };
+  )> }
+  & AgentLogoFragment
+);
 
-export type ListAgentFragment = { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null };
+export type ListAgentFragment = (
+  { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null }
+  & AgentLogoFragment
+);
 
 export type SearchAgentFragment = { __typename?: 'Agent', id: string, name: string, connected: boolean, blocked: boolean, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string } };
 
@@ -6508,7 +6556,10 @@ export type AgentChangeEventFragment = { __typename?: 'AgentChangeEvent', delete
     & AgentChangeFragment
   ) | null };
 
-export type HoverAgentFragment = { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> };
+export type HoverAgentFragment = (
+  { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> }
+  & AgentLogoFragment
+);
 
 export type StoredAssetFragment = { __typename?: 'Asset', id: string, ref: string, kind: AssetKind, size: number, nodes: Array<string>, width?: number | null, height?: number | null, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: (
     { __typename?: 'MediaStore' }
@@ -7275,7 +7326,10 @@ export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: stri
     & ReturnPortFragment
   )> };
 
-export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, action: { __typename?: 'Action', id: string, assignable: boolean }, args: Array<(
+export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, logo?: (
+      { __typename?: 'Blok' }
+      & BlokLogoFragment
+    ) | null }, args: Array<(
     { __typename?: 'ArgPort' }
     & ArgPortFragment
   )>, returns: Array<(
@@ -8455,6 +8509,13 @@ export type ListBloksQuery = { __typename?: 'Query', bloks: Array<(
     & ListBlokFragment
   )> };
 
+export type LogoBlokQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type LogoBlokQuery = { __typename?: 'Query', blok: { __typename?: 'Blok', id: string, hash: string, componentTree: any, demoState: any } };
+
 export type ClientsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<ClientFilter>;
@@ -9267,9 +9328,18 @@ export type WatchImplementationsSubscription = { __typename?: 'Subscription', im
       & ListImplementationFragment
     ) | null } };
 
+export const BlokLogoFragmentDoc = gql`
+    fragment BlokLogo on Blok {
+  id
+  hash
+}
+    `;
 export const ListActionFragmentDoc = gql`
     fragment ListAction on Action {
   id
+  logo {
+    ...BlokLogo
+  }
   name
   description
   hash
@@ -9295,7 +9365,7 @@ export const ListActionFragmentDoc = gql`
     args
   }
 }
-    `;
+    ${BlokLogoFragmentDoc}`;
 export const BrowseActionFragmentDoc = gql`
     fragment BrowseAction on Action {
   ...ListAction
@@ -9402,6 +9472,9 @@ export const SearchActionFragmentDoc = gql`
 export const PrimaryActionFragmentDoc = gql`
     fragment PrimaryAction on Action {
   id
+  logo {
+    ...BlokLogo
+  }
   stateful
   name
   hash
@@ -9426,10 +9499,13 @@ export const PrimaryActionFragmentDoc = gql`
   }
   description
 }
-    `;
+    ${BlokLogoFragmentDoc}`;
 export const HoverActionFragmentDoc = gql`
     fragment HoverAction on Action {
   id
+  logo {
+    ...BlokLogo
+  }
   name
   description
   kind
@@ -9454,7 +9530,7 @@ export const HoverActionFragmentDoc = gql`
     createdAt
   }
 }
-    `;
+    ${BlokLogoFragmentDoc}`;
 export const PortCallLeafArgumentFragmentDoc = gql`
     fragment PortCallLeafArgument on ActionArgument {
   key
@@ -10143,6 +10219,16 @@ export const ProtocolAgentFragmentDoc = gql`
     ${StateFragmentDoc}
 ${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}`;
+export const AgentLogoFragmentDoc = gql`
+    fragment AgentLogo on Agent {
+  logo: defaultBlok(context: LOGO) {
+    id
+    blok {
+      ...BlokLogo
+    }
+  }
+}
+    ${BlokLogoFragmentDoc}`;
 export const ListImplementationFragmentDoc = gql`
     fragment ListImplementation on Implementation {
   id
@@ -10218,6 +10304,7 @@ export const AgentFragmentDoc = gql`
     fragment Agent on Agent {
   id
   hash
+  ...AgentLogo
   implementations {
     ...ListImplementation
   }
@@ -10255,7 +10342,8 @@ export const AgentFragmentDoc = gql`
     ...AgentPlacement
   }
 }
-    ${ListImplementationFragmentDoc}
+    ${AgentLogoFragmentDoc}
+${ListImplementationFragmentDoc}
 ${StateFragmentDoc}
 ${ListTaskFragmentDoc}
 ${AgentPlacementFragmentDoc}`;
@@ -10302,6 +10390,7 @@ export const AgentChangeEventFragmentDoc = gql`
 export const HoverAgentFragmentDoc = gql`
     fragment HoverAgent on Agent {
   id
+  ...AgentLogo
   name
   active
   connected
@@ -10326,7 +10415,7 @@ export const HoverAgentFragmentDoc = gql`
     }
   }
 }
-    `;
+    ${AgentLogoFragmentDoc}`;
 export const StoredAssetFragmentDoc = gql`
     fragment StoredAsset on Asset {
   id
@@ -10879,6 +10968,7 @@ export const DependencyTreeNodeFragmentDoc = gql`
 export const ListAgentFragmentDoc = gql`
     fragment ListAgent on Agent {
   id
+  ...AgentLogo
   kind
   active
   connected
@@ -10906,7 +10996,7 @@ export const ListAgentFragmentDoc = gql`
     sub
   }
 }
-    `;
+    ${AgentLogoFragmentDoc}`;
 export const DependencyTreeBindingFragmentDoc = gql`
     fragment DependencyTreeBinding on ImplementationMapping {
   key
@@ -11513,6 +11603,9 @@ export const ListShortcutFragmentDoc = gql`
   action {
     id
     assignable
+    logo {
+      ...BlokLogo
+    }
   }
   bindNumber
   savedArgs
@@ -11524,7 +11617,8 @@ export const ListShortcutFragmentDoc = gql`
   }
   allowQuick
 }
-    ${ArgPortFragmentDoc}
+    ${BlokLogoFragmentDoc}
+${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}`;
 export const SpacePlacementFragmentDoc = gql`
     fragment SpacePlacement on Placement {
@@ -15653,6 +15747,44 @@ export function useListBloksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type ListBloksQueryHookResult = ReturnType<typeof useListBloksQuery>;
 export type ListBloksLazyQueryHookResult = ReturnType<typeof useListBloksLazyQuery>;
 export type ListBloksQueryResult = Apollo.QueryResult<ListBloksQuery, ListBloksQueryVariables>;
+export const LogoBlokDocument = gql`
+    query LogoBlok($id: ID!) {
+  blok(id: $id) {
+    id
+    hash
+    componentTree
+    demoState
+  }
+}
+    `;
+
+/**
+ * __useLogoBlokQuery__
+ *
+ * To run a query within a React component, call `useLogoBlokQuery` and pass it any options that fit your needs.
+ * When your component renders, `useLogoBlokQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useLogoBlokQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useLogoBlokQuery(baseOptions: ApolloReactHooks.QueryHookOptions<LogoBlokQuery, LogoBlokQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<LogoBlokQuery, LogoBlokQueryVariables>(LogoBlokDocument, options);
+      }
+export function useLogoBlokLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<LogoBlokQuery, LogoBlokQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<LogoBlokQuery, LogoBlokQueryVariables>(LogoBlokDocument, options);
+        }
+export type LogoBlokQueryHookResult = ReturnType<typeof useLogoBlokQuery>;
+export type LogoBlokLazyQueryHookResult = ReturnType<typeof useLogoBlokLazyQuery>;
+export type LogoBlokQueryResult = Apollo.QueryResult<LogoBlokQuery, LogoBlokQueryVariables>;
 export const ClientsDocument = gql`
     query Clients($pagination: OffsetPaginationInput, $filters: ClientFilter, $ordering: [ClientOrder!]) {
   clients(ordering: $ordering, pagination: $pagination, filters: $filters) {

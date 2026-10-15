@@ -8,7 +8,9 @@ import { fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
   OpenResultButtons,
+  deliverResults,
   openableReturns,
+  returnedStructures,
   openResultLabel,
   returnedStructure,
   runsDirectly,
@@ -135,5 +137,54 @@ describe("OpenResultButtons", () => {
 
     expect(onRun).toHaveBeenCalledWith(mask);
     expect(onSelect).not.toHaveBeenCalled();
+  });
+});
+
+describe("returned structures and the result sink", () => {
+  const lenses = { key: "crops", kind: PortKind.List, identifier: null };
+  const count = { key: "n", kind: PortKind.Int };
+
+  it("reads every structure a yield holds: a structure port's, each item of a list port's", () => {
+    expect(
+      returnedStructures([image, lenses, count], {
+        out: { __identifier: "@test/image", object: "1" },
+        crops: [
+          { __identifier: "@mikro/arraylens", object: "7" },
+          { __identifier: "@mikro/arraylens", object: 8 },
+        ],
+        n: 3,
+      }),
+    ).toEqual([
+      { identifier: "@test/image", id: "1" },
+      { identifier: "@mikro/arraylens", id: "7" },
+      { identifier: "@mikro/arraylens", id: "8" },
+    ]);
+    expect(returnedStructures([image], { out: "5" })).toEqual([{ identifier: "@test/image", id: "5" }]);
+    expect(returnedStructures([image], { out: null })).toEqual([]);
+    expect(returnedStructures([image], null)).toEqual([]);
+  });
+
+  it("hands the sink the last yield's structures once, on completion, and passes every event on", () => {
+    const sink = vi.fn();
+    const onEvent = vi.fn();
+    const wrapped = deliverResults(sink, [image], onEvent);
+
+    wrapped(event(TaskEventKind.Progress));
+    wrapped(event(TaskEventKind.Yield, { out: { __identifier: "@test/image", object: "1" } }));
+    expect(sink).not.toHaveBeenCalled();
+    wrapped(event(TaskEventKind.Completed));
+
+    expect(sink).toHaveBeenCalledTimes(1);
+    expect(sink).toHaveBeenCalledWith([{ identifier: "@test/image", id: "1" }]);
+    expect(onEvent).toHaveBeenCalledTimes(3);
+  });
+
+  it("without a sink is the callback as it was, and a run that returns nothing tells the sink nothing", () => {
+    const onEvent = vi.fn();
+    expect(deliverResults(null, [image], onEvent)).toBe(onEvent);
+
+    const sink = vi.fn();
+    deliverResults(sink, [image], onEvent)(event(TaskEventKind.Completed));
+    expect(sink).not.toHaveBeenCalled();
   });
 });

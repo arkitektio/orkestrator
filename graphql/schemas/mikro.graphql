@@ -262,6 +262,11 @@ type Annotation {
   """
   descriptors: JSON!
 
+  """
+  The descriptors `createLens(input: {lens:, annotation: <this>})` would give the lens it returns, without making it: what the crop of that lens to this shape provides to an action's port. The reverse of `ArrayLens.descriptorsUnder`, for asking with the shape -- in the same request that draws it. Null when the shape has no box or misses the lens, or the lens is not an array lens
+  """
+  descriptorsUnder(lens: ID!): JSON
+
   """The fill color of the geometry, as RGBA, or null for no fill"""
   fillColor: [Int!]
 
@@ -465,6 +470,11 @@ input AnnotationCollectionFilter {
   owner: ID
 
   """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
+
+  """
   Filter by the scene this collection was minted for as its default drawing surface
   """
   scene: ID
@@ -545,7 +555,7 @@ input AnnotationFilter {
   pinnedTo: [CoordinateInput!]
 
   """
-  Filter to the annotations satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL: `@mikro/annotation_kind` is the kind (named as the descriptor names it, e.g. PATH) and the axis counts are those of the collection's drawing space. A key annotations do not declare is refused rather than ignored
+  Filter to the annotations satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every annotation: `@mikro/annotation_kind` is the kind (named as the descriptor names it, e.g. PATH) and the axis counts are those of the collection's drawing space. A key annotations do not declare is refused rather than ignored
   """
   requires: [DescriptorConstraintInput!]
 
@@ -1022,7 +1032,7 @@ input ArrayDatasetFilter {
   placeableIn: ID
 
   """
-  Filter to the datasets satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored at creation, and `@mikro/value_kind` from the dataset's primary derivation. A key datasets do not declare is refused rather than ignored
+  Filter to the datasets satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every dataset (`@mikro/value_kind` restored whenever a derivation edge leaving it is drawn). A key datasets do not declare is refused rather than ignored
   """
   requires: [DescriptorConstraintInput!]
 
@@ -1207,6 +1217,11 @@ type ArrayLens implements Lens {
   This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
   """
   descriptors: JSON!
+
+  """
+  The descriptors `createLens(input: {lens: <this>, annotation:})` would give the lens it returns, without making it: what a crop of this lens to the shape's box provides to an action's port (one plane of a stack is an IMAGE, a pinned channel counts one). Null when the shape has no box or misses this lens -- the cut would be refused
+  """
+  descriptorsUnder(annotation: ID!): JSON
   id: ID!
 
   """
@@ -1939,6 +1954,11 @@ input ChartFilter {
   ids: [ID!]
   name: StrFilterLookup
 
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
+
   """Search by name (case-insensitive substring)"""
   search: String
 }
@@ -2447,6 +2467,11 @@ input CoordinateAnchorFilter {
 
   """Filter by list of IDs"""
   ids: [ID!]
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
   sparse: IDFilterLookup
   table: IDFilterLookup
 }
@@ -2589,6 +2614,11 @@ input CoordinateSystemFilter {
 
   """Filter by the creator's subject ID"""
   owner: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
 
   """Filter by a scene composing over this system as its world"""
   scene: ID
@@ -4109,6 +4139,11 @@ input FileFilter {
   """
   populated: Boolean
 
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
+
   """Search by name (case-insensitive substring)"""
   search: String
 
@@ -4269,6 +4304,11 @@ input FileLinkFilter {
 
   """Filter by the creator's subject ID"""
   owner: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
   seriesIdentifier: StrFilterLookup
   valueRelation: ValueRelation
 }
@@ -5885,6 +5925,11 @@ input LensFilter {
   networkCollection: ID
 
   """
+  Filter array lenses by whether their dataset was acquired rather than computed: true keeps the lenses over the roots, false those over a derived dataset -- the same line `ArrayDatasetFilter.notDerived` draws. Only array lenses are judged: a lens over a table, sparse dataset, mesh, network or annotation collection passes true and fails false
+  """
+  notDerived: Boolean
+
+  """
   Filter to lenses whose extent overlaps this annotation, wherever the two are co-registered: lenses over the dataset it was drawn on, and lenses over any other dataset registered into a space its collection reaches. Both extents are composed per request from the shapes and the edges and compared in the nearest space they share, so this costs one coordinate-graph walk per such space rather than an index lookup. A lens the server cannot bound there -- placed only per index, or across a warp -- is not returned
   """
   overlapsAnnotation: ID
@@ -5903,7 +5948,7 @@ input LensFilter {
   reachableFrom: ID
 
   """
-  Filter to the lenses satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored when the lens was made. `@mikro/value_kind` is asked of array lenses only and `@mikro/n_annotations` of whole annotation lenses only (a windowed one counts by geometry and is left out). A key lenses do not declare is refused rather than ignored
+  Filter to the lenses satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every lens, restored when what they count changes (a derivation edge, a shape drawn). A key only some kinds declare holds of no lens of another kind. A key no lens declares is refused rather than ignored
   """
   requires: [DescriptorConstraintInput!]
 
@@ -6051,6 +6096,94 @@ input LightpathGraphInput {
 }
 
 """
+The directed lineage around one container or file: `up` hops of what it was made from and `down` hops of what was made from it, files included. Unlike `lineageGraph`, which returns the whole undirected derivation component, this never turns sideways -- a node's siblings appear once its parent is walked from
+"""
+type Lineage {
+  """Every edge between two of `nodes`"""
+  edges: [LineageEdge!]!
+
+  """Every node reached, the root included, nearest-upstream first"""
+  nodes: [LineageNode!]!
+
+  """The root's node key"""
+  root: ID!
+
+  """Whether the walk stopped at `limit` before reaching its depth"""
+  truncated: Boolean!
+}
+
+"""One axis of an array dataset in a lineage, at its full resolution"""
+type LineageAxis {
+  """
+  The chunk extent along it: the store's inner chunk (the unit a reader decodes) where reported, else the level's chunk shape
+  """
+  chunk: Int
+
+  """The axis' name, e.g. 'z', 'c' or 'tau'"""
+  name: String!
+
+  """Its extent at level 0, if known"""
+  size: Int
+
+  """What it samples"""
+  type: AxisType!
+}
+
+"""
+That one node was made from another. Always parent to child, the way provenance reads
+"""
+type LineageEdge {
+  """
+  (DERIVATION) The shape the child was computed along or within, if the derivation named one
+  """
+  annotationId: ID
+
+  """Unique within the lineage and stable across walks"""
+  key: ID!
+
+  """
+  A derivation between containers, an ingest from a file, or an export to one
+  """
+  kind: LineageEdgeKind!
+
+  """
+  (DERIVATION) Whether this is the child's primary parent: the first edge its creator declared, the one that places it
+  """
+  primary: Boolean!
+
+  """The parent's node key"""
+  source: ID!
+
+  """
+  The parent's lens this step was computed from -- the one whose space a derivation lands in, the whole lens for an export -- always one of the parent's `lenses`. Null when the parent is a file
+  """
+  sourceLens: ID
+
+  """The child's node key"""
+  target: ID!
+
+  """
+  The task that made this step, if any: a rekuest task ID. For a file link, the link's own task when it records one; otherwise, and for every derivation, the task that made the child
+  """
+  taskId: ID
+
+  """
+  (DERIVATION) The kind of the edge's map. UNMAPPABLE where the lineage is recorded but no geometry survived
+  """
+  transformationKind: TransformKind
+
+  """What the step did to the values, if stated"""
+  valueRelation: ValueRelation
+}
+
+"""What a lineage edge records"""
+enum LineageEdgeKind {
+  DERIVATION
+  EXPORT
+  INGEST
+}
+
+"""
 The provenance component around one piece of data: every container it was computed from or that was computed from it, transitively, and the derivation edges between them. The lineage counterpart of `coordinateGraph`, and the difference is which edges are *walked*: that one crosses every edge touching a space, so a registration pulls in everything else registered into the same world -- the neighbourhood, not the provenance. This crosses derivation edges only, in both directions, because asking a source what came out of it and asking a product what went into it are the same graph read from two ends
 """
 type LineageGraph {
@@ -6068,6 +6201,128 @@ type LineageGraph {
   The coordinate system the walk started from. Its container is the node the graph is centred on
   """
   root: CoordinateSystem!
+}
+
+"""One lens of a lineage node: a port data was computed from"""
+type LineageLens {
+  """The lens' ID, as the lens queries and the lens' own structure take it"""
+  id: ID!
+
+  """
+  Its name, else what it selects (`y[0:32], c[1:2]`), else `Whole`. Its container is not repeated: the node already names it
+  """
+  label: String!
+
+  """
+  (array lens) How many positions it keeps along each of its dataset's axes, in the node's `axes` order. Null for any other kind of lens
+  """
+  shape: [Int!]
+
+  """
+  (array lens) What it narrows, one slice per narrowed axis in array order. Empty for the whole lens and any other kind
+  """
+  slices: [LineageSlice!]!
+
+  """Whether it selects all of its container"""
+  whole: Boolean!
+}
+
+"""One container or file in a lineage"""
+type LineageNode {
+  """
+  (array dataset) Its axes in array order, with sizes and chunks at level 0. Empty for every other kind
+  """
+  axes: [LineageAxis!]!
+
+  """When it was created"""
+  createdAt: DateTime
+
+  """
+  Hops from the root along the walk: positive downstream (made from the root), negative upstream (the root was made from it), 0 for the root. The nearest, when several paths reach it
+  """
+  depth: Int!
+
+  """(array dataset) The level-0 array's dtype, where the store reports one"""
+  dtype: String
+
+  """
+  Whether something made from it is left out of this answer, for the same reasons
+  """
+  hasMoreDown: Boolean!
+
+  """
+  Whether it was made from something this answer leaves out -- past the depth bound, past the fan-out cap or past the limit. Walk again rooted here to continue
+  """
+  hasMoreUp: Boolean!
+
+  """Its ID, as its own query takes it"""
+  id: ID!
+
+  """
+  `<kind>:<id>`, unique within the lineage and stable across walks: what the edges' `source` and `target` name
+  """
+  key: ID!
+
+  """What this node is"""
+  kind: LineageNodeKind!
+
+  """How many lenses it has in all, which may be more than `lenses` lists"""
+  lensCount: Int!
+
+  """
+  Its lenses, the ports its data is used through: the whole lens first, then every lens an edge in this answer leaves from, then the oldest of the rest up to a cap. Empty for a file
+  """
+  lenses: [LineageLens!]!
+
+  """
+  (array dataset) How many resolution levels it holds, level 0 included. 0 for every other kind
+  """
+  levels: Int!
+
+  """
+  Its name; a mesh or network collection without one is named by its store's key
+  """
+  name: String!
+
+  """
+  The task it was created through, if any: a rekuest task ID. Null for a mesh or network collection, which do not record one
+  """
+  taskId: ID
+}
+
+"""What a lineage node is: one of the containers, or a file"""
+enum LineageNodeKind {
+  ANNOTATION_COLLECTION
+  DATASET
+  FILE
+  MESH_COLLECTION
+  NETWORK_COLLECTION
+  SPARSE_DATASET
+  TABLE_DATASET
+}
+
+"""The node a lineage walk starts from"""
+input LineageRootInput {
+  """Its ID"""
+  id: ID!
+
+  """What the root is"""
+  kind: LineageNodeKind!
+}
+
+"""One narrowed axis of an array lens: its normalized slice"""
+type LineageSlice {
+  """The dataset axis it narrows"""
+  axis: String!
+
+  """The first index it keeps"""
+  start: Int!
+
+  """Every how many it keeps"""
+  step: Int!
+
+  """The first index past the last it keeps"""
+  stop: Int!
 }
 
 """
@@ -6429,6 +6684,11 @@ input MeshCollectionFilter {
 
   """Filter by the creator's subject ID"""
   owner: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
 
   """
   Search by the collection's label: its name, or its store's key (case-insensitive substring)
@@ -7480,6 +7740,11 @@ input NetworkCollectionFilter {
 
   """Filter by the creator's subject ID"""
   owner: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
 
   """
   Search by the collection's label: its name, or its store's key (case-insensitive substring)
@@ -9017,6 +9282,11 @@ type Query {
   lenses(filters: LensFilter, ordering: [LensOrder!]! = [], pagination: OffsetPaginationInput): [Lens!]!
 
   """
+  The directed lineage around one container or file: `up` hops of what it was made from and `down` hops of what was made from it, with the tasks that made each step and the files it was ingested from or exported to. One recursive walk per direction, so the cost follows the lineage and not the organization. A node whose hops were cut off -- by depth, by `fanout` per node or by `limit` overall -- says so in `hasMoreUp`/`hasMoreDown`; walk again rooted there to continue. Unlike `lineageGraph` it never turns sideways: a node's siblings appear once its parent is walked from
+  """
+  lineage(down: Int! = 3, fanout: Int! = 50, limit: Int! = 300, start: LineageRootInput!, up: Int! = 1): Lineage!
+
+  """
   Walk the *derivation* edges out from one container and return its provenance component: everything this data was computed from, everything computed from it, transitively in both directions, and the edges between them. Distinct from `coordinateGraph`, which walks every edge touching a space -- a registration there drags in every other dataset registered into the same world, which is a neighbourhood rather than a lineage. Nodes are containers, not spaces: a dataset's grid, its levels and its lenses are one node in a provenance story. Kind-blind, so an UNMAPPABLE edge is included and is the point -- that is how a measurement table hangs off the mask it was measured from; filter on `kind` for the chain that actually places things. Root it at any container's coordinate system
   """
   lineageGraph(coordinateSystem: ID!, maxDepth: Int = null): LineageGraph!
@@ -9691,6 +9961,11 @@ input SceneFilter {
   lens: ID
   name: StrFilterLookup
 
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
+
   """Search by name (case-insensitive substring)"""
   search: String
 }
@@ -10342,6 +10617,11 @@ input SparseDatasetFilter {
   """Filter by the creator's subject ID"""
   owner: ID
 
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
+
   """Search by name (case-insensitive substring)"""
   search: String
 }
@@ -10823,6 +11103,11 @@ input TableDatasetFilter {
   Filter to table datasets placeable into this coordinate system: those whose own coordinate system reaches it across steps that compose into one affine map, walking the transformation edges. Takes a *space*, not a scene -- pass `scene.worldCoordinateSystem.id` to ask it of a scene
   """
   placeableIn: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
 
   """
   Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking
@@ -11450,6 +11735,11 @@ input TransformationFilter {
 
   """Filter by the creator's subject ID"""
   owner: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
 
   """
   Filter by how much the edge's map is actually known, e.g. UNKNOWN to list every placement that is still an assumption

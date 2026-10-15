@@ -1,31 +1,18 @@
-import { ListRender } from "@/core/layout/ListRender";
+import { createList } from "@/core/layout/createList";
 import { KraphTerm } from "@/core/linkers";
-import {
-  StructurePaginationInput,
-  TermFilter,
-  useListTermsQuery,
-} from "../../api/graphql";
+import { useListTermsQuery } from "../../api/graphql";
 import TermCard from "../cards/TermCard";
 
-export type Props = {
-  filters?: TermFilter;
-  pagination?: StructurePaginationInput;
-};
+const TermList = createList({
+  useHook: useListTermsQuery,
+  dataKey: "terms",
+  ItemComponent: TermCard,
+  title: "Terms",
+  emptyTitle: "No terms",
+  emptyDescription: "Words appear here when you declare them, or when a graph or a claim first uses one.",
+  smart: KraphTerm,
+  minItemWidth: 240,
+  autoHide: false,
+});
 
-const List = ({ filters, pagination }: Props) => {
-  const { data, refetch } = useListTermsQuery({
-    variables: { filters, pagination },
-  });
-
-  return (
-    <ListRender
-      array={data?.terms}
-      title={<KraphTerm.ListLink className="flex-0">Terms</KraphTerm.ListLink>}
-      refetch={refetch}
-    >
-      {(ex) => <TermCard key={ex.id} item={ex} />}
-    </ListRender>
-  );
-};
-
-export default List;
+export default TermList;

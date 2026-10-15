@@ -1,7 +1,8 @@
 import { Badge } from "@/core/ui/badge";
-import { GetFileQuery, useGetFileDerivedQuery } from "../../api/graphql";
+import { GetFileQuery, LineageNodeKind, useGetFileDerivedQuery } from "../../api/graphql";
 import { formatBytes } from "../../specs";
 import { FileLinksSection } from "./FileLinksSection";
+import { LineageLink } from "../lineage/LineageLink";
 import { ProvenanceSection } from "./ProvenanceSection";
 
 type PageFile = GetFileQuery["file"];
@@ -79,6 +80,8 @@ export const FileInfoSidebar = ({ file }: { file: PageFile }) => {
           {file.organization?.slug || "Global"}
         </div>
       </div>
+
+      <LineageLink kind={LineageNodeKind.File} id={file.id} />
 
       {/* The links, with one failure message for both directions: they come from
           one query, so a partial rendering would be a lie about which one is

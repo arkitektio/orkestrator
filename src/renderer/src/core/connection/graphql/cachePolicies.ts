@@ -254,7 +254,15 @@ export const KABINET_TYPE_POLICIES = buildOffsetPaginationPolicies(KABINET_PAGIN
 export const KRAPH_TYPE_POLICIES = buildOffsetPaginationPolicies(KRAPH_PAGINATED_FIELDS);
 export const LOK_TYPE_POLICIES = buildOffsetPaginationPolicies(LOK_PAGINATED_FIELDS);
 export const LOVEKIT_TYPE_POLICIES = buildOffsetPaginationPolicies(LOVEKIT_PAGINATED_FIELDS);
-export const MIKRO_TYPE_POLICIES = buildOffsetPaginationPolicies(MIKRO_PAGINATED_FIELDS);
+export const MIKRO_TYPE_POLICIES: TypePolicies = {
+  ...buildOffsetPaginationPolicies(MIKRO_PAGINATED_FIELDS),
+  // A lineage node's `id` is its object's id in ITS table, so `file:4` and
+  // `dataset:4` would normalize to one `LineageNode:4`; and its `depth` and
+  // `hasMore*` are relative to the walk's root, so a second walk would rewrite
+  // the first's. Embedded in each answer instead (the node's `key` is what is
+  // unique, and only within the graph the view merges).
+  LineageNode: { keyFields: false },
+};
 export const REKUEST_TYPE_POLICIES: TypePolicies = {
   ...buildOffsetPaginationPolicies(REKUEST_PAGINATED_FIELDS),
   // Ports are embedded (no id): the slim `LiveTask` selection of `Action.args`

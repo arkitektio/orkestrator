@@ -5,6 +5,7 @@ import { cn } from "@/core/util/utils";
 import { RekuestAgent } from "@/core/linkers";
 
 import { ListAgentFragment } from "@/rekuest/api/graphql";
+import { AgentLogo } from "@/rekuest/components/logo/BlokLogo";
 
 interface Props {
   item: ListAgentFragment;
@@ -21,7 +22,8 @@ const TheCard = ({ item }: Props) => {
         )}
       >
         <CardHeader className="flex-grow">
-          <CardTitle>
+          <CardTitle className="flex items-start gap-2">
+            <AgentLogo agent={item} className="h-8 w-8" />
             <RekuestAgent.DetailLink object={item}>
               {" "}
               <h1 className="flex-wrap break-all">{item.app.identifier}</h1>
@@ -32,7 +34,6 @@ const TheCard = ({ item }: Props) => {
         <CardFooter>
         </CardFooter>
 
-        <StructureDisplay identifier="@lok/user" id={item.user.sub} variant="avatar" className="absolute bottom-2 right-2 w-8 h-8" />
         {item.device && (
           <StructureDisplay
             identifier="@lok/device"

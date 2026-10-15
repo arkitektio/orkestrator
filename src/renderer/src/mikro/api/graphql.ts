@@ -244,6 +244,8 @@ export type Annotation = {
   description?: Maybe<Scalars['String']['output']>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** The descriptors `createLens(input: {lens:, annotation: <this>})` would give the lens it returns, without making it: what the crop of that lens to this shape provides to an action's port. The reverse of `ArrayLens.descriptorsUnder`, for asking with the shape -- in the same request that draws it. Null when the shape has no box or misses the lens, or the lens is not an array lens */
+  descriptorsUnder?: Maybe<Scalars['JSON']['output']>;
   /** The fill color of the geometry, as RGBA, or null for no fill */
   fillColor?: Maybe<Array<Scalars['Int']['output']>>;
   /** Whether the geometry is filled with fill_color */
@@ -260,6 +262,12 @@ export type Annotation = {
   /** The stroke width of the geometry, in the drawing space's units. One number for every direction, so it is a well-defined length only where that space's axes share a scale */
   strokeWidth: Scalars['Float']['output'];
   vectors: Array<Array<Scalars['Float']['output']>>;
+};
+
+
+/** A human-drawn shape in an annotation collection's coordinate system. It belongs to the collection, not to a scene: delete the scene and the annotation survives */
+export type AnnotationDescriptorsUnderArgs = {
+  lens: Scalars['ID']['input'];
 };
 
 
@@ -439,6 +447,8 @@ export type AnnotationCollectionFilter = {
   name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Filter by the scene this collection was minted for as its default drawing surface */
   scene?: InputMaybe<Scalars['ID']['input']>;
   /** Search by name (case-insensitive substring) */
@@ -492,7 +502,7 @@ export type AnnotationFilter = {
   name?: InputMaybe<StrFilterLookup>;
   /** Filter to annotations pinned to every one of these coordinates, e.g. [{name: 't', value: 3}]. GIN-backed containment on the stored coordinate dict; an annotation that spans a coordinate does not match a pin on it */
   pinnedTo?: InputMaybe<Array<CoordinateInput>>;
-  /** Filter to the annotations satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL: `@mikro/annotation_kind` is the kind (named as the descriptor names it, e.g. PATH) and the axis counts are those of the collection's drawing space. A key annotations do not declare is refused rather than ignored */
+  /** Filter to the annotations satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every annotation: `@mikro/annotation_kind` is the kind (named as the descriptor names it, e.g. PATH) and the axis counts are those of the collection's drawing space. A key annotations do not declare is refused rather than ignored */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by name (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
@@ -834,7 +844,7 @@ export type ArrayDatasetFilter = {
   owner?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to datasets placeable into this coordinate system: those with a lens whose space reaches it across steps that compose into one affine map, walking the transformation edges. A route crossing a FIELD is not one -- it relates the two spaces by the values of an array, which no renderer can draw with, so such a dataset is not offered and `createLayer` would refuse it. Takes a *space*, not a scene, because that is all the answer depends on -- every scene over one world offers the same candidates. Pass `scene.worldCoordinateSystem.id` to ask it of a scene. What could be staged there -- for what already is, use `scene` */
   placeableIn?: InputMaybe<Scalars['ID']['input']>;
-  /** Filter to the datasets satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored at creation, and `@mikro/value_kind` from the dataset's primary derivation. A key datasets do not declare is refused rather than ignored */
+  /** Filter to the datasets satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every dataset (`@mikro/value_kind` restored whenever a derivation edge leaving it is drawn). A key datasets do not declare is refused rather than ignored */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Filter to datasets rendered in this scene, through their lenses' layers. What is actually staged there -- for what merely could be, use `placeableIn` */
   scene?: InputMaybe<Scalars['ID']['input']>;
@@ -964,6 +974,8 @@ export type ArrayLens = Lens & {
   derivedDatasets: Array<ArrayDataset>;
   /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
   descriptors: Scalars['JSON']['output'];
+  /** The descriptors `createLens(input: {lens: <this>, annotation:})` would give the lens it returns, without making it: what a crop of this lens to the shape's box provides to an action's port (one plane of a stack is an IMAGE, a pinned channel counts one). Null when the shape has no box or misses this lens -- the cut would be refused */
+  descriptorsUnder?: Maybe<Scalars['JSON']['output']>;
   id: Scalars['ID']['output'];
   /** What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows */
   kind: LensKind;
@@ -993,6 +1005,12 @@ export type ArrayLens = Lens & {
 /** A selection over an array dataset by index slices: what an action that works on pixels is handed. Its shape and axes are derived from the dataset and the slices */
 export type ArrayLensColorByOptionsArgs = {
   maxJoinDepth?: Scalars['Int']['input'];
+};
+
+
+/** A selection over an array dataset by index slices: what an action that works on pixels is handed. Its shape and axes are derived from the dataset and the slices */
+export type ArrayLensDescriptorsUnderArgs = {
+  annotation: Scalars['ID']['input'];
 };
 
 
@@ -1485,6 +1503,8 @@ export type ChartFilter = {
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   name?: InputMaybe<StrFilterLookup>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by name (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1870,6 +1890,8 @@ export type CoordinateAnchorFilter = {
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   sparse?: InputMaybe<IdFilterLookup>;
   table?: InputMaybe<IdFilterLookup>;
 };
@@ -1987,6 +2009,8 @@ export type CoordinateSystemFilter = {
   name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Filter by a scene composing over this system as its world */
   scene?: InputMaybe<Scalars['ID']['input']>;
   /** Search by name (case-insensitive substring) */
@@ -3116,6 +3140,8 @@ export type FileFilter = {
   owner?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by whether the upload completed. **Implies a store**: a file with no store at all is `hasStore: false`, not `populated: false`, so the two are not complementary and combining `hasStore: false` with `populated: false` matches nothing */
   populated?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by name (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter to files linked under this series of a multi-series file -- 'series-3' of a LIF. Matches on any link, in either direction */
@@ -3216,6 +3242,8 @@ export type FileLinkFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   seriesIdentifier?: InputMaybe<StrFilterLookup>;
   valueRelation?: InputMaybe<ValueRelation>;
 };
@@ -4507,6 +4535,8 @@ export type LensFilter = {
   meshCollection?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to the lenses over this network collection */
   networkCollection?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter array lenses by whether their dataset was acquired rather than computed: true keeps the lenses over the roots, false those over a derived dataset -- the same line `ArrayDatasetFilter.notDerived` draws. Only array lenses are judged: a lens over a table, sparse dataset, mesh, network or annotation collection passes true and fails false */
+  notDerived?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter to lenses whose extent overlaps this annotation, wherever the two are co-registered: lenses over the dataset it was drawn on, and lenses over any other dataset registered into a space its collection reaches. Both extents are composed per request from the shapes and the edges and compared in the nearest space they share, so this costs one coordinate-graph walk per such space rather than an index lookup. A lens the server cannot bound there -- placed only per index, or across a warp -- is not returned */
   overlapsAnnotation?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the creator's subject ID */
@@ -4515,7 +4545,7 @@ export type LensFilter = {
   placeableIn?: InputMaybe<LensPlaceableFilter>;
   /** Filter to the lenses co-registered with this annotation: lenses over the dataset it was drawn on, and lenses over any other dataset registered into a space its collection reaches, walking the transformation edges. The candidates `overlapsAnnotation` compares the shape against, without the comparison -- so a crop the shape lies outside of is still returned. What a picker offers once an annotation is chosen. The lenses over the annotation's own collection are always among them; an annotation whose collection has no edge out of its drawing space reaches no other */
   reachableFrom?: InputMaybe<Scalars['ID']['input']>;
-  /** Filter to the lenses satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored when the lens was made. `@mikro/value_kind` is asked of array lenses only and `@mikro/n_annotations` of whole annotation lenses only (a windowed one counts by geometry and is left out). A key lenses do not declare is refused rather than ignored */
+  /** Filter to the lenses satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every lens, restored when what they count changes (a derivation edge, a shape drawn). A key only some kinds declare holds of no lens of another kind. A key no lens declares is refused rather than ignored */
   requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by the lens' own name or, since most lenses have none and are known by their container's, by its container's label: the name of a dataset, table, sparse dataset or annotation collection, the name or store key of a mesh or network collection (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
@@ -4632,6 +4662,64 @@ export type LightpathGraphInput = {
   elements: Array<OpticalElementInput>;
 };
 
+/** The directed lineage around one container or file: `up` hops of what it was made from and `down` hops of what was made from it, files included. Unlike `lineageGraph`, which returns the whole undirected derivation component, this never turns sideways -- a node's siblings appear once its parent is walked from */
+export type Lineage = {
+  __typename?: 'Lineage';
+  /** Every edge between two of `nodes` */
+  edges: Array<LineageEdge>;
+  /** Every node reached, the root included, nearest-upstream first */
+  nodes: Array<LineageNode>;
+  /** The root's node key */
+  root: Scalars['ID']['output'];
+  /** Whether the walk stopped at `limit` before reaching its depth */
+  truncated: Scalars['Boolean']['output'];
+};
+
+/** One axis of an array dataset in a lineage, at its full resolution */
+export type LineageAxis = {
+  __typename?: 'LineageAxis';
+  /** The chunk extent along it: the store's inner chunk (the unit a reader decodes) where reported, else the level's chunk shape */
+  chunk?: Maybe<Scalars['Int']['output']>;
+  /** The axis' name, e.g. 'z', 'c' or 'tau' */
+  name: Scalars['String']['output'];
+  /** Its extent at level 0, if known */
+  size?: Maybe<Scalars['Int']['output']>;
+  /** What it samples */
+  type: AxisType;
+};
+
+/** That one node was made from another. Always parent to child, the way provenance reads */
+export type LineageEdge = {
+  __typename?: 'LineageEdge';
+  /** (DERIVATION) The shape the child was computed along or within, if the derivation named one */
+  annotationId?: Maybe<Scalars['ID']['output']>;
+  /** Unique within the lineage and stable across walks */
+  key: Scalars['ID']['output'];
+  /** A derivation between containers, an ingest from a file, or an export to one */
+  kind: LineageEdgeKind;
+  /** (DERIVATION) Whether this is the child's primary parent: the first edge its creator declared, the one that places it */
+  primary: Scalars['Boolean']['output'];
+  /** The parent's node key */
+  source: Scalars['ID']['output'];
+  /** The parent's lens this step was computed from -- the one whose space a derivation lands in, the whole lens for an export -- always one of the parent's `lenses`. Null when the parent is a file */
+  sourceLens?: Maybe<Scalars['ID']['output']>;
+  /** The child's node key */
+  target: Scalars['ID']['output'];
+  /** The task that made this step, if any: a rekuest task ID. For a file link, the link's own task when it records one; otherwise, and for every derivation, the task that made the child */
+  taskId?: Maybe<Scalars['ID']['output']>;
+  /** (DERIVATION) The kind of the edge's map. UNMAPPABLE where the lineage is recorded but no geometry survived */
+  transformationKind?: Maybe<TransformKind>;
+  /** What the step did to the values, if stated */
+  valueRelation?: Maybe<ValueRelation>;
+};
+
+/** What a lineage edge records */
+export enum LineageEdgeKind {
+  Derivation = 'DERIVATION',
+  Export = 'EXPORT',
+  Ingest = 'INGEST'
+}
+
 /** The provenance component around one piece of data: every container it was computed from or that was computed from it, transitively, and the derivation edges between them. The lineage counterpart of `coordinateGraph`, and the difference is which edges are *walked*: that one crosses every edge touching a space, so a registration pulls in everything else registered into the same world -- the neighbourhood, not the provenance. This crosses derivation edges only, in both directions, because asking a source what came out of it and asking a product what went into it are the same graph read from two ends */
 export type LineageGraph = {
   __typename?: 'LineageGraph';
@@ -4641,6 +4729,86 @@ export type LineageGraph = {
   nodes: Array<Resident>;
   /** The coordinate system the walk started from. Its container is the node the graph is centred on */
   root: CoordinateSystem;
+};
+
+/** One lens of a lineage node: a port data was computed from */
+export type LineageLens = {
+  __typename?: 'LineageLens';
+  /** The lens' ID, as the lens queries and the lens' own structure take it */
+  id: Scalars['ID']['output'];
+  /** Its name, else what it selects (`y[0:32], c[1:2]`), else `Whole`. Its container is not repeated: the node already names it */
+  label: Scalars['String']['output'];
+  /** (array lens) How many positions it keeps along each of its dataset's axes, in the node's `axes` order. Null for any other kind of lens */
+  shape?: Maybe<Array<Scalars['Int']['output']>>;
+  /** (array lens) What it narrows, one slice per narrowed axis in array order. Empty for the whole lens and any other kind */
+  slices: Array<LineageSlice>;
+  /** Whether it selects all of its container */
+  whole: Scalars['Boolean']['output'];
+};
+
+/** One container or file in a lineage */
+export type LineageNode = {
+  __typename?: 'LineageNode';
+  /** (array dataset) Its axes in array order, with sizes and chunks at level 0. Empty for every other kind */
+  axes: Array<LineageAxis>;
+  /** When it was created */
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
+  /** Hops from the root along the walk: positive downstream (made from the root), negative upstream (the root was made from it), 0 for the root. The nearest, when several paths reach it */
+  depth: Scalars['Int']['output'];
+  /** (array dataset) The level-0 array's dtype, where the store reports one */
+  dtype?: Maybe<Scalars['String']['output']>;
+  /** Whether something made from it is left out of this answer, for the same reasons */
+  hasMoreDown: Scalars['Boolean']['output'];
+  /** Whether it was made from something this answer leaves out -- past the depth bound, past the fan-out cap or past the limit. Walk again rooted here to continue */
+  hasMoreUp: Scalars['Boolean']['output'];
+  /** Its ID, as its own query takes it */
+  id: Scalars['ID']['output'];
+  /** `<kind>:<id>`, unique within the lineage and stable across walks: what the edges' `source` and `target` name */
+  key: Scalars['ID']['output'];
+  /** What this node is */
+  kind: LineageNodeKind;
+  /** How many lenses it has in all, which may be more than `lenses` lists */
+  lensCount: Scalars['Int']['output'];
+  /** Its lenses, the ports its data is used through: the whole lens first, then every lens an edge in this answer leaves from, then the oldest of the rest up to a cap. Empty for a file */
+  lenses: Array<LineageLens>;
+  /** (array dataset) How many resolution levels it holds, level 0 included. 0 for every other kind */
+  levels: Scalars['Int']['output'];
+  /** Its name; a mesh or network collection without one is named by its store's key */
+  name: Scalars['String']['output'];
+  /** The task it was created through, if any: a rekuest task ID. Null for a mesh or network collection, which do not record one */
+  taskId?: Maybe<Scalars['ID']['output']>;
+};
+
+/** What a lineage node is: one of the containers, or a file */
+export enum LineageNodeKind {
+  AnnotationCollection = 'ANNOTATION_COLLECTION',
+  Dataset = 'DATASET',
+  File = 'FILE',
+  MeshCollection = 'MESH_COLLECTION',
+  NetworkCollection = 'NETWORK_COLLECTION',
+  SparseDataset = 'SPARSE_DATASET',
+  TableDataset = 'TABLE_DATASET'
+}
+
+/** The node a lineage walk starts from */
+export type LineageRootInput = {
+  /** Its ID */
+  id: Scalars['ID']['input'];
+  /** What the root is */
+  kind: LineageNodeKind;
+};
+
+/** One narrowed axis of an array lens: its normalized slice */
+export type LineageSlice = {
+  __typename?: 'LineageSlice';
+  /** The dataset axis it narrows */
+  axis: Scalars['String']['output'];
+  /** The first index it keeps */
+  start: Scalars['Int']['output'];
+  /** Every how many it keeps */
+  step: Scalars['Int']['output'];
+  /** The first index past the last it keeps */
+  stop: Scalars['Int']['output'];
 };
 
 /** Record a link between a file and the data it encodes, after both already exist. Two shapes, one per direction: name a `file` plus `sourceOf` to record what that file was written from, or name one container plus `sourceFiles` to record which files it was produced from */
@@ -4922,6 +5090,8 @@ export type MeshCollectionFilter = {
   name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by the collection's label: its name, or its store's key (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -6233,6 +6403,8 @@ export type NetworkCollectionFilter = {
   name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by the collection's label: its name, or its store's key (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -7404,6 +7576,8 @@ export type Query = {
   lens: Lens;
   /** List lenses: selections over array datasets (by slices) and over tables, sparse datasets, meshes, networks and annotation collections (by windows), a heterogeneous list of lens kinds */
   lenses: Array<Lens>;
+  /** The directed lineage around one container or file: `up` hops of what it was made from and `down` hops of what was made from it, with the tasks that made each step and the files it was ingested from or exported to. One recursive walk per direction, so the cost follows the lineage and not the organization. A node whose hops were cut off -- by depth, by `fanout` per node or by `limit` overall -- says so in `hasMoreUp`/`hasMoreDown`; walk again rooted there to continue. Unlike `lineageGraph` it never turns sideways: a node's siblings appear once its parent is walked from */
+  lineage: Lineage;
   /** Walk the *derivation* edges out from one container and return its provenance component: everything this data was computed from, everything computed from it, transitively in both directions, and the edges between them. Distinct from `coordinateGraph`, which walks every edge touching a space -- a registration there drags in every other dataset registered into the same world, which is a neighbourhood rather than a lineage. Nodes are containers, not spaces: a dataset's grid, its levels and its lenses are one node in a provenance story. Kind-blind, so an UNMAPPABLE edge is included and is the point -- that is how a measurement table hangs off the mask it was measured from; filter on `kind` for the chain that actually places things. Root it at any container's coordinate system */
   lineageGraph: LineageGraph;
   /** List the memberships of the current organization (excluding bots) */
@@ -7672,6 +7846,15 @@ export type QueryLensesArgs = {
   filters?: InputMaybe<LensFilter>;
   ordering?: Array<LensOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryLineageArgs = {
+  down?: Scalars['Int']['input'];
+  fanout?: Scalars['Int']['input'];
+  limit?: Scalars['Int']['input'];
+  start: LineageRootInput;
+  up?: Scalars['Int']['input'];
 };
 
 
@@ -8268,6 +8451,8 @@ export type SceneFilter = {
   /** Filter to the scenes with a layer drawing through this lens or any selection within it, of any kind: the same set the lens' own `scenes` answers */
   lens?: InputMaybe<Scalars['ID']['input']>;
   name?: InputMaybe<StrFilterLookup>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by name (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -8761,6 +8946,8 @@ export type SparseDatasetFilter = {
   name?: InputMaybe<StrFilterLookup>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by name (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -9124,6 +9311,8 @@ export type TableDatasetFilter = {
   owner?: InputMaybe<Scalars['ID']['input']>;
   /** Filter to table datasets placeable into this coordinate system: those whose own coordinate system reaches it across steps that compose into one affine map, walking the transformation edges. Takes a *space*, not a scene -- pass `scene.worldCoordinateSystem.id` to ask it of a scene */
   placeableIn?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by name (case-insensitive substring) or by the meaning of the query against name and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter to tables satisfying every one of these specs, e.g. [POINTS_3D, TRACKED] for 3D tracks, or [SERIES] for a value against a single measured coordinate, which a chart draws without an axis to choose. Materialized at creation from the declared columns: one placement member (by how many SPACE coordinate columns the table has) plus a modifier per declared fact. Declared, not measured -- TIMED says a TIME coordinate column exists. Two placement members together match nothing. `hasColumnRole` is the raw form */
@@ -9573,6 +9762,8 @@ export type TransformationFilter = {
   output?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by the creator's subject ID */
   owner?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Filter by how much the edge's map is actually known, e.g. UNKNOWN to list every placement that is still an assumption */
   validity?: InputMaybe<PlacementValidity>;
 };
@@ -10330,6 +10521,14 @@ export type DatasetLineageFragment = { __typename?: 'ArrayDataset', id: string, 
     & DerivationEdge_UnmappableTransformation_Fragment
   )>, sourceFiles: Array<{ __typename?: 'FileLink', id: string, file: { __typename?: 'File', id: string, contentType?: string | null } }> };
 
+export type AddLayerArrayLensFragment = { __typename?: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, lensName?: string | null, slices: Array<(
+    { __typename?: 'Slice' }
+    & DimSliceFragment
+  )>, lensSpace?: { __typename?: 'CoordinateSystem', id: string } | null, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null, dataset: (
+    { __typename?: 'ArrayDataset' }
+    & DatasetLineageFragment
+  ) };
+
 type AddLayerCandidate_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string, description?: string | null, fullLens?: { __typename?: 'AnnotationLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
     { __typename?: 'AffineTransformation' }
     & DerivationEdge_AffineTransformation_Fragment
@@ -10365,17 +10564,17 @@ type AddLayerCandidate_AnnotationCollection_Fragment = { __typename: 'Annotation
 type AddLayerCandidate_AnnotationLens_Fragment = { __typename: 'AnnotationLens' };
 
 type AddLayerCandidate_ArrayDataset_Fragment = (
-  { __typename: 'ArrayDataset' }
+  { __typename: 'ArrayDataset', fullLens?: (
+    { __typename: 'ArrayLens' }
+    & AddLayerArrayLensFragment
+  ) | null }
   & DatasetLineageFragment
 );
 
-type AddLayerCandidate_ArrayLens_Fragment = { __typename: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, lensName?: string | null, slices: Array<(
-    { __typename?: 'Slice' }
-    & DimSliceFragment
-  )>, lensSpace?: { __typename?: 'CoordinateSystem', id: string } | null, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null, dataset: (
-    { __typename?: 'ArrayDataset' }
-    & DatasetLineageFragment
-  ) };
+type AddLayerCandidate_ArrayLens_Fragment = (
+  { __typename: 'ArrayLens' }
+  & AddLayerArrayLensFragment
+);
 
 type AddLayerCandidate_DataArray_Fragment = { __typename: 'DataArray', id: string, level: number, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null };
 
@@ -12354,6 +12553,18 @@ export type CreateAnnotationMutationVariables = Exact<{
 export type CreateAnnotationMutation = { __typename?: 'Mutation', createAnnotation: (
     { __typename?: 'Annotation' }
     & AnnotationFragment
+  ) };
+
+export type CreateSceneAnnotationMutationVariables = Exact<{
+  input: CreateAnnotationInput;
+  lens: Scalars['ID']['input'];
+}>;
+
+
+export type CreateSceneAnnotationMutation = { __typename?: 'Mutation', createAnnotation: (
+    { __typename?: 'Annotation' }
+    & AnnotationFragment
+    & AnnotationActionDescriptorsFragment
   ) };
 
 export type UpdateAnnotationMutationVariables = Exact<{
@@ -14445,12 +14656,18 @@ export type GetAnnotationInfoQueryVariables = Exact<{
 
 export type GetAnnotationInfoQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, kind: AnnotationKind, description?: string | null, creator?: { __typename?: 'User', sub: string } | null, collection: { __typename?: 'AnnotationCollection', id: string, name: string }, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }>, derivedLenses: Array<{ __typename?: 'ArrayLens', id: string, label: string, shape: Array<number> }>, derivedResidents: Array<{ __typename: 'AnnotationCollection', id: string, name: string } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'MeshCollection', id: string, label: string } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection', id: string, label: string } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset', id: string, name: string } | { __typename: 'SparseLens' } | { __typename: 'TableDataset', id: string, name: string } | { __typename: 'TableLens' }> } };
 
-export type GetAnnotationDescriptorsQueryVariables = Exact<{
+export type AnnotationActionDescriptorsFragment = { __typename?: 'Annotation', id: any, descriptors: any, descriptorsUnder?: any | null };
+
+export type GetAnnotationActionDescriptorsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
+  lens: Scalars['ID']['input'];
 }>;
 
 
-export type GetAnnotationDescriptorsQuery = { __typename?: 'Query', annotation: { __typename?: 'Annotation', id: any, descriptors: any } };
+export type GetAnnotationActionDescriptorsQuery = { __typename?: 'Query', annotation: (
+    { __typename?: 'Annotation' }
+    & AnnotationActionDescriptorsFragment
+  ) };
 
 export type GetSceneAnnotationsQueryVariables = Exact<{
   filters?: InputMaybe<AnnotationFilter>;
@@ -15445,6 +15662,17 @@ export type GetLensContainersQuery = { __typename?: 'Query', lenses: Array<(
     & LensSubject_TableLens_Fragment
   )> };
 
+export type GetLineageQueryVariables = Exact<{
+  start: LineageRootInput;
+  up?: Scalars['Int']['input'];
+  down?: Scalars['Int']['input'];
+  limit?: Scalars['Int']['input'];
+  fanout?: Scalars['Int']['input'];
+}>;
+
+
+export type GetLineageQuery = { __typename?: 'Query', lineage: { __typename?: 'Lineage', root: string, truncated: boolean, nodes: Array<{ __typename?: 'LineageNode', key: string, kind: LineageNodeKind, id: string, name: string, depth: number, createdAt?: any | null, taskId?: string | null, hasMoreUp: boolean, hasMoreDown: boolean, lensCount: number, dtype?: string | null, levels: number, lenses: Array<{ __typename?: 'LineageLens', id: string, label: string, whole: boolean, shape?: Array<number> | null, slices: Array<{ __typename?: 'LineageSlice', axis: string, start: number, stop: number, step: number }> }>, axes: Array<{ __typename?: 'LineageAxis', name: string, type: AxisType, size?: number | null, chunk?: number | null }> }>, edges: Array<{ __typename?: 'LineageEdge', key: string, kind: LineageEdgeKind, source: string, target: string, taskId?: string | null, transformationKind?: TransformKind | null, valueRelation?: ValueRelation | null, annotationId?: string | null, primary: boolean, sourceLens?: string | null }> } };
+
 export type MembersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -15893,6 +16121,27 @@ export const AddLayerLineageNodeFragmentDoc = gql`
   }
 }
     ${DatasetLineageFragmentDoc}`;
+export const AddLayerArrayLensFragmentDoc = gql`
+    fragment AddLayerArrayLens on ArrayLens {
+  id
+  lensName: name
+  shape
+  axisNames
+  slices {
+    ...DimSlice
+  }
+  lensSpace: coordinateSystem {
+    id
+  }
+  toParent {
+    id
+  }
+  dataset {
+    ...DatasetLineage
+  }
+}
+    ${DimSliceFragmentDoc}
+${DatasetLineageFragmentDoc}`;
 export const ListTableDatasetFragmentDoc = gql`
     fragment ListTableDataset on TableDataset {
   id
@@ -15925,22 +16174,7 @@ export const AddLayerCandidateFragmentDoc = gql`
     fragment AddLayerCandidate on Resident {
   __typename
   ... on ArrayLens {
-    id
-    lensName: name
-    shape
-    axisNames
-    slices {
-      ...DimSlice
-    }
-    lensSpace: coordinateSystem {
-      id
-    }
-    toParent {
-      id
-    }
-    dataset {
-      ...DatasetLineage
-    }
+    ...AddLayerArrayLens
   }
   ... on TableDataset {
     ...ListTableDataset
@@ -15987,6 +16221,10 @@ export const AddLayerCandidateFragmentDoc = gql`
   }
   ... on ArrayDataset {
     ...DatasetLineage
+    fullLens {
+      __typename
+      ...AddLayerArrayLens
+    }
   }
   ... on DataArray {
     id
@@ -16017,11 +16255,11 @@ export const AddLayerCandidateFragmentDoc = gql`
     }
   }
 }
-    ${DimSliceFragmentDoc}
-${DatasetLineageFragmentDoc}
+    ${AddLayerArrayLensFragmentDoc}
 ${ListTableDatasetFragmentDoc}
 ${TableDatasetColumnFragmentDoc}
-${DerivationEdgeFragmentDoc}`;
+${DerivationEdgeFragmentDoc}
+${DatasetLineageFragmentDoc}`;
 export const AddLayerSpaceFragmentDoc = gql`
     fragment AddLayerSpace on CoordinateSystem {
   id
@@ -18436,6 +18674,13 @@ export const SparseDatasetFragmentDoc = gql`
 }
     ${CoordinateSystemFragmentDoc}
 ${SparseStoreReadFragmentDoc}`;
+export const AnnotationActionDescriptorsFragmentDoc = gql`
+    fragment AnnotationActionDescriptors on Annotation {
+  id
+  descriptors
+  descriptorsUnder(lens: $lens)
+}
+    `;
 export const SparseColouringSourceFragmentDoc = gql`
     fragment SparseColouringSource on SparseDataset {
   id
@@ -18735,6 +18980,42 @@ export function useCreateAnnotationMutation(baseOptions?: ApolloReactHooks.Mutat
 export type CreateAnnotationMutationHookResult = ReturnType<typeof useCreateAnnotationMutation>;
 export type CreateAnnotationMutationResult = Apollo.MutationResult<CreateAnnotationMutation>;
 export type CreateAnnotationMutationOptions = Apollo.BaseMutationOptions<CreateAnnotationMutation, CreateAnnotationMutationVariables>;
+export const CreateSceneAnnotationDocument = gql`
+    mutation CreateSceneAnnotation($input: CreateAnnotationInput!, $lens: ID!) {
+  createAnnotation(input: $input) {
+    ...Annotation
+    ...AnnotationActionDescriptors
+  }
+}
+    ${AnnotationFragmentDoc}
+${AnnotationActionDescriptorsFragmentDoc}`;
+export type CreateSceneAnnotationMutationFn = Apollo.MutationFunction<CreateSceneAnnotationMutation, CreateSceneAnnotationMutationVariables>;
+
+/**
+ * __useCreateSceneAnnotationMutation__
+ *
+ * To run a mutation, you first call `useCreateSceneAnnotationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateSceneAnnotationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createSceneAnnotationMutation, { data, loading, error }] = useCreateSceneAnnotationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *      lens: // value for 'lens'
+ *   },
+ * });
+ */
+export function useCreateSceneAnnotationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateSceneAnnotationMutation, CreateSceneAnnotationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateSceneAnnotationMutation, CreateSceneAnnotationMutationVariables>(CreateSceneAnnotationDocument, options);
+      }
+export type CreateSceneAnnotationMutationHookResult = ReturnType<typeof useCreateSceneAnnotationMutation>;
+export type CreateSceneAnnotationMutationResult = Apollo.MutationResult<CreateSceneAnnotationMutation>;
+export type CreateSceneAnnotationMutationOptions = Apollo.BaseMutationOptions<CreateSceneAnnotationMutation, CreateSceneAnnotationMutationVariables>;
 export const UpdateAnnotationDocument = gql`
     mutation UpdateAnnotation($input: UpdateAnnotationInput!) {
   updateAnnotation(input: $input) {
@@ -22392,42 +22673,42 @@ export function useGetAnnotationInfoLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type GetAnnotationInfoQueryHookResult = ReturnType<typeof useGetAnnotationInfoQuery>;
 export type GetAnnotationInfoLazyQueryHookResult = ReturnType<typeof useGetAnnotationInfoLazyQuery>;
 export type GetAnnotationInfoQueryResult = Apollo.QueryResult<GetAnnotationInfoQuery, GetAnnotationInfoQueryVariables>;
-export const GetAnnotationDescriptorsDocument = gql`
-    query GetAnnotationDescriptors($id: ID!) {
+export const GetAnnotationActionDescriptorsDocument = gql`
+    query GetAnnotationActionDescriptors($id: ID!, $lens: ID!) {
   annotation(id: $id) {
-    id
-    descriptors
+    ...AnnotationActionDescriptors
   }
 }
-    `;
+    ${AnnotationActionDescriptorsFragmentDoc}`;
 
 /**
- * __useGetAnnotationDescriptorsQuery__
+ * __useGetAnnotationActionDescriptorsQuery__
  *
- * To run a query within a React component, call `useGetAnnotationDescriptorsQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetAnnotationDescriptorsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetAnnotationActionDescriptorsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAnnotationActionDescriptorsQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useGetAnnotationDescriptorsQuery({
+ * const { data, loading, error } = useGetAnnotationActionDescriptorsQuery({
  *   variables: {
  *      id: // value for 'id'
+ *      lens: // value for 'lens'
  *   },
  * });
  */
-export function useGetAnnotationDescriptorsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetAnnotationDescriptorsQuery, GetAnnotationDescriptorsQueryVariables>) {
+export function useGetAnnotationActionDescriptorsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetAnnotationActionDescriptorsQuery, GetAnnotationActionDescriptorsQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetAnnotationDescriptorsQuery, GetAnnotationDescriptorsQueryVariables>(GetAnnotationDescriptorsDocument, options);
+        return ApolloReactHooks.useQuery<GetAnnotationActionDescriptorsQuery, GetAnnotationActionDescriptorsQueryVariables>(GetAnnotationActionDescriptorsDocument, options);
       }
-export function useGetAnnotationDescriptorsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAnnotationDescriptorsQuery, GetAnnotationDescriptorsQueryVariables>) {
+export function useGetAnnotationActionDescriptorsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAnnotationActionDescriptorsQuery, GetAnnotationActionDescriptorsQueryVariables>) {
           const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetAnnotationDescriptorsQuery, GetAnnotationDescriptorsQueryVariables>(GetAnnotationDescriptorsDocument, options);
+          return ApolloReactHooks.useLazyQuery<GetAnnotationActionDescriptorsQuery, GetAnnotationActionDescriptorsQueryVariables>(GetAnnotationActionDescriptorsDocument, options);
         }
-export type GetAnnotationDescriptorsQueryHookResult = ReturnType<typeof useGetAnnotationDescriptorsQuery>;
-export type GetAnnotationDescriptorsLazyQueryHookResult = ReturnType<typeof useGetAnnotationDescriptorsLazyQuery>;
-export type GetAnnotationDescriptorsQueryResult = Apollo.QueryResult<GetAnnotationDescriptorsQuery, GetAnnotationDescriptorsQueryVariables>;
+export type GetAnnotationActionDescriptorsQueryHookResult = ReturnType<typeof useGetAnnotationActionDescriptorsQuery>;
+export type GetAnnotationActionDescriptorsLazyQueryHookResult = ReturnType<typeof useGetAnnotationActionDescriptorsLazyQuery>;
+export type GetAnnotationActionDescriptorsQueryResult = Apollo.QueryResult<GetAnnotationActionDescriptorsQuery, GetAnnotationActionDescriptorsQueryVariables>;
 export const GetSceneAnnotationsDocument = gql`
     query GetSceneAnnotations($filters: AnnotationFilter, $pagination: OffsetPaginationInput) {
   annotations(filters: $filters, pagination: $pagination) {
@@ -24503,6 +24784,90 @@ export function useGetLensContainersLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type GetLensContainersQueryHookResult = ReturnType<typeof useGetLensContainersQuery>;
 export type GetLensContainersLazyQueryHookResult = ReturnType<typeof useGetLensContainersLazyQuery>;
 export type GetLensContainersQueryResult = Apollo.QueryResult<GetLensContainersQuery, GetLensContainersQueryVariables>;
+export const GetLineageDocument = gql`
+    query GetLineage($start: LineageRootInput!, $up: Int! = 1, $down: Int! = 3, $limit: Int! = 300, $fanout: Int! = 50) {
+  lineage(start: $start, up: $up, down: $down, limit: $limit, fanout: $fanout) {
+    root
+    truncated
+    nodes {
+      key
+      kind
+      id
+      name
+      depth
+      createdAt
+      taskId
+      hasMoreUp
+      hasMoreDown
+      lensCount
+      lenses {
+        id
+        label
+        whole
+        shape
+        slices {
+          axis
+          start
+          stop
+          step
+        }
+      }
+      axes {
+        name
+        type
+        size
+        chunk
+      }
+      dtype
+      levels
+    }
+    edges {
+      key
+      kind
+      source
+      target
+      taskId
+      transformationKind
+      valueRelation
+      annotationId
+      primary
+      sourceLens
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetLineageQuery__
+ *
+ * To run a query within a React component, call `useGetLineageQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetLineageQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetLineageQuery({
+ *   variables: {
+ *      start: // value for 'start'
+ *      up: // value for 'up'
+ *      down: // value for 'down'
+ *      limit: // value for 'limit'
+ *      fanout: // value for 'fanout'
+ *   },
+ * });
+ */
+export function useGetLineageQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetLineageQuery, GetLineageQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetLineageQuery, GetLineageQueryVariables>(GetLineageDocument, options);
+      }
+export function useGetLineageLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetLineageQuery, GetLineageQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetLineageQuery, GetLineageQueryVariables>(GetLineageDocument, options);
+        }
+export type GetLineageQueryHookResult = ReturnType<typeof useGetLineageQuery>;
+export type GetLineageLazyQueryHookResult = ReturnType<typeof useGetLineageLazyQuery>;
+export type GetLineageQueryResult = Apollo.QueryResult<GetLineageQuery, GetLineageQueryVariables>;
 export const MembersDocument = gql`
     query Members {
   members {

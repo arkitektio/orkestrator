@@ -274,6 +274,15 @@
   --sidebar-accent-foreground: var(--accent-foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+
+  /* Logo palette (bloks/logo): an action logo paints with these only. Derived
+     from the brand, so a logo follows the brand hue, a scene's tint and dark mode. */
+  --logo-ink: var(--foreground);
+  --logo-muted: var(--muted-foreground);
+  --logo-brand: oklch(0.55 var(--brand-chroma) var(--brand-hue));
+  --logo-brand-strong: oklch(0.36 var(--brand-chroma) var(--brand-hue));
+  --logo-brand-soft: oklch(0.84 calc(var(--brand-chroma) * 0.5) var(--brand-hue));
+  --logo-surface: var(--card);
 }
 
 .dark {
@@ -321,6 +330,14 @@
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+
+  /* Logo palette (bloks/logo): an action logo paints with these only. */
+  --logo-ink: var(--foreground);
+  --logo-muted: var(--muted-foreground);
+  --logo-brand: oklch(0.72 var(--brand-chroma) var(--brand-hue));
+  --logo-brand-strong: oklch(0.87 calc(var(--brand-chroma) * 0.75) var(--brand-hue));
+  --logo-brand-soft: oklch(0.42 calc(var(--brand-chroma) * 0.6) var(--brand-hue));
+  --logo-surface: var(--card);
 }
 
 @theme inline {
@@ -755,4 +772,58 @@
 }
 .dockview-theme-abyss.dockview-dashboard .dv-drop-target-anchor.dv-drop-target-content {
   border-radius: var(--dv-border-radius);
+}
+
+/* Logo animations (bloks/logo `animate`). A shape is still until its logo is
+   hovered, alone ([data-logo-host]) or as part of a card or row (.group), or
+   while an action logo's task runs ([data-logo-active]). */
+.logo-anim {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes logo-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes logo-pulse {
+  50% { transform: scale(1.2); opacity: 0.7; }
+}
+@keyframes logo-float {
+  50% { transform: translateY(-12%); }
+}
+@keyframes logo-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes logo-march {
+  to { stroke-dashoffset: -24; }
+}
+@keyframes logo-blink {
+  50% { opacity: 0.15; }
+}
+
+:is(.group:hover, [data-logo-host]:hover, [data-logo-active]) .logo-anim-spin {
+  animation: logo-spin 1.4s linear infinite;
+}
+:is(.group:hover, [data-logo-host]:hover, [data-logo-active]) .logo-anim-pulse {
+  animation: logo-pulse 1.2s ease-in-out infinite;
+}
+:is(.group:hover, [data-logo-host]:hover, [data-logo-active]) .logo-anim-float {
+  animation: logo-float 1.6s ease-in-out infinite;
+}
+:is(.group:hover, [data-logo-host]:hover, [data-logo-active]) .logo-anim-draw {
+  stroke-dasharray: 1;
+  animation: logo-draw 1.2s ease-in-out infinite alternate;
+}
+:is(.group:hover, [data-logo-host]:hover, [data-logo-active]) .logo-anim-march {
+  animation: logo-march 1.6s linear infinite;
+}
+:is(.group:hover, [data-logo-host]:hover, [data-logo-active]) .logo-anim-blink {
+  animation: logo-blink 1s steps(2, jump-none) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-anim {
+    animation: none !important;
+  }
 }

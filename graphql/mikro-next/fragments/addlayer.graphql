@@ -77,41 +77,49 @@ fragment DatasetLineage on ArrayDataset {
   }
 }
 
+# One array lens as the picker reads it: a row of its own when it is a crop
+# (a resident of its own space), the dataset's handle when it is the whole lens
+# (`ArrayDataset.fullLens` -- `residents` lists a container once, never beside
+# its whole lens, so a dataset with no crop is reachable only through this).
+fragment AddLayerArrayLens on ArrayLens {
+  id
+  # Aliased: the other members of this union select a non-null `name`, and a
+  # lens' is nullable — GraphQL refuses the two under one response key.
+  lensName: name
+  shape
+  axisNames
+  slices {
+    ...DimSlice
+  }
+  # The space this lens's selection is expressed in: the intrinsic grid for an
+  # unsliced lens, its own crop space otherwise. What a derivation edge names.
+  # Aliased because it is nullable here and non-null on every collection arm,
+  # and one selection set may not carry both under one name.
+  #
+  # Id only: which axis is x, y, z, intensity, vector or phasor is the
+  # server's `suggestedRenderAxes`, which rides on the capability answer
+  # (`AddLayerLensCapabilities`) rather than here.
+  lensSpace: coordinateSystem {
+    id
+  }
+  # The crop edge from this lens's space back into its dataset's grid — the
+  # child edge the tree shows for a sliced lens, tagged here as a derivation
+  # that keeps the values (a crop is IDENTICAL by construction).
+  toParent {
+    id
+  }
+  dataset {
+    ...DatasetLineage
+  }
+}
+
 fragment AddLayerCandidate on Resident {
   __typename
   # Only an ARRAY lens is a row of its own: the picker lists tables, meshes,
   # networks and annotation collections by container, and offers their
   # windowed lenses on the row (`AddLayerWindowLenses`).
   ... on ArrayLens {
-    id
-    # Aliased: the other members of this union select a non-null `name`, and a
-    # lens' is nullable — GraphQL refuses the two under one response key.
-    lensName: name
-    shape
-    axisNames
-    slices {
-      ...DimSlice
-    }
-    # The space this lens's selection is expressed in: the intrinsic grid for an
-    # unsliced lens, its own crop space otherwise. What a derivation edge names.
-    # Aliased because it is nullable here and non-null on every collection arm,
-    # and one selection set may not carry both under one name.
-    #
-    # Id only: which axis is x, y, z, intensity, vector or phasor is the
-    # server's `suggestedRenderAxes`, which rides on the capability answer
-    # (`AddLayerLensCapabilities`) rather than here.
-    lensSpace: coordinateSystem {
-      id
-    }
-    # The crop edge from this lens's space back into its dataset's grid — the
-    # child edge the tree shows for a sliced lens, tagged here as a derivation
-    # that keeps the values (a crop is IDENTICAL by construction).
-    toParent {
-      id
-    }
-    dataset {
-      ...DatasetLineage
-    }
+    ...AddLayerArrayLens
   }
   # The four container arms carry their whole lens: a layer is created from a
   # LENS, so a row whose "Selection" is the whole thing sends this id.
@@ -160,8 +168,14 @@ fragment AddLayerCandidate on Resident {
       ...DerivationEdge
     }
   }
+  # The whole lens rides on its dataset: `residents` does not list it beside
+  # the dataset, and it is what the entry itself adds.
   ... on ArrayDataset {
     ...DatasetLineage
+    fullLens {
+      __typename
+      ...AddLayerArrayLens
+    }
   }
   ... on DataArray {
     id

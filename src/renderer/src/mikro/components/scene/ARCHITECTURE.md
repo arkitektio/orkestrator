@@ -90,6 +90,31 @@ structure per lens kind and rekuest matches a port's identifier exactly.
 The pairing is `annotationActionTarget.ts`; the full menu of a shape (no
 partner) stays on right-click and the card header's ellipsis.
 
+Below the pair, "On the crop" lists the actions that take **the crop of that
+lens to the shape** (`f(ArrayLens, ...)`), before the crop exists. The menu's
+subject is a stand-in array lens (`cropLensObject`, id `cut:<lens>:<shape>`,
+never a lens id) carrying the descriptors mikro says the crop would have
+(`Annotation.descriptorsUnder(lens:)`, the same cut `createLens(lens:,
+annotation:)` makes; null when the shape misses the lens). The card asks it
+with the shape's own descriptors in one query (`GetAnnotationActionDescriptors`),
+and a draw asks the same in the request that makes the shape
+(`CreateSceneAnnotation`, written into that query by `primeCardDescriptors`),
+so the card that opens on a new shape asks nothing. Filtering needs nothing more. The crop is made only when an action runs: the menu passes
+`materialize` (`SmartContextProps`), which every rekuest run path awaits
+before it builds arguments, and the card answers it with one `EnsureArrayLens`
+per lens and shape.
+
+**What a run in the scene returns lands in it.** The viewport and the scene's
+sidebar tabs (never the page around them: `Scene.Provider` may wrap a whole
+ModelPage) mount a result sink (`features/results/SceneResultSink`, over core's
+`SmartResultSink`): a rekuest row in any menu inside them hands the structures
+its task returned to the sink on completion, and every array lens among them
+is added as a layer with the Add Layer engine's own pick
+(`forms/addLayer/stageLens.ts`: fresh picker answers, `suggestLensKinds`'
+first kind, the form's request from `lensLayer.ts`). A lens the scene already
+draws (itself, or one channel of it), or one its world cannot place, is said
+and not added.
+
 ### The registries
 
 Feature-vertical layouts normally collapse where shared UI has to render

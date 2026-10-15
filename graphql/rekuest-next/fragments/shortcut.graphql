@@ -23,6 +23,9 @@ fragment ListShortcut on Shortcut {
   action {
     id
     assignable
+    logo {
+      ...BlokLogo
+    }
   }
   bindNumber
   savedArgs

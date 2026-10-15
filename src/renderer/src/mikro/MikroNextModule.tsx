@@ -16,6 +16,7 @@ import FilesPage from "./pages/FilesPage";
 import FolderPage from "./pages/FolderPage";
 import FoldersPage from "./pages/FoldersPage";
 import HomePage from "./pages/HomePage";
+import LineagePage from "./pages/LineagePage";
 import PeerHomePage from "./pages/PeerHomePage";
 import TableDatasetPage from "./pages/TableDatasetPage";
 import TableDatasetsPage from "./pages/TableDatasetsPage";
@@ -58,6 +59,7 @@ export const MikroNextModule = () => {
         <Route path="charts/:id" element={<ChartPage />} />
         <Route path="peerhome/:id" element={<PeerHomePage />} />
         <Route path="files/:id" element={<FilePage />} />
+        <Route path="lineage/:kind/:id" element={<LineagePage />} />
         <Route path="tabledatasets" element={<TableDatasetsPage />} />
         <Route path="tabledatasets/:id" element={<TableDatasetPage />} />
         <Route path="sparsedatasets" element={<SparseDatasetsPage />} />

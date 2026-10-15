@@ -41,7 +41,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
-  Blending,
   ColorMap,
   ColorSourceKind,
   ColumnRole,
@@ -86,7 +85,6 @@ import {
   type LensCandidate,
 } from "./addLayer/candidates";
 import {
-  extentOf,
   stagedFromLayers,
   suggestLensKinds,
   suggestTableKinds,
@@ -94,6 +92,12 @@ import {
   type LensSuggestion,
   type Relation,
 } from "./addLayer/engine";
+import { capabilitiesFrom } from "./addLayer/stageLens";
+import {
+  lensLayerRequest,
+  resolveLensLayerLenses,
+  type LensLayerLenses,
+} from "./addLayer/lensLayer";
 import {
   graphFromComponent,
   graphFromLineage,
@@ -586,112 +590,36 @@ const LensLayerForm = (props: {
   const phasorContext =
     phasorData?.lens.__typename === "ArrayLens" ? phasorData.lens.phasor : undefined;
 
-  /**
-   * The lens that is ONE channel of the row's lens: what an intensity, volume
-   * or phasor layer is made from, and each plane of an rgb one. A lens with no
-   * channel axis, or one that already keeps a single channel, is that lens.
-   * Otherwise it is the row's selection with the channel axis at `index` (a
-   * dataset index), found or made by the session registry.
-   */
-  const channelLens = (index: number): Promise<string> => {
-    const axis = lens.renderAxes?.intensity;
-    if (!axis || extentOf(lens, axis) <= 1) return Promise.resolve(lens.id);
-    return registry.ensureChannelLens(lens.dataset.id, lens.slices, axis, index);
-  };
-
-  const intensityInput = () => {
-    const intensity = defaults.intensity;
-    if (!intensity) return {};
-    return {
-      colormap: intensity.colormap as ColorMap,
-      blending: intensity.blending as Blending,
-      climMin: intensity.climMin ?? undefined,
-      climMax: intensity.climMax ?? undefined,
-      gamma: intensity.gamma ?? undefined,
-    };
-  };
-
   const onSubmit = form.handleSubmit(async (data) => {
-    const base = { lens: option.lens.id, scene: props.scene };
-    // Which channel a layer draws is its LENS, so the kinds that draw one
-    // channel are made from a single-channel lens rather than from the row's.
-    const channelIndex =
-      kind === "PHASOR"
-        ? (defaults.phasor?.intensityIndex ?? 0)
-        : (defaults.intensity?.intensityIndex ?? 0);
-    let channel: string;
-    let planes: { redLens: string; greenLens: string; blueLens: string } | null = null;
+    let lenses: LensLayerLenses;
     try {
-      channel =
-        kind === "INTENSITY" || kind === "VOLUME" || kind === "PHASOR"
-          ? await channelLens(channelIndex)
-          : option.lens.id;
-      if (kind === "RGB" && defaults.rgb) {
-        const [redLens, greenLens, blueLens] = await Promise.all([
-          channelLens(defaults.rgb.redIndex),
-          channelLens(defaults.rgb.greenIndex),
-          channelLens(defaults.rgb.blueIndex),
-        ]);
-        planes = { redLens, greenLens, blueLens };
-      }
+      lenses = await resolveLensLayerLenses(registry, kind, lens, defaults);
     } catch (error) {
       lensFailed(error);
       return;
     }
-    switch (kind) {
+    const request = lensLayerRequest({
+      kind,
+      scene: props.scene,
+      lens: option.lens.id,
+      lenses,
+      defaults,
+      choices: { mode: data.mode as ProjectionMode, harmonic, phasorMode: data.phasorMode as PhasorColorMode },
+    });
+    if (!request) return;
+    switch (request.kind) {
       case "INTENSITY":
-        return submitIntensity({
-          variables: { input: { ...base, lens: channel, ...intensityInput() } },
-          ...REFETCH_SCENE,
-        });
+        return submitIntensity({ variables: request.variables, ...REFETCH_SCENE });
       case "RGB":
-        // The layer's own lens stays the row's: the three planes are crops of it.
-        if (!planes) return;
-        return submitRgb({
-          variables: { input: { ...base, ...planes } },
-          ...REFETCH_SCENE,
-        });
+        return submitRgb({ variables: request.variables, ...REFETCH_SCENE });
       case "VOLUME":
-        return submitVolume({
-          variables: {
-            input: {
-              ...base,
-              lens: channel,
-              ...intensityInput(),
-              mode: data.mode as ProjectionMode,
-            },
-          },
-          ...REFETCH_SCENE,
-        });
+        return submitVolume({ variables: request.variables, ...REFETCH_SCENE });
       case "LABEL":
-        return submitLabel({ variables: { input: base }, ...REFETCH_SCENE });
+        return submitLabel({ variables: request.variables, ...REFETCH_SCENE });
       case "VECTOR":
-        // Which axis carries the components is not asked: the server derives it
-        // from the lens' DISPLACEMENT axis, the way point coordinates come from
-        // the table's declared roles.
-        return submitVector({ variables: { input: base }, ...REFETCH_SCENE });
-      case "PHASOR": {
-        const phasor = defaults.phasor;
-        if (!phasor) return;
-        return submitPhasor({
-          variables: {
-            input: {
-              ...base,
-              // The channel whose photons are counted, as its lens.
-              lens: channel,
-              phasorAxis: phasor.phasorAxis,
-              harmonic,
-              blending: phasor.blending as Blending,
-              transfer: {
-                colormap: phasor.colormap as ColorMap,
-                mode: data.phasorMode as PhasorColorMode,
-                weightByIntensity: phasor.weightByIntensity,
-              },
-            },
-          },
-          ...REFETCH_SCENE,
-        });
-      }
+        return submitVector({ variables: request.variables, ...REFETCH_SCENE });
+      case "PHASOR":
+        return submitPhasor({ variables: request.variables, ...REFETCH_SCENE });
     }
   });
 
@@ -1298,24 +1226,7 @@ const AddLayerFormInner = (props: AddLayerProps) => {
   });
 
   const capabilities: Capabilities = useMemo(
-    () =>
-      capabilityData
-        ? {
-            drawable: new Set(capabilityData.drawable.map((lens) => lens.id)),
-            labels: new Set(capabilityData.labels.map((lens) => lens.id)),
-            phasor: new Set(capabilityData.phasor.map((lens) => lens.id)),
-            rgb: new Set(capabilityData.rgb.map((lens) => lens.id)),
-            // Which axis is which, for every lens the server would draw: its
-            // own answer, in place of one read off the axis types here.
-            axes: new Map(
-              capabilityData.drawable.flatMap((lens) =>
-                lens.__typename === "ArrayLens"
-                  ? [[lens.id, lens.suggestedRenderAxes] as const]
-                  : [],
-              ),
-            ),
-          }
-        : null,
+    () => capabilitiesFrom(capabilityData),
     [capabilityData],
   );
 

@@ -177,6 +177,7 @@ const operationDescription = (fn: BlokFunctionDefinition, alias?: string): strin
 const CONTEXT: Record<BlokComponentContext, ComponentContext> = {
   html: ComponentContext.Html,
   scene: ComponentContext.Scene,
+  logo: ComponentContext.Logo,
 };
 
 export const componentInput = (component: {
@@ -194,6 +195,7 @@ export const componentInput = (component: {
     acceptsChildren: component.acceptsChildren ?? "children" in shape,
     context: CONTEXT[placement.context ?? "html"],
     childrenContext: placement.childrenContext ? CONTEXT[placement.childrenContext] : null,
+    inheritsContext: placement.inheritsContext ?? false,
     downstreamOf: [...(placement.downstreamOf ?? [])].sort(),
     notDownstreamOf: [...(placement.notDownstreamOf ?? [])].sort(),
     props: sortByKey(

@@ -9,6 +9,7 @@ import {
   AttestMetricDocument,
   AttestStructureDocument,
   RetractLinksDocument,
+  SetTermHiddenDocument,
   AttestNaturalEventDocument,
   AttestProtocolEventDocument,
   DeleteGraphDocument,
@@ -25,7 +26,7 @@ import {
 } from "./api/graphql";
 import { smartRegistry } from "@/core/smart/registry";
 import type { Structure } from "@/core/types";
-import { Equal, Link2, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
+import { Equal, Eye, EyeOff, Link2, PlusCircle, Ruler, Stamp, Undo2, Workflow } from "lucide-react";
 import { toast } from "@/core/notify";
 import { executeSameness, explainSameness, planSameness } from "./lib/sameness";
 
@@ -274,6 +275,39 @@ export const SameAsDatumAction: Action = {
   collections: ["io"],
 };
 
+/**
+ * A word is never deleted — every claim recorded under it names it. Hiding puts
+ * it away instead: pickers stop offering it, its claims still stand, and showing
+ * it again is the same call. One builder, two actions, because the menu does
+ * not know which state a term is in.
+ */
+const buildSetTermHiddenAction = (hidden: boolean): Action => ({
+  title: hidden ? "Hide term" : "Show term",
+  description: hidden
+    ? "Stop offering this word in pickers. Its claims still stand; it can be shown again"
+    : "Offer this hidden word in pickers again",
+  icon: hidden ? EyeOff : Eye,
+  conditions: [{ type: "identifier", identifier: "@kraph/term" }, { type: "nopartner" }],
+  execute: async ({ state, services }) => {
+    const client = (services.kraph as unknown as { client: ApolloClient<NormalizedCache> })
+      .client;
+    if (!client) {
+      throw new Error("Kraph service is not available");
+    }
+
+    const terms = state.left.filter((term) => term.identifier === "@kraph/term");
+    for (const term of terms) {
+      await client.mutate({
+        mutation: SetTermHiddenDocument,
+        variables: { id: String(term.id), hidden },
+        refetchQueries: ["ListTerms"],
+      });
+    }
+    const what = terms.length === 1 ? (terms[0].label ?? "the term") : `${terms.length} terms`;
+    toast.success(hidden ? `Hid ${what}` : `Showing ${what} again`);
+  },
+});
+
 export const KRAPH_ACTIONS = {
   "create-new-entity": NewEntityAction,
   "link-structure-to-entity": LinkStructureToEntityAction,
@@ -281,6 +315,8 @@ export const KRAPH_ACTIONS = {
   "same-datum": SameAsDatumAction,
   "attest-node": AttestNodeAction,
   "retract-links": RetractLinksAction,
+  "hide-term": buildSetTermHiddenAction(true),
+  "show-term": buildSetTermHiddenAction(false),
   "delete-kraph-graph": buildDeleteAction({
     title: "Delete Graph",
     identifier: "@kraph/graph",

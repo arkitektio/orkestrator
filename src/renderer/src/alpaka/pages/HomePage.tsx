@@ -3,7 +3,6 @@ import { PageLayout } from "@/core/layout/PageLayout";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { HelpSidebar } from "@/core/layout/help";
 import { Button } from "@/core/ui/button";
-import { Input } from "@/core/ui/input";
 import { Skeleton } from "@/core/ui/skeleton";
 import { Textarea } from "@/core/ui/textarea";
 import Timestamp from "@/core/ui/timestamp";
@@ -14,21 +13,17 @@ import { useSelf } from "@/core/connection/useSelf";
 import {
   ArrowRight,
   ArrowUp,
-  Brain,
-  Database,
   MessageSquarePlus,
   MessageSquareText,
   Paperclip,
-  Plug,
-  Search,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
+import { HomeEmpty, HomeSection, ModuleHome } from "@/core/layout/ModuleHome";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "@/core/notify";
 import { useCreateRoomMutation, useRecentRoomsQuery } from "../api/graphql";
 import {
   greeting,
-  groupByBucket,
   rankRecentRooms,
   RecentRoom,
   titleFromPrompt,
@@ -39,7 +34,13 @@ import { ALPAKA_HELP } from "../help";
 /** The signed-in user's name (host identity, not a lok query). */
 const Username = () => <>{useSelf().username}</>;
 
+/**
+ * The server orders rooms by creation, not by their latest message, so a
+ * wider window is fetched and ranked here; the page shows the first few.
+ */
 const RECENT_LIMIT = 50;
+/** The big card plus a few rows: the Rooms page has the rest. */
+const RECENT_SHOWN = 13;
 
 /** Hands the prompt to the room's own composer, where the replyer is picked. */
 const roomLink = (id: string, text?: string) =>
@@ -80,7 +81,7 @@ const Composer = () => {
         e.preventDefault();
         submit();
       }}
-      className="group relative rounded-3xl border bg-card shadow-sm transition-shadow focus-within:shadow-md focus-within:ring-1 focus-within:ring-ring/40"
+      className="group relative rounded-xl border bg-card shadow-sm transition-shadow focus-within:shadow-md focus-within:ring-1 focus-within:ring-ring/40"
     >
       <Textarea
         value={prompt}
@@ -116,7 +117,7 @@ const Composer = () => {
 const ContinueCard = ({ room }: { room: RecentRoom }) => (
   <Link
     to={roomLink(room.id)}
-    className="group relative flex flex-col gap-3 overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-card to-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5"
+    className="group relative flex flex-col gap-3 overflow-hidden rounded-xl border bg-gradient-to-br from-primary/10 via-card to-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5"
   >
     <div className="flex items-center justify-between gap-2">
       <span className="text-[0.65rem] font-medium uppercase tracking-wider text-primary">
@@ -178,39 +179,28 @@ const RoomRow = ({ room }: { room: RecentRoom }) => {
   );
 };
 
+/**
+ * The newest chats: the latest as the big "pick up" card, the next ones as
+ * rows beside each other. Searching and the full history are the Rooms page's.
+ */
 const RecentChats = () => {
-  const [search, setSearch] = useState("");
   const { data, loading, error } = useRecentRoomsQuery({
     variables: { pagination: { limit: RECENT_LIMIT } },
     fetchPolicy: "cache-and-network",
   });
   const { start, loading: starting } = useStartChat();
 
-  const rooms = useMemo(() => rankRecentRooms(data?.rooms ?? []), [data]);
-  const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    if (!needle) return rooms;
-    return rooms.filter((room) =>
-      `${room.title} ${room.preview ?? ""} ${room.description ?? ""}`
-        .toLowerCase()
-        .includes(needle),
-    );
-  }, [rooms, search]);
-
-  // While browsing, the newest chat gets the big card and is left out of the list.
-  const latest = search ? undefined : filtered[0];
-  const groups = useMemo(
-    () => groupByBucket(search ? filtered : filtered.slice(1)),
-    [filtered, search],
-  );
+  const rooms = useMemo(() => rankRecentRooms(data?.rooms ?? []).slice(0, RECENT_SHOWN), [data]);
 
   if (loading && !data) {
     return (
       <div className="flex flex-col gap-3">
-        <Skeleton className="h-40 rounded-3xl" />
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 rounded-xl" />
-        ))}
+        <Skeleton className="h-40 rounded-xl" />
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-1">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 rounded-xl" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -221,82 +211,48 @@ const RecentChats = () => {
 
   if (rooms.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed py-14 text-center">
-        <MessageSquarePlus className="size-8 text-muted-foreground" />
-        <div>
-          <p className="text-sm font-medium">No chats yet</p>
-          <p className="text-xs text-muted-foreground">
-            Ask a question above to start your first conversation.
-          </p>
-        </div>
-      </div>
+      <HomeEmpty title="No chats yet">
+        Ask a question above to start your first conversation.
+      </HomeEmpty>
     );
   }
 
+  const [latest, ...rest] = rooms;
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold tracking-tight">Recent chats</h2>
-        <div className="flex items-center gap-1">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter chats"
-              className="h-7 w-44 rounded-full pl-8 text-xs"
-            />
+    <HomeSection
+      title={
+        <span className="flex w-full items-center justify-between gap-2">
+          Recent chats
+          <span className="flex items-center gap-1 normal-case tracking-normal">
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => start()}
+              disabled={starting}
+            >
+              <MessageSquarePlus /> New
+            </Button>
+            <AlpakaRoom.ListLink className="text-[11px] font-normal text-muted-foreground hover:text-foreground">
+              All chats →
+            </AlpakaRoom.ListLink>
+          </span>
+        </span>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <ContinueCard room={latest} />
+        {rest.length > 0 && (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-1">
+            {rest.map((room) => (
+              <RoomRow key={room.id} room={room} />
+            ))}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="rounded-full"
-            onClick={() => start()}
-            disabled={starting}
-          >
-            <MessageSquarePlus /> New
-          </Button>
-        </div>
+        )}
       </div>
-
-      {latest && <ContinueCard room={latest} />}
-
-      {filtered.length === 0 && (
-        <p className="py-6 text-center text-sm text-muted-foreground">
-          No chats match “{search}”.
-        </p>
-      )}
-
-      {groups.map(({ bucket, rooms }) => (
-        <section key={bucket} className="flex flex-col">
-          <h3 className="px-3 pb-1 text-[0.65rem] font-medium uppercase tracking-wider text-muted-foreground">
-            {bucket}
-          </h3>
-          {rooms.map((room) => (
-            <RoomRow key={room.id} room={room} />
-          ))}
-        </section>
-      ))}
-
-      {rooms.length >= RECENT_LIMIT && (
-        <AlpakaRoom.ListLink className="self-center text-xs text-muted-foreground hover:text-foreground">
-          View all chats →
-        </AlpakaRoom.ListLink>
-      )}
-    </div>
+    </HomeSection>
   );
 };
-
-const SETUP_LINKS = [
-  { to: "/alpaka/llmmodels", label: "Models", hint: "LLMs you can chat with", icon: Brain },
-  { to: "/alpaka/providers", label: "Providers", hint: "Connected model APIs", icon: Plug },
-  {
-    to: "/alpaka/collections",
-    label: "Collections",
-    hint: "Knowledge for retrieval",
-    icon: Database,
-  },
-];
 
 const Page: React.FC = () => (
   <PageLayout
@@ -313,35 +269,21 @@ const Page: React.FC = () => (
       </Sidebars>
     }
   >
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-8 md:py-12">
-      <header className="flex flex-col gap-5">
-        <h1 className="text-3xl font-semibold tracking-tight">
+    <ModuleHome
+      moduleKey="alpaka"
+      title={
+        <>
           {greeting()}
           <Guard.Lok notConnectedFallback={<></>} connectingFallback={<></>}>
             , <Username />
           </Guard.Lok>
-        </h1>
-        <Composer />
-      </header>
-
+        </>
+      }
+      description="Chat with agents about your data, experiments or anything else."
+      lead={<Composer />}
+    >
       <RecentChats />
-
-      <nav className="grid gap-2 border-t pt-6 sm:grid-cols-3">
-        {SETUP_LINKS.map(({ to, label, hint, icon: Icon }) => (
-          <Link
-            key={to}
-            to={to}
-            className="group flex items-center gap-3 rounded-xl border bg-card px-3 py-2.5 transition-colors hover:border-foreground/20"
-          >
-            <Icon className="size-4 text-muted-foreground group-hover:text-foreground" />
-            <div className="min-w-0">
-              <p className="text-xs font-medium">{label}</p>
-              <p className="truncate text-[0.65rem] text-muted-foreground">{hint}</p>
-            </div>
-          </Link>
-        ))}
-      </nav>
-    </div>
+    </ModuleHome>
   </PageLayout>
 );
 

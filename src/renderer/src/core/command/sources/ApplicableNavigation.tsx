@@ -39,6 +39,7 @@ import { isElectron } from "@/core/util/platform";
 import { windowRole } from "@/core/util/windowRole";
 import { useRoles } from "@/core/connection/roles";
 import { isModuleAllowed } from "@/core/modules/registries";
+import { moduleHomeRoute } from "@/core/modules/hooks/useModuleNav";
 
 /**
  * Where you can go, and what the app itself can do.
@@ -183,7 +184,7 @@ export const ApplicableNavigation = ({ filter, onDone }: PassDownProps) => {
                 run(() => {
                   openTarget({
                     kind: "route",
-                    route: module.route,
+                    route: moduleHomeRoute(module.key, module.route),
                     label: module.definition.label || module.key,
                   });
                 })

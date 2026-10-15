@@ -69,6 +69,34 @@ export const layerLensPartner = (
   });
 };
 
+/**
+ * What a crop structure's id starts with before the crop exists. Never a lens
+ * id: a run path that forgot to `materialize` is refused by the server rather
+ * than run on another lens.
+ */
+export const CROP_ID_PREFIX = "cut:";
+
+/** What a crop of `lens` to the shape is called: "<shape> on <image>". */
+export const cropLabel = (roi: Pick<SelectedRoi, "name">, lens: Pick<Structure, "label">): string =>
+  `${roi.name || "Shape"} on ${lens.label ?? "this image"}`;
+
+/**
+ * The crop of a lens to the shape — the lens `createLens(lens:, annotation:)`
+ * would return — before it is made: an array lens with the descriptors the
+ * server says the crop would have (`descriptorsUnder`), so the actions it fits
+ * can be listed. Its id stands for the pair; the card makes the crop when an
+ * action runs on it and hands the real lens over instead.
+ */
+export const cropLensObject = (
+  roi: Pick<SelectedRoi, "id" | "name">,
+  lens: Pick<Structure, "id" | "label">,
+  descriptors: unknown,
+): Structure =>
+  structure(ARRAY_LENS_IDENTIFIER, `${CROP_ID_PREFIX}${lens.id}:${roi.id}`, {
+    label: cropLabel(roi, lens),
+    descriptors: descriptorsOf(descriptors),
+  });
+
 /** How far (px) the pointer may travel between press and release and still be a click. */
 export const CLICK_SLOP_PX = 4;
 

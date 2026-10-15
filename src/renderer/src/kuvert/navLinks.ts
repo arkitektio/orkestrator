@@ -1,10 +1,11 @@
-import { CloudUpload, Flag, Inbox, ListChecks, ListTodo, MailOpen, Mailbox, Search, Send, SendHorizontal, Tags } from "lucide-react";
+import { CloudUpload, Flag, Home, Inbox, ListChecks, ListTodo, MailOpen, Mailbox, Search, Send, SendHorizontal, Tags } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
 
 /** kuvert's pages, for the ⌘K palette and its rail popout (a `navLinks` builtin). */
 export const KUVERT_NAV_LINKS: NavLinkDecl[] = [
-  { label: "All Inboxes", route: "/kuvert", keywords: ["mail", "email", "inbox"], group: "Mail", icon: Inbox, home: true },
+  { label: "Home", route: "/kuvert/home", keywords: ["mail", "email"], group: "Mail", icon: Home, home: true },
+  { label: "All Inboxes", route: "/kuvert", keywords: ["mail", "email", "inbox"], group: "Mail", icon: Inbox, description: "Every inbox, newest first" },
   { label: "Unread", route: "/kuvert/unread", keywords: ["mail", "email", "new"], group: "Mail", icon: MailOpen, description: "Not yet read" },
   { label: "Flagged", route: "/kuvert/flagged", keywords: ["mail", "email", "important", "starred"], group: "Mail", icon: Flag, description: "Marked for later" },
   { label: "Sent", route: "/kuvert/sent", keywords: ["mail", "email", "sent"], group: "Mail", icon: Send, description: "Mail you sent" },

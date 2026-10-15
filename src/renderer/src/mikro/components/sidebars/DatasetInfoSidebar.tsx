@@ -5,7 +5,7 @@ import {
   PopoverTrigger,
 } from "@/core/ui/popover";
 import { MikroCoordinateSystem } from "@/core/linkers";
-import { GetArrayDatasetQuery, useGetArrayDatasetDerivedQuery } from "../../api/graphql";
+import { GetArrayDatasetQuery, LineageNodeKind, useGetArrayDatasetDerivedQuery } from "../../api/graphql";
 import {
   ADATASET_SPEC_INFO,
   arrayNbytes,
@@ -19,6 +19,7 @@ import { DatasetCalibrationSection } from "./DatasetCalibrationSection";
 import { DerivedDatasetsSection } from "./DerivedDatasetsSection";
 import { DerivedFromSection } from "./DerivedFromSection";
 import { FileLinksSection } from "./FileLinksSection";
+import { LineageLink } from "../lineage/LineageLink";
 import { ProvenanceSection } from "./ProvenanceSection";
 
 type PageDataset = GetArrayDatasetQuery["arrayDataset"];
@@ -236,6 +237,8 @@ export const DatasetLineage = ({ dataset }: { dataset: PageDataset }) => {
 
   return (
     <>
+      <LineageLink kind={LineageNodeKind.Dataset} id={dataset.id} />
+
       {/* Lineage and history. One failure message for all three: they come from
           one query, so a partial rendering would be a lie about which part is
           missing. */}

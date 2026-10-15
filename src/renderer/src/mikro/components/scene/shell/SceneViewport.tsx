@@ -4,6 +4,7 @@ import {
   useStore as useThreeStore,
   useThree,
 } from "@react-three/fiber";
+import { SceneResultSink } from "../features/results/SceneResultSink";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { LongCommitProfiler } from "../platform/perf/commitProfiler";
@@ -349,6 +350,9 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
 
   return (
     <SceneGuard>
+      {/* What a menu in the viewport runs and gets a lens back from lands in
+          the scene as a layer. */}
+      <SceneResultSink>
       <div
         className="relative h-full w-full overflow-hidden rounded-lg bg-black"
         style={backgroundStyle(status.scene.backgroundColor)}
@@ -463,6 +467,7 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
           <SceneShortcuts />
         </LongCommitProfiler>
       </div>
+      </SceneResultSink>
     </SceneGuard>
   );
 };

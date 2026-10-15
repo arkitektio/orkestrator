@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import type { ReactNode } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const descriptorsQuery = vi.fn();
+const actionQuery = vi.fn();
+const ensureLens = vi.fn();
 vi.mock("@/mikro/api/graphql", () => ({
-  useGetAnnotationDescriptorsQuery: (options: unknown) => descriptorsQuery(options),
+  useGetAnnotationActionDescriptorsQuery: (options: unknown) => actionQuery(options),
+  useEnsureArrayLensMutation: () => [ensureLens],
 }));
 const menuProps = vi.fn();
 vi.mock("@/core/smart/ObjectButton", () => {
@@ -90,17 +92,33 @@ const roi: SelectedRoi = {
 
 const image = { id: "layer:image", name: "DAPI", lens: { id: "7", descriptors: { "@mikro/n_space_axes": 2 } } };
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  menuProps.mockClear();
+  ensureLens.mockReset();
+  actionQuery.mockReset();
+});
+
+/** The last props each menu was drawn with: the pair's subject is the shape, the crop's a lens. */
+const lastMenu = (identifier: string) =>
+  menuProps.mock.calls.filter(([props]) => props.objects[0]?.identifier === identifier).at(-1)?.[0];
+const pairMenu = () => lastMenu("@mikro/annotation");
+const cropMenu = () => lastMenu("@mikro/arraylens");
+
+/** The card's one answer: the shape's descriptors, and its crop's of the lens. */
+const answer = (descriptors: unknown, descriptorsUnder?: unknown) => ({
+  data: { annotation: { id: "ann:1", descriptors, descriptorsUnder } },
+});
 
 describe("AnnotationPairActions", () => {
   it("offers what takes the pair as tiles: the shape with its descriptors, against the probed lens", () => {
     layers = [image];
-    descriptorsQuery.mockReturnValue({ data: { annotation: { descriptors: { "@mikro/annotation_kind": "RECTANGLE" } } } });
+    actionQuery.mockReturnValue(answer({ "@mikro/annotation_kind": "RECTANGLE" }));
 
     render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
 
     expect(screen.getByTestId("menu").dataset.skin).toBe("tiles");
-    const { objects, partners, sections } = menuProps.mock.lastCall![0];
+    const { objects, partners, sections } = pairMenu();
     expect({ objects, partners }).toEqual({
       objects: [
         { identifier: "@mikro/annotation", id: "ann:1", label: "soma", descriptors: { "@mikro/annotation_kind": "RECTANGLE" } },
@@ -114,7 +132,7 @@ describe("AnnotationPairActions", () => {
 
   it("names the image and keeps the search behind a magnifier — open at once on a click", () => {
     layers = [image];
-    descriptorsQuery.mockReturnValue({ data: { annotation: { descriptors: {} } } });
+    actionQuery.mockReturnValue(answer({}));
 
     const { unmount } = render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
     expect(screen.getByLabelText("Image to run with").textContent).toBe("Run with:DAPI");
@@ -132,7 +150,7 @@ describe("AnnotationPairActions", () => {
   it("runs with another layer's lens once picked — hidden ones too — and back", () => {
     const hidden = { id: "layer:gfp", name: "GFP", visible: false, lens: { id: "9", descriptors: {} } };
     layers = [image, hidden];
-    descriptorsQuery.mockReturnValue({ data: { annotation: { descriptors: {} } } });
+    actionQuery.mockReturnValue(answer({}));
     render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
 
     expect(screen.getByTestId("layers").dataset.value).toBe("layer:image");
@@ -140,18 +158,18 @@ describe("AnnotationPairActions", () => {
     expect(screen.getByTestId("layer:layer:gfp").textContent).toBe("GFPhidden");
 
     fireEvent.click(screen.getByTestId("layer:layer:gfp"));
-    expect(menuProps.mock.lastCall![0].partners).toEqual([
+    expect(pairMenu().partners).toEqual([
       { identifier: "@mikro/arraylens", id: "9", label: "GFP" },
     ]);
     expect(screen.getByLabelText("Image to run with").textContent).toBe("Run with:GFP");
 
     fireEvent.click(screen.getByTestId("layer:layer:image"));
-    expect(menuProps.mock.lastCall![0].partners[0].id).toBe("7");
+    expect(pairMenu().partners[0].id).toBe("7");
   });
 
   it("waits for the descriptors, and says so when there is no image to run on", () => {
     layers = [image];
-    descriptorsQuery.mockReturnValue({ data: undefined });
+    actionQuery.mockReturnValue({ data: undefined });
     const { rerender } = render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
     expect(screen.getByText("Loading…")).toBeTruthy();
 
@@ -159,5 +177,59 @@ describe("AnnotationPairActions", () => {
     rerender(<AnnotationPairActions roi={{ ...roi }} autoFocus={false} onDone={() => {}} />);
     expect(screen.getByText(/No image layer to run with/)).toBeTruthy();
     expect(screen.queryByTestId("menu")).toBeNull();
+  });
+
+  it("offers what takes the crop, with the descriptors mikro says it would have, and makes nothing to list them", () => {
+    layers = [image];
+    actionQuery.mockReturnValue(answer({}, { "@mikro/spec": ["IMAGE"], "@mikro/is_whole": false }));
+
+    render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
+
+    expect(actionQuery.mock.lastCall![0]).toEqual({ variables: { id: "ann:1", lens: "7" }, skip: false });
+    expect(screen.getByText("On the crop to this shape")).toBeTruthy();
+    const { objects, partners, sections, materialize } = cropMenu();
+    expect({ objects, partners, sections }).toEqual({
+      objects: [
+        {
+          identifier: "@mikro/arraylens",
+          id: "cut:7:ann:1",
+          label: "soma on DAPI",
+          descriptors: { "@mikro/spec": ["IMAGE"], "@mikro/is_whole": false },
+        },
+      ],
+      partners: [],
+      sections: { only: ["rekuest.shortcuts", "rekuest.actions"] },
+    });
+    expect(typeof materialize).toBe("function");
+    expect(pairMenu().materialize).toBeUndefined();
+    expect(ensureLens).not.toHaveBeenCalled();
+  });
+
+  it("makes the crop when something runs on it, once, and asks again after a failure", async () => {
+    layers = [image];
+    actionQuery.mockReturnValue(answer({}, { "@mikro/spec": ["IMAGE"] }));
+    render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
+    const { materialize } = cropMenu();
+
+    ensureLens.mockRejectedValueOnce(new Error("The box lies outside the lens"));
+    await expect(materialize()).rejects.toThrow(/Could not make the crop/);
+
+    ensureLens.mockResolvedValue({ data: { createLens: { id: "42" } } });
+    const made = { objects: [{ identifier: "@mikro/arraylens", id: "42", label: "soma on DAPI", descriptors: { "@mikro/spec": ["IMAGE"] } }], partners: [] };
+    await act(async () => {
+      await expect(materialize()).resolves.toEqual(made);
+      await expect(materialize()).resolves.toEqual(made);
+    });
+    expect(ensureLens).toHaveBeenCalledTimes(2);
+    expect(ensureLens.mock.lastCall![0]).toMatchObject({ variables: { input: { lens: "7", annotation: "ann:1" } } });
+  });
+
+  it("says when the shape misses the image, and lists nothing on a crop that cannot be made", () => {
+    layers = [image];
+    actionQuery.mockReturnValue(answer({}, null));
+    render(<AnnotationPairActions roi={roi} autoFocus={false} onDone={() => {}} />);
+
+    expect(screen.getByText("This shape lies outside DAPI.")).toBeTruthy();
+    expect(cropMenu()).toBeUndefined();
   });
 });

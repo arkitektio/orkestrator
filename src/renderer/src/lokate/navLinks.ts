@@ -1,9 +1,10 @@
-import { ChartNoAxesCombined, Footprints, History, MapPin, Route, ShieldCheck } from "lucide-react";
+import { ChartNoAxesCombined, Footprints, History, Home, MapPin, Route, ShieldCheck } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
 
 /** lokate's pages, for the ⌘K palette and its rail popout (a `navLinks` builtin). */
 export const LOKATE_NAV_LINKS: NavLinkDecl[] = [
+  { label: "Home", route: "/lokate/home", keywords: ["location"], group: "Explore", icon: Home, home: true },
   {
     label: "Timeline",
     route: "/lokate",
@@ -11,7 +12,6 @@ export const LOKATE_NAV_LINKS: NavLinkDecl[] = [
     group: "Explore",
     icon: History,
     description: "Your day, stay by stay",
-    home: true,
   },
   {
     label: "Places",

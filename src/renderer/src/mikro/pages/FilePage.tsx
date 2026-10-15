@@ -5,8 +5,10 @@ import { PageAction } from "@/core/ui/page-action";
 import { useMikroBigFileDownload } from "@/mikro/datalayer/useMikroBigFileDownload";
 import { MikroFile } from "@/core/linkers";
 import { useDownload } from "@/core/modules/download/DownloadProvider";
-import { DownloadIcon, FileIcon, Grid3x3 } from "lucide-react";
-import { useGetFileQuery } from "../api/graphql";
+import { DownloadIcon, FileIcon, GitBranch, Grid3x3 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { LineageNodeKind, useGetFileQuery } from "../api/graphql";
+import { lineageLink } from "../components/lineage/lineageGraph";
 import { MoveToFolderButton } from "../components/folder/MoveToFolderButton";
 import ArrayDatasetList from "../components/lists/ArrayDatasetList";
 import { FileInfoSidebar } from "../components/sidebars/FileInfoSidebar";
@@ -95,6 +97,16 @@ export const FilePage = asDetailQueryRoute(useGetFileQuery, ({ data }) => {
             className="shadow-sm"
           >
             Download
+          </PageAction>
+
+          {/* What these bytes became, and what was made of that, step by step. */}
+          <PageAction
+            asChild
+            collapse="icon"
+            icon={<GitBranch className="h-4 w-4" />}
+            className="shadow-sm"
+          >
+            <Link to={lineageLink(LineageNodeKind.File, file.id)}>Lineage</Link>
           </PageAction>
 
           <MikroFile.ObjectButton alwaysShow object={file} />

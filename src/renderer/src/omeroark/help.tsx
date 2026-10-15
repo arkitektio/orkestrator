@@ -8,8 +8,9 @@ import { PageHelp } from "@/core/layout/help";
 export const OMEROARK_HELP = {
   home: (
     <PageHelp
-      intro="Omero Ark shows the data of your OMERO server inside this app. OMERO sorts images into datasets, and datasets into projects; this page lists your projects."
+      intro="Omero Ark shows the data of your OMERO server inside this app. OMERO sorts images into datasets, and datasets into projects; this page links every Omero Ark page and lists your projects."
       steps={[
+        <>Use the <b>Datasets</b>, <b>Projects</b> and <b>Images</b> tiles at the top to open those lists.</>,
         <>Click a project to see the datasets it contains.</>,
         <>Press <b>Create</b>, type a <b>New Name</b> and press <b>Create</b> to make a new project on the OMERO server. You are taken to it right away.</>,
         <>Press <b>Disconnect Omero User</b> to remove your OMERO login from this app.</>,

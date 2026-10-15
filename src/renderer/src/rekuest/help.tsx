@@ -8,16 +8,16 @@ import { PageHelp } from "@/core/layout/help";
 export const REKUEST_HELP = {
   home: (
     <PageHelp
-      intro="The starting point for running things. It shows the apps you connected to this server (your “agents”), the tasks that are running or just finished, and the actions those apps offer."
+      intro="The starting point for running things. It shows the apps you connected to this server (your “agents”) first, then links every Rekuest page, then the tasks that are running or just finished."
       steps={[
-        <>Look at <b>Your Apps</b> to see which apps are connected. Press <b>Online</b> to hide the ones that are not reachable right now.</>,
+        <>Look at <b>Your apps</b> to see which apps are connected. Press <b>Online</b> to hide the ones that are not reachable right now.</>,
         <>Type into <b>Search apps…</b>, or open <b>Filter</b> and pick <b>By app</b> or <b>By device</b>, to narrow the grid.</>,
         <>The grid starts with your own apps only. Open <b>Filter</b>, then <b>By user</b>, and pick <b>All users</b> or one person to see theirs. Under <b>By type</b>, pick <b>Webhooks</b> or <b>All types</b> to include webhook agents. <b>Clear filters</b> goes back to your own apps.</>,
         <>Click an app card to open the agent and see the actions it can run.</>,
+        <>Use the tiles below the apps to open a Rekuest page: <b>Actions</b> is the catalog of everything your apps can do, <b>Tasks</b> every task you ran.</>,
         <>Right-click an app card for its actions, for example <b>Rename / Update Agent</b> or <b>Pin Agent</b>.</>,
         <>Under <b>Materialized Bloks</b>, click a card to open that view. Each card names the apps it is wired to and how many of them are online.</>,
         <>Scroll down to <b>Ongoing Tasks</b> and <b>Latest Tasks</b> and click a task to follow it.</>,
-        <>Hover an action card at the bottom and press its play button to fill in the arguments and run it.</>,
       ]}
       tips={[
         <>No apps yet: start an Arkitekt app and log it into this server. It shows up here as soon as it connects.</>,

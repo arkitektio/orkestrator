@@ -8,10 +8,11 @@ import { PageHelp } from "@/core/layout/help";
 export const DOKUMENTS_HELP = {
   home: (
     <PageHelp
-      intro="Dokuments keeps files such as PDFs and scans, and the documents made from them: a document is a file split into pages, each with its recognized text. This page lists the files."
+      intro="Dokuments keeps files such as PDFs and scans, and the documents made from them: a document is a file split into pages, each with its recognized text. This page links every Dokuments page and lists documents and files."
       steps={[
-        <>Click a file to open it and see the documents made from it.</>,
-        <>Right-click a file to open its context menu with the actions available for it.</>,
+        <>Use the <b>Documents</b> and <b>Files</b> tiles at the top to open the full lists.</>,
+        <>Click a document to read its pages, or a file to see the documents made from it.</>,
+        <>Right-click a document or file to open its context menu with the actions available for it.</>,
       ]}
     />
   ),

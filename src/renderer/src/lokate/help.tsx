@@ -6,6 +6,15 @@ import { PageHelp } from "@/core/layout/help";
  * offers: the button labels, menu entries and dialogs are the ones on screen.
  */
 export const LOKATE_HELP = {
+  home: (
+    <PageHelp
+      intro="Where to go in Lokate, and where you have been lately: every Lokate page, then your newest visits and trips."
+      steps={[
+        <>Use the tiles at the top to open a Lokate page: <b>Timeline</b> walks through a day stay by stay, <b>Places</b> lists your named places.</>,
+        <>Click a visit or trip below to open it, or its heading to see all of them.</>,
+      ]}
+    />
+  ),
   timeline: (
     <PageHelp
       intro="One day of your location history: where you stayed and how you got from one stay to the next, listed in order next to a map of the path."

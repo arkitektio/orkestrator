@@ -1,4 +1,4 @@
-import { useMemo, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { ChevronDownIcon, SearchIcon, TriangleAlert, XIcon } from "lucide-react";
 
 import { StatusPage } from "@/core/layout/fallbacks/StatusPage";
@@ -6,6 +6,8 @@ import { classifyError } from "@/core/layout/fallbacks/classifyError";
 import { RetryButton } from "@/core/layout/fallbacks/statusActions";
 import { SmartMenu, TILE_SKIN, useSmartMenu } from "@/core/smart/ObjectButton";
 import type { SmartSectionSelection } from "@/core/smart/extensions/section";
+import type { SmartContextProps } from "@/core/smart/extensions/types";
+import { structure } from "@/core/smart/structure";
 import type { Structure } from "@/core/types";
 import { Button } from "@/core/ui/button";
 import {
@@ -16,14 +18,23 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
-import { useGetAnnotationDescriptorsQuery } from "@/mikro/api/graphql";
+import {
+  useEnsureArrayLensMutation,
+  useGetAnnotationActionDescriptorsQuery,
+} from "@/mikro/api/graphql";
 
 import { layerDisplayLabel } from "../../../platform/layerui/layerIdentity";
 import { effectiveProbeLayerId } from "../../../platform/probe/probeTargeting";
 import { useSceneStore, useSceneStoreApi } from "../../../platform/stores/sceneStore";
 import { useViewerStore } from "../../../platform/stores/viewerStore";
 import type { SelectedRoi } from "../roiSelectionStore";
-import { annotationObject, layerLensPartner, pairLayerId } from "./annotationActionTarget";
+import {
+  ARRAY_LENS_IDENTIFIER,
+  annotationObject,
+  cropLensObject,
+  layerLensPartner,
+  pairLayerId,
+} from "./annotationActionTarget";
 
 /**
  * Only what takes the PAIR. By id, as strings: the sections are rekuest's,
@@ -54,6 +65,10 @@ const PAIR_SECTIONS: SmartSectionSelection = {
  * search waits behind a magnifier — open at once when the card was opened by
  * a click (`autoFocus`), where typing is meant for it.
  *
+ * Below them, "On the crop": the actions that take the crop of that image to
+ * the shape — `f(ArrayLens, ...)` on the lens `createLens(lens:, annotation:)`
+ * would return (`CropActions`).
+ *
  * The shape's FULL menu (delete, open, ..., no partner) is the card header's
  * ellipsis and the viewport's right-click.
  */
@@ -82,10 +97,23 @@ export const AnnotationPairActions = ({
       return layer ? layerDisplayLabel(layer) : undefined;
     });
   }, [targetLayerId, sceneApi]);
-  const { data, error, refetch } = useGetAnnotationDescriptorsQuery({ variables: { id: roi.id } });
-  const descriptors = data?.annotation.descriptors;
+  // One request for both groups: what the shape provides, and what its crop of
+  // the lens would. A draw asked it already and left it in the cache
+  // (`useCreateSceneAnnotation`). Picking another lens asks again; the shape's
+  // own descriptors stay on screen meanwhile.
+  const { data, previousData, error, refetch } = useGetAnnotationActionDescriptorsQuery({
+    variables: { id: roi.id, lens: lens?.id ?? "" },
+    skip: !lens,
+  });
+  const answered =
+    data?.annotation ?? (previousData?.annotation.id === roi.id ? previousData.annotation : undefined);
+  const descriptors = answered?.descriptors;
+  /** Undefined until answered for THIS lens; null when the shape misses it. */
+  const cut = data?.annotation.descriptorsUnder;
   const objects = useMemo(() => [annotationObject(roi, descriptors)], [roi, descriptors]);
   const partners = useMemo(() => (lens ? [lens] : []), [lens]);
+  // The one search filters both groups.
+  const [filter, setFilter] = useState<string | undefined>(undefined);
 
   if (error) {
     return (
@@ -110,21 +138,25 @@ export const AnnotationPairActions = ({
     return <p className="px-2 py-1 text-xs text-muted-foreground">Loading…</p>;
   }
   return (
-    <PairMenu
-      objects={objects}
-      partners={partners}
-      imageLabel={lens.label ?? "this image"}
-      picker={
-        <LensPicker
-          layerId={targetLayerId}
-          probedLayerId={probedLayerId}
-          label={lens.label ?? "this image"}
-          onPick={setPickedLayerId}
-        />
-      }
-      autoFocus={autoFocus}
-      onDone={onDone}
-    />
+    <>
+      <PairMenu
+        objects={objects}
+        partners={partners}
+        imageLabel={lens.label ?? "this image"}
+        picker={
+          <LensPicker
+            layerId={targetLayerId}
+            probedLayerId={probedLayerId}
+            label={lens.label ?? "this image"}
+            onPick={setPickedLayerId}
+          />
+        }
+        autoFocus={autoFocus}
+        onFilterChange={setFilter}
+        onDone={onDone}
+      />
+      <CropActions roi={roi} lens={lens} descriptors={cut} filter={filter} onDone={onDone} />
+    </>
   );
 };
 
@@ -134,6 +166,7 @@ const PairMenu = ({
   imageLabel,
   picker,
   autoFocus,
+  onFilterChange,
   onDone,
 }: {
   objects: Structure[];
@@ -141,9 +174,11 @@ const PairMenu = ({
   imageLabel: string;
   picker: ReactNode;
   autoFocus: boolean;
+  onFilterChange: (filter: string | undefined) => void;
   onDone: () => void;
 }) => {
   const menu = useSmartMenu({ objects, partners, sections: PAIR_SECTIONS, autoFocus, onDone });
+  useEffect(() => onFilterChange(menu.filter), [menu.filter, onFilterChange]);
   const [searching, setSearching] = useState(autoFocus);
   const stopSearching = () => {
     setSearching(false);
@@ -194,6 +229,119 @@ const PairMenu = ({
           <SmartMenu.Pinned />
           <SmartMenu.Sections />
           <SmartMenu.Empty>Nothing runs on this shape with this image</SmartMenu.Empty>
+        </SmartMenu.List>
+      </SmartMenu.Body>
+    </SmartMenu.Root>
+  );
+};
+
+/**
+ * "On the crop": the actions that take the crop of `lens` to the shape, before
+ * the crop exists. mikro says what the crop would provide (`descriptorsUnder`,
+ * the same cut `createLens(lens:, annotation:)` makes), so a port's `Requires`
+ * narrows the list as on a real lens — a z-pinned rectangle on a volume crops
+ * to an IMAGE. Nothing is made to list them: the crop is made when one of them
+ * runs (`materialize`, awaited by every run path), once per lens and shape —
+ * the server hands the same lens back for the same cut anyway.
+ *
+ * A shape that misses the lens has no crop, and the group says so.
+ */
+const CropActions = ({
+  roi,
+  lens,
+  descriptors,
+  filter,
+  onDone,
+}: {
+  roi: SelectedRoi;
+  lens: Structure;
+  descriptors: unknown;
+  filter: string | undefined;
+  onDone: () => void;
+}) => {
+  // Still asking for this lens: nothing to offer yet.
+  if (descriptors === undefined) return null;
+  return (
+    <div className="mt-1.5 border-t border-border/60 pt-1.5">
+      <p className="truncate px-1 text-[11px] text-muted-foreground">
+        On the crop to this shape
+      </p>
+      {descriptors === null ? (
+        <p className="px-1 py-1 text-xs text-muted-foreground">
+          This shape lies outside {lens.label ?? "this image"}.
+        </p>
+      ) : (
+        <CropMenu roi={roi} lens={lens} descriptors={descriptors} filter={filter} onDone={onDone} />
+      )}
+    </div>
+  );
+};
+
+const CropMenu = ({
+  roi,
+  lens,
+  descriptors,
+  filter,
+  onDone,
+}: {
+  roi: SelectedRoi;
+  lens: Structure;
+  descriptors: unknown;
+  filter: string | undefined;
+  onDone: () => void;
+}) => {
+  const crop = useMemo(() => cropLensObject(roi, lens, descriptors), [roi, lens, descriptors]);
+  const objects = useMemo(() => [crop], [crop]);
+  const [ensureLens] = useEnsureArrayLensMutation({
+    // The shape's card lists what was cut from it.
+    refetchQueries: ["GetAnnotationInfo"],
+  });
+  const made = useRef<{ key: string; lens: Promise<Structure> } | null>(null);
+
+  const materialize = useCallback<NonNullable<SmartContextProps["materialize"]>>(async () => {
+    const key = crop.id;
+    if (made.current?.key !== key) {
+      const pending: Promise<Structure> = ensureLens({
+        variables: { input: { lens: lens.id, annotation: roi.id } },
+      }).then(
+        ({ data }) => {
+          const id = data?.createLens.id;
+          if (!id) throw new Error("Could not make the crop: mikro answered no lens.");
+          return structure(ARRAY_LENS_IDENTIFIER, id, {
+            label: crop.label,
+            descriptors: crop.descriptors,
+          });
+        },
+        (error: unknown) => {
+          // Not remembered: the next run asks again.
+          if (made.current?.lens === pending) made.current = null;
+          throw new Error(`Could not make the crop: ${classifyError(error).message}`);
+        },
+      );
+      made.current = { key, lens: pending };
+    }
+    return { objects: [await made.current.lens], partners: [] };
+  }, [crop, ensureLens, lens.id, roi.id]);
+
+  const menu = useSmartMenu({
+    objects,
+    partners: [],
+    sections: PAIR_SECTIONS,
+    materialize,
+    autoFocus: false,
+    onDone,
+  });
+  const { setFilter } = menu;
+  useEffect(() => setFilter(filter), [filter, setFilter]);
+
+  return (
+    <SmartMenu.Root menu={menu} skin={TILE_SKIN}>
+      <SmartMenu.Body className="rounded-none bg-transparent p-0">
+        <SmartMenu.Progress />
+        <SmartMenu.List className="mt-1 max-h-64 p-0.5">
+          <SmartMenu.Pinned />
+          <SmartMenu.Sections />
+          <SmartMenu.Empty>Nothing runs on this crop</SmartMenu.Empty>
         </SmartMenu.List>
       </SmartMenu.Body>
     </SmartMenu.Root>

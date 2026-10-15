@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { Box, Home, Image } from "lucide-react";
 import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
@@ -17,7 +17,16 @@ vi.mock("@/core/ui/link", () => ({
   }) => <a href={to}>{children({ isActive: false })}</a>,
 }));
 
-import { ModuleNavCard, layoutModuleNav } from "./ModuleNavHover";
+// The card reads its pages from the module host; give it a fixed catalog.
+vi.mock("@/core/command/sources/routeCatalog", () => ({
+  routeCatalog: () => LINKS,
+  routesOfModule: (catalog: CatalogRoute[], module: string) => catalog.filter((r) => r.module === module),
+}));
+vi.mock("@/core/connection/roles", () => ({ useRoles: () => ({ roles: [] }) }));
+vi.mock("@/core/modules/host/host", () => ({ useModuleHostVersion: () => 0 }));
+
+import { layoutModuleNav } from "@/core/modules/hooks/useModuleNav";
+import { ModuleNavCard, ModuleNavMenu } from "./ModuleNavMenu";
 
 const LINKS: CatalogRoute[] = [
   { module: "m", label: "Dashboard", route: "/m/home", group: "Data", icon: Home, home: true },
@@ -66,5 +75,35 @@ describe("ModuleNavCard", () => {
     const chip = screen.getByText("Images").closest("a");
     expect(chip?.getAttribute("href")).toBe("/m/spec/image");
     expect(chip?.querySelector(".rounded-md.px-2")).toBeTruthy();
+  });
+});
+
+describe("ModuleNavMenu", () => {
+  const renderMenu = (ready = true) =>
+    render(
+      <MemoryRouter>
+        <ModuleNavMenu moduleKey="m" ready={ready} to="/m" label="Mikro" footer={<span>footer</span>}>
+          <button type="button">tile</button>
+        </ModuleNavMenu>
+      </MemoryRouter>,
+    );
+
+  it("opens the card on right-click, not on hover", () => {
+    renderMenu();
+    fireEvent.pointerEnter(screen.getByText("tile"));
+    fireEvent.mouseEnter(screen.getByText("tile"));
+    expect(screen.queryByText("Viewer scenes")).toBeNull();
+
+    fireEvent.contextMenu(screen.getByText("tile"));
+    expect(screen.getByText("Viewer scenes")).toBeTruthy();
+    expect(screen.getByText("footer")).toBeTruthy();
+  });
+
+  it("keeps the header and footer but drops the pages while the service is down", () => {
+    renderMenu(false);
+    fireEvent.contextMenu(screen.getByText("tile"));
+    expect(screen.getByText("Mikro").closest("a")?.getAttribute("href")).toBe("/m/home");
+    expect(screen.getByText("footer")).toBeTruthy();
+    expect(screen.queryByText("Viewer scenes")).toBeNull();
   });
 });
