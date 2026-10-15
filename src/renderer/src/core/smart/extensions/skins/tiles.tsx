@@ -37,7 +37,7 @@ const TileRow = (props: SkinRowProps) => {
     >
       <Tooltip>
         <TooltipTrigger className="flex w-full min-w-0 cursor-pointer flex-col items-center gap-1 text-center">
-          <CommandActionIcon icon={props.icon} svg={props.svg} className="h-7 w-7" />
+          <CommandActionIcon icon={props.icon} svg={props.svg} leading={props.leading} className="h-7 w-7" />
           <span className="line-clamp-2 w-full break-words text-[10px] leading-tight">
             {props.title}
           </span>

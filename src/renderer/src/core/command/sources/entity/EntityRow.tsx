@@ -3,7 +3,7 @@ import { ModulePaletteHitActions } from "@/core/modules/registries";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
 import { smartRegistry } from "@/core/smart/registry";
 import { Box } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { useCommandPalette } from "../../CommandPaletteProvider";
 import { useOpenTarget } from "../../useOpenTarget";
@@ -29,12 +29,15 @@ export const EntityRow = ({
   id,
   label,
   description,
+  leading,
   onDone,
 }: {
   identifier: string;
   id: string;
   label: string;
   description?: string;
+  /** A picture of the hit's own in the icon's place, e.g. an action's logo. */
+  leading?: ReactNode;
   onDone?: () => void;
 }) => {
   const openTarget = useOpenTarget();
@@ -54,6 +57,7 @@ export const EntityRow = ({
       title={label}
       description={description ?? smartRegistry.getDisplayName(identifier)}
       icon={Box}
+      leading={leading}
       onSelect={() => {
         // Alt asks about the result; the chip does the actual opening.
         if (altKey) {

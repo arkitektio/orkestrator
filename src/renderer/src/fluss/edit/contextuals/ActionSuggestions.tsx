@@ -1,3 +1,4 @@
+import { BlokLogo } from "@/rekuest/components/logo/BlokLogo";
 import { Card } from "@/core/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
@@ -23,7 +24,8 @@ export const ActionSuggestions = (props: {
           {action.stateful ? (
             <Popover>
               <PopoverTrigger asChild>
-                <Card className="px-2 py-1 border-solid border-2 border-green-300 cursor-pointer">
+                <Card className="flex items-center gap-1.5 px-2 py-1 border-solid border-2 border-green-300 cursor-pointer">
+                  <BlokLogo blok={action.logo} className="h-4 w-4" />
                   {action.name}
                 </Card>
               </PopoverTrigger>
@@ -42,10 +44,11 @@ export const ActionSuggestions = (props: {
             <Card
               onClick={() => props.onPick(action.id)}
               className={clsx(
-                "px-2 py-1 border cursor-pointer",
+                "flex items-center gap-1.5 px-2 py-1 border cursor-pointer",
                 action.scope == ActionScope.Global ? "" : "dark:border-blue-200",
               )}
             >
+              <BlokLogo blok={action.logo} className="h-4 w-4" />
               {action.name}
             </Card>
           )}

@@ -1,4 +1,5 @@
 import { useGlobalSearchQuery } from "@/rekuest/api/graphql";
+import { BlokLogo } from "@/rekuest/components/logo/BlokLogo";
 import { CommandGroup } from "cmdk";
 
 import { EntityRow } from "@/core/command/sources/entity/EntityRow";
@@ -22,6 +23,7 @@ export const RekuestEntitySearch = ({ term, onDone }: { term: string; onDone?: (
       id: a.id,
       label: a.name,
       description: a.description ?? undefined,
+      leading: a.logo ? <BlokLogo blok={a.logo} className="h-full w-full" /> : undefined,
     })),
     ...(data?.agents ?? []).map((a) => ({
       identifier: "@rekuest/agent",

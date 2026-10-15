@@ -21,6 +21,7 @@ import {
 } from "./openResult";
 import { bindShortcutKey } from "./shortcutKeybinds";
 import { actionAvailability } from "./actions";
+import { BlokLogo } from "@/rekuest/components/logo/BlokLogo";
 
 /** The Shortcuts row; the section is a descriptor in `./sections.tsx`. */
 
@@ -181,6 +182,8 @@ export const ShortcutButton = (
       title={props.shortcut.name}
       description={props.shortcut.description || (props.shortcut.bindNumber ? `Shortcut ${props.shortcut.bindNumber}` : undefined)}
       icon={Zap}
+      // The action it runs, by its logo when it has one.
+      leading={props.shortcut.action.logo ? <BlokLogo blok={props.shortcut.action.logo} className="h-full w-full" /> : undefined}
       progress={progress}
       running={doing}
       failure={error ? { title: "Could not run", detail: error } : null}

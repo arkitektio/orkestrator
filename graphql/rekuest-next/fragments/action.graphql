@@ -180,6 +180,9 @@ fragment DetailAction on Action {
 
 fragment PrimaryAction on Action {
   id
+  logo {
+    ...BlokLogo
+  }
   stateful
   name
   hash

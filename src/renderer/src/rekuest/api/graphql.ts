@@ -6494,7 +6494,10 @@ export type DetailActionFragment = (
   & GraphNodeActionFragment
 );
 
-export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, assignable: boolean, liveImplementations: number, description?: string | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
+export type PrimaryActionFragment = { __typename?: 'Action', id: string, stateful: boolean, name: string, hash: any, assignable: boolean, liveImplementations: number, description?: string | null, logo?: (
+    { __typename?: 'Blok' }
+    & BlokLogoFragment
+  ) | null, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string }>, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean, default?: any | null }>, returns: Array<{ __typename?: 'ReturnPort', key: string, label?: string | null, identifier?: any | null, kind: PortKind }> };
 
 export type HoverActionFragment = { __typename?: 'Action', id: string, name: string, description?: string | null, kind: ActionKind, stateful: boolean, logo?: (
     { __typename?: 'Blok' }
@@ -7323,7 +7326,10 @@ export type ShortcutFragment = { __typename?: 'Shortcut', id: string, name: stri
     & ReturnPortFragment
   )> };
 
-export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, action: { __typename?: 'Action', id: string, assignable: boolean }, args: Array<(
+export type ListShortcutFragment = { __typename?: 'Shortcut', id: string, name: string, description?: string | null, bindNumber?: number | null, savedArgs: any, allowQuick: boolean, action: { __typename?: 'Action', id: string, assignable: boolean, logo?: (
+      { __typename?: 'Blok' }
+      & BlokLogoFragment
+    ) | null }, args: Array<(
     { __typename?: 'ArgPort' }
     & ArgPortFragment
   )>, returns: Array<(
@@ -9466,6 +9472,9 @@ export const SearchActionFragmentDoc = gql`
 export const PrimaryActionFragmentDoc = gql`
     fragment PrimaryAction on Action {
   id
+  logo {
+    ...BlokLogo
+  }
   stateful
   name
   hash
@@ -9490,7 +9499,7 @@ export const PrimaryActionFragmentDoc = gql`
   }
   description
 }
-    `;
+    ${BlokLogoFragmentDoc}`;
 export const HoverActionFragmentDoc = gql`
     fragment HoverAction on Action {
   id
@@ -11594,6 +11603,9 @@ export const ListShortcutFragmentDoc = gql`
   action {
     id
     assignable
+    logo {
+      ...BlokLogo
+    }
   }
   bindNumber
   savedArgs
@@ -11605,7 +11617,8 @@ export const ListShortcutFragmentDoc = gql`
   }
   allowQuick
 }
-    ${ArgPortFragmentDoc}
+    ${BlokLogoFragmentDoc}
+${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}`;
 export const SpacePlacementFragmentDoc = gql`
     fragment SpacePlacement on Placement {

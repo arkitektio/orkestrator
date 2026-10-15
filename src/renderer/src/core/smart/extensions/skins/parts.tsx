@@ -9,9 +9,24 @@ import { useCompactRows, type RowPin } from "../rowPin";
 export const CommandActionIcon = (props: {
   icon?: React.ComponentType<{ className?: string }> | null;
   svg?: string | null;
+  leading?: React.ReactNode;
   className?: string;
 }) => {
   const compact = useCompactRows();
+  if (props.leading) {
+    // A picture of its own (an action's logo) fills the box the icon sits in.
+    return (
+      <span
+        className={cn(
+          "flex shrink-0 items-center justify-center overflow-hidden rounded-md",
+          compact ? "h-6 w-6" : "h-8 w-8",
+          props.className,
+        )}
+      >
+        {props.leading}
+      </span>
+    );
+  }
   if (props.svg) {
     return (
       <span

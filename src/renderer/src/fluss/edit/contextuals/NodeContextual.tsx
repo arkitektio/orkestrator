@@ -1,3 +1,4 @@
+import { BlokLogo } from "@/rekuest/components/logo/BlokLogo";
 import {
   Command,
   CommandEmpty,
@@ -37,7 +38,8 @@ export const NodeContextual = ({ params }: { params: NodeContextualParams }) => 
           <CommandEmpty>No actions found.</CommandEmpty>
           <CommandGroup heading={appFilter ? `Actions of ${appFilter}` : "Actions"}>
             {actions.map((action) => (
-              <CommandItem key={action.id} onSelect={() => onSelect(action.id)}>
+              <CommandItem key={action.id} onSelect={() => onSelect(action.id)} className="gap-2">
+                <BlokLogo blok={action.logo} className="h-4 w-4" />
                 {action.name} ({action.version})
               </CommandItem>
             ))}

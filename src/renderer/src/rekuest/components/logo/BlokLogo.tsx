@@ -1,8 +1,13 @@
 import * as React from "react";
 import { cn } from "@/core/util/utils";
-import DemoBlokRenderer from "@/rekuest/components/DemoBlokRenderer";
 import { AgentLogoFragment, BlokLogoFragment, useLogoBlokQuery } from "@/rekuest/api/graphql";
 import { inlineDrawing, loadLogo, saveLogo, serializeDrawing } from "./logoCache";
+
+/**
+ * The blok renderer, loaded only for a first drawing: a list whose logos are all
+ * kept never loads it, and neither does code that merely imports this module.
+ */
+const DemoBlokRenderer = React.lazy(() => import("@/rekuest/components/DemoBlokRenderer"));
 
 /** How long a first drawing must stay unchanged before it is kept. */
 const SETTLE_MS = 150;
@@ -110,12 +115,14 @@ const FirstDrawing = ({
   return (
     <span ref={container} data-logo-host="" className={className}>
       {blok && (
+        <React.Suspense fallback={null}>
         <DemoBlokRenderer
           blok={{ id: blok.id, componentTree: blok.componentTree, demoState: blok.demoState }}
           surfaceId={`logo-${blok.id}`}
           chrome="none"
           refuseAction={REFUSE_EVERY_ACTION}
         />
+        </React.Suspense>
       )}
     </span>
   );

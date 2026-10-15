@@ -30,6 +30,7 @@ import {
   type OpenableReturn,
 } from "./openResult";
 import { useRunOnSubmenu } from "./runOnContext";
+import { BlokLogo } from "@/rekuest/components/logo/BlokLogo";
 
 /**
  * The rows of the rekuest sections (Run, Batch, and the "Run on" picker). The sections themselves — queries, headings, status — are
@@ -418,6 +419,7 @@ export const AssignButton = (
         ) : null
       }
       icon={PlayCircle}
+      leading={props.action.logo ? <BlokLogo blok={props.action.logo} className="h-full w-full" /> : undefined}
     />
   );
 };
@@ -516,6 +518,7 @@ export const BatchAssignButton = (
       failure={inlineErrorToast}
       unavailable={actionAvailability(props.action)}
       icon={Boxes}
+      leading={props.action.logo ? <BlokLogo blok={props.action.logo} className="h-full w-full" /> : undefined}
     />
   );
 };
