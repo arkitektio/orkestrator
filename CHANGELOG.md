@@ -1,3 +1,14 @@
+# [3.3.0](https://github.com/arkitektio/orkestrator/compare/v3.2.0...v3.3.0) (2026-10-15)
+
+
+### Features
+
+* **blok:** action logos paint with the brand palette, animate, and draw the viewer's task ([d7119d1](https://github.com/arkitektio/orkestrator/commit/d7119d1fb4e47825e30fafe62d6a0e8b51059dd0))
+* **blok:** logo bloks draw SVG, and an agent's logo shows beside its name ([d470d6d](https://github.com/arkitektio/orkestrator/commit/d470d6dec8147241626687dc320b5d5e5e0097e2))
+* module homes, lineage page, scene results, kraph term creation ([51805de](https://github.com/arkitektio/orkestrator/commit/51805de7abc228b4c2fdf419f108e833a4bedb9a))
+* **rekuest:** an action shows the logo it is drawn by ([1d30b21](https://github.com/arkitektio/orkestrator/commit/1d30b211c90e77df0100c7cc60f8b3961645f5a3))
+* **rekuest:** an action's logo in the context menus and in search ([c850cb0](https://github.com/arkitektio/orkestrator/commit/c850cb094b9bedd1878a19decbb6a00a3910f689))
+
 # [3.2.0](https://github.com/arkitektio/orkestrator/compare/v3.1.0...v3.2.0) (2026-10-14)
 
 
