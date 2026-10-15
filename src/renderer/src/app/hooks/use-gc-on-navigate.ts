@@ -31,19 +31,32 @@ export const useGcOnNavigate = () => {
   useEffect(() => {
     const now = Date.now();
     if (now - lastRunRef.current < THROTTLE_MS) return;
-    lastRunRef.current = now;
 
-    const serviceMap = connectionRef.current?.serviceMap;
-    if (!serviceMap) return;
+    // A full traversal of a big cache is a long task: run it after the new
+    // page has rendered, when the browser is idle, not inside the transition.
+    const sweep = () => {
+      // Stamped when it runs: a sweep cancelled by a quick second navigation
+      // must not count against the throttle.
+      lastRunRef.current = Date.now();
+      const serviceMap = connectionRef.current?.serviceMap;
+      if (!serviceMap) return;
 
-    for (const service of Object.values(serviceMap)) {
-      if (service?.type !== "apollo") continue;
-      try {
-        (service.client as ApolloClient<unknown>).cache.gc();
-      } catch (e) {
-        console.warn("[gc-on-navigate] cache.gc failed for service:", e);
+      for (const service of Object.values(serviceMap)) {
+        if (service?.type !== "apollo") continue;
+        try {
+          (service.client as ApolloClient<unknown>).cache.gc();
+        } catch (e) {
+          console.warn("[gc-on-navigate] cache.gc failed for service:", e);
+        }
       }
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const handle = window.requestIdleCallback(sweep, { timeout: 5_000 });
+      return () => window.cancelIdleCallback(handle);
     }
+    const timer = window.setTimeout(sweep, 1_000);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 };
 

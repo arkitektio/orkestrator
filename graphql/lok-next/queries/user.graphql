@@ -10,6 +10,23 @@ query User($id: ID!) {
   }
 }
 
+# Every user a page's rows mention, in one request (`lok/lib/userChips.ts`).
+# The limit is the batch's size: `users` is paginated, and a default page
+# smaller than the batch would leave the rest unanswered.
+query UserChips($ids: [ID!]!, $limit: Int!) {
+  users(filters: { ids: $ids }, pagination: { limit: $limit }) {
+    ...UserChip
+  }
+}
+
+# One user as rows show them: what a chip is written to the cache as, so it
+# hangs off `user(id)` and survives `cache.gc()`.
+query UserChip($id: ID!) {
+  user(id: $id) {
+    ...UserChip
+  }
+}
+
 query DetailUser($id: ID!) {
   user(id: $id) {
     ...DetailUser

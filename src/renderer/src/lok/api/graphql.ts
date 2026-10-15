@@ -2162,6 +2162,8 @@ export type DetailUserFragment = { __typename?: 'User', id: string, username: st
 
 export type MeUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null };
 
+export type UserChipFragment = { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
+
 export type CreateClientMutationVariables = Exact<{
   identifier: Scalars['String']['input'];
   version: Scalars['String']['input'];
@@ -2799,6 +2801,27 @@ export type UserQueryVariables = Exact<{
 export type UserQuery = { __typename?: 'Query', user: (
     { __typename?: 'User' }
     & DetailUserFragment
+  ) };
+
+export type UserChipsQueryVariables = Exact<{
+  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  limit: Scalars['Int']['input'];
+}>;
+
+
+export type UserChipsQuery = { __typename?: 'Query', users: Array<(
+    { __typename?: 'User' }
+    & UserChipFragment
+  )> };
+
+export type UserChipQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type UserChipQuery = { __typename?: 'Query', user: (
+    { __typename?: 'User' }
+    & UserChipFragment
   ) };
 
 export type DetailUserQueryVariables = Exact<{
@@ -3504,6 +3527,18 @@ export const MeUserFragmentDoc = gql`
   firstName
   lastName
   avatar
+}
+    `;
+export const UserChipFragmentDoc = gql`
+    fragment UserChip on User {
+  id
+  username
+  profile {
+    id
+    avatar {
+      presignedUrl
+    }
+  }
 }
     `;
 export const CreateClientDocument = gql`
@@ -5848,6 +5883,77 @@ export function useUserLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOpt
 export type UserQueryHookResult = ReturnType<typeof useUserQuery>;
 export type UserLazyQueryHookResult = ReturnType<typeof useUserLazyQuery>;
 export type UserQueryResult = Apollo.QueryResult<UserQuery, UserQueryVariables>;
+export const UserChipsDocument = gql`
+    query UserChips($ids: [ID!]!, $limit: Int!) {
+  users(filters: {ids: $ids}, pagination: {limit: $limit}) {
+    ...UserChip
+  }
+}
+    ${UserChipFragmentDoc}`;
+
+/**
+ * __useUserChipsQuery__
+ *
+ * To run a query within a React component, call `useUserChipsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useUserChipsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useUserChipsQuery({
+ *   variables: {
+ *      ids: // value for 'ids'
+ *      limit: // value for 'limit'
+ *   },
+ * });
+ */
+export function useUserChipsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<UserChipsQuery, UserChipsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<UserChipsQuery, UserChipsQueryVariables>(UserChipsDocument, options);
+      }
+export function useUserChipsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<UserChipsQuery, UserChipsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<UserChipsQuery, UserChipsQueryVariables>(UserChipsDocument, options);
+        }
+export type UserChipsQueryHookResult = ReturnType<typeof useUserChipsQuery>;
+export type UserChipsLazyQueryHookResult = ReturnType<typeof useUserChipsLazyQuery>;
+export type UserChipsQueryResult = Apollo.QueryResult<UserChipsQuery, UserChipsQueryVariables>;
+export const UserChipDocument = gql`
+    query UserChip($id: ID!) {
+  user(id: $id) {
+    ...UserChip
+  }
+}
+    ${UserChipFragmentDoc}`;
+
+/**
+ * __useUserChipQuery__
+ *
+ * To run a query within a React component, call `useUserChipQuery` and pass it any options that fit your needs.
+ * When your component renders, `useUserChipQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useUserChipQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useUserChipQuery(baseOptions: ApolloReactHooks.QueryHookOptions<UserChipQuery, UserChipQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<UserChipQuery, UserChipQueryVariables>(UserChipDocument, options);
+      }
+export function useUserChipLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<UserChipQuery, UserChipQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<UserChipQuery, UserChipQueryVariables>(UserChipDocument, options);
+        }
+export type UserChipQueryHookResult = ReturnType<typeof useUserChipQuery>;
+export type UserChipLazyQueryHookResult = ReturnType<typeof useUserChipLazyQuery>;
+export type UserChipQueryResult = Apollo.QueryResult<UserChipQuery, UserChipQueryVariables>;
 export const DetailUserDocument = gql`
     query DetailUser($id: ID!) {
   user(id: $id) {

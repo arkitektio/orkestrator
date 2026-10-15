@@ -82,6 +82,9 @@ fragment ListImplementation on Implementation {
   execution
   action {
     id
+    logo {
+      ...BlokLogo
+    }
     description
     name
     stateful

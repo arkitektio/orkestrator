@@ -3,6 +3,7 @@ import { useDialog } from "@/core/dialogs/registry";
 import { cn } from "@/core/util/utils";
 import { RekuestImplementation } from "@/core/linkers";
 import { ListImplementationFragment } from "@/rekuest/api/graphql";
+import { ActionLogo } from "@/rekuest/components/logo/ActionLogo";
 import { PlayCircle } from "lucide-react";
 import { useCallback } from "react";
 
@@ -30,7 +31,12 @@ const AgentImplementationCard = ({ item }: Props) => {
           "hover:bg-accent hover:border-accent-foreground/20 transition-colors",
         )}
       >
-        <PlayCircle className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+        {/* Its logo, when the action brings one, in the run icon's place. */}
+        {item.action.logo ? (
+          <ActionLogo action={item.action} className="h-4 w-4" />
+        ) : (
+          <PlayCircle className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
+        )}
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium leading-none truncate">
             {item.action.name}

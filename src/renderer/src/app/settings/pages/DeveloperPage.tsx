@@ -11,6 +11,7 @@ import { useDebug } from "@/core/debug/DebugContext";
 import { Bug } from "lucide-react";
 import { SettingsPage } from "../components/SettingsPage";
 import { ViewAsRolesCard } from "../components/ViewAsRolesCard";
+import { ClassicPerfCard } from "../components/ClassicPerfCard";
 
 export const DeveloperPage = () => {
   const { debug, setDebug } = useDebug();
@@ -58,6 +59,8 @@ export const DeveloperPage = () => {
       </Card>
 
       <ViewAsRolesCard />
+
+      <ClassicPerfCard />
     </SettingsPage>
   );
 };

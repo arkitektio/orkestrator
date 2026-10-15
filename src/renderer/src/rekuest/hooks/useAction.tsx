@@ -11,7 +11,7 @@ import {
   useCancelTask,
   useReassignFromTask,
 } from "./useAssign";
-import { useFilteredTasks } from "./useTasks";
+import { useMyLatestTask } from "../lib/taskIndex";
 
 export type useActionReturn = {
   assign: (
@@ -19,7 +19,6 @@ export type useActionReturn = {
   ) => Promise<PostmanTaskFragment>;
   reassign: () => Promise<PostmanTaskFragment>;
   cancel: () => void;
-  tasks?: LiveTaskFragment[];
   latestTask?: LiveTaskFragment;
   action: DetailActionFragment | undefined;
 };
@@ -37,8 +36,9 @@ export const useAction = (
     },
   });
 
-  const tasks = useFilteredTasks({ action: options.id, allowDone: true });
-  const latestTask = tasks.at(-1);
+  // The one latest task of this action, not the whole list: a tick on
+  // another task does not re-render this caller (see `taskIndex`).
+  const latestTask = useMyLatestTask({ action: options.id });
 
   const { assign } = useAssign();
   const { cancel: cancelTask } = useCancelTask();
@@ -63,7 +63,6 @@ export const useAction = (
     reassign,
     latestTask,
     cancel,
-    tasks,
     action: data?.action,
   };
 };

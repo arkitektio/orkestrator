@@ -82,7 +82,7 @@ export type Action = {
   latestTask?: Maybe<Task>;
   /** How many of its implementations sit on an agent that can take work now (connected, or a webhook agent) — one per agent. Kept by the database as agents connect and leave, a moment behind (takt recomputes it on commit); a crashed agent counts until takt's stale sweep notices (seconds). */
   liveImplementations: Scalars['Int']['output'];
-  /** A logo that draws this action: that of the implementation most recently registered with one. Each implementation has its own (`Implementation.logo`); an action without one is drawn by its agent's default logo. */
+  /** The action logo that draws this action: that of the implementation most recently registered with one (`Action.latest_logo`, kept by takt). Each implementation has its own (`Implementation.logo`); an action without one is drawn by its agent's default logo. */
   logo?: Maybe<Blok>;
   /** Name of the action. */
   name: Scalars['String']['output'];
@@ -1365,6 +1365,7 @@ export type CollectionActionsArgs = {
 
 /** The renderer a catalog component lives in. A component may only be placed where its context is in force. */
 export enum ComponentContext {
+  ActionLogo = 'ACTION_LOGO',
   Html = 'HTML',
   Logo = 'LOGO',
   Scene = 'SCENE'
@@ -2189,7 +2190,7 @@ export type Implementation = {
   interface: Scalars['String']['output'];
   /** The agent's locks this implementation takes while it runs. */
   locks: Array<Lock>;
-  /** The agent's logo blok (context LOGO) that draws this implementation's action, if it declared one. */
+  /** The agent's action logo blok (context ACTION_LOGO) that draws this implementation's action, if it declared one. */
   logo?: Maybe<Blok>;
   /** The higher-order implementations that wrap this implementation. */
   lowerOrderImplementations: Array<Implementation>;
@@ -2295,7 +2296,7 @@ export type ImplementationInput = {
   interface?: InputMaybe<Scalars['String']['input']>;
   /** The locks of the implementation. This is used to specify which resources the implementation needs to run */
   locks?: InputMaybe<Array<Scalars['String']['input']>>;
-  /** The key of the agent's logo blok (context LOGO) that draws this action. */
+  /** The key of the agent's action logo blok (context ACTION_LOGO) that draws this action. */
   logo?: InputMaybe<Scalars['String']['input']>;
   /** The states that the implementation manipulates. This is used to identify which states are manipulated by the implementation, and can be use to enhance state safety in the system */
   manipulates?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -5453,6 +5454,12 @@ export type Task = {
   latestEventKind: TaskEventKind;
   /** Last instruction type. */
   latestInstructKind: TaskInstructKind;
+  /** Message of the latest event that carried one. */
+  latestMessage?: Maybe<Scalars['String']['output']>;
+  /** Progress (0-100) of the latest PROGRESS event that carried one. Kept as events are recorded: follow a task with this, not with its events. */
+  latestProgress?: Maybe<Scalars['Int']['output']>;
+  /** Returns of the latest YIELD event. */
+  latestReturns?: Maybe<Scalars['AnyDefault']['output']>;
   /** The task is held back until then (a delayed task); null = dispatched on creation. */
   notBefore?: Maybe<Scalars['DateTime']['output']>;
   /** Parent task that triggered this one. */
@@ -6812,7 +6819,10 @@ export type DetailImplementationFragment = { __typename?: 'Implementation', id: 
     & PostmanTaskFragment
   ) | null };
 
-export type ListImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, execution: Execution, action: { __typename?: 'Action', id: string, description?: string | null, name: string, stateful: boolean }, agent: { __typename?: 'Agent', name: string, active: boolean } };
+export type ListImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, execution: Execution, action: { __typename?: 'Action', id: string, description?: string | null, name: string, stateful: boolean, logo?: (
+      { __typename?: 'Blok' }
+      & BlokLogoFragment
+    ) | null }, agent: { __typename?: 'Agent', name: string, active: boolean } };
 
 export type MinimalImplementationFragment = { __typename?: 'Implementation', id: string, interface: string, agent: { __typename?: 'Agent', name: string } };
 
@@ -7414,7 +7424,7 @@ export type StructurePackageFragment = { __typename?: 'StructurePackage', key: s
 
 export type ListStructurePackageFragment = { __typename?: 'StructurePackage', key: string, id: string };
 
-export type PostmanTaskFragment = { __typename?: 'Task', id: string, latestEventKind: TaskEventKind, args: any, reference?: string | null, isDone: boolean, dependencyMethod?: string | null, dependency?: string | null, dependencies: any, createdAt: any, finishedAt?: any | null, events: Array<(
+export type PostmanTaskFragment = { __typename?: 'Task', id: string, latestEventKind: TaskEventKind, latestProgress?: number | null, latestMessage?: string | null, latestReturns?: any | null, args: any, reference?: string | null, isDone: boolean, dependencyMethod?: string | null, dependency?: string | null, dependencies: any, createdAt: any, finishedAt?: any | null, events: Array<(
     { __typename?: 'TaskEvent' }
     & TaskEventFragment
   )>, action: (
@@ -7422,7 +7432,7 @@ export type PostmanTaskFragment = { __typename?: 'Task', id: string, latestEvent
     & PortsFragment
   ), implementation?: { __typename?: 'Implementation', id: string, interface: string, higherOrderFor?: { __typename?: 'Implementation', id: string, action: { __typename?: 'Action', id: string, key: string } } | null } | null };
 
-export type LiveTaskFragment = { __typename?: 'Task', id: string, latestEventKind: TaskEventKind, args: any, reference?: string | null, isDone: boolean, dependencyMethod?: string | null, dependency?: string | null, dependencies: any, createdAt: any, finishedAt?: any | null, events: Array<(
+export type LiveTaskFragment = { __typename?: 'Task', id: string, latestEventKind: TaskEventKind, latestProgress?: number | null, latestMessage?: string | null, latestReturns?: any | null, args: any, reference?: string | null, isDone: boolean, dependencyMethod?: string | null, dependency?: string | null, dependencies: any, createdAt: any, finishedAt?: any | null, events: Array<(
     { __typename?: 'TaskEvent' }
     & TaskEventFragment
   )>, action: { __typename?: 'Action', hash: any, id: string, name: string, args: Array<{ __typename?: 'ArgPort', key: string, kind: PortKind, identifier?: any | null }> }, implementation?: { __typename?: 'Implementation', id: string, interface: string, higherOrderFor?: { __typename?: 'Implementation', id: string, action: { __typename?: 'Action', id: string, key: string } } | null } | null };
@@ -10236,6 +10246,9 @@ export const ListImplementationFragmentDoc = gql`
   execution
   action {
     id
+    logo {
+      ...BlokLogo
+    }
     description
     name
     stateful
@@ -10245,7 +10258,7 @@ export const ListImplementationFragmentDoc = gql`
     active
   }
 }
-    `;
+    ${BlokLogoFragmentDoc}`;
 export const ListTaskFragmentDoc = gql`
     fragment ListTask on Task {
   id
@@ -11368,6 +11381,9 @@ export const PostmanTaskFragmentDoc = gql`
     fragment PostmanTask on Task {
   id
   latestEventKind
+  latestProgress
+  latestMessage
+  latestReturns
   args
   reference
   isDone
@@ -11833,10 +11849,13 @@ export const LiveTaskFragmentDoc = gql`
     fragment LiveTask on Task {
   id
   latestEventKind
+  latestProgress
+  latestMessage
+  latestReturns
   args
   reference
   isDone
-  events(ordering: {createdAt: DESC}) {
+  events(ordering: {createdAt: DESC}, pagination: {limit: 25}) {
     ...TaskEvent
   }
   action {

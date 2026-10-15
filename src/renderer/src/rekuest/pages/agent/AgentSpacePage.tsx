@@ -8,6 +8,7 @@ import type { } from "@react-three/fiber";
 import { Canvas } from "@react-three/fiber";
 import { createElement, Suspense } from "react";
 import { REKUEST_HELP } from "../../help";
+import { useKeepTabLive } from "@/core/tabs/keepLive";
 
 const toyCarUrl = new URL(
   "../../../../../../resources/Box.glb",
@@ -29,6 +30,8 @@ const ToyCarModel = () => {
 };
 
 const SpaceScene = () => {
+  // A frozen tab would drop the GPU context: stay live hidden.
+  useKeepTabLive();
   return (
     <div className="relative flex-1 min-h-[340px] overflow-hidden rounded-2xl border border-amber-300/40 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.14),_transparent_35%),linear-gradient(180deg,_rgba(24,24,27,0.2),_rgba(9,9,11,0.92))] shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
       <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-5 py-4">

@@ -133,15 +133,22 @@ export const useLatestTask = (options: FilterOptions) => {
   return latestTask;
 };
 
+/** A task as `deriveLiveState` reads it: the latest-report fields when it has them. */
+type DerivableTask = LiveTaskFragment | (Omit<LiveTaskFragment, "latestProgress" | "latestMessage" | "latestReturns"> &
+  Partial<Pick<LiveTaskFragment, "latestProgress" | "latestMessage" | "latestReturns">>);
+
 export const deriveLiveState = (
-  task: LiveTaskFragment | undefined,
+  task: DerivableTask | undefined,
 ) => {
-  const latestProgress = task?.events
-    .filter((x) => x.kind == TaskEventKind.Progress)
-    .at(0)?.progress;
-  const latestYield = task?.events
-    .filter((x) => x.kind == TaskEventKind.Yield)
-    .at(0)?.returns;
+  // The server keeps the latest report on the task; the event window is the
+  // fallback for a shape that does not select it (and may have scrolled past
+  // a yield).
+  const latestProgress =
+    task?.latestProgress ??
+    task?.events.filter((x) => x.kind == TaskEventKind.Progress).at(0)?.progress;
+  const latestYield =
+    task?.latestReturns ??
+    task?.events.filter((x) => x.kind == TaskEventKind.Yield).at(0)?.returns;
   const done = task?.events
     .filter((x) => x.kind == TaskEventKind.Completed)
     .at(0);
@@ -157,9 +164,8 @@ export const deriveLiveState = (
     )
     .at(0)?.message;
 
-  const latestMessage = task?.events.find(
-    (x) => x.message != undefined,
-  )?.message;
+  const latestMessage =
+    task?.latestMessage ?? task?.events.find((x) => x.message != undefined)?.message;
 
   return {
     progress:

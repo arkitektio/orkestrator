@@ -13,7 +13,7 @@ import {
   useCancelTask,
   useReassignFromTask,
 } from "./useAssign";
-import { useFilteredTasks } from "./useTasks";
+import { useMyLatestTask } from "../lib/taskIndex";
 
 export type UseImplementationActionReturn = {
   implementation?: DetailImplementationFragment;
@@ -23,7 +23,6 @@ export type UseImplementationActionReturn = {
   ) => Promise<PostmanTaskFragment>;
   reassign: () => Promise<PostmanTaskFragment>;
   cancel: () => void;
-  tasks?: LiveTaskFragment[];
   latestTask?: LiveTaskFragment;
 };
 
@@ -40,12 +39,9 @@ export const useImplementationAction = (
     },
   });
 
-  const tasks = useFilteredTasks({
-    implementation: options.id,
-    allowDone: true,
-  });
+  const liveLatest = useMyLatestTask({ implementation: options.id });
 
-  const latestTask = data?.implementation.myLatestTask || tasks.at(0);
+  const latestTask = data?.implementation.myLatestTask || liveLatest;
 
   const { assign: rawAssign } = useAssign();
   const { cancel: cancelTask } = useCancelTask();
@@ -80,7 +76,6 @@ export const useImplementationAction = (
     reassign,
     latestTask,
     cancel,
-    tasks,
     implementation: data?.implementation,
     error,
   };

@@ -90,6 +90,9 @@ export const DoForm = ({ id }: { id: string }) => {
   const yieldEvent = latestTask?.events?.find(
     (x) => x.kind == TaskEventKind.Yield,
   );
+  // The task's latest returns as the server keeps them: the event list a live
+  // task carries is a window, and later logs can push a yield out of it.
+  const yieldReturns = latestTask?.latestReturns ?? yieldEvent?.returns;
 
   const errorEvent = latestTask?.events?.find(
     (x) => x.kind == TaskEventKind.Critical,
@@ -129,7 +132,7 @@ export const DoForm = ({ id }: { id: string }) => {
               </Button>
             </div>
 
-            {yieldEvent ? (
+            {yieldReturns ? (
               <Card className="flex-1 p-2">
                 <CardHeader>
                   <CardTitle className="font-light">Outs</CardTitle>
@@ -140,7 +143,7 @@ export const DoForm = ({ id }: { id: string }) => {
                     <ReturnsContainer
                       registry={registry}
                       ports={implementation?.action.returns || []}
-                      values={yieldEvent?.returns}
+                      values={yieldReturns}
                     ></ReturnsContainer>
                   </div>
                 </CardContent>

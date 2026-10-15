@@ -1,4 +1,5 @@
 import { useDebugReport } from "@/core/debug/useDebugReport";
+import { useRefetchOnReveal } from "@/core/tabs/keepLive";
 import {
   ApolloQueryResult,
   OperationVariables,
@@ -52,6 +53,8 @@ export const asParamlessRoute = <T extends unknown>(
       hook({
         ...options.queryOptions,
       });
+    // A frozen tab lost its subscription events: catch up when it is shown.
+    useRefetchOnReveal(passyProps.refetch, !!direct);
     useDebugReport(Component.displayName ?? Component.name ?? "page", {
       variables: options.queryOptions?.variables,
       data: passyProps.data,

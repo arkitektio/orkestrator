@@ -25,6 +25,7 @@ const CONTEXTS: Record<ComponentContext, { label: string; icon: typeof Box }> = 
   [ComponentContext.Scene]: { label: "3D scene", icon: Box },
   [ComponentContext.Html]: { label: "Panel", icon: LayoutPanelTop },
   [ComponentContext.Logo]: { label: "Logo", icon: Shapes },
+  [ComponentContext.ActionLogo]: { label: "Action logo", icon: Shapes },
 };
 
 const MaterializedBlokCard = ({ item }: Props) => {

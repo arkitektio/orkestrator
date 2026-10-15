@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { RunEventFragment } from "@/fluss/api/graphql";
 import { NodeShowLayout } from "../base/NodeShow";
 import { createEditFlowStore } from "../edit/store";
-import { TrackRiverContext } from "../track/context";
+import { createRunStateStore, TrackRiverContext } from "../track/context";
 import { linearGraph, makeNode } from "../validation/fixtures";
 import { createEditAdapter, FlowAdapterProvider, showAdapter, trackAdapter, useFlowAdapter } from "./adapter";
 
@@ -65,10 +65,10 @@ describe("FlowAdapter", () => {
       return <div>{status?.kind ?? "none"}</div>;
     };
     const event = { id: "e", source: "mid", kind: "COMPLETE", t: 1 } as unknown as RunEventFragment;
+    const runStore = createRunStateStore();
+    runStore.setState({ t: 1, latestBySource: new Map([["mid", event]]) });
     render(
-      <TrackRiverContext.Provider
-        value={{ setRunState: () => {}, runState: { t: 1, latestBySource: new Map([["mid", event]]) } }}
-      >
+      <TrackRiverContext.Provider value={{ setRunState: () => {}, runStore }}>
         <FlowAdapterProvider adapter={trackAdapter}>
           <Probe />
         </FlowAdapterProvider>

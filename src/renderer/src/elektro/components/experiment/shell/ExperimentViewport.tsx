@@ -1,5 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
+import { useKeepTabLive } from "@/core/tabs/keepLive";
 import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
 import { RendererDisposer } from "@/core/data/scene/gpu/RendererDisposer";
 import { AnnotationDrawer } from "../features/annotations/AnnotationDrawer";
@@ -72,6 +73,8 @@ export const ExperimentMiniViewport = () => <ExperimentViewport variant="mini" /
 const ReadyViewport = ({ variant }: { variant: ExperimentViewportVariant }) => {
   const full = variant === "full";
   const visible = useTabVisible();
+  // A frozen tab would drop the GPU context and its uploads: stay live hidden.
+  useKeepTabLive();
   const rowCount = useViewerStore((s) => s.rowCount);
 
   return (

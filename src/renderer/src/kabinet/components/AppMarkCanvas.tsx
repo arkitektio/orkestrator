@@ -2,6 +2,7 @@ import { AppMark, MarkCanvas } from "@/kabinet/lib/marks";
 import { cn } from "@/core/util/utils";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
 import type { AppIdentity } from "../appIdentity";
+import { useKeepTabLive } from "@/core/tabs/keepLive";
 
 /**
  * An app's mark, drawn live rather than rasterised.
@@ -24,6 +25,8 @@ export const AppMarkCanvas = ({
   // already draws nothing; "never" also stops the stray frame a resize would
   // otherwise trigger.
   const visible = useTabVisible();
+  // A frozen tab would drop the GPU context: stay live hidden.
+  useKeepTabLive();
 
   return (
     <div className={cn("relative size-24 shrink-0", className)}>

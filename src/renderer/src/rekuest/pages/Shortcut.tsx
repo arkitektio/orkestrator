@@ -52,6 +52,9 @@ export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
   const yieldEvent = latestTask?.events.find(
     (x) => x.kind == TaskEventKind.Yield,
   );
+  // The task's latest returns as the server keeps them: the event list a live
+  // task carries is a window, and later logs can push a yield out of it.
+  const yieldReturns = latestTask?.latestReturns ?? yieldEvent?.returns;
 
   const errorEvent = latestTask?.events.find(
     (x) => x.kind == TaskEventKind.Critical,
@@ -88,7 +91,7 @@ export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
               </Button>
             </div>
 
-            {yieldEvent ? (
+            {yieldReturns ? (
               <Card className="flex-1">
                 <CardHeader>
                   <CardTitle className="font-light">Outs</CardTitle>
@@ -99,7 +102,7 @@ export const ShortcutForm = ({ shortcut }: { shortcut: ShortcutFragment }) => {
                     <ReturnsContainer
                       registry={registry}
                       ports={shortcut.returns}
-                      values={yieldEvent?.returns}
+                      values={yieldReturns}
                     ></ReturnsContainer>
                   </div>
                 </CardContent>

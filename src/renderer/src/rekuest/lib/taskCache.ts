@@ -34,6 +34,16 @@ import {
 type RekuestClient = ApolloClient<unknown>;
 
 /**
+ * The window a paginated `events` entry holds, read off its store field name
+ * (`events({"ordering":…,"pagination":{"limit":25}})`); `undefined` for the
+ * unpaginated entry, which is a detail view's full history.
+ */
+export const eventWindowOf = (storeFieldName: string): number | undefined => {
+  const match = /"pagination":\{[^}]*"limit":(\d+)/.exec(storeFieldName);
+  return match ? Number(match[1]) : undefined;
+};
+
+/**
  * Merge a single (synthesized) task event into the normalized `Task:<id>` entity.
  * Works for any cached task — top-level or child — and returns whether the
  * entity existed (so the caller can buffer events that raced ahead of hydration).
@@ -46,7 +56,7 @@ export const writeTaskEventToCache = (
   client.cache.modify({
     id: client.cache.identify({ __typename: "Task", id: event.task }),
     fields: {
-      events(existing, { toReference, readField }) {
+      events(existing, { toReference, readField, storeFieldName }) {
         const list: readonly Reference[] = Array.isArray(existing)
           ? existing
           : [];
@@ -67,7 +77,14 @@ export const writeTaskEventToCache = (
           { ...synth, task: toReference({ __typename: "Task", id: event.task }) },
           true,
         );
-        return ref ? [ref, ...list] : list;
+        if (!ref) return list;
+        // The modifier runs on EVERY stored variant of `events`. The live list
+        // (`LiveTask`, paginated) keeps its window, so a long-running task
+        // costs the same on its 10 000th event as on its 10th; the
+        // unpaginated variant is a detail page's full history and stays whole.
+        const size = eventWindowOf(storeFieldName);
+        const next = [ref, ...list];
+        return size !== undefined && next.length > size ? next.slice(0, size) : next;
       },
       // An ended task stays ended: what arrives after it (a LATE_REPORT) is
       // an annotation, never a new state.
@@ -81,8 +98,61 @@ export const writeTaskEventToCache = (
       isDone: (prev: boolean) => prev || isTerminalEvent(event.kind),
       finishedAt: (prev: string | null) =>
         isTerminalEvent(event.kind) ? event.createdAt : prev,
+      // The task's latest report, as the server keeps it (takt `insert_event`).
+      latestProgress: (prev: number | null) =>
+        event.kind === TaskEventKind.Progress && event.progress != null ? event.progress : prev,
+      latestMessage: (prev: string | null) => event.message ?? prev,
+      latestReturns: (prev: unknown) => (event.kind === TaskEventKind.Yield ? (event.returns ?? null) : prev),
     },
   });
+
+/**
+ * How long task events collect before they reach the cache. A task reporting
+ * progress at 20 Hz was 20 broadcasts a second, each one re-reading every
+ * query that holds the task; collected, it is one. A timer, not a frame:
+ * frames stop while the window is hidden, timers only slow down.
+ */
+export const TASK_EVENT_FLUSH_MS = 50;
+
+/**
+ * Collects task events and writes them in one `cache.batch` (one broadcast).
+ * Whether the task was cached is decided when the event is WRITTEN, not when
+ * it arrived — an event for a task still being hydrated is handed to
+ * `onMissing` (the caller buffers it for the hydration to replay).
+ */
+export const createTaskEventQueue = (
+  client: RekuestClient,
+  onMissing: (event: TaskEventChangeFragment) => void,
+  flushMs: number = TASK_EVENT_FLUSH_MS,
+) => {
+  let pending: { event: TaskEventChangeFragment; synth: TaskEventFragment }[] = [];
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  const flush = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    if (pending.length === 0) return;
+    const batch = pending;
+    pending = [];
+    const missing: TaskEventChangeFragment[] = [];
+    client.cache.batch({
+      update: () => {
+        for (const { event, synth } of batch) {
+          if (!writeTaskEventToCache(client, event, synth)) missing.push(event);
+        }
+      },
+    });
+    missing.forEach(onMissing);
+  };
+
+  return {
+    push: (event: TaskEventChangeFragment, synth: TaskEventFragment) => {
+      pending.push({ event, synth });
+      if (!timer) timer = setTimeout(flush, flushMs);
+    },
+    flush,
+  };
+};
 
 /** Flush events that were buffered before the task was hydrated. */
 export const flushBufferedEvents = (client: RekuestClient, id: string) => {

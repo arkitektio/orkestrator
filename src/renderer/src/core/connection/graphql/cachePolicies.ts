@@ -252,7 +252,25 @@ export const ELEKTRO_TYPE_POLICIES: TypePolicies = {
 export const FLUSS_TYPE_POLICIES = buildOffsetPaginationPolicies(FLUSS_PAGINATED_FIELDS);
 export const KABINET_TYPE_POLICIES = buildOffsetPaginationPolicies(KABINET_PAGINATED_FIELDS);
 export const KRAPH_TYPE_POLICIES = buildOffsetPaginationPolicies(KRAPH_PAGINATED_FIELDS);
-export const LOK_TYPE_POLICIES = buildOffsetPaginationPolicies(LOK_PAGINATED_FIELDS);
+const lokPagination = buildOffsetPaginationPolicies(LOK_PAGINATED_FIELDS);
+/**
+ * `user(id)` answers from the normalized `User:<id>` when it holds what the
+ * query asks for: a user already known from a list, a chip batch
+ * (`lok/lib/userChips.ts`) or another page is not fetched again.
+ */
+export const LOK_TYPE_POLICIES: TypePolicies = {
+  ...lokPagination,
+  Query: {
+    ...lokPagination.Query,
+    fields: {
+      ...lokPagination.Query?.fields,
+      user: {
+        read: (existing, { args, toReference }) =>
+          existing ?? (args?.id ? toReference({ __typename: "User", id: args.id }) : undefined),
+      },
+    },
+  },
+};
 export const LOVEKIT_TYPE_POLICIES = buildOffsetPaginationPolicies(LOVEKIT_PAGINATED_FIELDS);
 export const MIKRO_TYPE_POLICIES: TypePolicies = {
   ...buildOffsetPaginationPolicies(MIKRO_PAGINATED_FIELDS),

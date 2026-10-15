@@ -1,6 +1,9 @@
 fragment PostmanTask on Task {
   id
   latestEventKind
+  latestProgress
+  latestMessage
+  latestReturns
   args
   reference
   isDone
@@ -37,13 +40,23 @@ fragment PostmanTask on Task {
 # `...Ports` subtree (widgets/effects/validators, ~400 lines) that `PostmanTask`
 # carries — `useFilteredTasks` only needs `args { key kind identifier }` for
 # identifier/object matching. Detail views keep using `PostmanTask`.
+#
+# What it shows comes from `latestProgress` / `latestMessage` / `latestReturns`
+# (kept by the server as events are recorded, and by `writeTaskEventToCache`
+# as they stream in). Only the newest 25 events: this list lives for the whole session and every
+# event is prepended to it (`writeTaskEventToCache` caps this variant to the
+# same window). The paginated field is a separate cache entry from
+# `PostmanTask`'s full history, so detail views keep every event.
 fragment LiveTask on Task {
   id
   latestEventKind
+  latestProgress
+  latestMessage
+  latestReturns
   args
   reference
   isDone
-  events(ordering: {createdAt: DESC}) {
+  events(ordering: {createdAt: DESC}, pagination: {limit: 25}) {
     ...TaskEvent
   }
   action {

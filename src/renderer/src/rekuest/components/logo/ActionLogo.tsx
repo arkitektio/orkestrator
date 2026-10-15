@@ -3,7 +3,7 @@ import BlokRenderer from "@/core/blok/renderer/BlokRenderer";
 import { useBlokRuntime, type BlokTaskRecord } from "@/core/blok/renderer/runtime";
 import { cn } from "@/core/util/utils";
 import { BlokLogoFragment, useLogoBlokQuery } from "@/rekuest/api/graphql";
-import { useLatestTask } from "@/rekuest/hooks/useTasks";
+import { useMyLatestTask } from "@/rekuest/lib/taskIndex";
 import { useBlokDocument } from "../blokDocument";
 import { latestTaskRecord } from "../blokLatestTask";
 import { BlokLogo } from "./BlokLogo";
@@ -21,7 +21,7 @@ const REFUSE_EVERY_ACTION = () => true;
  * Until they run it, that task is null and the logo is the drawing kept for
  * its hash (`BlokLogo`): a list of actions renders no bloks. Once the viewer's
  * tasks hold one of the action, from the my-tasks cache with no subscription
- * of its own, the logo renders live with `@task` set to that task's record,
+ * of its own (only its own latest task, see `taskIndex`), the logo renders live with `@task` set to that task's record,
  * and while it runs the box is `data-logo-active`, which plays the logo's
  * animations without a hover.
  */
@@ -32,7 +32,7 @@ export const ActionLogo = ({
   action: { id: string; logo?: BlokLogoFragment | null };
   className?: string;
 }) => {
-  const task = useLatestTask({ action: action.id, allowDone: true });
+  const task = useMyLatestTask({ action: action.id });
   const record = React.useMemo(() => (task ? latestTaskRecord(task) : null), [task]);
   if (!action.logo) return null;
   if (!record) return <BlokLogo blok={action.logo} className={className} />;

@@ -69,7 +69,7 @@ type Action {
   liveImplementations: Int!
 
   """
-  A logo that draws this action: that of the implementation most recently registered with one. Each implementation has its own (`Implementation.logo`); an action without one is drawn by its agent's default logo.
+  The action logo that draws this action: that of the implementation most recently registered with one (`Action.latest_logo`, kept by takt). Each implementation has its own (`Implementation.logo`); an action without one is drawn by its agent's default logo.
   """
   logo: Blok
 
@@ -1647,6 +1647,7 @@ type Collection {
 The renderer a catalog component lives in. A component may only be placed where its context is in force.
 """
 enum ComponentContext {
+  ACTION_LOGO
   HTML
   LOGO
   SCENE
@@ -2814,7 +2815,7 @@ type Implementation {
   locks: [Lock!]!
 
   """
-  The agent's logo blok (context LOGO) that draws this implementation's action, if it declared one.
+  The agent's action logo blok (context ACTION_LOGO) that draws this implementation's action, if it declared one.
   """
   logo: Blok
 
@@ -2941,7 +2942,7 @@ input ImplementationInput {
   locks: [String!] = null
 
   """
-  The key of the agent's logo blok (context LOGO) that draws this action.
+  The key of the agent's action logo blok (context ACTION_LOGO) that draws this action.
   """
   logo: String = null
 
@@ -5953,6 +5954,17 @@ type Task {
 
   """Last instruction type."""
   latestInstructKind: TaskInstructKind!
+
+  """Message of the latest event that carried one."""
+  latestMessage: String
+
+  """
+  Progress (0-100) of the latest PROGRESS event that carried one. Kept as events are recorded: follow a task with this, not with its events.
+  """
+  latestProgress: Int
+
+  """Returns of the latest YIELD event."""
+  latestReturns: AnyDefault
 
   """
   The task is held back until then (a delayed task); null = dispatched on creation.

@@ -1,10 +1,10 @@
-import { ApolloClient, ApolloLink, InMemoryCache, Observable } from "@apollo/client";
+import { ApolloClient, ApolloLink, InMemoryCache, Observable, gql } from "@apollo/client";
 import { describe, expect, it } from "vitest";
 
 import { REKUEST_TYPE_POLICIES } from "@/core/connection/graphql/cachePolicies";
 import rekuestResult from "../api/fragments";
 import { MyTasksDocument, TaskEventKind, type MyTasksQuery, type TaskEventChangeFragment } from "../api/graphql";
-import { writeTaskEventToCache } from "./taskCache";
+import { eventWindowOf, writeTaskEventToCache } from "./taskCache";
 import { shouldAutoDismiss, taskRank } from "./taskIsland";
 import { taskEventChangeToEvent } from "./taskTracker";
 
@@ -13,6 +13,9 @@ const runningTask = (id: string) => ({
   __typename: "Task",
   id,
   latestEventKind: TaskEventKind.Started,
+  latestProgress: null,
+  latestMessage: null,
+  latestReturns: null,
   args: {},
   reference: `ref-${id}`,
   isDone: false,
@@ -59,6 +62,16 @@ const change = (kind: TaskEventKind, id: string, extra: Partial<TaskEventChangeF
     ...extra,
   }) as TaskEventChangeFragment;
 
+/** The unpaginated `events` a detail view (`PostmanTask`) selects. */
+const FULL_EVENTS = gql`
+  fragment FullEvents on Task {
+    id
+    events(ordering: { createdAt: DESC }) {
+      id
+    }
+  }
+`;
+
 const settle = () => new Promise((resolve) => setTimeout(resolve, 30));
 
 /**
@@ -90,8 +103,15 @@ const setup = async () => {
   await settle();
   const apply = (event: TaskEventChangeFragment) =>
     writeTaskEventToCache(client, event, taskEventChangeToEvent(event, "ref-1"));
-  return { state, island, apply, close: () => (seed.unsubscribe(), reader.unsubscribe()) };
+  return { client, state, island, apply, close: () => (seed.unsubscribe(), reader.unsubscribe()) };
 };
+
+describe("eventWindowOf", () => {
+  it("reads the limit off a paginated store field and nothing off a plain one", () => {
+    expect(eventWindowOf('events({"ordering":{"createdAt":"DESC"},"pagination":{"limit":25}})')).toBe(25);
+    expect(eventWindowOf('events({"ordering":{"createdAt":"DESC"}})')).toBeUndefined();
+  });
+});
 
 describe("writeTaskEventToCache", () => {
   it("leaves the task list complete, so an event never sends it back to the network", async () => {
@@ -102,6 +122,8 @@ describe("writeTaskEventToCache", () => {
     await settle();
     expect(state.requests).toBe(1); // still only the seed
     expect(island.tasks[0].events.map((event) => event.id)).toEqual(["p2", "p1", "started-1"]);
+    // The latest report follows the events, as the server keeps it.
+    expect(island.tasks[0].latestProgress).toBe(80);
     // The synthesized event resolves its task through the normalized entity.
     expect(island.tasks[0].events[0].task).toEqual({ __typename: "Task", id: "1", reference: "ref-1" });
     close();
@@ -120,8 +142,29 @@ describe("writeTaskEventToCache", () => {
     expect(task.latestEventKind).toBe(TaskEventKind.Failed);
     expect(task.isDone).toBe(true);
     expect(task.events[0].message).toBe("boom");
+    expect(task.latestMessage).toBe("boom");
     expect(taskRank(task)).toBe(1);
     expect(shouldAutoDismiss(task, false)).toBe(false);
+    close();
+  });
+
+  it("keeps the live list to its window but a detail view's full history whole", async () => {
+    const { client, island, apply, close } = await setup();
+    // A detail page's unpaginated `events` on the same `Task:1`.
+    client.cache.writeFragment({
+      id: client.cache.identify({ __typename: "Task", id: "1" }),
+      fragment: FULL_EVENTS,
+      data: { __typename: "Task", id: "1", events: [] },
+    });
+    for (let i = 0; i < 40; i++) apply(change(TaskEventKind.Progress, `p${i}`, { progress: i }));
+    await settle();
+    expect(island.tasks[0].events).toHaveLength(25);
+    expect(island.tasks[0].events[0].id).toBe("p39");
+    const full = client.cache.readFragment<{ events: { id: string }[] }>({
+      id: client.cache.identify({ __typename: "Task", id: "1" }),
+      fragment: FULL_EVENTS,
+    });
+    expect(full?.events).toHaveLength(40);
     close();
   });
 

@@ -2,6 +2,7 @@ import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import { renderQueryState } from "@/core/layout/routes/queryState";
 import type { DetailVariables, HookFunction } from "@/core/layout/routes/DetailQueryRoute";
 import { useDebugReport } from "@/core/debug/useDebugReport";
+import { useRefetchOnReveal } from "@/core/tabs/keepLive";
 import { ApolloQueryResult, OperationVariables, QueryHookOptions } from "@apollo/client";
 import React from "react";
 import { useParams } from "react-router-dom";
@@ -47,6 +48,8 @@ export const asGraphScopeQueryRoute = <T extends any>(
       skip: !graphId,
       ...options.queryOptions,
     });
+    // A frozen tab lost its subscription events: catch up when it is shown.
+    useRefetchOnReveal(query.refetch, !graphId);
     useDebugReport(Component.displayName ?? Component.name ?? "page", {
       variables: { id: graphId ?? "" },
       data: query.data,
@@ -110,6 +113,7 @@ export const asGraphDetailQueryRoute = <T extends any>(
         ...options.queryOptions,
         skip: Boolean(options.queryOptions?.skip) || misconfigured,
       });
+    useRefetchOnReveal(passyProps.refetch, !!direct || misconfigured);
     useDebugReport(Component.displayName ?? Component.name ?? "page", {
       variables: { id: id ?? "", graph: scope?.graphId ?? "" },
       data: passyProps.data,

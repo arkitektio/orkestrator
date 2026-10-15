@@ -28,6 +28,7 @@ import {
   type SceneView,
 } from './context';
 import {BlokSceneEmbedProvider, useBlokSceneEmbedded, useBlokSceneFill} from './host';
+import { useKeepTabLive } from "@/core/tabs/keepLive";
 
 /** The direction each view looks from, toward what it frames. */
 const VIEW_DIRECTIONS: Record<SceneView, [number, number, number]> = {
@@ -392,6 +393,8 @@ export const SceneSurface = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const store = React.useMemo(() => createSceneStore({view, grid}), []);
   const elements = React.useRef(new Map<string, HTMLDivElement>());
+  // A frozen tab would drop the GPU context: stay live hidden.
+  useKeepTabLive();
 
   return (
     <SceneStoreProvider value={store}>

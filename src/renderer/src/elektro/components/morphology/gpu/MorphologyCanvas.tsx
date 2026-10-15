@@ -3,6 +3,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
+import { useKeepTabLive } from "@/core/tabs/keepLive";
 import { isSceneNavigationTarget } from "@/core/dnd/keyboardTarget";
 import { captureFrameBlob, type CaptureRenderer } from "@/core/data/scene/capture/captureFrame";
 import { EXCLUDE_FROM_CAPTURE } from "@/core/data/scene/capture/captureVisibility";
@@ -241,6 +242,8 @@ export const MorphologyCanvas = ({
   children: React.ReactNode;
 }) => {
   const visible = useTabVisible();
+  // A frozen tab would drop the GPU context and its uploads: stay live hidden.
+  useKeepTabLive();
   const smoothCamera = useMorphologyStore((s) => s.hud.smoothCamera);
   const zoomToCursor = useMorphologyStore((s) => s.hud.zoomToCursor);
 

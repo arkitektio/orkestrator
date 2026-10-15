@@ -28,13 +28,13 @@ const BLOK = {
 };
 
 const useLogoBlokQuery = vi.fn(() => ({data: {blok: BLOK}}));
-const useLatestTask = vi.fn<() => unknown>(() => undefined);
+const useMyLatestTask = vi.fn<() => unknown>(() => undefined);
 
 vi.mock('@/rekuest/api/graphql', async importOriginal => ({
   ...(await importOriginal<typeof import('@/rekuest/api/graphql')>()),
   useLogoBlokQuery: () => useLogoBlokQuery(),
 }));
-vi.mock('@/rekuest/hooks/useTasks', () => ({useLatestTask: () => useLatestTask()}));
+vi.mock('@/rekuest/lib/taskIndex', () => ({useMyLatestTask: () => useMyLatestTask()}));
 vi.mock('@/rekuest/scene/RekuestSceneHost', () => ({
   RekuestSceneHost: ({children}: {children: React.ReactNode}) => <>{children}</>,
 }));
@@ -64,14 +64,14 @@ describe('an action logo', {timeout: 20000}, () => {
   });
 
   it('draws the task live, and plays while it runs', async () => {
-    useLatestTask.mockImplementation(() => task(TaskEventKind.Progress, 'cropping'));
+    useMyLatestTask.mockImplementation(() => task(TaskEventKind.Progress, 'cropping'));
     const running = render(<ActionLogo action={action as never} className="h-4 w-4" />);
 
     await waitFor(() => expect(running.container.querySelector('text')?.textContent).toBe('cropping'));
     expect(running.container.querySelector('[data-logo-active]')).not.toBeNull();
     expect(running.container.querySelector('rect')?.getAttribute('class')).toBe('logo-anim logo-anim-march');
 
-    useLatestTask.mockImplementation(() => task(TaskEventKind.Completed, 'cropped'));
+    useMyLatestTask.mockImplementation(() => task(TaskEventKind.Completed, 'cropped'));
     running.rerender(<ActionLogo action={action as never} className="h-4 w-4" />);
     await waitFor(() => expect(running.container.querySelector('[data-logo-active]')).toBeNull());
   });

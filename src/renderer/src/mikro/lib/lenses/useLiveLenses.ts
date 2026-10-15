@@ -54,7 +54,9 @@ export const useLiveLenses = ({
         for (const __typename of LENS_KIND_ORDER) {
           client.cache.evict({ id: client.cache.identify({ __typename, id: event.delete }) });
         }
-        client.cache.gc();
+        // No `gc()` here: lists drop the dangling reference on read, and a full
+        // sweep per event made a bulk delete N traversals of the whole cache.
+        // `GcOnNavigate` collects the orphans when the browser is idle.
       }
     },
     onError: (error) => {

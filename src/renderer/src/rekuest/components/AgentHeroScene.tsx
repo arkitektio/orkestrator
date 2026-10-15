@@ -10,6 +10,7 @@ import { Suspense, useRef } from "react";
 import type { Group } from "three";
 import { Vector2 } from "three";
 import { AgentPlacementFragment } from "../api/graphql";
+import { useKeepTabLive } from "@/core/tabs/keepLive";
 
 declare module "react" {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -44,6 +45,8 @@ const AgentSceneFallback = () => {
 };
 
 export const AgentHeroScene = (props: { placement: AgentPlacementFragment }) => {
+  // A frozen tab would drop the GPU context: stay live hidden.
+  useKeepTabLive();
   return (
     <div className="absolute inset-y-0 right-0 w-[40%] overflow-hidden rounded-lg bg-black">
       <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-full bg-[linear-gradient(90deg,rgba(0,0,0,0.96)_0%,rgba(0,0,0,0.78)_18%,rgba(0,0,0,0.38)_38%,rgba(0,0,0,0.10)_56%,transparent_76%)]" />

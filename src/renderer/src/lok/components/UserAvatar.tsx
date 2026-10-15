@@ -2,26 +2,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/core/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { LokDevice, LokUser } from "@/core/linkers";
-import { useListDevicesQuery, useUserQuery } from "../api/graphql";
+import { useListDevicesQuery } from "../api/graphql";
+import { useUserChip } from "../lib/userChips";
 import { cn } from "@/core/util/utils";
 import { Badge } from "@/core/ui/badge";
 
 export const UserAvatar = (props: { sub: string, className?: string }) => {
-  const { data } = useUserQuery({
-    variables: {
-      id: props.sub,
-    },
-  });
+  const user = useUserChip(props.sub);
 
   const resolve = useLokResolve();
 
   return (
     <Avatar className={cn(props.className)}>
       <AvatarImage
-        src={resolve(data?.user?.profile.avatar?.presignedUrl) as string | undefined}
-        alt={data?.user?.username}
+        src={resolve(user?.profile.avatar?.presignedUrl) as string | undefined}
+        alt={user?.username}
       />
-      <AvatarFallback>{data?.user.username.slice(0, 2)}</AvatarFallback>
+      <AvatarFallback>{user?.username.slice(0, 2)}</AvatarFallback>
     </Avatar>
   );
 };
@@ -61,41 +58,29 @@ export const DeviceImprint = (props: { deviceId: string, className?: string }) =
 };
 
 export const UserUsername = (props: { sub: string }) => {
-  const { data } = useUserQuery({
-    variables: {
-      id: props.sub,
-    },
-  });
+  const user = useUserChip(props.sub);
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <LokUser.DetailLink object={{ id: props.sub }}>
-          <span className="cursor-pointer">{data?.user.username}</span>
+          <span className="cursor-pointer">{user?.username}</span>
         </LokUser.DetailLink>
       </TooltipTrigger>
 
-      <TooltipContent>{data?.user.username}</TooltipContent>
+      <TooltipContent>{user?.username}</TooltipContent>
     </Tooltip>
   );
 };
 
 export const JustUsername = (props: { sub: string }) => {
-  const { data } = useUserQuery({
-    variables: {
-      id: props.sub,
-    },
-  });
+  const user = useUserChip(props.sub);
 
-  return data?.user.username;
+  return user?.username;
 };
 
 export const UserAvatarUsername = (props: { sub: string }) => {
-  const { data } = useUserQuery({
-    variables: {
-      id: props.sub,
-    },
-  });
+  const user = useUserChip(props.sub);
 
   const resolve = useLokResolve();
 
@@ -107,18 +92,18 @@ export const UserAvatarUsername = (props: { sub: string }) => {
             <AvatarImage
               className="rounded-md"
               src={
-                resolve(data?.user?.profile.avatar?.presignedUrl) as
+                resolve(user?.profile.avatar?.presignedUrl) as
                 | string
                 | undefined
               }
-              alt={data?.user?.username}
+              alt={user?.username}
             />
-            <AvatarFallback>{data?.user.username.slice(0, 2)}</AvatarFallback>
+            <AvatarFallback>{user?.username.slice(0, 2)}</AvatarFallback>
           </Avatar>
         </LokUser.DetailLink>
       </TooltipTrigger>
 
-      <TooltipContent>{data?.user.username}</TooltipContent>
+      <TooltipContent>{user?.username}</TooltipContent>
     </Tooltip>
   );
 };

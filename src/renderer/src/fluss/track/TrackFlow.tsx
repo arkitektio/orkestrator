@@ -8,8 +8,7 @@ import { flowEdgeTypes, flowNodeTypes } from "../nodes/flowTypes";
 import { edges_to_flowedges, nodes_to_flownodes } from "../utils";
 import { LiveTracker } from "./components/tracker/LiveTracker";
 import { RangeTracker } from "./components/tracker/RangeTracker";
-import { TrackRiverContext, TrackRiverContextType } from "./context";
-import { RunState } from "./types";
+import { createRunStateStore, TrackRiverContext, TrackRiverContextType } from "./context";
 
 export type Props = {
   run: DetailRunFragment;
@@ -17,7 +16,7 @@ export type Props = {
 
 /** A flow with its run events overlaid (live subscription or scrubbable range). */
 export const TrackFlow: React.FC<Props> = ({ run }) => {
-  const [runState, setRunState] = useState<RunState>({ t: 0 });
+  const [runStore] = useState(createRunStateStore);
 
   const initialNodes = useMemo(() => nodes_to_flownodes(run.flow.graph?.nodes || []), [run.flow]);
   const edges = useMemo(() => edges_to_flowedges(run.flow.graph?.edges || []), [run.flow]);
@@ -25,8 +24,8 @@ export const TrackFlow: React.FC<Props> = ({ run }) => {
   useEffect(() => setNodes(initialNodes), [initialNodes, setNodes]);
 
   const context = useMemo<TrackRiverContextType>(
-    () => ({ flow: run.flow, run, runState, setRunState }),
-    [run, runState],
+    () => ({ flow: run.flow, run, runStore, setRunState: (state) => runStore.setState(state, true) }),
+    [run, runStore],
   );
 
   return (

@@ -37,3 +37,17 @@ fragment MeUser on User {
   lastName
   avatar
 }
+
+# What a person looks like wherever they are mentioned (avatar, name chip):
+# the `@lok/user` displays read this, batched over many rows (`useUserChip`),
+# never the full `DetailUser` with its groups and memberships.
+fragment UserChip on User {
+  id
+  username
+  profile {
+    id
+    avatar {
+      presignedUrl
+    }
+  }
+}

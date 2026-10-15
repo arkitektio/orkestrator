@@ -1,13 +1,15 @@
-import React, { useEffect } from "react";
+import React, { Activity, Profiler, useEffect } from "react";
 import { unstable_HistoryRouter as HistoryRouter, useLocation } from "react-router-dom";
 import useReactRouterBreadcrumbs from "use-react-router-breadcrumbs";
 
 import { breadcrumbText } from "@/core/command/breadcrumbText";
+import { classicPerf } from "@/core/debug/classicPerf";
 import { cn } from "@/core/util/utils";
 
 import { RouterBoundary } from "./RouterBoundary";
 import { SplitDivider } from "./SplitDivider";
 import { TabIdContext } from "./TabContext";
+import { useTabKeptLive } from "./keepLive";
 import { TabLayoutContext } from "./TabLayoutContext";
 import { TabPaneContext, type TabPane } from "./TabPaneContext";
 import { TabVisibilityContext } from "./TabVisibilityContext";
@@ -45,12 +47,47 @@ const TabTitleReporter = ({ tabId }: { tabId: string }) => {
 };
 
 /**
+ * A tab's pages, frozen while the tab is hidden.
+ *
+ * Up to `MAX_WARM` tabs stay mounted, and a hidden one used to do everything a
+ * shown one does: every query re-rendered on every cache write, every poller
+ * polled, every subscription streamed. In a hidden `<Activity>` its state and
+ * DOM are kept but its effects are torn down — Apollo stops watching (and
+ * polling, and its `subscribeToMore`) until the tab is shown and they run
+ * again. Route queries catch up then (`useRefetchOnReveal`); lists refetch on
+ * their own. A page that must keep running hidden (a GPU canvas) opts out
+ * with `useKeepTabLive()`.
+ *
+ * Inside the tab's router, so its location is the tab's own.
+ */
+const TabBody = ({
+  tabId,
+  visible,
+  routes,
+}: {
+  tabId: string;
+  visible: boolean;
+  routes: React.ReactNode;
+}) => {
+  const { pathname } = useLocation();
+  const keptLive = useTabKeptLive(tabId, pathname);
+  // Always rendered (adding it would remount the tab); counts only while a
+  // classic-perf recording runs.
+  return (
+    <Profiler id={tabId} onRender={(_id, _phase, actual) => classicPerf.noteCommit(tabId, visible, actual)}>
+      <Activity mode={visible || keptLive ? "visible" : "hidden"}>{routes}</Activity>
+    </Profiler>
+  );
+};
+
+/**
  * Where tabs are rendered.
  *
  * Every WARM tab gets its own `HistoryRouter` over its own memory history and
  * a full copy of the app's routes; only the active one is displayed. Hidden
  * with a class (`display:none`), not unmounted, so a switch back restores
- * scroll, form state and a loaded scene exactly as they were. Cold tabs are
+ * scroll, form state and a loaded scene exactly as they were — and frozen
+ * (`TabBody`), so a hidden tab does no work until it is shown. Cold tabs are
  * simply absent from the map — their history object survives in the store,
  * and when they warm again they mount at the index they were left at, so Back
  * and Forward still work.
@@ -126,7 +163,7 @@ export const TabOutlet = ({ routes }: { routes: React.ReactNode }) => {
                     <TabLayoutContext.Provider value={tab.layout}>
                       <TabVisibilityContext.Provider value={visible}>
                         <TabTitleReporter tabId={tab.id} />
-                        {routes}
+                        <TabBody tabId={tab.id} visible={visible} routes={routes} />
                       </TabVisibilityContext.Provider>
                     </TabLayoutContext.Provider>
                   </TabPaneContext.Provider>

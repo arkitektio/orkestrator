@@ -21,6 +21,7 @@ import { useTabPane } from "./TabPaneContext";
 import { TabsProvider, useActiveTabId, useTabActions, useTabList } from "./TabsProvider";
 import { useTabVisible } from "./TabVisibilityContext";
 import { useTabTitle } from "./useTabTitle";
+import { useKeepTabLive } from "./keepLive";
 import { MAX_WARM } from "./tabs";
 
 /** Rendered INSIDE each tab's own router. */
@@ -50,6 +51,22 @@ const TitledPage = ({ title }: { title: React.ReactNode }) => {
   return <button onClick={() => navigate("/plain")}>leave</button>;
 };
 
+/** Counts its effect runs: what a query watch, a poller or a subscription is. */
+const effects = { live: 0, torn: 0 };
+const EffectProbe = () => {
+  React.useEffect(() => {
+    effects.live += 1;
+    return () => {
+      effects.torn += 1;
+    };
+  }, []);
+  return <div data-testid="effect-probe" />;
+};
+const KeepLiveProbe = () => {
+  useKeepTabLive();
+  return <EffectProbe />;
+};
+
 /** Rendered in the CHROME, outside the outlet. */
 const Chrome = () => {
   const tabs = useTabList();
@@ -65,6 +82,8 @@ const Chrome = () => {
       <button onClick={() => open("/c")}>open-c</button>
       <button onClick={() => open("/dataset/5")}>open-dataset</button>
       <button onClick={() => open("/widget")}>open-widget</button>
+      <button onClick={() => open("/effects")}>open-effects</button>
+      <button onClick={() => open("/live")}>open-live</button>
       <button onClick={() => focus(tabs[0].id)}>focus-first</button>
       {tabs.map((t, i) => (
         <button key={t.id} onClick={() => focus(t.id)}>{`focus-${i}`}</button>
@@ -78,6 +97,8 @@ const routes = (
   <Routes>
     <Route path="/dataset/:id" element={<TitledPage title="HeLa s3" />} />
     <Route path="/widget" element={<TitledPage title={<b>not text</b>} />} />
+    <Route path="/effects" element={<EffectProbe />} />
+    <Route path="/live" element={<KeepLiveProbe />} />
     <Route path="*" element={<PageProbe />} />
   </Routes>
 );
@@ -117,6 +138,32 @@ describe("TabOutlet", () => {
     expect(wrapperOf(b).className).not.toBe("hidden");
     expect(a.dataset.visible).toBe("false");
     expect(b.dataset.visible).toBe("true");
+  });
+
+  it("freezes a hidden tab: its effects are torn down and run again when it is shown", () => {
+    effects.live = 0;
+    effects.torn = 0;
+    renderApp();
+    click("open-effects");
+    const before = { ...effects };
+    expect(before.live).toBeGreaterThan(before.torn);
+    click("open-b"); // the effects tab is hidden now
+    expect(effects.torn).toBe(effects.live);
+    // Still mounted (state and DOM kept), just not running.
+    expect(screen.getByTestId("effect-probe")).toBeTruthy();
+    click("focus-1");
+    expect(effects.live).toBeGreaterThan(effects.torn);
+  });
+
+  it("keeps a tab live while hidden when its page asks to", () => {
+    effects.live = 0;
+    effects.torn = 0;
+    renderApp();
+    click("open-live");
+    const running = effects.live - effects.torn;
+    expect(running).toBeGreaterThan(0);
+    click("open-b");
+    expect(effects.live - effects.torn).toBe(running);
   });
 
   it("navigating inside one tab does not move another", () => {

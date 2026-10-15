@@ -6,6 +6,7 @@ import {
 } from "@react-three/fiber";
 import { SceneResultSink } from "../features/results/SceneResultSink";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
+import { useKeepTabLive } from "@/core/tabs/keepLive";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { LongCommitProfiler } from "../platform/perf/commitProfiler";
 import { useViewStoreApi } from "../platform/stores/viewStore";
@@ -207,6 +208,8 @@ const SceneWrapper = ({ children }: { children: ReactNode }) => {
   // demand mode a scene at rest already draws nothing; "never" also stops the
   // odd frame a chunk arriving in the background would otherwise trigger.
   const visible = useTabVisible();
+  // A frozen tab would drop the GPU context and its uploads: stay live hidden.
+  useKeepTabLive();
   // `select-none` on the canvas surface stops a drag (pan / ROI draw / probe)
   // from ever turning into a text selection. Overlays keep normal selection.
   //

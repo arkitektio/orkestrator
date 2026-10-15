@@ -1,4 +1,3 @@
-import { useTrackRiver } from "../context";
+import { useNodeRunEvent } from "../context";
 
-export const useLatestNodeEvent = (node: string) =>
-  useTrackRiver().runState?.latestBySource?.get(node);
+export const useLatestNodeEvent = (node: string) => useNodeRunEvent(node);

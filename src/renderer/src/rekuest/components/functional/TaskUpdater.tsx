@@ -22,9 +22,9 @@ import {
   taskEventChangeToEvent,
 } from "../../lib/taskTracker";
 import {
+  createTaskEventQueue,
   flushBufferedEvents,
   hydrateAndInsertMyTask,
-  writeTaskEventToCache,
 } from "../../lib/taskCache";
 import {
   notify as notifyTask,
@@ -68,6 +68,10 @@ export const TaskUpdater = () => {
   useEffect(() => {
     if (!client) return undefined;
 
+    // The cache writes are collected (one broadcast per flush); an event
+    // whose task is not cached yet is buffered for its hydration to replay.
+    const events = createTaskEventQueue(client, (event) => bufferEvent(event.task, event));
+
     const subscription = client
       .subscribe<WatchMyTasksSubscription, WatchMyTasksSubscriptionVariables>({
         query: WatchMyTasksDocument,
@@ -81,8 +85,8 @@ export const TaskUpdater = () => {
           const reference = referenceForId(event.task);
           const synth = taskEventChangeToEvent(event, reference);
 
-          // Deliver to locally tracking components outside the cache update
-          // (cache writes no-op when the entity isn't cached yet).
+          // Deliver to locally tracking components at once, outside the
+          // (collected) cache update.
           if (reference) {
             deliverToCallback(reference, synth);
           } else {
@@ -90,12 +94,7 @@ export const TaskUpdater = () => {
             holdForCallback(event.task, event);
           }
 
-          const existed = writeTaskEventToCache(client, event, synth);
-          if (!existed) {
-            // The event arrived before its task was hydrated; replay it once
-            // the create/hydration completes.
-            bufferEvent(event.task, event);
-          }
+          events.push(event, synth);
         }
 
         if (create) {
@@ -135,7 +134,10 @@ export const TaskUpdater = () => {
         }
       });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      events.flush();
+    };
   }, [client]);
 
   return <></>;

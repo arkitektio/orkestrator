@@ -63,8 +63,9 @@ const applyRuleEvent = (
     });
   }
   if (event.delete) {
+    // Evict only: lists drop the dangling reference on read; `GcOnNavigate`
+    // collects the orphans when idle (a sweep per event is a full traversal).
     client.cache.evict({ id: client.cache.identify({ __typename: typename, id: event.delete }) });
-    client.cache.gc();
   }
 };
 

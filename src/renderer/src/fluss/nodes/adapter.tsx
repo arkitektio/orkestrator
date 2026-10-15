@@ -16,7 +16,7 @@ import { useStore } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import { EditFlowStore, EMPTY_ERRORS } from "../edit/store";
 import { useShowRiver } from "../show/context";
-import { useTrackRiver } from "../track/context";
+import { useNodeRunEvent } from "../track/context";
 
 export type FlowMode = "edit" | "show" | "track";
 
@@ -68,7 +68,7 @@ export const trackAdapter: FlowAdapter = {
   useNodeErrors: noErrors,
   useShowNodeErrors: off,
   useShowEdgeLabels: off,
-  useNodeStatus: (id) => useTrackRiver().runState?.latestBySource?.get(id),
+  useNodeStatus: useNodeRunEvent,
   useDependency: noDependency,
   useSubflowChildCount: zero,
   useEditActions: noEdit,

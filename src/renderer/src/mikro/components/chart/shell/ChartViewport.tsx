@@ -19,6 +19,7 @@ import { useViewerStore, type InteractionModeOption } from "@/core/data/plot/sto
 import { RendererDisposer } from "@/core/data/scene/gpu/RendererDisposer";
 import { createWebGPURendererFactory } from "@/core/data/scene/gpu/createWebGPURenderer";
 import { useTabVisible } from "@/core/tabs/TabVisibilityContext";
+import { useKeepTabLive } from "@/core/tabs/keepLive";
 import { ChartAnnotationDrawer } from "../features/annotations/ChartAnnotationDrawer";
 import { ChartAnnotationOverlay } from "../features/annotations/ChartAnnotationOverlay";
 import { ChartAnnotationToolbar } from "../features/annotations/ChartAnnotationToolbar";
@@ -91,6 +92,8 @@ const MODE_OPTIONS: InteractionModeOption[] = [
 
 const ReadyViewport = () => {
   const visible = useTabVisible();
+  // A frozen tab would drop the GPU context and its uploads: stay live hidden.
+  useKeepTabLive();
   const rowCount = useViewerStore((s) => s.rowCount);
   const axis = useChartStore((s) => s.axis);
   const autoscale = useChartAutoscale();

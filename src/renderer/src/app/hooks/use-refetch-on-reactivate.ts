@@ -18,7 +18,20 @@ const MIN_AWAY_MS = 2_000;
  * overwrite it with the server's list, which no longer contains just-finished
  * tasks (see `rekuest/hooks/useTasks.tsx`).
  */
-const EXCLUDED_QUERY_NAMES = new Set(["MyTasks"]);
+const EXCLUDED_QUERY_NAMES = new Set(["MyTasks", "User", "UserChips"]);
+
+/**
+ * Per-row lookups: one mounted per avatar, hover card or picker. They name
+ * things that barely change, and refetching each of them on every focus was
+ * a burst of N requests (plus, for lok, a re-download of every avatar).
+ * Matched by operation name, NOT by fetch policy: route pages are
+ * `cache-first` too and must refresh, and Apollo rewrites
+ * `options.fetchPolicy` to `nextFetchPolicy` after the first fetch.
+ */
+const isRowLookup = (name: string) => name.startsWith("Hover") || name.endsWith("Options");
+
+const shouldRefetch = (name: string | undefined) =>
+  !name || (!EXCLUDED_QUERY_NAMES.has(name) && !isRowLookup(name));
 
 /**
  * Re-run every currently-active GraphQL query when the app is reactivated —
@@ -67,8 +80,7 @@ export const useRefetchOnReactivate = () => {
           const client = service.client as ApolloClient<unknown>;
           void client.refetchQueries({
             include: "active",
-            onQueryUpdated: (observable) =>
-              !EXCLUDED_QUERY_NAMES.has(observable.queryName ?? ""),
+            onQueryUpdated: (observable) => shouldRefetch(observable.queryName),
           });
         } catch (e) {
           console.warn("[refetch-on-reactivate] refetch failed for service:", e);
