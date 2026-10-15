@@ -53,6 +53,8 @@ import {
   PutTableDatasetsInFolderMutationVariables,
 } from "@/mikro/api/graphql";
 import { linkBuilder } from "@/core/smart/builder";
+import { LineageNodeKind } from "@/mikro/api/graphql";
+import { lineageLink } from "@/mikro/components/lineage/lineageGraph";
 import { lensRegistry } from "@/mikro/lib/lenses/lensRegistry";
 import { sceneRegistrationLink } from "@/mikro/components/registration/entry";
 import { visualizationLink } from "@/mikro/lib/visualize";
@@ -72,6 +74,7 @@ import {
   Ruler,
   ScanSearch,
   Waypoints,
+  GitBranch,
 } from "lucide-react";
 import { Action } from "@/core/smart/localactions/LocalActionProvider";
 import { getRefetchableQueriesForEntities } from "@/core/smart/localactions/helpers/refetch";
@@ -139,7 +142,87 @@ const VISUALIZED_CONTAINERS = [
   ['meshCollection', 'meshCollection', '@mikro/meshcollection', 'mesh collection', 'its meshes, in their own space'],
 ] as const;
 
+// What `Show Lineage` starts from: everything the lineage walk can be rooted at
+// that has a smart object to select it by.
+const LINEAGE_ROOTS = [
+  ['arrayDataset', '@mikro/arraydataset', LineageNodeKind.Dataset, 'array dataset'],
+  ['file', '@mikro/file', LineageNodeKind.File, 'file'],
+  ['tableDataset', '@mikro/tabledataset', LineageNodeKind.TableDataset, 'table dataset'],
+  ['sparseDataset', '@mikro/sparsedataset', LineageNodeKind.SparseDataset, 'sparse dataset'],
+  ['meshCollection', '@mikro/meshcollection', LineageNodeKind.MeshCollection, 'mesh collection'],
+] as const;
+
+// A lens has no lineage of its own (it writes no data); its container's is
+// what someone standing on a lens means.
+const lensContainer = (lens: GetLensContainersQuery['lenses'][number]): [LineageNodeKind, string] | undefined => {
+  switch (lens.__typename) {
+    case 'ArrayLens':
+      return [LineageNodeKind.Dataset, lens.dataset.id];
+    case 'TableLens':
+      return [LineageNodeKind.TableDataset, lens.tableDataset.id];
+    case 'SparseLens':
+      return [LineageNodeKind.SparseDataset, lens.sparseDataset.id];
+    case 'MeshLens':
+      return [LineageNodeKind.MeshCollection, lens.meshCollection.id];
+    case 'NetworkLens':
+      return [LineageNodeKind.NetworkCollection, lens.networkCollection.id];
+    case 'AnnotationLens':
+      return [LineageNodeKind.AnnotationCollection, lens.annotationCollection.id];
+    default:
+      return undefined;
+  }
+};
+
 export const MIKRO_ACTIONS: Record<string, MikroAction> = {
+  // How this came to be and what was made from it, as a graph stepped
+  // through from here.
+  ...Object.fromEntries(
+    LINEAGE_ROOTS.map(([key, identifier, kind, noun]): [string, MikroAction] => [
+      `lineage-${key}`,
+      {
+        title: 'Show Lineage',
+        description: `How this ${noun} came to be and what was made from it, with the tasks behind each step`,
+        icon: GitBranch,
+        conditions: [{ type: 'identifier', identifier }, { type: 'nopartner' }],
+        execute: async ({ state, navigate }) => {
+          const selected = state.left.find((item) => item.identifier === identifier);
+          if (!selected?.id) {
+            throw new Error(`No ${noun} selected for Show Lineage action`);
+          }
+          navigate(lineageLink(kind, selected.id));
+        },
+      },
+    ]),
+  ),
+  'lineage-lens': {
+    title: 'Show Lineage',
+    description: 'How the data this lens selects from came to be and what was made from it, with the tasks behind each step',
+    icon: GitBranch,
+    conditions: [
+      { type: 'mixture', identifiers: [...LENS_IDENTIFIERS] },
+      { type: 'nopartner' },
+    ],
+    execute: async ({ state, services, navigate }) => {
+      const selected = state.left.find((item) => isLensIdentifier(item.identifier));
+      if (!selected?.id) {
+        throw new Error('No lens selected for Show Lineage action');
+      }
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+      const { data } = await mikro.client.query<GetLensContainersQuery, GetLensContainersQueryVariables>({
+        query: GetLensContainersDocument,
+        variables: { ids: [selected.id] },
+      });
+      const lens = data.lenses.at(0);
+      const root = lens && lensContainer(lens);
+      if (!root) {
+        throw new Error('This lens selects from nothing with a lineage');
+      }
+      navigate(lineageLink(...root));
+    },
+  },
   // One `Visualize` per container and one for a lens, all through the lens:
   // the server reads the axes of the space the selection lives in and answers
   // with a chart or a scene, and refuses in prose what is neither. To render at

@@ -34,7 +34,6 @@ const TheCard = ({ item }: Props) => {
         <CardFooter>
         </CardFooter>
 
-        <StructureDisplay identifier="@lok/user" id={item.user.sub} variant="avatar" className="absolute bottom-2 right-2 w-8 h-8" />
         {item.device && (
           <StructureDisplay
             identifier="@lok/device"

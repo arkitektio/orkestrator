@@ -1944,12 +1944,6 @@ input DeleteStructureRelationCategoryInput {
   id: String!
 }
 
-"""Input for retiring one of the organization's words"""
-input DeleteTermInput {
-  """The ID of the term to delete"""
-  id: String!
-}
-
 """A DERIVED_FROM claim: this claim came from that one (RFC 0017)"""
 type Derivation implements Edge {
   """Who claimed this, and when"""
@@ -4083,9 +4077,6 @@ type Mutation {
   """Delete a structure relation category from the graph"""
   deleteStructureRelationCategory(input: DeleteStructureRelationCategoryInput!): ID!
 
-  """Retire a word nothing has been claimed under"""
-  deleteTerm(input: DeleteTermInput!): ID!
-
   """Finalize a big file upload after the client has written the object"""
   finishBigFileUpload(input: FinishBigFileUploadInput!): BigFileStore!
 
@@ -4216,7 +4207,7 @@ type Mutation {
   updateStructureRelationCategory(input: UpdateStructureRelationCategoryInput!): StructureRelationCategory!
 
   """
-  Update a term's label, description, PURL or colour. Its kind and key are its identity and cannot change.
+  Update a term's label, description, PURL or colour, or hide it. Its kind and key are its identity and cannot change, and a term is never deleted — hiding is how a word is put away.
   """
   updateTerm(input: UpdateTermInput!): Term!
 }
@@ -6837,6 +6828,11 @@ type Term {
   """What this word means"""
   description: String
 
+  """
+  Whether curators have put this word away. A word is never deleted; a hidden one is still named by its claims, it is just no longer offered
+  """
+  hidden: Boolean!
+
   """Database ID of the term"""
   id: ID!
 
@@ -6866,6 +6862,9 @@ input TermFilter {
 
   """Filter to terms at least one graph declares a category for"""
   declared: Boolean
+
+  """Only hidden words, or only offered ones. Omitted shows both"""
+  hidden: Boolean
 
   """Filter by list of IDs"""
   ids: [ID!]
@@ -7317,6 +7316,11 @@ input UpdateTermInput {
 
   """What this word means"""
   description: String = null
+
+  """
+  Put the word away (true) or offer it again (false). A word is never deleted; omitted leaves it as it is
+  """
+  hidden: Boolean = null
 
   """The ID of the term to update"""
   id: String!

@@ -1,3 +1,4 @@
+import { useOfferedTermSearch } from "@/kraph/lib/terms";
 import { useDialog } from "@/core/dialogs/registry";
 import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
 import { Button } from "@/core/ui/button";
@@ -33,7 +34,8 @@ const TForm = (props: { category?: string }) => {
       : [],
   });
 
-  const [searchTerms] = useSearchEntityTermsLazyQuery();
+  const [searchEntityTerms] = useSearchEntityTermsLazyQuery();
+  const searchTerms = useOfferedTermSearch(searchEntityTerms);
   const [createTerm] = useCreateEntityTermInlineMutation();
 
   const { closeDialog } = useDialog();

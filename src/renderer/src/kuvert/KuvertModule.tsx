@@ -8,6 +8,7 @@ import AccountsPage from "./pages/AccountsPage";
 import CategoryPage from "./pages/CategoryPage";
 import ChangesPage from "./pages/ChangesPage";
 import FolderPage from "./pages/FolderPage";
+import HomePage from "./pages/HomePage";
 import MessagePage from "./pages/MessagePage";
 import OutboxPage from "./pages/OutboxPage";
 import OutgoingPage from "./pages/OutgoingPage";
@@ -26,6 +27,7 @@ export const KuvertModule: React.FC = () => (
     <MailboxSyncs />
     <ModuleLayout>
       <Routes>
+        <Route path="home" element={<HomePage />} />
         <Route path="accounts" element={<AccountsPage />} />
         <Route path="accounts/:id" element={<AccountPage />} />
         <Route path="folders/:id" element={<FolderPage />} />

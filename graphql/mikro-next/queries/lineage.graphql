@@ -1,0 +1,67 @@
+# The directed lineage around one container or file — what it was made from, `up`
+# hops of it, and what was made from it, `down` hops — with the task behind each
+# step. One recursive walk per direction on the server, so a deeper ask costs no
+# more round trips.
+#
+# Not a fragment of any page: the lineage view keeps its own merged graph and
+# asks again rooted at a frontier node to step further (`hasMoreUp` /
+# `hasMoreDown` say where there is more), so each answer is read once and merged.
+query GetLineage(
+  $start: LineageRootInput!
+  $up: Int! = 1
+  $down: Int! = 3
+  $limit: Int! = 300
+  $fanout: Int! = 50
+) {
+  lineage(start: $start, up: $up, down: $down, limit: $limit, fanout: $fanout) {
+    root
+    truncated
+    nodes {
+      key
+      kind
+      id
+      name
+      depth
+      createdAt
+      taskId
+      hasMoreUp
+      hasMoreDown
+      # Every lens is a port: the tile lists them and each edge leaves from
+      # `sourceLens`, one of these.
+      lensCount
+      lenses {
+        id
+        label
+        whole
+        shape
+        slices {
+          axis
+          start
+          stop
+          step
+        }
+      }
+      # An array dataset's schematic: its axes with sizes and chunks, at level 0.
+      axes {
+        name
+        type
+        size
+        chunk
+      }
+      dtype
+      levels
+    }
+    edges {
+      key
+      kind
+      source
+      target
+      taskId
+      transformationKind
+      valueRelation
+      annotationId
+      primary
+      sourceLens
+    }
+  }
+}

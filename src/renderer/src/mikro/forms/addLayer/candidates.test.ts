@@ -85,6 +85,7 @@ const dataset = (
   id: string,
   name = "dapi.zarr",
   spec: ArrayDatasetSpec[] = [],
+  fullLens?: string,
 ): Candidate => ({
   __typename: "ArrayDataset",
   id,
@@ -94,6 +95,9 @@ const dataset = (
   intrinsicSystem: { id: `grid-${id}` },
   derivedFrom: [],
   sourceFiles: [],
+  fullLens: fullLens
+    ? (lens(fullLens, { datasetId: id, dataset: name }) as Extract<Candidate, { __typename: "ArrayLens" }>)
+    : null,
 });
 
 const level = (id: string, value: number): Candidate => ({
@@ -318,6 +322,27 @@ describe("buildSections", () => {
     ]);
     expect(entry.lenses[0].space).toMatchObject({ id: "w", isWorld: true });
     expect(entry.lenses[1].space).toMatchObject({ id: "crop", isWorld: false });
+  });
+
+  it("offers a dataset through its whole lens, which residents do not list beside it", () => {
+    // The server lists a container once: a segmentation with no crop is an
+    // ArrayDataset resident whose only lens rides on it as `fullLens`.
+    const inhabited = space("w", "Stage world", [
+      dataset("d1", "nuclei.zarr", [], "whole"),
+      // A server that still lists the whole lens too yields it once.
+      dataset("d2", "dapi.zarr", [], "dapi-whole"),
+      lens("dapi-whole", { datasetId: "d2", dataset: "dapi.zarr" }),
+    ]);
+    const sections = buildSections({
+      world: worldRef(inhabited),
+      graph: graphOf(inhabited),
+      capabilities: caps(["whole", "dapi-whole"], ["whole"]),
+      search: "",
+    });
+    const byName = Object.fromEntries(datasetsOf(sections).map((entry) => [entry.name, entry]));
+    expect(byName["nuclei.zarr"].lenses.map((option) => option.lens.id)).toEqual(["whole"]);
+    expect(byName["nuclei.zarr"].lenses[0].kinds[0]).toBe("LABEL");
+    expect(byName["dapi.zarr"].lenses.map((option) => option.lens.id)).toEqual(["dapi-whole"]);
   });
 
   it("keeps a dataset reachable only through a lens, and drops one with no drawable lens", () => {

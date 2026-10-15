@@ -8,9 +8,10 @@ import { PageHelp } from "@/core/layout/help";
 export const LOVEKIT_HELP = {
   home: (
     <PageHelp
-      intro="Lovekit carries live video streams. This start page has no content of its own yet."
+      intro="Lovekit carries live video. This page links every Lovekit page and lists the latest streams and broadcasts."
       steps={[
-        <>Open <b>Solo Broadcasts</b> from the module’s navigation to see the live video that is available.</>,
+        <>Use the <b>Streams</b>, <b>Solo Broadcasts</b> and <b>Calls</b> tiles at the top to open those pages.</>,
+        <>Click a stream or broadcast below to open it.</>,
         <>Press ⌘K / Ctrl+K and type “Solo Broadcasts” to get there from anywhere.</>,
       ]}
     />

@@ -8,13 +8,15 @@ import { PageHelp } from "@/core/layout/help";
 export const KABINET_HELP = {
   home: (
     <PageHelp
-      intro="Kabinet is your organization’s app store. Apps come from GitHub repositories you add; this page shows the repositories, the newest actions they bring and the latest releases."
+      intro="Kabinet is your organization’s app store. Apps come from GitHub repositories you add; this page links every Kabinet page, then shows your pods, the newest apps in the App Store and your repositories."
       steps={[
+        <>Use the tiles at the top (<b>App Store</b>, <b>Repos</b>, <b>Releases</b>, <b>Pods</b>, …) to open those pages.</>,
         <>Press <b>App Store</b> to browse every app and pick one to install.</>,
         <>Press <b>Add Repo</b> and enter a GitHub repository as “user/repo” (or paste its URL). Kabinet reads the repository and lists the apps it declares.</>,
         <>Press <b>Rescan Repos</b> to read all repositories again and pick up releases published since.</>,
-        <>Press <b>Install</b> on a card under <b>Latest Releases</b> to allow that release to run as you.</>,
-        <>Click a repository, action or release card to open its page.</>,
+        <>Look at <b>Pods</b> for what runs on your engines right now, running ones first; click one to see its logs, or <b>All pods</b> for the rest.</>,
+        <>Click an app under <b>Fresh in the App Store</b> to open it and install it, or <b>Open App Store</b> to browse and search every app.</>,
+        <>Click a repository card to open its page.</>,
       ]}
       tips={[
         <>Adding a repository installs nothing on your machine. It only makes its apps available here.</>,

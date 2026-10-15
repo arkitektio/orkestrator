@@ -1,102 +1,15 @@
 import { ArrowRight } from "lucide-react";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
 
-import { type CatalogRoute, routeCatalog, routesOfModule } from "@/core/command/sources/routeCatalog";
-import { useRoles } from "@/core/connection/roles";
-import { useModuleHostVersion } from "@/core/modules/host/host";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/core/ui/hover-card";
+import type { CatalogRoute } from "@/core/command/sources/routeCatalog";
+import { type ModuleNavLayout, useModuleNav } from "@/core/modules/hooks/useModuleNav";
+import { Popover, PopoverAnchor, PopoverContent } from "@/core/ui/popover";
 import { DroppableNavLink } from "@/core/ui/link";
 import { cn } from "@/core/util/utils";
 
-/** Delay before the first card of a hover run opens. */
-const OPEN_DELAY = 200;
-const CLOSE_DELAY = 160;
-/**
- * How long after the last card closed a neighbour still opens instantly — the
- * pointer crossing the gap between two tiles should not restart the delay.
- */
-const SKIP_DELAY = 400;
-
-type HoverGroup = {
-  openKey: string | null;
-  /** True while a card is open, and for `SKIP_DELAY` after the last closed. */
-  unfolded: boolean;
-  setOpen: (key: string, open: boolean) => void;
-};
-
-const HoverGroupContext = createContext<HoverGroup | null>(null);
-
-/**
- * One open module card at a time, menubar-style: the first card waits for
- * `OPEN_DELAY`, but once one is open, moving onto another tile switches to its
- * card at once instead of waiting out a close and a fresh open.
- *
- * Radix's HoverCard has no group of its own (NavigationMenu does, but it is
- * built around a single shared viewport for a horizontal bar, which does not
- * fit a wrapping grid of icons), so the cards are controlled from here.
- */
-export const ModuleNavHoverGroup = ({ children }: { children: React.ReactNode }) => {
-  const [openKey, setOpenKey] = useState<string | null>(null);
-  const [unfolded, setUnfolded] = useState(false);
-  const foldTimer = useRef<number | undefined>(undefined);
-
-  const setOpen = useCallback((key: string, open: boolean) => {
-    window.clearTimeout(foldTimer.current);
-    if (open) {
-      setOpenKey(key);
-      setUnfolded(true);
-      return;
-    }
-    // A stale close from the card we just switched away from must not close
-    // the one that replaced it.
-    setOpenKey((current) => (current === key ? null : current));
-    foldTimer.current = window.setTimeout(() => setUnfolded(false), SKIP_DELAY);
-  }, []);
-
-  useEffect(() => () => window.clearTimeout(foldTimer.current), []);
-
-  const value = useMemo(() => ({ openKey, unfolded, setOpen }), [openKey, unfolded, setOpen]);
-
-  return <HoverGroupContext.Provider value={value}>{children}</HoverGroupContext.Provider>;
-};
-
-/** A module's pages, as its popout lays them out. */
-type ModuleNavLayout = {
-  home?: CatalogRoute;
-  groups: { title: string; links: CatalogRoute[] }[];
-};
-
-/** The group a link without one falls into. */
-const DEFAULT_GROUP = "Pages";
-
 /** A module with this few tiles gets one narrow column: two would look empty. */
 const NARROW_MAX_TILES = 3;
-
-export const layoutModuleNav = (links: readonly CatalogRoute[]): ModuleNavLayout => {
-  const home = links.find((link) => link.home);
-  const groups = new Map<string, CatalogRoute[]>();
-  for (const link of links) {
-    if (link === home) continue;
-    const title = link.group ?? DEFAULT_GROUP;
-    const group = groups.get(title);
-    if (group) group.push(link);
-    else groups.set(title, [link]);
-  }
-  return { home, groups: [...groups].map(([title, links]) => ({ title, links })) };
-};
-
-/** One module's pages, re-read when a module arrives or leaves. */
-const useModuleNav = (moduleKey: string): ModuleNavLayout => {
-  const version = useModuleHostVersion();
-  const { roles } = useRoles();
-  return useMemo(
-    () => layoutModuleNav(routesOfModule(routeCatalog(), moduleKey, roles)),
-    // `version` is the dependency: the catalog is rebuilt when it moves.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [moduleKey, version, roles],
-  );
-};
 
 const Tile = ({ link }: { link: CatalogRoute }) => {
   const Icon = link.icon;
@@ -164,9 +77,9 @@ const Chip = ({ link }: { link: CatalogRoute }) => {
  * none (the per-kind dataset pages, which the label already says enough about).
  *
  * Pages only, from the module's `navLinks`: no lists of recent or pinned
- * objects. Those ran the module's queries on every hover and duplicated what
- * the module's own home page and ⌘K already show; a card you pass over on the
- * way to a tile should open at once and cost nothing.
+ * objects. Those ran the module's queries every time the card opened and
+ * duplicated what the module's own home page and ⌘K already show; the card
+ * should open at once and cost nothing.
  */
 export const ModuleNavCard = ({
   nav,
@@ -228,23 +141,29 @@ export const ModuleNavCard = ({
   );
 };
 
+/** Where clicking a module's tile goes: its `home` page, else the module's route. */
+export const useModuleHome = (moduleKey: string, fallback: string): string =>
+  useModuleNav(moduleKey).home?.route ?? fallback;
+
 /**
- * A module's pages, on hover over its icon.
+ * A module's card, on right-click of its tile.
  *
- * These links used to sit permanently in the rail (and before that, in a
- * resizable pane of their own beside the page). Both were a standing cost for
- * something you need for a moment: the rail's vertical run is worth more to the
- * open tabs below, and the pages you actually revisit end up pinned anyway.
+ * It used to open on hover, which put a card over the page every time the
+ * pointer crossed the rail on its way somewhere else. A plain click now goes
+ * to the module's home page; the card with every page — and, through `footer`,
+ * the service's connection state — is one right-click away.
  *
- * `ready` gates it: a page in a module whose service is down is a dead end —
- * the tile itself leads to the page that explains why.
+ * Only the pages are gated on `ready`: a page in a module whose service is
+ * down is a dead end, but the header (which opens the page that explains
+ * why) and the footer still show.
  */
-export const ModuleNavHover = ({
+export const ModuleNavMenu = ({
   moduleKey,
   ready,
   to,
   label,
   icon,
+  footer,
   children,
 }: {
   moduleKey: string;
@@ -253,30 +172,27 @@ export const ModuleNavHover = ({
   to: string;
   label: string;
   icon?: React.ReactNode;
+  /** Below the pages: the module's connection state, for one. */
+  footer?: React.ReactNode;
   children: React.ReactNode;
 }) => {
-  const group = useContext(HoverGroupContext);
-  // Outside a group each card manages itself, with the plain delay.
-  const [localOpen, setLocalOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const nav = useModuleNav(moduleKey);
-
-  if (!ready || nav.groups.length === 0) {
-    return <>{children}</>;
-  }
-
-  const open = group ? group.openKey === moduleKey : localOpen;
-  const setOpen = (next: boolean) =>
-    group ? group.setOpen(moduleKey, next) : setLocalOpen(next);
+  const shown = useMemo(() => (ready ? nav : { home: nav.home, groups: [] }), [ready, nav]);
 
   return (
-    <HoverCard
-      open={open}
-      onOpenChange={setOpen}
-      openDelay={group?.unfolded ? 0 : OPEN_DELAY}
-      closeDelay={CLOSE_DELAY}
-    >
-      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
-      <HoverCardContent
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverAnchor asChild>
+        <div
+          onContextMenu={(event) => {
+            event.preventDefault();
+            setOpen(true);
+          }}
+        >
+          {children}
+        </div>
+      </PopoverAnchor>
+      <PopoverContent
         side="right"
         align="start"
         sideOffset={8}
@@ -287,14 +203,11 @@ export const ModuleNavHover = ({
           if ((event.target as HTMLElement).closest("a")) setOpen(false);
         }}
       >
-        <ModuleNavCard nav={nav} to={to} label={label} icon={icon} />
-      </HoverCardContent>
-    </HoverCard>
+        <ModuleNavCard nav={shown} to={to} label={label} icon={icon} />
+        {footer}
+      </PopoverContent>
+    </Popover>
   );
 };
 
-/** Whether hovering this module's tile opens a navigation card. */
-export const hasModuleNav = (moduleKey: string, ready: boolean) =>
-  ready && routesOfModule(routeCatalog(), moduleKey).some((link) => !link.home);
-
-export default ModuleNavHover;
+export default ModuleNavMenu;

@@ -8,6 +8,16 @@ mutation CreateAnnotation($input: CreateAnnotationInput!) {
   }
 }
 
+# A draw in the scene: the shape, and what its card asks of it — its
+# descriptors and those of its crop of the probed lens — in one go, so the
+# card that opens on the new shape reads them from the cache.
+mutation CreateSceneAnnotation($input: CreateAnnotationInput!, $lens: ID!) {
+  createAnnotation(input: $input) {
+    ...Annotation
+    ...AnnotationActionDescriptors
+  }
+}
+
 mutation UpdateAnnotation($input: UpdateAnnotationInput!) {
   updateAnnotation(input: $input) {
     ...Annotation

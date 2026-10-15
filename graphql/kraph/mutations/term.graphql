@@ -10,8 +10,12 @@ mutation UpdateTerm($input: UpdateTermInput!) {
   }
 }
 
-mutation DeleteTerm($id: String!) {
-  deleteTerm(input: { id: $id })
+# A word is never deleted — every claim recorded under it names it. Hiding puts
+# it away: pickers stop offering it, and showing it again is the same call.
+mutation SetTermHidden($id: String!, $hidden: Boolean!) {
+  updateTerm(input: { id: $id, hidden: $hidden }) {
+    ...Term
+  }
 }
 
 # Typing a word the organization has not used before claims it. The key is the

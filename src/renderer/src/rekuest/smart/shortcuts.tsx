@@ -13,8 +13,10 @@ import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Zap } from "lucide-react";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
 import type { SmartContextProps } from "@/core/smart/extensions/types";
+import { useResultSink } from "@/core/smart/extensions/results";
 import {
   OpenResultButtons,
+  deliverResults,
   runsDirectly,
   useOpenResult,
   type OpenableReturn,
@@ -22,6 +24,7 @@ import {
 import { bindShortcutKey } from "./shortcutKeybinds";
 import { actionAvailability } from "./actions";
 import { BlokLogo } from "@/rekuest/components/logo/BlokLogo";
+import { materializeErrorMessage, resolveRun } from "./materialize";
 
 /** The Shortcuts row; the section is a descriptor in `./sections.tsx`. */
 
@@ -88,7 +91,7 @@ export const ShortcutButton = (
   // Depend on the individual fields, not `props` (a fresh object every render),
   // so the callbacks below — and the window keydown effect that depends on
   // them — stay stable across renders.
-  const { objects, partners, onDone, onError } = props;
+  const { objects, partners, onDone, onError, materialize } = props;
   const [doing, setDoing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [progress, setProgress] = React.useState<number | null>(0);
@@ -119,10 +122,26 @@ export const ShortcutButton = (
   );
 
   const thenOpen = useOpenResult();
+  const sink = useResultSink();
 
   const conditionalAssign = React.useCallback(
     async (shortcut: ListShortcutFragment, open?: OpenableReturn) => {
-      const keys = buildShortcutArgs(shortcut, { objects, partners });
+      let run: SmartContextProps = { objects, partners };
+      if (materialize) {
+        // Running while the object it runs on is made.
+        setDoing(true);
+        try {
+          run = await resolveRun({ objects, partners, materialize });
+        } catch (error) {
+          const message = materializeErrorMessage(error);
+          setDoing(false);
+          setError(message);
+          onError?.(message);
+          return;
+        }
+        setDoing(false);
+      }
+      const keys = buildShortcutArgs(shortcut, run);
       if (!keys) {
         return;
       }
@@ -140,9 +159,11 @@ export const ShortcutButton = (
       const reference = uuidv4();
       // Also globally: the popover holding this row closes on select, so the
       // rail's task island is the only surface left for the running task.
-      const untrack = trackTask(reference, open ? thenOpen(open, doStuff) : doStuff, {
-        notifyGlobally: true,
-      });
+      const untrack = trackTask(
+        reference,
+        deliverResults(sink, shortcut.returns, open ? thenOpen(open, doStuff) : doStuff),
+        { notifyGlobally: true },
+      );
 
       try {
         await assign(buildAssignInput({
@@ -163,7 +184,7 @@ export const ShortcutButton = (
         onError?.(message);
       }
     },
-    [assign, doStuff, thenOpen, openDialog, objects, partners, onError],
+    [assign, doStuff, thenOpen, sink, openDialog, objects, partners, materialize, onError],
   );
 
   React.useEffect(() => {

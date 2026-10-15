@@ -6,6 +6,20 @@ import { PageHelp } from "@/core/layout/help";
  * the button labels, menu entries and dialogs are the ones on screen.
  */
 export const KUVERT_HELP = {
+  home: (
+    <PageHelp
+      intro="Where to go in Kuvert, and what wants reading: every Kuvert page, then the newest unread and flagged conversations across all your mailboxes, and the mailboxes themselves."
+      steps={[
+        <>Use the tiles at the top to open a mailbox (<b>All Inboxes</b>, <b>Unread</b>, <b>Flagged</b>, <b>Sent</b>) or another Kuvert page such as <b>Tasks</b> or <b>Search</b>.</>,
+        <>Click a conversation under <b>Unread</b> or <b>Flagged</b> to open it, or <b>All</b> beside the heading for the whole mailbox.</>,
+        <>Press <b>New mail</b> to write a message.</>,
+      ]}
+      tips={[
+        <><b>Unread</b> and <b>Flagged</b> appear only while something is in them.</>,
+        <>Without a mailbox, press <b>Add mailbox</b> to link your first account.</>,
+      ]}
+    />
+  ),
   smartMailbox: (
     <PageHelp
       intro="A mailbox that gathers mail from all your accounts: All Inboxes, Unread, Flagged or Sent. Conversations are listed on the left, newest first; the one you select opens on the right."

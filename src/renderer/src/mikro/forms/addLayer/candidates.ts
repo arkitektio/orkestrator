@@ -254,7 +254,8 @@ const columnSummary = (table: TableCandidate) =>
  *
  * A dataset is assembled from two directions and keyed by its id, because the
  * two halves need not share a space: the `ArrayDataset` resident carries the
- * name and the spec, its `Lens` residents carry what can actually be drawn. A
+ * name, the spec and its whole lens (`fullLens`), its crop `Lens` residents
+ * carry the rest of what can actually be drawn. A
  * lens whose dataset is not itself a resident still yields an entry — the lens
  * knows its dataset — and a dataset with no drawable lens yields none.
  */
@@ -329,6 +330,39 @@ export const buildSections = (input: {
     return created;
   };
 
+  // One array lens onto its dataset's entry. A crop arrives as a resident of
+  // its own space; the whole lens on its dataset's resident, since `residents`
+  // lists a container once and never beside its whole lens. Keyed by id, so a
+  // lens reached both ways is offered once.
+  const addLens = (resident: ArrayLensResident, spaceRef: SpaceRef) => {
+    const lens = lensCandidateOf(resident, capabilities);
+    const suggestion = suggestLensKinds(graph, lens, capabilities, staged);
+    // Not drawable as anything — the server would refuse the creation, so
+    // the lens is not offered at all.
+    if (!suggestion.kinds.length) return;
+    const entry = datasetEntry(resident.dataset, resident.dataset.spec);
+    const key = `Lens:${resident.id}`;
+    if (entry.lenses.some((option) => option.key === key)) return;
+    entry.lenses.push({
+      key,
+      lens,
+      label: resident.lensName ? `${resident.lensName} — ${lensLabel(resident)}` : lensLabel(resident),
+      space: spaceRef,
+      kinds: suggestion.kinds,
+      suggestion,
+    });
+    // The relation reads the channel count off a lens, which the dataset
+    // resident does not carry; the widest lens answers for the entry.
+    const channelAxis = lens.renderAxes?.intensity ?? null;
+    const channels = extentOf(lens, channelAxis);
+    if (channels > 1) {
+      Object.assign(
+        entry,
+        relate({ __typename: "ArrayDataset", id: resident.dataset.id }, channels, channelAxis),
+      );
+    }
+  };
+
   for (const space of spaces) {
     const spaceRef: SpaceRef = {
       id: space.id,
@@ -338,35 +372,12 @@ export const buildSections = (input: {
 
     for (const resident of space.residents) {
       switch (resident.__typename) {
-        case "ArrayLens": {
-          const lens = lensCandidateOf(resident, capabilities);
-          const suggestion = suggestLensKinds(graph, lens, capabilities, staged);
-          // Not drawable as anything — the server would refuse the creation, so
-          // the lens is not offered at all.
-          if (!suggestion.kinds.length) break;
-          const entry = datasetEntry(resident.dataset, resident.dataset.spec);
-          entry.lenses.push({
-            key: `Lens:${resident.id}`,
-            lens,
-            label: resident.lensName ? `${resident.lensName} — ${lensLabel(resident)}` : lensLabel(resident),
-            space: spaceRef,
-            kinds: suggestion.kinds,
-            suggestion,
-          });
-          // The relation reads the channel count off a lens, which the dataset
-          // resident does not carry; the widest lens answers for the entry.
-          const channelAxis = lens.renderAxes?.intensity ?? null;
-          const channels = extentOf(lens, channelAxis);
-          if (channels > 1) {
-            Object.assign(
-              entry,
-              relate({ __typename: "ArrayDataset", id: resident.dataset.id }, channels, channelAxis),
-            );
-          }
+        case "ArrayLens":
+          addLens(resident, spaceRef);
           break;
-        }
         case "ArrayDataset":
           datasetEntry(resident, resident.spec);
+          if (resident.fullLens) addLens(resident.fullLens, spaceRef);
           break;
         case "TableDataset": {
           const suggestion = suggestTableKinds(graph, resident);

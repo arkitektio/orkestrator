@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { annotationObject, clickPointOf, layerLensPartner, pairLayerId } from "./annotationActionTarget";
+import {
+  annotationObject,
+  clickPointOf,
+  cropLensObject,
+  layerLensPartner,
+  pairLayerId,
+} from "./annotationActionTarget";
 
 const image = { "@mikro/n_space_axes": 2, "@mikro/n_channels": 1 };
 const volume = { "@mikro/n_space_axes": 3, "@mikro/n_channels": 2 };
@@ -59,5 +65,17 @@ describe("annotationActionTarget", () => {
     const point = { x: 1, y: 2, z: 3 };
     expect(clickPointOf({ delta: 0, point })).toEqual([1, 2, 3]);
     expect(clickPointOf({ delta: 40, point })).toBeUndefined();
+  });
+
+  it("names a crop not made yet by its lens and shape, never by a lens id, with what it would provide", () => {
+    const crop = cropLensObject({ id: "ann:1", name: "soma" }, { id: "2", label: "DAPI" }, { "@mikro/spec": ["IMAGE"] });
+    expect(crop).toEqual({
+      identifier: "@mikro/arraylens",
+      id: "cut:2:ann:1",
+      label: "soma on DAPI",
+      descriptors: { "@mikro/spec": ["IMAGE"] },
+    });
+    expect(cropLensObject({ id: "ann:1", name: null }, { id: "2" }, {}).label).toBe("Shape on this image");
+    expect(cropLensObject({ id: "ann:1", name: null }, { id: "2" }, {}).descriptors).toBeUndefined();
   });
 });

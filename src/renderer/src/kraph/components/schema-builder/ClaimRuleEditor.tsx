@@ -292,7 +292,7 @@ const WordChips = (props: {
 }) => {
   const [searchTerms] = useSearchEntityTermsLazyQuery();
   const search = useCallback<SearchFunction>(
-    async ({ search }) => (await searchTerms({ variables: { search } })).data?.options ?? [],
+    async ({ search }) => (await searchTerms({ variables: { search, hidden: false } })).data?.options ?? [],
     [searchTerms],
   );
   return <ValueChips {...props} search={search} placeholder="Pick a word…" />;

@@ -1,4 +1,5 @@
 import { Sidebars } from "@/core/layout/Sidebars";
+import { ModuleHome } from "@/core/layout/ModuleHome";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { HelpSidebar } from "@/core/layout/help";
 import { DialogButton } from "@/core/ui/dialog-button";
@@ -21,7 +22,7 @@ const Page = () => {
   const navigate = useNavigate();
 
   return (
-    <PageLayout help={OMEROARK_HELP.home} title="Projects" pageActions={<> <DeleteMeButton />
+    <PageLayout help={OMEROARK_HELP.home} title="Omero Ark" pageActions={<> <DeleteMeButton />
 
 
       <DialogButton
@@ -51,7 +52,13 @@ const Page = () => {
         </Sidebars.Tab>
       </Sidebars>
     }>
-      <ProjectList />
+      <ModuleHome
+        moduleKey="omeroark"
+        title="Omero Ark"
+        description="The projects, datasets and images of your OMERO server."
+      >
+        <ProjectList />
+      </ModuleHome>
     </PageLayout>
   );
 };

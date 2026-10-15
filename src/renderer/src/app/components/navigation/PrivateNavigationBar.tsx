@@ -2,14 +2,7 @@ import { Arkitekt, serviceGuard } from "@/core/connection/arkitekt/host";
 import { moduleRegistry } from "@/app/Arkitekt";
 import { DroppableNavLink } from "@/core/ui/link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuLabel,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/core/ui/context-menu";
+import { Button } from "@/core/ui/button";
 import { cn } from "@/core/util/utils";
 import { aliasToHttpPath } from "@/core/connection/arkitekt/alias/helpers";
 import {
@@ -20,8 +13,9 @@ import {
   Clock,
 } from "lucide-react";
 import React from "react";
+import { useMatch } from "react-router-dom";
 import { matchIcon } from "../../../core/modules/moduleIcons";
-import ModuleNavHover, { ModuleNavHoverGroup, hasModuleNav } from "./ModuleNavHover";
+import ModuleNavMenu, { useModuleHome } from "./ModuleNavMenu";
 import RailTabs from "./RailTabs";
 import RailFooter from "./RailFooter";
 import { isModuleAllowed, ModuleRailIslands } from "@/core/modules/registries";
@@ -170,6 +164,43 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
 };
 
 /**
+ * The foot of a module's right-click card: where the service is reached, and
+ * a retry. What used to be the tile's whole context menu.
+ *
+ * Connected, one line is enough; otherwise the full breakdown — every alias
+ * tried and every error — because then it is the reason you opened the card.
+ */
+const ModuleConnectionFooter = ({ moduleKey }: { moduleKey: string }) => {
+  const moduleState = Arkitekt.useModuleState(moduleKey);
+  const serviceState = Arkitekt.useServiceState(moduleState?.definition.key ?? "");
+  const { retryModule } = Arkitekt.useActions();
+
+  const retry = (
+    <Button variant="ghost" size="xs" className="ml-auto shrink-0" onClick={() => void retryModule(moduleKey)}>
+      <RefreshCw />
+      Retry
+    </Button>
+  );
+
+  if (moduleState?.status === "ready" && serviceState?.alias) {
+    return (
+      <div className="mt-2 flex items-center gap-2 border-t border-border/50 px-1.5 pt-1.5 text-[11px] text-muted-foreground">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
+        <span className="min-w-0 truncate font-mono">{aliasToHttpPath(serviceState.alias, "")}</span>
+        {retry}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 border-t border-border/50 pt-1.5">
+      <ServiceConnectionInfo moduleKey={moduleKey} />
+      <div className="flex px-1.5">{retry}</div>
+    </div>
+  );
+};
+
+/**
  * One module's tile.
  *
  * It selects its own state rather than being handed it. Passing
@@ -199,35 +230,59 @@ const tileClass = (active: boolean) =>
   );
 
 /**
+ * A module's tile: a click opens the module's home page, and the tile reads as
+ * active anywhere under the module's route, not only on that page.
+ */
+const ModuleTile = ({
+  route,
+  home,
+  label,
+  className,
+  children,
+}: {
+  route: string;
+  home: string;
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) => {
+  const isActive = useMatch({ path: route, end: false }) !== null;
+  return (
+    <DroppableNavLink to={home} className="block" aria-label={label}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span data-active={isActive} className={cn(tileClass(isActive), className)}>
+            {children}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="right">{label}</TooltipContent>
+      </Tooltip>
+    </DroppableNavLink>
+  );
+};
+
+/**
  * Team — the lok module — as a tile of its own.
  *
  * Not a `moduleRegistry` entry: lok is the session's own service, not one of
  * the configured ones, so a registry row would read as "unconfigured". The rail
  * only renders inside a signed-in shell, where lok is by definition ready.
  */
-const TeamNavItem = () => (
-  <ModuleNavHover moduleKey="lok" ready to="/lok" label="Team" icon={matchIcon("lok")}>
-    <DroppableNavLink to="/lok" className="block" aria-label="Team">
-      {({ isActive }) => (
-        <span data-active={isActive} className={tileClass(isActive)}>
-          {matchIcon("lok")}
-        </span>
-      )}
-    </DroppableNavLink>
-  </ModuleNavHover>
-);
+const TeamNavItem = () => {
+  const home = useModuleHome("lok", "/lok");
+  return (
+    <ModuleNavMenu moduleKey="lok" ready to="/lok" label="Team" icon={matchIcon("lok")}>
+      <ModuleTile route="/lok" home={home} label="Team">
+        {matchIcon("lok")}
+      </ModuleTile>
+    </ModuleNavMenu>
+  );
+};
 
 const ModuleNavItem = ({ moduleKey }: { moduleKey: string }) => {
   const moduleState = Arkitekt.useModuleState(moduleKey);
-  const { retryModule } = Arkitekt.useActions();
+  const home = useModuleHome(moduleKey, moduleState?.route ?? `/${moduleKey}`);
 
-  if (!moduleState) {
-    return null;
-  }
-
-  const icon = matchIcon(moduleKey);
-  const isChecking = moduleState.status === "checking";
-  const isInvalid = moduleState.status === "invalid";
   /**
    * Every module the rail shows is navigable, including a broken one.
    *
@@ -236,75 +291,45 @@ const ModuleNavItem = ({ moduleKey }: { moduleKey: string }) => {
    * offers the retry and the connection doctor. Refusing to open it hides the
    * only screen that helps. It still greys out, so the rail reads the same at
    * a glance — it just no longer withholds the explanation.
+   *
+   * Hidden ones are unreachable in practice: the rail is built from
+   * `useAvailableModuleKeys`, which already drops them. Kept as an explicit
+   * floor rather than a disabled tile, because a tile nobody can open has no
+   * job here.
    */
-  const isInteractive = moduleState.status !== "hidden";
-
-  const buttonContent = (
-    <div className={cn("flex items-center justify-center", isInvalid && "opacity-35 grayscale")}>
-      {icon}
-    </div>
-  );
-
-  if (isInteractive) {
-    return (
-      <ContextMenu key={moduleKey}>
-        <ContextMenuTrigger asChild>
-          <ModuleNavHover
-            moduleKey={moduleKey}
-            ready={moduleState.status === "ready"}
-            to={moduleState.route}
-            label={moduleState.definition.label || moduleState.key}
-            icon={icon}
-          >
-          <DroppableNavLink to={moduleState.route} className="block">
-            {({ isActive }) => {
-              const tile = (
-                <span
-                  data-active={isActive}
-                  className={cn(tileClass(isActive), isChecking && "opacity-80")}
-                >
-                  {buttonContent}
-                </span>
-              );
-              // The hover card already names the module in its header; a
-              // tooltip on top of it would say the same thing in the same spot.
-              if (hasModuleNav(moduleKey, moduleState.status === "ready")) {
-                return tile;
-              }
-              return (
-                <Tooltip>
-                  <TooltipTrigger asChild>{tile}</TooltipTrigger>
-                  <TooltipContent side="right">
-                    {moduleState.definition.label || moduleState.key}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            }}
-          </DroppableNavLink>
-          </ModuleNavHover>
-        </ContextMenuTrigger>
-        <ContextMenuContent className="w-auto">
-          <ContextMenuLabel>{moduleState.definition.label || moduleState.key}</ContextMenuLabel>
-          <ContextMenuSeparator />
-          <ServiceConnectionInfo moduleKey={moduleKey} />
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            onClick={() => {
-              void retryModule(moduleKey);
-            }}
-          >
-            <RefreshCw className="mr-2 h-3 w-3" />
-            Retry Connection
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
-    );
+  if (!moduleState || moduleState.status === "hidden") {
+    return null;
   }
 
-  // Unreachable in practice: the rail is built from `useAvailableModuleKeys`,
-  // which already drops the hidden ones. Kept as an explicit floor rather
-  // than a disabled tile, because a tile nobody can open has no job here.
-  return null;
+  const icon = matchIcon(moduleKey);
+  const label = moduleState.definition.label || moduleState.key;
+
+  return (
+    <ModuleNavMenu
+      moduleKey={moduleKey}
+      ready={moduleState.status === "ready"}
+      to={moduleState.route}
+      label={label}
+      icon={icon}
+      footer={<ModuleConnectionFooter moduleKey={moduleKey} />}
+    >
+      <ModuleTile
+        route={moduleState.route}
+        home={home}
+        label={label}
+        className={cn(moduleState.status === "checking" && "opacity-80")}
+      >
+        <div
+          className={cn(
+            "flex items-center justify-center",
+            moduleState.status === "invalid" && "opacity-35 grayscale",
+          )}
+        >
+          {icon}
+        </div>
+      </ModuleTile>
+    </ModuleNavMenu>
+  );
 };
 
 const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
@@ -326,7 +351,6 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           to the open tabs below than to twelve stacked icons. `auto-fit` with a
           `1fr` max stretches the tiles across the full rail width and wraps to
           a new row only once a tile would drop below its minimum size. */}
-      <ModuleNavHoverGroup>
       {/* `app-no-drag`: the rail's surface is a window-drag region, and a drag
           region eats the clicks of everything inside it that has not opted out.
           The gaps AROUND this grid still drag the window. */}
@@ -359,10 +383,9 @@ const PrivateNavigationBar: React.FC<INavigationBarProps> = () => {
           <ModuleNavItem key={moduleKey} moduleKey={moduleKey} />
         ))}
       </div>
-      </ModuleNavHoverGroup>
 
-      {/* The open tabs. A module's own links live on the hover over its icon
-          above, not here — the vertical run belongs to what the user has open,
+      {/* The open tabs. A module's own links live on the right-click card of
+          its icon above, not here — the vertical run belongs to what the user has open,
           the pinned ones first.
 
           Deliberately NOT `app-no-drag` on this scroller: `RailTabs` opts its

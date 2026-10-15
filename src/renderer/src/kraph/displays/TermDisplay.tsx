@@ -20,6 +20,7 @@ export const TermDisplay = (props: DisplayWidgetProps) => {
           <span className="font-medium text-sm truncate">{term.key}</span>
           <span className="text-xs text-muted-foreground shrink-0">
             {termKindLabel(term.kind)}
+            {term.hidden && " · hidden"}
           </span>
         </div>
       </KraphTerm.DetailLink>
@@ -28,7 +29,12 @@ export const TermDisplay = (props: DisplayWidgetProps) => {
 
   return (
     <KraphTerm.DetailLink object={{ id: props.id }}>
-      <div className="w-full rounded-lg border border-border/60 bg-card p-3 space-y-1 relative overflow-hidden">
+      <div
+        className={
+          "w-full rounded-lg border border-border/60 bg-card p-3 space-y-1 relative overflow-hidden" +
+          (term.hidden ? " opacity-60" : "")
+        }
+      >
         <div
           className="absolute inset-x-0 top-0 h-1"
           style={{ background: termTint(term.color) }}
@@ -49,6 +55,7 @@ export const TermDisplay = (props: DisplayWidgetProps) => {
         <div className="font-semibold text-sm">{term.label || term.key}</div>
         <div className="text-xs text-muted-foreground">
           {term.key} · {termKindLabel(term.kind)}
+          {term.hidden && " · hidden"}
         </div>
         {term.description && (
           <div className="text-xs text-muted-foreground line-clamp-2">

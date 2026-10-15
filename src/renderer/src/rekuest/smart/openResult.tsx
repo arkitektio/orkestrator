@@ -1,4 +1,5 @@
 import { RowIconButton } from "@/core/smart/extensions/CommandActionRow";
+import type { ResultSink } from "@/core/smart/extensions/results";
 import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { smartRegistry } from "@/core/smart/registry";
 import { structure } from "@/core/smart/structure";
@@ -64,6 +65,65 @@ export const returnedStructure = (
       ? (value as Record<string, unknown>).object
       : value;
   return typeof id === "string" || typeof id === "number" ? structure(port.identifier, id) : null;
+};
+
+/** A returned value as a Structure: the wire form names its own identifier. */
+const wireStructure = (value: unknown, fallback?: string | null): Structure | null => {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    const identifier = typeof record.__identifier === "string" ? record.__identifier : fallback;
+    const id = record.object;
+    return identifier && (typeof id === "string" || typeof id === "number") ? structure(identifier, id) : null;
+  }
+  return fallback && (typeof value === "string" || typeof value === "number") ? structure(fallback, value) : null;
+};
+
+/**
+ * Every structure a yield holds, at every return port: a Structure port's
+ * value, and each item of a List port's (whose items name their identifier in
+ * the wire form). Empty ports and other kinds add nothing.
+ */
+export const returnedStructures = (
+  ports: readonly OpenableReturn[] | null | undefined,
+  returns: unknown,
+): Structure[] => {
+  if (!returns || typeof returns !== "object") return [];
+  const record = returns as Record<string, unknown>;
+  return (ports ?? []).flatMap((port) => {
+    const value = record[port.key];
+    if (port.kind === PortKind.Structure) {
+      const found = wireStructure(value, port.identifier);
+      return found ? [found] : [];
+    }
+    if (port.kind === PortKind.List && Array.isArray(value)) {
+      return value.flatMap((item) => {
+        const found = wireStructure(item);
+        return found ? [found] : [];
+      });
+    }
+    return [];
+  });
+};
+
+/**
+ * Wraps a run's task callback so the menu's result sink (`useResultSink`)
+ * hears what it returned: once, on completion, from the last yield. Without a
+ * sink, the callback as it was.
+ */
+export const deliverResults = (
+  sink: ResultSink | null,
+  ports: readonly OpenableReturn[] | null | undefined,
+  onEvent: OnTaskEvent,
+): OnTaskEvent => {
+  if (!sink) return onEvent;
+  let returns: unknown = null;
+  return (event) => {
+    if (event.returns != null) returns = event.returns;
+    onEvent(event);
+    if (event.kind !== TaskEventKind.Completed) return;
+    const results = returnedStructures(ports, returns);
+    if (results.length > 0) sink(results);
+  };
 };
 
 /** "Run, then open Image"; the port's label too when two returns share a type. */

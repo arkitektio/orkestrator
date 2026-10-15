@@ -8,18 +8,17 @@ import { PageHelp } from "@/core/layout/help";
 export const ALPAKA_HELP = {
   home: (
     <PageHelp
-      intro="Alpaka is where you chat with language models about your data. This page starts a new chat and lists the ones you had recently."
+      intro="Alpaka is where you chat with language models about your data. This page starts a new chat, links every Alpaka page and lists the chats you had most recently."
       steps={[
         <>Type a question into the box at the top and press Enter to start a new chat. Shift + Enter adds a new line instead.</>,
+        <>Use the <b>Rooms</b>, <b>Collections</b>, <b>Models</b> and <b>Providers</b> tiles to open those pages; <b>Rooms</b> lists and searches every chat.</>,
         <>Click the <b>Continue chat</b> card to go back to the chat you used last.</>,
-        <>Type into <b>Filter chats</b> to narrow the list of recent chats by title or text.</>,
-        <>Press <b>New</b> next to the filter to open an empty chat without a first question.</>,
-        <>Use the <b>Models</b>, <b>Providers</b> and <b>Collections</b> tiles at the bottom to see what the chats can draw on.</>,
+        <>Press <b>New</b> next to <b>Recent chats</b> to open an empty chat without a first question, or <b>All chats</b> to see the rest.</>,
       ]}
       tips={[
         <>Your question is not sent right away: it is placed in the new chat’s message box, where you pick who answers before sending.</>,
         <>You can start a chat about any object in the app: right-click it and choose <b>Talk about structure</b>.</>,
-        <>The filter, the <b>New</b> button and the <b>Continue chat</b> card only appear once you have at least one chat.</>,
+        <>The <b>New</b> button and the <b>Continue chat</b> card only appear once you have at least one chat.</>,
       ]}
     />
   ),

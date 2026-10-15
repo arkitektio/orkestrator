@@ -5,6 +5,7 @@ import {
   HoverSkeleton,
 } from "@/core/ui/HoverShell";
 import { Badge } from "@/core/ui/badge";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Object } from "@/core/types";
 import { formatDistanceToNow } from "date-fns";
 import { Zap } from "lucide-react";
@@ -62,7 +63,16 @@ export const AgentHoverCard = ({ object }: { object: Object }) => {
       </div>
 
       <div className="flex flex-col gap-1">
-        <HoverRow label="User" value={agent.user.sub} />
+        <HoverRow
+          label="User"
+          value={
+            <StructureDisplay
+              identifier="@lok/user"
+              id={agent.user.sub}
+              variant="inline"
+            />
+          }
+        />
         {agent.lastSeen && (
           <HoverRow
             label="Last seen"

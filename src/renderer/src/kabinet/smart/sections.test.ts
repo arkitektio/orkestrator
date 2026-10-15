@@ -23,6 +23,7 @@ describe("kabinet's install prefetch", () => {
       { service: "kabinet", name: "definitions", query: SmartDefinitionsDocument, variables },
     ]);
     expect(JSON.stringify(variables)).toContain('"descriptors":[{"key":"axes","value":"c"}]');
+    expect(variables.filters?.alreadyDeployed).toBe(false);
   });
 
   it("also asks for definitions taking one item when several are selected", () => {

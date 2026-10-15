@@ -21,9 +21,10 @@ export const TermBadge = ({
       <span
         className={
           "inline-flex items-center gap-1.5 rounded-full border border-border/60 px-2 py-0.5 text-xs text-muted-foreground hover:text-primary transition-colors " +
+          (term.hidden ? "opacity-60 line-through decoration-muted-foreground/50 " : "") +
           (className ?? "")
         }
-        title={`${term.key} · ${termKindLabel(term.kind)}`}
+        title={`${term.key} · ${termKindLabel(term.kind)}${term.hidden ? " · hidden" : ""}`}
       >
         <span
           className="h-2 w-2 rounded-full shrink-0"

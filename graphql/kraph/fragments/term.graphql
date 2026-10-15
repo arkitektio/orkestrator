@@ -4,6 +4,9 @@ fragment ListTerm on Term {
   key
   label
   color
+  # A word is never deleted, only hidden: still named by its claims, no longer
+  # offered by pickers.
+  hidden
 }
 
 fragment Term on Term {
@@ -13,6 +16,21 @@ fragment Term on Term {
   createdAt
   image {
     ...MediaStore
+  }
+}
+
+# A row of the vocabulary explorer: enough to tell words apart and to say
+# whether any graph speaks one, without each card fetching its own term.
+fragment ExploreTerm on Term {
+  ...ListTerm
+  description
+  purl
+  categories {
+    id
+    graph {
+      id
+      name
+    }
   }
 }
 

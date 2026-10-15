@@ -884,6 +884,8 @@ export type DefinitionFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<DefinitionFilter>;
   OR?: InputMaybe<DefinitionFilter>;
+  /** Keep only definitions already deployed in their organization (a deployment of one of the flavours that provide them, on one of its backends), or with false only those never deployed there: what is left to install. */
+  alreadyDeployed?: InputMaybe<Scalars['Boolean']['input']>;
   /** Keep only definitions provided by these apps. */
   apps?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep only definitions in these collections. */

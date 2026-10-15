@@ -1,3 +1,4 @@
+import { useOfferedTermSearch } from "@/kraph/lib/terms";
 import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
 import { ParagraphField } from "@/core/forms/ParagraphField";
@@ -376,7 +377,8 @@ const ExistenceStep = ({
 }) => {
   const { control, getValues, setValue } = useFormContext<WizardValues>();
   const [search] = useSearchGraphsLazyQuery();
-  const [searchTerms] = useSearchEntityTermsLazyQuery();
+  const [searchEntityTerms] = useSearchEntityTermsLazyQuery();
+  const searchTerms = useOfferedTermSearch(searchEntityTerms);
   const [createTerm] = useCreateEntityTermInlineMutation();
   const mode = useWatch({ control, name: "existenceMode" });
   const rules = useWatch({ control, name: "rules" });

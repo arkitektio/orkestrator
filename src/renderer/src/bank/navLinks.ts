@@ -2,6 +2,7 @@ import {
   ArrowLeftRight,
   ChartNoAxesCombined,
   Home,
+  LayoutDashboard,
   Landmark,
   LineChart,
   ListChecks,
@@ -21,7 +22,8 @@ import type { NavLinkDecl } from "@/core/modules/host/define";
 
 /** bank's pages, for the ⌘K palette and its rail popout (a `navLinks` builtin). */
 export const BANK_NAV_LINKS: NavLinkDecl[] = [
-  { label: "Overview", route: "/bank", keywords: ["finance", "money", "dashboard"], group: "Explore", icon: Home, home: true },
+  { label: "Home", route: "/bank/home", keywords: ["finance", "money"], group: "Explore", icon: Home, home: true },
+  { label: "Overview", route: "/bank", keywords: ["dashboard", "cashflow", "charts"], group: "Explore", icon: LayoutDashboard, description: "Cashflow, spending and budgets" },
   { label: "Insights", route: "/bank/insights", keywords: ["stats", "analysis", "compare", "trends", "savings"], group: "Explore", icon: ChartNoAxesCombined, description: "Trends and comparisons" },
   { label: "Accounts", route: "/bank/accounts", keywords: ["balance"], group: "Explore", icon: Wallet, description: "Balances per account" },
   { label: "Transactions", route: "/bank/transactions", keywords: ["payments", "statement"], group: "Explore", icon: ArrowLeftRight, description: "Every booking" },

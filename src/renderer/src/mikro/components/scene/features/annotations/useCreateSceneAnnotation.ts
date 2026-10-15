@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import {
   AnnotationKind,
   useCreateAnnotationMutation,
+  useCreateSceneAnnotationMutation,
   type CreateAnnotationMutation,
 } from "@/mikro/api/graphql";
 import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
@@ -9,6 +10,9 @@ import { upsertSceneAnnotation } from "../../../../lib/annotations/annotationCac
 import { inSceneOrder, toStoredVector } from "./sceneVectors";
 import { useRoiSelectionStoreApi } from "./roiSelectionStore";
 import { useSceneStoreApi } from "../../platform/stores/sceneStore";
+import { useViewerStoreApi } from "../../platform/stores/viewerStore";
+import { layerLensPartner, pairLayerId } from "./hover/annotationActionTarget";
+import { primeCardDescriptors } from "./hover/primeCardDescriptors";
 
 export type CreatedSceneAnnotation = CreateAnnotationMutation["createAnnotation"];
 
@@ -27,11 +31,18 @@ export type CreatedSceneAnnotation = CreateAnnotationMutation["createAnnotation"
  * This hook is mounted by the hot brick layer components, which otherwise
  * avoid reactive store subscriptions — so it must not subscribe either. All
  * scene state is read lazily via the store API at call time.
+ *
+ * With a lens under the probe, the draw also asks what the shape's card will
+ * (`CreateSceneAnnotation`: its descriptors, and its crop's of that lens) and
+ * writes the answer where the card reads it, so the card that opens on the new
+ * shape lists its actions without a request of its own.
  */
 export const useCreateSceneAnnotation = () => {
   const sceneStoreApi = useSceneStoreApi();
   const roiSelectionApi = useRoiSelectionStoreApi();
+  const viewerStoreApi = useViewerStoreApi();
   const [createAnnotation] = useCreateAnnotationMutation();
+  const [createWithCut] = useCreateSceneAnnotationMutation();
 
   const createSceneAnnotation = useCallback(
     async (
@@ -54,24 +65,45 @@ export const useCreateSceneAnnotation = () => {
                 layer.__typename === "AnnotationLayer" &&
                 layer.annotationCollection?.id === collectionId,
             );
-        const result = await createAnnotation({
-          variables: { input: { scene: sceneId, kind, vectors } },
-          // The answer IS the new shape: write it into its collection's list
-          // instead of fetching the whole list again (`annotationCache.ts`).
-          // In stored order, as the cache holds every shape.
-          update: (cache, { data }) => {
-            const drawn = data?.createAnnotation;
-            if (drawn) upsertSceneAnnotation(cache, drawn.collection.id, drawn);
-          },
+        // The lens the card will run with: the probe's, by the card's own rule.
+        const layers = sceneStoreApi.getState().layers;
+        const lens = layerLensPartner(
+          pairLayerId(null, viewerStoreApi.getState().probeLayerId, layers),
+          layers,
+        );
+        const input = { scene: sceneId, kind, vectors };
+        const options = {
           // Annotating the scene mints its annotation collection, the
           // collection's registration into the world AND the AnnotationLayer
           // that draws it — but only on first use. Until that layer exists
           // there is nothing to render the shape, so the first annotation has
           // to refetch the scene itself, once.
-          refetchQueries: ({ data }) =>
+          refetchQueries: ({ data }: { data?: CreateAnnotationMutation | null }) =>
             drawsCollection(data?.createAnnotation.collection.id) ? [] : ["GetScene"],
           awaitRefetchQueries: false,
-        });
+        };
+        const result = lens
+          ? await createWithCut({
+              variables: { input, lens: lens.id },
+              update: (cache, { data }) => {
+                const drawn = data?.createAnnotation;
+                if (!drawn) return;
+                upsertSceneAnnotation(cache, drawn.collection.id, drawn);
+                primeCardDescriptors(cache, drawn, lens.id);
+              },
+              ...options,
+            })
+          : await createAnnotation({
+              variables: { input },
+              // The answer IS the new shape: write it into its collection's list
+              // instead of fetching the whole list again (`annotationCache.ts`).
+              // In stored order, as the cache holds every shape.
+              update: (cache, { data }) => {
+                const drawn = data?.createAnnotation;
+                if (drawn) upsertSceneAnnotation(cache, drawn.collection.id, drawn);
+              },
+              ...options,
+            });
         const answered = result.data?.createAnnotation ?? null;
         if (!answered) return null;
         const created = inSceneOrder(answered);
@@ -119,7 +151,7 @@ export const useCreateSceneAnnotation = () => {
         return null;
       }
     },
-    [createAnnotation, sceneStoreApi, roiSelectionApi],
+    [createAnnotation, createWithCut, sceneStoreApi, viewerStoreApi, roiSelectionApi],
   );
 
   const createPointAnnotation = useCallback(

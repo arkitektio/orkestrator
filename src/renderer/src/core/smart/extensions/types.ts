@@ -26,6 +26,16 @@ export type SmartContextProps = {
    */
   sections?: SmartSectionSelection;
   /**
+   * What the rows RUN with, when the menu's structures stand for objects not
+   * made yet (the scene card's crop of a lens to a shape). Filtering reads
+   * `objects` / `partners` as they are — a match needs only identifiers and
+   * descriptors — and a row awaits this before it builds an action's
+   * arguments, so the object is made only when something runs on it.
+   * Honoured by rekuest's rows: a menu passing it narrows `sections` to
+   * those, or another row would run on the stand-ins.
+   */
+  materialize?: () => Promise<Pick<SmartContextProps, "objects" | "partners">>;
+  /**
    * Focus the search field on open. Default true; off where the menu opens
    * while a key is still held, whose auto-repeat would type into it.
    */

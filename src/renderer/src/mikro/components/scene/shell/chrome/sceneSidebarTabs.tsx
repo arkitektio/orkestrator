@@ -1,4 +1,5 @@
 import { SceneGuard, useSceneScopeStatus } from "../SceneProvider";
+import { SceneResultSink } from "../../features/results/SceneResultSink";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { AnimationPanel } from "../../features/animation/AnimationPanel";
 import { AnnotationsPanel } from "../../features/annotations/AnnotationsPanel";
@@ -43,21 +44,27 @@ const SceneLayersSidebarBody = () => {
 /** The layer list as a sidebar tab. */
 export const SceneLayersSidebar = () => (
   <SceneGuard fallback={<SidebarFallback />}>
+    <SceneResultSink>
     <SceneLayersSidebarBody />
+    </SceneResultSink>
   </SceneGuard>
 );
 
 /** The camera-tour editor/player as a sidebar tab. */
 export const SceneAnimationsSidebar = () => (
   <SceneGuard fallback={<SidebarFallback />}>
+    <SceneResultSink>
     <AnimationPanel variant="sidebar" />
+    </SceneResultSink>
   </SceneGuard>
 );
 
 /** Every annotation in the scene, with selection details, as a sidebar tab. */
 export const SceneAnnotationsSidebar = () => (
   <SceneGuard fallback={<SidebarFallback />}>
+    <SceneResultSink>
     <AnnotationsPanel variant="sidebar" />
+    </SceneResultSink>
   </SceneGuard>
 );
 
@@ -68,7 +75,9 @@ export const SceneAnnotationsSidebar = () => (
  */
 export const SceneMeshesSidebar = () => (
   <SceneGuard fallback={<SidebarFallback />}>
+    <SceneResultSink>
     <MeshesPanel variant="sidebar" />
+    </SceneResultSink>
   </SceneGuard>
 );
 
@@ -80,9 +89,11 @@ export const SceneMeshesSidebar = () => (
  */
 export const SceneProbeSidebar = () => (
   <SceneGuard fallback={<SidebarFallback />}>
+    <SceneResultSink>
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-2">
       <ProbePanel />
       <ProbeMetadata />
     </div>
+    </SceneResultSink>
   </SceneGuard>
 );

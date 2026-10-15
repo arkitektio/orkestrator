@@ -75,13 +75,22 @@ query GetAnnotationInfo($id: ID!) {
 }
 
 # What one shape PROVIDES to an action's port (`@mikro/annotation_kind`, the
-# axis counts of its collection's space), for the scene's click menu. Per
-# clicked shape, never on `SceneAnnotation`: the server reads the collection's
-# axes to answer it, and that fragment ships every shape of every layer.
-query GetAnnotationDescriptors($id: ID!) {
+# axis counts of its collection's space), and what the crop of the lens under
+# it would (`descriptorsUnder`: the descriptors `createLens(lens:, annotation:)`
+# would give its lens, before anyone makes it; null when the shape misses the
+# lens), for the scene's card. Per clicked shape, never on `SceneAnnotation`:
+# the server reads the collection's axes to answer it, and that fragment ships
+# every shape of every layer. A draw asks the same in the request that makes
+# the shape (`CreateSceneAnnotation`) and writes it here.
+fragment AnnotationActionDescriptors on Annotation {
+  id
+  descriptors
+  descriptorsUnder(lens: $lens)
+}
+
+query GetAnnotationActionDescriptors($id: ID!, $lens: ID!) {
   annotation(id: $id) {
-    id
-    descriptors
+    ...AnnotationActionDescriptors
   }
 }
 

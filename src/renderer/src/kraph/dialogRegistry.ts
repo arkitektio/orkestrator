@@ -9,6 +9,7 @@ import CreateEntityForm from "./forms/CreateEntityForm";
 import CreateGraphForm from "./forms/CreateGraphForm";
 import CreateNaturalEventCategoryForm from "./forms/CreateNaturalEventCategoryForm";
 import CreateProtocolEventCategoryForm from "./forms/CreateProtocolEventCategoryForm";
+import CreateTermForm from "./forms/CreateTermForm";
 import { TForm as CreateRelationCategoryForm } from "./forms/CreateRelationCategoryForm";
 import { TForm as CreateStructureRelationCategoryForm } from "./forms/CreateStructureRelationCategoryForm";
 import UpdateEntityCategoryForm from "./forms/UpdateEntityCategoryForm";
@@ -33,4 +34,5 @@ export const KRAPH_DIALOGS = {
   createnaturaleventcategory: CreateNaturalEventCategoryForm,
   createrelationcategory: CreateRelationCategoryForm,
   createstructurerelationcategory: CreateStructureRelationCategoryForm,
+  createterm: CreateTermForm,
 };

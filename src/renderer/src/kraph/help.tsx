@@ -8,9 +8,10 @@ import { PageHelp } from "@/core/layout/help";
 export const KRAPH_HELP = {
   home: (
     <PageHelp
-      intro="The starting page of the knowledge graph module. A graph collects what you know about your samples: the things you track (entities), what was measured on them, and how they relate. This page shows every graph you have."
+      intro="The starting page of the knowledge graph module. A graph collects what you know about your samples: the things you track (entities), what was measured on them, and how they relate. This page links every Kraph page and shows every graph you have."
       steps={[
-        <>If you have no graph yet, press <b>Create Your First Graph</b>, give it a name and a description, and confirm. You land on the new graph.</>,
+        <>Use the tiles at the top (<b>Terms</b>, <b>Graphs</b>, the categories, <b>Scatter Plots</b>, …) to open those pages.</>,
+        <>If you have no graph yet, press <b>Create your first graph</b>, give it a name and a description, and confirm. You land on the new graph.</>,
         <>Click a graph card to open it and see its schema as a diagram.</>,
         <>Right-click a graph card for its actions, for example <b>Create Protocol Event Category</b> or <b>Delete Graph</b>.</>,
         <>Open the <b>Statistics</b> tab of the sidebar to see how many graphs exist.</>,
@@ -116,11 +117,15 @@ export const KRAPH_HELP = {
     <PageHelp
       intro="Your organization’s vocabulary. A term is a word such as “cell” or “treated with”; graphs declare the words they use, and every graph declaring the same word sees the same records."
       steps={[
+        <>Pick a kind above the list to see only those words; with <b>All kinds</b> the list is grouped by kind.</>,
+        <>Use the search to find a word by its word, label or description.</>,
+        <>Use <b>Graphs</b> to see only words a graph speaks, or only words no graph declares yet.</>,
+        <>Press <b>New term</b> to declare a word before any graph uses it.</>,
         <>Click a term to see what it means and which graphs declare it.</>,
-        <>Read the line under each word to see what kind of term it is.</>,
       ]}
       tips={[
-        <>There is no create button for terms on this page. A term{"’"}s label, description and ontology link are edited on its own page.</>,
+        <>A term is never deleted. Hide it from its page or its menu: pickers stop offering it, and its records stay. Set <b>Show</b> to <b>Hidden</b> to find hidden words again.</>,
+        <>A word and its kind belong together: “AIS” as an entity and “AIS” as a relation are two terms.</>,
       ]}
     />
   ),
@@ -129,11 +134,14 @@ export const KRAPH_HELP = {
       intro="One word of the vocabulary: its meaning, and the graphs that use it. All those graphs share the same records for this word."
       steps={[
         <>Press <b>Edit</b> to set the <b>Label</b>, <b>Description</b> and <b>PURL</b> (the link to a published ontology term), then <b>Save</b>.</>,
-        <>Look under <b>Declared by</b> to see every graph that uses this word, and under which category.</>,
-        <>Click the link below the description, if there is one, to open the published ontology term.</>,
+        <>Click the colour swatch next to the word to change its colour.</>,
+        <>Look under <b>Declared by</b> to see every graph that uses this word, and open its category or the graph.</>,
+        <>Press <b>Hide</b> to stop offering the word in pickers, and <b>Show</b> to offer it again.</>,
       ]}
       tips={[
         <>The description you set here is inherited by every graph that declares the word.</>,
+        <>A term cannot be deleted, and its word cannot be changed: records name it. Declare the right word instead, and hide this one.</>,
+        <>Under <b>Same word, other kinds</b> you find the other terms spelled the same way.</>,
       ]}
     />
   ),

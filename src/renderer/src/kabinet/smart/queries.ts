@@ -16,10 +16,18 @@ export const toKabinetDemands = (
 
 export const SMART_DEFINITION_LIMIT = 12;
 
+/**
+ * What is left to install for the selection: a definition already deployed in
+ * the organization is offered under Run (its action is live), not again here.
+ */
 export const definitionsVariables = (
   demands: KabinetPortDemandInput[],
   options: SearchOptions = {},
 ): SmartDefinitionsQueryVariables => ({
-  filters: { demands, ...(options.search ? { search: options.search } : {}) },
+  filters: {
+    demands,
+    alreadyDeployed: false,
+    ...(options.search ? { search: options.search } : {}),
+  },
   pagination: { limit: options.limit ?? SMART_DEFINITION_LIMIT },
 });

@@ -1281,12 +1281,6 @@ export type DeleteStructureRelationCategoryInput = {
   id: Scalars['String']['input'];
 };
 
-/** Input for retiring one of the organization's words */
-export type DeleteTermInput = {
-  /** The ID of the term to delete */
-  id: Scalars['String']['input'];
-};
-
 /** A DERIVED_FROM claim: this claim came from that one (RFC 0017) */
 export type Derivation = Edge & {
   __typename?: 'Derivation';
@@ -2875,8 +2869,6 @@ export type Mutation = {
   deleteStructureKind: Scalars['ID']['output'];
   /** Delete a structure relation category from the graph */
   deleteStructureRelationCategory: Scalars['ID']['output'];
-  /** Retire a word nothing has been claimed under */
-  deleteTerm: Scalars['ID']['output'];
   /** Finalize a big file upload after the client has written the object */
   finishBigFileUpload: BigFileStore;
   /** Finalize a media upload after the client has written the object */
@@ -2947,7 +2939,7 @@ export type Mutation = {
   updateStructureKind: StructureKind;
   /** Update an existing structure relation category in the graph */
   updateStructureRelationCategory: StructureRelationCategory;
-  /** Update a term's label, description, PURL or colour. Its kind and key are its identity and cannot change. */
+  /** Update a term's label, description, PURL or colour, or hide it. Its kind and key are its identity and cannot change, and a term is never deleted — hiding is how a word is put away. */
   updateTerm: Term;
 };
 
@@ -3231,12 +3223,6 @@ export type MutationDeleteStructureKindArgs = {
 /** Graph Engine Mutations */
 export type MutationDeleteStructureRelationCategoryArgs = {
   input: DeleteStructureRelationCategoryInput;
-};
-
-
-/** Graph Engine Mutations */
-export type MutationDeleteTermArgs = {
-  input: DeleteTermInput;
 };
 
 
@@ -5782,6 +5768,8 @@ export type Term = {
   createdAt: Scalars['DateTime']['output'];
   /** What this word means */
   description?: Maybe<Scalars['String']['output']>;
+  /** Whether curators have put this word away. A word is never deleted; a hidden one is still named by its claims, it is just no longer offered */
+  hidden: Scalars['Boolean']['output'];
   /** Database ID of the term */
   id: Scalars['ID']['output'];
   /** Illustrative image, if any */
@@ -5803,6 +5791,8 @@ export type TermFilter = {
   OR?: InputMaybe<TermFilter>;
   /** Filter to terms at least one graph declares a category for */
   declared?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Only hidden words, or only offered ones. Omitted shows both */
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by the words themselves */
@@ -6096,6 +6086,8 @@ export type UpdateTermInput = {
   color?: InputMaybe<Array<Scalars['Int']['input']>>;
   /** What this word means */
   description?: InputMaybe<Scalars['String']['input']>;
+  /** Put the word away (true) or offer it again (false). A word is never deleted; omitted leaves it as it is */
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
   /** The ID of the term to update */
   id: Scalars['String']['input'];
   /** Optional media store ID for an illustrative image */
@@ -7281,13 +7273,18 @@ export type KnowledgeStructureFragment = (
 
 export type DetailStructureRelationFragment = { __typename?: 'StructureRelation', id: string, label: string, sourceId: string, targetId: string, category?: { __typename?: 'StructureRelationCategory', id: string, label: string } | null, source: { __typename?: 'Structure', identifier: any, object: string }, target: { __typename?: 'Structure', identifier: any, object: string } };
 
-export type ListTermFragment = { __typename?: 'Term', id: string, kind: TermKind, key: string, label?: string | null, color?: Array<number> | null };
+export type ListTermFragment = { __typename?: 'Term', id: string, kind: TermKind, key: string, label?: string | null, color?: Array<number> | null, hidden: boolean };
 
 export type TermFragment = (
   { __typename?: 'Term', description?: string | null, purl?: string | null, createdAt: any, image?: (
     { __typename?: 'MediaStore' }
     & MediaStoreFragment
   ) | null }
+  & ListTermFragment
+);
+
+export type ExploreTermFragment = (
+  { __typename?: 'Term', description?: string | null, purl?: string | null, categories: Array<{ __typename?: 'EntityCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'MeasurementCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'NaturalEventCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'ProtocolEventCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'RelationCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } } | { __typename?: 'StructureRelationCategory', id: string, graph: { __typename?: 'Graph', id: string, name: string } }> }
   & ListTermFragment
 );
 
@@ -8152,12 +8149,16 @@ export type UpdateTermMutation = { __typename?: 'Mutation', updateTerm: (
     & TermFragment
   ) };
 
-export type DeleteTermMutationVariables = Exact<{
+export type SetTermHiddenMutationVariables = Exact<{
   id: Scalars['String']['input'];
+  hidden: Scalars['Boolean']['input'];
 }>;
 
 
-export type DeleteTermMutation = { __typename?: 'Mutation', deleteTerm: string };
+export type SetTermHiddenMutation = { __typename?: 'Mutation', updateTerm: (
+    { __typename?: 'Term' }
+    & TermFragment
+  ) };
 
 export type CreateEntityTermInlineMutationVariables = Exact<{
   input: Scalars['String']['input'];
@@ -9055,12 +9056,34 @@ export type ListTermsQueryVariables = Exact<{
 
 export type ListTermsQuery = { __typename?: 'Query', terms: Array<(
     { __typename?: 'Term' }
+    & ExploreTermFragment
+  )> };
+
+export type TermNamesakesQueryVariables = Exact<{
+  key: Scalars['String']['input'];
+}>;
+
+
+export type TermNamesakesQuery = { __typename?: 'Query', terms: Array<(
+    { __typename?: 'Term' }
+    & ListTermFragment
+  )> };
+
+export type FindTermQueryVariables = Exact<{
+  kind: TermKind;
+  key: Scalars['String']['input'];
+}>;
+
+
+export type FindTermQuery = { __typename?: 'Query', terms: Array<(
+    { __typename?: 'Term' }
     & ListTermFragment
   )> };
 
 export type SearchTermsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -9080,6 +9103,7 @@ export type SearchAssignableTermsQuery = { __typename?: 'Query', terms: Array<(
 export type SearchEntityTermsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -9088,6 +9112,7 @@ export type SearchEntityTermsQuery = { __typename?: 'Query', options: Array<{ __
 export type SearchProtocolEventTermsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -9096,6 +9121,7 @@ export type SearchProtocolEventTermsQuery = { __typename?: 'Query', options: Arr
 export type SearchNaturalEventTermsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -9104,6 +9130,7 @@ export type SearchNaturalEventTermsQuery = { __typename?: 'Query', options: Arra
 export type SearchRelationTermsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -9112,6 +9139,7 @@ export type SearchRelationTermsQuery = { __typename?: 'Query', options: Array<{ 
 export type SearchStructureRelationTermsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -9120,6 +9148,7 @@ export type SearchStructureRelationTermsQuery = { __typename?: 'Query', options:
 export type SearchMeasurementTermsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+  hidden?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
@@ -9319,6 +9348,7 @@ export const ListTermFragmentDoc = gql`
   key
   label
   color
+  hidden
 }
     `;
 export const AssertionFragmentDoc = gql`
@@ -10411,6 +10441,20 @@ export const DetailStructureRelationFragmentDoc = gql`
   }
 }
     `;
+export const ExploreTermFragmentDoc = gql`
+    fragment ExploreTerm on Term {
+  ...ListTerm
+  description
+  purl
+  categories {
+    id
+    graph {
+      id
+      name
+    }
+  }
+}
+    ${ListTermFragmentDoc}`;
 export const TermCategoryFragmentDoc = gql`
     fragment TermCategory on Category {
   __typename
@@ -13051,37 +13095,40 @@ export function useUpdateTermMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type UpdateTermMutationHookResult = ReturnType<typeof useUpdateTermMutation>;
 export type UpdateTermMutationResult = Apollo.MutationResult<UpdateTermMutation>;
 export type UpdateTermMutationOptions = Apollo.BaseMutationOptions<UpdateTermMutation, UpdateTermMutationVariables>;
-export const DeleteTermDocument = gql`
-    mutation DeleteTerm($id: String!) {
-  deleteTerm(input: {id: $id})
+export const SetTermHiddenDocument = gql`
+    mutation SetTermHidden($id: String!, $hidden: Boolean!) {
+  updateTerm(input: {id: $id, hidden: $hidden}) {
+    ...Term
+  }
 }
-    `;
-export type DeleteTermMutationFn = Apollo.MutationFunction<DeleteTermMutation, DeleteTermMutationVariables>;
+    ${TermFragmentDoc}`;
+export type SetTermHiddenMutationFn = Apollo.MutationFunction<SetTermHiddenMutation, SetTermHiddenMutationVariables>;
 
 /**
- * __useDeleteTermMutation__
+ * __useSetTermHiddenMutation__
  *
- * To run a mutation, you first call `useDeleteTermMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteTermMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useSetTermHiddenMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetTermHiddenMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [deleteTermMutation, { data, loading, error }] = useDeleteTermMutation({
+ * const [setTermHiddenMutation, { data, loading, error }] = useSetTermHiddenMutation({
  *   variables: {
  *      id: // value for 'id'
+ *      hidden: // value for 'hidden'
  *   },
  * });
  */
-export function useDeleteTermMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteTermMutation, DeleteTermMutationVariables>) {
+export function useSetTermHiddenMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<SetTermHiddenMutation, SetTermHiddenMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<DeleteTermMutation, DeleteTermMutationVariables>(DeleteTermDocument, options);
+        return ApolloReactHooks.useMutation<SetTermHiddenMutation, SetTermHiddenMutationVariables>(SetTermHiddenDocument, options);
       }
-export type DeleteTermMutationHookResult = ReturnType<typeof useDeleteTermMutation>;
-export type DeleteTermMutationResult = Apollo.MutationResult<DeleteTermMutation>;
-export type DeleteTermMutationOptions = Apollo.BaseMutationOptions<DeleteTermMutation, DeleteTermMutationVariables>;
+export type SetTermHiddenMutationHookResult = ReturnType<typeof useSetTermHiddenMutation>;
+export type SetTermHiddenMutationResult = Apollo.MutationResult<SetTermHiddenMutation>;
+export type SetTermHiddenMutationOptions = Apollo.BaseMutationOptions<SetTermHiddenMutation, SetTermHiddenMutationVariables>;
 export const CreateEntityTermInlineDocument = gql`
     mutation CreateEntityTermInline($input: String!) {
   result: createTerm(input: {kind: ENTITY, key: $input}) {
@@ -16491,10 +16538,10 @@ export type GetTermQueryResult = Apollo.QueryResult<GetTermQuery, GetTermQueryVa
 export const ListTermsDocument = gql`
     query ListTerms($filters: TermFilter, $pagination: VocabularyPaginationInput) {
   terms(filters: $filters, pagination: $pagination) {
-    ...ListTerm
+    ...ExploreTerm
   }
 }
-    ${ListTermFragmentDoc}`;
+    ${ExploreTermFragmentDoc}`;
 
 /**
  * __useListTermsQuery__
@@ -16524,10 +16571,81 @@ export function useListTermsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type ListTermsQueryHookResult = ReturnType<typeof useListTermsQuery>;
 export type ListTermsLazyQueryHookResult = ReturnType<typeof useListTermsLazyQuery>;
 export type ListTermsQueryResult = Apollo.QueryResult<ListTermsQuery, ListTermsQueryVariables>;
+export const TermNamesakesDocument = gql`
+    query TermNamesakes($key: String!) {
+  terms(filters: {keys: [$key]}, pagination: {limit: 20}) {
+    ...ListTerm
+  }
+}
+    ${ListTermFragmentDoc}`;
+
+/**
+ * __useTermNamesakesQuery__
+ *
+ * To run a query within a React component, call `useTermNamesakesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTermNamesakesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTermNamesakesQuery({
+ *   variables: {
+ *      key: // value for 'key'
+ *   },
+ * });
+ */
+export function useTermNamesakesQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TermNamesakesQuery, TermNamesakesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TermNamesakesQuery, TermNamesakesQueryVariables>(TermNamesakesDocument, options);
+      }
+export function useTermNamesakesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TermNamesakesQuery, TermNamesakesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TermNamesakesQuery, TermNamesakesQueryVariables>(TermNamesakesDocument, options);
+        }
+export type TermNamesakesQueryHookResult = ReturnType<typeof useTermNamesakesQuery>;
+export type TermNamesakesLazyQueryHookResult = ReturnType<typeof useTermNamesakesLazyQuery>;
+export type TermNamesakesQueryResult = Apollo.QueryResult<TermNamesakesQuery, TermNamesakesQueryVariables>;
+export const FindTermDocument = gql`
+    query FindTerm($kind: TermKind!, $key: String!) {
+  terms(filters: {kinds: [$kind], keys: [$key]}, pagination: {limit: 1}) {
+    ...ListTerm
+  }
+}
+    ${ListTermFragmentDoc}`;
+
+/**
+ * __useFindTermQuery__
+ *
+ * To run a query within a React component, call `useFindTermQuery` and pass it any options that fit your needs.
+ * When your component renders, `useFindTermQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useFindTermQuery({
+ *   variables: {
+ *      kind: // value for 'kind'
+ *      key: // value for 'key'
+ *   },
+ * });
+ */
+export function useFindTermQuery(baseOptions: ApolloReactHooks.QueryHookOptions<FindTermQuery, FindTermQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<FindTermQuery, FindTermQueryVariables>(FindTermDocument, options);
+      }
+export function useFindTermLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<FindTermQuery, FindTermQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<FindTermQuery, FindTermQueryVariables>(FindTermDocument, options);
+        }
+export type FindTermQueryHookResult = ReturnType<typeof useFindTermQuery>;
+export type FindTermLazyQueryHookResult = ReturnType<typeof useFindTermLazyQuery>;
+export type FindTermQueryResult = Apollo.QueryResult<FindTermQuery, FindTermQueryVariables>;
 export const SearchTermsDocument = gql`
-    query SearchTerms($search: String, $values: [ID!]) {
+    query SearchTerms($search: String, $values: [ID!], $hidden: Boolean) {
   options: terms(
-    filters: {search: $search, ids: $values}
+    filters: {search: $search, ids: $values, hidden: $hidden}
     pagination: {limit: 10}
   ) {
     value: id
@@ -16550,6 +16668,7 @@ export const SearchTermsDocument = gql`
  *   variables: {
  *      search: // value for 'search'
  *      values: // value for 'values'
+ *      hidden: // value for 'hidden'
  *   },
  * });
  */
@@ -16566,7 +16685,10 @@ export type SearchTermsLazyQueryHookResult = ReturnType<typeof useSearchTermsLaz
 export type SearchTermsQueryResult = Apollo.QueryResult<SearchTermsQuery, SearchTermsQueryVariables>;
 export const SearchAssignableTermsDocument = gql`
     query SearchAssignableTerms($search: String, $kinds: [TermKind!]) {
-  terms(filters: {search: $search, kinds: $kinds}, pagination: {limit: 20}) {
+  terms(
+    filters: {search: $search, kinds: $kinds, hidden: false}
+    pagination: {limit: 20}
+  ) {
     ...AssignableTerm
   }
 }
@@ -16601,9 +16723,9 @@ export type SearchAssignableTermsQueryHookResult = ReturnType<typeof useSearchAs
 export type SearchAssignableTermsLazyQueryHookResult = ReturnType<typeof useSearchAssignableTermsLazyQuery>;
 export type SearchAssignableTermsQueryResult = Apollo.QueryResult<SearchAssignableTermsQuery, SearchAssignableTermsQueryVariables>;
 export const SearchEntityTermsDocument = gql`
-    query SearchEntityTerms($search: String, $values: [String!]) {
+    query SearchEntityTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: {search: $search, keys: $values, kinds: [ENTITY]}
+    filters: {search: $search, keys: $values, kinds: [ENTITY], hidden: $hidden}
     pagination: {limit: 10}
   ) {
     value: key
@@ -16626,6 +16748,7 @@ export const SearchEntityTermsDocument = gql`
  *   variables: {
  *      search: // value for 'search'
  *      values: // value for 'values'
+ *      hidden: // value for 'hidden'
  *   },
  * });
  */
@@ -16641,9 +16764,9 @@ export type SearchEntityTermsQueryHookResult = ReturnType<typeof useSearchEntity
 export type SearchEntityTermsLazyQueryHookResult = ReturnType<typeof useSearchEntityTermsLazyQuery>;
 export type SearchEntityTermsQueryResult = Apollo.QueryResult<SearchEntityTermsQuery, SearchEntityTermsQueryVariables>;
 export const SearchProtocolEventTermsDocument = gql`
-    query SearchProtocolEventTerms($search: String, $values: [String!]) {
+    query SearchProtocolEventTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: {search: $search, keys: $values, kinds: [PROTOCOL_EVENT]}
+    filters: {search: $search, keys: $values, kinds: [PROTOCOL_EVENT], hidden: $hidden}
     pagination: {limit: 10}
   ) {
     value: key
@@ -16666,6 +16789,7 @@ export const SearchProtocolEventTermsDocument = gql`
  *   variables: {
  *      search: // value for 'search'
  *      values: // value for 'values'
+ *      hidden: // value for 'hidden'
  *   },
  * });
  */
@@ -16681,9 +16805,9 @@ export type SearchProtocolEventTermsQueryHookResult = ReturnType<typeof useSearc
 export type SearchProtocolEventTermsLazyQueryHookResult = ReturnType<typeof useSearchProtocolEventTermsLazyQuery>;
 export type SearchProtocolEventTermsQueryResult = Apollo.QueryResult<SearchProtocolEventTermsQuery, SearchProtocolEventTermsQueryVariables>;
 export const SearchNaturalEventTermsDocument = gql`
-    query SearchNaturalEventTerms($search: String, $values: [String!]) {
+    query SearchNaturalEventTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: {search: $search, keys: $values, kinds: [NATURAL_EVENT]}
+    filters: {search: $search, keys: $values, kinds: [NATURAL_EVENT], hidden: $hidden}
     pagination: {limit: 10}
   ) {
     value: key
@@ -16706,6 +16830,7 @@ export const SearchNaturalEventTermsDocument = gql`
  *   variables: {
  *      search: // value for 'search'
  *      values: // value for 'values'
+ *      hidden: // value for 'hidden'
  *   },
  * });
  */
@@ -16721,9 +16846,9 @@ export type SearchNaturalEventTermsQueryHookResult = ReturnType<typeof useSearch
 export type SearchNaturalEventTermsLazyQueryHookResult = ReturnType<typeof useSearchNaturalEventTermsLazyQuery>;
 export type SearchNaturalEventTermsQueryResult = Apollo.QueryResult<SearchNaturalEventTermsQuery, SearchNaturalEventTermsQueryVariables>;
 export const SearchRelationTermsDocument = gql`
-    query SearchRelationTerms($search: String, $values: [String!]) {
+    query SearchRelationTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: {search: $search, keys: $values, kinds: [RELATION]}
+    filters: {search: $search, keys: $values, kinds: [RELATION], hidden: $hidden}
     pagination: {limit: 10}
   ) {
     value: key
@@ -16746,6 +16871,7 @@ export const SearchRelationTermsDocument = gql`
  *   variables: {
  *      search: // value for 'search'
  *      values: // value for 'values'
+ *      hidden: // value for 'hidden'
  *   },
  * });
  */
@@ -16761,9 +16887,9 @@ export type SearchRelationTermsQueryHookResult = ReturnType<typeof useSearchRela
 export type SearchRelationTermsLazyQueryHookResult = ReturnType<typeof useSearchRelationTermsLazyQuery>;
 export type SearchRelationTermsQueryResult = Apollo.QueryResult<SearchRelationTermsQuery, SearchRelationTermsQueryVariables>;
 export const SearchStructureRelationTermsDocument = gql`
-    query SearchStructureRelationTerms($search: String, $values: [String!]) {
+    query SearchStructureRelationTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: {search: $search, keys: $values, kinds: [STRUCTURE_RELATION]}
+    filters: {search: $search, keys: $values, kinds: [STRUCTURE_RELATION], hidden: $hidden}
     pagination: {limit: 10}
   ) {
     value: key
@@ -16786,6 +16912,7 @@ export const SearchStructureRelationTermsDocument = gql`
  *   variables: {
  *      search: // value for 'search'
  *      values: // value for 'values'
+ *      hidden: // value for 'hidden'
  *   },
  * });
  */
@@ -16801,9 +16928,9 @@ export type SearchStructureRelationTermsQueryHookResult = ReturnType<typeof useS
 export type SearchStructureRelationTermsLazyQueryHookResult = ReturnType<typeof useSearchStructureRelationTermsLazyQuery>;
 export type SearchStructureRelationTermsQueryResult = Apollo.QueryResult<SearchStructureRelationTermsQuery, SearchStructureRelationTermsQueryVariables>;
 export const SearchMeasurementTermsDocument = gql`
-    query SearchMeasurementTerms($search: String, $values: [String!]) {
+    query SearchMeasurementTerms($search: String, $values: [String!], $hidden: Boolean) {
   options: terms(
-    filters: {search: $search, keys: $values, kinds: [MEASUREMENT]}
+    filters: {search: $search, keys: $values, kinds: [MEASUREMENT], hidden: $hidden}
     pagination: {limit: 10}
   ) {
     value: key
@@ -16826,6 +16953,7 @@ export const SearchMeasurementTermsDocument = gql`
  *   variables: {
  *      search: // value for 'search'
  *      values: // value for 'values'
+ *      hidden: // value for 'hidden'
  *   },
  * });
  */

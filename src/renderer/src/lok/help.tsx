@@ -26,9 +26,10 @@ export const LOK_HELP = {
   ),
   overview: (
     <PageHelp
-      intro="A start page for the Team module: a greeting, what other modules have to tell you (for example your latest mentions), and a handful of the apps registered in your organization."
+      intro="The start page of the Team module: a greeting, every Team page, what other modules have to tell you (for example your latest mentions), and a handful of the apps registered in your organization."
       steps={[
-        <>Click an app under <b>Recent Apps</b> to open it and see its releases.</>,
+        <>Use the tiles at the top to open a Team page: <b>Members</b> lists everyone in your organization, <b>Me</b> is your own profile.</>,
+        <>Click an app under <b>Recent apps</b> to open it and see its releases.</>,
         <>Open the <b>Statistics</b> tab of the sidebar to see how many users your organization has.</>,
         <>Press <b>Record</b> in the header to open the Morse code recorder.</>,
       ]}
@@ -79,7 +80,7 @@ export const LOK_HELP = {
       ]}
       tips={[
         <>This page is only available to administrators.</>,
-        <>The members of your own organization are on the Team start page (<b>Members</b>).</>,
+        <>The members of your own organization are on the <b>Members</b> page of Team.</>,
       ]}
     />
   ),

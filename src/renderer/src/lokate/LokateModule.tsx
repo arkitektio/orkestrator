@@ -2,6 +2,7 @@ import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
+import HomePage from "./pages/HomePage";
 import InsightsPage from "./pages/InsightsPage";
 import PlacePage from "./pages/PlacePage";
 import PlacesPage from "./pages/PlacesPage";
@@ -16,6 +17,7 @@ export const LokateModule: React.FC = () => (
   <ModuleLayout>
     <Routes>
       <Route index element={<TimelinePage />} />
+      <Route path="home" element={<HomePage />} />
       <Route path="places" element={<PlacesPage />} />
       <Route path="places/:id" element={<PlacePage />} />
       <Route path="visits/:id" element={<VisitPage />} />
