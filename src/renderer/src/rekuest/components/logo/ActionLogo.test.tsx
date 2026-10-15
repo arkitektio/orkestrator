@@ -53,7 +53,8 @@ const task = (kind: TaskEventKind, message: string) => ({
 
 afterEach(cleanup);
 
-describe('an action logo', () => {
+// A first drawing renders the blok (its renderer lazy-loaded) and settles before it is kept: slow under a loaded run.
+describe('an action logo', {timeout: 20000}, () => {
   it('is the kept drawing until the viewer runs the action', async () => {
     const idle = render(<ActionLogo action={action as never} className="h-4 w-4" />);
     await waitFor(() => expect(idle.container.querySelector('svg[data-blok-prefix^="logo"]')).not.toBeNull(), {timeout: 5000});

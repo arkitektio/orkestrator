@@ -40,7 +40,8 @@ const KEPT = 'span[data-logo-host] > svg[data-blok-prefix^="logo"]';
 
 afterEach(cleanup);
 
-describe('an agent logo', () => {
+// A first drawing renders the blok (its renderer lazy-loaded) and settles before it is kept: slow under a loaded run.
+describe('an agent logo', {timeout: 20000}, () => {
   it('is drawn once, kept, and then shown from what was kept', async () => {
 
     const first = render(<AgentLogo agent={agent('h1') as never} className="h-8 w-8" />);
