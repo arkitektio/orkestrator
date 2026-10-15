@@ -10,7 +10,7 @@ export type BlokRenderArgs<TSchema extends BlokObjectSchema = BlokObjectSchema> 
 };
 
 /** The renderer a component lives in. A blok's tree starts in `html`. */
-export type BlokComponentContext = 'html' | 'scene';
+export type BlokComponentContext = 'html' | 'scene' | 'logo';
 
 /**
  * Where a component may sit in a tree. Published with the catalog, so the
@@ -22,6 +22,12 @@ export type BlokComponentPlacement = {
   context?: BlokComponentContext;
   /** The context of its children when it differs from its own: it bridges two renderers. */
   childrenContext?: BlokComponentContext;
+  /**
+   * Placed in whichever context is in force, which its children inherit:
+   * control flow that renders nothing of its own (`foreach`, `if`, `Fragment`).
+   * `context` and `childrenContext` are then ignored.
+   */
+  inheritsContext?: boolean;
   /** At least one of these must be an ancestor, at any depth. */
   downstreamOf?: readonly string[];
   /** None of these may be an ancestor. */

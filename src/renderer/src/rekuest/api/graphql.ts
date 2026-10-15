@@ -433,6 +433,8 @@ export type Agent = {
   connected: Scalars['Boolean']['output'];
   /** The name the agent declares for itself, whatever a user calls it. */
   declaredName: Scalars['String']['output'];
+  /** The blok this agent declared as its default for a context, if any: its panel, its scene or its logo. */
+  defaultBlok?: Maybe<MaterializedBlok>;
   /** What this agent is, in a sentence. Client-declared at registration; null for an agent that never declared one. */
   description?: Maybe<Scalars['String']['output']>;
   /** Device associated with the agent, via its client (if any). */
@@ -481,6 +483,12 @@ export type Agent = {
   triggers: Array<Trigger>;
   /** The user this agent belongs to. */
   user: User;
+};
+
+
+/** Represents a compute agent that can execute implementations. */
+export type AgentDefaultBlokArgs = {
+  context: ComponentContext;
 };
 
 
@@ -988,6 +996,8 @@ export type Blok = {
   forModel?: Maybe<Scalars['String']['output']>;
   /** The node of `forModel` this blok attaches to; the model's root when null. */
   forNode?: Maybe<Scalars['String']['output']>;
+  /** A SHA-256 of what the blok renders: its component tree, demo state and context. Two bloks with the same hash draw the same thing, so a client may cache what it rendered under it. */
+  hash: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   /** Materialized bloks that are instances of this blok. */
   materializedBloks: Array<MaterializedBlok>;
@@ -1146,6 +1156,7 @@ export type CatalogComponent = {
   context: ComponentContext;
   description?: Maybe<Scalars['String']['output']>;
   downstreamOf: Array<Scalars['String']['output']>;
+  inheritsContext: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   notDownstreamOf: Array<Scalars['String']['output']>;
   props: Array<CatalogProp>;
@@ -1163,6 +1174,8 @@ export type CatalogComponentInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   /** Component names of which at least one must be an ancestor, at any depth. Empty means no requirement. */
   downstreamOf?: Array<Scalars['String']['input']>;
+  /** Whether the component may be placed in any context, taking its parent's for itself and its children (control flow such as foreach or if). Its context is then ignored. */
+  inheritsContext?: Scalars['Boolean']['input'];
   /** The component name a ComponentNode.component (or a custom widget's component) must match. */
   name: Scalars['String']['input'];
   /** Component names of which none may be an ancestor. */
@@ -1349,6 +1362,7 @@ export type CollectionActionsArgs = {
 /** The renderer a catalog component lives in. A component may only be placed where its context is in force. */
 export enum ComponentContext {
   Html = 'HTML',
+  Logo = 'LOGO',
   Scene = 'SCENE'
 }
 
@@ -6480,7 +6494,10 @@ export type ProtocolAgentFragment = { __typename?: 'Agent', id: string, name: st
         & ReturnPortFragment
       )> } }> };
 
-export type AgentFragment = { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, implementations: Array<(
+export type AgentLogoFragment = { __typename?: 'Agent', logo?: { __typename?: 'MaterializedBlok', id: string, blok: { __typename?: 'Blok', id: string, hash: string } } | null };
+
+export type AgentFragment = (
+  { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, implementations: Array<(
     { __typename?: 'Implementation' }
     & ListImplementationFragment
   )>, memoryShelve?: { __typename?: 'MemoryShelve', id: string } | null, states: Array<(
@@ -6492,9 +6509,14 @@ export type AgentFragment = { __typename?: 'Agent', id: string, hash: string, bl
   )>, placements: Array<(
     { __typename?: 'Placement' }
     & AgentPlacementFragment
-  )> };
+  )> }
+  & AgentLogoFragment
+);
 
-export type ListAgentFragment = { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null };
+export type ListAgentFragment = (
+  { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null }
+  & AgentLogoFragment
+);
 
 export type SearchAgentFragment = { __typename?: 'Agent', id: string, name: string, connected: boolean, blocked: boolean, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string } };
 
@@ -6508,7 +6530,10 @@ export type AgentChangeEventFragment = { __typename?: 'AgentChangeEvent', delete
     & AgentChangeFragment
   ) | null };
 
-export type HoverAgentFragment = { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> };
+export type HoverAgentFragment = (
+  { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> }
+  & AgentLogoFragment
+);
 
 export type StoredAssetFragment = { __typename?: 'Asset', id: string, ref: string, kind: AssetKind, size: number, nodes: Array<string>, width?: number | null, height?: number | null, stats?: { __typename?: 'ModelStats', nodes: number, triangles: number, textures: number, animations: number } | null, file: (
     { __typename?: 'MediaStore' }
@@ -8455,6 +8480,13 @@ export type ListBloksQuery = { __typename?: 'Query', bloks: Array<(
     & ListBlokFragment
   )> };
 
+export type LogoBlokQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type LogoBlokQuery = { __typename?: 'Query', blok: { __typename?: 'Blok', id: string, hash: string, componentTree: any, demoState: any } };
+
 export type ClientsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<ClientFilter>;
@@ -10143,6 +10175,17 @@ export const ProtocolAgentFragmentDoc = gql`
     ${StateFragmentDoc}
 ${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}`;
+export const AgentLogoFragmentDoc = gql`
+    fragment AgentLogo on Agent {
+  logo: defaultBlok(context: LOGO) {
+    id
+    blok {
+      id
+      hash
+    }
+  }
+}
+    `;
 export const ListImplementationFragmentDoc = gql`
     fragment ListImplementation on Implementation {
   id
@@ -10218,6 +10261,7 @@ export const AgentFragmentDoc = gql`
     fragment Agent on Agent {
   id
   hash
+  ...AgentLogo
   implementations {
     ...ListImplementation
   }
@@ -10255,7 +10299,8 @@ export const AgentFragmentDoc = gql`
     ...AgentPlacement
   }
 }
-    ${ListImplementationFragmentDoc}
+    ${AgentLogoFragmentDoc}
+${ListImplementationFragmentDoc}
 ${StateFragmentDoc}
 ${ListTaskFragmentDoc}
 ${AgentPlacementFragmentDoc}`;
@@ -10302,6 +10347,7 @@ export const AgentChangeEventFragmentDoc = gql`
 export const HoverAgentFragmentDoc = gql`
     fragment HoverAgent on Agent {
   id
+  ...AgentLogo
   name
   active
   connected
@@ -10326,7 +10372,7 @@ export const HoverAgentFragmentDoc = gql`
     }
   }
 }
-    `;
+    ${AgentLogoFragmentDoc}`;
 export const StoredAssetFragmentDoc = gql`
     fragment StoredAsset on Asset {
   id
@@ -10879,6 +10925,7 @@ export const DependencyTreeNodeFragmentDoc = gql`
 export const ListAgentFragmentDoc = gql`
     fragment ListAgent on Agent {
   id
+  ...AgentLogo
   kind
   active
   connected
@@ -10906,7 +10953,7 @@ export const ListAgentFragmentDoc = gql`
     sub
   }
 }
-    `;
+    ${AgentLogoFragmentDoc}`;
 export const DependencyTreeBindingFragmentDoc = gql`
     fragment DependencyTreeBinding on ImplementationMapping {
   key
@@ -15653,6 +15700,44 @@ export function useListBloksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type ListBloksQueryHookResult = ReturnType<typeof useListBloksQuery>;
 export type ListBloksLazyQueryHookResult = ReturnType<typeof useListBloksLazyQuery>;
 export type ListBloksQueryResult = Apollo.QueryResult<ListBloksQuery, ListBloksQueryVariables>;
+export const LogoBlokDocument = gql`
+    query LogoBlok($id: ID!) {
+  blok(id: $id) {
+    id
+    hash
+    componentTree
+    demoState
+  }
+}
+    `;
+
+/**
+ * __useLogoBlokQuery__
+ *
+ * To run a query within a React component, call `useLogoBlokQuery` and pass it any options that fit your needs.
+ * When your component renders, `useLogoBlokQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useLogoBlokQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useLogoBlokQuery(baseOptions: ApolloReactHooks.QueryHookOptions<LogoBlokQuery, LogoBlokQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<LogoBlokQuery, LogoBlokQueryVariables>(LogoBlokDocument, options);
+      }
+export function useLogoBlokLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<LogoBlokQuery, LogoBlokQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<LogoBlokQuery, LogoBlokQueryVariables>(LogoBlokDocument, options);
+        }
+export type LogoBlokQueryHookResult = ReturnType<typeof useLogoBlokQuery>;
+export type LogoBlokLazyQueryHookResult = ReturnType<typeof useLogoBlokLazyQuery>;
+export type LogoBlokQueryResult = Apollo.QueryResult<LogoBlokQuery, LogoBlokQueryVariables>;
 export const ClientsDocument = gql`
     query Clients($pagination: OffsetPaginationInput, $filters: ClientFilter, $ordering: [ClientOrder!]) {
   clients(ordering: $ordering, pagination: $pagination, filters: $filters) {

@@ -61,6 +61,7 @@ export const Foreach = createBlokComponent(
   {
     name: 'foreach',
     acceptsChildren: true,
+    placement: {inheritsContext: true},
     schema: z
       .object({
         items: z
@@ -118,6 +119,7 @@ export const Foreach = createBlokComponent(
 export const If = createBlokComponent(
   {
     name: 'if',
+    placement: {inheritsContext: true},
     schema: z
       .object({
         when: BlokPropSchemas.DynamicBoolean.optional().describe(
@@ -142,6 +144,7 @@ export const If = createBlokComponent(
 export const Fragment = createBlokComponent(
   {
     name: 'Fragment',
+    placement: {inheritsContext: true},
     schema: z
       .object({
         children: childListSchema,

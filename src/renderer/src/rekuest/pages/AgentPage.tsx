@@ -1,3 +1,4 @@
+import { AgentLogo } from "@/rekuest/components/logo/AgentLogo";
 import { useRekuest } from "@/rekuest/api/hooks";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { VerticalListRender } from "@/core/layout/VerticalListRender";
@@ -292,7 +293,8 @@ export const AgentPage = asDetailQueryRoute(
           <div className="absolute inset-y-0 left-0 z-20 flex w-full max-w-[620px] items-stretch">
             <div className="flex w-full flex-col justify-between gap-6 p-6">
               <div className="space-y-1">
-                <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <AgentLogo agent={data.agent} className="h-10 w-10 lg:h-12 lg:w-12" />
                   <RekuestAgent.DetailLink object={data.agent}>
                     <h1 className="scroll-m-20 text-2xl font-bold tracking-tight transition-colors hover:text-primary lg:text-4xl cursor-pointer">
                       {data.agent.name}

@@ -22,9 +22,20 @@ fragment ProtocolAgent on Agent {
     }
   }
 }
+fragment AgentLogo on Agent {
+  logo: defaultBlok(context: LOGO) {
+    id
+    blok {
+      id
+      hash
+    }
+  }
+}
+
 fragment Agent on Agent {
   id
   hash
+  ...AgentLogo
   implementations {
     ...ListImplementation
   }
@@ -66,6 +77,7 @@ fragment Agent on Agent {
 
 fragment ListAgent on Agent {
   id
+  ...AgentLogo
   kind
   active
   connected
@@ -140,6 +152,7 @@ fragment AgentChangeEvent on AgentChangeEvent {
 
 fragment HoverAgent on Agent {
   id
+  ...AgentLogo
   name
   active
   connected

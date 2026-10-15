@@ -66,6 +66,7 @@ describe("componentInput", () => {
       acceptsChildren: true,
       context: "HTML",
       childrenContext: null,
+      inheritsContext: false,
       downstreamOf: [],
       notDownstreamOf: [],
       props: [
@@ -113,6 +114,25 @@ describe("componentInput", () => {
       childrenContext: "HTML",
       downstreamOf: ["Model", "Robot"],
     });
+  });
+
+  it("publishes the logo context and the components that take their parent's", () => {
+    const Svg = createBlokComponent(
+      { name: "SVG", placement: { childrenContext: "logo", notDownstreamOf: ["SVG"] }, schema: z.object({}) },
+      Noop,
+    );
+    const Path = createBlokComponent(
+      { name: "Path", placement: { context: "logo", downstreamOf: ["SVG"] }, schema: z.object({}) },
+      Noop,
+    );
+    const Loop = createBlokComponent(
+      { name: "Loop", acceptsChildren: true, placement: { inheritsContext: true }, schema: z.object({}) },
+      Noop,
+    );
+
+    expect(componentInput(Svg)).toMatchObject({ context: "HTML", childrenContext: "LOGO", inheritsContext: false });
+    expect(componentInput(Path)).toMatchObject({ context: "LOGO", childrenContext: null, downstreamOf: ["SVG"] });
+    expect(componentInput(Loop)).toMatchObject({ inheritsContext: true });
   });
 
   it("takes a declared acceptsChildren over the schema's lack of a children prop", () => {

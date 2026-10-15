@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, LayoutPanelTop } from "lucide-react";
+import { Box, LayoutPanelTop, Shapes } from "lucide-react";
 import { Badge } from "@/core/ui/badge";
 import {
   Card,
@@ -24,6 +24,7 @@ interface Props {
 const CONTEXTS: Record<ComponentContext, { label: string; icon: typeof Box }> = {
   [ComponentContext.Scene]: { label: "3D scene", icon: Box },
   [ComponentContext.Html]: { label: "Panel", icon: LayoutPanelTop },
+  [ComponentContext.Logo]: { label: "Logo", icon: Shapes },
 };
 
 const MaterializedBlokCard = ({ item }: Props) => {

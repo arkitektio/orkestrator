@@ -1,4 +1,5 @@
 import {RawInspector} from './bloks/inspector/Inspector';
+import {logoBlokComponents} from './bloks/logo';
 import {lovekitBlokComponents} from './bloks/lovekit';
 import {sceneBlokComponents} from './bloks/scene';
 import {structureBlokComponents} from './bloks/structure';
@@ -30,6 +31,7 @@ export const defaultBlokCatalog = createBlokCatalog(
     ...lovekitBlokComponents,
     ...structureBlokComponents,
     ...sceneBlokComponents,
+    ...logoBlokComponents,
     RawInspector,
   ],
   standardBlokFunctions,
