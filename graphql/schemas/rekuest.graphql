@@ -1303,8 +1303,10 @@ input BlokImplementationInput {
   """
   catalog: String = null
 
-  """The UI component tree blueprint for this Blok."""
-  components: [ComponentNodeInput!]!
+  """
+  The UI component tree blueprint for this Blok, unless it is sent as its `source`.
+  """
+  components: [ComponentNodeInput!] = null
 
   """
   The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene.
@@ -1341,6 +1343,11 @@ input BlokImplementationInput {
 
   """The key of this Blok implementation."""
   key: String!
+
+  """
+  The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent.
+  """
+  source: String = null
 }
 
 """The input for bouncing an agent."""
@@ -1768,6 +1775,11 @@ input CreateBlokInput {
 
   """The name of the Blok, used for identification in the system."""
   name: String!
+
+  """
+  The blok as BSX, which the server parses into `components`: send one of the two.
+  """
+  source: String = null
 }
 
 """
@@ -6717,6 +6729,11 @@ input UpdateBlokInput {
 
   """The name of the blok, used for identification in the system."""
   name: String = null
+
+  """
+  The blok as BSX, which the server parses into the tree it replaces the existing one with: send it or `components`, not both.
+  """
+  source: String = null
 }
 
 """

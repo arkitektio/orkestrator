@@ -1078,8 +1078,8 @@ export type BlokDependencyFilter = {
 export type BlokImplementationInput = {
   /** The optional catalog name if this Blok should be registered inside a specific namespace in your Electron app's UI component registry. */
   catalog?: InputMaybe<Scalars['String']['input']>;
-  /** The UI component tree blueprint for this Blok. */
-  components: Array<ComponentNodeInput>;
+  /** The UI component tree blueprint for this Blok, unless it is sent as its `source`. */
+  components?: InputMaybe<Array<ComponentNodeInput>>;
   /** The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene. */
   context?: ComponentContext;
   /** Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one. */
@@ -1096,6 +1096,8 @@ export type BlokImplementationInput = {
   forNode?: InputMaybe<Scalars['String']['input']>;
   /** The key of this Blok implementation. */
   key: Scalars['String']['input'];
+  /** The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent. */
+  source?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** The input for bouncing an agent. */
@@ -1444,6 +1446,8 @@ export type CreateBlokInput = {
   forNode?: InputMaybe<Scalars['String']['input']>;
   /** The name of the Blok, used for identification in the system. */
   name: Scalars['String']['input'];
+  /** The blok as BSX, which the server parses into `components`: send one of the two. */
+  source?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Input for creating a dashboard, optionally specifying its name and the bloks to include. It is owned by the caller's organization. */
@@ -6117,6 +6121,8 @@ export type UpdateBlokInput = {
   id: Scalars['ID']['input'];
   /** The name of the blok, used for identification in the system. */
   name?: InputMaybe<Scalars['String']['input']>;
+  /** The blok as BSX, which the server parses into the tree it replaces the existing one with: send it or `components`, not both. */
+  source?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Input for updating a dashboard: its name and associated bloks. Ownership cannot be reassigned. */
