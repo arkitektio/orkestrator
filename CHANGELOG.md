@@ -1,3 +1,15 @@
+# [3.4.0](https://github.com/arkitektio/orkestrator/compare/v3.3.0...v3.4.0) (2026-10-15)
+
+
+### Features
+
+* **kabinet:** draw the bloks and logos an app brings, and deploy with any deployer ([d2881ed](https://github.com/arkitektio/orkestrator/commit/d2881ed08099e78b5d4eea5b1ada8a28120b0770))
+
+
+### Performance Improvements
+
+* frozen hidden tabs, a task index, batched user chips and a perf recorder ([09a0c37](https://github.com/arkitektio/orkestrator/commit/09a0c37ce9c554d60f520a853df6a40151784369))
+
 # [3.3.0](https://github.com/arkitektio/orkestrator/compare/v3.2.0...v3.3.0) (2026-10-15)
 
 
