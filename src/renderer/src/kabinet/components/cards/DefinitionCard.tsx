@@ -1,3 +1,4 @@
+import { DefinitionLogo } from "@/kabinet/components/logo/KabinetBlokLogo";
 import React from "react";
 import {
   Card,
@@ -18,8 +19,9 @@ const TheCard = ({ item }: Props) => {
   return (
     <KabinetDefinition.Smart object={item} >
       <Card className="group aspect-square @sm:aspect-[3/2] overflow-hidden">
-        <CardHeader className="flex flex-row justify-between">
-          <div>
+        <CardHeader className="flex flex-row items-start gap-3">
+          <DefinitionLogo definition={item} className="size-10 rounded-lg" />
+          <div className="min-w-0">
             <CardTitle>
               <KabinetDefinition.DetailLink object={item}>
                 {" "}
@@ -32,7 +34,6 @@ const TheCard = ({ item }: Props) => {
               )}
             </CardDescription>
           </div>
-          <CardTitle></CardTitle>
         </CardHeader>
       </Card>
     </KabinetDefinition.Smart>

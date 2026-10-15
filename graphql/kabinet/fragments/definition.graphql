@@ -3,6 +3,10 @@ fragment Definition on Definition {
   name
   hash
   description
+  # The ACTION_LOGO blok that draws it (that of the newest flavour naming one).
+  logo {
+    ...KabinetLogoBlok
+  }
   args {
     ...ArgPort
   }
@@ -19,6 +23,9 @@ fragment ListDefinition on Definition {
   name
   hash
   description
+  logo {
+    ...KabinetLogoBlok
+  }
   # What kind of action it is — every list that shows a definition badges it.
   kind
   flavours {
@@ -31,6 +38,9 @@ fragment ListDefinition on Definition {
       version
       logo
       originalLogo
+      logoBlok {
+        ...KabinetLogoBlok
+      }
       app {
         id
         identifier
@@ -46,4 +56,7 @@ fragment SmartDefinition on Definition {
   id
   name
   description
+  logo {
+    ...KabinetLogoBlok
+  }
 }

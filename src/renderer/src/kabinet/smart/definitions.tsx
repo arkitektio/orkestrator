@@ -1,3 +1,4 @@
+import { DefinitionLogo } from "@/kabinet/components/logo/KabinetBlokLogo";
 import { useDialog } from "@/core/dialogs/registry";
 import {
   DefinitionReleaseDocument,
@@ -76,6 +77,7 @@ export const InstallDefinitionRow = ({ definition }: { definition: SmartDefiniti
       title={definition.name}
       description={definition.description}
       icon={Download}
+      leading={definition.logo ? <DefinitionLogo definition={definition} className="h-full w-full" /> : undefined}
       running={running}
       failure={failure}
     />

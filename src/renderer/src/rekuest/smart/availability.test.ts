@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { AgentKind } from "@/rekuest/api/graphql";
 import { actionAvailability, canTakeWork, needsAgentChoice } from "./actions";

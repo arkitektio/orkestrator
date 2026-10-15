@@ -262,6 +262,9 @@ type App {
   """The globally unique, reverse-domain identifier of the app."""
   identifier: String!
 
+  """The app's logo: the LOGO blok of its newest release that brings one."""
+  logoBlok: FlavourBlok
+
   """
   The versions of this app. Filter, order and paginate them exactly like the root `releases` query -- an app page reads them from here instead of fetching every release and grouping client-side. There is no implicit ordering; ask for `releasedAt` to get them newest first.
   """
@@ -416,6 +419,14 @@ input ArgPortInput {
 
   """The assign widget to use for this port, discriminated by `kind`."""
   widget: AssignWidgetInput = null
+}
+
+"""
+What a file an agent brings with it is: a 3D model (a binary glTF file) or an image (PNG, JPEG or WebP).
+"""
+enum AssetKind {
+  IMAGE
+  MODEL_3D
 }
 
 interface AssignWidget {
@@ -589,8 +600,20 @@ input BlokImplementationInput {
   """
   catalog: String = null
 
-  """The UI component tree blueprint for this Blok."""
-  components: [ComponentNodeInput!]!
+  """
+  The UI component tree blueprint for this Blok, unless it is sent as its `source`.
+  """
+  components: [ComponentNodeInput!] = null
+
+  """
+  The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene.
+  """
+  context: ComponentContext! = HTML
+
+  """
+  Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one.
+  """
+  default: Boolean! = false
 
   """
   An optional JSON-serializable object providing demo state values for this Blok's internal reactive data model, useful for testing and development purposes.
@@ -605,8 +628,23 @@ input BlokImplementationInput {
   """
   description: String = null
 
+  """
+  The model ('sha256:...') this Blok decorates: viewers showing that model offer this Blok at `for_node`. HTML bloks only.
+  """
+  forModel: String = null
+
+  """
+  The node of `for_model` this Blok attaches to; the model's root when absent.
+  """
+  forNode: String = null
+
   """The key of this Blok implementation."""
   key: String!
+
+  """
+  The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent.
+  """
+  source: String = null
 }
 
 """Requires CPU resources on the backend."""
@@ -766,6 +804,16 @@ input CollectionOrder @oneOf {
   definedAt: Ordering
   id: Ordering
   name: Ordering
+}
+
+"""
+The renderer a catalog component lives in. A component may only be placed where its context is in force.
+"""
+enum ComponentContext {
+  ACTION_LOGO
+  HTML
+  LOGO
+  SCENE
 }
 
 """
@@ -1119,6 +1167,11 @@ type Definition {
 
   """The kind of action, e.g. a function or a generator."""
   kind: ActionKind!
+
+  """
+  The ACTION_LOGO blok that draws this action: the one `flavour`'s implementation names, or without `flavour` the one of the newest flavour providing it that names one. Null when none does.
+  """
+  logo(flavour: ID = null): FlavourBlok
 
   """The cleartext name of this action."""
   name: String!
@@ -1530,7 +1583,17 @@ A buildable variant of a release: a specific Docker image together with the sele
 """
 type Flavour {
   """
-  Blok implementation manifests declared by this flavour's inspection, as submitted (rekuest_core BlokImplementationInput shape).
+  The files this flavour's app brings, as its inspection declared them (name, kind, ref, size, and the path in the image or an https source).
+  """
+  assets: UntypedParams!
+
+  """
+  The bloks this flavour's app brings, parsed and ready to draw, in the order it declared them; of one context only when `context` is given.
+  """
+  blokImplementations(context: ComponentContext = null): [FlavourBlok!]!
+
+  """
+  Blok implementation manifests declared by this flavour's inspection (rekuest_core BlokImplementationInput shape): the app's LOGO, its actions' ACTION_LOGOs, panels and scenes.
   """
   bloks: UntypedParams!
 
@@ -1556,6 +1619,9 @@ type Flavour {
 
   """The stored logo of this flavour, which is its release's."""
   logo: String
+
+  """This flavour's app logo: its default LOGO blok, or its first."""
+  logoBlok: FlavourBlok
 
   """The raw app manifest this flavour was built from."""
   manifest: UntypedParams!
@@ -1588,6 +1654,53 @@ type Flavour {
   The imported OCI repository this flavour was read from, if it came from one.
   """
   source: OciRepo
+}
+
+"""
+A blok a flavour's app brings: its LOGO, an action's ACTION_LOGO, a panel (HTML) or a scene (SCENE). Its source is parsed into `componentTree` when the flavour is imported; nothing of it runs here.
+"""
+type FlavourBlok {
+  """
+  The whole component tree as one JSON value (a list of roots) in the wire spelling (snake_case keys), as rekuest serves `Blok.componentTree`. Null when the source does not parse.
+  """
+  componentTree: JSON
+
+  """The renderer its root lives in."""
+  context: ComponentContext!
+
+  """
+  Whether it is its app's default for its context (the app's logo is its default LOGO).
+  """
+  default: Boolean!
+
+  """The state the blok is drawn against when it is shown on its own."""
+  demoState: JSON
+
+  """What the app says the blok shows."""
+  description: String
+
+  """The flavour whose app brings this blok."""
+  flavourId: ID!
+
+  """The model ('sha256:...') this blok decorates, if any."""
+  forModel: String
+
+  """The node of `forModel` it attaches to; the model's root when null."""
+  forNode: String
+
+  """
+  A SHA-256 of what the blok draws: its component tree, demo state and context. Two bloks with the same hash draw the same thing, so a client may keep what it drew under it.
+  """
+  hash: String!
+
+  """`<flavour id>:<key>`: what `flavourBlok` finds it by."""
+  id: ID!
+
+  """The key the app declared this blok under, unique within it."""
+  key: String!
+
+  """Why the blok's source does not parse, or null."""
+  parseError: String
 }
 
 """Filter for flavours."""
@@ -1797,6 +1910,11 @@ input ImplementationInput {
   locks: [String!] = null
 
   """
+  The key of the agent's action logo blok (context ACTION_LOGO) that draws this action.
+  """
+  logo: String = null
+
+  """
   The states that the implementation manipulates. This is used to identify which states are manipulated by the implementation, and can be use to enhance state safety in the system
   """
   manipulates: [String!] = null
@@ -1840,7 +1958,38 @@ input ImportRepoInput {
   reference: String!
 }
 
+"""A file the app brings, as its image holds it."""
+input InspectedAssetInput {
+  """What the file is."""
+  kind: AssetKind!
+
+  """
+  The name bloks refer to the asset by, as in `@self.assets.<name>`. Unique within the agent.
+  """
+  name: String!
+
+  """
+  Where the file is, relative to the app's directory. Absent for a file the image does not hold: that one names a `source`.
+  """
+  path: String = null
+
+  """'sha256:' and the hex SHA-256 of the file's exact bytes."""
+  ref: String!
+
+  """
+  The size of the file in bytes. Required unless the asset names a `source`: an agent knows the size of a file it holds.
+  """
+  size: Int = null
+
+  """
+  The https URL the file can be fetched from. Given instead of holding the file: the agent uploads nothing, an admin's client fetches it.
+  """
+  source: String = null
+}
+
 input InspectionInput {
+  """The files the app brings: models and images its bloks call by name."""
+  assets: [InspectedAssetInput!]! = []
   bloks: [BlokImplementationInput!]! = []
   implementations: [ImplementationInput!]!
   locks: [LockImplementationInput!]!
@@ -2483,6 +2632,11 @@ type Query {
   """Return a single flavour (a buildable variant of a release) by its ID."""
   flavour(id: ID!): Flavour!
 
+  """
+  Return a single blok a flavour's app brings by its ID (`<flavour id>:<key>`), or null when there is none.
+  """
+  flavourBlok(id: ID!): FlavourBlok
+
   """List all flavours visible to the current organization."""
   flavours(filters: FlavourFilter, ordering: [FlavourOrder!]! = [], pagination: OffsetPaginationInput): [Flavour!]!
 
@@ -2620,6 +2774,11 @@ type Release {
   The stored logo of this release: the path of the ingested media, or null while none has been ingested.
   """
   logo: String
+
+  """
+  The release's logo: the LOGO blok of the first of its flavours that brings one.
+  """
+  logoBlok: FlavourBlok
 
   """
   The subject manifest to pre-authorize in lok (createMandate): identifier, version, scopes and the union of flavour requirements.

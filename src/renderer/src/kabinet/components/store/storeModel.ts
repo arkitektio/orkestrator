@@ -36,6 +36,8 @@ export type StoreApp = {
   repos: NonNullable<StoreFlavourFragment["repo"]>[];
   runningCount: number;
   deploymentCount: number;
+  /** The LOGO blok of the newest release that brings one. */
+  logoBlok: { id: string; hash: string } | null;
   logo: string | null;
   hue: number;
   /**
@@ -144,6 +146,7 @@ export const groupApps = (releases: StoreReleaseFragment[]): StoreApp[] => {
       repos,
       runningCount: deployments.filter((d) => d.status === PodStatus.Running).length,
       deploymentCount: deployments.length,
+      logoBlok: appReleases.map((r) => r.logoBlok).find(Boolean) ?? null,
       logo:
         logoFor(latest) ??
         latestFlavours.map(logoFor).find(Boolean) ??

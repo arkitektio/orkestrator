@@ -2,10 +2,11 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Badge } from "@/core/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import { KabinetApp, KabinetRelease } from "@/core/linkers";
-import { Boxes, KeyRound, Layers, ShieldCheck } from "lucide-react";
+import { Boxes, KeyRound, Layers, Shapes, ShieldCheck } from "lucide-react";
+import { bringsBloks, ReleaseBloks } from "../components/bloks/FlavourBloks";
 import { lazy, Suspense, useMemo } from "react";
 import { useGetReleaseQuery, useListReleaseApprovalsQuery } from "../api/graphql";
-import { releaseIdentity } from "../appIdentity";
+import { hasOwnLogo, releaseIdentity } from "../appIdentity";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import { AccessTab, ActionsTab, Fact, FlavoursTab } from "../components/AppTabs";
 import ApprovalCard from "../components/cards/ApprovalCard";
@@ -103,7 +104,7 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
           <div className="relative flex flex-col gap-5 p-6 pt-14">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="flex items-end gap-4">
-                {app.logo ? (
+                {hasOwnLogo(app) ? (
                   <AppIcon
                     app={app}
                     size={96}
@@ -182,6 +183,11 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
               <TabsTrigger value="approvals">
                 <ShieldCheck /> Approvals
               </TabsTrigger>
+              {release.flavours.some(bringsBloks) && (
+                <TabsTrigger value="bloks">
+                  <Shapes /> Bloks
+                </TabsTrigger>
+              )}
             </TabsList>
             <TabsContent value="flavours">
               <FlavoursTab flavours={release.flavours} />
@@ -198,6 +204,11 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
             <TabsContent value="approvals">
               <ApprovalsTab release={release.id} />
             </TabsContent>
+            {release.flavours.some(bringsBloks) && (
+              <TabsContent value="bloks">
+                <ReleaseBloks flavours={release.flavours} />
+              </TabsContent>
+            )}
           </Tabs>
         )}
 

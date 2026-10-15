@@ -47,6 +47,9 @@ fragment StoreFlavour on Flavour {
     name
     description
     kind
+    logo {
+      ...KabinetLogoBlok
+    }
   }
   deployments {
     id
@@ -60,6 +63,9 @@ fragment StoreRelease on Release {
   version
   logo
   originalLogo
+  logoBlok {
+    ...KabinetLogoBlok
+  }
   scopes
   entrypoint
   app {

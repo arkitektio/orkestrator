@@ -3,10 +3,11 @@ import { Badge } from "@/core/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import Timestamp from "@/core/ui/timestamp";
 import { KabinetApp, KabinetFlavour, KabinetRelease } from "@/core/linkers";
-import { Boxes, Container, GitBranch, KeyRound, Layers, Server } from "lucide-react";
+import { Boxes, Container, GitBranch, KeyRound, Layers, Server, Shapes } from "lucide-react";
+import { bringsBloks, FlavourBloks } from "../components/bloks/FlavourBloks";
 import { lazy, Suspense, useMemo } from "react";
 import { PodStatus, useGetFlavourQuery } from "../api/graphql";
-import { logoFor, releaseIdentity } from "../appIdentity";
+import { hasOwnLogo, logoFor, releaseIdentity } from "../appIdentity";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import { AccessTab, ActionsTab, Fact } from "../components/AppTabs";
 import { InstallButton, SelectorBadges } from "../components/store/StoreParts";
@@ -153,7 +154,7 @@ export const FlavourPage = asDetailQueryRoute(useGetFlavourQuery, ({ data }) => 
           <div className="relative flex flex-col gap-5 p-6 pt-14">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="flex items-end gap-4">
-                {app.logo ? (
+                {hasOwnLogo(app) ? (
                   <AppIcon
                     app={app}
                     size={96}
@@ -225,6 +226,11 @@ export const FlavourPage = asDetailQueryRoute(useGetFlavourQuery, ({ data }) => 
             <TabsTrigger value="deployments">
               <Server /> Deployments
             </TabsTrigger>
+            {bringsBloks(flavour) && (
+              <TabsTrigger value="bloks">
+                <Shapes /> Bloks
+              </TabsTrigger>
+            )}
           </TabsList>
           <TabsContent value="actions">
             <ActionsTab
@@ -241,6 +247,11 @@ export const FlavourPage = asDetailQueryRoute(useGetFlavourQuery, ({ data }) => 
           <TabsContent value="deployments">
             <DeploymentsTab deployments={flavour.deployments} />
           </TabsContent>
+          {bringsBloks(flavour) && (
+            <TabsContent value="bloks">
+              <FlavourBloks flavourId={flavour.id} />
+            </TabsContent>
+          )}
         </Tabs>
 
         <OtherFlavours flavours={flavour.release.flavours} current={flavour.id} />

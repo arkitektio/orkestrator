@@ -20,6 +20,9 @@ fragment ListReleaseApproval on ReleaseApproval {
     version
     logo
     originalLogo
+    logoBlok {
+      ...KabinetLogoBlok
+    }
     app {
       id
       identifier
@@ -46,6 +49,9 @@ fragment ApprovableRelease on Release {
   version
   logo
   originalLogo
+  logoBlok {
+    ...KabinetLogoBlok
+  }
   scopes
   approvalDigest
   digestPinned

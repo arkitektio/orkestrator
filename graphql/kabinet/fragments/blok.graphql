@@ -1,0 +1,26 @@
+# A blok a flavour's app brings (FlavourBlok): its LOGO, an action's ACTION_LOGO,
+# a panel or a scene. kabinet parses its BSX source when the flavour is imported;
+# `componentTree` is that tree in the runtime's own (snake_case) spelling, the
+# same value rekuest serves as `Blok.componentTree`.
+
+# What a list needs to show a logo: the drawing is kept under `hash`
+# (core/blok/logo), and the tree is fetched only when it is not (KabinetLogoTree).
+fragment KabinetLogoBlok on FlavourBlok {
+  id
+  hash
+}
+
+fragment KabinetBlok on FlavourBlok {
+  id
+  flavourId
+  key
+  context
+  default
+  description
+  hash
+  componentTree
+  demoState
+  forModel
+  forNode
+  parseError
+}

@@ -2,13 +2,17 @@ import { useMarkImage } from "@/kabinet/lib/marks/useMarkImage";
 import { cn } from "@/core/util/utils";
 import { useState } from "react";
 import { hueFor, type AppIdentity } from "../appIdentity";
+import { KabinetBlokLogo } from "./logo/KabinetBlokLogo";
 
 /** Soft two-stop gradient derived from the app's hue. */
 export const appGradient = (hue: number, alpha = 1) =>
   `linear-gradient(135deg, hsl(${hue} 70% 55% / ${alpha}), hsl(${(hue + 40) % 360} 75% 42% / ${alpha}))`;
 
 /**
- * An app's icon, in three tiers.
+ * An app's icon, in four tiers.
+ *
+ * First the LOGO blok the app brings (`KabinetBlokLogo`): what the app itself
+ * says it looks like, drawn once and kept, so a grid of them renders no bloks.
  *
  * Most registered apps have no logo at all — `App` carries none, and the
  * release/flavour chain `logoFor` walks comes back null for all but a few — so
@@ -43,13 +47,28 @@ export const AppIcon = ({
     .map((word) => word.charAt(0))
     .join("");
 
-  const showLogo = !!app.logo && !failed;
+  const showBlok = !!app.logoBlok;
+  const showLogo = !showBlok && !!app.logo && !failed;
   const { src: mark } = useMarkImage(
-    showLogo
+    showBlok || showLogo
       ? null
       : { name: app.name, identifier: app.identifier, embedding: app.embedding, size },
   );
   const hue = app.hue ?? hueFor(app.identifier);
+
+  if (showBlok) {
+    return (
+      <div
+        className={cn(
+          "relative flex shrink-0 items-center justify-center overflow-hidden rounded-2xl",
+          "size-14 text-lg",
+          className,
+        )}
+      >
+        <KabinetBlokLogo blok={app.logoBlok} className="size-full rounded-[inherit]" />
+      </div>
+    );
+  }
 
   if (showLogo) {
     return (

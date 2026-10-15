@@ -1,0 +1,29 @@
+# A logo's tree, for its first drawing only.
+query KabinetLogoTree($id: ID!) {
+  flavourBlok(id: $id) {
+    id
+    hash
+    componentTree
+    demoState
+  }
+}
+
+# What a flavour's app brings, for its Bloks tab: every blok ready to draw, the
+# files they name (name, kind, ref, size, path or source; nothing stores them
+# before the app is installed), and which action each ACTION_LOGO draws.
+query FlavourBloks($id: ID!) {
+  flavour(id: $id) {
+    id
+    blokImplementations {
+      ...KabinetBlok
+    }
+    assets
+    definitions {
+      id
+      name
+      logo(flavour: $id) {
+        id
+      }
+    }
+  }
+}

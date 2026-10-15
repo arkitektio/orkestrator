@@ -19,6 +19,11 @@ export interface AppIdentity {
   identifier: string;
   /** Display name. Only its first character reaches the mark, as the letter. */
   name: string;
+  /**
+   * The LOGO blok the app brings (its newest release's), drawn and kept by
+   * `KabinetBlokLogo`. Beats an uploaded logo: it is what the app says it looks like.
+   */
+  logoBlok?: { id: string; hash: string } | null;
   /** A real logo, if one was ever uploaded. Beats the generated mark. */
   logo?: string | null;
   /** Kabinet's `Embedding` scalar. Null until the backend has indexed the app. */
@@ -40,6 +45,9 @@ export const logoFor = (entity: {
   originalLogo?: string | null;
 }): string | null =>
   isUrl(entity.logo) ? entity.logo : isUrl(entity.originalLogo) ? entity.originalLogo : null;
+
+/** Whether the app has a picture of its own (a LOGO blok or an uploaded logo), so no mark is generated. */
+export const hasOwnLogo = (app: Pick<AppIdentity, "logo" | "logoBlok">): boolean => !!(app.logoBlok || app.logo);
 
 /** Stable hue per identifier, so every app keeps its colour across renders. */
 export const hueFor = (identifier: string): number => {
@@ -73,12 +81,14 @@ export const splitIdentifier = (
 export const releaseIdentity = (release: {
   logo?: string | null;
   originalLogo?: string | null;
+  logoBlok?: { id: string; hash: string } | null;
   app: { id?: string; identifier: string; embedding?: unknown };
   flavours?: readonly { logo?: string | null; originalLogo?: string | null }[];
 }): AppIdentity => ({
   id: release.app.id,
   identifier: release.app.identifier,
   name: splitIdentifier(release.app.identifier).name,
+  logoBlok: release.logoBlok ?? null,
   logo: logoFor(release) ?? release.flavours?.map(logoFor).find(Boolean) ?? null,
   // Codegen types the Embedding scalar as `any`; it is a string on the wire and
   // the decoder is the only thing that reads it, so narrow it at the boundary.

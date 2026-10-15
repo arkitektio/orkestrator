@@ -1,3 +1,4 @@
+import { DefinitionLogo } from "@/kabinet/components/logo/KabinetBlokLogo";
 import { Badge } from "@/core/ui/badge";
 import { Input } from "@/core/ui/input";
 import Timestamp from "@/core/ui/timestamp";
@@ -67,9 +68,13 @@ export const ActionsTab = ({
             object={definition}
             className="group flex gap-3 rounded-xl border bg-card p-3 transition-colors hover:border-foreground/20"
           >
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-              <Boxes className="size-4 text-muted-foreground" />
-            </div>
+            {definition.logo ? (
+              <DefinitionLogo definition={definition} className="size-8 rounded-lg" />
+            ) : (
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <Boxes className="size-4 text-muted-foreground" />
+              </div>
+            )}
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="truncate text-sm font-medium group-hover:underline">

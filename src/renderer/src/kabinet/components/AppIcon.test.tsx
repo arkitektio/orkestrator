@@ -6,6 +6,9 @@ const useMarkImage = vi.fn();
 vi.mock("@/kabinet/lib/marks/useMarkImage", () => ({
   useMarkImage: (input: unknown) => useMarkImage(input),
 }));
+vi.mock("./logo/KabinetBlokLogo", () => ({
+  KabinetBlokLogo: ({ blok }: { blok: { id: string } }) => <span data-testid="logo-blok">{blok.id}</span>,
+}));
 import { AppIcon } from "./AppIcon";
 
 const app = {
@@ -19,11 +22,25 @@ const app = {
 const MARK = "data:image/png;base64,MARK";
 
 /**
- * `AppIcon` has three tiers, and which one shows is the whole point: a real
- * logo always wins, the generated mark replaces the initials that used to be
- * every logo-less app's icon, and the initials survive as the no-WebGL floor.
+ * `AppIcon` has four tiers, and which one shows is the whole point: the LOGO
+ * blok the app brings wins, then a real logo, the generated mark replaces the
+ * initials that used to be every logo-less app's icon, and the initials
+ * survive as the no-WebGL floor.
  */
 describe("AppIcon", () => {
+  it("draws the LOGO blok the app brings, over an uploaded logo and the mark", () => {
+    useMarkImage.mockReturnValue({ src: MARK, pending: false });
+    const { container } = render(
+      <AppIcon
+        app={{ ...app, logo: "https://example.com/logo.png", logoBlok: { id: "3:basiks_logo", hash: "sha256:x" } }}
+      />,
+    );
+
+    expect(screen.getByTestId("logo-blok")).toHaveTextContent("3:basiks_logo");
+    expect(container.querySelector("img")).toBeNull();
+    expect(useMarkImage).toHaveBeenCalledWith(null);
+  });
+
   it("shows a real logo and never renders a mark for it", () => {
     useMarkImage.mockReturnValue({ src: null, pending: false });
     render(<AppIcon app={{ ...app, logo: "https://example.com/logo.png" }} />);

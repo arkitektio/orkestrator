@@ -6,6 +6,7 @@ import { KabinetDefinition } from "@/core/linkers";
 import { useCallback } from "react";
 import { useGetDefinitionQuery } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";
+import { DefinitionLogo } from "../components/logo/KabinetBlokLogo";
 import { KABINET_HELP } from "../help";
 
 export const DefinitionPage = asDetailQueryRoute(
@@ -35,12 +36,15 @@ export const DefinitionPage = asDetailQueryRoute(
       >
         <div className="col-span-4 grid md:grid-cols-2 gap-4 md:gap-8 xl:gap-20 md:items-center p-6">
           <div className="mb-3">
-            <h1
-              className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl cursor-pointer"
-              onClick={copyHashToClipboard}
-            >
-              {data?.definition?.name}
-            </h1>
+            <div className="flex items-center gap-4">
+              <DefinitionLogo definition={data.definition} className="size-14 rounded-xl" />
+              <h1
+                className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl cursor-pointer"
+                onClick={copyHashToClipboard}
+              >
+                {data?.definition?.name}
+              </h1>
+            </div>
             <p className="mt-3 text-xl text-muted-foreground max-w-[80%]">
               {description}
             </p>

@@ -14,7 +14,7 @@ import { useMemo, useState } from "react";
 import { useGetApprovableReleaseQuery } from "../api/graphql";
 import { releaseIdentity } from "../appIdentity";
 import { AppIcon } from "../components/AppIcon";
-import { deployableApprovals, hostsOf, isApprovalInstaller } from "../lib/approvals";
+import { deployableApprovals, deployerApps, hostsOf, isApprovalInstaller } from "../lib/approvals";
 import { NoPluginEngine, Section } from "./parts";
 import { AssignErrorNote } from "@/rekuest/components/AssignErrorNote";
 
@@ -28,13 +28,17 @@ const APPROVAL_IDENTIFIER = "@kabinet/approval";
  * this is the step that sends it to a backend. Without an approval there is
  * nothing to deploy under, so it offers to authorize first; without any
  * deployer there is nowhere to send it, which is the admin's to fix.
+ *
+ * Every deployer app is offered, not only those you approved: one you have
+ * not approved yet is authorized first (back to `installrelease`'s first
+ * step, with it chosen), however often the release is deployed already.
  */
 export const DeployReleaseDialog = (props: {
   release: string;
   approval?: string;
   agent?: string;
-  /** Set by the install dialog showing this as its second step: back to its first. */
-  onAuthorize?: () => void;
+  /** Set by the install dialog showing this as its second step: back to its first, with `agent` chosen. */
+  onAuthorize?: (agent?: string) => void;
   /** The approval was made a moment ago in that first step, not found. */
   justAuthorized?: boolean;
 }) => {
@@ -61,6 +65,11 @@ export const DeployReleaseDialog = (props: {
     [installersQuery.data],
   );
   const noDeployers = installersQuery.data && installers.length === 0;
+  // Every deployer app with a host, and those your approvals name even without one.
+  const deployers = useMemo(
+    () => [...new Set([...approvals.map((candidate) => candidate.agent), ...deployerApps(installers)])],
+    [approvals, installers],
+  );
   const hosts = useMemo(() => (approval ? hostsOf(installers, approval.agent) : []), [installers, approval]);
   // Your approval names a deployer app that has no host (any more), while
   // others do: authorizing one of those is the way on.
@@ -101,14 +110,20 @@ export const DeployReleaseDialog = (props: {
   }
 
   const identity = releaseIdentity(release);
-  const authorize =
-    props.onAuthorize ??
-    (() =>
-      openDialog(
-        "installrelease",
-        { release: props.release, agent: props.agent, authorize: true },
-        { className: "max-w-xl" },
-      ));
+  const authorize = (agent?: string) =>
+    props.onAuthorize
+      ? props.onAuthorize(agent)
+      : openDialog(
+          "installrelease",
+          { release: props.release, agent: agent ?? props.agent, authorize: true },
+          { className: "max-w-xl" },
+        );
+  // Deploying with a deployer you approved picks that approval; any other is authorized first.
+  const chooseDeployer = (agent: string) => {
+    const approved = approvals.find((candidate) => candidate.agent === agent);
+    if (approved) setChosenApproval(approved.id);
+    else authorize(agent);
+  };
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -152,16 +167,19 @@ export const DeployReleaseDialog = (props: {
         </p>
       ) : (
         <>
-          {approvals.length > 1 && (
-            <Section title="Under">
-              <Select value={approval?.id} onValueChange={setChosenApproval}>
+          {deployers.length > 1 && (
+            <Section title="Deployed by">
+              <Select value={approval?.agent} onValueChange={chooseDeployer}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {approvals.map((candidate) => (
-                    <SelectItem key={candidate.id} value={candidate.id}>
-                      <span className="font-mono text-xs">{candidate.agent}</span>
+                  {deployers.map((agent) => (
+                    <SelectItem key={agent} value={agent}>
+                      <span className="font-mono text-xs">{agent}</span>
+                      {!approvals.some((candidate) => candidate.agent === agent) && (
+                        <span className="text-xs text-muted-foreground"> · authorize first</span>
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -211,12 +229,12 @@ export const DeployReleaseDialog = (props: {
           {noDeployers ? "Close" : "Cancel"}
         </Button>
         {noDeployers ? null : approvals.length === 0 ? (
-          <Button onClick={authorize}>
+          <Button onClick={() => authorize()}>
             <ShieldCheck />
             Authorize…
           </Button>
         ) : stranded ? (
-          <Button onClick={authorize}>
+          <Button onClick={() => authorize()}>
             <ShieldCheck />
             Authorize another deployer…
           </Button>

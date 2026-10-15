@@ -194,6 +194,8 @@ export type App = {
   id: Scalars['ID']['output'];
   /** The globally unique, reverse-domain identifier of the app. */
   identifier: Scalars['String']['output'];
+  /** The app's logo: the LOGO blok of its newest release that brings one. */
+  logoBlok?: Maybe<FlavourBlok>;
   /** The versions of this app. Filter, order and paginate them exactly like the root `releases` query -- an app page reads them from here instead of fetching every release and grouping client-side. There is no implicit ordering; ask for `releasedAt` to get them newest first. */
   releases: Array<Release>;
 };
@@ -309,6 +311,12 @@ export type ArgPortInput = {
   /** The assign widget to use for this port, discriminated by `kind`. */
   widget?: InputMaybe<AssignWidgetInput>;
 };
+
+/** What a file an agent brings with it is: a 3D model (a binary glTF file) or an image (PNG, JPEG or WebP). */
+export enum AssetKind {
+  Image = 'IMAGE',
+  Model_3D = 'MODEL_3D'
+}
 
 export type AssignWidget = {
   followValue?: Maybe<Scalars['String']['output']>;
@@ -431,16 +439,26 @@ export type BackendOrder =
 export type BlokImplementationInput = {
   /** The optional catalog name if this Blok should be registered inside a specific namespace in your Electron app's UI component registry. */
   catalog?: InputMaybe<Scalars['String']['input']>;
-  /** The UI component tree blueprint for this Blok. */
-  components: Array<ComponentNodeInput>;
+  /** The UI component tree blueprint for this Blok, unless it is sent as its `source`. */
+  components?: InputMaybe<Array<ComponentNodeInput>>;
+  /** The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene. */
+  context?: ComponentContext;
+  /** Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one. */
+  default?: Scalars['Boolean']['input'];
   /** An optional JSON-serializable object providing demo state values for this Blok's internal reactive data model, useful for testing and development purposes. */
   demoState?: InputMaybe<Scalars['JSONSerializable']['input']>;
   /** The dependencies required by this Blok. */
   dependencies?: Array<AgentDependencyInput>;
   /** A human-readable description about this Blok's purpose and functionality. */
   description?: InputMaybe<Scalars['String']['input']>;
+  /** The model ('sha256:...') this Blok decorates: viewers showing that model offer this Blok at `for_node`. HTML bloks only. */
+  forModel?: InputMaybe<Scalars['String']['input']>;
+  /** The node of `for_model` this Blok attaches to; the model's root when absent. */
+  forNode?: InputMaybe<Scalars['String']['input']>;
   /** The key of this Blok implementation. */
   key: Scalars['String']['input'];
+  /** The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent. */
+  source?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Requires CPU resources on the backend. */
@@ -582,6 +600,14 @@ export type CollectionOrder =
   { definedAt: Ordering; id?: never; name?: never; }
   |  { definedAt?: never; id: Ordering; name?: never; }
   |  { definedAt?: never; id?: never; name: Ordering; };
+
+/** The renderer a catalog component lives in. A component may only be placed where its context is in force. */
+export enum ComponentContext {
+  ActionLogo = 'ACTION_LOGO',
+  Html = 'HTML',
+  Logo = 'LOGO',
+  Scene = 'SCENE'
+}
 
 /** An abstract structural visual element inside a Blok blueprint manifest. */
 export type ComponentNodeInput = {
@@ -816,6 +842,8 @@ export type Definition = {
   isTestFor: Array<Definition>;
   /** The kind of action, e.g. a function or a generator. */
   kind: ActionKind;
+  /** The ACTION_LOGO blok that draws this action: the one `flavour`'s implementation names, or without `flavour` the one of the newest flavour providing it that names one. Null when none does. */
+  logo?: Maybe<FlavourBlok>;
   /** The cleartext name of this action. */
   name: Scalars['String']['output'];
   /** The protocols this action implements. */
@@ -852,6 +880,12 @@ export type DefinitionIsTestForArgs = {
   filters?: InputMaybe<DefinitionFilter>;
   ordering?: Array<DefinitionOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** An action definition: the abstract, hashed description of an RPC task that a flavour provides. */
+export type DefinitionLogoArgs = {
+  flavour?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -1155,7 +1189,11 @@ export enum Execution {
 /** A buildable variant of a release: a specific Docker image together with the selectors and requirements needed to run it. */
 export type Flavour = {
   __typename?: 'Flavour';
-  /** Blok implementation manifests declared by this flavour's inspection, as submitted (rekuest_core BlokImplementationInput shape). */
+  /** The files this flavour's app brings, as its inspection declared them (name, kind, ref, size, and the path in the image or an https source). */
+  assets: Scalars['UntypedParams']['output'];
+  /** The bloks this flavour's app brings, parsed and ready to draw, in the order it declared them; of one context only when `context` is given. */
+  blokImplementations: Array<FlavourBlok>;
+  /** Blok implementation manifests declared by this flavour's inspection (rekuest_core BlokImplementationInput shape): the app's LOGO, its actions' ACTION_LOGOs, panels and scenes. */
   bloks: Scalars['UntypedParams']['output'];
   /** The action definitions this flavour provides. */
   definitions: Array<Definition>;
@@ -1170,6 +1208,8 @@ export type Flavour = {
   image: DockerImage;
   /** The stored logo of this flavour, which is its release's. */
   logo?: Maybe<Scalars['String']['output']>;
+  /** This flavour's app logo: its default LOGO blok, or its first. */
+  logoBlok?: Maybe<FlavourBlok>;
   /** The raw app manifest this flavour was built from. */
   manifest: Scalars['UntypedParams']['output'];
   /** The name of this flavour (e.g. 'vanilla', 'cuda'). */
@@ -1190,6 +1230,12 @@ export type Flavour = {
 
 
 /** A buildable variant of a release: a specific Docker image together with the selectors and requirements needed to run it. */
+export type FlavourBlokImplementationsArgs = {
+  context?: InputMaybe<ComponentContext>;
+};
+
+
+/** A buildable variant of a release: a specific Docker image together with the selectors and requirements needed to run it. */
 export type FlavourDefinitionsArgs = {
   filters?: InputMaybe<DefinitionFilter>;
   ordering?: Array<DefinitionOrder>;
@@ -1202,6 +1248,35 @@ export type FlavourDeploymentsArgs = {
   filters?: InputMaybe<DeploymentFilter>;
   ordering?: Array<DeploymentOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** A blok a flavour's app brings: its LOGO, an action's ACTION_LOGO, a panel (HTML) or a scene (SCENE). Its source is parsed into `componentTree` when the flavour is imported; nothing of it runs here. */
+export type FlavourBlok = {
+  __typename?: 'FlavourBlok';
+  /** The whole component tree as one JSON value (a list of roots) in the wire spelling (snake_case keys), as rekuest serves `Blok.componentTree`. Null when the source does not parse. */
+  componentTree?: Maybe<Scalars['JSON']['output']>;
+  /** The renderer its root lives in. */
+  context: ComponentContext;
+  /** Whether it is its app's default for its context (the app's logo is its default LOGO). */
+  default: Scalars['Boolean']['output'];
+  /** The state the blok is drawn against when it is shown on its own. */
+  demoState?: Maybe<Scalars['JSON']['output']>;
+  /** What the app says the blok shows. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The flavour whose app brings this blok. */
+  flavourId: Scalars['ID']['output'];
+  /** The model ('sha256:...') this blok decorates, if any. */
+  forModel?: Maybe<Scalars['String']['output']>;
+  /** The node of `forModel` it attaches to; the model's root when null. */
+  forNode?: Maybe<Scalars['String']['output']>;
+  /** A SHA-256 of what the blok draws: its component tree, demo state and context. Two bloks with the same hash draw the same thing, so a client may keep what it drew under it. */
+  hash: Scalars['String']['output'];
+  /** `<flavour id>:<key>`: what `flavourBlok` finds it by. */
+  id: Scalars['ID']['output'];
+  /** The key the app declared this blok under, unique within it. */
+  key: Scalars['String']['output'];
+  /** Why the blok's source does not parse, or null. */
+  parseError?: Maybe<Scalars['String']['output']>;
 };
 
 /** Filter for flavours. */
@@ -1383,6 +1458,8 @@ export type ImplementationInput = {
   interface?: InputMaybe<Scalars['String']['input']>;
   /** The locks of the implementation. This is used to specify which resources the implementation needs to run */
   locks?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** The key of the agent's action logo blok (context ACTION_LOGO) that draws this action. */
+  logo?: InputMaybe<Scalars['String']['input']>;
   /** The states that the implementation manipulates. This is used to identify which states are manipulated by the implementation, and can be use to enhance state safety in the system */
   manipulates?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Whether Rekuest should mint a signed provenance token when this implementation is assigned. Default true (provenance-by-default); set false for trivial/internal tasks that never produce external provenance. */
@@ -1405,7 +1482,25 @@ export type ImportRepoInput = {
   reference: Scalars['String']['input'];
 };
 
+/** A file the app brings, as its image holds it. */
+export type InspectedAssetInput = {
+  /** What the file is. */
+  kind: AssetKind;
+  /** The name bloks refer to the asset by, as in `@self.assets.<name>`. Unique within the agent. */
+  name: Scalars['String']['input'];
+  /** Where the file is, relative to the app's directory. Absent for a file the image does not hold: that one names a `source`. */
+  path?: InputMaybe<Scalars['String']['input']>;
+  /** 'sha256:' and the hex SHA-256 of the file's exact bytes. */
+  ref: Scalars['String']['input'];
+  /** The size of the file in bytes. Required unless the asset names a `source`: an agent knows the size of a file it holds. */
+  size?: InputMaybe<Scalars['Int']['input']>;
+  /** The https URL the file can be fetched from. Given instead of holding the file: the agent uploads nothing, an admin's client fetches it. */
+  source?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type InspectionInput = {
+  /** The files the app brings: models and images its bloks call by name. */
+  assets?: Array<InspectedAssetInput>;
   bloks?: Array<BlokImplementationInput>;
   implementations: Array<ImplementationInput>;
   locks: Array<LockImplementationInput>;
@@ -1943,6 +2038,8 @@ export type Query = {
   deployments: Array<Deployment>;
   /** Return a single flavour (a buildable variant of a release) by its ID. */
   flavour: Flavour;
+  /** Return a single blok a flavour's app brings by its ID (`<flavour id>:<key>`), or null when there is none. */
+  flavourBlok?: Maybe<FlavourBlok>;
   /** List all flavours visible to the current organization. */
   flavours: Array<Flavour>;
   /** Return a single tracked GitHub repository by its ID. */
@@ -2030,6 +2127,11 @@ export type QueryDeploymentsArgs = {
 
 
 export type QueryFlavourArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryFlavourBlokArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -2170,6 +2272,8 @@ export type Release = {
   id: Scalars['ID']['output'];
   /** The stored logo of this release: the path of the ingested media, or null while none has been ingested. */
   logo?: Maybe<Scalars['String']['output']>;
+  /** The release's logo: the LOGO blok of the first of its flavours that brings one. */
+  logoBlok?: Maybe<FlavourBlok>;
   /** The subject manifest to pre-authorize in lok (createMandate): identifier, version, scopes and the union of flavour requirements. */
   mandateManifest: Scalars['UntypedParams']['output'];
   /** The display name of this release, in the form 'identifier:version'. */
@@ -2849,14 +2953,20 @@ export type ShelfAppFragment = { __typename?: 'App', id: string, identifier: str
     & StoreReleaseFragment
   )> };
 
-export type ListReleaseApprovalFragment = { __typename?: 'ReleaseApproval', id: string, name: string, agent: string, digest: string, mandateId: string, createdAt: any, revokedAt?: any | null, isStale: boolean, isActive: boolean, approver: { __typename?: 'User', sub: string }, release: { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } } };
+export type ListReleaseApprovalFragment = { __typename?: 'ReleaseApproval', id: string, name: string, agent: string, digest: string, mandateId: string, createdAt: any, revokedAt?: any | null, isStale: boolean, isActive: boolean, approver: { __typename?: 'User', sub: string }, release: { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, logoBlok?: (
+      { __typename?: 'FlavourBlok' }
+      & KabinetLogoBlokFragment
+    ) | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } } };
 
 export type ReleaseApprovalFragment = (
   { __typename?: 'ReleaseApproval', backends: Array<{ __typename?: 'Backend', id: string, name: string }> }
   & ListReleaseApprovalFragment
 );
 
-export type ApprovableReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, approvalDigest: string, digestPinned: boolean, mandateManifest: any, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null }, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, image: { __typename?: 'DockerImage', imageString: string }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }> }>, approvals: Array<(
+export type ApprovableReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, approvalDigest: string, digestPinned: boolean, mandateManifest: any, logoBlok?: (
+    { __typename?: 'FlavourBlok' }
+    & KabinetLogoBlokFragment
+  ) | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null }, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, image: { __typename?: 'DockerImage', imageString: string }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }> }>, approvals: Array<(
     { __typename?: 'ReleaseApproval' }
     & ListReleaseApprovalFragment
   )> };
@@ -2871,7 +2981,14 @@ export type BackendFragment = { __typename?: 'Backend', id: string, clientId: st
     & ListResourceFragment
   )> };
 
-export type DefinitionFragment = { __typename?: 'Definition', id: string, name: string, hash: any, description?: string | null, args: Array<(
+export type KabinetLogoBlokFragment = { __typename?: 'FlavourBlok', id: string, hash: string };
+
+export type KabinetBlokFragment = { __typename?: 'FlavourBlok', id: string, flavourId: string, key: string, context: ComponentContext, default: boolean, description?: string | null, hash: string, componentTree?: any | null, demoState?: any | null, forModel?: string | null, forNode?: string | null, parseError?: string | null };
+
+export type DefinitionFragment = { __typename?: 'Definition', id: string, name: string, hash: any, description?: string | null, logo?: (
+    { __typename?: 'FlavourBlok' }
+    & KabinetLogoBlokFragment
+  ) | null, args: Array<(
     { __typename?: 'ArgPort' }
     & ArgPortFragment
   )>, returns: Array<(
@@ -2882,11 +2999,23 @@ export type DefinitionFragment = { __typename?: 'Definition', id: string, name: 
     & ListFlavourFragment
   )> };
 
-export type ListDefinitionFragment = { __typename?: 'Definition', id: string, name: string, hash: any, description?: string | null, kind: ActionKind, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } } }> };
+export type ListDefinitionFragment = { __typename?: 'Definition', id: string, name: string, hash: any, description?: string | null, kind: ActionKind, logo?: (
+    { __typename?: 'FlavourBlok' }
+    & KabinetLogoBlokFragment
+  ) | null, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, logoBlok?: (
+        { __typename?: 'FlavourBlok' }
+        & KabinetLogoBlokFragment
+      ) | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } } }> };
 
-export type SmartDefinitionFragment = { __typename?: 'Definition', id: string, name: string, description?: string | null };
+export type SmartDefinitionFragment = { __typename?: 'Definition', id: string, name: string, description?: string | null, logo?: (
+    { __typename?: 'FlavourBlok' }
+    & KabinetLogoBlokFragment
+  ) | null };
 
-export type ListFlavourFragment = { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } }, selectors: Array<{ __typename?: 'CPUSelector' } | (
+export type ListFlavourFragment = { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, release: { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, logoBlok?: (
+      { __typename?: 'FlavourBlok' }
+      & KabinetLogoBlokFragment
+    ) | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null } }, selectors: Array<{ __typename?: 'CPUSelector' } | (
     { __typename?: 'CudaSelector' }
     & CudaSelectorFragment
   ) | { __typename?: 'LabelSelector' } | { __typename?: 'OneApiSelector' } | { __typename?: 'RAMSelector' } | (
@@ -2895,7 +3024,7 @@ export type ListFlavourFragment = { __typename?: 'Flavour', id: string, name: st
   )> };
 
 export type FlavourFragment = (
-  { __typename?: 'Flavour', selectors: Array<(
+  { __typename?: 'Flavour', assets: any, selectors: Array<(
     { __typename?: 'CPUSelector' }
     & StoreSelector_CpuSelector_Fragment
   ) | (
@@ -2916,7 +3045,7 @@ export type FlavourFragment = (
   )>, image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }>, repo?: { __typename?: 'GithubRepo', id: string, name: string, user: string, repo: string, url: string } | null, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }>, definitions: Array<(
     { __typename?: 'Definition' }
     & ListDefinitionFragment
-  )>, release: { __typename?: 'Release', scopes: Array<string>, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, selectors: Array<{ __typename?: 'CPUSelector' } | (
+  )>, blokKeys: Array<{ __typename?: 'FlavourBlok', id: string, context: ComponentContext }>, release: { __typename?: 'Release', scopes: Array<string>, flavours: Array<{ __typename?: 'Flavour', id: string, name: string, selectors: Array<{ __typename?: 'CPUSelector' } | (
         { __typename?: 'CudaSelector' }
         & CudaSelectorFragment
       ) | { __typename?: 'LabelSelector' } | { __typename?: 'OneApiSelector' } | { __typename?: 'RAMSelector' } | (
@@ -2926,7 +3055,10 @@ export type FlavourFragment = (
   & ListFlavourFragment
 );
 
-export type ListPodFragment = { __typename?: 'Pod', id: string, podId: string, clientId?: string | null, status: PodStatus, backend: { __typename?: 'Backend', name: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } }, deployment: { __typename?: 'Deployment', id: string, flavour: { __typename?: 'Flavour', release: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', identifier: string } } } }, resource?: { __typename?: 'Resource', id: string, name: string } | null };
+export type ListPodFragment = { __typename?: 'Pod', id: string, podId: string, clientId?: string | null, status: PodStatus, backend: { __typename?: 'Backend', name: string, user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } }, deployment: { __typename?: 'Deployment', id: string, flavour: { __typename?: 'Flavour', release: { __typename?: 'Release', id: string, version: string, logoBlok?: (
+          { __typename?: 'FlavourBlok' }
+          & KabinetLogoBlokFragment
+        ) | null, app: { __typename?: 'App', identifier: string } } } }, resource?: { __typename?: 'Resource', id: string, name: string } | null };
 
 export type PodFragment = { __typename?: 'Pod', id: string, podId: string, status: PodStatus, clientId?: string | null, backend: (
     { __typename?: 'Backend' }
@@ -2937,7 +3069,10 @@ export type PodFragment = { __typename?: 'Pod', id: string, podId: string, statu
   ) | null, deployment: { __typename?: 'Deployment', id: string, approval?: (
       { __typename?: 'ReleaseApproval' }
       & ListReleaseApprovalFragment
-    ) | null, flavour: { __typename?: 'Flavour', release: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', identifier: string } } } } };
+    ) | null, flavour: { __typename?: 'Flavour', release: { __typename?: 'Release', id: string, version: string, logoBlok?: (
+          { __typename?: 'FlavourBlok' }
+          & KabinetLogoBlokFragment
+        ) | null, app: { __typename?: 'App', identifier: string } } } } };
 
 export type StringAssignWidgetFragment = { __typename: 'StringAssignWidget', kind: AssignWidgetKind, placeholder?: string | null, asParagraph?: boolean | null };
 
@@ -3410,13 +3545,19 @@ export type BlokComponentPropFragment = { __typename?: 'ComponentProp', key: str
       & BlokArgumentFragment
     )> | null } | null };
 
-export type ReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, entrypoint: string, scopes: Array<string>, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null, releases: Array<{ __typename?: 'Release', id: string, version: string }> }, flavours: Array<(
-    { __typename?: 'Flavour' }
+export type ReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, entrypoint: string, scopes: Array<string>, logoBlok?: (
+    { __typename?: 'FlavourBlok' }
+    & KabinetLogoBlokFragment
+  ) | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null, releases: Array<{ __typename?: 'Release', id: string, version: string }> }, flavours: Array<(
+    { __typename?: 'Flavour', assets: any, blokKeys: Array<{ __typename?: 'FlavourBlok', id: string, context: ComponentContext }> }
     & ListFlavourFragment
     & StoreFlavourFragment
   )> };
 
-export type ListReleaseFragment = { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null }, flavours: Array<(
+export type ListReleaseFragment = { __typename?: 'Release', id: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, logoBlok?: (
+    { __typename?: 'FlavourBlok' }
+    & KabinetLogoBlokFragment
+  ) | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null }, flavours: Array<(
     { __typename?: 'Flavour' }
     & ListFlavourFragment
   )> };
@@ -3471,9 +3612,15 @@ export type StoreFlavourFragment = { __typename?: 'Flavour', id: string, name: s
   ) | (
     { __typename?: 'RocmSelector' }
     & StoreSelector_RocmSelector_Fragment
-  )>, repo?: { __typename?: 'GithubRepo', id: string, name: string, user: string, repo: string, url: string } | null, definitions: Array<{ __typename?: 'Definition', id: string, name: string, description?: string | null, kind: ActionKind }>, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }> };
+  )>, repo?: { __typename?: 'GithubRepo', id: string, name: string, user: string, repo: string, url: string } | null, definitions: Array<{ __typename?: 'Definition', id: string, name: string, description?: string | null, kind: ActionKind, logo?: (
+      { __typename?: 'FlavourBlok' }
+      & KabinetLogoBlokFragment
+    ) | null }>, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }> };
 
-export type StoreReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, entrypoint: string, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null }, flavours: Array<(
+export type StoreReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, entrypoint: string, logoBlok?: (
+    { __typename?: 'FlavourBlok' }
+    & KabinetLogoBlokFragment
+  ) | null, app: { __typename?: 'App', id: string, identifier: string, embedding?: any | null }, flavours: Array<(
     { __typename?: 'Flavour' }
     & StoreFlavourFragment
   )> };
@@ -3611,6 +3758,23 @@ export type GetBackendQuery = { __typename?: 'Query', backend: (
     { __typename?: 'Backend' }
     & BackendFragment
   ) };
+
+export type KabinetLogoTreeQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type KabinetLogoTreeQuery = { __typename?: 'Query', flavourBlok?: { __typename?: 'FlavourBlok', id: string, hash: string, componentTree?: any | null, demoState?: any | null } | null };
+
+export type FlavourBloksQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type FlavourBloksQuery = { __typename?: 'Query', flavour: { __typename?: 'Flavour', id: string, assets: any, blokImplementations: Array<(
+      { __typename?: 'FlavourBlok' }
+      & KabinetBlokFragment
+    )>, definitions: Array<{ __typename?: 'Definition', id: string, name: string, logo?: { __typename?: 'FlavourBlok', id: string } | null }> } };
 
 export type GetDefinitionQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3814,6 +3978,12 @@ export type AppStoreQuery = { __typename?: 'Query', releases: Array<(
     & StoreReleaseFragment
   )> };
 
+export const KabinetLogoBlokFragmentDoc = gql`
+    fragment KabinetLogoBlok on FlavourBlok {
+  id
+  hash
+}
+    `;
 export const StoreSelectorFragmentDoc = gql`
     fragment StoreSelector on Selector {
   __typename
@@ -3865,13 +4035,17 @@ export const StoreFlavourFragmentDoc = gql`
     name
     description
     kind
+    logo {
+      ...KabinetLogoBlok
+    }
   }
   deployments {
     id
     status
   }
 }
-    ${StoreSelectorFragmentDoc}`;
+    ${StoreSelectorFragmentDoc}
+${KabinetLogoBlokFragmentDoc}`;
 export const StoreReleaseFragmentDoc = gql`
     fragment StoreRelease on Release {
   id
@@ -3879,6 +4053,9 @@ export const StoreReleaseFragmentDoc = gql`
   version
   logo
   originalLogo
+  logoBlok {
+    ...KabinetLogoBlok
+  }
   scopes
   entrypoint
   app {
@@ -3890,7 +4067,8 @@ export const StoreReleaseFragmentDoc = gql`
     ...StoreFlavour
   }
 }
-    ${StoreFlavourFragmentDoc}`;
+    ${KabinetLogoBlokFragmentDoc}
+${StoreFlavourFragmentDoc}`;
 export const AppFragmentDoc = gql`
     fragment App on App {
   id
@@ -3931,6 +4109,9 @@ export const ListReleaseApprovalFragmentDoc = gql`
     version
     logo
     originalLogo
+    logoBlok {
+      ...KabinetLogoBlok
+    }
     app {
       id
       identifier
@@ -3938,7 +4119,7 @@ export const ListReleaseApprovalFragmentDoc = gql`
     }
   }
 }
-    `;
+    ${KabinetLogoBlokFragmentDoc}`;
 export const ReleaseApprovalFragmentDoc = gql`
     fragment ReleaseApproval on ReleaseApproval {
   ...ListReleaseApproval
@@ -3955,6 +4136,9 @@ export const ApprovableReleaseFragmentDoc = gql`
   version
   logo
   originalLogo
+  logoBlok {
+    ...KabinetLogoBlok
+  }
   scopes
   approvalDigest
   digestPinned
@@ -3983,7 +4167,8 @@ export const ApprovableReleaseFragmentDoc = gql`
     ...ListReleaseApproval
   }
 }
-    ${ListReleaseApprovalFragmentDoc}`;
+    ${KabinetLogoBlokFragmentDoc}
+${ListReleaseApprovalFragmentDoc}`;
 export const ListBackendFragmentDoc = gql`
     fragment ListBackend on Backend {
   id
@@ -3995,6 +4180,22 @@ export const ListBackendFragmentDoc = gql`
   }
   name
   kind
+}
+    `;
+export const KabinetBlokFragmentDoc = gql`
+    fragment KabinetBlok on FlavourBlok {
+  id
+  flavourId
+  key
+  context
+  default
+  description
+  hash
+  componentTree
+  demoState
+  forModel
+  forNode
+  parseError
 }
     `;
 export const PortCallLeafArgumentFragmentDoc = gql`
@@ -4627,6 +4828,9 @@ export const ListFlavourFragmentDoc = gql`
     version
     logo
     originalLogo
+    logoBlok {
+      ...KabinetLogoBlok
+    }
     app {
       id
       identifier
@@ -4638,7 +4842,8 @@ export const ListFlavourFragmentDoc = gql`
     ...RocmSelector
   }
 }
-    ${CudaSelectorFragmentDoc}
+    ${KabinetLogoBlokFragmentDoc}
+${CudaSelectorFragmentDoc}
 ${RocmSelectorFragmentDoc}`;
 export const DefinitionFragmentDoc = gql`
     fragment Definition on Definition {
@@ -4646,6 +4851,9 @@ export const DefinitionFragmentDoc = gql`
   name
   hash
   description
+  logo {
+    ...KabinetLogoBlok
+  }
   args {
     ...ArgPort
   }
@@ -4656,7 +4864,8 @@ export const DefinitionFragmentDoc = gql`
     ...ListFlavour
   }
 }
-    ${ArgPortFragmentDoc}
+    ${KabinetLogoBlokFragmentDoc}
+${ArgPortFragmentDoc}
 ${ReturnPortFragmentDoc}
 ${ListFlavourFragmentDoc}`;
 export const SmartDefinitionFragmentDoc = gql`
@@ -4664,14 +4873,20 @@ export const SmartDefinitionFragmentDoc = gql`
   id
   name
   description
+  logo {
+    ...KabinetLogoBlok
+  }
 }
-    `;
+    ${KabinetLogoBlokFragmentDoc}`;
 export const ListDefinitionFragmentDoc = gql`
     fragment ListDefinition on Definition {
   id
   name
   hash
   description
+  logo {
+    ...KabinetLogoBlok
+  }
   kind
   flavours {
     id
@@ -4683,6 +4898,9 @@ export const ListDefinitionFragmentDoc = gql`
       version
       logo
       originalLogo
+      logoBlok {
+        ...KabinetLogoBlok
+      }
       app {
         id
         identifier
@@ -4691,7 +4909,7 @@ export const ListDefinitionFragmentDoc = gql`
     }
   }
 }
-    `;
+    ${KabinetLogoBlokFragmentDoc}`;
 export const FlavourFragmentDoc = gql`
     fragment Flavour on Flavour {
   ...ListFlavour
@@ -4722,6 +4940,11 @@ export const FlavourFragmentDoc = gql`
   definitions {
     ...ListDefinition
   }
+  blokKeys: blokImplementations {
+    id
+    context
+  }
+  assets
   release {
     scopes
     flavours {
@@ -4758,6 +4981,9 @@ export const ListPodFragmentDoc = gql`
       release {
         id
         version
+        logoBlok {
+          ...KabinetLogoBlok
+        }
         app {
           identifier
         }
@@ -4771,7 +4997,7 @@ export const ListPodFragmentDoc = gql`
   }
   status
 }
-    `;
+    ${KabinetLogoBlokFragmentDoc}`;
 export const ListResourceFragmentDoc = gql`
     fragment ListResource on Resource {
   id
@@ -4829,6 +5055,9 @@ export const PodFragmentDoc = gql`
       release {
         id
         version
+        logoBlok {
+          ...KabinetLogoBlok
+        }
         app {
           identifier
         }
@@ -4838,7 +5067,8 @@ export const PodFragmentDoc = gql`
 }
     ${BackendFragmentDoc}
 ${ListResourceFragmentDoc}
-${ListReleaseApprovalFragmentDoc}`;
+${ListReleaseApprovalFragmentDoc}
+${KabinetLogoBlokFragmentDoc}`;
 export const ReleaseFragmentDoc = gql`
     fragment Release on Release {
   id
@@ -4846,6 +5076,9 @@ export const ReleaseFragmentDoc = gql`
   version
   logo
   originalLogo
+  logoBlok {
+    ...KabinetLogoBlok
+  }
   entrypoint
   app {
     id
@@ -4859,10 +5092,16 @@ export const ReleaseFragmentDoc = gql`
   flavours {
     ...ListFlavour
     ...StoreFlavour
+    blokKeys: blokImplementations {
+      id
+      context
+    }
+    assets
   }
   scopes
 }
-    ${ListFlavourFragmentDoc}
+    ${KabinetLogoBlokFragmentDoc}
+${ListFlavourFragmentDoc}
 ${StoreFlavourFragmentDoc}`;
 export const ListReleaseFragmentDoc = gql`
     fragment ListRelease on Release {
@@ -4870,6 +5109,9 @@ export const ListReleaseFragmentDoc = gql`
   version
   logo
   originalLogo
+  logoBlok {
+    ...KabinetLogoBlok
+  }
   app {
     id
     identifier
@@ -4880,7 +5122,8 @@ export const ListReleaseFragmentDoc = gql`
     ...ListFlavour
   }
 }
-    ${ListFlavourFragmentDoc}`;
+    ${KabinetLogoBlokFragmentDoc}
+${ListFlavourFragmentDoc}`;
 export const ListRepoFragmentDoc = gql`
     fragment ListRepo on GithubRepo {
   id
@@ -5455,6 +5698,90 @@ export function useGetBackendLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetBackendQueryHookResult = ReturnType<typeof useGetBackendQuery>;
 export type GetBackendLazyQueryHookResult = ReturnType<typeof useGetBackendLazyQuery>;
 export type GetBackendQueryResult = Apollo.QueryResult<GetBackendQuery, GetBackendQueryVariables>;
+export const KabinetLogoTreeDocument = gql`
+    query KabinetLogoTree($id: ID!) {
+  flavourBlok(id: $id) {
+    id
+    hash
+    componentTree
+    demoState
+  }
+}
+    `;
+
+/**
+ * __useKabinetLogoTreeQuery__
+ *
+ * To run a query within a React component, call `useKabinetLogoTreeQuery` and pass it any options that fit your needs.
+ * When your component renders, `useKabinetLogoTreeQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useKabinetLogoTreeQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useKabinetLogoTreeQuery(baseOptions: ApolloReactHooks.QueryHookOptions<KabinetLogoTreeQuery, KabinetLogoTreeQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<KabinetLogoTreeQuery, KabinetLogoTreeQueryVariables>(KabinetLogoTreeDocument, options);
+      }
+export function useKabinetLogoTreeLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<KabinetLogoTreeQuery, KabinetLogoTreeQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<KabinetLogoTreeQuery, KabinetLogoTreeQueryVariables>(KabinetLogoTreeDocument, options);
+        }
+export type KabinetLogoTreeQueryHookResult = ReturnType<typeof useKabinetLogoTreeQuery>;
+export type KabinetLogoTreeLazyQueryHookResult = ReturnType<typeof useKabinetLogoTreeLazyQuery>;
+export type KabinetLogoTreeQueryResult = Apollo.QueryResult<KabinetLogoTreeQuery, KabinetLogoTreeQueryVariables>;
+export const FlavourBloksDocument = gql`
+    query FlavourBloks($id: ID!) {
+  flavour(id: $id) {
+    id
+    blokImplementations {
+      ...KabinetBlok
+    }
+    assets
+    definitions {
+      id
+      name
+      logo(flavour: $id) {
+        id
+      }
+    }
+  }
+}
+    ${KabinetBlokFragmentDoc}`;
+
+/**
+ * __useFlavourBloksQuery__
+ *
+ * To run a query within a React component, call `useFlavourBloksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useFlavourBloksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useFlavourBloksQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useFlavourBloksQuery(baseOptions: ApolloReactHooks.QueryHookOptions<FlavourBloksQuery, FlavourBloksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<FlavourBloksQuery, FlavourBloksQueryVariables>(FlavourBloksDocument, options);
+      }
+export function useFlavourBloksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<FlavourBloksQuery, FlavourBloksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<FlavourBloksQuery, FlavourBloksQueryVariables>(FlavourBloksDocument, options);
+        }
+export type FlavourBloksQueryHookResult = ReturnType<typeof useFlavourBloksQuery>;
+export type FlavourBloksLazyQueryHookResult = ReturnType<typeof useFlavourBloksLazyQuery>;
+export type FlavourBloksQueryResult = Apollo.QueryResult<FlavourBloksQuery, FlavourBloksQueryVariables>;
 export const GetDefinitionDocument = gql`
     query GetDefinition($id: ID!) {
   definition(id: $id) {

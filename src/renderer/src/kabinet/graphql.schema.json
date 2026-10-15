@@ -990,6 +990,18 @@
             "deprecationReason": null
           },
           {
+            "name": "logoBlok",
+            "description": "The app's logo: the LOGO blok of its newest release that brings one.",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "FlavourBlok",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "releases",
             "description": "The versions of this app. Filter, order and paginate them exactly like the root `releases` query -- an app page reads them from here instead of fetching every release and grouping client-side. There is no implicit ordering; ask for `releasedAt` to get them newest first.",
             "args": [
@@ -1944,6 +1956,30 @@
         "possibleTypes": null
       },
       {
+        "kind": "ENUM",
+        "name": "AssetKind",
+        "description": "What a file an agent brings with it is: a 3D model (a binary glTF file) or an image (PNG, JPEG or WebP).",
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "IMAGE",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "MODEL_3D",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "possibleTypes": null
+      },
+      {
         "kind": "INTERFACE",
         "name": "AssignWidget",
         "description": null,
@@ -2804,25 +2840,53 @@
           },
           {
             "name": "components",
-            "description": "The UI component tree blueprint for this Blok.",
+            "description": "The UI component tree blueprint for this Blok, unless it is sent as its `source`.",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ComponentNodeInput",
+                  "kind": "INPUT_OBJECT",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "context",
+            "description": "The renderer for this Blok's root: HTML for panels and dashboards, SCENE for a full 3D view whose root opens a scene.",
             "type": {
               "kind": "NON_NULL",
               "name": null,
               "ofType": {
-                "name": null,
-                "kind": "LIST",
-                "ofType": {
-                  "name": null,
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "name": "ComponentNodeInput",
-                    "kind": "INPUT_OBJECT",
-                    "ofType": null
-                  }
-                }
+                "name": "ComponentContext",
+                "kind": "ENUM",
+                "ofType": null
               }
             },
-            "defaultValue": null,
+            "defaultValue": "HTML",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "default",
+            "description": "Whether this Blok is its agent's default for its context. A newly declared default replaces the previous one.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Boolean",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": "false",
             "isDeprecated": false,
             "deprecationReason": null
           },
@@ -2875,6 +2939,30 @@
             "deprecationReason": null
           },
           {
+            "name": "forModel",
+            "description": "The model ('sha256:...') this Blok decorates: viewers showing that model offer this Blok at `for_node`. HTML bloks only.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "forNode",
+            "description": "The node of `for_model` this Blok attaches to; the model's root when absent.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "key",
             "description": "The key of this Blok implementation.",
             "type": {
@@ -2887,6 +2975,18 @@
               }
             },
             "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "source",
+            "description": "The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
             "isDeprecated": false,
             "deprecationReason": null
           }
@@ -3718,6 +3818,42 @@
         ],
         "interfaces": null,
         "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "ENUM",
+        "name": "ComponentContext",
+        "description": "The renderer a catalog component lives in. A component may only be placed where its context is in force.",
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "ACTION_LOGO",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "HTML",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "LOGO",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "SCENE",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
         "possibleTypes": null
       },
       {
@@ -5496,6 +5632,31 @@
                 "kind": "ENUM",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "logo",
+            "description": "The ACTION_LOGO blok that draws this action: the one `flavour`'s implementation names, or without `flavour` the one of the newest flavour providing it that names one. Null when none does.",
+            "args": [
+              {
+                "name": "flavour",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "ID",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "FlavourBlok",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -7531,8 +7692,61 @@
         "isOneOf": null,
         "fields": [
           {
+            "name": "assets",
+            "description": "The files this flavour's app brings, as its inspection declared them (name, kind, ref, size, and the path in the image or an https source).",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "UntypedParams",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "blokImplementations",
+            "description": "The bloks this flavour's app brings, parsed and ready to draw, in the order it declared them; of one context only when `context` is given.",
+            "args": [
+              {
+                "name": "context",
+                "description": null,
+                "type": {
+                  "kind": "ENUM",
+                  "name": "ComponentContext",
+                  "ofType": null
+                },
+                "defaultValue": "null",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "FlavourBlok",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "bloks",
-            "description": "Blok implementation manifests declared by this flavour's inspection, as submitted (rekuest_core BlokImplementationInput shape).",
+            "description": "Blok implementation manifests declared by this flavour's inspection (rekuest_core BlokImplementationInput shape): the app's LOGO, its actions' ACTION_LOGOs, panels and scenes.",
             "args": [],
             "type": {
               "kind": "NON_NULL",
@@ -7765,6 +7979,18 @@
             "deprecationReason": null
           },
           {
+            "name": "logoBlok",
+            "description": "This flavour's app logo: its default LOGO blok, or its first.",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "FlavourBlok",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "manifest",
             "description": "The raw app manifest this flavour was built from.",
             "args": [],
@@ -7891,6 +8117,186 @@
             "type": {
               "kind": "OBJECT",
               "name": "OciRepo",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "FlavourBlok",
+        "description": "A blok a flavour's app brings: its LOGO, an action's ACTION_LOGO, a panel (HTML) or a scene (SCENE). Its source is parsed into `componentTree` when the flavour is imported; nothing of it runs here.",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "componentTree",
+            "description": "The whole component tree as one JSON value (a list of roots) in the wire spelling (snake_case keys), as rekuest serves `Blok.componentTree`. Null when the source does not parse.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSON",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "context",
+            "description": "The renderer its root lives in.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ComponentContext",
+                "kind": "ENUM",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "default",
+            "description": "Whether it is its app's default for its context (the app's logo is its default LOGO).",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "Boolean",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "demoState",
+            "description": "The state the blok is drawn against when it is shown on its own.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSON",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "description",
+            "description": "What the app says the blok shows.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "flavourId",
+            "description": "The flavour whose app brings this blok.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "forModel",
+            "description": "The model ('sha256:...') this blok decorates, if any.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "forNode",
+            "description": "The node of `forModel` it attaches to; the model's root when null.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "hash",
+            "description": "A SHA-256 of what the blok draws: its component tree, demo state and context. Two bloks with the same hash draw the same thing, so a client may keep what it drew under it.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "id",
+            "description": "`<flavour id>:<key>`: what `flavourBlok` finds it by.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "key",
+            "description": "The key the app declared this blok under, unique within it.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "parseError",
+            "description": "Why the blok's source does not parse, or null.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "isDeprecated": false,
@@ -9140,6 +9546,18 @@
             "deprecationReason": null
           },
           {
+            "name": "logo",
+            "description": "The key of the agent's action logo blok (context ACTION_LOGO) that draws this action.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "manipulates",
             "description": "The states that the implementation manipulates. This is used to identify which states are manipulated by the implementation, and can be use to enhance state safety in the system",
             "type": {
@@ -9302,11 +9720,131 @@
       },
       {
         "kind": "INPUT_OBJECT",
+        "name": "InspectedAssetInput",
+        "description": "A file the app brings, as its image holds it.",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "kind",
+            "description": "What the file is.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "AssetKind",
+                "kind": "ENUM",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "name",
+            "description": "The name bloks refer to the asset by, as in `@self.assets.<name>`. Unique within the agent.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "path",
+            "description": "Where the file is, relative to the app's directory. Absent for a file the image does not hold: that one names a `source`.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "ref",
+            "description": "'sha256:' and the hex SHA-256 of the file's exact bytes.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "size",
+            "description": "The size of the file in bytes. Required unless the asset names a `source`: an agent knows the size of a file it holds.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "source",
+            "description": "The https URL the file can be fetched from. Given instead of holding the file: the agent uploads nothing, an admin's client fetches it.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "null",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
         "name": "InspectionInput",
         "description": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
+          {
+            "name": "assets",
+            "description": "The files the app brings: models and images its bloks call by name.",
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "InspectedAssetInput",
+                    "kind": "INPUT_OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "defaultValue": "[]",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
           {
             "name": "bloks",
             "description": null,
@@ -13009,6 +13547,35 @@
             "deprecationReason": null
           },
           {
+            "name": "flavourBlok",
+            "description": "Return a single blok a flavour's app brings by its ID (`<flavour id>:<key>`), or null when there is none.",
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "ID",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "FlavourBlok",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "flavours",
             "description": "List all flavours visible to the current organization.",
             "args": [
@@ -14232,6 +14799,18 @@
             "type": {
               "kind": "SCALAR",
               "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "logoBlok",
+            "description": "The release's logo: the LOGO blok of the first of its flavours that brings one.",
+            "args": [],
+            "type": {
+              "kind": "OBJECT",
+              "name": "FlavourBlok",
               "ofType": null
             },
             "isDeprecated": false,

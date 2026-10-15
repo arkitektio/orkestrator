@@ -13,6 +13,11 @@ vi.mock("@/core/linkers", () => ({
   },
 }));
 
+// An app's logo draws through the blok renderer, whose catalog needs the real linkers.
+vi.mock("@/kabinet/components/logo/KabinetBlokLogo", () => ({
+  KabinetBlokLogo: () => null,
+  DefinitionLogo: () => null,
+}));
 import { RepoInfoSidebar } from "./RepoInfoSidebar";
 
 const flavour = (overrides: Partial<Parameters<typeof RepoInfoSidebar>[0]["repo"]["flavours"][number]> = {}) => ({

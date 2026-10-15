@@ -4,6 +4,7 @@ import { KabinetApp } from "@/core/linkers";
 import { Boxes, KeyRound, Layers, Tag } from "lucide-react";
 import { lazy, Suspense, useMemo } from "react";
 import { useGetAppQuery, useListAppsQuery } from "../api/graphql";
+import { hasOwnLogo } from "../appIdentity";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import {
   AccessTab,
@@ -99,7 +100,7 @@ export const AppPage = asDetailQueryRoute(useGetAppQuery, ({ data }) => {
               <div className="relative flex flex-col gap-5 p-6 pt-14">
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div className="flex items-end gap-4">
-                    {app.logo ? (
+                    {hasOwnLogo(app) ? (
                       <AppIcon
                         app={app}
                         size={96}

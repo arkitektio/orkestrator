@@ -259,7 +259,8 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
         // Just authorized: that deployer. Skipped here: whatever the caller asked for.
         agent={deploying ? agent : props.agent}
         justAuthorized={justAuthorized}
-        onAuthorize={() => {
+        onAuthorize={(next) => {
+          if (next) setChosenApp(next);
           setJustAuthorized(false);
           setDeploying(false);
           setAnother(true);

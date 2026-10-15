@@ -1,3 +1,4 @@
+import { DefinitionLogo } from "@/kabinet/components/logo/KabinetBlokLogo";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
@@ -132,7 +133,11 @@ const FeaturedApp = ({ app }: { app: StoreApp }) => (
               key={definition.id}
               className="flex items-center gap-2 rounded-lg bg-background/70 px-3 py-2 text-xs backdrop-blur"
             >
-              <Boxes className="size-3.5 shrink-0 text-muted-foreground" />
+              {definition.logo ? (
+                <DefinitionLogo definition={definition} className="size-3.5" />
+              ) : (
+                <Boxes className="size-3.5 shrink-0 text-muted-foreground" />
+              )}
               <span className="truncate">{definition.name}</span>
             </div>
           ))}

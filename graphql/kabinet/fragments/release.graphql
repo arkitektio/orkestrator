@@ -11,6 +11,9 @@ fragment Release on Release {
   version
   logo
   originalLogo
+  logoBlok {
+    ...KabinetLogoBlok
+  }
   entrypoint
   app {
     id
@@ -24,6 +27,12 @@ fragment Release on Release {
   flavours {
     ...ListFlavour
     ...StoreFlavour
+    # Which builds bring bloks or files, for the Bloks tab (FlavourBloks).
+    blokKeys: blokImplementations {
+      id
+      context
+    }
+    assets
   }
   scopes
 }
@@ -33,6 +42,9 @@ fragment ListRelease on Release {
   version
   logo
   originalLogo
+  logoBlok {
+    ...KabinetLogoBlok
+  }
   app {
     id
     identifier

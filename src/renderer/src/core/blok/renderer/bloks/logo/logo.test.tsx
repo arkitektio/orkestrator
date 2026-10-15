@@ -3,7 +3,7 @@ import {cleanup} from '@testing-library/react';
 import {afterEach, describe, expect, it} from 'vitest';
 import {defaultBlokCatalog} from '../../catalog';
 import {normalizeBlokComponentTree, preflightBlokDocument} from '../../runtime';
-import {serializeDrawing} from '@/rekuest/components/logo/logoCache';
+import {serializeDrawing} from '@/core/blok/logo/logoCache';
 import {renderBlokDocument} from '../testing';
 import tree from './logo.fixture.json';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hueFor, logoFor, releaseIdentity, splitIdentifier } from "./appIdentity";
+import { hasOwnLogo, hueFor, logoFor, releaseIdentity, splitIdentifier } from "./appIdentity";
 
 describe("logoFor", () => {
   it("prefers the stored logo, then the upstream one", () => {
@@ -54,6 +54,7 @@ describe("releaseIdentity", () => {
     expect(releaseIdentity(release)).toEqual({
       identifier: "org.example.napari-viewer",
       name: "Napari Viewer",
+      logoBlok: null,
       logo: null,
       embedding: null,
       hue: hueFor("org.example.napari-viewer"),
@@ -93,5 +94,15 @@ describe("releaseIdentity", () => {
   it("copes with a release that has no flavours at all", () => {
     const { flavours: _flavours, ...noFlavours } = release;
     expect(releaseIdentity(noFlavours).logo).toBeNull();
+  });
+});
+
+describe("hasOwnLogo", () => {
+  it("is true for a LOGO blok or an uploaded logo, so no mark is generated", () => {
+    const blok = { id: "3:basiks_logo", hash: "sha256:x" };
+    expect(releaseIdentity({ logo: null, originalLogo: null, logoBlok: blok, app: { identifier: "a.b" } }).logoBlok).toBe(blok);
+    expect(hasOwnLogo({ logoBlok: blok, logo: null })).toBe(true);
+    expect(hasOwnLogo({ logoBlok: null, logo: "https://a/l.png" })).toBe(true);
+    expect(hasOwnLogo({ logoBlok: null, logo: null })).toBe(false);
   });
 });

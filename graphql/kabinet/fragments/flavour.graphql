@@ -8,6 +8,9 @@ fragment ListFlavour on Flavour {
     version
     logo
     originalLogo
+    logoBlok {
+      ...KabinetLogoBlok
+    }
     app {
       id
       identifier
@@ -62,6 +65,13 @@ fragment Flavour on Flavour {
   definitions {
     ...ListDefinition
   }
+  # Whether its app brings bloks or files at all: the Bloks tab is shown only
+  # then, and fetches what it draws itself (FlavourBloks).
+  blokKeys: blokImplementations {
+    id
+    context
+  }
+  assets
   # Its siblings: the other builds of the same version.
   release {
     scopes

@@ -16,6 +16,9 @@ fragment ListPod on Pod {
       release {
         id
         version
+        logoBlok {
+          ...KabinetLogoBlok
+        }
         app {
           identifier
         }
@@ -55,6 +58,9 @@ fragment Pod on Pod {
       release {
         id
         version
+        logoBlok {
+          ...KabinetLogoBlok
+        }
         app {
           identifier
         }

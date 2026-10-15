@@ -104,6 +104,7 @@ export const KABINET_HELP = {
         <>Press the <b>Install</b> button in the header (it names the version), review the dialog and confirm with <b>Authorize</b>. The dialog then asks where to deploy it.</>,
         <>Press the <b>Deploy</b> button that appears next to it once the release is installed, choose a backend and confirm with <b>Deploy</b>.</>,
         <>Open <b>Approvals</b> to see who has allowed this release to run as them.</>,
+        <>Open <b>Bloks</b> (shown when the app brings any) to see its logo, the logos of its actions, its panels and scenes drawn against their demo state, and the files it brings. Pick a build at the top when there are several.</>,
         <>Click another version under <b>Versions</b> at the bottom to compare releases.</>,
       ]}
       tips={[
@@ -121,6 +122,7 @@ export const KABINET_HELP = {
         <>Open <b>Access</b> for the services it talks to and the permissions it requests.</>,
         <>Open <b>Source</b> for the container image it runs and the repository it was built from.</>,
         <>Open <b>Deployments</b> to see whether this build is running anywhere.</>,
+        <>Open <b>Bloks</b> (shown when the app brings any) to see its logo, the logos of its actions, its panels and scenes drawn against their demo state, and the files it brings.</>,
         <>Press the <b>Install</b> button in the header (it names the version) to install the release this build belongs to.</>,
       ]}
       tips={[
