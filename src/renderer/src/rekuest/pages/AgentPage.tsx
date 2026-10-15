@@ -1,4 +1,4 @@
-import { AgentLogo } from "@/rekuest/components/logo/AgentLogo";
+import { AgentLogo } from "@/rekuest/components/logo/BlokLogo";
 import { useRekuest } from "@/rekuest/api/hooks";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { VerticalListRender } from "@/core/layout/VerticalListRender";

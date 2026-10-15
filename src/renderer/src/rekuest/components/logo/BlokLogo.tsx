@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/core/util/utils";
 import DemoBlokRenderer from "@/rekuest/components/DemoBlokRenderer";
-import { AgentLogoFragment, useLogoBlokQuery } from "@/rekuest/api/graphql";
+import { AgentLogoFragment, BlokLogoFragment, useLogoBlokQuery } from "@/rekuest/api/graphql";
 import { loadLogo, saveLogo, serializeDrawing, svgDataUrl } from "./logoCache";
 
 /** How long a first drawing must stay unchanged before it is kept. */
@@ -10,27 +10,23 @@ const SETTLE_MS = 150;
 /** Logos never act: whatever a logo blok binds to an agent is dropped. */
 const REFUSE_EVERY_ACTION = () => true;
 
-type Props = {
-  /** The agent's `AgentLogo` fragment. */
-  agent: AgentLogoFragment;
-  /** The box the logo fills; it has to have a size. */
-  className?: string;
-};
-
 /**
- * An agent's logo: the blok it declared as its default for the LOGO context.
+ * A logo blok (context LOGO), drawn in a box: an agent's, an action's.
  *
- * A logo shows its demo state, never the agent's live state. Since that makes
+ * A logo shows its demo state, never an agent's live state. Since that makes
  * it the same picture every time, it is drawn once and kept (`logoCache.ts`):
  * the first showing renders the blok and keeps the `<svg>` it drew under the
- * blok's hash, and every later one is an `<img>` of it. An agent that declared
- * no logo shows nothing.
+ * blok's hash, and every later one is an `<img>` of it. No blok shows nothing.
  */
-export const AgentLogo = ({ agent, className }: Props) => {
-  const blok = agent.logo?.blok;
+export const BlokLogo = ({ blok, className }: { blok?: BlokLogoFragment | null; className?: string }) => {
   if (!blok) return null;
   return <CachedLogo key={`${blok.id}:${blok.hash}`} blokId={blok.id} hash={blok.hash} className={className} />;
 };
+
+/** An agent's logo: the blok it declared as its default for the LOGO context. */
+export const AgentLogo = ({ agent, className }: { agent: AgentLogoFragment; className?: string }) => (
+  <BlokLogo blok={agent.logo?.blok} className={className} />
+);
 
 type Cached = { status: "loading" } | { status: "hit"; svg: string } | { status: "miss" };
 
@@ -117,4 +113,4 @@ const FirstDrawing = ({
   );
 };
 
-export default AgentLogo;
+export default BlokLogo;

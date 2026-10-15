@@ -5,7 +5,7 @@ import { cn } from "@/core/util/utils";
 import { RekuestAgent } from "@/core/linkers";
 
 import { ListAgentFragment } from "@/rekuest/api/graphql";
-import { AgentLogo } from "@/rekuest/components/logo/AgentLogo";
+import { AgentLogo } from "@/rekuest/components/logo/BlokLogo";
 
 interface Props {
   item: ListAgentFragment;

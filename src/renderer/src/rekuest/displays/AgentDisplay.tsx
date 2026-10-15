@@ -2,7 +2,7 @@ import { DisplayLine, DisplayLinePlaceholder } from "@/core/smart/display/Displa
 import type { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { cn } from "@/core/util/utils";
 import { useHoverAgentQuery } from "../api/graphql";
-import { AgentLogo } from "../components/logo/AgentLogo";
+import { AgentLogo } from "../components/logo/BlokLogo";
 
 /** `@rekuest/agent` elsewhere: a presence dot, its name, app and version. */
 export const AgentDisplay = (props: DisplayWidgetProps) => {

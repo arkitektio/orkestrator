@@ -68,6 +68,11 @@ type Action {
   """
   liveImplementations: Int!
 
+  """
+  A logo that draws this action: that of the implementation most recently registered with one. Each implementation has its own (`Implementation.logo`); an action without one is drawn by its agent's default logo.
+  """
+  logo: Blok
+
   """Name of the action."""
   name: String!
 
@@ -2796,6 +2801,11 @@ type Implementation {
   """The agent's locks this implementation takes while it runs."""
   locks: [Lock!]!
 
+  """
+  The agent's logo blok (context LOGO) that draws this implementation's action, if it declared one.
+  """
+  logo: Blok
+
   """The higher-order implementations that wrap this implementation."""
   lowerOrderImplementations(filters: ImplementationFilter, ordering: [ImplementationOrder!]! = [], pagination: OffsetPaginationInput): [Implementation!]!
 
@@ -2917,6 +2927,11 @@ input ImplementationInput {
   The locks of the implementation. This is used to specify which resources the implementation needs to run
   """
   locks: [String!] = null
+
+  """
+  The key of the agent's logo blok (context LOGO) that draws this action.
+  """
+  logo: String = null
 
   """
   The states that the implementation manipulates. This is used to identify which states are manipulated by the implementation, and can be use to enhance state safety in the system

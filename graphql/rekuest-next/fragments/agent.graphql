@@ -22,12 +22,16 @@ fragment ProtocolAgent on Agent {
     }
   }
 }
+fragment BlokLogo on Blok {
+  id
+  hash
+}
+
 fragment AgentLogo on Agent {
   logo: defaultBlok(context: LOGO) {
     id
     blok {
-      id
-      hash
+      ...BlokLogo
     }
   }
 }

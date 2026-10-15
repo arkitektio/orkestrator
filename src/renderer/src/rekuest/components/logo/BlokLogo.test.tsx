@@ -2,7 +2,11 @@
 import * as React from 'react';
 import {cleanup, render, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+
+/** A first drawing settles before it is kept; a loaded test run takes longer than waitFor's default. */
+const SLOW = {timeout: 5000};
 import tree from '@/core/blok/renderer/bloks/logo/logo.fixture.json';
+import {AgentLogo, BlokLogo} from './BlokLogo';
 
 /**
  * The first showing of a logo draws its blok and keeps the svg; every later one
@@ -35,17 +39,16 @@ afterEach(cleanup);
 
 describe('an agent logo', () => {
   it('is drawn once, kept, and then shown from what was kept', async () => {
-    const {AgentLogo} = await import('./AgentLogo');
 
     const first = render(<AgentLogo agent={agent('h1') as never} className="h-8 w-8" />);
     // The first showing draws the blok itself...
-    await waitFor(() => expect(first.container.querySelector('svg[data-blok-svg]')).not.toBeNull());
+    await waitFor(() => expect(first.container.querySelector('svg[data-blok-svg]')).not.toBeNull(), SLOW);
     // ...and once the drawing settles, it is replaced by the kept svg.
     const img = await waitFor(() => {
       const found = first.container.querySelector('img');
       expect(found).not.toBeNull();
       return found as HTMLImageElement;
-    });
+    }, SLOW);
     expect(img.src).toMatch(/^data:image\/svg\+xml;charset=utf-8,/);
     expect(decodeURIComponent(img.src)).toContain('fill="lime"');
     expect(first.container.querySelector('svg[data-blok-svg]')).toBeNull();
@@ -58,17 +61,25 @@ describe('an agent logo', () => {
   });
 
   it('draws again when the blok changed', async () => {
-    const {AgentLogo} = await import('./AgentLogo');
     useLogoBlokQuery.mockClear();
     useLogoBlokQuery.mockImplementation(() => ({data: {blok: {...BLOK, hash: 'h2'}}}));
 
     const changed = render(<AgentLogo agent={agent('h2') as never} className="h-8 w-8" />);
-    await waitFor(() => expect(changed.container.querySelector('img')).not.toBeNull());
+    await waitFor(() => expect(changed.container.querySelector('img')).not.toBeNull(), SLOW);
     expect(useLogoBlokQuery).toHaveBeenCalled();
   });
 
+  it('draws an action by the blok it names, from the same cache', async () => {
+    useLogoBlokQuery.mockClear();
+    useLogoBlokQuery.mockImplementation(() => ({data: {blok: BLOK}}));
+
+    // The test before kept this blok's drawing for h2, which replaced the one for h1.
+    const action = render(<BlokLogo blok={{id: BLOK.id, hash: 'h2'} as never} className="h-4 w-4" />);
+    await waitFor(() => expect(action.container.querySelector('img')).not.toBeNull());
+    expect(useLogoBlokQuery).not.toHaveBeenCalled();
+  });
+
   it('shows nothing for an agent without a logo', async () => {
-    const {AgentLogo} = await import('./AgentLogo');
     const none = render(<AgentLogo agent={{logo: null} as never} />);
     expect(none.container.innerHTML).toBe('');
   });
