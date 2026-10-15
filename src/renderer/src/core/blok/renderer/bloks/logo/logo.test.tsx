@@ -112,3 +112,59 @@ describe('a logo blok from the Python client', () => {
     expect(svg?.querySelector('div')).toBeNull();
   });
 });
+
+const circle = (id: string, props: Record<string, string>) => ({
+  id,
+  component: 'Circle',
+  props: [{key: 'r', static_value: '2'}, ...Object.entries(props).map(([key, value]) => ({key, static_value: value}))],
+});
+
+describe('paint', () => {
+  it('draws palette tokens from the brand under either root, and colours only under an SVG', () => {
+    const shapes = [circle('token', {fill: 'brand-soft', stroke: 'ink'}), circle('colour', {fill: '#fbbf24'}), circle('empty', {fill: 'none'})];
+    renderBlokDocument(defaultBlokCatalog, [{id: 'logo', component: 'SVG', children: shapes}]);
+    renderBlokDocument(defaultBlokCatalog, [{id: 'action', component: 'ActionLogo', children: shapes}]);
+
+    const [free, palette] = [...document.querySelectorAll('svg')];
+    const fills = (svg: Element) => [...svg.querySelectorAll('circle')].map(shape => shape.getAttribute('fill'));
+    expect(fills(free)).toEqual(['var(--logo-brand-soft)', '#fbbf24', 'none']);
+    // An action logo paints with the palette only: anything else is drawn in ink.
+    expect(fills(palette)).toEqual(['var(--logo-brand-soft)', 'var(--logo-ink)', 'none']);
+    expect(palette.querySelector('circle')?.getAttribute('stroke')).toBe('var(--logo-ink)');
+    expect(palette.hasAttribute('data-logo-palette')).toBe(true);
+    expect(free.hasAttribute('data-logo-palette')).toBe(false);
+  });
+
+  it('keeps an action logo a tree this catalog knows, its shapes placed under it', () => {
+    const preflight = preflightBlokDocument(
+      normalizeBlokComponentTree([{id: 'action', component: 'ActionLogo', children: [circle('c', {fill: 'brand'})]}]).roots,
+      defaultBlokCatalog,
+    );
+    expect(preflight.errors).toEqual([]);
+  });
+});
+
+describe('animate', () => {
+  it('marks a shape with the animation it plays and its delay, and a draw with a unit length', () => {
+    renderBlokDocument(defaultBlokCatalog, [
+      {
+        id: 'action',
+        component: 'ActionLogo',
+        children: [
+          circle('pulse', {animate: 'pulse', animateDelay: '0.3'}),
+          {id: 'trace', component: 'Path', props: [{key: 'd', static_value: 'M0 0h4'}, {key: 'animate', static_value: 'draw'}]},
+          circle('still', {}),
+        ],
+      },
+    ]);
+
+    const [pulse, still] = [...document.querySelectorAll('circle')];
+    expect(pulse.getAttribute('class')).toBe('logo-anim logo-anim-pulse');
+    expect(pulse.style.animationDelay).toBe('0.3s');
+    expect(still.getAttribute('class')).toBeNull();
+    const trace = document.querySelector('path');
+    expect(trace?.getAttribute('class')).toBe('logo-anim logo-anim-draw');
+    expect(trace?.getAttribute('pathLength')).toBe('1');
+  });
+});
+

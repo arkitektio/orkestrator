@@ -4,8 +4,9 @@
  * A logo is drawn once by the blok renderer, against its demo state. The
  * `<svg>` it produced is serialized and kept here under the blok's id, with
  * the server's `Blok.hash` of what it renders. Every later showing with the
- * same hash is an `<img>` of that SVG: a list of agents renders no bloks, and
- * fetches no trees.
+ * same hash places that SVG inline (`inlineDrawing`): a list of agents renders
+ * no bloks, and fetches no trees. Inline, not an `<img>`: the palette is
+ * `var(--logo-*)` of the page, and a hover plays the logo's animations.
  *
  * In IndexedDB, like the rail backdrop (`backdropStore.ts`), and mirrored in
  * memory so that a list showing one logo many times reads the store once. One
@@ -19,7 +20,7 @@ const STORE = "svgs";
  * Bumped when how a logo renders changes (the SVG components themselves), so
  * a drawing cached by an older Orkestrator is drawn again.
  */
-export const LOGO_RENDERER_VERSION = 1;
+export const LOGO_RENDERER_VERSION = 2;
 
 /** What a drawing is cached under: what the blok renders, and which renderer drew it. */
 export const logoCacheKey = (hash: string) => `${hash}:v${LOGO_RENDERER_VERSION}`;
@@ -99,23 +100,73 @@ export const clearLogos = async (): Promise<void> => {
   await run("readwrite", (store) => store.clear());
 };
 
-/** A drawing as an `<img>` source. */
-export const svgDataUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-
 /**
- * The `<svg>` a logo blok drew, as text an `<img>` can show: null when there is
- * none, or when a node in it failed (that drawing is not the logo, so it is not
- * kept).
+ * The `<svg>` a logo blok drew, as text to keep: null when there is none, or
+ * when a node in it failed (that drawing is not the logo, so it is not kept).
  */
 export const serializeDrawing = (container: Element): string | null => {
   const svg = container.querySelector("svg[data-blok-svg]");
   if (!svg || svg.querySelector("[data-blok-error]")) return null;
   const copy = svg.cloneNode(true) as Element;
   // The serializer declares the SVG namespace itself; an `xmlns` attribute as well
-  // would be a duplicate attribute, which no image decoder takes.
+  // would be a duplicate attribute, which no parser takes.
   copy.removeAttribute("xmlns");
   const text = new XMLSerializer().serializeToString(copy);
   return /^<svg[^>]*\sxmlns="/.test(text) ? text : text.replace("<svg", `<svg xmlns="${SVG_NAMESPACE}"`);
 };
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+
+/** What a logo blok can draw (`bloks/logo`), and nothing else is placed in the page. */
+const DRAWN_ELEMENTS = new Set([
+  "svg",
+  "title",
+  "path",
+  "circle",
+  "ellipse",
+  "rect",
+  "line",
+  "polyline",
+  "polygon",
+  "text",
+  "g",
+  "defs",
+  "lineargradient",
+  "radialgradient",
+  "stop",
+  "clippath",
+]);
+
+/** Attributes that may hold a `url(#id)` into the drawing. */
+const REFERENCING_ATTRIBUTES = ["fill", "stroke", "clip-path"];
+
+/**
+ * A kept drawing as markup to place inline, its ids moved to `prefix` so two
+ * copies on one page never share a gradient. Null when it is not a drawing a
+ * logo blok makes: something that is not one of its elements, a handler, or
+ * a link, none of which the renderer ever writes.
+ */
+export const inlineDrawing = (svg: string, prefix: string): string | null => {
+  const parsed = new DOMParser().parseFromString(svg, "image/svg+xml");
+  const root = parsed.documentElement;
+  if (parsed.querySelector("parsererror") || root.localName !== "svg" || root.namespaceURI !== SVG_NAMESPACE) {
+    return null;
+  }
+  const drawnAs = root.getAttribute("data-blok-prefix");
+  for (const element of [root, ...Array.from(root.querySelectorAll("*"))]) {
+    if (!DRAWN_ELEMENTS.has(element.localName.toLowerCase()) || element.namespaceURI !== SVG_NAMESPACE) return null;
+    for (const attribute of Array.from(element.attributes)) {
+      const name = attribute.name.toLowerCase();
+      if (name.startsWith("on") || name.endsWith("href")) return null;
+    }
+    if (!drawnAs) continue;
+    const id = element.getAttribute("id");
+    if (id?.startsWith(`${drawnAs}-`)) element.setAttribute("id", prefix + id.slice(drawnAs.length));
+    for (const name of REFERENCING_ATTRIBUTES) {
+      const value = element.getAttribute(name);
+      if (value?.includes(`#${drawnAs}-`)) element.setAttribute(name, value.split(`#${drawnAs}-`).join(`#${prefix}-`));
+    }
+  }
+  root.setAttribute("data-blok-prefix", prefix);
+  return new XMLSerializer().serializeToString(root);
+};

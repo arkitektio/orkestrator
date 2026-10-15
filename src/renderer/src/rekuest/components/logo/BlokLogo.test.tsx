@@ -10,7 +10,7 @@ import {AgentLogo, BlokLogo} from './BlokLogo';
 
 /**
  * The first showing of a logo draws its blok and keeps the svg; every later one
- * with the same hash is an <img> of it, without fetching the tree. jsdom has no
+ * with the same hash places it inline, without fetching the tree. jsdom has no
  * IndexedDB, so the cache answers from its in-memory side.
  */
 const BLOK = {
@@ -35,6 +35,9 @@ vi.mock('@/rekuest/scene/RekuestAssetHost', () => ({
 
 const agent = (hash: string) => ({logo: {id: 'materialized', blok: {id: BLOK.id, hash}}});
 
+/** A kept drawing, placed inline: its ids are moved to a `logo…` prefix, a first drawing's are `svg…`. */
+const KEPT = 'span[data-logo-host] > svg[data-blok-prefix^="logo"]';
+
 afterEach(cleanup);
 
 describe('an agent logo', () => {
@@ -43,21 +46,30 @@ describe('an agent logo', () => {
     const first = render(<AgentLogo agent={agent('h1') as never} className="h-8 w-8" />);
     // The first showing draws the blok itself...
     await waitFor(() => expect(first.container.querySelector('svg[data-blok-svg]')).not.toBeNull(), SLOW);
-    // ...and once the drawing settles, it is replaced by the kept svg.
-    const img = await waitFor(() => {
-      const found = first.container.querySelector('img');
+    // ...and once the drawing settles, it is replaced by the kept svg, inline.
+    const kept = await waitFor(() => {
+      const found = first.container.querySelector(KEPT);
       expect(found).not.toBeNull();
-      return found as HTMLImageElement;
+      return found as SVGSVGElement;
     }, SLOW);
-    expect(img.src).toMatch(/^data:image\/svg\+xml;charset=utf-8,/);
-    expect(decodeURIComponent(img.src)).toContain('fill="lime"');
-    expect(first.container.querySelector('svg[data-blok-svg]')).toBeNull();
+    expect(kept.querySelector('circle[fill="lime"]')).not.toBeNull();
+    const gradient = kept.querySelector('linearGradient');
+    expect(gradient?.id.startsWith(kept.getAttribute('data-blok-prefix') ?? '-')).toBe(true);
+    expect(kept.querySelector('rect')?.getAttribute('fill')).toBe(`url(#${gradient?.id})`);
     first.unmount();
 
     useLogoBlokQuery.mockClear();
-    const again = render(<AgentLogo agent={agent('h1') as never} className="h-8 w-8" />);
-    await waitFor(() => expect(again.container.querySelector('img')).not.toBeNull());
+    const again = render(
+      <>
+        <AgentLogo agent={agent('h1') as never} className="h-8 w-8" />
+        <AgentLogo agent={agent('h1') as never} className="h-8 w-8" />
+      </>,
+    );
+    await waitFor(() => expect(again.container.querySelectorAll(KEPT)).toHaveLength(2));
     expect(useLogoBlokQuery).not.toHaveBeenCalled();
+    // Two copies on one page never share a gradient.
+    const ids = [...again.container.querySelectorAll('linearGradient')].map(found => found.id);
+    expect(new Set(ids).size).toBe(2);
   });
 
   it('draws again when the blok changed', async () => {
@@ -65,7 +77,7 @@ describe('an agent logo', () => {
     useLogoBlokQuery.mockImplementation(() => ({data: {blok: {...BLOK, hash: 'h2'}}}));
 
     const changed = render(<AgentLogo agent={agent('h2') as never} className="h-8 w-8" />);
-    await waitFor(() => expect(changed.container.querySelector('img')).not.toBeNull(), SLOW);
+    await waitFor(() => expect(changed.container.querySelector(KEPT)).not.toBeNull(), SLOW);
     expect(useLogoBlokQuery).toHaveBeenCalled();
   });
 
@@ -75,7 +87,7 @@ describe('an agent logo', () => {
 
     // The test before kept this blok's drawing for h2, which replaced the one for h1.
     const action = render(<BlokLogo blok={{id: BLOK.id, hash: 'h2'} as never} className="h-4 w-4" />);
-    await waitFor(() => expect(action.container.querySelector('img')).not.toBeNull());
+    await waitFor(() => expect(action.container.querySelector(KEPT)).not.toBeNull());
     expect(useLogoBlokQuery).not.toHaveBeenCalled();
   });
 

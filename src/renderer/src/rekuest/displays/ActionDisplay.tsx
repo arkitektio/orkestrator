@@ -2,7 +2,7 @@ import { DisplayLine, DisplayLinePlaceholder, countOf } from "@/core/smart/displ
 import type { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { Play } from "lucide-react";
 import { useHoverActionQuery } from "../api/graphql";
-import { BlokLogo } from "../components/logo/BlokLogo";
+import { ActionLogo } from "../components/logo/ActionLogo";
 
 /** `@rekuest/action` elsewhere: its name, and how many agents can run it right now. */
 export const ActionDisplay = (props: DisplayWidgetProps) => {
@@ -16,7 +16,7 @@ export const ActionDisplay = (props: DisplayWidgetProps) => {
       {...props}
       icon={Play}
       // Its logo, when an implementation brings one, in the icon's place.
-      leading={action.logo ? <BlokLogo blok={action.logo} className="h-4 w-4" /> : undefined}
+      leading={action.logo ? <ActionLogo action={action} className="h-4 w-4" /> : undefined}
       title={action.name}
       meta={[
         action.kind.toLowerCase(),

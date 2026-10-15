@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/core/util/utils";
 import DemoBlokRenderer from "@/rekuest/components/DemoBlokRenderer";
 import { AgentLogoFragment, BlokLogoFragment, useLogoBlokQuery } from "@/rekuest/api/graphql";
-import { loadLogo, saveLogo, serializeDrawing, svgDataUrl } from "./logoCache";
+import { inlineDrawing, loadLogo, saveLogo, serializeDrawing } from "./logoCache";
 
 /** How long a first drawing must stay unchanged before it is kept. */
 const SETTLE_MS = 150;
@@ -16,7 +16,9 @@ const REFUSE_EVERY_ACTION = () => true;
  * A logo shows its demo state, never an agent's live state. Since that makes
  * it the same picture every time, it is drawn once and kept (`logoCache.ts`):
  * the first showing renders the blok and keeps the `<svg>` it drew under the
- * blok's hash, and every later one is an `<img>` of it. No blok shows nothing.
+ * blok's hash, and every later one places it inline. No blok shows nothing.
+ *
+ * Its box is a `data-logo-host`: hovering it plays the logo's animations.
  */
 export const BlokLogo = ({ blok, className }: { blok?: BlokLogoFragment | null; className?: string }) => {
   if (!blok) return null;
@@ -32,6 +34,12 @@ type Cached = { status: "loading" } | { status: "hit"; svg: string } | { status:
 
 const CachedLogo = ({ blokId, hash, className }: { blokId: string; hash: string; className?: string }) => {
   const [cached, setCached] = React.useState<Cached>({ status: "loading" });
+  const prefix = `logo${React.useId().replace(/[^A-Za-z0-9]/g, "")}`;
+  // A kept drawing that is not one a logo blok makes is drawn again instead.
+  const markup = React.useMemo(
+    () => (cached.status === "hit" ? inlineDrawing(cached.svg, prefix) : null),
+    [cached, prefix],
+  );
   const drawn = React.useCallback((svg: string) => setCached({ status: "hit", svg }), []);
 
   React.useEffect(() => {
@@ -46,8 +54,8 @@ const CachedLogo = ({ blokId, hash, className }: { blokId: string; hash: string;
 
   const box = cn("relative shrink-0 overflow-hidden", className);
   if (cached.status === "loading") return <span className={box} aria-hidden />;
-  if (cached.status === "hit") {
-    return <img src={svgDataUrl(cached.svg)} alt="" draggable={false} className={cn(box, "object-contain")} />;
+  if (markup) {
+    return <span data-logo-host="" className={cn(box, "[&>svg]:size-full")} dangerouslySetInnerHTML={{ __html: markup }} />;
   }
   return (
     <FirstDrawing
@@ -100,7 +108,7 @@ const FirstDrawing = ({
   }, [blok, blokId, hash, onDrawn]);
 
   return (
-    <span ref={container} className={className}>
+    <span ref={container} data-logo-host="" className={className}>
       {blok && (
         <DemoBlokRenderer
           blok={{ id: blok.id, componentTree: blok.componentTree, demoState: blok.demoState }}
