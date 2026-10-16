@@ -1,3 +1,4 @@
+import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/core/ui/card";
 import { ScrollArea } from "@/core/ui/scroll-area";
@@ -6,7 +7,6 @@ import { cn } from "@/core/util/utils";
 import { RekuestTask } from "@/core/linkers";
 import { FlowFragment } from "@/fluss/api/graphql";
 import { DetailImplementationFragment } from "@/rekuest/api/graphql";
-import { ImplementationActionButton } from "@/rekuest/buttons/ImplementationActionButton";
 import { EyeOpenIcon, LetterCaseToggleIcon } from "@radix-ui/react-icons";
 import { Controls, useNodesState } from "@xyflow/react";
 import { AnimatePresence } from "framer-motion";
@@ -38,6 +38,7 @@ export const ShowFlow: React.FC<Props> = ({ flow, template, preview = false }) =
   useEffect(() => setNodes(initialNodes), [initialNodes, setNodes]);
 
   const navigate = useNavigate();
+  const { openDialog } = useDialog();
 
   const context = useMemo<ShowRiverContextType>(
     () => ({ flow, template, showEdgeLabels }),
@@ -69,12 +70,16 @@ export const ShowFlow: React.FC<Props> = ({ flow, template, preview = false }) =
             <AnimatePresence>
               {template && (
                 <div className="absolute bottom-0 right-0 ml-3 mt-5 z-50">
-                  <ImplementationActionButton
-                    id={template.id}
-                    onAssign={(e) => navigate(RekuestTask.linkBuilder(e.id))}
+                  <Button
+                    onClick={() =>
+                      openDialog("assign", {
+                        target: { implementation: template.id },
+                        onAssigned: (task) => navigate(RekuestTask.linkBuilder(task.id)),
+                      })
+                    }
                   >
-                    <Button> Run </Button>
-                  </ImplementationActionButton>
+                    Run
+                  </Button>
                 </div>
               )}
             </AnimatePresence>

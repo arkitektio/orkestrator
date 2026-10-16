@@ -10,6 +10,7 @@ vi.mock("@/core/dialogs/registry", () => ({ useDialog: () => ({ openDialog: vi.f
 vi.mock("@/rekuest/lib/taskTracker", () => ({ trackTask: () => () => {}, failureFallback: () => "" }));
 vi.mock("./openResult", () => ({
   deliverResults: (_sink: unknown, _ports: unknown, onEvent: unknown) => onEvent,
+  runTracker: () => () => () => {},
   OpenResultButtons: () => null,
   runsDirectly: () => true,
   useOpenResult: () => () => () => {},

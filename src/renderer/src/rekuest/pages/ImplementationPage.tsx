@@ -1,11 +1,9 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
-import { buildAssignInput } from "@/rekuest/assign";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { PageAction } from "@/core/ui/page-action";
 import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
-import { Form } from "@/core/ui/form";
 import { Separator } from "@/core/ui/separator";
 import {
   Sheet,
@@ -15,8 +13,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/core/ui/sheet";
-import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
-import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
 import {
   RekuestAction,
   RekuestAgent,
@@ -30,62 +26,27 @@ import {
   DetailImplementationFragment,
   Effects,
   Execution,
-  ResolvedDependencyInput,
   WatchImplementationDocument,
   WatchImplementationSubscription,
   WatchImplementationSubscriptionVariables,
   useImplementationQuery
 } from "@/rekuest/api/graphql";
-import { ArrowRight, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { ReactNode, useEffect } from "react";
 import TaskList from "../components/lists/TaskList";
 import { useImplementationAction } from "../hooks/useImplementationAction";
-import { useImplementationForm } from "../hooks/useImplementationForm";
-import { useDependencyTree } from "../hooks/useDependencyTree";
-import { DependencyTreeNotice } from "../components/dependencies/DependencyTreeNotice";
 import { ImplementationStatsSidebar } from "../sidebars/ImplementationStatistics";
 import { ReturnsContainer } from "@/core/ports/engine/tailwind";
 import PortConstraintBadges from "@/core/ports/widgets/PortConstraintBadges";
 import { portToLabel } from "@/core/ports/engine/utils";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { REKUEST_HELP } from "../help";
-import { notifyAssignError } from "../lib/assignError";
+import { AssignForm } from "../forms/assign/AssignForm";
 
 
 export const DoForm = ({ id }: { id: string }) => {
-  const { assign, latestTask, implementation } = useImplementationAction({
-    id: id,
-  });
-
-   const form = useImplementationForm({
-     implementation: implementation,
-     overwrites: { ...latestTask?.args },
-     reValidateMode: "onChange",
-   });
-
-   const tree = useDependencyTree(implementation, form.control);
-
-   const onSubmit = async (data: {
-     args: Record<string, unknown>;
-     dependencies: ResolvedDependencyInput[];
-   }) => {
-     try {
-       await assign(buildAssignInput({
-         implementation: id,
-         args: data.args,
-         dependencies: data.dependencies,
-         hooks: [],
-       }));
-
-     } catch (e) {
-       notifyAssignError(e, { id: `assign:${id}` });
-     }
-   };
-
-
+  const { latestTask, implementation } = useImplementationAction({ id });
   const { registry } = useWidgetRegistry();
-
-
 
   const yieldEvent = latestTask?.events?.find(
     (x) => x.kind == TaskEventKind.Yield,
@@ -99,100 +60,73 @@ export const DoForm = ({ id }: { id: string }) => {
   );
 
   return (
-    <>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="rounded flex gap-2xl max-w-[80%] mt-2 gap-2">
-            <Card className="flex-1 p-2">
-              <CardHeader>
-                <CardTitle className="font-light">Arguments</CardTitle>
-              </CardHeader>
+    <div className="rounded flex gap-2xl max-w-[80%] mt-2 gap-2">
+      <Card className="flex-1 p-2">
+        <CardHeader>
+          <CardTitle className="font-light">Arguments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AssignForm target={{ implementation: id }} layout="inline" />
+        </CardContent>
+      </Card>
+      {yieldReturns ? (
+        <Card className="flex-1 p-2">
+          <CardHeader>
+            <CardTitle className="font-light">Outs</CardTitle>
+          </CardHeader>
 
-              <CardContent>
-                <div className="w-full">
-                  <ArgsContainer
-                    registry={registry}
-                    ports={implementation?.action?.args || []}
-                    path={[]}
-                  />
-                   {implementation?.dependencies && (
-            <DependenciesContainer dependencies={implementation?.dependencies} bound={implementation.agent.id} tree={tree.nodes} />
-          )}
-                  <DependencyTreeNotice tree={tree} />
-                </div>
-              </CardContent>
-            </Card>
-            <div className="flex-initial h-full flex flex-col ">
-              <Button
-                type="submit"
-                variant={"ghost"}
-                className="my-auto block h-full"
-              >
-                <ArrowRight className="my-auto" />
-              </Button>
+          <CardContent>
+            <div className="flex flex-col gap-2">
+              <ReturnsContainer
+                registry={registry}
+                ports={implementation?.action.returns || []}
+                values={yieldReturns}
+              ></ReturnsContainer>
             </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="flex-1">
+          <CardHeader>
+            <CardTitle className="font-light">Outs</CardTitle>
+          </CardHeader>
 
-            {yieldReturns ? (
-              <Card className="flex-1 p-2">
-                <CardHeader>
-                  <CardTitle className="font-light">Outs</CardTitle>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="flex flex-col gap-2">
-                    <ReturnsContainer
-                      registry={registry}
-                      ports={implementation?.action.returns || []}
-                      values={yieldReturns}
-                    ></ReturnsContainer>
+          <CardContent>
+            <div className="flex flex-col gap-2">
+              {implementation?.action?.returns?.map((p) => (
+                <div key={p.key} className="rounded border border-border/50 p-2">
+                  <div className=" font-bold">{p.label || p.key}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {p.description}
                   </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="flex-1">
-                <CardHeader>
-                  <CardTitle className="font-light">Outs</CardTitle>
-                </CardHeader>
 
-                <CardContent>
-                  <div className="flex flex-col gap-2">
-                    {implementation?.action?.returns?.map((p) => (
-                      <div key={p.key} className="rounded border border-border/50 p-2">
-                        <div className=" font-bold">{p.label || p.key}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {p.description}
-                        </div>
-
-                        <div className="text-xs text-muted-foreground">
-                          {portToLabel(p)}
-                        </div>
-                        <PortConstraintBadges items={p.provides} className="mt-1" />
-                      </div>
-                    ))}
+                  <div className="text-xs text-muted-foreground">
+                    {portToLabel(p)}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                  <PortConstraintBadges items={p.provides} className="mt-1" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-            {errorEvent && (
-              <Card className="flex-1">
-                <CardHeader>
-                  <CardTitle className="font-light text-red-800">
-                    Errors
-                  </CardTitle>
-                </CardHeader>
+      {errorEvent && (
+        <Card className="flex-1">
+          <CardHeader>
+            <CardTitle className="font-light text-red-800">
+              Errors
+            </CardTitle>
+          </CardHeader>
 
-                <CardContent>
-                  <div className="flex flex-col gap-2">
-                    {errorEvent.message}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </form>
-      </Form>
-    </>
+          <CardContent>
+            <div className="flex flex-col gap-2">
+              {errorEvent.message}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
 

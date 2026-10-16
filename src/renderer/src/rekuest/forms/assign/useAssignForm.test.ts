@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ListDependencyFragment } from "../api/graphql";
-import { buildDependenciesSchema } from "./useImplementationForm";
+import { ListDependencyFragment } from "@/rekuest/api/graphql";
+import { buildDependenciesSchema } from "./useAssignForm";
 
 const dependency = (overrides: Partial<ListDependencyFragment>): ListDependencyFragment => ({
   id: "1",

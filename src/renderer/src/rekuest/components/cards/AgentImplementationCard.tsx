@@ -17,7 +17,7 @@ const AgentImplementationCard = ({ item }: Props) => {
   const onRun = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      openDialog("implementationassign", { id: item.id }, {});
+      openDialog("assign", { target: { implementation: item.id } });
     },
     [item.id, openDialog],
   );

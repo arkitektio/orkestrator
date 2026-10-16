@@ -66,7 +66,7 @@ export const dialogRoles = (Dialog: unknown): RoleRequirement | undefined =>
  * each have to.
  *
  * ```ts
- * actionassign: prefersSize("medium", ActionAssignForm),
+ * assign: prefersSize("medium", AssignDialog),
  * ```
  */
 export const prefersSize = <C extends ComponentType<any>>(size: DialogSize, Dialog: C): C =>

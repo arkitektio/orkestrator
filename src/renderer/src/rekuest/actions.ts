@@ -540,7 +540,7 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
         throw new Error('No action selected')
       }
 
-      dialog.openDialog('actionassign', { id: structure.id })
+      dialog.openDialog('assign', { target: { action: structure.id } })
     },
     collections: ['io'],
   },

@@ -24,13 +24,13 @@ import { TASK_HOOKS } from "@/core/modules/taskhooks/registry";
 describe("host registries", () => {
   it("hold every dialog", () => {
     expect(Object.keys(DIALOGS).sort()).toEqual([
-      "actionassign",
       "addchartlayer",
       "addexperimentlayer",
       "addlayer",
       "addusertoorganization",
       "alpakareplyerassign",
       "answermembershiprequest",
+      "assign",
       "bankassignmerchant",
       "bankcategorize",
       "bankcreatebudget",
@@ -79,7 +79,6 @@ describe("host registries", () => {
       "exporttofile",
       "exportwiregram",
       "firetrigger",
-      "implementationassign",
       "importocirepo",
       "importwiregram",
       "installrelease",

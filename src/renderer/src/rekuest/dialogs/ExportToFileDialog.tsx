@@ -1,13 +1,9 @@
-import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/core/ui/dialog";
-import { Form } from "@/core/ui/form";
-import { ArgsContainer } from "@/core/ports/widgets/ArgsContainer";
-import { FormActionDescription } from "@/core/ports/engine/ActionDescription";
 import { usePendingHooksStore } from "@/core/modules/taskhooks/pendingHooksStore";
 import { smartRegistry } from "@/core/smart/registry";
 import {
@@ -15,21 +11,17 @@ import {
   DemandKind,
   PortKind,
   useAllPrimaryActionsQuery,
+  useDetailActionQuery,
 } from "@/rekuest/api/graphql";
-import { buildAssignInput } from "@/rekuest/assign";
-import { useAction } from "@/rekuest/hooks/useAction";
-import { usePortForm } from "@/core/ports/engine/usePortForm";
-import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
 import { Structure } from "@/core/types";
 import { ArrowLeft, Download } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "@/core/notify";
-import { v4 as uuidv4 } from "uuid";
 
 import { FILE_DOWNLOADERS } from "@/core/modules/registries";
 import { structureLabel } from "@/core/modules/export/structureLabel";
 import { FILE_DOWNLOAD_HOOK } from "@/core/modules/export/taskHooks";
-import { AssignErrorNote } from "../components/AssignErrorNote";
+import { AssignForm } from "../forms/assign/AssignForm";
 
 export type ExportToFileDialogProps = {
   structure: Structure;
@@ -160,101 +152,51 @@ const ExporterRunForm = (props: {
   label: string;
   onBack: () => void;
 }) => {
-  const { assign, action } = useAction({ id: props.actionId });
-  const { closeDialog } = useDialog();
-  const { registry } = useWidgetRegistry();
+  // The same query the form runs: answered from the cache.
+  const { data } = useDetailActionQuery({ variables: { id: props.actionId } });
   const addPendingHook = usePendingHooksStore((s) => s.addPendingHook);
 
   // Preset (and hide) every arg that expects the structure being exported.
-  const preset =
-    action?.args
-      .filter((arg) => arg.identifier === props.structure.identifier)
-      .reduce<Record<string, unknown>>((acc, arg) => {
-        acc[arg.key] = props.structure.id;
-        return acc;
-      }, {}) ?? {};
-
-  // ArgsContainer hides fields by key -> true, while usePortForm seeds their
-  // values via `overwrites`.
-  const hidden = Object.keys(preset).reduce<{ [key: string]: boolean }>((acc, key) => {
-    acc[key] = true;
-    return acc;
-  }, {});
-
-  const form = usePortForm({
-    ports: action?.args || [],
-    overwrites: preset,
-  });
-
-  // Why the last submit did not start; the dialog stays open on it.
-  const [failure, setFailure] = useState<unknown>(null);
-
-  const onSubmit = async (data: any) => {
-    const reference = uuidv4();
-    setFailure(null);
-    try {
-      const task = await assign(
-        buildAssignInput({
-          action: props.actionId,
-          args: data,
-          reference,
-        }),
-      );
-
-      addPendingHook({
-        reference,
-        taskId: task.id,
-        hookType: FILE_DOWNLOAD_HOOK,
-        params: {
-          name: props.label,
-          exporterName: props.exporterName,
-        },
-      });
-
-      toast.info(`Export started — “${props.exporterName}” is running.`);
-      closeDialog();
-    } catch (e) {
-      setFailure(e);
-    }
-  };
-
-  const isSubmitting = form.formState.isSubmitting;
+  const preset = useMemo(
+    () =>
+      data?.action.args
+        .filter((arg) => arg.identifier === props.structure.identifier)
+        .reduce<Record<string, unknown>>((acc, arg) => {
+          acc[arg.key] = props.structure.id;
+          return acc;
+        }, {}),
+    [data?.action.args, props.structure],
+  );
 
   return (
-    <div>
-      <DialogHeader>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={props.onBack} type="button">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <DialogTitle>{action?.name || props.exporterName}</DialogTitle>
-        </div>
-      </DialogHeader>
-      <DialogDescription className="mt-2" asChild>
-        <div>
-          {action?.description && (
-            <FormActionDescription description={action.description} control={form.control} />
-          )}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="mt-4 space-y-6">
-              <ArgsContainer
-                registry={registry}
-                groups={action?.portGroups || []}
-                ports={action?.args || []}
-                hidden={hidden}
-                path={[]}
-              />
-              <AssignErrorNote error={failure} />
-              <div className="flex justify-end">
-                <Button type="submit" variant="outline" disabled={isSubmitting}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export{isSubmitting ? "ing…" : ""}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </div>
-      </DialogDescription>
-    </div>
+    <AssignForm
+      target={{ action: props.actionId }}
+      args={preset}
+      hidden={preset}
+      prefillLatest={false}
+      leading={
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={props.onBack} type="button">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+      }
+      submitLabel={
+        <>
+          <Download className="h-4 w-4" />
+          Export
+        </>
+      }
+      onAssigned={(task, reference) => {
+        addPendingHook({
+          reference,
+          taskId: task.id,
+          hookType: FILE_DOWNLOAD_HOOK,
+          params: {
+            name: props.label,
+            exporterName: props.exporterName,
+          },
+        });
+        toast.info(`Export started — “${props.exporterName}” is running.`);
+      }}
+    />
   );
 };

@@ -14,7 +14,7 @@ import {
   useImplementationsQuery,
 } from "@/rekuest/api/graphql";
 import { buildAssignInput } from "@/rekuest/assign";
-import { failureFallback, trackTask } from "@/rekuest/lib/taskTracker";
+import { failureFallback } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Boxes, PlayCircle } from "lucide-react";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
@@ -26,7 +26,7 @@ import {
 import { useResultSink } from "@/core/smart/extensions/results";
 import {
   OpenResultButtons,
-  deliverResults,
+  runTracker,
   runsDirectly,
   useOpenResult,
   type OpenableReturn,
@@ -160,27 +160,25 @@ export const DirectImplementationAssignment = (
       return;
     }
 
+    // The tracker lives in the "Run on" picker, which closes the instant the
+    // run starts: on the rail too (`runTracker`), or it runs with no indicator.
+    const track = runTracker(sink, action.returns, (event) => {
+      props.onDone?.({ event, kind: "action" });
+    });
+
     const unknownKeys = action.args.filter((arg) => arg.key && !keys[arg.key]);
     if (unknownKeys.length >= 1) {
-      openDialog("implementationassign", {
-        id: implementation.id,
+      openDialog("assign", {
+        target: { implementation: implementation.id },
         args: keys,
         hidden: keys,
+        track,
       });
       return;
     }
 
     const reference = uuidv4();
-    // `notifyGlobally`: the tracker below lives in the "Run on" picker, which
-    // closes the instant the run starts. Without this the rail's task island
-    // is suppressed too and the task runs with no indicator anywhere.
-    const untrack = trackTask(
-      reference,
-      deliverResults(sink, action.returns, (event) => {
-        props.onDone?.({ event, kind: "action" });
-      }),
-      { notifyGlobally: true },
-    );
+    const untrack = track(reference);
 
     try {
       await assign(buildAssignInput({
@@ -387,19 +385,18 @@ export const AssignButton = (
 
     const unknownKeys = action.args.filter((arg) => arg.key && !keys[arg.key]);
     if (unknownKeys.length >= 1) {
-      openDialog("actionassign", {
-        id: action.id,
+      openDialog("assign", {
+        target: { action: action.id },
         args: keys,
         hidden: keys,
+        track: runTracker(sink, action.returns, onEvent),
       });
       return;
     }
 
     const reference = uuidv4();
-    const untrack = trackTask(
+    const untrack = runTracker(sink, action.returns, open ? thenOpen(open, onEvent) : onEvent)(
       reference,
-      deliverResults(sink, action.returns, open ? thenOpen(open, onEvent) : onEvent),
-      { notifyGlobally: true },
     );
 
     try {
@@ -523,18 +520,17 @@ export const BatchAssignButton = (
 
       const unknownKeys = action.args.filter((arg) => arg.key && !keys[arg.key]);
       if (unknownKeys.length >= 1) {
-        openDialog("actionassign", {
-          id: action.id,
+        openDialog("assign", {
+          target: { action: action.id },
           args: keys,
           hidden: keys,
+          track: runTracker(sink, action.returns, onEvent),
         });
         return;
       }
 
       const reference = uuidv4();
-      const untrack = trackTask(reference, deliverResults(sink, action.returns, onEvent), {
-        notifyGlobally: true,
-      });
+      const untrack = runTracker(sink, action.returns, onEvent)(reference);
 
       try {
         await assign(buildAssignInput({

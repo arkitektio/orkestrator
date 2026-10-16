@@ -21,6 +21,7 @@ vi.mock("@/rekuest/lib/taskTracker", () => ({
 vi.mock("./runOnContext", () => ({ useRunOnSubmenu: () => submenu }));
 vi.mock("./openResult", async () => ({
   deliverResults: (await vi.importActual<typeof import("./openResult")>("./openResult")).deliverResults,
+  runTracker: (await vi.importActual<typeof import("./openResult")>("./openResult")).runTracker,
   OpenResultButtons: () => <span>open-buttons</span>,
   runsDirectly: () => true,
   useOpenResult: () => () => () => {},
@@ -141,7 +142,7 @@ describe("AssignButton", () => {
     fireEvent.click(screen.getByText("Track"));
     await waitFor(() => expect(openDialog).toHaveBeenCalledTimes(1));
     const [id, props] = openDialog.mock.calls[0];
-    expect(id).toBe("actionassign");
+    expect(id).toBe("assign");
     expect(JSON.stringify(props)).toContain('"object":"42"');
     expect(JSON.stringify(props)).not.toContain("cut:");
     expect(assign).not.toHaveBeenCalled();
@@ -164,5 +165,36 @@ describe("AssignButton", () => {
     expect(sink).not.toHaveBeenCalled();
     tracked!({ kind: "COMPLETED", returns: null });
     expect(sink).toHaveBeenCalledWith([{ identifier: "@mikro/arraylens", id: "42" }]);
+  });
+
+  it("follows a run that needed the dialog like a direct one: results to the sink, then onDone", async () => {
+    const sink = vi.fn();
+    const onDone = vi.fn();
+    const wider = action({
+      args: [
+        { key: "image", kind: "STRUCTURE", identifier: "@mikro/image", nullable: false },
+        { key: "sigma", kind: "FLOAT", nullable: false },
+      ],
+      returns: [{ key: "return0", kind: "STRUCTURE", identifier: "@mikro/arraylens", label: null }],
+    });
+    render(
+      <SmartResultSink onResults={sink}>
+        <AssignButton action={wider} objects={objects} onDone={onDone} />
+      </SmartResultSink>,
+    );
+    fireEvent.click(screen.getByText("Track"));
+    await waitFor(() => expect(openDialog).toHaveBeenCalledTimes(1));
+    const [, props] = openDialog.mock.calls[0];
+
+    // The dialog calls this right before it assigns.
+    tracked = null;
+    expect(typeof props.track).toBe("function");
+    props.track("ref-1");
+    expect(tracked).not.toBeNull();
+
+    tracked!({ kind: "COMPLETED", returns: { return0: { __identifier: "@mikro/arraylens", object: "42" } } });
+    expect(sink).toHaveBeenCalledWith([{ identifier: "@mikro/arraylens", id: "42" }]);
+    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(assign).not.toHaveBeenCalled();
   });
 });

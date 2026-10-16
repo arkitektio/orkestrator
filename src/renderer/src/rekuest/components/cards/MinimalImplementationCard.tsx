@@ -51,7 +51,7 @@ const TheCard = ({ item }: Props) => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-row gap-2">
-            <DialogButton name={"implementationassign"} size="sm" dialogProps={{ id: item.id }} variant={"outline"}>Assign </DialogButton>
+            <DialogButton name={"assign"} size="sm" dialogProps={{ target: { implementation: item.id } }} variant={"outline"}>Assign </DialogButton>
           </div>
         </CardContent>
       </Card>

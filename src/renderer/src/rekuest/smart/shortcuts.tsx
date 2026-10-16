@@ -8,7 +8,7 @@ import { toast } from "@/core/notify";
 import { assignErrorMessage } from "../lib/assignError";
 import { v4 as uuidv4 } from "uuid";
 import { TaskEventFragment, ListShortcutFragment, PortKind } from "@/rekuest/api/graphql";
-import { failureFallback, trackTask } from "@/rekuest/lib/taskTracker";
+import { failureFallback } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Zap } from "lucide-react";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
@@ -16,7 +16,7 @@ import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { useResultSink } from "@/core/smart/extensions/results";
 import {
   OpenResultButtons,
-  deliverResults,
+  runTracker,
   runsDirectly,
   useOpenResult,
   type OpenableReturn,
@@ -148,22 +148,23 @@ export const ShortcutButton = (
 
       const unknownKeys = shortcut.args.filter((arg) => arg.key && !keys[arg.key]);
       if (unknownKeys.length >= 1) {
-        openDialog("actionassign", {
-          id: shortcut.action.id,
+        openDialog("assign", {
+          target: { action: shortcut.action.id },
           args: { ...keys, ...shortcut.savedArgs },
           hidden: { ...keys, ...shortcut.savedArgs },
+          track: runTracker(sink, shortcut.returns, doStuff),
         });
         return;
       }
 
       const reference = uuidv4();
-      // Also globally: the popover holding this row closes on select, so the
-      // rail's task island is the only surface left for the running task.
-      const untrack = trackTask(
-        reference,
-        deliverResults(sink, shortcut.returns, open ? thenOpen(open, doStuff) : doStuff),
-        { notifyGlobally: true },
-      );
+      // Also on the rail (`runTracker`): the popover holding this row closes on
+      // select, so the task island is the only surface left for the run.
+      const untrack = runTracker(
+        sink,
+        shortcut.returns,
+        open ? thenOpen(open, doStuff) : doStuff,
+      )(reference);
 
       try {
         await assign(buildAssignInput({

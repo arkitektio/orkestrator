@@ -45,9 +45,9 @@ const TheCard = ({ item }: Props) => {
         <CardFooter className="pt-0">
 
             <DialogButton
-              name={"implementationassign"}
+              name={"assign"}
               size="sm"
-              dialogProps={{ id: item.id }}
+              dialogProps={{ target: { implementation: item.id } }}
               variant={"outline"}
               className="h-8"
             >

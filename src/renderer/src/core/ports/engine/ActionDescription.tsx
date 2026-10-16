@@ -69,7 +69,10 @@ export const ActionDescription = (props: {
 export const FormActionDescription = (props: {
   description?: string | null;
   control: Control<FieldValues>;
+  /** Where the arguments sit in the form, when not at its root (`"args"`). */
+  name?: string;
 }) => {
-  const variables = useWatch({ control: props.control });
+  const values = useWatch({ control: props.control });
+  const variables = props.name ? values?.[props.name] : values;
   return <ActionDescription description={props.description} variables={variables} />;
 };

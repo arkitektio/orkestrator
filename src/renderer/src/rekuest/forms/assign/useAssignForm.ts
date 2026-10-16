@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "@/core/notify";
 import Zod from "zod";
-import { DetailImplementationFragment, ListDependencyFragment, ResolvedDependencyInput } from "../api/graphql";
+import { ListDependencyFragment, ResolvedDependencyInput } from "@/rekuest/api/graphql";
 import { createPortResolver } from "@/core/ports/engine/portResolver";
-import { toPins } from "../lib/dependencyTree";
+import type { PortablePort } from "@/core/ports/engine/types";
+import { toPins } from "@/rekuest/lib/dependencyTree";
 import {
   buildZodSchema,
   extractErrorMessages,
@@ -98,16 +99,26 @@ export const buildDependenciesSchema = (
     });
 };
 
-export const useImplementationForm = (props: {
-  implementation?: DetailImplementationFragment;
+/** No dependencies: an action target (any agent takes it) has none to pin. */
+const NO_DEPENDENCIES: ListDependencyFragment[] = [];
+
+/**
+ * The form an assign fills: `{ args, dependencies }`, whatever the target. An
+ * action has no dependencies; an implementation brings its own. Widgets sit
+ * under `args` (`ArgsContainer path={["args"]}`), the dependency picker writes
+ * `dependencies`.
+ */
+export const useAssignForm = (props: {
+  ports?: PortablePort[];
+  dependencies?: ListDependencyFragment[];
   overwrites?: { [key: string]: unknown };
   presetDependencies?: ResolvedDependencyInput[] ;
   doNotAutoReset?: boolean;
-  additionalSchema?: Zod.ZodObject<Zod.ZodRawShape>;
   mode?: "onChange" | "onBlur" | "onSubmit" | "onTouched" | "all";
   reValidateMode?: "onChange" | "onBlur" | "onSubmit";
 }) => {
-  const args = props.implementation?.action.args;
+  const args = props.ports;
+  const dependencies = props.dependencies ?? NO_DEPENDENCIES;
   const hash = portHash(args || []);
   const overwritesKey = JSON.stringify(props.overwrites || {});
   const presetKey = JSON.stringify(props.presetDependencies || []);
@@ -125,7 +136,7 @@ export const useImplementationForm = (props: {
   const resolver = useMemo(() => {
     const zodSchema = Zod.object({
       args: buildZodSchema(args || []),
-      dependencies: buildDependenciesSchema(props.implementation?.dependencies || []),
+      dependencies: buildDependenciesSchema(dependencies),
     });
     return createPortResolver(zodSchema, args || [], {
       portsPath: ["args"],
@@ -133,7 +144,7 @@ export const useImplementationForm = (props: {
       alwaysMounted: ["dependencies"],
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hash, props.implementation?.dependencies]);
+  }, [hash, dependencies]);
 
   const { handleSubmit, ...form } = useForm({
     defaultValues: buildDefaults(),

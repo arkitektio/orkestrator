@@ -5,6 +5,8 @@ import { smartRegistry } from "@/core/smart/registry";
 import { structure } from "@/core/smart/structure";
 import type { Structure } from "@/core/types";
 import { PortKind, TaskEventFragment, TaskEventKind } from "@/rekuest/api/graphql";
+import type { AssignTrack } from "@/rekuest/forms/assign/target";
+import { trackTask } from "@/rekuest/lib/taskTracker";
 import { ArrowUpRight } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -125,6 +127,20 @@ export const deliverResults = (
     if (results.length > 0) sink(results);
   };
 };
+
+/**
+ * How a menu row follows a run it started, directly or through the assign
+ * dialog: results to the sink, events to the row. Also on the rail, since the
+ * menu holding the row closes as the run starts.
+ */
+export const runTracker =
+  (
+    sink: ResultSink | null,
+    ports: readonly OpenableReturn[] | null | undefined,
+    onEvent: OnTaskEvent,
+  ): AssignTrack =>
+  (reference) =>
+    trackTask(reference, deliverResults(sink, ports, onEvent), { notifyGlobally: true });
 
 /** "Run, then open Image"; the port's label too when two returns share a type. */
 export const openResultLabel = (port: OpenableReturn, all: readonly OpenableReturn[]) => {

@@ -3,6 +3,7 @@ import { Button } from "@/core/ui/button";
 import { Card } from "@/core/ui/card";
 import { ActionDescription } from "@/core/ports/engine/ActionDescription";
 import { RekuestAction } from "@/core/linkers";
+import { useDialog } from "@/core/dialogs/registry";
 import { Play } from "lucide-react";
 
 import {
@@ -10,7 +11,6 @@ import {
   BrowseActionFragment,
   ListActionFragment,
 } from "@/rekuest/api/graphql";
-import { ActionButton } from "@/rekuest/buttons/ActionButton";
 import { AgentStatusDot } from "@/rekuest/components/displays/AgentStatusDot";
 import { ActionLogo } from "@/rekuest/components/logo/ActionLogo";
 import { Availability, deriveAvailability } from "@/rekuest/lib/actionBrowse";
@@ -46,6 +46,7 @@ const notes = (item: Item) =>
 
 const TheCard = ({ item }: Props) => {
   const availability = deriveAvailability(item.implementations);
+  const { openDialog } = useDialog();
 
   return (
     <RekuestAction.Smart object={item} hover>
@@ -82,17 +83,16 @@ const TheCard = ({ item }: Props) => {
 
         <div className="mt-auto flex h-6 items-center justify-between gap-2 pt-1 text-xs text-muted-foreground/60">
           <span className="truncate">{notes(item).join(" · ")}</span>
-          <ActionButton id={item.id}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-              aria-label={`Run ${item.name}`}
-              title="Run"
-            >
-              <Play className="h-3.5 w-3.5" />
-            </Button>
-          </ActionButton>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            aria-label={`Run ${item.name}`}
+            title="Run"
+            onClick={() => openDialog("assign", { target: { action: item.id } })}
+          >
+            <Play className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </Card>
     </RekuestAction.Smart>

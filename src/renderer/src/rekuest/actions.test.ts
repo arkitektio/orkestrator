@@ -73,7 +73,7 @@ describe("@rekuest/action local actions", () => {
     const { openDialog } = await run("rekuest-assign-action", [
       structure("@rekuest/action", "42"),
     ]);
-    expect(openDialog).toHaveBeenCalledWith("actionassign", { id: "42" });
+    expect(openDialog).toHaveBeenCalledWith("assign", { target: { action: "42" } });
   });
 
   it("Create Shortcut passes the ACTION id straight to the dialog", async () => {
@@ -90,7 +90,7 @@ describe("@rekuest/action local actions", () => {
       structure("@rekuest/agent", "7"),
       structure("@rekuest/action", "42"),
     ]);
-    expect(openDialog).toHaveBeenCalledWith("actionassign", { id: "42" });
+    expect(openDialog).toHaveBeenCalledWith("assign", { target: { action: "42" } });
   });
 });
 

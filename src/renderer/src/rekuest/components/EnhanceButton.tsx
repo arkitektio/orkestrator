@@ -9,6 +9,7 @@ import {
 } from "@/core/ui/dropdown-menu";
 import { DemandKind, PortKind, PrimaryActionFragment, useAllPrimaryActionsQuery } from "@/rekuest/api/graphql";
 import { useAssignWithCallback } from "@/rekuest/hooks/useAssign";
+import { trackTask } from "@/rekuest/lib/taskTracker";
 import { Identifier, Object } from "@/core/types";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
@@ -64,9 +65,13 @@ export const EnhanceButton = (props: EnhanceButtonProps) => {
 
     const unknownKeys = action.args.filter((arg) => arg.key && arg.key !== key && arg.nullable == false);
     if (unknownKeys.length > 0) {
-      openDialog("actionassign", {
-        id: action.id,
+      openDialog("assign", {
+        target: { action: action.id },
         args: { [key]: props.object },
+        hidden: { [key]: true },
+        // On the rail too: the dialog closes as the run starts.
+        track: (reference) =>
+          trackTask(reference, () => props.onChanged?.(), { notifyGlobally: true }),
       });
       return;
     }
