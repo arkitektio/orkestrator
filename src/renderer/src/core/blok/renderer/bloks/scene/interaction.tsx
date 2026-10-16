@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type * as THREE from 'three';
 import * as z from 'zod';
 import {
   BlokRuntimeProvider,
@@ -17,18 +18,31 @@ import {useModel, useSceneNotice, useSceneOverlay, useSceneStoreApi} from './con
 import {useBlokSceneHost} from './host';
 
 const nodeProp = z.string().describe('The name of the node in the enclosing model.');
+const titleProp = describedString('The heading of the card; it shows the node name when unset.');
+const descriptionProp = describedString('A line under the heading of the card.');
+
+/** The clicked spot, kept in the node's own coordinates so the card points at it while the node moves. */
+const localPoint = (node: THREE.Object3D, world: THREE.Vector3): THREE.Vector3 => node.worldToLocal(world.clone());
 
 const onClickSchema = z
   .object({
     node: nodeProp,
-    onClick: actionProp('Called when the node is clicked. Arguments may read event.node.'),
+    onClick: actionProp(
+      'Called when the node is clicked (not when a drag of the view ends on it). Arguments may read event.node and event.point ([x, y, z] in meters, where it was hit).',
+    ),
     open: describedString('The name of an html blok to show when the node is clicked.'),
+    title: titleProp,
+    description: descriptionProp,
     mode: z
       .enum(['popout', 'panel'])
       .optional()
-      .describe('Where the opened blok shows: "popout" as a card on the node, "panel" beside the scene. Defaults to popout.'),
+      .describe(
+        'Where the opened blok shows: "popout" as a card on the clicked spot (the viewer can drag it aside), "panel" beside the scene. Defaults to popout.',
+      ),
   })
-  .describe('Makes a node and everything beneath it clickable, with a highlight on hover. A click runs an action, opens a blok, or both.');
+  .describe(
+    'Makes a node and everything beneath it clickable, with a highlight on hover. A click runs an action, opens a blok, or both; a second click closes it, and opening one card closes the others that are not pinned.',
+  );
 
 export const OnClickBlok = createBlokComponent(
   {name: 'OnClick', placement: {context: 'scene', downstreamOf: ['Model', 'Robot']}, schema: onClickSchema},
@@ -38,28 +52,46 @@ export const OnClickBlok = createBlokComponent(
     const host = useBlokSceneHost();
     const name = useValue(blok.node);
     const open = useValue(blok.open);
+    const title = useValue(blok.title);
+    const description = useValue(blok.description);
     const mode = useValue(blok.mode) ?? 'popout';
     const onClick = useEventAction(blok, 'onClick');
     const node = name ? model.instance.nodes.get(name) : undefined;
     useSceneNotice(name && !node ? 'Unknown node' : null, `The model has no node '${name}'.`);
 
-    const [opened, setOpened] = React.useState(false);
+    const store = useSceneStoreApi();
+    // Where the card points while open; null while closed.
+    const [opened, setOpened] = React.useState<THREE.Vector3 | null>(null);
+    const openedRef = React.useRef(opened);
+    React.useEffect(() => {
+      openedRef.current = opened;
+    }, [opened]);
     React.useEffect(() => {
       if (!node) return;
       return model.addClickable(node, {
-        onClick: () => {
-          onClick?.({node: name});
-          if (open) setOpened(previous => !previous);
+        onClick: ({point}) => {
+          onClick?.({node: name, point: point.toArray()});
+          if (!open) return;
+          if (openedRef.current) {
+            setOpened(null);
+            return;
+          }
+          // One card at a time: opening this one closes the others, except those pinned.
+          store.getState().dismiss();
+          setOpened(localPoint(node, point));
         },
       });
-    }, [model, name, node, onClick, open]);
+    }, [model, name, node, onClick, open, store]);
 
     const anchor = React.useCallback(() => node ?? null, [node]);
-    const close = React.useCallback(() => setOpened(false), []);
+    const close = React.useCallback(() => setOpened(null), []);
     const content = React.useMemo(() => (open ? host.renderBlok(open) : null), [host, open]);
     useSceneOverlay({
-      visible: opened && Boolean(open),
+      visible: opened !== null && Boolean(open),
       anchor,
+      point: mode === 'popout' ? opened : null,
+      title: title ?? name,
+      description,
       content,
       mode,
       dismissable: true,
@@ -77,8 +109,12 @@ const popoutSchema = z
       .optional()
       .describe('What shows the card: a click on the node, the pointer over it, or always. Defaults to click.'),
     open: z.boolean().optional().describe('Whether the card shows. When bound it decides alone and trigger is ignored.'),
+    title: titleProp,
+    description: descriptionProp,
   })
-  .describe('An HTML card anchored to a node that follows it as it moves. Its children are ordinary html components.');
+  .describe(
+    'An HTML card anchored to a node that follows it as it moves; the viewer can drag it aside, and a line keeps pointing at the node. Its children are ordinary html components.',
+  );
 
 export const PopoutBlok = createBlokComponent(
   {
@@ -93,11 +129,15 @@ export const PopoutBlok = createBlokComponent(
     const name = useValue(blok.node);
     const trigger = useValue(blok.trigger) ?? 'click';
     const controlled = useValue(blok.open);
+    const title = useValue(blok.title);
+    const description = useValue(blok.description);
     const node = name ? model.instance.nodes.get(name) : undefined;
     useSceneNotice(name && !node ? 'Unknown node' : null, `The model has no node '${name}'.`);
 
     const store = useSceneStoreApi();
     const [toggled, setToggled] = React.useState(false);
+    // The spot a click opened the card on; the node's origin otherwise.
+    const [point, setPoint] = React.useState<THREE.Vector3 | null>(null);
     const [hovered, setHovered] = React.useState(false);
     const interactive = controlled === undefined && trigger !== 'always';
     const openRef = React.useRef(toggled);
@@ -107,7 +147,7 @@ export const PopoutBlok = createBlokComponent(
     React.useEffect(() => {
       if (!node || !interactive) return;
       return model.addClickable(node, {
-        onClick: () => {
+        onClick: ({point: hit}) => {
           if (trigger !== 'click') return;
           if (openRef.current) {
             setToggled(false);
@@ -115,6 +155,7 @@ export const PopoutBlok = createBlokComponent(
           }
           // One card at a time: opening this one closes the others, except those pinned.
           store.getState().dismiss();
+          setPoint(localPoint(node, hit));
           setToggled(true);
         },
         onHover: setHovered,
@@ -150,6 +191,9 @@ export const PopoutBlok = createBlokComponent(
     useSceneOverlay({
       visible: Boolean(node) && visible,
       anchor,
+      point: trigger === 'click' ? point : null,
+      title: title ?? name,
+      description,
       content,
       mode: 'popout',
       dismissable: controlled === undefined && trigger === 'click',

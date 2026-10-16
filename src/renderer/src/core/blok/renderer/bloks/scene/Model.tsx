@@ -27,6 +27,7 @@ import {
 import {ASSET_KIND_LABELS, AssetSourceNotice, useBlokAsset, type BlokAssetSource} from '../../assets';
 import {useBlokSceneHost, useBlokSceneInert, useBlokSceneStill, type BlokModelDecoration} from './host';
 import {instantiate, loadModel, type ModelInstance} from './loadModel';
+import {useBlokReady, type BlokReadiness} from '@/core/blok/preview/snapshotMode';
 
 const modelShape = {
   src: z
@@ -94,6 +95,9 @@ const Placeholder = ({reason, source}: {reason: string; source?: BlokAssetSource
     </mesh>
   );
 };
+
+/** How far (px) the pointer may move between press and release for it to count as a click. */
+const CLICK_SLOP_PX = 4;
 
 const HoverBox = ({node}: {node: THREE.Object3D}) => {
   const helper = React.useMemo(() => new THREE.BoxHelper(node, 0x38bdf8), [node]);
@@ -404,10 +408,12 @@ const LoadedModel = ({
     return null;
   };
   const onClick = (event: ThreeEvent<MouseEvent>) => {
+    // A drag that moved the view and ended on a part is not a click on it.
+    if (event.delta > CLICK_SLOP_PX) return;
     const node = clickableAt(event.object);
     if (!node) return;
     event.stopPropagation();
-    clickables.current.get(node)?.onClick();
+    clickables.current.get(node)?.onClick({point: event.point.clone()});
   };
   const onPointerMove = (event: ThreeEvent<PointerEvent>) => {
     const node = clickableAt(event.object);
@@ -501,6 +507,15 @@ const ModelBody = ({component, buildChild, robot}: Pick<BlokRenderArgs, 'compone
           : asset.status === 'ready' && asset.kind !== 'MODEL_3D'
             ? `This asset is a ${ASSET_KIND_LABELS[asset.kind]}, not a 3D model.`
             : (current?.error ?? 'Loading model…');
+
+  // A scene without its model is not what it looks like: a preview waits for the
+  // model, and is not kept when it cannot load (not stored, not a model, failed).
+  const readiness: BlokReadiness = current?.instance
+    ? 'ready'
+    : asset?.status === 'loading' || (load && !current)
+      ? 'pending'
+      : 'failed';
+  useBlokReady(readiness, reason);
 
   return (
     <group position={origin} rotation={rotation} scale={scale}>

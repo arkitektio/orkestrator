@@ -17,6 +17,14 @@ export type SceneOverlay = {
   id: string;
   /** The object the overlay follows; `null` while it has none. */
   anchor: () => THREE.Object3D | null;
+  /**
+   * Where on the anchor the card points, in the anchor's own coordinates (the
+   * spot that was clicked); its origin when unset.
+   */
+  point?: THREE.Vector3 | null;
+  /** The card's heading; a card without one shows only its drag handle and buttons. */
+  title?: string;
+  description?: string;
   content: React.ReactNode;
   /** `popout` follows its anchor; `panel` sits beside the scene. */
   mode: 'popout' | 'panel';
@@ -138,14 +146,14 @@ export const useSceneOverlay = (
 ): string => {
   const id = React.useId();
   const store = useSceneStoreApi();
-  const {visible, anchor, content, mode, dismissable, onDismiss} = overlay;
+  const {visible, anchor, point, title, description, content, mode, dismissable, onDismiss} = overlay;
   React.useEffect(() => {
     if (!visible) {
       store.getState().removeOverlay(id);
       return;
     }
-    store.getState().setOverlay({id, anchor, content, mode, dismissable, onDismiss});
-  }, [anchor, content, dismissable, id, mode, onDismiss, store, visible]);
+    store.getState().setOverlay({id, anchor, point, title, description, content, mode, dismissable, onDismiss});
+  }, [anchor, content, description, dismissable, id, mode, onDismiss, point, store, title, visible]);
   React.useEffect(() => () => store.getState().removeOverlay(id), [id, store]);
   return id;
 };
@@ -165,7 +173,10 @@ export const useSceneNotice = (title: string | null, detail?: string): void => {
 };
 
 /** A node of the model that can be clicked, and what a click does. */
-export type Clickable = {onClick: () => void; onHover?: (hovered: boolean) => void};
+export type Clickable = {onClick: (hit: ClickHit) => void; onHover?: (hovered: boolean) => void};
+
+/** Where a click met the model: the point on its surface, in world coordinates. */
+export type ClickHit = {point: THREE.Vector3};
 
 export type ModelContextValue = {
   /** The id other models address this one by, if it has one. */

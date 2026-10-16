@@ -3,11 +3,19 @@ import * as THREE from 'three';
 import * as z from 'zod';
 import {Canvas, useFrame, useThree} from '@react-three/fiber';
 import {Grid, OrbitControls} from '@react-three/drei';
-import {Grid3x3, Pin, RotateCw, Scan, Settings2, X} from 'lucide-react';
+import {Anchor, GripVertical, Grid3x3, Pin, RotateCw, Scan, Settings2, X} from 'lucide-react';
 import {NAVIGATE_BUTTONS_3D} from '@/core/data/scene/camera/navigateButtons';
 import {Button} from '@/core/ui/button';
 import {ButtonGroup} from '@/core/ui/button-group';
-import {Popover, PopoverContent, PopoverTrigger} from '@/core/ui/popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from '@/core/ui/popover';
+import {cn} from '@/core/util/utils';
 import {Switch} from '@/core/ui/switch';
 import {
   BlokNodeErrorSurface,
@@ -29,6 +37,7 @@ import {
 } from './context';
 import {BlokSceneEmbedProvider, useBlokSceneEmbedded, useBlokSceneFill} from './host';
 import { useKeepTabLive } from "@/core/tabs/keepLive";
+import {useBlokReady, useBlokSnapshotMode} from '@/core/blok/preview/snapshotMode';
 
 /** The direction each view looks from, toward what it frames. */
 const VIEW_DIRECTIONS: Record<SceneView, [number, number, number]> = {
@@ -121,88 +130,352 @@ const SceneErrorSurface = ({componentId, title, detail}: BlokNodeErrorProps) => 
 
 const projected = new THREE.Vector3();
 
-/** Keeps every popout on its anchor, once per frame, without a React render. */
-const OverlayTracker = ({elements}: {elements: React.RefObject<Map<string, HTMLDivElement>>}) => {
+/** Room kept between a card and the edge of the view, and between a card and what it points at. */
+const CARD_INSET = 8;
+const CARD_GAP = 12;
+
+const clamp = (value: number, low: number, high: number) => Math.min(Math.max(value, low), Math.max(low, high));
+
+/**
+ * A popout card as the frame loop moves it: its element, where the viewer
+ * dragged it (null while it rides its anchor), and the leader drawn from it to
+ * the anchor once it was dragged away.
+ */
+type CardHandle = {
+  element: HTMLDivElement | null;
+  detached: {x: number; y: number} | null;
+  leader: SVGLineElement | null;
+  dot: SVGCircleElement | null;
+};
+
+type CardHandles = React.RefObject<Map<string, CardHandle>>;
+
+/**
+ * Keeps every popout on its anchor, once per frame, without a React render.
+ *
+ * A card rides above the spot it points at, kept inside the view and flipped
+ * below when there is no room above. A card the viewer dragged away stays
+ * where it was dropped, and a leader line runs from it to the spot.
+ */
+const OverlayTracker = ({cards}: {cards: CardHandles}) => {
   const store = useSceneStoreApi();
   const {camera, size} = useThree();
   useFrame(() => {
     store.getState().overlays.forEach(overlay => {
-      const element = elements.current?.get(overlay.id);
-      if (!element || overlay.mode !== 'popout') return;
+      const handle = cards.current?.get(overlay.id);
+      const element = handle?.element;
+      if (!handle || !element || overlay.mode !== 'popout') return;
       const anchor = overlay.anchor();
       if (!anchor) {
         element.style.display = 'none';
         return;
       }
-      anchor.getWorldPosition(projected).project(camera);
+      if (overlay.point) projected.copy(overlay.point).applyMatrix4(anchor.matrixWorld);
+      else anchor.getWorldPosition(projected);
+      projected.project(camera);
       const behind = projected.z > 1;
-      element.style.display = behind ? 'none' : '';
       const x = (projected.x * 0.5 + 0.5) * size.width;
       const y = (-projected.y * 0.5 + 0.5) * size.height;
-      element.style.transform = `translate(${x}px, ${y}px) translate(-50%, calc(-100% - 12px))`;
+      const width = element.offsetWidth;
+      const height = element.offsetHeight;
+
+      if (handle.detached) {
+        const left = clamp(handle.detached.x, 0, size.width - width);
+        const top = clamp(handle.detached.y, 0, size.height - height);
+        element.style.display = '';
+        element.style.transform = `translate(${left}px, ${top}px)`;
+        const leader = handle.leader;
+        const dot = handle.dot;
+        if (leader && dot) {
+          leader.style.display = behind ? 'none' : '';
+          dot.style.display = behind ? 'none' : '';
+          // To the nearest point of the card's edge.
+          leader.setAttribute('x1', String(x));
+          leader.setAttribute('y1', String(y));
+          leader.setAttribute('x2', String(clamp(x, left, left + width)));
+          leader.setAttribute('y2', String(clamp(y, top, top + height)));
+          dot.setAttribute('cx', String(x));
+          dot.setAttribute('cy', String(y));
+        }
+        return;
+      }
+
+      element.style.display = behind ? 'none' : '';
+      if (handle.leader) handle.leader.style.display = 'none';
+      if (handle.dot) handle.dot.style.display = 'none';
+      const above = y - height - CARD_GAP;
+      const top = above >= CARD_INSET ? above : y + CARD_GAP;
+      const left = clamp(x - width / 2, CARD_INSET, size.width - width - CARD_INSET);
+      element.style.transform = `translate(${left}px, ${clamp(top, CARD_INSET, size.height - height - CARD_INSET)}px)`;
     });
   });
   return null;
 };
 
-const OverlayCard = ({
+/** How far (px) the header must be dragged before the card leaves its anchor. */
+const DRAG_SLOP_PX = 3;
+/** The smallest a card can be resized to. */
+const MIN_CARD = {width: 208, height: 96};
+
+/** What a card shows, as a shadcn popover does: a header (title, description, buttons), then its content. */
+const CardBody = ({
   overlay,
-  register,
+  handle,
+  detached,
+  onAttach,
 }: {
   overlay: SceneOverlay;
-  register: (id: string, element: HTMLDivElement | null) => void;
+  /** Where the header starts a drag; a panel has none. */
+  handle?: (event: React.PointerEvent<HTMLDivElement>) => void;
+  detached?: boolean;
+  onAttach?: () => void;
 }) => {
   const store = useSceneStoreApi();
   const pinned = useSceneState(state => state.pinned.has(overlay.id));
-  const popout = overlay.mode === 'popout';
+  const header = handle || overlay.title || overlay.dismissable;
   return (
-    <div
-      ref={element => register(overlay.id, element)}
-      className={
-        popout
-          ? 'pointer-events-auto absolute left-0 top-0 max-w-sm rounded-xl border border-border bg-popover p-3 text-sm text-popover-foreground shadow-lg'
-          : 'pointer-events-auto max-h-full w-80 overflow-auto rounded-xl border border-border bg-popover p-3 text-sm text-popover-foreground shadow-lg'
-      }
-      onPointerDown={event => event.stopPropagation()}
-    >
-      {overlay.dismissable ? (
-        <div className="-mr-1 -mt-1 mb-1 flex justify-end gap-1">
-          <button
-            type="button"
-            aria-label={pinned ? 'Unpin' : 'Pin'}
-            aria-pressed={pinned}
-            className={`rounded p-1 hover:bg-muted ${pinned ? 'text-foreground' : 'text-muted-foreground'}`}
-            onClick={() => store.getState().togglePinned(overlay.id)}
-          >
-            <Pin className="size-3.5" />
-          </button>
-          <button
-            type="button"
-            aria-label="Close"
-            className="rounded p-1 text-muted-foreground hover:bg-muted"
-            onClick={() => overlay.onDismiss?.()}
-          >
-            <X className="size-3.5" />
-          </button>
+    <>
+      {header ? (
+        <div
+          className={cn(
+            'flex items-start gap-1.5',
+            handle && 'cursor-grab touch-none select-none active:cursor-grabbing',
+          )}
+          onPointerDown={handle}
+          title={handle ? 'Drag to move the card aside' : undefined}
+        >
+          {handle ? <GripVertical aria-hidden className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/60" /> : null}
+          <PopoverHeader className="min-w-0 flex-1">
+            {overlay.title ? <PopoverTitle className="truncate">{overlay.title}</PopoverTitle> : null}
+            {overlay.description ? <PopoverDescription>{overlay.description}</PopoverDescription> : null}
+          </PopoverHeader>
+          <div className="-mr-1 -mt-1 flex shrink-0 items-center">
+            {detached && onAttach ? (
+              <Button variant="ghost" size="icon-xs" aria-label="Back to the part" title="Back to the part" onClick={onAttach}>
+                <Anchor />
+              </Button>
+            ) : null}
+            {overlay.dismissable ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={pinned ? 'Unpin' : 'Pin'}
+                  aria-pressed={pinned}
+                  title={pinned ? 'Unpin: a click elsewhere closes it' : 'Pin: keep it open'}
+                  className={pinned ? 'text-foreground' : 'text-muted-foreground'}
+                  onClick={() => store.getState().togglePinned(overlay.id)}
+                >
+                  <Pin className={pinned ? 'fill-current' : undefined} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="Close"
+                  className="text-muted-foreground"
+                  onClick={() => overlay.onDismiss?.()}
+                >
+                  <X />
+                </Button>
+              </>
+            ) : null}
+          </div>
         </div>
       ) : null}
-      {overlay.content}
-    </div>
+      <div className="min-h-0 flex-1 overflow-auto">{overlay.content}</div>
+    </>
   );
 };
 
+const CARD_CLASS =
+  'flex flex-col gap-2 rounded-lg bg-popover p-2.5 text-xs text-popover-foreground shadow-md ring-1 ring-foreground/10';
+
+/** Escape closes a card that a click elsewhere would close. */
+const closeOnEscape = (overlay: SceneOverlay) => (event: React.KeyboardEvent) => {
+  if (event.key !== 'Escape' || !overlay.dismissable) return;
+  event.stopPropagation();
+  overlay.onDismiss?.();
+};
+
+/** A card on its anchor in the 3D view; dragged by its header, it stays where it is dropped. */
+const PopoutCard = ({overlay, cards}: {overlay: SceneOverlay; cards: CardHandles}) => {
+  const store = useSceneStoreApi();
+  const handle = React.useMemo<CardHandle>(() => ({element: null, detached: null, leader: null, dot: null}), []);
+  const [detached, setDetached] = React.useState(false);
+  // What the viewer resized the card to; null while it fits its content.
+  const [size, setSize] = React.useState<{width: number; height: number} | null>(null);
+  const body = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const all = cards.current;
+    all?.set(overlay.id, handle);
+    return () => {
+      if (all?.get(overlay.id) === handle) all.delete(overlay.id);
+    };
+  }, [cards, handle, overlay.id]);
+
+  const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const element = handle.element;
+    const frame = element?.offsetParent;
+    if (event.button !== 0 || !element || !frame || (event.target as Element).closest('button')) return;
+    event.preventDefault();
+    const card = element.getBoundingClientRect();
+    const bounds = frame.getBoundingClientRect();
+    const from = handle.detached ?? {x: card.left - bounds.left, y: card.top - bounds.top};
+    const origin = {x: event.clientX, y: event.clientY};
+    let moved = false;
+    const move = (pointer: PointerEvent) => {
+      const dx = pointer.clientX - origin.x;
+      const dy = pointer.clientY - origin.y;
+      if (!moved && Math.hypot(dx, dy) < DRAG_SLOP_PX) return;
+      moved = true;
+      handle.detached = {
+        x: clamp(from.x + dx, 0, bounds.width - card.width),
+        y: clamp(from.y + dy, 0, bounds.height - card.height),
+      };
+      element.style.transform = `translate(${handle.detached.x}px, ${handle.detached.y}px)`;
+    };
+    const end = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      if (!moved) return;
+      setDetached(true);
+      keep();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+  };
+
+  /** A card the viewer worked on (moved, resized) is one to keep: a click on the scene leaves it open. */
+  const keep = () => {
+    if (overlay.dismissable && !store.getState().pinned.has(overlay.id)) store.getState().togglePinned(overlay.id);
+  };
+
+  /** Resizes from the bottom-right corner, up to the edges of the view. */
+  const startResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    const card = body.current;
+    const frame = handle.element?.offsetParent;
+    if (event.button !== 0 || !card || !frame) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const from = card.getBoundingClientRect();
+    const bounds = frame.getBoundingClientRect();
+    const origin = {x: event.clientX, y: event.clientY};
+    let next = {width: from.width, height: from.height};
+    // A card on its anchor would re-centre as it grows: it holds still until released.
+    const riding = handle.detached === null;
+    if (riding) handle.detached = {x: from.left - bounds.left, y: from.top - bounds.top};
+    const move = (pointer: PointerEvent) => {
+      next = {
+        width: clamp(from.width + pointer.clientX - origin.x, MIN_CARD.width, bounds.right - from.left - CARD_INSET),
+        height: clamp(from.height + pointer.clientY - origin.y, MIN_CARD.height, bounds.bottom - from.top - CARD_INSET),
+      };
+      // Drawn directly while dragging; React hears the size once, on release.
+      card.style.width = `${next.width}px`;
+      card.style.height = `${next.height}px`;
+      card.style.maxWidth = 'none';
+    };
+    const end = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      if (riding) handle.detached = null;
+      setSize(next);
+      keep();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+  };
+
+  const attach = () => {
+    handle.detached = null;
+    setDetached(false);
+  };
+
+  return (
+    <>
+      <svg aria-hidden className="pointer-events-none absolute inset-0 size-full overflow-visible">
+        <line
+          ref={line => {
+            handle.leader = line;
+          }}
+          className="stroke-foreground/40"
+          strokeWidth={1}
+          strokeDasharray="3 3"
+          style={{display: 'none'}}
+        />
+        <circle
+          ref={dot => {
+            handle.dot = dot;
+          }}
+          r={3}
+          className="fill-popover stroke-foreground/60"
+          strokeWidth={1.5}
+          style={{display: 'none'}}
+        />
+      </svg>
+      <div
+        ref={element => {
+          handle.element = element;
+        }}
+        className="pointer-events-auto absolute left-0 top-0 will-change-transform"
+        onPointerDown={event => event.stopPropagation()}
+        onKeyDown={closeOnEscape(overlay)}
+      >
+        {/* The frame loop moves the outer box; the inner one animates in. */}
+        <div
+          ref={body}
+          data-detached={detached || undefined}
+          className={cn(
+            CARD_CLASS,
+            'relative animate-in fade-in-0 zoom-in-95 duration-100',
+            // Fits its content until the viewer sizes it.
+            size ? 'max-w-none' : 'w-max min-w-52 max-w-80 [&>div:nth-last-child(2)]:max-h-80',
+            detached && 'shadow-lg ring-foreground/20',
+          )}
+          style={size ? {width: size.width, height: size.height} : undefined}
+        >
+          <CardBody overlay={overlay} handle={startDrag} detached={detached} onAttach={attach} />
+          <div
+            aria-hidden
+            title="Drag to resize"
+            onPointerDown={startResize}
+            onDoubleClick={() => {
+              const card = body.current;
+              if (card) card.removeAttribute('style');
+              setSize(null);
+            }}
+            className="absolute bottom-0 right-0 flex size-4 cursor-se-resize touch-none items-end justify-end p-0.5 text-muted-foreground/50 hover:text-muted-foreground"
+          >
+            <svg viewBox="0 0 8 8" className="size-2">
+              <path d="M7 1 1 7M7 4 4 7" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+/** A card beside the view. */
+const PanelCard = ({overlay}: {overlay: SceneOverlay}) => (
+  <div
+    className={cn(CARD_CLASS, 'pointer-events-auto max-h-full w-80 overflow-hidden')}
+    onPointerDown={event => event.stopPropagation()}
+    onKeyDown={closeOnEscape(overlay)}
+  >
+    <CardBody overlay={overlay} />
+  </div>
+);
+
 /** The HTML half of a scene: popouts on their anchors, panels beside the view, and what went wrong. */
-const SceneOverlays = ({elements}: {elements: React.RefObject<Map<string, HTMLDivElement>>}) => {
+const SceneOverlays = ({cards}: {cards: CardHandles}) => {
   const overlays = useSceneState(state => state.overlays);
   const notices = useSceneState(state => state.notices);
   const showNotices = useSceneState(state => state.settings.notices);
-  const register = React.useCallback(
-    (id: string, element: HTMLDivElement | null) => {
-      if (element) elements.current?.set(id, element);
-      else elements.current?.delete(id);
-    },
-    [elements],
-  );
   const all = [...overlays.values()];
   const panels = all.filter(overlay => overlay.mode === 'panel');
   return (
@@ -211,13 +484,13 @@ const SceneOverlays = ({elements}: {elements: React.RefObject<Map<string, HTMLDi
         {all
           .filter(overlay => overlay.mode === 'popout')
           .map(overlay => (
-            <OverlayCard key={overlay.id} overlay={overlay} register={register} />
+            <PopoutCard key={overlay.id} overlay={overlay} cards={cards} />
           ))}
       </div>
       {panels.length ? (
         <div className="pointer-events-none absolute bottom-12 right-2 top-2 flex flex-col gap-2">
           {panels.map(overlay => (
-            <OverlayCard key={overlay.id} overlay={overlay} register={register} />
+            <PanelCard key={overlay.id} overlay={overlay} />
           ))}
         </div>
       ) : null}
@@ -373,6 +646,22 @@ type SceneSurfaceProps = {
   children?: React.ReactNode;
 };
 
+/** How many frames a preview waits for before the canvas counts as painted. */
+const PAINTED_AFTER_FRAMES = 3;
+
+/** A scene is not ready for its preview until its canvas has drawn a few frames. */
+const FirstFrames = () => {
+  const frames = React.useRef(0);
+  const [painted, setPainted] = React.useState(false);
+  useBlokReady(painted ? 'ready' : 'pending');
+  useFrame(() => {
+    if (painted) return;
+    frames.current += 1;
+    if (frames.current >= PAINTED_AFTER_FRAMES) setPainted(true);
+  });
+  return null;
+};
+
 /**
  * One 3D view: the renderer, camera, light rig and ground, with the HTML that
  * belongs to it laid over. A `Scene` blok opens one for itself; a host that
@@ -392,15 +681,18 @@ export const SceneSurface = ({
   // What is asked for is where the scene starts; from then on it is the viewer's.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const store = React.useMemo(() => createSceneStore({view, grid}), []);
-  const elements = React.useRef(new Map<string, HTMLDivElement>());
+  const cards = React.useRef(new Map<string, CardHandle>());
   // A frozen tab would drop the GPU context: stay live hidden.
   useKeepTabLive();
+  // A preview reads the canvas after it painted: keep the drawing buffer.
+  const snapshot = useBlokSnapshotMode();
 
   return (
     <SceneStoreProvider value={store}>
       <div ref={frameRef} className={className} style={style}>
         <Canvas
           className="absolute! inset-0"
+          gl={snapshot ? {preserveDrawingBuffer: true} : undefined}
           camera={{position: VIEW_DIRECTIONS[view], fov: 40, near: 0.005, far: 200}}
           onPointerMissed={() => {
             store.getState().dismiss();
@@ -417,12 +709,13 @@ export const SceneSurface = ({
                 <SceneOrbitControls />
                 <CameraRig />
                 {children}
-                <OverlayTracker elements={elements} />
+                <OverlayTracker cards={cards} />
+                {snapshot && <FirstFrames />}
               </BlokSceneEmbedProvider>
             </BlokNodeErrorSurface.Provider>
           </SceneStoreProvider>
         </Canvas>
-        <SceneOverlays elements={elements} />
+        <SceneOverlays cards={cards} />
         <SceneControls />
         {overlay}
       </div>
