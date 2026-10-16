@@ -8,6 +8,8 @@ import { Button } from "@/core/ui/button";
 import { PageAction, PageActionGroup } from "@/core/ui/page-action";
 import { cn } from "@/core/util/utils";
 import { RekuestAgent, RekuestState } from "@/core/linkers";
+import { ObjectButton } from "@/core/smart/ObjectButton";
+import { structure } from "@/core/smart/structure";
 import {
   AgentFragment,
   ComponentContext,
@@ -243,6 +245,11 @@ export const AgentPage = asDetailQueryRoute(
         }
         pageActions={
           <>
+            {/* What other apps offer on this agent: a supervisor's stop / start /
+                restart (actions taking @rekuest/agent) among them. */}
+            <ObjectButton
+              objects={[structure("@rekuest/agent", data.agent.id, { label: data.agent.name })]}
+            />
             <PinAgent agent={data.agent} />
             <BounceAgentButton agent={data.agent} />
             <CopyAgentPythonButton agent={data.agent} />
