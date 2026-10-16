@@ -119,9 +119,13 @@ fragment MaterializedBlok on MaterializedBlok {
   }
 }
 
+# A card draws the blok's preview, kept under its hash (core/blok/preview).
 fragment ListBlok on Blok {
   id
   name
+  description
+  context
+  hash
 }
 
 fragment ListMaterializedBlok on MaterializedBlok {
@@ -135,6 +139,7 @@ fragment ListMaterializedBlok on MaterializedBlok {
     name
     description
     context
+    hash
   }
   agentMappings {
     key

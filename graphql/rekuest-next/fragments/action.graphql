@@ -157,6 +157,10 @@ fragment GraphNodeAction on Action {
 # form lives in ActionOverview.
 fragment DetailAction on Action {
   ...GraphNodeAction
+  # The assign dialog heads its form with it.
+  logo {
+    ...BlokLogo
+  }
   implementations {
     ...MinimalImplementation
   }

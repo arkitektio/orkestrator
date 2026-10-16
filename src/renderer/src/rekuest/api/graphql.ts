@@ -6494,7 +6494,10 @@ export type GraphNodeActionFragment = (
 );
 
 export type DetailActionFragment = (
-  { __typename?: 'Action', key: string, version: string, hash: any, allowProbe: boolean, implementations: Array<(
+  { __typename?: 'Action', key: string, version: string, hash: any, allowProbe: boolean, logo?: (
+    { __typename?: 'Blok' }
+    & BlokLogoFragment
+  ) | null, implementations: Array<(
     { __typename?: 'Implementation' }
     & MinimalImplementationFragment
   )>, tests: Array<{ __typename?: 'Action', id: string, name: string, description?: string | null, runs?: Array<{ __typename?: 'Task', latestEventKind: TaskEventKind, implementation_id?: any | null }> | null }>, app: { __typename?: 'App', identifier: string } }
@@ -6704,9 +6707,9 @@ export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: st
     & BlokFragment
   ), agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
-export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string };
+export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string };
 
-export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
+export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type ClientFragment = { __typename?: 'Client', id: string, clientId: string };
 
@@ -10486,6 +10489,7 @@ export const ListMaterializedBlokFragmentDoc = gql`
     name
     description
     context
+    hash
   }
   agentMappings {
     key
@@ -10825,6 +10829,9 @@ export const ListBlokFragmentDoc = gql`
     fragment ListBlok on Blok {
   id
   name
+  description
+  context
+  hash
 }
     `;
 export const ClientFragmentDoc = gql`
@@ -11321,6 +11328,9 @@ export const MinimalImplementationFragmentDoc = gql`
 export const DetailActionFragmentDoc = gql`
     fragment DetailAction on Action {
   ...GraphNodeAction
+  logo {
+    ...BlokLogo
+  }
   implementations {
     ...MinimalImplementation
   }
@@ -11342,6 +11352,7 @@ export const DetailActionFragmentDoc = gql`
   allowProbe
 }
     ${GraphNodeActionFragmentDoc}
+${BlokLogoFragmentDoc}
 ${MinimalImplementationFragmentDoc}`;
 export const TaskEventFragmentDoc = gql`
     fragment TaskEvent on TaskEvent {
