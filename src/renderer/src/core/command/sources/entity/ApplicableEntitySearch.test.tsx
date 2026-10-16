@@ -38,6 +38,12 @@ vi.mock("@/rekuest/api/graphql", () => ({ useGlobalSearchQuery: (o: unknown) => 
 vi.mock("@/kraph/api/graphql", () => ({ useGlobalSearchQuery: (o: unknown) => kraphQuery(o) }));
 vi.mock("@/lok/api/graphql", () => ({ useGlobalSearchQuery: (o: unknown) => lokQuery(o) }));
 
+// rekuest's search draws a BlokLogo, whose renderer reaches back into
+// `@/core/modules/registries` (blok structure → useStructureOptions). That is
+// the module this file's mock factory is still building, so importing it
+// from there deadlocks the run. A logo is not what this test is about.
+vi.mock("@/rekuest/components/logo/BlokLogo", () => ({ BlokLogo: () => null, AgentLogo: () => null }));
+
 // The debounce would otherwise swallow the term for 250ms.
 vi.mock("@uidotdev/usehooks", () => ({ useDebounce: (v: unknown) => v }));
 

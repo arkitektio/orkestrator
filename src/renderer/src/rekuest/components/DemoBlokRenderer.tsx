@@ -21,13 +21,19 @@ type DemoBlokRendererProps = Omit<
 /** A blok shown against its demo state is bound to no agent: what it names of one is not there. */
 const NO_AGENTS: ReadonlyMap<string, string> = new Map();
 
+/** What a blok drawn against its demo state stands in: rekuest's scene host, and its assets with no agent bound. */
+export const RekuestDemoHost = ({children}: {children: React.ReactNode}) => (
+  <RekuestSceneHost>
+    <RekuestAssetHost agents={NO_AGENTS}>{children}</RekuestAssetHost>
+  </RekuestSceneHost>
+);
+
 export const DemoBlokRenderer = (props: DemoBlokRendererProps) => {
   const {blok, surfaceId, ...rendererProps} = props;
   const {roots, truncatedIds} = useBlokDocument(blok.componentTree as unknown[] | null);
 
   return (
-    <RekuestSceneHost>
-     <RekuestAssetHost agents={NO_AGENTS}>
+    <RekuestDemoHost>
       <BlokRenderer
         {...rendererProps}
         surfaceId={surfaceId ?? `${blok.id ?? 'blok'}-demo`}
@@ -36,8 +42,7 @@ export const DemoBlokRenderer = (props: DemoBlokRendererProps) => {
       >
         <BlokTruncationNotice truncatedIds={truncatedIds} />
       </BlokRenderer>
-     </RekuestAssetHost>
-    </RekuestSceneHost>
+    </RekuestDemoHost>
   );
 };
 

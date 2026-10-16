@@ -64,6 +64,7 @@ import {
 import * as z from 'zod';
 import {BlokPropSchemas, createBlokComponent, useAction, useBlok, useValue} from '../runtime';
 import {useAssetImageUrl} from '../assets';
+import {useBlokSnapshotMode} from '@/core/blok/preview/snapshotMode';
 import {iconNameSchema, renderIcon} from './icons';
 import {
   actionProp,
@@ -637,6 +638,8 @@ export const Chart = createBlokComponent(
     const showGrid = useValue(blok.showGrid);
     const showLegend = useValue(blok.showLegend);
     const height = useValue(blok.height);
+    // A preview is taken once the drawing settles: no series grows into place.
+    const animated = !useBlokSnapshotMode();
     const className = useValue(blok.className);
 
     const rows = data ?? [];
@@ -680,6 +683,7 @@ export const Chart = createBlokComponent(
                   fill={entry.color}
                   stackId={stacked ? 'stack' : undefined}
                   radius={4}
+                  isAnimationActive={animated}
                 />
               ))}
             </BarChart>
@@ -699,6 +703,7 @@ export const Chart = createBlokComponent(
                   fill={entry.color}
                   fillOpacity={0.25}
                   stackId={stacked ? 'stack' : undefined}
+                  isAnimationActive={animated}
                 />
               ))}
             </AreaChart>
@@ -708,7 +713,7 @@ export const Chart = createBlokComponent(
             <PieChart>
               {tooltip}
               {legend}
-              <Pie data={rows} dataKey={resolvedSeries[0].key} nameKey={category}>
+              <Pie data={rows} dataKey={resolvedSeries[0].key} nameKey={category} isAnimationActive={animated}>
                 {rows.map((_row, index) => (
                   <Cell
                     key={index}
@@ -727,7 +732,7 @@ export const Chart = createBlokComponent(
               {tooltip}
               {legend}
               {resolvedSeries.map(entry => (
-                <Line key={entry.key} dataKey={entry.key} stroke={entry.color} dot={false} />
+                <Line key={entry.key} dataKey={entry.key} stroke={entry.color} dot={false} isAnimationActive={animated} />
               ))}
             </LineChart>
           );

@@ -80,7 +80,7 @@ export const BlokNodeError = (props: BlokNodeErrorProps) => {
 };
 
 const BlokNodeErrorCard = (props: BlokNodeErrorProps) => (
-  <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
+  <div data-blok-error={props.componentId} className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
     <div className="font-medium text-destructive">{props.title}</div>
     {props.detail ? <div className="mt-1 text-foreground">{props.detail}</div> : null}
     <div className="mt-1 text-xs text-muted-foreground">Component: {props.componentId}</div>

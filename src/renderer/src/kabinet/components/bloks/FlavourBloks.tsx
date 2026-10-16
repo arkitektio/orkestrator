@@ -1,6 +1,7 @@
 import * as React from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Box, LayoutPanelTop, Loader2 } from "lucide-react";
 import { CachedBlokLogo, type LogoTree } from "@/core/blok/logo/CachedBlokLogo";
+import { CachedBlokPreview } from "@/core/blok/preview/CachedBlokPreview";
 import BlokRenderer from "@/core/blok/renderer/BlokRenderer";
 import {
   ASSET_KIND_LABELS,
@@ -180,19 +181,50 @@ const ActionLogos = ({ logos, drawnFor }: { logos: KabinetBlokFragment[]; drawnF
   </div>
 );
 
-const Previews = ({ bloks, scene }: { bloks: KabinetBlokFragment[]; scene?: boolean }) => (
-  <div className={cn("grid gap-4", scene ? "grid-cols-1" : "xl:grid-cols-2")}>
-    {bloks.map((blok) => (
-      <div key={blok.id} className="flex min-w-0 flex-col gap-2">
+/**
+ * A panel or a scene, as its kept preview (drawn once against its demo state);
+ * "Show live" runs it instead, at full size.
+ */
+const PreviewCell = ({ blok, scene }: { blok: KabinetBlokFragment; scene?: boolean }) => {
+  const [live, setLive] = React.useState(false);
+  const Icon = scene ? Box : LayoutPanelTop;
+  return (
+    <div className={cn("flex min-w-0 flex-col gap-2", live && "col-span-full")}>
+      <div className="flex items-center justify-between gap-2">
         <BlokHeading blok={blok} />
-        {blok.parseError ? (
-          <ParseFailure blok={blok} />
-        ) : (
-          <div className={cn("overflow-auto rounded-xl border", scene ? "h-[28rem]" : "max-h-[32rem] p-3")}>
-            <BlokPreview blok={blok} />
-          </div>
+        {!blok.parseError && (
+          <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" onClick={() => setLive((now) => !now)}>
+            {live ? "Show preview" : "Show live"}
+          </Button>
         )}
       </div>
+      {blok.parseError ? (
+        <ParseFailure blok={blok} />
+      ) : live ? (
+        <div className={cn("overflow-auto rounded-xl border", scene ? "h-[28rem]" : "max-h-[32rem] p-3")}>
+          <BlokPreview blok={blok} />
+        </div>
+      ) : (
+        <CachedBlokPreview
+          cacheId={`kabinet:${blok.id}`}
+          hash={blok.hash}
+          useTree={useTabTree}
+          className="aspect-[8/5] w-full rounded-xl border bg-muted/40"
+          fallback={
+            <div className="flex size-full items-center justify-center text-muted-foreground/40">
+              <Icon className="size-8" />
+            </div>
+          }
+        />
+      )}
+    </div>
+  );
+};
+
+const Previews = ({ bloks, scene }: { bloks: KabinetBlokFragment[]; scene?: boolean }) => (
+  <div className="grid grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-4">
+    {bloks.map((blok) => (
+      <PreviewCell key={blok.id} blok={blok} scene={scene} />
     ))}
   </div>
 );

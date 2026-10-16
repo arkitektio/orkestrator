@@ -13,8 +13,7 @@
  * entry per blok: a new hash replaces the old drawing.
  */
 
-const DB_NAME = "orkestrator-logos";
-const STORE = "svgs";
+import { createKeyedStore } from "../cache/keyedStore";
 
 /**
  * Bumped when how a logo renders changes (the SVG components themselves), so
@@ -22,39 +21,7 @@ const STORE = "svgs";
  */
 export const LOGO_RENDERER_VERSION = 2;
 
-/** What a drawing is cached under: what the blok renders, and which renderer drew it. */
-export const logoCacheKey = (hash: string) => `${hash}:v${LOGO_RENDERER_VERSION}`;
-
 type StoredLogo = { key: string; svg: string };
-
-const memory = new Map<string, StoredLogo>();
-
-const open = (): Promise<IDBDatabase> =>
-  new Promise((resolve, reject) => {
-    if (typeof indexedDB === "undefined") {
-      reject(new Error("This window cannot store logos."));
-      return;
-    }
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE);
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("Could not open the logo store."));
-  });
-
-const run = async <T>(mode: IDBTransactionMode, work: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> => {
-  const db = await open();
-  try {
-    return await new Promise<T>((resolve, reject) => {
-      const transaction = db.transaction(STORE, mode);
-      const request = work(transaction.objectStore(STORE));
-      transaction.oncomplete = () => resolve(request.result);
-      transaction.onerror = () => reject(transaction.error ?? new Error("Could not store the logo."));
-      transaction.onabort = () => reject(transaction.error ?? new Error("Could not store the logo."));
-    });
-  } finally {
-    db.close();
-  }
-};
 
 const isStoredLogo = (value: unknown): value is StoredLogo =>
   typeof value === "object" &&
@@ -62,43 +29,34 @@ const isStoredLogo = (value: unknown): value is StoredLogo =>
   typeof (value as StoredLogo).key === "string" &&
   typeof (value as StoredLogo).svg === "string";
 
+const logos = createKeyedStore<string>({
+  db: "orkestrator-logos",
+  store: "svgs",
+  version: LOGO_RENDERER_VERSION,
+  isValue: (value): value is string => typeof value === "string",
+  label: "logo",
+  // Stored as `{ key, svg }` since before the store was shared.
+  legacy: {
+    read: (stored) => (isStoredLogo(stored) ? { key: stored.key, value: stored.svg } : null),
+    write: (entry): StoredLogo => ({ key: entry.key, svg: entry.value }),
+  },
+});
+
+/** What a drawing is cached under: what the blok renders, and which renderer drew it. */
+export const logoCacheKey = logos.cacheKey;
+
 /**
  * The SVG blok `blokId` rendered to, when it was rendered from what `hash`
  * describes; null when it never was, or has changed since. A store that
  * cannot be opened is a miss: the logo is drawn instead.
  */
-export const loadLogo = async (blokId: string, hash: string): Promise<string | null> => {
-  const key = logoCacheKey(hash);
-  const remembered = memory.get(blokId);
-  if (remembered) return remembered.key === key ? remembered.svg : null;
-  let stored: unknown;
-  try {
-    stored = await run<unknown>("readonly", (store) => store.get(blokId));
-  } catch {
-    return null;
-  }
-  if (!isStoredLogo(stored)) return null;
-  memory.set(blokId, stored);
-  return stored.key === key ? stored.svg : null;
-};
+export const loadLogo = (blokId: string, hash: string): Promise<string | null> => logos.load(blokId, hash);
 
 /** Keeps `svg` as blok `blokId`'s drawing for `hash`, replacing whatever was kept for it. */
-export const saveLogo = async (blokId: string, hash: string, svg: string): Promise<void> => {
-  const entry: StoredLogo = { key: logoCacheKey(hash), svg };
-  memory.set(blokId, entry);
-  try {
-    await run("readwrite", (store) => store.put(entry, blokId));
-  } catch (error) {
-    // Kept for this window only; the next one draws it again.
-    console.warn("[logo] could not store the drawing of", blokId, error);
-  }
-};
+export const saveLogo = (blokId: string, hash: string, svg: string): Promise<void> => logos.save(blokId, hash, svg);
 
 /** Forgets every drawing, in memory and stored. For tests, and a "clear caches" action. */
-export const clearLogos = async (): Promise<void> => {
-  memory.clear();
-  await run("readwrite", (store) => store.clear());
-};
+export const clearLogos = (): Promise<void> => logos.clear();
 
 /**
  * The `<svg>` a logo blok drew, as text to keep: null when there is none, or

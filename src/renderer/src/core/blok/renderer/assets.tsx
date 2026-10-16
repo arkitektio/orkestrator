@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type {BlokComponentNode} from './runtime';
+import {useBlokReady} from '@/core/blok/preview/snapshotMode';
 
 /**
  * Assets: the files an app brings with it, named in a blok like everything
@@ -119,6 +120,18 @@ export const useAssetImageUrl = (
       live = false;
     };
   }, [load, ref]);
+
+  // A preview waits for the image, and is not kept without it.
+  useBlokReady(
+    asset === null
+      ? 'ready'
+      : asset.status === 'loading' || (ref && resolved.ref !== ref)
+        ? 'pending'
+        : asset.status !== 'ready' || !ref || resolved.problem
+          ? 'failed'
+          : 'ready',
+    resolved.problem,
+  );
 
   if (asset === null) return {named: false};
   if (asset.status === 'unknown') return {named: true, problem: asset.reason};
