@@ -251,6 +251,9 @@ importers:
       undici:
         specifier: ^8.10.2
         version: 8.10.2
+      webbluetooth:
+        specifier: 7.1.0
+        version: 7.1.0
       zundo:
         specifier: ^2.3.0
         version: 2.3.0(zustand@5.0.14(@types/react@19.2.14)(immer@10.2.0)(react@19.2.7)(use-sync-external-store@1.6.0(react@19.2.7)))
@@ -4141,6 +4144,9 @@ packages:
   '@types/verror@1.10.11':
     resolution: {integrity: sha512-RlDm9K7+o5stv0Co8i8ZRGxDbrTxhJtgjqjFyVh/tXQyl/rYtTKlnTvZ88oSTeYREWurwx20Js4kTuKCsFkUtg==}
 
+  '@types/web-bluetooth@0.0.21':
+    resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
+
   '@types/webxr@0.5.24':
     resolution: {integrity: sha512-h8fgEd/DpoS9CBrjEQXR+dIDraopAEfu4wYVNY2tEPwk60stPWhvZMf4Foo5FakuQ7HFZoa8WceaWFervK2Ovg==}
 
@@ -4304,6 +4310,70 @@ packages:
 
   '@vitest/utils@4.1.9':
     resolution: {integrity: sha512-A51o8ymO5PpqlWNnBP9ZHPXDIpuMtTLlGSjN7la4US+LJzoUMyhwjA5QXlm39JexgwHKW4Xjs8Z2d3dLCXOeuA==}
+
+  '@webbluetooth/webbluetooth-darwin-arm64@7.1.0':
+    resolution: {integrity: sha512-KHWLt/T7aJJEXbtH8BRYarKMHsoZquRGaMmFuGXdY8kyMYMXSQFBQDGvKt9YuUSLmYwvYR5Q3drhMsPbNacV9A==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@webbluetooth/webbluetooth-darwin-x64@7.1.0':
+    resolution: {integrity: sha512-CUOsTczZwwsih/G2b99Z4ratmT1Gc3CLFAx0fPlYa6I/Bs+6g7u0wqSLh93tLf3csR1U5oJ7Ur9xdXAZ926IqQ==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@webbluetooth/webbluetooth-linux-arm-gnueabihf@7.1.0':
+    resolution: {integrity: sha512-rj4LUlokDw+xT3GjOQpDutUnWRXSMoYw2elUTFIQGt0JxdJxXbnnjSYDbeXlxAUQAejj5Xym1acKKve7RlQSqA==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+    cpu: [arm]
+    os: [linux]
+
+  '@webbluetooth/webbluetooth-linux-arm64-gnu@7.1.0':
+    resolution: {integrity: sha512-HhNZp4+ZLvU6WN+jomuhdWwOfiCBVzrQNrLlEIuqWH/kuw0Q2Q3yk77sFGvpkMngnP8PzPGzNv+ZmbqYARwzAA==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@webbluetooth/webbluetooth-linux-arm64-musl@7.1.0':
+    resolution: {integrity: sha512-smLukcDUXGJJrde9LHZx0QBEToqpMLVsU0Rz7FtfExMluOJHeJy/cfHyJ0StygWNepzIPhibjaQk5+pZsIkNTA==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@webbluetooth/webbluetooth-linux-x64-gnu@7.1.0':
+    resolution: {integrity: sha512-aaDo1Bk9/dMFGtLwYXNp3XViN6c/ckj6+rjJVtqIfSDvWB7T22OdT6fGbmQDfvUUGizLpd8MYzN9Y8zYfTe05Q==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@webbluetooth/webbluetooth-linux-x64-musl@7.1.0':
+    resolution: {integrity: sha512-DXXiOBOg7VNvpVMvBuYgTgokk1MSuQSvsd5gIi8YsutnrtaohGWkAU1DX5wDef7mTU7n6iez7++4RLQNJkzjhA==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@webbluetooth/webbluetooth-win32-arm64-msvc@7.1.0':
+    resolution: {integrity: sha512-KSomJcWmdLF8KXR2dy8+x4M4YcziVZmpLonDv+PEQIpsDVJRsir5JletOjzt/AGVTcFtFnhW+d3hFsLWfXrGSg==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@webbluetooth/webbluetooth-win32-ia32-msvc@7.1.0':
+    resolution: {integrity: sha512-PCO15c+gUKY2yd67Xbcb09wLDgUBmrUOfPOeuqpP0sA0dMLDY/yqtGbx/sSSmWWrLFWJa4gesNi14F6YkOWFTw==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+    cpu: [ia32]
+    os: [win32]
+
+  '@webbluetooth/webbluetooth-win32-x64-msvc@7.1.0':
+    resolution: {integrity: sha512-u3evpQ3eE5gbU9cGYhl/Ca+BMggwuxQWigiJOQGP3gtwiFK1INtvENhkBdoFcupYnfTK60f1hgbZ9hdVj3I5Vg==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+    cpu: [x64]
+    os: [win32]
 
   '@whatwg-node/disposablestack@0.0.6':
     resolution: {integrity: sha512-LOtTn+JgJvX8WfBVJtF08TGrdjuFzGJc4mkP8EdDI8ADbvO7kiexYep1o8dwnt0okb0jYclCDXF13xU7Ge4zSw==}
@@ -9398,6 +9468,10 @@ packages:
   web-worker@1.5.0:
     resolution: {integrity: sha512-RiMReJrTAiA+mBjGONMnjVDP2u3p9R1vkcGz6gDIrOMT3oGuYwX2WRMYI9ipkphSuE5XKEhydbhNEJh4NY9mlw==}
 
+  webbluetooth@7.1.0:
+    resolution: {integrity: sha512-xTXnAv/JdjtUG1+2Glm8DMtQzJ553nLLNB02Xvf5Tou2H48ztWV3dehxUoi3H0lJGQWXLPZtGVukqiefuzVzYA==}
+    engines: {node: '>= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0'}
+
   webcrypto-core@1.9.2:
     resolution: {integrity: sha512-gsXecm82UQNlTBURJGuqOWy1Ww08S3kZUcr3aOJS02Pk0xLtkfeUAVC0u0xhgdonFme80edSJUIJyuvL/7250Q==}
 
@@ -13709,6 +13783,8 @@ snapshots:
   '@types/verror@1.10.11':
     optional: true
 
+  '@types/web-bluetooth@0.0.21': {}
+
   '@types/webxr@0.5.24': {}
 
   '@types/ws@8.18.1':
@@ -13928,6 +14004,36 @@ snapshots:
       '@vitest/pretty-format': 4.1.9
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.0
+
+  '@webbluetooth/webbluetooth-darwin-arm64@7.1.0':
+    optional: true
+
+  '@webbluetooth/webbluetooth-darwin-x64@7.1.0':
+    optional: true
+
+  '@webbluetooth/webbluetooth-linux-arm-gnueabihf@7.1.0':
+    optional: true
+
+  '@webbluetooth/webbluetooth-linux-arm64-gnu@7.1.0':
+    optional: true
+
+  '@webbluetooth/webbluetooth-linux-arm64-musl@7.1.0':
+    optional: true
+
+  '@webbluetooth/webbluetooth-linux-x64-gnu@7.1.0':
+    optional: true
+
+  '@webbluetooth/webbluetooth-linux-x64-musl@7.1.0':
+    optional: true
+
+  '@webbluetooth/webbluetooth-win32-arm64-msvc@7.1.0':
+    optional: true
+
+  '@webbluetooth/webbluetooth-win32-ia32-msvc@7.1.0':
+    optional: true
+
+  '@webbluetooth/webbluetooth-win32-x64-msvc@7.1.0':
+    optional: true
 
   '@whatwg-node/disposablestack@0.0.6':
     dependencies:
@@ -19398,6 +19504,21 @@ snapshots:
   web-streams-polyfill@3.3.3: {}
 
   web-worker@1.5.0: {}
+
+  webbluetooth@7.1.0:
+    dependencies:
+      '@types/web-bluetooth': 0.0.21
+    optionalDependencies:
+      '@webbluetooth/webbluetooth-darwin-arm64': 7.1.0
+      '@webbluetooth/webbluetooth-darwin-x64': 7.1.0
+      '@webbluetooth/webbluetooth-linux-arm-gnueabihf': 7.1.0
+      '@webbluetooth/webbluetooth-linux-arm64-gnu': 7.1.0
+      '@webbluetooth/webbluetooth-linux-arm64-musl': 7.1.0
+      '@webbluetooth/webbluetooth-linux-x64-gnu': 7.1.0
+      '@webbluetooth/webbluetooth-linux-x64-musl': 7.1.0
+      '@webbluetooth/webbluetooth-win32-arm64-msvc': 7.1.0
+      '@webbluetooth/webbluetooth-win32-ia32-msvc': 7.1.0
+      '@webbluetooth/webbluetooth-win32-x64-msvc': 7.1.0
 
   webcrypto-core@1.9.2:
     dependencies:

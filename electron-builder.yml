@@ -38,6 +38,9 @@ extraResources:
 asarUnpack:
   - "node_modules/sherpa-onnx-node/**"
   - "node_modules/sherpa-onnx-*/**"
+  # BLE (device provisioning): webbluetooth's loader and its per-platform .node.
+  - "node_modules/webbluetooth/**"
+  - "node_modules/@webbluetooth/**"
 win:
   executableName: orkestrator
 nsis:
@@ -63,6 +66,7 @@ mac:
     - NSAllowsArbitraryLoads: Application requests access to make insecure http requests.
     - NSCameraUsageDescription: Application requests access to the device's camera.
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSBluetoothAlwaysUsageDescription: Application uses Bluetooth to set up lab devices (Wi-Fi and sign-in).
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: true

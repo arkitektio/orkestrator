@@ -26,6 +26,38 @@ import type {
   VoiceStatusPayload,
 } from "../main/voice/protocol";
 import {
+  BLUETOOTH_AVAILABILITY_CHANNEL,
+  BLUETOOTH_CONNECT_CHANNEL,
+  BLUETOOTH_DEVICES_CHANNEL,
+  BLUETOOTH_DISCONNECT_CHANNEL,
+  BLUETOOTH_DISCONNECTED_CHANNEL,
+  BLUETOOTH_NOTIFICATION_CHANNEL,
+  BLUETOOTH_NOTIFY_START_CHANNEL,
+  BLUETOOTH_NOTIFY_STOP_CHANNEL,
+  BLUETOOTH_READ_CHANNEL,
+  BLUETOOTH_SCAN_START_CHANNEL,
+  BLUETOOTH_SCAN_STOP_CHANNEL,
+  BLUETOOTH_WRITE_CHANNEL,
+  type BluetoothAvailability,
+  type BluetoothCharacteristicRef,
+  type BluetoothConnectResult,
+  type BluetoothDisconnected,
+  type BluetoothNotification,
+  type BluetoothScanEvent,
+  type BluetoothScanRequest,
+  type BluetoothWriteRequest,
+} from "../main/bluetooth/protocol";
+import {
+  EDUROAM_EAP_CONFIG_CHANNEL,
+  EDUROAM_SEARCH_CHANNEL,
+  WIFI_PROFILES_DELETE_CHANNEL,
+  WIFI_PROFILES_LIST_CHANNEL,
+  WIFI_PROFILES_SAVE_CHANNEL,
+  type EduroamInstitution,
+  type WifiProfile,
+  type WifiProfileList,
+} from "../main/wifi/protocol";
+import {
   MESH_CLAIM_CHANNEL,
   MESH_EVENT_CHANNEL,
   MESH_LOCK_INIT_CHANNEL,
@@ -253,6 +285,41 @@ const api = {
       ipcRenderer.invoke(MESH_LOCK_INIT_CHANNEL, request),
     restart: (): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_RESTART_CHANNEL),
     onEvent: (cb: (event: MeshEvent) => void) => subscribe<MeshEvent>(MESH_EVENT_CHANNEL, cb),
+  },
+  /**
+   * Bluetooth Low Energy through main (a native btleplug addon): GATT
+   * primitives only. Events reach only the window that started the scan or
+   * opened the connection.
+   */
+  bluetooth: {
+    availability: (): Promise<BluetoothAvailability> => ipcRenderer.invoke(BLUETOOTH_AVAILABILITY_CHANNEL),
+    startScan: (request: BluetoothScanRequest): Promise<void> =>
+      ipcRenderer.invoke(BLUETOOTH_SCAN_START_CHANNEL, request),
+    stopScan: (): Promise<void> => ipcRenderer.invoke(BLUETOOTH_SCAN_STOP_CHANNEL),
+    onDevices: (cb: (event: BluetoothScanEvent) => void) => subscribe<BluetoothScanEvent>(BLUETOOTH_DEVICES_CHANNEL, cb),
+    connect: (deviceId: string): Promise<BluetoothConnectResult> =>
+      ipcRenderer.invoke(BLUETOOTH_CONNECT_CHANNEL, { deviceId }),
+    disconnect: (deviceId: string): Promise<void> => ipcRenderer.invoke(BLUETOOTH_DISCONNECT_CHANNEL, { deviceId }),
+    read: (ref: BluetoothCharacteristicRef): Promise<Uint8Array> => ipcRenderer.invoke(BLUETOOTH_READ_CHANNEL, ref),
+    write: (request: BluetoothWriteRequest): Promise<void> => ipcRenderer.invoke(BLUETOOTH_WRITE_CHANNEL, request),
+    startNotifications: (ref: BluetoothCharacteristicRef): Promise<void> =>
+      ipcRenderer.invoke(BLUETOOTH_NOTIFY_START_CHANNEL, ref),
+    stopNotifications: (ref: BluetoothCharacteristicRef): Promise<void> =>
+      ipcRenderer.invoke(BLUETOOTH_NOTIFY_STOP_CHANNEL, ref),
+    onNotification: (cb: (event: BluetoothNotification) => void) =>
+      subscribe<BluetoothNotification>(BLUETOOTH_NOTIFICATION_CHANNEL, cb),
+    onDisconnected: (cb: (event: BluetoothDisconnected) => void) =>
+      subscribe<BluetoothDisconnected>(BLUETOOTH_DISCONNECTED_CHANNEL, cb),
+  },
+  /** Saved Wi-Fi profiles (secrets sealed in main) and the eduroam directory. */
+  wifi: {
+    list: (): Promise<WifiProfileList> => ipcRenderer.invoke(WIFI_PROFILES_LIST_CHANNEL),
+    save: (profile: WifiProfile): Promise<WifiProfileList> => ipcRenderer.invoke(WIFI_PROFILES_SAVE_CHANNEL, profile),
+    remove: (id: string): Promise<WifiProfileList> => ipcRenderer.invoke(WIFI_PROFILES_DELETE_CHANNEL, { id }),
+    searchEduroam: (query: string): Promise<EduroamInstitution[]> =>
+      ipcRenderer.invoke(EDUROAM_SEARCH_CHANNEL, { query }),
+    eduroamEapConfig: (eapconfigEndpoint: string): Promise<string> =>
+      ipcRenderer.invoke(EDUROAM_EAP_CONFIG_CHANNEL, { eapconfigEndpoint }),
   },
   initAgent: (context: any) => ipcRenderer.invoke("agent:init", context),
   executeElectron: (task: Assign) => ipcRenderer.invoke("agent:execute", task),

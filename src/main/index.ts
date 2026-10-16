@@ -1,5 +1,5 @@
 import { electronApp, is, optimizer } from "@electron-toolkit/utils";
-import { app, shell, IpcMainEvent, MessageChannelMain, systemPreferences, utilityProcess } from "electron";
+import { app, shell, IpcMainEvent, MessageChannelMain, net, safeStorage, systemPreferences, utilityProcess } from "electron";
 import { resolve, join } from "path";
 import icon from "../../resources/icon.png?asset";
 import { machineId } from "node-machine-id";
@@ -25,6 +25,8 @@ import { normalize, sep } from "node:path";
 import { Readable } from "node:stream";
 import { ShellService } from "./modules/ShellService";
 import { HardwareService } from "./modules/HardwareService";
+import { BluetoothService } from "./bluetooth/BluetoothService";
+import { WifiService } from "./wifi/WifiService";
 import { FactoryResetService, finishFactoryReset } from "./modules/FactoryReset";
 import { DoctorService, defaultDoctorDeps } from "./doctor/DoctorService";
 import { VoiceService } from "./voice/VoiceService";
@@ -192,6 +194,15 @@ const bigFileUploadService = new BigFileUploadService(transport, meshProxyPort);
 const bigFileDownloadService = new BigFileDownloadService(transport, meshProxyPort);
 const shellService = new ShellService(transport);
 const hardwareService = new HardwareService(transport);
+// BLE for device provisioning: a native addon (btleplug), loaded on first use.
+const bluetoothService = new BluetoothService(transport);
+// Saved Wi-Fi profiles (secrets sealed with the OS keychain) and the eduroam
+// directory, for provisioning devices. `net.fetch` follows the system proxy.
+const wifiService = new WifiService(transport, {
+  userData: () => app.getPath("userData"),
+  secrets: safeStorage,
+  fetch: (input, init) => net.fetch(input as string, init),
+});
 const factoryResetService = new FactoryResetService(transport);
 // Voice input: the speech model runs in a utilityProcess (`voice/worker.ts`,
 // built to `out/main/voice-worker.js`), started only once a user switches
@@ -219,6 +230,8 @@ appManager.register(bigFileDownloadService);
 appManager.register(new AssetFetchService());
 appManager.register(shellService);
 appManager.register(hardwareService);
+appManager.register(bluetoothService);
+appManager.register(wifiService);
 appManager.register(factoryResetService);
 appManager.register(doctorService);
 appManager.register(voiceService);

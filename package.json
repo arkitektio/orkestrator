@@ -74,6 +74,7 @@
     "socks-proxy-agent": "^10.1.0",
     "systeminformation": "^5.33.15",
     "undici": "^8.10.2",
+    "webbluetooth": "7.1.0",
     "zundo": "^2.3.0",
     "zustand": "^5.0.12"
   },

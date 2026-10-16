@@ -1,4 +1,4 @@
-import { AppWindow, Boxes, Cpu, Home, KeyRound, Plug, Server, Tag, User, UserCircle, Users } from "lucide-react";
+import { AppWindow, Bluetooth, Boxes, Cpu, Home, KeyRound, Plug, Server, Tag, User, UserCircle, Users } from "lucide-react";
 
 import { ADMIN_ROLE } from "@/core/connection/roles";
 import type { NavLinkDecl } from "@/core/modules/host/define";
@@ -14,6 +14,7 @@ export const LOK_NAV_LINKS: NavLinkDecl[] = [
   { label: "Services", route: "/lok/services", group: "Admin", icon: Server, description: "Known service types", roles: ADMIN_ROLE },
   { label: "Instances", route: "/lok/instances", group: "Admin", icon: Boxes, description: "Deployed services", roles: ADMIN_ROLE },
   { label: "Devices", route: "/lok/devices", keywords: ["compute", "nodes"], group: "Admin", icon: Cpu, description: "Compute nodes", roles: ADMIN_ROLE },
+  { label: "Provision device", route: "/lok/devices/provision", keywords: ["bluetooth", "ble", "esp32", "wifi", "setup", "pair"], group: "Admin", icon: Bluetooth, description: "Set up a device over Bluetooth", roles: ADMIN_ROLE },
   { label: "Clients", route: "/lok/clients", keywords: ["apps", "oauth"], group: "Admin", icon: Plug, description: "Every registered client", roles: ADMIN_ROLE },
   { label: "Releases", route: "/lok/releases", keywords: ["apps", "versions"], group: "Admin", icon: Tag, description: "App versions", roles: ADMIN_ROLE },
 ];

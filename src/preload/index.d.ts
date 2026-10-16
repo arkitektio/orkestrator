@@ -5,6 +5,17 @@ import { ElectronAPI } from "@electron-toolkit/preload";
 import type { ChromeTheme, ChromeThemeSource, WindowChromeState } from "../main/modules/WindowManager";
 import type { DialogRequest as ForwardedDialog } from "../main/modules/QuickPaletteWindow";
 import type {
+  BluetoothAvailability,
+  BluetoothCharacteristicRef,
+  BluetoothConnectResult,
+  BluetoothDisconnected,
+  BluetoothNotification,
+  BluetoothScanEvent,
+  BluetoothScanRequest,
+  BluetoothWriteRequest,
+} from "../main/bluetooth/protocol";
+import type { EduroamInstitution, WifiProfile, WifiProfileList } from "../main/wifi/protocol";
+import type {
   VoiceCatalogEntry,
   VoiceEvent,
   VoiceModelState,
@@ -37,6 +48,35 @@ import type {
  * Everything here is an id or a configuration main validates; see
  * `src/main/mesh/protocol.ts`.
  */
+export type BluetoothApi = {
+  /** Whether this computer can do BLE at all (addon, adapter, powered on). */
+  availability: () => Promise<BluetoothAvailability>;
+  /** Starts (or restarts) a scan; the devices arrive through `onDevices`. */
+  startScan: (request: BluetoothScanRequest) => Promise<void>;
+  stopScan: () => Promise<void>;
+  onDevices: (cb: (event: BluetoothScanEvent) => void) => () => void;
+  /** Connects to a device the scan saw and discovers its services. */
+  connect: (deviceId: string) => Promise<BluetoothConnectResult>;
+  disconnect: (deviceId: string) => Promise<void>;
+  read: (ref: BluetoothCharacteristicRef) => Promise<Uint8Array>;
+  write: (request: BluetoothWriteRequest) => Promise<void>;
+  startNotifications: (ref: BluetoothCharacteristicRef) => Promise<void>;
+  stopNotifications: (ref: BluetoothCharacteristicRef) => Promise<void>;
+  onNotification: (cb: (event: BluetoothNotification) => void) => () => void;
+  onDisconnected: (cb: (event: BluetoothDisconnected) => void) => () => void;
+};
+
+export type WifiApi = {
+  list: () => Promise<WifiProfileList>;
+  /** Adds or replaces (by id) a profile; answers with the new list. */
+  save: (profile: WifiProfile) => Promise<WifiProfileList>;
+  remove: (id: string) => Promise<WifiProfileList>;
+  /** Institutions in the eduroam directory whose name matches (at least 2 characters). */
+  searchEduroam: (query: string) => Promise<EduroamInstitution[]>;
+  /** The eap-config XML of a profile the directory lists. */
+  eduroamEapConfig: (eapconfigEndpoint: string) => Promise<string>;
+};
+
 export type MeshApi = {
   status: () => Promise<MeshStatusPayload>;
   /**
@@ -177,6 +217,8 @@ declare global {
       voice: VoiceApi;
       doctor: DoctorApi;
       mesh: MeshApi;
+      bluetooth: BluetoothApi;
+      wifi: WifiApi;
       executeElectron: (task: Assign) => Promise<void>;
       onAgentYield: (cb: (data: any) => void) => () => void;
       onAgentDone: (cb: (data: any) => void) => () => void;

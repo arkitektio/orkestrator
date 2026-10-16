@@ -26,6 +26,7 @@ import { RoleRoute } from "@/core/layout/fallbacks/NotPermitted";
 import { ADMIN_ROLE } from "@/core/connection/roles";
 import ClientsPage from "./pages/ClientsPage";
 import ReleasesPage from "./pages/ReleasesPage";
+import ProvisionDevicePage from "./pages/ProvisionDevicePage";
 interface Props { }
 
 export const LokNextModule: React.FC<Props> = () => {
@@ -39,6 +40,8 @@ export const LokNextModule: React.FC<Props> = () => {
         <Route path="members/:id" element={<UserPage />} />
         <Route path="users/:id" element={<UserPage />} />
         <Route path="apps" element={<RoleRoute roles={ADMIN_ROLE}><AppsPage /></RoleRoute>} />
+        {/* Before `devices/:id`, which would take "provision" for an id. */}
+        <Route path="devices/provision" element={<RoleRoute roles={ADMIN_ROLE}><ProvisionDevicePage /></RoleRoute>} />
         <Route path="devices/:id" element={<DevicePage />} />
         <Route path="devices" element={<RoleRoute roles={ADMIN_ROLE}><DevicesPage /></RoleRoute>} />
         <Route path="apps/:id" element={<AppPage />} />

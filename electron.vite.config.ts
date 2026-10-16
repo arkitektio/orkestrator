@@ -16,7 +16,9 @@ export default defineConfig({
         // sherpa-onnx's native addon is loaded only by the voice worker and
         // must stay a runtime `require`: a .node file cannot be bundled, and
         // `asarUnpack` in electron-builder.yml keeps it on disk.
-        external: ["sherpa-onnx-node", /^sherpa-onnx-/],
+        // webbluetooth (BLE for device provisioning) is a napi-rs addon with
+        // one optional package per platform; same rule.
+        external: ["sherpa-onnx-node", /^sherpa-onnx-/, /^webbluetooth(\/|$)/, /^@webbluetooth\//],
       },
     },
   },

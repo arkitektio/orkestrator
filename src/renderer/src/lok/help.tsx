@@ -227,6 +227,23 @@ export const LOK_HELP = {
       ]}
     />
   ),
+  provisionDevice: (
+    <PageHelp
+      intro="Sets up an Arkitekt device (an ESP32) over Bluetooth: it gets your Wi-Fi, the deployment's address and a key to sign in with, and then runs as you."
+      steps={[
+        <>Put the device in pairing mode (a new one starts in it; hold BOOT for 5 seconds on one already set up) and press <b>Scan</b>.</>,
+        <>Press <b>Select</b> next to the device, check what it reports under <b>Inspect</b>, then press <b>Continue</b>.</>,
+        <>Choose a Wi-Fi profile or press <b>New Wi-Fi profile</b>. For eduroam, search your institution to fill in its certificate.</>,
+        <>Check the <b>Deployment</b> address, then press <b>Provision</b> and wait until the device reports “Registered”.</>,
+      ]}
+      tips={[
+        <>Each device gets its own key, pinned to it, under one standing mandate for its app; both show up under Mandates, where you can revoke them.</>,
+        <>Provisioning a device again gives it a new key and keeps it the same device and agent.</>,
+        <>The device must reach the deployment address over its own Wi-Fi. Localhost or a VPN-only address will not work.</>,
+        <>Wi-Fi passwords are saved encrypted with your system keychain; without one, they are not saved.</>,
+      ]}
+    />
+  ),
   mandates: (
     <PageHelp
       intro="The apps allowed to act as you. A mandate is your approval for one exact app version to be started and signed in under your name, for example by an app installer on a lab computer."
@@ -239,7 +256,7 @@ export const LOK_HELP = {
       tips={[
         <>“Live” means the app can be started; “Expired” stops new starts; “Revoked” means everything was signed out; “Not live” means the app cannot be started right now.</>,
         <>A revoked mandate cannot be restored. To run the app again it has to be approved again.</>,
-        <>You do not create mandates here: installing an app from the App Store asks for one.</>,
+        <>Mandates come from elsewhere: installing an app from the App Store asks for one, and <b>Provision device</b> issues one per device.</>,
       ]}
     />
   ),
