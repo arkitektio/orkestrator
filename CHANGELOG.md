@@ -1,3 +1,14 @@
+# [3.5.0](https://github.com/arkitektio/orkestrator/compare/v3.4.0...v3.5.0) (2026-10-16)
+
+
+### Features
+
+* **blok:** previews of panels and scenes, drawn once and kept under the blok's hash ([97b9251](https://github.com/arkitektio/orkestrator/commit/97b9251aacdee2935c7c099ec59fa127a03f6eac))
+* **blok:** scene popout cards point at the clicked spot and can be dragged aside ([a18e775](https://github.com/arkitektio/orkestrator/commit/a18e7757e03ac8bd6c36fb8b7b3a8603723a6f03))
+* **lok:** mandates are keyed, redeem tokens are gone ([39bcebe](https://github.com/arkitektio/orkestrator/commit/39bcebe347b18d0c7e1ae64a106c6ee96020692b))
+* **lok:** provision a device over Bluetooth ([2fac9b6](https://github.com/arkitektio/orkestrator/commit/2fac9b63e8785ec18c86d61e4d9c2d4c8d518379))
+* **rekuest:** an agent's page offers what other apps can do with it ([b424750](https://github.com/arkitektio/orkestrator/commit/b424750191e5ce26a3266201d73f77bc7461c137))
+
 # [3.4.0](https://github.com/arkitektio/orkestrator/compare/v3.3.0...v3.4.0) (2026-10-15)
 
 
