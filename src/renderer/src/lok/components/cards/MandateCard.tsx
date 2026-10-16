@@ -4,7 +4,7 @@ import Timestamp from "@/core/ui/timestamp";
 import { LokMandate } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
 import { ListMandateFragment } from "../../api/graphql";
-import { MANDATE_STATUS_LABEL, mandateStatus, mandateSubject } from "../../lib/mandateLabels";
+import { MANDATE_STATUS_LABEL, mandateHolder, mandateStatus, mandateSubject } from "../../lib/mandateLabels";
 
 interface Props {
   item: ListMandateFragment;
@@ -12,7 +12,7 @@ interface Props {
 
 /**
  * One app allowed to act as its grantor: what runs (the subject), who
- * starts it (the agent), and how many instances are signed in right now.
+ * signs it in (an agent app or a key holder), and how many instances are signed in right now.
  */
 const TheCard = ({ item }: Props) => {
   const subject = mandateSubject(item);
@@ -41,8 +41,9 @@ const TheCard = ({ item }: Props) => {
         <p className="truncate text-xs text-muted-foreground">
           {subject.version && <span className="font-mono">v{subject.version}</span>}
           {subject.version && " · "}
-          run by {item.agentIdentifier}
+          run by {mandateHolder(item)}
           {item.agentDevice && ` on ${item.agentDevice.name ?? item.agentDevice.deviceId}`}
+          {!item.agentDevice && item.subject.deviceId && ` on ${item.subject.deviceId}`}
         </p>
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs text-muted-foreground/60">

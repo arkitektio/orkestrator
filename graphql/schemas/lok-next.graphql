@@ -98,6 +98,9 @@ type Client {
   """
   logo: MediaStore
 
+  """The mandate this client logs in with, if it logs in with a key."""
+  mandate: Mandate
+
   """
   The mappings of the client. A mapping is a mapping of a service to a service instance. This is used to configure the hub.
   """
@@ -252,37 +255,37 @@ input CreateInviteInput {
 }
 
 """
-Pre-authorize an agent app to provision clients of a subject app that act as you.
+Pre-authorize an agent app to issue mandate keys for a subject app, acting as you.
 """
 input CreateMandateInput {
-  """Identifier of the app allowed to provision (e.g. a deployer)."""
+  """Identifier of the app allowed to issue keys (e.g. a deployer)."""
   agent: String!
 
-  """Only an agent running on this device may provision."""
+  """Only an agent running on this device may issue."""
   agentDeviceId: String = null
 
-  """Only an agent acting as this user may provision."""
+  """Only an agent acting as this user may issue."""
   agentUser: ID = null
 
   """Opaque binding for the approving service (e.g. a release digest)."""
   attestation: String = null
 
   """
-  Stop new provisioning after this many days (1–365). Null means until revoked.
+  The mandate (and every key issued under it) stops working after this many days (1–365). Null: as long as your app.
   """
   expiresInDays: Int = null
 
   """
-  The hub provisioned clients compose against. Defaults to the calling client's hub.
+  The hub the subject composes against. Defaults to the calling client's hub.
   """
   hub: ID = null
 
   """
-  The subject app. Its scopes and requirements are the ceiling for every provisioned client; deviceId is ignored.
+  The subject app. Its scopes and requirements are the ceiling for every key issued under it, and may not exceed your app's own; deviceId is ignored.
   """
   manifest: ManifestInput!
 
-  """How many clients may exist under the mandate at once."""
+  """How many live keys may exist under the mandate at once."""
   maxClients: Int = null
 }
 
@@ -314,17 +317,6 @@ input DeclineInviteInput {
 
 input DeclineMembershipRequestInput {
   id: ID!
-}
-
-input DeleteRedeemTokenInput {
-  id: ID!
-}
-
-input DevelopmentClientInput {
-  hub: ID = null
-  layers: [String!] = ["web"]
-  manifest: ManifestInput!
-  role: ClientRole = null
 }
 
 """Device(id, node_id, name, organization)"""
@@ -623,6 +615,62 @@ input InviteOrdering @oneOf {
 }
 
 """
+Issue a mandate key for one instance of a mandate's subject (called by the mandate's agent).
+"""
+input IssueChildMandateKeyInput {
+  """Unique per instance: one key logs in one client per device."""
+  deviceId: String!
+
+  """
+  The key stops working after this many days. Null: as long as the mandate.
+  """
+  expiresInDays: Int = null
+  label: String = null
+  mandate: ID!
+}
+
+"""
+Issue a mandate key for an app, acting as you. It is capped at your app's own scopes and dies with your app.
+"""
+input IssueMandateKeyInput {
+  """Whether a client logging in with the key may ask for a mesh key."""
+  allowMesh: Boolean! = false
+
+  """
+  Let every release of the app log in with the key, not only the manifest's version.
+  """
+  anyVersion: Boolean! = false
+
+  """The key stops working after this many days (1–30)."""
+  expiresInDays: Int!
+
+  """
+  The hub the app composes against. Defaults to the calling client's hub.
+  """
+  hub: ID = null
+  label: String = null
+
+  """
+  The app the key logs in. Identifier, version and deviceId (when given) must match exactly; scopes and requirements are a ceiling.
+  """
+  manifest: ManifestInput!
+
+  """On how many devices the key may log in. Null: unlimited."""
+  maxClients: Int = null
+}
+
+"""
+A freshly issued mandate and its key. The key is shown only here, once.
+"""
+type IssuedMandateKey {
+  """
+  The mandate key. Hand it to the app as FAKTS_MANDATE_KEY; lok keeps only its hash.
+  """
+  key: String!
+  mandate: Mandate!
+}
+
+"""
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf).
 """
 scalar JSON @specifiedBy(url: "https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf")
@@ -675,48 +723,163 @@ input LinkingRequestInput {
 }
 
 """
-A standing authorization: the grantor lets an agent app provision clients of a subject app that act as the grantor.
+A standing authority to act as the grantor, inside one hub, up to a pinned app. Whoever holds its key logs in as the grantor (a keyed mandate), or the agent app it names may issue keyed mandates under it (an agent mandate). It dies with whoever issued it.
 """
 type Mandate {
-  """If set, only an agent running on this device may provision."""
+  """If set, only an agent running on this device may issue."""
   agentDevice: Device
 
-  """The app allowed to provision under this mandate."""
-  agentIdentifier: String!
+  """
+  The app allowed to issue keys under this mandate. Null for a keyed mandate.
+  """
+  agentIdentifier: String
 
-  """If set, only an agent acting as this user may provision."""
+  """If set, only an agent acting as this user may issue."""
   agentUser: User
+
+  """Whether a client logging in with the key may ask for a mesh key."""
+  allowMesh: Boolean!
 
   """Opaque binding set by the approving service (e.g. a release digest)."""
   attestation: String!
 
-  """The clients currently provisioned under this mandate."""
+  """The keyed mandates the agent issued under this one."""
+  children(filters: MandateFilter, ordering: [MandateOrdering!]! = [], pagination: OffsetPaginationInput): [Mandate!]!
+
+  """Who may use the mandate."""
+  claimant: MandateClaimant!
+
+  """The clients logged in with the key, one per device."""
   clients(filters: ClientFilter, ordering: [ClientOrdering!]! = [], pagination: OffsetPaginationInput): [Client!]!
   createdAt: DateTime!
 
-  """After this, no new clients may be provisioned."""
+  """After this the mandate no longer works. Null: as long as its issuer."""
   expiresAt: DateTime
 
-  """The user the provisioned clients act as."""
+  """The user the clients act as."""
   grantor: User!
 
-  """The hub provisioned clients compose against."""
+  """The hub the clients compose against."""
   hub: Hub!
   id: ID!
 
-  """Whether the agent may still provision under this mandate."""
+  """Whether the mandate still works."""
   isLive: Boolean!
 
-  """How many clients may be provisioned at once. Null means unlimited."""
+  """The app that issued this mandate."""
+  issuingClient: Client
+
+  """
+  The first characters of the key, to recognise it by. Empty for an agent mandate.
+  """
+  keyPrefix: String!
+
+  """A human name for the mandate."""
+  label: String!
+
+  """When the key was last exchanged for a token."""
+  lastUsedAt: DateTime
+
+  """
+  Keyed: on how many devices the key may log in. Agent: how many live keys may be issued under it. Null means unlimited.
+  """
   maxClients: Int
 
-  """When the grantor withdrew the mandate; its clients were deleted then."""
+  """Who issued the mandate."""
+  origin: MandateOrigin!
+
+  """The agent mandate this one was issued under."""
+  parent: Mandate
+
+  """Why the mandate was withdrawn."""
+  revocationReason: MandateRevocation
+
+  """When the mandate was withdrawn; its clients were deleted then."""
   revokedAt: DateTime
 
-  """
-  The approved subject: identifier, version, and the scope/requirement ceilings.
-  """
-  subjectManifest: JSON!
+  """The app the mandate admits, and the ceilings it puts on it."""
+  subject: MandatePin!
+}
+
+"""Who may use a mandate."""
+enum MandateClaimant {
+  AGENT
+  KEY
+}
+
+"""
+A standing authority to act as the grantor, inside one hub, up to a pinned manifest.
+
+Every headless login goes through one. Who may use it is the *claimant*:
+
+- ``key``: whoever holds the mandate key exchanges it at the token endpoint
+  (``urn:fakts:grant-type:mandate-key``) for an access token of a client acting as
+  the grantor. Only the key's SHA-256 is stored. There is no refresh chain: the
+  client runs the grant again when its access token expires, and every grant
+  re-checks the mandate.
+- ``agent``: the app named by ``agent_identifier`` (a deployer) may issue keyed
+  child mandates under it, one per instance it runs. kabinet's release approvals
+  are agent mandates.
+
+Who issued it is the *origin*, and a mandate dies with its issuer: the grantor
+membership, the issuing client (``issuing_client``), the parent agent mandate
+(``parent``), the hub that asked for it, or the deployment config entry
+(``config_name``) that names it. Deletions cascade; revocations are pushed down
+to every child by ``fakts.services.mandates.revoke_mandate``.
+"""
+input MandateFilter {
+  AND: MandateFilter
+  DISTINCT: Boolean
+  NOT: MandateFilter
+  OR: MandateFilter
+  ids: [ID!]
+  live: Boolean
+  search: String
+}
+
+input MandateOrdering @oneOf {
+  createdAt: Ordering
+  id: Ordering
+  lastUsedAt: Ordering
+}
+
+"""Who issued a mandate. A mandate dies with its issuer."""
+enum MandateOrigin {
+  AGENT
+  CLIENT
+  CONFIG
+  HUB
+  MEMBER
+}
+
+"""
+The ceiling a mandate puts on the apps that log in under it. A null field is open.
+"""
+type MandatePin {
+  """The device. Null: any device."""
+  deviceId: String
+
+  """The app. Null: fixed by the first app that logs in."""
+  identifier: String
+
+  """The most requirements an app may ask for. Null: any."""
+  requirements: [RequirementPin!]
+
+  """The most scopes an app may ask for. Null: the organization's."""
+  scopes: [String!]
+
+  """The release. Null: every release."""
+  version: String
+}
+
+"""Why a mandate stopped working."""
+enum MandateRevocation {
+  ISSUER_REVOKED
+  ORGANIZATION_REVOKED
+  PARENT_REVOKED
+  REMOVED_FROM_CONFIG
+  REVOKED
+  SUPERSEDED
 }
 
 input ManifestInput {
@@ -811,21 +974,18 @@ type Mutation {
   addUserToOrganization(input: AddUserToOrganizationInput!): Membership!
   approveMembershipRequest(input: ApproveMembershipRequestInput!): Membership!
   cancelInvite(input: CancelInviteInput!): Invite!
-  createDevelopmentalClient(input: DevelopmentClientInput!): Client!
   createGroupProfile(input: CreateGroupProfileInput!): GroupProfile!
   createInvite(input: CreateInviteInput!): Invite!
   createMandate(input: CreateMandateInput!): Mandate!
   createOrganization(input: CreateOrganizationInput!): Organization!
   createProfile(input: CreateProfileInput!): Profile!
-  createRedeemToken(input: RedeemTokenInput!): RedeemToken!
   createServiceInstance(input: CreateServiceInstanceInput!): ServiceInstance!
   declineInvite(input: DeclineInviteInput!): Invite!
   declineMembershipRequest(input: DeclineMembershipRequestInput!): MembershipRequest!
-  deleteRedeemToken(input: DeleteRedeemTokenInput!): ID!
+  issueChildMandateKey(input: IssueChildMandateKeyInput!): IssuedMandateKey!
+  issueMandateKey(input: IssueMandateKeyInput!): IssuedMandateKey!
   notifyUser(input: NotifyUserInput!): Boolean!
-  provision(input: ProvisionInput!): RedeemToken!
   registerComChannel(input: RegisterComChannelInput!): ComChannel!
-  releaseMandateClient(input: ReleaseMandateClientInput!): String!
   render(input: RenderInput!): Fakt!
   requestMediaUpload(input: RequestMediaUploadInput!): PresignedPostCredentials!
   requestMembership(input: RequestMembershipInput!): Boolean!
@@ -969,18 +1129,6 @@ type Profile {
   name: String
 }
 
-"""Mint a single-use credential for one instance of a mandate's subject."""
-input ProvisionInput {
-  """
-  Unique per provisioned instance: a client's identity includes its device, so instances sharing one would replace each other.
-  """
-  deviceId: String!
-  mandate: ID!
-
-  """How long the token stays redeemable (default 60, at most 1440)."""
-  ttlMinutes: Int = null
-}
-
 type PublicSource {
   """The kind of the public source. E.g. 'github'"""
   kind: String!
@@ -1027,23 +1175,19 @@ type Query {
   layer(id: ID!): Layer!
   layers(filters: LayerFilter, ordering: [LayerOrdering!]! = [], pagination: OffsetPaginationInput): [Layer!]!
   mandate(id: ID!): Mandate!
-  mandateToken(id: ID!): RedeemToken!
 
   """
-  Mandates you granted, or (as an agent app) may provision under. Org admins see all.
+  Mandates you granted, your app issued, or (as an agent app) you may issue under or did. Org admins see all.
   """
-  mandates(pagination: OffsetPaginationInput): [Mandate!]!
+  mandates(filters: MandateFilter, ordering: [MandateOrdering!]! = [], pagination: OffsetPaginationInput): [Mandate!]!
   me: User!
   message(id: ID!): SystemMessage!
   myActiveMessages: [SystemMessage!]!
   myManagedClients(kind: ClientKind!): [Client!]!
-  myRedeemTokens: [RedeemToken!]!
   mycontext: Context!
   mygroups: [Group!]!
   organization(id: ID!): Organization!
   organizations(filters: OrganizationFilter, ordering: [OrganizationOrdering!]! = [], pagination: OffsetPaginationInput): [Organization!]!
-  redeemToken(id: ID!): RedeemToken!
-  redeemTokens(filters: RedeemTokenFilter, ordering: [RedeemTokenOrdering!]! = [], pagination: OffsetPaginationInput): [RedeemToken!]!
   release(clientId: ID = null, id: ID = null, identifier: AppIdentifier = null, version: Version = null): Release!
   releases(ordering: [ReleaseOrdering!]! = []): [Release!]!
   role(id: ID!): Role!
@@ -1058,70 +1202,6 @@ type Query {
   user(id: ID!): User!
   userStats(filters: UserFilter = null): UserStats!
   users(filters: UserFilter, ordering: [UserOrdering!]! = [], pagination: OffsetPaginationInput): [User!]!
-}
-
-"""
-A redeem token is a token that can be used to redeem the rights to create
-a client. It is used to give the recipient the right to create a client.
-
-If the token is not redeemed within the expires_at time, it will be invalid.
-If the token has been redeemed, but the manifest has changed, the token will be invalid.
-"""
-type RedeemToken {
-  """The client that this redeem token belongs to."""
-  client: Client
-
-  """When this token stops being redeemable. Null means never."""
-  expiresAt: DateTime
-  id: ID!
-
-  """The mandate this token was provisioned under, if any."""
-  mandate: Mandate
-
-  """How many times this token may be redeemed. Null means unlimited."""
-  maxRedemptions: Int
-
-  """
-  The manifest this token was pre-authorized for at mint time, or null for an unpinned token. A redeem must match its identifier, version and device_id exactly and may only request a subset of its scopes and requirements.
-  """
-  pinnedManifest: JSON
-
-  """How many times this token has been redeemed so far."""
-  redemptionCount: Int!
-
-  """The token of the redeem token"""
-  token: String!
-
-  """The user that this redeem token belongs to."""
-  user: User!
-}
-
-"""
-A redeem token is a token that can be used to redeem the rights to create
-a client. It is used to give the recipient the right to create a client.
-
-If the token is not redeemed within the expires_at time, it will be invalid.
-If the token has been redeemed, but the manifest has changed, the token will be invalid.
-"""
-input RedeemTokenFilter {
-  AND: RedeemTokenFilter
-  DISTINCT: Boolean
-  NOT: RedeemTokenFilter
-  OR: RedeemTokenFilter
-  ids: [ID!]
-  search: String
-}
-
-input RedeemTokenInput {
-  expiresInDays: Int = null
-  manifest: ManifestInput!
-  maxRedemptions: Int = null
-  token: String = null
-}
-
-input RedeemTokenOrdering @oneOf {
-  createdAt: Ordering
-  id: Ordering
 }
 
 input RegisterComChannelInput {
@@ -1165,11 +1245,6 @@ type Release {
   version: Version!
 }
 
-input ReleaseMandateClientInput {
-  """The OAuth client id of a client provisioned under a mandate."""
-  clientId: String!
-}
-
 input ReleaseOrdering @oneOf {
   id: Ordering
   name: Ordering
@@ -1200,6 +1275,12 @@ input RequirementInput {
   description: String = null
   key: String!
   optional: Boolean! = false
+  service: String!
+}
+
+"""A requirement as a mandate pins it."""
+type RequirementPin {
+  key: String!
   service: String!
 }
 

@@ -6,7 +6,6 @@ import { AnswerMembershipRequestDialog } from "./dialogs/AnswerMembershipRequest
 import { CreateOrganizationForm } from "./dialogs/CreateOrganization";
 import { NotifyDialog } from "./dialogs/NotifyDialog";
 import { RevokeMandateDialog } from "./dialogs/RevokeMandateDialog";
-import { CreateRedeemTokenForm } from "./forms/CreateRedeemTokenForm";
 import { CreateServiceInstanceForm } from "./forms/CreateServiceInstance";
 import { UpdateServiceInstanceForm } from "./forms/UpdateServiceInstanceForm";
 
@@ -22,7 +21,6 @@ export const LOK_DIALOGS = {
   createorganization: CreateOrganizationForm,
   createserviceinstance: needsRoles(ADMIN_ROLE, CreateServiceInstanceForm),
   updateserviceinstance: needsRoles(ADMIN_ROLE, UpdateServiceInstanceForm),
-  createredeemtoken: needsRoles(ADMIN_ROLE, CreateRedeemTokenForm),
   reportclientbug: ReportClientBugDialog,
   revokemandate: RevokeMandateDialog,
 };

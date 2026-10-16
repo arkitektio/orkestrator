@@ -249,39 +249,11 @@ export const LOK_HELP = {
       steps={[
         <>Read the facts at the top: who granted it, which app starts it, any device or operator it is limited to, and when it expires.</>,
         <>Check “Allowed to” for the permissions the app has while acting for the grantor.</>,
-        <>Hover a row under “Running as …” and press <b>Sign out</b> to stop that one instance.</>,
         <>Click an instance’s name to open that client.</>,
         <>Open the menu button at the right end of the header and choose <b>Revoke mandate</b> to withdraw the approval entirely.</>,
       ]}
       tips={[
-        <>An instance you signed out can be started again while the mandate is live. Revoking is what stops it for good.</>,
         <>The “Running as …” list is hidden when no instance is signed in.</>,
-      ]}
-    />
-  ),
-  redeemTokens: (
-    <PageHelp
-      intro="Redeem tokens authorize a new app or device to access your account: whoever presents the token is linked to it."
-      steps={[
-        <>Press <b>New Token</b>. A random value is already filled in under <b>The token</b>; keep it or type your own, then confirm with <b>Change</b>.</>,
-        <>You land on the new token’s page. Pass its value to the app or device you want to register.</>,
-        <>Come back to this list to see which tokens were used: those are marked “Claimed”, with the app that claimed them.</>,
-      ]}
-      tips={[
-        <>This page is only available to administrators.</>,
-        <>Treat a token like a password: anyone who has it can register an app in your name.</>,
-      ]}
-    />
-  ),
-  redeemToken: (
-    <PageHelp
-      intro="One redeem token. The large text is the token value an app or device presents to register with the server."
-      steps={[
-        <>Copy the token value and enter it in the app or device you want to register.</>,
-        <>Go back to the <b>Redeem Tokens</b> list afterwards to check that the token shows as “Claimed”.</>,
-      ]}
-      tips={[
-        <>Treat the token like a password and share it only with the device it is meant for.</>,
       ]}
     />
   ),

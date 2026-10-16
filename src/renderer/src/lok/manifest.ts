@@ -14,7 +14,6 @@ export const manifest: ModuleManifest = {
   icon: "users",
   models: [
     { identifier: "@lok/user", name: "User", datum: false, path: "members/:id" },
-    { identifier: "@lok/redeemtoken", name: "Redeem Token", datum: false, path: "redeemtokens/:id" },
     { identifier: "@lok/group", name: "Group", datum: false, path: "groups/:id" },
     { identifier: "@lok/client", name: "Client", datum: false, path: "clients/:id" },
     { identifier: "@lok/device", name: "Device ", datum: false, path: "devices/:id" },

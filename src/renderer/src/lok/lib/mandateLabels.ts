@@ -1,13 +1,20 @@
 /**
  * Naming a mandate and saying where it stands.
  *
- * `subjectManifest` is lok's JSON copy of the manifest the grantor approved;
- * its identifier and version are what the mandate is FOR, so they are the
- * mandate's name everywhere it is shown.
+ * `subject` is the mandate's pin: the app it is FOR. Its identifier and
+ * version are the mandate's name everywhere it is shown; a field lok leaves
+ * null is unpinned (any app, any release).
  */
 
+export type MandatePinLike = {
+  identifier?: string | null;
+  version?: string | null;
+  deviceId?: string | null;
+  scopes?: readonly string[] | null;
+};
+
 export type MandateLike = {
-  subjectManifest: unknown;
+  subject: MandatePinLike;
   isLive: boolean;
   revokedAt?: string | null;
   expiresAt?: string | null;
@@ -15,30 +22,31 @@ export type MandateLike = {
 
 export type MandateSubject = { identifier: string; version: string | null };
 
-export const mandateSubject = (mandate: Pick<MandateLike, "subjectManifest">): MandateSubject => {
-  const manifest =
-    mandate.subjectManifest && typeof mandate.subjectManifest === "object"
-      ? (mandate.subjectManifest as Record<string, unknown>)
-      : {};
-  return {
-    identifier: typeof manifest.identifier === "string" ? manifest.identifier : "Unknown app",
-    version: typeof manifest.version === "string" ? manifest.version : null,
-  };
-};
+export const mandateSubject = (mandate: Pick<MandateLike, "subject">): MandateSubject => ({
+  identifier: mandate.subject.identifier ?? "Any app",
+  version: mandate.subject.version ?? null,
+});
 
 /** `identifier:version`, the way lok names clients. */
-export const mandateLabel = (mandate: Pick<MandateLike, "subjectManifest">): string => {
+export const mandateLabel = (mandate: Pick<MandateLike, "subject">): string => {
   const { identifier, version } = mandateSubject(mandate);
   return version ? `${identifier}:${version}` : identifier;
 };
 
-/** The scopes the grantor approved: the ceiling for every provisioned client. */
-export const mandateScopes = (mandate: Pick<MandateLike, "subjectManifest">): string[] => {
-  const manifest = mandate.subjectManifest as { scopes?: unknown } | null;
-  return Array.isArray(manifest?.scopes)
-    ? manifest.scopes.filter((scope): scope is string => typeof scope === "string")
-    : [];
-};
+/** The scopes the grantor approved: the ceiling for every client signed in under it. */
+export const mandateScopes = (mandate: Pick<MandateLike, "subject">): string[] => [
+  ...(mandate.subject.scopes ?? []),
+];
+
+/**
+ * Who signs the app in: the agent app a deployer mandate names, or whoever
+ * holds a keyed mandate's key (recognised by its first characters).
+ */
+export const mandateHolder = (mandate: {
+  agentIdentifier?: string | null;
+  keyPrefix: string;
+}): string =>
+  mandate.agentIdentifier ?? (mandate.keyPrefix ? `the holder of key ${mandate.keyPrefix}…` : "the key holder");
 
 export type MandateStatus = "live" | "revoked" | "expired" | "paused";
 

@@ -5,7 +5,6 @@ import { manifest } from "./manifest";
 // its manifest declares.
 
 export const LokUser = smartOf(manifest, "@lok/user");
-export const LokRedeemToken = smartOf(manifest, "@lok/redeemtoken");
 export const LokGroup = smartOf(manifest, "@lok/group");
 export const LokClient = smartOf(manifest, "@lok/client");
 export const LokDevice = smartOf(manifest, "@lok/device");

@@ -10,6 +10,14 @@ mutation RevokeMandate($id: ID!) {
   }
 }
 
-mutation ReleaseMandateClient($clientId: String!) {
-  releaseMandateClient(input: { clientId: $clientId })
+# One device's key under a standing agent mandate this app holds; the key is
+# shown only in this answer (lok keeps its hash). Used to provision a device
+# over Bluetooth.
+mutation IssueChildMandateKey($input: IssueChildMandateKeyInput!) {
+  issueChildMandateKey(input: $input) {
+    key
+    mandate {
+      ...DetailMandate
+    }
+  }
 }

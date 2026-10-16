@@ -108,6 +108,8 @@ export type Client = {
   kind: ClientKind;
   /** The logo of the release. This should be a url to a logo that can be used to represent the release. */
   logo?: Maybe<MediaStore>;
+  /** The mandate this client logs in with, if it logs in with a key. */
+  mandate?: Maybe<Mandate>;
   /** The mappings of the client. A mapping is a mapping of a service to a service instance. This is used to configure the hub. */
   mappings: Array<ServiceInstanceMapping>;
   /** A human-readable label for the client that folds in the app, version, operator and device — e.g. `com.example.app:v0.1.1 by Johannes on my-laptop`. */
@@ -247,23 +249,23 @@ export type CreateInviteInput = {
   roles?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
-/** Pre-authorize an agent app to provision clients of a subject app that act as you. */
+/** Pre-authorize an agent app to issue mandate keys for a subject app, acting as you. */
 export type CreateMandateInput = {
-  /** Identifier of the app allowed to provision (e.g. a deployer). */
+  /** Identifier of the app allowed to issue keys (e.g. a deployer). */
   agent: Scalars['String']['input'];
-  /** Only an agent running on this device may provision. */
+  /** Only an agent running on this device may issue. */
   agentDeviceId?: InputMaybe<Scalars['String']['input']>;
-  /** Only an agent acting as this user may provision. */
+  /** Only an agent acting as this user may issue. */
   agentUser?: InputMaybe<Scalars['ID']['input']>;
   /** Opaque binding for the approving service (e.g. a release digest). */
   attestation?: InputMaybe<Scalars['String']['input']>;
-  /** Stop new provisioning after this many days (1–365). Null means until revoked. */
+  /** The mandate (and every key issued under it) stops working after this many days (1–365). Null: as long as your app. */
   expiresInDays?: InputMaybe<Scalars['Int']['input']>;
-  /** The hub provisioned clients compose against. Defaults to the calling client's hub. */
+  /** The hub the subject composes against. Defaults to the calling client's hub. */
   hub?: InputMaybe<Scalars['ID']['input']>;
-  /** The subject app. Its scopes and requirements are the ceiling for every provisioned client; deviceId is ignored. */
+  /** The subject app. Its scopes and requirements are the ceiling for every key issued under it, and may not exceed your app's own; deviceId is ignored. */
   manifest: ManifestInput;
-  /** How many clients may exist under the mandate at once. */
+  /** How many live keys may exist under the mandate at once. */
   maxClients?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -292,17 +294,6 @@ export type DeclineInviteInput = {
 
 export type DeclineMembershipRequestInput = {
   id: Scalars['ID']['input'];
-};
-
-export type DeleteRedeemTokenInput = {
-  id: Scalars['ID']['input'];
-};
-
-export type DevelopmentClientInput = {
-  hub?: InputMaybe<Scalars['ID']['input']>;
-  layers?: InputMaybe<Array<Scalars['String']['input']>>;
-  manifest: ManifestInput;
-  role?: InputMaybe<ClientRole>;
 };
 
 /** Device(id, node_id, name, organization) */
@@ -583,6 +574,41 @@ export type InviteOrdering =
   { createdAt: Ordering; id?: never; }
   |  { createdAt?: never; id: Ordering; };
 
+/** Issue a mandate key for one instance of a mandate's subject (called by the mandate's agent). */
+export type IssueChildMandateKeyInput = {
+  /** Unique per instance: one key logs in one client per device. */
+  deviceId: Scalars['String']['input'];
+  /** The key stops working after this many days. Null: as long as the mandate. */
+  expiresInDays?: InputMaybe<Scalars['Int']['input']>;
+  label?: InputMaybe<Scalars['String']['input']>;
+  mandate: Scalars['ID']['input'];
+};
+
+/** Issue a mandate key for an app, acting as you. It is capped at your app's own scopes and dies with your app. */
+export type IssueMandateKeyInput = {
+  /** Whether a client logging in with the key may ask for a mesh key. */
+  allowMesh?: Scalars['Boolean']['input'];
+  /** Let every release of the app log in with the key, not only the manifest's version. */
+  anyVersion?: Scalars['Boolean']['input'];
+  /** The key stops working after this many days (1–30). */
+  expiresInDays: Scalars['Int']['input'];
+  /** The hub the app composes against. Defaults to the calling client's hub. */
+  hub?: InputMaybe<Scalars['ID']['input']>;
+  label?: InputMaybe<Scalars['String']['input']>;
+  /** The app the key logs in. Identifier, version and deviceId (when given) must match exactly; scopes and requirements are a ceiling. */
+  manifest: ManifestInput;
+  /** On how many devices the key may log in. Null: unlimited. */
+  maxClients?: InputMaybe<Scalars['Int']['input']>;
+};
+
+/** A freshly issued mandate and its key. The key is shown only here, once. */
+export type IssuedMandateKey = {
+  __typename?: 'IssuedMandateKey';
+  /** The mandate key. Hand it to the app as FAKTS_MANDATE_KEY; lok keeps only its hash. */
+  key: Scalars['String']['output'];
+  mandate: Mandate;
+};
+
 /** A Layer is a network through which service instances can be reached (e.g. the public web, a tailnet, a VPN, or a docker network). Instance aliases are resolved relative to the layer they belong to. */
 export type Layer = {
   __typename?: 'Layer';
@@ -617,44 +643,147 @@ export type LinkingRequestInput = {
   port: Scalars['String']['input'];
 };
 
-/** A standing authorization: the grantor lets an agent app provision clients of a subject app that act as the grantor. */
+/** A standing authority to act as the grantor, inside one hub, up to a pinned app. Whoever holds its key logs in as the grantor (a keyed mandate), or the agent app it names may issue keyed mandates under it (an agent mandate). It dies with whoever issued it. */
 export type Mandate = {
   __typename?: 'Mandate';
-  /** If set, only an agent running on this device may provision. */
+  /** If set, only an agent running on this device may issue. */
   agentDevice?: Maybe<Device>;
-  /** The app allowed to provision under this mandate. */
-  agentIdentifier: Scalars['String']['output'];
-  /** If set, only an agent acting as this user may provision. */
+  /** The app allowed to issue keys under this mandate. Null for a keyed mandate. */
+  agentIdentifier?: Maybe<Scalars['String']['output']>;
+  /** If set, only an agent acting as this user may issue. */
   agentUser?: Maybe<User>;
+  /** Whether a client logging in with the key may ask for a mesh key. */
+  allowMesh: Scalars['Boolean']['output'];
   /** Opaque binding set by the approving service (e.g. a release digest). */
   attestation: Scalars['String']['output'];
-  /** The clients currently provisioned under this mandate. */
+  /** The keyed mandates the agent issued under this one. */
+  children: Array<Mandate>;
+  /** Who may use the mandate. */
+  claimant: MandateClaimant;
+  /** The clients logged in with the key, one per device. */
   clients: Array<Client>;
   createdAt: Scalars['DateTime']['output'];
-  /** After this, no new clients may be provisioned. */
+  /** After this the mandate no longer works. Null: as long as its issuer. */
   expiresAt?: Maybe<Scalars['DateTime']['output']>;
-  /** The user the provisioned clients act as. */
+  /** The user the clients act as. */
   grantor: User;
-  /** The hub provisioned clients compose against. */
+  /** The hub the clients compose against. */
   hub: Hub;
   id: Scalars['ID']['output'];
-  /** Whether the agent may still provision under this mandate. */
+  /** Whether the mandate still works. */
   isLive: Scalars['Boolean']['output'];
-  /** How many clients may be provisioned at once. Null means unlimited. */
+  /** The app that issued this mandate. */
+  issuingClient?: Maybe<Client>;
+  /** The first characters of the key, to recognise it by. Empty for an agent mandate. */
+  keyPrefix: Scalars['String']['output'];
+  /** A human name for the mandate. */
+  label: Scalars['String']['output'];
+  /** When the key was last exchanged for a token. */
+  lastUsedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** Keyed: on how many devices the key may log in. Agent: how many live keys may be issued under it. Null means unlimited. */
   maxClients?: Maybe<Scalars['Int']['output']>;
-  /** When the grantor withdrew the mandate; its clients were deleted then. */
+  /** Who issued the mandate. */
+  origin: MandateOrigin;
+  /** The agent mandate this one was issued under. */
+  parent?: Maybe<Mandate>;
+  /** Why the mandate was withdrawn. */
+  revocationReason?: Maybe<MandateRevocation>;
+  /** When the mandate was withdrawn; its clients were deleted then. */
   revokedAt?: Maybe<Scalars['DateTime']['output']>;
-  /** The approved subject: identifier, version, and the scope/requirement ceilings. */
-  subjectManifest: Scalars['JSON']['output'];
+  /** The app the mandate admits, and the ceilings it puts on it. */
+  subject: MandatePin;
 };
 
 
-/** A standing authorization: the grantor lets an agent app provision clients of a subject app that act as the grantor. */
+/** A standing authority to act as the grantor, inside one hub, up to a pinned app. Whoever holds its key logs in as the grantor (a keyed mandate), or the agent app it names may issue keyed mandates under it (an agent mandate). It dies with whoever issued it. */
+export type MandateChildrenArgs = {
+  filters?: InputMaybe<MandateFilter>;
+  ordering?: Array<MandateOrdering>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+/** A standing authority to act as the grantor, inside one hub, up to a pinned app. Whoever holds its key logs in as the grantor (a keyed mandate), or the agent app it names may issue keyed mandates under it (an agent mandate). It dies with whoever issued it. */
 export type MandateClientsArgs = {
   filters?: InputMaybe<ClientFilter>;
   ordering?: Array<ClientOrdering>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
+
+/** Who may use a mandate. */
+export enum MandateClaimant {
+  Agent = 'AGENT',
+  Key = 'KEY'
+}
+
+/**
+ * A standing authority to act as the grantor, inside one hub, up to a pinned manifest.
+ *
+ * Every headless login goes through one. Who may use it is the *claimant*:
+ *
+ * - ``key``: whoever holds the mandate key exchanges it at the token endpoint
+ *   (``urn:fakts:grant-type:mandate-key``) for an access token of a client acting as
+ *   the grantor. Only the key's SHA-256 is stored. There is no refresh chain: the
+ *   client runs the grant again when its access token expires, and every grant
+ *   re-checks the mandate.
+ * - ``agent``: the app named by ``agent_identifier`` (a deployer) may issue keyed
+ *   child mandates under it, one per instance it runs. kabinet's release approvals
+ *   are agent mandates.
+ *
+ * Who issued it is the *origin*, and a mandate dies with its issuer: the grantor
+ * membership, the issuing client (``issuing_client``), the parent agent mandate
+ * (``parent``), the hub that asked for it, or the deployment config entry
+ * (``config_name``) that names it. Deletions cascade; revocations are pushed down
+ * to every child by ``fakts.services.mandates.revoke_mandate``.
+ */
+export type MandateFilter = {
+  AND?: InputMaybe<MandateFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<MandateFilter>;
+  OR?: InputMaybe<MandateFilter>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  live?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MandateOrdering =
+  { createdAt: Ordering; id?: never; lastUsedAt?: never; }
+  |  { createdAt?: never; id: Ordering; lastUsedAt?: never; }
+  |  { createdAt?: never; id?: never; lastUsedAt: Ordering; };
+
+/** Who issued a mandate. A mandate dies with its issuer. */
+export enum MandateOrigin {
+  Agent = 'AGENT',
+  Client = 'CLIENT',
+  Config = 'CONFIG',
+  Hub = 'HUB',
+  Member = 'MEMBER'
+}
+
+/** The ceiling a mandate puts on the apps that log in under it. A null field is open. */
+export type MandatePin = {
+  __typename?: 'MandatePin';
+  /** The device. Null: any device. */
+  deviceId?: Maybe<Scalars['String']['output']>;
+  /** The app. Null: fixed by the first app that logs in. */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The most requirements an app may ask for. Null: any. */
+  requirements?: Maybe<Array<RequirementPin>>;
+  /** The most scopes an app may ask for. Null: the organization's. */
+  scopes?: Maybe<Array<Scalars['String']['output']>>;
+  /** The release. Null: every release. */
+  version?: Maybe<Scalars['String']['output']>;
+};
+
+/** Why a mandate stopped working. */
+export enum MandateRevocation {
+  IssuerRevoked = 'ISSUER_REVOKED',
+  OrganizationRevoked = 'ORGANIZATION_REVOKED',
+  ParentRevoked = 'PARENT_REVOKED',
+  RemovedFromConfig = 'REMOVED_FROM_CONFIG',
+  Revoked = 'REVOKED',
+  Superseded = 'SUPERSEDED'
+}
 
 export type ManifestInput = {
   authors?: Array<Scalars['String']['input']>;
@@ -766,21 +895,18 @@ export type Mutation = {
   addUserToOrganization: Membership;
   approveMembershipRequest: Membership;
   cancelInvite: Invite;
-  createDevelopmentalClient: Client;
   createGroupProfile: GroupProfile;
   createInvite: Invite;
   createMandate: Mandate;
   createOrganization: Organization;
   createProfile: Profile;
-  createRedeemToken: RedeemToken;
   createServiceInstance: ServiceInstance;
   declineInvite: Invite;
   declineMembershipRequest: MembershipRequest;
-  deleteRedeemToken: Scalars['ID']['output'];
+  issueChildMandateKey: IssuedMandateKey;
+  issueMandateKey: IssuedMandateKey;
   notifyUser: Scalars['Boolean']['output'];
-  provision: RedeemToken;
   registerComChannel: ComChannel;
-  releaseMandateClient: Scalars['String']['output'];
   render: Scalars['Fakt']['output'];
   requestMediaUpload: PresignedPostCredentials;
   requestMembership: Scalars['Boolean']['output'];
@@ -819,11 +945,6 @@ export type MutationCancelInviteArgs = {
 };
 
 
-export type MutationCreateDevelopmentalClientArgs = {
-  input: DevelopmentClientInput;
-};
-
-
 export type MutationCreateGroupProfileArgs = {
   input: CreateGroupProfileInput;
 };
@@ -849,11 +970,6 @@ export type MutationCreateProfileArgs = {
 };
 
 
-export type MutationCreateRedeemTokenArgs = {
-  input: RedeemTokenInput;
-};
-
-
 export type MutationCreateServiceInstanceArgs = {
   input: CreateServiceInstanceInput;
 };
@@ -869,8 +985,13 @@ export type MutationDeclineMembershipRequestArgs = {
 };
 
 
-export type MutationDeleteRedeemTokenArgs = {
-  input: DeleteRedeemTokenInput;
+export type MutationIssueChildMandateKeyArgs = {
+  input: IssueChildMandateKeyInput;
+};
+
+
+export type MutationIssueMandateKeyArgs = {
+  input: IssueMandateKeyInput;
 };
 
 
@@ -879,18 +1000,8 @@ export type MutationNotifyUserArgs = {
 };
 
 
-export type MutationProvisionArgs = {
-  input: ProvisionInput;
-};
-
-
 export type MutationRegisterComChannelArgs = {
   input: RegisterComChannelInput;
-};
-
-
-export type MutationReleaseMandateClientArgs = {
-  input: ReleaseMandateClientInput;
 };
 
 
@@ -1082,15 +1193,6 @@ export type Profile = {
   name?: Maybe<Scalars['String']['output']>;
 };
 
-/** Mint a single-use credential for one instance of a mandate's subject. */
-export type ProvisionInput = {
-  /** Unique per provisioned instance: a client's identity includes its device, so instances sharing one would replace each other. */
-  deviceId: Scalars['String']['input'];
-  mandate: Scalars['ID']['input'];
-  /** How long the token stays redeemable (default 60, at most 1440). */
-  ttlMinutes?: InputMaybe<Scalars['Int']['input']>;
-};
-
 export type PublicSource = {
   __typename?: 'PublicSource';
   /** The kind of the public source. E.g. 'github' */
@@ -1132,20 +1234,16 @@ export type Query = {
   layer: Layer;
   layers: Array<Layer>;
   mandate: Mandate;
-  mandateToken: RedeemToken;
-  /** Mandates you granted, or (as an agent app) may provision under. Org admins see all. */
+  /** Mandates you granted, your app issued, or (as an agent app) you may issue under or did. Org admins see all. */
   mandates: Array<Mandate>;
   me: User;
   message: SystemMessage;
   myActiveMessages: Array<SystemMessage>;
   myManagedClients: Array<Client>;
-  myRedeemTokens: Array<RedeemToken>;
   mycontext: Context;
   mygroups: Array<Group>;
   organization: Organization;
   organizations: Array<Organization>;
-  redeemToken: RedeemToken;
-  redeemTokens: Array<RedeemToken>;
   release: Release;
   releases: Array<Release>;
   role: Role;
@@ -1267,12 +1365,9 @@ export type QueryMandateArgs = {
 };
 
 
-export type QueryMandateTokenArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
 export type QueryMandatesArgs = {
+  filters?: InputMaybe<MandateFilter>;
+  ordering?: Array<MandateOrdering>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -1295,18 +1390,6 @@ export type QueryOrganizationArgs = {
 export type QueryOrganizationsArgs = {
   filters?: InputMaybe<OrganizationFilter>;
   ordering?: Array<OrganizationOrdering>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-export type QueryRedeemTokenArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QueryRedeemTokensArgs = {
-  filters?: InputMaybe<RedeemTokenFilter>;
-  ordering?: Array<RedeemTokenOrdering>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -1388,61 +1471,6 @@ export type QueryUsersArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/**
- * A redeem token is a token that can be used to redeem the rights to create
- * a client. It is used to give the recipient the right to create a client.
- *
- * If the token is not redeemed within the expires_at time, it will be invalid.
- * If the token has been redeemed, but the manifest has changed, the token will be invalid.
- */
-export type RedeemToken = {
-  __typename?: 'RedeemToken';
-  /** The client that this redeem token belongs to. */
-  client?: Maybe<Client>;
-  /** When this token stops being redeemable. Null means never. */
-  expiresAt?: Maybe<Scalars['DateTime']['output']>;
-  id: Scalars['ID']['output'];
-  /** The mandate this token was provisioned under, if any. */
-  mandate?: Maybe<Mandate>;
-  /** How many times this token may be redeemed. Null means unlimited. */
-  maxRedemptions?: Maybe<Scalars['Int']['output']>;
-  /** The manifest this token was pre-authorized for at mint time, or null for an unpinned token. A redeem must match its identifier, version and device_id exactly and may only request a subset of its scopes and requirements. */
-  pinnedManifest?: Maybe<Scalars['JSON']['output']>;
-  /** How many times this token has been redeemed so far. */
-  redemptionCount: Scalars['Int']['output'];
-  /** The token of the redeem token */
-  token: Scalars['String']['output'];
-  /** The user that this redeem token belongs to. */
-  user: User;
-};
-
-/**
- * A redeem token is a token that can be used to redeem the rights to create
- * a client. It is used to give the recipient the right to create a client.
- *
- * If the token is not redeemed within the expires_at time, it will be invalid.
- * If the token has been redeemed, but the manifest has changed, the token will be invalid.
- */
-export type RedeemTokenFilter = {
-  AND?: InputMaybe<RedeemTokenFilter>;
-  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
-  NOT?: InputMaybe<RedeemTokenFilter>;
-  OR?: InputMaybe<RedeemTokenFilter>;
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  search?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type RedeemTokenInput = {
-  expiresInDays?: InputMaybe<Scalars['Int']['input']>;
-  manifest: ManifestInput;
-  maxRedemptions?: InputMaybe<Scalars['Int']['input']>;
-  token?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type RedeemTokenOrdering =
-  { createdAt: Ordering; id?: never; }
-  |  { createdAt?: never; id: Ordering; };
-
 export type RegisterComChannelInput = {
   token: Scalars['String']['input'];
 };
@@ -1475,11 +1503,6 @@ export type ReleaseClientsArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-export type ReleaseMandateClientInput = {
-  /** The OAuth client id of a client provisioned under a mandate. */
-  clientId: Scalars['String']['input'];
-};
-
 export type ReleaseOrdering =
   { id: Ordering; name?: never; }
   |  { id?: never; name: Ordering; };
@@ -1508,6 +1531,13 @@ export type RequirementInput = {
   key: Scalars['String']['input'];
   optional?: Scalars['Boolean']['input'];
   service: Scalars['String']['input'];
+};
+
+/** A requirement as a mandate pins it. */
+export type RequirementPin = {
+  __typename?: 'RequirementPin';
+  key: Scalars['String']['output'];
+  service: Scalars['String']['output'];
 };
 
 export type RevokeMandateInput = {
@@ -2063,7 +2093,7 @@ export type LayerFragment = { __typename?: 'Layer', id: string, name: string, id
 
 export type ListLayerFragment = { __typename?: 'Layer', id: string, name: string, identifier: any, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
-export type ListMandateFragment = { __typename?: 'Mandate', id: string, agentIdentifier: string, subjectManifest: any, attestation: string, maxClients?: number | null, createdAt: any, expiresAt?: any | null, revokedAt?: any | null, isLive: boolean, grantor: { __typename?: 'User', id: string, username: string }, agentDevice?: { __typename?: 'Device', id: string, deviceId: string, name?: string | null } | null, agentUser?: { __typename?: 'User', id: string, username: string } | null, clients: Array<{ __typename?: 'Client', id: string, clientId: string, name: string, node?: { __typename?: 'Device', id: string, name?: string | null } | null }> };
+export type ListMandateFragment = { __typename?: 'Mandate', id: string, label: string, keyPrefix: string, claimant: MandateClaimant, origin: MandateOrigin, agentIdentifier?: string | null, attestation: string, maxClients?: number | null, createdAt: any, expiresAt?: any | null, revokedAt?: any | null, isLive: boolean, subject: { __typename?: 'MandatePin', identifier?: string | null, version?: string | null, deviceId?: string | null, scopes?: Array<string> | null }, grantor: { __typename?: 'User', id: string, username: string }, agentDevice?: { __typename?: 'Device', id: string, deviceId: string, name?: string | null } | null, agentUser?: { __typename?: 'User', id: string, username: string } | null, clients: Array<{ __typename?: 'Client', id: string, clientId: string, name: string, node?: { __typename?: 'Device', id: string, name?: string | null } | null }> };
 
 export type DetailMandateFragment = (
   { __typename?: 'Mandate', hub: { __typename?: 'Hub', id: string, name: string, identifier: any } }
@@ -2082,13 +2112,6 @@ export type OrganizationFragment = { __typename?: 'Organization', id: string, na
 export type ListOrganizationFragment = { __typename?: 'Organization', id: string, name: string, slug: string, brandHue?: number | null, brandChroma?: number | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
 export type ProfileFragment = { __typename?: 'Profile', id: string, name?: string | null, bio?: string | null, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null };
-
-export type ListRedeemTokenFragment = { __typename?: 'RedeemToken', id: string, token: string, user: { __typename?: 'User', id: string, email?: string | null }, client?: { __typename?: 'Client', id: string, name: string, release?: { __typename?: 'Release', version: any, app: { __typename?: 'App', identifier: any } } | null } | null };
-
-export type DetailRedeemTokenFragment = (
-  { __typename?: 'RedeemToken' }
-  & ListRedeemTokenFragment
-);
 
 export type DetailReleaseFragment = { __typename?: 'Release', id: string, version: any, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null, app: (
     { __typename?: 'App' }
@@ -2163,16 +2186,6 @@ export type DetailUserFragment = { __typename?: 'User', id: string, username: st
 export type MeUserFragment = { __typename?: 'User', id: string, username: string, email?: string | null, firstName?: string | null, lastName?: string | null, avatar?: string | null };
 
 export type UserChipFragment = { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } };
-
-export type CreateClientMutationVariables = Exact<{
-  identifier: Scalars['String']['input'];
-  version: Scalars['String']['input'];
-  scopes: Array<Scalars['String']['input']> | Scalars['String']['input'];
-  logo?: InputMaybe<Scalars['String']['input']>;
-}>;
-
-
-export type CreateClientMutation = { __typename?: 'Mutation', createDevelopmentalClient: { __typename?: 'Client', id: string } };
 
 export type UpdateDeviceMutationVariables = Exact<{
   input: UpdateDeviceInput;
@@ -2254,12 +2267,15 @@ export type RevokeMandateMutation = { __typename?: 'Mutation', revokeMandate: (
     & DetailMandateFragment
   ) };
 
-export type ReleaseMandateClientMutationVariables = Exact<{
-  clientId: Scalars['String']['input'];
+export type IssueChildMandateKeyMutationVariables = Exact<{
+  input: IssueChildMandateKeyInput;
 }>;
 
 
-export type ReleaseMandateClientMutation = { __typename?: 'Mutation', releaseMandateClient: string };
+export type IssueChildMandateKeyMutation = { __typename?: 'Mutation', issueChildMandateKey: { __typename?: 'IssuedMandateKey', key: string, mandate: (
+      { __typename?: 'Mandate' }
+      & DetailMandateFragment
+    ) } };
 
 export type UpdateMembershipColorsMutationVariables = Exact<{
   input: UpdateMembershipColorsInput;
@@ -2341,13 +2357,6 @@ export type UpdateUserProfileMutation = { __typename?: 'Mutation', updateProfile
     { __typename?: 'Profile' }
     & ProfileFragment
   ) };
-
-export type CreateRedeemTokenMutationVariables = Exact<{
-  input: RedeemTokenInput;
-}>;
-
-
-export type CreateRedeemTokenMutation = { __typename?: 'Mutation', createRedeemToken: { __typename?: 'RedeemToken', id: string, token: string } };
 
 export type RequestMediaUploadMutationVariables = Exact<{
   key: Scalars['String']['input'];
@@ -2592,6 +2601,11 @@ export type GetMandateQuery = { __typename?: 'Query', mandate: (
     & DetailMandateFragment
   ) };
 
+export type StandingMandatesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type StandingMandatesQuery = { __typename?: 'Query', mandates: Array<{ __typename?: 'Mandate', id: string, agentIdentifier?: string | null, claimant: MandateClaimant, subject: { __typename?: 'MandatePin', identifier?: string | null, version?: string | null }, parent?: { __typename?: 'Mandate', id: string } | null }> };
+
 export type MembershipRequestsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -2635,27 +2649,6 @@ export type OrganizationOptionsQueryVariables = Exact<{
 
 
 export type OrganizationOptionsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Organization', value: string, label: string }> };
-
-export type RedeemTokensQueryVariables = Exact<{
-  filters?: InputMaybe<RedeemTokenFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type RedeemTokensQuery = { __typename?: 'Query', redeemTokens: Array<(
-    { __typename?: 'RedeemToken' }
-    & ListRedeemTokenFragment
-  )> };
-
-export type GetRedeemTokenQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetRedeemTokenQuery = { __typename?: 'Query', redeemToken: (
-    { __typename?: 'RedeemToken' }
-    & DetailRedeemTokenFragment
-  ) };
 
 export type ReleasesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3228,8 +3221,17 @@ export const ListLayerFragmentDoc = gql`
 export const ListMandateFragmentDoc = gql`
     fragment ListMandate on Mandate {
   id
+  label
+  keyPrefix
+  claimant
+  origin
   agentIdentifier
-  subjectManifest
+  subject {
+    identifier
+    version
+    deviceId
+    scopes
+  }
   attestation
   maxClients
   createdAt
@@ -3282,31 +3284,6 @@ export const MembershipRequestFragmentDoc = gql`
   }
 }
     `;
-export const ListRedeemTokenFragmentDoc = gql`
-    fragment ListRedeemToken on RedeemToken {
-  id
-  token
-  user {
-    id
-    email
-  }
-  client {
-    id
-    name
-    release {
-      version
-      app {
-        identifier
-      }
-    }
-  }
-}
-    `;
-export const DetailRedeemTokenFragmentDoc = gql`
-    fragment DetailRedeemToken on RedeemToken {
-  ...ListRedeemToken
-}
-    ${ListRedeemTokenFragmentDoc}`;
 export const ListClientFragmentDoc = gql`
     fragment ListClient on Client {
   id
@@ -3541,44 +3518,6 @@ export const UserChipFragmentDoc = gql`
   }
 }
     `;
-export const CreateClientDocument = gql`
-    mutation CreateClient($identifier: String!, $version: String!, $scopes: [String!]!, $logo: String) {
-  createDevelopmentalClient(
-    input: {manifest: {identifier: $identifier, version: $version, scopes: $scopes, logo: $logo}}
-  ) {
-    id
-  }
-}
-    `;
-export type CreateClientMutationFn = Apollo.MutationFunction<CreateClientMutation, CreateClientMutationVariables>;
-
-/**
- * __useCreateClientMutation__
- *
- * To run a mutation, you first call `useCreateClientMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateClientMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createClientMutation, { data, loading, error }] = useCreateClientMutation({
- *   variables: {
- *      identifier: // value for 'identifier'
- *      version: // value for 'version'
- *      scopes: // value for 'scopes'
- *      logo: // value for 'logo'
- *   },
- * });
- */
-export function useCreateClientMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateClientMutation, CreateClientMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<CreateClientMutation, CreateClientMutationVariables>(CreateClientDocument, options);
-      }
-export type CreateClientMutationHookResult = ReturnType<typeof useCreateClientMutation>;
-export type CreateClientMutationResult = Apollo.MutationResult<CreateClientMutation>;
-export type CreateClientMutationOptions = Apollo.BaseMutationOptions<CreateClientMutation, CreateClientMutationVariables>;
 export const UpdateDeviceDocument = gql`
     mutation UpdateDevice($input: UpdateDeviceInput!) {
   updateDevice(input: $input) {
@@ -3843,37 +3782,42 @@ export function useRevokeMandateMutation(baseOptions?: ApolloReactHooks.Mutation
 export type RevokeMandateMutationHookResult = ReturnType<typeof useRevokeMandateMutation>;
 export type RevokeMandateMutationResult = Apollo.MutationResult<RevokeMandateMutation>;
 export type RevokeMandateMutationOptions = Apollo.BaseMutationOptions<RevokeMandateMutation, RevokeMandateMutationVariables>;
-export const ReleaseMandateClientDocument = gql`
-    mutation ReleaseMandateClient($clientId: String!) {
-  releaseMandateClient(input: {clientId: $clientId})
+export const IssueChildMandateKeyDocument = gql`
+    mutation IssueChildMandateKey($input: IssueChildMandateKeyInput!) {
+  issueChildMandateKey(input: $input) {
+    key
+    mandate {
+      ...DetailMandate
+    }
+  }
 }
-    `;
-export type ReleaseMandateClientMutationFn = Apollo.MutationFunction<ReleaseMandateClientMutation, ReleaseMandateClientMutationVariables>;
+    ${DetailMandateFragmentDoc}`;
+export type IssueChildMandateKeyMutationFn = Apollo.MutationFunction<IssueChildMandateKeyMutation, IssueChildMandateKeyMutationVariables>;
 
 /**
- * __useReleaseMandateClientMutation__
+ * __useIssueChildMandateKeyMutation__
  *
- * To run a mutation, you first call `useReleaseMandateClientMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useReleaseMandateClientMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useIssueChildMandateKeyMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useIssueChildMandateKeyMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [releaseMandateClientMutation, { data, loading, error }] = useReleaseMandateClientMutation({
+ * const [issueChildMandateKeyMutation, { data, loading, error }] = useIssueChildMandateKeyMutation({
  *   variables: {
- *      clientId: // value for 'clientId'
+ *      input: // value for 'input'
  *   },
  * });
  */
-export function useReleaseMandateClientMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ReleaseMandateClientMutation, ReleaseMandateClientMutationVariables>) {
+export function useIssueChildMandateKeyMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<IssueChildMandateKeyMutation, IssueChildMandateKeyMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<ReleaseMandateClientMutation, ReleaseMandateClientMutationVariables>(ReleaseMandateClientDocument, options);
+        return ApolloReactHooks.useMutation<IssueChildMandateKeyMutation, IssueChildMandateKeyMutationVariables>(IssueChildMandateKeyDocument, options);
       }
-export type ReleaseMandateClientMutationHookResult = ReturnType<typeof useReleaseMandateClientMutation>;
-export type ReleaseMandateClientMutationResult = Apollo.MutationResult<ReleaseMandateClientMutation>;
-export type ReleaseMandateClientMutationOptions = Apollo.BaseMutationOptions<ReleaseMandateClientMutation, ReleaseMandateClientMutationVariables>;
+export type IssueChildMandateKeyMutationHookResult = ReturnType<typeof useIssueChildMandateKeyMutation>;
+export type IssueChildMandateKeyMutationResult = Apollo.MutationResult<IssueChildMandateKeyMutation>;
+export type IssueChildMandateKeyMutationOptions = Apollo.BaseMutationOptions<IssueChildMandateKeyMutation, IssueChildMandateKeyMutationVariables>;
 export const UpdateMembershipColorsDocument = gql`
     mutation UpdateMembershipColors($input: UpdateMembershipColorsInput!) {
   updateMembershipColors(input: $input) {
@@ -4167,40 +4111,6 @@ export function useUpdateUserProfileMutation(baseOptions?: ApolloReactHooks.Muta
 export type UpdateUserProfileMutationHookResult = ReturnType<typeof useUpdateUserProfileMutation>;
 export type UpdateUserProfileMutationResult = Apollo.MutationResult<UpdateUserProfileMutation>;
 export type UpdateUserProfileMutationOptions = Apollo.BaseMutationOptions<UpdateUserProfileMutation, UpdateUserProfileMutationVariables>;
-export const CreateRedeemTokenDocument = gql`
-    mutation CreateRedeemToken($input: RedeemTokenInput!) {
-  createRedeemToken(input: $input) {
-    id
-    token
-  }
-}
-    `;
-export type CreateRedeemTokenMutationFn = Apollo.MutationFunction<CreateRedeemTokenMutation, CreateRedeemTokenMutationVariables>;
-
-/**
- * __useCreateRedeemTokenMutation__
- *
- * To run a mutation, you first call `useCreateRedeemTokenMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCreateRedeemTokenMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [createRedeemTokenMutation, { data, loading, error }] = useCreateRedeemTokenMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useCreateRedeemTokenMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateRedeemTokenMutation, CreateRedeemTokenMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<CreateRedeemTokenMutation, CreateRedeemTokenMutationVariables>(CreateRedeemTokenDocument, options);
-      }
-export type CreateRedeemTokenMutationHookResult = ReturnType<typeof useCreateRedeemTokenMutation>;
-export type CreateRedeemTokenMutationResult = Apollo.MutationResult<CreateRedeemTokenMutation>;
-export type CreateRedeemTokenMutationOptions = Apollo.BaseMutationOptions<CreateRedeemTokenMutation, CreateRedeemTokenMutationVariables>;
 export const RequestMediaUploadDocument = gql`
     mutation RequestMediaUpload($key: String!, $datalayer: String!, $contentType: String) {
   requestMediaUpload(
@@ -5085,6 +4995,49 @@ export function useGetMandateLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetMandateQueryHookResult = ReturnType<typeof useGetMandateQuery>;
 export type GetMandateLazyQueryHookResult = ReturnType<typeof useGetMandateLazyQuery>;
 export type GetMandateQueryResult = Apollo.QueryResult<GetMandateQuery, GetMandateQueryVariables>;
+export const StandingMandatesDocument = gql`
+    query StandingMandates {
+  mandates(filters: {live: true}) {
+    id
+    agentIdentifier
+    claimant
+    subject {
+      identifier
+      version
+    }
+    parent {
+      id
+    }
+  }
+}
+    `;
+
+/**
+ * __useStandingMandatesQuery__
+ *
+ * To run a query within a React component, call `useStandingMandatesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useStandingMandatesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useStandingMandatesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useStandingMandatesQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<StandingMandatesQuery, StandingMandatesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<StandingMandatesQuery, StandingMandatesQueryVariables>(StandingMandatesDocument, options);
+      }
+export function useStandingMandatesLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<StandingMandatesQuery, StandingMandatesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<StandingMandatesQuery, StandingMandatesQueryVariables>(StandingMandatesDocument, options);
+        }
+export type StandingMandatesQueryHookResult = ReturnType<typeof useStandingMandatesQuery>;
+export type StandingMandatesLazyQueryHookResult = ReturnType<typeof useStandingMandatesLazyQuery>;
+export type StandingMandatesQueryResult = Apollo.QueryResult<StandingMandatesQuery, StandingMandatesQueryVariables>;
 export const MembershipRequestsDocument = gql`
     query MembershipRequests($id: ID!) {
   organization(id: $id) {
@@ -5268,77 +5221,6 @@ export function useOrganizationOptionsLazyQuery(baseOptions?: ApolloReactHooks.L
 export type OrganizationOptionsQueryHookResult = ReturnType<typeof useOrganizationOptionsQuery>;
 export type OrganizationOptionsLazyQueryHookResult = ReturnType<typeof useOrganizationOptionsLazyQuery>;
 export type OrganizationOptionsQueryResult = Apollo.QueryResult<OrganizationOptionsQuery, OrganizationOptionsQueryVariables>;
-export const RedeemTokensDocument = gql`
-    query RedeemTokens($filters: RedeemTokenFilter, $pagination: OffsetPaginationInput) {
-  redeemTokens(filters: $filters, pagination: $pagination) {
-    ...ListRedeemToken
-  }
-}
-    ${ListRedeemTokenFragmentDoc}`;
-
-/**
- * __useRedeemTokensQuery__
- *
- * To run a query within a React component, call `useRedeemTokensQuery` and pass it any options that fit your needs.
- * When your component renders, `useRedeemTokensQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useRedeemTokensQuery({
- *   variables: {
- *      filters: // value for 'filters'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useRedeemTokensQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<RedeemTokensQuery, RedeemTokensQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<RedeemTokensQuery, RedeemTokensQueryVariables>(RedeemTokensDocument, options);
-      }
-export function useRedeemTokensLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RedeemTokensQuery, RedeemTokensQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<RedeemTokensQuery, RedeemTokensQueryVariables>(RedeemTokensDocument, options);
-        }
-export type RedeemTokensQueryHookResult = ReturnType<typeof useRedeemTokensQuery>;
-export type RedeemTokensLazyQueryHookResult = ReturnType<typeof useRedeemTokensLazyQuery>;
-export type RedeemTokensQueryResult = Apollo.QueryResult<RedeemTokensQuery, RedeemTokensQueryVariables>;
-export const GetRedeemTokenDocument = gql`
-    query GetRedeemToken($id: ID!) {
-  redeemToken(id: $id) {
-    ...DetailRedeemToken
-  }
-}
-    ${DetailRedeemTokenFragmentDoc}`;
-
-/**
- * __useGetRedeemTokenQuery__
- *
- * To run a query within a React component, call `useGetRedeemTokenQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetRedeemTokenQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetRedeemTokenQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetRedeemTokenQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetRedeemTokenQuery, GetRedeemTokenQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetRedeemTokenQuery, GetRedeemTokenQueryVariables>(GetRedeemTokenDocument, options);
-      }
-export function useGetRedeemTokenLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetRedeemTokenQuery, GetRedeemTokenQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetRedeemTokenQuery, GetRedeemTokenQueryVariables>(GetRedeemTokenDocument, options);
-        }
-export type GetRedeemTokenQueryHookResult = ReturnType<typeof useGetRedeemTokenQuery>;
-export type GetRedeemTokenLazyQueryHookResult = ReturnType<typeof useGetRedeemTokenLazyQuery>;
-export type GetRedeemTokenQueryResult = Apollo.QueryResult<GetRedeemTokenQuery, GetRedeemTokenQueryVariables>;
 export const ReleasesDocument = gql`
     query Releases {
   releases {

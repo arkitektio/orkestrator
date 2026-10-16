@@ -9,3 +9,20 @@ query GetMandate($id: ID!) {
     ...DetailMandate
   }
 }
+
+# The live mandates, to find the standing one an agent app issues device keys
+# under (matched by agent, subject app and having no parent).
+query StandingMandates {
+  mandates(filters: { live: true }) {
+    id
+    agentIdentifier
+    claimant
+    subject {
+      identifier
+      version
+    }
+    parent {
+      id
+    }
+  }
+}

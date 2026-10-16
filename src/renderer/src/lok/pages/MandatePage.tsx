@@ -1,21 +1,17 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { LOK_HELP } from "../help";
-import { toast } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
-import { Button } from "@/core/ui/button";
 import Timestamp from "@/core/ui/timestamp";
 import { LokClient, LokMandate, LokUser } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
-import { LogOut } from "lucide-react";
 import React from "react";
 import {
   DetailMandateFragment,
-  GetMandateDocument,
   useGetMandateQuery,
-  useReleaseMandateClientMutation,
 } from "../api/graphql";
 import {
   MANDATE_STATUS_LABEL,
+  mandateHolder,
   mandateScopes,
   mandateStatus,
   mandateSubject,
@@ -29,48 +25,22 @@ const Fact = ({ label, children }: { label: string; children: React.ReactNode })
 );
 
 /**
- * The instances signed in under the mandate. Signing one out deletes its lok
- * client (`releaseMandateClient`); the deployer can provision a new one while
- * the mandate is live.
+ * The instances signed in under the mandate: one client per device. lok has
+ * no per-client sign-out; revoking the mandate signs them all out.
  */
 const MandateClients = ({ mandate }: { mandate: DetailMandateFragment }) => {
-  const [release, { loading }] = useReleaseMandateClientMutation({
-    refetchQueries: [{ query: GetMandateDocument, variables: { id: mandate.id } }],
-  });
-
   if (mandate.clients.length === 0) return null;
-
-  const signOut = async (clientId: string) => {
-    try {
-      await release({ variables: { clientId } });
-      toast.success("Signed out");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not sign the instance out");
-    }
-  };
 
   return (
     <section className="flex flex-col gap-2">
       <h3 className="text-base font-semibold tracking-tight">Running as {mandate.grantor.username}</h3>
       <div className="flex flex-col divide-y rounded-md border">
         {mandate.clients.map((client) => (
-          <div key={client.id} className="group flex items-center justify-between gap-3 px-3 py-2">
-            <div className="min-w-0">
-              <LokClient.DetailLink object={client} className="block truncate text-sm hover:text-primary">
-                {client.name}
-              </LokClient.DetailLink>
-              <p className="truncate font-mono text-xs text-muted-foreground">{client.clientId}</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={loading}
-              className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-              onClick={() => signOut(client.clientId)}
-            >
-              <LogOut className="size-3.5" />
-              Sign out
-            </Button>
+          <div key={client.id} className="min-w-0 px-3 py-2">
+            <LokClient.DetailLink object={client} className="block truncate text-sm hover:text-primary">
+              {client.name}
+            </LokClient.DetailLink>
+            <p className="truncate font-mono text-xs text-muted-foreground">{client.clientId}</p>
           </div>
         ))}
       </div>
@@ -79,14 +49,15 @@ const MandateClients = ({ mandate }: { mandate: DetailMandateFragment }) => {
 };
 
 /**
- * One mandate: an agent app (a deployer) may start one exact app version
- * signed in as the grantor, within the scopes approved here.
+ * One mandate: an agent app (a deployer) or the holder of its key may sign
+ * the pinned app in as the grantor, within the scopes approved here.
  */
 export const MandatePage = asDetailQueryRoute(useGetMandateQuery, ({ data }) => {
   const mandate = data.mandate;
   const subject = mandateSubject(mandate);
   const status = mandateStatus(mandate);
   const scopes = mandateScopes(mandate);
+  const holder = mandateHolder(mandate);
 
   return (
     <LokMandate.ModelPage help={LOK_HELP.mandate} object={mandate} title={subject.identifier}>
@@ -112,7 +83,7 @@ export const MandatePage = asDetailQueryRoute(useGetMandateQuery, ({ data }) => 
           <p className="text-sm text-muted-foreground">
             {status === "revoked"
               ? "Withdrawn. Every instance started under it was signed out."
-              : `${mandate.agentIdentifier} may start this app signed in as ${mandate.grantor.username}.`}
+              : `Signs this app in as ${mandate.grantor.username}, started by ${holder}.`}
           </p>
         </header>
 
@@ -122,9 +93,15 @@ export const MandatePage = asDetailQueryRoute(useGetMandateQuery, ({ data }) => 
               {mandate.grantor.username}
             </LokUser.DetailLink>
           </Fact>
-          <Fact label="Started by">
-            <span className="font-mono text-xs">{mandate.agentIdentifier}</span>
+          <Fact label="Signed in by">
+            <span className="font-mono text-xs">{holder}</span>
           </Fact>
+          {mandate.label && <Fact label="Label">{mandate.label}</Fact>}
+          {mandate.subject.deviceId && (
+            <Fact label="Pinned to device">
+              <span className="font-mono text-xs">{mandate.subject.deviceId}</span>
+            </Fact>
+          )}
           {mandate.agentDevice && (
             <Fact label="Only on device">{mandate.agentDevice.name ?? mandate.agentDevice.deviceId}</Fact>
           )}

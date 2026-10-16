@@ -14,8 +14,6 @@ import MandatePage from "./pages/MandatePage";
 import MandatesPage from "./pages/MandatesPage";
 import MePage from "./pages/MePage";
 import RecordPage from "./pages/RecordPage";
-import RedeemTokenPage from "./pages/RedeemTokenPage";
-import RedeemTokensPage from "./pages/RedeemTokensPage";
 import ReleasePage from "./pages/ReleasePage";
 import ServiceInstancePage from "./pages/ServiceInstancePage";
 import ServicePage from "./pages/ServicePage";
@@ -56,8 +54,6 @@ export const LokNextModule: React.FC<Props> = () => {
         <Route path="services/:id" element={<ServicePage />} />
         <Route path="mandates" element={<MandatesPage />} />
         <Route path="mandates/:id" element={<MandatePage />} />
-        <Route path="redeemtokens" element={<RoleRoute roles={ADMIN_ROLE}><RedeemTokensPage /></RoleRoute>} />
-        <Route path="redeemtokens/:id" element={<RedeemTokenPage />} />
         <Route
           path="serviceinstances/:id"
           element={<ServiceInstancePage />}

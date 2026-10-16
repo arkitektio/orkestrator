@@ -63,7 +63,6 @@ describe("host registries", () => {
       "createorganization",
       "createproject",
       "createprotocoleventcategory",
-      "createredeemtoken",
       "createrelationcategory",
       "createrepo",
       "createserviceinstance",

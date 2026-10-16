@@ -152,7 +152,6 @@ export const LOK_PAGINATED_FIELDS: PaginatedFieldMap = {
   invites: ["filters", "ordering"],
   layers: ["filters", "ordering"],
   organizations: ["filters", "ordering"],
-  redeemTokens: ["filters", "ordering"],
   roles: ["filters", "ordering"],
   serviceInstances: ["filters", "ordering"],
   serviceReleases: ["filters", "ordering"],

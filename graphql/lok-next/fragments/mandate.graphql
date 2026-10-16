@@ -1,9 +1,19 @@
-# A standing authorization: the grantor lets an agent app (a deployer)
-# provision clients of one exact app version that act as the grantor.
+# A standing authorization to act as the grantor, up to a pinned app: either
+# an agent app (a deployer) issues keys under it, or whoever holds its key
+# signs the app in (a provisioned device, CI).
 fragment ListMandate on Mandate {
   id
+  label
+  keyPrefix
+  claimant
+  origin
   agentIdentifier
-  subjectManifest
+  subject {
+    identifier
+    version
+    deviceId
+    scopes
+  }
   attestation
   maxClients
   createdAt
