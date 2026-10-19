@@ -395,7 +395,13 @@ func (n *node) dial(ctx context.Context, network, addr string) (net.Conn, error)
 			addr = net.JoinHostPort(host+"."+suffix, port)
 		}
 	}
-	return n.srv.Dial(ctx, network, addr)
+	conn, err := n.srv.Dial(ctx, network, addr)
+	if err != nil {
+		// Both proxies answer a failed dial with one generic reply (SOCKS
+		// "general failure"), so this line is the only place the reason survives.
+		logf("[%s] dial %s %s: %v", n.id, network, addr, err)
+	}
+	return conn, err
 }
 
 func (n *node) port() int { return n.proxy }
