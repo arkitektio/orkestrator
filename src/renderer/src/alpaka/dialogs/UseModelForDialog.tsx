@@ -1,11 +1,11 @@
 import { DefaultKind, useUseModelForMutation } from "@/alpaka/api/graphql";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { ChoicesField } from "@/core/forms/ChoicesField";
 import { Button } from "@/core/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 
 type UseModelForFormData = {
   kind: DefaultKind;
@@ -22,28 +22,18 @@ export const UseModelForDialog = (props: { model: string }) => {
   const [useModelFor, { loading }] = useUseModelForMutation();
   const { closeDialog } = useDialog();
 
-  const handleUseModelFor = async (data: UseModelForFormData) => {
-    try {
-      await useModelFor({
+  const { submit: handleUseModelFor, submitting } = useDialogSubmit(
+    (data: UseModelForFormData) =>
+      useModelFor({
         variables: {
           input: {
             model: props.model,
             kind: data.kind,
           },
         },
-      });
-      toast.success(
-        `Model set for ${
-          USE_CASE_OPTIONS.find((option) => option.value === data.kind)?.label ??
-          data.kind
-        }`,
-      );
-      closeDialog();
-    } catch (error) {
-      toast.error("Failed to set model for use case");
-      console.error(error);
-    }
-  };
+      }),
+    { errorTitle: "Couldn't set the model for this use" },
+  );
 
   const form = useForm<UseModelForFormData>({
     defaultValues: {
@@ -72,11 +62,11 @@ export const UseModelForDialog = (props: { model: string }) => {
             type="button"
             variant="outline"
             onClick={closeDialog}
-            disabled={loading}
+            disabled={loading || submitting}
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading || submitting}>
             {loading ? "Setting..." : "Set"}
           </Button>
         </DialogFooter>

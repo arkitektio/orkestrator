@@ -1,10 +1,12 @@
-import { useGraphQlFormDialog } from "@/core/dialogs/FormDialog";
+import { useFormDialog } from "@/core/dialogs/FormDialog";
 import { ChoicesField } from "@/core/forms/ChoicesField";
 import { StringField } from "@/core/forms/StringField";
 import { Button } from "@/core/ui/button";
 import { DialogFooter } from "@/core/ui/dialog";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Form } from "@/core/ui/form";
 import { enumToOptions } from "@/core/util/utils";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   CreateProviderMutationVariables,
@@ -13,9 +15,10 @@ import {
 } from "../api/graphql";
 
 export default () => {
-  const [add] = useCreateProviderMutation();
-
-  const dialog = useGraphQlFormDialog(add);
+  const [add, { loading }] = useCreateProviderMutation();
+  // The sheet closes once the provider exists; a refusal stays in it, by the button.
+  const { onSubmit } = useFormDialog();
+  const [failure, setFailure] = useState<unknown>(null);
 
   const form = useForm<CreateProviderMutationVariables["input"]>({
     defaultValues: {
@@ -30,13 +33,19 @@ export default () => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(async (data) => {
-            dialog({
-              variables: {
-                input: {
-                  ...data,
+            setFailure(null);
+            try {
+              const result = await add({
+                variables: {
+                  input: {
+                    ...data,
+                  },
                 },
-              },
-            });
+              });
+              onSubmit(result.data);
+            } catch (e) {
+              setFailure(e);
+            }
           })}
         >
           <div className="grid grid-cols-1 gap-2">
@@ -58,8 +67,11 @@ export default () => {
             />
           </div>
 
+          <ErrorNote error={failure} title="Couldn't add the provider" className="mt-2" />
           <DialogFooter className="mt-2">
-            <Button type="submit">Create</Button>
+            <Button type="submit" disabled={loading}>
+              Create
+            </Button>
           </DialogFooter>
         </form>
       </Form>

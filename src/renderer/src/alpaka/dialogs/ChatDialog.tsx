@@ -1,5 +1,6 @@
 import { Role, useChatMutation } from "@/alpaka/api/graphql";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { BoldPlugin, CodePlugin, ItalicPlugin, UnderlinePlugin } from "@platejs/basic-nodes/react";
@@ -12,7 +13,6 @@ import {
 } from "lucide-react";
 import { Plate, PlateContent, usePlateEditor } from "platejs/react";
 import { useState } from "react";
-import { toast } from "@/core/notify";
 
 export const ChatDialog = (props: { model: string }) => {
   const [chat, { loading }] = useChatMutation();
@@ -40,11 +40,12 @@ export const ChatDialog = (props: { model: string }) => {
   }
 
 
-  const handleChat = async () => {
-    const message = serialize(editor.children);
-    if (!message) return;
+  // The answer shows in the dialog, and so does a failure; it stays open for the next message.
+  const { submit: handleChat } = useDialogSubmit(
+    async () => {
+      const message = serialize(editor.children);
+      if (!message) return;
 
-    try {
       const result = await chat({
         variables: {
           input: {
@@ -59,18 +60,13 @@ export const ChatDialog = (props: { model: string }) => {
         },
       });
 
-      if (result.data?.chat?.choices?.[0]?.message?.content) {
-        setResponse(result.data.chat.choices[0].message.content);
-        toast.success("Chat response received");
-        editor.tf.setValue([{ type: 'p', children: [{ text: '' }] }]);
-      } else {
-        toast.error("No response received");
-      }
-    } catch (error) {
-      toast.error("Failed to chat with model");
-      console.error(error);
-    }
-  };
+      const content = result.data?.chat?.choices?.[0]?.message?.content;
+      if (!content) throw new Error("The model answered with nothing.");
+      setResponse(content);
+      editor.tf.setValue([{ type: 'p', children: [{ text: '' }] }]);
+    },
+    { errorTitle: "Couldn't chat with the model", close: false },
+  );
 
 
   const handleKeyDown = (event: React.KeyboardEvent) => {

@@ -79,7 +79,7 @@ import {
   startPending,
   type PendingMessage,
 } from "./pendingMessages";
-import { toast } from "@/core/notify";
+import { reportError, toast } from "@/core/notify";
 import { v4 as uuidv4 } from "uuid";
 import { assignErrorMessage } from "@/rekuest/lib/assignError";
 
@@ -600,16 +600,14 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
   const handleCancelTask = async (id: string, _reference: string) => {
     if (!id) return;
     try {
-      toast.info("Canceling replyer...");
       await cancelAssign({
         variables: {
           input: { task: id },
         },
       });
       toast.success("Cancellation requested");
-    } catch (err: any) {
-      console.error(err);
-      toast.error(`Failed to cancel: ${err.message || err}`);
+    } catch (err) {
+      reportError(err, "Couldn't cancel the reply");
     }
   };
 
@@ -751,9 +749,8 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
       } else {
         setPendingMessages((prev) => dropPending(prev, localId));
       }
-    } catch (error: any) {
-      console.error(error);
-      toast.error(`Failed to send message: ${error.message || error}`);
+    } catch (error) {
+      reportError(error, "Couldn't send the message");
       // The row goes with the failure: the toast is the record, and a ghost
       // that never resolves would read as sent.
       setPendingMessages((prev) => dropPending(prev, localId));

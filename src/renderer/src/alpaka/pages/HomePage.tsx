@@ -20,7 +20,7 @@ import {
 import React, { useMemo, useState } from "react";
 import { HomeEmpty, HomeSection, ModuleHome } from "@/core/layout/ModuleHome";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import { useCreateRoomMutation, useRecentRoomsQuery } from "../api/graphql";
 import {
   greeting,
@@ -61,7 +61,7 @@ const useStartChat = () => {
       });
       if (data?.createRoom) navigate(roomLink(data.createRoom.id, prompt?.trim()));
     } catch (e) {
-      toast.error(`Could not start a chat: ${(e as Error).message}`);
+      reportError(e, "Couldn't start a chat");
     }
   };
 

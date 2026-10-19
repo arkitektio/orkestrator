@@ -1,4 +1,5 @@
 import { useCreateRoomMutation } from "@/alpaka/api/graphql";
+import { describeError } from "@/core/notify";
 import { useTabActions } from "@/core/tabs/TabsProvider";
 import { AlpakaRoom } from "@/core/linkers";
 import React from "react";
@@ -143,7 +144,8 @@ export const useTalkAbout = (options: {
           navigate(to);
         }
       } catch (nextError) {
-        const message = nextError instanceof Error ? nextError.message : "Failed to create room";
+        // One sentence for the row it shows on; the raw text stays out of it.
+        const { message } = describeError(nextError);
         setError(message);
         onError?.(message);
       } finally {
