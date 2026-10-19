@@ -3,3 +3,15 @@ mutation CreateInvite($input: CreateInviteInput!) {
     ...Invite
   }
 }
+
+mutation ShareCollaboration($input: CreateInviteInput!) {
+  createInvite(input: $input) {
+    ...CollaborationLink
+  }
+}
+
+mutation RevokeCollaborationLink($id: ID!) {
+  cancelInvite(input: { id: $id, revokeShared: true }) {
+    id
+  }
+}

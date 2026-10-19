@@ -43,3 +43,19 @@ fragment Invite on Invite {
   createdAt
   expiresAt
 }
+
+# A link that grants collaborations: what it grants, and how much of it is used.
+fragment CollaborationLink on Invite {
+  id
+  inviteUrl
+  expiresAt
+  uses
+  maxUses
+  mesh
+  valid
+  collaborations {
+    instance
+    collaboration
+    roles
+  }
+}
