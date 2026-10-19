@@ -1,12 +1,12 @@
 import { ElektroGuard } from "@/elektro/api/funcs";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { cn } from "@/core/util/utils";
 import { useState } from "react";
-import { toast } from "@/core/notify";
 import {
   useCreateAnnotationLayerMutation,
   useCreateEventsLayerMutation,
@@ -86,20 +86,22 @@ const AddExperimentLayer = ({ experiment }: AddExperimentLayerFormProps) => {
 
   const loading = [arrays, sparse, tables, collections].some((q) => q.loading);
 
-  const create = async (id: string | null = picked) => {
-    if (!id) return;
-    try {
+  // The new layer appears in the scene behind the dialog: no success toast.
+  const { submit } = useDialogSubmit(
+    async (id: string) => {
       if (kind === "trace") await createTrace({ variables: { input: { experiment, dataset: id } } });
       if (kind === "spikes") await createSpikes({ variables: { input: { experiment, sparseDataset: id } } });
       if (kind === "events") await createEvents({ variables: { input: { experiment, tableDataset: id } } });
       if (kind === "annotation") {
         await createAnnotation({ variables: { input: { experiment, annotationCollection: id } } });
       }
-      toast.success("Layer added");
-      closeDialog();
-    } catch (error) {
-      toast.error(`Could not add the layer: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    },
+    { errorTitle: "Couldn't add the layer" },
+  );
+
+  const create = async (id: string | null = picked) => {
+    if (!id) return;
+    await submit(id);
   };
 
   return (

@@ -1,12 +1,12 @@
 import { ElektroGuard } from "@/elektro/api/funcs";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import { useDebounce } from "@/core/util/hooks/use-debounce";
 import { cn } from "@/core/util/utils";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "@/core/notify";
 import {
   useClockPickerQuery,
   useCreateClockOffsetMutation,
@@ -87,19 +87,21 @@ const PlaceExperimentLayer = ({ source, world, worldName, label }: PlaceExperime
   const [rate, setRate] = useState("");
   const [tStart, setTStart] = useState("0 s");
 
-  const submit = async () => {
-    try {
+  // The layer reconciles in place behind the dialog: no success toast.
+  const { submit: write } = useDialogSubmit(
+    async () => {
       if (mode === "offset") {
-        if (!offsetClock) return;
-        await createOffset({ variables: { input: { clock: offsetClock, onto: world, offset } } });
+        await createOffset({ variables: { input: { clock: offsetClock!, onto: world, offset } } });
       } else {
         await createLaw({ variables: { input: { source, clock: lawClock, samplingRate: rate, tStart } } });
       }
-      toast.success("Placement written — the layer reconciles in place");
-      closeDialog();
-    } catch (error) {
-      toast.error(`Could not place the layer: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    },
+    { errorTitle: "Couldn't place the layer" },
+  );
+
+  const submit = async () => {
+    if (mode === "offset" && !offsetClock) return;
+    await write();
   };
 
   const busy = offsetState.loading || lawState.loading;

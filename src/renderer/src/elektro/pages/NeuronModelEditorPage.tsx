@@ -1,6 +1,6 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { ElektroNeuronModel } from "@/core/linkers";
-import { toast } from "@/core/notify";
+import { reportError, toast } from "@/core/notify";
 import { useNavigate } from "react-router-dom";
 import {
   useAddModelsToWorkspaceMutation,
@@ -16,6 +16,10 @@ import {
 } from "../lib/modelSerialization";
 import { ELEKTRO_HELP } from "../help";
 
+/** The first message, and how many more there are (the toast shows two lines). */
+const summarize = (messages: string[]) =>
+  messages.length > 1 ? `${messages[0]} (and ${messages.length - 1} more)` : messages[0];
+
 export const NeuronModelEditorPage = asDetailQueryRoute(
   useDetailNeuronModelQuery,
   ({ data }) => {
@@ -24,17 +28,23 @@ export const NeuronModelEditorPage = asDetailQueryRoute(
     const navigate = useNavigate();
 
     const handleSave = async (config: EditableModelConfig) => {
-      // Refuse to send a structurally broken model; surface the reason.
+      // Refuse to send a structurally broken model; surface the reason, in
+      // one toast however many problems there are.
       const validation = validateModelConfig(config);
       if (!validation.ok) {
-        validation.errors.slice(0, 3).forEach(e => toast.error(e.message));
-        if (validation.errors.length > 3) {
-          toast.error(`…and ${validation.errors.length - 3} more validation error(s).`);
-        }
+        toast.error("Couldn't save the model", {
+          id: "neuron-model-validation",
+          description: summarize(validation.errors.map((e) => e.message)),
+        });
         return;
       }
       // Non-blocking concerns (e.g. disconnected roots) — warn but proceed.
-      validation.warnings.slice(0, 3).forEach(w => toast.warning(w.message));
+      if (validation.warnings.length > 0) {
+        toast.warning("The model has warnings", {
+          id: "neuron-model-validation",
+          description: summarize(validation.warnings.map((w) => w.message)),
+        });
+      }
 
       try {
         const result = await createModel({
@@ -48,8 +58,8 @@ export const NeuronModelEditorPage = asDetailQueryRoute(
             }
           }
         });
+        // Opening the saved model below is the confirmation.
         const newId = result.data?.createNeuronModel?.id;
-        toast.success("Model saved successfully!");
 
         // If a workspace is active, the freshly saved model joins it. Best-effort:
         // a workspace error must never block saving the model itself.
@@ -63,8 +73,7 @@ export const NeuronModelEditorPage = asDetailQueryRoute(
             });
             setActiveModel(newId);
           } catch (workspaceError) {
-            console.error(workspaceError);
-            toast.error("Saved, but could not add the model to the active workspace");
+            reportError(workspaceError, "Saved, but couldn't add the model to the active workspace");
           }
         }
 
@@ -73,8 +82,7 @@ export const NeuronModelEditorPage = asDetailQueryRoute(
           navigate(ElektroNeuronModel.linkBuilder(newId));
         }
       } catch (e) {
-        console.error(e);
-        toast.error("Failed to save model");
+        reportError(e, "Couldn't save the model");
       }
     };
 
