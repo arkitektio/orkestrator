@@ -19,6 +19,8 @@ import { createStore } from "zustand/vanilla";
 export type AgentRoomStatus = "connecting" | "connected" | "error";
 
 type Entry = {
+  /** Which acquisition this is: a retry of an entry released and acquired again is stale. */
+  generation: number;
   refs: number;
   status: AgentRoomStatus;
   error: string | null;
@@ -62,8 +64,14 @@ const settle = (agentId: string) => {
   }
 };
 
-const join = async (agentId: string, connector: Connector, attempt = 0): Promise<void> => {
-  if (!entry(agentId)) return;
+let generations = 0;
+
+const join = async (agentId: string, connector: Connector, generation: number, attempt = 0): Promise<void> => {
+  const current = () => {
+    const found = entry(agentId);
+    return found && found.generation === generation ? found : undefined;
+  };
+  if (!current()) return;
   update(agentId, { status: "connecting", error: null });
   const room = new Room({ adaptiveStream: true });
   try {
@@ -71,13 +79,13 @@ const join = async (agentId: string, connector: Connector, attempt = 0): Promise
     await room.connect(connector.url, token, { autoSubscribe: false });
   } catch (error) {
     void room.disconnect();
-    if (!entry(agentId)) return;
+    if (!current()) return;
     update(agentId, { status: "error", error: error instanceof Error ? error.message : String(error) });
     const delay = Math.min(1_000 * 2 ** attempt, MAX_BACKOFF_MS);
-    setTimeout(() => void join(agentId, connector, attempt + 1), delay);
+    setTimeout(() => void join(agentId, connector, generation, attempt + 1), delay);
     return;
   }
-  if (!entry(agentId)) {
+  if (!current()) {
     // Nobody watches any more: it was released while connecting.
     void room.disconnect();
     return;
@@ -85,10 +93,10 @@ const join = async (agentId: string, connector: Connector, attempt = 0): Promise
   // A track the agent (re)publishes is subscribed when someone wants it.
   room.on(RoomEvent.TrackPublished, () => settle(agentId));
   room.on(RoomEvent.Disconnected, () => {
-    if (entry(agentId)?.room !== room) return;
+    if (current()?.room !== room) return;
     update(agentId, { room: null });
     // Still watched: join again (a server restart, a dropped network).
-    void join(agentId, connector);
+    void join(agentId, connector, generation);
   });
   update(agentId, { room, status: "connected", error: null });
   settle(agentId);
@@ -105,10 +113,11 @@ const acquire = (agentId: string, connector: Connector) => {
     update(agentId, { refs: current.refs + 1 });
     return;
   }
+  const generation = ++generations;
   agentRooms.setState((state) => ({
-    rooms: { ...state.rooms, [agentId]: { refs: 1, status: "connecting", error: null, room: null, wanted: {} } },
+    rooms: { ...state.rooms, [agentId]: { generation, refs: 1, status: "connecting", error: null, room: null, wanted: {} } },
   }));
-  void join(agentId, connector);
+  void join(agentId, connector, generation);
 };
 
 const release = (agentId: string) => {
