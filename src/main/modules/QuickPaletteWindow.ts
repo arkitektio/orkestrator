@@ -254,7 +254,13 @@ const createQuickBrowserWindow = (): BrowserWindow => {
     },
   });
   window.setAlwaysOnTop(true, "floating");
-  window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // `visibleOnFullScreen` alone makes Electron call `app.dock.hide()` (so a
+  // plain NSWindow can float over full-screen apps), which drops the Dock
+  // icon for good. The panel floats there without it.
+  window.setVisibleOnAllWorkspaces(true, {
+    visibleOnFullScreen: true,
+    skipTransformProcessType: true,
+  });
   // Any link the palette would open as a window goes nowhere: navigation is
   // forwarded to the main window instead.
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
