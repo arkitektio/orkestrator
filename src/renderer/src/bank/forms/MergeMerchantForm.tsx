@@ -1,18 +1,16 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/core/notify";
 import { ListMerchantsDocument, useMergeMerchantsMutation, useSearchMerchantsLazyQuery } from "../api/graphql";
-import { toastText } from "../errors";
+import { asBankError } from "../errors";
 import { BankMerchant } from "../linkers";
 
 /** Fold a merchant into another: aliases, places and transactions move over, it is deleted. */
 export const MergeMerchantForm = (props: { id: string }) => {
-  const { closeDialog } = useDialog();
   const navigate = useNavigate();
   const [searchMerchants] = useSearchMerchantsLazyQuery();
   const [merge, { loading }] = useMergeMerchantsMutation({
@@ -24,19 +22,21 @@ export const MergeMerchantForm = (props: { id: string }) => {
   });
   const form = useForm<{ into: string | null }>({ defaultValues: { into: null } });
 
-  const submit = async ({ into }: { into: string | null }) => {
+  // Opens the merchant it was merged into: that is the confirmation.
+  const { submit: mergeInto } = useDialogSubmit(
+    async (into: string) => {
+      await merge({ variables: { merchant: props.id, into } }).catch((e) => Promise.reject(asBankError(e)));
+      return into;
+    },
+    { errorTitle: "Couldn't merge the merchants", onSuccess: (into) => navigate(BankMerchant.linkBuilder(into)) },
+  );
+
+  const submit = ({ into }: { into: string | null }) => {
     if (!into || into === props.id) {
       form.setError("into", { message: "Pick another merchant" });
       return;
     }
-    try {
-      await merge({ variables: { merchant: props.id, into } });
-      toast.success("Merchants merged");
-      closeDialog();
-      navigate(BankMerchant.linkBuilder(into));
-    } catch (e) {
-      toast.error("Could not merge: " + toastText(e));
-    }
+    return mergeInto(into);
   };
 
   return (

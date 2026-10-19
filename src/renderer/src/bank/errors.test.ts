@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BankErrorCode } from "./api/graphql";
-import { describeError, errorCodeOf, toastText } from "./errors";
+import { asBankError, describeBankError, describeError, errorCodeOf, toastText } from "./errors";
 import { syncBudget } from "./sync";
 
 describe("bank errors", () => {
@@ -28,6 +28,31 @@ describe("bank errors", () => {
       { nextSyncAllowedAt: at },
     );
     expect(text).toMatch(/Try again at/);
+  });
+});
+
+describe("describeBankError", () => {
+  it("words a coded failure from the table and keeps the raw text as details", () => {
+    const apollo = Object.assign(new Error("consent gone"), {
+      graphQLErrors: [{ message: "consent gone", extensions: { code: "CONSENT_EXPIRED" } }],
+      networkError: null,
+    });
+    const described = describeBankError(apollo);
+    expect(described.message).toMatch(/Relink/);
+    expect(described.technical).toMatch(/consent gone/);
+  });
+
+  it("reads an uncoded failure like any other", () => {
+    expect(describeBankError(new Error("boom")).message).toBe("boom");
+  });
+
+  it("rethrows as an error the dialog note takes as it is, and passes an abort through", () => {
+    const wrapped = asBankError({ graphQLErrors: [{ message: "x", extensions: { code: "BANK_UNAVAILABLE" } }] });
+    expect(wrapped).toBeInstanceOf(Error);
+    expect((wrapped as Error).message).toMatch(/not answering/);
+    expect(typeof (wrapped as { technical?: unknown }).technical).toBe("string");
+    const abort = Object.assign(new Error("stop"), { name: "AbortError" });
+    expect(asBankError(abort)).toBe(abort);
   });
 });
 

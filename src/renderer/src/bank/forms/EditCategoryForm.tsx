@@ -31,7 +31,7 @@ type Values = {
 const EditCategory = ({ category }: { category: CategoryFragment }) => {
   const [update, { loading }] = useUpdateCategoryMutation({ refetchQueries: [ListCategoriesDocument] });
   const [searchCategories] = useSearchCategoriesLazyQuery();
-  const submit = useGraphQLDialog(update, { successMessage: "Category saved" });
+  const submit = useGraphQLDialog(update, { errorTitle: "Couldn't save the category" });
 
   const form = useForm<Values>({
     defaultValues: {

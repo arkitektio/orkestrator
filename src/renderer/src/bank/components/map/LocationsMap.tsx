@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { Marker } from "react-map-gl/maplibre";
-import { toast } from "@/core/notify";
 import { MerchantLocationFragment, useUpdateMerchantLocationMutation } from "../../api/graphql";
-import { toastText } from "../../errors";
+import { reportBankErrorAs } from "../../errors";
 import { BaseMap, Bbox, toBounds } from "@/core/map/BaseMap";
 import { MapMarker, MARKER_OFFSET } from "@/core/map/MapMarker";
 
@@ -64,8 +63,7 @@ export const LocationsMap = ({
                 input: { id: location.id, latitude: e.lngLat.lat.toFixed(6), longitude: e.lngLat.lng.toFixed(6) },
               },
             })
-              .then(() => toast.success(`Moved ${location.name}`))
-              .catch((error) => toast.error("Could not move it: " + toastText(error)))
+              .catch(reportBankErrorAs(`Couldn't move ${location.name}`))
           }
         >
           <MapMarker color={color} selected={location.id === selected} title={location.name} />

@@ -26,7 +26,7 @@ type Values = {
 const EditMerchant = ({ merchant }: { merchant: MerchantFragment }) => {
   const [update, { loading }] = useUpdateMerchantMutation();
   const [searchCategories] = useSearchCategoriesLazyQuery();
-  const submit = useGraphQLDialog(update, { successMessage: "Merchant saved" });
+  const submit = useGraphQLDialog(update, { errorTitle: "Couldn't save the merchant" });
   const form = useForm<Values>({
     defaultValues: {
       name: merchant.name,

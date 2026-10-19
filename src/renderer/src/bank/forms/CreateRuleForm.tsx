@@ -42,7 +42,7 @@ export const CreateRuleForm = (props: { category?: string; pattern?: string; fie
     refetchQueries: [ListCategoryRulesDocument, GetCategoryDocument, ListTransactionsDocument],
   });
   const [searchCategories] = useSearchCategoriesLazyQuery();
-  const submit = useGraphQLDialog(create, { successMessage: "Rule created" });
+  const submit = useGraphQLDialog(create, { errorTitle: "Couldn't create the rule" });
 
   const form = useForm<Values>({
     defaultValues: {

@@ -9,7 +9,6 @@ import { Textarea } from "@/core/ui/textarea";
 import { BankAccount, BankMerchant, BankPlace, BankTransaction } from "@/bank/linkers";
 import { ListPlus, MapPin, Store, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "@/core/notify";
 import {
   CategorySource,
   MerchantSource,
@@ -26,7 +25,7 @@ import { TradeBadge } from "../components/TradeBadge";
 import { InfoList } from "@/core/ui/info-list";
 import { MerchantLogo } from "../components/MerchantLogo";
 import { Money } from "../components/Money";
-import { toastText } from "../errors";
+import { reportBankErrorAs } from "../errors";
 import { formatDay, formatIban, formatMoney, toNumber } from "../format";
 import { BANK_HELP } from "../help";
 
@@ -40,9 +39,7 @@ const TransactionPage = asDetailQueryRoute(useGetTransactionQuery, ({ data }) =>
   const [markTransfer, { loading: marking }] = useMarkTransferMutation();
   const [setCategory, { loading: categorizing }] = useCategorizeTransactionsMutation();
   const pick = (category: string) =>
-    setCategory({ variables: { ids: [tx.id], category } }).catch((e) =>
-      toast.error("Could not categorize: " + toastText(e)),
-    );
+    setCategory({ variables: { ids: [tx.id], category } }).catch(reportBankErrorAs("Couldn't categorize the transaction"));
 
   const categorize = () => openDialog("bankcategorize", { ids: [tx.id], category: tx.category?.id }, { size: "small" });
   const setMerchant = () =>
@@ -208,8 +205,8 @@ const TransactionPage = asDetailQueryRoute(useGetTransactionQuery, ({ data }) =>
             checked={tx.isTransfer}
             disabled={marking}
             onCheckedChange={(checked) =>
-              markTransfer({ variables: { input: { id: tx.id, isTransfer: checked } } }).catch((e: Error) =>
-                toast.error(e.message),
+              markTransfer({ variables: { input: { id: tx.id, isTransfer: checked } } }).catch(
+                reportBankErrorAs("Couldn't mark the transfer"),
               )
             }
           />
@@ -218,7 +215,11 @@ const TransactionPage = asDetailQueryRoute(useGetTransactionQuery, ({ data }) =>
           <button
             type="button"
             className="-mt-4 self-start text-xs text-muted-foreground underline-offset-2 hover:underline"
-            onClick={() => markTransfer({ variables: { input: { id: tx.id, isTransfer: null } } })}
+            onClick={() =>
+              markTransfer({ variables: { input: { id: tx.id, isTransfer: null } } }).catch(
+                reportBankErrorAs("Couldn't hand the transfer back to detection"),
+              )
+            }
           >
             Detect automatically again
           </button>
@@ -238,9 +239,9 @@ const TransactionPage = asDetailQueryRoute(useGetTransactionQuery, ({ data }) =>
               className="self-end"
               disabled={savingNote}
               onClick={() =>
-                saveNote({ variables: { input: { id: tx.id, note: note.trim() || null } } })
-                  .then(() => toast.success("Note saved"))
-                  .catch((e: Error) => toast.error(e.message))
+                saveNote({ variables: { input: { id: tx.id, note: note.trim() || null } } }).catch(
+                  reportBankErrorAs("Couldn't save the note"),
+                )
               }
             >
               Save note

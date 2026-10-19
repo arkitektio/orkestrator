@@ -5,7 +5,7 @@ import {
   useCategorizeTransactionsMutation,
   useCategoryCandidatesQuery,
 } from "../api/graphql";
-import { toastText } from "../errors";
+import { reportBankErrorAs } from "../errors";
 import TransactionCard from "./cards/TransactionCard";
 
 /**
@@ -36,7 +36,7 @@ export const CategoryCandidates = ({ category, name }: { category: string; name:
         onClick={() =>
           categorize({ variables: { ids: candidates.map((tx) => tx.id), category } })
             .then(() => toast.success(`${candidates.length} moved to ${name}`))
-            .catch((e) => toast.error("Could not categorize: " + toastText(e)))
+            .catch(reportBankErrorAs("Couldn't categorize the transactions"))
         }
       >
         Move all {candidates.length} here

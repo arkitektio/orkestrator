@@ -19,7 +19,7 @@ import {
 } from "../api/graphql";
 import { useBank } from "../api/funcs";
 import { ProblemBanner } from "../components/ProblemBanner";
-import { toastText } from "../errors";
+import { reportBankErrorAs } from "../errors";
 import { syncBudget } from "../sync";
 import { BalanceChart } from "../components/charts/BalanceChart";
 import { useTransactionFilterBar } from "../components/filter/TransactionFilterBar";
@@ -118,7 +118,7 @@ const AccountPage = asDetailQueryRoute(useGetBankAccountQuery, ({ data, refetch 
                       : "Synced",
                   );
                 })
-                .catch((e) => toast.error(toastText(e, account)))
+                .catch(reportBankErrorAs("Couldn't sync the account", account))
             }
           >
             Sync now

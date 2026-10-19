@@ -1,14 +1,12 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 import { useCategorizeTransactionsMutation, useSearchCategoriesLazyQuery } from "../api/graphql";
 import { CategorySuggestions } from "../components/CategorySuggestions";
-import { toastText } from "../errors";
+import { asBankError } from "../errors";
 
 /**
  * Set (or clear) the category of one or more transactions. Setting it by hand
@@ -17,22 +15,14 @@ import { toastText } from "../errors";
 export const CategorizeForm = (props: { ids: string[]; category?: string | null }) => {
   const [categorize] = useCategorizeTransactionsMutation();
   const [searchCategories] = useSearchCategoriesLazyQuery();
-  const { closeDialog } = useDialog();
-  const [busy, setBusy] = useState(false);
   const form = useForm<{ category: string | null }>({ defaultValues: { category: props.category ?? null } });
 
-  const apply = async (category: string | null) => {
-    setBusy(true);
-    try {
-      await categorize({ variables: { ids: props.ids, category } });
-      toast.success(category ? "Categorized" : "Category cleared");
-      closeDialog();
-    } catch (e) {
-      toast.error("Could not categorize: " + toastText(e));
-    } finally {
-      setBusy(false);
-    }
-  };
+  // The transactions show their category where the dialog was opened from.
+  const { submit: apply, submitting: busy } = useDialogSubmit(
+    (category: string | null) =>
+      categorize({ variables: { ids: props.ids, category } }).catch((e) => Promise.reject(asBankError(e))),
+    { errorTitle: "Couldn't categorize" },
+  );
 
   return (
     <Form {...form}>

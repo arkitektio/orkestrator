@@ -6,7 +6,7 @@ import {
   useCategorizeTransactionsMutation,
   useListTransactionsQuery,
 } from "../api/graphql";
-import { toastText } from "../errors";
+import { reportBankErrorAs } from "../errors";
 import TransactionCard from "./cards/TransactionCard";
 
 const NO_ORDERING: [] = [];
@@ -53,7 +53,7 @@ export const SimilarTransactions = ({
           onClick={() =>
             categorize({ variables: { ids: movable.map((tx) => tx.id), category: category.id } })
               .then(() => toast.success(`${movable.length} moved to ${category.name}`))
-              .catch((e) => toast.error("Could not categorize: " + toastText(e)))
+              .catch(reportBankErrorAs("Couldn't categorize the transactions"))
           }
         >
           Move {movable.length} to {category.name}
