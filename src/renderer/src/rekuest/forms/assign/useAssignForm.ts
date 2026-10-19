@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
+import { useReportValidation } from "@/core/ports/engine/usePortForm";
 import Zod from "zod";
 import { ListDependencyFragment, ResolvedDependencyInput } from "@/rekuest/api/graphql";
 import { createPortResolver } from "@/core/ports/engine/portResolver";
@@ -8,7 +8,6 @@ import type { PortablePort } from "@/core/ports/engine/types";
 import { toPins } from "@/rekuest/lib/dependencyTree";
 import {
   buildZodSchema,
-  extractErrorMessages,
   portHash,
   portToDefaults,
   pruneUnmountedPorts,
@@ -146,6 +145,8 @@ export const useAssignForm = (props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hash, dependencies]);
 
+  const reportValidation = useReportValidation();
+
   const { handleSubmit, ...form } = useForm({
     defaultValues: buildDefaults(),
     mode: props.mode || "onSubmit",
@@ -167,16 +168,11 @@ export const useAssignForm = (props: {
             dependencies: toPins(data.dependencies),
           });
         },
-        (errors) => {
-          const msgs = extractErrorMessages(errors as Record<string, any>);
-          if (msgs.length === 0) toast.error("Please check the form for errors.");
-          else if (msgs.length === 1) toast.error(msgs[0]);
-          else toast.error(`${msgs.length} validation errors — ${msgs.slice(0, 3).join("; ")}${msgs.length > 3 ? "…" : ""}`);
-        },
+        (errors) => reportValidation(errors as Record<string, unknown>),
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [handleSubmit, hash, resolver],
+    [handleSubmit, hash, resolver, reportValidation],
   );
 
   const lastResetKeyRef = useRef<string | null>(null);

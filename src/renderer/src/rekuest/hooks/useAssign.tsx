@@ -17,9 +17,9 @@ import {
 import { toAssignError } from "../lib/assignError";
 
 /**
- * Passed as the mutation's `onError` so the service-wide toast stays quiet:
- * the caller shows the failure once, where the run was started. With an
- * `onError` present Apollo resolves with `errors` instead of rejecting.
+ * Passed as the mutation's `onError`: with one present Apollo resolves with
+ * `errors` instead of rejecting, and `assign` throws them as one
+ * `AssignError` for the caller to show once, where the run was started.
  */
 const reportedByCaller = () => {};
 
@@ -121,10 +121,14 @@ export const useCancelTask = () => {
 
   const cancel = useCallback(
     async (taskId: string) => {
+      // A refusal rejects (no `onError` here): thrown as an `AssignError`,
+      // like an assign's, so every caller reads one shape.
       const mutation = await cancelMutation({
         variables: {
           input: { task: taskId },
         },
+      }).catch((error: unknown) => {
+        throw toAssignError(error);
       });
 
       const task = mutation.data?.cancel;

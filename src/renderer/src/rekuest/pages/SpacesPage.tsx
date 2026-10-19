@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { RekuestSpace } from "@/core/linkers";
 import SpacesList from "../components/lists/SpacesList";
 import { useCreateSpaceMutation } from "../api/graphql";
@@ -16,7 +17,11 @@ const Page = () => {
     <RekuestSpace.ListPage help={REKUEST_HELP.spaces} title={"Spaces"} pageActions={
       <PageAction
         alwaysShow
-        onClick={() => create({ variables: { input: { name: "New Space " + Date.now() } } })}
+        onClick={() =>
+          create({ variables: { input: { name: "New Space " + Date.now() } } }).catch(
+            reportErrorAs("Couldn't create the space"),
+          )
+        }
       >
         Create
       </PageAction>

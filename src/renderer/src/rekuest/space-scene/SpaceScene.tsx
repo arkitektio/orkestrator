@@ -9,8 +9,7 @@ import {
   useSceneNotice,
   useSceneOverlay,
 } from '@/core/blok/renderer/bloks/scene';
-import {formatApolloError} from '@/core/connection/graphql/errorHandler';
-import {toast} from '@/core/notify';
+import {describeError, reportErrorAs, toast} from '@/core/notify';
 import {useSmartDrop} from '@/core/smart/hooks';
 import {Button} from '@/core/ui/button';
 import {Input} from '@/core/ui/input';
@@ -411,8 +410,6 @@ const PanelHeading = ({children}: {children: React.ReactNode}) => (
   </div>
 );
 
-const report = (what: string) => (error: unknown) => toast.error(`${what}: ${formatApolloError(error, 'rekuest')}`);
-
 /** The room with its handles: add 3D views from the list, pick one up and move it. */
 export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
   const placements = space.placements;
@@ -450,7 +447,7 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
         variables: {input: {id: placement.id, affineMatrix}},
         // The view stays where it was let go while the server is told.
         optimisticResponse: {updatePlacement: {...placement, affineMatrix}},
-      }).catch(report('The placement could not be moved'));
+      }).catch(reportErrorAs("Couldn't move the placement"));
     },
     [updatePlacement],
   );
@@ -476,7 +473,7 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
         },
       })
         .then(result => setSelected(result.data?.createPlacement.id ?? null))
-        .catch(report(`${viewName(option.view)} could not be placed`));
+        .catch(reportErrorAs(`Couldn't place ${viewName(option.view)}`));
     },
     [createPlacement, placements, space.id],
   );
@@ -484,7 +481,7 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
   const remove = React.useCallback(
     (placement: SpacePlacementFragment) => {
       setSelected(null);
-      deletePlacement({variables: {id: placement.id}}).catch(report('The placement could not be removed'));
+      deletePlacement({variables: {id: placement.id}}).catch(reportErrorAs("Couldn't remove the placement"));
     },
     [deletePlacement],
   );
@@ -522,7 +519,7 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
             {shown.length === 0 ? (
               <div className="px-2 py-3 text-xs text-muted-foreground">
                 {error
-                  ? `The 3D views could not be loaded: ${formatApolloError(error, 'rekuest')}`
+                  ? `The 3D views could not be loaded. ${describeError(error).message}`
                   : loading
                     ? 'Loading…'
                     : needle

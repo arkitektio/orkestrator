@@ -10,6 +10,7 @@ import {
 import { deriveLiveState } from "@/rekuest/hooks/useTasks";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, Loader, Square, X } from "lucide-react";
+import { reportErrorAs } from "@/core/notify";
 import { memo, useMemo, useState } from "react";
 import {
   eventKindTint,
@@ -75,7 +76,7 @@ const RowControls = ({
           size="icon"
           className="h-5 w-5 text-muted-foreground hover:text-destructive"
           disabled={cancelling}
-          onClick={() => cancel()}
+          onClick={() => cancel().catch(reportErrorAs("Couldn't cancel the task"))}
           aria-label="Cancel task"
           title={cancelling ? "Cancelling…" : "Cancel task"}
         >

@@ -7,8 +7,7 @@ import {
   type BlokRefuseActionHandler,
   type BlokTaskRecord,
 } from '@/core/blok/renderer/runtime';
-import {formatApolloError} from '@/core/connection/graphql/errorHandler';
-import {toast} from '@/core/notify';
+import {describeError, toast} from '@/core/notify';
 import {v4 as uuidv4} from 'uuid';
 import {useAssign} from '@/rekuest/hooks/useAssign';
 import {useLatestTask} from '@/rekuest/hooks/useLatestTask';
@@ -212,7 +211,7 @@ const useMaterializedDispatchAction = (
             reference,
           }),
         ).catch((error: unknown) => {
-          const reason = formatApolloError(error, 'rekuest');
+          const reason = describeError(error).message;
           untrack();
           observe?.({end: 'failed', error: reason});
           resolve();

@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const notifications = vi.fn();
-const cancel = vi.fn();
+const cancel = vi.fn(() => Promise.resolve({}));
 const myTasks = vi.fn();
 
 // Exits wait for an animation that never finishes under fake timers, and the

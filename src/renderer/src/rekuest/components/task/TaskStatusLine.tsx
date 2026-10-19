@@ -1,6 +1,7 @@
 import { Button } from "@/core/ui/button";
 import { Progress } from "@/core/ui/progress";
 import { RekuestTask } from "@/core/linkers";
+import { reportErrorAs } from "@/core/notify";
 import { useMemo } from "react";
 import {
   TaskEventKind,
@@ -83,7 +84,7 @@ export const TaskStatusLine = (props: {
               size="sm"
               className="ml-auto h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
               disabled={cancelling || canceling}
-              onClick={() => cancel()}
+              onClick={() => cancel().catch(reportErrorAs("Couldn't cancel the task"))}
             >
               {canceling ? "Canceling…" : "Cancel"}
             </Button>

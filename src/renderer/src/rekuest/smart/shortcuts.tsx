@@ -4,7 +4,6 @@ import { buildAssignInput } from "@/rekuest/assign";
 import { Badge } from "@/core/ui/badge";
 import { LightningBoltIcon } from "@radix-ui/react-icons";
 import React from "react";
-import { toast } from "@/core/notify";
 import { assignErrorMessage } from "../lib/assignError";
 import { v4 as uuidv4 } from "uuid";
 import { TaskEventFragment, ListShortcutFragment, PortKind } from "@/rekuest/api/graphql";
@@ -30,30 +29,37 @@ import { materializeErrorMessage, resolveRun } from "./materialize";
 
 const getErrorMessage = assignErrorMessage;
 
+/**
+ * A selection the shortcut's arguments cannot take. The menu only offers rows
+ * whose arguments match, so this is a bug: the detail goes to the console, the
+ * row says it could not run.
+ */
+const selectionMismatch = (detail: string, shortcut: { id: string }) => {
+  console.error(`[rekuest] ${detail}`, shortcut.id);
+  return new Error("This shortcut can't take the selected objects.");
+};
+
 const buildShortcutArgs = (
   shortcut: ListShortcutFragment,
   props: SmartContextProps,
-): Record<string, unknown> | null => {
+): Record<string, unknown> => {
   const keys: Record<string, unknown> = {};
 
   if (props.objects.length === 1) {
     const key = shortcut.args?.at(0)?.key;
     if (!key) {
-      toast.error("No key found for self");
-      return null;
+      throw selectionMismatch("No key found for self", shortcut);
     }
     keys[key] = toWire(props.objects[0]);
   }
 
   if (props.objects.length > 1) {
     if (shortcut.args.at(0)?.kind !== PortKind.List) {
-      toast.error("Should be a list but is not");
-      return null;
+      throw selectionMismatch("Should be a list but is not", shortcut);
     }
     const key = shortcut.args?.at(0)?.key;
     if (!key) {
-      toast.error("No key found for self");
-      return null;
+      throw selectionMismatch("No key found for self", shortcut);
     }
     keys[key] = props.objects.map(toWire);
   }
@@ -61,21 +67,18 @@ const buildShortcutArgs = (
   if (props.partners && props.partners.length === 1) {
     const key = shortcut.args?.at(1)?.key;
     if (!key) {
-      toast.error("No key found for partner");
-      return null;
+      throw selectionMismatch("No key found for partner", shortcut);
     }
     keys[key] = toWire(props.partners[0]);
   }
 
   if (props.partners && props.partners.length > 1) {
     if (shortcut.args.at(1)?.kind !== PortKind.List) {
-      toast.error("Should be a list but is not");
-      return null;
+      throw selectionMismatch("Should be a list but is not", shortcut);
     }
     const key = shortcut.args?.at(1)?.key;
     if (!key) {
-      toast.error("No key found for partner");
-      return null;
+      throw selectionMismatch("No key found for partner", shortcut);
     }
     keys[key] = props.partners.map(toWire);
   }
@@ -141,8 +144,13 @@ export const ShortcutButton = (
         }
         setDoing(false);
       }
-      const keys = buildShortcutArgs(shortcut, run);
-      if (!keys) {
+      let keys: Record<string, unknown>;
+      try {
+        keys = buildShortcutArgs(shortcut, run);
+      } catch (error) {
+        const message = getErrorMessage(error);
+        setError(message);
+        onError?.(message);
         return;
       }
 

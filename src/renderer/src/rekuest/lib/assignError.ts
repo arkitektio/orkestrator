@@ -1,5 +1,5 @@
 import { classifyError, type QueryErrorKind } from "@/core/layout/fallbacks/classifyError";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 
 /**
  * A request rekuest refused (assign, cancel), as one sentence a person can
@@ -70,8 +70,5 @@ export const assignErrorMessage = (error: unknown): string =>
  * inline. One `id` per site: a repeat replaces the toast instead of stacking.
  */
 export const notifyAssignError = (error: unknown, options: { id: string; title?: string }) => {
-  toast.error(options.title ?? "Couldn't run the task", {
-    id: options.id,
-    description: assignErrorMessage(error),
-  });
+  reportError(toAssignError(error), { title: options.title ?? "Couldn't run the task", id: options.id });
 };

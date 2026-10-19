@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Button } from "@/core/ui/button";
@@ -291,7 +292,7 @@ export const TPage = asDetailQueryRoute(
                   onClick={() =>
                     resume({
                       variables: { input: { task: data.task.id, step: false } },
-                    })
+                    }).catch(reportErrorAs("Couldn't resume the task"))
                   }
                   className="rounded-r-none"
                 >
@@ -314,7 +315,7 @@ export const TPage = asDetailQueryRoute(
                           variables: {
                             input: { task: data.task.id, step: true },
                           },
-                        })
+                        }).catch(reportErrorAs("Couldn't step the task"))
                       }
                     >
                       Step to next breakpoint
@@ -329,7 +330,9 @@ export const TPage = asDetailQueryRoute(
                 size="sm"
                 variant="outline"
                 onClick={() =>
-                  pause({ variables: { input: { task: data.task.id } } })
+                  pause({ variables: { input: { task: data.task.id } } }).catch(
+                    reportErrorAs("Couldn't pause the task"),
+                  )
                 }
               >
                 Pause
@@ -340,7 +343,7 @@ export const TPage = asDetailQueryRoute(
             {isCancelable(data.task) && (
               <PageAction
                 priority={20}
-                onClick={() => cancel(data.task.id)}
+                onClick={() => cancel(data.task.id).catch(reportErrorAs("Couldn't cancel the task"))}
                 variant={"destructive"}
                 size={"sm"}
               >
@@ -353,7 +356,7 @@ export const TPage = asDetailQueryRoute(
                 onClick={() =>
                   interrupt({
                     variables: { input: { task: data.task.id } },
-                  })
+                  }).catch(reportErrorAs("Couldn't interrupt the task"))
                 }
                 variant={"destructive"}
                 size={"sm"}

@@ -9,7 +9,6 @@ import { PageAction } from "@/core/ui/page-action";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/core/ui/dialog";
 import { MaterializeBlokForm } from "../forms/MaterializeBlokForm";
 import { useState } from "react";
-import { toast } from "@/core/notify";
 import { REKUEST_HELP } from "../help";
 
 export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
@@ -55,7 +54,6 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                             }))}
                           onMaterialized={(_materializedBlok) => {
                                 setOpen(false);
-                                toast.success("Blok Materialized!");
                                 // navigate to the materialized dashboard/blok here if applicable
                             }}
                         />

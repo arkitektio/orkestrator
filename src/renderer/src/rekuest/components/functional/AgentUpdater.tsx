@@ -1,13 +1,11 @@
 import { useRekuest } from "@/rekuest/api/hooks";
 import type { ApolloClient, Reference } from "@apollo/client";
 import { useEffect } from "react";
-import { toast } from "@/core/notify";
 import {
   AgentChangeFragment,
   HydrateAgentDocument,
   HydrateAgentQuery,
   HydrateAgentQueryVariables,
-  useAgentQuery,
   WatchAgentsDocument,
   WatchAgentsSubscription,
   WatchAgentsSubscriptionVariables,
@@ -77,17 +75,6 @@ const hydrateAndInsertAgent = async (client: RekuestClient, id: string) => {
   });
 };
 
-export const AgentToatser = (_props: { id: string }) => {
-  const { data } = useAgentQuery({});
-
-  return (
-    <div className="h-full relative w-full overflow-hidden group p-2">
-      {data?.agent?.name} is now{" "}
-      {data?.agent.connected ? "connected" : "disconnected"}
-    </div>
-  );
-};
-
 export const AgentUpdater = (_props: {}) => {
   const client = useRekuest();
 
@@ -108,14 +95,7 @@ export const AgentUpdater = (_props: {}) => {
           }
 
           if (create) {
-            void hydrateAndInsertAgent(client, create.id).then(() => {
-              const toastId = create.id;
-              toast(<AgentToatser id={toastId} />, {
-                id: toastId,
-                duration: 300,
-                dismissible: true,
-              });
-            });
+            void hydrateAndInsertAgent(client, create.id);
           }
 
           if (deleted) {

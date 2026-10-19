@@ -10,7 +10,7 @@ export const UpdateAgentForm = (props: { agent: AgentFragment }) => {
   const [updateAgent] = useUpdateAgentMutation();
 
   const submit = useGraphQLDialog(updateAgent, {
-    successMessage: "Agent updated",
+    errorTitle: "Couldn't rename the agent",
   });
 
   const form = useForm({

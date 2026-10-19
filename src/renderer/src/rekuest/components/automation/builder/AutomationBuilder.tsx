@@ -1,4 +1,6 @@
+import { DialogError, useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
+import { describeError } from "@/core/notify";
 import { RekuestSchedule, RekuestTrigger } from "@/core/linkers";
 import { usePortForm } from "@/core/ports/engine/usePortForm";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
@@ -60,9 +62,6 @@ import { SchedulePanel } from "../SchedulePanel";
 import { AutomationInitial, Pin, SignalWhen } from "./initial";
 import { SignalPicker } from "./SignalPicker";
 
-const errorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
-
 /** An ISO instant as a `datetime-local` value (local time, to the minute), and back. */
 const toLocalInput = (iso: string | null | undefined) => {
   if (!iso) return "";
@@ -111,7 +110,7 @@ export const BuilderError = ({
   <div className="flex flex-col gap-4">
     <DialogHeader>
       <DialogTitle>{title}</DialogTitle>
-      <DialogDescription>Could not load it: {errorMessage(error)}</DialogDescription>
+      <DialogDescription>Could not load it. {describeError(error).message}</DialogDescription>
     </DialogHeader>
     <DialogFooter>
       <Button type="button" variant="outline" onClick={onRetry}>
@@ -277,7 +276,10 @@ export const AutomationBuilder = ({
       initial.debounceSeconds != null,
   );
   const [attempted, setAttempted] = useState(false);
+  // A rule the form can tell is wrong before sending; a refused save goes
+  // to the dialog's error note.
   const [failure, setFailure] = useState<string | null>(null);
+  const { report, clear } = useDialogError();
 
   const actionQuery = useDetailActionQuery({ variables: { id: action ?? "" }, skip: !action });
   const detail = action && actionQuery.data?.action.id === action ? actionQuery.data.action : undefined;
@@ -355,6 +357,7 @@ export const AutomationBuilder = ({
   const onSubmit = async (values: Record<string, unknown>) => {
     setAttempted(true);
     setFailure(null);
+    clear();
     if (!detail || !action) return;
     const finalName = name.trim() || defaultName;
     // Sent on every save, null where empty: an edit clears what was removed.
@@ -424,7 +427,7 @@ export const AutomationBuilder = ({
       const id = result.data?.createTrigger.id;
       if (id) navigate(RekuestTrigger.linkBuilder(id));
     } catch (error) {
-      setFailure(`Could not save it: ${errorMessage(error)}`);
+      report(error, "Couldn't save the automation");
     }
   };
 
@@ -702,6 +705,7 @@ export const AutomationBuilder = ({
           </ScrollArea>
 
           {failure && <p className="text-sm text-destructive">{failure}</p>}
+          <DialogError />
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={closeDialog} disabled={isSubmitting}>

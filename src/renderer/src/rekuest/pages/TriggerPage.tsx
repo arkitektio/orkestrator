@@ -2,7 +2,7 @@ import { useDialog } from "@/core/dialogs/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { RekuestAction, RekuestAgent, RekuestTrigger } from "@/core/linkers";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Badge } from "@/core/ui/badge";
 import { PageAction } from "@/core/ui/page-action";
@@ -35,8 +35,8 @@ export const TriggerPage = asDetailQueryRoute(useTriggerQuery, ({ data }) => {
   const [update, { loading: updating }] = useUpdateTriggerMutation();
 
   const setEnabled = (enabled: boolean) =>
-    update({ variables: { input: { id: trigger.id, enabled } } }).catch((error) =>
-      toast.error(`Could not ${enabled ? "enable" : "disable"}: ${error.message}`),
+    update({ variables: { input: { id: trigger.id, enabled } } }).catch(
+      reportErrorAs(`Couldn't ${enabled ? "enable" : "disable"} the trigger`),
     );
 
   return (

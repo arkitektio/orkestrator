@@ -2,10 +2,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/core/dialogs/registry", () => ({ useDialog: () => ({}) }));
-vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), info: vi.fn(), error: vi.fn() },
-}));
-
 import { CleanupActionsDocument } from "@/rekuest/api/graphql";
 import type { ActionState, Structure } from "@/core/smart/localactions/LocalActionProvider";
 import { REKUEST_ACTIONS } from "./actions";

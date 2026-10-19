@@ -16,7 +16,6 @@ import {
 import { Structure } from "@/core/types";
 import { ArrowLeft, Download } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "@/core/notify";
 
 import { FILE_DOWNLOADERS } from "@/core/modules/registries";
 import { structureLabel } from "@/core/modules/export/structureLabel";
@@ -195,7 +194,6 @@ const ExporterRunForm = (props: {
             exporterName: props.exporterName,
           },
         });
-        toast.info(`Export started — “${props.exporterName}” is running.`);
       }}
     />
   );

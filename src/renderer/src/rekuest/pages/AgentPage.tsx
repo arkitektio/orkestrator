@@ -1,4 +1,5 @@
 import { AgentLogo } from "@/rekuest/components/logo/BlokLogo";
+import { reportErrorAs } from "@/core/notify";
 import { useRekuest } from "@/rekuest/api/hooks";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { VerticalListRender } from "@/core/layout/VerticalListRender";
@@ -51,7 +52,7 @@ export const PinAgent = (props: { agent: AgentFragment }) => {
           variables: {
             input: { id: props.agent.id, pin: !props.agent.pinned },
           },
-        });
+        }).catch(reportErrorAs(props.agent.pinned ? "Couldn't unpin the agent" : "Couldn't pin the agent"));
       }}
     >
       {props.agent.pinned ? (
@@ -81,7 +82,7 @@ export const BounceAgentButton = (props: { agent: AgentFragment }) => {
           variables: {
             input: { agent: props.agent.id },
           },
-        });
+        }).catch(reportErrorAs("Couldn't bounce the agent"));
       }}
     >
       Bounce
