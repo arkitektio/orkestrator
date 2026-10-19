@@ -1,6 +1,5 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLListSearchField } from "@/core/forms/GraphQLListSearchField";
-import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
@@ -28,35 +27,25 @@ export const AnswerMembershipRequestDialog = (props: {
     // The request leaves the list and its user joins the members.
     refetchQueries: ["MembershipRequests", "Organization"],
   });
-  const [decline, { loading: declining }] = useDeclineMembershipRequestMutation({
+  const [decline] = useDeclineMembershipRequestMutation({
     refetchQueries: ["MembershipRequests"],
   });
   const [search] = useRoleOptionsLazyQuery();
-  const { closeDialog } = useDialog();
 
   const form = useForm<AnswerForm>({ defaultValues: { roles: [] } });
 
-  const onApprove = async ({ roles }: AnswerForm) => {
-    try {
-      await approve({ variables: { input: { id: props.id, roles } } });
-      toast.success(`${props.username} is now a member`);
-      closeDialog();
-    } catch {
-      toast.error("Could not approve the request");
-    }
-  };
+  // Either way the request leaves the list on screen: no success toast.
+  const { submit: onApprove, submitting: approving } = useDialogSubmit(
+    ({ roles }: AnswerForm) => approve({ variables: { input: { id: props.id, roles } } }),
+    { errorTitle: "Couldn't approve the request" },
+  );
 
-  const onDecline = async () => {
-    try {
-      await decline({ variables: { input: { id: props.id } } });
-      toast.success(`Declined ${props.username}'s request`);
-      closeDialog();
-    } catch {
-      toast.error("Could not decline the request");
-    }
-  };
+  const { submit: onDecline, submitting: declining } = useDialogSubmit(
+    () => decline({ variables: { input: { id: props.id } } }),
+    { errorTitle: "Couldn't decline the request" },
+  );
 
-  const busy = form.formState.isSubmitting || declining;
+  const busy = approving || declining;
 
   return (
     <Form {...form}>
@@ -82,7 +71,7 @@ export const AnswerMembershipRequestDialog = (props: {
             Decline
           </Button>
           <Button type="submit" disabled={busy}>
-            {form.formState.isSubmitting ? "Approving…" : "Approve"}
+            {approving ? "Approving…" : "Approve"}
           </Button>
         </DialogFooter>
       </form>

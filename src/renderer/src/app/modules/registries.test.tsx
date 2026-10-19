@@ -113,6 +113,7 @@ describe("host registries", () => {
       "setasmeasurement",
       "sharecollaboration",
       "updateagent",
+      "updatedevice",
       "updatefolder",
       "updateserviceinstance",
       "usemodelfor",

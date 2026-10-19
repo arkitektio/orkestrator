@@ -2,10 +2,7 @@ import type { CreateFunc, UploadFunc } from "@/core/datalayer/upload/drag";
 import { LOK_MEDIA_ACCEPT, useLokUpload } from "@/lok/datalayer/useLokUpload";
 import type React from "react";
 import { useCallback, useState } from "react";
-import { toast } from "@/core/notify";
-
-const messageOf = (error: unknown) =>
-  error instanceof Error && error.message ? error.message : "Upload failed";
+import { reportError } from "@/core/notify";
 
 /**
  * An image upload into lok's media store, applied with `apply(key)` — a
@@ -29,7 +26,7 @@ export const useLokImageUpload = (apply: (key: string) => Promise<unknown>) => {
         return await upload(file, options);
       } catch (error) {
         setBusy(false);
-        toast.error(messageOf(error));
+        reportError(error, "Couldn't upload the image");
         throw error;
       }
     },
@@ -41,7 +38,7 @@ export const useLokImageUpload = (apply: (key: string) => Promise<unknown>) => {
       try {
         await apply(key);
       } catch (error) {
-        toast.error(messageOf(error));
+        reportError(error, "Couldn't change the picture");
         throw error;
       } finally {
         setBusy(false);
@@ -60,7 +57,7 @@ export const useLokImageUpload = (apply: (key: string) => Promise<unknown>) => {
       try {
         await createFile(file, await uploadFile(file, {}));
       } catch {
-        // Already said, by the toast.
+        // Already reported above.
       }
     },
     [uploadFile, createFile],

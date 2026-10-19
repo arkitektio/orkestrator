@@ -16,8 +16,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/core/ui/form";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Input } from "@/core/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useCreateInviteMutation } from "../api/graphql";
@@ -40,9 +42,12 @@ export const CreateInviteDialog = ({
   organizationId,
   availableRoles,
 }: CreateInviteDialogProps) => {
-  const [createInvite] = useCreateInviteMutation({
+  const [createInvite, { loading }] = useCreateInviteMutation({
     refetchQueries: ['Organization']
   });
+  // Not a registry dialog, so it holds its own failure; the new invite shows
+  // in the page's list, so success needs no toast.
+  const [error, setError] = useState<unknown>(null);
 
   const form = useForm<
     z.input<typeof formSchema>,
@@ -56,23 +61,32 @@ export const CreateInviteDialog = ({
     },
   });
 
-  const onSubmit = (values: z.output<typeof formSchema>) => {
-    createInvite({
-      variables: {
-        input: {
-          organization: organizationId,
-          expiresInDays: values.expiresInDays,
-          roles: values.roles,
+  const onSubmit = async (values: z.output<typeof formSchema>) => {
+    setError(null);
+    try {
+      await createInvite({
+        variables: {
+          input: {
+            organization: organizationId,
+            expiresInDays: values.expiresInDays,
+            roles: values.roles,
+          },
         },
-      },
-    }).then(() => {
+      });
       onOpenChange(false);
       form.reset();
-    });
+    } catch (e) {
+      setError(e);
+    }
+  };
+
+  const onDialogOpenChange = (next: boolean) => {
+    if (!next) setError(null);
+    onOpenChange(next);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onDialogOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create Invite</DialogTitle>
@@ -149,8 +163,9 @@ export const CreateInviteDialog = ({
                 </FormItem>
               )}
             />
+            <ErrorNote error={error} title="Couldn't create the invite" />
             <DialogFooter>
-              <Button type="submit">Create Invite</Button>
+              <Button type="submit" disabled={loading}>Create Invite</Button>
             </DialogFooter>
           </form>
         </Form>

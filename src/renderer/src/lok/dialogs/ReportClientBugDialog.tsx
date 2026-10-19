@@ -1,4 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { ParagraphField } from "@/core/forms/ParagraphField";
 import { StringField } from "@/core/forms/StringField";
 import { Button } from "@/core/ui/button";
@@ -10,7 +11,6 @@ import {
 import { Form } from "@/core/ui/form";
 import { DetailClientFragment, useClientQuery } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 import { clientAppIdentifier, clientAppVersion } from "@/lok/lib/clientLabels";
 
 type ReportClientBugFormData = {
@@ -133,22 +133,21 @@ const ReportForm = ({
     },
   });
 
-  const onSubmit = async (data: ReportClientBugFormData) => {
-    const { title, description, additionalContext } = data;
+  // The browser opening on the issue page is the confirmation.
+  const { submit: onSubmit, submitting } = useDialogSubmit(
+    async (data: ReportClientBugFormData) => {
+      const { title, description, additionalContext } = data;
 
-    // Construct the full issue body
-    let issueBody = description;
-    if (description && additionalContext) {
-      issueBody += "\n\n---\n\n";
-    }
-    issueBody += additionalContext;
+      // Without one the submit is disabled and the form says so.
+      if (!issueUrl) return;
 
-    if (!issueUrl) {
-      toast.error("No issue URL configured for this client");
-      return;
-    }
+      // Construct the full issue body
+      let issueBody = description;
+      if (description && additionalContext) {
+        issueBody += "\n\n---\n\n";
+      }
+      issueBody += additionalContext;
 
-    try {
       // Build the GitHub issue URL
       const githubUrl = buildGitHubIssueUrl({
         baseUrl: issueUrl,
@@ -158,15 +157,10 @@ const ReportForm = ({
       });
 
       // Open the GitHub issue creation page in a new window
-      window.api.openWebbrowser(githubUrl);
-
-      toast.success("Opening GitHub issue page...");
-      closeDialog();
-    } catch (error) {
-      console.error("Error creating bug report:", error);
-      toast.error("Failed to create bug report");
-    }
-  };
+      await window.api.openWebbrowser(githubUrl);
+    },
+    { errorTitle: "Couldn't open the issue page" },
+  );
 
   return (
     <Form {...form}>
@@ -223,15 +217,15 @@ const ReportForm = ({
             type="button"
             variant="outline"
             onClick={() => closeDialog()}
-            disabled={form.formState.isSubmitting}
+            disabled={submitting}
           >
             Cancel
           </Button>
           <Button
             type="submit"
-            disabled={form.formState.isSubmitting || !issueUrl}
+            disabled={submitting || !issueUrl}
           >
-            {form.formState.isSubmitting
+            {submitting
               ? "Creating..."
               : "Create GitHub Issue"}
           </Button>

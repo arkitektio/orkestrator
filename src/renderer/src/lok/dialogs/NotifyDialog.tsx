@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { ParagraphField } from "@/core/forms/ParagraphField";
 import { StringField } from "@/core/forms/StringField";
 import { Button } from "@/core/ui/button";
@@ -20,37 +20,52 @@ const plural = (n: number) => `${n} user${n === 1 ? "" : "s"}`;
  */
 export const NotifyDialog = (props: { users: string[] }) => {
   const [notify] = useNotifyUserMutation();
-  const { closeDialog } = useDialog();
 
   const form = useForm<NotifyFormData>({
     defaultValues: { title: "", message: "" },
   });
 
-  const onSubmit = async ({ title, message }: NotifyFormData) => {
-    if (!message.trim()) {
+  // Delivery is invisible from here, so it is always said: a toast when some
+  // or all were reached, the dialog's own error (and it stays open) when none.
+  const { submit, submitting } = useDialogSubmit(
+    async ({ title, message }: NotifyFormData) => {
+      const results = await Promise.allSettled(
+        props.users.map((user) =>
+          notify({ variables: { input: { user, title, message } } }),
+        ),
+      );
+      // A rejection is a transport/permission error; `false` is lok declining
+      // to deliver (e.g. no registered phone). Both count as not reached.
+      const failed = results.filter(
+        (r) => r.status === "rejected" || r.value.data?.notifyUser !== true,
+      ).length;
+
+      if (failed === props.users.length) {
+        const rejected = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
+        throw rejected
+          ? rejected.reason
+          : new Error("Nobody could be reached. A recipient needs a registered phone to get messages.");
+      }
+      return failed;
+    },
+    {
+      errorTitle: "Couldn't deliver the message",
+      onSuccess: (failed) => {
+        if (failed === 0) {
+          toast.success(`Message sent to ${plural(props.users.length)}`);
+        } else {
+          toast.warning(`Sent to ${plural(props.users.length - failed)}, failed for ${plural(failed)}`);
+        }
+      },
+    },
+  );
+
+  const onSubmit = (data: NotifyFormData) => {
+    if (!data.message.trim()) {
       form.setError("message", { message: "A message is required" });
       return;
     }
-    const results = await Promise.allSettled(
-      props.users.map((user) =>
-        notify({ variables: { input: { user, title, message } } }),
-      ),
-    );
-    // A rejection is a transport/permission error; `false` is lok declining
-    // to deliver (e.g. no registered phone). Both count as not reached.
-    const failed = results.filter(
-      (r) => r.status === "rejected" || r.value.data?.notifyUser !== true,
-    ).length;
-
-    if (failed === 0) {
-      toast.success(`Message sent to ${plural(props.users.length)}`);
-      closeDialog();
-    } else if (failed === props.users.length) {
-      toast.error("The message could not be delivered");
-    } else {
-      toast.warning(`Sent to ${plural(props.users.length - failed)}, failed for ${plural(failed)}`);
-      closeDialog();
-    }
+    return submit(data);
   };
 
   return (
@@ -73,8 +88,8 @@ export const NotifyDialog = (props: { users: string[] }) => {
         </div>
 
         <DialogFooter>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Sending…" : "Send"}
+          <Button type="submit" disabled={submitting}>
+            {submitting ? "Sending…" : "Send"}
           </Button>
         </DialogFooter>
       </form>
