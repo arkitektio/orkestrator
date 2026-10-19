@@ -64,7 +64,7 @@ export const describeError = (
         fix: "none",
       };
     case MailErrorCode.NotConfigured:
-      return { text: "This is not set up on the server. Ask an admin.", fix: "none" };
+      return { text: "Your organization has not set this up (no usable mail provider). Ask an admin.", fix: "none" };
     default:
       return { text: message || "Something went wrong.", fix: "none" };
   }

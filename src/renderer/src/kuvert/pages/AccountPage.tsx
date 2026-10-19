@@ -70,7 +70,7 @@ const AccountPage = asDetailQueryRoute(useGetMailAccountQuery, ({ data, refetch 
           <InfoList
             rows={[
               ["Address", account.emailAddress],
-              ["Provider", account.provider.toLowerCase()],
+              ["Provider", account.mailProvider ? account.mailProvider.name : "none (removed)"],
               ["Status", account.status.toLowerCase().replace("_", " ")],
               ["Sharing", account.visibility.toLowerCase()],
               ["Reads via", account.protocol],

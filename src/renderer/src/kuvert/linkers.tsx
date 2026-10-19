@@ -4,6 +4,7 @@ import { manifest } from "./manifest";
 // Kuvert's smart objects (Smart cards, links, pages), built from the models its
 // manifest declares.
 
+export const MailProvider = smartOf(manifest, "@kuvert/provider");
 export const MailAccount = smartOf(manifest, "@kuvert/account");
 export const MailFolder = smartOf(manifest, "@kuvert/folder");
 export const MailThread = smartOf(manifest, "@kuvert/thread");

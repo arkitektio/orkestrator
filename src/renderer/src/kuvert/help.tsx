@@ -41,7 +41,7 @@ export const KUVERT_HELP = {
     <PageHelp
       intro="Your mailboxes: the mail accounts linked here, whose mail you read and send from this app."
       steps={[
-        <>Press <b>Add mailbox</b> and type the mail address. Google and Microsoft addresses sign in through your browser; any other address asks for its password and, under <b>Servers</b>, its mail servers.</>,
+        <>Press <b>Add mailbox</b> and type the mail address. Google and Microsoft addresses sign in through your browser when your organization set that sign-in up; any other address asks for its password and, under <b>Servers</b>, its mail servers. When your organization offers several providers for the address, pick one under <b>Link through</b>.</>,
         <>Click a mailbox to open its settings: its name, folders, categories and sign-in.</>,
         <>Right-click a mailbox and choose <b>Sync now</b> to fetch new mail, or <b>New mail</b> to write from it.</>,
         <>Right-click a mailbox and choose <b>Share mailbox</b> to set who else in the organization sees it.</>,
@@ -50,6 +50,7 @@ export const KUVERT_HELP = {
       tips={[
         <>A red warning triangle on a mailbox means it needs attention, usually a new sign-in. Open it to see what is wrong.</>,
         <>A new mailbox is private until you share it. Removing one only drops the mail stored here; the mail on the server is untouched.</>,
+        <>If the dialog says your organization has no provider set up, an admin has to add one under <b>Providers</b> first.</>,
       ]}
     />
   ),
@@ -68,6 +69,36 @@ export const KUVERT_HELP = {
         <>Only the owner of a mailbox can change its settings; a mailbox shared with you is read-only here.</>,
         <>If something is wrong, a red banner at the top says what, with the button that fixes it, such as <b>Sign in again</b> or <b>Update password</b>.</>,
         <>When changes have not reached the server yet, a line at the top counts them, with <b>Push now</b> and <b>Review</b>. The Info tab shows the servers, the last sync and who the mailbox is shared with.</>,
+      ]}
+    />
+  ),
+  providers: (
+    <PageHelp
+      intro="A provider is how your organization's members link their mailboxes: an IMAP server, or a Google or Microsoft sign-in (an OAuth client). Admins set them up here; every mailbox goes through one."
+      steps={[
+        <>Press <b>Add provider</b> and pick the kind.</>,
+        <>For an IMAP provider, switch <b>Fixed servers</b> on to name the servers once (members then give only their login), or leave it off to let each member name their own.</>,
+        <>For Google or Microsoft, enter the <b>Client id</b> and <b>Client secret</b> of your OAuth client and keep the <b>Redirect URLs</b> registered for it.</>,
+        <>Switch <b>Capabilities</b> on or off to decide whether its mailboxes may send, and whether the scheduled sync includes them.</>,
+        <>Right-click a provider for <b>Link through this provider</b>, <b>Edit provider</b>, <b>Disable provider</b> or <b>Delete provider</b>.</>,
+      ]}
+      tips={[
+        <>The client secret is stored encrypted and never shown again.</>,
+        <>A provider can be deleted only when no mailbox goes through it.</>,
+      ]}
+    />
+  ),
+  provider: (
+    <PageHelp
+      intro="One provider: what it is set up with, what its mailboxes may do, and the mailboxes linked through it that you can see."
+      steps={[
+        <>Press <b>Link through it</b> to add a mailbox through this provider.</>,
+        <>Press <b>Edit</b> to change its name, client or servers, and capabilities. Leave <b>Client secret</b> empty to keep the stored one.</>,
+        <>Press <b>Disable</b> to stop it: it links no mailbox, and its mailboxes neither sync nor send. <b>Enable</b> turns it back on.</>,
+      ]}
+      tips={[
+        <>While mailboxes go through it, its client id, and an IMAP provider{"’"}s protocol and fixed servers setting, stay as they are. Fixed servers may still change; its mailboxes follow.</>,
+        <>The Info tab counts every mailbox linked through it, including those not shared with you.</>,
       ]}
     />
   ),

@@ -13,6 +13,7 @@
       "MailAccount",
       "MailChange",
       "MailFolder",
+      "MailProvider",
       "Message",
       "Organization",
       "OutgoingMessage",
