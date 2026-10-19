@@ -2,6 +2,9 @@ import { LightPath3DDialog } from "./components/lightpath/LightPath3DDialog";
 import { CommitMeshDesignDialog } from "./components/scene/features/meshDesign/ui/CommitMeshDesignDialog";
 import { AddChartLayerForm } from "./forms/AddChartLayerForm";
 import { AddLayerForm } from "./forms/AddLayerForm";
+import { AddToCollaborationForm } from "./forms/AddToCollaborationForm";
+import { CreateCollaborationForm } from "./forms/CreateCollaborationForm";
+import { ShareCollaborationForm } from "./forms/ShareCollaborationForm";
 import { CalibrateForm } from "./forms/CalibrateForm";
 import { CreateChartForm } from "./forms/CreateChartForm";
 import { CreateFolderForm } from "./forms/CreateFolderForm";
@@ -23,6 +26,10 @@ export const MIKRO_DIALOGS = {
   lightpath3d: LightPath3DDialog,
   addchartlayer: AddChartLayerForm,
   addlayer: AddLayerForm,
+  // collaborations: what a guest is granted (forms/*Collaboration*)
+  addtocollaboration: AddToCollaborationForm,
+  createcollaboration: CreateCollaborationForm,
+  sharecollaboration: ShareCollaborationForm,
   register: RegisterForm,
   calibrate: CalibrateForm,
   createchart: CreateChartForm,

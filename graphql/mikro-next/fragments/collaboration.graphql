@@ -1,0 +1,21 @@
+fragment ListCollaboration on Collaboration {
+  id
+  name
+  description
+  createdAt
+}
+
+fragment CollaborationItem on CollaborationItem {
+  id
+  identifier
+  objectId
+  brought
+  addedAt
+}
+
+fragment Collaboration on Collaboration {
+  ...ListCollaboration
+  items {
+    ...CollaborationItem
+  }
+}

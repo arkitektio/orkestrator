@@ -1,4 +1,6 @@
-directive @auth(required_org_roles: [String!] = null, required_roles: [String!] = null, required_scopes: [String!] = null) on FIELD_DEFINITION
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
+
+directive @identified(by: String!) on OBJECT
 
 directive @unionElementOf(discriminator: String!, key: String!, union: String!) repeatable on INPUT_OBJECT
 
@@ -2110,6 +2112,49 @@ type Client {
 }
 
 """
+What a guest granted it sees of the organization: the objects put in it, and what is part of them.
+"""
+type Collaboration {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+
+  """What is in the collaboration; what is part of these is in it too"""
+  items: [CollaborationItem!]!
+  name: String!
+}
+
+"""
+One object in a collaboration: put there, or brought along with one that needs it to be seen.
+"""
+type CollaborationItem {
+  addedAt: DateTime!
+
+  """
+  Whether it is in the collaboration only as what another object in it needs to be seen
+  """
+  brought: Boolean!
+  id: ID!
+
+  """The structure the object is known by across the hub: @mikro/scene"""
+  identifier: String
+
+  """The object's id, in its structure"""
+  objectId: String!
+}
+
+"""An object to put in, or take out of, a collaboration"""
+input CollaborationObjectInput {
+  collaboration: ID!
+
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """The object's id"""
+  object: ID!
+}
+
+"""
 One column a layer may be coloured or filtered by, and how it is reached. Both pickers read the same options: `colorBys` and `filterBys` turn on the same measure-vs-categorical split, so two lists would be two copies of one answer. Every option returned is one the mutation that publishes the picker accepts -- `createMeshLayer` over a collection, `createLabelLayer` over a lens -- and every column it omits is one that mutation refuses; that invariant is why this exists rather than a client filtering `attributePlans`, which walks a different set
 """
 type ColorByOption {
@@ -2812,6 +2857,12 @@ Input type for creating a chart: a composition of data laid out along one metric
 input CreateChartInput {
   axis: PhysicalAxisInput = null
   coordinateSystem: ID = null
+  description: String = null
+  name: String!
+}
+
+"""A new collaboration"""
+input CreateCollaborationInput {
   description: String = null
   name: String!
 }
@@ -7039,6 +7090,11 @@ type ModelChange {
 }
 
 type Mutation {
+  """
+  Put an object in a collaboration, with what it needs to be seen: a scene brings the data its layers draw
+  """
+  addToCollaboration(input: CollaborationObjectInput!): Collaboration!
+
   """Attach unstructured metadata to a file"""
   attachUnstructuredMeta(input: UnstructuredMetaInput!): UnstructuredMeta!
 
@@ -7104,6 +7160,9 @@ type Mutation {
   Bootstrap a chart over an existing coordinate system, drawing every array, table and annotation collection already laid along its axis. Authors no edges
   """
   createChartFromCoordinateSystem(input: CreateChartFromCoordinateSystemInput!): Chart!
+
+  """Create an empty collaboration, to put objects in and grant a guest"""
+  createCollaboration(input: CreateCollaborationInput!): Collaboration!
 
   """
   Attach metadata spokes to an array, table or sparse dataset after ingest: a microscope state, OME metadata, a value histogram, a channel label or a light path, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced
@@ -7282,6 +7341,11 @@ type Mutation {
   deleteChartLayer(input: DeleteChartLayerInput!): ID!
 
   """
+  Delete a collaboration: whoever was granted it sees nothing of it any more
+  """
+  deleteCollaboration(id: ID!): ID!
+
+  """
   Delete an unused shared coordinate system. Refused while any scene is rooted in it or any transformation edge touches it. This is the only door a shared space leaves through -- deleting a scene never deletes one. Other system kinds cascade with their owner and cannot be deleted directly
   """
   deleteCoordinateSystem(input: DeleteCoordinateSystemInput!): ID!
@@ -7428,6 +7492,11 @@ type Mutation {
   Unfile table datasets from a folder. They are not deleted, only unfiled
   """
   releaseTableDatasetsFromFolder(input: DesociateInput!): Folder!
+
+  """
+  Take an object out of a collaboration, with what it brought that nothing else there needs
+  """
+  removeFromCollaboration(input: CollaborationObjectInput!): Collaboration!
 
   """Request temporary S3 read credentials for a big file"""
   requestBigfileAccess(input: RequestBigFileAccessInput!): BigFileAccessGrant!
@@ -9206,6 +9275,14 @@ type Query {
 
   """List the child folders of a folder"""
   children(filters: FolderChildrenFilter = null, order: ChildrenOrder = null, pagination: ChildrenPaginationInput = null, parent: ID!): [FolderChild!]!
+
+  """Get a single collaboration by ID"""
+  collaboration(id: ID!): Collaboration!
+
+  """
+  List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
+  """
+  collaborations: [Collaboration!]!
 
   """
   Every column a mesh collection's objects can be coloured or filtered by: one entry per (joinPath, table, column), with the control its declared role admits. **The set this returns is exactly the set `createMeshLayer(colorBys:)` and `filterBys` accept** -- same reachability walk, same measure-vs-categorical rule -- which is what makes it an options query rather than a suggestion. Distinct from `attributePlans`, which answers a different question (how to execute a lookup per hover) over a different set: it walks the whole fact component and returns plans rooted at a source mask that mesh ids cannot execute, drops tables the write path accepts, and fails outright on a storeless array. Both pickers read these same options, because both branch on the same split. `joinPath` follows `references` from table to table -- pass an option's path back verbatim to select it. The columns' *values* are not here: a picker wanting a class list or a numeric range reads them from the parquet it already has an `accessGrant` for

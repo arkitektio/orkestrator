@@ -37,6 +37,7 @@ export const MikroHistory = smartOf(manifest, "@mikro/history");
 export const MikroFluorophore = smartOf(manifest, "@mikro/fluorophore");
 export const MikroFile = smartOf(manifest, "@mikro/file");
 export const MikroScene = smartOf(manifest, "@mikro/scene");
+export const MikroCollaboration = smartOf(manifest, "@mikro/collaboration");
 export const MikroChart = smartOf(manifest, "@mikro/chart");
 export const MikroTableDataset = smartOf(manifest, "@mikro/tabledataset");
 export const MikroSparseDataset = smartOf(manifest, "@mikro/sparsedataset");

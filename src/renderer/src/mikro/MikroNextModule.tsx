@@ -23,6 +23,8 @@ import TableDatasetsPage from "./pages/TableDatasetsPage";
 import SparseDatasetPage from "./pages/SparseDatasetPage";
 import SparseDatasetsPage from "./pages/SparseDatasetsPage";
 import ScenesPage from "./pages/ScenesPage";
+import CollaborationsPage from "./pages/CollaborationsPage";
+import CollaborationPage from "./pages/CollaborationPage";
 import ScenePage from "./pages/ScenePage";
 import SceneRegistrationPage from "./pages/SceneRegistrationPage";
 import { LensPage } from "./pages/LensPage";
@@ -52,6 +54,8 @@ export const MikroNextModule = () => {
         <Route path="annotations" element={<AnnotationsPage />} />
         <Route path="annotations/:id" element={<AnnotationPage />} />
         <Route path="scenes" element={<ScenesPage />} />
+        <Route path="collaborations" element={<CollaborationsPage />} />
+        <Route path="collaborations/:id" element={<CollaborationPage />} />
         <Route path="scenes/:id" element={<ScenePage />} />
         {/* Its own page, opted into from a scene — never a mode of ScenePage. */}
         <Route path="scenes/:id/register" element={<SceneRegistrationPage />} />
