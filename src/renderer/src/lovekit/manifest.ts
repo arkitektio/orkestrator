@@ -13,8 +13,20 @@ export const manifest: ModuleManifest = {
   label: "Lovekit",
   icon: "radio",
   models: [
-    { identifier: "@lovekit/stream", name: "Stream", datum: true, path: "streams/:id" },
-    { identifier: "@lovekit/solo_broadcast", name: "Solo Broadcast", datum: false, path: "solobroadcasts/:id" },
+    {
+      identifier: "@lovekit/stream",
+      name: "Stream",
+      datum: true,
+      path: "streams/:id",
+      description: "A live camera or microphone an app offers",
+    },
+    {
+      identifier: "@lovekit/agent",
+      name: "Stream Agent",
+      datum: false,
+      path: "agents/:id",
+      description: "An app that offers live streams",
+    },
     {
       identifier: "@lovekit/call",
       name: "Call",
@@ -23,7 +35,7 @@ export const manifest: ModuleManifest = {
       description: "A video call with your team about some objects",
     },
   ],
-  // Calls are carried by the LiveKit media server the host configures
-  // (`io.livekit.livekit`); lovekit only mints the tokens.
+  // Streams and calls are carried by the LiveKit media server the host
+  // configures (`io.livekit.livekit`); lovekit only mints the tokens.
   requires: { services: ["livekit"] },
 };

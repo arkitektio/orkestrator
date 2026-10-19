@@ -3,6 +3,7 @@ import { reportErrorAs } from "@/core/notify";
 import { useRekuest } from "@/rekuest/api/hooks";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { VerticalListRender } from "@/core/layout/VerticalListRender";
+import { PageSections } from "@/core/layout/PageSections";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
@@ -348,6 +349,13 @@ export const AgentPage = asDetailQueryRoute(
 
 
         <div className="mt-4 flex flex-col gap-4 min-h-0 flex-1">
+          {/* What other modules show about this agent (lovekit: its live
+              streams), given the app instance it runs as. */}
+          <PageSections
+            placement="main"
+            identifier="@rekuest/agent"
+            object={{ id: data.agent.id, clientId: data.agent.client.clientId, userSub: data.agent.user.sub }}
+          />
           <div className="flex-1 min-h-0 overflow-y-auto">
             <VerticalListRender title="Actions" array={data.agent.implementations}>
               {(item) => <AgentImplementationCard key={item.id} item={item} />}

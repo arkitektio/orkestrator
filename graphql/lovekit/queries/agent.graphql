@@ -1,0 +1,21 @@
+query GetAgent($id: ID!) {
+  agent(id: $id) {
+    ...Agent
+  }
+}
+
+query SearchAgents($search: String, $values: [ID!]) {
+  options: agents(
+    filters: { search: $search, ids: $values }
+    pagination: { limit: 10 }
+  ) {
+    value: id
+    label: name
+  }
+}
+
+query ListAgents($filter: AgentFilter, $pagination: OffsetPaginationInput) {
+  agents(filters: $filter, pagination: $pagination) {
+    ...ListAgent
+  }
+}

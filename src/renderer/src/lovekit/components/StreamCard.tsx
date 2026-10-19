@@ -3,14 +3,14 @@ import { Card } from "@/core/ui/card";
 import { cn } from "@/core/util/utils";
 import { LovekitStream } from "@/core/linkers";
 import { ListStreamFragment, StreamKind } from "../api/graphql";
-import { StreamerApp, StreamerName, StreamKindIcon, streamKindLabel } from "./streamer";
+import { AgentApp, AgentUser, LiveDot, StreamKindIcon, streamKindLabel } from "./agent";
 
 interface Props {
   item: ListStreamFragment;
   className?: string;
 }
 
-/** A stream: what it carries, who sends it, and from which app. */
+/** A stream: whether it is live, what it carries, and the app and person it comes from. */
 const TheCard = ({ item, className }: Props) => {
   const audio = item.kind === StreamKind.Audio;
   return (
@@ -30,15 +30,16 @@ const TheCard = ({ item, className }: Props) => {
               object={item}
               className="truncate text-sm font-medium leading-tight transition-colors hover:text-primary"
             >
-              {item.title || `${streamKindLabel(item.kind)} stream`}
+              {item.title}
             </LovekitStream.DetailLink>
-            <StreamerName streamer={item.streamer} className="text-xs text-muted-foreground" />
+            <AgentUser agent={item.agent} className="text-xs text-muted-foreground" />
           </div>
+          <LiveDot live={item.live} />
         </div>
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs text-muted-foreground/60">
-          <StreamerApp streamer={item.streamer} />
-          <span className="shrink-0">{streamKindLabel(item.kind)}</span>
+          <AgentApp agent={item.agent} />
+          <span className="shrink-0">{item.live ? "Live" : streamKindLabel(item.kind)}</span>
         </div>
       </Card>
     </LovekitStream.Smart>

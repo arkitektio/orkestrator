@@ -18,6 +18,8 @@ export type Scalars = {
   Float: { input: number; output: number; }
   /** Date with time (isoformat) */
   DateTime: { input: any; output: any; }
+  /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf). */
+  JSON: { input: any; output: any; }
   _Any: { input: any; output: any; }
 };
 
@@ -25,6 +27,45 @@ export type Scalars = {
 export type AddToCallInput = {
   about: Array<StructureInput>;
   call: Scalars['ID']['input'];
+};
+
+/** An app instance that owns live streams: one per client, user and organization */
+export type Agent = {
+  __typename?: 'Agent';
+  client: Client;
+  createdAt: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  /** Whether the agent publishes any of its streams right now. */
+  live: Scalars['Boolean']['output'];
+  /** What the agent is called: its client's name, or its client id. */
+  name: Scalars['String']['output'];
+  /** The LiveKit room the agent's streams are tracks in. */
+  roomName: Scalars['String']['output'];
+  /** Every stream the agent offers, as it declared them last */
+  streams: Array<Stream>;
+  user: User;
+};
+
+
+/** An app instance that owns live streams: one per client, user and organization */
+export type AgentStreamsArgs = {
+  filters?: InputMaybe<StreamFilter>;
+  order?: InputMaybe<StreamOrder>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** Filter for agents */
+export type AgentFilter = {
+  AND?: InputMaybe<AgentFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<AgentFilter>;
+  OR?: InputMaybe<AgentFilter>;
+  /** Agents running as this client (its OAuth client id), as rekuest knows it too. */
+  clientId?: InputMaybe<Scalars['String']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Agents running for this user (the `sub` their token carries). */
+  userSub?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type App = {
@@ -109,32 +150,9 @@ export type Client = {
   release?: Maybe<Release>;
 };
 
-export type CollaborativeBroadcast = {
-  __typename?: 'CollaborativeBroadcast';
-  audioStreams: Array<Stream>;
-  createdAt: Scalars['DateTime']['output'];
-  id: Scalars['ID']['output'];
-  /** The streamers that are collaborating on this broadcast. */
-  streamers: Array<Streamer>;
-  streams: Array<Stream>;
-  title: Scalars['String']['output'];
-  videoStreams: Array<Stream>;
-};
-
-
-export type CollaborativeBroadcastStreamersArgs = {
-  filters?: InputMaybe<StreamerFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-/** Filter for Solo Broadcasts */
-export type CollaborativeBroadcastFilter = {
-  AND?: InputMaybe<CollaborativeBroadcastFilter>;
-  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
-  NOT?: InputMaybe<CollaborativeBroadcastFilter>;
-  OR?: InputMaybe<CollaborativeBroadcastFilter>;
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  search?: InputMaybe<Scalars['String']['input']>;
+/** Every stream an agent offers */
+export type DeclareStreamsInput = {
+  streams: Array<StreamDeclarationInput>;
 };
 
 /** The invitation to put away */
@@ -148,31 +166,11 @@ export type EnsureCallInput = {
   title?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type EnsureCollaborativeBroadcastInput = {
-  instanceId?: InputMaybe<Scalars['String']['input']>;
-  title?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type EnsureSoloBroadcastInput = {
-  instanceId?: InputMaybe<Scalars['String']['input']>;
-  title?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type EnsureStreamInput = {
-  broadcast?: InputMaybe<Scalars['ID']['input']>;
-  kind?: StreamKind;
-  title?: InputMaybe<Scalars['String']['input']>;
-};
-
 /** Who to ask into a call */
 export type InviteToCallInput = {
   call: Scalars['ID']['input'];
   /** The users to invite, by their lok id (the `sub` their token carries) */
   users: Array<Scalars['ID']['input']>;
-};
-
-export type JoinBroadcastInput = {
-  broadcast: Scalars['ID']['input'];
 };
 
 /** The call to join */
@@ -184,27 +182,32 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Turn a call to these structures: they become what it is about last, and what it was about stays */
   addToCall: Call;
+  /** Offer exactly these streams as the caller's agent: undeclared ones are removed, unchanged ones untouched */
+  declareStreams: Array<Stream>;
   /** Put an invitation away, on every device */
   dismissCallInvite: Scalars['ID']['output'];
   /** The live call about these structures, or a new one */
   ensureCall: Call;
-  /** Create a collaborative broadcast */
-  ensureCollaborativeBroadcast: CollaborativeBroadcast;
-  /** Create a solo broadcast */
-  ensureSoloBroadcast: SoloBroadcast;
-  /** Create a stream and return the token for it */
-  ensureStream: Scalars['String']['output'];
   /** Ask users into a call; their open apps ring */
   inviteToCall: Call;
-  /** Join a solo broadcast and return the token for it */
-  joinBroadcast: Scalars['String']['output'];
   /** Join a call and return the token for it */
   joinCall: Scalars['String']['output'];
+  /** A token for the caller's agent to publish its streams; a newer connection replaces an older one */
+  publishToken: Scalars['String']['output'];
+  /** A token to watch every stream of an agent */
+  watchAgent: Scalars['String']['output'];
+  /** A token to watch a stream: its agent's room, where it is the track named by its key */
+  watchStream: Scalars['String']['output'];
 };
 
 
 export type MutationAddToCallArgs = {
   input: AddToCallInput;
+};
+
+
+export type MutationDeclareStreamsArgs = {
+  input: DeclareStreamsInput;
 };
 
 
@@ -218,33 +221,23 @@ export type MutationEnsureCallArgs = {
 };
 
 
-export type MutationEnsureCollaborativeBroadcastArgs = {
-  input: EnsureCollaborativeBroadcastInput;
-};
-
-
-export type MutationEnsureSoloBroadcastArgs = {
-  input: EnsureSoloBroadcastInput;
-};
-
-
-export type MutationEnsureStreamArgs = {
-  input: EnsureStreamInput;
-};
-
-
 export type MutationInviteToCallArgs = {
   input: InviteToCallInput;
 };
 
 
-export type MutationJoinBroadcastArgs = {
-  input: JoinBroadcastInput;
+export type MutationJoinCallArgs = {
+  input: JoinCallInput;
 };
 
 
-export type MutationJoinCallArgs = {
-  input: JoinCallInput;
+export type MutationWatchAgentArgs = {
+  input: WatchAgentInput;
+};
+
+
+export type MutationWatchStreamArgs = {
+  input: WatchStreamInput;
 };
 
 export type OffsetPaginationInput = {
@@ -271,29 +264,36 @@ export type Query = {
   __typename?: 'Query';
   _entities: Array<Maybe<_Entity>>;
   _service: _Service;
+  /** Get an agent by ID */
+  agent: Agent;
+  /** The organization's agents that offer streams */
+  agents: Array<Agent>;
   /** Get a call by ID */
   call: Call;
   /** The organization's calls; filter `live` for the ones in progress */
   calls: Array<Call>;
-  /** Get a collaborative broadcast by ID */
-  collaborativeBroadcast: CollaborativeBroadcast;
-  /** Get all collaborative broadcasts */
-  collaborativeBroadcasts: Array<CollaborativeBroadcast>;
   /** Your pending invitations to calls that are still live */
   myCallInvites: Array<CallInvite>;
-  /** Get a solo broadcast by ID */
-  soloBroadcast: SoloBroadcast;
-  /** Get all solo broadcasts */
-  soloBroadcasts: Array<SoloBroadcast>;
   /** Get a stream by ID */
   stream: Stream;
-  /** Get a stream */
+  /** The streams of the organization's agents; filter `live` for the ones being published */
   streams: Array<Stream>;
 };
 
 
 export type Query_EntitiesArgs = {
   representations: Array<Scalars['_Any']['input']>;
+};
+
+
+export type QueryAgentArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryAgentsArgs = {
+  filters?: InputMaybe<AgentFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -309,28 +309,6 @@ export type QueryCallsArgs = {
 };
 
 
-export type QueryCollaborativeBroadcastArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QueryCollaborativeBroadcastsArgs = {
-  filters?: InputMaybe<CollaborativeBroadcastFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
-export type QuerySoloBroadcastArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type QuerySoloBroadcastsArgs = {
-  filters?: InputMaybe<SoloBroadcastFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-
 export type QueryStreamArgs = {
   id: Scalars['ID']['input'];
 };
@@ -338,6 +316,7 @@ export type QueryStreamArgs = {
 
 export type QueryStreamsArgs = {
   filters?: InputMaybe<StreamFilter>;
+  order?: InputMaybe<StreamOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -348,84 +327,73 @@ export type Release = {
   version: Scalars['String']['output'];
 };
 
-export type SoloBroadcast = {
-  __typename?: 'SoloBroadcast';
-  audioStreams: Array<Stream>;
-  createdAt: Scalars['DateTime']['output'];
-  id: Scalars['ID']['output'];
-  streamer: Streamer;
-  title: Scalars['String']['output'];
-  videoStreams: Array<Stream>;
-};
-
-/** Filter for Solo Broadcasts */
-export type SoloBroadcastFilter = {
-  AND?: InputMaybe<SoloBroadcastFilter>;
-  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
-  NOT?: InputMaybe<SoloBroadcastFilter>;
-  OR?: InputMaybe<SoloBroadcastFilter>;
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  search?: InputMaybe<Scalars['String']['input']>;
-};
-
+/** One live source an agent offers: a camera, a detector, a microphone */
 export type Stream = {
   __typename?: 'Stream';
+  agent: Agent;
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@lovekit/stream_kind`). The keys are the ones lovekit declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   id: Scalars['ID']['output'];
+  /** The agent's name for the stream, the same across its restarts: the name of the LiveKit track it is published as */
+  key: Scalars['String']['output'];
   kind: StreamKind;
-  streamer: Streamer;
+  /** Whether the agent publishes this stream right now: LiveKit's answer, asked when read. */
+  live: Scalars['Boolean']['output'];
   title: Scalars['String']['output'];
 };
 
+/** One stream an agent offers */
+export type StreamDeclarationInput = {
+  /** What the stream shows */
+  description?: InputMaybe<Scalars['String']['input']>;
+  /** The agent's own name for the stream, the same on every start; its LiveKit track is published under this name */
+  key: Scalars['String']['input'];
+  /** Whether it is video or audio */
+  kind?: StreamKind;
+  /** What the stream is called; the key when not given */
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** A stream an agent of your organization declared, changed or no longer offers */
 export type StreamEvent = {
   __typename?: 'StreamEvent';
+  /** A stream an agent declared for the first time */
   create?: Maybe<Stream>;
+  /** A stream its agent no longer offers */
   delete?: Maybe<Scalars['ID']['output']>;
-  moved?: Maybe<Stream>;
+  /** A stream whose title, kind or description changed */
   update?: Maybe<Stream>;
 };
 
-/** Filter for Streams */
+/** Filter for streams */
 export type StreamFilter = {
   AND?: InputMaybe<StreamFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<StreamFilter>;
   OR?: InputMaybe<StreamFilter>;
+  /** Streams of this agent. */
+  agent?: InputMaybe<Scalars['ID']['input']>;
+  /** Streams of the agent running as this client (its OAuth client id), as rekuest knows it too. */
+  clientId?: InputMaybe<Scalars['String']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only streams their agent publishes right now (true), or does not (false). */
+  live?: InputMaybe<Scalars['Boolean']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
+  /** Streams of agents running for this user (the `sub` their token carries). */
+  userSub?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** The state of a dask cluster */
+/** What a stream carries */
 export enum StreamKind {
   Audio = 'AUDIO',
   Video = 'VIDEO'
 }
 
-export type Streamer = {
-  __typename?: 'Streamer';
-  client: Client;
-  /** The collaborative broadcasts created by this agent. */
-  collaborativeBroadcasts: Array<CollaborativeBroadcast>;
-  id: Scalars['ID']['output'];
-  /** The solo broadcasts created by this agent, if any. */
-  soloBroadcasts?: Maybe<SoloBroadcast>;
-  user: User;
-};
-
-
-export type StreamerCollaborativeBroadcastsArgs = {
-  filters?: InputMaybe<CollaborativeBroadcastFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-};
-
-/** Filter for Dask Clusters */
-export type StreamerFilter = {
-  AND?: InputMaybe<StreamerFilter>;
-  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
-  NOT?: InputMaybe<StreamerFilter>;
-  OR?: InputMaybe<StreamerFilter>;
-  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
-  search?: InputMaybe<Scalars['String']['input']>;
-};
+export type StreamOrder =
+  { createdAt: Ordering; title?: never; }
+  |  { createdAt?: never; title: Ordering; };
 
 /** A reference to an object on another service */
 export type Structure = {
@@ -446,21 +414,40 @@ export type Subscription = {
   callInvites: CallInviteEvent;
   /** The calls others start in your organization as they start, and any call's new topics */
   calls: CallEvent;
-  /** Subscribe to stream events */
+  /** Streams your organization's agents declare, change and drop, as they do */
   streams: StreamEvent;
-};
-
-
-export type SubscriptionStreamsArgs = {
-  dataset?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type User = {
   __typename?: 'User';
   activeOrganization?: Maybe<Organization>;
+  /** The family name, if the issuer sends one. */
+  familyName?: Maybe<Scalars['String']['output']>;
+  /** The given name, if the issuer sends one. */
+  givenName?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  /** The user's locale (BCP47), if the issuer sends one. */
+  locale?: Maybe<Scalars['String']['output']>;
+  /** The full name, if the issuer sends one. */
+  name?: Maybe<Scalars['String']['output']>;
+  /** A casual name, if the issuer sends one. */
+  nickname?: Maybe<Scalars['String']['output']>;
+  /** URL of the profile picture, if the issuer sends one. */
+  picture?: Maybe<Scalars['String']['output']>;
   preferredUsername: Scalars['String']['output'];
   sub: Scalars['String']['output'];
+  /** The user's IANA time zone, if the issuer sends one. */
+  zoneinfo?: Maybe<Scalars['String']['output']>;
+};
+
+/** The agent whose streams to watch */
+export type WatchAgentInput = {
+  agent: Scalars['ID']['input'];
+};
+
+/** The stream to watch */
+export type WatchStreamInput = {
+  stream: Scalars['ID']['input'];
 };
 
 export type _Entity = App | Client | Organization | Release | User;
@@ -470,34 +457,20 @@ export type _Service = {
   sdl: Scalars['String']['output'];
 };
 
-export type BroadcastStreamFragment = { __typename?: 'Stream', id: string, title: string, kind: StreamKind };
+export type AgentOwnerFragment = { __typename?: 'Agent', id: string, name: string, roomName: string, user: { __typename?: 'User', id: string, sub: string, preferredUsername: string }, client: { __typename?: 'Client', id: string, clientId: string, release?: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', id: string, identifier: string } } | null } };
 
-export type SoloBroadcastFragment = { __typename?: 'SoloBroadcast', id: string, title: string, createdAt: any, streamer: (
-    { __typename?: 'Streamer' }
-    & StreamerFragment
-  ), videoStreams: Array<(
+export type AgentFragment = (
+  { __typename?: 'Agent', createdAt: any, live: boolean, streams: Array<(
     { __typename?: 'Stream' }
-    & BroadcastStreamFragment
-  )>, audioStreams: Array<(
-    { __typename?: 'Stream' }
-    & BroadcastStreamFragment
-  )> };
+    & ListStreamFragment
+  )> }
+  & AgentOwnerFragment
+);
 
-export type ListSoloBroadcastFragment = { __typename?: 'SoloBroadcast', id: string, title: string, createdAt: any, streamer: (
-    { __typename?: 'Streamer' }
-    & StreamerFragment
-  ), videoStreams: Array<(
-    { __typename?: 'Stream' }
-    & BroadcastStreamFragment
-  )>, audioStreams: Array<(
-    { __typename?: 'Stream' }
-    & BroadcastStreamFragment
-  )> };
-
-export type CollaborativeBroadcastFragment = { __typename?: 'CollaborativeBroadcast', id: string, title: string, streamers: Array<(
-    { __typename?: 'Streamer' }
-    & StreamerFragment
-  )> };
+export type ListAgentFragment = (
+  { __typename?: 'Agent', live: boolean }
+  & AgentOwnerFragment
+);
 
 export type CallParticipantFragment = { __typename?: 'CallParticipant', identity: string, name: string, joinedAt: number };
 
@@ -521,26 +494,14 @@ export type CallInviteFragment = { __typename?: 'CallInvite', id: string, create
     & ListCallFragment
   ), inviter: { __typename?: 'User', id: string, sub: string, preferredUsername: string } };
 
-export type StreamFragment = { __typename?: 'Stream', id: string, title: string, kind: StreamKind, streamer: (
-    { __typename?: 'Streamer' }
-    & StreamerFragment
+export type StreamFragment = { __typename?: 'Stream', id: string, key: string, title: string, kind: StreamKind, description?: string | null, createdAt: any, live: boolean, agent: (
+    { __typename?: 'Agent' }
+    & AgentOwnerFragment
   ) };
 
-export type ListStreamFragment = { __typename?: 'Stream', id: string, title: string, kind: StreamKind, streamer: (
-    { __typename?: 'Streamer' }
-    & StreamerFragment
-  ) };
-
-export type StreamerFragment = { __typename?: 'Streamer', id: string, user: { __typename?: 'User', id: string, sub: string, preferredUsername: string }, client: { __typename?: 'Client', id: string, clientId: string, release?: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', id: string, identifier: string } } | null } };
-
-export type EnsureSoloBroadcastMutationVariables = Exact<{
-  input: EnsureSoloBroadcastInput;
-}>;
-
-
-export type EnsureSoloBroadcastMutation = { __typename?: 'Mutation', ensureSoloBroadcast: (
-    { __typename?: 'SoloBroadcast' }
-    & SoloBroadcastFragment
+export type ListStreamFragment = { __typename?: 'Stream', id: string, key: string, title: string, kind: StreamKind, live: boolean, agent: (
+    { __typename?: 'Agent' }
+    & AgentOwnerFragment
   ) };
 
 export type EnsureCallMutationVariables = Exact<{
@@ -584,19 +545,48 @@ export type DismissCallInviteMutationVariables = Exact<{
 
 export type DismissCallInviteMutation = { __typename?: 'Mutation', dismissCallInvite: string };
 
-export type JoinBroadcastMutationVariables = Exact<{
-  input: JoinBroadcastInput;
+export type WatchStreamMutationVariables = Exact<{
+  input: WatchStreamInput;
 }>;
 
 
-export type JoinBroadcastMutation = { __typename?: 'Mutation', joinBroadcast: string };
+export type WatchStreamMutation = { __typename?: 'Mutation', watchStream: string };
 
-export type EnsureStreamMutationVariables = Exact<{
-  input: EnsureStreamInput;
+export type WatchAgentMutationVariables = Exact<{
+  input: WatchAgentInput;
 }>;
 
 
-export type EnsureStreamMutation = { __typename?: 'Mutation', ensureStream: string };
+export type WatchAgentMutation = { __typename?: 'Mutation', watchAgent: string };
+
+export type GetAgentQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetAgentQuery = { __typename?: 'Query', agent: (
+    { __typename?: 'Agent' }
+    & AgentFragment
+  ) };
+
+export type SearchAgentsQueryVariables = Exact<{
+  search?: InputMaybe<Scalars['String']['input']>;
+  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+}>;
+
+
+export type SearchAgentsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'Agent', value: string, label: string }> };
+
+export type ListAgentsQueryVariables = Exact<{
+  filter?: InputMaybe<AgentFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListAgentsQuery = { __typename?: 'Query', agents: Array<(
+    { __typename?: 'Agent' }
+    & ListAgentFragment
+  )> };
 
 export type GetCallQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -637,35 +627,6 @@ export type MyCallInvitesQuery = { __typename?: 'Query', myCallInvites: Array<(
     & CallInviteFragment
   )> };
 
-export type GetCollaborativeBroadcastQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetCollaborativeBroadcastQuery = { __typename?: 'Query', collaborativeBroadcast: (
-    { __typename?: 'CollaborativeBroadcast' }
-    & CollaborativeBroadcastFragment
-  ) };
-
-export type SearchollaborativeBroadcastsQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchollaborativeBroadcastsQuery = { __typename?: 'Query', options: Array<{ __typename?: 'CollaborativeBroadcast', value: string, label: string }> };
-
-export type ListCollaborativeBroadcastsQueryVariables = Exact<{
-  filter?: InputMaybe<CollaborativeBroadcastFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type ListCollaborativeBroadcastsQuery = { __typename?: 'Query', collaborativeBroadcasts: Array<(
-    { __typename?: 'CollaborativeBroadcast' }
-    & CollaborativeBroadcastFragment
-  )> };
-
 export type GlobalSearchQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
 }>;
@@ -674,35 +635,6 @@ export type GlobalSearchQueryVariables = Exact<{
 export type GlobalSearchQuery = { __typename?: 'Query', streams: Array<(
     { __typename?: 'Stream' }
     & ListStreamFragment
-  )> };
-
-export type GetSoloBroadcastQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GetSoloBroadcastQuery = { __typename?: 'Query', soloBroadcast: (
-    { __typename?: 'SoloBroadcast' }
-    & SoloBroadcastFragment
-  ) };
-
-export type SearchSoloBroadcastQueryVariables = Exact<{
-  search?: InputMaybe<Scalars['String']['input']>;
-  values?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
-}>;
-
-
-export type SearchSoloBroadcastQuery = { __typename?: 'Query', options: Array<{ __typename?: 'SoloBroadcast', value: string, label: string }> };
-
-export type ListSoloBroadcastsQueryVariables = Exact<{
-  filter?: InputMaybe<SoloBroadcastFilter>;
-  pagination?: InputMaybe<OffsetPaginationInput>;
-}>;
-
-
-export type ListSoloBroadcastsQuery = { __typename?: 'Query', soloBroadcasts: Array<(
-    { __typename?: 'SoloBroadcast' }
-    & ListSoloBroadcastFragment
   )> };
 
 export type GetStreamQueryVariables = Exact<{
@@ -753,9 +685,22 @@ export type WatchCallsSubscription = { __typename?: 'Subscription', calls: { __t
       & ListCallFragment
     ) | null } };
 
-export const StreamerFragmentDoc = gql`
-    fragment Streamer on Streamer {
+export type WatchStreamsSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type WatchStreamsSubscription = { __typename?: 'Subscription', streams: { __typename?: 'StreamEvent', delete?: string | null, create?: (
+      { __typename?: 'Stream' }
+      & ListStreamFragment
+    ) | null, update?: (
+      { __typename?: 'Stream' }
+      & ListStreamFragment
+    ) | null } };
+
+export const AgentOwnerFragmentDoc = gql`
+    fragment AgentOwner on Agent {
   id
+  name
+  roomName
   user {
     id
     sub
@@ -775,56 +720,35 @@ export const StreamerFragmentDoc = gql`
   }
 }
     `;
-export const BroadcastStreamFragmentDoc = gql`
-    fragment BroadcastStream on Stream {
+export const ListStreamFragmentDoc = gql`
+    fragment ListStream on Stream {
   id
+  key
   title
   kind
+  live
+  agent {
+    ...AgentOwner
+  }
 }
-    `;
-export const SoloBroadcastFragmentDoc = gql`
-    fragment SoloBroadcast on SoloBroadcast {
-  id
-  title
+    ${AgentOwnerFragmentDoc}`;
+export const AgentFragmentDoc = gql`
+    fragment Agent on Agent {
+  ...AgentOwner
   createdAt
-  streamer {
-    ...Streamer
-  }
-  videoStreams {
-    ...BroadcastStream
-  }
-  audioStreams {
-    ...BroadcastStream
+  live
+  streams {
+    ...ListStream
   }
 }
-    ${StreamerFragmentDoc}
-${BroadcastStreamFragmentDoc}`;
-export const ListSoloBroadcastFragmentDoc = gql`
-    fragment ListSoloBroadcast on SoloBroadcast {
-  id
-  title
-  createdAt
-  streamer {
-    ...Streamer
-  }
-  videoStreams {
-    ...BroadcastStream
-  }
-  audioStreams {
-    ...BroadcastStream
-  }
+    ${AgentOwnerFragmentDoc}
+${ListStreamFragmentDoc}`;
+export const ListAgentFragmentDoc = gql`
+    fragment ListAgent on Agent {
+  ...AgentOwner
+  live
 }
-    ${StreamerFragmentDoc}
-${BroadcastStreamFragmentDoc}`;
-export const CollaborativeBroadcastFragmentDoc = gql`
-    fragment CollaborativeBroadcast on CollaborativeBroadcast {
-  id
-  title
-  streamers {
-    ...Streamer
-  }
-}
-    ${StreamerFragmentDoc}`;
+    ${AgentOwnerFragmentDoc}`;
 export const CallStructureFragmentDoc = gql`
     fragment CallStructure on Structure {
   identifier
@@ -892,56 +816,17 @@ export const CallInviteFragmentDoc = gql`
 export const StreamFragmentDoc = gql`
     fragment Stream on Stream {
   id
+  key
   title
   kind
-  streamer {
-    ...Streamer
+  description
+  createdAt
+  live
+  agent {
+    ...AgentOwner
   }
 }
-    ${StreamerFragmentDoc}`;
-export const ListStreamFragmentDoc = gql`
-    fragment ListStream on Stream {
-  id
-  title
-  kind
-  streamer {
-    ...Streamer
-  }
-}
-    ${StreamerFragmentDoc}`;
-export const EnsureSoloBroadcastDocument = gql`
-    mutation EnsureSoloBroadcast($input: EnsureSoloBroadcastInput!) {
-  ensureSoloBroadcast(input: $input) {
-    ...SoloBroadcast
-  }
-}
-    ${SoloBroadcastFragmentDoc}`;
-export type EnsureSoloBroadcastMutationFn = Apollo.MutationFunction<EnsureSoloBroadcastMutation, EnsureSoloBroadcastMutationVariables>;
-
-/**
- * __useEnsureSoloBroadcastMutation__
- *
- * To run a mutation, you first call `useEnsureSoloBroadcastMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useEnsureSoloBroadcastMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [ensureSoloBroadcastMutation, { data, loading, error }] = useEnsureSoloBroadcastMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useEnsureSoloBroadcastMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EnsureSoloBroadcastMutation, EnsureSoloBroadcastMutationVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<EnsureSoloBroadcastMutation, EnsureSoloBroadcastMutationVariables>(EnsureSoloBroadcastDocument, options);
-      }
-export type EnsureSoloBroadcastMutationHookResult = ReturnType<typeof useEnsureSoloBroadcastMutation>;
-export type EnsureSoloBroadcastMutationResult = Apollo.MutationResult<EnsureSoloBroadcastMutation>;
-export type EnsureSoloBroadcastMutationOptions = Apollo.BaseMutationOptions<EnsureSoloBroadcastMutation, EnsureSoloBroadcastMutationVariables>;
+    ${AgentOwnerFragmentDoc}`;
 export const EnsureCallDocument = gql`
     mutation EnsureCall($input: EnsureCallInput!) {
   ensureCall(input: $input) {
@@ -1103,68 +988,179 @@ export function useDismissCallInviteMutation(baseOptions?: ApolloReactHooks.Muta
 export type DismissCallInviteMutationHookResult = ReturnType<typeof useDismissCallInviteMutation>;
 export type DismissCallInviteMutationResult = Apollo.MutationResult<DismissCallInviteMutation>;
 export type DismissCallInviteMutationOptions = Apollo.BaseMutationOptions<DismissCallInviteMutation, DismissCallInviteMutationVariables>;
-export const JoinBroadcastDocument = gql`
-    mutation JoinBroadcast($input: JoinBroadcastInput!) {
-  joinBroadcast(input: $input)
+export const WatchStreamDocument = gql`
+    mutation WatchStream($input: WatchStreamInput!) {
+  watchStream(input: $input)
 }
     `;
-export type JoinBroadcastMutationFn = Apollo.MutationFunction<JoinBroadcastMutation, JoinBroadcastMutationVariables>;
+export type WatchStreamMutationFn = Apollo.MutationFunction<WatchStreamMutation, WatchStreamMutationVariables>;
 
 /**
- * __useJoinBroadcastMutation__
+ * __useWatchStreamMutation__
  *
- * To run a mutation, you first call `useJoinBroadcastMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useJoinBroadcastMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useWatchStreamMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useWatchStreamMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [joinBroadcastMutation, { data, loading, error }] = useJoinBroadcastMutation({
+ * const [watchStreamMutation, { data, loading, error }] = useWatchStreamMutation({
  *   variables: {
  *      input: // value for 'input'
  *   },
  * });
  */
-export function useJoinBroadcastMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<JoinBroadcastMutation, JoinBroadcastMutationVariables>) {
+export function useWatchStreamMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<WatchStreamMutation, WatchStreamMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<JoinBroadcastMutation, JoinBroadcastMutationVariables>(JoinBroadcastDocument, options);
+        return ApolloReactHooks.useMutation<WatchStreamMutation, WatchStreamMutationVariables>(WatchStreamDocument, options);
       }
-export type JoinBroadcastMutationHookResult = ReturnType<typeof useJoinBroadcastMutation>;
-export type JoinBroadcastMutationResult = Apollo.MutationResult<JoinBroadcastMutation>;
-export type JoinBroadcastMutationOptions = Apollo.BaseMutationOptions<JoinBroadcastMutation, JoinBroadcastMutationVariables>;
-export const EnsureStreamDocument = gql`
-    mutation EnsureStream($input: EnsureStreamInput!) {
-  ensureStream(input: $input)
+export type WatchStreamMutationHookResult = ReturnType<typeof useWatchStreamMutation>;
+export type WatchStreamMutationResult = Apollo.MutationResult<WatchStreamMutation>;
+export type WatchStreamMutationOptions = Apollo.BaseMutationOptions<WatchStreamMutation, WatchStreamMutationVariables>;
+export const WatchAgentDocument = gql`
+    mutation WatchAgent($input: WatchAgentInput!) {
+  watchAgent(input: $input)
 }
     `;
-export type EnsureStreamMutationFn = Apollo.MutationFunction<EnsureStreamMutation, EnsureStreamMutationVariables>;
+export type WatchAgentMutationFn = Apollo.MutationFunction<WatchAgentMutation, WatchAgentMutationVariables>;
 
 /**
- * __useEnsureStreamMutation__
+ * __useWatchAgentMutation__
  *
- * To run a mutation, you first call `useEnsureStreamMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useEnsureStreamMutation` returns a tuple that includes:
+ * To run a mutation, you first call `useWatchAgentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useWatchAgentMutation` returns a tuple that includes:
  * - A mutate function that you can call at any time to execute the mutation
  * - An object with fields that represent the current status of the mutation's execution
  *
  * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
  *
  * @example
- * const [ensureStreamMutation, { data, loading, error }] = useEnsureStreamMutation({
+ * const [watchAgentMutation, { data, loading, error }] = useWatchAgentMutation({
  *   variables: {
  *      input: // value for 'input'
  *   },
  * });
  */
-export function useEnsureStreamMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EnsureStreamMutation, EnsureStreamMutationVariables>) {
+export function useWatchAgentMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<WatchAgentMutation, WatchAgentMutationVariables>) {
         const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useMutation<EnsureStreamMutation, EnsureStreamMutationVariables>(EnsureStreamDocument, options);
+        return ApolloReactHooks.useMutation<WatchAgentMutation, WatchAgentMutationVariables>(WatchAgentDocument, options);
       }
-export type EnsureStreamMutationHookResult = ReturnType<typeof useEnsureStreamMutation>;
-export type EnsureStreamMutationResult = Apollo.MutationResult<EnsureStreamMutation>;
-export type EnsureStreamMutationOptions = Apollo.BaseMutationOptions<EnsureStreamMutation, EnsureStreamMutationVariables>;
+export type WatchAgentMutationHookResult = ReturnType<typeof useWatchAgentMutation>;
+export type WatchAgentMutationResult = Apollo.MutationResult<WatchAgentMutation>;
+export type WatchAgentMutationOptions = Apollo.BaseMutationOptions<WatchAgentMutation, WatchAgentMutationVariables>;
+export const GetAgentDocument = gql`
+    query GetAgent($id: ID!) {
+  agent(id: $id) {
+    ...Agent
+  }
+}
+    ${AgentFragmentDoc}`;
+
+/**
+ * __useGetAgentQuery__
+ *
+ * To run a query within a React component, call `useGetAgentQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAgentQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAgentQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetAgentQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetAgentQuery, GetAgentQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetAgentQuery, GetAgentQueryVariables>(GetAgentDocument, options);
+      }
+export function useGetAgentLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetAgentQuery, GetAgentQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetAgentQuery, GetAgentQueryVariables>(GetAgentDocument, options);
+        }
+export type GetAgentQueryHookResult = ReturnType<typeof useGetAgentQuery>;
+export type GetAgentLazyQueryHookResult = ReturnType<typeof useGetAgentLazyQuery>;
+export type GetAgentQueryResult = Apollo.QueryResult<GetAgentQuery, GetAgentQueryVariables>;
+export const SearchAgentsDocument = gql`
+    query SearchAgents($search: String, $values: [ID!]) {
+  options: agents(
+    filters: {search: $search, ids: $values}
+    pagination: {limit: 10}
+  ) {
+    value: id
+    label: name
+  }
+}
+    `;
+
+/**
+ * __useSearchAgentsQuery__
+ *
+ * To run a query within a React component, call `useSearchAgentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSearchAgentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSearchAgentsQuery({
+ *   variables: {
+ *      search: // value for 'search'
+ *      values: // value for 'values'
+ *   },
+ * });
+ */
+export function useSearchAgentsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchAgentsQuery, SearchAgentsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SearchAgentsQuery, SearchAgentsQueryVariables>(SearchAgentsDocument, options);
+      }
+export function useSearchAgentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchAgentsQuery, SearchAgentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SearchAgentsQuery, SearchAgentsQueryVariables>(SearchAgentsDocument, options);
+        }
+export type SearchAgentsQueryHookResult = ReturnType<typeof useSearchAgentsQuery>;
+export type SearchAgentsLazyQueryHookResult = ReturnType<typeof useSearchAgentsLazyQuery>;
+export type SearchAgentsQueryResult = Apollo.QueryResult<SearchAgentsQuery, SearchAgentsQueryVariables>;
+export const ListAgentsDocument = gql`
+    query ListAgents($filter: AgentFilter, $pagination: OffsetPaginationInput) {
+  agents(filters: $filter, pagination: $pagination) {
+    ...ListAgent
+  }
+}
+    ${ListAgentFragmentDoc}`;
+
+/**
+ * __useListAgentsQuery__
+ *
+ * To run a query within a React component, call `useListAgentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListAgentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListAgentsQuery({
+ *   variables: {
+ *      filter: // value for 'filter'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListAgentsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListAgentsQuery, ListAgentsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListAgentsQuery, ListAgentsQueryVariables>(ListAgentsDocument, options);
+      }
+export function useListAgentsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListAgentsQuery, ListAgentsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListAgentsQuery, ListAgentsQueryVariables>(ListAgentsDocument, options);
+        }
+export type ListAgentsQueryHookResult = ReturnType<typeof useListAgentsQuery>;
+export type ListAgentsLazyQueryHookResult = ReturnType<typeof useListAgentsLazyQuery>;
+export type ListAgentsQueryResult = Apollo.QueryResult<ListAgentsQuery, ListAgentsQueryVariables>;
 export const GetCallDocument = gql`
     query GetCall($id: ID!) {
   call(id: $id) {
@@ -1308,117 +1304,6 @@ export function useMyCallInvitesLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type MyCallInvitesQueryHookResult = ReturnType<typeof useMyCallInvitesQuery>;
 export type MyCallInvitesLazyQueryHookResult = ReturnType<typeof useMyCallInvitesLazyQuery>;
 export type MyCallInvitesQueryResult = Apollo.QueryResult<MyCallInvitesQuery, MyCallInvitesQueryVariables>;
-export const GetCollaborativeBroadcastDocument = gql`
-    query GetCollaborativeBroadcast($id: ID!) {
-  collaborativeBroadcast(id: $id) {
-    ...CollaborativeBroadcast
-  }
-}
-    ${CollaborativeBroadcastFragmentDoc}`;
-
-/**
- * __useGetCollaborativeBroadcastQuery__
- *
- * To run a query within a React component, call `useGetCollaborativeBroadcastQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetCollaborativeBroadcastQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetCollaborativeBroadcastQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetCollaborativeBroadcastQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetCollaborativeBroadcastQuery, GetCollaborativeBroadcastQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetCollaborativeBroadcastQuery, GetCollaborativeBroadcastQueryVariables>(GetCollaborativeBroadcastDocument, options);
-      }
-export function useGetCollaborativeBroadcastLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetCollaborativeBroadcastQuery, GetCollaborativeBroadcastQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetCollaborativeBroadcastQuery, GetCollaborativeBroadcastQueryVariables>(GetCollaborativeBroadcastDocument, options);
-        }
-export type GetCollaborativeBroadcastQueryHookResult = ReturnType<typeof useGetCollaborativeBroadcastQuery>;
-export type GetCollaborativeBroadcastLazyQueryHookResult = ReturnType<typeof useGetCollaborativeBroadcastLazyQuery>;
-export type GetCollaborativeBroadcastQueryResult = Apollo.QueryResult<GetCollaborativeBroadcastQuery, GetCollaborativeBroadcastQueryVariables>;
-export const SearchollaborativeBroadcastsDocument = gql`
-    query SearchollaborativeBroadcasts($search: String, $values: [ID!]) {
-  options: collaborativeBroadcasts(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: title
-  }
-}
-    `;
-
-/**
- * __useSearchollaborativeBroadcastsQuery__
- *
- * To run a query within a React component, call `useSearchollaborativeBroadcastsQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchollaborativeBroadcastsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchollaborativeBroadcastsQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchollaborativeBroadcastsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchollaborativeBroadcastsQuery, SearchollaborativeBroadcastsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchollaborativeBroadcastsQuery, SearchollaborativeBroadcastsQueryVariables>(SearchollaborativeBroadcastsDocument, options);
-      }
-export function useSearchollaborativeBroadcastsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchollaborativeBroadcastsQuery, SearchollaborativeBroadcastsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchollaborativeBroadcastsQuery, SearchollaborativeBroadcastsQueryVariables>(SearchollaborativeBroadcastsDocument, options);
-        }
-export type SearchollaborativeBroadcastsQueryHookResult = ReturnType<typeof useSearchollaborativeBroadcastsQuery>;
-export type SearchollaborativeBroadcastsLazyQueryHookResult = ReturnType<typeof useSearchollaborativeBroadcastsLazyQuery>;
-export type SearchollaborativeBroadcastsQueryResult = Apollo.QueryResult<SearchollaborativeBroadcastsQuery, SearchollaborativeBroadcastsQueryVariables>;
-export const ListCollaborativeBroadcastsDocument = gql`
-    query ListCollaborativeBroadcasts($filter: CollaborativeBroadcastFilter, $pagination: OffsetPaginationInput) {
-  collaborativeBroadcasts(filters: $filter, pagination: $pagination) {
-    ...CollaborativeBroadcast
-  }
-}
-    ${CollaborativeBroadcastFragmentDoc}`;
-
-/**
- * __useListCollaborativeBroadcastsQuery__
- *
- * To run a query within a React component, call `useListCollaborativeBroadcastsQuery` and pass it any options that fit your needs.
- * When your component renders, `useListCollaborativeBroadcastsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListCollaborativeBroadcastsQuery({
- *   variables: {
- *      filter: // value for 'filter'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useListCollaborativeBroadcastsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListCollaborativeBroadcastsQuery, ListCollaborativeBroadcastsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListCollaborativeBroadcastsQuery, ListCollaborativeBroadcastsQueryVariables>(ListCollaborativeBroadcastsDocument, options);
-      }
-export function useListCollaborativeBroadcastsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListCollaborativeBroadcastsQuery, ListCollaborativeBroadcastsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListCollaborativeBroadcastsQuery, ListCollaborativeBroadcastsQueryVariables>(ListCollaborativeBroadcastsDocument, options);
-        }
-export type ListCollaborativeBroadcastsQueryHookResult = ReturnType<typeof useListCollaborativeBroadcastsQuery>;
-export type ListCollaborativeBroadcastsLazyQueryHookResult = ReturnType<typeof useListCollaborativeBroadcastsLazyQuery>;
-export type ListCollaborativeBroadcastsQueryResult = Apollo.QueryResult<ListCollaborativeBroadcastsQuery, ListCollaborativeBroadcastsQueryVariables>;
 export const GlobalSearchDocument = gql`
     query GlobalSearch($search: String) {
   streams(filters: {search: $search}) {
@@ -1454,117 +1339,6 @@ export function useGlobalSearchLazyQuery(baseOptions?: ApolloReactHooks.LazyQuer
 export type GlobalSearchQueryHookResult = ReturnType<typeof useGlobalSearchQuery>;
 export type GlobalSearchLazyQueryHookResult = ReturnType<typeof useGlobalSearchLazyQuery>;
 export type GlobalSearchQueryResult = Apollo.QueryResult<GlobalSearchQuery, GlobalSearchQueryVariables>;
-export const GetSoloBroadcastDocument = gql`
-    query GetSoloBroadcast($id: ID!) {
-  soloBroadcast(id: $id) {
-    ...SoloBroadcast
-  }
-}
-    ${SoloBroadcastFragmentDoc}`;
-
-/**
- * __useGetSoloBroadcastQuery__
- *
- * To run a query within a React component, call `useGetSoloBroadcastQuery` and pass it any options that fit your needs.
- * When your component renders, `useGetSoloBroadcastQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useGetSoloBroadcastQuery({
- *   variables: {
- *      id: // value for 'id'
- *   },
- * });
- */
-export function useGetSoloBroadcastQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetSoloBroadcastQuery, GetSoloBroadcastQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<GetSoloBroadcastQuery, GetSoloBroadcastQueryVariables>(GetSoloBroadcastDocument, options);
-      }
-export function useGetSoloBroadcastLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetSoloBroadcastQuery, GetSoloBroadcastQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<GetSoloBroadcastQuery, GetSoloBroadcastQueryVariables>(GetSoloBroadcastDocument, options);
-        }
-export type GetSoloBroadcastQueryHookResult = ReturnType<typeof useGetSoloBroadcastQuery>;
-export type GetSoloBroadcastLazyQueryHookResult = ReturnType<typeof useGetSoloBroadcastLazyQuery>;
-export type GetSoloBroadcastQueryResult = Apollo.QueryResult<GetSoloBroadcastQuery, GetSoloBroadcastQueryVariables>;
-export const SearchSoloBroadcastDocument = gql`
-    query SearchSoloBroadcast($search: String, $values: [ID!]) {
-  options: soloBroadcasts(
-    filters: {search: $search, ids: $values}
-    pagination: {limit: 10}
-  ) {
-    value: id
-    label: title
-  }
-}
-    `;
-
-/**
- * __useSearchSoloBroadcastQuery__
- *
- * To run a query within a React component, call `useSearchSoloBroadcastQuery` and pass it any options that fit your needs.
- * When your component renders, `useSearchSoloBroadcastQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useSearchSoloBroadcastQuery({
- *   variables: {
- *      search: // value for 'search'
- *      values: // value for 'values'
- *   },
- * });
- */
-export function useSearchSoloBroadcastQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<SearchSoloBroadcastQuery, SearchSoloBroadcastQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<SearchSoloBroadcastQuery, SearchSoloBroadcastQueryVariables>(SearchSoloBroadcastDocument, options);
-      }
-export function useSearchSoloBroadcastLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SearchSoloBroadcastQuery, SearchSoloBroadcastQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<SearchSoloBroadcastQuery, SearchSoloBroadcastQueryVariables>(SearchSoloBroadcastDocument, options);
-        }
-export type SearchSoloBroadcastQueryHookResult = ReturnType<typeof useSearchSoloBroadcastQuery>;
-export type SearchSoloBroadcastLazyQueryHookResult = ReturnType<typeof useSearchSoloBroadcastLazyQuery>;
-export type SearchSoloBroadcastQueryResult = Apollo.QueryResult<SearchSoloBroadcastQuery, SearchSoloBroadcastQueryVariables>;
-export const ListSoloBroadcastsDocument = gql`
-    query ListSoloBroadcasts($filter: SoloBroadcastFilter, $pagination: OffsetPaginationInput) {
-  soloBroadcasts(filters: $filter, pagination: $pagination) {
-    ...ListSoloBroadcast
-  }
-}
-    ${ListSoloBroadcastFragmentDoc}`;
-
-/**
- * __useListSoloBroadcastsQuery__
- *
- * To run a query within a React component, call `useListSoloBroadcastsQuery` and pass it any options that fit your needs.
- * When your component renders, `useListSoloBroadcastsQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useListSoloBroadcastsQuery({
- *   variables: {
- *      filter: // value for 'filter'
- *      pagination: // value for 'pagination'
- *   },
- * });
- */
-export function useListSoloBroadcastsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListSoloBroadcastsQuery, ListSoloBroadcastsQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<ListSoloBroadcastsQuery, ListSoloBroadcastsQueryVariables>(ListSoloBroadcastsDocument, options);
-      }
-export function useListSoloBroadcastsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListSoloBroadcastsQuery, ListSoloBroadcastsQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<ListSoloBroadcastsQuery, ListSoloBroadcastsQueryVariables>(ListSoloBroadcastsDocument, options);
-        }
-export type ListSoloBroadcastsQueryHookResult = ReturnType<typeof useListSoloBroadcastsQuery>;
-export type ListSoloBroadcastsLazyQueryHookResult = ReturnType<typeof useListSoloBroadcastsLazyQuery>;
-export type ListSoloBroadcastsQueryResult = Apollo.QueryResult<ListSoloBroadcastsQuery, ListSoloBroadcastsQueryVariables>;
 export const GetStreamDocument = gql`
     query GetStream($id: ID!) {
   stream(id: $id) {
@@ -1742,3 +1516,38 @@ export function useWatchCallsSubscription(baseOptions?: ApolloReactHooks.Subscri
       }
 export type WatchCallsSubscriptionHookResult = ReturnType<typeof useWatchCallsSubscription>;
 export type WatchCallsSubscriptionResult = Apollo.SubscriptionResult<WatchCallsSubscription>;
+export const WatchStreamsDocument = gql`
+    subscription WatchStreams {
+  streams {
+    create {
+      ...ListStream
+    }
+    update {
+      ...ListStream
+    }
+    delete
+  }
+}
+    ${ListStreamFragmentDoc}`;
+
+/**
+ * __useWatchStreamsSubscription__
+ *
+ * To run a query within a React component, call `useWatchStreamsSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchStreamsSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchStreamsSubscription({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useWatchStreamsSubscription(baseOptions?: ApolloReactHooks.SubscriptionHookOptions<WatchStreamsSubscription, WatchStreamsSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchStreamsSubscription, WatchStreamsSubscriptionVariables>(WatchStreamsDocument, options);
+      }
+export type WatchStreamsSubscriptionHookResult = ReturnType<typeof useWatchStreamsSubscription>;
+export type WatchStreamsSubscriptionResult = Apollo.SubscriptionResult<WatchStreamsSubscription>;

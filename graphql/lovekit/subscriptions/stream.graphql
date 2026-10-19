@@ -1,0 +1,11 @@
+subscription WatchStreams {
+  streams {
+    create {
+      ...ListStream
+    }
+    update {
+      ...ListStream
+    }
+    delete
+  }
+}
