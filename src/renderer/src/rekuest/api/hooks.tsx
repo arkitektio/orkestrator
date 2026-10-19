@@ -9,7 +9,6 @@ import {
   useQuery as useApolloQuery,
   useSubscription as useApolloSubscription,
 } from "@apollo/client";
-import { onApolloError } from "@/core/connection/graphql/errorHandler";
 
 
 /**
@@ -31,15 +30,14 @@ export type {
   SubscriptionHookOptions
 };
 
+// No `onError`: a failed mutation rejects, and its caller reports it — inline
+// in a dialog (`useDialogSubmit`), else `reportErrorAs` (CLAUDE.md §8).
 export const useMutation: MutationFuncType = (doc, options) => {
   const rekuest = useRekuest();
 
   return useApolloMutation(doc, {
     ...options,
     client: rekuest,
-    // A hook that reports its own failure (`useAssign`) passes an `onError`;
-    // every other mutation keeps the service-wide toast.
-    onError: options?.onError ?? onApolloError("rekuest"),
   });
 };
 

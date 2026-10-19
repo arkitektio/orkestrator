@@ -1,3 +1,4 @@
+import { DialogErrorScope, useDialogError } from "@/core/dialogs/DialogError";
 import React, { useCallback } from "react";
 import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
@@ -30,7 +31,6 @@ export const useGraphQlFormDialog = <T extends MutationFunction>(
 
   const onSubmitGraphQl = useCallback(
     (e: any) => {
-      console.log("submit");
       return mutation(e)
         .then((d) => {
           if (d.errors) {
@@ -42,15 +42,52 @@ export const useGraphQlFormDialog = <T extends MutationFunction>(
           return d;
         })
         .catch((d) => {
+          // Shown in the dialog; settled here so it is not reported twice.
           onError(d);
-
-          throw d;
+          return { errors: d };
         });
     },
     [onSubmit, onError],
   );
 
   return onSubmitGraphQl as T;
+};
+
+/**
+ * The form's context inside an open dialog or sheet: a submit closes it, a
+ * failure stays in it — shown at its foot by the `DialogErrorScope` around
+ * it — unless the caller handles errors itself (`onError`).
+ */
+const FormDialogBody = ({
+  close,
+  onSubmit: onSubmitProp,
+  onError: onErrorProp,
+  children,
+}: {
+  close: () => void;
+  onSubmit?: (v: any) => void;
+  onError?: (err: any) => void;
+  children: React.ReactNode;
+}) => {
+  const { report } = useDialogError();
+
+  const onSubmit = useCallback(
+    (v: any) => {
+      close();
+      onSubmitProp?.(v);
+    },
+    [close, onSubmitProp],
+  );
+
+  const onError = useCallback(
+    (e: any) => {
+      if (onErrorProp) onErrorProp(e);
+      else report(e);
+    },
+    [onErrorProp, report],
+  );
+
+  return <FormDialogContext.Provider value={{ onSubmit, onError }}>{children}</FormDialogContext.Provider>;
 };
 
 export const FormDialog = (props: {
@@ -60,33 +97,17 @@ export const FormDialog = (props: {
   onError?: (err: any) => void;
 }) => {
   const [open, setOpen] = React.useState(false);
-
-  const onSubmit = useCallback(
-    (v: any) => {
-      console.log("submit");
-      setOpen(false);
-      props.onSubmit?.(v);
-    },
-    [setOpen, props.onSubmit],
-  );
-
-  const onError = useCallback(
-    (e: any) => {
-      console.log("error", e);
-      setOpen(false);
-      props.onError ? props.onError(e) : alert("Error: " + e);
-    },
-    [setOpen, props.onError],
-  );
+  const close = useCallback(() => setOpen(false), []);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger>{props.trigger}</DialogTrigger>
       <DialogContent>
-        <FormDialogContext.Provider value={{ onSubmit, onError }}>
-          {" "}
-          {props.children}
-        </FormDialogContext.Provider>
+        <DialogErrorScope>
+          <FormDialogBody close={close} onSubmit={props.onSubmit} onError={props.onError}>
+            {props.children}
+          </FormDialogBody>
+        </DialogErrorScope>
       </DialogContent>
     </Dialog>
   );
@@ -99,33 +120,17 @@ export const FormSheet = (props: {
   onError?: (err: any) => void;
 }) => {
   const [open, setOpen] = React.useState(false);
-
-  const onSubmit = useCallback(
-    (v: any) => {
-      console.log("submit");
-      setOpen(false);
-      props.onSubmit?.(v);
-    },
-    [setOpen, props.onSubmit],
-  );
-
-  const onError = useCallback(
-    (e: any) => {
-      console.log("error", e);
-      setOpen(false);
-      props.onError?.(e);
-    },
-    [setOpen, props.onError],
-  );
+  const close = useCallback(() => setOpen(false), []);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger>{props.trigger}</SheetTrigger>
       <SheetContent>
-        <FormDialogContext.Provider value={{ onSubmit, onError }}>
-          {" "}
-          {props.children}
-        </FormDialogContext.Provider>
+        <DialogErrorScope>
+          <FormDialogBody close={close} onSubmit={props.onSubmit} onError={props.onError}>
+            {props.children}
+          </FormDialogBody>
+        </DialogErrorScope>
       </SheetContent>
     </Sheet>
   );

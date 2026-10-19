@@ -13,7 +13,7 @@ import { UnexpectedError } from "@/core/layout/fallbacks/UnexpectedError";
 import { ReportButton } from "@/core/layout/fallbacks/statusActions";
 import { Button } from "@/core/ui/button";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import { Toaster } from "@/core/ui/sonner";
+import { UnhandledErrorNet } from "@/core/notify";
 import { UpdateListener } from "@/app/updates/UpdateListener";
 import { TooltipProvider } from "@/core/ui/tooltip";
 import { useFatalReport } from "@/core/debug/use-report";
@@ -203,7 +203,8 @@ export const AppProvider = ({
                                     </Guard.Lok>
                                     {/* The roles, for readers outside React (drop targets). */}
                                     <RolesBridge />
-                                    <Toaster />
+                                    {/* A failed request nobody caught still reaches the toast island. */}
+                                    <UnhandledErrorNet />
                                     {/* One subscription to the app updater, for
                                         the rail island and the settings card. */}
                                     {!quick && <UpdateListener />}

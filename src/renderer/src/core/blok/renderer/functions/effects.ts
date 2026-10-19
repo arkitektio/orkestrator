@@ -10,20 +10,11 @@ import {textSchema} from './argumentSchemas';
 
 const describe = (values: unknown[]): unknown => (values.length === 1 ? values[0] : values);
 
-const asMessage = (message: unknown): string =>
-  typeof message === 'string' ? message : JSON.stringify(message) ?? String(message);
-
-const TOAST_BY_LEVEL = {
-  info: 'info',
-  warn: 'warning',
-  error: 'error',
-} as const;
-
 const createLoggerFunction = (level: 'info' | 'warn' | 'error') =>
   createVariadicBlokFunction(
     {
       name: `logger.${level}`,
-      description: `Logs its arguments and shows a ${level} toast.`,
+      description: `Logs its arguments to the console at ${level} level. For a message the user should see, use ui.toast.`,
       returnType: 'unknown',
       purity: 'effect',
       item: z.unknown(),
@@ -32,9 +23,9 @@ const createLoggerFunction = (level: 'info' | 'warn' | 'error') =>
     values => {
       const message = describe(values);
       // Resolved at call time, not captured at module load, so the sink stays
-      // whatever `console`/`toast` is when the action actually fires.
+      // whatever `console` is when the action actually fires. No toast: a log
+      // line is for the author, and a logger in a loop would fill the island.
       console[level](`blok logger.${level}`, message);
-      toast[TOAST_BY_LEVEL[level]](asMessage(message));
       return message;
     },
   );
@@ -61,7 +52,7 @@ const copyFunction = createBlokFunction(
 
 /**
  * A toast is the one piece of UI a blok raises without a component: it is
- * transient, app-owned chrome (the `<Toaster/>` is mounted once by the shell),
+ * transient, app-owned chrome (the toast island, `core/notify`),
  * so it belongs in action position like any other effect.
  */
 const toastFunction = createBlokFunction(

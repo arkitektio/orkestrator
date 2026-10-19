@@ -6,7 +6,7 @@ const actions = vi.hoisted(() => ({ open: vi.fn(), openBeside: vi.fn() }));
 vi.mock("@/core/tabs/TabsProvider", () => ({ useTabActions: () => actions }));
 
 const toastError = vi.hoisted(() => vi.fn());
-vi.mock("sonner", () => ({ toast: { error: toastError } }));
+vi.mock("@/core/notify", () => ({ toast: { error: toastError } }));
 
 import { SMART_MODEL_DROP_TYPE } from "@/core/constants";
 import { createDragSource, installDndEngine } from "@/core/dnd/engine";

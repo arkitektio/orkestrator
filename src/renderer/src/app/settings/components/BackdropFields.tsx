@@ -2,7 +2,7 @@ import { customBackdropStyle, RAIL_BACKDROPS, type RailBackdropId } from "@/app/
 import { useStoredBackdropUrl } from "@/app/components/chrome/RailBackdrop";
 import { acceptsFiles } from "@/core/dnd/files";
 import { useCanDrop, useDropTarget } from "@/core/dnd/react";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import { BACKDROP_ACCEPT, clearBackdrop, importBackdrop } from "@/core/settings/store/backdropStore";
 import type { Settings } from "@/core/settings/store/validator";
 import { Button } from "@/core/ui/button";
@@ -89,7 +89,7 @@ export const BackdropFields = () => {
       setValue("railBackdropVersion", Date.now(), { shouldDirty: true });
       choose("custom");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not use that image.");
+      reportError(error, "Couldn't use that image");
     }
   };
 

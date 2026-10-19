@@ -1,32 +1,32 @@
 import type { ReactNode } from "react";
-import { toast as sonner, type ExternalToast } from "sonner";
-import { dismissToast, pushToast, toastIslandMounted, type ToastKind } from "./toasts";
+import { dismissToast, pushToast, type ToastKind, type ToastOptions } from "./toasts";
 
 /**
- * The app's `toast`: sonner's call shape, shown in the rail's toast island.
+ * The app's `toast`, shown in the toast island: the rail's in a signed-in
+ * window, a floating copy on the welcome screen and under the quick bar's
+ * palette. There is no other toast surface.
  *
- * A window with no island (the sign-in screen, the quick bar, anything without
- * the rail) falls back to sonner's floating toast, so a call site never has to
- * know where it runs. Import this instead of `sonner`; import `sonner` itself
- * only for a toast that must float.
+ * For a failure, prefer `reportError` / `reportErrorAs`: they turn the error
+ * into a sentence and offer the raw text as "Copy details".
  */
 
 type Message = (() => ReactNode) | ReactNode;
 
-const route = (kind: ToastKind, sonnerCall: (message: Message, data?: ExternalToast) => string | number) =>
-  (message: Message, data?: ExternalToast): string | number =>
-    toastIslandMounted() ? pushToast(kind, message, data) : sonnerCall(message, data);
+const kind =
+  (k: ToastKind) =>
+  (message: Message, options?: ToastOptions): string | number =>
+    pushToast(k, message, options);
 
-export const toast = Object.assign(route("default", (m, d) => sonner(m, d)), {
-  success: route("success", (m, d) => sonner.success(m, d)),
-  info: route("info", (m, d) => sonner.info(m, d)),
-  warning: route("warning", (m, d) => sonner.warning(m, d)),
-  error: route("error", (m, d) => sonner.error(m, d)),
-  message: route("default", (m, d) => sonner.message(m, d)),
-  dismiss: (id?: string | number) => {
-    dismissToast(id);
-    sonner.dismiss(id);
-  },
+export const toast = Object.assign(kind("default"), {
+  success: kind("success"),
+  info: kind("info"),
+  warning: kind("warning"),
+  error: kind("error"),
+  message: kind("default"),
+  dismiss: (id?: string | number) => dismissToast(id),
 });
 
+export type { ToastAction, ToastOptions } from "./toasts";
 export { ToastIsland } from "./ToastIsland";
+export { describeError, isAbort, type DescribedError } from "./describeError";
+export { installUnhandledErrorNet, reportError, UnhandledErrorNet, reportErrorAs, type ReportOptions } from "./reportError";

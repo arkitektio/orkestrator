@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import type { Action, ExternalToast } from "sonner";
+import type { MouseEvent, ReactNode } from "react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
@@ -15,14 +14,34 @@ import { createStore } from "zustand/vanilla";
 
 export type ToastKind = "default" | "success" | "info" | "warning" | "error";
 
+/** A link-sized button on a toast; it clears the toast unless `onClick` prevents default. */
+export type ToastAction = {
+  label: ReactNode;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
+};
+
+export type ToastOptions = {
+  /** Same id replaces the toast in place. */
+  id?: string | number;
+  description?: (() => ReactNode) | ReactNode;
+  action?: ToastAction | ReactNode;
+  cancel?: ToastAction | ReactNode;
+  icon?: ReactNode;
+  /** Milliseconds; `Infinity` stays until dismissed. Defaults per kind. */
+  duration?: number;
+  /** The raw text behind an error (codes, paths): offered as "Copy details". */
+  technical?: string;
+};
+
 export type RailToast = {
   id: string | number;
   kind: ToastKind;
   message: ReactNode;
   description?: ReactNode;
-  action?: Action | ReactNode;
-  cancel?: Action | ReactNode;
+  action?: ToastAction | ReactNode;
+  cancel?: ToastAction | ReactNode;
   icon?: ReactNode;
+  technical?: string;
   createdAt: number;
 };
 
@@ -38,9 +57,9 @@ export const TOAST_TTL_MS: Record<ToastKind, number> = {
 /** A bounded list: the rail is narrow, and a burst of failures must not fill it. */
 export const MAX_TOASTS = 5;
 
-type State = { toasts: RailToast[]; islands: number };
+type State = { toasts: RailToast[] };
 
-export const toastStore = createStore<State>(() => ({ toasts: [], islands: 0 }));
+export const toastStore = createStore<State>(() => ({ toasts: [] }));
 
 export const useRailToasts = <T>(selector: (state: State) => T) => useStore(toastStore, selector);
 
@@ -69,11 +88,11 @@ let counter = 0;
 
 const resolve = (node: (() => ReactNode) | ReactNode) => (typeof node === "function" ? node() : node);
 
-/** Adds a toast, or replaces the one with the same `id` in place (sonner's semantics). */
+/** Adds a toast, or replaces the one with the same `id` in place. */
 export const pushToast = (
   kind: ToastKind,
   message: (() => ReactNode) | ReactNode,
-  options: ExternalToast = {},
+  options: ToastOptions = {},
 ): string | number => {
   const id = options.id ?? `toast-${++counter}`;
   const toast: RailToast = {
@@ -84,6 +103,7 @@ export const pushToast = (
     action: options.action,
     cancel: options.cancel,
     icon: options.icon,
+    technical: options.technical,
     createdAt: Date.now(),
   };
 
@@ -138,18 +158,10 @@ export const resumeToasts = () => {
   }
 };
 
-/** An island in this window will show toasts; returns its unmount. */
-export const mountToastIsland = () => {
-  toastStore.setState((state) => ({ islands: state.islands + 1 }));
-  return () => toastStore.setState((state) => ({ islands: Math.max(0, state.islands - 1) }));
-};
-
-export const toastIslandMounted = () => toastStore.getState().islands > 0;
-
 /** Test seam: back to an empty store with no timers. */
 export const resetToasts = () => {
   for (const key of [...timers.keys()]) clearTimer(key);
   paused = false;
   counter = 0;
-  toastStore.setState({ toasts: [], islands: 0 });
+  toastStore.setState({ toasts: [] });
 };

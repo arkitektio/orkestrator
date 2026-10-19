@@ -124,7 +124,8 @@ export const PageLayout = ({
     copy: copyPathToClipboard,
     copyPrivate: copyPrivateToClipboard,
     copyBadge: copyBadgeToClipboard,
-  } = useCopyUniversalLink(location);
+    // Menu items: nothing left on screen to show the check.
+  } = useCopyUniversalLink(location, { announce: true });
 
   // Not a `useCallback`: it closed over `location` with an empty dependency
   // array, so it popped out the first pathname the page ever had rather than

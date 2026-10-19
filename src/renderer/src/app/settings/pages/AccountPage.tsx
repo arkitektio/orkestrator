@@ -12,7 +12,7 @@ import {
 } from "@/core/ui/card";
 import { ChevronsUpDown, LogOut, Stethoscope, Trash2, User } from "lucide-react";
 import { Link } from "react-router-dom";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import { settingsLink } from "../sections";
 import { SettingsPage } from "../components/SettingsPage";
 
@@ -103,9 +103,8 @@ export const AccountPage = () => {
             disabled={!activeProfile}
             onClick={() => {
               if (!activeProfile) return;
-              void signOutProfile(activeProfile.id).then(() => {
-                toast.success(`Signed out of ${profileTitle(activeProfile)}.`);
-              });
+              // No toast: the window goes back to the welcome screen.
+              void signOutProfile(activeProfile.id).catch(reportErrorAs("Couldn't sign out"));
             }}
           >
             <LogOut className="w-4 h-4" />
@@ -129,10 +128,7 @@ export const AccountPage = () => {
             disabled={!activeProfile}
             onClick={() => {
               if (!activeProfile) return;
-              const name = profileTitle(activeProfile);
-              void removeProfile(activeProfile.id).then(() => {
-                toast.success(`Removed ${name} from this computer.`);
-              });
+              void removeProfile(activeProfile.id).catch(reportErrorAs("Couldn't remove the account"));
             }}
           >
             <Trash2 className="w-4 h-4" />
@@ -143,9 +139,7 @@ export const AccountPage = () => {
             className="gap-2"
             disabled={profiles.length === 0}
             onClick={() => {
-              void forgetAllProfiles().then(() =>
-                toast.success("Forgot every account on this computer."),
-              );
+              void forgetAllProfiles().catch(reportErrorAs("Couldn't forget the accounts"));
             }}
           >
             <Trash2 className="w-4 h-4" />

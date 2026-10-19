@@ -2,15 +2,15 @@ import { Button } from "@/core/ui/button";
 import { RailIsland, RailIslandRow } from "@/core/ui/rail/RailIsland";
 import { cn } from "@/core/util/utils";
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, MessageSquare, X, type LucideIcon } from "lucide-react";
-import React, { isValidElement, useEffect } from "react";
-import type { Action } from "sonner";
+import { copyText } from "@/core/tabs/sharing/universalLink";
+import React, { isValidElement, useEffect, useState } from "react";
 import {
   dismissToast,
-  mountToastIsland,
   pauseToasts,
   resumeToasts,
   useRailToasts,
   type RailToast,
+  type ToastAction,
   type ToastKind,
 } from "./toasts";
 
@@ -30,11 +30,11 @@ const KIND_COLOR: Record<ToastKind, string> = {
   error: "text-destructive",
 };
 
-const isAction = (value: unknown): value is Action =>
+const isAction = (value: unknown): value is ToastAction =>
   !!value && typeof value === "object" && !isValidElement(value) && "label" in value && "onClick" in value;
 
 /** An `action` / `cancel`: a link-sized button that runs and then clears the toast. */
-const ToastButton = ({ toast, button, muted }: { toast: RailToast; button: Action | React.ReactNode; muted?: boolean }) => {
+const ToastButton = ({ toast, button, muted }: { toast: RailToast; button: ToastAction | React.ReactNode; muted?: boolean }) => {
   if (!isAction(button)) return <>{button}</>;
   return (
     <Button
@@ -47,6 +47,25 @@ const ToastButton = ({ toast, button, muted }: { toast: RailToast; button: Actio
       }}
     >
       {button.label}
+    </Button>
+  );
+};
+
+/** The raw text behind an error, for a bug report; the row keeps its sentence. */
+const CopyDetails = ({ technical }: { technical: string }) => {
+  const [copied, setCopied] = useState(false);
+  return (
+    <Button
+      variant="link"
+      size="sm"
+      className="h-auto p-0 text-[11px] text-muted-foreground"
+      onClick={async () => {
+        if (!(await copyText(technical))) return;
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+    >
+      {copied ? "Copied" : "Copy details"}
     </Button>
   );
 };
@@ -72,10 +91,11 @@ const ToastRow = ({ toast }: { toast: RailToast }) => {
               {toast.description}
             </div>
           )}
-          {(toast.action != null || toast.cancel != null) && (
+          {(toast.action != null || toast.cancel != null || toast.technical) && (
             <div className="mt-1 flex items-center gap-3">
               {toast.action != null && <ToastButton toast={toast} button={toast.action} />}
               {toast.cancel != null && <ToastButton toast={toast} button={toast.cancel} muted />}
+              {toast.technical && <CopyDetails technical={toast.technical} />}
             </div>
           )}
         </div>
@@ -95,21 +115,15 @@ const ToastRow = ({ toast }: { toast: RailToast }) => {
 };
 
 /**
- * The app's toasts, as an island in the rail (`core/notify`). Mounting it is
- * what routes `toast` here instead of sonner's floating stack; newest on top,
- * and nothing expires while the pointer is on it.
+ * The app's toasts (`core/notify`), as an island: in the rail of a signed-in
+ * window, in the welcome screen's lower-left corner, under the quick bar's
+ * palette. Newest on top, and nothing expires while the pointer is on it.
  */
 export const ToastIsland = () => {
   const toasts = useRailToasts((state) => state.toasts);
 
-  useEffect(() => {
-    const unmount = mountToastIsland();
-    return () => {
-      unmount();
-      // Gone mid-hover: the pointer never leaves, so let the expiries run again.
-      resumeToasts();
-    };
-  }, []);
+  // Gone mid-hover: the pointer never leaves, so let the expiries run again.
+  useEffect(() => () => resumeToasts(), []);
 
   return (
     <div

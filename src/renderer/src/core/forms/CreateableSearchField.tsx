@@ -1,3 +1,4 @@
+import { describeError } from "@/core/notify";
 import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
 
 import { Button } from "@/core/ui/button";
@@ -48,7 +49,7 @@ export const ButtonLabel = (props: {
         setOption(res[0]);
       })
       .catch((err) => {
-        setError(err.message);
+        setError(describeError(err).message);
       });
   }, [props.value, props.search]);
 
@@ -107,7 +108,7 @@ export const CreateableSearchField = ({
         setError(null);
       })
       .catch((err) => {
-        setError(err.message);
+        setError(describeError(err).message);
       });
   };
 
@@ -126,7 +127,7 @@ export const CreateableSearchField = ({
         });
       })
       .catch((err) => {
-        setError(err.message);
+        setError(describeError(err).message);
       });
   };
 
@@ -137,7 +138,7 @@ export const CreateableSearchField = ({
         setError(null);
       })
       .catch((err) => {
-        setError(err.message);
+        setError(describeError(err).message);
       });
   }, [name, search]);
 

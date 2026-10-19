@@ -1,4 +1,6 @@
 import { QuickPalette } from "@/core/command/QuickPalette";
+import { LocalActionIsland } from "@/app/components/rail/LocalActionIsland";
+import { ToastIsland } from "@/core/notify";
 import { useEffect, useRef } from "react";
 
 import { Arkitekt } from "./Arkitekt";
@@ -88,6 +90,10 @@ export const QuickShell = () => {
         ) : (
           <SignInNotice />
         )}
+        {/* The islands a palette run reports to, under the palette inside the
+            panel: the window grows with them. */}
+        <ToastIsland />
+        <LocalActionIsland />
       </div>
     </div>
   );

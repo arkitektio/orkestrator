@@ -20,7 +20,7 @@ import type { Settings } from "@/core/settings/store/validator";
 import { Check, Download, Mic, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useController, useFormContext, useWatch } from "react-hook-form";
-import { toast } from "@/core/notify";
+import { reportError, toast } from "@/core/notify";
 import type {
   VoiceCatalogEntry,
   VoiceModelProgress,
@@ -197,7 +197,7 @@ const ModelPicker = ({ catalog }: { catalog: VoiceCatalogEntry[] }) => {
       await window.api.voice.models.ensure({ modelId: field.value, modelHost: modelHost || undefined });
       toast.success(`${current?.label ?? field.value} is ready`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error));
+      reportError(error, "Couldn't download the voice model");
     } finally {
       setBusy(null);
     }
@@ -208,7 +208,7 @@ const ModelPicker = ({ catalog }: { catalog: VoiceCatalogEntry[] }) => {
     try {
       await window.api.voice.models.remove({ modelId: field.value });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error));
+      reportError(error, "Couldn't remove the voice model");
     } finally {
       setBusy(null);
     }

@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("sonner", () => ({
-  toast: { info: vi.fn(), warning: vi.fn(), error: vi.fn(), success: vi.fn() },
-}));
-
 import {
   dependencyScope,
   describePortCallCatalog,

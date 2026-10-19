@@ -9,7 +9,6 @@ import {
   useQuery as useApolloQuery,
   useSubscription as useApolloSubscription,
 } from "@apollo/client";
-import { onApolloError } from "@/core/connection/graphql/errorHandler";
 
 
 /** lok is the session's own service: its client is the self service's. */
@@ -27,13 +26,14 @@ export type {
   SubscriptionHookOptions
 };
 
+// No `onError`: a failed mutation rejects, and its caller reports it — inline
+// in a dialog (`useDialogSubmit`), else `reportErrorAs` (CLAUDE.md §8).
 export const useMutation: MutationFuncType = (doc, options) => {
   const lok = { client: useLok() };
 
   return useApolloMutation(doc, {
     ...options,
     client: lok?.client,
-    onError: onApolloError("lok"),
   });
 };
 

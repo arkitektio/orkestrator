@@ -28,9 +28,10 @@ import { Switch } from "@/core/ui/switch";
 import type { ProfileMesh } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import { useMeshes } from "@/core/connection/mesh/useMeshes";
 import { cn } from "@/core/util/utils";
-import { AlertTriangle, Check, Clock, Copy, Loader2, Lock, Network, Radio, RotateCw, ShieldCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, Clock, Loader2, Lock, Network, Radio, RotateCw, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/core/notify";
+import { CopyButton } from "@/core/ui/copy-button";
 import {
   isLockPublicKey,
   MESH_LOCK_MAX_TRUSTED_KEYS,
@@ -444,30 +445,6 @@ const PeerRow = ({ peer, ping, onPing }: { peer: MeshPeer; ping?: MeshPingResult
         </Button>
       )}
     </li>
-  );
-};
-
-/** Copies a value; the icon flips to a check for a moment. */
-const CopyButton = ({ value, title }: { value: string; title: string }) => {
-  const [copied, setCopied] = useState(false);
-  return (
-    <Button
-      size="icon"
-      variant="ghost"
-      className="size-6 shrink-0 text-muted-foreground"
-      title={title}
-      onClick={() => {
-        void navigator.clipboard.writeText(value).then(
-          () => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-          },
-          () => toast.error("Could not copy to the clipboard"),
-        );
-      }}
-    >
-      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-    </Button>
   );
 };
 

@@ -27,12 +27,6 @@ vi.mock("@/core/smart/registry", () => ({
   smartRegistry: { getDisplayName: (identifier: string) => identifier },
 }));
 
-// The port-call catalog pulls in the standard blok functions, one of which
-// toasts; keep the toaster out of the unit test.
-vi.mock("sonner", () => ({
-  toast: { info: vi.fn(), warning: vi.fn(), error: vi.fn(), success: vi.fn() },
-}));
-
 import type { LabellablePort, PortablePort } from "./types";
 import { PortKind } from "@/rekuest/api/graphql";
 import {

@@ -28,8 +28,14 @@ import { toast } from "@/core/notify";
  * (`orgLinkFor`) when the deployment has one, by arkitekt.live otherwise. `copyPrivate` is the same link with the deployment and
  * organization hashed away, for pasting somewhere public. The badge stays
  * portable, because a README is read by strangers.
+ *
+ * `announce`: the caller has no button to flip (a menu that closes), so a
+ * copy also says so in a toast. A button shows `copied` instead.
  */
-export const useCopyUniversalLink = (location: { pathname: string; search?: string }) => {
+export const useCopyUniversalLink = (
+  location: { pathname: string; search?: string },
+  { announce = false }: { announce?: boolean } = {},
+) => {
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
@@ -42,10 +48,10 @@ export const useCopyUniversalLink = (location: { pathname: string; search?: stri
       return;
     }
     setCopied(true);
-    toast.success(message, { description: text });
+    if (announce) toast.success(message, { description: text });
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setCopied(false), 1500);
-  }, []);
+  }, [announce]);
 
   const scope = useActiveScope();
   const host = useActiveLinkHost();

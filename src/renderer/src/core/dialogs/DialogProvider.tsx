@@ -1,5 +1,6 @@
 // typed-dialog-provider.tsx
 
+import { DialogErrorScope } from "@/core/dialogs/DialogError";
 import { usePageDialogHost } from "@/core/dialogs/PageDialogHost";
 import { dialogPreferredSize } from "@/core/modules/host/dialogNeeds";
 import { Dialog, DialogContent } from "@/core/ui/dialog";
@@ -296,8 +297,11 @@ export function createDialogProvider<
               // Last: a caller's own width wins over the size.
               modalState.className,
             )}>
-              {/* Guarded per dialog by the services it needs (MODULE_DIALOGS). */}
-              <Component {...modalState.props} />
+              {/* Guarded per dialog by the services it needs (MODULE_DIALOGS).
+                  Its own failures show in it (`DialogErrorScope`). */}
+              <DialogErrorScope key={modalState.id}>
+                <Component {...modalState.props} />
+              </DialogErrorScope>
             </DialogContent>
           )}
         </Dialog>
@@ -332,7 +336,9 @@ export function createDialogProvider<
               )}
             >
               {/* Guarded per dialog by the services it needs (MODULE_DIALOGS). */}
-              <Component {...modalState.props} />
+              <DialogErrorScope key={modalState.id}>
+                <Component {...modalState.props} />
+              </DialogErrorScope>
             </SheetContent>
           )}
         </Sheet>

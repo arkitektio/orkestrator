@@ -1,6 +1,7 @@
 import { UploadOptions } from "@/core/datalayer/hooks/useUpload";
 import { acceptsFiles } from "@/core/dnd/files";
 import { useCanDrop, useDropTarget } from "@/core/dnd/react";
+import { reportError } from "@/core/notify";
 import { useState } from "react";
 
 export type UploadFunc = (
@@ -69,7 +70,7 @@ export const DragZone: React.FC<{
               );
             })
             .catch((e) => {
-              console.log("error", e);
+              reportError(e, `Couldn't upload ${file.name}`);
               setUploadFutures((futures) =>
                 futures.filter((f) => f.hash !== hashFile(file)),
               );

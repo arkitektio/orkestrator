@@ -4,7 +4,7 @@ import { Structure } from "@/core/types";
 import { autoUpdate, flip, offset, shift, useFloating } from "@floating-ui/react";
 import { createSelector } from "reselect";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "@/core/notify";
+import { reportError, toast } from "@/core/notify";
 
 import { DropPayload } from "@/core/dnd/engine";
 import { useDragSource, useDropTarget } from "@/core/dnd/react";
@@ -181,7 +181,7 @@ export const useSmartModel = ({
         }
       } catch (error) {
         console.error(error);
-        toast.error(error instanceof Error ? error.message : String(error));
+        reportError(error, "Couldn't handle the drop");
         return;
       } finally {
         syncAttribute(nodeRef.current, "data-isdropping", "false");

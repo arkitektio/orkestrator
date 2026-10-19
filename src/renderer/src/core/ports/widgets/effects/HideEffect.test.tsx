@@ -3,10 +3,6 @@ import { act, render, screen } from "@testing-library/react";
 import { FormProvider, useForm, type UseFormReturn } from "react-hook-form";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("sonner", () => ({
-  toast: { info: vi.fn(), warning: vi.fn(), error: vi.fn(), success: vi.fn() },
-}));
-
 import type { PortEffectFragment } from "@/rekuest/api/graphql";
 import type { MappablePort } from "@/core/ports/engine/types";
 import { PortsRootContext } from "@/core/ports/engine/PortsRootContext";

@@ -21,7 +21,7 @@ const map = {
   Progress: `${UI}/progress.tsx`, RadioGroup: `${UI}/radio-group.tsx`, ResizablePanelGroup: `${UI}/resizable.tsx`,
   ScrollArea: `${UI}/scroll-area.tsx`, Select: `${UI}/select.tsx`, Separator: `${UI}/separator.tsx`,
   Sheet: `${UI}/sheet.tsx`, Sidebar: `${UI}/sidebar.tsx`, Skeleton: `${UI}/skeleton.tsx`,
-  Slider: `${UI}/slider.tsx`, Toaster: `${UI}/sonner.tsx`, Spinner: `${UI}/spinner.tsx`,
+  Slider: `${UI}/slider.tsx`, Spinner: `${UI}/spinner.tsx`,
   StatusPulse: `${UI}/status.tsx`, Switch: `${UI}/switch.tsx`, Table: `${UI}/table.tsx`,
   Tabs: `${UI}/tabs.tsx`, Textarea: `${UI}/textarea.tsx`, Toggle: `${UI}/toggle.tsx`,
   ToggleGroup: `${UI}/toggle-group.tsx`, Tooltip: `${UI}/tooltip.tsx`, ChartContainer: `${UI}/chart.tsx`,

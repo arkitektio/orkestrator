@@ -4,7 +4,7 @@ import { useDownload } from "@/core/modules/download/DownloadProvider";
 import { Structure } from "@/core/types";
 import type { ApolloClient } from "@apollo/client";
 import { useEffect } from "react";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
 
@@ -32,9 +32,7 @@ export const handleExportRequest = (
   for (const file of files) {
     const downloader = FILE_DOWNLOADERS[file.identifier];
     downloader.download(deps.ctx, file.id).catch((error: unknown) => {
-      toast.error(
-        `Couldn't download ${structureLabel(file)}: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      reportError(error, `Couldn't download ${structureLabel(file)}`);
     });
   }
 

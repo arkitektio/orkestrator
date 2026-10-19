@@ -10,7 +10,7 @@ import {
 import { useSwitchToProfile } from "@/core/connection/profile/ui/useSwitchToProfile";
 import { Building2 } from "lucide-react";
 import React from "react";
-import { toast } from "@/core/notify";
+import { reportErrorAs, toast } from "@/core/notify";
 
 import ProfileRow from "./ProfileRow";
 
@@ -47,22 +47,22 @@ export const ProfileSwitcher = () => {
 
   const onSignOut = React.useCallback(
     (profile: StoredProfile) => {
-      void signOutProfile(profile.id).then(() => {
-        toast.success(
-          `Signed out of ${profile.label.organizationName || profile.label.deploymentName || "this account"}. It stays in the list; signing back in needs your browser.`,
-        );
-      });
+      // Said, because what it leaves behind is not visible: the account stays.
+      void signOutProfile(profile.id).then(
+        () =>
+          toast.success(
+            `Signed out of ${profile.label.organizationName || profile.label.deploymentName || "this account"}. It stays in the list; signing back in needs your browser.`,
+          ),
+        reportErrorAs("Couldn't sign out"),
+      );
     },
     [signOutProfile],
   );
 
   const onRemove = React.useCallback(
     (profile: StoredProfile) => {
-      void removeProfile(profile.id).then(() => {
-        toast.success(
-          `Removed ${profile.label.organizationName || profile.label.deploymentName || "account"} from this computer.`,
-        );
-      });
+      // No toast: it leaves the list.
+      void removeProfile(profile.id).catch(reportErrorAs("Couldn't remove the account"));
     },
     [removeProfile],
   );

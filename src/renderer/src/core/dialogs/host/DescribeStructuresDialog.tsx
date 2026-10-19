@@ -1,11 +1,8 @@
-import { Copy } from "lucide-react";
 
-import { Button } from "@/core/ui/button";
+import { CopyButton } from "@/core/ui/copy-button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { InfoList } from "@/core/ui/info-list";
 import { smartRegistry } from "@/core/smart/registry";
-import { toast } from "@/core/notify";
-import { copyText } from "@/core/tabs/sharing/universalLink";
 import type { Structure } from "@/core/types";
 
 /** What the "Debug describe" action hands over: the selection and its partner. */
@@ -78,12 +75,6 @@ const Group = ({ title, structures }: { title: string; structures: Structure[] }
  * palette hit actually handed over. Host-owned, so it needs no service.
  */
 export const DescribeStructuresDialog = ({ left, right, isCommand }: DescribeStructuresProps) => {
-  const copy = async () => {
-    const ok = await copyText(serialize({ left, right, isCommand }));
-    if (ok) toast.success("Selection copied as JSON");
-    else toast.error("Could not copy the selection");
-  };
-
   return (
     <div className="flex max-h-[80cqh] flex-col gap-4">
       <DialogHeader>
@@ -98,10 +89,9 @@ export const DescribeStructuresDialog = ({ left, right, isCommand }: DescribeStr
         {right && right.length > 0 && <Group title="Partner" structures={right} />}
       </div>
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={copy}>
-          <Copy className="mr-2 size-3.5" />
+        <CopyButton variant="outline" value={() => serialize({ left, right, isCommand })} title="Copy as JSON">
           Copy as JSON
-        </Button>
+        </CopyButton>
       </div>
     </div>
   );
