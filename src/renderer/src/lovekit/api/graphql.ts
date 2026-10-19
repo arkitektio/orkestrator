@@ -470,15 +470,29 @@ export type _Service = {
   sdl: Scalars['String']['output'];
 };
 
-export type SoloBroadcastFragment = { __typename?: 'SoloBroadcast', id: string, title: string, streamer: (
-    { __typename?: 'Streamer' }
-    & StreamerFragment
-  ) };
+export type BroadcastStreamFragment = { __typename?: 'Stream', id: string, title: string, kind: StreamKind };
 
-export type ListSoloBroadcastFragment = { __typename?: 'SoloBroadcast', id: string, title: string, streamer: (
+export type SoloBroadcastFragment = { __typename?: 'SoloBroadcast', id: string, title: string, createdAt: any, streamer: (
     { __typename?: 'Streamer' }
     & StreamerFragment
-  ) };
+  ), videoStreams: Array<(
+    { __typename?: 'Stream' }
+    & BroadcastStreamFragment
+  )>, audioStreams: Array<(
+    { __typename?: 'Stream' }
+    & BroadcastStreamFragment
+  )> };
+
+export type ListSoloBroadcastFragment = { __typename?: 'SoloBroadcast', id: string, title: string, createdAt: any, streamer: (
+    { __typename?: 'Streamer' }
+    & StreamerFragment
+  ), videoStreams: Array<(
+    { __typename?: 'Stream' }
+    & BroadcastStreamFragment
+  )>, audioStreams: Array<(
+    { __typename?: 'Stream' }
+    & BroadcastStreamFragment
+  )> };
 
 export type CollaborativeBroadcastFragment = { __typename?: 'CollaborativeBroadcast', id: string, title: string, streamers: Array<(
     { __typename?: 'Streamer' }
@@ -507,11 +521,17 @@ export type CallInviteFragment = { __typename?: 'CallInvite', id: string, create
     & ListCallFragment
   ), inviter: { __typename?: 'User', id: string, sub: string, preferredUsername: string } };
 
-export type StreamFragment = { __typename?: 'Stream', id: string };
+export type StreamFragment = { __typename?: 'Stream', id: string, title: string, kind: StreamKind, streamer: (
+    { __typename?: 'Streamer' }
+    & StreamerFragment
+  ) };
 
-export type ListStreamFragment = { __typename?: 'Stream', id: string };
+export type ListStreamFragment = { __typename?: 'Stream', id: string, title: string, kind: StreamKind, streamer: (
+    { __typename?: 'Streamer' }
+    & StreamerFragment
+  ) };
 
-export type StreamerFragment = { __typename?: 'Streamer', user: { __typename?: 'User', sub: string }, client: { __typename?: 'Client', clientId: string } };
+export type StreamerFragment = { __typename?: 'Streamer', id: string, user: { __typename?: 'User', id: string, sub: string, preferredUsername: string }, client: { __typename?: 'Client', id: string, clientId: string, release?: { __typename?: 'Release', id: string, version: string, app: { __typename?: 'App', id: string, identifier: string } } | null } };
 
 export type EnsureSoloBroadcastMutationVariables = Exact<{
   input: EnsureSoloBroadcastInput;
@@ -682,7 +702,7 @@ export type ListSoloBroadcastsQueryVariables = Exact<{
 
 export type ListSoloBroadcastsQuery = { __typename?: 'Query', soloBroadcasts: Array<(
     { __typename?: 'SoloBroadcast' }
-    & SoloBroadcastFragment
+    & ListSoloBroadcastFragment
   )> };
 
 export type GetStreamQueryVariables = Exact<{
@@ -711,7 +731,7 @@ export type ListStreamsQueryVariables = Exact<{
 
 export type ListStreamsQuery = { __typename?: 'Query', streams: Array<(
     { __typename?: 'Stream' }
-    & StreamFragment
+    & ListStreamFragment
   )> };
 
 export type WatchCallInvitesSubscriptionVariables = Exact<{ [key: string]: never; }>;
@@ -735,32 +755,67 @@ export type WatchCallsSubscription = { __typename?: 'Subscription', calls: { __t
 
 export const StreamerFragmentDoc = gql`
     fragment Streamer on Streamer {
+  id
   user {
+    id
     sub
+    preferredUsername
   }
   client {
+    id
     clientId
+    release {
+      id
+      version
+      app {
+        id
+        identifier
+      }
+    }
   }
+}
+    `;
+export const BroadcastStreamFragmentDoc = gql`
+    fragment BroadcastStream on Stream {
+  id
+  title
+  kind
 }
     `;
 export const SoloBroadcastFragmentDoc = gql`
     fragment SoloBroadcast on SoloBroadcast {
   id
   title
+  createdAt
   streamer {
     ...Streamer
   }
+  videoStreams {
+    ...BroadcastStream
+  }
+  audioStreams {
+    ...BroadcastStream
+  }
 }
-    ${StreamerFragmentDoc}`;
+    ${StreamerFragmentDoc}
+${BroadcastStreamFragmentDoc}`;
 export const ListSoloBroadcastFragmentDoc = gql`
     fragment ListSoloBroadcast on SoloBroadcast {
   id
   title
+  createdAt
   streamer {
     ...Streamer
   }
+  videoStreams {
+    ...BroadcastStream
+  }
+  audioStreams {
+    ...BroadcastStream
+  }
 }
-    ${StreamerFragmentDoc}`;
+    ${StreamerFragmentDoc}
+${BroadcastStreamFragmentDoc}`;
 export const CollaborativeBroadcastFragmentDoc = gql`
     fragment CollaborativeBroadcast on CollaborativeBroadcast {
   id
@@ -837,13 +892,23 @@ export const CallInviteFragmentDoc = gql`
 export const StreamFragmentDoc = gql`
     fragment Stream on Stream {
   id
+  title
+  kind
+  streamer {
+    ...Streamer
+  }
 }
-    `;
+    ${StreamerFragmentDoc}`;
 export const ListStreamFragmentDoc = gql`
     fragment ListStream on Stream {
   id
+  title
+  kind
+  streamer {
+    ...Streamer
+  }
 }
-    `;
+    ${StreamerFragmentDoc}`;
 export const EnsureSoloBroadcastDocument = gql`
     mutation EnsureSoloBroadcast($input: EnsureSoloBroadcastInput!) {
   ensureSoloBroadcast(input: $input) {
@@ -1467,10 +1532,10 @@ export type SearchSoloBroadcastQueryResult = Apollo.QueryResult<SearchSoloBroadc
 export const ListSoloBroadcastsDocument = gql`
     query ListSoloBroadcasts($filter: SoloBroadcastFilter, $pagination: OffsetPaginationInput) {
   soloBroadcasts(filters: $filter, pagination: $pagination) {
-    ...SoloBroadcast
+    ...ListSoloBroadcast
   }
 }
-    ${SoloBroadcastFragmentDoc}`;
+    ${ListSoloBroadcastFragmentDoc}`;
 
 /**
  * __useListSoloBroadcastsQuery__
@@ -1578,10 +1643,10 @@ export type SearchStreamsQueryResult = Apollo.QueryResult<SearchStreamsQuery, Se
 export const ListStreamsDocument = gql`
     query ListStreams($filter: StreamFilter, $pagination: OffsetPaginationInput) {
   streams(filters: $filter, pagination: $pagination) {
-    ...Stream
+    ...ListStream
   }
 }
-    ${StreamFragmentDoc}`;
+    ${ListStreamFragmentDoc}`;
 
 /**
  * __useListStreamsQuery__

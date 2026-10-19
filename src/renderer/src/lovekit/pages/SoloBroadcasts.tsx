@@ -1,37 +1,15 @@
-import { Explainer } from "@/core/layout/Explainer";
-import { PageAction } from "@/core/ui/page-action";
-import { AlpakaCollection, LovekitSoloBroadcast } from "@/core/linkers";
-import { UploadIcon } from "lucide-react";
-import React from "react";
+import { LovekitSoloBroadcast } from "@/core/linkers";
 import SoloBroadcastList from "../components/lists/SoloBroadcastList";
 import { LOVEKIT_HELP } from "../help";
 
-export type IRepresentationScreenProps = {};
-
-const ImagesPage: React.FC<IRepresentationScreenProps> = () => {
+const Page = () => {
   return (
-    <LovekitSoloBroadcast.ListPage
-      help={LOVEKIT_HELP.soloBroadcasts}
-      title="Images"
-      pageActions={
-        <>
-          <AlpakaCollection.NewButton alwaysShow collapse="icon">
-            <PageAction size="sm" icon={<UploadIcon className="h-4 w-4" />}>
-              New
-            </PageAction>
-          </AlpakaCollection.NewButton>
-        </>
-      }
-    >
+    <LovekitSoloBroadcast.ListPage help={LOVEKIT_HELP.soloBroadcasts} title="Solo Broadcasts">
       <div className="p-3">
-        <Explainer
-          title="Collections"
-          description="Collections are searchable groups of data. They allow to retrieve data based on semantic queries."
-        />
-        <SoloBroadcastList pagination={{ limit: 30 }} />
+        <SoloBroadcastList defaultLimit={30} />
       </div>
     </LovekitSoloBroadcast.ListPage>
   );
 };
 
-export default ImagesPage;
+export default Page;

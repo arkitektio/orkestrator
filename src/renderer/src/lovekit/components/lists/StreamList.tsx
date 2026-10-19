@@ -17,6 +17,8 @@ const TList = createList({
   smart: LovekitStream,
   // A page of its own says so when there is nothing, instead of going blank.
   autoHide: false,
+  // Title, streamer and app need the room; the default pack squeezes them.
+  minItemWidth: 240,
   emptyTitle: "No streams yet",
 });
 

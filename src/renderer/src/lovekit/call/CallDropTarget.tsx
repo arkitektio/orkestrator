@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useDropTarget } from "@/core/dnd/react";
-import { toast } from "@/core/notify";
+import { reportError, toast } from "@/core/notify";
 import { acceptsSmartDrag, resolveSmartDrop } from "@/core/smart/dragPayload";
 import type { Structure } from "@/core/types";
 import { cn } from "@/core/util/utils";
@@ -34,9 +34,10 @@ export const CallDropTarget = ({
     setBusy(true);
     try {
       await addToCall(client, call, dropped);
+      // Dropped on the rail's call row the new topic is not on screen; say it.
       toast.success(`“${call.title}” is now talking about this`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not add it to the call");
+      reportError(error, "Couldn't add it to the call");
     } finally {
       setBusy(false);
     }

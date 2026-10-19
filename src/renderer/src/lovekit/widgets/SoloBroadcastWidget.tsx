@@ -1,5 +1,6 @@
 import { cn } from "@/core/util/utils";
 import { useGetSoloBroadcastQuery } from "@/lovekit/api/graphql";
+import { Loader2 } from "lucide-react";
 import { StreamJoiner } from "../components/StreamJoiner";
 
 
@@ -7,29 +8,18 @@ export const AsyncSoloBroadcastWidget = (props: {
   id: string;
   className?: string;
 }) => {
-  const { data, error } = useGetSoloBroadcastQuery({
+  const { data } = useGetSoloBroadcastQuery({
     variables: {
       id: props.id,
     },
   });
 
-  const broadcast = data?.soloBroadcast?.id;
-
-  return (
-    <div className={cn("relative h-full w-full overflow-hidden bg-black", props.className)}>
-      {broadcast && (
-        <StreamJoiner broadcast={data.soloBroadcast} />
-      )}
-      {!broadcast && (
-        <div className="flex items-center justify-center h-full">
-          <span className="text-white">Loading broadcast...</span>
-        </div>
-      )}
-      {error && (
-        <div className="text-red-500">
-          Error loading stream: {error.message}
-        </div>
-      )}
-    </div>
-  );
+  if (!data?.soloBroadcast) {
+    return (
+      <div className={cn("flex h-full w-full items-center justify-center bg-black text-white/60", props.className)}>
+        <Loader2 className="size-5 animate-spin" />
+      </div>
+    );
+  }
+  return <StreamJoiner broadcast={data.soloBroadcast} showTitle className={props.className} />;
 };

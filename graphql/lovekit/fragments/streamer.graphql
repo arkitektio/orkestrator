@@ -1,8 +1,20 @@
 fragment Streamer on Streamer {
+  id
   user {
+    id
     sub
+    preferredUsername
   }
   client {
+    id
     clientId
+    release {
+      id
+      version
+      app {
+        id
+        identifier
+      }
+    }
   }
 }

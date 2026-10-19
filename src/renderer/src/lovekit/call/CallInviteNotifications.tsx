@@ -1,4 +1,5 @@
 import { useReportNotificationCount } from "@/core/dashboard/notificationCount";
+import { reportErrorAs } from "@/core/notify";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Button } from "@/core/ui/button";
 import { PanelRight, Phone, X } from "lucide-react";
@@ -48,7 +49,7 @@ export const CallInviteNotifications = () => {
                 <Button size="xs" variant="outline" onClick={() => openCall(invite.call, { join: true, target: "side" })}>
                   <PanelRight /> To the side
                 </Button>
-                <Button size="xs" variant="ghost" onClick={() => void dismiss(invite)}>
+                <Button size="xs" variant="ghost" onClick={() => void dismiss(invite).catch(reportErrorAs("Couldn't dismiss the invitation"))}>
                   <X /> Dismiss
                 </Button>
               </div>

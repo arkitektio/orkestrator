@@ -3,20 +3,17 @@ import { Sidebars } from "@/core/layout/Sidebars";
 import { LovekitSoloBroadcast } from "@/core/linkers";
 import { useGetSoloBroadcastQuery } from "../api/graphql";
 
-import { cn } from "@/core/util/utils";
+import { BroadcastInfo } from "../components/BroadcastInfo";
 import { StreamJoiner } from "../components/StreamJoiner";
 import { LOVEKIT_HELP } from "../help";
 
 export default asDetailQueryRoute(
   useGetSoloBroadcastQuery,
   ({ data }) => {
-
-
-    const broadcast = data?.soloBroadcast?.id;
     return (
       <LovekitSoloBroadcast.ModelPage
         help={LOVEKIT_HELP.soloBroadcast}
-        title={data?.soloBroadcast.title || "Broadcast"}
+        title={data.soloBroadcast.title || "Broadcast"}
         object={data.soloBroadcast}
         pageActions={
           <>
@@ -25,22 +22,16 @@ export default asDetailQueryRoute(
         }
         sidebars={
           <Sidebars>
+            <Sidebars.Tab label="Info">
+              <BroadcastInfo broadcast={data.soloBroadcast} />
+            </Sidebars.Tab>
             <Sidebars.Tab label="Knowledge">
               <LovekitSoloBroadcast.Knowledge object={data.soloBroadcast} />
             </Sidebars.Tab>
           </Sidebars>
         }
       >
-        <div className={cn("relative h-full w-full overflow-hidden bg-black")}>
-          {broadcast && (
-            <StreamJoiner broadcast={data.soloBroadcast} />
-          )}
-          {!broadcast && (
-            <div className="flex items-center justify-center h-full">
-              <span className="text-white">Loading broadcast...</span>
-            </div>
-          )}
-        </div>
+        <StreamJoiner broadcast={data.soloBroadcast} />
       </LovekitSoloBroadcast.ModelPage>
     );
   },

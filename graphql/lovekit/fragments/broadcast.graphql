@@ -1,16 +1,36 @@
+fragment BroadcastStream on Stream {
+  id
+  title
+  kind
+}
+
 fragment SoloBroadcast on SoloBroadcast {
   id
   title
+  createdAt
   streamer {
     ...Streamer
+  }
+  videoStreams {
+    ...BroadcastStream
+  }
+  audioStreams {
+    ...BroadcastStream
   }
 }
 
 fragment ListSoloBroadcast on SoloBroadcast {
   id
   title
+  createdAt
   streamer {
     ...Streamer
+  }
+  videoStreams {
+    ...BroadcastStream
+  }
+  audioStreams {
+    ...BroadcastStream
   }
 }
 

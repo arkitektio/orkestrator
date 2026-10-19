@@ -11,6 +11,7 @@ import { StructureCallsSection } from "./call/StructureCallsSection";
 import { LOVEKIT_DIALOGS } from "./dialogRegistry";
 import { CallDisplay } from "./displays/CallDisplay";
 import { SoloBroadcastDisplay } from "./displays/SoloBroadcastDisplay";
+import { StreamDisplay } from "./displays/StreamDisplay";
 import { manifest } from "./manifest";
 import { service } from "./service";
 import { LOVEKIT_NAV_LINKS } from "./navLinks";
@@ -24,6 +25,7 @@ export const LOVEKIT_MODULE = defineModule({
     displays: {
       "@lovekit/solo_broadcast": SoloBroadcastDisplay,
       "@lovekit/call": CallDisplay,
+      "@lovekit/stream": StreamDisplay,
     },
     actions: LOVEKIT_ACTIONS,
     dialogs: LOVEKIT_DIALOGS,

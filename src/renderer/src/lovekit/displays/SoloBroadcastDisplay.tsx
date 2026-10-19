@@ -1,96 +1,37 @@
-import { useLivekit } from "@/core/connection/arkitekt/host";
+import { DisplayLine, DisplayLinePlaceholder } from "@/core/smart/display/DisplayLine";
 import { DisplayWidgetProps } from "@/core/smart/display/registry";
 import { cn } from "@/core/util/utils";
-import {
-  SoloBroadcastFragment,
-  useGetSoloBroadcastQuery,
-  useJoinBroadcastMutation
-} from "@/lovekit/api/graphql";
-import {
-  GridLayout,
-  LiveKitRoom,
-  useTracks,
-  VideoTrack,
-} from "@livekit/components-react";
-import { Track } from "livekit-client";
-import { useEffect, useRef, useState } from "react";
+import { useGetSoloBroadcastQuery } from "@/lovekit/api/graphql";
+import { Loader2, Radio } from "lucide-react";
+import { StreamerName } from "../components/streamer";
+import { StreamJoiner } from "../components/StreamJoiner";
 
-function VideoRenderer() {
-  const trackRefs = useTracks([Track.Source.Camera]);
-
-  const streamer = trackRefs.filter((t) =>
-    t.participant.identity.startsWith("streamer"),
-  );
-
-  return (
-    <GridLayout tracks={streamer}>
-      <VideoTrack trackRef={streamer.at(0)} />
-    </GridLayout>
-  );
-}
-
-export const VideoStream = ({ token }: { token: string }) => {
-  const { url } = useLivekit();
-
-  console.log("Stream", token, url);
-
-  return (
-    <LiveKitRoom token={token} serverUrl={url} connect={true}>
-      <VideoRenderer />
-    </LiveKitRoom>
-  );
-};
-
-export const StreamJoiner = (props: { broadcast: SoloBroadcastFragment }) => {
-  const [token, setToken] = useState<string | null>(null);
-  const tokenFutureRan = useRef<boolean>(false);
-
-  const [x] = useJoinBroadcastMutation();
-
-  useEffect(() => {
-    if (!tokenFutureRan.current) {
-      tokenFutureRan.current = true;
-      x({
-        variables: {
-          input: { broadcast: props.broadcast.id },
-        },
-      }).then((result) => {
-        if (result.data?.joinBroadcast) {
-          setToken(result.data.joinBroadcast);
-        }
-      });
-    }
-  }, [props.broadcast.id, x]);
-
-  return (
-    <div className="w-full h-full flex-grow relative flex items-center justify-center">
-      {token && <VideoStream token={token} />}
-    </div>
-  );
-};
-
+/**
+ * `@lovekit/solo_broadcast`: the live video where there is room for it
+ * ("card"), a line naming it and its streamer everywhere else.
+ */
 export const SoloBroadcastDisplay = (props: DisplayWidgetProps) => {
-  const { data, error } = useGetSoloBroadcastQuery({
-    variables: {
-      id: props.id,
-    },
-  });
+  const { data } = useGetSoloBroadcastQuery({ variables: { id: props.id } });
+  const broadcast = data?.soloBroadcast;
 
-  const broadcast = data?.soloBroadcast?.id;
+  if ((props.variant && props.variant !== "card") || props.context === "command") {
+    if (!broadcast) return <DisplayLinePlaceholder {...props} icon={Radio} />;
+    return (
+      <DisplayLine
+        {...props}
+        icon={Radio}
+        title={broadcast.title || "Broadcast"}
+        meta={[<StreamerName streamer={broadcast.streamer} />]}
+      />
+    );
+  }
 
-  return (
-    <div className={cn("w-full h-full bg-black relative", props.className)}>
-      {broadcast && <StreamJoiner broadcast={data.soloBroadcast} />}
-      {!broadcast && (
-        <div className="flex items-center justify-center h-full">
-          <span className="text-white">Loading broadcast...</span>
-        </div>
-      )}
-      {error && (
-        <div className="text-red-500">
-          Error loading stream: {error.message}
-        </div>
-      )}
-    </div>
-  );
+  if (!broadcast) {
+    return (
+      <div className={cn("flex h-full w-full items-center justify-center bg-black text-white/60", props.className)}>
+        <Loader2 className="size-5 animate-spin" />
+      </div>
+    );
+  }
+  return <StreamJoiner broadcast={broadcast} showTitle className={props.className} />;
 };

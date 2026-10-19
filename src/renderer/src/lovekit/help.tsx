@@ -20,11 +20,10 @@ export const LOVEKIT_HELP = {
     <PageHelp
       intro="A solo broadcast is live video sent by one source to anyone who opens it. This page lists the latest broadcasts."
       steps={[
-        <>Click a broadcast under <b>Latest Broadcasts</b> to open it and watch.</>,
+        <>Each card shows who is broadcasting, from which app, since when, and whether it carries video, sound or both. Click one to open it and watch.</>,
         <>Press ⌘K / Ctrl+K and type “Solo Broadcasts” to come back to this list from anywhere.</>,
       ]}
       tips={[
-        <>Broadcasts are listed by their number, not by a title.</>,
         <>A broadcast cannot be started from this page.</>,
       ]}
     />
@@ -33,17 +32,20 @@ export const LOVEKIT_HELP = {
     <PageHelp
       intro="The live video of one broadcast. The page joins the broadcast by itself as soon as it opens."
       steps={[
-        <>Wait a moment after opening the page; the video starts without pressing anything.</>,
+        <>Wait a moment after opening the page; the video starts without pressing anything. <b>LIVE</b> in the corner means the streamer is sending; the eye counts who is watching, you included.</>,
+        <>Sound starts muted: press <b>Unmute</b> at the bottom right of the video to hear it.</>,
+        <>Open the <b>Info</b> tab for the streamer, the app they send from, when the broadcast started and its streams.</>,
         <>Use <b>Popout</b> in the page header’s ▾ menu to keep the video in a window of its own while you work elsewhere.</>,
       ]}
       tips={[
-        <>“Waiting for broadcast...” means you are connected but the source is not sending video right now.</>,
+        <>“Waiting for … to send video” means you are connected but the streamer is not sending video right now.</>,
+        <>If joining fails, press <b>Try again</b> in the player.</>,
       ]}
     />
   ),
   stream: (
     <PageHelp
-      intro="One video stream. For now this page shows only the stream’s number."
+      intro="One stream of a broadcast: whether it carries video or audio, who sends it and from which app."
       steps={[
         <>Open the <b>Knowledge</b> tab to see what has been recorded about this stream.</>,
         <>Open the menu button at the right end of the page header for the actions available on this stream.</>,

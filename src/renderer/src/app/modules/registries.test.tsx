@@ -171,6 +171,7 @@ describe("host registries", () => {
       "@lokate/visit",
       "@lovekit/call",
       "@lovekit/solo_broadcast",
+      "@lovekit/stream",
       "@mikro/annotation",
       "@mikro/annotationlens",
       "@mikro/arraydataset",

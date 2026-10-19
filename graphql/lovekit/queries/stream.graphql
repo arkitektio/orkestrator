@@ -16,6 +16,6 @@ query SearchStreams($search: String, $values: [ID!]) {
 
 query ListStreams($filter: StreamFilter, $pagination: OffsetPaginationInput) {
   streams(filters: $filter, pagination: $pagination) {
-    ...Stream
+    ...ListStream
   }
 }

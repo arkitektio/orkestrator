@@ -1,8 +1,17 @@
 fragment Stream on Stream {
   id
+  title
+  kind
+  streamer {
+    ...Streamer
+  }
 }
-
 
 fragment ListStream on Stream {
   id
+  title
+  kind
+  streamer {
+    ...Streamer
+  }
 }

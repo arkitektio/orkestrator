@@ -19,6 +19,6 @@ query ListSoloBroadcasts(
   $pagination: OffsetPaginationInput
 ) {
   soloBroadcasts(filters: $filter, pagination: $pagination) {
-    ...SoloBroadcast
+    ...ListSoloBroadcast
   }
 }
