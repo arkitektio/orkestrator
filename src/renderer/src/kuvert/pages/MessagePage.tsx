@@ -20,7 +20,10 @@ const MessagePage = asDetailQueryRoute(useGetMessageQuery, ({ data }) => {
   useEffect(() => {
     if (marked.current === message.id || message.isRead) return;
     marked.current = message.id;
-    void markRead({ variables: { input: { messages: [message.id], read: true } } });
+    // In the background: the mail staying unread is the only sign, as with any failed sync.
+    markRead({ variables: { input: { messages: [message.id], read: true } } }).catch((e) =>
+      console.error("Couldn't mark the mail read", e),
+    );
   }, [message.id]);
 
   return (

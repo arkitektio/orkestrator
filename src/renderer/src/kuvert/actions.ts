@@ -45,7 +45,7 @@ import {
 } from "./api/graphql";
 import { LOGIN_ANCHOR } from "./components/settings/anchors";
 import { MailAccount } from "./linkers";
-import { toastText } from "./errors";
+import { asKuvertError } from "./errors";
 import { CATEGORY_ACTIONS } from "./localactions/categories";
 import { CHANGE_ACTIONS } from "./localactions/changes";
 import { TASK_ACTIONS } from "./localactions/tasks";
@@ -76,7 +76,7 @@ const kuvertMutate = async (
   try {
     return await kuvertClient(services).mutate(options);
   } catch (e) {
-    throw new Error(toastText(e));
+    throw asKuvertError(e);
   }
 };
 

@@ -2,6 +2,7 @@ import { Spinner } from "@/core/ui/spinner";
 import { AuthFlowPanel } from "@/core/authflow/AuthFlow";
 import { useAuthFlow } from "@/core/authflow/useAuthFlow";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/core/ui/collapsible";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
@@ -12,7 +13,6 @@ import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/core/notify";
 import {
   ListMailAccountsDocument,
   MailboxTreeDocument,
@@ -25,7 +25,7 @@ import {
   useStartOAuthLinkMutation,
 } from "../api/graphql";
 import { sessionOf } from "@/core/authflow/contract";
-import { toastText } from "../errors";
+import { inKuvertWords } from "../errors";
 import { MailAccount } from "../linkers";
 import { PasswordField, SelectField, ServerFields, serverInput, ServerValues, TextField } from "./fields";
 
@@ -62,8 +62,8 @@ const OAuthStep = ({
   const auth = useAuthFlow({
     flow: "kuvert",
     open,
+    // Its page opens: that is the confirmation.
     onDone: (session) => {
-      toast.success(`${session.result?.label ?? "Mailbox"} linked`);
       closeDialog();
       if (session.result) navigate(MailAccount.linkBuilder(session.result.id));
     },
@@ -120,7 +120,6 @@ const fromPreset = (preset: MailPresetFragment | undefined, protocol: Protocol):
 
 /** Username and (app) password. The login is tested before the mailbox is saved. */
 const PasswordStep = ({ address, preset }: { address: string; preset?: MailPresetFragment }) => {
-  const { closeDialog } = useDialog();
   const navigate = useNavigate();
   const [create, { loading }] = useCreateMailAccountMutation({
     refetchQueries: [ListMailAccountsDocument, MailboxTreeDocument],
@@ -146,30 +145,36 @@ const PasswordStep = ({ address, preset }: { address: string; preset?: MailPrese
     form.setValue("smtp", servers.smtp);
   }, [preset?.key, protocol]);
 
-  const submit = (v: PasswordValues) =>
-    create({
-      variables: {
-        input: {
-          emailAddress: address.trim(),
-          password: v.password,
-          name: v.name.trim() || null,
-          displayName: v.displayName.trim() || null,
-          protocol: v.protocol,
-          username: v.username.trim() || null,
-          incoming: serverInput(v.incoming),
-          smtp: serverInput(v.smtp),
-          smtpUsername: v.smtpUsername.trim() || null,
-          smtpPassword: v.smtpPassword || null,
-        },
-      },
-    })
-      .then((r) => {
+  // A refused login test stays in the dialog with the server's reason; a
+  // linked mailbox opens on its page.
+  const { submit, submitting } = useDialogSubmit(
+    (v: PasswordValues) =>
+      inKuvertWords(
+        create({
+          variables: {
+            input: {
+              emailAddress: address.trim(),
+              password: v.password,
+              name: v.name.trim() || null,
+              displayName: v.displayName.trim() || null,
+              protocol: v.protocol,
+              username: v.username.trim() || null,
+              incoming: serverInput(v.incoming),
+              smtp: serverInput(v.smtp),
+              smtpUsername: v.smtpUsername.trim() || null,
+              smtpPassword: v.smtpPassword || null,
+            },
+          },
+        }),
+      ),
+    {
+      errorTitle: "Couldn't link the mailbox",
+      onSuccess: (r) => {
         const account = r.data?.createMailAccount;
-        toast.success(`${address} linked`);
-        closeDialog();
         if (account) navigate(MailAccount.linkBuilder(account.id));
-      })
-      .catch((e) => toast.error(toastText(e)));
+      },
+    },
+  );
 
   return (
     <Form {...form}>
@@ -207,7 +212,7 @@ const PasswordStep = ({ address, preset }: { address: string; preset?: MailPrese
           </CollapsibleContent>
         </Collapsible>
         <DialogFooter>
-          <Button type="submit" disabled={loading || !address.includes("@")}>
+          <Button type="submit" disabled={loading || submitting || !address.includes("@")}>
             {loading ? "Testing the login…" : "Add mailbox"}
           </Button>
         </DialogFooter>

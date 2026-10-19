@@ -6,7 +6,7 @@ import { CloudAlert, CloudOff, CloudUpload } from "lucide-react";
 import React from "react";
 import { useKuvert } from "../../api/funcs";
 import { MailChangeState, MessageFragment, SyncState } from "../../api/graphql";
-import { describeError } from "../../errors";
+import { describeError, reportKuvertErrorAs } from "../../errors";
 import { retryChanges, revertToServer, undoChanges } from "../../mailOps";
 import { describeChange } from "./describe";
 
@@ -29,10 +29,11 @@ const Hint = ({ icon, text }: { icon: React.ReactNode; text: string }) => (
 const Failed = ({ message }: { message: MessageFragment }) => {
   const client = useKuvert();
   const failed = message.changes.filter((c) => c.state === MailChangeState.Failed);
-  const run = (work: () => Promise<unknown>, done: string) =>
+  // Reverting and undoing show on the mail itself; a retry only queues, so it says so.
+  const run = (work: () => Promise<unknown>, failure: string, done?: string) =>
     work()
-      .then(() => toast.success(done))
-      .catch((e: Error) => toast.error(e.message));
+      .then(() => done && toast.success(done))
+      .catch(reportKuvertErrorAs(failure));
 
   return (
     <Popover>
@@ -62,15 +63,15 @@ const Failed = ({ message }: { message: MessageFragment }) => {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => run(() => revertToServer(client, [message.id]), "Back to what the server has")}
+            onClick={() => run(() => revertToServer(client, [message.id]), "Couldn't revert the mail")}
           >
             Revert to server
           </Button>
-          <Button size="sm" variant="outline" onClick={() => run(() => undoChanges(client, { messages: [message.id] }), "Undone")}>
+          <Button size="sm" variant="outline" onClick={() => run(() => undoChanges(client, { messages: [message.id] }), "Couldn't undo the changes")}>
             Undo
           </Button>
           {failed.length > 0 && (
-            <Button size="sm" onClick={() => run(() => retryChanges(client, failed.map((c) => c.id)), "Queued again")}>
+            <Button size="sm" onClick={() => run(() => retryChanges(client, failed.map((c) => c.id)), "Couldn't retry the changes", "Queued again")}>
               Retry
             </Button>
           )}

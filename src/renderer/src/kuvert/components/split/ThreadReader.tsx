@@ -18,7 +18,11 @@ export const useMarkThreadRead = (thread: ThreadFragment | undefined) => {
     if (!thread || marked.current === thread.id) return;
     marked.current = thread.id;
     const unread = thread.messages.filter((m) => !m.isRead).map((m) => m.id);
-    if (unread.length) void markRead({ variables: { input: { messages: unread, read: true } } });
+    if (!unread.length) return;
+    // In the background: the mail staying unread is the only sign, as with any failed sync.
+    markRead({ variables: { input: { messages: unread, read: true } } }).catch((e) =>
+      console.error("Couldn't mark the mail read", e),
+    );
   }, [thread?.id]);
 };
 

@@ -1,5 +1,4 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { toast } from "@/core/notify";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/core/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
 import { TooltipButton } from "@/core/ui/tooltip-button";
@@ -13,7 +12,7 @@ import {
   useCategorizeMessagesMutation,
   useListCategoriesQuery,
 } from "../../api/graphql";
-import { toastText } from "../../errors";
+import { reportKuvertErrorAs } from "../../errors";
 import { CategoryDot } from "./CategoryDot";
 import { membership } from "./membership";
 import { TriCheck } from "./TriCheck";
@@ -43,7 +42,7 @@ export const CategoryButton = ({
     const all = membership(mail, category.id) === "all";
     categorize({
       variables: { input: { messages, add: all ? [] : [category.id], remove: all ? [category.id] : [] } },
-    }).catch((e) => toast.error(toastText(e)));
+    }).catch(reportKuvertErrorAs("Couldn't change the categories"));
   };
 
   return (

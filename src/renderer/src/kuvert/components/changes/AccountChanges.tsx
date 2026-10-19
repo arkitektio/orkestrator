@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useKuvert } from "../../api/funcs";
 import { ListMailAccountFragment } from "../../api/graphql";
+import { reportKuvertErrorAs } from "../../errors";
 import { pushChanges } from "../../mailOps";
 
 export const changesRoute = (account?: string) => (account ? `/kuvert/changes?account=${account}` : "/kuvert/changes");
@@ -28,7 +29,7 @@ export const AccountChanges = ({
     setPushing(true);
     pushChanges(client, account.id)
       .then((text) => toast.success(text))
-      .catch((e: Error) => toast.error(e.message))
+      .catch(reportKuvertErrorAs("Couldn't push the changes"))
       .finally(() => setPushing(false));
   };
 

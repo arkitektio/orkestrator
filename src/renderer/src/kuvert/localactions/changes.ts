@@ -63,11 +63,9 @@ export const CHANGE_ACTIONS: Record<string, Action> = {
     conditions: [{ type: "identifier", identifier: ACCOUNT }, { type: "nopartner" }],
     execute: async ({ services, state, onProgress }) => {
       const ids = need(idsOf(state, ACCOUNT), "mailbox");
-      const client = kuvertClient(services);
-      for (const [i, id] of ids.entries()) {
-        toast.success(await pushChanges(client, id));
-        onProgress(((i + 1) / ids.length) * 100);
-      }
+      // One summary for every mailbox: what reached the server is not visible here.
+      toast.success(await pushChanges(kuvertClient(services), ids));
+      onProgress(100);
     },
   },
   "kuvert-review-changes": {

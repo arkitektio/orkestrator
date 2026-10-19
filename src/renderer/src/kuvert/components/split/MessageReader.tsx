@@ -21,7 +21,10 @@ export const MessageReader = ({ id }: { id: string }) => {
   useEffect(() => {
     if (!message || message.isRead || marked.current) return;
     marked.current = true;
-    void markRead({ variables: { input: { messages: [message.id], read: true } } });
+    // In the background: the mail staying unread is the only sign, as with any failed sync.
+    markRead({ variables: { input: { messages: [message.id], read: true } } }).catch((e) =>
+      console.error("Couldn't mark the mail read", e),
+    );
   }, [message?.id]);
 
   if (!message) return <ReaderState loading={loading} what="mail" />;

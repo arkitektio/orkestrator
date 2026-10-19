@@ -4,7 +4,8 @@ import { Form } from "@/core/ui/form";
 import { Switch } from "@/core/ui/switch";
 import { cn } from "@/core/util/utils";
 import { toast } from "@/core/notify";
-import React, { useEffect } from "react";
+import { ErrorNote } from "@/core/ui/error-note";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation } from "react-router-dom";
 import {
@@ -19,7 +20,7 @@ import {
   useUpdateMailAccountMutation,
   useUpdateMailFolderMutation,
 } from "../../api/graphql";
-import { toastText } from "../../errors";
+import { asKuvertError, reportKuvertErrorAs } from "../../errors";
 import { PasswordField, ServerFields, serverInput, ServerValues, TextField } from "../../forms/fields";
 import { sortFolders } from "../../format";
 import { MailFolder } from "../../linkers";
@@ -85,7 +86,9 @@ const SettingSwitch = ({
         checked={account[field]}
         disabled={loading || !account.isOwner}
         onCheckedChange={(value) =>
-          update({ variables: { input: { id: account.id, [field]: value } } }).catch((e) => toast.error(toastText(e)))
+          update({ variables: { input: { id: account.id, [field]: value } } }).catch(
+            reportKuvertErrorAs("Couldn't change the setting"),
+          )
         }
       />
     </Row>
@@ -127,10 +130,11 @@ const NamesForm = ({ account }: { account: MailAccountFragment }) => {
   const form = useForm({ defaultValues: defaults });
   useEffect(() => form.reset(defaults), [account.name, account.displayName]);
 
+  // The names show on the page once saved: no toast.
   const submit = (v: typeof defaults) =>
-    update({ variables: { input: { id: account.id, name: v.name.trim(), displayName: v.displayName.trim() } } })
-      .then(() => toast.success("Mailbox updated"))
-      .catch((e) => toast.error(toastText(e)));
+    update({ variables: { input: { id: account.id, name: v.name.trim(), displayName: v.displayName.trim() } } }).catch(
+      reportKuvertErrorAs("Couldn't rename the mailbox"),
+    );
 
   return (
     <Form {...form}>
@@ -166,9 +170,12 @@ const LoginForm = ({ account }: { account: MailAccountFragment }) => {
     smtpPassword: "",
   };
   const form = useForm<LoginValues>({ defaultValues: defaults });
+  // A refused test is the answer to this form: shown in it, not as a toast.
+  const [failure, setFailure] = useState<unknown>(null);
 
   // Only what changed is sent.
   const submit = (v: LoginValues) => {
+    setFailure(null);
     const dirty = form.formState.dirtyFields;
     const input: UpdateMailAccountInput = {
       id: account.id,
@@ -184,7 +191,7 @@ const LoginForm = ({ account }: { account: MailAccountFragment }) => {
         toast.success("Login tested and saved");
         form.reset({ ...v, password: "", smtpPassword: "" });
       })
-      .catch((e) => toast.error(toastText(e)));
+      .catch((e) => setFailure(asKuvertError(e)));
   };
 
   return (
@@ -202,11 +209,15 @@ const LoginForm = ({ account }: { account: MailAccountFragment }) => {
             <PasswordField name="smtpPassword" label="SMTP password" />
           </div>
         </fieldset>
+        <ErrorNote error={failure} title="Couldn't save the login" className="mx-3" />
         <SaveBar
           dirty={form.formState.isDirty}
           loading={loading}
           label={loading ? "Testing…" : "Test and save"}
-          onReset={() => form.reset(defaults)}
+          onReset={() => {
+            setFailure(null);
+            form.reset(defaults);
+          }}
         />
       </form>
     </Form>
@@ -232,7 +243,9 @@ const FolderRow = ({ folder, canToggle }: { folder: MailFolderFragment; canToggl
               disabled={loading || !folder.selectable}
               title={folder.syncEnabled ? "Synced" : "Not synced"}
               onCheckedChange={(syncEnabled) =>
-                update({ variables: { input: { id: folder.id, syncEnabled } } }).catch((e) => toast.error(toastText(e)))
+                update({ variables: { input: { id: folder.id, syncEnabled } } }).catch(
+                  reportKuvertErrorAs("Couldn't change the folder's sync"),
+                )
               }
             />
           )}

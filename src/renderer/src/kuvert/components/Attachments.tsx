@@ -10,8 +10,8 @@ import {
   AttachmentTrigger,
 } from "@/core/ui/attachment";
 import { Download } from "lucide-react";
-import { toast } from "@/core/notify";
 import { AttachmentFragment } from "../api/graphql";
+import { reportKuvertErrorAs } from "../errors";
 import { useAttachmentUrls, useSaveAttachment } from "../datalayer/attachments";
 import { formatBytes } from "../format";
 import { fileIcon, fileKind } from "./fileIcon";
@@ -29,7 +29,7 @@ export const MessageAttachments = ({ message, attachments }: { message: string; 
   const save = useSaveAttachment();
   if (files.length === 0) return null;
 
-  const saveOne = (a: AttachmentFragment) => save(message, a).catch((e: Error) => toast.error(e.message));
+  const saveOne = (a: AttachmentFragment) => save(message, a).catch(reportKuvertErrorAs("Couldn't save the attachment"));
 
   return (
     <AttachmentGroup>

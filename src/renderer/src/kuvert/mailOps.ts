@@ -21,7 +21,7 @@ import {
   ThreadMessageIdsQuery,
   UndoMailChangesDocument,
 } from "./api/graphql";
-import { toastText } from "./errors";
+import { asKuvertError, reportKuvertError } from "./errors";
 
 /**
  * What one does to mail, on a client: the local actions (menu, ObjectButton)
@@ -39,7 +39,7 @@ const run = async <T>(work: () => Promise<T>) => {
   try {
     return await work();
   } catch (e) {
-    throw new Error(toastText(e));
+    throw asKuvertError(e);
   }
 };
 
@@ -146,20 +146,26 @@ export const revertToServer = (client: Client, messages: string[]) =>
     }),
   );
 
-/** Push a mailbox's due changes now; the result as a sentence. */
-export const pushChanges = async (client: Client, account: string) => {
-  const result = await run(() =>
-    client.mutate({
-      mutation: PushMailChangesDocument,
-      variables: { account },
-      refetchQueries: CHANGE_VIEWS,
-    }),
-  );
-  const r = result.data?.pushMailChanges;
-  if (!r) return "Pushed";
-  const parts = [`${r.pushed} pushed`];
-  if (r.failed) parts.push(`${r.failed} failed`);
-  if (r.pending) parts.push(`${r.pending} still waiting`);
+/** Push the due changes of one or more mailboxes now; the result, summed, as one sentence. */
+export const pushChanges = async (client: Client, accounts: string | string[]) => {
+  const total = { pushed: 0, failed: 0, pending: 0 };
+  for (const account of typeof accounts === "string" ? [accounts] : accounts) {
+    const result = await run(() =>
+      client.mutate({
+        mutation: PushMailChangesDocument,
+        variables: { account },
+        refetchQueries: CHANGE_VIEWS,
+      }),
+    );
+    const r = result.data?.pushMailChanges;
+    if (!r) continue;
+    total.pushed += r.pushed;
+    total.failed += r.failed;
+    total.pending += r.pending;
+  }
+  const parts = [`${total.pushed} pushed`];
+  if (total.failed) parts.push(`${total.failed} failed`);
+  if (total.pending) parts.push(`${total.pending} still waiting`);
   return parts.join(", ");
 };
 
@@ -172,9 +178,8 @@ export const undoToast = (client: Client, messages: string[], text: string) => {
     action: {
       label: "Undo",
       onClick: () => {
-        undoChanges(client, { messages })
-          .then(() => toast.success("Undone"))
-          .catch((e: Error) => toast.error(e.message));
+        // The mail lists refetch: the mail back where it was says it worked.
+        undoChanges(client, { messages }).catch((e) => reportKuvertError(e, "Couldn't undo the change"));
       },
     },
   });

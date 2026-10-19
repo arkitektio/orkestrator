@@ -26,7 +26,7 @@ import {
   UpdateTaskDocument,
 } from "../api/graphql";
 import { TASK_VIEWS } from "../components/tasks/taskOps";
-import { toastText } from "../errors";
+import { asKuvertError } from "../errors";
 
 const THREAD = "@kuvert/thread";
 const TASK = "@kuvert/task";
@@ -49,7 +49,7 @@ const kuvertMutate = async (
   try {
     return await kuvertClient(services).mutate({ refetchQueries: TASK_VIEWS, ...options });
   } catch (e) {
-    throw new Error(toastText(e));
+    throw asKuvertError(e);
   }
 };
 

@@ -5,7 +5,6 @@ import { cn } from "@/core/util/utils";
 import { Flag, Inbox, Paperclip } from "lucide-react";
 import React, { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/core/notify";
 import { useKuvert } from "../../api/funcs";
 import {
   FolderRole,
@@ -18,6 +17,7 @@ import {
 } from "../../api/graphql";
 import { formatMailDate } from "../../format";
 import { MailMessage, MailThread } from "../../linkers";
+import { reportKuvertError } from "../../errors";
 import { deleteMail, threadMessages, undoToast } from "../../mailOps";
 import { CategoryDot } from "../categories/CategoryDot";
 import { useMailSelection } from "../split/selection";
@@ -197,7 +197,7 @@ export const MailList = ({
         const next = rows[index + 1] ?? rows[index - 1];
         select(next ? { kind: next.kind, id: next.id } : null);
       } catch (e) {
-        toast.error((e as Error).message);
+        reportKuvertError(e, "Couldn't move the mail to Trash");
       }
     }
   };

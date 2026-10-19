@@ -1,32 +1,34 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import { Spinner } from "@/core/ui/spinner";
-import { toast } from "@/core/notify";
 import { cn } from "@/core/util/utils";
 import { useState } from "react";
 import { ListTaskListFragment, useCreateTaskListMutation, useGetTaskListQuery, useUpdateTaskListMutation } from "../api/graphql";
 import { LIST_COLORS, TASK_VIEWS } from "../components/tasks/taskOps";
-import { toastText } from "../errors";
+import { inKuvertWords } from "../errors";
 
 const Body = ({ list }: { list?: ListTaskListFragment }) => {
-  const { closeDialog } = useDialog();
   const [name, setName] = useState(list?.name ?? "");
   const [color, setColor] = useState(list?.color || LIST_COLORS[0]);
   const [create, created] = useCreateTaskListMutation({ refetchQueries: TASK_VIEWS });
   const [update, updated] = useUpdateTaskListMutation({ refetchQueries: TASK_VIEWS });
 
+  // The list shows in the task views: closing is the confirmation.
+  const save = useDialogSubmit(
+    (input: { name: string; color: string }) =>
+      inKuvertWords<unknown>(
+        list ? update({ variables: { input: { id: list.id, ...input } } }) : create({ variables: { input } }),
+      ),
+    { errorTitle: list ? "Couldn't save the list" : "Couldn't create the list" },
+  );
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const input = { name: name.trim(), color };
     if (!input.name) return;
-    (list ? update({ variables: { input: { id: list.id, ...input } } }) : create({ variables: { input } }))
-      .then(() => {
-        toast.success(list ? "List updated" : "List created");
-        closeDialog();
-      })
-      .catch((err) => toast.error(toastText(err)));
+    void save.submit(input);
   };
 
   return (
@@ -57,7 +59,7 @@ const Body = ({ list }: { list?: ListTaskListFragment }) => {
         />
       </div>
       <DialogFooter>
-        <Button type="submit" disabled={!name.trim() || created.loading || updated.loading}>
+        <Button type="submit" disabled={!name.trim() || created.loading || updated.loading || save.submitting}>
           {list ? "Save" : "Create"}
         </Button>
       </DialogFooter>

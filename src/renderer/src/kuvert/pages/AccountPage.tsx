@@ -12,7 +12,7 @@ import { AccountChanges, changesRoute } from "../components/changes/AccountChang
 import { InfoList } from "../components/InfoList";
 import { ProblemBanner } from "../components/ProblemBanner";
 import { AccountSettings } from "../components/settings/AccountSettings";
-import { toastText } from "../errors";
+import { reportKuvertErrorAs } from "../errors";
 import { KUVERT_HELP } from "../help";
 import { MailAccount } from "../linkers";
 
@@ -47,7 +47,7 @@ const AccountPage = asDetailQueryRoute(useGetMailAccountQuery, ({ data, refetch 
                       : "Synced",
                   );
                 })
-                .catch((e) => toast.error(toastText(e)))
+                .catch(reportKuvertErrorAs("Couldn't sync the mailbox"))
             }
           >
             Sync now

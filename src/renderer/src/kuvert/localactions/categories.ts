@@ -13,7 +13,7 @@ import {
   ListMessagesDocument,
   ListThreadsDocument,
 } from "../api/graphql";
-import { toastText } from "../errors";
+import { asKuvertError } from "../errors";
 
 const ACCOUNT = "@kuvert/account";
 const MESSAGE = "@kuvert/message";
@@ -36,7 +36,7 @@ const kuvertMutate = async (
   try {
     return await kuvertClient(services).mutate(options);
   } catch (e) {
-    throw new Error(toastText(e));
+    throw asKuvertError(e);
   }
 };
 

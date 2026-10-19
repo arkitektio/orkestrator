@@ -5,7 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/core/ui/separator";
 import { Textarea } from "@/core/ui/textarea";
 import { TooltipButton } from "@/core/ui/tooltip-button";
-import { toast } from "@/core/notify";
 import { cn } from "@/core/util/utils";
 import { AlarmClock, AlarmClockOff, Bot, Check, Maximize2, Pencil, Pin, PinOff, RotateCcw, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -22,7 +21,7 @@ import {
   useUnlinkThreadsMutation,
   useUpdateTaskMutation,
 } from "../../api/graphql";
-import { toastText } from "../../errors";
+import { reportKuvertErrorAs } from "../../errors";
 import { formatMailDate } from "../../format";
 import { MailTask, MailThread } from "../../linkers";
 import { participantsLabel } from "../list/rows";
@@ -31,12 +30,11 @@ import { formatDue, fromLocalInput, isOverdue, TASK_VIEWS, toLocalInput } from "
 
 const Divider = () => <Separator orientation="vertical" className="mx-1 h-5" />;
 
-const fail = (e: unknown) => toast.error(toastText(e));
-
 /** Change a task's fields; lists refetch when what they filter on moved. */
 const useUpdate = (id: string) => {
   const [update] = useUpdateTaskMutation({ refetchQueries: TASK_VIEWS });
-  return (input: Omit<UpdateTaskInput, "id">) => update({ variables: { input: { id, ...input } } }).catch(fail);
+  return (input: Omit<UpdateTaskInput, "id">) =>
+    update({ variables: { input: { id, ...input } } }).catch(reportKuvertErrorAs("Couldn't update the task"));
 };
 
 /** Finish, drop, snooze, pin, edit: the task's own toolbar. */
@@ -46,25 +44,26 @@ const TaskToolbar = ({ task, page }: { task: TaskFragment; page?: string }) => {
   const [setStatus] = useSetTaskStatusMutation({ refetchQueries: TASK_VIEWS });
   const [snooze] = useSnoozeTasksMutation({ refetchQueries: TASK_VIEWS });
   const update = useUpdate(task.id);
-  const status = (next: TaskStatus, done: string) =>
-    setStatus({ variables: { input: { tasks: [task.id], status: next } } })
-      .then(() => toast.success(done))
-      .catch(fail);
+  // The toolbar and the lists change with it: no toast to say so.
+  const status = (next: TaskStatus) =>
+    setStatus({ variables: { input: { tasks: [task.id], status: next } } }).catch(
+      reportKuvertErrorAs("Couldn't change the task's status"),
+    );
   const open = task.status === TaskStatus.Open;
 
   return (
     <div className="sticky top-0 z-20 flex h-12 shrink-0 items-center gap-0.5 border-b bg-background/80 px-2 backdrop-blur-md">
       {open ? (
         <>
-          <TooltipButton variant="ghost" size="icon-lg" tooltip="Mark done" onClick={() => status(TaskStatus.Done, "Done")}>
+          <TooltipButton variant="ghost" size="icon-lg" tooltip="Mark done" onClick={() => status(TaskStatus.Done)}>
             <Check />
           </TooltipButton>
-          <TooltipButton variant="ghost" size="icon-lg" tooltip="Dismiss" onClick={() => status(TaskStatus.Dismissed, "Dismissed")}>
+          <TooltipButton variant="ghost" size="icon-lg" tooltip="Dismiss" onClick={() => status(TaskStatus.Dismissed)}>
             <X />
           </TooltipButton>
         </>
       ) : (
-        <TooltipButton variant="ghost" size="icon-lg" tooltip="Open again" onClick={() => status(TaskStatus.Open, "Opened again")}>
+        <TooltipButton variant="ghost" size="icon-lg" tooltip="Open again" onClick={() => status(TaskStatus.Open)}>
           <RotateCcw />
         </TooltipButton>
       )}
@@ -74,7 +73,11 @@ const TaskToolbar = ({ task, page }: { task: TaskFragment; page?: string }) => {
           variant="ghost"
           size="icon-lg"
           tooltip="Wake now"
-          onClick={() => snooze({ variables: { input: { tasks: [task.id], until: null } } }).catch(fail)}
+          onClick={() =>
+            snooze({ variables: { input: { tasks: [task.id], until: null } } }).catch(
+              reportKuvertErrorAs("Couldn't wake the task"),
+            )
+          }
         >
           <AlarmClockOff />
         </TooltipButton>
@@ -165,7 +168,9 @@ const LinkRow = ({ link, task }: { link: TaskThreadFragment; task: string }) => 
             disabled={loading}
             onClick={(e) => {
               e.stopPropagation();
-              unlink({ variables: { input: { task, threads: [t.id] } } }).catch(fail);
+              unlink({ variables: { input: { task, threads: [t.id] } } }).catch(
+                reportKuvertErrorAs("Couldn't take the conversation out"),
+              );
             }}
           >
             <X />

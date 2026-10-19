@@ -9,7 +9,7 @@ import { ListThreadsDocument, useGetMailFolderQuery, useSyncMailAccountMutation 
 import { MailSplit } from "../components/split/MailSplit";
 import { MailList } from "../components/list/MailList";
 import { ProblemBanner } from "../components/ProblemBanner";
-import { toastText } from "../errors";
+import { reportKuvertErrorAs } from "../errors";
 import { KUVERT_HELP } from "../help";
 import { MailFolder } from "../linkers";
 
@@ -53,7 +53,7 @@ const FolderPage = asDetailQueryRoute(useGetMailFolderQuery, ({ data, refetch })
                   void refetch();
                   toast.success(result ? `Synced: ${result.created} new` + (result.more ? ", more to come" : "") : "Synced");
                 })
-                .catch((e) => toast.error(toastText(e)))
+                .catch(reportKuvertErrorAs("Couldn't sync the folder"))
             }
           >
             Sync
