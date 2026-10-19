@@ -4,6 +4,46 @@ input AddToCallInput {
   call: ID!
 }
 
+"""
+An app instance that owns live streams: one per client, user and organization
+"""
+type Agent {
+  client: Client!
+  createdAt: DateTime!
+  id: ID!
+
+  """Whether the agent publishes any of its streams right now."""
+  live: Boolean!
+
+  """What the agent is called: its client's name, or its client id."""
+  name: String!
+
+  """The LiveKit room the agent's streams are tracks in."""
+  roomName: String!
+
+  """Every stream the agent offers, as it declared them last"""
+  streams(filters: StreamFilter, order: StreamOrder, pagination: OffsetPaginationInput): [Stream!]!
+  user: User!
+}
+
+"""Filter for agents"""
+input AgentFilter {
+  AND: AgentFilter
+  DISTINCT: Boolean
+  NOT: AgentFilter
+  OR: AgentFilter
+
+  """
+  Agents running as this client (its OAuth client id), as rekuest knows it too.
+  """
+  clientId: String
+  ids: [ID!]
+  search: String
+
+  """Agents running for this user (the `sub` their token carries)."""
+  userSub: String
+}
+
 type App {
   id: ID!
   identifier: String!
@@ -95,30 +135,13 @@ type Client {
   release: Release
 }
 
-type CollaborativeBroadcast {
-  audioStreams: [Stream!]!
-  createdAt: DateTime!
-  id: ID!
-
-  """The streamers that are collaborating on this broadcast."""
-  streamers(filters: StreamerFilter, pagination: OffsetPaginationInput): [Streamer!]!
-  streams: [Stream!]!
-  title: String!
-  videoStreams: [Stream!]!
-}
-
-"""Filter for Solo Broadcasts"""
-input CollaborativeBroadcastFilter {
-  AND: CollaborativeBroadcastFilter
-  DISTINCT: Boolean
-  NOT: CollaborativeBroadcastFilter
-  OR: CollaborativeBroadcastFilter
-  ids: [ID!] = null
-  search: String = null
-}
-
 """Date with time (isoformat)"""
 scalar DateTime
+
+"""Every stream an agent offers"""
+input DeclareStreamsInput {
+  streams: [StreamDeclarationInput!]!
+}
 
 """The invitation to put away"""
 input DismissCallInviteInput {
@@ -131,22 +154,6 @@ input EnsureCallInput {
   title: String = null
 }
 
-input EnsureCollaborativeBroadcastInput {
-  instanceId: String = null
-  title: String = null
-}
-
-input EnsureSoloBroadcastInput {
-  instanceId: String = null
-  title: String = null
-}
-
-input EnsureStreamInput {
-  broadcast: ID = null
-  kind: StreamKind! = VIDEO
-  title: String = null
-}
-
 """Who to ask into a call"""
 input InviteToCallInput {
   call: ID!
@@ -155,9 +162,10 @@ input InviteToCallInput {
   users: [ID!]!
 }
 
-input JoinBroadcastInput {
-  broadcast: ID!
-}
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf).
+"""
+scalar JSON @specifiedBy(url: "https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf")
 
 """The call to join"""
 input JoinCallInput {
@@ -170,29 +178,35 @@ type Mutation {
   """
   addToCall(input: AddToCallInput!): Call!
 
+  """
+  Offer exactly these streams as the caller's agent: undeclared ones are removed, unchanged ones untouched
+  """
+  declareStreams(input: DeclareStreamsInput!): [Stream!]!
+
   """Put an invitation away, on every device"""
   dismissCallInvite(input: DismissCallInviteInput!): ID!
 
   """The live call about these structures, or a new one"""
   ensureCall(input: EnsureCallInput!): Call!
 
-  """Create a collaborative broadcast"""
-  ensureCollaborativeBroadcast(input: EnsureCollaborativeBroadcastInput!): CollaborativeBroadcast!
-
-  """Create a solo broadcast"""
-  ensureSoloBroadcast(input: EnsureSoloBroadcastInput!): SoloBroadcast!
-
-  """Create a stream and return the token for it"""
-  ensureStream(input: EnsureStreamInput!): String!
-
   """Ask users into a call; their open apps ring"""
   inviteToCall(input: InviteToCallInput!): Call!
 
-  """Join a solo broadcast and return the token for it"""
-  joinBroadcast(input: JoinBroadcastInput!): String!
-
   """Join a call and return the token for it"""
   joinCall(input: JoinCallInput!): String!
+
+  """
+  A token for the caller's agent to publish its streams; a newer connection replaces an older one
+  """
+  publishToken: String!
+
+  """A token to watch every stream of an agent"""
+  watchAgent(input: WatchAgentInput!): String!
+
+  """
+  A token to watch a stream: its agent's room, where it is the track named by its key
+  """
+  watchStream(input: WatchStreamInput!): String!
 }
 
 input OffsetPaginationInput {
@@ -218,32 +232,28 @@ type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
 
+  """Get an agent by ID"""
+  agent(id: ID!): Agent!
+
+  """The organization's agents that offer streams"""
+  agents(filters: AgentFilter, pagination: OffsetPaginationInput): [Agent!]!
+
   """Get a call by ID"""
   call(id: ID!): Call!
 
   """The organization's calls; filter `live` for the ones in progress"""
   calls(filters: CallFilter, order: CallOrder, pagination: OffsetPaginationInput): [Call!]!
 
-  """Get a collaborative broadcast by ID"""
-  collaborativeBroadcast(id: ID!): CollaborativeBroadcast!
-
-  """Get all collaborative broadcasts"""
-  collaborativeBroadcasts(filters: CollaborativeBroadcastFilter, pagination: OffsetPaginationInput): [CollaborativeBroadcast!]!
-
   """Your pending invitations to calls that are still live"""
   myCallInvites: [CallInvite!]!
-
-  """Get a solo broadcast by ID"""
-  soloBroadcast(id: ID!): SoloBroadcast!
-
-  """Get all solo broadcasts"""
-  soloBroadcasts(filters: SoloBroadcastFilter, pagination: OffsetPaginationInput): [SoloBroadcast!]!
 
   """Get a stream by ID"""
   stream(id: ID!): Stream!
 
-  """Get a stream"""
-  streams(filters: StreamFilter, pagination: OffsetPaginationInput): [Stream!]!
+  """
+  The streams of the organization's agents; filter `live` for the ones being published
+  """
+  streams(filters: StreamFilter, order: StreamOrder, pagination: OffsetPaginationInput): [Stream!]!
 }
 
 type Release {
@@ -252,75 +262,99 @@ type Release {
   version: String!
 }
 
-type SoloBroadcast {
-  audioStreams: [Stream!]!
-  createdAt: DateTime!
-  id: ID!
-  streamer: Streamer!
-  title: String!
-  videoStreams: [Stream!]!
-}
-
-"""Filter for Solo Broadcasts"""
-input SoloBroadcastFilter {
-  AND: SoloBroadcastFilter
-  DISTINCT: Boolean
-  NOT: SoloBroadcastFilter
-  OR: SoloBroadcastFilter
-  ids: [ID!] = null
-  search: String = null
-}
-
+"""One live source an agent offers: a camera, a detector, a microphone"""
 type Stream {
+  agent: Agent!
+  createdAt: DateTime!
+  description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@lovekit/stream_kind`). The keys are the ones lovekit declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
   id: ID!
+
+  """
+  The agent's name for the stream, the same across its restarts: the name of the LiveKit track it is published as
+  """
+  key: String!
   kind: StreamKind!
-  streamer: Streamer!
+
+  """
+  Whether the agent publishes this stream right now: LiveKit's answer, asked when read.
+  """
+  live: Boolean!
   title: String!
 }
 
+"""One stream an agent offers"""
+input StreamDeclarationInput {
+  """What the stream shows"""
+  description: String = null
+
+  """
+  The agent's own name for the stream, the same on every start; its LiveKit track is published under this name
+  """
+  key: String!
+
+  """Whether it is video or audio"""
+  kind: StreamKind! = VIDEO
+
+  """What the stream is called; the key when not given"""
+  title: String = null
+}
+
+"""
+A stream an agent of your organization declared, changed or no longer offers
+"""
 type StreamEvent {
+  """A stream an agent declared for the first time"""
   create: Stream
+
+  """A stream its agent no longer offers"""
   delete: ID
-  moved: Stream
+
+  """A stream whose title, kind or description changed"""
   update: Stream
 }
 
-"""Filter for Streams"""
+"""Filter for streams"""
 input StreamFilter {
   AND: StreamFilter
   DISTINCT: Boolean
   NOT: StreamFilter
   OR: StreamFilter
-  ids: [ID!] = null
-  search: String = null
+
+  """Streams of this agent."""
+  agent: ID
+
+  """
+  Streams of the agent running as this client (its OAuth client id), as rekuest knows it too.
+  """
+  clientId: String
+  ids: [ID!]
+
+  """
+  Only streams their agent publishes right now (true), or does not (false).
+  """
+  live: Boolean
+  search: String
+
+  """
+  Streams of agents running for this user (the `sub` their token carries).
+  """
+  userSub: String
 }
 
-"""The state of a dask cluster"""
+"""What a stream carries"""
 enum StreamKind {
   AUDIO
   VIDEO
 }
 
-type Streamer {
-  client: Client!
-
-  """The collaborative broadcasts created by this agent."""
-  collaborativeBroadcasts(filters: CollaborativeBroadcastFilter, pagination: OffsetPaginationInput): [CollaborativeBroadcast!]!
-  id: ID!
-
-  """The solo broadcasts created by this agent, if any."""
-  soloBroadcasts: SoloBroadcast
-  user: User!
-}
-
-"""Filter for Dask Clusters"""
-input StreamerFilter {
-  AND: StreamerFilter
-  DISTINCT: Boolean
-  NOT: StreamerFilter
-  OR: StreamerFilter
-  ids: [ID!] = null
-  search: String = null
+input StreamOrder @oneOf {
+  createdAt: Ordering
+  title: Ordering
 }
 
 """A reference to an object on another service"""
@@ -344,15 +378,48 @@ type Subscription {
   """
   calls: CallEvent!
 
-  """Subscribe to stream events"""
-  streams(dataset: ID = null): StreamEvent!
+  """
+  Streams your organization's agents declare, change and drop, as they do
+  """
+  streams: StreamEvent!
 }
 
 type User {
   activeOrganization: Organization
+
+  """The family name, if the issuer sends one."""
+  familyName: String
+
+  """The given name, if the issuer sends one."""
+  givenName: String
   id: ID!
+
+  """The user's locale (BCP47), if the issuer sends one."""
+  locale: String
+
+  """The full name, if the issuer sends one."""
+  name: String
+
+  """A casual name, if the issuer sends one."""
+  nickname: String
+
+  """URL of the profile picture, if the issuer sends one."""
+  picture: String
   preferredUsername: String!
   sub: String!
+
+  """The user's IANA time zone, if the issuer sends one."""
+  zoneinfo: String
+}
+
+"""The agent whose streams to watch"""
+input WatchAgentInput {
+  agent: ID!
+}
+
+"""The stream to watch"""
+input WatchStreamInput {
+  stream: ID!
 }
 
 scalar _Any

@@ -5,5 +5,5 @@ import { manifest } from "./manifest";
 // its manifest declares.
 
 export const LovekitStream = smartOf(manifest, "@lovekit/stream");
-export const LovekitSoloBroadcast = smartOf(manifest, "@lovekit/solo_broadcast");
+export const LovekitAgent = smartOf(manifest, "@lovekit/agent");
 export const LovekitCall = smartOf(manifest, "@lovekit/call");

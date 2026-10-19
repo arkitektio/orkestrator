@@ -1,7 +1,7 @@
-mutation JoinBroadcast($input: JoinBroadcastInput!) {
-  joinBroadcast(input: $input)
+mutation WatchStream($input: WatchStreamInput!) {
+  watchStream(input: $input)
 }
 
-mutation EnsureStream($input: EnsureStreamInput!) {
-  ensureStream(input: $input)
+mutation WatchAgent($input: WatchAgentInput!) {
+  watchAgent(input: $input)
 }

@@ -1,0 +1,36 @@
+fragment AgentOwner on Agent {
+  id
+  name
+  roomName
+  user {
+    id
+    sub
+    preferredUsername
+  }
+  client {
+    id
+    clientId
+    release {
+      id
+      version
+      app {
+        id
+        identifier
+      }
+    }
+  }
+}
+
+fragment Agent on Agent {
+  ...AgentOwner
+  createdAt
+  live
+  streams {
+    ...ListStream
+  }
+}
+
+fragment ListAgent on Agent {
+  ...AgentOwner
+  live
+}

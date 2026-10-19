@@ -1,11 +1,10 @@
 import { PageLayout } from "@/core/layout/PageLayout";
 import { ModuleHome } from "@/core/layout/ModuleHome";
 import React from "react";
-import SoloBroadcastList from "../components/lists/SoloBroadcastList";
 import StreamList from "../components/lists/StreamList";
 import { LOVEKIT_HELP } from "../help";
 
-/** Lovekit's front door: its pages, then the latest streams and broadcasts. */
+/** Lovekit's front door: its pages, then the streams the organization's apps offer. */
 const Page: React.FC = () => {
   return (
     <PageLayout
@@ -15,10 +14,9 @@ const Page: React.FC = () => {
       <ModuleHome
         moduleKey="lovekit"
         title="Lovekit"
-        description="Live video: streams, broadcasts and calls."
+        description="Live video: the streams apps offer, and calls."
       >
         <StreamList defaultLimit={12} />
-        <SoloBroadcastList defaultLimit={12} />
       </ModuleHome>
     </PageLayout>
   );

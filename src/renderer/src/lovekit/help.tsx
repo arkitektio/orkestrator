@@ -8,50 +8,46 @@ import { PageHelp } from "@/core/layout/help";
 export const LOVEKIT_HELP = {
   home: (
     <PageHelp
-      intro="Lovekit carries live video. This page links every Lovekit page and lists the latest streams and broadcasts."
+      intro="Lovekit carries live video. This page links every Lovekit page and lists the streams the apps of your organization offer."
       steps={[
-        <>Use the <b>Streams</b>, <b>Solo Broadcasts</b> and <b>Calls</b> tiles at the top to open those pages.</>,
-        <>Click a stream or broadcast below to open it.</>,
-        <>Press ⌘K / Ctrl+K and type “Solo Broadcasts” to get there from anywhere.</>,
+        <>Use the <b>Streams</b> and <b>Calls</b> tiles at the top to open those pages.</>,
+        <>Click a stream below to open it and watch it. A green dot means it is live.</>,
+        <>Press ⌘K / Ctrl+K and type “Streams” to get there from anywhere.</>,
+      ]}
+      tips={[
+        <>A stream is offered by an app (a microscope, a camera): it is there as long as the app offers it, and live while the app sends it.</>,
       ]}
     />
   ),
-  soloBroadcasts: (
+  streams: (
     <PageHelp
-      intro="A solo broadcast is live video sent by one source to anyone who opens it. This page lists the latest broadcasts."
+      intro="Every stream the apps of your organization offer, live or not."
       steps={[
-        <>Each card shows who is broadcasting, from which app, since when, and whether it carries video, sound or both. Click one to open it and watch.</>,
-        <>Press ⌘K / Ctrl+K and type “Solo Broadcasts” to come back to this list from anywhere.</>,
+        <>Each card shows what the stream carries, who runs the app it comes from, and whether it is live. Click one to watch it.</>,
       ]}
       tips={[
-        <>A broadcast cannot be started from this page.</>,
-      ]}
-    />
-  ),
-  soloBroadcast: (
-    <PageHelp
-      intro="The live video of one broadcast. The page joins the broadcast by itself as soon as it opens."
-      steps={[
-        <>Wait a moment after opening the page; the video starts without pressing anything. <b>LIVE</b> in the corner means the streamer is sending; the eye counts who is watching, you included.</>,
-        <>Sound starts muted: press <b>Unmute</b> at the bottom right of the video to hear it.</>,
-        <>Open the <b>Info</b> tab for the streamer, the app they send from, when the broadcast started and its streams.</>,
-        <>Use <b>Popout</b> in the page header’s ▾ menu to keep the video in a window of its own while you work elsewhere.</>,
-      ]}
-      tips={[
-        <>“Waiting for … to send video” means you are connected but the streamer is not sending video right now.</>,
-        <>If joining fails, press <b>Try again</b> in the player.</>,
+        <>A stream cannot be started from this page: the app that offers it sends it.</>,
       ]}
     />
   ),
   stream: (
     <PageHelp
-      intro="One stream of a broadcast: whether it carries video or audio, who sends it and from which app."
+      intro="One stream, live. The page connects by itself as soon as it opens."
       steps={[
-        <>Open the <b>Knowledge</b> tab to see what has been recorded about this stream.</>,
-        <>Open the menu button at the right end of the page header for the actions available on this stream.</>,
+        <>Wait a moment after opening the page; the picture starts without pressing anything.</>,
+        <>“Waiting for …” means you are connected but the app is not sending right now; “… is offline” means the app is not running.</>,
+        <>Click the app under <b>Agent</b> to see every stream it offers.</>,
       ]}
       tips={[
-        <>To watch live video, open a broadcast from <b>Solo Broadcasts</b> instead.</>,
+        <>When the app restarts, the stream comes back by itself: it is the same stream.</>,
+      ]}
+    />
+  ),
+  agent: (
+    <PageHelp
+      intro="One app that offers streams, and all of them, live, side by side."
+      steps={[
+        <>Click a stream's name to open it on its own page.</>,
       ]}
     />
   ),

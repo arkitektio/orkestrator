@@ -161,8 +161,7 @@ export const LOK_PAGINATED_FIELDS: PaginatedFieldMap = {
 
 /** `lovekit.graphql` */
 export const LOVEKIT_PAGINATED_FIELDS: PaginatedFieldMap = {
-  collaborativeBroadcasts: ["filters"],
-  soloBroadcasts: ["filters"],
+  agents: ["filters"],
   streams: ["filters"],
 };
 
