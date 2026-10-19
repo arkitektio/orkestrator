@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import {
@@ -45,9 +46,10 @@ const CreateLensSceneControl = ({
 
   const loading = visualizing || staging;
   const stage = (world?: string) =>
-    world
+    void (world
       ? createScene({ variables: { input: { lens: lens.id, world } } })
-      : visualize(lens.id);
+      : visualize(lens.id)
+    ).catch(reportErrorAs("Couldn't visualize the lens"));
 
   const label = loading ? "Visualizing…" : "Visualize";
 

@@ -14,7 +14,9 @@ export const CreateFolderForm = (props: { parentFolderId?: string }) => {
         refetchQueries: ["Children", "GetFolders"],
     });
 
-    const submit = useGraphQLDialog(createFolder, { successMessage: "Folder created" });
+    const submit = useGraphQLDialog(createFolder, {
+        errorTitle: "Couldn't create the folder",
+    });
 
     const form = useForm<CreateFolderInput>({
         defaultValues: {

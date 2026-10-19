@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import {
   useDeleteAnnotationMutation,
@@ -71,11 +71,7 @@ const LayerMarkList = ({ layerId }: { layerId: string }) => {
                 variables: { input: { id: annotation.id } },
                 // The answer is the id that went: drop it from the list here.
                 update: (cache) => removeSceneAnnotation(cache, annotation.id),
-              }).catch((error: unknown) =>
-                toast.error(
-                  `Could not delete the mark: ${error instanceof Error ? error.message : String(error)}`,
-                ),
-              )
+              }).catch(reportErrorAs("Couldn't delete the mark"))
             }
           >
             <Trash2 />

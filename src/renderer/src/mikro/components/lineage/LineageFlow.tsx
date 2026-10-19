@@ -1,4 +1,4 @@
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Button } from "@/core/ui/button";
 import {
@@ -112,7 +112,7 @@ export const LineageFlow = ({ answer }: { answer: LineageAnswer }) => {
         setState((current) => mergeLineage(current, data.lineage, { key, direction }));
       } catch (error) {
         anchorRef.current = null;
-        toast.error(error instanceof Error ? error.message : "Could not load more lineage");
+        reportError(error, "Couldn't load more lineage");
       } finally {
         busyRef.current = false;
         setExpanding(null);

@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import {
@@ -128,7 +129,7 @@ export const CreateSceneControl = ({
   const loading = stagingDataset || stagingLens || visualizing;
 
   const stage = (coordinateSystem: string) =>
-    shown && coordinateSystem === grid?.id
+    void (shown && coordinateSystem === grid?.id
       ? visualize(shown.id)
       : lens
       ? createLensScene({
@@ -148,7 +149,8 @@ export const CreateSceneControl = ({
                 dataset.defaultScene || !dataset.fullLens ? undefined : [dataset.fullLens.id],
             },
           },
-        });
+        })
+    ).catch(reportErrorAs("Couldn't visualize the dataset"));
 
   const label = loading ? "Visualizing…" : "Visualize";
 

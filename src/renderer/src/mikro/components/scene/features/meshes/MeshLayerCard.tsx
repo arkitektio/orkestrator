@@ -1,4 +1,5 @@
 import { effectiveFlatNormals } from "./meshLayerDefaults";
+import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import {
   Box,
@@ -427,9 +428,8 @@ export const MeshLayerCard = memo(
           }
           setDirty(false);
         })
-        .catch((error) => {
-          console.warn("[mesh] could not save the layer:", error);
-        });
+        // Still dirty, so Save stays offered.
+        .catch(reportErrorAs("Couldn't save the layer"));
     }, [layerId, patchSceneLayer, updateMeshLayer, registry]);
 
     /** Memoized because it crosses the sections' memo boundary as an object. */

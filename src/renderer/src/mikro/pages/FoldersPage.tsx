@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { Explainer } from "@/core/layout/Explainer";
 import { PageAction } from "@/core/ui/page-action";
 import { MikroFolder } from "@/core/linkers";
@@ -27,7 +28,7 @@ const Page: React.FC<IRepresentationScreenProps> = () => {
             alwaysShow
             size="sm"
             icon={<PlusIcon className="h-4 w-4" />}
-            onClick={() => createFolder()}
+            onClick={() => void createFolder().catch(reportErrorAs("Couldn't create the folder"))}
           >
             New
           </PageAction>

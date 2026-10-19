@@ -1,7 +1,7 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { MikroCollaboration } from "@/core/linkers";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
@@ -35,8 +35,7 @@ const Item = ({ collaboration, item, removable }: { collaboration: string; item:
           title="Take it out, with what it brought that nothing else needs"
           onClick={() =>
             remove({ variables: { input: { collaboration, identifier: item.identifier!, object: item.objectId } } })
-              .then(() => toast.success("Taken out"))
-              .catch((e: Error) => toast.error("Could not take it out: " + e.message))
+              .catch(reportErrorAs("Couldn't take it out of the collaboration"))
           }
         >
           <X className="h-4 w-4" />

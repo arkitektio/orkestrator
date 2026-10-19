@@ -1,7 +1,6 @@
 import { useCallback, useRef, type ReactNode } from "react";
 
-import { classifyError } from "@/core/layout/fallbacks/classifyError";
-import { toast } from "@/core/notify";
+import { reportError, toast } from "@/core/notify";
 import { SmartResultSink } from "@/core/smart/extensions/results";
 import { uniqueStructures } from "@/core/smart/structure";
 import type { Structure } from "@/core/types";
@@ -53,7 +52,7 @@ export const SceneResultSink = ({ children }: { children?: ReactNode }) => {
             const message = stageMessage(await stageLens(client, registry, { scene, lens: lens.id }));
             toast[message.kind](message.text);
           } catch (error) {
-            toast.error(`Could not add the result as a layer: ${classifyError(error).message}`);
+            reportError(error, "Couldn't add the result as a layer");
           }
         });
       }

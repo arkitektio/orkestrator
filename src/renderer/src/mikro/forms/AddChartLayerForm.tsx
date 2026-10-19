@@ -1,5 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
-import { toast } from "@/core/notify";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import {
@@ -129,7 +128,6 @@ export const AddChartLayerForm = (props: {
   /** A windowed lens of `table`: the series then draws that selection of it. */
   lens?: string;
 }) => {
-  const { closeDialog } = useDialog();
   const { data, error, loading, refetch } = useChartAddLayerCandidatesQuery({
     variables: { chart: props.chart },
     fetchPolicy: "cache-and-network",
@@ -147,16 +145,14 @@ export const AddChartLayerForm = (props: {
     [data],
   );
 
-  /** Run one create; the dialog closes on success and says why on a refusal. */
-  const add = (what: string, run: () => Promise<unknown>) =>
-    void run()
-      .then(() => {
-        toast.success(`${what} added to the chart`);
-        closeDialog();
-      })
-      .catch((e: unknown) =>
-        toast.error(`Could not add ${what.toLowerCase()}: ${e instanceof Error ? e.message : String(e)}`),
-      );
+  /**
+   * Run one create; the dialog closes on success (the layer is drawn on the
+   * chart) and says why, in the dialog, on a refusal.
+   */
+  const { submit } = useDialogSubmit((run: () => Promise<unknown>) => run(), {
+    errorTitle: "Couldn't add the layer",
+  });
+  const add = (run: () => Promise<unknown>) => void submit(run);
 
   if (error && !data) return <QueryError error={error} onRetry={() => refetch()} />;
 
@@ -194,7 +190,7 @@ export const AddChartLayerForm = (props: {
                       variant="outline"
                       disabled={busy || lens.drawn || lens.reason != null}
                       onClick={() =>
-                        add("Trace", () => addTrace({ variables: { input: { chart, lens: lens.id } } }))
+                        add(() => addTrace({ variables: { input: { chart, lens: lens.id } } }))
                       }
                     >
                       Add
@@ -214,7 +210,7 @@ export const AddChartLayerForm = (props: {
                   initial={table.id === props.table ? props.valueColumn : null}
                   disabled={busy}
                   onAdd={(valueColumn) =>
-                    add("Series", async () =>
+                    add(async () =>
                       addSeries({
                         variables: {
                           input: {
@@ -249,7 +245,7 @@ export const AddChartLayerForm = (props: {
                     variant="outline"
                     disabled={busy || collection.drawn}
                     onClick={() =>
-                      add("Annotations", async () =>
+                      add(async () =>
                         addAnnotations({
                           variables: {
                             input: {
@@ -279,7 +275,7 @@ export const AddChartLayerForm = (props: {
                   variant="outline"
                   disabled={busy}
                   onClick={() =>
-                    add("Drawing layer", () => addAnnotations({ variables: { input: { chart } } }))
+                    add(() => addAnnotations({ variables: { input: { chart } } }))
                   }
                 >
                   Add

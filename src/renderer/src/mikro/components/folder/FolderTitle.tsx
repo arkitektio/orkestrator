@@ -1,5 +1,5 @@
 import { MikroFolder } from "@/core/linkers";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { Pencil } from "lucide-react";
 import { useRef, useState } from "react";
@@ -39,7 +39,7 @@ export const FolderTitle = ({ folder }: { folder: Pick<FolderFragment, "id" | "n
     try {
       await updateFolder({ variables: { id: folder.id, name } });
     } catch (error) {
-      toast.error(`Could not rename the folder: ${error instanceof Error ? error.message : String(error)}`);
+      reportError(error, "Couldn't rename the folder");
     }
   };
 
@@ -47,7 +47,7 @@ export const FolderTitle = ({ folder }: { folder: Pick<FolderFragment, "id" | "n
     try {
       await pinFolder({ variables: { id: folder.id, pin } });
     } catch (error) {
-      toast.error(`Could not ${pin ? "pin" : "unpin"} the folder: ${error instanceof Error ? error.message : String(error)}`);
+      reportError(error, `Couldn't ${pin ? "pin" : "unpin"} the folder`);
     }
   };
 

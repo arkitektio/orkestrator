@@ -1,7 +1,7 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { useDeleteLayerMutation, type SceneLayerFragment } from "@/mikro/api/graphql";
 import { Fragment, useCallback, useMemo, useRef, useState } from "react";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import { LongCommitProfiler } from "../../platform/perf/commitProfiler";
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import { useSelectionStore } from "../../platform/stores/selectionStore";
@@ -108,8 +108,8 @@ export const LayerControlPanel = ({
       // Drop the selection first if it points at the layer being removed, so
       // the panel doesn't try to keep an unfolded editor for a gone layer.
       if (selectedRef.current === id) setSelectedLayerId(null);
-      void deleteLayer({ variables: { input: { id } } }).catch((e) =>
-        toast.error("Could not remove layer: " + (e as Error).message),
+      void deleteLayer({ variables: { input: { id } } }).catch(
+        reportErrorAs("Couldn't remove the layer"),
       );
     },
     [deleteLayer, setSelectedLayerId],

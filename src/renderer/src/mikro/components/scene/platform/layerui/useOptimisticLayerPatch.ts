@@ -1,3 +1,4 @@
+import { reportError } from "@/core/notify";
 import { useCallback, useRef } from "react";
 
 import { useSceneStore } from "../stores/sceneStore";
@@ -44,8 +45,10 @@ export function useOptimisticLayerPatch<P extends object, I extends object = P>(
         const input = toInput ? await toInput(patch) : (patch as unknown as I);
         await mutate({ variables: { input: { id: layerId, ...input } } });
       };
+      // One toast per layer: a slider's burst of failed writes replaces it.
       const report = (error: unknown) => {
         console.warn(`${logTag} could not save layer settings`, error);
+        reportError(error, { title: "Couldn't save the layer settings", id: `layer-patch-${layerId}` });
       };
       if (!toInput) {
         void write().catch(report);

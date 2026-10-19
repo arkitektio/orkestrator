@@ -1,3 +1,4 @@
+import { reportError } from "@/core/notify";
 import { FormDialog } from "@/core/dialogs/FormDialog";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
@@ -754,7 +755,7 @@ export const FolderListExplorer = (props: FolderListExplorerProps) => {
 
         if (filed) refetch?.();
       } catch (dropError) {
-        console.error("Failed to add dropped items to folder:", dropError);
+        reportError(dropError, "Couldn't move the items into the folder");
       }
     },
     { accepts: acceptsDrop },

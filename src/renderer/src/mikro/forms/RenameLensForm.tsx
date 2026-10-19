@@ -36,7 +36,7 @@ const RenameLensFields = ({ lens }: { lens: DetailLensFragment }) => {
   // `UpdateLens` selects `id` and `name`, so Apollo writes the new name into the
   // normalized lens and every tile, row and title showing it follows.
   const [updateLens, { loading }] = useUpdateLensMutation();
-  const submit = useGraphQLDialog(updateLens, { successMessage: "Lens renamed" });
+  const submit = useGraphQLDialog(updateLens, { errorTitle: "Couldn't rename the lens" });
 
   return (
     <form

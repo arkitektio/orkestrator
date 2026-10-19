@@ -5,6 +5,7 @@ import { Input } from "@/core/ui/input";
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { commitMeshDesign, type CommitProgress, type CommitResult, type WorldSystemLike } from "../commit/commitDesign";
 import { DESIGN_TRIANGLE_BUDGET, totalTriangles, type DesignMesh, type DesignOrigin } from "../store/meshDesignStore";
 
@@ -32,44 +33,39 @@ export const CommitMeshDesignDialog = ({ sceneId, world, meshes, origin, onProgr
   const { closeDialog } = useDialog();
   const [name, setName] = useState("");
   const [progress, setProgress] = useState<CommitProgress | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
   useEffect(() => () => abort.current?.abort(), []);
 
   const triangles = totalTriangles(meshes);
-  const busy = progress !== null && !error;
 
-  const commit = async () => {
-    if (!datalayer) {
-      setError("No datalayer endpoint configured");
-      return;
-    }
-    abort.current = new AbortController();
-    setError(null);
-    const report = (p: CommitProgress) => {
-      setProgress(p);
-      onProgress(p);
-    };
-    try {
-      const result = await commitMeshDesign({
-        client,
-        datalayer,
-        sceneId,
-        world,
-        meshes,
-        origin,
-        name,
-        onProgress: report,
-        signal: abort.current.signal,
-      });
-      onCommitted(result);
-      closeDialog();
-    } catch (reason) {
-      const message = reason instanceof Error ? reason.message : String(reason);
-      setError(message);
-      onFailed(message);
-    }
-  };
+  // A failure stays in the dialog (and is handed to the toolbar's status).
+  const { submit: commit, submitting: busy } = useDialogSubmit(
+    async () => {
+      if (!datalayer) throw new Error("No datalayer endpoint configured");
+      abort.current = new AbortController();
+      const report = (p: CommitProgress) => {
+        setProgress(p);
+        onProgress(p);
+      };
+      try {
+        return await commitMeshDesign({
+          client,
+          datalayer,
+          sceneId,
+          world,
+          meshes,
+          origin,
+          name,
+          onProgress: report,
+          signal: abort.current.signal,
+        });
+      } catch (reason) {
+        onFailed(reason instanceof Error ? reason.message : String(reason));
+        throw reason;
+      }
+    },
+    { errorTitle: "Couldn't commit the mesh collection", onSuccess: onCommitted },
+  );
 
   const uploadPct =
     progress && "upload" in progress && progress.upload.bytesTotal > 0
@@ -112,13 +108,12 @@ export const CommitMeshDesignDialog = ({ sceneId, world, meshes, origin, onProgr
           </div>
         ))}
       </div>
-      {progress && !error && (
+      {progress && busy && (
         <div className="text-xs text-muted-foreground">
           {progress.message}
           {uploadPct !== null ? ` ${uploadPct}%` : ""}
         </div>
       )}
-      {error && <div className="text-xs text-red-400">{error}</div>}
       <div className="flex justify-end gap-2">
         <Button variant="outline" size="sm" onClick={() => closeDialog()} disabled={busy}>
           Cancel

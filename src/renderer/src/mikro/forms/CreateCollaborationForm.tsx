@@ -8,7 +8,9 @@ import { CreateCollaborationInput, useCreateCollaborationMutation } from "../api
 
 export const CreateCollaborationForm = () => {
   const [createCollaboration] = useCreateCollaborationMutation({ refetchQueries: ["GetCollaborations"] });
-  const submit = useGraphQLDialog(createCollaboration, { successMessage: "Collaboration created" });
+  const submit = useGraphQLDialog(createCollaboration, {
+    errorTitle: "Couldn't create the collaboration",
+  });
   const form = useForm<CreateCollaborationInput>({ defaultValues: { name: "New Collaboration" } });
 
   return (

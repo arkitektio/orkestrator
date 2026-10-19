@@ -1,4 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { toast } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
@@ -25,7 +26,7 @@ const describe = (objects: CollaborationSubject) =>
  * seen (a scene's datasets, a dataset's stores) comes along: mikro puts that in too.
  */
 export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps) => {
-  const { closeDialog, openDialog } = useDialog();
+  const { openDialog } = useDialog();
   const [name, setName] = useState("");
   const [pending, setPending] = useState<string>();
   const { data, loading } = useGetCollaborationsQuery();
@@ -35,34 +36,35 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
   const holdsAll = (items: { identifier?: string | null; objectId: string }[]) =>
     objects.every((object) => items.some((item) => item.identifier === object.identifier && item.objectId === object.id));
 
-  const putIn = async (collaboration: { id: string; name: string }) => {
-    setPending(collaboration.id);
-    try {
-      for (const object of objects) {
-        await add({ variables: { input: { collaboration: collaboration.id, identifier: object.identifier, object: object.id } } });
+  // A failure stays in the dialog; the toast on success is for its Share action.
+  const { submit } = useDialogSubmit(
+    async (target: { id: string; name: string } | "new") => {
+      setPending(target === "new" ? "__new__" : target.id);
+      try {
+        let collaboration = target;
+        if (collaboration === "new") {
+          const created = (await create({ variables: { input: { name: name.trim() } } })).data?.createCollaboration;
+          if (!created) throw new Error("the collaboration was not created");
+          collaboration = created;
+        }
+        for (const object of objects) {
+          await add({ variables: { input: { collaboration: collaboration.id, identifier: object.identifier, object: object.id } } });
+        }
+        return collaboration;
+      } finally {
+        setPending(undefined);
       }
-      toast.success(`Put ${describe(objects)} in ${collaboration.name}`, {
-        action: { label: "Share", onClick: () => openDialog("sharecollaboration", { collaboration: collaboration.id }, { size: "medium" }) },
-      });
-      closeDialog();
-    } catch (e) {
-      toast.error("Could not add: " + (e as Error).message);
-    } finally {
-      setPending(undefined);
-    }
-  };
-
-  const createAndPutIn = async () => {
-    setPending("__new__");
-    try {
-      const created = (await create({ variables: { input: { name: name.trim() } } })).data?.createCollaboration;
-      if (!created) throw new Error("the collaboration was not created");
-      await putIn(created);
-    } catch (e) {
-      toast.error("Could not create: " + (e as Error).message);
-      setPending(undefined);
-    }
-  };
+    },
+    {
+      errorTitle: "Couldn't add to the collaboration",
+      onSuccess: (collaboration) =>
+        toast.success(`Put ${describe(objects)} in ${collaboration.name}`, {
+          action: { label: "Share", onClick: () => openDialog("sharecollaboration", { collaboration: collaboration.id }, { size: "medium" }) },
+        }),
+    },
+  );
+  const putIn = (collaboration: { id: string; name: string }) => submit(collaboration);
+  const createAndPutIn = () => submit("new");
 
   const collaborations = data?.collaborations ?? [];
 

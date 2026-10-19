@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
 import { Button } from "@/core/ui/button";
 import { ButtonGroup } from "@/core/ui/button-group";
@@ -53,10 +53,8 @@ export const ChartAnnotationToolbar = () => {
           disabled={loading}
           title="An empty surface over this chart, to draw marks on"
           onClick={() =>
-            void addLayer({ variables: { input: { chart: chartId } } }).catch((error: unknown) =>
-              toast.error(
-                `Could not add a drawing layer: ${error instanceof Error ? error.message : String(error)}`,
-              ),
+            void addLayer({ variables: { input: { chart: chartId } } }).catch(
+              reportErrorAs("Couldn't add a drawing layer"),
             )
           }
         >

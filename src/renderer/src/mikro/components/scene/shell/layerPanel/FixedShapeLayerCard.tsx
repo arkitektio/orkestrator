@@ -25,7 +25,7 @@ import {
 } from "../../features/volume/rendergraph/RenderNodeEditor";
 import { RgbChannelEditor } from "./RgbChannelEditor";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
-import { toast } from "@/core/notify";
+import { reportError, reportErrorAs } from "@/core/notify";
 import { readGains, storedGains } from "./whiteBalance";
 import { LayerRow } from "./LayerRow";
 import { UnplannableNotice } from "./UnplannableNotice";
@@ -237,7 +237,7 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
     });
   };
 
-  const save = async () => {
+  const persist = async () => {
     if (layer.__typename === "IntensityLayer") {
       const transfer = layer.channels[0]?.transfer;
       await saveIntensity({
@@ -277,9 +277,7 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
           } catch (error) {
             // Keep the card dirty: nothing was saved, and the mapping the user
             // picked is still what the viewer shows.
-            toast.error(
-              `Could not save the channel mapping: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            reportError(error, "Couldn't save the channel mapping");
             return;
           }
         }
@@ -319,6 +317,8 @@ export const FixedShapeLayerCard = memo(function FixedShapeLayerCard({
     setProjectionEdited(false);
     setPlanesEdited(false);
   };
+  // A refused save keeps the card dirty: the viewer still shows the edit.
+  const save = () => void persist().catch(reportErrorAs("Couldn't save the layer"));
 
   const saving = savingIntensity || savingRgb || savingPhasor;
 

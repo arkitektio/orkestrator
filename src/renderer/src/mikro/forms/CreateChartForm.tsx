@@ -55,7 +55,7 @@ export const CreateChartForm = (props: { coordinateSystem?: string }) => {
   );
 
   const submit = useGraphQLDialog(createChart, {
-    successMessage: "Chart created",
+    errorTitle: "Couldn't create the chart",
     onSuccess: (data) => {
       const chart = data?.createChart;
       if (chart) navigate(MikroChart.linkBuilder(chart.id));

@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import { AnnotationKind, useCreateAnnotationMutation } from "@/mikro/api/graphql";
 import { upsertSceneAnnotation } from "@/mikro/lib/annotations/annotationCache";
 import type { ChartLayerState } from "../../platform/model/chartLayerModel";
@@ -39,7 +39,7 @@ export const useChartAnnotationCommit = () => {
         });
         return true;
       } catch (error) {
-        toast.error(`Could not save the mark: ${error instanceof Error ? error.message : String(error)}`);
+        reportError(error, "Couldn't save the mark");
         return false;
       }
     },

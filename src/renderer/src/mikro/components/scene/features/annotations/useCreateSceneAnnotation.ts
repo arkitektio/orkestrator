@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { reportError } from "@/core/notify";
 import {
   AnnotationKind,
   useCreateAnnotationMutation,
@@ -147,7 +148,8 @@ export const useCreateSceneAnnotation = () => {
         if (kind !== AnnotationKind.Point) roiSelectionApi.getState().openRoiMenu(roi);
         return created;
       } catch (err) {
-        console.error("Failed to create annotation:", err);
+        // The drawn shape is gone with the failed write: say why.
+        reportError(err, { title: "Couldn't save the annotation", id: "create-scene-annotation" });
         return null;
       }
     },
