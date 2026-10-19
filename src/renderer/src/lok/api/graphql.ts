@@ -87,6 +87,8 @@ export type ApproveMembershipRequestInput = {
 
 export type CancelInviteInput = {
   id: Scalars['ID']['input'];
+  /** For a collaboration invite: also take back the collaborations it granted from everyone who accepted it. */
+  revokeShared?: Scalars['Boolean']['input'];
 };
 
 /**
@@ -244,7 +246,13 @@ export type CreateGroupProfileInput = {
 };
 
 export type CreateInviteInput = {
+  /** For a collaboration invite: whether the guests' apps may join the organization's mesh. They then reach only the hubs the granted collaborations run on, nothing else of the mesh. */
+  allowMesh?: Scalars['Boolean']['input'];
+  /** Grant only these collaborations of the organization's service instances, each with the roles that hold inside it, instead of making the holder a member. */
+  collaborations?: InputMaybe<Array<SharedCollaborationInput>>;
   expiresInDays?: InputMaybe<Scalars['Int']['input']>;
+  /** For a collaboration invite: how many people may accept it. Null: anyone with the link until it expires. */
+  maxUses?: InputMaybe<Scalars['Int']['input']>;
   organization?: InputMaybe<Scalars['ID']['input']>;
   roles?: InputMaybe<Array<Scalars['String']['input']>>;
 };
@@ -525,6 +533,8 @@ export type InstanceHealth = {
 export type Invite = {
   __typename?: 'Invite';
   acceptedBy?: Maybe<User>;
+  /** The collaborations this invite grants, with the roles that hold inside each. Null for an invite that makes its holder a member. */
+  collaborations?: Maybe<Array<SharedCollaboration>>;
   createdAt: Scalars['DateTime']['output'];
   createdBy: User;
   createdFor: Organization;
@@ -535,10 +545,18 @@ export type Invite = {
   id: Scalars['ID']['output'];
   /** Get the full URL for accepting this invite */
   inviteUrl: Scalars['String']['output'];
+  /** For a collaboration invite: how many people may accept it. Null: anyone with the link until it expires. */
+  maxUses?: Maybe<Scalars['Int']['output']>;
+  /** For a collaboration invite: whether its guests' apps may join the organization's mesh, reaching only the hubs the granted collaborations run on. */
+  mesh: Scalars['Boolean']['output'];
+  /** Whether anyone with the link can preview the invitation before signing in. */
+  public: Scalars['Boolean']['output'];
   respondedAt?: Maybe<Scalars['DateTime']['output']>;
   roles: Array<Role>;
   status: Scalars['String']['output'];
   token: Scalars['String']['output'];
+  /** How many people accepted it so far. */
+  uses: Scalars['Int']['output'];
   /** Check if the invite is still valid and pending */
   valid: Scalars['Boolean']['output'];
 };
@@ -559,7 +577,7 @@ export type InviteRolesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** Invite(id, token, email, created_by, created_for, created_at, expires_at, public, status, accepted_by, declined_by, responded_at) */
+/** Invite(id, token, email, created_by, created_for, created_at, expires_at, public, status, accepted_by, declined_by, responded_at, shared_collaborations, max_uses, uses, mesh) */
 export type InviteFilter = {
   AND?: InputMaybe<InviteFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1682,7 +1700,13 @@ export type ServiceInstanceMappingsArgs = {
   ordering?: Array<ServiceInstanceMappingOrdering>;
 };
 
-/** ServiceInstance(id, hub, release, logo, instance_id, private_key, steward, organization, device, template, public_key, token) */
+/**
+ * One service running in a hub: a hub runs one instance of a service per ``instance_id``.
+ *
+ * Its id is what a token composed for it names (``aud``) and what a guest's collaborations are
+ * listed under, so it must not change when the hub is authorized again by another admin or
+ * upgraded to another release of the service: those are updated on the instance, in place.
+ */
 export type ServiceInstanceFilter = {
   AND?: InputMaybe<ServiceInstanceFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1748,6 +1772,26 @@ export type ServiceReleaseFilter = {
 
 export type ServiceReleaseOrdering =
   { id: Ordering; };
+
+/** One collaboration a collaboration invite grants: a collaboration of a service instance, with the roles that hold inside it. */
+export type SharedCollaboration = {
+  __typename?: 'SharedCollaboration';
+  /** The collaboration's id in that service. */
+  collaboration: Scalars['String']['output'];
+  /** The service instance the collaboration lives in. */
+  instance: Scalars['ID']['output'];
+  /** Identifiers of the organization's roles that hold inside the collaboration. Empty: view only. */
+  roles: Array<Scalars['String']['output']>;
+};
+
+export type SharedCollaborationInput = {
+  /** The collaboration's id in that service. */
+  collaboration: Scalars['String']['input'];
+  /** The service instance the collaboration lives in (on a hub of the organization). */
+  instance: Scalars['ID']['input'];
+  /** Identifiers of the organization's roles that hold for the guest inside the collaboration. Empty: view only. */
+  roles?: Array<Scalars['String']['input']>;
+};
 
 export type StrFilterLookup = {
   contains?: InputMaybe<Scalars['String']['input']>;
