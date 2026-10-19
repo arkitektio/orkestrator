@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { StringField } from "@/core/forms/StringField";
 import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
@@ -39,10 +39,23 @@ export const ImportOciRepoForm = (props: {
   reference?: string;
   onSuccess?: (data: ImportRepoMutation | null | undefined) => void;
 }) => {
-  const { closeDialog } = useDialog();
   const [importRepo, { loading }] = useImportRepoMutation({
     refetchQueries: [ListReleasesDocument, ListDefinitionsDocument, AppStoreDocument],
   });
+  const { submit } = useDialogSubmit(
+    (reference: string, channels: string[]) =>
+      importRepo({ variables: { reference, channels: channels.length ? channels : undefined } }),
+    {
+      errorTitle: "Couldn't import the repository",
+      onSuccess: (result) => {
+        // Importing again is how new releases are found: the count is news.
+        const repo = result.data?.importRepo;
+        const count = repo?.flavours.length ?? 0;
+        toast.success(`Imported ${repo?.name ?? "the repository"}: ${count} flavour${count === 1 ? "" : "s"}`);
+        props.onSuccess?.(result.data);
+      },
+    },
+  );
 
   const form = useForm<Values>({ defaultValues: { reference: props.reference ?? "", channels: "" } });
 
@@ -61,18 +74,7 @@ export const ImportOciRepoForm = (props: {
             .split(",")
             .map((channel) => channel.trim())
             .filter(Boolean);
-          try {
-            const result = await importRepo({
-              variables: { reference, channels: channels.length ? channels : undefined },
-            });
-            const repo = result.data?.importRepo;
-            const count = repo?.flavours.length ?? 0;
-            toast.success(`Imported ${repo?.name ?? reference}: ${count} flavour${count === 1 ? "" : "s"}`);
-            props.onSuccess?.(result.data);
-            closeDialog();
-          } catch (e) {
-            toast.error("Could not import the repository: " + (e as Error).message);
-          }
+          await submit(reference, channels);
         })}
       >
         <DialogHeader>

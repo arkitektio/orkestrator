@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { PageAction } from "@/core/ui/page-action";
 import { DialogButton } from "@/core/ui/dialog-button";
@@ -25,9 +26,7 @@ const ReposPage = () => {
           </DialogButton>
           <PageAction
             priority={-10}
-            onClick={async () => {
-              await rescan();
-            }}
+            onClick={() => rescan().catch(reportErrorAs("Couldn't rescan the repositories"))}
             size="sm"
           >
             {loading ? "Rescanning..." : "Rescan Repos"}

@@ -1,12 +1,13 @@
 import { useSelf } from "@/core/connection/useSelf";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { useOperation } from "@/core/modules/hooks/useOperation";
-import { toast } from "@/core/notify";
 import type { JSONObject } from "@/core/types";
 import { Alert, AlertDescription } from "@/core/ui/alert";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
@@ -186,7 +187,6 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
   const lockedHost = hosts.find((host) => host.id === onlyHost && host.agent.device);
   const [expiresInDays, setExpiresInDays] = useState<number | null>(null);
   const [maxClients, setMaxClients] = useState("");
-  const [busy, setBusy] = useState(false);
   const [deploying, setDeploying] = useState(false);
   const [justAuthorized, setJustAuthorized] = useState(false);
   // Asked for from the deploy step: approve another deployer app.
@@ -230,22 +230,26 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
     }
   };
 
-  const submit = async () => {
-    if (!release || !agent) return;
-    setBusy(true);
-    try {
+  // Stays open on success: the deploy step follows in the same dialog.
+  const { submit, submitting: busy } = useDialogSubmit(
+    async () => {
+      if (!release || !agent) return false;
       await newApproval(release, agent);
-      setJustAuthorized(true);
-      setDeploying(true);
-    } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setBusy(false);
-    }
-  };
+      return true;
+    },
+    {
+      errorTitle: "Couldn't authorize the release",
+      close: false,
+      onSuccess: (done) => {
+        if (!done) return;
+        setJustAuthorized(true);
+        setDeploying(true);
+      },
+    },
+  );
 
   if (error) {
-    return <p className="text-sm text-destructive">Could not load the release: {error.message}</p>;
+    return <ErrorNote error={error} title="Couldn't load the release" />;
   }
   if (!release) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -399,7 +403,7 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
             <Button variant="outline" onClick={() => closeDialog()} disabled={busy}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={busy || !agent || maxClientsInvalid}>
+            <Button onClick={() => void submit()} disabled={busy || !agent || maxClientsInvalid}>
               <ShieldCheck />
               {busy ? "Authorizing…" : "Authorize"}
             </Button>

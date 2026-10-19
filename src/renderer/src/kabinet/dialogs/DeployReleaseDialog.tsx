@@ -1,6 +1,7 @@
 import { useSelf } from "@/core/connection/useSelf";
 import { useDialog } from "@/core/dialogs/registry";
 import { toast } from "@/core/notify";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
@@ -103,7 +104,7 @@ export const DeployReleaseDialog = (props: {
   };
 
   if (error) {
-    return <p className="text-sm text-destructive">Could not load the release: {error.message}</p>;
+    return <ErrorNote error={error} title="Couldn't load the release" />;
   }
   if (!release) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;

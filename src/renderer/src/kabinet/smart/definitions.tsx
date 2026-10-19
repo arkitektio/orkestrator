@@ -1,3 +1,4 @@
+import { describeError } from "@/core/notify";
 import { DefinitionLogo } from "@/kabinet/components/logo/KabinetBlokLogo";
 import { useDialog } from "@/core/dialogs/registry";
 import {
@@ -63,7 +64,7 @@ export const InstallDefinitionRow = ({ definition }: { definition: SmartDefiniti
     } catch (error) {
       setFailure({
         title: "Could not find its release",
-        detail: error instanceof Error ? error.message : undefined,
+        detail: describeError(error).message,
       });
     } finally {
       setRunning(false);
