@@ -1,4 +1,5 @@
 import { Button } from "@/core/ui/button";
+import { ErrorNote } from "@/core/ui/error-note";
 import { DateTimePicker } from "@/core/ui/datetime-picker";
 import { Input } from "@/core/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
@@ -7,7 +8,6 @@ import { GetEntityDocument, PropertyDefinitionFragment, useAssertMetricValueMuta
 import { buildItoldyousoMetric, isManuallyAssertable } from "@/kraph/lib/itoldyouso";
 import { Check, Pencil, X } from "lucide-react";
 import { useState } from "react";
-import { toast } from "@/core/notify";
 
 export const PropertyEditor = ({
   entityId,
@@ -20,6 +20,7 @@ export const PropertyEditor = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentValue, setCurrentValue] = useState(value);
+  const [failure, setFailure] = useState<unknown>(null);
   const [assertMetricValue, { loading }] = useAssertMetricValueMutation({
     refetchQueries: [{ query: GetEntityDocument, variables: { id: entityId } }],
   });
@@ -27,6 +28,7 @@ export const PropertyEditor = ({
   const assertable = isManuallyAssertable(definition.valueKind);
 
   const handleSave = async () => {
+    setFailure(null);
     try {
       // Properties are derived, so a manual edit is recorded as the weakest
       // evidence there is: an "itoldyouso" metric with no measurement behind
@@ -43,10 +45,9 @@ export const PropertyEditor = ({
         },
       });
       setIsOpen(false);
-      toast.success("Value asserted");
     } catch (e) {
-      console.error(e);
-      toast.error("Failed to assert value");
+      // Shown in the popover, next to the value that did not save.
+      setFailure(e);
     }
   };
 
@@ -154,6 +155,7 @@ export const PropertyEditor = ({
             </p>
           </div>
           {renderInput()}
+          <ErrorNote error={failure} title="Couldn't save the value" variant="line" />
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setIsOpen(false)}>
               <X className="h-4 w-4 mr-1" /> Cancel

@@ -13,7 +13,7 @@ import { measureTerm } from "@/kraph/lib/measureTerm";
 import { useRecentTerms, type RecentTerm } from "@/kraph/lib/recentTerms";
 import { History, Network, Ruler } from "lucide-react";
 import React from "react";
-import { toast } from "@/core/notify";
+import { describeError, toast } from "@/core/notify";
 import { CommandActionRow } from "@/core/smart/extensions/CommandActionRow";
 import type { PassDownProps } from "@/core/smart/extensions/types";
 
@@ -47,10 +47,17 @@ export const StructureRelateButton = (props: {
 }) => {
   const [createSRelation] = useAssertStructureRelationExistsMutation();
   const [createStructure] = useAssertStructureExistsMutation();
+  const [running, setRunning] = React.useState(false);
+  const [failure, setFailure] = React.useState<{ title: string; detail?: string } | null>(null);
 
   const handleRelationCreation = async () => {
-    for (const object of props.left.objects) {
-      try {
+    if (running) return;
+    setRunning(true);
+    setFailure(null);
+    const total = props.left.objects.length;
+    let done = 0;
+    try {
+      for (const object of props.left.objects) {
         const left = await createStructure({
           variables: {
             input: {
@@ -86,12 +93,21 @@ export const StructureRelateButton = (props: {
           },
         });
 
-        toast.success("Relation created successfully!");
-      } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "Failed to create relation",
-        );
+        done += 1;
       }
+      // The menu stays open and shows nothing of the new edge: say it was made.
+      toast.success(
+        total === 1
+          ? `Related as ${props.category.label}`
+          : `Related ${total} as ${props.category.label}`,
+      );
+    } catch (error) {
+      setFailure({
+        title: done > 0 ? `Related ${done} of ${total}, then failed` : "Couldn't relate them",
+        detail: describeError(error).message,
+      });
+    } finally {
+      setRunning(false);
     }
   };
 
@@ -102,6 +118,8 @@ export const StructureRelateButton = (props: {
       title={props.category.label}
       description={props.category.graph.name}
       icon={Network}
+      running={running}
+      failure={failure}
     />
   );
 };
@@ -151,9 +169,8 @@ export const MeasureRecentTermRow = (props: { term: RecentTerm; left: PassDownPr
       recents.record({ key: props.term.key, label: props.term.label, color: props.term.color });
       toast.success(`Measures ${label}`);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      setFailure({ title: `Could not measure ${label}`, detail });
-      toast.error(`Could not measure “${label}”: ${detail}`);
+      // The row says it, where it was chosen.
+      setFailure({ title: `Couldn't measure ${label}`, detail: describeError(error).message });
     } finally {
       setRunning(false);
     }
@@ -183,8 +200,13 @@ export const EntityRelateButton = (props: {
   target: Structure;
 }) => {
   const [assertRelation] = useAssertRelationExistsMutation();
+  const [running, setRunning] = React.useState(false);
+  const [failure, setFailure] = React.useState<{ title: string; detail?: string } | null>(null);
 
   const handleRelationCreation = async () => {
+    if (running) return;
+    setRunning(true);
+    setFailure(null);
     try {
       await assertRelation({
         variables: {
@@ -195,11 +217,11 @@ export const EntityRelateButton = (props: {
           },
         },
       });
-      toast.success("Relation created successfully!");
+      toast.success(`Related as ${props.category.label}`);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create relation",
-      );
+      setFailure({ title: "Couldn't relate them", detail: describeError(error).message });
+    } finally {
+      setRunning(false);
     }
   };
 
@@ -210,6 +232,8 @@ export const EntityRelateButton = (props: {
       title={props.category.label}
       description={props.category.graph.name}
       icon={Network}
+      running={running}
+      failure={failure}
     />
   );
 };

@@ -1,12 +1,11 @@
 import { useOfferedTermSearch } from "@/kraph/lib/terms";
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
 import { Button } from "@/core/ui/button";
 import { DialogFooter } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 import {
   AssertEntityExistsMutationVariables,
   GetEntityCategoryDocument,
@@ -38,7 +37,11 @@ const TForm = (props: { category?: string }) => {
   const searchTerms = useOfferedTermSearch(searchEntityTerms);
   const [createTerm] = useCreateEntityTermInlineMutation();
 
-  const { closeDialog } = useDialog();
+  const { submit, submitting } = useDialogSubmit(
+    (data: AssertEntityExistsMutationVariables["input"]) =>
+      add({ variables: { input: { term: data.term } } }),
+    { errorTitle: "Couldn't create the entity" },
+  );
 
   const form = useForm<AssertEntityExistsMutationVariables["input"]>({
     defaultValues: { term: "" },
@@ -54,13 +57,7 @@ const TForm = (props: { category?: string }) => {
     <>
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(async (data) => {
-            add({ variables: { input: { term: data.term } } })
-              .then(closeDialog)
-              .catch((e) => {
-                toast.error("Error creating entity:", e);
-              });
-          })}
+          onSubmit={form.handleSubmit(submit)}
         >
           <div className="grid grid-cols-2 gap-2">
             <div className="col-span-2 flex-col gap-1 flex">
@@ -75,7 +72,7 @@ const TForm = (props: { category?: string }) => {
           </div>
 
           <DialogFooter className="mt-2">
-            <Button type="submit">Create</Button>
+            <Button type="submit" disabled={submitting}>Create</Button>
           </DialogFooter>
         </form>
       </Form>

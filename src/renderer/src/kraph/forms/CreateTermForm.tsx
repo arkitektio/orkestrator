@@ -1,8 +1,8 @@
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { ParagraphField } from "@/core/forms/ParagraphField";
 import { StringField } from "@/core/forms/StringField";
 import { KraphTerm } from "@/core/linkers";
-import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/core/ui/form";
@@ -32,7 +32,7 @@ type Values = {
 export const CreateTermForm = (props: { kind?: TermKind; termKey?: string }) => {
   const { closeDialog } = useDialog();
   const navigate = useNavigate();
-  const [create, { loading }] = useCreateTermMutation({ refetchQueries: [ListTermsDocument] });
+  const [create] = useCreateTermMutation({ refetchQueries: [ListTermsDocument] });
 
   const form = useForm<Values>({
     defaultValues: {
@@ -58,12 +58,9 @@ export const CreateTermForm = (props: { kind?: TermKind; termKey?: string }) => 
     navigate(KraphTerm.linkBuilder(id));
   };
 
-  const submit = async (data: Values) => {
-    if (!data.key.trim()) {
-      form.setError("key", { message: "A term needs a word" });
-      return;
-    }
-    try {
+  // The dialog lands on the term's page, which is the confirmation.
+  const { submit: declare, submitting } = useDialogSubmit(
+    async (data: Values) => {
       const { data: result } = await create({
         variables: {
           input: {
@@ -75,11 +72,22 @@ export const CreateTermForm = (props: { kind?: TermKind; termKey?: string }) => 
           },
         },
       });
-      toast.success(existing ? `Updated “${data.key.trim()}”` : `Declared “${data.key.trim()}”`);
-      if (result) open(result.createTerm.id);
-    } catch (e) {
-      toast.error("Could not declare the term: " + (e instanceof Error ? e.message : String(e)));
+      return result?.createTerm.id;
+    },
+    {
+      errorTitle: "Couldn't declare the term",
+      onSuccess: (id) => {
+        if (id) navigate(KraphTerm.linkBuilder(id));
+      },
+    },
+  );
+
+  const submit = async (data: Values) => {
+    if (!data.key.trim()) {
+      form.setError("key", { message: "A term needs a word" });
+      return;
     }
+    await declare(data);
   };
 
   return (
@@ -156,8 +164,8 @@ export const CreateTermForm = (props: { kind?: TermKind; termKey?: string }) => 
         />
 
         <DialogFooter>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Saving..." : existing ? "Update" : "Create"}
+          <Button type="submit" disabled={submitting}>
+            {submitting ? "Saving..." : existing ? "Update" : "Create"}
           </Button>
         </DialogFooter>
       </form>

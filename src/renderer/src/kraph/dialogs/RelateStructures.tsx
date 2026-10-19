@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Structure } from "@/core/types";
 import {
   ListStructureRelationCategoryWithGraphFragment,
@@ -6,7 +6,7 @@ import {
   useAssertStructureExistsMutation,
   useListStructureRelationCategoryQuery
 } from "@/kraph/api/graphql";
-import { toast } from "@/core/notify";
+import { ErrorNote } from "@/core/ui/error-note";
 
 export const RelateStructures = (props: {
   left: Structure[];
@@ -17,28 +17,14 @@ export const RelateStructures = (props: {
     fetchPolicy: "network-only",
   });
 
-  const { closeDialog } = useDialog();
-
   // `ensureStructure` is gone: `assertStructureExists` is idempotent on the
   // (identifier, object) pair, so asserting twice records one structure.
-  const [ensureStructure] = useAssertStructureExistsMutation({
-    onCompleted: () => {},
-    onError: (error) => {
-      console.error("Error creating structure:", error);
-    },
-  });
+  const [ensureStructure] = useAssertStructureExistsMutation();
 
-  const [createSRelation] = useAssertStructureRelationExistsMutation({
-    onCompleted: () => {},
-    onError: (error) => {
-      console.error("Error creating relation:", error);
-    },
-  });
+  const [createSRelation] = useAssertStructureRelationExistsMutation();
 
-  const handleRelationCreation = async (
-    category: ListStructureRelationCategoryWithGraphFragment,
-  ) => {
-    try {
+  const { submit: handleRelationCreation, submitting } = useDialogSubmit(
+    async (category: ListStructureRelationCategoryWithGraphFragment) => {
       const leftStructure = props.left.at(0);
       const rightStructure = props.right.at(0);
 
@@ -77,29 +63,24 @@ export const RelateStructures = (props: {
           },
         },
       });
-
-      closeDialog();
-      toast.success("Relation created successfully!");
-    } catch (error) {
-      toast.error(
-        `Failed to create relation: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-      console.error("Failed to create relation:", error);
-    }
-  };
+    },
+    { errorTitle: "Couldn't relate the structures" },
+  );
 
   return (
     <div className="flex flex-col w-full h-full items-center justify-center">
       <div className="flex flex-col space-y-4">Relating structures...</div>
 
-      {error && <div className="text-red-500">Error: {error.message}</div>}
-      {!data && <div className="text-muted-foreground">Loading...</div>}
+      <ErrorNote error={error} title="Couldn't load the relation categories" />
+      {!data && !error && <div className="text-muted-foreground">Loading...</div>}
 
       {data?.structureRelationCategories?.map((category) => (
         <div
           key={category.id}
           className="p-2 border rounded-lg w-full cursor-pointer hover:bg-muted"
-          onClick={() => handleRelationCreation(category)}
+          onClick={() => {
+            if (!submitting) handleRelationCreation(category);
+          }}
         >
           <div className="font-bold">{category.label}</div>
           <div className="text-sm text-muted-foreground">{category.description}</div>

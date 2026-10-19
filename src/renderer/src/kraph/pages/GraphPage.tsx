@@ -1,5 +1,6 @@
 import { asGraphScopeQueryRoute } from "@/kraph/routes/graphRoutes";
 import { FormSheet } from "@/core/dialogs/FormDialog";
+import { reportErrorAs } from "@/core/notify";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { KraphGraph } from "@/core/linkers";
 import { HobbyKnifeIcon } from "@radix-ui/react-icons";
@@ -65,7 +66,7 @@ export const Page = asGraphScopeQueryRoute(useGetGraphQuery, ({ data, refetch })
           <PageAction
             priority={-10}
             onClick={() => {
-              pin();
+              pin().catch(reportErrorAs(data.graph.pinned ? "Couldn't unpin the graph" : "Couldn't pin the graph"));
             }}
           >
             {data.graph.pinned ? "Unpin" : "Pin"}

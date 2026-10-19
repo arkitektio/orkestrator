@@ -1,4 +1,5 @@
 import { PageSections } from "@/core/layout/PageSections";
+import { reportError } from "@/core/notify";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { FormSheet } from "@/core/dialogs/FormDialog";
 import { Sidebars } from "@/core/layout/Sidebars";
@@ -24,14 +25,18 @@ const Page =  asDetailQueryRoute(
     const [update] = useUpdateProtocolEventCategoryMutation();
 
     const createFile = async (file: File) => {
-      const response = await uploadFile(file);
-      if (response) {
-        await update({
-          variables: {
-            input: { id: data.protocolEventCategory.id, image: response },
-          },
-        });
-        await refetch();
+      try {
+        const response = await uploadFile(file);
+        if (response) {
+          await update({
+            variables: {
+              input: { id: data.protocolEventCategory.id, image: response },
+            },
+          });
+          await refetch();
+        }
+      } catch (e) {
+        reportError(e, "Couldn't set the image");
       }
     };
 

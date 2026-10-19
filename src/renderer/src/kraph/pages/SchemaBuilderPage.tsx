@@ -12,7 +12,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { Save } from "lucide-react";
 import { ValueKind } from "../api/graphql";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import { PageLayout } from "@/core/layout/PageLayout";
 import { KRAPH_HELP } from "../help";
 
@@ -54,6 +54,8 @@ export function SchemaBuilderPage({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(
     initialProperties.length > 0 ? 0 : null
   );
+  // Why the last save was refused, shown above the editor until it passes.
+  const [problems, setProblems] = useState<string[]>([]);
   const navigate = useNavigate();
 
   const getProperties = () => getValues("properties");
@@ -120,27 +122,16 @@ export function SchemaBuilderPage({
     const validation = validateSchema(data.properties);
 
     if (!validation.isValid) {
-      toast.error(
-        <div>
-          <p className="font-semibold mb-2">Schema validation failed:</p>
-          <ul className="list-disc list-inside space-y-1">
-            {validation.errors.map((error, i) => (
-              <li key={i} className="text-sm">{error}</li>
-            ))}
-          </ul>
-        </div>,
-        { duration: 5000 }
-      );
+      setProblems(validation.errors);
       return;
     }
+    setProblems([]);
 
+    // Saving leaves the page, which is the confirmation.
     try {
       await onSave(data.properties);
-      toast.success("Schema saved successfully");
     } catch (error) {
-      toast.error(
-        `Failed to save schema: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+      reportError(error, "Couldn't save the schema");
     }
   };
 
@@ -178,35 +169,50 @@ export function SchemaBuilderPage({
         </>
       }
     >
-      <div className="flex h-full min-h-0 overflow-hidden">
-        <div className="w-96">
-          <PropertyList
-            properties={getProperties()}
-            selectedIndex={selectedIndex}
-            onSelectProperty={setSelectedIndex}
-            onAddProperty={handleAddProperty}
-            onReorderProperties={handleReorderProperties}
-          />
-        </div>
+      <div className="flex h-full min-h-0 flex-col">
+        {problems.length > 0 && (
+          <div
+            role="alert"
+            className="m-3 mb-0 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            <p className="font-medium">The schema can't be saved yet:</p>
+            <ul className="list-inside list-disc">
+              {problems.map((problem, i) => (
+                <li key={i}>{problem}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <div className="w-96">
+            <PropertyList
+              properties={getProperties()}
+              selectedIndex={selectedIndex}
+              onSelectProperty={setSelectedIndex}
+              onAddProperty={handleAddProperty}
+              onReorderProperties={handleReorderProperties}
+            />
+          </div>
 
-        <div className="flex-1 bg-accent/20 min-h-0">
-          <PropertyInspector
-            property={
-              selectedIndex !== null ? getProperties()[selectedIndex] : null
-            }
-            onUpdate={(updates) =>
-              selectedIndex !== null &&
-              handleUpdateProperty(selectedIndex, updates)
-            }
-            onDelete={() =>
-              selectedIndex !== null && handleDeleteProperty(selectedIndex)
-            }
-            errors={
-              selectedIndex !== null && errors.properties?.[selectedIndex]
-                ? errors.properties[selectedIndex]
-                : undefined
-            }
-          />
+          <div className="flex-1 bg-accent/20 min-h-0">
+            <PropertyInspector
+              property={
+                selectedIndex !== null ? getProperties()[selectedIndex] : null
+              }
+              onUpdate={(updates) =>
+                selectedIndex !== null &&
+                handleUpdateProperty(selectedIndex, updates)
+              }
+              onDelete={() =>
+                selectedIndex !== null && handleDeleteProperty(selectedIndex)
+              }
+              errors={
+                selectedIndex !== null && errors.properties?.[selectedIndex]
+                  ? errors.properties[selectedIndex]
+                  : undefined
+              }
+            />
+          </div>
         </div>
       </div>
     </PageLayout>

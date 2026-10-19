@@ -6,7 +6,7 @@ import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { Image } from "@/core/ui/image";
 import { SwatchColorPicker } from "@/core/ui/SwatchColorPicker";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import {
   KraphEntityCategory,
   KraphGraph,
@@ -46,8 +46,7 @@ const useSetHidden = (term: { id: string; key: string }) => {
   const [mutate, { loading }] = useSetTermHiddenMutation({ refetchQueries: ["ListTerms"] });
   const set = (hidden: boolean) =>
     mutate({ variables: { id: term.id, hidden } })
-      .then(() => toast.success(hidden ? `Hid “${term.key}”` : `“${term.key}” is offered again`))
-      .catch((e) => toast.error(e instanceof Error ? e.message : String(e)));
+      .catch(reportErrorAs(hidden ? "Couldn't hide the term" : "Couldn't show the term again"));
   return { set, loading };
 };
 
@@ -183,8 +182,8 @@ const Page = asDetailQueryRoute(useGetTermQuery, ({ data, refetch }) => {
                 title="Colour of this word"
                 align="start"
                 onCommit={(color) =>
-                  update({ variables: { input: { id: term.id, color: [...color] } } }).catch((e) =>
-                    toast.error(e instanceof Error ? e.message : String(e)),
+                  update({ variables: { input: { id: term.id, color: [...color] } } }).catch(
+                    reportErrorAs("Couldn't change the colour"),
                   )
                 }
               />

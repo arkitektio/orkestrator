@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { DescendantInput, DescendantKind } from "@/kraph/api/graphql";
 import { BoldPlugin, CodePlugin, UnderlinePlugin } from "@platejs/basic-nodes/react";
@@ -99,11 +100,10 @@ export const CommentEdit = ({
         descendants: convertToDescendantInput(editorContent),
       },
     })
-      .catch(console.error)
-      .then(() => {
-        setSaving(false);
-        editor.tf.reset();
-      });
+      // A failed comment keeps its text, so it can be sent again.
+      .then(() => editor.tf.reset())
+      .catch(reportErrorAs("Couldn't post the comment"))
+      .finally(() => setSaving(false));
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {

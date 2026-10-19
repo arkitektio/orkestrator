@@ -1,5 +1,5 @@
+import { useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
-import { toast } from "@/core/notify";
 import type { Structure } from "@/core/types";
 import {
   Command,
@@ -46,6 +46,7 @@ const matches = (term: PickedTerm, typed: string) => {
  */
 export const MeasureTermDialog = (props: { structures: Structure[] }) => {
   const { closeDialog } = useDialog();
+  const { report, clear } = useDialogError();
   const client = useKraph();
   const recents = useRecentTerms();
   const [search, setSearch] = useState("");
@@ -69,13 +70,13 @@ export const MeasureTermDialog = (props: { structures: Structure[] }) => {
   const choose = async (term: PickedTerm) => {
     if (busy) return;
     setBusy(term.key);
+    clear();
     try {
       await measureTerm(client, props.structures, term.key);
       recents.record(term);
-      toast.success(`Measures ${term.label || term.key}`);
       closeDialog();
     } catch (e) {
-      toast.error(`Could not measure “${term.key}”: ${e instanceof Error ? e.message : String(e)}`);
+      report(e, `Couldn't measure “${term.key}”`);
     } finally {
       setBusy(null);
     }

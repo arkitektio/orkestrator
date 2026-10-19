@@ -20,7 +20,7 @@ import { cn } from "@/core/util/utils";
 import { acceptsSmartDrag, resolveSmartDrop } from "@/core/smart/dragPayload";
 import type { Structure } from "@/core/types";
 import { useState } from "react";
-import { toast } from "@/core/notify";
+import { reportError, toast } from "@/core/notify";
 
 export type SameAsDropTargetProps = {
   /** The datum this card belongs to. */
@@ -59,7 +59,7 @@ export const SameAsDropTarget = ({ self, term, onDone }: SameAsDropTargetProps) 
       }
       setProposal({ plan, partner });
     } catch (e) {
-      toast.error((e as Error).message);
+      reportError(e, `Couldn't check whether they are the same ${term}`);
     } finally {
       setBusy(false);
     }
@@ -69,11 +69,11 @@ export const SameAsDropTarget = ({ self, term, onDone }: SameAsDropTargetProps) 
     if (!proposal) return;
     setBusy(true);
     try {
+      // The partner shows up under "Same as" once the card refetches.
       await executeSameness(client, proposal.plan);
-      toast.success(`Claimed the same ${term}`);
       onDone?.();
     } catch (e) {
-      toast.error(`Could not claim: ${(e as Error).message}`);
+      reportError(e, `Couldn't claim they are the same ${term}`);
     } finally {
       setBusy(false);
       setProposal(null);

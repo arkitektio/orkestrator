@@ -15,6 +15,7 @@ import {
 import { ChevronDown, Download } from "lucide-react";
 import * as React from "react";
 
+import { reportErrorAs } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import {
@@ -110,7 +111,7 @@ const EditableCell = ({
           unit: propertyDefinition.unit,
         }),
       },
-    });
+    }).catch(reportErrorAs("Couldn't save the value"));
 
   const assertable = isManuallyAssertable(propertyDefinition.valueKind);
   const [editingValue, setEditingValue] = React.useState(value);

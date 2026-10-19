@@ -8,7 +8,7 @@ import {
 import { isNotKnownYet } from "@/kraph/lib/knowledgeErrors";
 import type { Identifier, Object } from "@/core/types";
 import { useCallback, useState } from "react";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 
 /** A label the person just typed, shown before the log has answered. */
 export type PendingLabel = { key: string; state: "pending" | "failed" };
@@ -80,7 +80,7 @@ export const useKnowledge = (identifier: Identifier, object: Object): Knowledge 
             label.key === key ? { ...label, state: "failed" } : label,
           ),
         );
-        toast.error(`Could not claim “${key}”: ${(e as Error).message}`);
+        reportError(e, `Couldn't claim “${key}”`);
       }
     },
     [assertEntity, identifier, object.id, refetch],

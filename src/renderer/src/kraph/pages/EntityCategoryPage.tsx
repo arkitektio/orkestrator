@@ -1,4 +1,5 @@
 import { PageSections } from "@/core/layout/PageSections";
+import { reportError, reportErrorAs } from "@/core/notify";
 import { useDialog } from "@/core/dialogs/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
@@ -40,17 +41,21 @@ export const Page = asDetailQueryRoute(
     const { openSheet } = useDialog();
 
     const createFile = async (file: File) => {
-      const response = await uploadFile(file);
-      if (response) {
-        await update({
-          variables: {
-            input: {
-              id: data.entityCategory.id,
-              image: response,
+      try {
+        const response = await uploadFile(file);
+        if (response) {
+          await update({
+            variables: {
+              input: {
+                id: data.entityCategory.id,
+                image: response,
+              },
             },
-          },
-        });
-        await refetch();
+          });
+          await refetch();
+        }
+      } catch (e) {
+        reportError(e, "Couldn't set the image");
       }
     };
 
@@ -86,7 +91,7 @@ export const Page = asDetailQueryRoute(
             <PageAction
               priority={10}
               onClick={() => {
-                quickCreate().then(refetch);
+                quickCreate().then(() => refetch()).catch(reportErrorAs("Couldn't create the entity"));
               }}
             >
               Quick+
@@ -94,7 +99,9 @@ export const Page = asDetailQueryRoute(
             <PageAction
               priority={-10}
               onClick={() => {
-                pin().then(() => refetch());
+                pin().catch(reportErrorAs(
+                  data.entityCategory.pinned ? "Couldn't unpin the category" : "Couldn't pin the category",
+                ));
               }}
             >
               {data.entityCategory.pinned ? "Unpin" : "Pin"}
