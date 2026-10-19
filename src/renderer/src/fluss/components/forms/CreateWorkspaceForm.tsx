@@ -17,7 +17,7 @@ export const CreateWorkspaceForm = (props: { onSuccess?: (data: CreateWorkspaceM
     refetchQueries: [WorkspacesDocument, WorkspaceCarouselDocument],
   });
 
-  const submit = useGraphQLDialog(add, { successMessage: "Workspace created", onSuccess: props.onSuccess });
+  const submit = useGraphQLDialog(add, { errorTitle: "Couldn't create the workspace", onSuccess: props.onSuccess });
 
   const form = useForm({});
 
