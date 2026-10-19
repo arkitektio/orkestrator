@@ -5,6 +5,7 @@ import {
 } from "@/alpaka/api/graphql";
 import {
   firstMessageAttachments,
+  getRoomTalkingAbout,
   toStructureInputs,
 } from "@/alpaka/roomTalkingAbout";
 import { KabinetGuard } from "@/kabinet/api/hooks";
@@ -82,6 +83,14 @@ import {
 import { reportError, toast } from "@/core/notify";
 import { v4 as uuidv4 } from "uuid";
 import { assignErrorMessage } from "@/rekuest/lib/assignError";
+import {
+  GENERIC_REPLYER_FILTER,
+  replyerSubject,
+  specificReplyerFilter,
+  splitReplyers,
+  subjectArgKey,
+  subjectWire,
+} from "./replyerSubject";
 
 /** How long after a message lands a still-spinning pill re-checks its task. */
 const RECHECK_AFTER_MESSAGE_MS = 5000;
@@ -223,6 +232,10 @@ const InstallReplyerSection = (props: {
 type ReplyerAction = { id: string; name: string };
 
 const ReplyerControl = (props: {
+  /** Replyers that also take the structure the room is about, listed first. */
+  specificActions: ReplyerAction[];
+  /** That structure's identifier, for the group's heading. */
+  subjectIdentifier?: string;
   actions: ReplyerAction[];
   selectedActionId: string;
   onSelect: (id: string) => void;
@@ -233,6 +246,8 @@ const ReplyerControl = (props: {
   hasPriorTask: boolean;
 }) => {
   const {
+    specificActions,
+    subjectIdentifier,
     actions,
     selectedActionId,
     onSelect,
@@ -247,10 +262,28 @@ const ReplyerControl = (props: {
   const [argsOpen, setArgsOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const selected = actions.find((a) => a.id === selectedActionId);
-  const filtered = search
-    ? actions.filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
-    : actions;
+  const selected =
+    specificActions.find((a) => a.id === selectedActionId) ??
+    actions.find((a) => a.id === selectedActionId);
+  const matching = (list: ReplyerAction[]) =>
+    search ? list.filter((a) => a.name.toLowerCase().includes(search.toLowerCase())) : list;
+  const filtered = matching(actions);
+  const filteredSpecific = matching(specificActions);
+  const replyerItem = (act: ReplyerAction) => (
+    <CommandItem
+      key={act.id}
+      value={act.id}
+      onSelect={() => {
+        onSelect(act.id);
+        setPickerOpen(false);
+      }}
+      className="flex items-center gap-2"
+    >
+      <MessageSquareText className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <span className="flex-1 truncate text-sm">{act.name}</span>
+      {selectedActionId === act.id && <Check className="h-4 w-4 shrink-0" />}
+    </CommandItem>
+  );
 
   const visibleArgs = useMemo(
     () => ((action?.args ?? []) as any[]).filter((arg) => !hiddenArgs[arg.key]),
@@ -297,6 +330,11 @@ const ReplyerControl = (props: {
               onValueChange={setSearch}
             />
             <CommandList>
+              {filteredSpecific.length > 0 && (
+                <CommandGroup heading={`For ${subjectIdentifier ?? "this structure"}`}>
+                  {filteredSpecific.map(replyerItem)}
+                </CommandGroup>
+              )}
               <CommandGroup heading="Replyers">
                 <CommandItem
                   value="none"
@@ -312,23 +350,7 @@ const ReplyerControl = (props: {
                     <Check className="h-4 w-4 shrink-0" />
                   )}
                 </CommandItem>
-                {filtered.map((act) => (
-                  <CommandItem
-                    key={act.id}
-                    value={act.id}
-                    onSelect={() => {
-                      onSelect(act.id);
-                      setPickerOpen(false);
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <MessageSquareText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="flex-1 truncate text-sm">{act.name}</span>
-                    {selectedActionId === act.id && (
-                      <Check className="h-4 w-4 shrink-0" />
-                    )}
-                  </CommandItem>
-                ))}
+                {filtered.map(replyerItem)}
               </CommandGroup>
               <KabinetGuard fallback={<></>}>
                 <CommandSeparator />
@@ -423,7 +445,8 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
 
   const [selectedActionId, setSelectedActionId] = useState<string>("none");
-  const [hasAutoselected, setHasAutoselected] = useState(false);
+  // Once the user picks a replyer (or none), the picker stops choosing for them.
+  const [pickedByHand, setPickedByHand] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [stagedStructures, setStagedStructures] = useState<StructureInput[]>([]);
   const [prefillText, setPrefillText] = useState("");
@@ -476,39 +499,48 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
     setStagedStructures((prev) => (prev.length > 0 ? prev : attachments));
   }, [room, talkingAbout]);
 
-  const { data: actionsData } = useAllActionsQuery({
-    variables: {
-      filters: {
-        demands: [
-          {
-            kind: DemandKind.Args,
-            matches: [
-              {
-                kind: PortKind.Structure,
-                identifier: "@alpaka/message",
-              },
-            ],
-          },
-          {
-            kind: DemandKind.Returns,
-            matches: [
-              {
-                kind: PortKind.Structure,
-                identifier: "@alpaka/message",
-              },
-            ],
-          },
-        ],
-      },
-    },
-  });
+  // The structure the conversation is on: replyers that also take one of its
+  // kind are listed first, and handed it.
+  const about = useMemo(
+    () => (talkingAbout && talkingAbout.length > 0 ? talkingAbout : getRoomTalkingAbout(room.id)),
+    [talkingAbout, room.id],
+  );
+  const subject = useMemo(
+    () => replyerSubject({ staged: stagedStructures, messages: room.messages, about }),
+    [stagedStructures, room.messages, about],
+  );
+  const subjectIdentifier = subject?.identifier;
 
+  const { data: actionsData } = useAllActionsQuery({
+    variables: { filters: GENERIC_REPLYER_FILTER },
+  });
+  const { data: specificData } = useAllActionsQuery({
+    variables: { filters: specificReplyerFilter(subjectIdentifier ?? "") },
+    skip: !subjectIdentifier,
+  });
+  const replyers = useMemo(
+    () =>
+      splitReplyers(
+        actionsData?.actions ?? [],
+        subjectIdentifier ? (specificData?.actions ?? []) : [],
+      ),
+    [actionsData, specificData, subjectIdentifier],
+  );
+
+  // The most specific replyer is chosen for the user: again whenever the
+  // subject changes kind, until they pick one themselves.
+  const autoselectedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!hasAutoselected && actionsData?.actions && actionsData.actions.length > 0) {
-      setSelectedActionId(actionsData.actions[0].id);
-      setHasAutoselected(true);
-    }
-  }, [actionsData, hasAutoselected]);
+    if (pickedByHand) return;
+    // With a subject, wait for its replyers before falling back to the generic ones.
+    if (subjectIdentifier && !specificData) return;
+    const first = replyers.specific[0] ?? replyers.rest[0];
+    if (!first) return;
+    const key = subjectIdentifier ?? "";
+    if (autoselectedFor.current === key) return;
+    autoselectedFor.current = key;
+    setSelectedActionId(first.id);
+  }, [replyers, subjectIdentifier, specificData, pickedByHand]);
 
   const { data: actionDetailData } = useDetailActionQuery({
     variables: {
@@ -611,8 +643,11 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
     }
   };
 
-  /** Assign the selected replyer to a message, with a pill to follow it. */
-  const runReplyer = async (messageId: string) => {
+  /**
+   * Assign the selected replyer to a message, with a pill to follow it; a
+   * replyer that takes the structure the message is about is handed it.
+   */
+  const runReplyer = async (messageId: string, about: StructureInput | undefined) => {
     if (!selectedActionId || selectedActionId === "none" || !messageKey || !action) {
       return;
     }
@@ -627,6 +662,10 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
         object: messageId,
       },
     };
+    const aboutKey = subjectArgKey(action.args, about, messageKey);
+    if (aboutKey && about) {
+      assignArgs[aboutKey] = subjectWire(about);
+    }
 
     const reference = uuidv4();
     setActiveTasks((prev) => startTask(prev, reference, action.name));
@@ -654,18 +693,22 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
         return;
       }
 
-      await runReplyer(messageId);
+      const message = room.messages.find((candidate) => candidate.id === messageId);
+      await runReplyer(messageId, message?.attachedStructures[0] ?? subject);
     }
   };
 
   const { registry } = useWidgetRegistry();
 
   const selectedAction = useMemo(() => {
-    if (!actionsData?.actions || !selectedActionId || selectedActionId === "none") {
+    if (!selectedActionId || selectedActionId === "none") {
       return undefined;
     }
-    return actionsData.actions.find((act) => act.id === selectedActionId);
-  }, [actionsData, selectedActionId]);
+    return (
+      replyers.specific.find((act) => act.id === selectedActionId) ??
+      replyers.rest.find((act) => act.id === selectedActionId)
+    );
+  }, [replyers, selectedActionId]);
 
   const latestTask = selectedAction?.latestTask;
 
@@ -678,12 +721,16 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
   }, [action]);
   const messageKey = messageArg?.key;
 
+  // The argument that takes the subject: filled from it and hidden while there
+  // is one, left to the user (in Args) while there is not.
+  const subjectKey = subjectArgKey(action?.args, subject, messageKey);
+
   const hiddenArgs = useMemo(() => {
-    if (messageKey) {
-      return { [messageKey]: true };
-    }
-    return {};
-  }, [messageKey]);
+    const hidden: Record<string, boolean> = {};
+    if (messageKey) hidden[messageKey] = true;
+    if (subjectKey) hidden[subjectKey] = true;
+    return hidden;
+  }, [messageKey, subjectKey]);
 
   const formOverwrites = useMemo(() => {
     const overwrites: Record<string, any> = {};
@@ -698,8 +745,12 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
         object: "dummy",
       };
     }
+    // The real one is put in by `runReplyer`; this passes validation.
+    if (subjectKey && subject) {
+      overwrites[subjectKey] = subjectWire(subject);
+    }
     return overwrites;
-  }, [messageKey, latestTask]);
+  }, [messageKey, latestTask, subjectKey, subject]);
 
   const form = usePortForm({
     ports: (action?.args || []) as any,
@@ -745,7 +796,7 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
         setPendingMessages((prev) =>
           confirmPending(prev, localId, createdMessage.id),
         );
-        await runReplyer(createdMessage.id);
+        await runReplyer(createdMessage.id, attached[0] ?? subject);
       } else {
         setPendingMessages((prev) => dropPending(prev, localId));
       }
@@ -826,9 +877,14 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
         onRereply={selectedActionId !== "none" ? handleRereply : undefined}
         replyerControl={
           <ReplyerControl
-            actions={actionsData?.actions ?? []}
+            specificActions={replyers.specific}
+            subjectIdentifier={subjectIdentifier}
+            actions={replyers.rest}
             selectedActionId={selectedActionId}
-            onSelect={setSelectedActionId}
+            onSelect={(id) => {
+              setPickedByHand(true);
+              setSelectedActionId(id);
+            }}
             action={action}
             form={form}
             registry={registry}
