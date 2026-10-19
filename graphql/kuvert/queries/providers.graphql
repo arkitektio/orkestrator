@@ -1,0 +1,17 @@
+query ListMailProviders($filters: MailProviderFilter, $pagination: OffsetPaginationInput) {
+  mailProviders(filters: $filters, pagination: $pagination) {
+    ...ListMailProvider
+  }
+}
+
+query GetMailProvider($id: ID!) {
+  mailProvider(id: $id) {
+    ...MailProvider
+  }
+}
+
+query ProviderKinds {
+  providerKinds {
+    ...ProviderKind
+  }
+}

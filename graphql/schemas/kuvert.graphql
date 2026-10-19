@@ -1,4 +1,4 @@
-directive @auth(required_org_roles: [String!] = null, required_roles: [String!] = null, required_scopes: [String!] = null) on FIELD_DEFINITION
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
 
 """A mail address with its display name."""
 type Address {
@@ -272,14 +272,16 @@ input CreateCategoryInput {
 }
 
 """
-A mailbox to link with a username and (app) password. Servers default to the preset of the address's provider when there is one (`mailPresets`).
+A mailbox to link with a username and (app) password, through one of the organization's IMAP providers. A provider with fixed servers takes only the login; otherwise servers default to the preset of the address's provider when there is one (`mailPresets`).
 """
 input CreateMailAccountInput {
   """The sender name of sent mail."""
   displayName: String = null
   emailAddress: String!
 
-  """The IMAP or POP3 server; the preset's by default."""
+  """
+  The IMAP or POP3 server; the preset's by default. Not with a provider that fixes the servers.
+  """
   incoming: ServerInput = null
 
   """A display name for the mailbox; the address by default."""
@@ -290,15 +292,22 @@ input CreateMailAccountInput {
 
   """POP3: keep downloaded mail on the server."""
   popLeaveOnServer: Boolean! = true
-  protocol: Protocol! = IMAP
 
   """
-  Append sent mail to the Sent folder; the preset's choice by default (off for Gmail/Microsoft).
+  How incoming mail is read: the provider's when it fixes the servers, else IMAP by default.
+  """
+  protocol: Protocol = null
+
+  """The IMAP provider to link through (see `mailProviders`)."""
+  provider: ID!
+
+  """
+  Append sent mail to the Sent folder; the provider's choice with fixed servers, else the preset's (off for Gmail/Microsoft).
   """
   saveSentCopy: Boolean = null
 
   """
-  The SMTP server; the preset's by default. Without one the mailbox cannot send.
+  The SMTP server; the preset's by default. Without one the mailbox cannot send. Not with a provider that fixes the servers.
   """
   smtp: ServerInput = null
 
@@ -311,6 +320,67 @@ input CreateMailAccountInput {
   """The login; the address by default."""
   username: String = null
   visibility: Visibility! = PRIVATE
+}
+
+"""
+A new Gmail or Microsoft provider: one OAuth client (a Google Cloud OAuth client, an Entra app registration).
+"""
+input CreateOAuthProviderInput {
+  """
+  What to switch on; everything the kind can do by default (see `providerKinds`).
+  """
+  capabilities: [ProviderCapability!] = null
+
+  """The OAuth client id."""
+  clientId: String!
+
+  """
+  The client secret (a public client with PKCE has none). Stored encrypted and never returned.
+  """
+  clientSecret: String = null
+
+  """GMAIL or MICROSOFT."""
+  kind: Provider!
+
+  """What to call it, unique in the organization."""
+  name: String!
+
+  """The redirect URLs registered for the client, the default first."""
+  redirectUrls: [String!]!
+
+  """
+  Microsoft: the Entra tenant (id or domain); `common` (any account) by default.
+  """
+  tenant: String = null
+}
+
+"""
+A new IMAP provider. With `incoming` (and `protocol`) its servers are fixed and members only give their login; without, each member names the servers (`mailPresets` fills in well-known ones).
+"""
+input CreateServerProviderInput {
+  """
+  What to switch on; everything the kind can do by default (see `providerKinds`).
+  """
+  capabilities: [ProviderCapability!] = null
+
+  """The fixed IMAP or POP3 server; omitted: members name their own."""
+  incoming: ServerInput = null
+
+  """What to call it, unique in the organization."""
+  name: String!
+
+  """With fixed servers: how incoming mail is read."""
+  protocol: Protocol = null
+
+  """
+  Whether its mailboxes append sent mail to Sent (off when the server files it itself).
+  """
+  saveSentCopy: Boolean! = true
+
+  """
+  The fixed SMTP server (only with `incoming`); omitted with fixed servers: its mailboxes cannot send.
+  """
+  smtp: ServerInput = null
 }
 
 """A new task, optionally with its conversations."""
@@ -364,6 +434,39 @@ type DeleteResult {
   deleted: Int!
 }
 
+"""
+One constraint on an object's descriptors, in the shape a rekuest port states its `requires` in -- so a picker hands a port's constraints on unchanged. `key` is one of the keys the structure declares (e.g. `@kuvert/has_attachments`); a key it does not declare is refused.
+"""
+input DescriptorConstraintInput {
+  """The descriptor key, e.g. `@kuvert/has_attachments`"""
+  key: String!
+
+  """
+  How the object's value is compared with `value`. MATCHES is equality, as EQUALS is
+  """
+  operator: DescriptorOperator!
+
+  """
+  The value compared against: a number for GTE and LTE, a list for IN and NOT_IN, true or false for EXISTS, the member looked for with CONTAINS
+  """
+  value: JSON = null
+}
+
+"""
+How a descriptor constraint compares the object's value with the stated one. The operators a rekuest port's `requires` and `provides` are written in, with the same meaning.
+"""
+enum DescriptorOperator {
+  CONTAINS
+  EQUALS
+  EXISTS
+  GTE
+  IN
+  LTE
+  MATCHES
+  NOT_EQUALS
+  NOT_IN
+}
+
 input FinishBigFileUploadInput {
   storeId: String!
   valid: Boolean! = true
@@ -408,7 +511,9 @@ type MailAccount {
   """Every synced folder has reached the backfill window."""
   backfillDone: Boolean!
 
-  """Whether the mailbox can send (it has an SMTP server)."""
+  """
+  Whether the mailbox can send: it has an SMTP server, and its provider is enabled with SEND switched on.
+  """
   canSend: Boolean!
 
   """What the incoming server announced (IMAP CAPABILITY, POP3 CAPA)."""
@@ -460,6 +565,11 @@ type MailAccount {
 
   """When the last successful sync finished."""
   lastSyncedAt: DateTime
+
+  """
+  The organization's provider the mailbox was linked through (null: none any more; an admin has to set one up).
+  """
+  mailProvider: MailProvider
 
   """A display name for the mailbox (e.g. 'Work')."""
   name: String!
@@ -555,6 +665,7 @@ input MailAccountFilter {
   OR: MailAccountFilter
   ids: [ID!]
   mine: Boolean
+  provider: ID
   search: String
   status: MailAccountStatus
 }
@@ -658,7 +769,7 @@ enum MailChangeState {
 }
 
 """
-What went wrong, for a client to offer a fix. Also stored as ``last_error_code``. NOT_CONFIGURED: The service is not configured for this (an OAuth client, the datalayer); AUTH_FAILED: The server refused the username or password; CONSENT_EXPIRED: The OAuth grant was revoked or ran out; link the mailbox again; CONNECTION_FAILED: The server could not be reached, or the connection broke; TLS_FAILED: The TLS handshake failed (certificate or protocol); TLS_REQUIRED: The mailbox asks for a connection without TLS, which is not allowed; HOST_NOT_ALLOWED: The host resolves to a private or internal address; SYNC_IN_PROGRESS: Another sync holds this mailbox right now; RATE_LIMITED: Synced too recently; try again later; SERVER_ERROR: The server answered a command with an error; SEND_REJECTED: The SMTP server refused the message or a recipient; UNSUPPORTED_BY_PROTOCOL: POP3 cannot do this (folders, flags on the server); MAILBOX_INACTIVE: The mailbox is disabled or needs new credentials; INVALID_STATE: The link state is unknown, used or belongs to someone else; CODE_EXPIRED: The link was not completed in time; PROVIDER_ERROR: The OAuth provider answered with an error; UNSUPPORTED_BY_POLICY: The mailbox is set not to change this on the server (its push settings); KEYWORDS_NOT_PERMITTED: The folder does not keep keywords (no \\* in PERMANENTFLAGS), the category stays local; MESSAGE_GONE: The message is no longer where the change expected it on the server; UNSAFE_EXPUNGE: Without UIDPLUS an expunge would also remove other deleted messages of the folder.
+What went wrong, for a client to offer a fix. Also stored as ``last_error_code``. NOT_CONFIGURED: The organization or the service is not set up for this (no usable provider, the datalayer); AUTH_FAILED: The server refused the username or password; CONSENT_EXPIRED: The OAuth grant was revoked or ran out; link the mailbox again; CONNECTION_FAILED: The server could not be reached, or the connection broke; TLS_FAILED: The TLS handshake failed (certificate or protocol); TLS_REQUIRED: The mailbox asks for a connection without TLS, which is not allowed; HOST_NOT_ALLOWED: The host resolves to a private or internal address; SYNC_IN_PROGRESS: Another sync holds this mailbox right now; RATE_LIMITED: Synced too recently; try again later; SERVER_ERROR: The server answered a command with an error; SEND_REJECTED: The SMTP server refused the message or a recipient; UNSUPPORTED_BY_PROTOCOL: POP3 cannot do this (folders, flags on the server); MAILBOX_INACTIVE: The mailbox is disabled or needs new credentials; INVALID_STATE: The link state is unknown, used or belongs to someone else; CODE_EXPIRED: The link was not completed in time; PROVIDER_ERROR: The OAuth provider answered with an error; UNSUPPORTED_BY_POLICY: The mailbox is set not to change this on the server (its push settings); KEYWORDS_NOT_PERMITTED: The folder does not keep keywords (no \\* in PERMANENTFLAGS), the category stays local; MESSAGE_GONE: The message is no longer where the change expected it on the server; UNSAFE_EXPUNGE: Without UIDPLUS an expunge would also remove other deleted messages of the folder.
 """
 enum MailErrorCode {
   AUTH_FAILED
@@ -766,11 +877,104 @@ type MailPreset {
   """The provider is linked through OAuth (`startOAuthLink`)."""
   oauth: Boolean!
 
-  """This deployment has an OAuth client for it."""
+  """The organization has an enabled provider for it (`mailProviders`)."""
   oauthConfigured: Boolean!
   pop3: ServerSettings
   provider: Provider!
   saveSentCopy: Boolean!
+  smtp: ServerSettings
+}
+
+"""
+A provider the organization's admins set up (an IMAP server, a Gmail or Microsoft OAuth client). Every mailbox is linked through one; credentials are never returned.
+"""
+type MailProvider {
+  """The capabilities switched on for this provider."""
+  capabilities: [ProviderCapability!]!
+
+  """When the provider was set up."""
+  createdAt: DateTime!
+
+  """The admin who set it up."""
+  creator: User
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@kuvert/message_count`). The keys are the ones kuvert declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
+  """
+  A disabled provider links no mailbox, and its mailboxes neither sync, push nor send.
+  """
+  enabled: Boolean!
+  id: ID!
+
+  """Which kind of provider this is."""
+  kind: Provider!
+
+  """What its kind is and can do."""
+  kindInfo: ProviderKind!
+
+  """
+  How many mailboxes of the organization are linked through it (all of them, whoever sees them).
+  """
+  mailboxCount: Int!
+
+  """What the organization calls it."""
+  name: String!
+
+  """Its OAuth client when it is a Gmail or Microsoft provider, else null."""
+  oauth: OAuthClientSettings
+
+  """The organization this provider belongs to."""
+  organization: Organization!
+
+  """Its servers when it is an IMAP provider, else null."""
+  server: MailServerSettings
+
+  """When it was last changed."""
+  updatedAt: DateTime!
+}
+
+"""
+A provider an organization's admin set up: one kind, its settings and credentials, and what is switched on.
+
+Every mailbox is linked through one. A Gmail or Microsoft provider is one OAuth client (its
+id and redirect URLs in ``settings``, its secret Fernet-encrypted in ``secret``); an IMAP
+provider is a mail server (fixed in ``settings``), or any server its members name. What a
+kind's ``settings`` hold is :mod:`mail.providers`'s to validate; a kind needing other
+settings needs no migration.
+"""
+input MailProviderFilter {
+  AND: MailProviderFilter
+  DISTINCT: Boolean
+  NOT: MailProviderFilter
+  OR: MailProviderFilter
+  enabled: Boolean
+  ids: [ID!]
+  kind: Provider
+  requires: [DescriptorConstraintInput!]
+}
+
+"""
+The servers of an IMAP provider: fixed by the admin, or left to each member (`fixed` false).
+"""
+type MailServerSettings {
+  """
+  True: its mailboxes use these servers, members only give their login. False: members name the servers.
+  """
+  fixed: Boolean!
+
+  """With fixed servers: the IMAP or POP3 server."""
+  incoming: ServerSettings
+
+  """With fixed servers: how incoming mail is read."""
+  protocol: Protocol
+
+  """Whether its mailboxes append sent mail to Sent."""
+  saveSentCopy: Boolean!
+
+  """With fixed servers: the SMTP server (null: its mailboxes cannot send)."""
   smtp: ServerSettings
 }
 
@@ -937,6 +1141,7 @@ input MessageFilter {
   hasFlag: String
   ids: [ID!]
   recipient: String
+  requires: [DescriptorConstraintInput!]
 
   """
   Search by text: a case-insensitive substring of the subject, sender or text; or semantic similarity to them ("flight booking" finds the airline's confirmation). Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
@@ -983,9 +1188,15 @@ type Mutation {
   createCategory(input: CreateCategoryInput!): Category!
 
   """
-  Link a mailbox with a username and (app) password; the login is tested first.
+  Link a mailbox with a username and (app) password through an IMAP provider; the login is tested first.
   """
   createMailAccount(input: CreateMailAccountInput!): MailAccount!
+
+  """Admins: set up a Gmail or Microsoft OAuth client as a provider."""
+  createOAuthProvider(input: CreateOAuthProviderInput!): MailProvider!
+
+  """Admins: set up an IMAP provider, with fixed servers or open to any."""
+  createServerProvider(input: CreateServerProviderInput!): MailProvider!
 
   """Create a task, optionally with conversations."""
   createTask(input: CreateTaskInput!): Task!
@@ -1001,6 +1212,9 @@ type Mutation {
 
   """Delete messages (into Trash, or for good)."""
   deleteMessages(input: DeleteMessagesInput!): DeleteResult!
+
+  """Admins: remove a provider no mailbox goes through."""
+  deleteProvider(id: ID!): ID!
 
   """Delete a task."""
   deleteTask(id: ID!): ID!
@@ -1058,7 +1272,9 @@ type Mutation {
   """Snooze tasks until a time (null wakes them)."""
   snoozeTasks(input: SnoozeTasksInput!): [Task!]!
 
-  """Start linking (or re-linking) a mailbox through OAuth."""
+  """
+  Start linking (or re-linking) a mailbox through a Gmail or Microsoft provider.
+  """
   startOAuthLink(input: StartOAuthLinkInput!): AuthSession!
 
   """Sync a mailbox now."""
@@ -1084,6 +1300,21 @@ type Mutation {
   """Turn syncing a folder on or off."""
   updateMailFolder(input: UpdateMailFolderInput!): MailFolder!
 
+  """
+  Admins: change a Gmail or Microsoft provider; an empty secret keeps the stored one.
+  """
+  updateOAuthProvider(input: UpdateOAuthProviderInput!): MailProvider!
+
+  """
+  Admins: rename, enable or disable any provider, or change its capabilities.
+  """
+  updateProvider(input: UpdateProviderInput!): MailProvider!
+
+  """
+  Admins: change an IMAP provider; its mailboxes follow new fixed servers.
+  """
+  updateServerProvider(input: UpdateServerProviderInput!): MailProvider!
+
   """Change a task."""
   updateTask(input: UpdateTaskInput!): Task!
 
@@ -1094,6 +1325,25 @@ type Mutation {
   Create or update the caller's task with this externalKey, and add conversations to it.
   """
   upsertTask(input: UpsertTaskInput!): Task!
+}
+
+"""
+The OAuth client of a Gmail or Microsoft provider. Its secret is never returned.
+"""
+type OAuthClientSettings {
+  """The OAuth client id."""
+  clientId: String!
+
+  """
+  Whether a client secret is stored (a public client with PKCE has none).
+  """
+  hasSecret: Boolean!
+
+  """The redirect URLs a login may use; the first is the default."""
+  redirectUrls: [String!]!
+
+  """Microsoft: the Entra tenant logins go through (`common`: any account)."""
+  tenant: String!
 }
 
 input OffsetPaginationInput {
@@ -1190,6 +1440,7 @@ input OutgoingMessageFilter {
   NOT: OutgoingMessageFilter
   OR: OutgoingMessageFilter
   account: ID
+  requires: [DescriptorConstraintInput!]
   status: OutgoingStatus
 }
 
@@ -1211,12 +1462,45 @@ enum Protocol {
 }
 
 """
-Who hosts a mailbox (decides OAuth, presets and Sent-copy behaviour). GENERIC: Any IMAP/POP3 server; GMAIL: Gmail / Google Workspace; MICROSOFT: Outlook.com / Microsoft 365.
+Who hosts a mailbox (decides OAuth, presets and Sent-copy behaviour); also the kind of a :class:`MailProvider`. GENERIC: Any IMAP/POP3 server; GMAIL: Gmail / Google Workspace; MICROSOFT: Outlook.com / Microsoft 365.
 """
 enum Provider {
   GENERIC
   GMAIL
   MICROSOFT
+}
+
+"""
+What a provider may be used for, beyond reading mail (which every one does). SEND: Send mail through its mailboxes' SMTP servers; SCHEDULED_SYNC: Let the unattended sync_all_mailboxes action sync its mailboxes.
+"""
+enum ProviderCapability {
+  SCHEDULED_SYNC
+  SEND
+}
+
+"""
+A capability a provider can have switched on, as shown to whoever switches it.
+"""
+type ProviderCapabilityInfo {
+  capability: ProviderCapability!
+  description: String!
+  label: String!
+}
+
+"""
+A kind of provider this server can run. What a client needs to offer it, without knowing the kinds itself.
+"""
+type ProviderKind {
+  """
+  How its mailboxes log in: PASSWORD — link one with `createMailAccount`; XOAUTH2 — with `startOAuthLink`.
+  """
+  authMethod: AuthMethod!
+
+  """Everything the kind can do; a provider enables a subset."""
+  capabilities: [ProviderCapabilityInfo!]!
+  description: String!
+  kind: Provider!
+  label: String!
 }
 
 """What pushing a mailbox's changes did."""
@@ -1272,6 +1556,14 @@ type Query {
   """
   mailPresets(address: String): [MailPreset!]!
 
+  """A provider by id."""
+  mailProvider(id: ID!): MailProvider!
+
+  """
+  The providers the organization set up; every mailbox is linked through one.
+  """
+  mailProviders(filters: MailProviderFilter, pagination: OffsetPaginationInput): [MailProvider!]!
+
   """A message by id."""
   message(id: ID!): Message!
 
@@ -1283,14 +1575,14 @@ type Query {
   """How many messages match the filters."""
   messagesCount(filters: MessageFilter = null): Int!
 
-  """Providers this deployment can link through OAuth."""
-  oauthProviders: [Provider!]!
-
   """Mail sent through the visible mailboxes, newest first."""
   outbox(filters: OutgoingMessageFilter, pagination: OffsetPaginationInput): [OutgoingMessage!]!
 
   """A sent message by id."""
   outgoingMessage(id: ID!): OutgoingMessage!
+
+  """The kinds of provider this server can run, each with its capabilities."""
+  providerKinds: [ProviderKind!]!
 
   """A task by id."""
   task(id: ID!): Task!
@@ -1425,7 +1717,7 @@ input SnoozeTasksInput {
 }
 
 """
-Start linking a mailbox through OAuth, or re-link one (`account`) whose grant ran out.
+Start linking a mailbox through one of the organization's Gmail or Microsoft providers, or re-link one (`account`) whose grant ran out.
 """
 input StartOAuthLinkInput {
   """Re-link this mailbox (owner only)."""
@@ -1437,7 +1729,11 @@ input StartOAuthLinkInput {
   """A display name for the new mailbox."""
   name: String = null
   protocol: Protocol! = IMAP
-  provider: Provider!
+
+  """
+  The provider to link through (see `mailProviders`). A re-link goes through the mailbox's own by default, or another of its kind.
+  """
+  provider: ID = null
 
   """
   One of the deployment's registered redirect URLs; the first by default.
@@ -1728,6 +2024,7 @@ input ThreadFilter {
   hasAttachments: Boolean
   hasTask: Boolean
   ids: [ID!]
+  requires: [DescriptorConstraintInput!]
 
   """
   Only conversations with a message matching the text: the same substring and meaning search as `messages(filters: {search})`.
@@ -1787,7 +2084,7 @@ input UpdateCategoryInput {
 }
 
 """
-Changes to a mailbox; omitted fields stay as they are. Changing servers or credentials tests the login first.
+Changes to a mailbox; omitted fields stay as they are. Changing servers or credentials tests the login first. A mailbox whose provider fixes the servers keeps them (an admin changes them on the provider).
 """
 input UpdateMailAccountInput {
   displayName: String
@@ -1833,6 +2130,46 @@ input UpdateMailFolderInput {
 
   """Whether syncs read the folder. Turning it off keeps what is stored."""
   syncEnabled: Boolean!
+}
+
+"""
+Changes to a Gmail or Microsoft provider; omitted fields stay as they are. Its client id stays while mailboxes go through it (their refresh tokens belong to that client).
+"""
+input UpdateOAuthProviderInput {
+  capabilities: [ProviderCapability!]
+  clientId: String
+
+  """A new client secret. Omitted or empty: the stored one is kept."""
+  clientSecret: String
+  enabled: Boolean
+  id: ID!
+  name: String
+  redirectUrls: [String!]
+  tenant: String
+}
+
+"""
+Changes any provider takes, whatever its kind; omitted fields stay as they are.
+"""
+input UpdateProviderInput {
+  capabilities: [ProviderCapability!]
+  enabled: Boolean
+  id: ID!
+  name: String
+}
+
+"""
+Changes to an IMAP provider; omitted fields stay as they are. Fixed servers may change and its mailboxes follow; while it has mailboxes, its protocol and whether its servers are fixed stay.
+"""
+input UpdateServerProviderInput {
+  capabilities: [ProviderCapability!]
+  enabled: Boolean
+  id: ID!
+  incoming: ServerInput
+  name: String
+  protocol: Protocol
+  saveSentCopy: Boolean
+  smtp: ServerInput
 }
 
 """Changes to a task; omitted fields stay as they are."""
@@ -1890,7 +2227,7 @@ enum Visibility {
 
 scalar _Any
 
-union _Entity = Attachment | BigFileStore | Category | MailAccount | MailChange | MailFolder | Message | Organization | OutgoingMessage | Task | TaskList | TaskThread | Thread | User
+union _Entity = Attachment | BigFileStore | Category | MailAccount | MailChange | MailFolder | MailProvider | Message | Organization | OutgoingMessage | Task | TaskList | TaskThread | Thread | User
 
 type _Service {
   sdl: String!

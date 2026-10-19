@@ -1,5 +1,7 @@
+import { ADMIN_ROLE } from "@/core/connection/roles";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
+import { RoleRoute } from "@/core/layout/fallbacks/NotPermitted";
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { MailboxSyncs } from "./components/useMailboxSyncs";
@@ -12,6 +14,8 @@ import HomePage from "./pages/HomePage";
 import MessagePage from "./pages/MessagePage";
 import OutboxPage from "./pages/OutboxPage";
 import OutgoingPage from "./pages/OutgoingPage";
+import ProviderPage from "./pages/ProviderPage";
+import ProvidersPage from "./pages/ProvidersPage";
 import SearchPage from "./pages/SearchPage";
 import SmartMailboxPage from "./pages/SmartMailboxPage";
 import TaskListPage from "./pages/TaskListPage";
@@ -41,6 +45,8 @@ export const KuvertModule: React.FC = () => (
         <Route path="tasks" element={<TasksPage />} />
         <Route path="tasks/:id" element={<TaskPage />} />
         <Route path="tasklists/:id" element={<TaskListPage />} />
+        <Route path="providers" element={<RoleRoute roles={ADMIN_ROLE}><ProvidersPage /></RoleRoute>} />
+        <Route path="providers/:id" element={<RoleRoute roles={ADMIN_ROLE}><ProviderPage /></RoleRoute>} />
         {SMART_MAILBOXES.map((mailbox) =>
           mailbox.path ? (
             <Route key={mailbox.key} path={mailbox.path} element={<SmartMailboxPage key={mailbox.key} mailbox={mailbox} />} />

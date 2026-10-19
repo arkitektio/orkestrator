@@ -25,6 +25,8 @@ import { PasswordField, ServerFields, serverInput, ServerValues, TextField } fro
 import { sortFolders } from "../../format";
 import { MailFolder } from "../../linkers";
 import { AccountCategories } from "../categories/AccountCategories";
+import { relinkProps } from "../../relink";
+import { SIGN_IN_WITH } from "../providerKind";
 import { LOGIN_ANCHOR } from "./anchors";
 
 export { LOGIN_ANCHOR } from "./anchors";
@@ -170,6 +172,8 @@ const LoginForm = ({ account }: { account: MailAccountFragment }) => {
     smtpPassword: "",
   };
   const form = useForm<LoginValues>({ defaultValues: defaults });
+  // A provider with fixed servers keeps them; an admin changes them there.
+  const fixed = !!account.mailProvider?.server?.fixed;
   // A refused test is the answer to this form: shown in it, not as a toast.
   const [failure, setFailure] = useState<unknown>(null);
 
@@ -181,8 +185,8 @@ const LoginForm = ({ account }: { account: MailAccountFragment }) => {
       id: account.id,
       password: v.password || undefined,
       username: dirty.username ? v.username.trim() : undefined,
-      incoming: dirty.incoming ? serverInput(v.incoming) : undefined,
-      smtp: dirty.smtp ? serverInput(v.smtp) : undefined,
+      incoming: dirty.incoming && !fixed ? serverInput(v.incoming) : undefined,
+      smtp: dirty.smtp && !fixed ? serverInput(v.smtp) : undefined,
       smtpUsername: v.smtpUsername.trim() || undefined,
       smtpPassword: v.smtpPassword || undefined,
     };
@@ -202,8 +206,16 @@ const LoginForm = ({ account }: { account: MailAccountFragment }) => {
             <TextField name="username" label="Username" />
             <PasswordField name="password" label="New password" description="Leave empty to keep the current one." />
           </div>
-          <ServerFields prefix="incoming" label={account.protocol === Protocol.Pop3 ? "POP3" : "IMAP"} />
-          <ServerFields prefix="smtp" label="SMTP" />
+          {fixed ? (
+            <p className="text-xs text-muted-foreground">
+              The servers are set by {account.mailProvider?.name}; an admin changes them there.
+            </p>
+          ) : (
+            <>
+              <ServerFields prefix="incoming" label={account.protocol === Protocol.Pop3 ? "POP3" : "IMAP"} />
+              <ServerFields prefix="smtp" label="SMTP" />
+            </>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <TextField name="smtpUsername" label="SMTP username" placeholder="same as above" />
             <PasswordField name="smtpPassword" label="SMTP password" />
@@ -328,14 +340,15 @@ export const AccountSettings = ({ account }: { account: MailAccountFragment }) =
       >
         {oauth ? (
           <Rows>
-            <Row label={`Signed in with ${account.provider.charAt(0) + account.provider.slice(1).toLowerCase()}`} description={account.username}>
+            <Row
+              label={`Signed in with ${SIGN_IN_WITH[account.provider]}`}
+              description={account.mailProvider ? `${account.username} · through ${account.mailProvider.name}` : account.username}
+            >
               <Button
                 size="sm"
                 variant="outline"
                 disabled={!account.isOwner}
-                onClick={() =>
-                  openDialog("kuvertlink", { relink: account.id, provider: account.provider, address: account.emailAddress }, { size: "medium" })
-                }
+                onClick={() => openDialog("kuvertlink", relinkProps(account), { size: "medium" })}
               >
                 Sign in again
               </Button>
