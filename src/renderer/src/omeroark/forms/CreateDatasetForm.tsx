@@ -9,7 +9,7 @@ import { CreateDatasetMutation, CreateDatasetMutationVariables, ListProjectFragm
 export const CreateDatasetForm = (props: { project?: ListProjectFragment; onSuccess?: (data: CreateDatasetMutation | null | undefined) => void }) => {
   const [add] = useCreateDatasetMutation();
 
-  const submit = useGraphQLDialog(add, { successMessage: "Dataset created", onSuccess: props.onSuccess });
+  const submit = useGraphQLDialog(add, { errorTitle: "Couldn't create the dataset", onSuccess: props.onSuccess });
 
   const form = useForm<CreateDatasetMutationVariables["input"]>({
     defaultValues: {

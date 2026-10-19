@@ -1,5 +1,7 @@
+import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/core/ui/card";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
 import { useForm } from "react-hook-form";
@@ -28,12 +30,12 @@ export const DeleteMeButton = () => {
       variables: {
         input: {}
       }
-    })
+    }).catch(reportErrorAs("Couldn't disconnect your OMERO account"))
   }}>Disconnect Omero User</Button>
 }
 
 export const EnsureMeForm = () => {
-  const [setMe, { loading }] = useEnsureOmeroUserMutation({
+  const [setMe, { loading, error }] = useEnsureOmeroUserMutation({
     refetchQueries: [{ query: MeDocument }],
   });
 
@@ -60,7 +62,8 @@ export const EnsureMeForm = () => {
           port: data.port,
         },
       },
-    });
+      // The failure is the hook's `error`, shown above the button.
+    }).catch(() => {});
   };
 
   return (
@@ -124,6 +127,8 @@ export const EnsureMeForm = () => {
               <p className="text-sm text-red-500">{errors.port.message}</p>
             )}
           </div>
+
+          <ErrorNote error={error} title="Couldn't connect to OMERO" />
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Connecting..." : "Connect to OMERO"}
