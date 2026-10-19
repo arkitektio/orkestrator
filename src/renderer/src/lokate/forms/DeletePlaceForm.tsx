@@ -1,4 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
@@ -17,23 +18,18 @@ export const DeletePlaceForm = ({ id }: { id: string }) => {
   const [sync, { loading }] = useSyncPlacesMutation({ refetchQueries: [ListPlacesDocument] });
   const place = data?.place;
 
-  const remove = async () => {
-    if (!place) return;
-    try {
+  // Gone, it leaves the list: only a phone's newer copy winning is said.
+  const { submit: remove } = useDialogSubmit(
+    async () => {
+      if (!place) return;
       const { data: result } = await sync({
         variables: { places: [], deleted: [{ clientId: place.clientId, deletedAt: new Date().toISOString() }] },
       });
-      if (result?.syncPlaces.stale.length) {
-        toast.info("A phone changed this place more recently; it was kept");
-      } else {
-        toast.success("Place deleted");
-        navigate("/lokate/places");
-      }
-      closeDialog();
-    } catch (error) {
-      toast.error("Could not delete the place: " + (error instanceof Error ? error.message : String(error)));
-    }
-  };
+      if (result?.syncPlaces.stale.length) toast.info("A phone changed this place more recently; it was kept");
+      else navigate("/lokate/places");
+    },
+    { errorTitle: "Couldn't delete the place" },
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -47,7 +43,7 @@ export const DeletePlaceForm = ({ id }: { id: string }) => {
         <Button type="button" variant="ghost" onClick={closeDialog}>
           Cancel
         </Button>
-        <Button variant="destructive" disabled={!place || loading} onClick={remove}>
+        <Button variant="destructive" disabled={!place || loading} onClick={() => remove()}>
           {loading ? "Deleting..." : "Delete"}
         </Button>
       </DialogFooter>
