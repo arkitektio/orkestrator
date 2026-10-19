@@ -177,7 +177,8 @@ const DashboardAgentBlokPicker = (props: {
   agentName: string;
   onSelect: (blokId: string) => void;
 }) => {
-  const { data, loading, error } = useListBloksQuery();
+  // Bloks to materialize by hand: an app's own are forked first.
+  const { data, loading, error } = useListBloksQuery({ variables: { filters: { provided: false } } });
   const [search, setSearch] = useState("");
 
   const filteredBloks = useMemo(() => {
@@ -401,7 +402,7 @@ const DashboardDropDialog = (props: {
 };
 
 export const DashboardBlokSidebar = () => {
-  const { data } = useListBloksQuery();
+  const { data } = useListBloksQuery({ variables: { filters: { provided: false } } });
 
   return (
     <div className="flex flex-col gap-2 p-3">

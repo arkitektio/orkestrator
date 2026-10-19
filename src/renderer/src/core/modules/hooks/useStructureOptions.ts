@@ -6,6 +6,10 @@ import type { SearchOptions } from "@/core/forms/SearchField";
 import { useModuleHostVersion } from "@/core/modules/host/host";
 import { resolveServiceClient } from "@/core/modules/host/operations";
 import type { StructureOption } from "@/core/modules/host/options";
+import type { DescriptorConstraint } from "@/core/ports/engine/constraints";
+
+/** A search, plus the constraints of the action input it fills (for a source that honours them). */
+export type StructureSearch = SearchOptions & { requires?: readonly DescriptorConstraint[] };
 
 /**
  * A search over another module's models, for a picker (a user chip, an app
@@ -20,15 +24,22 @@ export const useStructureOptions = (identifier: string, by?: string) => {
 
   return useMemo(() => {
     if (!source) return undefined;
-    return async ({ search, values }: SearchOptions): Promise<StructureOption[]> => {
+    return async ({ search, values, requires }: StructureSearch): Promise<StructureOption[]> => {
       const client = resolveServiceClient(store.getState(), source.service);
       if (!client) return [];
       return source.search(client, {
         search: search || undefined,
         values: values?.map(String),
+        ...(source.honoursRequires && requires?.length ? { requires: [...requires] } : {}),
       });
     };
   }, [source, store]);
+};
+
+/** Whether the module answering for `identifier` narrows by an input's `requires`. */
+export const useOptionSourceHonoursRequires = (identifier: string, by?: string): boolean => {
+  useModuleHostVersion();
+  return Boolean(findOptionSource(identifier, by)?.honoursRequires);
 };
 
 /** Every option at once, for a short list (a filter menu). */

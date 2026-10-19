@@ -1,19 +1,19 @@
 import { ListRender } from "@/core/layout/ListRender";
 import { RekuestBlok } from "@/core/linkers";
 import {
-  AgentFilter,
+  BlokFilter,
   OffsetPaginationInput,
   useListBloksQuery,
 } from "@/rekuest/api/graphql";
 import BlokCard from "../cards/BlokCard";
 
 export type Props = {
-  filters?: AgentFilter;
+  filters?: BlokFilter;
   pagination?: OffsetPaginationInput;
 };
 
-const List = (_props: Props) => {
-  const { data, refetch } = useListBloksQuery({});
+const List = ({ filters, pagination }: Props) => {
+  const { data, refetch } = useListBloksQuery({ variables: { filters, pagination } });
 
   return (
     <ListRender

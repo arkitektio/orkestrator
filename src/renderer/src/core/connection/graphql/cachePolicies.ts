@@ -202,6 +202,7 @@ export const MIKRO_PAGINATED_FIELDS: PaginatedFieldMap = {
 export const REKUEST_PAGINATED_FIELDS: PaginatedFieldMap = {
   actions: ["filters", "ordering"],
   agents: ["filters", "ordering"],
+  bloks: ["filters"],
   clients: ["filters", "ordering"],
   firings: ["filters", "ordering"],
   implementations: ["filters", "ordering"],

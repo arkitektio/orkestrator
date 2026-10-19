@@ -8,7 +8,10 @@ const service = vi.hoisted(() => ({
 }));
 
 vi.mock("@/rekuest/api/graphql", () => ({ PortKind: { Structure: "STRUCTURE" } }));
-vi.mock("@/core/modules/hooks/useStructureOptions", () => ({ useStructureOptions: () => undefined }));
+vi.mock("@/core/modules/hooks/useStructureOptions", () => ({
+  useStructureOptions: () => undefined,
+  useOptionSourceHonoursRequires: () => false,
+}));
 vi.mock("@/core/modules/hooks/useServiceQuery", () => ({
   useServiceQuery: () => (query: string, variables: Record<string, unknown>) => service.run(query, variables),
 }));

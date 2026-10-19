@@ -11,7 +11,7 @@ import { PageAction, PageActionGroup } from "@/core/ui/page-action";
 import { cn } from "@/core/util/utils";
 import { RekuestAgent, RekuestState } from "@/core/linkers";
 import { ObjectButton } from "@/core/smart/ObjectButton";
-import { structure } from "@/core/smart/structure";
+import { agentStructure } from "@/rekuest/smart/agent";
 import {
   AgentFragment,
   ComponentContext,
@@ -98,7 +98,7 @@ export const BounceAgentButton = (props: { agent: AgentFragment }) => {
  */
 const useDefaultSceneBlok = (agent: string) => {
   const { data, loading } = useListMaterializedBloksQuery({
-    variables: { filters: { agent } },
+    variables: { filters: { agent, contexts: [ComponentContext.Scene] } },
   });
   const id = data?.materializedBloks.find(
     (blok) => blok.isDefault && blok.blok.context === ComponentContext.Scene,
@@ -247,11 +247,9 @@ export const AgentPage = asDetailQueryRoute(
         }
         pageActions={
           <>
-            {/* What other apps offer on this agent: a supervisor's stop / start /
-                restart (actions taking @rekuest/agent) among them. */}
-            <ObjectButton
-              objects={[structure("@rekuest/agent", data.agent.id, { label: data.agent.name })]}
-            />
+            {/* What other apps offer on this agent, its supervisor's stop / start /
+                restart under "Supervisor" (the structure carries @rekuest/supervisor). */}
+            <ObjectButton objects={[agentStructure(data.agent)]} />
             <PinAgent agent={data.agent} />
             <BounceAgentButton agent={data.agent} />
             <CopyAgentPythonButton agent={data.agent} />
@@ -328,7 +326,9 @@ export const AgentPage = asDetailQueryRoute(
                       <Timestamp date={data.agent.lastSeen} relative />
                       </div>
                                        </div>
-                    {(data.agent.active !== data.agent.connected || data.agent.blocked) && (
+                    {(data.agent.active !== data.agent.connected ||
+                      data.agent.blocked ||
+                      data.agent.supervisor) && (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {data.agent.active !== data.agent.connected && (
                           <Badge variant="outline" className="text-xs">
@@ -338,6 +338,15 @@ export const AgentPage = asDetailQueryRoute(
                         {data.agent.blocked && (
                           <Badge variant="destructive" className="text-xs">
                             Blocked
+                          </Badge>
+                        )}
+                        {data.agent.supervisor && (
+                          <Badge
+                            variant="secondary"
+                            className="text-xs"
+                            title="Self-declared by the agent; its supervisor checks before acting on it"
+                          >
+                            Supervised by {data.agent.supervisor}
                           </Badge>
                         )}
                       </div>

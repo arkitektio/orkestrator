@@ -479,6 +479,8 @@ export type Agent = {
   sessions: Array<Session>;
   /** Current and historical states associated with the agent. */
   states: Array<State>;
+  /** The app this agent says controls its lifecycle (e.g. 'plugin_engine'), as stated on its last registration. Self-declared: a hint for pickers (descriptor @rekuest/supervisor), never authority. */
+  supervisor?: Maybe<Scalars['String']['output']>;
   /** Tasks executed by this agent. */
   tasks: Array<Task>;
   /** The triggers whose runs are pinned to this agent. */
@@ -655,9 +657,13 @@ export type AgentFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by pinned agents */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Agents meeting a port's descriptor constraints (a picker hands them in as $requires). The only descriptor of @rekuest/agent is @rekuest/supervisor; any other key is refused. */
+  requires?: InputMaybe<Array<RequiresInput>>;
   /** Filter by name of the agents */
   search?: InputMaybe<Scalars['String']['input']>;
   stateDemands?: InputMaybe<Array<StateDemandInput>>;
+  /** Agents whose self-declared supervisor is this app (e.g. 'plugin_engine'). */
+  supervisor?: InputMaybe<Scalars['String']['input']>;
   threeDModel?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by user ID */
   user?: InputMaybe<Scalars['ID']['input']>;
@@ -979,6 +985,8 @@ export type BlockInput = {
 
 export type Blok = {
   __typename?: 'Blok';
+  /** The app whose agents provide this blok; null for a custom blok a user made. A provided blok changes and goes with its agents' registrations and cannot be edited or materialized by hand: fork it. */
+  app?: Maybe<App>;
   catalog: UiCatalog;
   /** The whole component tree as one JSON value, in the wire spelling (snake_case keys). Unlike `components` it has no depth limit, which a selection set always has. */
   componentTree: Scalars['AnyDefault']['output'];
@@ -1004,6 +1012,10 @@ export type Blok = {
   /** Materialized bloks that are instances of this blok. */
   materializedBloks: Array<MaterializedBlok>;
   name: Scalars['String']['output'];
+  /** Whether an app's agents provide this blok (see `app`). */
+  provided: Scalars['Boolean']['output'];
+  /** The agents that currently provide this blok, each through its own materialization. */
+  providers: Array<Agent>;
 };
 
 
@@ -1072,6 +1084,18 @@ export type BlokDependencyFilter = {
   NOT?: InputMaybe<BlokDependencyFilter>;
   OR?: InputMaybe<BlokDependencyFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+/** A way to filter bloks */
+export type BlokFilter = {
+  AND?: InputMaybe<BlokFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<BlokFilter>;
+  OR?: InputMaybe<BlokFilter>;
+  /** Only bloks an app provides (true) or only custom bloks users made (false). */
+  provided?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Search by name */
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** Which locks does the agent provide in general */
@@ -2042,6 +2066,14 @@ export enum FiringOutcome {
   Rejected = 'REJECTED'
 }
 
+/** Copy a blok an app provides into a custom blok of the caller's organization, to edit it or bind other agents to it. */
+export type ForkBlokInput = {
+  /** The provided blok to fork. */
+  id: Scalars['ID']['input'];
+  /** The custom blok's name. Defaults to the provided blok's. */
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
 export enum Granularity {
   Day = 'DAY',
   Hour = 'HOUR',
@@ -2476,6 +2508,8 @@ export type MaterializedBlok = {
   createdAt: Scalars['DateTime']['output'];
   /** Placements of this materialized blok on dashboards. */
   dashboardPlacements: Array<DashboardPlacement>;
+  /** The agent this materialization belongs to, for a blok its app provides; null when a user made it. An agent's materialization follows its registrations. */
+  declaredBy?: Maybe<Agent>;
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   /** Whether this is its declaring agent's default blok for the blok's context. */
@@ -2510,8 +2544,12 @@ export type MaterializedBlokFilter = {
   OR?: InputMaybe<MaterializedBlokFilter>;
   /** Filter by agent */
   agent?: InputMaybe<Scalars['ID']['input']>;
+  /** Only bloks that render in one of these contexts: HTML and SCENE are interfaces to open, LOGO and ACTION_LOGO draw an agent or an action. */
+  contexts?: InputMaybe<Array<ComponentContext>>;
   /** Filter by IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Only agents' own materializations of the bloks they provide (true) or only ones users made (false). */
+  provided?: InputMaybe<Scalars['Boolean']['input']>;
   /** Search by name */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -2754,6 +2792,8 @@ export type Mutation = {
   finishMediaUpload: MediaStore;
   /** Fire a trigger on a stored signal by hand (a replay). The run is created whether or not the signal satisfies the trigger, and logged as a firing of its own. */
   fireTrigger: Firing;
+  /** Copy a blok an app provides into a custom blok, to edit it or bind other agents to it. The copy lives on whatever the providing agents do. */
+  forkBlok: Blok;
   /** Implement an agent with given states and implementations. This is used to set up an agent with its initial configuration and capabilities. */
   implementAgent: Agent;
   /** Import a wiregram: one document of schedules and triggers. All or nothing; importing the same key again updates what it created and removes what it no longer lists. */
@@ -3026,6 +3066,12 @@ export type MutationFinishMediaUploadArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationFireTriggerArgs = {
   input: FireTriggerInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationForkBlokArgs = {
+  input: ForkBlokInput;
 };
 
 
@@ -3828,6 +3874,12 @@ export type QueryAssetArgs = {
 
 export type QueryBlokArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type QueryBloksArgs = {
+  filters?: InputMaybe<BlokFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -6093,6 +6145,13 @@ export type UiCatalog = {
   widgetDefaults: Array<WidgetDefault>;
 };
 
+
+/** A UI catalog: the components a UI app can render and the pure operations it can evaluate for UtilCalls, registered per organization. */
+export type UiCatalogBloksArgs = {
+  filters?: InputMaybe<BlokFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
 /** The input for bouncing an agent. */
 export type UnblockInput = {
   /** The agent ID to unblock. */
@@ -6533,7 +6592,7 @@ export type AgentLogoFragment = { __typename?: 'Agent', logo?: { __typename?: 'M
     ) } | null };
 
 export type AgentFragment = (
-  { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, implementations: Array<(
+  { __typename?: 'Agent', id: string, hash: string, blocked: boolean, pinned: boolean, name: string, active: boolean, connected: boolean, lastSeen?: any | null, supervisor?: string | null, implementations: Array<(
     { __typename?: 'Implementation' }
     & ListImplementationFragment
   )>, memoryShelve?: { __typename?: 'MemoryShelve', id: string } | null, states: Array<(
@@ -6550,7 +6609,7 @@ export type AgentFragment = (
 );
 
 export type ListAgentFragment = (
-  { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null }
+  { __typename?: 'Agent', id: string, kind: AgentKind, active: boolean, connected: boolean, name: string, lastSeen?: any | null, pinned: boolean, blocked: boolean, supervisor?: string | null, client: { __typename?: 'Client', clientId: string }, user: { __typename?: 'User', sub: string }, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, device?: { __typename?: 'Device', id: string, deviceId: string } | null }
   & AgentLogoFragment
 );
 
@@ -6567,7 +6626,7 @@ export type AgentChangeEventFragment = { __typename?: 'AgentChangeEvent', delete
   ) | null };
 
 export type HoverAgentFragment = (
-  { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> }
+  { __typename?: 'Agent', id: string, name: string, active: boolean, connected: boolean, blocked: boolean, pinned: boolean, lastSeen?: any | null, supervisor?: string | null, app: { __typename?: 'App', identifier: string }, release: { __typename?: 'Release', version: string }, user: { __typename?: 'User', sub: string }, implementations: Array<{ __typename?: 'Implementation', id: string, interface: string, action: { __typename?: 'Action', id: string, name: string } }> }
   & AgentLogoFragment
 );
 
@@ -6694,7 +6753,7 @@ export type BlokComponentPropFragment = { __typename?: 'ComponentProp', key: str
 
 export type BlokDiagnosticFragment = { __typename?: 'Diagnostic', level: DiagnosticLevel, code: string, message: string, path?: string | null };
 
-export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, demoState: any, materializedBloks: Array<(
+export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, demoState: any, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
     { __typename?: 'MaterializedBlok' }
     & ListMaterializedBlokFragment
   )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, diagnostics: Array<(
@@ -6702,14 +6761,14 @@ export type BlokFragment = { __typename?: 'Blok', id: string, name: string, desc
     & BlokDiagnosticFragment
   )> };
 
-export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, isDefault: boolean, createdAt: any, blok: (
+export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, isDefault: boolean, createdAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: (
     { __typename?: 'Blok' }
     & BlokFragment
   ), agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
-export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string };
+export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string, provided: boolean, app?: { __typename?: 'App', id: string, identifier: string } | null };
 
-export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
+export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type ClientFragment = { __typename?: 'Client', id: string, clientId: string };
 
@@ -7833,6 +7892,16 @@ export type UpdateBlokMutation = { __typename?: 'Mutation', updateBlok: (
     & BlokFragment
   ) };
 
+export type ForkBlokMutationVariables = Exact<{
+  input: ForkBlokInput;
+}>;
+
+
+export type ForkBlokMutation = { __typename?: 'Mutation', forkBlok: (
+    { __typename?: 'Blok' }
+    & BlokFragment
+  ) };
+
 export type DeleteBlokMutationVariables = Exact<{
   input: DeleteBlokInput;
 }>;
@@ -8268,6 +8337,7 @@ export type AgentOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['ID']['input']>>;
   dependency?: InputMaybe<Scalars['ID']['input']>;
+  requires?: InputMaybe<Array<RequiresInput>>;
 }>;
 
 
@@ -8514,7 +8584,10 @@ export type GetBlokQuery = { __typename?: 'Query', blok: (
     & BlokFragment
   ) };
 
-export type ListBloksQueryVariables = Exact<{ [key: string]: never; }>;
+export type ListBloksQueryVariables = Exact<{
+  filters?: InputMaybe<BlokFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
 
 
 export type ListBloksQuery = { __typename?: 'Query', bloks: Array<(
@@ -10351,6 +10424,7 @@ export const AgentFragmentDoc = gql`
   active
   connected
   lastSeen
+  supervisor
   tasks(pagination: {limit: 5}, ordering: {createdAt: DESC}) {
     ...ListTask
   }
@@ -10413,6 +10487,7 @@ export const HoverAgentFragmentDoc = gql`
   blocked
   pinned
   lastSeen
+  supervisor
   app {
     identifier
   }
@@ -10484,6 +10559,10 @@ export const ListMaterializedBlokFragmentDoc = gql`
   description
   isDefault
   updatedAt
+  declaredBy {
+    id
+    name
+  }
   blok {
     id
     name
@@ -10832,6 +10911,11 @@ export const ListBlokFragmentDoc = gql`
   description
   context
   hash
+  provided
+  app {
+    id
+    identifier
+  }
 }
     `;
 export const ClientFragmentDoc = gql`
@@ -10867,6 +10951,16 @@ export const BlokFragmentDoc = gql`
   id
   name
   description
+  provided
+  app {
+    id
+    identifier
+  }
+  providers {
+    id
+    name
+    connected
+  }
   materializedBloks {
     ...ListMaterializedBlok
   }
@@ -10898,6 +10992,11 @@ export const MaterializedBlokFragmentDoc = gql`
   name
   isDefault
   createdAt
+  declaredBy {
+    id
+    name
+    connected
+  }
   blok {
     ...Blok
   }
@@ -10996,6 +11095,7 @@ export const ListAgentFragmentDoc = gql`
   lastSeen
   pinned
   blocked
+  supervisor
   client {
     clientId
   }
@@ -13294,6 +13394,39 @@ export function useUpdateBlokMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type UpdateBlokMutationHookResult = ReturnType<typeof useUpdateBlokMutation>;
 export type UpdateBlokMutationResult = Apollo.MutationResult<UpdateBlokMutation>;
 export type UpdateBlokMutationOptions = Apollo.BaseMutationOptions<UpdateBlokMutation, UpdateBlokMutationVariables>;
+export const ForkBlokDocument = gql`
+    mutation ForkBlok($input: ForkBlokInput!) {
+  forkBlok(input: $input) {
+    ...Blok
+  }
+}
+    ${BlokFragmentDoc}`;
+export type ForkBlokMutationFn = Apollo.MutationFunction<ForkBlokMutation, ForkBlokMutationVariables>;
+
+/**
+ * __useForkBlokMutation__
+ *
+ * To run a mutation, you first call `useForkBlokMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useForkBlokMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [forkBlokMutation, { data, loading, error }] = useForkBlokMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useForkBlokMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ForkBlokMutation, ForkBlokMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ForkBlokMutation, ForkBlokMutationVariables>(ForkBlokDocument, options);
+      }
+export type ForkBlokMutationHookResult = ReturnType<typeof useForkBlokMutation>;
+export type ForkBlokMutationResult = Apollo.MutationResult<ForkBlokMutation>;
+export type ForkBlokMutationOptions = Apollo.BaseMutationOptions<ForkBlokMutation, ForkBlokMutationVariables>;
 export const DeleteBlokDocument = gql`
     mutation DeleteBlok($input: DeleteBlokInput!) {
   deleteBlok(input: $input)
@@ -14811,9 +14944,9 @@ export type AgentForProtocolQueryHookResult = ReturnType<typeof useAgentForProto
 export type AgentForProtocolLazyQueryHookResult = ReturnType<typeof useAgentForProtocolLazyQuery>;
 export type AgentForProtocolQueryResult = Apollo.QueryResult<AgentForProtocolQuery, AgentForProtocolQueryVariables>;
 export const AgentOptionsDocument = gql`
-    query AgentOptions($search: String, $values: [ID!], $dependency: ID) {
+    query AgentOptions($search: String, $values: [ID!], $dependency: ID, $requires: [RequiresInput!]) {
   options: agents(
-    filters: {search: $search, ids: $values, dependency: $dependency}
+    filters: {search: $search, ids: $values, dependency: $dependency, requires: $requires}
     pagination: {limit: 10}
   ) {
     value: id
@@ -14837,6 +14970,7 @@ export const AgentOptionsDocument = gql`
  *      search: // value for 'search'
  *      values: // value for 'values'
  *      dependency: // value for 'dependency'
+ *      requires: // value for 'requires'
  *   },
  * });
  */
@@ -15744,8 +15878,8 @@ export type GetBlokQueryHookResult = ReturnType<typeof useGetBlokQuery>;
 export type GetBlokLazyQueryHookResult = ReturnType<typeof useGetBlokLazyQuery>;
 export type GetBlokQueryResult = Apollo.QueryResult<GetBlokQuery, GetBlokQueryVariables>;
 export const ListBloksDocument = gql`
-    query ListBloks {
-  bloks {
+    query ListBloks($filters: BlokFilter, $pagination: OffsetPaginationInput) {
+  bloks(filters: $filters, pagination: $pagination) {
     ...ListBlok
   }
 }
@@ -15763,6 +15897,8 @@ export const ListBloksDocument = gql`
  * @example
  * const { data, loading, error } = useListBloksQuery({
  *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
  *   },
  * });
  */

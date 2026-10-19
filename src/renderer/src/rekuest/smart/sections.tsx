@@ -7,8 +7,9 @@ import {
   useAllPrimaryActionsQuery,
   useShortcutsQuery,
 } from "@/rekuest/api/graphql";
-import { Boxes, PlayCircle, Zap } from "lucide-react";
+import { Boxes, PlayCircle, ShieldCheck, Zap } from "lucide-react";
 import { buildDemands, useSmartDemands } from "@/rekuest/smart/demands";
+import { supervisorOf } from "@/rekuest/smart/agent";
 import type {
   SectionItems,
   SmartContextSection,
@@ -54,6 +55,13 @@ const useShortcutItems = (ctx: SmartSectionContext): SectionItems<ListShortcutFr
   return { items: stable.data?.shortcuts, status: stable.status, error: stable.error };
 };
 
+/**
+ * The supervisor of a selection that is one agent naming one: its actions on
+ * the agent are that agent's "supervisor actions" (stop, start, restart, …).
+ */
+const selectionSupervisor = (props: Pick<SmartContextProps, "objects">) =>
+  props.objects.length === 1 ? supervisorOf(props.objects[0]) : undefined;
+
 const useActionItems = (ctx: SmartSectionContext): SectionItems<PrimaryActionFragment> => {
   const demands = useSmartDemands(ctx);
   const skip = demands.single.length === 0;
@@ -62,7 +70,21 @@ const useActionItems = (ctx: SmartSectionContext): SectionItems<PrimaryActionFra
     variables: actionsVariables(demands.single, {
       search: ctx.filter,
       collection: ctx.collection,
+      exceptApp: selectionSupervisor(ctx),
     }),
+    skip,
+  });
+  const stable = useStableData(result, skip);
+  return { items: stable.data?.actions, status: stable.status, error: stable.error };
+};
+
+const useSupervisorItems = (ctx: SmartSectionContext): SectionItems<PrimaryActionFragment> => {
+  const demands = useSmartDemands(ctx);
+  const supervisor = selectionSupervisor(ctx);
+  const skip = !supervisor || demands.single.length === 0;
+  const result = useAllPrimaryActionsQuery({
+    ...QUERY_OPTIONS,
+    variables: actionsVariables(demands.single, { search: ctx.filter, app: supervisor }),
     skip,
   });
   const stable = useStableData(result, skip);
@@ -131,9 +153,40 @@ export const REKUEST_ACTIONS_SECTION: SmartContextSection<PrimaryActionFragment>
       service: "rekuest",
       name: "actions",
       query: AllPrimaryActionsDocument,
-      variables: actionsVariables(buildDemands(target).single, { collection: target.collection }),
+      variables: actionsVariables(buildDemands(target).single, {
+        collection: target.collection,
+        exceptApp: selectionSupervisor(target),
+      }),
     },
   ],
+};
+
+export const REKUEST_SUPERVISOR_SECTION: SmartContextSection<PrimaryActionFragment> = {
+  id: "rekuest.supervisor",
+  module: "rekuest",
+  title: "Supervisor",
+  icon: ShieldCheck,
+  priority: 35,
+  tier: "remote",
+  Guard: RekuestGuard,
+  applies: (props) => selectionSupervisor(props) !== undefined,
+  useItems: useSupervisorItems,
+  itemKey: (action) => action.id,
+  searchParts: actionParts,
+  Row: ({ item, context }) => <AssignButton action={item} {...context} />,
+  prefetch: (target) => {
+    const supervisor = selectionSupervisor(target);
+    return supervisor
+      ? [
+          {
+            service: "rekuest",
+            name: "supervisor",
+            query: AllPrimaryActionsDocument,
+            variables: actionsVariables(buildDemands(target).single, { app: supervisor }),
+          },
+        ]
+      : [];
+  },
 };
 
 export const REKUEST_BATCH_ACTIONS_SECTION: SmartContextSection<PrimaryActionFragment> = {
@@ -153,6 +206,7 @@ export const REKUEST_BATCH_ACTIONS_SECTION: SmartContextSection<PrimaryActionFra
 
 export const REKUEST_SECTIONS: SmartContextSection<any>[] = [
   REKUEST_SHORTCUTS_SECTION,
+  REKUEST_SUPERVISOR_SECTION,
   REKUEST_ACTIONS_SECTION,
   REKUEST_BATCH_ACTIONS_SECTION,
 ];

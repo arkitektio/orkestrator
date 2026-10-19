@@ -1,4 +1,4 @@
-directive @auth(required_org_roles: [String!] = null, required_roles: [String!] = null, required_scopes: [String!] = null) on FIELD_DEFINITION
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
 
 directive @unionElementOf(discriminator: String!, key: String!, union: String!) repeatable on INPUT_OBJECT
 
@@ -503,6 +503,11 @@ type Agent {
   """Current and historical states associated with the agent."""
   states: [State!]!
 
+  """
+  The app this agent says controls its lifecycle (e.g. 'plugin_engine'), as stated on its last registration. Self-declared: a hint for pickers (descriptor @rekuest/supervisor), never authority.
+  """
+  supervisor: String
+
   """Tasks executed by this agent."""
   tasks(filters: TaskFilter, ordering: [TaskOrder!]! = [], pagination: OffsetPaginationInput): [Task!]!
 
@@ -679,9 +684,19 @@ input AgentFilter {
   """Filter by pinned agents"""
   pinned: Boolean
 
+  """
+  Agents meeting a port's descriptor constraints (a picker hands them in as $requires). The only descriptor of @rekuest/agent is @rekuest/supervisor; any other key is refused.
+  """
+  requires: [RequiresInput!]
+
   """Filter by name of the agents"""
   search: String
   stateDemands: [StateDemandInput!]
+
+  """
+  Agents whose self-declared supervisor is this app (e.g. 'plugin_engine').
+  """
+  supervisor: String
   threeDModel: ID
 
   """Filter by user ID"""
@@ -1176,6 +1191,10 @@ input BlockInput {
 }
 
 type Blok {
+  """
+  The app whose agents provide this blok; null for a custom blok a user made. A provided blok changes and goes with its agents' registrations and cannot be edited or materialized by hand: fork it.
+  """
+  app: App
   catalog: UICatalog!
 
   """
@@ -1219,6 +1238,14 @@ type Blok {
   """Materialized bloks that are instances of this blok."""
   materializedBloks(filters: MaterializedBlokFilter, ordering: [MaterializedBlokOrder!]! = [], pagination: OffsetPaginationInput): [MaterializedBlok!]!
   name: String!
+
+  """Whether an app's agents provide this blok (see `app`)."""
+  provided: Boolean!
+
+  """
+  The agents that currently provide this blok, each through its own materialization.
+  """
+  providers: [Agent!]!
 }
 
 type BlokAgentMapping {
@@ -1294,6 +1321,22 @@ input BlokDependencyFilter {
   NOT: BlokDependencyFilter
   OR: BlokDependencyFilter
   ids: [ID!]
+}
+
+"""A way to filter bloks"""
+input BlokFilter {
+  AND: BlokFilter
+  DISTINCT: Boolean
+  NOT: BlokFilter
+  OR: BlokFilter
+
+  """
+  Only bloks an app provides (true) or only custom bloks users made (false).
+  """
+  provided: Boolean
+
+  """Search by name"""
+  search: String
 }
 
 """Which locks does the agent provide in general"""
@@ -2592,6 +2635,17 @@ enum FiringOutcome {
   REJECTED
 }
 
+"""
+Copy a blok an app provides into a custom blok of the caller's organization, to edit it or bind other agents to it.
+"""
+input ForkBlokInput {
+  """The provided blok to fork."""
+  id: ID!
+
+  """The custom blok's name. Defaults to the provided blok's."""
+  name: String = null
+}
+
 enum Granularity {
   DAY
   HOUR
@@ -3196,6 +3250,11 @@ type MaterializedBlok {
 
   """Placements of this materialized blok on dashboards."""
   dashboardPlacements(filters: DashboardPlacementFilter, ordering: [DashboardPlacementOrder!]! = [], pagination: OffsetPaginationInput): [DashboardPlacement!]!
+
+  """
+  The agent this materialization belongs to, for a blok its app provides; null when a user made it. An agent's materialization follows its registrations.
+  """
+  declaredBy: Agent
   description: String
   id: ID!
 
@@ -3220,8 +3279,18 @@ input MaterializedBlokFilter {
   """Filter by agent"""
   agent: ID
 
+  """
+  Only bloks that render in one of these contexts: HTML and SCENE are interfaces to open, LOGO and ACTION_LOGO draw an agent or an action.
+  """
+  contexts: [ComponentContext!]
+
   """Filter by IDs"""
   ids: [ID!]
+
+  """
+  Only agents' own materializations of the bloks they provide (true) or only ones users made (false).
+  """
+  provided: Boolean
 
   """Search by name"""
   search: String
@@ -3514,6 +3583,11 @@ type Mutation {
   Fire a trigger on a stored signal by hand (a replay). The run is created whether or not the signal satisfies the trigger, and logged as a firing of its own.
   """
   fireTrigger(input: FireTriggerInput!): Firing!
+
+  """
+  Copy a blok an app provides into a custom blok, to edit it or bind other agents to it. The copy lives on whatever the providing agents do.
+  """
+  forkBlok(input: ForkBlokInput!): Blok!
 
   """
   Implement an agent with given states and implementations. This is used to set up an agent with its initial configuration and capabilities.
@@ -4172,7 +4246,7 @@ type Query {
   blok(id: ID!): Blok!
 
   """List of UI Blok."""
-  bloks: [Blok!]!
+  bloks(filters: BlokFilter, pagination: OffsetPaginationInput): [Blok!]!
 
   """The html bloks registered to decorate the model of this reference."""
   bloksForModel(ref: String!): [Blok!]!
@@ -6663,7 +6737,7 @@ A UI catalog: the components a UI app can render and the pure operations it can 
 """
 type UICatalog {
   """Bloks rendered against this catalog."""
-  bloks: [Blok!]!
+  bloks(filters: BlokFilter, pagination: OffsetPaginationInput): [Blok!]!
 
   """Registered components. Empty until a UI app registers the catalog."""
   components: [CatalogComponent!]!

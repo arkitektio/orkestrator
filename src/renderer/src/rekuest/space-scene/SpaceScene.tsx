@@ -47,7 +47,7 @@ type GizmoMode = 'translate' | 'rotate';
 const SNAP_DISTANCE = 0.05;
 const SNAP_ANGLE = Math.PI / 12;
 
-/** How many materialized bloks are asked for, to pick the 3D views from: past the server's default page. */
+/** How many 3D views are asked for: past the server's default page. */
 const VIEW_LIMIT = 500;
 
 /** The edge of the box that stands in for a placement with nothing to show, in meters. */
@@ -419,8 +419,10 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
   const [search, setSearch] = React.useState('');
   const gizmoHeld = React.useRef(false);
 
-  // Every view is asked for and the scene ones picked out here: the list has no filter for a blok's context.
-  const {data, loading, error} = useListMaterializedBloksQuery({variables: {pagination: {limit: VIEW_LIMIT}}});
+  // Only the scene views: the server narrows by the blok's context.
+  const {data, loading, error} = useListMaterializedBloksQuery({
+    variables: {filters: {contexts: [ComponentContext.Scene]}, pagination: {limit: VIEW_LIMIT}},
+  });
   const options = React.useMemo(
     () => optionsFor(data?.materializedBloks ?? [], placements),
     [data, placements],

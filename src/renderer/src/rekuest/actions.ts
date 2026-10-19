@@ -16,6 +16,9 @@ import {
   CleanupActionsMutationVariables,
   DeleteBlokDocument,
   DeleteBlokMutation,
+  GetBlokDocument,
+  GetBlokQuery,
+  GetBlokQueryVariables,
   DeleteBlokMutationVariables,
   DeleteDashboardDocument,
   DeleteDashboardMutation,
@@ -155,6 +158,26 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       }
 
       dialog.openDialog('updateagent', { agent: data.agent })
+    },
+    collections: ['io'],
+  },
+  'rekuest-fork-blok': {
+    title: 'Fork Blok',
+    description: 'Copy a blok an app provides into one of your own, to edit it or bind other agents',
+    icon: Copy,
+    conditions: only('@rekuest/blok'),
+    execute: async ({ services, state, dialog }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const { data } = await services.rekuest.client.query<GetBlokQuery, GetBlokQueryVariables>({
+        query: GetBlokDocument,
+        variables: { id: selected(state, '@rekuest/blok') },
+      })
+      if (!data.blok.provided) {
+        throw new Error(`${data.blok.name} is already yours to change; only a blok an app provides is forked`)
+      }
+      dialog.openDialog('forkblok', { id: data.blok.id, name: data.blok.name })
     },
     collections: ['io'],
   },

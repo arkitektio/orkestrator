@@ -61,6 +61,18 @@ const BindingsSidebar = ({ materializedBlok }: { materializedBlok: MaterializedB
       )}
     </div>
 
+    {materializedBlok.declaredBy && (
+      <div className="flex flex-col gap-1">
+        <div className="text-xs text-muted-foreground">Belongs to</div>
+        <RekuestAgent.DetailLink object={materializedBlok.declaredBy} className="font-medium">
+          {materializedBlok.declaredBy.name || materializedBlok.declaredBy.id}
+        </RekuestAgent.DetailLink>
+        <p className="text-xs text-muted-foreground">
+          Its app provides the blok; the agent keeps this in step with its registrations.
+        </p>
+      </div>
+    )}
+
     {materializedBlok.agentMappings.length > 0 && (
       <div className="flex flex-col gap-1">
         <div className="text-xs text-muted-foreground">Bound agents</div>

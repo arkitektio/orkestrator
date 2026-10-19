@@ -4,7 +4,12 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import * as z from 'zod';
 
 const loaded = vi.hoisted(() => vi.fn());
-const options = vi.hoisted(() => ({search: vi.fn(async () => [] as {value: string; label: string}[])}));
+const options = vi.hoisted(() => ({
+  search: vi.fn(async (_request: Record<string, unknown>) => [] as {value: string; label: string}[]),
+  honoursRequires: false,
+}));
+// The action input the picker fills, when a test gives it one.
+const port = vi.hoisted(() => ({value: undefined as unknown}));
 const service = vi.hoisted(() => ({
   run: vi.fn(async (_query: string, _variables: Record<string, unknown>) => ({
     options: [{value: 7, label: 'cells.zarr', description: 'c[0:1]'}, {value: null}],
@@ -14,6 +19,12 @@ const service = vi.hoisted(() => ({
 vi.mock('@/core/modules/hooks/useStructureOptions', () => ({
   useStructureOptions: (identifier: string) =>
     identifier === '@mikro/arraydataset' ? options.search : undefined,
+  useOptionSourceHonoursRequires: (identifier: string) =>
+    identifier === '@mikro/arraydataset' && options.honoursRequires,
+}));
+vi.mock('../../runtime', async importOriginal => ({
+  ...(await importOriginal<typeof import('../../runtime')>()),
+  useBlokPort: () => port.value,
 }));
 vi.mock('@/core/modules/hooks/useServiceQuery', () => ({
   useServiceQuery: (ward: string | undefined) => (query: string, variables: Record<string, unknown>) =>
@@ -154,6 +165,45 @@ describe('StructurePicker', () => {
 
     expect(screen.getByText(/No picker available for @nobody\/thing/)).toBeInTheDocument();
     expect(screen.queryByTestId('picker')).toBeNull();
+  });
+});
+
+describe('StructurePicker answered by the owning module', () => {
+  const REQUIRES = [{key: '@mikro/n_channels', operator: 'GTE', value: 2}];
+  afterEach(() => {
+    port.value = undefined;
+    options.honoursRequires = false;
+  });
+
+  it("hands a source that honours them the input's constraints, and shows them", async () => {
+    options.search.mockClear();
+    options.honoursRequires = true;
+    port.value = {identifier: '@mikro/arraydataset', requires: REQUIRES};
+    renderBlokDocument(catalog, picker(), {form: {image: null}});
+
+    fireEvent.click(screen.getByText('list'));
+    await vi.waitFor(() => expect(options.search).toHaveBeenCalled());
+
+    expect(options.search).toHaveBeenLastCalledWith({search: 'cells', requires: REQUIRES});
+    expect(JSON.parse(screen.getByTestId('picker').dataset.requires ?? 'null')).toEqual(REQUIRES);
+  });
+
+  it('resolves a held value by its id alone', () => {
+    options.search.mockClear();
+    options.honoursRequires = true;
+    port.value = {identifier: '@mikro/arraydataset', requires: REQUIRES};
+    renderBlokDocument(catalog, picker(), {form: {image: null}});
+
+    fireEvent.click(screen.getByText('resolve'));
+
+    expect(options.search).toHaveBeenLastCalledWith({values: ['42']});
+  });
+
+  it('shows no constraints for a source that cannot narrow by them', () => {
+    port.value = {identifier: '@mikro/arraydataset', requires: REQUIRES};
+    renderBlokDocument(catalog, picker(), {form: {image: null}});
+
+    expect(screen.getByTestId('picker').dataset.requires).toBe('null');
   });
 });
 

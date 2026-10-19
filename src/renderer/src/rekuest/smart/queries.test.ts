@@ -33,6 +33,17 @@ describe("query variables", () => {
     });
   });
 
+  it("keep only one app's actions, or leave them out", () => {
+    expect(actionsVariables(demands.single, { app: "plugin_engine" }).filters).toEqual({
+      demands: demands.single,
+      appIdentifier: "plugin_engine",
+    });
+    expect(actionsVariables(demands.single, { exceptApp: "plugin_engine" }).filters).toEqual({
+      demands: demands.single,
+      NOT: { appIdentifier: "plugin_engine" },
+    });
+  });
+
   it("are deep-equal across calls (the cache-hit precondition)", () => {
     expect(actionsVariables(buildDemands({ objects: [{ identifier: "@mikro/image", id: "2" }] }).single)).toEqual(
       actionsVariables(demands.single),

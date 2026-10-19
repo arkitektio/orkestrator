@@ -3,6 +3,7 @@ import { CreateShortcutDialog } from "./components/dialogs/CreateShortcutDialog"
 import { AssignDialog } from "./forms/assign/AssignForm";
 import { ExportToFileDialog } from "./dialogs/ExportToFileDialog";
 import { FireTriggerDialog } from "./dialogs/FireTriggerDialog";
+import { ForkBlokDialog } from "./dialogs/ForkBlokDialog";
 import { ReplyerAssignForm } from "./dialogs/ReplyerAssignForm";
 import { ReportBugDialog } from "./dialogs/ReportBugDialog";
 import { RerunLostDialog } from "./dialogs/RerunLostDialog";
@@ -34,6 +35,8 @@ export const REKUEST_DIALOGS = {
   importwiregram: prefersSize("medium", ImportWiregramDialog),
   exportwiregram: prefersSize("medium", ExportWiregramDialog),
   updateagent: UpdateAgentForm,
+  // a blok an app provides → a custom copy to edit or bind to other agents
+  forkblok: prefersSize("small", ForkBlokDialog),
   // a failed task → lok's report form, prefilled
   reportbug: ReportBugDialog,
   // a LOST task that may already have acted → confirm before running again
