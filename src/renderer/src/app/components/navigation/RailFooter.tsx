@@ -1,5 +1,5 @@
 import { Arkitekt } from "@/core/connection/arkitekt/host";
-import { AgentEngageToggle } from "@/core/agent/AgentEngageToggle";
+import { AgentEngageIcon, AgentEngageItem, useAgentEngage } from "@/core/agent/AgentEngageToggle";
 import ProfileSwitcher from "@/app/components/profile/ProfileSwitcher";
 import { profileDetail, profileTitle } from "@/core/connection/profile/ui/profileLabels";
 import { ProfileBrandAvatar } from "@/core/connection/profile/ui/ProfileBrandAvatar";
@@ -11,11 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/core/ui/dropdown-menu";
-import { DroppableNavLink } from "@/core/ui/link";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
 import { cn } from "@/core/util/utils";
 import { ChevronsUpDown, Laptop, Network, Server, Settings, ShieldCheck, UsersRound, Waypoints } from "lucide-react";
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 import { pathTitle, type TunnelPath } from "@/core/connection/mesh/connectionPath";
 import { useConnectionPath } from "@/core/connection/mesh/useConnectionPath";
@@ -84,6 +83,8 @@ export const RailFooter = () => {
   const autoLoggingIn = Arkitekt.useIsAutoLoggingIn();
   const parkSession = Arkitekt.useDisconnect();
   const path = useConnectionPath();
+  const agent = useAgentEngage();
+  const navigate = useNavigate();
   const tunnel = path.kind === "direct" ? undefined : path;
   const style = tunnel && PATH_STYLE[tunnel.kind];
 
@@ -110,7 +111,7 @@ export const RailFooter = () => {
   return (
     // `app-no-drag`: the rail around it is a window-drag region, which would
     // otherwise swallow every click on the switcher and the settings link.
-    <div className="app-no-drag flex w-full min-w-0 shrink-0 items-end gap-1 px-2 pb-2">
+    <div className="app-no-drag flex w-full min-w-0 shrink-0 px-2 pb-2">
       {/* When a tunnel carries the traffic the avatar wears its colour, and
           hovering folds a note out above the switcher — in place, growing
           upward, after a beat so a pointer passing by does not jolt the rail.
@@ -189,10 +190,22 @@ export const RailFooter = () => {
             )}
           </span>
 
+          {/* The agent's state stays in sight; switching it is in the menu. */}
+          {agent && (
+            <>
+              <AgentEngageIcon state={agent.state} />
+              <span className="sr-only">{agent.label}</span>
+            </>
+          )}
+
           <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60 transition-colors group-hover:text-foreground" />
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent side="top" align="start" className="w-64 border-border">
+        <DropdownMenuContent
+          side="top"
+          align="start"
+          className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-64 border-border"
+        >
           <DropdownMenuLabel className="py-1 text-xs font-normal text-muted-foreground">
             Switch organization
           </DropdownMenuLabel>
@@ -202,6 +215,19 @@ export const RailFooter = () => {
           <ProfileSwitcher />
 
           <DropdownMenuSeparator />
+
+          {/* Whether apps you run may ask you something here (the agent). */}
+          <AgentEngageItem />
+
+          {/* Settings is a destination: appearance (light / dark) lives there
+              too, not here. */}
+          <DropdownMenuItem
+            className="cursor-pointer gap-2 text-xs"
+            onSelect={() => navigate("/settings")}
+          >
+            <Settings className="h-3.5 w-3.5" />
+            Settings
+          </DropdownMenuItem>
 
           {/* Adding an account hands off to an external browser for up to a
               minute, which a menu that closes on every click cannot host — so
@@ -219,31 +245,6 @@ export const RailFooter = () => {
         </DropdownMenuContent>
       </DropdownMenu>
       </div>
-
-      {/* Whether apps you run may ask you something here (the agent). */}
-      <AgentEngageToggle />
-
-      {/* Settings is a destination, not a menu item — one gear, no nesting.
-          Appearance (light / dark) lives there too, not here. */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DroppableNavLink to="/settings" aria-label="Settings">
-            {({ isActive }) => (
-              <span
-                className={cn(
-                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
-                  isActive
-                    ? "bg-background text-foreground"
-                    : "text-muted-foreground hover:bg-background hover:text-foreground",
-                )}
-              >
-                <Settings className="h-4 w-4" />
-              </span>
-            )}
-          </DroppableNavLink>
-        </TooltipTrigger>
-        <TooltipContent side="top">Settings</TooltipContent>
-      </Tooltip>
     </div>
   );
 };

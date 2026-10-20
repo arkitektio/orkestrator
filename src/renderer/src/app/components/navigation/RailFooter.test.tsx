@@ -32,24 +32,11 @@ vi.mock("@/app/components/profile/ProfileSwitcher", () => ({
   default: () => <div>switcher</div>,
 }));
 
-// The agent's engage toggle has its own test; it needs the settings store.
-vi.mock("@/core/agent/AgentEngageToggle", () => ({ AgentEngageToggle: () => null }));
-
-// `DroppableNavLink` navigates, so it needs a router; this test is about the
-// footer, not navigation or drag-and-drop.
-vi.mock("@/core/ui/link", () => ({
-  DroppableNavLink: ({
-    to,
-    children,
-    ...props
-  }: {
-    to: string;
-    children: (state: { isActive: boolean }) => React.ReactNode;
-  }) => (
-    <a href={to} {...props}>
-      {children({ isActive: false })}
-    </a>
-  ),
+// The agent's engage item has its own test; it needs the settings store.
+vi.mock("@/core/agent/AgentEngageToggle", () => ({
+  useAgentEngage: () => ({ engaged: true, state: "connected", label: "Engaged", toggle: () => {} }),
+  AgentEngageIcon: ({ state }: { state: string }) => <span data-testid="agent-icon" data-agent={state} />,
+  AgentEngageItem: () => <div>Agent</div>,
 }));
 
 import { RailFooter } from "./RailFooter";
@@ -175,14 +162,18 @@ describe("RailFooter", () => {
     expect(await screen.findByText("Switch organization")).toBeInTheDocument();
   }, 20000);
 
-  it("puts settings beside it as a single gear, not a menu item", () => {
+  it("keeps the agent's state in the row and its switch, with settings, in the menu", async () => {
     activeProfile.mockReturnValue(profile({ organizationName: "Acme Labs" }));
     renderFooter();
 
-    const gear = screen.getByLabelText("Settings");
-    expect(gear).toBeInTheDocument();
-    expect(gear).toHaveAttribute("href", "/settings");
-  });
+    expect(screen.getByTestId("agent-icon")).toHaveAttribute("data-agent", "connected");
+    expect(screen.queryByText("Settings")).toBeNull();
+
+    await userEvent.click(screen.getByText("Acme Labs"));
+
+    expect(await screen.findByText("Agent")).toBeInTheDocument();
+    expect(screen.getByText("Settings")).toBeInTheDocument();
+  }, 20000);
 
   describe("how services are reached", () => {
     const frame = () => document.querySelector("[data-path]");

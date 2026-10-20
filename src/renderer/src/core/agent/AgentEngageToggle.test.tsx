@@ -7,22 +7,31 @@ const setSettings = vi.hoisted(() => vi.fn());
 vi.mock("@/core/settings/store/SettingsContext", () => ({
   useSettings: () => ({ settings: settings.current, setSettings }),
 }));
-vi.mock("@/core/ui/tooltip", () => ({
-  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  TooltipContent: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+// A menu item outside a menu: a plain button that keeps `onSelect`.
+vi.mock("@/core/ui/dropdown-menu", () => ({
+  DropdownMenuItem: ({
+    onSelect,
+    children,
+    ...props
+  }: { onSelect: (event: { preventDefault: () => void }) => void; children: React.ReactNode }) => (
+    <button type="button" onClick={() => onSelect({ preventDefault: () => {} })} {...props}>
+      {children}
+    </button>
+  ),
 }));
 
 import { AgentContext } from "./AgentProvider";
-import { AgentEngageToggle } from "./AgentEngageToggle";
+import { AgentEngageItem } from "./AgentEngageToggle";
 import { resetAgentState, setAgentState } from "./store";
 
 const renderIn = (disabled: boolean) =>
   render(
     <AgentContext.Provider value={{ agent: null, disabled }}>
-      <AgentEngageToggle />
+      <AgentEngageItem />
     </AgentContext.Provider>,
   );
+
+const tower = () => document.querySelector("[data-agent]");
 
 beforeEach(() => {
   setSettings.mockReset();
@@ -30,11 +39,12 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe("AgentEngageToggle", () => {
+describe("AgentEngageItem", () => {
   it("engages a disengaged window", () => {
     settings.current = { startAgent: false, other: 1 };
     renderIn(false);
 
+    expect(tower()).toHaveAttribute("data-agent", "stopped");
     screen.getByRole("button", { name: "Engage" }).click();
 
     expect(setSettings).toHaveBeenCalledWith({ startAgent: true, other: 1 });
@@ -45,7 +55,8 @@ describe("AgentEngageToggle", () => {
     setAgentState({ assignments: [], errors: [], connected: true });
     renderIn(false);
 
-    expect(screen.getByText("Engaged: apps you run can ask you here")).toBeTruthy();
+    expect(screen.getByTitle("Engaged: apps you run can ask you here")).toBeTruthy();
+    expect(tower()).toHaveAttribute("data-agent", "connected");
     screen.getByRole("button", { name: "Disengage" }).click();
     expect(setSettings).toHaveBeenCalledWith({ startAgent: false });
   });
