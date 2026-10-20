@@ -32,6 +32,9 @@ vi.mock("@/app/components/profile/ProfileSwitcher", () => ({
   default: () => <div>switcher</div>,
 }));
 
+// The agent's engage toggle has its own test; it needs the settings store.
+vi.mock("@/core/agent/AgentEngageToggle", () => ({ AgentEngageToggle: () => null }));
+
 // `DroppableNavLink` navigates, so it needs a router; this test is about the
 // footer, not navigation or drag-and-drop.
 vi.mock("@/core/ui/link", () => ({
