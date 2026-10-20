@@ -82,6 +82,31 @@ describe("resolveServiceAlias", () => {
     expect(probed).toEqual(["old.example.org", PUBLIC.host]);
   });
 
+  it("narrates every probe and the wait for the mesh, in order", async () => {
+    vi.mocked(checkAliasHealth).mockImplementation(async (a, timeout, _controller, onFailure) => {
+      if (a.host === MESH.host) return true;
+      onFailure?.({ kind: "timeout", timeoutMs: timeout });
+      return false;
+    });
+    const events: string[] = [];
+    await resolveServiceAlias({
+      instance: instance(MESH, PUBLIC),
+      controller: new AbortController(),
+      routed,
+      onAttempt: (event) =>
+        events.push(`${event.state}:${event.alias.host}:${event.route}${event.state === "failed" ? `:${event.failure?.kind}` : ""}`),
+      onMeshWait: (waiting) => events.push(waiting ? "wait" : "go"),
+    });
+    expect(events).toEqual([
+      `trying:${PUBLIC.host}:direct`,
+      `failed:${PUBLIC.host}:direct:timeout`,
+      "wait",
+      "go",
+      `trying:${MESH.host}:mesh`,
+      `ok:${MESH.host}:mesh`,
+    ]);
+  });
+
   it("names the service when nothing answers", async () => {
     answering();
     await expect(

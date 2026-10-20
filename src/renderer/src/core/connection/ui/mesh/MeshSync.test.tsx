@@ -14,7 +14,7 @@ vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
 }));
 
 const { MeshSync } = await import("./MeshSync");
-const { joinAndPark } = await import("@/core/connection/mesh/profileMesh");
+const { demandMesh, joinAndPark, releaseMesh, resetMeshDemands } = await import("@/core/connection/mesh/profileMesh");
 
 const MESH = { id: "lab", label: "Lab", controlUrl: "https://mesh.arkitekt.live", hosts: [], enabled: true };
 const alias = (host: string) => ({ id: host, host, ssl: true, challenge: "ht" });
@@ -34,6 +34,7 @@ let claim: ReturnType<typeof vi.fn>;
 const claimed = () => claim.mock.calls.map(([request]) => request.mesh?.id ?? null);
 
 beforeEach(() => {
+  resetMeshDemands();
   claim = vi.fn(async () => ({ sidecar: { state: "ready", version: "t" }, meshes: [] }));
   (window as unknown as { api: unknown }).api = {
     mesh: {
@@ -55,18 +56,22 @@ describe("MeshSync", () => {
     expect(claimed()).toEqual([null]);
   });
 
-  it("claims the mesh when the hub has an address on it", () => {
+  it("does not start the mesh just because the hub has an address on it", () => {
     state.profile = profileWith(["mikro.lab.mesh.arkitekt.live"]);
     render(<MeshSync />);
-    expect(claimed()).toEqual(["lab"]);
+    expect(claimed()).toEqual([null]);
   });
 
-  it("starts the mesh by itself once the hub's fakts gain such an address", () => {
-    state.profile = profileWith(["mikro.example.org"]);
-    const { rerender } = render(<MeshSync />);
+  it("claims the mesh while something demands it, and lets it go after", () => {
     state.profile = profileWith(["mikro.example.org", "mikro.lab.mesh.arkitekt.live"]);
-    rerender(<MeshSync />);
+    render(<MeshSync />);
+    act(() => demandMesh("lab", "mikro"));
+    act(() => demandMesh("lab", "self"));
     expect(claimed()).toEqual([null, "lab"]);
+    act(() => releaseMesh("lab", "mikro"));
+    expect(claimed()).toEqual([null, "lab"]);
+    act(() => releaseMesh("lab", "self"));
+    expect(claimed()).toEqual([null, "lab", null]);
   });
 
   it("keeps claiming a mesh while it joins once, then lets it go", async () => {

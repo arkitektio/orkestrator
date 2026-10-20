@@ -8,25 +8,35 @@ const cancelled = (controller: AbortController): Error =>
     ? controller.signal.reason
     : new DOMException("The alias check was cancelled", "AbortError");
 
+/** Why an alias said "no": it took too long, could not be reached, or answered with an error. */
+export type AliasFailure = { kind: "timeout"; timeoutMs: number } | { kind: "unreachable" } | { kind: "status"; status: number };
+
 /**
  * Does this alias answer its challenge? A network error or a timeout is an
  * answer too — "no" — so a caller can move on to the next alias rather than
  * treating one unreachable address as the service being down. Only the
- * caller's own cancel throws.
+ * caller's own cancel throws. `onFailure` hears why a "no" was one.
  */
 export const checkAliasHealth = async (
   alias: Alias,
   timeout: number,
   controller: AbortController,
+  onFailure?: (failure: AliasFailure) => void,
 ): Promise<boolean> => {
   const url = aliasToHttpPath(alias, alias.challenge);
   try {
     const response = await fetchWithTimeout(url, { timeout, controller });
-    if (!response.ok) console.warn(`[alias] ${url} answered ${response.status}`);
+    if (!response.ok) {
+      console.warn(`[alias] ${url} answered ${response.status}`);
+      onFailure?.({ kind: "status", status: response.status });
+    }
     return response.ok;
   } catch (error) {
     if (controller.signal.aborted) throw cancelled(controller);
     console.warn(`[alias] ${url} did not answer:`, error instanceof Error ? error.message : error);
+    // `fetchWithTimeout` aborts with this message when its own timer fires.
+    const timedOut = error instanceof Error && error.message === "Timeout Error";
+    onFailure?.(timedOut ? { kind: "timeout", timeoutMs: timeout } : { kind: "unreachable" });
     return false;
   }
 };

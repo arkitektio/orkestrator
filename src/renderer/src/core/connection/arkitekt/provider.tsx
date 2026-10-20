@@ -6,8 +6,27 @@ import { resolveServiceAlias } from "./alias/serviceAlias";
 import { isMeshRouted, NO_MESH_GATE, watchMesh, type MeshGate } from "@/core/connection/mesh/meshGate";
 import { ArkitektContext } from "./context";
 import { useConnectionStatus } from "./hooks";
-import { claimProfileMesh, hintedProfileMesh, joinAndPark, meshForIdentity, meshFromGrant } from "@/core/connection/mesh/profileMesh";
+import {
+  demandMesh,
+  hintedProfileMesh,
+  joinAndPark,
+  meshForIdentity,
+  meshFromGrant,
+  releaseMesh,
+  releaseOtherMeshes,
+} from "@/core/connection/mesh/profileMesh";
+import { meshFirewallGate } from "@/core/connection/mesh/firewallNotice";
 import { meshNeeded } from "@/core/connection/mesh/meshNeed";
+import {
+  connectionProgress,
+  endServiceCheck,
+  endSession,
+  recordAttempt,
+  sessionStep,
+  startServiceCheck,
+  startSession,
+  waitForMesh,
+} from "@/core/connection/progress/store";
 import { flow } from "./fakts/flow";
 import { grantHintForProfile } from "./fakts/grantHint";
 import { Manifest } from "./fakts/manifestSchema";
@@ -120,6 +139,13 @@ type StorageProvider = () => Promise<Storage>;
  * what is actually persisted a microtask later (`adoptPersistedBook`), which is
  * what corrects a profile another window removed in the meantime.
  */
+/** How the connecting surfaces name a profile: its deployment and organisation. */
+const sessionLabels = (profile: StoredProfile) => ({
+  deployment: profile.session.fakts.self?.deployment_name || profile.label.endpointName || undefined,
+  profileLabel: profile.label.organizationName || undefined,
+  endpointUrl: profile.session.endpoint.base_url,
+});
+
 const seedProfileBook = (storageProvider?: StorageProvider): StoredProfileBook => {
   if (storageProvider) return emptyProfileBook();
   if (typeof window === "undefined" || typeof localStorage === "undefined") {
@@ -493,6 +519,13 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
    * keeps two racing switches from both landing.
    */
   const bringUpGenerationRef = useRef(0);
+  /**
+   * Cancels the alias probes of the session that is live. Replaced when a
+   * new session goes live (`goLive`), not when a bring-up merely starts: a
+   * switch keeps the current session — and its checks — until the next one
+   * is proven.
+   */
+  const probeControllerRef = useRef(new AbortController());
   const nextBringUp = () => ++bringUpGenerationRef.current;
   const isCurrentBringUp = (generation: number) => bringUpGenerationRef.current === generation;
 
@@ -545,11 +578,12 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
   );
 
   /**
-   * The gate for the active profile's mesh — one per mesh, made on first use
-   * so the very first check of a launch already waits on it, and replaced
-   * when the profile (or its mesh switch) changes. When the node comes (back)
-   * up, it caches the mesh's MagicDNS suffix on the profile and re-checks
-   * every service that failed meanwhile.
+   * The gate for the active profile's mesh — one per mesh, made when the
+   * mesh is first DEMANDED (a check reached its mesh addresses), so its clock
+   * starts with the claim rather than with the launch; replaced when the
+   * profile (or its mesh switch) changes, and when it gave up and a check
+   * asks again. When the node comes (back) up, it caches the mesh's MagicDNS
+   * suffix on the profile and re-checks every service that failed meanwhile.
    */
   const meshGateRef = useRef<MeshGate>(NO_MESH_GATE);
   const validateServicesRef = useRef<(keys: string[]) => Promise<void>>(async () => {});
@@ -557,10 +591,14 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     (mesh: ProfileMesh | undefined): MeshGate => {
       const wanted = mesh?.enabled ? mesh : undefined;
       const current = meshGateRef.current;
-      if (current.meshId === (wanted?.id ?? null)) return current;
+      const outcome = current.outcome();
+      // A gate that gave up is not reused: a retry waits for the node again.
+      const spent = (outcome === "timeout" || outcome === "failed") && !current.isRunning();
+      if (current.meshId === (wanted?.id ?? null) && !spent) return current;
       current.dispose();
 
-      const gate = watchMesh(wanted);
+      // The claim waits for Windows' firewall explainer; so does the clock.
+      const gate = watchMesh(wanted, { clockStarts: meshFirewallGate(true) ?? Promise.resolve() });
       if (wanted) {
         gate.onRunning((status) => {
           const suffix = status.magicDnsSuffix;
@@ -583,7 +621,25 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
     },
     [store, persistBook],
   );
-  useEffect(() => () => meshGateRef.current.dispose(), []);
+  // A bring-up's narration ends however it ends — live, failed or cancelled:
+  // every one of those settles the activity.
+  useEffect(
+    () =>
+      store.subscribe((next, previous) => {
+        if (next.activity.kind === "settled" && previous.activity.kind !== "settled") endSession();
+      }),
+    [store],
+  );
+
+  useEffect(() => {
+    // A StrictMode re-mount comes back after the cleanup below ran.
+    if (probeControllerRef.current.signal.aborted) probeControllerRef.current = new AbortController();
+    return () => {
+      // Cancel first: disposing the gate releases every walk waiting on it.
+      probeControllerRef.current.abort();
+      meshGateRef.current.dispose();
+    };
+  }, []);
 
   /**
    * Check one service's alias and bring its runtime state in line. Resolves
@@ -617,6 +673,8 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       }
 
       const wasReady = serviceState.status === "ready" && !!serviceState.service;
+      const controller = probeControllerRef.current;
+      startServiceCheck(serviceKey, runId);
       store.setState((current) => ({
         ...deriveRuntimeState(current, {
           serviceStateOverrides: {
@@ -632,19 +690,33 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         current.profileBook.activeProfileId === profileId;
 
       try {
-        // Aliases behind the profile's mesh wait for its node; the rest are
-        // checked at once (`resolveServiceAlias`).
-        const mesh = profileId ? state.profileBook.profiles[profileId]?.mesh : undefined;
-        // No address of this hub on the mesh: its node is parked, and nothing
-        // should wait on it.
-        const gate = meshGateFor(meshNeeded(session.fakts, mesh) ? mesh : undefined);
+        // Aliases behind the profile's mesh are tried last, and only then is
+        // the mesh started (`demandMesh`); the rest are checked at once
+        // (`resolveServiceAlias`). A hub with no real address on the mesh
+        // treats every alias as direct — bare labels included.
+        const profileMesh = profileId ? state.profileBook.profiles[profileId]?.mesh : undefined;
+        const mesh = meshNeeded(session.fakts, profileMesh) ? profileMesh : undefined;
+        const routed = (alias: Alias) => isMeshRouted(alias.host, mesh);
         const resolved = await resolveServiceAlias({
           instance,
           cached: session.aliasMap.aliasMap[serviceKey],
           timeout: serviceBuilderMap[serviceKey]?.timeout ?? 5000,
-          controller: new AbortController(),
-          routed: (alias) => isMeshRouted(alias.host, mesh),
-          meshUp: () => (gate.isRunning() ? Promise.resolve() : gate.ready.then(() => undefined)),
+          controller,
+          routed,
+          meshUp: () => {
+            if (!mesh?.enabled) return Promise.resolve();
+            demandMesh(mesh.id, serviceKey);
+            const gate = meshGateFor(mesh);
+            return gate.isRunning() ? Promise.resolve() : gate.ready.then(() => undefined);
+          },
+          onAttempt: ({ alias, route, state: attempt, ...rest }) =>
+            recordAttempt(serviceKey, runId, {
+              host: alias.host,
+              route,
+              state: attempt,
+              failure: "failure" in rest ? rest.failure : undefined,
+            }),
+          onMeshWait: (waiting) => waitForMesh(serviceKey, runId, waiting),
         });
 
         let changed = false;
@@ -725,9 +797,19 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         });
 
         supersededService?.dispose?.();
+        // Answered directly: this service no longer needs the mesh. One that
+        // lives on the mesh keeps its demand, and so keeps the mesh up.
+        if (mesh && !routed(resolved) && validationRunIdsRef.current[serviceKey] === runId) {
+          releaseMesh(mesh.id, serviceKey);
+        }
+        // Done and healthy: nothing left to narrate. A failed check keeps its
+        // attempts, so the page that says so can list what was tried.
+        endServiceCheck(serviceKey, runId);
         dlog("[ArkitektProvider] checkService succeeded:", serviceKey, "alias changed:", changed);
         return changed && profileId ? { profileId, serviceKey, alias: resolved } : undefined;
       } catch (error) {
+        // Its session was replaced mid-walk: nothing to report, a newer check owns the service.
+        if (controller.signal.aborted) return undefined;
         const message = error instanceof Error ? error.message : "Unable to validate service";
         console.error("[ArkitektProvider] checkService failed:", serviceKey, message, error);
 
@@ -814,6 +896,23 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
    */
   const goLive = useCallback(
     (session: StoredArkitektSession, manifest: EnhancedManifest): Promise<void> => {
+      // Another profile's mesh is not wanted by this session; lok behind this
+      // one's mesh wants it from the start (the lok client is not
+      // alias-checked, so nothing else would ask for it).
+      const book = store.getState().profileBook;
+      const profileMesh = book.activeProfileId ? book.profiles[book.activeProfileId]?.mesh : undefined;
+      const mesh = meshNeeded(session.fakts, profileMesh) ? profileMesh : undefined;
+      releaseOtherMeshes(mesh?.id);
+      if (meshGateRef.current.meshId && meshGateRef.current.meshId !== mesh?.id) {
+        meshGateRef.current.dispose();
+        meshGateRef.current = NO_MESH_GATE;
+      }
+      if (mesh?.enabled && isMeshRouted(session.fakts.self.alias.host, mesh)) demandMesh(mesh.id, "self");
+      else if (mesh) releaseMesh(mesh.id, "self");
+      // The previous session's probes have nobody left to answer to.
+      probeControllerRef.current.abort();
+      probeControllerRef.current = new AbortController();
+
       hydrateConnection(
         session,
         manifest,
@@ -824,7 +923,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       );
       return validateServices(Object.keys(serviceBuilderMap));
     },
-    [hydrateConnection, validateServices, serviceBuilderMap],
+    [hydrateConnection, validateServices, serviceBuilderMap, store],
   );
 
   /** Nothing live: tear the connection down and settle. */
@@ -882,6 +981,10 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         autoLoginError: undefined,
         sessionOnlyProfileId: null,
       });
+      // The caller may already have narrated finding the deployment.
+      const labels = { deployment: endpoint.name, endpointUrl: endpoint.base_url };
+      if (connectionProgress.getSnapshot().session?.kind === "granting") sessionStep("register", labels);
+      else startSession("granting", "register", labels);
 
       try {
         const enhancedManifest = await resolveEnhancedManifest();
@@ -900,6 +1003,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
           hint,
           requestMeshKey: hintedMesh?.enabled !== false,
           onVerificationUri,
+          onStep: (step) => sessionStep(step),
         });
         dlog("[ArkitektProvider] connect: granted, services:", Object.keys(fakts.instances || {}));
 
@@ -915,15 +1019,10 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
           : undefined;
         const previousMesh = meshForIdentity(store.getState().profileBook, finalId) ?? hintedMesh;
         const mesh = meshFromGrant(endpoint, grantedMesh, previousMesh);
-        // A hub with an address on the mesh gets its node now; one without
-        // still joins once — the key is one-shot, and skipping the join would
-        // cost a new sign-in the day the hub gains such an address — and is
-        // then parked.
-        if (mesh?.enabled && grantedMesh) {
-          void (meshNeeded(fakts, mesh)
-            ? claimProfileMesh(mesh, grantedMesh.authKey)
-            : joinAndPark(mesh, grantedMesh.authKey));
-        }
+        // The key is one-shot: the node joins with it now (its identity lands
+        // on disk) and is then parked. A service check that needs the mesh
+        // demands it meanwhile, which keeps it running past the park.
+        if (mesh?.enabled && grantedMesh) void joinAndPark(mesh, grantedMesh.authKey);
 
         // No aliases yet: the checks below resolve them, once, instead of a
         // probe here and a second one straight after hydrating.
@@ -940,6 +1039,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         // newer bring-up decides what is live.
         if (!isCurrentBringUp(generation)) return;
 
+        sessionStep("open");
         goLive(nextSession, enhancedManifest)
           .then(() => reportChecks(endpoint.base_url))
           .catch((error) => console.warn("[ArkitektProvider] could not report alias checks:", error));
@@ -1037,6 +1137,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
       // Set BEFORE the first persist: `persistBook` reads this to decide what
       // to leave out of the write, and the rotation below writes.
       const generation = nextBringUp();
+      startSession("switching", "refresh", sessionLabels(profile));
       store.setState({
         activity: switching(profileId),
         autoLoginError: undefined,
@@ -1068,6 +1169,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
           return;
         }
 
+        sessionStep("open");
         void goLive(nextSession, manifest);
       } catch (error) {
         const { kind, message } = describeRefreshFailure(error, profile);
@@ -1303,6 +1405,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         // spending the same refresh token a second time. The manifest's IPC
         // round trip runs alongside; nothing in the rotation needs it.
         const generation = nextBringUp();
+        startSession("booting", "refresh", sessionLabels(active));
         const { manifest: enhancedManifest, session: nextSession } = await reviveStoredProfile(
           active,
           (current, s) => updateProfileSession(markProfileOk(current, active.id), active.id, s),
@@ -1310,6 +1413,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         // A grant or a switch the user started meanwhile wins.
         if (!isCurrentBringUp(generation)) return;
 
+        sessionStep("open");
         void goLive(nextSession, enhancedManifest);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Auto-login failed";

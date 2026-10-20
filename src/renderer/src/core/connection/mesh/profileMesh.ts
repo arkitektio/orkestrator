@@ -100,6 +100,66 @@ export const claimProfileMesh = async (mesh: ProfileMesh | undefined, authKey?: 
   }
 };
 
+/* ──────────────────────────── on demand ───────────────────────────────── */
+
+/**
+ * Who needs which mesh running right now. The mesh is not started because
+ * the hub HAS an address on it — only when something is about to use one: a
+ * service whose direct addresses all failed, a service that last answered
+ * through the mesh, or `"self"` when lok itself sits behind it. Hubs with
+ * working direct addresses never start it (and never get Windows' firewall
+ * question).
+ *
+ * `MeshSync` claims a mesh while anyone demands it (or it is joining). A
+ * service that ends up on a direct address releases its demand; one that
+ * lives on the mesh keeps it, and so keeps the mesh up.
+ */
+const demands = new Map<string, Set<string>>();
+const demandListeners = new Set<() => void>();
+let demandSnapshot: ReadonlyMap<string, readonly string[]> = new Map();
+
+const publishDemands = () => {
+  demandSnapshot = new Map([...demands].filter(([, by]) => by.size > 0).map(([id, by]) => [id, [...by].sort()]));
+  demandListeners.forEach((listener) => listener());
+};
+
+export const demandedMeshes = {
+  subscribe: (listener: () => void) => {
+    demandListeners.add(listener);
+    return () => demandListeners.delete(listener);
+  },
+  getSnapshot: (): ReadonlyMap<string, readonly string[]> => demandSnapshot,
+};
+
+export const demandMesh = (meshId: string, by: string) => {
+  const current = demands.get(meshId) ?? new Set<string>();
+  if (current.has(by)) return;
+  demands.set(meshId, current.add(by));
+  publishDemands();
+};
+
+export const releaseMesh = (meshId: string, by: string) => {
+  if (!demands.get(meshId)?.delete(by)) return;
+  publishDemands();
+};
+
+/** A new session: whatever another profile's mesh was wanted for is moot. */
+export const releaseOtherMeshes = (keep: string | undefined) => {
+  let changed = false;
+  for (const id of [...demands.keys()]) {
+    if (id === keep) continue;
+    demands.delete(id);
+    changed = true;
+  }
+  if (changed) publishDemands();
+};
+
+/** Tests only. */
+export const resetMeshDemands = () => {
+  demands.clear();
+  publishDemands();
+};
+
 /* ─────────────────────── join once, then park ─────────────────────────── */
 
 /**

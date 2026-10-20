@@ -29,6 +29,10 @@ import { UpdateIsland } from "@/core/updates/UpdateIsland";
 import { VoiceIsland } from "@/core/voice";
 import { useRoles } from "@/core/connection/roles";
 import { RoleOverrideIsland } from "@/core/connection/ui/RoleOverrideIsland";
+import { describeServiceStatus } from "@/core/connection/progress/describe";
+import { useMeshProgress, useServiceProgress } from "@/core/connection/progress/hooks";
+import { ConnectionSteps } from "@/core/connection/ui/progress/ConnectionSteps";
+import { serviceSteps } from "@/core/connection/ui/progress/serviceSteps";
 
 const RekuestGuard = serviceGuard("rekuest");
 
@@ -42,6 +46,8 @@ export type INavigationBarProps = {
 const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
   const moduleState = Arkitekt.useModuleState(moduleKey);
   const serviceState = Arkitekt.useServiceState(moduleState?.definition.key ?? "");
+  const progress = useServiceProgress(moduleState?.definition.key);
+  const meshProgress = useMeshProgress();
 
   if (!moduleState) {
     return (
@@ -59,6 +65,7 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
     );
   }
 
+  const steps = serviceSteps({ progress, mesh: meshProgress });
   const connectedAlias = serviceState.alias;
   const allAliases = serviceState.instance?.aliases || [];
   const hasErrors = serviceState.errors.length > 0;
@@ -79,13 +86,17 @@ const ServiceConnectionInfo = ({ moduleKey }: { moduleKey: string }) => {
           {serviceState.key}
         </div>
         <div className="text-xs text-muted-foreground space-y-1">
-          <div>Status: <span className="font-medium">{serviceState.status}</span></div>
+          <div className="font-medium">{describeServiceStatus(serviceState.status, serviceState.revalidating)}</div>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
             Last checked: {lastChecked}
           </div>
         </div>
       </div>
+
+      {serviceState.status === "checking" && steps.length > 0 && (
+        <ConnectionSteps steps={steps} className="text-xs" />
+      )}
 
       {connectedAlias ? (
         <div>

@@ -20,6 +20,7 @@ export const flow = async ({
   hint,
   requestMeshKey = true,
   onVerificationUri,
+  onStep,
 }: {
   endpoint: FaktsEndpoint;
   controller: AbortController;
@@ -34,7 +35,10 @@ export const flow = async ({
   requestMeshKey?: boolean;
   /** The approval page's URL, once opened — so the caller can offer to open it again. */
   onVerificationUri?: (uri: string) => void;
+  /** Which part of the grant is running: registering, waiting for the browser, finishing. */
+  onStep?: (step: "register" | "approve" | "finishing") => void;
 }): Promise<GrantResult> => {
+  onStep?.("register");
   // 1. Device authorization (also dynamically registers our public client).
   //    A deployment with a mesh is asked for a one-shot key — unless this is
   //    a build without the mesh client, or the profile being re-approved has
@@ -55,6 +59,7 @@ export const flow = async ({
   const verificationUri = withGrantHint(authorization.verification_uri_complete, hint);
   const handle = await popOutWindowOpen(verificationUri);
   onVerificationUri?.(verificationUri);
+  onStep?.("approve");
 
   // 3. Poll the token endpoint until approved → tokens + instances
   try {
@@ -66,6 +71,7 @@ export const flow = async ({
       interval: authorization.interval,
       expiresIn: authorization.expires_in,
     });
+    onStep?.("finishing");
     // The key, if lok minted one, rides back in `result.mesh`; the caller
     // puts the mesh on the profile and uses the key once (`profileMesh.ts`).
     return result;

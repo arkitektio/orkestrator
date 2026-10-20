@@ -75,7 +75,7 @@ describe("AppShell", () => {
     render(<AppShell />);
 
     expect(screen.getByLabelText("Modules and pinned pages")).toBeInTheDocument();
-    expect(screen.getByTestId("quiet-page")).toBeInTheDocument();
+    expect(screen.getByTestId("connecting-page")).toBeInTheDocument();
     expect(screen.queryByTestId("welcome-layout")).toBeNull();
     expect(screen.queryByText("Welcome to Arkitekt")).toBeNull();
     // The page stays quiet — no route, so no module query fires early.
@@ -95,7 +95,7 @@ describe("AppShell", () => {
     expect(screen.getByText("rail")).toBe(railWhileBooting);
     expect(screen.getByText("tabs")).toBeInTheDocument();
     expect(screen.getByText("corner")).toBeInTheDocument();
-    expect(screen.queryByTestId("quiet-page")).toBeNull();
+    expect(screen.queryByTestId("connecting-page")).toBeNull();
   });
 
   it("stays in the shell when auto-login fails, and says so there", () => {
