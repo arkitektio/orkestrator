@@ -1,3 +1,10 @@
+## [4.0.2](https://github.com/arkitektio/orkestrator/compare/v4.0.1...v4.0.2) (2026-10-20)
+
+
+### Bug Fixes
+
+* **mesh:** rebuild a stuck node so a fresh join key is used ([c9add58](https://github.com/arkitektio/orkestrator/commit/c9add588fbd58f000c7906b559961f9e67a13682))
+
 ## [4.0.1](https://github.com/arkitektio/orkestrator/compare/v4.0.0...v4.0.1) (2026-10-20)
 
 
