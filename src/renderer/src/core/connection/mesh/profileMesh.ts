@@ -61,6 +61,18 @@ export const meshForIdentity = (book: StoredProfileBook, profileId: string | und
   profileId ? book.profiles[profileId]?.mesh : undefined;
 
 /**
+ * The mesh a grant re-authenticates. Once the grant has named its identity,
+ * only that profile's: the hint matches user and hub, not organisation, so the
+ * hinted profile can be the same user in another organisation — another mesh,
+ * whose node (and its state on disk) must not be handed to this one.
+ */
+export const previousMeshForGrant = (
+  book: StoredProfileBook,
+  profileId: string | undefined,
+  hinted: ProfileMesh | undefined,
+): ProfileMesh | undefined => (profileId ? meshForIdentity(book, profileId) : hinted);
+
+/**
  * The mesh a fresh grant puts on its profile: only when lok minted a key, so
  * the node is about to join with it. A re-approved profile's mesh keeps its
  * id (the key then re-authenticates the same node), its pins and its switch.

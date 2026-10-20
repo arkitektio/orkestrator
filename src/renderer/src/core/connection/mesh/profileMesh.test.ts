@@ -8,7 +8,7 @@ import {
   type StoredProfileBook,
 } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import { claimProfileMesh, hintedProfileMesh, joinAndPark, joiningMeshes,
-  meshForIdentity, meshClaimFor, meshFromGrant } from "./profileMesh";
+  meshForIdentity, meshClaimFor, meshFromGrant, previousMeshForGrant } from "./profileMesh";
 import type { MeshEvent, MeshStatusPayload } from "../../../../../main/mesh/protocol";
 
 const endpoint = {
@@ -90,6 +90,17 @@ describe("meshForIdentity", () => {
     expect(meshForIdentity(book, "a")?.id).toBe("mesh-1");
     expect(meshForIdentity(book, "nope")).toBeUndefined();
     expect(meshForIdentity(book, undefined)).toBeUndefined();
+  });
+});
+
+describe("previousMeshForGrant", () => {
+  it("never hands the hinted profile's mesh to a grant that named another organisation", () => {
+    const book = bookOf(profile("a", "u1", "h1", MESH));
+    const hinted = hintedProfileMesh(book, endpoint, { sub: "u1", hub: "h1" });
+    expect(previousMeshForGrant(book, "a", hinted)?.id).toBe("mesh-1");
+    expect(previousMeshForGrant(book, "other-org", hinted)).toBeUndefined();
+    // A grant without an identity only has the hint to go on.
+    expect(previousMeshForGrant(book, undefined, hinted)?.id).toBe("mesh-1");
   });
 });
 

@@ -10,8 +10,8 @@ import {
   demandMesh,
   hintedProfileMesh,
   joinAndPark,
-  meshForIdentity,
   meshFromGrant,
+  previousMeshForGrant,
   releaseMesh,
   releaseOtherMeshes,
 } from "@/core/connection/mesh/profileMesh";
@@ -1017,7 +1017,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
               hubId: identity.hubId,
             })
           : undefined;
-        const previousMesh = meshForIdentity(store.getState().profileBook, finalId) ?? hintedMesh;
+        const previousMesh = previousMeshForGrant(store.getState().profileBook, finalId, hintedMesh);
         const mesh = meshFromGrant(endpoint, grantedMesh, previousMesh);
         // The key is one-shot: the node joins with it now (its identity lands
         // on disk) and is then parked. A service check that needs the mesh
