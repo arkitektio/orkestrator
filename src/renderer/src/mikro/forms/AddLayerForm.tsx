@@ -1,4 +1,5 @@
 import { MikroGuard } from "@/mikro/api/funcs";
+import { useDialogError } from "@/core/dialogs/DialogError";
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { ChoicesField } from "@/core/forms/ChoicesField";
 import { FloatField } from "@/core/forms/FloatField";
@@ -26,7 +27,6 @@ import {
   type LensTypename,
 } from "@/mikro/lenses";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
-import { toast } from "@/core/notify";
 import { modifierSpecsOf, spatialSpecOf } from "@/mikro/specs";
 import {
   ChevronDown,
@@ -113,16 +113,19 @@ const REFETCH_SCENE = {
   awaitRefetchQueries: true,
 };
 
+// No success toast: the new layer appears in the scene.
 const DIALOG_OPTIONS = {
-  successMessage: "Layer added",
-  errorPrefix: "Could not add layer",
+  errorTitle: "Couldn't add the layer",
 };
 
-/** Said when the lens a layer is to be made from could not be found or made. */
-const lensFailed = (error: unknown) =>
-  toast.error(
-    `Could not add layer: ${error instanceof Error ? error.message : String(error)}`,
-  );
+/**
+ * Said, in the dialog, when the lens a layer is to be made from could not be
+ * found or made.
+ */
+const useLensFailed = () => {
+  const { report } = useDialogError();
+  return (error: unknown) => report(error, DIALOG_OPTIONS.errorTitle);
+};
 
 /**
  * The lens a container row's layer is made from. A layer draws a LENS, never a
@@ -538,6 +541,7 @@ const LensLayerForm = (props: {
   const { option } = props.source;
   const { suggestion, lens } = props;
   const registry = useLensRegistry();
+  const lensFailed = useLensFailed();
   const [kind, setKind] = useState<LayerKind>(suggestion.kinds[0]);
   const [touched, setTouched] = useState(false);
   useEffect(() => {
@@ -775,6 +779,7 @@ const TableLayerForm = (props: {
   const [kind, setKind] = useState<TableKind>(props.entry.kinds[0]);
 
   const containerLens = useContainerLens();
+  const lensFailed = useLensFailed();
   const [createPoint] = useCreatePointLayerMutation();
   const [createTrack] = useCreateTrackLayerMutation();
   const submitPoint = useGraphQLDialog(createPoint, DIALOG_OPTIONS);
@@ -949,6 +954,7 @@ const MeshLayerForm = (props: {
 }) => {
   const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
   const containerLens = useContainerLens();
+  const lensFailed = useLensFailed();
   const [createMesh] = useCreateMeshLayerMutation();
   const submitMesh = useGraphQLDialog(createMesh, DIALOG_OPTIONS);
 
@@ -1030,6 +1036,7 @@ const NetworkLayerForm = (props: {
 }) => {
   const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
   const containerLens = useContainerLens();
+  const lensFailed = useLensFailed();
   const [createNetwork] = useCreateNetworkLayerMutation();
   const submitNetwork = useGraphQLDialog(createNetwork, DIALOG_OPTIONS);
 
@@ -1109,6 +1116,7 @@ const AnnotationLayerForm = (props: {
 }) => {
   const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
   const containerLens = useContainerLens();
+  const lensFailed = useLensFailed();
   const [createAnnotationLayer] = useCreateAnnotationLayerMutation();
   const submit = useGraphQLDialog(createAnnotationLayer, DIALOG_OPTIONS);
 

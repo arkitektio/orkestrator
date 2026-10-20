@@ -1,6 +1,6 @@
 import { toast } from "@/core/notify";
 import { CategorySource, SuggestionChipFragment, SuggestionReason, useCategorizeTransactionsMutation } from "../../api/graphql";
-import { toastText } from "../../errors";
+import { reportBankErrorAs } from "../../errors";
 import { SuggestionChip } from "../CategorySuggestions";
 
 const REASONS: Record<SuggestionReason, string> = {
@@ -31,7 +31,7 @@ export const CardSuggestions = ({
   const pick = (category: { id: string; name: string }) =>
     categorize({ variables: { ids: [transaction], category: category.id } })
       .then(() => toast.success(`Categorized as ${category.name}`))
-      .catch((e) => toast.error("Could not categorize: " + toastText(e)));
+      .catch(reportBankErrorAs("Couldn't categorize the transaction"));
 
   // Guessed rows: the guess first, then the alternatives.
   const ordered =

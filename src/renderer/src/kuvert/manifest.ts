@@ -13,6 +13,7 @@ export const manifest: ModuleManifest = {
   label: "Mail",
   icon: "mail",
   models: [
+    { identifier: "@kuvert/provider", name: "Mail Provider", datum: false, path: "providers/:id" },
     { identifier: "@kuvert/account", name: "Mailbox", datum: false, path: "accounts/:id" },
     { identifier: "@kuvert/folder", name: "Mail Folder", datum: false, path: "folders/:id" },
     { identifier: "@kuvert/thread", name: "Conversation", datum: false, path: "threads/:id" },

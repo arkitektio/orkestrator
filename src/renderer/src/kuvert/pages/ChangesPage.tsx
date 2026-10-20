@@ -14,7 +14,7 @@ import { useSearchParams } from "react-router-dom";
 import { useKuvert } from "../api/funcs";
 import { MailChangeFragment, MailChangeState, useListMailAccountsQuery, useListMailChangesQuery } from "../api/graphql";
 import { changeStatus, describeChange } from "../components/changes/describe";
-import { describeError } from "../errors";
+import { describeError, reportKuvertError, reportKuvertErrorAs } from "../errors";
 import { KUVERT_HELP } from "../help";
 import { MailAccount, MailMessage } from "../linkers";
 import { pushChanges, retryChanges, undoChanges } from "../mailOps";
@@ -43,11 +43,11 @@ const Status = ({ change }: { change: MailChangeFragment }) => {
 const ChangeRow = ({ change }: { change: MailChangeFragment }) => {
   const client = useKuvert();
   const [busy, setBusy] = useState(false);
-  const run = (work: () => Promise<unknown>, done: string) => {
+  // The row leaves the queue or changes its state: that is the confirmation.
+  const run = (work: () => Promise<unknown>, failure: string) => {
     setBusy(true);
     work()
-      .then(() => toast.success(done))
-      .catch((e: Error) => toast.error(e.message))
+      .catch(reportKuvertErrorAs(failure))
       .finally(() => setBusy(false));
   };
   const failed = change.state === MailChangeState.Failed;
@@ -83,7 +83,7 @@ const ChangeRow = ({ change }: { change: MailChangeFragment }) => {
             size="icon-sm"
             tooltip="Undo: keep what the server has"
             disabled={busy}
-            onClick={() => run(() => undoChanges(client, { changes: [change.id] }), "Undone")}
+            onClick={() => run(() => undoChanges(client, { changes: [change.id] }), "Couldn't undo the change")}
           >
             <Undo2 />
           </TooltipButton>
@@ -94,7 +94,7 @@ const ChangeRow = ({ change }: { change: MailChangeFragment }) => {
             size="icon-sm"
             tooltip="Try again"
             disabled={busy}
-            onClick={() => run(() => retryChanges(client, [change.id]), "Queued again")}
+            onClick={() => run(() => retryChanges(client, [change.id]), "Couldn't retry the change")}
           >
             <RotateCcw />
           </TooltipButton>
@@ -146,9 +146,9 @@ const ChangesPage = () => {
   const pushAll = async () => {
     setPushing(true);
     try {
-      for (const id of pendingAccounts) toast.success(await pushChanges(client, id));
+      toast.success(await pushChanges(client, pendingAccounts));
     } catch (e) {
-      toast.error((e as Error).message);
+      reportKuvertError(e, "Couldn't push the changes");
     } finally {
       setPushing(false);
     }
@@ -195,7 +195,7 @@ const ChangesPage = () => {
                   failed.map((c) => c.id),
                 )
                   .then(() => toast.success(`Queued ${failed.length} again`))
-                  .catch((e: Error) => toast.error(e.message))
+                  .catch(reportKuvertErrorAs("Couldn't retry the changes"))
               }
             >
               Retry failed

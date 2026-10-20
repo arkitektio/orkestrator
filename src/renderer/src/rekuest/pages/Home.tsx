@@ -59,6 +59,8 @@ type Filters = {
   app: string | null;
   device: string | null;
   kind: string | null;
+  /** The app the agents say supervises them (`Agent.supervisor`). */
+  supervisor: string | null;
 };
 
 const DEFAULT_KIND = AgentKind.Websocket;
@@ -68,7 +70,7 @@ const KIND_LABELS: Record<AgentKind, string> = {
 };
 
 /**
- * One dropdown for every agent filter (type / user / app / device). The
+ * One dropdown for every agent filter (type / user / app / device / supervisor). The
  * active selections are echoed as badges on the trigger so the reader always
  * knows why the grid looks the way it does.
  */
@@ -94,7 +96,9 @@ const FilterMenu = ({
   const kindLabel =
     filters.kind === ALL ? "All" : KIND_LABELS[(filters.kind as AgentKind | null) ?? DEFAULT_KIND];
   // Only what departs from the defaults counts as an active filter.
-  const active = [filters.user, filters.app, filters.device, filters.kind].filter(Boolean).length;
+  const active = [filters.user, filters.app, filters.device, filters.kind, filters.supervisor].filter(
+    Boolean,
+  ).length;
 
   return (
     <DropdownMenu>
@@ -204,12 +208,39 @@ const FilterMenu = ({
           </DropdownMenuSubContent>
         </DropdownMenuSub>
 
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <span className="flex-1">By supervisor</span>
+            {filters.supervisor && (
+              <span className="ml-2 max-w-24 truncate text-xs text-muted-foreground">
+                {filters.supervisor}
+              </span>
+            )}
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent className="max-h-80 overflow-y-auto">
+            {/* A supervisor is an app (e.g. plugin_engine), named by its identifier. */}
+            <DropdownMenuRadioGroup
+              value={filters.supervisor ?? ALL}
+              onValueChange={(v) => onChange({ supervisor: v === ALL ? null : v })}
+            >
+              <DropdownMenuRadioItem value={ALL}>Any or none</DropdownMenuRadioItem>
+              {apps.map((a) => (
+                <DropdownMenuRadioItem key={a.value} value={a.value}>
+                  {a.label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+
         {active > 0 && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-muted-foreground"
-              onSelect={() => onChange({ user: null, app: null, device: null, kind: null })}
+              onSelect={() =>
+                onChange({ user: null, app: null, device: null, kind: null, supervisor: null })
+              }
             >
               Clear filters
             </DropdownMenuItem>
@@ -237,16 +268,18 @@ const Page = () => {
   const [app, setApp] = useQueryState("app", parseAsString);
   const [device, setDevice] = useQueryState("device", parseAsString);
   const [kind, setKind] = useQueryState("kind", parseAsString);
+  const [supervisor, setSupervisor] = useQueryState("supervisor", parseAsString);
   const [onlineOnly, setOnlineOnly] = useQueryState("online", parseAsBoolean.withDefault(false));
 
-  const filters: Filters = { user, app, device, kind };
+  const filters: Filters = { user, app, device, kind, supervisor };
   const setFilters = (next: Partial<Filters>) => {
     if ("user" in next) setUser(next.user ?? null);
     if ("app" in next) setApp(next.app ?? null);
     if ("device" in next) setDevice(next.device ?? null);
     if ("kind" in next) setKind(next.kind ?? null);
+    if ("supervisor" in next) setSupervisor(next.supervisor ?? null);
   };
-  const hasFilter = Boolean(search || user || app || device || kind || onlineOnly);
+  const hasFilter = Boolean(search || user || app || device || kind || supervisor || onlineOnly);
 
   // No `user` in the URL means the signed-in user's own agents.
   const { userId } = useSelf();
@@ -260,6 +293,7 @@ const Page = () => {
         user: userFilter ?? undefined,
         appIdentifier: app ?? undefined,
         deviceId: device ?? undefined,
+        supervisor: supervisor ?? undefined,
       },
       ordering: [{ lastSeen: Ordering.Desc }],
     },
@@ -268,15 +302,17 @@ const Page = () => {
   });
 
   // The server has no kind filter, and a newly connected agent is inserted
-  // into every cached `agents(...)` list (AgentUpdater), so both the type and
-  // the user are narrowed here too.
+  // into every cached `agents(...)` list (AgentUpdater), so the type, the user
+  // and the supervisor are narrowed here too.
   const visible = useMemo(
     () =>
       (data?.agents ?? []).filter(
         (a) =>
-          (!kindFilter || a.kind === kindFilter) && (!userFilter || a.user.sub === userFilter),
+          (!kindFilter || a.kind === kindFilter) &&
+          (!userFilter || a.user.sub === userFilter) &&
+          (!supervisor || a.supervisor === supervisor),
       ),
-    [data, kindFilter, userFilter],
+    [data, kindFilter, userFilter, supervisor],
   );
   const agents = useMemo(() => {
     const all = sortAgents(visible);

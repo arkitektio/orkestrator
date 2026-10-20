@@ -1,4 +1,5 @@
 import type { NetworkProbeResult } from "../../../../../../main/doctor/protocol";
+import { MESH_DIAL_FAILED_CODE, MESH_PROXY_DOWN_CODE } from "../../../../../../main/doctor/networkErrors";
 
 /**
  * One probe, read as the four stages a request goes through: name → address
@@ -43,11 +44,18 @@ const dnsStage = (probe: NetworkProbeResult): StageResult => {
   return { state: "failed", detail: dns.code ?? dns.lookupError ?? "no address" };
 };
 
+/** Our own mesh codes say nothing to a reader; the errno codes are the usual vocabulary. */
+const TCP_CODE_LABEL: Record<string, string> = {
+  [MESH_PROXY_DOWN_CODE]: "mesh proxy down",
+  [MESH_DIAL_FAILED_CODE]: "mesh refused",
+};
+
 const tcpStage = (probe: NetworkProbeResult): StageResult => {
   const { tcp } = probe;
   if (!tcp.attempted) return skipped();
   if (tcp.ok) return { state: "ok", detail: `${tcp.ms}ms` };
-  return { state: "failed", detail: [tcp.code ?? tcp.message ?? "failed", `${tcp.ms}ms`].join(" ") };
+  const reason = (tcp.code && TCP_CODE_LABEL[tcp.code]) ?? tcp.code ?? tcp.message ?? "failed";
+  return { state: "failed", detail: [reason, `${tcp.ms}ms`].join(" ") };
 };
 
 const tlsStage = (probe: NetworkProbeResult): StageResult => {

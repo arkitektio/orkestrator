@@ -55,6 +55,24 @@ export const errorCode = (error: unknown): string | undefined => {
 export const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+/** The mesh's own local proxy did not take the connection: the sidecar is gone, not the peer. */
+export const MESH_PROXY_DOWN_CODE = "MESH_PROXY_DOWN";
+/** The mesh proxy answered and refused the dial (no such peer, port closed, not allowed). */
+export const MESH_DIAL_FAILED_CODE = "MESH_DIAL_FAILED";
+
+/**
+ * Read a SOCKS dial through the mesh proxy. The `socks` client carries no
+ * errno: a socket error on the way to 127.0.0.1 arrives as Node's message
+ * ("connect ECONNREFUSED 127.0.0.1:…"), and a refusal from the proxy as
+ * "Socks5 proxy rejected connection - <reply>". meshd answers every dial
+ * error with the generic SOCKS "Failure", so the cause stays in meshd's log.
+ */
+export const meshDialCode = (message: string): string => {
+  if (/timed? ?out/i.test(message)) return DOCTOR_TIMEOUT_CODE;
+  if (/\b(ECONNREFUSED|ECONNRESET|EPIPE)\b/.test(message)) return MESH_PROXY_DOWN_CODE;
+  return MESH_DIAL_FAILED_CODE;
+};
+
 /**
  * OpenSSL's verify codes for "nobody vouches for this certificate". Both spellings
  * occur: a bare self-signed leaf, and a leaf signed by a private CA.

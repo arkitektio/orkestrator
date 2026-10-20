@@ -1,4 +1,4 @@
-import { Axis3d, ChartSpline, Clapperboard, File, Folder, Grid2x2, Grid3x3, Home, PenTool, ScanSearch, Table2 } from "lucide-react";
+import { Axis3d, ChartSpline, Clapperboard, File, Folder, Grid2x2, Grid3x3, Home, PenTool, ScanSearch, Share2, Table2 } from "lucide-react";
 
 import type { NavLinkDecl } from "@/core/modules/host/define";
 import { ADATASET_SPECS, arrayDatasetSpecLink } from "./specs";
@@ -26,4 +26,5 @@ export const MIKRO_NAV_LINKS: NavLinkDecl[] = [
   { label: "Files", route: "/mikro/files", group: "Files", icon: File, description: "Uploaded raw files" },
   { label: "Scenes", route: "/mikro/scenes", keywords: ["3d", "viewer"], group: "Data", icon: Clapperboard, description: "Composed viewer scenes" },
   { label: "Charts", route: "/mikro/charts", keywords: ["plots", "traces", "series", "curves"], group: "Data", icon: ChartSpline, description: "Data laid out along one axis" },
+  { label: "Collaborations", route: "/mikro/collaborations", keywords: ["share", "guests", "invite", "spaces"], group: "Sharing", icon: Share2, description: "What guests are granted" },
 ];

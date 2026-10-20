@@ -1,4 +1,6 @@
-directive @auth(required_org_roles: [String!] = null, required_roles: [String!] = null, required_scopes: [String!] = null) on FIELD_DEFINITION
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
+
+directive @identified(by: String!) on OBJECT
 
 directive @unionElementOf(discriminator: String!, key: String!, union: String!) repeatable on INPUT_OBJECT
 
@@ -2110,6 +2112,49 @@ type Client {
 }
 
 """
+What a guest granted it sees of the organization: the objects put in it, and what is part of them.
+"""
+type Collaboration {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+
+  """What is in the collaboration; what is part of these is in it too"""
+  items: [CollaborationItem!]!
+  name: String!
+}
+
+"""
+One object in a collaboration: put there, or brought along with one that needs it to be seen.
+"""
+type CollaborationItem {
+  addedAt: DateTime!
+
+  """
+  Whether it is in the collaboration only as what another object in it needs to be seen
+  """
+  brought: Boolean!
+  id: ID!
+
+  """The structure the object is known by across the hub: @mikro/scene"""
+  identifier: String
+
+  """The object's id, in its structure"""
+  objectId: String!
+}
+
+"""An object to put in, or take out of, a collaboration"""
+input CollaborationObjectInput {
+  collaboration: ID!
+
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """The object's id"""
+  object: ID!
+}
+
+"""
 One column a layer may be coloured or filtered by, and how it is reached. Both pickers read the same options: `colorBys` and `filterBys` turn on the same measure-vs-categorical split, so two lists would be two copies of one answer. Every option returned is one the mutation that publishes the picker accepts -- `createMeshLayer` over a collection, `createLabelLayer` over a lens -- and every column it omits is one that mutation refuses; that invariant is why this exists rather than a client filtering `attributePlans`, which walks a different set
 """
 type ColorByOption {
@@ -2816,6 +2861,12 @@ input CreateChartInput {
   name: String!
 }
 
+"""A new collaboration"""
+input CreateCollaborationInput {
+  description: String = null
+  name: String!
+}
+
 """
 Attach metadata spokes to an array, table or sparse dataset after ingest. Exactly one of `dataset`, `table` and `sparse` names the container; `anchor` carries the coordinates and the spokes. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced
 """
@@ -2969,6 +3020,11 @@ input CreateMeshLensInput {
   Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the mesh collection's whole lens, or the lens cut from
   """
   windows: [WindowInput!] = null
+}
+
+"""Many metrics in one transaction, at most 5000"""
+input CreateMetricsInput {
+  metrics: [MetricInput!]!
 }
 
 """
@@ -3478,6 +3534,11 @@ input DeleteLensInput {
 """Input for deleting a mesh collection by ID"""
 input DeleteMeshCollectionInput {
   """The ID of the mesh collection to delete"""
+  id: ID!
+}
+
+"""The metric to delete"""
+input DeleteMetricInput {
   id: ID!
 }
 
@@ -6981,6 +7042,137 @@ type MetaSchema {
   schema: Any!
 }
 
+"""
+One value recorded about an annotation or a dataset, by an app or a person: a quantity (`magnitude` in `unit`) or a `code` a process emitted. Immutable: a correction is a new metric that `supersedes` it. What a metric means is not said here: kraph, reading every metric from mikro's change feed, says it
+"""
+type Metric {
+  """(code) The category a process emitted"""
+  code: String
+  createdAt: DateTime!
+
+  """The user it was recorded as"""
+  creator: User
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+  id: ID!
+
+  """
+  What was measured, namespaced by who measured it: `ais_suite.measure_profile/threshold_distance`, `user:<sub>/spine_count`
+  """
+  key: String!
+
+  """(quantity) The number, in `unit`"""
+  magnitude: Float
+
+  """The identifier of the app that recorded it; null when recorded by hand"""
+  producerApp: String
+
+  """The release of that app"""
+  producerVersion: String
+
+  """The metric this one corrects, if any"""
+  supersedes: Metric
+
+  """The object this value is about"""
+  target: MetricTarget!
+
+  """(quantity) The unit of `magnitude`"""
+  unit: String
+
+  """What a reader of the change feed keys this metric on"""
+  uuid: String!
+}
+
+input MetricFilter {
+  AND: MetricFilter
+  DISTINCT: Boolean
+  NOT: MetricFilter
+  OR: MetricFilter
+  id: ID
+
+  """Filter by list of IDs"""
+  ids: [ID!]
+
+  """Filter to the metrics correcting nothing, or only to corrections"""
+  isCorrection: Boolean
+  key: StrFilterLookup
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
+
+  """Filter to the metrics about one object"""
+  target: MetricTargetFilter
+
+  """
+  Filter to the metrics about objects of this structure: @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset
+  """
+  targetIdentifier: String
+}
+
+"""
+One value about one object: a quantity (magnitude and unit) or a code, exactly one
+"""
+input MetricInput {
+  code: String = null
+  key: String!
+  magnitude: Float = null
+  supersedes: ID = null
+  target: MetricTargetInput!
+  unit: String = null
+}
+
+input MetricOrder @oneOf {
+  createdAt: Ordering
+  id: Ordering
+  key: Ordering
+}
+
+"""
+An object metrics are recorded about: its structure and id, as rekuest's signals and STRUCTURE ports spell them, and a uuid of its own
+"""
+type MetricTarget {
+  id: ID!
+
+  """
+  The structure of the object: @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset
+  """
+  identifier: String!
+
+  """The id of the object within its structure"""
+  object: ID!
+
+  """
+  The object's uuid as a metric target: what a reader of the change feed keys it on
+  """
+  uuid: String!
+}
+
+"""
+An object metrics are about: its structure and id, as a signal spells them
+"""
+input MetricTargetFilter {
+  """
+  @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset
+  """
+  identifier: String!
+
+  """The id of the object within its structure"""
+  object: ID!
+}
+
+"""
+The object a metric is about: its structure and id, as rekuest's signals and STRUCTURE ports spell them
+"""
+input MetricTargetInput {
+  identifier: String!
+  object: ID!
+}
+
 """Mirror"""
 type MirrorElement implements OpticalElement {
   angleDeg: Float
@@ -7039,6 +7231,11 @@ type ModelChange {
 }
 
 type Mutation {
+  """
+  Put an object in a collaboration, with what it needs to be seen: a scene brings the data its layers draw
+  """
+  addToCollaboration(input: CollaborationObjectInput!): Collaboration!
+
   """Attach unstructured metadata to a file"""
   attachUnstructuredMeta(input: UnstructuredMetaInput!): UnstructuredMeta!
 
@@ -7105,6 +7302,9 @@ type Mutation {
   """
   createChartFromCoordinateSystem(input: CreateChartFromCoordinateSystemInput!): Chart!
 
+  """Create an empty collaboration, to put objects in and grant a guest"""
+  createCollaboration(input: CreateCollaborationInput!): Collaboration!
+
   """
   Attach metadata spokes to an array, table or sparse dataset after ingest: a microscope state, OME metadata, a value histogram, a channel label or a light path, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced
   """
@@ -7150,6 +7350,16 @@ type Mutation {
   The lens keeping these windows of a mesh collection's own space: the one that exists, or a new one
   """
   createMeshLens(input: CreateMeshLensInput!): MeshLens!
+
+  """
+  Record one value about an annotation or a dataset: a quantity or a code. Announced to the hub's rekuest (a CREATED @mikro/metric signal) once committed
+  """
+  createMetric(input: MetricInput!): Metric!
+
+  """
+  Record many values in one transaction. No signal is sent for each: a reader finds them in mikro's change feed
+  """
+  createMetrics(input: CreateMetricsInput!): [Metric!]!
 
   """
   Register an immutable network collection from an uploaded konnektion store, in a coordinate system of its own
@@ -7282,6 +7492,11 @@ type Mutation {
   deleteChartLayer(input: DeleteChartLayerInput!): ID!
 
   """
+  Delete a collaboration: whoever was granted it sees nothing of it any more
+  """
+  deleteCollaboration(id: ID!): ID!
+
+  """
   Delete an unused shared coordinate system. Refused while any scene is rooted in it or any transformation edge touches it. This is the only door a shared space leaves through -- deleting a scene never deletes one. Other system kinds cascade with their owner and cannot be deleted directly
   """
   deleteCoordinateSystem(input: DeleteCoordinateSystemInput!): ID!
@@ -7302,6 +7517,11 @@ type Mutation {
 
   """Delete an existing mesh collection"""
   deleteMeshCollection(input: DeleteMeshCollectionInput!): ID!
+
+  """
+  Delete a metric. One a correction supersedes is kept while the correction stands
+  """
+  deleteMetric(input: DeleteMetricInput!): ID!
 
   """Delete an existing network collection"""
   deleteNetworkCollection(input: DeleteNetworkCollectionInput!): ID!
@@ -7428,6 +7648,11 @@ type Mutation {
   Unfile table datasets from a folder. They are not deleted, only unfiled
   """
   releaseTableDatasetsFromFolder(input: DesociateInput!): Folder!
+
+  """
+  Take an object out of a collaboration, with what it brought that nothing else there needs
+  """
+  removeFromCollaboration(input: CollaborationObjectInput!): Collaboration!
 
   """Request temporary S3 read credentials for a big file"""
   requestBigfileAccess(input: RequestBigFileAccessInput!): BigFileAccessGrant!
@@ -9207,6 +9432,14 @@ type Query {
   """List the child folders of a folder"""
   children(filters: FolderChildrenFilter = null, order: ChildrenOrder = null, pagination: ChildrenPaginationInput = null, parent: ID!): [FolderChild!]!
 
+  """Get a single collaboration by ID"""
+  collaboration(id: ID!): Collaboration!
+
+  """
+  List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
+  """
+  collaborations: [Collaboration!]!
+
   """
   Every column a mesh collection's objects can be coloured or filtered by: one entry per (joinPath, table, column), with the control its declared role admits. **The set this returns is exactly the set `createMeshLayer(colorBys:)` and `filterBys` accept** -- same reachability walk, same measure-vs-categorical rule -- which is what makes it an options query rather than a suggestion. Distinct from `attributePlans`, which answers a different question (how to execute a lookup per hover) over a different set: it walks the whole fact component and returns plans rooted at a source mask that mesh ids cannot execute, drops tables the write path accepts, and fails outright on a storeless array. Both pickers read these same options, because both branch on the same split. `joinPath` follows `references` from table to table -- pass an option's path back verbatim to select it. The columns' *values* are not here: a picker wanting a class list or a numeric range reads them from the parquet it already has an `accessGrant` for
   """
@@ -9301,6 +9534,14 @@ type Query {
   List mesh collections (immutable Parquet-backed mesh sets, each in a coordinate system of its own)
   """
   meshCollections(filters: MeshCollectionFilter, pagination: OffsetPaginationInput): [MeshCollection!]!
+
+  """Get a single metric by ID"""
+  metric(id: ID!): Metric!
+
+  """
+  List metrics: values recorded about annotations and datasets, by apps and people
+  """
+  metrics(filters: MetricFilter, ordering: [MetricOrder!]! = [], pagination: OffsetPaginationInput): [Metric!]!
 
   """List files created by the current user"""
   myfiles(filters: FileFilter, ordering: [FileOrder!]! = [], pagination: OffsetPaginationInput): [File!]!
@@ -12671,7 +12912,7 @@ type ZarrUploadGrant {
 
 scalar _Any
 
-union _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
+union _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
 
 type _Service {
   sdl: String!

@@ -1,3 +1,4 @@
+import { describeError as describeAny, isAbort, reportError, type DescribedError } from "@/core/notify";
 import { MailErrorCode } from "./api/graphql";
 
 /** What the user can do about an error: the one button the UI offers. */
@@ -63,7 +64,7 @@ export const describeError = (
         fix: "none",
       };
     case MailErrorCode.NotConfigured:
-      return { text: "This is not set up on the server. Ask an admin.", fix: "none" };
+      return { text: "Your organization has not set this up (no usable mail provider). Ask an admin.", fix: "none" };
     default:
       return { text: message || "Something went wrong.", fix: "none" };
   }
@@ -71,3 +72,54 @@ export const describeError = (
 
 /** A failed request as a toast line. */
 export const toastText = (error: unknown) => describeError(errorCodeOf(error), { message: errorMessageOf(error) }).text;
+
+/**
+ * A failure in the table's words where it has a mail code, else the host's
+ * reading; the raw text stays behind "Copy details" either way.
+ */
+export const describeKuvertError = (error: unknown): DescribedError => {
+  const described = describeAny(error);
+  const code = errorCodeOf(error);
+  if (!code) return described;
+  return { ...described, message: describeError(code, { message: described.message }).text };
+};
+
+/** One island error toast for a failure outside a dialog: `reportKuvertError(e, "Couldn't sync the mailbox")`. */
+export const reportKuvertError = (error: unknown, title: string) =>
+  reportError(error, { title, describe: describeKuvertError });
+
+/** `reportKuvertError` for a `.catch`. */
+export const reportKuvertErrorAs = (title: string) => (error: unknown) => {
+  reportKuvertError(error, title);
+};
+
+/**
+ * The failure rethrown in the table's words, carrying its raw text: for a
+ * dialog submit (shown inline) or a local action (shown by its island), both
+ * of which read an Error with a `technical` string as it is.
+ */
+export const asKuvertError = (error: unknown): unknown => {
+  if (isAbort(error)) return error;
+  const { kind, message, technical } = describeKuvertError(error);
+  return Object.assign(new Error(message), { kind, technical });
+};
+
+/**
+ * A failure the server answered with as data (an outgoing mail whose status
+ * is failed), not as a GraphQL error: an Error in the table's words, for the
+ * same places `asKuvertError` serves.
+ */
+export const codedError = (
+  code: MailErrorCode | null | undefined,
+  message: string | null | undefined,
+  fallback = "Something went wrong.",
+) => {
+  const text = code || message ? describeError(code, { message }).text : fallback;
+  return Object.assign(new Error(text), { technical: [code, message].filter(Boolean).join(": ") });
+};
+
+/** `work`, its failure rethrown with `asKuvertError`: `useDialogSubmit(() => inKuvertWords(create(…)))`. */
+export const inKuvertWords = <T>(work: Promise<T>): Promise<T> =>
+  work.catch((e: unknown) => {
+    throw asKuvertError(e);
+  });

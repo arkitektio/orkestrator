@@ -1,6 +1,7 @@
 import type {
   MeshClaimRequest,
   MeshEvent,
+  MeshFirewallState,
   MeshLockInitRequest,
   MeshLockInitResult,
   MeshLockSignRequest,
@@ -21,6 +22,7 @@ export type MeshBridge = {
   lockSign: (request: MeshLockSignRequest) => Promise<MeshLockSignResult>;
   lockInit: (request: MeshLockInitRequest) => Promise<MeshLockInitResult>;
   restart: () => Promise<MeshStatusPayload>;
+  firewall: () => Promise<MeshFirewallState>;
   onEvent: (cb: (event: MeshEvent) => void) => () => void;
 };
 

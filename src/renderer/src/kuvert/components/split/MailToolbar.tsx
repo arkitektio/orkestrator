@@ -4,9 +4,9 @@ import { TooltipButton } from "@/core/ui/tooltip-button";
 import { Archive, Flag, FolderInput, Mail, Maximize2, ShieldBan, Trash2 } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/core/notify";
 import { useKuvert } from "../../api/funcs";
 import { CategoryChipFragment, FolderRole } from "../../api/graphql";
+import { reportKuvertErrorAs } from "../../errors";
 import { deleteMail, markRead, moveToRole, setFlagged, undoToast } from "../../mailOps";
 import { CategoryButton } from "../categories/CategoryButton";
 import { ReplyButtons } from "../MessageView";
@@ -55,7 +55,7 @@ export const MailToolbar = ({
         undoToast(client, affected, done);
         if (gone) onGone();
       })
-      .catch((e: Error) => toast.error(e.message));
+      .catch(reportKuvertErrorAs("Couldn't change the mail"));
 
   return (
     <div className="sticky top-0 z-20 flex h-12 shrink-0 items-center gap-0.5 border-b bg-background/80 px-2 backdrop-blur-md">

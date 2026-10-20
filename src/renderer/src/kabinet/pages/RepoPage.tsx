@@ -4,14 +4,14 @@ import { Sidebars } from "@/core/layout/Sidebars";
 import { Badge } from "@/core/ui/badge";
 import { PageAction, PageActionGroup } from "@/core/ui/page-action";
 import { KabinetFlavour, KabinetRepo } from "@/core/linkers";
-import { Code2, GitBranch, Github, RefreshCw, Share2, ShieldAlert } from "lucide-react";
-import { toast } from "@/core/notify";
+import { Check, Code2, GitBranch, Github, RefreshCw, Share2, ShieldAlert } from "lucide-react";
+import { reportErrorAs } from "@/core/notify";
+import { useCopyToClipboard } from "@/core/ui/copy-button";
 import { useGetRepoQuery, useScanRepoMutation } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";
 import { RepoInfoSidebar } from "../components/sidebars/RepoInfoSidebar";
 import { installBadgeMarkdown, installRepoLink } from "../repoLink";
 import { KABINET_HELP } from "../help";
-import { copyText } from "@/core/tabs/sharing/universalLink";
 
 /**
  * A repository is its flavours: the body lists them and nothing else. What
@@ -25,20 +25,15 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
     variables: { id: repo.id },
   });
 
-  const rescan = () =>
-    scan()
-      .then(() => toast.success("Rescanned"))
-      .catch((e: Error) => toast.error("Could not rescan: " + e.message));
+  const rescan = () => scan().catch(reportErrorAs("Couldn't rescan the repository"));
 
   // What you send a colleague: their Orkestrator opens on the install prompt
   // for this repository, whichever Kabinet they are on. The badge is the same
   // link dressed for a README, which is where an app repo advertises itself.
-  const copyShare = (what: "link" | "badge") => async () => {
-    const coordinates = { user: repo.user, repo: repo.repo };
-    const text = what === "link" ? installRepoLink(coordinates) : installBadgeMarkdown(coordinates);
-    if (await copyText(text)) toast.success(what === "link" ? "Install link copied" : "Badge copied", { description: text });
-    else toast.error("Could not copy it");
-  };
+  // Each button flips to a check once copied.
+  const coordinates = { user: repo.user, repo: repo.repo };
+  const link = useCopyToClipboard();
+  const badge = useCopyToClipboard();
 
   return (
     <KabinetRepo.ModelPage
@@ -57,18 +52,18 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
           <PageActionGroup>
             <PageAction
               collapse="icon"
-              icon={<Share2 className="h-4 w-4" />}
+              icon={link.copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
               size="sm"
-              onClick={copyShare("link")}
+              onClick={() => void link.copy(installRepoLink(coordinates))}
               title="Copy a link that prompts someone else to add this repo"
             >
               Copy install link
             </PageAction>
             <PageAction
               collapse="icon"
-              icon={<Code2 className="h-4 w-4" />}
+              icon={badge.copied ? <Check className="h-4 w-4" /> : <Code2 className="h-4 w-4" />}
               size="sm"
-              onClick={copyShare("badge")}
+              onClick={() => void badge.copy(installBadgeMarkdown(coordinates))}
               title="Copy the markdown for an 'Open in Arkitekt' README badge"
             >
               Copy README badge

@@ -1,12 +1,14 @@
 import { useSelf } from "@/core/connection/useSelf";
+import type { AwaitedDialogProps } from "@/core/dialogs/DialogProvider";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { useOperation } from "@/core/modules/hooks/useOperation";
-import { toast } from "@/core/notify";
 import type { JSONObject } from "@/core/types";
 import { Alert, AlertDescription } from "@/core/ui/alert";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Input } from "@/core/ui/input";
 import { Label } from "@/core/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
@@ -153,8 +155,17 @@ const ANY_HOST = "__any__";
  *
  * Without a deployer there is nothing to authorize; that is the admin's to
  * fix, and the dialog says so.
+ *
+ * Awaited (`awaitDialog`, `onResolve` given) it only authorizes, for the
+ * deployer `agent` names, and answers with the new approval's id: a deployer
+ * asked for it (orkestrator's `request_approval`) and deploys it itself. It
+ * asks only after finding no approval it may use, so none is reused here.
  */
-export const InstallReleaseDialog = (props: { release: string; agent?: string; authorize?: boolean }) => {
+export const InstallReleaseDialog = (
+  props: { release: string; agent?: string; authorize?: boolean } & AwaitedDialogProps<string>,
+) => {
+  const { onResolve } = props;
+  const approveOnly = onResolve !== undefined;
   const { closeDialog } = useDialog();
   const self = useSelf();
   const { data, error } = useGetApprovableReleaseQuery({ variables: { id: props.release } });
@@ -177,7 +188,9 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
   const apps = useMemo(() => deployerApps(installers), [installers]);
 
   const [chosenApp, setChosenApp] = useState<string | undefined>(props.agent);
-  const agent = chosenApp && apps.includes(chosenApp) ? chosenApp : apps.at(0);
+  // Asked for by a deployer: that one, whether or not it offers installs to pick from.
+  const agent =
+    approveOnly && props.agent ? props.agent : chosenApp && apps.includes(chosenApp) ? chosenApp : apps.at(0);
   const hosts = useMemo(() => (agent ? hostsOf(installers, agent) : []), [installers, agent]);
 
   // Optional: pin the mandate to one host's device. Default is any host of
@@ -186,14 +199,15 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
   const lockedHost = hosts.find((host) => host.id === onlyHost && host.agent.device);
   const [expiresInDays, setExpiresInDays] = useState<number | null>(null);
   const [maxClients, setMaxClients] = useState("");
-  const [busy, setBusy] = useState(false);
   const [deploying, setDeploying] = useState(false);
   const [justAuthorized, setJustAuthorized] = useState(false);
   // Asked for from the deploy step: approve another deployer app.
   const [another, setAnother] = useState(false);
 
   const release = data?.release;
-  const existing = release && agent ? reusableApproval(release.approvals, agent, self.userId) : undefined;
+  // Awaited, a deployer already found none it may use: a new one is made.
+  const existing =
+    !approveOnly && release && agent ? reusableApproval(release.approvals, agent, self.userId) : undefined;
   const authorized = deployableApprovals(release?.approvals ?? [], self.userId).length > 0;
 
   const maxClientsValue = maxClients.trim() === "" ? null : Number(maxClients);
@@ -230,29 +244,37 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
     }
   };
 
-  const submit = async () => {
-    if (!release || !agent) return;
-    setBusy(true);
-    try {
-      await newApproval(release, agent);
-      setJustAuthorized(true);
-      setDeploying(true);
-    } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : String(cause));
-    } finally {
-      setBusy(false);
-    }
-  };
+  // Stays open on success: the deploy step follows in the same dialog, or,
+  // awaited, the approval is the answer (and awaitDialog closes it).
+  const { submit, submitting: busy } = useDialogSubmit(
+    async () => {
+      if (!release || !agent) return null;
+      return await newApproval(release, agent);
+    },
+    {
+      errorTitle: "Couldn't authorize the release",
+      close: false,
+      onSuccess: (approval) => {
+        if (!approval) return;
+        if (approveOnly) {
+          onResolve(approval);
+          return;
+        }
+        setJustAuthorized(true);
+        setDeploying(true);
+      },
+    },
+  );
 
   if (error) {
-    return <p className="text-sm text-destructive">Could not load the release: {error.message}</p>;
+    return <ErrorNote error={error} title="Couldn't load the release" />;
   }
   if (!release) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
 
   // The second step, and the only one for a release already authorized.
-  if (deploying || (authorized && !props.authorize && !another)) {
+  if (!approveOnly && (deploying || (authorized && !props.authorize && !another))) {
     return (
       <DeployReleaseDialog
         release={props.release}
@@ -274,7 +296,7 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
   }
 
   const identity = releaseIdentity(release);
-  const noDeployers = installersQuery.data && apps.length === 0;
+  const noDeployers = !approveOnly && installersQuery.data && apps.length === 0;
 
   return (
     // `min-w-0`: DialogContent is a grid, whose items otherwise grow to their
@@ -288,8 +310,9 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
               Install {identity.name} <span className="font-mono text-base text-muted-foreground">v{release.version}</span>
             </DialogTitle>
             <DialogDescription className="mt-1 text-sm font-light">
-              First authorize it to run signed in as you, limited to what is listed here. You are
-              then asked where to deploy it. Revoke the approval to sign it out.
+              {approveOnly
+                ? `${agent ?? "A deployer"} asks you to authorize it to run signed in as you, limited to what is listed here. It deploys it once you do. Revoke the approval to sign it out.`
+                : "First authorize it to run signed in as you, limited to what is listed here. You are then asked where to deploy it. Revoke the approval to sign it out."}
             </DialogDescription>
           </div>
         </div>
@@ -297,6 +320,10 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
 
       {noDeployers ? (
         <NoPluginEngine />
+      ) : approveOnly && props.agent ? (
+        <Section title="Deployed by">
+          <p className="font-mono text-sm">{props.agent}</p>
+        </Section>
       ) : (
         <Section title="Deployed by">
           {installersQuery.error ? (
@@ -399,7 +426,7 @@ export const InstallReleaseDialog = (props: { release: string; agent?: string; a
             <Button variant="outline" onClick={() => closeDialog()} disabled={busy}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={busy || !agent || maxClientsInvalid}>
+            <Button onClick={() => void submit()} disabled={busy || !agent || maxClientsInvalid}>
               <ShieldCheck />
               {busy ? "Authorizing…" : "Authorize"}
             </Button>

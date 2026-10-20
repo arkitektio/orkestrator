@@ -1,6 +1,6 @@
 import { Flag, Minus, Pencil, Pentagon, SquareDashed, Trash2, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { useDeleteExperimentAnnotationMutation } from "@/elektro/api/graphql";
 import { evictAnnotation } from "./annotationCache";
@@ -130,9 +130,7 @@ export const AnnotationsPanel = () => {
       variables: { id: annotationId },
       optimisticResponse: { __typename: "Mutation", deleteAnnotation: annotationId },
       update: (cache) => evictAnnotation(cache, annotationId),
-    }).catch((error: unknown) =>
-      toast.error(`Could not delete: ${error instanceof Error ? error.message : String(error)}`),
-    );
+    }).catch(reportErrorAs("Couldn't delete the annotation"));
 
   return (
     <div className="flex flex-col gap-1 overflow-y-auto p-3">

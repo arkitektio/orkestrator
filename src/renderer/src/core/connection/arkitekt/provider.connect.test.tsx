@@ -16,7 +16,7 @@ import {
 import { useArkitektActions, useArkitektStore } from "./hooks";
 import { ArkitektProvider } from "./provider";
 import { report } from "./utils";
-import { claimProfileMesh, joinAndPark } from "@/core/connection/mesh/profileMesh";
+import { claimProfileMesh, demandedMeshes, joinAndPark } from "@/core/connection/mesh/profileMesh";
 
 /**
  * A fresh grant: what it writes, in what order, and what it leaves alone when
@@ -176,7 +176,7 @@ describe("a fresh grant", () => {
     expect(events.filter((event) => event.startsWith("write:") && event !== "write:")).toHaveLength(2); // admission + the alias the check resolved
   });
 
-  it("a hub with an address on the mesh gets its node for good, not joined-and-parked", async () => {
+  it("a hub with an address on the mesh still joins and parks; nothing demands it while a direct address answers", async () => {
     const MESH_ALIAS = { id: "m1", host: "mikro.lab.mesh.alpha.test", ssl: true, challenge: "ht" };
     vi.mocked(flow).mockResolvedValue(
       grant({ fakts: { ...fakts, instances: { lok: { ...fakts.instances.lok, aliases: [ALIAS, MESH_ALIAS] } } } }) as never,
@@ -186,8 +186,9 @@ describe("a fresh grant", () => {
 
     await connect();
 
-    expect(events).toContain("claim:tskey-once");
-    expect(joinAndPark).not.toHaveBeenCalled();
+    expect(events).toContain("join:tskey-once");
+    expect(claimProfileMesh).not.toHaveBeenCalled();
+    expect([...demandedMeshes.getSnapshot().keys()]).toEqual([]);
   });
 
   it("re-approval lands on the row it already had, keeping its label, mesh node and creation date", async () => {

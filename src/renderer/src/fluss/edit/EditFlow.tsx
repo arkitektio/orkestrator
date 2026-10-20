@@ -1,5 +1,5 @@
 import { RekuestGuard } from "@/rekuest/api/hooks";
-import { toast } from "@/core/ui/use-toast";
+import { reportError, toast } from "@/core/notify";
 import { FlowFragment, GraphInput } from "@/fluss/api/graphql";
 import { EditFlowCanvas } from "@/fluss/edit/components/EditFlowCanvas";
 import { EditFlowStoreContext } from "@/fluss/edit/context";
@@ -50,8 +50,8 @@ export const EditFlow: React.FC<Props> = ({ flow, onSave }) => {
   const save = useCallback(async () => {
     const state = store.getState();
     if (state.remainingErrors.length > 0) {
-      toast({
-        title: "Workflow has errors",
+      toast.warning("Workflow has errors", {
+        id: "flow-save",
         description: "Resolve the remaining validation errors before saving.",
       });
       return;
@@ -68,10 +68,7 @@ export const EditFlow: React.FC<Props> = ({ flow, onSave }) => {
       const saved = await onSave(graph);
       store.getState().markSaved(saved ?? undefined);
     } catch (error) {
-      toast({
-        title: "Saving failed",
-        description: error instanceof Error ? error.message : String(error),
-      });
+      reportError(error, { title: "Couldn't save the workflow", id: "flow-save" });
     }
   }, [onSave, store]);
 

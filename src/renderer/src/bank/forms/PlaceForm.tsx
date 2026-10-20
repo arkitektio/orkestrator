@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { ParagraphField } from "@/core/forms/ParagraphField";
 import { StringField } from "@/core/forms/StringField";
 import { Button } from "@/core/ui/button";
@@ -22,7 +22,7 @@ import { isLocated } from "../components/cards/PlaceCard";
 import { AddressSearch, GeocodeResult } from "../components/map/AddressSearch";
 import type { Bbox } from "@/core/map/BaseMap";
 import type { Point } from "@/core/map/PointPicker";
-import { toastText } from "../errors";
+import { asBankError } from "../errors";
 
 // maplibre loads with the map, not with the dialog registry.
 const PointPicker = lazy(() => import("@/core/map/PointPicker"));
@@ -58,7 +58,6 @@ const useAround = (merchant: string | undefined, except?: string): Bbox | null =
 };
 
 const PlaceFields = ({ place, merchant }: { place?: MerchantLocationFragment; merchant?: string }) => {
-  const { closeDialog } = useDialog();
   const [pin, setPin] = useState<Point | null>(() => pointOf(place));
   const [pinMoved, setPinMoved] = useState(false);
   const around = useAround(merchant ?? place?.merchant.id, place?.id);
@@ -97,7 +96,9 @@ const PlaceFields = ({ place, merchant }: { place?: MerchantLocationFragment; me
     if (!form.getValues("name").trim()) set("name", result.label.split(",")[0]);
   };
 
-  const submit = async (data: Values) => {
+  // The place shows up on the merchant's page and map: closing is the
+  // confirmation. Only an address that could not be found is said.
+  const { submit } = useDialogSubmit(async (data: Values) => {
     const address = {
       name: data.name.trim(),
       street: orNull(data.street),
@@ -110,23 +111,20 @@ const PlaceFields = ({ place, merchant }: { place?: MerchantLocationFragment; me
       // A pin set on the map wins over looking the address up.
       ...(pin && pinMoved ? { latitude: pin.latitude.toFixed(6), longitude: pin.longitude.toFixed(6) } : {}),
     };
-    try {
-      const id = place
-        ? (await update({ variables: { input: { id: place.id, ...address } } })).data?.updateMerchantLocation.id
-        : (await create({ variables: { input: { merchant: merchant!, ...address } } })).data?.createMerchantLocation.id;
-      // A place with an address but no pin is looked up right away.
-      const addressChanged =
-        !place || address.street !== place.street || address.city !== place.city || address.postalCode !== place.postalCode;
-      if (id && !pin && (address.street || address.city) && addressChanged) {
-        const found = await geocode({ variables: { id } }).catch(() => null);
-        if (found && found.data?.geocodeMerchantLocation.latitude == null) toast.info("Saved, but the address was not found on the map");
-      }
-      toast.success(place ? "Place saved" : "Place added");
-      closeDialog();
-    } catch (e) {
-      toast.error("Could not save the place: " + toastText(e));
+    const saved = await (
+      place
+        ? update({ variables: { input: { id: place.id, ...address } } }).then((r) => r.data?.updateMerchantLocation.id)
+        : create({ variables: { input: { merchant: merchant!, ...address } } }).then((r) => r.data?.createMerchantLocation.id)
+    ).catch((e) => Promise.reject(asBankError(e)));
+    // A place with an address but no pin is looked up right away; a failed
+    // lookup leaves it saved without a pin.
+    const addressChanged =
+      !place || address.street !== place.street || address.city !== place.city || address.postalCode !== place.postalCode;
+    if (saved && !pin && (address.street || address.city) && addressChanged) {
+      const found = await geocode({ variables: { id: saved } }).catch(() => null);
+      if (found && found.data?.geocodeMerchantLocation.latitude == null) toast.info("Saved, but the address was not found on the map");
     }
-  };
+  }, { errorTitle: place ? "Couldn't save the place" : "Couldn't add the place" });
 
   return (
     <Form {...form}>

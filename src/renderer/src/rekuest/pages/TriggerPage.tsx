@@ -2,7 +2,7 @@ import { useDialog } from "@/core/dialogs/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { RekuestAction, RekuestAgent, RekuestTrigger } from "@/core/linkers";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Badge } from "@/core/ui/badge";
 import { PageAction } from "@/core/ui/page-action";
@@ -18,6 +18,7 @@ import { Link } from "react-router-dom";
 import {
   ArgumentsRow,
   FromRow,
+  PolicyRow,
   RuleHeader,
   RuleRow,
   RuleRows,
@@ -35,8 +36,8 @@ export const TriggerPage = asDetailQueryRoute(useTriggerQuery, ({ data }) => {
   const [update, { loading: updating }] = useUpdateTriggerMutation();
 
   const setEnabled = (enabled: boolean) =>
-    update({ variables: { input: { id: trigger.id, enabled } } }).catch((error) =>
-      toast.error(`Could not ${enabled ? "enable" : "disable"}: ${error.message}`),
+    update({ variables: { input: { id: trigger.id, enabled } } }).catch(
+      reportErrorAs(`Couldn't ${enabled ? "enable" : "disable"} the trigger`),
     );
 
   return (
@@ -142,6 +143,7 @@ export const TriggerPage = asDetailQueryRoute(useTriggerQuery, ({ data }) => {
             args={trigger.args}
             receiving={{ port: trigger.port, identifier: trigger.identifier }}
           />
+          <PolicyRow rule={trigger} />
           <RuleRow label="Where">
             {trigger.agent ? (
               <RekuestAgent.DetailLink object={trigger.agent} className="hover:underline">

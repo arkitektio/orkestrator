@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { PageAction } from "@/core/ui/page-action";
@@ -38,7 +39,7 @@ export const TPage = asDetailQueryRoute(
             </PageAction>
             {isCancelable(data.task) && (
               <PageAction
-                onClick={() => cancel(data.task.id)}
+                onClick={() => cancel(data.task.id).catch(reportErrorAs("Couldn't cancel the task"))}
                 // Stopping a running task outranks starting another one.
                 priority={20}
                 variant={"destructive"}
@@ -52,7 +53,7 @@ export const TPage = asDetailQueryRoute(
                 onClick={() =>
                   interrupt({
                     variables: { input: { task: data.task.id } },
-                  })
+                  }).catch(reportErrorAs("Couldn't interrupt the task"))
                 }
                 // Stopping a running task outranks starting another one.
                 priority={20}

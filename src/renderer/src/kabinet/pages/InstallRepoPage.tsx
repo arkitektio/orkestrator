@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/cor
 import { ArrowRight, Github } from "lucide-react";
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import {
   ListDefinitionsDocument,
   ListReleasesDocument,
@@ -53,11 +53,10 @@ const InstallRepoPage = () => {
     if (!coordinates) return;
     add({ variables: { identifier: githubIdentifier(coordinates) } })
       .then((result) => {
-        toast.success("Repo added");
         const id = result.data?.createGithubRepo.id;
         if (id) navigate(`/kabinet/repos/${id}`);
       })
-      .catch((e: Error) => toast.error("Could not add the repo: " + e.message));
+      .catch(reportErrorAs("Couldn't add the repository"));
   };
 
   return (

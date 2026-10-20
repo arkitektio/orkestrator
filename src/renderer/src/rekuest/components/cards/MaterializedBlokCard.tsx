@@ -51,6 +51,15 @@ const MaterializedBlokCard = ({ item }: Props) => {
               Default
             </Badge>
           )}
+          {item.declaredBy && (
+            <Badge
+              variant="outline"
+              className="max-w-40 truncate bg-card/80 shadow-sm"
+              title="Its agent keeps it in step with its registrations"
+            >
+              {item.declaredBy.name}
+            </Badge>
+          )}
         </div>
         <CardHeader className="mt-auto gap-1">
           <CardTitle className="text-base">

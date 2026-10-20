@@ -10,7 +10,7 @@ import {
   useMerchantCandidatesQuery,
 } from "../api/graphql";
 import { SuggestionChip } from "../components/CategorySuggestions";
-import { toastText } from "../errors";
+import { reportBankErrorAs } from "../errors";
 import { MerchantSectionNav } from "../components/merchants/MerchantSectionNav";
 import { Money } from "../components/Money";
 import { BANK_HELP } from "../help";
@@ -51,7 +51,7 @@ const CandidateCard = ({ candidate }: { candidate: MerchantCandidateFragment }) 
             onClick={() =>
               categorize({ variables: { ids: candidate.transactionIds, category: suggested.id } })
                 .then(() => toast.success(`${candidate.count} categorized as ${suggested.name}`))
-                .catch((e) => toast.error("Could not categorize: " + toastText(e)))
+                .catch(reportBankErrorAs("Couldn't categorize the transactions"))
             }
           />
         )}

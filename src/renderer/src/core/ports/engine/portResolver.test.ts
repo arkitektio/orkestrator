@@ -20,10 +20,6 @@ vi.mock("@/rekuest/api/graphql", () => ({
 vi.mock("@/core/smart/registry", () => ({
   smartRegistry: { getDisplayName: (identifier: string) => identifier },
 }));
-vi.mock("sonner", () => ({
-  toast: { info: vi.fn(), warning: vi.fn(), error: vi.fn(), success: vi.fn() },
-}));
-
 import type { FieldValues, ResolverOptions } from "react-hook-form";
 import { z } from "zod";
 import { PortKind } from "@/rekuest/api/graphql";

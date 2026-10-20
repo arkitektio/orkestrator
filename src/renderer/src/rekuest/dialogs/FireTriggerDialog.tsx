@@ -1,4 +1,6 @@
+import { DialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { toast } from "@/core/notify";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Button } from "@/core/ui/button";
@@ -8,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/core/ui/dialog";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Skeleton } from "@/core/ui/skeleton";
 import Timestamp from "@/core/ui/timestamp";
 import { cn } from "@/core/util/utils";
@@ -61,7 +64,7 @@ const TriggerChoices = ({
     skip: !of,
   });
   const failure = signalQuery.error ?? error;
-  if (failure) return <p className="text-sm text-destructive">{failure.message}</p>;
+  if (failure) return <ErrorNote error={failure} title="Couldn't load the triggers" variant="line" />;
   if (!data) return <Skeleton className="h-9 w-full" />;
   if (data.triggers.length === 0) {
     return <p className="text-sm text-muted-foreground">No trigger listens for signals like this one.</p>;
@@ -89,7 +92,7 @@ const SignalChoices = ({
   onChange: (signal: string) => void;
 }) => {
   const { data, error } = useTriggerMatchingSignalsQuery({ variables: { id: trigger } });
-  if (error) return <p className="text-sm text-destructive">{error.message}</p>;
+  if (error) return <ErrorNote error={error} title="Couldn't load the signals" variant="line" />;
   if (!data) return <Skeleton className="h-9 w-full" />;
   const signals = data.trigger.matchingSignals;
   if (signals.length === 0) {
@@ -127,26 +130,36 @@ export const FireTriggerDialog = (props: { signal?: string; trigger?: string }) 
   const { closeDialog } = useDialog();
   const [signal, setSignal] = useState(props.signal);
   const [trigger, setTrigger] = useState(props.trigger);
-  const [failure, setFailure] = useState<string | null>(null);
-  const [fire, { loading }] = useFireTriggerMutation({
+  // The server answered, but the trigger did not run (skipped, refused):
+  // said here, and the dialog stays open to pick another pair.
+  const [refused, setRefused] = useState<string | null>(null);
+  const [fire] = useFireTriggerMutation({
     refetchQueries: ["Signal", "Trigger", "ListFirings", "ListSignals"],
   });
 
-  const submit = async () => {
-    if (!signal || !trigger) return;
-    setFailure(null);
-    try {
+  const { submit, submitting } = useDialogSubmit(
+    async () => {
+      if (!signal || !trigger) return null;
+      setRefused(null);
       const { data } = await fire({ variables: { input: { signal, trigger } } });
-      const firing = data?.fireTrigger;
-      if (!firing) return;
-      const words = describeFiring(firing);
-      if (firing.outcome === FiringOutcome.Fired) toast.success(`${firing.trigger.name} fired`);
-      else toast.error(`${words.label}${firing.reason ? `: ${firing.reason}` : ""}`);
-      closeDialog();
-    } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error));
-    }
-  };
+      return data?.fireTrigger ?? null;
+    },
+    {
+      errorTitle: "Couldn't fire the trigger",
+      close: false,
+      onSuccess: (firing) => {
+        if (!firing) return;
+        if (firing.outcome !== FiringOutcome.Fired) {
+          const words = describeFiring(firing);
+          setRefused(`${words.label}${firing.reason ? `: ${firing.reason}` : ""}`);
+          return;
+        }
+        // The run it started is not on screen here.
+        toast.success(`${firing.trigger.name} fired`);
+        closeDialog();
+      },
+    },
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -175,13 +188,14 @@ export const FireTriggerDialog = (props: { signal?: string; trigger?: string }) 
         ) : null}
       </section>
 
-      {failure && <p className="text-sm text-destructive">Could not fire it: {failure}</p>}
+      {refused && <p className="text-sm text-destructive">{refused}</p>}
+      <DialogError />
 
       <DialogFooter>
-        <Button type="button" variant="ghost" onClick={closeDialog} disabled={loading}>
+        <Button type="button" variant="ghost" onClick={closeDialog} disabled={submitting}>
           Cancel
         </Button>
-        <Button type="button" onClick={submit} disabled={loading || !signal || !trigger}>
+        <Button type="button" onClick={() => void submit()} disabled={submitting || !signal || !trigger}>
           Fire
         </Button>
       </DialogFooter>

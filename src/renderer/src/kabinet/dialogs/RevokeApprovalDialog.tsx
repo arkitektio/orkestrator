@@ -1,6 +1,6 @@
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { useOperation } from "@/core/modules/hooks/useOperation";
-import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Label } from "@/core/ui/label";
@@ -23,30 +23,26 @@ export const RevokeApprovalDialog = (props: { ids: string[] }) => {
   const [revokeApproval] = useRevokeApprovalMutation({ refetchQueries: [ListReleaseApprovalsDocument] });
   const revokeMandate = useOperation("lok.revokeMandate");
   const [signOut, setSignOut] = useState(true);
-  const [busy, setBusy] = useState(false);
 
   const approvals = data?.releaseApprovals ?? [];
   const title =
     approvals.length === 1 ? `Revoke approval of ${approvals[0].release.name}?` : `Revoke ${props.ids.length} approvals?`;
 
-  const submit = async () => {
-    setBusy(true);
-    const results = await Promise.allSettled(
-      approvals.map(async (approval) => {
-        if (!approval.revokedAt) await revokeApproval({ variables: { id: approval.id } });
-        if (signOut) await revokeMandate({ id: approval.mandateId });
-      }),
-    );
-    setBusy(false);
-    const failed = results.filter((result): result is PromiseRejectedResult => result.status === "rejected");
-    if (failed.length === 0) {
-      toast.success(approvals.length === 1 ? "Approval revoked" : `${approvals.length} approvals revoked`);
-      closeDialog();
-      return;
-    }
-    const reason = failed[0].reason;
-    toast.error(reason instanceof Error ? reason.message : "Could not revoke");
-  };
+  // Every approval is tried; the first failure stays in the dialog, and the
+  // list behind it shows which ones were revoked.
+  const { submit, submitting: busy } = useDialogSubmit(
+    async () => {
+      const results = await Promise.allSettled(
+        approvals.map(async (approval) => {
+          if (!approval.revokedAt) await revokeApproval({ variables: { id: approval.id } });
+          if (signOut) await revokeMandate({ id: approval.mandateId });
+        }),
+      );
+      const failed = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
+      if (failed) throw failed.reason;
+    },
+    { errorTitle: approvals.length === 1 ? "Couldn't revoke the approval" : "Couldn't revoke every approval" },
+  );
 
   return (
     <>
@@ -67,7 +63,7 @@ export const RevokeApprovalDialog = (props: { ids: string[] }) => {
         <Button variant="outline" onClick={() => closeDialog()} disabled={busy}>
           Cancel
         </Button>
-        <Button variant="destructive" onClick={submit} disabled={busy || approvals.length === 0}>
+        <Button variant="destructive" onClick={() => void submit()} disabled={busy || approvals.length === 0}>
           {busy ? "Revoking…" : "Revoke"}
         </Button>
       </DialogFooter>

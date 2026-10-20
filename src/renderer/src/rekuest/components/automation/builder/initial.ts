@@ -1,4 +1,4 @@
-import { ScheduleOverlap, SignalKind } from "@/rekuest/api/graphql";
+import { ScheduleOverlap, SignalKind, TaskPolicy } from "@/rekuest/api/graphql";
 import { AutomationKind } from "@/rekuest/lib/automation";
 import { CadenceDraft, cadenceFromSchedule } from "@/rekuest/lib/cron";
 import { ConditionDraft, fromWireConditions } from "@/rekuest/lib/triggerConditions";
@@ -18,6 +18,8 @@ export type AutomationInitial = {
   name?: string;
   args?: Record<string, unknown>;
   enabled?: boolean;
+  /** Whether what its runs ask other actions to do waits for approval (ASK, the default). */
+  policy?: TaskPolicy;
   cadence?: CadenceDraft;
   ephemeralRuns?: boolean;
   when?: SignalWhen;
@@ -53,6 +55,7 @@ const argsOf = (args: unknown): Record<string, unknown> =>
 export const initialFromSchedule = (schedule: {
   name: string;
   enabled: boolean;
+  policy?: TaskPolicy;
   args?: unknown;
   cron?: string | null;
   intervalSeconds?: number | null;
@@ -72,6 +75,7 @@ export const initialFromSchedule = (schedule: {
   name: schedule.name,
   args: argsOf(schedule.args),
   enabled: schedule.enabled,
+  policy: schedule.policy,
   cadence: cadenceFromSchedule(schedule),
   ephemeralRuns: schedule.ephemeralRuns,
   pin: pinOf(schedule),
@@ -83,6 +87,7 @@ export const initialFromSchedule = (schedule: {
 export const initialFromTrigger = (trigger: {
   name: string;
   enabled: boolean;
+  policy?: TaskPolicy;
   args?: unknown;
   identifier: string;
   kind: SignalKind;
@@ -101,6 +106,7 @@ export const initialFromTrigger = (trigger: {
   name: trigger.name,
   args: argsOf(trigger.args),
   enabled: trigger.enabled,
+  policy: trigger.policy,
   when: { identifier: trigger.identifier, kind: trigger.kind },
   conditions: fromWireConditions(trigger.conditions),
   port: trigger.port,

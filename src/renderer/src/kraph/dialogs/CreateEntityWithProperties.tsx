@@ -1,3 +1,4 @@
+import { useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
 import { DateTimePicker } from "@/core/ui/datetime-picker";
@@ -16,9 +17,8 @@ import {
 import { buildItoldyousoMetric, isManuallyAssertable } from "@/kraph/lib/itoldyouso";
 import { enUS } from "date-fns/locale";
 import { AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 
 type PropertyValue = string | number | boolean | Date | null | undefined;
 
@@ -248,11 +248,14 @@ export const CreateEntityWithPropertiesDialog = (props: {
   const { form, validateForm } = useCreateEntityForm(props.category);
   const [propertyErrors, setPropertyErrors] = useState<Record<string, string>>({});
 
-  const [assertEntity, { loading }] = useAssertEntityExistsMutation({
-    onError: (error) => {
-      toast.error(`Failed to create entity: ${error.message}`);
-    },
-  });
+  const { report, clear } = useDialogError();
+  const [submitting, setSubmitting] = useState(false);
+  // What a failed submit already did, so a retry neither claims a second
+  // entity nor records a value twice.
+  const createdId = useRef<string | null>(null);
+  const recorded = useRef(new Set<string>());
+
+  const [assertEntity] = useAssertEntityExistsMutation();
 
   const [assertMetricValue] = useAssertMetricValueMutation({
     refetchQueries: ["EntityNodes", "GetEntityCategory"],
@@ -264,60 +267,69 @@ export const CreateEntityWithPropertiesDialog = (props: {
 
     if (Object.keys(errors).length > 0) {
       setPropertyErrors(errors);
-      toast.error("Please fix the validation errors");
       return;
     }
 
     setPropertyErrors({});
-
-    // The entity is created bare: properties are derived, so the values typed
-    // here are not part of it. They are recorded afterwards as "itoldyouso"
-    // metrics against the new entity — evidence with no measurement behind it,
-    // which the category's derivation rules then fold into the properties.
-    const created = await assertEntity({
-      variables: {
-        input: {
-          // Claims name the word, not the category row.
-          term: props.category.term?.key ?? props.category.key,
-        },
-      },
-    });
-
-    const entityId = created.data?.assertEntityExists.instance.id;
-    if (!entityId) return;
-
-    const assertions = (props.category.propertyDefinitions ?? [])
-      .filter((def) => isManuallyAssertable(def.valueKind))
-      .map((def) => ({ def, value: data.properties[def.key] }))
-      .filter(({ value }) => value !== undefined && value !== null && value !== "");
-
+    clear();
+    setSubmitting(true);
     try {
-      for (const { def, value } of assertions) {
-        await assertMetricValue({
-          variables: {
-            input: buildItoldyousoMetric({
-              entityId,
-              key: def.key,
-              valueKind: def.valueKind,
-              value: serializePropertyValue(value, def.valueKind),
-              unit: def.unit,
-            }),
-          },
-        });
+      // The entity is created bare: properties are derived, so the values typed
+      // here are not part of it. They are recorded afterwards as "itoldyouso"
+      // metrics against the new entity — evidence with no measurement behind it,
+      // which the category's derivation rules then fold into the properties.
+      let entityId = createdId.current;
+      if (!entityId) {
+        try {
+          const created = await assertEntity({
+            variables: {
+              input: {
+                // Claims name the word, not the category row.
+                term: props.category.term?.key ?? props.category.key,
+              },
+            },
+          });
+          entityId = created.data?.assertEntityExists.instance.id ?? null;
+        } catch (error) {
+          report(error, "Couldn't create the entity");
+          return;
+        }
+        if (!entityId) return;
+        createdId.current = entityId;
       }
-    } catch (error) {
-      // The entity exists either way — say so rather than implying nothing happened.
-      toast.error(
-        `Entity created, but recording its values failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-      closeDialog();
-      return;
-    }
 
-    toast.success("Entity created successfully");
-    closeDialog();
+      const assertions = (props.category.propertyDefinitions ?? [])
+        .filter((def) => isManuallyAssertable(def.valueKind))
+        .filter((def) => !recorded.current.has(def.key))
+        .map((def) => ({ def, value: data.properties[def.key] }))
+        .filter(({ value }) => value !== undefined && value !== null && value !== "");
+
+      try {
+        for (const { def, value } of assertions) {
+          await assertMetricValue({
+            variables: {
+              input: buildItoldyousoMetric({
+                entityId,
+                key: def.key,
+                valueKind: def.valueKind,
+                value: serializePropertyValue(value, def.valueKind),
+                unit: def.unit,
+              }),
+            },
+          });
+          recorded.current.add(def.key);
+        }
+      } catch (error) {
+        // The entity exists either way — say so, and stay open: submitting
+        // again records only the values still missing, on the same entity.
+        report(error, "Created the entity, but couldn't record its values");
+        return;
+      }
+
+      closeDialog();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -358,14 +370,14 @@ export const CreateEntityWithPropertiesDialog = (props: {
 
           {/* Footer */}
           <div className="flex gap-2 pt-4 border-t">
-            <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? "Creating..." : "Create Entity"}
+            <Button type="submit" disabled={submitting} className="flex-1">
+              {submitting ? "Creating..." : createdId.current ? "Record the remaining values" : "Create Entity"}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => closeDialog()}
-              disabled={loading}
+              disabled={submitting}
             >
               Cancel
             </Button>

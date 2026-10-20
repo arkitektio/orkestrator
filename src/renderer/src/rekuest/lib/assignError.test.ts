@@ -1,10 +1,8 @@
 import { ApolloError } from "@apollo/client";
 import { GraphQLError } from "graphql";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-const error = vi.fn();
-vi.mock("@/core/notify", () => ({ toast: { error: (...args: unknown[]) => error(...args) } }));
-
+import { toastStore } from "@/core/notify/toasts";
 import { AssignError, assignErrorMessage, notifyAssignError, toAssignError } from "./assignError";
 
 const graphQLError = (message: string, code?: string) =>
@@ -57,7 +55,11 @@ describe("notifyAssignError", () => {
   it("raises one toast keyed by the site", () => {
     notifyAssignError(toAssignError(graphQLError("boom")), { id: "site" });
 
-    expect(error).toHaveBeenCalledTimes(1);
-    expect(error).toHaveBeenCalledWith("Couldn't run the task", { id: "site", description: "boom" });
+    notifyAssignError(toAssignError(graphQLError("boom again")), { id: "site" });
+
+    const toasts = toastStore.getState().toasts;
+    expect(toasts).toHaveLength(1);
+    expect(toasts[0]).toMatchObject({ id: "site", kind: "error", message: "Couldn't run the task", description: "boom again" });
+    expect(toasts[0].technical).toContain("path: assign");
   });
 });

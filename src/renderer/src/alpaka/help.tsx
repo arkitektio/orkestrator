@@ -50,6 +50,7 @@ export const ALPAKA_HELP = {
         <>When the picker reads <b>No replyer</b>, your message is saved in the room but nothing answers it. That is also what you see when no connected app offers a replyer.</>,
         <>If the picker shows an <b>Install Replyer</b> list, choosing an entry installs that replyer. Open the picker again afterwards to select it.</>,
         <>The <b>Info</b> tab shows who opened the room, who takes part in it and how many messages it holds.</>,
+        <>A replyer that also takes the kind of object the conversation is about (what is attached, else what the room was opened about) is listed first, under <b>For</b> and that kind, and is chosen for you. It is handed that object with each message.</>,
       ]}
     />
   ),

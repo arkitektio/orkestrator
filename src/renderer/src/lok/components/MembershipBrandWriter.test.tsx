@@ -17,13 +17,12 @@ vi.mock("@/core/connection/arkitekt/host", async (importOriginal) => ({
   Arkitekt: { useSelfService: () => ({ client }) },
 }));
 
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-
 import {
   MyContextDocument,
   UpdateMembershipColorsDocument,
 } from "../api/graphql";
 import { resetBrandTheme, setBrandBase } from "@/core/settings/store/brandTheme";
+import { resetToasts, toastStore } from "@/core/notify/toasts";
 import { MembershipBrandWriter } from "./MembershipBrandWriter";
 
 const ORG = { __typename: "Organization", id: "org-1", name: "Org", slug: "org" };
@@ -108,6 +107,7 @@ const hue = () => document.documentElement.style.getPropertyValue("--brand-hue")
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  resetToasts();
   resetBrandTheme();
   setBrandBase({ hue: 267.256, chroma: 0.20962 });
 });
@@ -175,5 +175,8 @@ describe("MembershipBrandWriter", () => {
 
     // Back to the organization's brand, which is what is actually stored.
     expect(hue()).toBe("200");
+    // And the failure is said once, by this writer (the mutation rejects).
+    const errors = toastStore.getState().toasts.filter((t) => t.kind === "error");
+    expect(errors.map((t) => t.message)).toEqual(["Couldn't save your brand colour"]);
   });
 });

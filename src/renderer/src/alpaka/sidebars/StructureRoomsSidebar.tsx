@@ -1,3 +1,4 @@
+import { reportError } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
@@ -230,22 +231,26 @@ export const StructureRoomsSidebar = ({
       return;
     }
 
-    const result = await createRoom({
-      variables: {
-        input: {
-          title: `Chat about ${identifier}`,
-          description: `Talking about ${object.id}`,
-          talkingAbout: [talkingAbout],
+    try {
+      const result = await createRoom({
+        variables: {
+          input: {
+            title: `Chat about ${identifier}`,
+            description: `Talking about ${object.id}`,
+            talkingAbout: [talkingAbout],
+          },
         },
-      },
-    });
+      });
 
-    const nextRoomId = result.data?.createRoom.id;
-    await refetch();
+      const nextRoomId = result.data?.createRoom.id;
+      await refetch();
 
-    if (nextRoomId) {
-      storeRoomTalkingAbout(nextRoomId, [talkingAbout]);
-      selectRoom(nextRoomId);
+      if (nextRoomId) {
+        storeRoomTalkingAbout(nextRoomId, [talkingAbout]);
+        selectRoom(nextRoomId);
+      }
+    } catch (e) {
+      reportError(e, "Couldn't start a chat");
     }
   }, [createRoom, identifier, object.id, refetch, selectRoom, talkingAbout]);
 

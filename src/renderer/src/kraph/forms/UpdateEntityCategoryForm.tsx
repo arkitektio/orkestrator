@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { ChoicesField } from "@/core/forms/ChoicesField";
 import { ParagraphField } from "@/core/forms/ParagraphField";
 import { StringField } from "@/core/forms/StringField";
@@ -10,7 +10,6 @@ import { Form } from "@/core/ui/form";
 import { Trash2 } from "lucide-react";
 import { buildDerivationRule } from "../components/schema-builder/utils";
 import { useFieldArray, useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 import {
   DerivationType,
   EntityCategoryFragment,
@@ -31,7 +30,11 @@ const TForm = (props: { entityCategory: EntityCategoryFragment, onSuccess?: () =
     refetchQueries: ["GetGraph"],
   });
 
-  const { closeDialog } = useDialog();
+  const { submit, submitting } = useDialogSubmit(
+    (data: UpdateEntityCategoryMutationVariables["input"]) =>
+      update({ variables: { input: { ...data } } }),
+    { errorTitle: "Couldn't update the entity category", onSuccess: () => props.onSuccess?.() },
+  );
 
   const form = useForm<UpdateEntityCategoryMutationVariables["input"]>({
     defaultValues: {
@@ -68,21 +71,7 @@ const TForm = (props: { entityCategory: EntityCategoryFragment, onSuccess?: () =
     <>
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(async (data) => {
-            update({
-              variables: {
-                input: {
-                  ...data,
-                },
-              },
-            }).then(() => {
-              toast.success("Entity Category updated");
-              props.onSuccess?.();
-              closeDialog();
-            }).catch((e) => {
-              toast.error("Error updating Entity Category: " + e.message);
-            });
-          })}
+          onSubmit={form.handleSubmit(submit)}
         >
           <div className="grid grid-cols-2 gap-2">
             <div className="col-span-2 flex-col gap-1 flex">
@@ -197,7 +186,7 @@ const TForm = (props: { entityCategory: EntityCategoryFragment, onSuccess?: () =
           </div>
 
           <DialogFooter className="mt-2">
-            <Button type="submit">Save</Button>
+            <Button type="submit" disabled={submitting}>Save</Button>
           </DialogFooter>
         </form>
       </Form>

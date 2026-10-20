@@ -22,7 +22,7 @@ export const CreateBudgetForm = (props: { category?: string; currency?: string }
     refetchQueries: [ListBudgetsDocument, BudgetStatusDocument],
   });
   const [searchCategories] = useSearchCategoriesLazyQuery();
-  const submit = useGraphQLDialog(create, { successMessage: "Budget created" });
+  const submit = useGraphQLDialog(create, { errorTitle: "Couldn't create the budget" });
 
   const form = useForm<Values>({
     defaultValues: { category: props.category ?? null, amount: null, currency: props.currency ?? "EUR" },

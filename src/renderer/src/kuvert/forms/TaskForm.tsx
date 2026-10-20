@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { SwitchField } from "@/core/forms/SwitchField";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
@@ -7,7 +7,6 @@ import { Input } from "@/core/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
 import { Spinner } from "@/core/ui/spinner";
 import { Textarea } from "@/core/ui/textarea";
-import { toast } from "@/core/notify";
 import { useForm, useFormContext } from "react-hook-form";
 import {
   GetThreadDocument,
@@ -19,7 +18,7 @@ import {
 } from "../api/graphql";
 import { ListDot } from "../components/tasks/ListDot";
 import { fromLocalInput, TASK_VIEWS, toLocalInput } from "../components/tasks/taskOps";
-import { toastText } from "../errors";
+import { inKuvertWords } from "../errors";
 import { TextField } from "./fields";
 
 type Values = { title: string; notes: string; dueAt: string; list: string; pinned: boolean };
@@ -93,7 +92,6 @@ const Fields = () => {
 
 /** The form itself; `task` edits it, else a new one (with `threads`, on `list`). */
 const TaskFormBody = ({ task, threads = [], list }: { task?: ListTaskFragment; threads?: string[]; list?: string }) => {
-  const { closeDialog } = useDialog();
   const refetchQueries = [...TASK_VIEWS, ...(threads.length ? [GetThreadDocument] : [])];
   const [create, created] = useCreateTaskMutation({ refetchQueries });
   const [update, updated] = useUpdateTaskMutation({ refetchQueries });
@@ -105,6 +103,11 @@ const TaskFormBody = ({ task, threads = [], list }: { task?: ListTaskFragment; t
       list: task?.list?.id ?? list ?? NO_LIST,
       pinned: task?.pinned ?? false,
     },
+  });
+
+  // The task shows in the task views: closing is the confirmation.
+  const { submit: save, submitting } = useDialogSubmit((work: () => Promise<unknown>) => inKuvertWords(work()), {
+    errorTitle: task ? "Couldn't save the task" : "Couldn't create the task",
   });
 
   const submit = (v: Values) => {
@@ -119,15 +122,11 @@ const TaskFormBody = ({ task, threads = [], list }: { task?: ListTaskFragment; t
       form.setError("title", { message: "A task needs a title" });
       return;
     }
-    const work = task
-      ? update({ variables: { input: { id: task.id, ...fields } } })
-      : create({ variables: { input: { ...fields, threads } } });
-    return work
-      .then(() => {
-        toast.success(task ? "Task updated" : "Task created");
-        closeDialog();
-      })
-      .catch((e) => toast.error(toastText(e)));
+    return save(() =>
+      task
+        ? update({ variables: { input: { id: task.id, ...fields } } })
+        : create({ variables: { input: { ...fields, threads } } }),
+    );
   };
 
   return (
@@ -143,7 +142,7 @@ const TaskFormBody = ({ task, threads = [], list }: { task?: ListTaskFragment; t
         </DialogHeader>
         <Fields />
         <DialogFooter>
-          <Button type="submit" disabled={created.loading || updated.loading}>
+          <Button type="submit" disabled={created.loading || updated.loading || submitting}>
             {task ? "Save" : "Create"}
           </Button>
         </DialogFooter>

@@ -2,6 +2,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { BankCategory } from "@/bank/linkers";
 import { toast } from "@/core/notify";
+import { reportBankErrorAs } from "../errors";
 import { ListCategoriesDocument, useSyncBaseCategoriesMutation } from "../api/graphql";
 import CategoryList from "../components/lists/CategoryList";
 import { BANK_HELP } from "../help";
@@ -29,7 +30,7 @@ const CategoriesPage = () => {
                   const added = r.data?.syncBaseCategories.length ?? 0;
                   toast.success(added ? `Added ${added} default categories` : "All default categories are there");
                 })
-                .catch((e: Error) => toast.error(e.message))
+                .catch(reportBankErrorAs("Couldn't add the default categories"))
             }
           >
             Add defaults

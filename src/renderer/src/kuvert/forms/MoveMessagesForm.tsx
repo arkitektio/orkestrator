@@ -1,9 +1,8 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
 import React, { useState } from "react";
-import { toast } from "@/core/notify";
 import {
   ListMessagesDocument,
   ListThreadsDocument,
@@ -13,12 +12,11 @@ import {
   useMoveMessagesMutation,
 } from "../api/graphql";
 import { FOLDER_ICON } from "../components/folderIcon";
-import { toastText } from "../errors";
+import { inKuvertWords } from "../errors";
 import { sortFolders } from "../format";
 
 /** Move mail to another folder of its mailbox. Mail from several mailboxes cannot move together. */
 export const MoveMessagesForm = ({ messages }: { messages: string[] }) => {
-  const { closeDialog } = useDialog();
   const [filter, setFilter] = useState("");
   const { data: selected } = useListMessagesQuery({
     variables: { filters: { ids: messages }, pagination: { limit: messages.length } },
@@ -32,6 +30,11 @@ export const MoveMessagesForm = ({ messages }: { messages: string[] }) => {
   const [move, { loading }] = useMoveMessagesMutation({
     refetchQueries: [ListThreadsDocument, ListMessagesDocument, MailboxTreeDocument],
   });
+  // The mail leaves the list it was in: closing is the confirmation.
+  const { submit, submitting } = useDialogSubmit(
+    (folder: string) => inKuvertWords(move({ variables: { input: { messages, folder } } })),
+    { errorTitle: "Couldn't move the mail" },
+  );
 
   const folders = sortFolders(data?.mailFolders ?? []).filter(
     (f) => f.selectable && f.existsOnServer && f.path.toLowerCase().includes(filter.toLowerCase()),
@@ -54,15 +57,8 @@ export const MoveMessagesForm = ({ messages }: { messages: string[] }) => {
                 key={folder.id}
                 variant="ghost"
                 className="justify-start gap-2"
-                disabled={loading || (current.size === 1 && current.has(folder.id))}
-                onClick={() =>
-                  move({ variables: { input: { messages, folder: folder.id } } })
-                    .then(() => {
-                      toast.success(`Moved to ${folder.name}`);
-                      closeDialog();
-                    })
-                    .catch((e) => toast.error(toastText(e)))
-                }
+                disabled={loading || submitting || (current.size === 1 && current.has(folder.id))}
+                onClick={() => void submit(folder.id)}
               >
                 {React.createElement(FOLDER_ICON[folder.role], { className: "h-4 w-4" })}
                 <span className="truncate">{folder.path}</span>

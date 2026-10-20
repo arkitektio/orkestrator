@@ -2,7 +2,6 @@ import { Button } from "@/core/ui/button";
 import { Checkbox } from "@/core/ui/checkbox";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/core/ui/empty";
 import { Spinner } from "@/core/ui/spinner";
-import { toast } from "@/core/notify";
 import { cn } from "@/core/util/utils";
 import { AlarmClock, ListTodo, MessagesSquare, Pin } from "lucide-react";
 import React, { useMemo, useRef, useState } from "react";
@@ -15,7 +14,7 @@ import {
   useSetTaskStatusMutation,
   useTasksCountQuery,
 } from "../../api/graphql";
-import { toastText } from "../../errors";
+import { reportKuvertErrorAs } from "../../errors";
 import { MailTask } from "../../linkers";
 import { ListDot } from "./ListDot";
 import { useTaskSelection } from "./selection";
@@ -37,9 +36,9 @@ const DoneBox = ({ task }: { task: ListTaskFragment }) => {
       aria-label={done ? "Open again" : "Mark done"}
       onClick={(e) => e.stopPropagation()}
       onCheckedChange={(checked) =>
-        setStatus({ variables: { input: { tasks: [task.id], status: checked ? TaskStatus.Done : TaskStatus.Open } } })
-          .then(() => checked && toast.success("Done"))
-          .catch((e) => toast.error(toastText(e)))
+        setStatus({ variables: { input: { tasks: [task.id], status: checked ? TaskStatus.Done : TaskStatus.Open } } }).catch(
+          reportKuvertErrorAs(checked ? "Couldn't finish the task" : "Couldn't open the task again"),
+        )
       }
     />
   );

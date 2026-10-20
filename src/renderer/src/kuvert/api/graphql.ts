@@ -245,12 +245,12 @@ export type CreateCategoryInput = {
   sync?: CategorySync;
 };
 
-/** A mailbox to link with a username and (app) password. Servers default to the preset of the address's provider when there is one (`mailPresets`). */
+/** A mailbox to link with a username and (app) password, through one of the organization's IMAP providers. A provider with fixed servers takes only the login; otherwise servers default to the preset of the address's provider when there is one (`mailPresets`). */
 export type CreateMailAccountInput = {
   /** The sender name of sent mail. */
   displayName?: InputMaybe<Scalars['String']['input']>;
   emailAddress: Scalars['String']['input'];
-  /** The IMAP or POP3 server; the preset's by default. */
+  /** The IMAP or POP3 server; the preset's by default. Not with a provider that fixes the servers. */
   incoming?: InputMaybe<ServerInput>;
   /** A display name for the mailbox; the address by default. */
   name?: InputMaybe<Scalars['String']['input']>;
@@ -258,10 +258,13 @@ export type CreateMailAccountInput = {
   password: Scalars['String']['input'];
   /** POP3: keep downloaded mail on the server. */
   popLeaveOnServer?: Scalars['Boolean']['input'];
-  protocol?: Protocol;
-  /** Append sent mail to the Sent folder; the preset's choice by default (off for Gmail/Microsoft). */
+  /** How incoming mail is read: the provider's when it fixes the servers, else IMAP by default. */
+  protocol?: InputMaybe<Protocol>;
+  /** The IMAP provider to link through (see `mailProviders`). */
+  provider: Scalars['ID']['input'];
+  /** Append sent mail to the Sent folder; the provider's choice with fixed servers, else the preset's (off for Gmail/Microsoft). */
   saveSentCopy?: InputMaybe<Scalars['Boolean']['input']>;
-  /** The SMTP server; the preset's by default. Without one the mailbox cannot send. */
+  /** The SMTP server; the preset's by default. Without one the mailbox cannot send. Not with a provider that fixes the servers. */
   smtp?: InputMaybe<ServerInput>;
   /** The separate SMTP password. */
   smtpPassword?: InputMaybe<Scalars['String']['input']>;
@@ -270,6 +273,40 @@ export type CreateMailAccountInput = {
   /** The login; the address by default. */
   username?: InputMaybe<Scalars['String']['input']>;
   visibility?: Visibility;
+};
+
+/** A new Gmail or Microsoft provider: one OAuth client (a Google Cloud OAuth client, an Entra app registration). */
+export type CreateOAuthProviderInput = {
+  /** What to switch on; everything the kind can do by default (see `providerKinds`). */
+  capabilities?: InputMaybe<Array<ProviderCapability>>;
+  /** The OAuth client id. */
+  clientId: Scalars['String']['input'];
+  /** The client secret (a public client with PKCE has none). Stored encrypted and never returned. */
+  clientSecret?: InputMaybe<Scalars['String']['input']>;
+  /** GMAIL or MICROSOFT. */
+  kind: Provider;
+  /** What to call it, unique in the organization. */
+  name: Scalars['String']['input'];
+  /** The redirect URLs registered for the client, the default first. */
+  redirectUrls: Array<Scalars['String']['input']>;
+  /** Microsoft: the Entra tenant (id or domain); `common` (any account) by default. */
+  tenant?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** A new IMAP provider. With `incoming` (and `protocol`) its servers are fixed and members only give their login; without, each member names the servers (`mailPresets` fills in well-known ones). */
+export type CreateServerProviderInput = {
+  /** What to switch on; everything the kind can do by default (see `providerKinds`). */
+  capabilities?: InputMaybe<Array<ProviderCapability>>;
+  /** The fixed IMAP or POP3 server; omitted: members name their own. */
+  incoming?: InputMaybe<ServerInput>;
+  /** What to call it, unique in the organization. */
+  name: Scalars['String']['input'];
+  /** With fixed servers: how incoming mail is read. */
+  protocol?: InputMaybe<Protocol>;
+  /** Whether its mailboxes append sent mail to Sent (off when the server files it itself). */
+  saveSentCopy?: Scalars['Boolean']['input'];
+  /** The fixed SMTP server (only with `incoming`); omitted with fixed servers: its mailboxes cannot send. */
+  smtp?: InputMaybe<ServerInput>;
 };
 
 /** A new task, optionally with its conversations. */
@@ -311,6 +348,29 @@ export type DeleteResult = {
   deleted: Scalars['Int']['output'];
 };
 
+/** One constraint on an object's descriptors, in the shape a rekuest port states its `requires` in -- so a picker hands a port's constraints on unchanged. `key` is one of the keys the structure declares (e.g. `@kuvert/has_attachments`); a key it does not declare is refused. */
+export type DescriptorConstraintInput = {
+  /** The descriptor key, e.g. `@kuvert/has_attachments` */
+  key: Scalars['String']['input'];
+  /** How the object's value is compared with `value`. MATCHES is equality, as EQUALS is */
+  operator: DescriptorOperator;
+  /** The value compared against: a number for GTE and LTE, a list for IN and NOT_IN, true or false for EXISTS, the member looked for with CONTAINS */
+  value?: InputMaybe<Scalars['JSON']['input']>;
+};
+
+/** How a descriptor constraint compares the object's value with the stated one. The operators a rekuest port's `requires` and `provides` are written in, with the same meaning. */
+export enum DescriptorOperator {
+  Contains = 'CONTAINS',
+  Equals = 'EQUALS',
+  Exists = 'EXISTS',
+  Gte = 'GTE',
+  In = 'IN',
+  Lte = 'LTE',
+  Matches = 'MATCHES',
+  NotEquals = 'NOT_EQUALS',
+  NotIn = 'NOT_IN'
+}
+
 export type FinishBigFileUploadInput = {
   storeId: Scalars['String']['input'];
   valid?: Scalars['Boolean']['input'];
@@ -343,7 +403,7 @@ export type MailAccount = {
   authMethod: AuthMethod;
   /** Every synced folder has reached the backfill window. */
   backfillDone: Scalars['Boolean']['output'];
-  /** Whether the mailbox can send (it has an SMTP server). */
+  /** Whether the mailbox can send: it has an SMTP server, and its provider is enabled with SEND switched on. */
   canSend: Scalars['Boolean']['output'];
   /** What the incoming server announced (IMAP CAPABILITY, POP3 CAPA). */
   capabilities: Array<Scalars['String']['output']>;
@@ -376,6 +436,8 @@ export type MailAccount = {
   lastErrorCode?: Maybe<MailErrorCode>;
   /** When the last successful sync finished. */
   lastSyncedAt?: Maybe<Scalars['DateTime']['output']>;
+  /** The organization's provider the mailbox was linked through (null: none any more; an admin has to set one up). */
+  mailProvider?: Maybe<MailProvider>;
   /** A display name for the mailbox (e.g. 'Work'). */
   name: Scalars['String']['output'];
   /** The organization this mailbox belongs to. */
@@ -452,6 +514,7 @@ export type MailAccountFilter = {
   OR?: InputMaybe<MailAccountFilter>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   mine?: InputMaybe<Scalars['Boolean']['input']>;
+  provider?: InputMaybe<Scalars['ID']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<MailAccountStatus>;
 };
@@ -531,7 +594,7 @@ export enum MailChangeState {
   Pending = 'PENDING'
 }
 
-/** What went wrong, for a client to offer a fix. Also stored as ``last_error_code``. NOT_CONFIGURED: The service is not configured for this (an OAuth client, the datalayer); AUTH_FAILED: The server refused the username or password; CONSENT_EXPIRED: The OAuth grant was revoked or ran out; link the mailbox again; CONNECTION_FAILED: The server could not be reached, or the connection broke; TLS_FAILED: The TLS handshake failed (certificate or protocol); TLS_REQUIRED: The mailbox asks for a connection without TLS, which is not allowed; HOST_NOT_ALLOWED: The host resolves to a private or internal address; SYNC_IN_PROGRESS: Another sync holds this mailbox right now; RATE_LIMITED: Synced too recently; try again later; SERVER_ERROR: The server answered a command with an error; SEND_REJECTED: The SMTP server refused the message or a recipient; UNSUPPORTED_BY_PROTOCOL: POP3 cannot do this (folders, flags on the server); MAILBOX_INACTIVE: The mailbox is disabled or needs new credentials; INVALID_STATE: The link state is unknown, used or belongs to someone else; CODE_EXPIRED: The link was not completed in time; PROVIDER_ERROR: The OAuth provider answered with an error; UNSUPPORTED_BY_POLICY: The mailbox is set not to change this on the server (its push settings); KEYWORDS_NOT_PERMITTED: The folder does not keep keywords (no \\* in PERMANENTFLAGS), the category stays local; MESSAGE_GONE: The message is no longer where the change expected it on the server; UNSAFE_EXPUNGE: Without UIDPLUS an expunge would also remove other deleted messages of the folder. */
+/** What went wrong, for a client to offer a fix. Also stored as ``last_error_code``. NOT_CONFIGURED: The organization or the service is not set up for this (no usable provider, the datalayer); AUTH_FAILED: The server refused the username or password; CONSENT_EXPIRED: The OAuth grant was revoked or ran out; link the mailbox again; CONNECTION_FAILED: The server could not be reached, or the connection broke; TLS_FAILED: The TLS handshake failed (certificate or protocol); TLS_REQUIRED: The mailbox asks for a connection without TLS, which is not allowed; HOST_NOT_ALLOWED: The host resolves to a private or internal address; SYNC_IN_PROGRESS: Another sync holds this mailbox right now; RATE_LIMITED: Synced too recently; try again later; SERVER_ERROR: The server answered a command with an error; SEND_REJECTED: The SMTP server refused the message or a recipient; UNSUPPORTED_BY_PROTOCOL: POP3 cannot do this (folders, flags on the server); MAILBOX_INACTIVE: The mailbox is disabled or needs new credentials; INVALID_STATE: The link state is unknown, used or belongs to someone else; CODE_EXPIRED: The link was not completed in time; PROVIDER_ERROR: The OAuth provider answered with an error; UNSUPPORTED_BY_POLICY: The mailbox is set not to change this on the server (its push settings); KEYWORDS_NOT_PERMITTED: The folder does not keep keywords (no \\* in PERMANENTFLAGS), the category stays local; MESSAGE_GONE: The message is no longer where the change expected it on the server; UNSAFE_EXPUNGE: Without UIDPLUS an expunge would also remove other deleted messages of the folder. */
 export enum MailErrorCode {
   AuthFailed = 'AUTH_FAILED',
   CodeExpired = 'CODE_EXPIRED',
@@ -620,11 +683,78 @@ export type MailPreset = {
   note: Scalars['String']['output'];
   /** The provider is linked through OAuth (`startOAuthLink`). */
   oauth: Scalars['Boolean']['output'];
-  /** This deployment has an OAuth client for it. */
+  /** The organization has an enabled provider for it (`mailProviders`). */
   oauthConfigured: Scalars['Boolean']['output'];
   pop3?: Maybe<ServerSettings>;
   provider: Provider;
   saveSentCopy: Scalars['Boolean']['output'];
+  smtp?: Maybe<ServerSettings>;
+};
+
+/** A provider the organization's admins set up (an IMAP server, a Gmail or Microsoft OAuth client). Every mailbox is linked through one; credentials are never returned. */
+export type MailProvider = {
+  __typename?: 'MailProvider';
+  /** The capabilities switched on for this provider. */
+  capabilities: Array<ProviderCapability>;
+  /** When the provider was set up. */
+  createdAt: Scalars['DateTime']['output'];
+  /** The admin who set it up. */
+  creator?: Maybe<User>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@kuvert/message_count`). The keys are the ones kuvert declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  /** A disabled provider links no mailbox, and its mailboxes neither sync, push nor send. */
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** Which kind of provider this is. */
+  kind: Provider;
+  /** What its kind is and can do. */
+  kindInfo: ProviderKind;
+  /** How many mailboxes of the organization are linked through it (all of them, whoever sees them). */
+  mailboxCount: Scalars['Int']['output'];
+  /** What the organization calls it. */
+  name: Scalars['String']['output'];
+  /** Its OAuth client when it is a Gmail or Microsoft provider, else null. */
+  oauth?: Maybe<OAuthClientSettings>;
+  /** The organization this provider belongs to. */
+  organization: Organization;
+  /** Its servers when it is an IMAP provider, else null. */
+  server?: Maybe<MailServerSettings>;
+  /** When it was last changed. */
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+/**
+ * A provider an organization's admin set up: one kind, its settings and credentials, and what is switched on.
+ *
+ * Every mailbox is linked through one. A Gmail or Microsoft provider is one OAuth client (its
+ * id and redirect URLs in ``settings``, its secret Fernet-encrypted in ``secret``); an IMAP
+ * provider is a mail server (fixed in ``settings``), or any server its members name. What a
+ * kind's ``settings`` hold is :mod:`mail.providers`'s to validate; a kind needing other
+ * settings needs no migration.
+ */
+export type MailProviderFilter = {
+  AND?: InputMaybe<MailProviderFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<MailProviderFilter>;
+  OR?: InputMaybe<MailProviderFilter>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  kind?: InputMaybe<Provider>;
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
+};
+
+/** The servers of an IMAP provider: fixed by the admin, or left to each member (`fixed` false). */
+export type MailServerSettings = {
+  __typename?: 'MailServerSettings';
+  /** True: its mailboxes use these servers, members only give their login. False: members name the servers. */
+  fixed: Scalars['Boolean']['output'];
+  /** With fixed servers: the IMAP or POP3 server. */
+  incoming?: Maybe<ServerSettings>;
+  /** With fixed servers: how incoming mail is read. */
+  protocol?: Maybe<Protocol>;
+  /** Whether its mailboxes append sent mail to Sent. */
+  saveSentCopy: Scalars['Boolean']['output'];
+  /** With fixed servers: the SMTP server (null: its mailboxes cannot send). */
   smtp?: Maybe<ServerSettings>;
 };
 
@@ -747,6 +877,7 @@ export type MessageFilter = {
   hasFlag?: InputMaybe<Scalars['String']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   recipient?: InputMaybe<Scalars['String']['input']>;
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Search by text: a case-insensitive substring of the subject, sender or text; or semantic similarity to them ("flight booking" finds the airline's confirmation). Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   sender?: InputMaybe<Scalars['String']['input']>;
@@ -780,8 +911,12 @@ export type Mutation = {
   completeAuth: AuthSession;
   /** Create a category of a mailbox. */
   createCategory: Category;
-  /** Link a mailbox with a username and (app) password; the login is tested first. */
+  /** Link a mailbox with a username and (app) password through an IMAP provider; the login is tested first. */
   createMailAccount: MailAccount;
+  /** Admins: set up a Gmail or Microsoft OAuth client as a provider. */
+  createOAuthProvider: MailProvider;
+  /** Admins: set up an IMAP provider, with fixed servers or open to any. */
+  createServerProvider: MailProvider;
   /** Create a task, optionally with conversations. */
   createTask: Task;
   /** Create a task list. */
@@ -792,6 +927,8 @@ export type Mutation = {
   deleteMailAccount: Scalars['ID']['output'];
   /** Delete messages (into Trash, or for good). */
   deleteMessages: DeleteResult;
+  /** Admins: remove a provider no mailbox goes through. */
+  deleteProvider: Scalars['ID']['output'];
   /** Delete a task. */
   deleteTask: Scalars['ID']['output'];
   /** Delete a task list; its tasks stay, on no list. */
@@ -824,7 +961,7 @@ export type Mutation = {
   shareMailAccount: MailAccount;
   /** Snooze tasks until a time (null wakes them). */
   snoozeTasks: Array<Task>;
-  /** Start linking (or re-linking) a mailbox through OAuth. */
+  /** Start linking (or re-linking) a mailbox through a Gmail or Microsoft provider. */
   startOAuthLink: AuthSession;
   /** Sync a mailbox now. */
   syncMailAccount: SyncResult;
@@ -840,6 +977,12 @@ export type Mutation = {
   updateMailAccount: MailAccount;
   /** Turn syncing a folder on or off. */
   updateMailFolder: MailFolder;
+  /** Admins: change a Gmail or Microsoft provider; an empty secret keeps the stored one. */
+  updateOAuthProvider: MailProvider;
+  /** Admins: rename, enable or disable any provider, or change its capabilities. */
+  updateProvider: MailProvider;
+  /** Admins: change an IMAP provider; its mailboxes follow new fixed servers. */
+  updateServerProvider: MailProvider;
   /** Change a task. */
   updateTask: Task;
   /** Rename, recolor or move a task list. */
@@ -874,6 +1017,16 @@ export type MutationCreateMailAccountArgs = {
 };
 
 
+export type MutationCreateOAuthProviderArgs = {
+  input: CreateOAuthProviderInput;
+};
+
+
+export type MutationCreateServerProviderArgs = {
+  input: CreateServerProviderInput;
+};
+
+
 export type MutationCreateTaskArgs = {
   input: CreateTaskInput;
 };
@@ -897,6 +1050,11 @@ export type MutationDeleteMailAccountArgs = {
 
 export type MutationDeleteMessagesArgs = {
   input: DeleteMessagesInput;
+};
+
+
+export type MutationDeleteProviderArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1021,6 +1179,21 @@ export type MutationUpdateMailFolderArgs = {
 };
 
 
+export type MutationUpdateOAuthProviderArgs = {
+  input: UpdateOAuthProviderInput;
+};
+
+
+export type MutationUpdateProviderArgs = {
+  input: UpdateProviderInput;
+};
+
+
+export type MutationUpdateServerProviderArgs = {
+  input: UpdateServerProviderInput;
+};
+
+
 export type MutationUpdateTaskArgs = {
   input: UpdateTaskInput;
 };
@@ -1033,6 +1206,19 @@ export type MutationUpdateTaskListArgs = {
 
 export type MutationUpsertTaskArgs = {
   input: UpsertTaskInput;
+};
+
+/** The OAuth client of a Gmail or Microsoft provider. Its secret is never returned. */
+export type OAuthClientSettings = {
+  __typename?: 'OAuthClientSettings';
+  /** The OAuth client id. */
+  clientId: Scalars['String']['output'];
+  /** Whether a client secret is stored (a public client with PKCE has none). */
+  hasSecret: Scalars['Boolean']['output'];
+  /** The redirect URLs a login may use; the first is the default. */
+  redirectUrls: Array<Scalars['String']['output']>;
+  /** Microsoft: the Entra tenant logins go through (`common`: any account). */
+  tenant: Scalars['String']['output'];
 };
 
 export type OffsetPaginationInput = {
@@ -1107,6 +1293,7 @@ export type OutgoingMessageFilter = {
   NOT?: InputMaybe<OutgoingMessageFilter>;
   OR?: InputMaybe<OutgoingMessageFilter>;
   account?: InputMaybe<Scalars['ID']['input']>;
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   status?: InputMaybe<OutgoingStatus>;
 };
 
@@ -1123,12 +1310,38 @@ export enum Protocol {
   Pop3 = 'POP3'
 }
 
-/** Who hosts a mailbox (decides OAuth, presets and Sent-copy behaviour). GENERIC: Any IMAP/POP3 server; GMAIL: Gmail / Google Workspace; MICROSOFT: Outlook.com / Microsoft 365. */
+/** Who hosts a mailbox (decides OAuth, presets and Sent-copy behaviour); also the kind of a :class:`MailProvider`. GENERIC: Any IMAP/POP3 server; GMAIL: Gmail / Google Workspace; MICROSOFT: Outlook.com / Microsoft 365. */
 export enum Provider {
   Generic = 'GENERIC',
   Gmail = 'GMAIL',
   Microsoft = 'MICROSOFT'
 }
+
+/** What a provider may be used for, beyond reading mail (which every one does). SEND: Send mail through its mailboxes' SMTP servers; SCHEDULED_SYNC: Let the unattended sync_all_mailboxes action sync its mailboxes. */
+export enum ProviderCapability {
+  ScheduledSync = 'SCHEDULED_SYNC',
+  Send = 'SEND'
+}
+
+/** A capability a provider can have switched on, as shown to whoever switches it. */
+export type ProviderCapabilityInfo = {
+  __typename?: 'ProviderCapabilityInfo';
+  capability: ProviderCapability;
+  description: Scalars['String']['output'];
+  label: Scalars['String']['output'];
+};
+
+/** A kind of provider this server can run. What a client needs to offer it, without knowing the kinds itself. */
+export type ProviderKind = {
+  __typename?: 'ProviderKind';
+  /** How its mailboxes log in: PASSWORD — link one with `createMailAccount`; XOAUTH2 — with `startOAuthLink`. */
+  authMethod: AuthMethod;
+  /** Everything the kind can do; a provider enables a subset. */
+  capabilities: Array<ProviderCapabilityInfo>;
+  description: Scalars['String']['output'];
+  kind: Provider;
+  label: Scalars['String']['output'];
+};
 
 /** What pushing a mailbox's changes did. */
 export type PushResult = {
@@ -1164,18 +1377,22 @@ export type Query = {
   mailFolders: Array<MailFolder>;
   /** Server settings of well-known providers (the one for `address`, when given). */
   mailPresets: Array<MailPreset>;
+  /** A provider by id. */
+  mailProvider: MailProvider;
+  /** The providers the organization set up; every mailbox is linked through one. */
+  mailProviders: Array<MailProvider>;
   /** A message by id. */
   message: Message;
   /** Messages of the visible mailboxes (paginated, filterable — `search` also matches by meaning — and orderable). */
   messages: Array<Message>;
   /** How many messages match the filters. */
   messagesCount: Scalars['Int']['output'];
-  /** Providers this deployment can link through OAuth. */
-  oauthProviders: Array<Provider>;
   /** Mail sent through the visible mailboxes, newest first. */
   outbox: Array<OutgoingMessage>;
   /** A sent message by id. */
   outgoingMessage: OutgoingMessage;
+  /** The kinds of provider this server can run, each with its capabilities. */
+  providerKinds: Array<ProviderKind>;
   /** A task by id. */
   task: Task;
   /** A task list by id. */
@@ -1246,6 +1463,17 @@ export type QueryMailFoldersArgs = {
 
 export type QueryMailPresetsArgs = {
   address?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryMailProviderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryMailProvidersArgs = {
+  filters?: InputMaybe<MailProviderFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -1409,7 +1637,7 @@ export type SnoozeTasksInput = {
   until?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
-/** Start linking a mailbox through OAuth, or re-link one (`account`) whose grant ran out. */
+/** Start linking a mailbox through one of the organization's Gmail or Microsoft providers, or re-link one (`account`) whose grant ran out. */
 export type StartOAuthLinkInput = {
   /** Re-link this mailbox (owner only). */
   account?: InputMaybe<Scalars['ID']['input']>;
@@ -1418,7 +1646,8 @@ export type StartOAuthLinkInput = {
   /** A display name for the new mailbox. */
   name?: InputMaybe<Scalars['String']['input']>;
   protocol?: Protocol;
-  provider: Provider;
+  /** The provider to link through (see `mailProviders`). A re-link goes through the mailbox's own by default, or another of its kind. */
+  provider?: InputMaybe<Scalars['ID']['input']>;
   /** One of the deployment's registered redirect URLs; the first by default. */
   redirectUrl?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1654,6 +1883,7 @@ export type ThreadFilter = {
   hasAttachments?: InputMaybe<Scalars['Boolean']['input']>;
   hasTask?: InputMaybe<Scalars['Boolean']['input']>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
   /** Only conversations with a message matching the text: the same substring and meaning search as `messages(filters: {search})`. */
   search?: InputMaybe<Scalars['String']['input']>;
   task?: InputMaybe<Scalars['ID']['input']>;
@@ -1699,7 +1929,7 @@ export type UpdateCategoryInput = {
   sync?: InputMaybe<CategorySync>;
 };
 
-/** Changes to a mailbox; omitted fields stay as they are. Changing servers or credentials tests the login first. */
+/** Changes to a mailbox; omitted fields stay as they are. Changing servers or credentials tests the login first. A mailbox whose provider fixes the servers keeps them (an admin changes them on the provider). */
 export type UpdateMailAccountInput = {
   displayName?: InputMaybe<Scalars['String']['input']>;
   /** False pauses the mailbox (DISABLED); true makes it ACTIVE again (after a successful login). */
@@ -1731,6 +1961,39 @@ export type UpdateMailFolderInput = {
   id: Scalars['ID']['input'];
   /** Whether syncs read the folder. Turning it off keeps what is stored. */
   syncEnabled: Scalars['Boolean']['input'];
+};
+
+/** Changes to a Gmail or Microsoft provider; omitted fields stay as they are. Its client id stays while mailboxes go through it (their refresh tokens belong to that client). */
+export type UpdateOAuthProviderInput = {
+  capabilities?: InputMaybe<Array<ProviderCapability>>;
+  clientId?: InputMaybe<Scalars['String']['input']>;
+  /** A new client secret. Omitted or empty: the stored one is kept. */
+  clientSecret?: InputMaybe<Scalars['String']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+  redirectUrls?: InputMaybe<Array<Scalars['String']['input']>>;
+  tenant?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Changes any provider takes, whatever its kind; omitted fields stay as they are. */
+export type UpdateProviderInput = {
+  capabilities?: InputMaybe<Array<ProviderCapability>>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  id: Scalars['ID']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Changes to an IMAP provider; omitted fields stay as they are. Fixed servers may change and its mailboxes follow; while it has mailboxes, its protocol and whether its servers are fixed stay. */
+export type UpdateServerProviderInput = {
+  capabilities?: InputMaybe<Array<ProviderCapability>>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  id: Scalars['ID']['input'];
+  incoming?: InputMaybe<ServerInput>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  protocol?: InputMaybe<Protocol>;
+  saveSentCopy?: InputMaybe<Scalars['Boolean']['input']>;
+  smtp?: InputMaybe<ServerInput>;
 };
 
 /** Changes to a task; omitted fields stay as they are. */
@@ -1780,14 +2043,17 @@ export enum Visibility {
   Shared = 'SHARED'
 }
 
-export type _Entity = Attachment | BigFileStore | Category | MailAccount | MailChange | MailFolder | Message | Organization | OutgoingMessage | Task | TaskList | TaskThread | Thread | User;
+export type _Entity = Attachment | BigFileStore | Category | MailAccount | MailChange | MailFolder | MailProvider | Message | Organization | OutgoingMessage | Task | TaskList | TaskThread | Thread | User;
 
 export type _Service = {
   __typename?: '_Service';
   sdl: Scalars['String']['output'];
 };
 
-export type ListMailAccountFragment = { __typename?: 'MailAccount', id: string, name: string, emailAddress: string, displayName: string, provider: Provider, status: MailAccountStatus, protocol: Protocol, visibility: Visibility, authMethod: AuthMethod, lastSyncedAt?: string | null, lastError?: string | null, lastErrorCode?: MailErrorCode | null, syncing: boolean, canSend: boolean, isOwner: boolean, unreadCount: number, pendingChanges: number, failedChanges: number };
+export type ListMailAccountFragment = { __typename?: 'MailAccount', id: string, name: string, emailAddress: string, displayName: string, provider: Provider, status: MailAccountStatus, protocol: Protocol, visibility: Visibility, authMethod: AuthMethod, lastSyncedAt?: string | null, lastError?: string | null, lastErrorCode?: MailErrorCode | null, syncing: boolean, canSend: boolean, isOwner: boolean, unreadCount: number, pendingChanges: number, failedChanges: number, mailProvider?: (
+    { __typename?: 'MailProvider' }
+    & MailProviderRefFragment
+  ) | null };
 
 export type MailAccountFragment = (
   { __typename?: 'MailAccount', incomingHost: string, incomingPort: number, incomingSecurity: Security, smtpHost?: string | null, smtpPort?: number | null, smtpSecurity: Security, username: string, saveSentCopy: boolean, popLeaveOnServer: boolean, pushSeen: boolean, pushFlagged: boolean, pushMoves: boolean, pushDeletes: boolean, pushKeywords: boolean, capabilities: Array<string>, backfillDone: boolean, serverSideFolders: boolean, createdAt: string, creator?: { __typename?: 'User', id: string, sub: string, preferredUsername: string } | null, sharedWith: Array<{ __typename?: 'User', id: string, sub: string, preferredUsername: string }>, folders: Array<(
@@ -1896,6 +2162,29 @@ export type MailPresetFragment = { __typename?: 'MailPreset', key: string, name:
     { __typename?: 'ServerSettings' }
     & ServerSettingsFragment
   ) | null };
+
+export type ProviderKindFragment = { __typename?: 'ProviderKind', kind: Provider, label: string, description: string, authMethod: AuthMethod, capabilities: Array<{ __typename?: 'ProviderCapabilityInfo', capability: ProviderCapability, label: string, description: string }> };
+
+export type MailProviderRefFragment = { __typename?: 'MailProvider', id: string, name: string, kind: Provider, enabled: boolean, capabilities: Array<ProviderCapability>, server?: { __typename?: 'MailServerSettings', fixed: boolean } | null };
+
+export type ListMailProviderFragment = { __typename?: 'MailProvider', id: string, name: string, kind: Provider, enabled: boolean, capabilities: Array<ProviderCapability>, mailboxCount: number, kindInfo: (
+    { __typename?: 'ProviderKind' }
+    & ProviderKindFragment
+  ), server?: { __typename?: 'MailServerSettings', fixed: boolean, protocol?: Protocol | null, incoming?: (
+      { __typename?: 'ServerSettings' }
+      & ServerSettingsFragment
+    ) | null } | null };
+
+export type MailProviderFragment = (
+  { __typename?: 'MailProvider', createdAt: string, updatedAt: string, creator?: { __typename?: 'User', id: string, sub: string, preferredUsername: string } | null, oauth?: { __typename?: 'OAuthClientSettings', clientId: string, hasSecret: boolean, redirectUrls: Array<string>, tenant: string } | null, server?: { __typename?: 'MailServerSettings', fixed: boolean, protocol?: Protocol | null, saveSentCopy: boolean, incoming?: (
+      { __typename?: 'ServerSettings' }
+      & ServerSettingsFragment
+    ) | null, smtp?: (
+      { __typename?: 'ServerSettings' }
+      & ServerSettingsFragment
+    ) | null } | null }
+  & ListMailProviderFragment
+);
 
 export type ListTaskListFragment = { __typename?: 'TaskList', id: string, name: string, color: string, position: number, openCount: number, createdAt: string };
 
@@ -2199,6 +2488,63 @@ export type CancelAuthMutation = { __typename?: 'Mutation', cancelAuth: (
     & AuthSessionFragment
   ) };
 
+export type CreateOAuthProviderMutationVariables = Exact<{
+  input: CreateOAuthProviderInput;
+}>;
+
+
+export type CreateOAuthProviderMutation = { __typename?: 'Mutation', createOAuthProvider: (
+    { __typename?: 'MailProvider' }
+    & MailProviderFragment
+  ) };
+
+export type UpdateOAuthProviderMutationVariables = Exact<{
+  input: UpdateOAuthProviderInput;
+}>;
+
+
+export type UpdateOAuthProviderMutation = { __typename?: 'Mutation', updateOAuthProvider: (
+    { __typename?: 'MailProvider' }
+    & MailProviderFragment
+  ) };
+
+export type CreateServerProviderMutationVariables = Exact<{
+  input: CreateServerProviderInput;
+}>;
+
+
+export type CreateServerProviderMutation = { __typename?: 'Mutation', createServerProvider: (
+    { __typename?: 'MailProvider' }
+    & MailProviderFragment
+  ) };
+
+export type UpdateServerProviderMutationVariables = Exact<{
+  input: UpdateServerProviderInput;
+}>;
+
+
+export type UpdateServerProviderMutation = { __typename?: 'Mutation', updateServerProvider: (
+    { __typename?: 'MailProvider' }
+    & MailProviderFragment
+  ) };
+
+export type UpdateProviderMutationVariables = Exact<{
+  input: UpdateProviderInput;
+}>;
+
+
+export type UpdateProviderMutation = { __typename?: 'Mutation', updateProvider: (
+    { __typename?: 'MailProvider' }
+    & MailProviderFragment
+  ) };
+
+export type DeleteProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteProviderMutation = { __typename?: 'Mutation', deleteProvider: string };
+
 export type CreateTaskMutationVariables = Exact<{
   input: CreateTaskInput;
 }>;
@@ -2351,11 +2697,6 @@ export type MailPresetsQuery = { __typename?: 'Query', mailPresets: Array<(
     & MailPresetFragment
   )> };
 
-export type OAuthProvidersQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type OAuthProvidersQuery = { __typename?: 'Query', oauthProviders: Array<Provider> };
-
 export type AuthSessionQueryVariables = Exact<{
   state: Scalars['String']['input'];
 }>;
@@ -2489,6 +2830,35 @@ export type KuvertPaletteSearchQueryVariables = Exact<{
 
 export type KuvertPaletteSearchQuery = { __typename?: 'Query', messages: Array<{ __typename?: 'Message', id: string, subject: string, senderName: string, senderAddress: string, date?: string | null }> };
 
+export type ListMailProvidersQueryVariables = Exact<{
+  filters?: InputMaybe<MailProviderFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type ListMailProvidersQuery = { __typename?: 'Query', mailProviders: Array<(
+    { __typename?: 'MailProvider' }
+    & ListMailProviderFragment
+  )> };
+
+export type GetMailProviderQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetMailProviderQuery = { __typename?: 'Query', mailProvider: (
+    { __typename?: 'MailProvider' }
+    & MailProviderFragment
+  ) };
+
+export type ProviderKindsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ProviderKindsQuery = { __typename?: 'Query', providerKinds: Array<(
+    { __typename?: 'ProviderKind' }
+    & ProviderKindFragment
+  )> };
+
 export type ListTasksQueryVariables = Exact<{
   filters?: InputMaybe<TaskFilter>;
   ordering?: Array<TaskOrder> | TaskOrder;
@@ -2601,6 +2971,18 @@ export type MailboxSyncsSubscriptionVariables = Exact<{ [key: string]: never; }>
 
 export type MailboxSyncsSubscription = { __typename?: 'Subscription', mailboxSyncs: { __typename?: 'MailboxSyncEvent', accountId: string, created: number, updated: number, deleted: number, more: boolean } };
 
+export const MailProviderRefFragmentDoc = gql`
+    fragment MailProviderRef on MailProvider {
+  id
+  name
+  kind
+  enabled
+  capabilities
+  server {
+    fixed
+  }
+}
+    `;
 export const ListMailAccountFragmentDoc = gql`
     fragment ListMailAccount on MailAccount {
   id
@@ -2621,8 +3003,11 @@ export const ListMailAccountFragmentDoc = gql`
   unreadCount
   pendingChanges
   failedChanges
+  mailProvider {
+    ...MailProviderRef
+  }
 }
-    `;
+    ${MailProviderRefFragmentDoc}`;
 export const MailFolderFragmentDoc = gql`
     fragment MailFolder on MailFolder {
   id
@@ -2857,6 +3242,70 @@ export const MailPresetFragmentDoc = gql`
   note
 }
     ${ServerSettingsFragmentDoc}`;
+export const ProviderKindFragmentDoc = gql`
+    fragment ProviderKind on ProviderKind {
+  kind
+  label
+  description
+  authMethod
+  capabilities {
+    capability
+    label
+    description
+  }
+}
+    `;
+export const ListMailProviderFragmentDoc = gql`
+    fragment ListMailProvider on MailProvider {
+  id
+  name
+  kind
+  enabled
+  capabilities
+  mailboxCount
+  kindInfo {
+    ...ProviderKind
+  }
+  server {
+    fixed
+    protocol
+    incoming {
+      ...ServerSettings
+    }
+  }
+}
+    ${ProviderKindFragmentDoc}
+${ServerSettingsFragmentDoc}`;
+export const MailProviderFragmentDoc = gql`
+    fragment MailProvider on MailProvider {
+  ...ListMailProvider
+  createdAt
+  updatedAt
+  creator {
+    id
+    sub
+    preferredUsername
+  }
+  oauth {
+    clientId
+    hasSecret
+    redirectUrls
+    tenant
+  }
+  server {
+    fixed
+    protocol
+    saveSentCopy
+    incoming {
+      ...ServerSettings
+    }
+    smtp {
+      ...ServerSettings
+    }
+  }
+}
+    ${ListMailProviderFragmentDoc}
+${ServerSettingsFragmentDoc}`;
 export const ListTaskListFragmentDoc = gql`
     fragment ListTaskList on TaskList {
   id
@@ -4003,6 +4452,202 @@ export function useCancelAuthMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type CancelAuthMutationHookResult = ReturnType<typeof useCancelAuthMutation>;
 export type CancelAuthMutationResult = Apollo.MutationResult<CancelAuthMutation>;
 export type CancelAuthMutationOptions = Apollo.BaseMutationOptions<CancelAuthMutation, CancelAuthMutationVariables>;
+export const CreateOAuthProviderDocument = gql`
+    mutation CreateOAuthProvider($input: CreateOAuthProviderInput!) {
+  createOAuthProvider(input: $input) {
+    ...MailProvider
+  }
+}
+    ${MailProviderFragmentDoc}`;
+export type CreateOAuthProviderMutationFn = Apollo.MutationFunction<CreateOAuthProviderMutation, CreateOAuthProviderMutationVariables>;
+
+/**
+ * __useCreateOAuthProviderMutation__
+ *
+ * To run a mutation, you first call `useCreateOAuthProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateOAuthProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createOAuthProviderMutation, { data, loading, error }] = useCreateOAuthProviderMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateOAuthProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateOAuthProviderMutation, CreateOAuthProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateOAuthProviderMutation, CreateOAuthProviderMutationVariables>(CreateOAuthProviderDocument, options);
+      }
+export type CreateOAuthProviderMutationHookResult = ReturnType<typeof useCreateOAuthProviderMutation>;
+export type CreateOAuthProviderMutationResult = Apollo.MutationResult<CreateOAuthProviderMutation>;
+export type CreateOAuthProviderMutationOptions = Apollo.BaseMutationOptions<CreateOAuthProviderMutation, CreateOAuthProviderMutationVariables>;
+export const UpdateOAuthProviderDocument = gql`
+    mutation UpdateOAuthProvider($input: UpdateOAuthProviderInput!) {
+  updateOAuthProvider(input: $input) {
+    ...MailProvider
+  }
+}
+    ${MailProviderFragmentDoc}`;
+export type UpdateOAuthProviderMutationFn = Apollo.MutationFunction<UpdateOAuthProviderMutation, UpdateOAuthProviderMutationVariables>;
+
+/**
+ * __useUpdateOAuthProviderMutation__
+ *
+ * To run a mutation, you first call `useUpdateOAuthProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateOAuthProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateOAuthProviderMutation, { data, loading, error }] = useUpdateOAuthProviderMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateOAuthProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateOAuthProviderMutation, UpdateOAuthProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateOAuthProviderMutation, UpdateOAuthProviderMutationVariables>(UpdateOAuthProviderDocument, options);
+      }
+export type UpdateOAuthProviderMutationHookResult = ReturnType<typeof useUpdateOAuthProviderMutation>;
+export type UpdateOAuthProviderMutationResult = Apollo.MutationResult<UpdateOAuthProviderMutation>;
+export type UpdateOAuthProviderMutationOptions = Apollo.BaseMutationOptions<UpdateOAuthProviderMutation, UpdateOAuthProviderMutationVariables>;
+export const CreateServerProviderDocument = gql`
+    mutation CreateServerProvider($input: CreateServerProviderInput!) {
+  createServerProvider(input: $input) {
+    ...MailProvider
+  }
+}
+    ${MailProviderFragmentDoc}`;
+export type CreateServerProviderMutationFn = Apollo.MutationFunction<CreateServerProviderMutation, CreateServerProviderMutationVariables>;
+
+/**
+ * __useCreateServerProviderMutation__
+ *
+ * To run a mutation, you first call `useCreateServerProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateServerProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createServerProviderMutation, { data, loading, error }] = useCreateServerProviderMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateServerProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateServerProviderMutation, CreateServerProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateServerProviderMutation, CreateServerProviderMutationVariables>(CreateServerProviderDocument, options);
+      }
+export type CreateServerProviderMutationHookResult = ReturnType<typeof useCreateServerProviderMutation>;
+export type CreateServerProviderMutationResult = Apollo.MutationResult<CreateServerProviderMutation>;
+export type CreateServerProviderMutationOptions = Apollo.BaseMutationOptions<CreateServerProviderMutation, CreateServerProviderMutationVariables>;
+export const UpdateServerProviderDocument = gql`
+    mutation UpdateServerProvider($input: UpdateServerProviderInput!) {
+  updateServerProvider(input: $input) {
+    ...MailProvider
+  }
+}
+    ${MailProviderFragmentDoc}`;
+export type UpdateServerProviderMutationFn = Apollo.MutationFunction<UpdateServerProviderMutation, UpdateServerProviderMutationVariables>;
+
+/**
+ * __useUpdateServerProviderMutation__
+ *
+ * To run a mutation, you first call `useUpdateServerProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateServerProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateServerProviderMutation, { data, loading, error }] = useUpdateServerProviderMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateServerProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateServerProviderMutation, UpdateServerProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateServerProviderMutation, UpdateServerProviderMutationVariables>(UpdateServerProviderDocument, options);
+      }
+export type UpdateServerProviderMutationHookResult = ReturnType<typeof useUpdateServerProviderMutation>;
+export type UpdateServerProviderMutationResult = Apollo.MutationResult<UpdateServerProviderMutation>;
+export type UpdateServerProviderMutationOptions = Apollo.BaseMutationOptions<UpdateServerProviderMutation, UpdateServerProviderMutationVariables>;
+export const UpdateProviderDocument = gql`
+    mutation UpdateProvider($input: UpdateProviderInput!) {
+  updateProvider(input: $input) {
+    ...MailProvider
+  }
+}
+    ${MailProviderFragmentDoc}`;
+export type UpdateProviderMutationFn = Apollo.MutationFunction<UpdateProviderMutation, UpdateProviderMutationVariables>;
+
+/**
+ * __useUpdateProviderMutation__
+ *
+ * To run a mutation, you first call `useUpdateProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateProviderMutation, { data, loading, error }] = useUpdateProviderMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateProviderMutation, UpdateProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateProviderMutation, UpdateProviderMutationVariables>(UpdateProviderDocument, options);
+      }
+export type UpdateProviderMutationHookResult = ReturnType<typeof useUpdateProviderMutation>;
+export type UpdateProviderMutationResult = Apollo.MutationResult<UpdateProviderMutation>;
+export type UpdateProviderMutationOptions = Apollo.BaseMutationOptions<UpdateProviderMutation, UpdateProviderMutationVariables>;
+export const DeleteProviderDocument = gql`
+    mutation DeleteProvider($id: ID!) {
+  deleteProvider(id: $id)
+}
+    `;
+export type DeleteProviderMutationFn = Apollo.MutationFunction<DeleteProviderMutation, DeleteProviderMutationVariables>;
+
+/**
+ * __useDeleteProviderMutation__
+ *
+ * To run a mutation, you first call `useDeleteProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteProviderMutation, { data, loading, error }] = useDeleteProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteProviderMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteProviderMutation, DeleteProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteProviderMutation, DeleteProviderMutationVariables>(DeleteProviderDocument, options);
+      }
+export type DeleteProviderMutationHookResult = ReturnType<typeof useDeleteProviderMutation>;
+export type DeleteProviderMutationResult = Apollo.MutationResult<DeleteProviderMutation>;
+export type DeleteProviderMutationOptions = Apollo.BaseMutationOptions<DeleteProviderMutation, DeleteProviderMutationVariables>;
 export const CreateTaskDocument = gql`
     mutation CreateTask($input: CreateTaskInput!) {
   createTask(input: $input) {
@@ -4558,38 +5203,6 @@ export function useMailPresetsLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type MailPresetsQueryHookResult = ReturnType<typeof useMailPresetsQuery>;
 export type MailPresetsLazyQueryHookResult = ReturnType<typeof useMailPresetsLazyQuery>;
 export type MailPresetsQueryResult = Apollo.QueryResult<MailPresetsQuery, MailPresetsQueryVariables>;
-export const OAuthProvidersDocument = gql`
-    query OAuthProviders {
-  oauthProviders
-}
-    `;
-
-/**
- * __useOAuthProvidersQuery__
- *
- * To run a query within a React component, call `useOAuthProvidersQuery` and pass it any options that fit your needs.
- * When your component renders, `useOAuthProvidersQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useOAuthProvidersQuery({
- *   variables: {
- *   },
- * });
- */
-export function useOAuthProvidersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<OAuthProvidersQuery, OAuthProvidersQueryVariables>) {
-        const options = {...defaultOptions, ...baseOptions}
-        return ApolloReactHooks.useQuery<OAuthProvidersQuery, OAuthProvidersQueryVariables>(OAuthProvidersDocument, options);
-      }
-export function useOAuthProvidersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<OAuthProvidersQuery, OAuthProvidersQueryVariables>) {
-          const options = {...defaultOptions, ...baseOptions}
-          return ApolloReactHooks.useLazyQuery<OAuthProvidersQuery, OAuthProvidersQueryVariables>(OAuthProvidersDocument, options);
-        }
-export type OAuthProvidersQueryHookResult = ReturnType<typeof useOAuthProvidersQuery>;
-export type OAuthProvidersLazyQueryHookResult = ReturnType<typeof useOAuthProvidersLazyQuery>;
-export type OAuthProvidersQueryResult = Apollo.QueryResult<OAuthProvidersQuery, OAuthProvidersQueryVariables>;
 export const AuthSessionDocument = gql`
     query AuthSession($state: String!) {
   authSession(state: $state) {
@@ -5070,6 +5683,111 @@ export function useKuvertPaletteSearchLazyQuery(baseOptions?: ApolloReactHooks.L
 export type KuvertPaletteSearchQueryHookResult = ReturnType<typeof useKuvertPaletteSearchQuery>;
 export type KuvertPaletteSearchLazyQueryHookResult = ReturnType<typeof useKuvertPaletteSearchLazyQuery>;
 export type KuvertPaletteSearchQueryResult = Apollo.QueryResult<KuvertPaletteSearchQuery, KuvertPaletteSearchQueryVariables>;
+export const ListMailProvidersDocument = gql`
+    query ListMailProviders($filters: MailProviderFilter, $pagination: OffsetPaginationInput) {
+  mailProviders(filters: $filters, pagination: $pagination) {
+    ...ListMailProvider
+  }
+}
+    ${ListMailProviderFragmentDoc}`;
+
+/**
+ * __useListMailProvidersQuery__
+ *
+ * To run a query within a React component, call `useListMailProvidersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useListMailProvidersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useListMailProvidersQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useListMailProvidersQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ListMailProvidersQuery, ListMailProvidersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ListMailProvidersQuery, ListMailProvidersQueryVariables>(ListMailProvidersDocument, options);
+      }
+export function useListMailProvidersLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ListMailProvidersQuery, ListMailProvidersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ListMailProvidersQuery, ListMailProvidersQueryVariables>(ListMailProvidersDocument, options);
+        }
+export type ListMailProvidersQueryHookResult = ReturnType<typeof useListMailProvidersQuery>;
+export type ListMailProvidersLazyQueryHookResult = ReturnType<typeof useListMailProvidersLazyQuery>;
+export type ListMailProvidersQueryResult = Apollo.QueryResult<ListMailProvidersQuery, ListMailProvidersQueryVariables>;
+export const GetMailProviderDocument = gql`
+    query GetMailProvider($id: ID!) {
+  mailProvider(id: $id) {
+    ...MailProvider
+  }
+}
+    ${MailProviderFragmentDoc}`;
+
+/**
+ * __useGetMailProviderQuery__
+ *
+ * To run a query within a React component, call `useGetMailProviderQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMailProviderQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetMailProviderQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetMailProviderQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetMailProviderQuery, GetMailProviderQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetMailProviderQuery, GetMailProviderQueryVariables>(GetMailProviderDocument, options);
+      }
+export function useGetMailProviderLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetMailProviderQuery, GetMailProviderQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetMailProviderQuery, GetMailProviderQueryVariables>(GetMailProviderDocument, options);
+        }
+export type GetMailProviderQueryHookResult = ReturnType<typeof useGetMailProviderQuery>;
+export type GetMailProviderLazyQueryHookResult = ReturnType<typeof useGetMailProviderLazyQuery>;
+export type GetMailProviderQueryResult = Apollo.QueryResult<GetMailProviderQuery, GetMailProviderQueryVariables>;
+export const ProviderKindsDocument = gql`
+    query ProviderKinds {
+  providerKinds {
+    ...ProviderKind
+  }
+}
+    ${ProviderKindFragmentDoc}`;
+
+/**
+ * __useProviderKindsQuery__
+ *
+ * To run a query within a React component, call `useProviderKindsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useProviderKindsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useProviderKindsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useProviderKindsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<ProviderKindsQuery, ProviderKindsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ProviderKindsQuery, ProviderKindsQueryVariables>(ProviderKindsDocument, options);
+      }
+export function useProviderKindsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ProviderKindsQuery, ProviderKindsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ProviderKindsQuery, ProviderKindsQueryVariables>(ProviderKindsDocument, options);
+        }
+export type ProviderKindsQueryHookResult = ReturnType<typeof useProviderKindsQuery>;
+export type ProviderKindsLazyQueryHookResult = ReturnType<typeof useProviderKindsLazyQuery>;
+export type ProviderKindsQueryResult = Apollo.QueryResult<ProviderKindsQuery, ProviderKindsQueryVariables>;
 export const ListTasksDocument = gql`
     query ListTasks($filters: TaskFilter, $ordering: [TaskOrder!]! = [{position: ASC}], $pagination: OffsetPaginationInput) {
   tasks(filters: $filters, ordering: $ordering, pagination: $pagination) {

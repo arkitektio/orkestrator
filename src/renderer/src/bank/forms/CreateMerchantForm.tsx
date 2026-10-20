@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
 import { ParagraphField } from "@/core/forms/ParagraphField";
 import { StringField } from "@/core/forms/StringField";
@@ -8,14 +8,13 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/co
 import { Form } from "@/core/ui/form";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/core/notify";
 import {
   ListMerchantsDocument,
   MerchantCandidatesDocument,
   useCreateMerchantMutation,
   useSearchCategoriesLazyQuery,
 } from "../api/graphql";
-import { toastText } from "../errors";
+import { asBankError } from "../errors";
 import { BankMerchant } from "../linkers";
 
 type Values = { name: string; aliases: string; category: string | null; website: string; online: boolean; description: string };
@@ -31,7 +30,6 @@ export const CreateMerchantForm = (props: {
   category?: string | null;
   fromTransactions?: string[];
 }) => {
-  const { closeDialog } = useDialog();
   const navigate = useNavigate();
   const [create, { loading }] = useCreateMerchantMutation({
     refetchQueries: [ListMerchantsDocument, MerchantCandidatesDocument],
@@ -49,8 +47,9 @@ export const CreateMerchantForm = (props: {
   });
   const count = props.fromTransactions?.length ?? 0;
 
-  const submit = async (data: Values) => {
-    try {
+  // Opens the new merchant: that is the confirmation.
+  const { submit } = useDialogSubmit(
+    async (data: Values) => {
       const aliases = data.aliases
         .split(",")
         .map((alias) => alias.trim())
@@ -67,14 +66,16 @@ export const CreateMerchantForm = (props: {
             fromTransactions: props.fromTransactions?.length ? props.fromTransactions : null,
           },
         },
-      });
-      toast.success("Merchant created");
-      closeDialog();
-      if (result) navigate(BankMerchant.linkBuilder(result.createMerchant.id));
-    } catch (e) {
-      toast.error("Could not create the merchant: " + toastText(e));
-    }
-  };
+      }).catch((e) => Promise.reject(asBankError(e)));
+      return result;
+    },
+    {
+      errorTitle: "Couldn't create the merchant",
+      onSuccess: (result) => {
+        if (result) navigate(BankMerchant.linkBuilder(result.createMerchant.id));
+      },
+    },
+  );
 
   return (
     <Form {...form}>

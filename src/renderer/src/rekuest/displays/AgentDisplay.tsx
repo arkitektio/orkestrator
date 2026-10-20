@@ -32,6 +32,7 @@ export const AgentDisplay = (props: DisplayWidgetProps) => {
         agent.blocked ? "blocked" : agent.connected ? "online" : "offline",
         agent.app?.identifier,
         agent.release?.version,
+        agent.supervisor ? `supervised by ${agent.supervisor}` : undefined,
       ]}
     />
   );

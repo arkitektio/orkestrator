@@ -1,6 +1,6 @@
 import { useStructureOptions } from "@/core/modules/hooks/useStructureOptions";
 import type { StructureOption } from "@/core/modules/host/options";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/core/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/core/ui/popover";
@@ -47,13 +47,12 @@ export const InvitePopover = ({
 
   const ask = (person: StructureOption) => {
     if (invited.includes(person.value)) return;
+    // The row's check is the confirmation; a failure takes it back.
     setInvited((current) => [...current, person.value]);
-    invite({ variables: { input: { call: callId, users: [person.value] } } })
-      .then(() => toast.success(`${person.label} invited`))
-      .catch((error) => {
-        setInvited((current) => current.filter((id) => id !== person.value));
-        toast.error(error instanceof Error ? error.message : "Could not invite");
-      });
+    invite({ variables: { input: { call: callId, users: [person.value] } } }).catch((error) => {
+      setInvited((current) => current.filter((id) => id !== person.value));
+      reportError(error, `Couldn't invite ${person.label}`);
+    });
   };
 
   return (

@@ -8,6 +8,7 @@ import {
 import {useDatalayerEndpoint} from '@/core/connection/arkitekt/host';
 import {ADMIN_ROLE, useHasRoles} from '@/core/connection/roles';
 import {DEFAULT_MODEL_POLICY} from '@/core/model/glb';
+import {describeError} from '@/core/notify';
 import {
   AgentAssetsDocument,
   AssetPolicyDocument,
@@ -106,7 +107,7 @@ const useAssetSource = (declared: AgentAssetFragment | undefined): BlokAssetSour
       .then(bytes => {
         heldBytes.set(ref, bytes);
       })
-      .catch((problem: Error) => setFailure(problem.message))
+      .catch((problem: unknown) => setFailure(describeError(problem).message))
       .finally(() => setAdding(false));
   }, [client, endpoint, kind, ref, source]);
 
@@ -146,9 +147,48 @@ const useAsset = (dependency: string, name: string): BlokAsset => {
     const held = stored ? heldBytes.get(stored) : undefined;
     if (held) return held;
     if (!file || !endpoint) throw new Error('The asset store is not reachable.');
-    const response = await fetch(await getRekuestMediaUrl(file, client, endpoint));
+    // TEMPORARY timing: which stage of a slow asset load is slow (grant, first byte, transfer).
+    const started = performance.now();
+    const url = await getRekuestMediaUrl(file, client, endpoint);
+    const signed = performance.now();
+    const response = await fetch(url);
+    const headers = performance.now();
     if (!response.ok) throw new Error(`The asset store answered ${response.status}.`);
-    return new Uint8Array(await response.arrayBuffer());
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    const reader = response.body!.getReader();
+    for (;;) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      size += value.byteLength;
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    const finished = performance.now();
+    const transfer = finished - headers;
+    console.info('[blok:asset] fetch', {
+      ref: stored,
+      // Origin and path only: the query string is the signature and carries the session token.
+      url: new URL(url).origin + new URL(url).pathname,
+      grantAndSignMs: Math.round(signed - started),
+      firstByteMs: Math.round(headers - signed),
+      transferMs: Math.round(transfer),
+      totalMs: Math.round(finished - started),
+      bytes: size,
+      mbPerSecond: transfer > 0 ? Number((size / 1e6 / (transfer / 1000)).toFixed(2)) : null,
+      chunks: chunks.length,
+      contentLength: response.headers.get('content-length'),
+      contentEncoding: response.headers.get('content-encoding'),
+      cacheControl: response.headers.get('cache-control'),
+      server: response.headers.get('server'),
+      xCache: response.headers.get('x-cache'),
+    });
+    return bytes;
   }, [client, endpoint, file, stored]);
 
   return React.useMemo<BlokAsset>(() => {

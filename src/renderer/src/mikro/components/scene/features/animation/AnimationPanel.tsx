@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { reportError, reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { Input } from "@/core/ui/input";
 import { Easing } from "@/mikro/api/graphql";
@@ -72,7 +73,7 @@ const TourRow = ({ id, name, waypointCount, durationMs }: {
         className="h-6 w-6 text-white/50 hover:text-red-400"
         title="Delete tour"
         disabled={saving}
-        onClick={() => remove(id)}
+        onClick={() => void remove(id).catch(reportErrorAs("Couldn't delete the tour"))}
       >
         <Trash2 className="h-3 w-3" />
       </Button>
@@ -209,7 +210,13 @@ export const AnimationPanel = ({
 
   const onSave = async () => {
     const trimmed = name.trim() || `Tour ${animations.length + 1}`;
-    await saveDraft(trimmed);
+    try {
+      await saveDraft(trimmed);
+    } catch (error) {
+      // The draft and its name stay, to try again.
+      reportError(error, "Couldn't save the tour");
+      return;
+    }
     setName("");
   };
 

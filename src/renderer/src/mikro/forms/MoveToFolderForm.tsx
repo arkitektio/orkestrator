@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import {
@@ -19,7 +19,6 @@ import {
 } from "@/mikro/components/folder/useFolderMove";
 import { FolderPlus } from "lucide-react";
 import { useState } from "react";
-import { toast } from "@/core/notify";
 import { useCreateFolderMutation, useGetFoldersQuery } from "../api/graphql";
 
 /** Pick the folder to file files or array datasets into. */
@@ -49,7 +48,6 @@ export const MoveToFolderForm = (props: MoveToFolderFormProps) => {
   const [search, setSearch] = useState("");
   const [pending, setPending] = useState<string>();
   const [creating, setCreating] = useState<CreatingAt>(props.startCreating ? null : undefined);
-  const { closeDialog } = useDialog();
   const { move: moveTo } = useFolderMove();
   const [createFolder] = useCreateFolderMutation({ refetchQueries: ["GetFolders"] });
 
@@ -61,31 +59,33 @@ export const MoveToFolderForm = (props: MoveToFolderFormProps) => {
     skip: !search,
   });
 
-  const move = (folder: TreeFolder) => {
-    setPending(folder.id);
-    return moveTo(props.subject, folder.id)
-      .then(() => {
-        toast.success(`Moved to ${folder.name}`);
-        closeDialog();
-      })
-      .catch((e: Error) => toast.error("Could not move: " + e.message))
-      .finally(() => setPending(undefined));
-  };
+  // Closing is the confirmation; a failure stays in the dialog.
+  const { submit: move } = useDialogSubmit(
+    async (folder: TreeFolder) => {
+      setPending(folder.id);
+      try {
+        await moveTo(props.subject, folder.id);
+      } finally {
+        setPending(undefined);
+      }
+    },
+    { errorTitle: "Couldn't move to the folder" },
+  );
 
-  const createAndMove = (name: string, parent: string | null) => {
-    setPending(PENDING_NEW);
-    return createFolder({ variables: { input: { name, parent } } })
-      .then((result) => {
+  const { submit: createAndMove } = useDialogSubmit(
+    async (name: string, parent: string | null) => {
+      setPending(PENDING_NEW);
+      try {
+        const result = await createFolder({ variables: { input: { name, parent } } });
         const folder = result.data?.createFolder;
         if (!folder) throw new Error("the folder was not created");
-        return moveTo(props.subject, folder.id).then(() => {
-          toast.success(`Created ${folder.name} and moved ${describeSubject(props.subject)} into it`);
-          closeDialog();
-        });
-      })
-      .catch((e: Error) => toast.error("Could not create folder: " + e.message))
-      .finally(() => setPending(undefined));
-  };
+        await moveTo(props.subject, folder.id);
+      } finally {
+        setPending(undefined);
+      }
+    },
+    { errorTitle: "Couldn't create the folder" },
+  );
 
   const results = data?.folders ?? [];
 

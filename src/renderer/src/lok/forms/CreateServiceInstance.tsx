@@ -13,7 +13,10 @@ import {
 export const CreateServiceInstanceForm = (props: { identifier?: string; onSuccess?: (data: CreateServiceInstanceMutation | null | undefined) => void }) => {
   const [createServiceInstance] = useCreateServiceInstanceMutation();
 
-  const submit = useGraphQLDialog(createServiceInstance, { successMessage: "Service Instance created", onSuccess: props.onSuccess });
+  const submit = useGraphQLDialog(createServiceInstance, {
+    errorTitle: "Couldn't create the service instance",
+    onSuccess: props.onSuccess,
+  });
 
   const form = useForm<CreateServiceInstanceInput>({
     defaultValues: {

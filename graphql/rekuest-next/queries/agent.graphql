@@ -29,9 +29,11 @@ query AgentForProtocol($id: ID!) {
 }
 
 
-query AgentOptions($search: String, $values: [ID!], $dependency: ID) {
+# The @rekuest/agent picker. `$requires` is a port's descriptor constraints, handed on
+# unchanged (the only descriptor of an agent is @rekuest/supervisor).
+query AgentOptions($search: String, $values: [ID!], $dependency: ID, $requires: [RequiresInput!]) {
   options: agents(
-    filters: { search: $search, ids: $values, dependency: $dependency }
+    filters: { search: $search, ids: $values, dependency: $dependency, requires: $requires }
     pagination: { limit: 10 }
   ) {
     value: id

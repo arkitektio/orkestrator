@@ -17,7 +17,9 @@ export const UpdateServiceInstanceForm = (props: {
 }) => {
   const [createServiceInstance] = useUpdateServiceInstanceMutation();
 
-  const cre = useGraphQLDialog(createServiceInstance);
+  const cre = useGraphQLDialog(createServiceInstance, {
+    errorTitle: "Couldn't update the service instance",
+  });
 
   const [userSearch] = useUserOptionsLazyQuery();
   const [groupSearch] = useGroupOptionsLazyQuery();

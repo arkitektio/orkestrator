@@ -1,11 +1,10 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLListSearchField } from "@/core/forms/GraphQLListSearchField";
 import { Button } from "@/core/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useAddUserToOrganizationMutation, useMyContextQuery, useRoleOptionsLazyQuery } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 
 type AddUserInfoForm = {
   roles: string[];
@@ -21,36 +20,32 @@ export const AddUserToOrganizationDialog = (props: { users: string[] }) => {
   const { data: context } = useMyContextQuery();
   const organization = context?.mycontext.organization;
 
-  const { closeDialog } = useDialog();
+  const plural = props.users.length > 1 ? "s" : "";
 
-  const dialog = async (data: AddUserInfoForm) => {
-    if (!organization) return;
-    const { roles } = data;
-
-    // Send notification to each user
-    const promises = props.users.map(userId =>
-      add({
-        variables: {
-          input: {
-            user: userId,
-            organization: organization.id,
-            roles: roles,
-          },
-        },
-      })
-    );
-
-    try {
-      await Promise.all(promises);
-      toast.success(`Added ${props.users.length} user${props.users.length > 1 ? 's' : ''} to ${organization.name}`);
-      return { data: { success: true } };
-    } catch (error) {
-      toast.error("Failed to add users");
-      throw error;
-    } finally {
-      closeDialog();
-    }
-  }
+  // Opened from a selection of users, where the new membership does not show:
+  // the toast is the confirmation.
+  const { submit, submitting } = useDialogSubmit(
+    async ({ roles }: AddUserInfoForm) => {
+      if (!organization) throw new Error("The organization is not loaded yet");
+      await Promise.all(
+        props.users.map((userId) =>
+          add({
+            variables: {
+              input: {
+                user: userId,
+                organization: organization.id,
+                roles: roles,
+              },
+            },
+          }),
+        ),
+      );
+    },
+    {
+      errorTitle: `Couldn't add the user${plural}`,
+      successMessage: `Added ${props.users.length} user${plural} to ${organization?.name ?? "the organization"}`,
+    },
+  );
 
   const form = useForm<AddUserInfoForm>({
     defaultValues: {
@@ -61,7 +56,7 @@ export const AddUserToOrganizationDialog = (props: { users: string[] }) => {
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(dialog)}
+        onSubmit={form.handleSubmit(submit)}
       >
         <DialogHeader>
           <DialogTitle>Add to {organization?.name ?? "organization"}</DialogTitle>
@@ -69,7 +64,7 @@ export const AddUserToOrganizationDialog = (props: { users: string[] }) => {
 
         <div className="grid gap-4">
           <div className="text-sm text-muted-foreground">
-            Adding {props.users.length} user{props.users.length > 1 ? 's' : ''}
+            Adding {props.users.length} user{plural}
           </div>
 
           <GraphQLListSearchField
@@ -81,8 +76,8 @@ export const AddUserToOrganizationDialog = (props: { users: string[] }) => {
         </div>
 
         <DialogFooter className="mt-6">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Adding…" : "Add"}
+          <Button type="submit" disabled={submitting || !organization}>
+            {submitting ? "Adding…" : "Add"}
           </Button>
         </DialogFooter>
       </form>

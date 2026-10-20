@@ -1,13 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const sonner = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn(), message: vi.fn(), dismiss: vi.fn() }));
-vi.mock("sonner", () => ({ toast: sonner }));
-
 import { toast } from "./index";
 import {
   MAX_TOASTS,
   dismissToast,
-  mountToastIsland,
   pauseToasts,
   pushToast,
   resetToasts,
@@ -81,23 +77,16 @@ describe("toast store", () => {
 });
 
 describe("toast facade", () => {
-  it("falls back to sonner when no island is mounted", () => {
-    toast.error("Nope", { description: "x" });
-    expect(sonner.error).toHaveBeenCalledWith("Nope", { description: "x" });
-    expect(ids()).toEqual([]);
-  });
-
-  it("goes to the island once one is mounted, and back when it leaves", () => {
-    const unmount = mountToastIsland();
+  it("puts every kind in the island store", () => {
     toast.success("Sent", { id: "s" });
     toast("Plain", { id: "p" });
-    expect(sonner.success).not.toHaveBeenCalled();
-    expect(toastStore.getState().toasts.map((t) => [t.id, t.kind])).toEqual([
-      ["s", "success"],
-      ["p", "default"],
+    toast.error("Nope", { id: "e", description: "x" });
+    expect(toastStore.getState().toasts.map((t) => [t.id, t.kind, t.description])).toEqual([
+      ["s", "success", undefined],
+      ["p", "default", undefined],
+      ["e", "error", "x"],
     ]);
-    unmount();
-    toast.info("Later");
-    expect(sonner.info).toHaveBeenCalledWith("Later", undefined);
+    toast.dismiss("e");
+    expect(ids()).toEqual(["s", "p"]);
   });
 });

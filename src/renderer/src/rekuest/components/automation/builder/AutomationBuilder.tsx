@@ -1,4 +1,6 @@
+import { DialogError, useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
+import { describeError } from "@/core/notify";
 import { RekuestSchedule, RekuestTrigger } from "@/core/linkers";
 import { usePortForm } from "@/core/ports/engine/usePortForm";
 import { useWidgetRegistry } from "@/core/ports/engine/WidgetsContext";
@@ -28,6 +30,7 @@ import { useDebounce } from "@/core/util/hooks/use-debounce";
 import {
   PortKind,
   ScheduleOverlap,
+  TaskPolicy,
   useCreateScheduleMutation,
   useCreateTriggerMutation,
   useDetailActionQuery,
@@ -37,6 +40,7 @@ import {
   useUpdateTriggerMutation,
 } from "@/rekuest/api/graphql";
 import { AutomationKind, describeDraft } from "@/rekuest/lib/automation";
+import { AutoModeToggle } from "@/rekuest/components/AutoModeToggle";
 import {
   CadenceDraft,
   cadenceToInput,
@@ -59,9 +63,6 @@ import { PinSelect } from "../PinSelect";
 import { SchedulePanel } from "../SchedulePanel";
 import { AutomationInitial, Pin, SignalWhen } from "./initial";
 import { SignalPicker } from "./SignalPicker";
-
-const errorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
 
 /** An ISO instant as a `datetime-local` value (local time, to the minute), and back. */
 const toLocalInput = (iso: string | null | undefined) => {
@@ -111,7 +112,7 @@ export const BuilderError = ({
   <div className="flex flex-col gap-4">
     <DialogHeader>
       <DialogTitle>{title}</DialogTitle>
-      <DialogDescription>Could not load it: {errorMessage(error)}</DialogDescription>
+      <DialogDescription>Could not load it. {describeError(error).message}</DialogDescription>
     </DialogHeader>
     <DialogFooter>
       <Button type="button" variant="outline" onClick={onRetry}>
@@ -258,6 +259,8 @@ export const AutomationBuilder = ({
   const [pin, setPin] = useState<Pin | null>(initial.pin ?? null);
   const [name, setName] = useState(initial.name ?? "");
   const [enabled, setEnabled] = useState(initial.enabled ?? true);
+  // Off (ASK, the server's default): what a run asks other actions to do waits for approval.
+  const [auto, setAuto] = useState(initial.policy === TaskPolicy.Auto);
   const [ephemeralRuns, setEphemeralRuns] = useState(initial.ephemeralRuns ?? false);
   const [description, setDescription] = useState(initial.description ?? "");
   const [endsAt, setEndsAt] = useState(() => toLocalInput(initial.endsAt));
@@ -277,7 +280,10 @@ export const AutomationBuilder = ({
       initial.debounceSeconds != null,
   );
   const [attempted, setAttempted] = useState(false);
+  // A rule the form can tell is wrong before sending; a refused save goes
+  // to the dialog's error note.
   const [failure, setFailure] = useState<string | null>(null);
+  const { report, clear } = useDialogError();
 
   const actionQuery = useDetailActionQuery({ variables: { id: action ?? "" }, skip: !action });
   const detail = action && actionQuery.data?.action.id === action ? actionQuery.data.action : undefined;
@@ -355,6 +361,7 @@ export const AutomationBuilder = ({
   const onSubmit = async (values: Record<string, unknown>) => {
     setAttempted(true);
     setFailure(null);
+    clear();
     if (!detail || !action) return;
     const finalName = name.trim() || defaultName;
     // Sent on every save, null where empty: an edit clears what was removed.
@@ -362,6 +369,7 @@ export const AutomationBuilder = ({
       name: finalName,
       args: values,
       enabled,
+      policy: auto ? TaskPolicy.Auto : TaskPolicy.Ask,
       description: description.trim() || null,
       endsAt: fromLocalInput(endsAt),
       maxRuns: positiveInt(maxRuns),
@@ -424,7 +432,7 @@ export const AutomationBuilder = ({
       const id = result.data?.createTrigger.id;
       if (id) navigate(RekuestTrigger.linkBuilder(id));
     } catch (error) {
-      setFailure(`Could not save it: ${errorMessage(error)}`);
+      report(error, "Couldn't save the automation");
     }
   };
 
@@ -625,6 +633,17 @@ export const AutomationBuilder = ({
                     checked={enabled}
                     onChange={setEnabled}
                   />
+                  <label className="flex items-center justify-between gap-4 text-sm">
+                    <span>
+                      Auto-mode
+                      <span className="block text-xs text-muted-foreground">
+                        {auto
+                          ? "What a run asks other actions to do runs without asking."
+                          : "What a run asks other actions to do waits for your approval."}
+                      </span>
+                    </span>
+                    <AutoModeToggle auto={auto} onChange={setAuto} />
+                  </label>
                   {kind === "clock" && (
                     <Toggle
                       label="Ephemeral runs"
@@ -702,6 +721,7 @@ export const AutomationBuilder = ({
           </ScrollArea>
 
           {failure && <p className="text-sm text-destructive">{failure}</p>}
+          <DialogError />
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={closeDialog} disabled={isSubmitting}>

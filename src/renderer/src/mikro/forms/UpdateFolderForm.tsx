@@ -10,7 +10,7 @@ export const UpdateFolderForm = (props: { folder: FolderFragment }) => {
   const [updateFolder] = useUpdateFolderMutation();
 
   const submit = useGraphQLDialog(updateFolder, {
-    successMessage: "Folder updated",
+    errorTitle: "Couldn't rename the folder",
   });
 
   const form = useForm({

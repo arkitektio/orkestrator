@@ -3,8 +3,7 @@ import React from "react";
 import { Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import StreamPage from "./pages/StreamPage";
-import SoloBroadcast from "./pages/SoloBroadcast";
-import SoloBroadcasts from "./pages/SoloBroadcasts";
+import AgentPage from "./pages/AgentPage";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import Streams from "./pages/Streams";
 import CallPage from "./pages/CallPage";
@@ -16,8 +15,7 @@ export const Module: React.FC<Props> = (_props) => {
     <ModuleLayout>
       <Routes>
         <Route path="streams/:id" element={<StreamPage />} />
-        <Route path="solobroadcasts/:id" element={<SoloBroadcast />} />
-        <Route path="solobroadcasts" element={<SoloBroadcasts />} />
+        <Route path="agents/:id" element={<AgentPage />} />
         <Route path="calls/:id" element={<CallPage />} />
         <Route path="calls" element={<CallsPage />} />
         <Route index element={<HomePage />} />

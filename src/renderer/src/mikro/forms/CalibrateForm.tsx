@@ -81,8 +81,7 @@ const CalibrateFormBody = (props: {
 
   const [create, { loading }] = useCreateCoordinateSystemMutation();
   const submit = useGraphQLDialog(create, {
-    successMessage: "Calibrated",
-    errorPrefix: "Could not calibrate",
+    errorTitle: "Couldn't calibrate the dataset",
   });
 
   const setRow = (index: number, patch: Partial<CalibrationRow>) =>

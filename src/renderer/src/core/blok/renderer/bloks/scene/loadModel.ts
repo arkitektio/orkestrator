@@ -50,9 +50,25 @@ export const loadModel = (
   const cached = cache.get(ref);
   if (cached) return cached;
   const loading = (async () => {
+    // TEMPORARY timing: which stage of a slow model load is slow (bytes, validation, decode).
+    const started = performance.now();
     const bytes = await getBytes();
+    const fetched = performance.now();
     const report = await validateModel(bytes, ref, policy);
-    return {gltf: await parse(bytes), report};
+    const validated = performance.now();
+    const gltf = await parse(bytes);
+    const parsed = performance.now();
+    console.info('[blok:model] load', {
+      ref,
+      bytes: bytes.byteLength,
+      getBytesMs: Math.round(fetched - started),
+      validateMs: Math.round(validated - fetched),
+      parseMs: Math.round(parsed - validated),
+      totalMs: Math.round(parsed - started),
+      extensionsUsed: gltf.parser.json.extensionsUsed ?? [],
+      stats: report.stats,
+    });
+    return {gltf, report};
   })();
   cache.set(ref, loading);
   // A failure is not content: the next attempt (after an admin added the model, say) starts over.

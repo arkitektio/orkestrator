@@ -1,8 +1,7 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { toast } from "@/core/notify";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
-import { useState } from "react";
 import { MandatesDocument, useRevokeMandateMutation } from "../api/graphql";
 
 /**
@@ -13,23 +12,19 @@ import { MandatesDocument, useRevokeMandateMutation } from "../api/graphql";
 export const RevokeMandateDialog = (props: { ids: string[] }) => {
   const { closeDialog } = useDialog();
   const [revoke] = useRevokeMandateMutation({ refetchQueries: [MandatesDocument] });
-  const [busy, setBusy] = useState(false);
 
   const plural = props.ids.length === 1 ? "this mandate" : `${props.ids.length} mandates`;
 
-  const submit = async () => {
-    setBusy(true);
-    const results = await Promise.allSettled(props.ids.map((id) => revoke({ variables: { id } })));
-    setBusy(false);
-    const failed = results.filter((result) => result.status === "rejected");
-    if (failed.length === 0) {
-      toast.success(props.ids.length === 1 ? "Mandate revoked" : `${props.ids.length} mandates revoked`);
-      closeDialog();
-      return;
-    }
-    const reason = (failed[0] as PromiseRejectedResult).reason;
-    toast.error(reason instanceof Error ? reason.message : "Could not revoke");
-  };
+  // The revoked mandates leave the list on screen: no success toast. Every
+  // revoke is tried; the first failure stays in the dialog.
+  const { submit, submitting: busy } = useDialogSubmit(
+    async () => {
+      const results = await Promise.allSettled(props.ids.map((id) => revoke({ variables: { id } })));
+      const failed = results.find((result): result is PromiseRejectedResult => result.status === "rejected");
+      if (failed) throw failed.reason;
+    },
+    { errorTitle: props.ids.length === 1 ? "Couldn't revoke the mandate" : "Couldn't revoke every mandate" },
+  );
 
   return (
     <>
@@ -44,7 +39,7 @@ export const RevokeMandateDialog = (props: { ids: string[] }) => {
         <Button variant="outline" onClick={() => closeDialog()} disabled={busy}>
           Cancel
         </Button>
-        <Button variant="destructive" onClick={submit} disabled={busy}>
+        <Button variant="destructive" onClick={() => void submit()} disabled={busy}>
           {busy ? "Revoking…" : "Revoke"}
         </Button>
       </DialogFooter>

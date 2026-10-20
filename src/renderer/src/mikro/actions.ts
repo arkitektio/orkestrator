@@ -15,6 +15,7 @@ import {
   CreateSceneFromCoordinateSystemMutationVariables,
   DeleteArrayDatasetDocument,
   DeleteChartDocument,
+  DeleteCollaborationDocument,
   DeleteFolderDocument,
   DeleteFileDocument,
   DeleteLensDocument,
@@ -61,6 +62,7 @@ import { visualizationLink } from "@/mikro/lib/visualize";
 import { LENS_IDENTIFIERS, isLensIdentifier } from "@/mikro/lenses";
 import {
   Aperture,
+  Share2,
   Boxes,
   ChartSpline,
   Clapperboard,
@@ -173,7 +175,68 @@ const lensContainer = (lens: GetLensContainersQuery['lenses'][number]): [Lineage
   }
 };
 
+/**
+ * What can be put in a collaboration: mikro's hosted structures this module shows. What each
+ * needs to be seen comes along (mikro's `depends`), and what is part of it is in it too.
+ */
+export const COLLABORATION_IDENTIFIERS = [
+  '@mikro/scene',
+  '@mikro/arraydataset',
+  '@mikro/tabledataset',
+  '@mikro/sparsedataset',
+  '@mikro/meshcollection',
+  '@mikro/annotation',
+  '@mikro/chart',
+  '@mikro/coordinatesystem',
+  '@mikro/file',
+  '@mikro/folder',
+  ...LENS_IDENTIFIERS,
+] as const
+
+/** Who may make, fill and share collaborations: mikro and lok ask the same of a member. */
+const COLLABORATING_ROLES = { anyOf: ['admin', 'editor'] } as const
+
 export const MIKRO_ACTIONS: Record<string, MikroAction> = {
+  'add-to-collaboration': {
+    title: 'Add to Collaboration',
+    description: 'Put this in a collaboration, to share it with guests',
+    icon: Share2,
+    conditions: [
+      { type: 'mixture', identifiers: [...COLLABORATION_IDENTIFIERS] },
+      { type: 'nopartner' },
+    ],
+    roles: COLLABORATING_ROLES,
+    execute: async ({ state, dialog }) => {
+      const objects = state.left
+        .filter((item) => (COLLABORATION_IDENTIFIERS as readonly string[]).includes(item.identifier))
+        .map((item) => ({ identifier: item.identifier, id: item.id }))
+      if (objects.length === 0) throw new Error('Nothing selected can be put in a collaboration')
+      dialog.openDialog('addtocollaboration', { objects }, { className: 'max-w-lg' })
+    },
+  },
+  'share-collaboration': {
+    title: 'Share',
+    description: 'Make a link that grants this collaboration to whoever accepts it',
+    icon: Share2,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/collaboration' },
+      { type: 'nopartner' },
+    ],
+    roles: COLLABORATING_ROLES,
+    execute: async ({ state, dialog }) => {
+      const [collaboration] = state.left
+      if (!collaboration) throw new Error('Which collaboration?')
+      dialog.openDialog('sharecollaboration', { collaboration: collaboration.id }, { size: 'medium' })
+    },
+  },
+  'delete-collaboration': buildDeleteAction<ModuleServices<"mikro">>({
+    title: 'Delete Collaboration',
+    identifier: '@mikro/collaboration',
+    description: 'Delete the collaboration: whoever it was shared with sees nothing of it any more',
+    service: 'mikro',
+    typename: 'Collaboration',
+    mutation: DeleteCollaborationDocument,
+  }),
   // How this came to be and what was made from it, as a graph stepped
   // through from here.
   ...Object.fromEntries(

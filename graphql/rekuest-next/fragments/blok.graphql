@@ -77,6 +77,17 @@ fragment Blok on Blok {
   id
   name
   description
+  # An app's agents provide it (it follows their registrations): forked, never edited.
+  provided
+  app {
+    id
+    identifier
+  }
+  providers {
+    id
+    name
+    connected
+  }
   materializedBloks {
     ...ListMaterializedBlok
   }
@@ -106,6 +117,12 @@ fragment MaterializedBlok on MaterializedBlok {
   name
   isDefault
   createdAt
+  # The agent this materialization belongs to, for a blok its app provides.
+  declaredBy {
+    id
+    name
+    connected
+  }
   blok {
     ...Blok
   }
@@ -126,6 +143,11 @@ fragment ListBlok on Blok {
   description
   context
   hash
+  provided
+  app {
+    id
+    identifier
+  }
 }
 
 fragment ListMaterializedBlok on MaterializedBlok {
@@ -134,6 +156,10 @@ fragment ListMaterializedBlok on MaterializedBlok {
   description
   isDefault
   updatedAt
+  declaredBy {
+    id
+    name
+  }
   blok {
     id
     name

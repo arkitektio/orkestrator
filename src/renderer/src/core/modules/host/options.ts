@@ -1,4 +1,5 @@
 import type { ApolloClient } from "@apollo/client";
+import type { DescriptorConstraint } from "@/core/ports/engine/constraints";
 
 export type StructureOption = { value: string; label: string };
 
@@ -14,8 +15,14 @@ export type OptionSource = {
   by?: string;
   /** The service key whose client answers; "lok" is the session's own service. */
   service: string;
+  /**
+   * The source narrows a listing to an action input's descriptor constraints
+   * (`args.requires`, handed on unchanged). A source without it is never
+   * handed any, and its picker shows none as chips.
+   */
+  honoursRequires?: boolean;
   search: (
     client: ApolloClient<any>,
-    args: { search?: string; values?: string[] },
+    args: { search?: string; values?: string[]; requires?: DescriptorConstraint[] },
   ) => Promise<StructureOption[]>;
 };

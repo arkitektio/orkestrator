@@ -21,6 +21,32 @@ fragment File on File {
   }
 }
 
+# The page's view of a file: `File` plus who made it, through what, and what
+# the store says about the bytes. Kept off `File` itself because that fragment
+# is what every file mutation returns, and none of them needs this.
+fragment DetailFile on File {
+  ...File
+  creator {
+    sub
+  }
+  createdThrough {
+    id
+    taskId
+    createdAt
+    assigner {
+      sub
+    }
+  }
+  store {
+    id
+    originalFileName
+    # Measured when the upload finished; null while unfinished or for stores
+    # written before this was recorded.
+    sizeBytes
+    contentType
+  }
+}
+
 fragment ListFile on File {
   descriptors
   id

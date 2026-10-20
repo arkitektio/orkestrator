@@ -5,6 +5,7 @@ fragment ListSchedule on Schedule {
   id
   name
   enabled
+  policy
   cron
   intervalSeconds
   timezone
@@ -66,6 +67,7 @@ fragment ListTrigger on Trigger {
   id
   name
   enabled
+  policy
   identifier
   kind
   port

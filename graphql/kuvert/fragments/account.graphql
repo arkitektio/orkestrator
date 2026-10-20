@@ -17,6 +17,9 @@ fragment ListMailAccount on MailAccount {
   unreadCount
   pendingChanges
   failedChanges
+  mailProvider {
+    ...MailProviderRef
+  }
 }
 
 fragment MailAccount on MailAccount {

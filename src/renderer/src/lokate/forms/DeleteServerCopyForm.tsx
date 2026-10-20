@@ -1,4 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
@@ -19,17 +20,18 @@ export const DeleteServerCopyForm = () => {
   const [deleteServerCopy, { loading }] = useDeleteServerCopyMutation({ refetchQueries: "active" });
   const confirmed = typed === DELETE_CONFIRM;
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!confirmed) return;
-    try {
-      const { data } = await deleteServerCopy({ variables: { confirm: DELETE_CONFIRM } });
+  // How much went is nowhere else to be seen: said in a toast.
+  const { submit: run } = useDialogSubmit(() => deleteServerCopy({ variables: { confirm: DELETE_CONFIRM } }), {
+    errorTitle: "Couldn't delete the server copy",
+    onSuccess: ({ data }) => {
       const count = data?.deleteServerCopy ?? 0;
       toast.success(count === 1 ? "Deleted 1 record" : `Deleted ${count} records`);
-      closeDialog();
-    } catch (error) {
-      toast.error("Could not delete: " + (error instanceof Error ? error.message : String(error)));
-    }
+    },
+  });
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (confirmed) run();
   };
 
   return (

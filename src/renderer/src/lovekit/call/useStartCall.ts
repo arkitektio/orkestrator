@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { describeError } from "@/core/notify";
 import { useEnsureCallMutation } from "@/lovekit/api/graphql";
 import { callLink, callTitle } from "./links";
 import { toStructureInputs } from "./structureInput";
@@ -35,7 +36,7 @@ export const useStartCall = () => {
         if (!id) throw new Error("No call came back");
         navigate(callLink(id, { join: true }));
       } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : "Could not start the call");
+        setError(`Couldn't start the call: ${describeError(nextError).message}`);
       } finally {
         setStarting(false);
       }

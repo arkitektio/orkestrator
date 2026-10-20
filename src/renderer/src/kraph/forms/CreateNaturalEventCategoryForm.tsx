@@ -20,7 +20,7 @@ const TForm = (props: { graph?: string; onSuccess?: (data: CreateNaturalEventCat
   });
 
   const submit = useGraphQLDialog(add, {
-    successMessage: "Natural Event Category created",
+    errorTitle: "Couldn't create the natural event category",
     onSuccess: (data) => {
       if (data) {
         props.onSuccess?.(data);

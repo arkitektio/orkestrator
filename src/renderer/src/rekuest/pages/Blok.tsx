@@ -1,26 +1,42 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { useDialog } from "@/core/dialogs/registry";
 import { registry } from "@/core/smart/localactions/registry";
 import { LocalActionButton } from "@/core/ui/localactionbutton";
-import { RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
+import { RekuestAgent, RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
+import { cn } from "@/core/util/utils";
 import DemoBlokRenderer from "@/rekuest/components/DemoBlokRenderer";
 import { useGetBlokQuery } from "../api/graphql";
 import { Button } from "@/core/ui/button";
 import { PageAction } from "@/core/ui/page-action";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/core/ui/dialog";
 import { MaterializeBlokForm } from "../forms/MaterializeBlokForm";
+import { GitFork } from "lucide-react";
 import { useState } from "react";
-import { toast } from "@/core/notify";
 import { REKUEST_HELP } from "../help";
 
 export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
   const [open, setOpen] = useState(false);
+  const { openDialog } = useDialog();
+  // An app's agents keep a provided blok in step with their registrations:
+  // it is forked, never edited, materialized or deleted by hand.
+  const provided = data.blok.provided;
 
   return (
     <RekuestBlok.ModelPage
       title={data.blok.name || "New Blok"}
       help={REKUEST_HELP.blok}
       object={data.blok}
-      pageActions={(
+      pageActions={provided ? (
+        <PageAction.Slot alwaysShow>
+          <Button
+            variant="default"
+            onClick={() => openDialog("forkblok", { id: data.blok.id, name: data.blok.name })}
+          >
+            <GitFork className="h-4 w-4" />
+            Fork Blok
+          </Button>
+        </PageAction.Slot>
+      ) : (
         <>
             <LocalActionButton
                 priority={-20}
@@ -55,7 +71,6 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                             }))}
                           onMaterialized={(_materializedBlok) => {
                                 setOpen(false);
-                                toast.success("Blok Materialized!");
                                 // navigate to the materialized dashboard/blok here if applicable
                             }}
                         />
@@ -103,6 +118,34 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                 <p className="mt-1 text-sm font-medium">{data.blok.materializedBloks.length}</p>
               </div>
             </div>
+
+            {provided && (
+              <div className="grid gap-2 rounded-2xl border border-border/60 bg-background/70 p-4">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                    Provided by
+                  </p>
+                  <p className="mt-1 text-sm font-medium">{data.blok.app?.identifier}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    It follows its agents' registrations. Fork it to change it.
+                  </p>
+                </div>
+                {data.blok.providers.map((agent) => (
+                  <div key={agent.id} className="flex items-center gap-2 text-sm">
+                    <span
+                      className={cn(
+                        "size-2 shrink-0 rounded-full",
+                        agent.connected ? "bg-emerald-500" : "bg-muted-foreground/40",
+                      )}
+                      title={agent.connected ? "Connected" : "Offline"}
+                    />
+                    <RekuestAgent.DetailLink object={agent} className="truncate">
+                      {agent.name || agent.id}
+                    </RekuestAgent.DetailLink>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {data.blok.diagnostics.length > 0 && (
               <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">

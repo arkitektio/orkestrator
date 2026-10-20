@@ -1,7 +1,7 @@
 import Zod from "zod";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
+import { useDialogError } from "@/core/dialogs/DialogError";
 import { createPortResolver } from "./portResolver";
 import { ArgPort } from "./types";
 import {
@@ -15,14 +15,24 @@ import {
 
 export { portHash };
 
-const reportSubmitErrors = (errors: Record<string, unknown>) => {
+/** A failed validation as one sentence: fields that are folded away or hidden still get named. */
+export const validationSummary = (errors: Record<string, unknown>): string => {
   const msgs = extractErrorMessages(errors);
-  if (msgs.length === 0) toast.error("Please check the form for errors.");
-  else if (msgs.length === 1) toast.error(msgs[0]);
-  else
-    toast.error(
-      `${msgs.length} validation errors — ${msgs.slice(0, 3).join("; ")}${msgs.length > 3 ? "…" : ""}`,
-    );
+  if (msgs.length === 0) return "Some fields need attention.";
+  if (msgs.length === 1) return msgs[0];
+  return `${msgs.length} fields need attention — ${msgs.slice(0, 3).join("; ")}${msgs.length > 3 ? "…" : ""}`;
+};
+
+/**
+ * Reports a failed validation where the form is: inline in a dialog
+ * (`DialogErrorScope`), as an island toast elsewhere.
+ */
+export const useReportValidation = () => {
+  const { report } = useDialogError();
+  return useCallback(
+    (errors: Record<string, unknown>) => report(new Error(validationSummary(errors)), "Check the form"),
+    [report],
+  );
 };
 
 export const usePortForm = (props: {
@@ -54,6 +64,8 @@ export const usePortForm = (props: {
     return createPortResolver(schema, props.ports);
   }, [props.additionalSchema, props.ports]);
 
+  const reportValidation = useReportValidation();
+
   const { handleSubmit, ...form } = useForm({
     defaultValues,
     mode: props.mode || "onSubmit",
@@ -82,11 +94,11 @@ export const usePortForm = (props: {
           });
         },
         (errors) => {
-          reportSubmitErrors(errors as Record<string, unknown>);
+          reportValidation(errors as Record<string, unknown>);
         },
       );
     },
-    [handleSubmit, props.additionalSchema, props.ports, resolver],
+    [handleSubmit, props.additionalSchema, props.ports, resolver, reportValidation],
   );
 
   useEffect(() => {

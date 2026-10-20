@@ -1,3 +1,4 @@
+import { describeError } from "@/core/notify";
 import { CheckIcon } from "@radix-ui/react-icons";
 
 import {
@@ -51,7 +52,7 @@ export const ListButtonLabel = (props: {
         setOptions(res.filter(notEmpty));
       })
       .catch((err) => {
-        setError(err.message);
+        setError(describeError(err).message);
       });
   }, [props.value, props.search]);
 
@@ -126,7 +127,7 @@ export const CreatableListSearchField = ({
         setError(null);
       })
       .catch((err) => {
-        setError(err.message);
+        setError(describeError(err).message);
         setOptions([]);
       });
   };
@@ -138,7 +139,7 @@ export const CreatableListSearchField = ({
         setError(null);
       })
       .catch((err) => {
-        setError(err.message || "Error");
+        setError(describeError(err).message);
         setOptions([]);
       });
   }, [name, search]);

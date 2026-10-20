@@ -1,8 +1,11 @@
+import { ADMIN_ROLE } from "@/core/connection/roles";
+import { needsRoles } from "@/core/modules/host/dialogNeeds";
 import { AddToTaskForm } from "./forms/AddToTaskForm";
 import { CategorizeForm } from "./forms/CategorizeForm";
 import { CategoryForm } from "./forms/CategoryForm";
 import { ComposeForm } from "./forms/ComposeForm";
 import { LinkMailboxForm } from "./forms/LinkMailboxForm";
+import { CreateProviderForm, EditProviderForm } from "./forms/ProviderForm";
 import { MoveMessagesForm } from "./forms/MoveMessagesForm";
 import { ShareMailAccountForm } from "./forms/ShareMailAccountForm";
 import { SnoozeTaskForm } from "./forms/SnoozeTaskForm";
@@ -16,6 +19,8 @@ import { TaskListForm } from "./forms/TaskListForm";
  */
 export const KUVERT_DIALOGS = {
   kuvertlink: LinkMailboxForm,
+  kuvertcreateprovider: needsRoles(ADMIN_ROLE, CreateProviderForm),
+  kuverteditprovider: needsRoles(ADMIN_ROLE, EditProviderForm),
   kuvertcompose: ComposeForm,
   kuvertmove: MoveMessagesForm,
   kuvertshare: ShareMailAccountForm,

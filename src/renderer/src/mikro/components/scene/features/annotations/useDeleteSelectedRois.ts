@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { toast } from "@/core/notify";
+import { reportError, toast } from "@/core/notify";
 import { useDeleteAnnotationMutation } from "@/mikro/api/graphql";
 import { removeSceneAnnotation } from "../../../../lib/annotations/annotationCache";
 import { useRoiSelectionStore, type SelectedRoi } from "./roiSelectionStore";
@@ -57,11 +57,23 @@ export const useDeleteSelectedRois = (): {
       }),
     );
 
+    const failures: unknown[] = [];
     results.forEach((result) => {
       if (result.status === "fulfilled") {
         removeSelectedRoi(result.value);
+      } else {
+        failures.push(result.reason);
       }
     });
+    // One toast for the batch, the first refusal as its reason.
+    if (failures.length > 0) {
+      reportError(
+        failures[0],
+        failures.length === results.length
+          ? `Couldn't delete the ${results.length === 1 ? "annotation" : "annotations"}`
+          : `Couldn't delete ${failures.length} of ${results.length} annotations`,
+      );
+    }
   }, [deleteAnnotationMutation, isDeleting, removeSelectedRoi, selectedRois]);
 
   return { deleteSelectedRois, isDeleting };

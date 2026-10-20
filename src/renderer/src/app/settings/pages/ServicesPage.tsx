@@ -23,7 +23,7 @@ import { useMemo, useState } from "react";
 import { useMeshes } from "@/core/connection/mesh/useMeshes";
 import { useSystemTailscale } from "@/core/connection/mesh/useSystemTailscale";
 import { anyMeshHost } from "@/core/connection/arkitekt/doctor/classify";
-import { toast } from "@/core/notify";
+import { reportError, toast } from "@/core/notify";
 import { HubAwareConnectionDoctor } from "@/core/connection/ui/doctor/HubAwareConnectionDoctor";
 import { instanceToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
 import { toHubHealthFacts, type HubHealthFacts } from "@/core/connection/arkitekt/doctor/hubHealth";
@@ -108,9 +108,7 @@ export const ServicesPage = () => {
         toast.warning("Status reported, but some services are unreachable.");
       }
     } catch (error) {
-      toast.error(
-        `Failed to report status: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      reportError(error, "Couldn't report the status");
     } finally {
       setReporting(false);
     }

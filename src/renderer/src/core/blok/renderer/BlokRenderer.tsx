@@ -1,6 +1,5 @@
 import {useEffect, useId, useMemo, useRef, useState} from 'react';
 import {cn} from '@/core/util/utils';
-import { toast } from "@/core/notify";
 import BlokDebugState from './BlokDebugState';
 import {SceneModelScopeProvider, useSceneNotice} from './bloks/scene/context';
 import {BlokSceneFillProvider} from './bloks/scene/host';
@@ -113,7 +112,8 @@ export default function BlokRenderer({
     () =>
       dispatchAction ??
       (action => {
-        toast.info(
+        // A preview has nowhere to send it; the author reads it in the console.
+        console.info(
           action.dependency
             ? `Preview action captured on ${surfaceId}: ${action.operation} on ${action.dependency}`
             : `Preview action captured on ${surfaceId}: ${action.operation}`,

@@ -90,9 +90,12 @@ export const FileLinksSection = ({
 }: {
   title: string;
   links: readonly FileLinkFragment[];
-  emptyTitle: string;
-  emptyDescription: string;
+  /** Without one, an empty relation renders nothing (the file page's body). */
+  emptyTitle?: string;
+  emptyDescription?: string;
 }) => {
+  if (links.length === 0 && !emptyTitle) return null;
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-row items-baseline justify-between gap-2">

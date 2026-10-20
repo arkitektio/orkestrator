@@ -17,9 +17,9 @@ import {
 import { toAssignError } from "../lib/assignError";
 
 /**
- * Passed as the mutation's `onError` so the service-wide toast stays quiet:
- * the caller shows the failure once, where the run was started. With an
- * `onError` present Apollo resolves with `errors` instead of rejecting.
+ * Passed as the mutation's `onError`: with one present Apollo resolves with
+ * `errors` instead of rejecting, and `assign` throws them as one
+ * `AssignError` for the caller to show once, where the run was started.
  */
 const reportedByCaller = () => {};
 
@@ -121,10 +121,14 @@ export const useCancelTask = () => {
 
   const cancel = useCallback(
     async (taskId: string) => {
+      // A refusal rejects (no `onError` here): thrown as an `AssignError`,
+      // like an assign's, so every caller reads one shape.
       const mutation = await cancelMutation({
         variables: {
           input: { task: taskId },
         },
+      }).catch((error: unknown) => {
+        throw toAssignError(error);
       });
 
       const task = mutation.data?.cancel;
@@ -145,6 +149,8 @@ export const useCancelTask = () => {
 /** Minimal task shape needed to re-run it (works for Postman and Detail tasks). */
 export type ReassignableTask = {
   args: AssignInput["args"];
+  /** A rerun keeps the original's: it waits for approval exactly as that did. */
+  policy?: AssignInput["policy"];
   action: { id: string };
   implementation?: { id: string } | null;
   resolvedDependencies?: readonly FrozenDependency[] | null;
@@ -177,6 +183,7 @@ export const useReassignFromTask = () => {
             : {}),
           hooks: [],
           capture: opts?.capture ?? false,
+          policy: task.policy,
         }),
       ),
     [assign],

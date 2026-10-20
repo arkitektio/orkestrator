@@ -13,7 +13,7 @@ import { UnexpectedError } from "@/core/layout/fallbacks/UnexpectedError";
 import { ReportButton } from "@/core/layout/fallbacks/statusActions";
 import { Button } from "@/core/ui/button";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import { Toaster } from "@/core/ui/sonner";
+import { UnhandledErrorNet } from "@/core/notify";
 import { UpdateListener } from "@/app/updates/UpdateListener";
 import { TooltipProvider } from "@/core/ui/tooltip";
 import { useFatalReport } from "@/core/debug/use-report";
@@ -102,6 +102,7 @@ import { GcOnNavigate } from "@/app/hooks/use-gc-on-navigate";
 import { OrganizationBrandSync } from "@/lok/components/OrganizationBrandSync";
 import { ProfileIdentitySync } from "@/lok/components/ProfileIdentitySync";
 import { MeshSync } from "../core/connection/ui/mesh/MeshSync";
+import { MeshFirewallPrompt } from "../core/connection/ui/mesh/MeshFirewallPrompt";
 import { CommandPaletteProvider } from "@/core/command/CommandPaletteProvider";
 import { CommandMenuHost } from "@/core/command/Host";
 import { ActiveTabRouter } from "@/core/tabs/ActiveTabRouter";
@@ -143,6 +144,7 @@ export const AppProvider = ({
    * palette source and action works — but tabs FORWARD to the main window,
    * the shell renders the palette itself, and the always-on background work
    * (module pollers, updater, dictation) stays with the real windows.
+   * `popout`: a window beside the main one, the same app, but not its agent.
    */
   role?: WindowRole;
 }) => {
@@ -171,10 +173,12 @@ export const AppProvider = ({
                               <DialogProvider forward={quick ? forwardDialogToMain : undefined}>
                                 <SelectionProvider>
                                   <SmartPrefetchProvider>
-                                  <AgentProvider disabled={false}>
+                                  {/* One window is this app's agent: the main one. */}
+                                  <AgentProvider disabled={role !== "app"}>
                                     <CommandPaletteProvider>
                                     <WardRegistrar />
                                     <MeshSync />
+                                    {!quick && <MeshFirewallPrompt />}
                                     {/* The cached brand, from the first frame — not after lok answers. */}
                                     <OrganizationBrandSync />
                                     {/* One palette for the whole app. It used to
@@ -203,7 +207,8 @@ export const AppProvider = ({
                                     </Guard.Lok>
                                     {/* The roles, for readers outside React (drop targets). */}
                                     <RolesBridge />
-                                    <Toaster />
+                                    {/* A failed request nobody caught still reaches the toast island. */}
+                                    <UnhandledErrorNet />
                                     {/* One subscription to the app updater, for
                                         the rail island and the settings card. */}
                                     {!quick && <UpdateListener />}

@@ -4,8 +4,8 @@ query GetBlok($id: ID!) {
   }
 }
 
-query ListBloks {
-  bloks {
+query ListBloks($filters: BlokFilter, $pagination: OffsetPaginationInput) {
+  bloks(filters: $filters, pagination: $pagination) {
     ...ListBlok
   }
 }

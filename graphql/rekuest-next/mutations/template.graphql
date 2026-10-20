@@ -1,3 +1,9 @@
 mutation DeleteImplementation($id: ID!) {
   deleteImplementation(input: { implementation: $id })
 }
+
+mutation CreateHigherOrderImplementation($input: CreateHigherOrderImplementationInput!) {
+  createHigherOrderImplementation(input: $input) {
+    ...ListImplementation
+  }
+}

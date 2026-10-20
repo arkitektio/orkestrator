@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import {
   type ColorMap,
   useUpdateEventsLayerMutation,
@@ -51,7 +51,7 @@ export const usePickerWrite = (kind: "spikes" | "events", layerId: string) => {
         else await updateEvents({ variables: { input } });
         return true;
       } catch (error) {
-        toast.error(`Could not save the picker: ${error instanceof Error ? error.message : String(error)}`);
+        reportError(error, "Couldn't save the picker");
         return false;
       }
     },

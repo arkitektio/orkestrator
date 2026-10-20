@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DescriptorOperator, SignalKind } from "../api/graphql";
+import { DescriptorOperator, SignalKind, TaskPolicy } from "../api/graphql";
 import {
   describeDraft,
   scheduleRow,
@@ -30,6 +30,15 @@ const trigger = {
   action: { id: "b", name: "Segment nuclei" },
   agent: { id: "g", name: "cellpose" },
 };
+
+describe("a rule's policy", () => {
+  it("is auto-mode only when it says AUTO; an older row without one asks", () => {
+    expect(scheduleRow({ ...schedule, policy: TaskPolicy.Auto }, now).auto).toBe(true);
+    expect(scheduleRow({ ...schedule, policy: TaskPolicy.Ask }, now).auto).toBe(false);
+    expect(scheduleRow(schedule, now).auto).toBe(false);
+    expect(triggerRow({ ...trigger, policy: TaskPolicy.Auto }).auto).toBe(true);
+  });
+});
 
 describe("scheduleRow", () => {
   it("says the cadence and the waiting run's time", () => {

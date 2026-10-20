@@ -68,7 +68,6 @@
     "Sidebar": "src/renderer/src/core/ui/sidebar.tsx",
     "Skeleton": "src/renderer/src/core/ui/skeleton.tsx",
     "Slider": "src/renderer/src/core/ui/slider.tsx",
-    "Toaster": "src/renderer/src/core/ui/sonner.tsx",
     "Spinner": "src/renderer/src/core/ui/spinner.tsx",
     "StatusPulse": "src/renderer/src/core/ui/status.tsx",
     "Switch": "src/renderer/src/core/ui/switch.tsx",

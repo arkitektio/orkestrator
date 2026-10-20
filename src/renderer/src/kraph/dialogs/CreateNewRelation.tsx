@@ -1,5 +1,5 @@
 import { CreatableListSearchField } from "@/core/forms/CreatableListSearchField";
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
 import { ParagraphField } from "@/core/forms/ParagraphField";
 import { SearchOptions } from "@/core/forms/SearchField";
@@ -21,7 +21,6 @@ import {
 import { smartRegistry } from "@/core/smart/registry";
 import { Structure } from "@/core/types";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 
 const searchIdentifiers = async ({ search, values }: SearchOptions) => {
   const models = smartRegistry
@@ -59,8 +58,6 @@ export const CreateNewRelation = (props: {
   left: Structure[];
   right: Structure[];
 }) => {
-  const { closeDialog } = useDialog();
-
   const form = useForm<FormData>({
     defaultValues: {
       // A structure descriptor is `identifiers` plus a default category key —
@@ -78,33 +75,18 @@ export const CreateNewRelation = (props: {
   const [createGraph] = useCreateInlineGraphMutation();
 
   const [createStructureRelationCategory] =
-    useCreateStructureRelationCategoryMutation({
-      onCompleted: (data) => {
-        console.log("Relation category created:", data);
-      },
-      onError: (error) => {
-        console.error("Error creating relation category:", error);
-      },
-    });
-  const handleRelationCreation = async (categoryInput: FormData) => {
-    try {
-      await createStructureRelationCategory({
+    useCreateStructureRelationCategoryMutation();
+  const { submit: handleRelationCreation, submitting } = useDialogSubmit(
+    (categoryInput: FormData) =>
+      createStructureRelationCategory({
         variables: {
           input: {
             ...categoryInput,
           },
         },
-      });
-
-      closeDialog();
-      toast.success("Structure relation category created successfully");
-    } catch (error) {
-      toast.error(
-        `Failed to create structure relation category: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-      console.error("Failed to create structure relation category:", error);
-    }
-  };
+      }),
+    { errorTitle: "Couldn't create the structure relation category" },
+  );
 
   return (
     <div className="flex flex-col w-full h-full max-w-4xl mx-auto p-6">
@@ -170,7 +152,7 @@ export const CreateNewRelation = (props: {
             </CollapsibleContent>
           </Collapsible>
 
-          <Button type="submit" variant="outline">
+          <Button type="submit" variant="outline" disabled={submitting}>
             Create Structure Relation Category
           </Button>
         </form>

@@ -1,4 +1,5 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { DialogError } from "@/core/dialogs/DialogError";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { AutoDerivedStringField, StringField } from "@/core/forms/StringField";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
@@ -16,7 +17,6 @@ import { Structure } from "@/core/types";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 
 const normalizeInput = (
   data: CreateMeasurementCategoryInput,
@@ -51,8 +51,6 @@ export const CreateNewMeasurement = (props: {
   right: Structure[];
   graph: string;
 }) => {
-  const { closeDialog } = useDialog();
-
   const [structureSearch, setStructureSearch] = useState("");
   const [entitySearch, setEntitySearch] = useState("");
   const debouncedStructureSearch = useDebounce(structureSearch);
@@ -124,19 +122,13 @@ export const CreateNewMeasurement = (props: {
     }
   };
 
-  const handleSubmit = async (data: CreateMeasurementCategoryInput) => {
-    try {
-      await createMeasurementCategory({
+  const { submit: handleSubmit, submitting } = useDialogSubmit(
+    (data: CreateMeasurementCategoryInput) =>
+      createMeasurementCategory({
         variables: { input: normalizeInput({ ...data, graph: props.graph }) },
-      });
-      closeDialog();
-      toast.success("Measurement category created!");
-    } catch (error) {
-      toast.error(
-        `Failed to create: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-    }
-  };
+      }),
+    { errorTitle: "Couldn't create the measurement category" },
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -241,8 +233,9 @@ export const CreateNewMeasurement = (props: {
                   description="AGE-name key, auto-derived from label"
                 />
               </div>
-              <div className="mt-auto pt-4">
-                <Button type="submit" className="w-full">
+              <div className="mt-auto pt-4 flex flex-col gap-2">
+                <DialogError />
+                <Button type="submit" className="w-full" disabled={submitting}>
                   Create Measurement Category
                 </Button>
               </div>

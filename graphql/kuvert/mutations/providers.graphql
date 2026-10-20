@@ -1,0 +1,33 @@
+mutation CreateOAuthProvider($input: CreateOAuthProviderInput!) {
+  createOAuthProvider(input: $input) {
+    ...MailProvider
+  }
+}
+
+mutation UpdateOAuthProvider($input: UpdateOAuthProviderInput!) {
+  updateOAuthProvider(input: $input) {
+    ...MailProvider
+  }
+}
+
+mutation CreateServerProvider($input: CreateServerProviderInput!) {
+  createServerProvider(input: $input) {
+    ...MailProvider
+  }
+}
+
+mutation UpdateServerProvider($input: UpdateServerProviderInput!) {
+  updateServerProvider(input: $input) {
+    ...MailProvider
+  }
+}
+
+mutation UpdateProvider($input: UpdateProviderInput!) {
+  updateProvider(input: $input) {
+    ...MailProvider
+  }
+}
+
+mutation DeleteProvider($id: ID!) {
+  deleteProvider(id: $id)
+}

@@ -1,5 +1,6 @@
-import { CloudUpload, Flag, Home, Inbox, ListChecks, ListTodo, MailOpen, Mailbox, Search, Send, SendHorizontal, Tags } from "lucide-react";
+import { CloudUpload, Flag, Home, Inbox, ListChecks, ListTodo, MailOpen, Mailbox, Plug, Search, Send, SendHorizontal, Tags } from "lucide-react";
 
+import { ADMIN_ROLE } from "@/core/connection/roles";
 import type { NavLinkDecl } from "@/core/modules/host/define";
 
 /** kuvert's pages, for the ⌘K palette and its rail popout (a `navLinks` builtin). */
@@ -16,4 +17,5 @@ export const KUVERT_NAV_LINKS: NavLinkDecl[] = [
   { label: "Mailboxes", route: "/kuvert/accounts", keywords: ["mail", "email", "accounts", "imap", "gmail", "outlook"], group: "Manage", icon: Mailbox, description: "Linked accounts" },
   { label: "Categories", route: "/kuvert/categories", keywords: ["mail", "labels", "tags"], group: "Manage", icon: Tags, description: "Labels on your mail" },
   { label: "Task lists", route: "/kuvert/tasklists", keywords: ["mail", "todo", "lists"], group: "Manage", icon: ListChecks, description: "Lists your tasks live in" },
+  { label: "Providers", route: "/kuvert/providers", keywords: ["mail", "imap", "gmail", "microsoft", "oauth", "setup", "credentials"], group: "Admin", icon: Plug, description: "How mailboxes are linked", roles: ADMIN_ROLE },
 ];

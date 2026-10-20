@@ -11,7 +11,7 @@ import {
 } from "@/core/ui/dropdown-menu";
 import { Ordering, useGetFoldersQuery } from "@/mikro/api/graphql";
 import { Check, FolderInput, FolderPlus, Search } from "lucide-react";
-import { toast } from "@/core/notify";
+import { reportErrorAs, toast } from "@/core/notify";
 import { describeSubject, useFolderMove, type FolderMoveSubject } from "./useFolderMove";
 
 /** How many folders the quick list offers before "Browse all folders…". */
@@ -57,10 +57,14 @@ export const MoveToFolderButton = ({
     },
   });
 
+  // Where the trigger's badge shows the folder, the badge is the confirmation;
+  // a file page draws none, so there the toast says where it went.
   const moveTo = (folder: { id: string; name: string }) => {
     move(subject, folder.id)
-      .then(() => toast.success(`Moved to ${folder.name}`))
-      .catch((e: Error) => toast.error("Could not move: " + e.message));
+      .then(() => {
+        if (currentFolder === undefined) toast.success(`Moved to ${folder.name}`);
+      })
+      .catch(reportErrorAs("Couldn't move to the folder"));
   };
 
   const folders = data?.folders ?? [];

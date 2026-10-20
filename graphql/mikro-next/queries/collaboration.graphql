@@ -1,0 +1,14 @@
+query GetCollaborations {
+  collaborations {
+    ...ListCollaboration
+    items {
+      ...CollaborationItem
+    }
+  }
+}
+
+query GetCollaboration($id: ID!) {
+  collaboration(id: $id) {
+    ...Collaboration
+  }
+}

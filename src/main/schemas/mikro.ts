@@ -1653,6 +1653,39 @@ export type Client = {
   name: Scalars['String']['output'];
 };
 
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** What is in the collaboration; what is part of these is in it too */
+  items: Array<CollaborationItem>;
+  name: Scalars['String']['output'];
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
 /** One column a layer may be coloured or filtered by, and how it is reached. Both pickers read the same options: `colorBys` and `filterBys` turn on the same measure-vs-categorical split, so two lists would be two copies of one answer. Every option returned is one the mutation that publishes the picker accepts -- `createMeshLayer` over a collection, `createLabelLayer` over a lens -- and every column it omits is one that mutation refuses; that invariant is why this exists rather than a client filtering `attributePlans`, which walks a different set */
 export type ColorByOption = {
   __typename?: 'ColorByOption';
@@ -2142,6 +2175,12 @@ export type CreateChartInput = {
   name: Scalars['String']['input'];
 };
 
+/** A new collaboration */
+export type CreateCollaborationInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+};
+
 /** Attach metadata spokes to an array, table or sparse dataset after ingest. Exactly one of `dataset`, `table` and `sparse` names the container; `anchor` carries the coordinates and the spokes. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced */
 export type CreateCoordinateAnchorInput = {
   anchor: CoordinateAnchorInput;
@@ -2255,6 +2294,11 @@ export type CreateMeshLensInput = {
   meshCollection?: InputMaybe<Scalars['ID']['input']>;
   /** Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the mesh collection's whole lens, or the lens cut from */
   windows?: InputMaybe<Array<WindowInput>>;
+};
+
+/** Many metrics in one transaction, at most 5000 */
+export type CreateMetricsInput = {
+  metrics: Array<MetricInput>;
 };
 
 /** Input for registering an immutable network collection. The collection gets a coordinate system of its own, and an edge relates it to the space the network was traced in */
@@ -2669,6 +2713,11 @@ export type DeleteLensInput = {
 /** Input for deleting a mesh collection by ID */
 export type DeleteMeshCollectionInput = {
   /** The ID of the mesh collection to delete */
+  id: Scalars['ID']['input'];
+};
+
+/** The metric to delete */
+export type DeleteMetricInput = {
   id: Scalars['ID']['input'];
 };
 
@@ -5302,6 +5351,95 @@ export type MetaSchema = {
   schema: Scalars['Any']['output'];
 };
 
+/** One value recorded about an annotation or a dataset, by an app or a person: a quantity (`magnitude` in `unit`) or a `code` a process emitted. Immutable: a correction is a new metric that `supersedes` it. What a metric means is not said here: kraph, reading every metric from mikro's change feed, says it */
+export type Metric = {
+  __typename?: 'Metric';
+  /** (code) The category a process emitted */
+  code?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  /** The user it was recorded as */
+  creator?: Maybe<User>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** What was measured, namespaced by who measured it: `ais_suite.measure_profile/threshold_distance`, `user:<sub>/spine_count` */
+  key: Scalars['String']['output'];
+  /** (quantity) The number, in `unit` */
+  magnitude?: Maybe<Scalars['Float']['output']>;
+  /** The identifier of the app that recorded it; null when recorded by hand */
+  producerApp?: Maybe<Scalars['String']['output']>;
+  /** The release of that app */
+  producerVersion?: Maybe<Scalars['String']['output']>;
+  /** The metric this one corrects, if any */
+  supersedes?: Maybe<Metric>;
+  /** The object this value is about */
+  target: MetricTarget;
+  /** (quantity) The unit of `magnitude` */
+  unit?: Maybe<Scalars['String']['output']>;
+  /** What a reader of the change feed keys this metric on */
+  uuid: Scalars['String']['output'];
+};
+
+export type MetricFilter = {
+  AND?: InputMaybe<MetricFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<MetricFilter>;
+  OR?: InputMaybe<MetricFilter>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the metrics correcting nothing, or only to corrections */
+  isCorrection?: InputMaybe<Scalars['Boolean']['input']>;
+  key?: InputMaybe<StrFilterLookup>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
+  /** Filter to the metrics about one object */
+  target?: InputMaybe<MetricTargetFilter>;
+  /** Filter to the metrics about objects of this structure: @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset */
+  targetIdentifier?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** One value about one object: a quantity (magnitude and unit) or a code, exactly one */
+export type MetricInput = {
+  code?: InputMaybe<Scalars['String']['input']>;
+  key: Scalars['String']['input'];
+  magnitude?: InputMaybe<Scalars['Float']['input']>;
+  supersedes?: InputMaybe<Scalars['ID']['input']>;
+  target: MetricTargetInput;
+  unit?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MetricOrder =
+  { createdAt: Ordering; id?: never; key?: never; }
+  |  { createdAt?: never; id: Ordering; key?: never; }
+  |  { createdAt?: never; id?: never; key: Ordering; };
+
+/** An object metrics are recorded about: its structure and id, as rekuest's signals and STRUCTURE ports spell them, and a uuid of its own */
+export type MetricTarget = {
+  __typename?: 'MetricTarget';
+  id: Scalars['ID']['output'];
+  /** The structure of the object: @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset */
+  identifier: Scalars['String']['output'];
+  /** The id of the object within its structure */
+  object: Scalars['ID']['output'];
+  /** The object's uuid as a metric target: what a reader of the change feed keys it on */
+  uuid: Scalars['String']['output'];
+};
+
+/** An object metrics are about: its structure and id, as a signal spells them */
+export type MetricTargetFilter = {
+  /** @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset */
+  identifier: Scalars['String']['input'];
+  /** The id of the object within its structure */
+  object: Scalars['ID']['input'];
+};
+
+/** The object a metric is about: its structure and id, as rekuest's signals and STRUCTURE ports spell them */
+export type MetricTargetInput = {
+  identifier: Scalars['String']['input'];
+  object: Scalars['ID']['input'];
+};
+
 /** Mirror */
 export type MirrorElement = OpticalElement & {
   __typename?: 'MirrorElement';
@@ -5353,6 +5491,8 @@ export type ModelChange = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Put an object in a collaboration, with what it needs to be seen: a scene brings the data its layers draw */
+  addToCollaboration: Collaboration;
   /** Attach unstructured metadata to a file */
   attachUnstructuredMeta: UnstructuredMeta;
   /** Show a coordinate system as whichever composition fits it: a chart over a space with exactly one metric, unit-carrying axis, a scene over any other space with a time or space axis. Bootstrapped from what already resides in the space; authors no edges */
@@ -5381,6 +5521,8 @@ export type Mutation = {
   createChart: Chart;
   /** Bootstrap a chart over an existing coordinate system, drawing every array, table and annotation collection already laid along its axis. Authors no edges */
   createChartFromCoordinateSystem: Chart;
+  /** Create an empty collaboration, to put objects in and grant a guest */
+  createCollaboration: Collaboration;
   /** Attach metadata spokes to an array, table or sparse dataset after ingest: a microscope state, OME metadata, a value histogram, a channel label or a light path, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced */
   createCoordinateAnchor: CoordinateAnchor;
   /** Create a SHARED coordinate system (an ownerless space) and, in one call, author the edges registering any number of sources (datasets, table datasets, mesh collections, coordinate systems) into it */
@@ -5401,6 +5543,10 @@ export type Mutation = {
   createMeshLayer: MeshLayer;
   /** The lens keeping these windows of a mesh collection's own space: the one that exists, or a new one */
   createMeshLens: MeshLens;
+  /** Record one value about an annotation or a dataset: a quantity or a code. Announced to the hub's rekuest (a CREATED @mikro/metric signal) once committed */
+  createMetric: Metric;
+  /** Record many values in one transaction. No signal is sent for each: a reader finds them in mikro's change feed */
+  createMetrics: Array<Metric>;
   /** Register an immutable network collection from an uploaded konnektion store, in a coordinate system of its own */
   createNetworkCollection: NetworkCollection;
   /** Create a layer that renders a node/edge network -- a traced arbor, a vessel tree, a connectome -- in a scene */
@@ -5457,6 +5603,8 @@ export type Mutation = {
   deleteChart: Scalars['ID']['output'];
   /** Delete a chart layer. Deletes nothing it drew */
   deleteChartLayer: Scalars['ID']['output'];
+  /** Delete a collaboration: whoever was granted it sees nothing of it any more */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Delete an unused shared coordinate system. Refused while any scene is rooted in it or any transformation edge touches it. This is the only door a shared space leaves through -- deleting a scene never deletes one. Other system kinds cascade with their owner and cannot be deleted directly */
   deleteCoordinateSystem: Scalars['ID']['output'];
   /** Delete an existing file */
@@ -5469,6 +5617,8 @@ export type Mutation = {
   deleteLens: Scalars['ID']['output'];
   /** Delete an existing mesh collection */
   deleteMeshCollection: Scalars['ID']['output'];
+  /** Delete a metric. One a correction supersedes is kept while the correction stands */
+  deleteMetric: Scalars['ID']['output'];
   /** Delete an existing network collection */
   deleteNetworkCollection: Scalars['ID']['output'];
   /** Delete every orphaned shared space in the organization -- no scene rooted in it, no edge touching it -- and return the deleted ids. The cleanup sweep for the no-garbage-collection policy: scene deletion never deletes a space, this call takes the leftovers back. Org admins sweep every orphan; anyone else sweeps only their own */
@@ -5537,6 +5687,8 @@ export type Mutation = {
   releaseMeshCollectionsFromFolder: Folder;
   /** Unfile table datasets from a folder. They are not deleted, only unfiled */
   releaseTableDatasetsFromFolder: Folder;
+  /** Take an object out of a collaboration, with what it brought that nothing else there needs */
+  removeFromCollaboration: Collaboration;
   /** Request temporary S3 read credentials for a big file */
   requestBigfileAccess: BigFileAccessGrant;
   /** Request an upload grant for a big file store */
@@ -5632,6 +5784,11 @@ export type Mutation = {
 };
 
 
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
 export type MutationAttachUnstructuredMetaArgs = {
   input: UnstructuredMetaInput;
 };
@@ -5702,6 +5859,11 @@ export type MutationCreateChartFromCoordinateSystemArgs = {
 };
 
 
+export type MutationCreateCollaborationArgs = {
+  input: CreateCollaborationInput;
+};
+
+
 export type MutationCreateCoordinateAnchorArgs = {
   input: CreateCoordinateAnchorInput;
 };
@@ -5749,6 +5911,16 @@ export type MutationCreateMeshLayerArgs = {
 
 export type MutationCreateMeshLensArgs = {
   input: CreateMeshLensInput;
+};
+
+
+export type MutationCreateMetricArgs = {
+  input: MetricInput;
+};
+
+
+export type MutationCreateMetricsArgs = {
+  input: CreateMetricsInput;
 };
 
 
@@ -5892,6 +6064,11 @@ export type MutationDeleteChartLayerArgs = {
 };
 
 
+export type MutationDeleteCollaborationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteCoordinateSystemArgs = {
   input: DeleteCoordinateSystemInput;
 };
@@ -5919,6 +6096,11 @@ export type MutationDeleteLensArgs = {
 
 export type MutationDeleteMeshCollectionArgs = {
   input: DeleteMeshCollectionInput;
+};
+
+
+export type MutationDeleteMetricArgs = {
+  input: DeleteMetricInput;
 };
 
 
@@ -6084,6 +6266,11 @@ export type MutationReleaseMeshCollectionsFromFolderArgs = {
 
 export type MutationReleaseTableDatasetsFromFolderArgs = {
   input: DesociateInput;
+};
+
+
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -7535,6 +7722,10 @@ export type Query = {
   charts: Array<Chart>;
   /** List the child folders of a folder */
   children: Array<FolderChild>;
+  /** Get a single collaboration by ID */
+  collaboration: Collaboration;
+  /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
+  collaborations: Array<Collaboration>;
   /** Every column a mesh collection's objects can be coloured or filtered by: one entry per (joinPath, table, column), with the control its declared role admits. **The set this returns is exactly the set `createMeshLayer(colorBys:)` and `filterBys` accept** -- same reachability walk, same measure-vs-categorical rule -- which is what makes it an options query rather than a suggestion. Distinct from `attributePlans`, which answers a different question (how to execute a lookup per hover) over a different set: it walks the whole fact component and returns plans rooted at a source mask that mesh ids cannot execute, drops tables the write path accepts, and fails outright on a storeless array. Both pickers read these same options, because both branch on the same split. `joinPath` follows `references` from table to table -- pass an option's path back verbatim to select it. The columns' *values* are not here: a picker wanting a class list or a numeric range reads them from the parquet it already has an `accessGrant` for */
   colorByOptions: Array<ColorByOption>;
   /** List coordinate anchors (the hubs pinning metadata spokes to coordinates of an array, table or sparse dataset) */
@@ -7581,6 +7772,10 @@ export type Query = {
   meshCollection: MeshCollection;
   /** List mesh collections (immutable Parquet-backed mesh sets, each in a coordinate system of its own) */
   meshCollections: Array<MeshCollection>;
+  /** Get a single metric by ID */
+  metric: Metric;
+  /** List metrics: values recorded about annotations and datasets, by apps and people */
+  metrics: Array<Metric>;
   /** List files created by the current user */
   myfiles: Array<File>;
   /** List folders created by the current user */
@@ -7728,6 +7923,11 @@ export type QueryChildrenArgs = {
 };
 
 
+export type QueryCollaborationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QueryColorByOptionsArgs = {
   filters?: InputMaybe<ColumnOptionFilter>;
   maxJoinDepth?: Scalars['Int']['input'];
@@ -7866,6 +8066,18 @@ export type QueryMeshCollectionArgs = {
 
 export type QueryMeshCollectionsArgs = {
   filters?: InputMaybe<MeshCollectionFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMetricArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryMetricsArgs = {
+  filters?: InputMaybe<MetricFilter>;
+  ordering?: Array<MetricOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -10455,7 +10667,7 @@ export type ZarrUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
-export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -10694,6 +10906,12 @@ type ChartLayerCandidate_TableLens_Fragment = { __typename: 'TableLens' };
 
 export type ChartLayerCandidateFragment = ChartLayerCandidate_AnnotationCollection_Fragment | ChartLayerCandidate_AnnotationLens_Fragment | ChartLayerCandidate_ArrayDataset_Fragment | ChartLayerCandidate_ArrayLens_Fragment | ChartLayerCandidate_DataArray_Fragment | ChartLayerCandidate_MeshCollection_Fragment | ChartLayerCandidate_MeshLens_Fragment | ChartLayerCandidate_NetworkCollection_Fragment | ChartLayerCandidate_NetworkLens_Fragment | ChartLayerCandidate_SparseDataset_Fragment | ChartLayerCandidate_SparseLens_Fragment | ChartLayerCandidate_TableDataset_Fragment | ChartLayerCandidate_TableLens_Fragment;
 
+export type ListCollaborationFragment = { __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any };
+
+export type CollaborationItemFragment = { __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any };
+
+export type CollaborationFragment = { __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any, items: Array<{ __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any }> };
+
 export type AxisFragment = { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null };
 
 export type ListCoordinateSystemFragment = { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> };
@@ -10803,6 +11021,8 @@ export type FabriksUploadGrantFragment = { __typename?: 'FabriksUploadGrant', ac
 export type GeneralKonnektionAccessGrantFragment = { __typename?: 'GeneralKonnektionAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, region: string, bucket: string };
 
 export type FileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
+
+export type DetailFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: any | null, contentType?: string | null, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
 
 export type ListFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
 
@@ -11253,6 +11473,34 @@ export type DeleteChartLayerMutationVariables = Exact<{
 
 
 export type DeleteChartLayerMutation = { __typename?: 'Mutation', deleteChartLayer: string };
+
+export type CreateCollaborationMutationVariables = Exact<{
+  input: CreateCollaborationInput;
+}>;
+
+
+export type CreateCollaborationMutation = { __typename?: 'Mutation', createCollaboration: { __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any, items: Array<{ __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any }> } };
+
+export type AddToCollaborationMutationVariables = Exact<{
+  input: CollaborationObjectInput;
+}>;
+
+
+export type AddToCollaborationMutation = { __typename?: 'Mutation', addToCollaboration: { __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any, items: Array<{ __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any }> } };
+
+export type RemoveFromCollaborationMutationVariables = Exact<{
+  input: CollaborationObjectInput;
+}>;
+
+
+export type RemoveFromCollaborationMutation = { __typename?: 'Mutation', removeFromCollaboration: { __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any, items: Array<{ __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any }> } };
+
+export type DeleteCollaborationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteCollaborationMutation = { __typename?: 'Mutation', deleteCollaboration: string };
 
 export type CreateCoordinateSystemMutationVariables = Exact<{
   input: CreateCoordinateSystemInput;
@@ -12033,6 +12281,18 @@ export type ChildrenQueryVariables = Exact<{
 
 export type ChildrenQuery = { __typename?: 'Query', children: Array<{ __typename?: 'AnnotationCollection', id: string, name: string } | { __typename?: 'ArrayDataset', descriptors: any, id: string, name: string, description?: string | null, axisNames: Array<string>, shape: Array<number>, multiscale: boolean, spec: Array<ArrayDatasetSpec>, dataArrays: Array<{ __typename?: 'DataArray', id: string, level: number, shape: Array<number>, store: { __typename?: 'ZarrStore', id: string, sizeBytes?: any | null } }>, latestSnapshot?: { __typename?: 'SceneSnapshot', id: string, name: string, createdAt: any, store: { __typename?: 'MediaStore', id: string, key: string, bucket: string } } | null, defaultScene?: { __typename?: 'Scene', id: string, name: string } | null, fullLens?: { __typename?: 'ArrayLens', id: string } | null } | { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } } | { __typename?: 'Folder', id: string, name: string, description?: string | null, isDefault: boolean } | { __typename?: 'MeshCollection', id: string, label: string } | { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string> }> };
 
+export type GetCollaborationsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetCollaborationsQuery = { __typename?: 'Query', collaborations: Array<{ __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any, items: Array<{ __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any }> }> };
+
+export type GetCollaborationQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetCollaborationQuery = { __typename?: 'Query', collaboration: { __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any, items: Array<{ __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any }> } };
+
 export type ColumnOptionJoinStepFragment = { __typename?: 'ColumnOptionJoinStep', table: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null } }, column: { __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null } };
 
 export type ColorByOptionFragment = { __typename?: 'ColorByOption', control: ColumnControl, axes: Array<string>, graphAttribute?: string | null, target?: GraphTarget | null, sparseDataset?: { __typename?: 'SparseDataset', id: string, name: string, axisNames: Array<string>, indexableAxes: Array<string>, shape: Array<number>, arrays: Array<{ __typename?: 'SparseArray', id: string, indexedAxis: number, indexedAxisName?: string | null, path: string, store: { __typename?: 'SparseStore', id: string, key: string, bucket: string, path: string, shape?: Array<number> | null, spec?: string | null, layouts: Array<{ __typename?: 'SparseLayout', path: string, indexedAxis: number, indexOrder: Array<number>, nnz: number, dtype: string, chunks?: any | null, rangeReadable: boolean }> } }>, axisReferences: Array<{ __typename?: 'SparseAxisReference', axis: string, references: { __typename?: 'TableDataset', id: string, name: string, axisNames: Array<string>, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> } }> } | null, table?: { __typename?: 'TableDataset', id: string, name: string, description?: string | null, axisNames: Array<string>, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null }, columns: Array<{ __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null }> } | null, column?: { __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null } | null, joinPath: Array<{ __typename?: 'ColumnOptionJoinStep', table: { __typename?: 'TableDataset', id: string, name: string, store: { __typename?: 'ParquetStore', id: string, key: string, bucket: string, path: string, sizeBytes?: any | null } }, column: { __typename?: 'Column', id: string, name: string, longName?: string | null, description?: string | null, dtype: string, role: ColumnRole, axisType?: AxisType | null, unit?: any | null, order: number, references?: { __typename?: 'TableDataset', id: string, name: string } | null, nodeReferences?: { __typename?: 'NetworkCollection', id: string } | null } }> };
@@ -12173,7 +12433,7 @@ export type GetFileQueryVariables = Exact<{
 }>;
 
 
-export type GetFileQuery = { __typename?: 'Query', file: { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, store: { __typename?: 'BigFileStore', id: string, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null } };
+export type GetFileQuery = { __typename?: 'Query', file: { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: any | null, contentType?: string | null, key: string, bucket: string, path: string, accessGrant: { __typename?: 'BigFileAccessGrant', accessKey: string, secretKey: string, sessionToken: string, expiresIn: number, path: string, key: string, bucket: string } }, provenanceEntries: Array<{ __typename?: 'ProvenanceEntry', id: string, kind: HistoryKind, date: any, task?: { __typename?: 'Task', id: string, taskId: string } | null, user?: { __typename?: 'User', sub: string } | null, client?: { __typename?: 'Client', clientId: string } | null, effectiveChanges: Array<{ __typename?: 'ModelChange', field: string, oldValue?: string | null, newValue?: string | null }> }>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null } };
 
 export type GetFilesQueryVariables = Exact<{
   filters?: InputMaybe<FileFilter>;
@@ -14016,6 +14276,32 @@ export const ChartLayerCandidateFragmentDoc = gql`
     ${DimSliceFragmentDoc}
 ${AxisFragmentDoc}
 ${TableDatasetColumnFragmentDoc}`;
+export const ListCollaborationFragmentDoc = gql`
+    fragment ListCollaboration on Collaboration {
+  id
+  name
+  description
+  createdAt
+}
+    `;
+export const CollaborationItemFragmentDoc = gql`
+    fragment CollaborationItem on CollaborationItem {
+  id
+  identifier
+  objectId
+  brought
+  addedAt
+}
+    `;
+export const CollaborationFragmentDoc = gql`
+    fragment Collaboration on Collaboration {
+  ...ListCollaboration
+  items {
+    ...CollaborationItem
+  }
+}
+    ${ListCollaborationFragmentDoc}
+${CollaborationItemFragmentDoc}`;
 export const BigFileUploadGrantFragmentDoc = gql`
     fragment BigFileUploadGrant on BigFileUploadGrant {
   accessKey
@@ -14232,6 +14518,28 @@ export const FileFragmentDoc = gql`
 }
     ${BigFileStoreFragmentDoc}
 ${ProvenanceEntryFragmentDoc}`;
+export const DetailFileFragmentDoc = gql`
+    fragment DetailFile on File {
+  ...File
+  creator {
+    sub
+  }
+  createdThrough {
+    id
+    taskId
+    createdAt
+    assigner {
+      sub
+    }
+  }
+  store {
+    id
+    originalFileName
+    sizeBytes
+    contentType
+  }
+}
+    ${FileFragmentDoc}`;
 export const FileLinkFragmentDoc = gql`
     fragment FileLink on FileLink {
   id
@@ -15527,6 +15835,32 @@ export const DeleteChartLayerDocument = gql`
   deleteChartLayer(input: {id: $id})
 }
     `;
+export const CreateCollaborationDocument = gql`
+    mutation CreateCollaboration($input: CreateCollaborationInput!) {
+  createCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+export const AddToCollaborationDocument = gql`
+    mutation AddToCollaboration($input: CollaborationObjectInput!) {
+  addToCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+export const RemoveFromCollaborationDocument = gql`
+    mutation RemoveFromCollaboration($input: CollaborationObjectInput!) {
+  removeFromCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+export const DeleteCollaborationDocument = gql`
+    mutation DeleteCollaboration($id: ID!) {
+  deleteCollaboration(id: $id)
+}
+    `;
 export const CreateCoordinateSystemDocument = gql`
     mutation CreateCoordinateSystem($input: CreateCoordinateSystemInput!) {
   createCoordinateSystem(input: $input) {
@@ -16582,6 +16916,24 @@ export const ChildrenDocument = gql`
 ${ListFolderFragmentDoc}
 ${ListArrayDatasetFragmentDoc}
 ${ListTableDatasetFragmentDoc}`;
+export const GetCollaborationsDocument = gql`
+    query GetCollaborations {
+  collaborations {
+    ...ListCollaboration
+    items {
+      ...CollaborationItem
+    }
+  }
+}
+    ${ListCollaborationFragmentDoc}
+${CollaborationItemFragmentDoc}`;
+export const GetCollaborationDocument = gql`
+    query GetCollaboration($id: ID!) {
+  collaboration(id: $id) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
 export const MeshColorByOptionsDocument = gql`
     query MeshColorByOptions($meshCollection: ID!, $filters: ColumnOptionFilter, $maxJoinDepth: Int) {
   options: colorByOptions(
@@ -16805,10 +17157,10 @@ ${AxisFragmentDoc}`;
 export const GetFileDocument = gql`
     query GetFile($id: ID!) {
   file(id: $id) {
-    ...File
+    ...DetailFile
   }
 }
-    ${FileFragmentDoc}`;
+    ${DetailFileFragmentDoc}`;
 export const GetFilesDocument = gql`
     query GetFiles($filters: FileFilter, $pagination: OffsetPaginationInput, $ordering: [FileOrder!]) {
   files(filters: $filters, pagination: $pagination, ordering: $ordering) {
@@ -17344,6 +17696,18 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     DeleteChartLayer(variables: DeleteChartLayerMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DeleteChartLayerMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<DeleteChartLayerMutation>({ document: DeleteChartLayerDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DeleteChartLayer', 'mutation', variables);
     },
+    CreateCollaboration(variables: CreateCollaborationMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateCollaborationMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<CreateCollaborationMutation>({ document: CreateCollaborationDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateCollaboration', 'mutation', variables);
+    },
+    AddToCollaboration(variables: AddToCollaborationMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AddToCollaborationMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<AddToCollaborationMutation>({ document: AddToCollaborationDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AddToCollaboration', 'mutation', variables);
+    },
+    RemoveFromCollaboration(variables: RemoveFromCollaborationMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RemoveFromCollaborationMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<RemoveFromCollaborationMutation>({ document: RemoveFromCollaborationDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RemoveFromCollaboration', 'mutation', variables);
+    },
+    DeleteCollaboration(variables: DeleteCollaborationMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DeleteCollaborationMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DeleteCollaborationMutation>({ document: DeleteCollaborationDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DeleteCollaboration', 'mutation', variables);
+    },
     CreateCoordinateSystem(variables: CreateCoordinateSystemMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateCoordinateSystemMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CreateCoordinateSystemMutation>({ document: CreateCoordinateSystemDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateCoordinateSystem', 'mutation', variables);
     },
@@ -17661,6 +18025,12 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     Children(variables: ChildrenQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ChildrenQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<ChildrenQuery>({ document: ChildrenDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'Children', 'query', variables);
+    },
+    GetCollaborations(variables?: GetCollaborationsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetCollaborationsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetCollaborationsQuery>({ document: GetCollaborationsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetCollaborations', 'query', variables);
+    },
+    GetCollaboration(variables: GetCollaborationQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetCollaborationQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetCollaborationQuery>({ document: GetCollaborationDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetCollaboration', 'query', variables);
     },
     MeshColorByOptions(variables: MeshColorByOptionsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MeshColorByOptionsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<MeshColorByOptionsQuery>({ document: MeshColorByOptionsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MeshColorByOptions', 'query', variables);

@@ -1,4 +1,4 @@
-import { SignalKind } from "../api/graphql";
+import { SignalKind, TaskPolicy } from "../api/graphql";
 import { AutomationState, scheduleState, triggerState } from "./automationStatus";
 import { describeCadence } from "./cron";
 import { KIND_LABELS, describeCondition, fromWireConditions } from "./triggerConditions";
@@ -30,6 +30,7 @@ export type ScheduleLike = Lifetime & {
   id: string;
   name: string;
   enabled: boolean;
+  policy?: TaskPolicy;
   cron?: string | null;
   intervalSeconds?: number | null;
   timezone?: string | null;
@@ -44,6 +45,7 @@ export type TriggerLike = Lifetime & {
   id: string;
   name: string;
   enabled: boolean;
+  policy?: TaskPolicy;
   identifier: string;
   kind: SignalKind;
   conditions?: unknown;
@@ -65,6 +67,8 @@ export type AutomationRow = {
   action: Named;
   agent: Named | null;
   enabled: boolean;
+  /** Auto-mode: what its runs ask other actions to do runs without asking. */
+  auto: boolean;
   state: AutomationState;
   /** When it last created a run. */
   lastRunAt: string | null;
@@ -94,6 +98,7 @@ export const scheduleRow = (schedule: ScheduleLike, now: number = Date.now()): A
     action: schedule.action,
     agent: schedule.agent ?? null,
     enabled: schedule.enabled,
+    auto: schedule.policy === TaskPolicy.Auto,
     state,
     lastRunAt: schedule.lastRunAt ?? null,
     nextAt: state === "waiting" ? (schedule.nextRun?.notBefore ?? null) : null,
@@ -115,6 +120,7 @@ export const triggerRow = (trigger: TriggerLike): AutomationRow => ({
   action: trigger.action,
   agent: trigger.agent ?? null,
   enabled: trigger.enabled,
+  auto: trigger.policy === TaskPolicy.Auto,
   state: triggerState(trigger),
   lastRunAt: trigger.lastRunAt ?? null,
   nextAt: null,

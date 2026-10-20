@@ -7,6 +7,7 @@ import { buildPac, pacDataUrl, proxyPortForHost, routesFor, type PacRoute } from
 import {
   MESH_CLAIM_CHANNEL,
   MESH_EVENT_CHANNEL,
+  MESH_FIREWALL_CHANNEL,
   MESH_LOCK_INIT_CHANNEL,
   MESH_LOCK_MAX_TRUSTED_KEYS,
   MESH_LOCK_SIGN_CHANNEL,
@@ -21,6 +22,7 @@ import {
   type MeshdCommand,
   type MeshdEvent,
   type MeshEvent,
+  type MeshFirewallState,
   type MeshLockInitRequest,
   type MeshLockInitResult,
   type MeshLockSignRequest,
@@ -80,6 +82,8 @@ export type MeshServiceDeps = {
   applyProxy: (pacScript: string | undefined) => Promise<void>;
   /** Whether a path exists (the binary, a node's state file); defaults to a stat. */
   exists?: (path: string) => Promise<boolean>;
+  /** Windows' inbound firewall rules for the sidecar; `not-windows` elsewhere. */
+  firewall?: () => Promise<MeshFirewallState>;
   log?: (message: string) => void;
 };
 
@@ -138,6 +142,7 @@ export class MeshService implements AppModule {
       this.lockInit(request),
     );
     this.transport.handleChannel(MESH_RESTART_CHANNEL, () => this.restart());
+    this.transport.handleChannel(MESH_FIREWALL_CHANNEL, () => this.deps.firewall?.() ?? "not-windows");
   }
 
   private readonly watched = new Set<number>();

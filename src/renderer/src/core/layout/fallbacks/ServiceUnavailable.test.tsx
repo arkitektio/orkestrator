@@ -347,3 +347,50 @@ describe("ServiceStatusPanel", () => {
     expect(within(screen.getByRole("region", { name: /Findings/ })).getByText("The hub sees it running")).toBeInTheDocument();
   });
 });
+
+describe("ServiceStatusPanel progress", () => {
+  const progress = {
+    key: "mikro",
+    run: 1,
+    startedAt: 0,
+    waitingForMesh: true,
+    attempts: [
+      { host: "mikro.example.org", route: "direct" as const, state: "failed" as const, failure: { kind: "timeout" as const, timeoutMs: 5000 }, at: 0 },
+    ],
+  };
+  const mesh = (phase: "joining" | "needs-machine-auth") => ({ meshId: "lab", label: "Lab", phase, since: 0, demandedBy: ["mikro"] });
+
+  it("says what a check tries, and that it waits for the mesh", () => {
+    renderPanel({ state: state({ status: "checking" }), progress, meshProgress: mesh("joining") });
+    expect(screen.getByText("Connecting to Mikro")).toBeTruthy();
+    expect(screen.getByText("mikro.example.org")).toBeTruthy();
+    expect(screen.getByText("didn't answer within 5 s")).toBeTruthy();
+    expect(screen.getByText("Joining the mesh")).toBeTruthy();
+  });
+
+  it("offers the mesh settings on the row when the mesh is stuck", () => {
+    renderPanel({
+      state: state({ status: "checking" }),
+      progress,
+      meshProgress: mesh("needs-machine-auth"),
+      meshAction: <button>Mesh settings</button>,
+    });
+    expect(screen.getByText("Waiting for an administrator to approve this computer on the mesh")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mesh settings" })).toBeTruthy();
+  });
+
+  it("leads a failure with the mesh's reason when that is what failed", () => {
+    renderPanel({
+      progress: {
+        ...progress,
+        waitingForMesh: false,
+        attempts: [...progress.attempts, { host: "mikro.lab.ts.net", route: "mesh", state: "failed", at: 1 }],
+      },
+      meshProgress: mesh("needs-machine-auth"),
+      meshAction: <button>Mesh settings</button>,
+    });
+    expect(screen.getByText("Couldn't reach Mikro")).toBeTruthy();
+    expect(screen.getByText("Waiting for an administrator to approve this computer on the mesh.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mesh settings" })).toBeTruthy();
+  });
+});

@@ -31,9 +31,14 @@ import {
 import type { MeshProbeResult } from "../../../../../main/doctor/protocol";
 import type { MeshStatusPayload } from "../../../../../main/mesh/protocol";
 import { Loader2, RefreshCw, Unplug } from "lucide-react";
+import { ConnectionSteps } from "@/core/connection/ui/progress/ConnectionSteps";
+import { serviceSteps } from "@/core/connection/ui/progress/serviceSteps";
+import { describeMesh, meshIsStuck } from "@/core/connection/progress/describe";
+import type { MeshProgress, ServiceProgress } from "@/core/connection/progress/store";
+import { useMeshProgress, useServiceProgress } from "@/core/connection/progress/hooks";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StatusPage, type StatusDetail } from "./StatusPage";
-import { BackButton, HomeButton } from "./statusActions";
+import { BackButton, HomeButton, MeshSettingsButton } from "./statusActions";
 
 /**
  * What a module page shows when its backend service is not ready.
@@ -103,6 +108,12 @@ export type ServiceStatusPanelProps = {
   renderFindings?: (findings: Finding[]) => React.ReactNode;
   /** Ways out when there is nothing to retry (the service is not installed). */
   leaveActions?: React.ReactNode;
+  /** The check as it runs: each address tried, and whether it waits on the mesh. */
+  progress?: ServiceProgress;
+  /** The active profile's mesh, as the progress store tells it. */
+  meshProgress?: MeshProgress;
+  /** The way to the mesh's settings, for when the mesh is what is stuck. */
+  meshAction?: React.ReactNode;
 };
 
 /**
@@ -126,6 +137,9 @@ export const ServiceStatusPanel = ({
   doctor,
   renderFindings,
   leaveActions,
+  progress,
+  meshProgress,
+  meshAction,
 }: ServiceStatusPanelProps) => {
   const [retrying, setRetrying] = useState(false);
   const name = state?.definition.name ?? serviceKey;
@@ -172,10 +186,20 @@ export const ServiceStatusPanel = ({
   }
 
   if (state.status !== "invalid") {
-    // Still trying its addresses. Nothing has failed, so there is nothing to
-    // draw and nothing to explain: this is usually gone in a moment.
-    return <StatusPage busy icon={Loader2} spin title={`Connecting to ${name}`} />;
+    // Still trying its addresses. Usually gone in a moment, so the rows say
+    // only what is being tried — and, when it is, that the mesh is awaited.
+    const steps = serviceSteps({ progress, mesh: meshProgress, meshAction });
+    return (
+      <StatusPage busy icon={Loader2} spin title={`Connecting to ${name}`}>
+        {steps.length > 0 && <ConnectionSteps steps={steps} className="w-[min(28rem,calc(100cqw-2rem))]" />}
+      </StatusPage>
+    );
   }
+
+  // The mesh is what failed, for a reason the user can act on: that leads,
+  // ahead of the general "couldn't reach" and the doctor.
+  const meshStuck =
+    !!meshProgress && meshIsStuck(meshProgress.phase) && !!progress?.attempts.some((attempt) => attempt.route === "mesh");
 
   // Every address failed. Only now the picture, and the doctor behind it.
   const diagram = buildConnectionDiagram({
@@ -217,7 +241,9 @@ export const ServiceStatusPanel = ({
       // occur: the heading stays put while the picture arrives under it.
       title={`Couldn't reach ${subject}`}
       description={
-        diagnosing ? null : doctor?.status === "error" ? (
+        meshStuck ? (
+          `${describeMesh(meshProgress)}.`
+        ) : diagnosing ? null : doctor?.status === "error" ? (
           <>The diagnosis itself failed{doctor.error ? `: ${doctor.error}` : "."}</>
         ) : verdict ? (
           // The likeliest reason, as one line. Everything else the check saw
@@ -231,6 +257,7 @@ export const ServiceStatusPanel = ({
             <RefreshCw className={retrying ? "animate-spin motion-reduce:animate-none" : undefined} />
             {allDown ? "Retry all services" : `Retry ${name}`}
           </Button>
+          {meshStuck && meshAction}
           {doctor?.report && !diagnosing && <CopyReportButton report={doctor.report} />}
         </>
       }
@@ -274,6 +301,8 @@ const ConnectedPanel = ({ serviceKey, doctor }: { serviceKey: string; doctor: Co
   const { retryService } = useArkitektActions();
   const activeProfile = useActiveProfile();
   const path = useConnectionPath();
+  const progress = useServiceProgress(serviceKey);
+  const meshProgress = useMeshProgress();
   const { sidecar, meshes } = useMeshes();
   const mesh = useMemo(() => ({ sidecar, meshes }), [sidecar, meshes]);
   const tailscale = useSystemTailscale(
@@ -323,6 +352,9 @@ const ConnectedPanel = ({ serviceKey, doctor }: { serviceKey: string; doctor: Co
       // What the doctor found about a part opens under the diagram when that
       // part is clicked, with whatever can be done about it.
       renderFindings={(findings) => <FindingList findings={findings} onRemedy={doctor.onRemedy} />}
+      progress={progress}
+      meshProgress={meshProgress}
+      meshAction={<MeshSettingsButton />}
       leaveActions={
         <>
           <BackButton />

@@ -2,10 +2,11 @@ import { Card } from "@/core/ui/card";
 import { RefreshCw, TriangleAlert } from "lucide-react";
 import { ListMailAccountFragment, MailAccountStatus } from "../../api/graphql";
 import { MailAccount } from "../../linkers";
+import { providerTrouble } from "../ProblemBanner";
 
 /** A linked mailbox: its name and address, and whether it needs attention. */
 const MailAccountCard = ({ item }: { item: ListMailAccountFragment }) => {
-  const trouble = item.status === MailAccountStatus.NeedsReauth || !!item.lastErrorCode;
+  const trouble = item.status === MailAccountStatus.NeedsReauth || !!item.lastErrorCode || providerTrouble(item);
   return (
     <MailAccount.Smart object={item}>
       <Card className="group flex flex-col gap-0.5 px-3 py-2">

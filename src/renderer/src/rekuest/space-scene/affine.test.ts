@@ -1,6 +1,17 @@
 import {Matrix4, Quaternion, Vector3} from 'three';
 import {describe, expect, it} from 'vitest';
-import {freeSpot, fromMatrix4, readPose, SPOT_SPACING, toMatrix4, writePose} from './affine';
+import {
+  autoFitScale,
+  FIT_SIZE,
+  freeSpot,
+  fromMatrix4,
+  readPose,
+  readScale,
+  SPOT_SPACING,
+  toMatrix4,
+  writePose,
+  writeScale,
+} from './affine';
 
 const at = (x: number, y: number, z: number) => fromMatrix4(new Matrix4().setPosition(x, y, z));
 
@@ -42,5 +53,36 @@ describe('a free spot', () => {
 
   it('fills a gap that was left', () => {
     expect(readPose(freeSpot([at(0, 0, 0), at(2 * SPOT_SPACING, 0, 0)])).x).toBe(SPOT_SPACING);
+  });
+});
+
+describe('a placement scale', () => {
+  it('is written evenly and keeps the position and the turn', () => {
+    const placed = writePose(at(0, 0, 0), {x: 1, y: 0.5, z: -2, turn: 90});
+    const scaled = writeScale(placed, 0.001);
+    expect(readScale(scaled)).toBe(0.001);
+    expect(readPose(scaled)).toEqual({x: 1, y: 0.5, z: -2, turn: 90});
+  });
+
+  it('is one for a placement that was never scaled', () => {
+    expect(readScale(at(1, 2, 3))).toBe(1);
+  });
+});
+
+describe('fitting on placing', () => {
+  it('leaves a model that is about the size of a device', () => {
+    expect(autoFitScale(FIT_SIZE)).toBeNull();
+    expect(autoFitScale(FIT_SIZE * 9)).toBeNull();
+    expect(autoFitScale(FIT_SIZE / 9)).toBeNull();
+  });
+
+  it('fits a model that is ten times too large or too small', () => {
+    expect(autoFitScale(FIT_SIZE * 1000)).toBeCloseTo(0.001);
+    expect(autoFitScale(FIT_SIZE / 10)).toBeCloseTo(10);
+  });
+
+  it('fits nothing it could not measure', () => {
+    expect(autoFitScale(0)).toBeNull();
+    expect(autoFitScale(Number.POSITIVE_INFINITY)).toBeNull();
   });
 });

@@ -1,5 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
-import { toast } from "@/core/notify";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Spinner } from "@/core/ui/spinner";
@@ -16,7 +15,7 @@ import {
 import { CategoryDot } from "../components/categories/CategoryDot";
 import { categorizeDelta, Membership, membership } from "../components/categories/membership";
 import { TriCheck } from "../components/categories/TriCheck";
-import { toastText } from "../errors";
+import { asKuvertError } from "../errors";
 
 type Group = { account: ListMessageFragment["account"]; mail: ListMessageFragment[] };
 
@@ -72,7 +71,6 @@ const AccountCategories = ({
 
 /** Put mail into categories of its mailbox and take it out; mail of several mailboxes is grouped by mailbox. */
 export const CategorizeForm = ({ messages }: { messages: string[] }) => {
-  const { closeDialog } = useDialog();
   const { data } = useListMessagesQuery({
     variables: { filters: { ids: messages }, pagination: { limit: messages.length } },
   });
@@ -83,20 +81,22 @@ export const CategorizeForm = ({ messages }: { messages: string[] }) => {
   });
   const groups = data ? byAccount(data.messages) : [];
 
-  const save = async () => {
-    try {
-      for (const group of groups) {
-        const { add, remove } = categorizeDelta(group.mail, wanted[group.account.id] ?? {});
-        if (add.length || remove.length) {
-          await categorize({ variables: { input: { messages: group.mail.map((m) => m.id), add, remove } } });
+  // The mail shows its categories: closing is the confirmation.
+  const { submit: save, submitting } = useDialogSubmit(
+    async () => {
+      try {
+        for (const group of groups) {
+          const { add, remove } = categorizeDelta(group.mail, wanted[group.account.id] ?? {});
+          if (add.length || remove.length) {
+            await categorize({ variables: { input: { messages: group.mail.map((m) => m.id), add, remove } } });
+          }
         }
+      } catch (e) {
+        throw asKuvertError(e);
       }
-      toast.success("Categories updated");
-      closeDialog();
-    } catch (e) {
-      toast.error(toastText(e));
-    }
-  };
+    },
+    { errorTitle: "Couldn't change the categories" },
+  );
 
   return (
     <div className="flex flex-col gap-3">
@@ -122,7 +122,7 @@ export const CategorizeForm = ({ messages }: { messages: string[] }) => {
         </div>
       )}
       <DialogFooter>
-        <Button type="button" disabled={loading || Object.keys(wanted).length === 0} onClick={() => void save()}>
+        <Button type="button" disabled={loading || submitting || Object.keys(wanted).length === 0} onClick={() => void save()}>
           {loading && <Spinner />}
           Save
         </Button>

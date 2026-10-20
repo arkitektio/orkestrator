@@ -26,6 +26,8 @@ export type Scalars = {
   EventValue: { input: any; output: any; }
   /** The `Identifier` scalar is a structure identifier of the form `@package/key` (e.g. `@mikro/image`) that types STRUCTURE, MEMORY_STRUCTURE and INTERFACE ports */
   Identifier: { input: any; output: any; }
+  /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf). */
+  JSON: { input: any; output: any; }
   /** The `JSONSerializable` scalar type represents a JSON-serializable value. */
   JSONSerializable: { input: any; output: any; }
   /** The `SearchQuery` scalar is a GraphQL query string a search widget executes against its ward to populate its choices */
@@ -203,7 +205,7 @@ export type ArgPortInput = {
   dimension?: InputMaybe<Scalars['String']['input']>;
   /** The effects of the port */
   effects?: InputMaybe<Array<EffectInput>>;
-  /** The identifier of a structure port. This is used to uniquely identify a specific type of structure. */
+  /** The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it. */
   identifier?: InputMaybe<Scalars['String']['input']>;
   /** The key of the port: unique among its siblings, free of '..', not 'value'. LIST/DICT item ports are conventionally keyed '...'. */
   key: Scalars['String']['input'];
@@ -363,6 +365,39 @@ export type CloseRunInput = {
   run: Scalars['ID']['input'];
 };
 
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** What is in the collaboration; what is part of these is in it too */
+  items: Array<CollaborationItem>;
+  name: Scalars['String']['output'];
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
 /** A single key-value prop configuration for a component layout node. */
 export type ComponentProp = {
   __typename?: 'ComponentProp';
@@ -390,16 +425,21 @@ export type ComponentPropInput = {
   utilCall?: InputMaybe<UtilCallInput>;
 };
 
-/** A new PythonFlow version, carrying the report the executor's validation produced for its source. */
+/** A new collaboration */
+export type CreateCollaborationInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+};
+
+/** A new PythonFlow version: its source and the actions it may call. The server validates it and derives its ports and runtime. */
 export type CreatePythonFlowInput = {
-  args?: Array<ArgPortInput>;
   description?: InputMaybe<Scalars['String']['input']>;
   entrypoint?: Scalars['String']['input'];
   manifest?: Array<ManifestEntryInput>;
   previous?: InputMaybe<Scalars['ID']['input']>;
-  returns?: Array<ReturnPortInput>;
-  runtime: Scalars['String']['input'];
   source: Scalars['String']['input'];
+  /** Structure identifiers the entrypoint's signature uses that no action mentions */
+  structures?: Array<Scalars['String']['input']>;
   title?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -523,12 +563,6 @@ export type Effect = {
   source?: Maybe<Scalars['String']['output']>;
 };
 
-/** The effect class of an implementation — declared by the implementation, never the caller. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world (no UPSERT), so an ambiguous failure is terminal and must not be retried. */
-export enum EffectClass {
-  None = 'NONE',
-  Physical = 'PHYSICAL'
-}
-
 /**
  *
  *     An effect is a way to modify a port based on a condition. For example,
@@ -563,6 +597,14 @@ export enum EffectKind {
   Message = 'MESSAGE'
 }
 
+/** What running an implementation again would do to the world. Purely informational: shown to whoever decides about a lost task. */
+export enum Effects {
+  Irreversible = 'IRREVERSIBLE',
+  None = 'NONE',
+  Repeatable = 'REPEATABLE',
+  Unknown = 'UNKNOWN'
+}
+
 /** A Flow is a versioned, executable graph of nodes and edges that lives inside a Workspace. It is the concrete definition that Runs (live executions) and Traces (dry runs) are created from. Flows with the same graph hash within a workspace are deduplicated. */
 export type Flow = {
   __typename?: 'Flow';
@@ -570,6 +612,8 @@ export type Flow = {
   createdAt: Scalars['DateTime']['output'];
   /** An optional longer description of what the flow does. */
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@fluss/status`). The keys are the ones fluss declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The full node-and-edge graph (nodes, edges and globals) that defines the flow. */
   graph: Graph;
   /** A content hash of the graph, used to deduplicate identical flows within a workspace. */
@@ -595,6 +639,8 @@ export type FlowFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<RequiresInput>>;
   /** Search by title (case-insensitive substring) or by the meaning of the query against title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -790,22 +836,28 @@ export type ManifestEntry = {
   alias: Scalars['String']['output'];
   /** The app that provides the action, if pinned. */
   app?: Maybe<Scalars['String']['output']>;
-  /** Whether calling the action touches the real world (PHYSICAL). */
-  effect: EffectClass;
+  /** What calling the action again would do to the world. IRREVERSIBLE marks the flow physical. */
+  effect: Effects;
   /** The key of the action within its app, if pinned. */
   key?: Maybe<Scalars['String']['output']>;
   /** The version of the app, if pinned. */
   version?: Maybe<Scalars['String']['output']>;
 };
 
-/** One action a Python flow may call, as the executor's validation resolved it. */
+/** One action a Python flow may call, with the ports of that action: the source is checked against them, and only the hash is stored. */
 export type ManifestEntryInput = {
   actionHash: Scalars['String']['input'];
   /** The name the action is injected under in the source */
   alias: Scalars['String']['input'];
   app?: InputMaybe<Scalars['String']['input']>;
-  effect?: EffectClass;
+  /** The action's arg ports, which the source's calls are checked against */
+  args?: Array<ArgPortInput>;
+  effect?: Effects;
   key?: InputMaybe<Scalars['String']['input']>;
+  /** The action's kind: a Python flow can only call FUNCTION actions */
+  kind: ActionKind;
+  /** The action's return ports, which the source's use of its results is checked against */
+  returns?: Array<ReturnPortInput>;
   version?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -828,13 +880,17 @@ export type MessageEffect = Effect & {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  /** Archive a PUBLISHED Python flow version, so it is no longer registered. */
+  /** Put an object in a collaboration, with what it needs to be seen: a run brings its flow, a flow its workspace, a workspace its flows */
+  addToCollaboration: Collaboration;
+  /** Archive a PUBLISHED Python flow version, so it no longer runs (its runs keep pointing at it). */
   archivePythonFlow: PythonFlow;
   /** Finish a Python flow run as COMPLETED or FAILED. */
   closePythonRun: PythonRun;
   /** Mark a run as COMPLETED. */
   closeRun: Run;
-  /** Store a new DRAFT Python flow version (or return the existing one with the same content in its lineage). */
+  /** Create an empty collaboration, to put objects in and grant a guest */
+  createCollaboration: Collaboration;
+  /** Validate a Python flow's source against the actions it may call and store it as a new DRAFT version, with the ports and runtime the validation derives (or return the existing one with the same content in its lineage). A source that does not validate is refused. */
   createPythonFlow: PythonFlow;
   /** Start (or reuse) the run of a published Python flow version for a task. */
   createPythonRun: PythonRun;
@@ -842,14 +898,18 @@ export type Mutation = {
   createRun: Run;
   /** Create a new workspace, seeded with an initial flow. */
   createWorkspace: Workspace;
+  /** Delete a collaboration: whoever was granted it sees nothing of it any more */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Delete a DRAFT Python flow version. */
   deletePythonFlow: Scalars['ID']['output'];
   /** Delete a run and its events and snapshots. */
   deleteRun: Scalars['ID']['output'];
   /** Delete a run snapshot. */
   deleteSnapshot: Scalars['ID']['output'];
-  /** Publish a DRAFT (or re-publish an ARCHIVED) Python flow version, so it is registered as an action. */
+  /** Publish a DRAFT (or re-publish an ARCHIVED) Python flow version, so it can run and be deployed as an action. */
   publishPythonFlow: PythonFlow;
+  /** Take an object out of a collaboration, with what it brought that nothing else there needs */
+  removeFromCollaboration: Collaboration;
   /** Capture a state snapshot of a run at a logical time. */
   snapshot: Snapshot;
   /** Record a single run event (a value, error or completion) for a run. */
@@ -858,6 +918,11 @@ export type Mutation = {
   updatePythonFlow: PythonFlow;
   /** Update a workspace's metadata and upsert the flow for the posted graph. */
   updateWorkspace: Workspace;
+};
+
+
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -873,6 +938,11 @@ export type MutationClosePythonRunArgs = {
 
 export type MutationCloseRunArgs = {
   input: CloseRunInput;
+};
+
+
+export type MutationCreateCollaborationArgs = {
+  input: CreateCollaborationInput;
 };
 
 
@@ -896,6 +966,11 @@ export type MutationCreateWorkspaceArgs = {
 };
 
 
+export type MutationDeleteCollaborationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeletePythonFlowArgs = {
   input: PythonFlowRefInput;
 };
@@ -913,6 +988,11 @@ export type MutationDeleteSnapshotArgs = {
 
 export type MutationPublishPythonFlowArgs = {
   input: PythonFlowRefInput;
+};
+
+
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -1010,7 +1090,7 @@ export type Provides = {
 };
 
 export type ProvidesInput = {
-  /** The key of the provision: the path into the object the constraint reads */
+  /** The key of the provision: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes') */
   key: Scalars['String']['input'];
   /** The operator for the provision */
   operator: DescriptorOperator;
@@ -1041,7 +1121,7 @@ export type ProxyWidget = AssignWidget & {
   targetPort: Scalars['String']['output'];
 };
 
-/** A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions are registered as actions. */
+/** A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions run, and only they can be deployed as actions. */
 export type PythonFlow = {
   __typename?: 'PythonFlow';
   /** The arguments of the entrypoint, as rekuest ports. */
@@ -1050,6 +1130,8 @@ export type PythonFlow = {
   createdAt: Scalars['DateTime']['output'];
   /** An optional longer description of what the flow does. */
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@fluss/status`). The keys are the ones fluss declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The function in the source that is called. */
   entrypoint: Scalars['String']['output'];
   /** A content hash over source, entrypoint, manifest and runtime. */
@@ -1062,7 +1144,7 @@ export type PythonFlow = {
   manifest: Array<ManifestEntry>;
   /** The versions derived from this one. */
   nextVersions: Array<PythonFlow>;
-  /** Whether any action in the manifest has a PHYSICAL effect. */
+  /** Whether any action in the manifest has an IRREVERSIBLE effect. */
   physical: Scalars['Boolean']['output'];
   /** The version this one was derived from, if any. */
   previous?: Maybe<PythonFlow>;
@@ -1074,7 +1156,7 @@ export type PythonFlow = {
   runtime: Scalars['String']['output'];
   /** The Python source of the flow. */
   source: Scalars['String']['output'];
-  /** DRAFT, PUBLISHED (registered as an action) or ARCHIVED. */
+  /** DRAFT, PUBLISHED (runs, and can be deployed as an action) or ARCHIVED. */
   status: PythonFlowStatus;
   /** A human-readable title for the flow. */
   title: Scalars['String']['output'];
@@ -1083,7 +1165,7 @@ export type PythonFlow = {
 };
 
 
-/** A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions are registered as actions. */
+/** A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions run, and only they can be deployed as actions. */
 export type PythonFlowNextVersionsArgs = {
   filters?: InputMaybe<PythonFlowFilter>;
   ordering?: Array<PythonFlowOrder>;
@@ -1091,11 +1173,20 @@ export type PythonFlowNextVersionsArgs = {
 };
 
 
-/** A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions are registered as actions. */
+/** A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions run, and only they can be deployed as actions. */
 export type PythonFlowRunsArgs = {
   filters?: InputMaybe<PythonRunFilter>;
   ordering?: Array<PythonRunOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+/** One problem with a Python flow's source. */
+export type PythonFlowDiagnostic = {
+  __typename?: 'PythonFlowDiagnostic';
+  /** The line of the source it is on, when known. */
+  line?: Maybe<Scalars['Int']['output']>;
+  /** What is wrong, as the checker reports it. */
+  message: Scalars['String']['output'];
 };
 
 export type PythonFlowFilter = {
@@ -1113,6 +1204,8 @@ export type PythonFlowFilter = {
   lineage?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<RequiresInput>>;
   /** Search by title (case-insensitive substring) or by the meaning of the query against title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter by lifecycle status */
@@ -1129,18 +1222,46 @@ export type PythonFlowRefInput = {
   id: Scalars['ID']['input'];
 };
 
-/** The lifecycle of a PythonFlow version: only PUBLISHED versions are registered as actions. */
+/** A Python flow's source and the actions it may call: what validatePythonFlow checks. */
+export type PythonFlowSourceInput = {
+  entrypoint?: Scalars['String']['input'];
+  manifest?: Array<ManifestEntryInput>;
+  source: Scalars['String']['input'];
+  /** Structure identifiers the entrypoint's signature uses that no action mentions */
+  structures?: Array<Scalars['String']['input']>;
+};
+
+/** The lifecycle of a PythonFlow version: only PUBLISHED versions run, and only they can be deployed as actions (a higher-order implementation of run_python_flow). */
 export enum PythonFlowStatus {
   Archived = 'ARCHIVED',
   Draft = 'DRAFT',
   Published = 'PUBLISHED'
 }
 
+/** What validating a Python flow's source found: the ports, stubs and runtime a version of it would be stored with, or why it would be refused. */
+export type PythonFlowValidation = {
+  __typename?: 'PythonFlowValidation';
+  /** The entrypoint's arguments, as rekuest ports (empty unless ok). */
+  args: Array<ArgPort>;
+  /** Why it would not, when it would not. */
+  diagnostics: Array<PythonFlowDiagnostic>;
+  /** Whether createPythonFlow would store this source. */
+  ok: Scalars['Boolean']['output'];
+  /** The entrypoint's return values, as rekuest ports (empty unless ok). */
+  returns: Array<ReturnPort>;
+  /** The interpreter and helpers the source was checked against. */
+  runtime: Scalars['String']['output'];
+  /** The stubs the source is checked against: the manifest's actions and the structures they use, for an editor's completion. */
+  stubs: Scalars['String']['output'];
+};
+
 /** A PythonRun is one execution of a published PythonFlow for a task; its step-by-step history is that task's child tasks in rekuest. */
 export type PythonRun = {
   __typename?: 'PythonRun';
   /** The time at which the run started. */
   createdAt: Scalars['DateTime']['output'];
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@fluss/status`). The keys are the ones fluss declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** The time at which the run finished, if it has. */
   finishedAt?: Maybe<Scalars['DateTime']['output']>;
   /** The version that is executed. */
@@ -1168,6 +1289,8 @@ export type PythonRunFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<RequiresInput>>;
   /** Search by task id (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Filter by run status */
@@ -1180,6 +1303,7 @@ export type PythonRunOrder =
 
 /** The status of a PythonRun. */
 export enum PythonRunStatus {
+  Cancelled = 'CANCELLED',
   Completed = 'COMPLETED',
   Failed = 'FAILED',
   Running = 'RUNNING'
@@ -1189,6 +1313,10 @@ export type Query = {
   __typename?: 'Query';
   _entities: Array<Maybe<_Entity>>;
   _service: _Service;
+  /** Get a single collaboration by ID */
+  collaboration: Collaboration;
+  /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
+  collaborations: Array<Collaboration>;
   /** Fetch the events of a run between two logical times, seeded from the latest snapshot at or before the lower bound. */
   eventsBetween: Array<RunEvent>;
   /** Fetch a single flow by id. */
@@ -1201,6 +1329,8 @@ export type Query = {
   pythonFlows: Array<PythonFlow>;
   /** Fetch a single Python flow run by id. */
   pythonRun: PythonRun;
+  /** Fetch the Python flow run created for a given task id. */
+  pythonRunForTask: PythonRun;
   /** List all Python flow runs in your organization. */
   pythonRuns: Array<PythonRun>;
   /** Fetch a single reactive template by id. */
@@ -1217,6 +1347,8 @@ export type Query = {
   snapshot: Snapshot;
   /** List all run snapshots in your organization. */
   snapshots: Array<Snapshot>;
+  /** Check a Python flow's source against the actions it may call, as createPythonFlow would, without storing it: its ports, stubs and runtime, or why it would be refused. */
+  validatePythonFlow: PythonFlowValidation;
   /** Fetch a single workspace by id. */
   workspace: Workspace;
   /** Aggregate statistics over the workspaces in your organization. */
@@ -1228,6 +1360,11 @@ export type Query = {
 
 export type Query_EntitiesArgs = {
   representations: Array<Scalars['_Any']['input']>;
+};
+
+
+export type QueryCollaborationArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1263,6 +1400,11 @@ export type QueryPythonFlowsArgs = {
 
 
 export type QueryPythonRunArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryPythonRunForTaskArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1312,6 +1454,11 @@ export type QuerySnapshotsArgs = {
   filters?: InputMaybe<SnapshotFilter>;
   ordering?: Array<SnapshotOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryValidatePythonFlowArgs = {
+  input: PythonFlowSourceInput;
 };
 
 
@@ -1544,7 +1691,7 @@ export type Requires = {
 };
 
 export type RequiresInput = {
-  /** The key of the requirement: the path into the object the constraint reads */
+  /** The key of the requirement: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes') */
   key: Scalars['String']['input'];
   /** The operator for the requirement */
   operator: DescriptorOperator;
@@ -1629,7 +1776,7 @@ export type ReturnPortInput = {
   dimension?: InputMaybe<Scalars['String']['input']>;
   /** The effects of the port */
   effects?: InputMaybe<Array<EffectInput>>;
-  /** The identifier of a structure port. This is used to uniquely identify a specific type of structure. */
+  /** The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it. */
   identifier?: InputMaybe<Scalars['String']['input']>;
   /** The key of the port: unique among its siblings, free of '..', not 'value'. LIST/DICT item ports are conventionally keyed '...'. */
   key: Scalars['String']['input'];
@@ -1674,6 +1821,8 @@ export type Run = {
   __typename?: 'Run';
   /** The time at which the run was started. */
   createdAt: Scalars['DateTime']['output'];
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@fluss/status`). The keys are the ones fluss declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** All events emitted during this run, in order. */
   events: Array<RunEvent>;
   /** The flow that is being executed by this run. */
@@ -1769,6 +1918,8 @@ export type RunFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter by whether the current user has pinned the item */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query */
+  requires?: InputMaybe<Array<RequiresInput>>;
   /** Search by task id (case-insensitive substring) */
   search?: InputMaybe<Scalars['String']['input']>;
 };
@@ -2086,6 +2237,8 @@ export type Workspace = {
   createdAt: Scalars['DateTime']['output'];
   /** An optional longer description of the workspace. */
   description?: Maybe<Scalars['String']['output']>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@fluss/status`). The keys are the ones fluss declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
   /** All flows contained in this workspace. */
   flows: Array<Flow>;
   /** The unique identifier of the workspace. */
@@ -2931,6 +3084,41 @@ export type FlussBlokComponentPropFragment = { __typename?: 'ComponentProp', key
       & FlussBlokArgumentFragment
     )> | null } | null };
 
+export type ManifestEntryFragment = { __typename?: 'ManifestEntry', alias: string, actionHash: string, app?: string | null, key?: string | null, version?: string | null, effect: Effects };
+
+export type PythonFlowVersionFragment = { __typename?: 'PythonFlow', id: string, title: string, status: PythonFlowStatus, hash: string, createdAt: any };
+
+export type PythonFlowFragment = { __typename?: 'PythonFlow', id: string, title: string, description?: string | null, lineage: string, source: string, entrypoint: string, runtime: string, status: PythonFlowStatus, hash: string, physical: boolean, createdAt: any, descriptors: any, previous?: { __typename?: 'PythonFlow', id: string } | null, args: Array<(
+    { __typename?: 'ArgPort' }
+    & FlussArgPortFragment
+  )>, returns: Array<(
+    { __typename?: 'ReturnPort' }
+    & FlussReturnPortFragment
+  )>, manifest: Array<(
+    { __typename?: 'ManifestEntry' }
+    & ManifestEntryFragment
+  )>, versions: Array<(
+    { __typename?: 'PythonFlow' }
+    & PythonFlowVersionFragment
+  )> };
+
+export type ListPythonFlowFragment = { __typename?: 'PythonFlow', id: string, title: string, description?: string | null, lineage: string, status: PythonFlowStatus, hash: string, physical: boolean, createdAt: any, descriptors: any };
+
+export type ListPythonRunFragment = { __typename?: 'PythonRun', id: string, taskId: string, status: PythonRunStatus, createdAt: any, finishedAt?: any | null, flow: { __typename?: 'PythonFlow', id: string, title: string } };
+
+export type DetailPythonRunFragment = { __typename?: 'PythonRun', id: string, taskId: string, status: PythonRunStatus, createdAt: any, finishedAt?: any | null, flow: { __typename?: 'PythonFlow', id: string, title: string, source: string, entrypoint: string, status: PythonFlowStatus, manifest: Array<(
+      { __typename?: 'ManifestEntry' }
+      & ManifestEntryFragment
+    )> } };
+
+export type PythonFlowValidationFragment = { __typename?: 'PythonFlowValidation', ok: boolean, stubs: string, runtime: string, diagnostics: Array<{ __typename?: 'PythonFlowDiagnostic', message: string, line?: number | null }>, args: Array<(
+    { __typename?: 'ArgPort' }
+    & FlussArgPortFragment
+  )>, returns: Array<(
+    { __typename?: 'ReturnPort' }
+    & FlussReturnPortFragment
+  )> };
+
 export type ReactiveTemplateFragment = { __typename?: 'ReactiveTemplate', id: string, implementation: ReactiveImplementation, title: string, description?: string | null, ins: Array<Array<(
     { __typename?: 'ArgPort' }
     & FlussArgPortFragment
@@ -2992,6 +3180,44 @@ export type CreateWorkspaceMutation = { __typename?: 'Mutation', createWorkspace
     & ListWorkspaceFragment
   ) };
 
+export type CreatePythonFlowMutationVariables = Exact<{
+  input: CreatePythonFlowInput;
+}>;
+
+
+export type CreatePythonFlowMutation = { __typename?: 'Mutation', createPythonFlow: (
+    { __typename?: 'PythonFlow' }
+    & PythonFlowFragment
+  ) };
+
+export type UpdatePythonFlowMutationVariables = Exact<{
+  input: UpdatePythonFlowInput;
+}>;
+
+
+export type UpdatePythonFlowMutation = { __typename?: 'Mutation', updatePythonFlow: { __typename?: 'PythonFlow', id: string, title: string, description?: string | null } };
+
+export type PublishPythonFlowMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PublishPythonFlowMutation = { __typename?: 'Mutation', publishPythonFlow: { __typename?: 'PythonFlow', id: string, status: PythonFlowStatus, descriptors: any } };
+
+export type ArchivePythonFlowMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type ArchivePythonFlowMutation = { __typename?: 'Mutation', archivePythonFlow: { __typename?: 'PythonFlow', id: string, status: PythonFlowStatus, descriptors: any } };
+
+export type DeletePythonFlowMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeletePythonFlowMutation = { __typename?: 'Mutation', deletePythonFlow: string };
+
 export type FlowQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -3018,6 +3244,70 @@ export type HomePageStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type HomePageStatsQuery = { __typename?: 'Query', workspaceStats: { __typename?: 'WorkspaceStats', count: number } };
+
+export type PythonFlowsQueryVariables = Exact<{
+  filters?: InputMaybe<PythonFlowFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  ordering?: InputMaybe<Array<PythonFlowOrder> | PythonFlowOrder>;
+}>;
+
+
+export type PythonFlowsQuery = { __typename?: 'Query', pythonFlows: Array<(
+    { __typename?: 'PythonFlow' }
+    & ListPythonFlowFragment
+  )> };
+
+export type PythonFlowQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PythonFlowQuery = { __typename?: 'Query', pythonFlow: (
+    { __typename?: 'PythonFlow' }
+    & PythonFlowFragment
+  ) };
+
+export type ValidatePythonFlowQueryVariables = Exact<{
+  input: PythonFlowSourceInput;
+}>;
+
+
+export type ValidatePythonFlowQuery = { __typename?: 'Query', validatePythonFlow: (
+    { __typename?: 'PythonFlowValidation' }
+    & PythonFlowValidationFragment
+  ) };
+
+export type PythonRunsQueryVariables = Exact<{
+  filters?: InputMaybe<PythonRunFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  ordering?: InputMaybe<Array<PythonRunOrder> | PythonRunOrder>;
+}>;
+
+
+export type PythonRunsQuery = { __typename?: 'Query', pythonRuns: Array<(
+    { __typename?: 'PythonRun' }
+    & ListPythonRunFragment
+  )> };
+
+export type PythonRunQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PythonRunQuery = { __typename?: 'Query', pythonRun: (
+    { __typename?: 'PythonRun' }
+    & DetailPythonRunFragment
+  ) };
+
+export type PythonRunForTaskQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PythonRunForTaskQuery = { __typename?: 'Query', pythonRunForTask: (
+    { __typename?: 'PythonRun' }
+    & DetailPythonRunFragment
+  ) };
 
 export type ReactiveTemplatesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -4019,6 +4309,122 @@ export const CarouselWorkspaceFragmentDoc = gql`
   }
 }
     ${FlowFragmentDoc}`;
+export const ManifestEntryFragmentDoc = gql`
+    fragment ManifestEntry on ManifestEntry {
+  alias
+  actionHash
+  app
+  key
+  version
+  effect
+}
+    `;
+export const PythonFlowVersionFragmentDoc = gql`
+    fragment PythonFlowVersion on PythonFlow {
+  id
+  title
+  status
+  hash
+  createdAt
+}
+    `;
+export const PythonFlowFragmentDoc = gql`
+    fragment PythonFlow on PythonFlow {
+  id
+  title
+  description
+  lineage
+  source
+  entrypoint
+  runtime
+  status
+  hash
+  physical
+  createdAt
+  descriptors
+  previous {
+    id
+  }
+  args {
+    ...FlussArgPort
+  }
+  returns {
+    ...FlussReturnPort
+  }
+  manifest {
+    ...ManifestEntry
+  }
+  versions {
+    ...PythonFlowVersion
+  }
+}
+    ${FlussArgPortFragmentDoc}
+${FlussReturnPortFragmentDoc}
+${ManifestEntryFragmentDoc}
+${PythonFlowVersionFragmentDoc}`;
+export const ListPythonFlowFragmentDoc = gql`
+    fragment ListPythonFlow on PythonFlow {
+  id
+  title
+  description
+  lineage
+  status
+  hash
+  physical
+  createdAt
+  descriptors
+}
+    `;
+export const ListPythonRunFragmentDoc = gql`
+    fragment ListPythonRun on PythonRun {
+  id
+  taskId
+  status
+  createdAt
+  finishedAt
+  flow {
+    id
+    title
+  }
+}
+    `;
+export const DetailPythonRunFragmentDoc = gql`
+    fragment DetailPythonRun on PythonRun {
+  id
+  taskId
+  status
+  createdAt
+  finishedAt
+  flow {
+    id
+    title
+    source
+    entrypoint
+    status
+    manifest {
+      ...ManifestEntry
+    }
+  }
+}
+    ${ManifestEntryFragmentDoc}`;
+export const PythonFlowValidationFragmentDoc = gql`
+    fragment PythonFlowValidation on PythonFlowValidation {
+  ok
+  stubs
+  runtime
+  diagnostics {
+    message
+    line
+  }
+  args {
+    ...FlussArgPort
+  }
+  returns {
+    ...FlussReturnPort
+  }
+}
+    ${FlussArgPortFragmentDoc}
+${FlussReturnPortFragmentDoc}`;
 export const ReactiveTemplateFragmentDoc = gql`
     fragment ReactiveTemplate on ReactiveTemplate {
   id
@@ -4215,6 +4621,175 @@ export function useCreateWorkspaceMutation(baseOptions?: ApolloReactHooks.Mutati
 export type CreateWorkspaceMutationHookResult = ReturnType<typeof useCreateWorkspaceMutation>;
 export type CreateWorkspaceMutationResult = Apollo.MutationResult<CreateWorkspaceMutation>;
 export type CreateWorkspaceMutationOptions = Apollo.BaseMutationOptions<CreateWorkspaceMutation, CreateWorkspaceMutationVariables>;
+export const CreatePythonFlowDocument = gql`
+    mutation CreatePythonFlow($input: CreatePythonFlowInput!) {
+  createPythonFlow(input: $input) {
+    ...PythonFlow
+  }
+}
+    ${PythonFlowFragmentDoc}`;
+export type CreatePythonFlowMutationFn = Apollo.MutationFunction<CreatePythonFlowMutation, CreatePythonFlowMutationVariables>;
+
+/**
+ * __useCreatePythonFlowMutation__
+ *
+ * To run a mutation, you first call `useCreatePythonFlowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreatePythonFlowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createPythonFlowMutation, { data, loading, error }] = useCreatePythonFlowMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreatePythonFlowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreatePythonFlowMutation, CreatePythonFlowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreatePythonFlowMutation, CreatePythonFlowMutationVariables>(CreatePythonFlowDocument, options);
+      }
+export type CreatePythonFlowMutationHookResult = ReturnType<typeof useCreatePythonFlowMutation>;
+export type CreatePythonFlowMutationResult = Apollo.MutationResult<CreatePythonFlowMutation>;
+export type CreatePythonFlowMutationOptions = Apollo.BaseMutationOptions<CreatePythonFlowMutation, CreatePythonFlowMutationVariables>;
+export const UpdatePythonFlowDocument = gql`
+    mutation UpdatePythonFlow($input: UpdatePythonFlowInput!) {
+  updatePythonFlow(input: $input) {
+    id
+    title
+    description
+  }
+}
+    `;
+export type UpdatePythonFlowMutationFn = Apollo.MutationFunction<UpdatePythonFlowMutation, UpdatePythonFlowMutationVariables>;
+
+/**
+ * __useUpdatePythonFlowMutation__
+ *
+ * To run a mutation, you first call `useUpdatePythonFlowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdatePythonFlowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updatePythonFlowMutation, { data, loading, error }] = useUpdatePythonFlowMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdatePythonFlowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdatePythonFlowMutation, UpdatePythonFlowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdatePythonFlowMutation, UpdatePythonFlowMutationVariables>(UpdatePythonFlowDocument, options);
+      }
+export type UpdatePythonFlowMutationHookResult = ReturnType<typeof useUpdatePythonFlowMutation>;
+export type UpdatePythonFlowMutationResult = Apollo.MutationResult<UpdatePythonFlowMutation>;
+export type UpdatePythonFlowMutationOptions = Apollo.BaseMutationOptions<UpdatePythonFlowMutation, UpdatePythonFlowMutationVariables>;
+export const PublishPythonFlowDocument = gql`
+    mutation PublishPythonFlow($id: ID!) {
+  publishPythonFlow(input: {id: $id}) {
+    id
+    status
+    descriptors
+  }
+}
+    `;
+export type PublishPythonFlowMutationFn = Apollo.MutationFunction<PublishPythonFlowMutation, PublishPythonFlowMutationVariables>;
+
+/**
+ * __usePublishPythonFlowMutation__
+ *
+ * To run a mutation, you first call `usePublishPythonFlowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePublishPythonFlowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [publishPythonFlowMutation, { data, loading, error }] = usePublishPythonFlowMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePublishPythonFlowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<PublishPythonFlowMutation, PublishPythonFlowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<PublishPythonFlowMutation, PublishPythonFlowMutationVariables>(PublishPythonFlowDocument, options);
+      }
+export type PublishPythonFlowMutationHookResult = ReturnType<typeof usePublishPythonFlowMutation>;
+export type PublishPythonFlowMutationResult = Apollo.MutationResult<PublishPythonFlowMutation>;
+export type PublishPythonFlowMutationOptions = Apollo.BaseMutationOptions<PublishPythonFlowMutation, PublishPythonFlowMutationVariables>;
+export const ArchivePythonFlowDocument = gql`
+    mutation ArchivePythonFlow($id: ID!) {
+  archivePythonFlow(input: {id: $id}) {
+    id
+    status
+    descriptors
+  }
+}
+    `;
+export type ArchivePythonFlowMutationFn = Apollo.MutationFunction<ArchivePythonFlowMutation, ArchivePythonFlowMutationVariables>;
+
+/**
+ * __useArchivePythonFlowMutation__
+ *
+ * To run a mutation, you first call `useArchivePythonFlowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useArchivePythonFlowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [archivePythonFlowMutation, { data, loading, error }] = useArchivePythonFlowMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useArchivePythonFlowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ArchivePythonFlowMutation, ArchivePythonFlowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ArchivePythonFlowMutation, ArchivePythonFlowMutationVariables>(ArchivePythonFlowDocument, options);
+      }
+export type ArchivePythonFlowMutationHookResult = ReturnType<typeof useArchivePythonFlowMutation>;
+export type ArchivePythonFlowMutationResult = Apollo.MutationResult<ArchivePythonFlowMutation>;
+export type ArchivePythonFlowMutationOptions = Apollo.BaseMutationOptions<ArchivePythonFlowMutation, ArchivePythonFlowMutationVariables>;
+export const DeletePythonFlowDocument = gql`
+    mutation DeletePythonFlow($id: ID!) {
+  deletePythonFlow(input: {id: $id})
+}
+    `;
+export type DeletePythonFlowMutationFn = Apollo.MutationFunction<DeletePythonFlowMutation, DeletePythonFlowMutationVariables>;
+
+/**
+ * __useDeletePythonFlowMutation__
+ *
+ * To run a mutation, you first call `useDeletePythonFlowMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeletePythonFlowMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deletePythonFlowMutation, { data, loading, error }] = useDeletePythonFlowMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeletePythonFlowMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeletePythonFlowMutation, DeletePythonFlowMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeletePythonFlowMutation, DeletePythonFlowMutationVariables>(DeletePythonFlowDocument, options);
+      }
+export type DeletePythonFlowMutationHookResult = ReturnType<typeof useDeletePythonFlowMutation>;
+export type DeletePythonFlowMutationResult = Apollo.MutationResult<DeletePythonFlowMutation>;
+export type DeletePythonFlowMutationOptions = Apollo.BaseMutationOptions<DeletePythonFlowMutation, DeletePythonFlowMutationVariables>;
 export const FlowDocument = gql`
     query Flow($id: ID!) {
   flow(id: $id) {
@@ -4321,6 +4896,220 @@ export function useHomePageStatsLazyQuery(baseOptions?: ApolloReactHooks.LazyQue
 export type HomePageStatsQueryHookResult = ReturnType<typeof useHomePageStatsQuery>;
 export type HomePageStatsLazyQueryHookResult = ReturnType<typeof useHomePageStatsLazyQuery>;
 export type HomePageStatsQueryResult = Apollo.QueryResult<HomePageStatsQuery, HomePageStatsQueryVariables>;
+export const PythonFlowsDocument = gql`
+    query PythonFlows($filters: PythonFlowFilter, $pagination: OffsetPaginationInput, $ordering: [PythonFlowOrder!]) {
+  pythonFlows(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...ListPythonFlow
+  }
+}
+    ${ListPythonFlowFragmentDoc}`;
+
+/**
+ * __usePythonFlowsQuery__
+ *
+ * To run a query within a React component, call `usePythonFlowsQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePythonFlowsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePythonFlowsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *      ordering: // value for 'ordering'
+ *   },
+ * });
+ */
+export function usePythonFlowsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<PythonFlowsQuery, PythonFlowsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PythonFlowsQuery, PythonFlowsQueryVariables>(PythonFlowsDocument, options);
+      }
+export function usePythonFlowsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PythonFlowsQuery, PythonFlowsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PythonFlowsQuery, PythonFlowsQueryVariables>(PythonFlowsDocument, options);
+        }
+export type PythonFlowsQueryHookResult = ReturnType<typeof usePythonFlowsQuery>;
+export type PythonFlowsLazyQueryHookResult = ReturnType<typeof usePythonFlowsLazyQuery>;
+export type PythonFlowsQueryResult = Apollo.QueryResult<PythonFlowsQuery, PythonFlowsQueryVariables>;
+export const PythonFlowDocument = gql`
+    query PythonFlow($id: ID!) {
+  pythonFlow(id: $id) {
+    ...PythonFlow
+  }
+}
+    ${PythonFlowFragmentDoc}`;
+
+/**
+ * __usePythonFlowQuery__
+ *
+ * To run a query within a React component, call `usePythonFlowQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePythonFlowQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePythonFlowQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePythonFlowQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PythonFlowQuery, PythonFlowQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PythonFlowQuery, PythonFlowQueryVariables>(PythonFlowDocument, options);
+      }
+export function usePythonFlowLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PythonFlowQuery, PythonFlowQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PythonFlowQuery, PythonFlowQueryVariables>(PythonFlowDocument, options);
+        }
+export type PythonFlowQueryHookResult = ReturnType<typeof usePythonFlowQuery>;
+export type PythonFlowLazyQueryHookResult = ReturnType<typeof usePythonFlowLazyQuery>;
+export type PythonFlowQueryResult = Apollo.QueryResult<PythonFlowQuery, PythonFlowQueryVariables>;
+export const ValidatePythonFlowDocument = gql`
+    query ValidatePythonFlow($input: PythonFlowSourceInput!) {
+  validatePythonFlow(input: $input) {
+    ...PythonFlowValidation
+  }
+}
+    ${PythonFlowValidationFragmentDoc}`;
+
+/**
+ * __useValidatePythonFlowQuery__
+ *
+ * To run a query within a React component, call `useValidatePythonFlowQuery` and pass it any options that fit your needs.
+ * When your component renders, `useValidatePythonFlowQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useValidatePythonFlowQuery({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useValidatePythonFlowQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ValidatePythonFlowQuery, ValidatePythonFlowQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ValidatePythonFlowQuery, ValidatePythonFlowQueryVariables>(ValidatePythonFlowDocument, options);
+      }
+export function useValidatePythonFlowLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ValidatePythonFlowQuery, ValidatePythonFlowQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ValidatePythonFlowQuery, ValidatePythonFlowQueryVariables>(ValidatePythonFlowDocument, options);
+        }
+export type ValidatePythonFlowQueryHookResult = ReturnType<typeof useValidatePythonFlowQuery>;
+export type ValidatePythonFlowLazyQueryHookResult = ReturnType<typeof useValidatePythonFlowLazyQuery>;
+export type ValidatePythonFlowQueryResult = Apollo.QueryResult<ValidatePythonFlowQuery, ValidatePythonFlowQueryVariables>;
+export const PythonRunsDocument = gql`
+    query PythonRuns($filters: PythonRunFilter, $pagination: OffsetPaginationInput, $ordering: [PythonRunOrder!]) {
+  pythonRuns(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...ListPythonRun
+  }
+}
+    ${ListPythonRunFragmentDoc}`;
+
+/**
+ * __usePythonRunsQuery__
+ *
+ * To run a query within a React component, call `usePythonRunsQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePythonRunsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePythonRunsQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *      ordering: // value for 'ordering'
+ *   },
+ * });
+ */
+export function usePythonRunsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<PythonRunsQuery, PythonRunsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PythonRunsQuery, PythonRunsQueryVariables>(PythonRunsDocument, options);
+      }
+export function usePythonRunsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PythonRunsQuery, PythonRunsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PythonRunsQuery, PythonRunsQueryVariables>(PythonRunsDocument, options);
+        }
+export type PythonRunsQueryHookResult = ReturnType<typeof usePythonRunsQuery>;
+export type PythonRunsLazyQueryHookResult = ReturnType<typeof usePythonRunsLazyQuery>;
+export type PythonRunsQueryResult = Apollo.QueryResult<PythonRunsQuery, PythonRunsQueryVariables>;
+export const PythonRunDocument = gql`
+    query PythonRun($id: ID!) {
+  pythonRun(id: $id) {
+    ...DetailPythonRun
+  }
+}
+    ${DetailPythonRunFragmentDoc}`;
+
+/**
+ * __usePythonRunQuery__
+ *
+ * To run a query within a React component, call `usePythonRunQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePythonRunQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePythonRunQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePythonRunQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PythonRunQuery, PythonRunQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PythonRunQuery, PythonRunQueryVariables>(PythonRunDocument, options);
+      }
+export function usePythonRunLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PythonRunQuery, PythonRunQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PythonRunQuery, PythonRunQueryVariables>(PythonRunDocument, options);
+        }
+export type PythonRunQueryHookResult = ReturnType<typeof usePythonRunQuery>;
+export type PythonRunLazyQueryHookResult = ReturnType<typeof usePythonRunLazyQuery>;
+export type PythonRunQueryResult = Apollo.QueryResult<PythonRunQuery, PythonRunQueryVariables>;
+export const PythonRunForTaskDocument = gql`
+    query PythonRunForTask($id: ID!) {
+  pythonRunForTask(id: $id) {
+    ...DetailPythonRun
+  }
+}
+    ${DetailPythonRunFragmentDoc}`;
+
+/**
+ * __usePythonRunForTaskQuery__
+ *
+ * To run a query within a React component, call `usePythonRunForTaskQuery` and pass it any options that fit your needs.
+ * When your component renders, `usePythonRunForTaskQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = usePythonRunForTaskQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function usePythonRunForTaskQuery(baseOptions: ApolloReactHooks.QueryHookOptions<PythonRunForTaskQuery, PythonRunForTaskQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<PythonRunForTaskQuery, PythonRunForTaskQueryVariables>(PythonRunForTaskDocument, options);
+      }
+export function usePythonRunForTaskLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<PythonRunForTaskQuery, PythonRunForTaskQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<PythonRunForTaskQuery, PythonRunForTaskQueryVariables>(PythonRunForTaskDocument, options);
+        }
+export type PythonRunForTaskQueryHookResult = ReturnType<typeof usePythonRunForTaskQuery>;
+export type PythonRunForTaskLazyQueryHookResult = ReturnType<typeof usePythonRunForTaskLazyQuery>;
+export type PythonRunForTaskQueryResult = Apollo.QueryResult<PythonRunForTaskQuery, PythonRunForTaskQueryVariables>;
 export const ReactiveTemplatesDocument = gql`
     query ReactiveTemplates($pagination: OffsetPaginationInput) {
   reactiveTemplates(pagination: $pagination) {

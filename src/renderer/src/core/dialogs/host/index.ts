@@ -1,4 +1,5 @@
 import { DescribeStructuresDialog } from "./DescribeStructuresDialog";
+import { MeshFirewallDialog } from "@/core/connection/ui/mesh/MeshFirewallDialog";
 
 /**
  * Dialogs the host owns: they apply to any structure, whichever module it is
@@ -9,6 +10,7 @@ import { DescribeStructuresDialog } from "./DescribeStructuresDialog";
  */
 export const HOST_DIALOGS = {
   describestructures: DescribeStructuresDialog,
+  meshfirewall: MeshFirewallDialog,
 } as const;
 
 export type HostDialogs = typeof HOST_DIALOGS;

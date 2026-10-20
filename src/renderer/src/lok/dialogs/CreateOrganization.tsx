@@ -1,12 +1,11 @@
 
 
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { StringField } from "@/core/forms/StringField";
 import { DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
 import { useCreateOrganizationMutation } from "@/lok/api/graphql";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 
 type CreateOrganizationForm = {
   name: string;
@@ -16,11 +15,8 @@ type CreateOrganizationForm = {
 export const CreateOrganizationForm = () => {
   const [add] = useCreateOrganizationMutation();
 
-  const { closeDialog } = useDialog();
-
-  const dialog = async (data: CreateOrganizationForm) => {
-
-    try {
+  const { submit, submitting } = useDialogSubmit(
+    (data: CreateOrganizationForm) =>
       add({
         variables: {
           input: {
@@ -28,16 +24,9 @@ export const CreateOrganizationForm = () => {
             description: data.description
           },
         },
-      })
-      toast.success("Organization created successfully");
-      return { data: { success: true } };
-    } catch (error) {
-      toast.error("Failed to create organization");
-      throw error;
-    } finally {
-      closeDialog();
-    }
-  }
+      }),
+    { errorTitle: "Couldn't create the organization" },
+  );
 
   const form = useForm<CreateOrganizationForm>({
     defaultValues: {
@@ -48,7 +37,7 @@ export const CreateOrganizationForm = () => {
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(dialog)}
+        onSubmit={form.handleSubmit(submit)}
       >
         <DialogHeader>
           <DialogTitle>New Organization</DialogTitle>
@@ -58,7 +47,7 @@ export const CreateOrganizationForm = () => {
         <StringField name="description" label="Description" description="A short description" />
 
 
-        <button type="submit" className="btn btn-primary mt-4">
+        <button type="submit" className="btn btn-primary mt-4" disabled={submitting}>
           Create Organization
         </button>
 

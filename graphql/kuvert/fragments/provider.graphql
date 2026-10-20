@@ -1,0 +1,70 @@
+fragment ProviderKind on ProviderKind {
+  kind
+  label
+  description
+  authMethod
+  capabilities {
+    capability
+    label
+    description
+  }
+}
+
+# What a mailbox needs to know of the provider it goes through.
+fragment MailProviderRef on MailProvider {
+  id
+  name
+  kind
+  enabled
+  capabilities
+  server {
+    fixed
+  }
+}
+
+fragment ListMailProvider on MailProvider {
+  id
+  name
+  kind
+  enabled
+  capabilities
+  mailboxCount
+  kindInfo {
+    ...ProviderKind
+  }
+  server {
+    fixed
+    protocol
+    incoming {
+      ...ServerSettings
+    }
+  }
+}
+
+fragment MailProvider on MailProvider {
+  ...ListMailProvider
+  createdAt
+  updatedAt
+  creator {
+    id
+    sub
+    preferredUsername
+  }
+  oauth {
+    clientId
+    hasSecret
+    redirectUrls
+    tenant
+  }
+  server {
+    fixed
+    protocol
+    saveSentCopy
+    incoming {
+      ...ServerSettings
+    }
+    smtp {
+      ...ServerSettings
+    }
+  }
+}

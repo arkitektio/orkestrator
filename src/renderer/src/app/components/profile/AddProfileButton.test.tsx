@@ -30,18 +30,24 @@ vi.mock("@/core/connection/ui/doctor/ConnectionDoctor", () => ({
 
 const { AddProfileButton } = await import("./AddProfileButton");
 const { popOutWindowOpen } = await import("@/core/connection/arkitekt/fakts/popout");
+const { sessionStep, resetConnectionProgress } = await import("@/core/connection/progress/store");
 
-/** A grant that has opened the browser and waits until its controller is aborted. */
+/**
+ * A grant that has opened the browser and waits until its controller is
+ * aborted — narrating its step the way the provider's `connect` does.
+ */
 const pendingGrant = () =>
   connect.mockImplementation(
     ({ controller, onVerificationUri }: { controller: AbortController; onVerificationUri: (uri: string) => void }) =>
       new Promise<void>((_resolve, reject) => {
         onVerificationUri(URL);
+        sessionStep("approve");
         controller.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
       }),
   );
 
 beforeEach(() => {
+  resetConnectionProgress();
   connect.mockReset();
   vi.mocked(popOutWindowOpen).mockClear();
 });
@@ -53,8 +59,9 @@ describe("AddProfileButton while waiting for the browser", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /sign in with/i }));
 
-    expect(await screen.findByText(/waiting for approval/i)).toBeInTheDocument();
-    const reopen = screen.getByRole("button", { name: /open browser again/i });
+    expect((await screen.findAllByText(/approve the sign-in in your browser/i)).length).toBeGreaterThan(0);
+    expect(screen.getByText(/finding go\.arkitekt\.live/i)).toBeInTheDocument();
+    const reopen = screen.getByRole("button", { name: /open again/i });
     await waitFor(() => expect(reopen).toBeEnabled());
     await userEvent.click(reopen);
     expect(popOutWindowOpen).toHaveBeenCalledWith(URL);
@@ -76,7 +83,7 @@ describe("AddProfileButton while waiting for the browser", () => {
 
   it("shows neither button when nothing is in progress", () => {
     render(<AddProfileButton presentation="hero" />);
-    expect(screen.queryByRole("button", { name: /open browser again/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /open again/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /cancel/i })).not.toBeInTheDocument();
   });
 });

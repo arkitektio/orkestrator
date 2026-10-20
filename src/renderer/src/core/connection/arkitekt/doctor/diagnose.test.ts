@@ -516,6 +516,45 @@ describe("built-in mesh findings", () => {
     expect(byId(findings, "net.tcp.timeout")?.severity).toBe("info");
   });
 
+  const refused = (code: string) => ({ attempted: true, ok: false, ms: 3, code, message: "Socks5 proxy rejected connection - Failure" });
+
+  it("routed + the proxy turns the dial down at once: says so, with the proxy's words", () => {
+    const findings = run({
+      context: ctx(CONTROL),
+      sidecar: sidecarWith("running", { proxyPort: 5000 }),
+      network: [viaMesh({ attempted: false, ok: false }, refused("MESH_DIAL_FAILED"))],
+    });
+    expect(findings[0]).toMatchObject({
+      id: "net.tcp.mesh-refused",
+      severity: "blocker",
+      evidence: expect.arrayContaining(["Socks5 proxy rejected connection - Failure"]),
+    });
+    expect(ids(findings)).not.toContain("net.tcp.failed");
+  });
+
+  it("routed + a MagicDNS name no peer carries: that is the verdict, the refusal a symptom", () => {
+    const findings = run({
+      context: ctx(CONTROL),
+      sidecar: sidecarWith("running", {
+        proxyPort: 5000,
+        peers: [{ dnsName: "kraph.tailnet-cafe.ts.net", hostName: "kraph", ips: ["100.64.0.3"], online: true }],
+      }),
+      network: [viaMesh({ attempted: false, ok: false }, refused("MESH_DIAL_FAILED"))],
+    });
+    expect(findings[0].id).toBe("mesh.sidecar.peer-unknown");
+    expect(byId(findings, "net.tcp.mesh-refused")?.severity).toBe("info");
+  });
+
+  it("routed + the local proxy refused: the mesh client is down, not the target's port", () => {
+    const findings = run({
+      context: ctx(CONTROL),
+      sidecar: sidecarWith("running", { proxyPort: 5000 }),
+      network: [viaMesh({ attempted: false, ok: false }, { ...refused("MESH_PROXY_DOWN"), message: "connect ECONNREFUSED 127.0.0.1:5000" })],
+    });
+    expect(findings[0]).toMatchObject({ id: "mesh.proxy.down", remedy: { kind: "navigate", path: "/settings/mesh" } });
+    expect(ids(findings)).not.toContain("net.tcp.refused");
+  });
+
   it("membership lapsed: sign in again", () => {
     const findings = run({ context: ctx(CONTROL), sidecar: sidecarWith("needs-login"), network: [failingProbe()] });
     expect(findings[0].id).toBe("mesh.sidecar.needs-login");

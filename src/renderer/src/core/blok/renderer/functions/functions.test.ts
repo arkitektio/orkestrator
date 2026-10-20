@@ -3,15 +3,6 @@ import {describe, expect, it, vi} from "vitest";
 import {createBlokCatalog, describeBlokCatalog} from "../runtime";
 import {standardBlokFunctions} from "./index";
 
-vi.mock("sonner", () => ({
-  toast: {
-    info: vi.fn(),
-    warning: vi.fn(),
-    error: vi.fn(),
-    success: vi.fn(),
-  },
-}));
-
 const catalog = createBlokCatalog("test", [], standardBlokFunctions);
 
 /** Invokes a pure function the way a value-position prop would. */

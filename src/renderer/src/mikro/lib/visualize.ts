@@ -1,7 +1,6 @@
 import { linkBuilder } from "@/core/smart/builder";
 import { useAutoVisualizeMutation, type AutoVisualizeMutation } from "@/mikro/api/graphql";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/core/notify";
 
 /**
  * Where an `autoVisualize` answer opens. The server chose the kind from the
@@ -17,7 +16,8 @@ export const visualizationLink = (
 /**
  * Show one lens from a page that draws scenes itself. A scene is handed to
  * `onScene` once the page's own queries hold it; a chart has a page of its
- * own, so that is where it opens. A refusal is the server's prose, as a toast.
+ * own, so that is where it opens. A refusal rejects: the caller reports it
+ * (the server's prose is the toast's sentence).
  */
 export const useVisualizeLens = (onScene: (sceneId: string) => void) => {
   const navigate = useNavigate();
@@ -29,7 +29,6 @@ export const useVisualizeLens = (onScene: (sceneId: string) => void) => {
       autoVisualize.__typename === "Chart"
         ? navigate(visualizationLink(autoVisualize))
         : onScene(autoVisualize.id),
-    onError: (error) => toast.error(error.message),
   });
   const visualize = (lens: string) => mutate({ variables: { input: { lens } } });
   return [visualize, loading] as const;

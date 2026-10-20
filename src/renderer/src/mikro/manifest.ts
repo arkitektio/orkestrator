@@ -32,6 +32,8 @@ export const manifest: ModuleManifest = {
     { identifier: "@mikro/fluorophore", name: "Fluorophore", datum: false, path: "fluorophores/:id" },
     { identifier: "@mikro/file", name: "File (Mikro)", datum: true, path: "files/:id" },
     { identifier: "@mikro/scene", name: "Scene", datum: true, path: "scenes/:id" },
+    // What a guest of the organization is granted: the objects put in it, and their parts.
+    { identifier: "@mikro/collaboration", name: "Collaboration", datum: false, path: "collaborations/:id" },
     { identifier: "@mikro/chart", name: "Chart", datum: true, path: "charts/:id" },
     { identifier: "@mikro/tabledataset", name: "Table Dataset", datum: true, path: "tabledatasets/:id" },
     { identifier: "@mikro/sparsedataset", name: "Sparse Dataset", datum: true, path: "sparsedatasets/:id" },

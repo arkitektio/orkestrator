@@ -1,5 +1,6 @@
 import { portHash } from "@/core/ports/engine/utils";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { IntField } from "@/core/forms/IntField";
 import { StringField } from "@/core/forms/StringField";
 import { SwitchField } from "@/core/forms/SwitchField";
@@ -170,31 +171,25 @@ export const CreateShortcutDialog = (props: {
     }),
   });
 
-  const onSubmit = async (data: any) => {
-    console.log("Submitting");
+  const { submit: onSubmit } = useDialogSubmit(
+    async (data: any) => {
+      const { toolbox, name, allowQuick, bindNumber, ...rest } = data;
 
-    const { toolbox, name, allowQuick, bindNumber, ...rest } = data;
-
-    await create({
-      variables: {
-        input: {
-          name: name,
-          action: props.id,
-          toolbox: toolbox || null,
-          args: rest,
-          bindNumber: bindNumber,
-          allowQuick: allowQuick,
+      return create({
+        variables: {
+          input: {
+            name: name,
+            action: props.id,
+            toolbox: toolbox || null,
+            args: rest,
+            bindNumber: bindNumber,
+            allowQuick: allowQuick,
+          },
         },
-      },
-    }).then(
-      () => {
-        closeDialog();
-      },
-      (err) => {
-        console.log(err);
-      },
-    );
-  };
+      });
+    },
+    { errorTitle: "Couldn't create the shortcut" },
+  );
 
   const isSubmitting = form.formState.isSubmitting;
   const isValid = form.formState.isValid;

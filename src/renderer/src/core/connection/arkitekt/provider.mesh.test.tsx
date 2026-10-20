@@ -14,6 +14,8 @@ import {
 } from "./fakts/profileStorageSchema";
 import { useArkitektStore } from "./hooks";
 import { ArkitektProvider } from "./provider";
+import { demandedMeshes, resetMeshDemands } from "@/core/connection/mesh/profileMesh";
+import { connectionProgress } from "@/core/connection/progress/store";
 
 /**
  * A service that lives behind the profile's mesh is not probed until the
@@ -86,6 +88,7 @@ const Probe = () => {
 };
 
 beforeEach(() => {
+  resetMeshDemands();
   localStorage.clear();
   status = undefined;
   writeStoredProfileBook(
@@ -160,5 +163,40 @@ describe("services behind the mesh", () => {
     emit(payload("starting"));
     emit(payload("running", 1081));
     await waitFor(() => expect(status).toBe("ready"));
+  });
+
+  it("demand the mesh only once their check reaches the mesh addresses", async () => {
+    renderProvider();
+    await waitFor(() => expect(demandedMeshes.getSnapshot().get("lab")).toEqual(["mikro"]));
+  });
+
+  it("release it when a direct address answers", async () => {
+    const DIRECT = { id: "d1", host: "mikro.example.org", ssl: true, challenge: "ht" };
+    session.fakts.instances.mikro.aliases = [DIRECT, MESH_ALIAS];
+    writeStoredProfileBook(
+      setActiveProfile(
+        upsertProfile(emptyProfileBook(), { ...createProfileFromSession(session, 1, "id-lab"), mesh: MESH }),
+        "id-lab",
+      ),
+      localStorage,
+    );
+    try {
+      renderProvider();
+      await waitFor(() => expect(status).toBe("ready"));
+      expect(vi.mocked(checkAliasHealth).mock.calls.map((call) => call[0].host)).toEqual([DIRECT.host]);
+      expect(demandedMeshes.getSnapshot().get("lab")).toBeUndefined();
+    } finally {
+      session.fakts.instances.mikro.aliases = [MESH_ALIAS];
+    }
+  });
+
+  it("narrate their walk: the wait for the mesh, then the address that answered", async () => {
+    renderProvider();
+    await waitFor(() => expect(connectionProgress.getSnapshot().services.mikro?.waitingForMesh).toBe(true));
+    // The launch itself is live by now: its narration has ended.
+    expect(connectionProgress.getSnapshot().session).toBeUndefined();
+    emit(payload("running", 1080));
+    await waitFor(() => expect(status).toBe("ready"));
+    expect(connectionProgress.getSnapshot().services.mikro).toBeUndefined();
   });
 });

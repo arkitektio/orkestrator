@@ -30,7 +30,7 @@ import ReviewTransactionList from "../components/lists/ReviewTransactionList";
 import { LocationsMap } from "../components/map/LocationsMap";
 import { MerchantLogo } from "../components/MerchantLogo";
 import { Money } from "../components/Money";
-import { toastText } from "../errors";
+import { reportBankErrorAs } from "../errors";
 import { formatDay } from "../format";
 import { BANK_HELP } from "../help";
 
@@ -79,13 +79,13 @@ const PlaceRow = ({
           disabled={loading}
           onClick={(e) => {
             e.stopPropagation();
+            // Found, it shows on the map; only a miss is said.
             geocode({ variables: { id: location.id } })
-              .then((r) =>
-                r.data?.geocodeMerchantLocation.latitude != null
-                  ? toast.success(`Found ${location.name}`)
-                  : toast.info(`No match for ${location.name}; add an address and try again`),
-              )
-              .catch((error) => toast.error("Could not look it up: " + toastText(error)));
+              .then((r) => {
+                if (r.data?.geocodeMerchantLocation.latitude == null)
+                  toast.info(`No match for ${location.name}; add an address and try again`);
+              })
+              .catch(reportBankErrorAs(`Couldn't look up ${location.name}`));
           }}
         >
           {loading ? "Locating..." : "Locate"}
@@ -123,7 +123,7 @@ const Aliases = ({ merchant }: { merchant: MerchantFragment }) => {
     text.trim() &&
     add({ variables: { merchant: merchant.id, text: text.trim() } })
       .then(() => setText(""))
-      .catch((e) => toast.error("Could not add the alias: " + toastText(e)));
+      .catch(reportBankErrorAs("Couldn't add the alias"));
 
   return (
     <div className="flex flex-col gap-1.5 px-3 pb-3">
@@ -137,7 +137,7 @@ const Aliases = ({ merchant }: { merchant: MerchantFragment }) => {
               aria-label={`Remove ${alias.pattern}`}
               className="rounded-sm opacity-60 hover:opacity-100"
               onClick={() =>
-                remove({ variables: { id: alias.id } }).catch((e) => toast.error("Could not remove: " + toastText(e)))
+                remove({ variables: { id: alias.id } }).catch(reportBankErrorAs("Couldn't remove the alias"))
               }
             >
               <X className="h-3 w-3" />

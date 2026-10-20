@@ -1,6 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
-import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { InfoList } from "@/core/ui/info-list";
@@ -11,7 +10,7 @@ import { BankProvider } from "@/bank/linkers";
 import { Check, Minus, Pencil, Power, PowerOff } from "lucide-react";
 import { ListBankProvidersDocument, useGetBankProviderQuery, useUpdateProviderMutation } from "../api/graphql";
 import ConnectionList from "../components/lists/ConnectionList";
-import { toastText } from "../errors";
+import { reportBankErrorAs } from "../errors";
 import { BANK_HELP } from "../help";
 
 /** One provider (admins): what it is set up with, what it may do, and the connections made through it. */
@@ -22,9 +21,9 @@ const ProviderPage = asDetailQueryRoute(useGetBankProviderQuery, ({ data }) => {
   const [update, { loading }] = useUpdateProviderMutation({ refetchQueries: [ListBankProvidersDocument] });
 
   const setEnabled = (enabled: boolean) =>
-    update({ variables: { input: { id: provider.id, enabled } } })
-      .then(() => toast.success(enabled ? `${provider.name} enabled` : `${provider.name} disabled`))
-      .catch((e) => toast.error(toastText(e)));
+    update({ variables: { input: { id: provider.id, enabled } } }).catch(
+      reportBankErrorAs(enabled ? `Couldn't enable ${provider.name}` : `Couldn't disable ${provider.name}`),
+    );
 
   return (
     <BankProvider.ModelPage

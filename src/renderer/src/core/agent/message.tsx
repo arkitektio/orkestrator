@@ -68,9 +68,16 @@ export const Message = z.object({
   id: z.string().optional(),
 });
 
-/** Base for agent→backend reporting events that join the ack/resume stream. */
-const FromAgentEvent = Message.extend({
+/**
+ * Base for every agent→backend frame: the backend refuses one without an `id`
+ * (takt closes the socket with 3003, "does not match the schema").
+ */
+const FromAgentFrame = Message.extend({
   id: z.string().default(() => crypto.randomUUID()),
+});
+
+/** Base for agent→backend reporting events that join the ack/resume stream. */
+const FromAgentEvent = FromAgentFrame.extend({
   // Monotonic per-connection stream sequence for at-least-once dedup/resume.
   seq: z.number().optional().nullable(),
 });
@@ -172,7 +179,7 @@ export const AssignResponse = Message.extend({
 // Agent → Server
 // ---------------------------------------------------------------------------
 
-export const Register = Message.extend({
+export const Register = FromAgentFrame.extend({
   type: z.literal(FromAgentMessageType.enum.REGISTER),
   token: z.string(),
   force: z.boolean().default(false),
@@ -180,7 +187,7 @@ export const Register = Message.extend({
   session_id: z.string().optional().nullable(),
 });
 
-export const SessionInit = Message.extend({
+export const SessionInit = FromAgentFrame.extend({
   type: z.literal(FromAgentMessageType.enum.SESSION_INIT),
   session_id: z.string(),
   states: z.record(z.string(), z.any()).default({}),
@@ -248,7 +255,7 @@ export const ResumedEvent = FromAgentEvent.extend({
   task: z.string(),
 });
 
-export const HeartbeatEvent = Message.extend({
+export const HeartbeatEvent = FromAgentFrame.extend({
   type: z.literal(FromAgentMessageType.enum.HEARTBEAT_ANSWER),
 });
 

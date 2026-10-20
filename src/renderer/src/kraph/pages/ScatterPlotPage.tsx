@@ -1,4 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { reportError } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { PageAction } from "@/core/ui/page-action";
 import { KraphGraphQuery, KraphScatterPlot } from "@/core/linkers";
@@ -99,7 +100,7 @@ const Page = asDetailQueryRoute(useGetScatterPlotQuery, ({ data }) => {
         navigate(`/kraph/scatterplots/${result.data.createScatterPlot.id}`);
       }
     } catch (error) {
-      console.error("Failed to update scatter plot:", error);
+      reportError(error, "Couldn't update the plot");
     } finally {
       setIsUpdating(false);
     }
@@ -128,7 +129,7 @@ const Page = asDetailQueryRoute(useGetScatterPlotQuery, ({ data }) => {
       // Up to the query the plot was over — there is no list of plots.
       navigate(KraphGraphQuery.linkBuilder(data.scatterPlot.query.id));
     } catch (error) {
-      console.error("Failed to delete scatter plot:", error);
+      reportError(error, "Couldn't delete the plot");
     } finally {
       setIsUpdating(false);
     }

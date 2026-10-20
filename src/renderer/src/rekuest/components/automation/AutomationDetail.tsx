@@ -1,6 +1,7 @@
 import { RekuestWiregram } from "@/core/linkers";
 import Timestamp from "@/core/ui/timestamp";
-import { useDetailActionQuery } from "@/rekuest/api/graphql";
+import { TaskPolicy, useDetailActionQuery } from "@/rekuest/api/graphql";
+import { Zap } from "lucide-react";
 import { AutomationState } from "@/rekuest/lib/automationStatus";
 import { TaskArgValue } from "../task/TaskEventLog";
 import { AutomationStatus } from "./AutomationStatus";
@@ -82,6 +83,23 @@ export const UntilRow = ({
     </RuleRow>
   );
 };
+
+/**
+ * Whether what the rule's runs ask other actions to do waits for approval
+ * (ASK) or runs unattended (AUTO). The run itself is never held.
+ */
+export const PolicyRow = ({ rule }: { rule: { policy: TaskPolicy } }) => (
+  <RuleRow label="Asks">
+    {rule.policy === TaskPolicy.Auto ? (
+      <span className="inline-flex items-center gap-1.5">
+        <Zap className="h-3.5 w-3.5 text-amber-500" />
+        Auto-mode: what its runs ask other actions to do runs without asking
+      </span>
+    ) : (
+      "What its runs ask other actions to do waits for your approval"
+    )}
+  </RuleRow>
+);
 
 /** The wiregram a rule was imported with. No row for a rule made here. */
 export const FromRow = ({

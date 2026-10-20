@@ -17,12 +17,19 @@ const TheCard = ({ item }: Props) => {
     <RekuestBlok.Smart object={item}>
       <Card className="relative isolate h-full min-h-48 justify-between">
         <BlokCardBackdrop blok={item} />
-        {context && (
-          <div className="px-4">
-            <Badge variant="secondary" className="gap-1 shadow-sm">
-              <context.icon className="h-3 w-3" />
-              {context.label}
-            </Badge>
+        {(context || item.app) && (
+          <div className="flex flex-wrap items-center gap-1.5 px-4">
+            {context && (
+              <Badge variant="secondary" className="gap-1 shadow-sm">
+                <context.icon className="h-3 w-3" />
+                {context.label}
+              </Badge>
+            )}
+            {item.app && (
+              <Badge variant="outline" className="bg-card/80 shadow-sm" title="Provided by this app's agents">
+                {item.app.identifier}
+              </Badge>
+            )}
           </div>
         )}
         <CardHeader className="gap-1">

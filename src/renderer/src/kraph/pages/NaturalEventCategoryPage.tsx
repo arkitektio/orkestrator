@@ -1,4 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { reportError } from "@/core/notify";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Card } from "@/core/ui/card";
 import { DragZone } from "@/core/datalayer/upload/drag";
@@ -66,14 +67,18 @@ export default asDetailQueryRoute(
     const [update] = useUpdateNaturalEventCategoryMutation();
 
     const createFile = async (file: File) => {
-      const response = await uploadFile(file);
-      if (response) {
-        await update({
-          variables: {
-            input: { id: data.naturalEventCategory.id, image: response },
-          },
-        });
-        await refetch();
+      try {
+        const response = await uploadFile(file);
+        if (response) {
+          await update({
+            variables: {
+              input: { id: data.naturalEventCategory.id, image: response },
+            },
+          });
+          await refetch();
+        }
+      } catch (e) {
+        reportError(e, "Couldn't set the image");
       }
     };
 

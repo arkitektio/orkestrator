@@ -2,7 +2,7 @@ import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Switch } from "@/core/ui/switch";
 import Timestamp from "@/core/ui/timestamp";
 import { BankRule } from "@/bank/linkers";
-import { toast } from "@/core/notify";
+import { reportBankErrorAs } from "../errors";
 import { ListTransactionsDocument, useGetCategoryRuleQuery, useUpdateCategoryRuleMutation } from "../api/graphql";
 import { ruleSentence } from "../components/cards/RuleCard";
 import { CategoryBadge } from "../components/CategoryBadge";
@@ -34,7 +34,9 @@ const RulePage = asDetailQueryRoute(useGetCategoryRuleQuery, ({ data }) => {
             checked={rule.active}
             disabled={loading}
             onCheckedChange={(active) =>
-              update({ variables: { input: { id: rule.id, active } } }).catch((e: Error) => toast.error(e.message))
+              update({ variables: { input: { id: rule.id, active } } }).catch(
+                reportBankErrorAs(active ? "Couldn't turn the rule on" : "Couldn't turn the rule off"),
+              )
             }
           />
         </label>

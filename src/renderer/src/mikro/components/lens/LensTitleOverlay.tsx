@@ -1,3 +1,4 @@
+import { reportErrorAs } from '@/core/notify'
 import { useDialog } from '@/core/dialogs/registry'
 import { Badge } from '@/core/ui/badge'
 import { Button } from '@/core/ui/button'
@@ -160,7 +161,9 @@ export const LensTitleOverlay = ({
               className="h-7 gap-1.5 px-2 text-xs text-white hover:text-white"
               disabled={nominating}
               onClick={() =>
-                setDefaultScene({ variables: { lens: lens.id, scene: activeSceneId } })
+                setDefaultScene({ variables: { lens: lens.id, scene: activeSceneId } }).catch(
+                  reportErrorAs("Couldn't make this the default scene")
+                )
               }
             >
               <Star className="h-3.5 w-3.5" />

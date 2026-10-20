@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 
+import { describeError } from "@/core/notify";
 import { useJoinCallMutation } from "@/lovekit/api/graphql";
 import { callStore, useCallState, type ActiveCall } from "./store";
 
@@ -24,8 +25,7 @@ export const useJoinCall = () => {
         if (!token) throw new Error("The call handed out no token");
         callStore.getState().start(call, token);
       } catch (nextError) {
-        const message = nextError instanceof Error ? nextError.message : "Could not join the call";
-        setError(message);
+        setError(`Couldn't join the call: ${describeError(nextError).message}`);
       } finally {
         setJoining(false);
       }

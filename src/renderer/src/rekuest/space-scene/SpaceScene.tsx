@@ -2,15 +2,14 @@ import * as React from 'react';
 import * as THREE from 'three';
 import {TransformControls} from '@react-three/drei';
 import {useFrame} from '@react-three/fiber';
-import {Check, Magnet, Move3d, Plus, Replace, Rotate3d, Trash2} from 'lucide-react';
+import {Check, Magnet, Move3d, Plus, Replace, Rotate3d, Scale3d, Scan, Trash2} from 'lucide-react';
 import {
   BlokSceneInertProvider,
   SceneSurface,
   useSceneNotice,
   useSceneOverlay,
 } from '@/core/blok/renderer/bloks/scene';
-import {formatApolloError} from '@/core/connection/graphql/errorHandler';
-import {toast} from '@/core/notify';
+import {describeError, reportErrorAs, toast} from '@/core/notify';
 import {useSmartDrop} from '@/core/smart/hooks';
 import {Button} from '@/core/ui/button';
 import {Input} from '@/core/ui/input';
@@ -31,7 +30,19 @@ import {
 } from '@/rekuest/api/graphql';
 import MaterializedBlokRenderer from '@/rekuest/components/MaterializedBlokRenderer';
 import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
-import {freeSpot, fromMatrix4, readPose, toMatrix4, writePose, type Affine, type Pose} from './affine';
+import {
+  autoFitScale,
+  fitScale,
+  freeSpot,
+  fromMatrix4,
+  readPose,
+  readScale,
+  toMatrix4,
+  writePose,
+  writeScale,
+  type Affine,
+  type Pose,
+} from './affine';
 
 /**
  * A space as one 3D room.
@@ -42,13 +53,21 @@ import {freeSpot, fromMatrix4, readPose, toMatrix4, writePose, type Affine, type
  * holds, moved to where its placement stands.
  */
 
-type GizmoMode = 'translate' | 'rotate';
+type GizmoMode = 'translate' | 'rotate' | 'scale';
 
 /** Snapping steps: the grid's cells, and a twelfth of a half turn. */
 const SNAP_DISTANCE = 0.05;
 const SNAP_ANGLE = Math.PI / 12;
 
-/** How many materialized bloks are asked for, to pick the 3D views from: past the server's default page. */
+/** How small one drag of the scale gizmo can make a view: a hundredth of what it was. */
+const MIN_SCALE_STEP = 0.01;
+
+/** A view is measured every this many frames while it is being fitted. */
+const MEASURE_EVERY = 15;
+/** Measurements in a row that agree before a view counts as loaded: its parts arrive one by one. */
+const STEADY_SAMPLES = 3;
+
+/** How many 3D views are asked for: past the server's default page. */
 const VIEW_LIMIT = 500;
 
 /** The edge of the box that stands in for a placement with nothing to show, in meters. */
@@ -90,6 +109,41 @@ const PlacedView = ({id, name}: {id: string; name: string}) => {
   );
 };
 
+/** The largest extent of what a placement shows, in meters as it was made: its own scale divided out. */
+const naturalExtent = (group: THREE.Object3D): number | null => {
+  group.updateWorldMatrix(true, true);
+  const box = new THREE.Box3().setFromObject(group);
+  if (box.isEmpty()) return null;
+  const size = box.getSize(new THREE.Vector3());
+  const scale = group.getWorldScale(new THREE.Vector3());
+  const extent =
+    Math.max(size.x, size.y, size.z) / Math.max(Math.abs(scale.x), Math.abs(scale.y), Math.abs(scale.z));
+  return extent > 0 && Number.isFinite(extent) ? extent : null;
+};
+
+/**
+ * Measures a view that was just placed once it has loaded, and hands over its
+ * size. Its model arrives after the placement does, so it waits for the size
+ * to hold still rather than measuring the first part that shows.
+ */
+const AutoFit = ({group, onMeasured}: {group: THREE.Group; onMeasured: (extent: number) => void}) => {
+  const state = React.useRef({frames: 0, last: null as number | null, steady: 0, done: false});
+  useFrame(() => {
+    const current = state.current;
+    current.frames += 1;
+    if (current.done || current.frames % MEASURE_EVERY !== 0) return;
+    const extent = naturalExtent(group);
+    const holds = extent !== null && current.last !== null && Math.abs(extent - current.last) <= current.last * 0.01;
+    current.steady = holds ? current.steady + 1 : 0;
+    current.last = extent;
+    if (extent !== null && current.steady >= STEADY_SAMPLES) {
+      current.done = true;
+      onMeasured(extent);
+    }
+  });
+  return null;
+};
+
 const SelectionBox = ({object}: {object: THREE.Object3D}) => {
   const helper = React.useMemo(() => new THREE.BoxHelper(object, 0x38bdf8), [object]);
   useFrame(() => helper.update());
@@ -103,6 +157,11 @@ type Editing = {
   snap: boolean;
   onSelect: (id: string | null) => void;
   onMove: (placement: SpacePlacementFragment, affine: Affine) => void;
+  /** The placements just added, to be fitted once their view has loaded. */
+  fitting: ReadonlySet<string>;
+  onMeasured: (placement: SpacePlacementFragment, extent: number) => void;
+  /** Every placement's group, for the Fit button to measure. */
+  groups: React.RefObject<Map<string, THREE.Group>>;
   /** Set while the gizmo is held, so letting go of it is not read as a click beside everything. */
   gizmoHeld: React.RefObject<boolean>;
 };
@@ -117,6 +176,17 @@ const Placed = ({placement, editing}: {placement: SpacePlacementFragment; editin
   const view = sceneViewOf(placement);
   const selected = editing?.selected === placement.id;
   const turning = editing?.mode === 'rotate';
+  // The scale the view had when the scale gizmo was picked up.
+  const scaleStart = React.useRef(new THREE.Vector3(1, 1, 1));
+
+  const groups = editing?.groups;
+  React.useEffect(() => {
+    if (!groups || !group) return undefined;
+    groups.current.set(placement.id, group);
+    return () => {
+      groups.current.delete(placement.id);
+    };
+  }, [group, groups, placement.id]);
 
   return (
     <>
@@ -137,6 +207,9 @@ const Placed = ({placement, editing}: {placement: SpacePlacementFragment; editin
           <Marker title={placement.name} detail={placement.blok ? 'Its view is a panel, not a 3D view' : 'No 3D view'} />
         )}
       </group>
+      {editing && view && group && editing.fitting.has(placement.id) ? (
+        <AutoFit group={group} onMeasured={extent => editing.onMeasured(placement, extent)} />
+      ) : null}
       {editing && selected && group ? (
         <>
           <SelectionBox object={group} />
@@ -151,6 +224,16 @@ const Placed = ({placement, editing}: {placement: SpacePlacementFragment; editin
             rotationSnap={editing.snap ? SNAP_ANGLE : null}
             onMouseDown={() => {
               editing.gizmoHeld.current = true;
+              scaleStart.current.copy(group.scale);
+            }}
+            // A view is scaled evenly: whichever handle is dragged, every axis follows it.
+            onObjectChange={() => {
+              if (editing.mode !== 'scale') return;
+              const start = scaleStart.current;
+              const ratio = [group.scale.x / start.x, group.scale.y / start.y, group.scale.z / start.z].reduce(
+                (most, next) => (Math.abs(next - 1) > Math.abs(most - 1) ? next : most),
+              );
+              group.scale.copy(start).multiplyScalar(Math.max(ratio, MIN_SCALE_STEP));
             }}
             onMouseUp={() => {
               window.setTimeout(() => {
@@ -362,16 +445,19 @@ const PlacementRow = ({
   selected,
   onSelect,
   onMove,
+  onFit,
   onRemove,
 }: {
   placement: SpacePlacementFragment;
   selected: boolean;
   onSelect: () => void;
   onMove: (affine: Affine) => void;
+  onFit: () => void;
   onRemove: () => void;
 }) => {
   const view = sceneViewOf(placement);
   const pose = readPose(placement.affineMatrix);
+  const scale = readScale(placement.affineMatrix);
   return (
     <div className={cn('rounded-md', selected ? 'bg-muted' : 'hover:bg-muted/60')}>
       <button type="button" onClick={onSelect} className="flex w-full items-center gap-2 px-2 py-1.5 text-left">
@@ -395,10 +481,34 @@ const PlacementRow = ({
               />
             ))}
           </div>
-          <Button variant="outline" size="sm" className="self-start" onClick={onRemove}>
-            <Trash2 />
-            Remove
-          </Button>
+          <div className="flex items-end gap-1.5">
+            <div className="w-20">
+              <PoseField
+                label="Scale"
+                hint="Size against the model as it was made: 1 is as made, 0.001 shows a model drawn in millimeters in meters"
+                step={0.1}
+                value={scale}
+                onCommit={value => {
+                  if (value > 0) onMove(writeScale(placement.affineMatrix, value));
+                }}
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              disabled={!view}
+              onClick={onFit}
+              title="Scale the view to the size of a device on a bench"
+            >
+              <Scan />
+              Fit
+            </Button>
+            <Button variant="outline" size="sm" className="ml-auto h-6 px-2 text-xs" onClick={onRemove}>
+              <Trash2 />
+              Remove
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>
@@ -411,8 +521,6 @@ const PanelHeading = ({children}: {children: React.ReactNode}) => (
   </div>
 );
 
-const report = (what: string) => (error: unknown) => toast.error(`${what}: ${formatApolloError(error, 'rekuest')}`);
-
 /** The room with its handles: add 3D views from the list, pick one up and move it. */
 export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
   const placements = space.placements;
@@ -420,10 +528,14 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
   const [mode, setMode] = React.useState<GizmoMode>('translate');
   const [snap, setSnap] = React.useState(true);
   const [search, setSearch] = React.useState('');
+  const [fitting, setFitting] = React.useState<ReadonlySet<string>>(() => new Set());
   const gizmoHeld = React.useRef(false);
+  const groups = React.useRef(new Map<string, THREE.Group>());
 
-  // Every view is asked for and the scene ones picked out here: the list has no filter for a blok's context.
-  const {data, loading, error} = useListMaterializedBloksQuery({variables: {pagination: {limit: VIEW_LIMIT}}});
+  // Only the scene views: the server narrows by the blok's context.
+  const {data, loading, error} = useListMaterializedBloksQuery({
+    variables: {filters: {contexts: [ComponentContext.Scene]}, pagination: {limit: VIEW_LIMIT}},
+  });
   const options = React.useMemo(
     () => optionsFor(data?.materializedBloks ?? [], placements),
     [data, placements],
@@ -450,7 +562,7 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
         variables: {input: {id: placement.id, affineMatrix}},
         // The view stays where it was let go while the server is told.
         optimisticResponse: {updatePlacement: {...placement, affineMatrix}},
-      }).catch(report('The placement could not be moved'));
+      }).catch(reportErrorAs("Couldn't move the placement"));
     },
     [updatePlacement],
   );
@@ -468,23 +580,55 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
             space: space.id,
             agent: option.agent.id,
             materializedBlok: option.view.id,
-            // An app stands in a space once: its new view takes the spot of the old one.
-            affineMatrix:
-              (option.placement?.affineMatrix as Affine | null | undefined) ??
-              freeSpot(placements.map(placement => placement.affineMatrix)),
+            // An app stands in a space once: its new view takes the spot of the
+            // old one, at the size it was made, as a new view is fitted anew.
+            affineMatrix: option.placement
+              ? writeScale(option.placement.affineMatrix, 1)
+              : freeSpot(placements.map(placement => placement.affineMatrix)),
           },
         },
       })
-        .then(result => setSelected(result.data?.createPlacement.id ?? null))
-        .catch(report(`${viewName(option.view)} could not be placed`));
+        .then(result => {
+          const id = result.data?.createPlacement.id ?? null;
+          setSelected(id);
+          if (id) setFitting(current => new Set(current).add(id));
+        })
+        .catch(reportErrorAs(`Couldn't place ${viewName(option.view)}`));
     },
     [createPlacement, placements, space.id],
+  );
+
+  // A view that was just placed and is ten times off the size of a device is fitted.
+  const measured = React.useCallback(
+    (placement: SpacePlacementFragment, extent: number) => {
+      setFitting(current => {
+        const next = new Set(current);
+        next.delete(placement.id);
+        return next;
+      });
+      const scale = autoFitScale(extent);
+      if (scale !== null) move(placement, writeScale(placement.affineMatrix, scale));
+    },
+    [move],
+  );
+
+  const fit = React.useCallback(
+    (placement: SpacePlacementFragment) => {
+      const group = groups.current.get(placement.id);
+      const extent = group ? naturalExtent(group) : null;
+      if (extent === null) {
+        toast.info('This view has nothing to measure yet.');
+        return;
+      }
+      move(placement, writeScale(placement.affineMatrix, fitScale(extent)));
+    },
+    [move],
   );
 
   const remove = React.useCallback(
     (placement: SpacePlacementFragment) => {
       setSelected(null);
-      deletePlacement({variables: {id: placement.id}}).catch(report('The placement could not be removed'));
+      deletePlacement({variables: {id: placement.id}}).catch(reportErrorAs("Couldn't remove the placement"));
     },
     [deletePlacement],
   );
@@ -500,8 +644,18 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
   });
 
   const editing = React.useMemo<Editing>(
-    () => ({selected, mode, snap, onSelect: setSelected, onMove: move, gizmoHeld}),
-    [mode, move, selected, snap],
+    () => ({
+      selected,
+      mode,
+      snap,
+      onSelect: setSelected,
+      onMove: move,
+      fitting,
+      onMeasured: measured,
+      groups,
+      gizmoHeld,
+    }),
+    [fitting, measured, mode, move, selected, snap],
   );
 
   return (
@@ -522,7 +676,7 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
             {shown.length === 0 ? (
               <div className="px-2 py-3 text-xs text-muted-foreground">
                 {error
-                  ? `The 3D views could not be loaded: ${formatApolloError(error, 'rekuest')}`
+                  ? `The 3D views could not be loaded. ${describeError(error).message}`
                   : loading
                     ? 'Loading…'
                     : needle
@@ -540,6 +694,7 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
                 selected={selected === placement.id}
                 onSelect={() => setSelected(selected === placement.id ? null : placement.id)}
                 onMove={affine => move(placement, affine)}
+                onFit={() => fit(placement)}
                 onRemove={() => remove(placement)}
               />
             ))}
@@ -577,6 +732,10 @@ export const SpaceEditor = ({space}: {space: SpaceFragment}) => {
                     <ToggleGroupItem value="rotate" title="Drag the ring to turn the selected view">
                       <Rotate3d />
                       Turn
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="scale" title="Drag a handle to scale the selected view, evenly">
+                      <Scale3d />
+                      Scale
                     </ToggleGroupItem>
                   </ToggleGroup>
                   <Toggle

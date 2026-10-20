@@ -70,8 +70,31 @@ describe("watchMesh", () => {
     vi.useFakeTimers();
     const { bridge } = fakeBridge(payload({ state: "starting" }));
     const gate = watchMesh(MESH, { bridge, timeoutMs: 1000 });
-    vi.advanceTimersByTime(1000);
+    await vi.advanceTimersByTimeAsync(1000);
     expect(await gate.ready).toBe("timeout");
+    expect(gate.outcome()).toBe("timeout");
+    vi.useRealTimers();
+  });
+
+  it("starts its clock only once the claim is on its way", async () => {
+    vi.useFakeTimers();
+    const { bridge } = fakeBridge(payload({ state: "starting" }));
+    let claimSent: () => void = () => {};
+    const gate = watchMesh(MESH, { bridge, timeoutMs: 1000, clockStarts: new Promise((resolve) => (claimSent = resolve)) });
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(gate.outcome()).toBeUndefined();
+    claimSent();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(gate.outcome()).toBe("timeout");
+    vi.useRealTimers();
+  });
+
+  it("fails when the node stops after it had started", async () => {
+    const { bridge, emit } = fakeBridge(payload({ state: "starting" }));
+    const gate = watchMesh(MESH, { bridge });
+    await Promise.resolve();
+    emit(payload({ state: "stopped" }));
+    expect(await gate.ready).toBe("failed");
   });
 
   it("tells its listeners every time the node comes (back) up", async () => {

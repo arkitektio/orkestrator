@@ -1,6 +1,7 @@
 import { PageAction } from "@/core/ui/page-action";
 import { BankRecurring } from "@/bank/linkers";
 import { toast } from "@/core/notify";
+import { reportBankErrorAs } from "../errors";
 import { ListRecurringPaymentsDocument, RecurringStatus, useDetectRecurringMutation } from "../api/graphql";
 import { RecurringSummary } from "../components/insights/recurring/RecurringSummary";
 import RecurringList from "../components/lists/RecurringList";
@@ -22,7 +23,7 @@ const RecurringPage = () => {
           onClick={() =>
             detect()
               .then((r) => toast.success(`${r.data?.detectRecurring.length ?? 0} recurring payments found`))
-              .catch((e: Error) => toast.error(e.message))
+              .catch(reportBankErrorAs("Couldn't look for recurring payments"))
           }
         >
           {loading ? "Detecting..." : "Detect"}

@@ -31,7 +31,7 @@ export const CreateRepoForm = (props: {
     refetchQueries: [ListReposDocument, ListReleasesDocument, ListDefinitionsDocument],
   });
 
-  const submit = useGraphQLDialog(add, { successMessage: "Repo added", onSuccess: props.onSuccess });
+  const submit = useGraphQLDialog(add, { errorTitle: "Couldn't add the repository", onSuccess: props.onSuccess });
 
   const form = useForm<Values>({ defaultValues: { identifier: props.identifier ?? "" } });
 

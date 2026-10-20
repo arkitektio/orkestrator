@@ -7,9 +7,11 @@ import { cn } from "@/core/util/utils";
 import { useSelf } from "@/core/connection/useSelf";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Loader2, CheckCircle2, AlertCircle, XCircle, X, Ban, RefreshCw } from "lucide-react";
+import { Loader2, AlertCircle, XCircle, X, RefreshCw, Hand } from "lucide-react";
 import { agentDisplayName, displayInitials } from "@/alpaka/agentName";
-import { ActiveTask } from "./activeTasks";
+import { ActiveTask, isLive } from "./activeTasks";
+import { HoldCard, HoldDecisionLine } from "@/rekuest/components/task/HoldCard";
+import type { HoldRequest } from "@/rekuest/lib/holds";
 import { isUnconfirmed, settlePending, type PendingMessage } from "./pendingMessages";
 import React, { useCallback, useRef } from "react";
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
@@ -262,6 +264,111 @@ const ChatMessage = React.memo(function ChatMessage({
   );
 });
 
+/**
+ * A hold, in the conversation where it was asked: from the agent that asks,
+ * on its side, like its messages, so it is read in the flow of what that agent
+ * is doing rather than found floating over the composer.
+ */
+const HoldRow = ({ hold }: { hold: HoldRequest }) => {
+  const reduceMotion = useReducedMotion();
+  const asker = hold.callerAgent?.name ?? "Agent";
+  return (
+    <motion.div
+      layout={reduceMotion ? false : "position"}
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.97, x: -12 }}
+      animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97, height: 0 }}
+      transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.7, opacity: { duration: 0.15 } }}
+      className="flex w-full items-end gap-3"
+    >
+      <Avatar size="lg" className="relative mt-1 shrink-0 border border-amber-500/40 bg-muted/60 shadow-sm" title={asker}>
+        <AvatarFallback className="bg-amber-500/10 text-xs font-semibold text-amber-700 dark:text-amber-300">
+          {displayInitials(asker, "AI")}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex min-w-0 max-w-[85%] flex-1 flex-col">
+        <HoldCard hold={hold} />
+      </div>
+    </motion.div>
+  );
+};
+
+/**
+ * A replyer at work, as one quiet line where its answer will appear: what it is,
+ * what it says it is doing, how far along. No box and no stack over the composer:
+ * the answer, when it comes, is the message itself, so a finished run leaves no
+ * line behind. A failure stays, small and red, until it is dismissed.
+ */
+export const TaskActivityRow = ({
+  task,
+  onCancel,
+  onDismiss,
+}: {
+  task: ActiveTask;
+  onCancel?: (id: string, reference: string) => void;
+  onDismiss?: (reference: string) => void;
+}) => {
+  const reduceMotion = useReducedMotion();
+  const live = isLive(task.status);
+  const failed = task.status === "ERROR";
+  const name = task.delegatedName ?? task.actionName;
+  const detail =
+    task.status === "HELD"
+      ? "waiting for you"
+      : task.status === "CANCELLED"
+        ? "stopped"
+        : task.message;
+  return (
+    <motion.div
+      layout={reduceMotion ? false : "position"}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      className={cn(
+        "group flex min-w-0 items-center gap-2 pl-[52px] text-[11px]",
+        failed ? "text-red-600 dark:text-red-400" : "text-muted-foreground",
+      )}
+    >
+      {task.status === "HELD" ? (
+        <Hand className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
+      ) : live ? (
+        <Loader2 className="h-3 w-3 shrink-0 animate-spin motion-reduce:animate-none" />
+      ) : failed ? (
+        <AlertCircle className="h-3 w-3 shrink-0" />
+      ) : (
+        <XCircle className="h-3 w-3 shrink-0" />
+      )}
+      <span className="shrink-0 font-medium text-foreground/70">{name}</span>
+      {detail && <span className="min-w-0 truncate">{detail}</span>}
+      {live && task.progress != null && (
+        <span className="shrink-0 tabular-nums">{Math.round(task.progress)}%</span>
+      )}
+      {live ? (
+        task.id && (
+          <button
+            type="button"
+            onClick={() => onCancel?.(task.id, task.reference)}
+            className="shrink-0 rounded px-1 opacity-0 transition-opacity hover:text-red-500 focus-visible:opacity-100 group-hover:opacity-100"
+            title="Stop this replyer"
+          >
+            Stop
+          </button>
+        )
+      ) : (
+        <button
+          type="button"
+          onClick={() => onDismiss?.(task.reference)}
+          className="shrink-0 rounded p-0.5 opacity-60 transition-opacity hover:opacity-100"
+          title="Dismiss"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </motion.div>
+  );
+};
+
 export function ChatList({
   messages,
   currentAgentName,
@@ -339,6 +446,25 @@ export function ChatList({
     [pendingMessages, messages, currentAgentName, userId, username],
   );
 
+  // What the conversation shows of the replyers' holds: each one waiting, and
+  // each one answered while its pill is up.
+  const holdRows = activeTasks.flatMap((ass) => [
+    ...(ass.decided ?? []).map((decided) => ({ key: `${ass.reference}:decided:${decided.task}`, decided, hold: null })),
+    ...(ass.status === "HELD" ? (ass.holds ?? []) : []).map((hold) => ({
+      key: `${ass.reference}:hold:${hold.task}`,
+      decided: null,
+      hold,
+    })),
+  ]);
+  // What is still worth a line: a run at work, failed or stopped. A finished one
+  // says nothing (its answer is in the conversation), and neither does one whose
+  // hold card is there to say it waits.
+  const activityRows = activeTasks.filter(
+    (task) => task.status !== "DONE" && !(task.status === "HELD" && task.holds?.length),
+  );
+  // A new hold, or a run starting, is followed down to like a new message.
+  const holdCount = holdRows.length + activityRows.length;
+
   React.useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -357,7 +483,7 @@ export function ChatList({
       top: container.scrollHeight,
       behavior: prefersReducedMotion ? "auto" : "smooth",
     });
-  }, [messages, pendingMessages, prefersReducedMotion]);
+  }, [messages, pendingMessages, prefersReducedMotion, holdCount]);
 
   return (
     <div className="flex min-h-0 flex-col flex-1 h-full overflow-hidden">
@@ -414,102 +540,37 @@ export function ChatList({
               isPending={isUnconfirmed(pending)}
             />
           ))}
+          {holdRows.map(({ key, hold, decided }) =>
+            hold ? (
+              <HoldRow key={key} hold={hold} />
+            ) : (
+              decided && (
+                <motion.div
+                  key={key}
+                  layout={prefersReducedMotion ? false : "position"}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="flex justify-center"
+                >
+                  <HoldDecisionLine hold={decided.hold} decision={decided} className="max-w-[85%]" />
+                </motion.div>
+              )
+            ),
+          )}
+          {activityRows.map((task) => (
+            <TaskActivityRow
+              key={`${task.reference}:activity`}
+              task={task}
+              onCancel={onCancelTask}
+              onDismiss={onDismissTask}
+            />
+          ))}
           </AnimatePresence>
         </div>
       </div>
       <div className="sticky bottom-0 px-3">
         <div className="relative">
-        {activeTasks.length > 0 && (
-          <div className="absolute inset-x-0 bottom-full z-10 mb-1 flex flex-col gap-2 px-1">
-            <AnimatePresence>
-              {activeTasks.map((ass) => (
-                <motion.div
-                  key={ass.reference}
-                  initial={{ opacity: 0, y: 15, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-2xl border px-4 py-2 text-xs shadow-md backdrop-blur-md transition-colors",
-                    ass.status === "DONE" && "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300",
-                    ass.status === "ERROR" && "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300",
-                    ass.status === "CANCELLED" && "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300",
-                    (ass.status === "RUNNING" || ass.status === "PENDING") && "border-primary/20 bg-primary/5 text-primary-foreground/90 dark:text-primary"
-                  )}
-                >
-                  {/* Status Indicator Icon */}
-                  <div className="flex items-center justify-center shrink-0">
-                    {(ass.status === "PENDING" || ass.status === "RUNNING") && (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-current" />
-                    )}
-                    {ass.status === "DONE" && (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-current" />
-                    )}
-                    {ass.status === "ERROR" && (
-                      <AlertCircle className="h-3.5 w-3.5 text-current" />
-                    )}
-                    {ass.status === "CANCELLED" && (
-                      <XCircle className="h-3.5 w-3.5 text-current" />
-                    )}
-                  </div>
-
-                  {/* Main Content */}
-                  <div className="flex-1 min-w-0 flex items-center gap-2">
-                    <span className="font-semibold text-foreground truncate max-w-[150px] sm:max-w-[250px] flex items-center gap-1.5">
-                      <span className="truncate">{ass.actionName}</span>
-                      {ass.delegatedName && (
-                        <span className="text-muted-foreground font-normal text-[10px] bg-muted/70 dark:bg-muted/30 border border-muted-foreground/10 px-1.5 py-0.5 rounded-full shrink-0">
-                          {ass.delegatedName}
-                        </span>
-                      )}
-                    </span>
-                    {ass.message && (
-                      <span className="text-muted-foreground truncate font-light text-[11px]">
-                        • {ass.message}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Progress bar or percentage */}
-                  {ass.progress !== undefined && ass.progress !== null && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] font-mono font-semibold text-muted-foreground">
-                        {Math.round(ass.progress)}%
-                      </span>
-                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted/50 border border-muted-foreground/10">
-                        <div
-                          className="h-full bg-primary/80 transition-all duration-300 rounded-full"
-                          style={{ width: `${Math.round(ass.progress)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Close/Cancel Button */}
-                  {ass.status === "PENDING" || ass.status === "RUNNING" ? (
-                    <button
-                      type="button"
-                      disabled={!ass.id}
-                      onClick={() => ass.id && onCancelTask?.(ass.id, ass.reference)}
-                      className="rounded-full p-1 hover:bg-red-500/20 text-muted-foreground hover:text-red-500 transition-colors shrink-0 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
-                      title="Cancel Replyer"
-                    >
-                      <Ban className="h-3 w-3" />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => onDismissTask?.(ass.reference)}
-                      className="rounded-full p-1 hover:bg-muted/20 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                      title="Dismiss"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
         <ChatBottombar
           sendMessage={sendMessage}
           isMobile={isMobile}

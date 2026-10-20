@@ -27,17 +27,25 @@ export type MeshGate = {
   /** Settles once: the first time the node runs, fails, or the wait runs out. */
   ready: Promise<GateOutcome>;
   isRunning: () => boolean;
+  /** How `ready` settled, once it has. */
+  outcome: () => GateOutcome | undefined;
   onRunning: (listener: (status: MeshNodeStatus) => void) => () => void;
   dispose: () => void;
 };
 
-export const MESH_GATE_TIMEOUT_MS = 15_000;
+/**
+ * From the claim — not from the first check — so the time Windows' firewall
+ * explainer is open does not count; it covers the sidecar starting (its own
+ * budget is 15 s) and the node logging in.
+ */
+export const MESH_GATE_TIMEOUT_MS = 30_000;
 
 /** No mesh, a switched-off one, or a build without the sidecar: nothing to wait for. */
 export const NO_MESH_GATE: MeshGate = {
   meshId: null,
   ready: Promise.resolve("none"),
   isRunning: () => false,
+  outcome: () => "none",
   onRunning: () => () => {},
   dispose: () => {},
 };
@@ -50,17 +58,25 @@ export const watchMesh = (
   {
     bridge = meshBridge(),
     timeoutMs = MESH_GATE_TIMEOUT_MS,
-  }: { bridge?: MeshBridge; timeoutMs?: number } = {},
+    clockStarts = Promise.resolve(),
+  }: {
+    bridge?: MeshBridge;
+    timeoutMs?: number;
+    /** When the timeout starts counting: once the claim is on its way. */
+    clockStarts?: Promise<void>;
+  } = {},
 ): MeshGate => {
   if (!mesh?.enabled || !bridge) return NO_MESH_GATE;
 
   let running = false;
-  let settled = false;
+  let settled: GateOutcome | undefined;
+  /** The node has been seen moving: a later `stopped` is a stop, not "not yet". */
+  let moved = false;
   let settle: (outcome: GateOutcome) => void = () => {};
   const ready = new Promise<GateOutcome>((resolve) => {
     settle = (outcome) => {
       if (settled) return;
-      settled = true;
+      settled = outcome;
       resolve(outcome);
     };
   });
@@ -84,7 +100,8 @@ export const watchMesh = (
       return;
     }
     running = false;
-    if (FAILED_STATES.has(status.state)) settle("failed");
+    if (FAILED_STATES.has(status.state) || (status.state === "stopped" && moved)) settle("failed");
+    if (status.state !== "stopped") moved = true;
   };
 
   const unsubscribe = bridge.onEvent((event) => {
@@ -92,13 +109,17 @@ export const watchMesh = (
   });
   // Subscribed first, then asked: a transition between the two is not lost.
   bridge.status().then(handle, () => {});
-  const timer = setTimeout(() => settle("timeout"), timeoutMs);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  void clockStarts.then(() => {
+    if (!settled) timer = setTimeout(() => settle("timeout"), timeoutMs);
+  });
   void ready.then(() => clearTimeout(timer));
 
   return {
     meshId: mesh.id,
     ready,
     isRunning: () => running,
+    outcome: () => settled,
     onRunning: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);

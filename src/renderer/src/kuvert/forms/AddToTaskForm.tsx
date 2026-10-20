@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
@@ -8,11 +8,10 @@ import { useState } from "react";
 import { GetThreadDocument, useCreateTaskMutation, useLinkThreadsMutation, useListTasksQuery } from "../api/graphql";
 import { ListDot } from "../components/tasks/ListDot";
 import { TASK_VIEWS } from "../components/tasks/taskOps";
-import { toastText } from "../errors";
+import { inKuvertWords } from "../errors";
 
 /** Put conversations into an open task (search by title), or a new one named by the search. */
 export const AddToTaskForm = ({ threads }: { threads: string[] }) => {
-  const { closeDialog } = useDialog();
   const [search, setSearch] = useState("");
   const { data } = useListTasksQuery({
     variables: { filters: { active: true, search: search.trim() || undefined }, pagination: { limit: 20 } },
@@ -20,13 +19,19 @@ export const AddToTaskForm = ({ threads }: { threads: string[] }) => {
   const refetchQueries = [...TASK_VIEWS, GetThreadDocument];
   const [link, linked] = useLinkThreadsMutation({ refetchQueries });
   const [create, created] = useCreateTaskMutation({ refetchQueries });
-  const busy = linked.loading || created.loading;
   const title = search.trim();
 
-  const done = (text: string) => {
-    toast.success(text);
-    closeDialog();
-  };
+  // The task is not on screen here: the toast names where the mail went.
+  const { submit, submitting } = useDialogSubmit(
+    async (work: () => Promise<unknown>, text: string) => {
+      await inKuvertWords(work());
+      toast.success(text);
+    },
+    { errorTitle: "Couldn't add to the task" },
+  );
+  const busy = linked.loading || created.loading || submitting;
+  const createTask = () =>
+    submit(() => create({ variables: { input: { title, threads } } }), `Added to new task “${title}”`);
 
   return (
     <div className="flex flex-col gap-3">
@@ -44,9 +49,7 @@ export const AddToTaskForm = ({ threads }: { threads: string[] }) => {
         onKeyDown={(e) => {
           if (e.key === "Enter" && title && data?.tasks.length === 0) {
             e.preventDefault();
-            create({ variables: { input: { title, threads } } })
-              .then(() => done(`Added to new task “${title}”`))
-              .catch((err) => toast.error(toastText(err)));
+            if (!busy) void createTask();
           }
         }}
       />
@@ -56,11 +59,7 @@ export const AddToTaskForm = ({ threads }: { threads: string[] }) => {
             variant="ghost"
             className="justify-start gap-2"
             disabled={busy}
-            onClick={() =>
-              create({ variables: { input: { title, threads } } })
-                .then(() => done(`Added to new task “${title}”`))
-                .catch((e) => toast.error(toastText(e)))
-            }
+            onClick={() => void createTask()}
           >
             <Plus className="h-4 w-4" />
             <span className="truncate">New task “{title}”</span>
@@ -73,9 +72,7 @@ export const AddToTaskForm = ({ threads }: { threads: string[] }) => {
             className="justify-start gap-2"
             disabled={busy}
             onClick={() =>
-              link({ variables: { input: { task: task.id, threads } } })
-                .then(() => done(`Added to “${task.title}”`))
-                .catch((e) => toast.error(toastText(e)))
+              void submit(() => link({ variables: { input: { task: task.id, threads } } }), `Added to “${task.title}”`)
             }
           >
             <ListDot color={task.list?.color} />

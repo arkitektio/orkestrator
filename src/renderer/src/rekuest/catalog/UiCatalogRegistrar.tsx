@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef } from "react";
-import { toast } from "@/core/notify";
 import {
   defaultBlokCatalog,
   UI_CATALOG_DESCRIPTION,
@@ -55,8 +54,8 @@ export const UiCatalogRegistrar = () => {
     }
 
     if (error) {
-      // The query hook already reports through the shared error handler;
-      // registering blind would only add a second failure.
+      // The catalog list could not be read; registering blind would only
+      // add a second failure.
       return;
     }
 
@@ -74,20 +73,20 @@ export const UiCatalogRegistrar = () => {
       return;
     }
 
-    void register({ variables: { input } }).then((result) => {
-      // `useMutation` from @/lib/rekuest/hooks sets onError, so failures
-      // resolve without data rather than rejecting.
-      if (!result.data) {
-        const detail = result.errors?.map((issue) => issue.message).join("; ");
-        toast.error(
-          `Could not register the UI catalog with rekuest${detail ? `: ${detail}` : "."}`,
+    // A background registration: a failure is for the console, the user
+    // started nothing.
+    register({ variables: { input } }).then(
+      (result) => {
+        if (!result.data) {
+          console.error("[ui-catalog] registration answered without data", result.errors);
+          return;
+        }
+        console.info(
+          `[ui-catalog] registered "${result.data.registerUiCatalog.name}" (${input.components.length} components, ${input.operations.length} operations).`,
         );
-        return;
-      }
-      console.info(
-        `[ui-catalog] registered "${result.data.registerUiCatalog.name}" (${input.components.length} components, ${input.operations.length} operations).`,
-      );
-    });
+      },
+      (failure) => console.error("[ui-catalog] could not register the UI catalog", failure),
+    );
   }, [base.data, data, error, input, loading, register]);
 
   return null;

@@ -1658,6 +1658,39 @@ export type Client = {
   name: Scalars['String']['output'];
 };
 
+/** What a guest granted it sees of the organization: the objects put in it, and what is part of them. */
+export type Collaboration = {
+  __typename?: 'Collaboration';
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  /** What is in the collaboration; what is part of these is in it too */
+  items: Array<CollaborationItem>;
+  name: Scalars['String']['output'];
+};
+
+/** One object in a collaboration: put there, or brought along with one that needs it to be seen. */
+export type CollaborationItem = {
+  __typename?: 'CollaborationItem';
+  addedAt: Scalars['DateTime']['output'];
+  /** Whether it is in the collaboration only as what another object in it needs to be seen */
+  brought: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  /** The structure the object is known by across the hub: @mikro/scene */
+  identifier?: Maybe<Scalars['String']['output']>;
+  /** The object's id, in its structure */
+  objectId: Scalars['String']['output'];
+};
+
+/** An object to put in, or take out of, a collaboration */
+export type CollaborationObjectInput = {
+  collaboration: Scalars['ID']['input'];
+  /** The structure the object is known by: @mikro/scene */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
 /** One column a layer may be coloured or filtered by, and how it is reached. Both pickers read the same options: `colorBys` and `filterBys` turn on the same measure-vs-categorical split, so two lists would be two copies of one answer. Every option returned is one the mutation that publishes the picker accepts -- `createMeshLayer` over a collection, `createLabelLayer` over a lens -- and every column it omits is one that mutation refuses; that invariant is why this exists rather than a client filtering `attributePlans`, which walks a different set */
 export type ColorByOption = {
   __typename?: 'ColorByOption';
@@ -2147,6 +2180,12 @@ export type CreateChartInput = {
   name: Scalars['String']['input'];
 };
 
+/** A new collaboration */
+export type CreateCollaborationInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+};
+
 /** Attach metadata spokes to an array, table or sparse dataset after ingest. Exactly one of `dataset`, `table` and `sparse` names the container; `anchor` carries the coordinates and the spokes. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced */
 export type CreateCoordinateAnchorInput = {
   anchor: CoordinateAnchorInput;
@@ -2260,6 +2299,11 @@ export type CreateMeshLensInput = {
   meshCollection?: InputMaybe<Scalars['ID']['input']>;
   /** Windows, one per axis to restrict, each keeping the positions whose value lies between its min and its max (an omitted side is open). Omit for everything: the mesh collection's whole lens, or the lens cut from */
   windows?: InputMaybe<Array<WindowInput>>;
+};
+
+/** Many metrics in one transaction, at most 5000 */
+export type CreateMetricsInput = {
+  metrics: Array<MetricInput>;
 };
 
 /** Input for registering an immutable network collection. The collection gets a coordinate system of its own, and an edge relates it to the space the network was traced in */
@@ -2674,6 +2718,11 @@ export type DeleteLensInput = {
 /** Input for deleting a mesh collection by ID */
 export type DeleteMeshCollectionInput = {
   /** The ID of the mesh collection to delete */
+  id: Scalars['ID']['input'];
+};
+
+/** The metric to delete */
+export type DeleteMetricInput = {
   id: Scalars['ID']['input'];
 };
 
@@ -5307,6 +5356,95 @@ export type MetaSchema = {
   schema: Scalars['Any']['output'];
 };
 
+/** One value recorded about an annotation or a dataset, by an app or a person: a quantity (`magnitude` in `unit`) or a `code` a process emitted. Immutable: a correction is a new metric that `supersedes` it. What a metric means is not said here: kraph, reading every metric from mikro's change feed, says it */
+export type Metric = {
+  __typename?: 'Metric';
+  /** (code) The category a process emitted */
+  code?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  /** The user it was recorded as */
+  creator?: Maybe<User>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** What was measured, namespaced by who measured it: `ais_suite.measure_profile/threshold_distance`, `user:<sub>/spine_count` */
+  key: Scalars['String']['output'];
+  /** (quantity) The number, in `unit` */
+  magnitude?: Maybe<Scalars['Float']['output']>;
+  /** The identifier of the app that recorded it; null when recorded by hand */
+  producerApp?: Maybe<Scalars['String']['output']>;
+  /** The release of that app */
+  producerVersion?: Maybe<Scalars['String']['output']>;
+  /** The metric this one corrects, if any */
+  supersedes?: Maybe<Metric>;
+  /** The object this value is about */
+  target: MetricTarget;
+  /** (quantity) The unit of `magnitude` */
+  unit?: Maybe<Scalars['String']['output']>;
+  /** What a reader of the change feed keys this metric on */
+  uuid: Scalars['String']['output'];
+};
+
+export type MetricFilter = {
+  AND?: InputMaybe<MetricFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<MetricFilter>;
+  OR?: InputMaybe<MetricFilter>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the metrics correcting nothing, or only to corrections */
+  isCorrection?: InputMaybe<Scalars['Boolean']['input']>;
+  key?: InputMaybe<StrFilterLookup>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
+  /** Filter to the metrics about one object */
+  target?: InputMaybe<MetricTargetFilter>;
+  /** Filter to the metrics about objects of this structure: @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset */
+  targetIdentifier?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** One value about one object: a quantity (magnitude and unit) or a code, exactly one */
+export type MetricInput = {
+  code?: InputMaybe<Scalars['String']['input']>;
+  key: Scalars['String']['input'];
+  magnitude?: InputMaybe<Scalars['Float']['input']>;
+  supersedes?: InputMaybe<Scalars['ID']['input']>;
+  target: MetricTargetInput;
+  unit?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MetricOrder =
+  { createdAt: Ordering; id?: never; key?: never; }
+  |  { createdAt?: never; id: Ordering; key?: never; }
+  |  { createdAt?: never; id?: never; key: Ordering; };
+
+/** An object metrics are recorded about: its structure and id, as rekuest's signals and STRUCTURE ports spell them, and a uuid of its own */
+export type MetricTarget = {
+  __typename?: 'MetricTarget';
+  id: Scalars['ID']['output'];
+  /** The structure of the object: @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset */
+  identifier: Scalars['String']['output'];
+  /** The id of the object within its structure */
+  object: Scalars['ID']['output'];
+  /** The object's uuid as a metric target: what a reader of the change feed keys it on */
+  uuid: Scalars['String']['output'];
+};
+
+/** An object metrics are about: its structure and id, as a signal spells them */
+export type MetricTargetFilter = {
+  /** @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset */
+  identifier: Scalars['String']['input'];
+  /** The id of the object within its structure */
+  object: Scalars['ID']['input'];
+};
+
+/** The object a metric is about: its structure and id, as rekuest's signals and STRUCTURE ports spell them */
+export type MetricTargetInput = {
+  identifier: Scalars['String']['input'];
+  object: Scalars['ID']['input'];
+};
+
 /** Mirror */
 export type MirrorElement = OpticalElement & {
   __typename?: 'MirrorElement';
@@ -5358,6 +5496,8 @@ export type ModelChange = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Put an object in a collaboration, with what it needs to be seen: a scene brings the data its layers draw */
+  addToCollaboration: Collaboration;
   /** Attach unstructured metadata to a file */
   attachUnstructuredMeta: UnstructuredMeta;
   /** Show a coordinate system as whichever composition fits it: a chart over a space with exactly one metric, unit-carrying axis, a scene over any other space with a time or space axis. Bootstrapped from what already resides in the space; authors no edges */
@@ -5386,6 +5526,8 @@ export type Mutation = {
   createChart: Chart;
   /** Bootstrap a chart over an existing coordinate system, drawing every array, table and annotation collection already laid along its axis. Authors no edges */
   createChartFromCoordinateSystem: Chart;
+  /** Create an empty collaboration, to put objects in and grant a guest */
+  createCollaboration: Collaboration;
   /** Attach metadata spokes to an array, table or sparse dataset after ingest: a microscope state, OME metadata, a value histogram, a channel label or a light path, pinned to some of its coordinates. Get-or-create on (container, coordinates): a second call at the same coordinates adds its spokes to the one anchor, and a spoke stated twice is replaced */
   createCoordinateAnchor: CoordinateAnchor;
   /** Create a SHARED coordinate system (an ownerless space) and, in one call, author the edges registering any number of sources (datasets, table datasets, mesh collections, coordinate systems) into it */
@@ -5406,6 +5548,10 @@ export type Mutation = {
   createMeshLayer: MeshLayer;
   /** The lens keeping these windows of a mesh collection's own space: the one that exists, or a new one */
   createMeshLens: MeshLens;
+  /** Record one value about an annotation or a dataset: a quantity or a code. Announced to the hub's rekuest (a CREATED @mikro/metric signal) once committed */
+  createMetric: Metric;
+  /** Record many values in one transaction. No signal is sent for each: a reader finds them in mikro's change feed */
+  createMetrics: Array<Metric>;
   /** Register an immutable network collection from an uploaded konnektion store, in a coordinate system of its own */
   createNetworkCollection: NetworkCollection;
   /** Create a layer that renders a node/edge network -- a traced arbor, a vessel tree, a connectome -- in a scene */
@@ -5462,6 +5608,8 @@ export type Mutation = {
   deleteChart: Scalars['ID']['output'];
   /** Delete a chart layer. Deletes nothing it drew */
   deleteChartLayer: Scalars['ID']['output'];
+  /** Delete a collaboration: whoever was granted it sees nothing of it any more */
+  deleteCollaboration: Scalars['ID']['output'];
   /** Delete an unused shared coordinate system. Refused while any scene is rooted in it or any transformation edge touches it. This is the only door a shared space leaves through -- deleting a scene never deletes one. Other system kinds cascade with their owner and cannot be deleted directly */
   deleteCoordinateSystem: Scalars['ID']['output'];
   /** Delete an existing file */
@@ -5474,6 +5622,8 @@ export type Mutation = {
   deleteLens: Scalars['ID']['output'];
   /** Delete an existing mesh collection */
   deleteMeshCollection: Scalars['ID']['output'];
+  /** Delete a metric. One a correction supersedes is kept while the correction stands */
+  deleteMetric: Scalars['ID']['output'];
   /** Delete an existing network collection */
   deleteNetworkCollection: Scalars['ID']['output'];
   /** Delete every orphaned shared space in the organization -- no scene rooted in it, no edge touching it -- and return the deleted ids. The cleanup sweep for the no-garbage-collection policy: scene deletion never deletes a space, this call takes the leftovers back. Org admins sweep every orphan; anyone else sweeps only their own */
@@ -5542,6 +5692,8 @@ export type Mutation = {
   releaseMeshCollectionsFromFolder: Folder;
   /** Unfile table datasets from a folder. They are not deleted, only unfiled */
   releaseTableDatasetsFromFolder: Folder;
+  /** Take an object out of a collaboration, with what it brought that nothing else there needs */
+  removeFromCollaboration: Collaboration;
   /** Request temporary S3 read credentials for a big file */
   requestBigfileAccess: BigFileAccessGrant;
   /** Request an upload grant for a big file store */
@@ -5637,6 +5789,11 @@ export type Mutation = {
 };
 
 
+export type MutationAddToCollaborationArgs = {
+  input: CollaborationObjectInput;
+};
+
+
 export type MutationAttachUnstructuredMetaArgs = {
   input: UnstructuredMetaInput;
 };
@@ -5707,6 +5864,11 @@ export type MutationCreateChartFromCoordinateSystemArgs = {
 };
 
 
+export type MutationCreateCollaborationArgs = {
+  input: CreateCollaborationInput;
+};
+
+
 export type MutationCreateCoordinateAnchorArgs = {
   input: CreateCoordinateAnchorInput;
 };
@@ -5754,6 +5916,16 @@ export type MutationCreateMeshLayerArgs = {
 
 export type MutationCreateMeshLensArgs = {
   input: CreateMeshLensInput;
+};
+
+
+export type MutationCreateMetricArgs = {
+  input: MetricInput;
+};
+
+
+export type MutationCreateMetricsArgs = {
+  input: CreateMetricsInput;
 };
 
 
@@ -5897,6 +6069,11 @@ export type MutationDeleteChartLayerArgs = {
 };
 
 
+export type MutationDeleteCollaborationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteCoordinateSystemArgs = {
   input: DeleteCoordinateSystemInput;
 };
@@ -5924,6 +6101,11 @@ export type MutationDeleteLensArgs = {
 
 export type MutationDeleteMeshCollectionArgs = {
   input: DeleteMeshCollectionInput;
+};
+
+
+export type MutationDeleteMetricArgs = {
+  input: DeleteMetricInput;
 };
 
 
@@ -6089,6 +6271,11 @@ export type MutationReleaseMeshCollectionsFromFolderArgs = {
 
 export type MutationReleaseTableDatasetsFromFolderArgs = {
   input: DesociateInput;
+};
+
+
+export type MutationRemoveFromCollaborationArgs = {
+  input: CollaborationObjectInput;
 };
 
 
@@ -7540,6 +7727,10 @@ export type Query = {
   charts: Array<Chart>;
   /** List the child folders of a folder */
   children: Array<FolderChild>;
+  /** Get a single collaboration by ID */
+  collaboration: Collaboration;
+  /** List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them) */
+  collaborations: Array<Collaboration>;
   /** Every column a mesh collection's objects can be coloured or filtered by: one entry per (joinPath, table, column), with the control its declared role admits. **The set this returns is exactly the set `createMeshLayer(colorBys:)` and `filterBys` accept** -- same reachability walk, same measure-vs-categorical rule -- which is what makes it an options query rather than a suggestion. Distinct from `attributePlans`, which answers a different question (how to execute a lookup per hover) over a different set: it walks the whole fact component and returns plans rooted at a source mask that mesh ids cannot execute, drops tables the write path accepts, and fails outright on a storeless array. Both pickers read these same options, because both branch on the same split. `joinPath` follows `references` from table to table -- pass an option's path back verbatim to select it. The columns' *values* are not here: a picker wanting a class list or a numeric range reads them from the parquet it already has an `accessGrant` for */
   colorByOptions: Array<ColorByOption>;
   /** List coordinate anchors (the hubs pinning metadata spokes to coordinates of an array, table or sparse dataset) */
@@ -7586,6 +7777,10 @@ export type Query = {
   meshCollection: MeshCollection;
   /** List mesh collections (immutable Parquet-backed mesh sets, each in a coordinate system of its own) */
   meshCollections: Array<MeshCollection>;
+  /** Get a single metric by ID */
+  metric: Metric;
+  /** List metrics: values recorded about annotations and datasets, by apps and people */
+  metrics: Array<Metric>;
   /** List files created by the current user */
   myfiles: Array<File>;
   /** List folders created by the current user */
@@ -7733,6 +7928,11 @@ export type QueryChildrenArgs = {
 };
 
 
+export type QueryCollaborationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QueryColorByOptionsArgs = {
   filters?: InputMaybe<ColumnOptionFilter>;
   maxJoinDepth?: Scalars['Int']['input'];
@@ -7871,6 +8071,18 @@ export type QueryMeshCollectionArgs = {
 
 export type QueryMeshCollectionsArgs = {
   filters?: InputMaybe<MeshCollectionFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMetricArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryMetricsArgs = {
+  filters?: InputMaybe<MetricFilter>;
+  ordering?: Array<MetricOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -10460,7 +10672,7 @@ export type ZarrUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
-export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -11170,6 +11382,18 @@ type ChartLayerCandidate_TableLens_Fragment = { __typename: 'TableLens' };
 
 export type ChartLayerCandidateFragment = ChartLayerCandidate_AnnotationCollection_Fragment | ChartLayerCandidate_AnnotationLens_Fragment | ChartLayerCandidate_ArrayDataset_Fragment | ChartLayerCandidate_ArrayLens_Fragment | ChartLayerCandidate_DataArray_Fragment | ChartLayerCandidate_MeshCollection_Fragment | ChartLayerCandidate_MeshLens_Fragment | ChartLayerCandidate_NetworkCollection_Fragment | ChartLayerCandidate_NetworkLens_Fragment | ChartLayerCandidate_SparseDataset_Fragment | ChartLayerCandidate_SparseLens_Fragment | ChartLayerCandidate_TableDataset_Fragment | ChartLayerCandidate_TableLens_Fragment;
 
+export type ListCollaborationFragment = { __typename?: 'Collaboration', id: string, name: string, description?: string | null, createdAt: any };
+
+export type CollaborationItemFragment = { __typename?: 'CollaborationItem', id: string, identifier?: string | null, objectId: string, brought: boolean, addedAt: any };
+
+export type CollaborationFragment = (
+  { __typename?: 'Collaboration', items: Array<(
+    { __typename?: 'CollaborationItem' }
+    & CollaborationItemFragment
+  )> }
+  & ListCollaborationFragment
+);
+
 export type AxisFragment = { __typename?: 'Axis', id: string, order: number, name: string, type: AxisType, unit?: any | null, longName?: string | null };
 
 export type ListCoordinateSystemFragment = { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset' } | { __typename: 'ArrayLens' } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> };
@@ -11411,6 +11635,11 @@ export type FileFragment = { __typename?: 'File', descriptors: any, id: string, 
     { __typename?: 'ProvenanceEntry' }
     & ProvenanceEntryFragment
   )>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
+
+export type DetailFileFragment = (
+  { __typename?: 'File', creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: number | null, contentType?: string | null } }
+  & FileFragment
+);
 
 export type ListFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
 
@@ -12698,6 +12927,43 @@ export type DeleteChartLayerMutationVariables = Exact<{
 
 
 export type DeleteChartLayerMutation = { __typename?: 'Mutation', deleteChartLayer: string };
+
+export type CreateCollaborationMutationVariables = Exact<{
+  input: CreateCollaborationInput;
+}>;
+
+
+export type CreateCollaborationMutation = { __typename?: 'Mutation', createCollaboration: (
+    { __typename?: 'Collaboration' }
+    & CollaborationFragment
+  ) };
+
+export type AddToCollaborationMutationVariables = Exact<{
+  input: CollaborationObjectInput;
+}>;
+
+
+export type AddToCollaborationMutation = { __typename?: 'Mutation', addToCollaboration: (
+    { __typename?: 'Collaboration' }
+    & CollaborationFragment
+  ) };
+
+export type RemoveFromCollaborationMutationVariables = Exact<{
+  input: CollaborationObjectInput;
+}>;
+
+
+export type RemoveFromCollaborationMutation = { __typename?: 'Mutation', removeFromCollaboration: (
+    { __typename?: 'Collaboration' }
+    & CollaborationFragment
+  ) };
+
+export type DeleteCollaborationMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteCollaborationMutation = { __typename?: 'Mutation', deleteCollaboration: string };
 
 export type CreateCoordinateSystemMutationVariables = Exact<{
   input: CreateCoordinateSystemInput;
@@ -14939,6 +15205,27 @@ export type ChildrenQuery = { __typename?: 'Query', children: Array<{ __typename
     & ListTableDatasetFragment
   )> };
 
+export type GetCollaborationsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetCollaborationsQuery = { __typename?: 'Query', collaborations: Array<(
+    { __typename?: 'Collaboration', items: Array<(
+      { __typename?: 'CollaborationItem' }
+      & CollaborationItemFragment
+    )> }
+    & ListCollaborationFragment
+  )> };
+
+export type GetCollaborationQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetCollaborationQuery = { __typename?: 'Query', collaboration: (
+    { __typename?: 'Collaboration' }
+    & CollaborationFragment
+  ) };
+
 export type ColumnOptionJoinStepFragment = { __typename?: 'ColumnOptionJoinStep', table: { __typename?: 'TableDataset', id: string, name: string, store: (
       { __typename?: 'ParquetStore' }
       & ParquetStoreFragment
@@ -15300,7 +15587,7 @@ export type GetFileQueryVariables = Exact<{
 
 export type GetFileQuery = { __typename?: 'Query', file: (
     { __typename?: 'File' }
-    & FileFragment
+    & DetailFileFragment
   ) };
 
 export type GetFilesQueryVariables = Exact<{
@@ -17441,6 +17728,32 @@ export const ChartLayerCandidateFragmentDoc = gql`
     ${DimSliceFragmentDoc}
 ${AxisFragmentDoc}
 ${TableDatasetColumnFragmentDoc}`;
+export const ListCollaborationFragmentDoc = gql`
+    fragment ListCollaboration on Collaboration {
+  id
+  name
+  description
+  createdAt
+}
+    `;
+export const CollaborationItemFragmentDoc = gql`
+    fragment CollaborationItem on CollaborationItem {
+  id
+  identifier
+  objectId
+  brought
+  addedAt
+}
+    `;
+export const CollaborationFragmentDoc = gql`
+    fragment Collaboration on Collaboration {
+  ...ListCollaboration
+  items {
+    ...CollaborationItem
+  }
+}
+    ${ListCollaborationFragmentDoc}
+${CollaborationItemFragmentDoc}`;
 export const BigFileUploadGrantFragmentDoc = gql`
     fragment BigFileUploadGrant on BigFileUploadGrant {
   accessKey
@@ -17657,6 +17970,28 @@ export const FileFragmentDoc = gql`
 }
     ${BigFileStoreFragmentDoc}
 ${ProvenanceEntryFragmentDoc}`;
+export const DetailFileFragmentDoc = gql`
+    fragment DetailFile on File {
+  ...File
+  creator {
+    sub
+  }
+  createdThrough {
+    id
+    taskId
+    createdAt
+    assigner {
+      sub
+    }
+  }
+  store {
+    id
+    originalFileName
+    sizeBytes
+    contentType
+  }
+}
+    ${FileFragmentDoc}`;
 export const FileLinkFragmentDoc = gql`
     fragment FileLink on FileLink {
   id
@@ -19507,6 +19842,136 @@ export function useDeleteChartLayerMutation(baseOptions?: ApolloReactHooks.Mutat
 export type DeleteChartLayerMutationHookResult = ReturnType<typeof useDeleteChartLayerMutation>;
 export type DeleteChartLayerMutationResult = Apollo.MutationResult<DeleteChartLayerMutation>;
 export type DeleteChartLayerMutationOptions = Apollo.BaseMutationOptions<DeleteChartLayerMutation, DeleteChartLayerMutationVariables>;
+export const CreateCollaborationDocument = gql`
+    mutation CreateCollaboration($input: CreateCollaborationInput!) {
+  createCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+export type CreateCollaborationMutationFn = Apollo.MutationFunction<CreateCollaborationMutation, CreateCollaborationMutationVariables>;
+
+/**
+ * __useCreateCollaborationMutation__
+ *
+ * To run a mutation, you first call `useCreateCollaborationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateCollaborationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createCollaborationMutation, { data, loading, error }] = useCreateCollaborationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateCollaborationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateCollaborationMutation, CreateCollaborationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateCollaborationMutation, CreateCollaborationMutationVariables>(CreateCollaborationDocument, options);
+      }
+export type CreateCollaborationMutationHookResult = ReturnType<typeof useCreateCollaborationMutation>;
+export type CreateCollaborationMutationResult = Apollo.MutationResult<CreateCollaborationMutation>;
+export type CreateCollaborationMutationOptions = Apollo.BaseMutationOptions<CreateCollaborationMutation, CreateCollaborationMutationVariables>;
+export const AddToCollaborationDocument = gql`
+    mutation AddToCollaboration($input: CollaborationObjectInput!) {
+  addToCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+export type AddToCollaborationMutationFn = Apollo.MutationFunction<AddToCollaborationMutation, AddToCollaborationMutationVariables>;
+
+/**
+ * __useAddToCollaborationMutation__
+ *
+ * To run a mutation, you first call `useAddToCollaborationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAddToCollaborationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [addToCollaborationMutation, { data, loading, error }] = useAddToCollaborationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAddToCollaborationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AddToCollaborationMutation, AddToCollaborationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AddToCollaborationMutation, AddToCollaborationMutationVariables>(AddToCollaborationDocument, options);
+      }
+export type AddToCollaborationMutationHookResult = ReturnType<typeof useAddToCollaborationMutation>;
+export type AddToCollaborationMutationResult = Apollo.MutationResult<AddToCollaborationMutation>;
+export type AddToCollaborationMutationOptions = Apollo.BaseMutationOptions<AddToCollaborationMutation, AddToCollaborationMutationVariables>;
+export const RemoveFromCollaborationDocument = gql`
+    mutation RemoveFromCollaboration($input: CollaborationObjectInput!) {
+  removeFromCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+export type RemoveFromCollaborationMutationFn = Apollo.MutationFunction<RemoveFromCollaborationMutation, RemoveFromCollaborationMutationVariables>;
+
+/**
+ * __useRemoveFromCollaborationMutation__
+ *
+ * To run a mutation, you first call `useRemoveFromCollaborationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRemoveFromCollaborationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [removeFromCollaborationMutation, { data, loading, error }] = useRemoveFromCollaborationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRemoveFromCollaborationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RemoveFromCollaborationMutation, RemoveFromCollaborationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RemoveFromCollaborationMutation, RemoveFromCollaborationMutationVariables>(RemoveFromCollaborationDocument, options);
+      }
+export type RemoveFromCollaborationMutationHookResult = ReturnType<typeof useRemoveFromCollaborationMutation>;
+export type RemoveFromCollaborationMutationResult = Apollo.MutationResult<RemoveFromCollaborationMutation>;
+export type RemoveFromCollaborationMutationOptions = Apollo.BaseMutationOptions<RemoveFromCollaborationMutation, RemoveFromCollaborationMutationVariables>;
+export const DeleteCollaborationDocument = gql`
+    mutation DeleteCollaboration($id: ID!) {
+  deleteCollaboration(id: $id)
+}
+    `;
+export type DeleteCollaborationMutationFn = Apollo.MutationFunction<DeleteCollaborationMutation, DeleteCollaborationMutationVariables>;
+
+/**
+ * __useDeleteCollaborationMutation__
+ *
+ * To run a mutation, you first call `useDeleteCollaborationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteCollaborationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteCollaborationMutation, { data, loading, error }] = useDeleteCollaborationMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteCollaborationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DeleteCollaborationMutation, DeleteCollaborationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DeleteCollaborationMutation, DeleteCollaborationMutationVariables>(DeleteCollaborationDocument, options);
+      }
+export type DeleteCollaborationMutationHookResult = ReturnType<typeof useDeleteCollaborationMutation>;
+export type DeleteCollaborationMutationResult = Apollo.MutationResult<DeleteCollaborationMutation>;
+export type DeleteCollaborationMutationOptions = Apollo.BaseMutationOptions<DeleteCollaborationMutation, DeleteCollaborationMutationVariables>;
 export const CreateCoordinateSystemDocument = gql`
     mutation CreateCoordinateSystem($input: CreateCoordinateSystemInput!) {
   createCoordinateSystem(input: $input) {
@@ -23401,6 +23866,79 @@ export function useChildrenLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type ChildrenQueryHookResult = ReturnType<typeof useChildrenQuery>;
 export type ChildrenLazyQueryHookResult = ReturnType<typeof useChildrenLazyQuery>;
 export type ChildrenQueryResult = Apollo.QueryResult<ChildrenQuery, ChildrenQueryVariables>;
+export const GetCollaborationsDocument = gql`
+    query GetCollaborations {
+  collaborations {
+    ...ListCollaboration
+    items {
+      ...CollaborationItem
+    }
+  }
+}
+    ${ListCollaborationFragmentDoc}
+${CollaborationItemFragmentDoc}`;
+
+/**
+ * __useGetCollaborationsQuery__
+ *
+ * To run a query within a React component, call `useGetCollaborationsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetCollaborationsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetCollaborationsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetCollaborationsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetCollaborationsQuery, GetCollaborationsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetCollaborationsQuery, GetCollaborationsQueryVariables>(GetCollaborationsDocument, options);
+      }
+export function useGetCollaborationsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetCollaborationsQuery, GetCollaborationsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetCollaborationsQuery, GetCollaborationsQueryVariables>(GetCollaborationsDocument, options);
+        }
+export type GetCollaborationsQueryHookResult = ReturnType<typeof useGetCollaborationsQuery>;
+export type GetCollaborationsLazyQueryHookResult = ReturnType<typeof useGetCollaborationsLazyQuery>;
+export type GetCollaborationsQueryResult = Apollo.QueryResult<GetCollaborationsQuery, GetCollaborationsQueryVariables>;
+export const GetCollaborationDocument = gql`
+    query GetCollaboration($id: ID!) {
+  collaboration(id: $id) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+
+/**
+ * __useGetCollaborationQuery__
+ *
+ * To run a query within a React component, call `useGetCollaborationQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetCollaborationQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetCollaborationQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetCollaborationQuery(baseOptions: ApolloReactHooks.QueryHookOptions<GetCollaborationQuery, GetCollaborationQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetCollaborationQuery, GetCollaborationQueryVariables>(GetCollaborationDocument, options);
+      }
+export function useGetCollaborationLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetCollaborationQuery, GetCollaborationQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetCollaborationQuery, GetCollaborationQueryVariables>(GetCollaborationDocument, options);
+        }
+export type GetCollaborationQueryHookResult = ReturnType<typeof useGetCollaborationQuery>;
+export type GetCollaborationLazyQueryHookResult = ReturnType<typeof useGetCollaborationLazyQuery>;
+export type GetCollaborationQueryResult = Apollo.QueryResult<GetCollaborationQuery, GetCollaborationQueryVariables>;
 export const MeshColorByOptionsDocument = gql`
     query MeshColorByOptions($meshCollection: ID!, $filters: ColumnOptionFilter, $maxJoinDepth: Int) {
   options: colorByOptions(
@@ -24089,10 +24627,10 @@ export type GetRegistrationEdgeQueryResult = Apollo.QueryResult<GetRegistrationE
 export const GetFileDocument = gql`
     query GetFile($id: ID!) {
   file(id: $id) {
-    ...File
+    ...DetailFile
   }
 }
-    ${FileFragmentDoc}`;
+    ${DetailFileFragmentDoc}`;
 
 /**
  * __useGetFileQuery__

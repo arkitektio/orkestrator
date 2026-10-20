@@ -1,12 +1,13 @@
 import { Button } from "@/core/ui/button";
 import { Card } from "@/core/ui/card";
+import { useCopyToClipboard } from "@/core/ui/copy-button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/core/ui/collapsible";
 import { Check, ChevronDown, ChevronRight, Copy } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 interface CypherQueryDisplayProps {
   query: string;
@@ -17,19 +18,8 @@ export const CypherQueryDisplay = ({
   query,
   title = "Generated Cypher Query",
 }: CypherQueryDisplayProps) => {
-  const [copied, setCopied] = useState(false);
+  const { copy, copied } = useCopyToClipboard();
   const [isOpen, setIsOpen] = useState(false);
-  const copyTimer = useRef<number | undefined>(undefined);
-
-  // Clear the pending copy-reset timer on unmount to avoid a setState-after-unmount.
-  useEffect(() => () => window.clearTimeout(copyTimer.current), []);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(query);
-    setCopied(true);
-    window.clearTimeout(copyTimer.current);
-    copyTimer.current = window.setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <Card className="w-full">
@@ -46,7 +36,7 @@ export const CypherQueryDisplay = ({
           <Button
             size="sm"
             variant="ghost"
-            onClick={handleCopy}
+            onClick={() => copy(query)}
             className="h-8 px-2"
           >
             {copied ? (

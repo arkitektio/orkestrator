@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/core/ui/dialog";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Form } from "@/core/ui/form";
 import { ActionDescription, FormActionDescription } from "@/core/ports/engine/ActionDescription";
 import { notEmpty } from "@/core/util/utils";
@@ -165,31 +166,31 @@ export const ReserveForm = (props: {
   });
 
   const navigate = useNavigate();
+  // Shown above the button: the form sits in a plain <Dialog>, which stays
+  // open to try again.
+  const [failure, setFailure] = React.useState<unknown>(null);
 
   const onSubmit = async (data: any) => {
-    console.log("Submitting");
-
     const { toolbox, name, allowQuick, ...rest } = data;
 
-    await create({
-      variables: {
-        input: {
-          name: name,
-          action: props.id,
-          args: rest,
-          allowQuick: allowQuick,
+    setFailure(null);
+    try {
+      const res = await create({
+        variables: {
+          input: {
+            name: name,
+            action: props.id,
+            args: rest,
+            allowQuick: allowQuick,
+          },
         },
-      },
-    }).then(
-      (res) => {
-        if (res.data?.createShortcut?.id) {
-          navigate(RekuestShortcut.linkBuilder(res.data?.createShortcut?.id));
-        }
-      },
-      (err) => {
-        console.log(err);
-      },
-    );
+      });
+      if (res.data?.createShortcut?.id) {
+        navigate(RekuestShortcut.linkBuilder(res.data?.createShortcut?.id));
+      }
+    } catch (error) {
+      setFailure(error);
+    }
   };
 
   const isValid = form.formState.isValid;
@@ -257,6 +258,7 @@ export const ReserveForm = (props: {
               description="Quick access will allow you to run this shortcut without any confirmation"
             />
 
+            <ErrorNote error={failure} title="Couldn't create the shortcut" />
             <DialogFooter>
               <Button variant={"outline"} disabled={!isValid}>
                 {" "}

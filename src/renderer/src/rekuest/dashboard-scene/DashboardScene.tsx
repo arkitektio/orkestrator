@@ -1,5 +1,6 @@
 import { Button } from "@/core/ui/button";
 import { Card } from "@/core/ui/card";
+import { ErrorNote } from "@/core/ui/error-note";
 import {
   Dialog,
   DialogContent,
@@ -176,7 +177,8 @@ const DashboardAgentBlokPicker = (props: {
   agentName: string;
   onSelect: (blokId: string) => void;
 }) => {
-  const { data, loading, error } = useListBloksQuery();
+  // Bloks to materialize by hand: an app's own are forked first.
+  const { data, loading, error } = useListBloksQuery({ variables: { filters: { provided: false } } });
   const [search, setSearch] = useState("");
 
   const filteredBloks = useMemo(() => {
@@ -252,6 +254,7 @@ const DashboardBlokMaterializeSelector = (props: {
     },
   });
   const [materialize, { loading }] = useMaterializeBlokMutation();
+  const [failure, setFailure] = useState<unknown>(null);
   const autoMaterializedRef = useRef(false);
 
   useEffect(() => {
@@ -260,6 +263,7 @@ const DashboardBlokMaterializeSelector = (props: {
     }
 
     autoMaterializedRef.current = true;
+    setFailure(null);
 
     materialize({
       variables: {
@@ -274,7 +278,7 @@ const DashboardBlokMaterializeSelector = (props: {
 
         if (!materializedBlok) {
           autoMaterializedRef.current = false;
-          toast.error("Failed to materialize blok");
+          console.error("materializeBlok answered without a blok", blokId);
           return;
         }
 
@@ -282,12 +286,16 @@ const DashboardBlokMaterializeSelector = (props: {
       })
       .catch((materializeError) => {
         autoMaterializedRef.current = false;
-        toast.error(materializeError.message);
+        setFailure(materializeError);
       });
   }, [blokId, dashboardId, data, materialize, onMaterialized]);
 
   if (error) {
-    return <div>Error loading blok: {error.message}</div>;
+    return <ErrorNote error={error} title="Couldn't load the blok" />;
+  }
+
+  if (failure) {
+    return <ErrorNote error={failure} title="Couldn't materialize the blok" />;
   }
 
   if (!data) {
@@ -394,7 +402,7 @@ const DashboardDropDialog = (props: {
 };
 
 export const DashboardBlokSidebar = () => {
-  const { data } = useListBloksQuery();
+  const { data } = useListBloksQuery({ variables: { filters: { provided: false } } });
 
   return (
     <div className="flex flex-col gap-2 p-3">

@@ -1,14 +1,17 @@
+import { DialogError, useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { RekuestWiregram } from "@/core/linkers";
-import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { Checkbox } from "@/core/ui/checkbox";
+import { CopyButton } from "@/core/ui/copy-button";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/core/ui/dialog";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Input } from "@/core/ui/input";
 import { Skeleton } from "@/core/ui/skeleton";
 import { Textarea } from "@/core/ui/textarea";
@@ -28,8 +31,6 @@ import { AlarmClock, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
-
 /**
  * Import a wiregram: a document of schedules and triggers, from a file or
  * pasted. The server takes it all or nothing; a document whose key was
@@ -42,24 +43,25 @@ export const ImportWiregramDialog = (props: { document?: unknown }) => {
   const [text, setText] = useState(() =>
     props.document == null ? "" : JSON.stringify(props.document, null, 2),
   );
-  const [failure, setFailure] = useState<string | null>(null);
-  const [importWiregram, { loading }] = useImportWiregramMutation({
+  const { report } = useDialogError();
+  const [importWiregram] = useImportWiregramMutation({
     refetchQueries: ["ListWiregrams", "ListSchedules", "ListTriggers"],
   });
   const parsed = useMemo(() => parseWiregram(text), [text]);
 
-  const submit = async () => {
-    if (!parsed.ok) return;
-    setFailure(null);
-    try {
+  const { submit, submitting } = useDialogSubmit(
+    async () => {
+      if (!parsed.ok) return undefined;
       const { data } = await importWiregram({ variables: { input: parsed.input } });
-      closeDialog();
-      const id = data?.importWiregram.id;
-      if (id) navigate(RekuestWiregram.linkBuilder(id));
-    } catch (error) {
-      setFailure(errorMessage(error));
-    }
-  };
+      return data?.importWiregram.id;
+    },
+    {
+      errorTitle: "Couldn't import the wiregram",
+      onSuccess: (id) => {
+        if (id) navigate(RekuestWiregram.linkBuilder(id));
+      },
+    },
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -77,7 +79,7 @@ export const ImportWiregramDialog = (props: { document?: unknown }) => {
         aria-label="Wiregram file"
         onChange={(event) => {
           const file = event.target.files?.[0];
-          if (file) file.text().then(setText, (error) => setFailure(errorMessage(error)));
+          if (file) file.text().then(setText, (error) => report(error, "Couldn't read the file"));
         }}
       />
       <Textarea
@@ -98,13 +100,13 @@ export const ImportWiregramDialog = (props: { document?: unknown }) => {
       ) : (
         text.trim() && <p className="text-sm text-destructive">{parsed.error}</p>
       )}
-      {failure && <p className="text-sm text-destructive">Could not import it: {failure}</p>}
+      <DialogError />
 
       <DialogFooter>
-        <Button type="button" variant="ghost" onClick={closeDialog} disabled={loading}>
+        <Button type="button" variant="ghost" onClick={closeDialog} disabled={submitting}>
           Cancel
         </Button>
-        <Button type="button" onClick={submit} disabled={loading || !parsed.ok}>
+        <Button type="button" onClick={() => void submit()} disabled={submitting || !parsed.ok}>
           Import
         </Button>
       </DialogFooter>
@@ -126,12 +128,11 @@ export const ExportWiregramDialog = (props: { schedules?: string[]; triggers?: s
   const [description, setDescription] = useState("");
   const [schedules, setSchedules] = useState(() => new Set(props.schedules ?? []));
   const [triggers, setTriggers] = useState(() => new Set(props.triggers ?? []));
-  const [failure, setFailure] = useState<string | null>(null);
   const [document, setDocument] = useState<unknown>(null);
 
   const scheduleQuery = useListSchedulesQuery({ variables: { pagination: { limit: LIMIT } } });
   const triggerQuery = useListTriggersQuery({ variables: { pagination: { limit: LIMIT } } });
-  const [exportWiregram, { loading }] = useExportWiregramMutation();
+  const [exportWiregram] = useExportWiregramMutation();
 
   const finalKey = key.trim() || keyFromName(name);
   const count = schedules.size + triggers.size;
@@ -143,9 +144,8 @@ export const ExportWiregramDialog = (props: { schedules?: string[]; triggers?: s
     update(next);
   };
 
-  const submit = async () => {
-    setFailure(null);
-    try {
+  const { submit, submitting } = useDialogSubmit(
+    async () => {
       const { data } = await exportWiregram({
         variables: {
           input: {
@@ -157,11 +157,10 @@ export const ExportWiregramDialog = (props: { schedules?: string[]; triggers?: s
           },
         },
       });
-      setDocument(data?.exportWiregram ?? null);
-    } catch (error) {
-      setFailure(errorMessage(error));
-    }
-  };
+      return data?.exportWiregram ?? null;
+    },
+    { errorTitle: "Couldn't export the automations", close: false, onSuccess: setDocument },
+  );
 
   if (document != null) {
     const text = JSON.stringify(document, null, 2);
@@ -178,18 +177,9 @@ export const ExportWiregramDialog = (props: { schedules?: string[]; triggers?: s
           <Button type="button" variant="ghost" onClick={closeDialog}>
             Close
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              navigator.clipboard.writeText(text).then(
-                () => toast.success("Copied"),
-                (error) => toast.error(`Could not copy it: ${errorMessage(error)}`),
-              )
-            }
-          >
+          <CopyButton value={text} title="Copy the document" variant="outline" size="default">
             Copy
-          </Button>
+          </CopyButton>
           <Button type="button" onClick={() => downloadWiregram(finalKey, document)}>
             Save file
           </Button>
@@ -224,7 +214,7 @@ export const ExportWiregramDialog = (props: { schedules?: string[]; triggers?: s
       />
 
       {loadError && !scheduleQuery.data && !triggerQuery.data ? (
-        <p className="text-sm text-destructive">Could not load the rules: {loadError.message}</p>
+        <ErrorNote error={loadError} title="Couldn't load the rules" variant="line" />
       ) : !scheduleQuery.data || !triggerQuery.data ? (
         <Skeleton className="h-24 w-full" />
       ) : (
@@ -252,16 +242,16 @@ export const ExportWiregramDialog = (props: { schedules?: string[]; triggers?: s
         </div>
       )}
 
-      {failure && <p className="text-sm text-destructive">Could not export: {failure}</p>}
+      <DialogError />
 
       <DialogFooter>
-        <Button type="button" variant="ghost" onClick={closeDialog} disabled={loading}>
+        <Button type="button" variant="ghost" onClick={closeDialog} disabled={submitting}>
           Cancel
         </Button>
         <Button
           type="button"
-          onClick={submit}
-          disabled={loading || !name.trim() || !finalKey || count === 0}
+          onClick={() => void submit()}
+          disabled={submitting || !name.trim() || !finalKey || count === 0}
         >
           Export {count > 0 ? count : ""}
         </Button>

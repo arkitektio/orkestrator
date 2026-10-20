@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const notifications = vi.fn();
-const cancel = vi.fn();
+const cancel = vi.fn(() => Promise.resolve({}));
 const myTasks = vi.fn();
 
 // Exits wait for an animation that never finishes under fake timers, and the
@@ -48,6 +48,7 @@ vi.mock("framer-motion", async () => {
 vi.mock("../../lib/taskNotifications", () => ({
   useTaskNotifications: () => notifications(),
   dismiss: vi.fn(),
+  dismissAll: vi.fn(),
 }));
 // The generated module drags in the Apollo client and `window.electron`.
 vi.mock("@/rekuest/api/graphql", () => ({
@@ -95,7 +96,7 @@ vi.mock("../task/YieldDisplay", () => ({
   DynamicYieldDisplay: () => <div>yield</div>,
 }));
 
-import { dismiss } from "../../lib/taskNotifications";
+import { dismiss, dismissAll } from "../../lib/taskNotifications";
 import { TaskNotificationStack } from "./TaskNotificationStack";
 
 /**
@@ -279,6 +280,13 @@ describe("the island as a whole", () => {
     expect(
       screen.getByRole("button", { name: "Show fewer tasks" }),
     ).toBeTruthy();
+  });
+
+  it("closes every task from the stacked edge", () => {
+    show(["a", "b", "c", "d", "e"].map((id) => makeTask(id)));
+    render(<TaskNotificationStack />);
+    fireEvent.click(screen.getByRole("button", { name: "Close all tasks" }));
+    expect(dismissAll).toHaveBeenCalledTimes(1);
   });
 });
 

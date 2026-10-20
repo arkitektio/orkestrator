@@ -22,7 +22,7 @@ type Values = { name: string; description: string; kind: CategoryKind; parent: s
 export const CreateCategoryForm = (props: { parent?: string; kind?: CategoryKind }) => {
   const [create, { loading }] = useCreateCategoryMutation({ refetchQueries: [ListCategoriesDocument] });
   const [searchCategories] = useSearchCategoriesLazyQuery();
-  const submit = useGraphQLDialog(create, { successMessage: "Category created" });
+  const submit = useGraphQLDialog(create, { errorTitle: "Couldn't create the category" });
 
   const form = useForm<Values>({
     defaultValues: {

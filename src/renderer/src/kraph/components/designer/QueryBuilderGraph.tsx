@@ -1,4 +1,5 @@
 import { Button } from "@/core/ui/button";
+import { reportError } from "@/core/notify";
 import { Checkbox } from "@/core/ui/checkbox";
 import {
   Dialog,
@@ -936,7 +937,7 @@ export const QueryBuilderGraph = ({
         }
       }
     } catch (error) {
-      console.error("Failed to run query:", error);
+      reportError(error, "Couldn't run the query");
     } finally {
       setIsRunning(false);
     }

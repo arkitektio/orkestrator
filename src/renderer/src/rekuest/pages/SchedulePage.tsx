@@ -2,7 +2,7 @@ import { useDialog } from "@/core/dialogs/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { RekuestAction, RekuestAgent, RekuestSchedule } from "@/core/linkers";
-import { toast } from "@/core/notify";
+import { reportErrorAs, toast } from "@/core/notify";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { PageAction } from "@/core/ui/page-action";
 import Timestamp from "@/core/ui/timestamp";
@@ -20,6 +20,7 @@ import {
   ArgumentsRow,
   FromRow,
   RuleHeader,
+  PolicyRow,
   RuleRow,
   RuleRows,
   UntilRow,
@@ -36,8 +37,8 @@ export const SchedulePage = asDetailQueryRoute(useScheduleQuery, ({ data, refetc
   const [runNow, { loading: starting }] = useTriggerScheduleMutation();
 
   const setEnabled = (enabled: boolean) =>
-    update({ variables: { input: { id: schedule.id, enabled } } }).catch((error) =>
-      toast.error(`Could not ${enabled ? "resume" : "pause"}: ${error.message}`),
+    update({ variables: { input: { id: schedule.id, enabled } } }).catch(
+      reportErrorAs(`Couldn't ${enabled ? "resume" : "pause"} the schedule`),
     );
 
   const startNow = () =>
@@ -46,7 +47,7 @@ export const SchedulePage = asDetailQueryRoute(useScheduleQuery, ({ data, refetc
         toast.success(`${schedule.name} started`);
         refetch();
       },
-      (error) => toast.error(`Could not start it: ${error.message}`),
+      reportErrorAs("Couldn't start the schedule"),
     );
 
   // The next slots of its timing, as the server reads it: what the timing
@@ -176,6 +177,7 @@ export const SchedulePage = asDetailQueryRoute(useScheduleQuery, ({ data, refetc
             )}
           </RuleRow>
           <ArgumentsRow action={schedule.action.id} args={schedule.args} />
+          <PolicyRow rule={schedule} />
           <RuleRow label="Where">
             {schedule.agent ? (
               <RekuestAgent.DetailLink object={schedule.agent} className="hover:underline">

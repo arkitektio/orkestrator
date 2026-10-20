@@ -1,4 +1,4 @@
-import { useGraphQlFormDialog } from "@/core/dialogs/FormDialog";
+import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
 import { StringField } from "@/core/forms/StringField";
 import { Button } from "@/core/ui/button";
 import { DialogFooter } from "@/core/ui/dialog";
@@ -11,7 +11,10 @@ export const UpdateComputeNodeForm = (props: {
 }) => {
   const [updateComputeNode] = useUpdateDeviceMutation();
 
-  const update = useGraphQlFormDialog(updateComputeNode);
+  // The new name shows on the page behind the sheet: no success toast.
+  const update = useGraphQLDialog(updateComputeNode, {
+    errorTitle: "Couldn't rename the device",
+  });
 
   const form = useForm<UpdateDeviceMutationVariables["input"]>({
     defaultValues: {

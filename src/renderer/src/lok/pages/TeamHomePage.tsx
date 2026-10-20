@@ -8,8 +8,9 @@ import { PageAction } from "@/core/ui/page-action";
 import { useLokResolve } from "@/core/datalayer/hooks/useResolve";
 import { useState } from "react";
 import { ADMIN_ROLE, useHasRoles } from "@/core/connection/roles";
-import { toast } from "@/core/notify";
 import { useDialog } from "@/core/dialogs/registry";
+import { useCopyToClipboard } from "@/core/ui/copy-button";
+import { Check, Copy } from "lucide-react";
 import {
   MembershipRequestFragment,
   OrganizationFragment,
@@ -23,6 +24,23 @@ import { useLokImageUpload } from "../hooks/useLokImageUpload";
 import MemberCard from "../components/cards/MemberCard";
 import { CreateInviteDialog } from "../dialogs/CreateInviteDialog";
 import { HomePageStatisticsSidebar } from "../sidebars/HomePageStatisticsSidebar";
+
+/** An invite's link; a click copies it and the icon flips to a check. */
+const InviteLink = ({ url }: { url: string }) => {
+  const { copy, copied } = useCopyToClipboard();
+  const Icon = copied ? Check : Copy;
+  return (
+    <button
+      type="button"
+      title={copied ? "Copied" : "Copy invite link"}
+      onClick={() => void copy(url)}
+      className="flex w-full items-center gap-2 rounded bg-muted/50 px-2 py-1 text-left font-mono transition-colors hover:bg-muted"
+    >
+      <span className="min-w-0 flex-1 truncate">{url}</span>
+      <Icon className="size-3 shrink-0 text-muted-foreground" />
+    </button>
+  );
+};
 
 /** The organization's invites, compact: status, link, who took it. */
 const Invites = ({ invites }: { invites: OrganizationFragment["invites"] }) => {
@@ -43,18 +61,7 @@ const Invites = ({ invites }: { invites: OrganizationFragment["invites"] }) => {
               </span>
             )}
           </div>
-          <button
-            type="button"
-            title="Copy invite link"
-            onClick={() =>
-              navigator.clipboard
-                .writeText(invite.inviteUrl)
-                .then(() => toast.success("Invite link copied"))
-            }
-            className="block w-full truncate rounded bg-muted/50 px-2 py-1 text-left font-mono transition-colors hover:bg-muted"
-          >
-            {invite.inviteUrl}
-          </button>
+          <InviteLink url={invite.inviteUrl} />
         </div>
       ))}
     </div>

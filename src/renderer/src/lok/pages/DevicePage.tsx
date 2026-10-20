@@ -1,12 +1,11 @@
 import { Arkitekt } from "@/core/connection/arkitekt/host";
 import { LOK_HELP } from "../help";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { FormSheet } from "@/core/dialogs/FormDialog";
 import { LokDevice } from "@/core/linkers";
 import { PageSections } from "@/core/layout/PageSections";
+import { SheetButton } from "@/core/ui/sheetbutton";
 import { Pencil } from "lucide-react";
 import { useGetDeviceQuery } from "../api/graphql";
-import { UpdateComputeNodeForm } from "../forms/UpdateComputeNodeForm";
 
 export const ComputeNodePage = asDetailQueryRoute(useGetDeviceQuery, ({ data }) => {
 
@@ -19,13 +18,16 @@ export const ComputeNodePage = asDetailQueryRoute(useGetDeviceQuery, ({ data }) 
       actions={<LokDevice.Actions object={data?.device} />}
       title={data?.device?.name || "Untitled Compute Node"}
       pageActions={
-        <FormSheet
-          trigger={
-            <Pencil className="inline-block ml-2 w-4 h-4 transition-opacity cursor-pointer" />
-          }
+        <SheetButton
+          alwaysShow
+          name="updatedevice"
+          variant="ghost"
+          size="icon"
+          title="Rename device"
+          dialogProps={{ computeNode: data.device }}
         >
-          <UpdateComputeNodeForm computeNode={data?.device} />
-        </FormSheet>
+          <Pencil className="w-4 h-4" />
+        </SheetButton>
       }
     >
       <div className="grid grid-cols-6">

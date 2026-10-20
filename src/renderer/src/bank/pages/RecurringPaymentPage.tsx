@@ -3,7 +3,7 @@ import { ListRender } from "@/core/layout/ListRender";
 import { PageAction } from "@/core/ui/page-action";
 import { BankAccount, BankRecurring } from "@/bank/linkers";
 import { Check, EyeOff } from "lucide-react";
-import { toast } from "@/core/notify";
+import { reportBankErrorAs } from "../errors";
 import { RecurringStatus, useGetRecurringPaymentQuery, useSetRecurringStatusMutation } from "../api/graphql";
 import TransactionCard from "../components/cards/TransactionCard";
 import { InfoList } from "@/core/ui/info-list";
@@ -15,7 +15,7 @@ const RecurringPaymentPage = asDetailQueryRoute(useGetRecurringPaymentQuery, ({ 
   const payment = data.recurringPayment;
   const [setStatus, { loading }] = useSetRecurringStatusMutation();
   const change = (status: RecurringStatus) =>
-    setStatus({ variables: { input: { id: payment.id, status } } }).catch((e: Error) => toast.error(e.message));
+    setStatus({ variables: { input: { id: payment.id, status } } }).catch(reportBankErrorAs("Couldn't change the status"));
 
   return (
     <BankRecurring.ModelPage

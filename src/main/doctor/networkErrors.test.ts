@@ -5,6 +5,7 @@ import {
   errorCode,
   errorMessage,
   looksLikeNotTls,
+  meshDialCode,
 } from "./networkErrors";
 
 describe("errnoToOutcome", () => {
@@ -21,6 +22,19 @@ describe("errnoToOutcome", () => {
     [undefined, "unknown"],
   ])("%s → %s", (code, expected) => {
     expect(errnoToOutcome(code as string | undefined)).toBe(expected);
+  });
+});
+
+describe("meshDialCode", () => {
+  it.each([
+    ["connect ECONNREFUSED 127.0.0.1:41234", "MESH_PROXY_DOWN"],
+    ["read ECONNRESET", "MESH_PROXY_DOWN"],
+    ["Socks5 proxy rejected connection - Failure", "MESH_DIAL_FAILED"],
+    ["Socks5 proxy rejected connection - HostUnreachable", "MESH_DIAL_FAILED"],
+    ["Socket closed", "MESH_DIAL_FAILED"],
+    ["Proxy connection timed out", "DOCTOR_TIMEOUT"],
+  ])("%s → %s", (message, expected) => {
+    expect(meshDialCode(message)).toBe(expected);
   });
 });
 

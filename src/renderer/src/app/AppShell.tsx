@@ -8,6 +8,7 @@ import { Arkitekt } from "./Arkitekt";
 import { AppRoutes } from "./AppRoutes";
 import { NotConnected } from "./components/fallbacks/NotConnected";
 import { QuietPage } from "../core/layout/fallbacks/QuietPage";
+import { ConnectingPage } from "@/core/layout/fallbacks/ConnectingPage";
 import { PrivateNavigationBar } from "./components/navigation/PrivateNavigationBar";
 import { ShellSignInNotice } from "../core/connection/ui/ShellSignInNotice";
 
@@ -50,8 +51,8 @@ export const AppShell = () => {
       <ShellSignInNotice />
 
       <Arkitekt.Guard
-        bootingFallback={<QuietPage />}
-        connectingFallback={<QuietPage />}
+        bootingFallback={<ConnectingPage />}
+        connectingFallback={<ConnectingPage />}
         // Inside the shell, "not connected" means the auto-login failed — the
         // notice above already says so, and dropping the welcome screen into
         // the content card would be the flicker again, one level down.

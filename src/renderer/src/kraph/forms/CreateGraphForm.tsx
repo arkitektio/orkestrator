@@ -19,7 +19,7 @@ const TForm = (props: { onSuccess?: (data: CreateGraphMutation) => void }) => {
   });
 
   const submit = useGraphQLDialog(add, {
-    successMessage: "Graph created",
+    errorTitle: "Couldn't create the graph",
     onSuccess: (data) => {
       if (data) {
         props.onSuccess?.(data);

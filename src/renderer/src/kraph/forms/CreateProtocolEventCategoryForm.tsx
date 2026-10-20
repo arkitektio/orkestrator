@@ -1,4 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLListSearchField } from "@/core/forms/GraphQLListSearchField";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
 import { StringField } from "@/core/forms/StringField";
@@ -32,15 +32,15 @@ export const TForm = (props: { graph: string }) => {
     refetchQueries: ["GetGraph"],
   });
 
-  const dialog = useDialog();
-
-  const onUpdate = (data) => {
-    create({
-      variables: {
-        input: data,
-      },
-    }).then(() => dialog.closeDialog());
-  };
+  const { submit: onUpdate, submitting } = useDialogSubmit(
+    (data: CreateProtocolEventCategoryMutationVariables["input"]) =>
+      create({
+        variables: {
+          input: data,
+        },
+      }),
+    { errorTitle: "Couldn't create the protocol event category" },
+  );
 
   const myform = useForm<CreateProtocolEventCategoryMutationVariables["input"]>(
     {
@@ -111,7 +111,7 @@ export const TForm = (props: { graph: string }) => {
               description="Project claims already made under this word into the graph now, instead of waiting for the next reproject."
             />
           </div>
-          <Button type="submit" variant={"default"}>
+          <Button type="submit" variant={"default"} disabled={submitting}>
             Save
           </Button>
         </div>

@@ -500,7 +500,7 @@ const TForm = (props: Partial<CreateEntityCategoryFormValues> & { onSuccess?: (d
   const [rulesError, setRulesError] = useState<string | null>(null);
 
   const submit = useGraphQLDialog(add, {
-    successMessage: "Entity Category created",
+    errorTitle: "Couldn't create the entity category",
     onSuccess: (data) => {
       if (data) {
         onSuccess?.(data);

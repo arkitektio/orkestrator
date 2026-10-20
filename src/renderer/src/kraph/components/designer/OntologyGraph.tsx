@@ -1,3 +1,4 @@
+import { reportError } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import {
   GraphFragment,
@@ -65,16 +66,18 @@ export const OntologyGraph = ({ graph }: { graph: GraphFragment }) => {
       .map(nodeToNodePositionInput)
       .filter((n) => n != null);
 
-    await updateGraphVisual({
-      variables: {
-        input: {
-          id: graph.id,
-          nodePositions,
+    try {
+      await updateGraphVisual({
+        variables: {
+          input: {
+            id: graph.id,
+            nodePositions,
+          },
         },
-      },
-    });
-
-    console.log("Graph visuals saved successfully");
+      });
+    } catch (error) {
+      reportError(error, "Couldn't save the layout");
+    }
   };
 
   const onPaneClick = (event: React.MouseEvent) => {

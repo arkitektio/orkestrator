@@ -59,6 +59,14 @@ describe("stageOf", () => {
     expect(result.stages.tls).toEqual({ state: "skipped", detail: "mesh tunnel" });
   });
 
+  it("names a mesh dial failure in words, not by its code", () => {
+    const viaMesh = (code: string) =>
+      stageOf(probe({ viaMeshProxy: 1080, tcp: { attempted: true, ok: false, ms: 3, code, message: "Socks5 proxy rejected connection - Failure" } }));
+    expect(viaMesh("MESH_DIAL_FAILED").stages.tcp.detail).toBe("mesh refused 3ms");
+    expect(viaMesh("MESH_PROXY_DOWN").stages.tcp.detail).toBe("mesh proxy down 3ms");
+    expect(viaMesh("ECONNRESET").stages.tcp.detail).toBe("ECONNRESET 3ms");
+  });
+
   it("passes a self-signed certificate but says so, and fails an expired one", () => {
     expect(stageOf(probe({ tls: { attempted: true, ok: false, selfSigned: true } })).stages.tls).toEqual({ state: "ok", detail: "self-signed" });
     expect(stageOf(probe({ tls: { attempted: true, ok: false, expired: true } })).firstFailure).toBe("tls");

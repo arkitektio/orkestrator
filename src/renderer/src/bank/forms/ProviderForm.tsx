@@ -189,7 +189,8 @@ const NewProvider = ({ kind, onBack }: { kind: ProviderKindFragment; onBack?: ()
   const [createEnableBanking, eb] = useCreateEnableBankingProviderMutation({ refetchQueries });
   const [createScalable, scalable] = useCreateScalableProviderMutation({ refetchQueries });
   const loading = eb.loading || scalable.loading;
-  const options = { successMessage: `${kind.label} set up` };
+  // Opens the new provider: that is the confirmation.
+  const options = { errorTitle: `Couldn't set up ${kind.label}` };
   const submitEnableBanking = useGraphQLDialog(createEnableBanking, {
     ...options,
     onSuccess: (data) => data && navigate(BankProvider.linkBuilder(data.createEnableBankingProvider.id)),
@@ -317,8 +318,8 @@ const EditProvider = ({ provider }: { provider: BankProviderFragment }) => {
   const [updateEnableBanking, eb] = useUpdateEnableBankingProviderMutation();
   const [updateProvider, any] = useUpdateProviderMutation();
   const loading = eb.loading || any.loading;
-  const submitEnableBanking = useGraphQLDialog(updateEnableBanking, { successMessage: "Provider saved" });
-  const submitProvider = useGraphQLDialog(updateProvider, { successMessage: "Provider saved" });
+  const submitEnableBanking = useGraphQLDialog(updateEnableBanking, { errorTitle: "Couldn't save the provider" });
+  const submitProvider = useGraphQLDialog(updateProvider, { errorTitle: "Couldn't save the provider" });
 
   const form = useForm<Values>({
     defaultValues: {

@@ -7,6 +7,7 @@ import { CreateOrganizationForm } from "./dialogs/CreateOrganization";
 import { NotifyDialog } from "./dialogs/NotifyDialog";
 import { RevokeMandateDialog } from "./dialogs/RevokeMandateDialog";
 import { CreateServiceInstanceForm } from "./forms/CreateServiceInstance";
+import { UpdateComputeNodeForm } from "./forms/UpdateComputeNodeForm";
 import { UpdateServiceInstanceForm } from "./forms/UpdateServiceInstanceForm";
 
 /**
@@ -21,6 +22,7 @@ export const LOK_DIALOGS = {
   createorganization: CreateOrganizationForm,
   createserviceinstance: needsRoles(ADMIN_ROLE, CreateServiceInstanceForm),
   updateserviceinstance: needsRoles(ADMIN_ROLE, UpdateServiceInstanceForm),
+  updatedevice: UpdateComputeNodeForm,
   reportclientbug: ReportClientBugDialog,
   revokemandate: RevokeMandateDialog,
 };

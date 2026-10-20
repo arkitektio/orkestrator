@@ -9,7 +9,7 @@ import { CreateProjectMutation, CreateProjectMutationVariables, useCreateProject
 export const CreateProjectForm = (props: { onSuccess?: (data: CreateProjectMutation | null | undefined) => void }) => {
   const [add] = useCreateProjectMutation();
 
-  const submit = useGraphQLDialog(add, { successMessage: "Project created", onSuccess: props.onSuccess });
+  const submit = useGraphQLDialog(add, { errorTitle: "Couldn't create the project", onSuccess: props.onSuccess });
 
   const form = useForm<CreateProjectMutationVariables["input"]>({
     defaultValues: {

@@ -11,7 +11,7 @@ import {
 } from "@/core/ui/alert-dialog";
 import { Button } from "@/core/ui/button";
 import { Eraser } from "lucide-react";
-import { toast } from "@/core/notify";
+import { reportErrorAs, toast } from "@/core/notify";
 import { useCleanupActionsMutation } from "../api/graphql";
 
 /**
@@ -36,7 +36,7 @@ export const ActionsManageSidebar = () => {
             : "Nothing to clean up",
         );
       })
-      .catch((error) => toast.error(`Cleanup failed: ${error.message}`));
+      .catch(reportErrorAs("Couldn't clean up the actions"));
 
   return (
     <div className="p-4 space-y-4">

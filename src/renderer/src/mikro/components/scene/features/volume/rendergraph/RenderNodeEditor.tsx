@@ -77,7 +77,7 @@ import {
 import { resolvePhasorAxis } from "../../../platform/model/dims";
 import { keptPositions, pinnedIndex } from "@/mikro/lib/lenses/lensSelection";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import { resolvePhasorScale } from "../../../platform/model/phasor";
 import { PhasorPlot } from "../PhasorPlot";
 import { useBrickStore } from "../../bricks/store/brickSlice";
@@ -1272,9 +1272,7 @@ export const useRenderGraphEditor = (layer: LayerState): RenderGraphEditor => {
       } catch (error) {
         // Stay dirty: nothing was saved, and the graph the user built is still
         // what the viewer shows.
-        toast.error(
-          `Could not save the render graph: ${error instanceof Error ? error.message : String(error)}`,
-        );
+        reportError(error, "Couldn't save the render graph");
         return;
       } finally {
         setResolving(false);
@@ -1283,9 +1281,16 @@ export const useRenderGraphEditor = (layer: LayerState): RenderGraphEditor => {
     // No channel axis: a source can only read the layer's own selection.
     const lensIdOf = (source: SourceRenderNode) =>
       lensByIndex.get(source.intensityIndex) ?? null;
-    const result = await updateLater({
-      variables: { input: { id: layer.id, renderGraph: serializeRenderGraph(root, lensIdOf) } },
-    });
+    let result;
+    try {
+      result = await updateLater({
+        variables: { input: { id: layer.id, renderGraph: serializeRenderGraph(root, lensIdOf) } },
+      });
+    } catch (error) {
+      // Stay dirty, as above.
+      reportError(error, "Couldn't save the render graph");
+      return;
+    }
     const nextGraph = result.data?.updateLayer?.renderGraph ?? layer.renderGraph;
     // Reflect the saved graph's primary channel in the (single-channel) viewer.
     const primary = primaryChannelRenderFields(nextGraph);

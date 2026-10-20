@@ -1,18 +1,20 @@
 import { ListRender } from "@/core/layout/ListRender";
 import { RekuestMaterializedBlok } from "@/core/linkers";
 import {
+  MaterializedBlokFilter,
   OffsetPaginationInput,
   useListMaterializedBloksQuery,
 } from "@/rekuest/api/graphql";
 import MaterializedBlokCard from "../cards/MaterializedBlokCard";
 
 export type Props = {
+  filters?: MaterializedBlokFilter;
   pagination?: OffsetPaginationInput;
 };
 
-const MaterializedBlokList = ({ pagination }: Props) => {
+const MaterializedBlokList = ({ filters, pagination }: Props) => {
   const { data, refetch } = useListMaterializedBloksQuery({
-    variables: pagination ? { pagination } : undefined,
+    variables: filters || pagination ? { filters, pagination } : undefined,
   });
 
   return (

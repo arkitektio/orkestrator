@@ -21,6 +21,7 @@ import {
   errorCode,
   errorMessage,
   looksLikeNotTls,
+  meshDialCode,
 } from "./networkErrors";
 
 /**
@@ -278,7 +279,7 @@ const probeTcpViaSocks = (host: string, port: number, proxyPort: number, timeout
           attempted: true,
           ok: false,
           ms: Date.now() - started,
-          code: /timed? ?out/i.test(message) ? DOCTOR_TIMEOUT_CODE : "MESH_DIAL_FAILED",
+          code: meshDialCode(message),
           message,
         });
       });

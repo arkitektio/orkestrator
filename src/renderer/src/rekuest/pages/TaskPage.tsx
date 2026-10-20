@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { Button } from "@/core/ui/button";
@@ -52,6 +53,8 @@ import {
   isResumable,
 } from "../lib/taskStatus";
 import { TaskFiredBy } from "../components/task/TaskFiredBy";
+import { HoldCard } from "../components/task/HoldCard";
+import { pendingHolds } from "../lib/holds";
 import { REKUEST_HELP } from "../help";
 
 // Only stats the main column doesn't already show — status, progress and
@@ -169,6 +172,8 @@ export const TPage = asDetailQueryRoute(
     const [resume] = useResumeMutation();
 
     const [selection, setSelection] = useState<LaneSelection>(null);
+    // What waits for a decision: this task's own hold, or a child it asked for.
+    const holds = useMemo(() => pendingHolds(data.task.events), [data.task.events]);
     const resolved = useMemo(
       () => resolveSelection(data.task, selection),
       [data.task, selection],
@@ -291,7 +296,7 @@ export const TPage = asDetailQueryRoute(
                   onClick={() =>
                     resume({
                       variables: { input: { task: data.task.id, step: false } },
-                    })
+                    }).catch(reportErrorAs("Couldn't resume the task"))
                   }
                   className="rounded-r-none"
                 >
@@ -314,7 +319,7 @@ export const TPage = asDetailQueryRoute(
                           variables: {
                             input: { task: data.task.id, step: true },
                           },
-                        })
+                        }).catch(reportErrorAs("Couldn't step the task"))
                       }
                     >
                       Step to next breakpoint
@@ -329,7 +334,9 @@ export const TPage = asDetailQueryRoute(
                 size="sm"
                 variant="outline"
                 onClick={() =>
-                  pause({ variables: { input: { task: data.task.id } } })
+                  pause({ variables: { input: { task: data.task.id } } }).catch(
+                    reportErrorAs("Couldn't pause the task"),
+                  )
                 }
               >
                 Pause
@@ -340,7 +347,7 @@ export const TPage = asDetailQueryRoute(
             {isCancelable(data.task) && (
               <PageAction
                 priority={20}
-                onClick={() => cancel(data.task.id)}
+                onClick={() => cancel(data.task.id).catch(reportErrorAs("Couldn't cancel the task"))}
                 variant={"destructive"}
                 size={"sm"}
               >
@@ -353,7 +360,7 @@ export const TPage = asDetailQueryRoute(
                 onClick={() =>
                   interrupt({
                     variables: { input: { task: data.task.id } },
-                  })
+                  }).catch(reportErrorAs("Couldn't interrupt the task"))
                 }
                 variant={"destructive"}
                 size={"sm"}
@@ -379,6 +386,13 @@ export const TPage = asDetailQueryRoute(
           <div className="shrink-0 px-4 pt-3">
             <TaskStatusHero task={data.task} />
           </div>
+          {holds.length > 0 && (
+            <div className="flex shrink-0 flex-col gap-2 px-4 pt-3">
+              {holds.map((hold) => (
+                <HoldCard key={hold.task} hold={hold} />
+              ))}
+            </div>
+          )}
           {stageOpen ? (
             <ResizablePanelGroup
               direction="vertical"

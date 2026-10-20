@@ -6,6 +6,7 @@ import { RekuestAgent } from "@/core/linkers";
 
 import { ListAgentFragment } from "@/rekuest/api/graphql";
 import { AgentLogo } from "@/rekuest/components/logo/BlokLogo";
+import { agentDescriptors } from "@/rekuest/smart/agent";
 
 interface Props {
   item: ListAgentFragment;
@@ -13,8 +14,13 @@ interface Props {
 }
 
 const TheCard = ({ item }: Props) => {
+  // What actions match it by: its supervisor's take only the agents they supervise.
+  const object = React.useMemo(() => {
+    const descriptors = agentDescriptors(item);
+    return descriptors ? { ...item, descriptors } : item;
+  }, [item]);
   return (
-    <RekuestAgent.Smart object={item} hover>
+    <RekuestAgent.Smart object={object} hover>
       <Card
         className={cn(
           "group aspect-square flex flex-col relative overflow-visible",

@@ -1,4 +1,5 @@
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import type { Point } from "@/core/map/PointPicker";
 import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
@@ -24,8 +25,6 @@ const REFETCH = [ListPlacesDocument, GetPlaceDocument];
 
 type PlaceAt = { lat: number; lon: number; radius?: number };
 
-const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
-
 const PlaceFields = ({ place, at }: { place?: PlaceFragment; at?: PlaceAt }) => {
   const { closeDialog } = useDialog();
   const [name, setName] = useState(place?.name ?? "");
@@ -38,10 +37,10 @@ const PlaceFields = ({ place, at }: { place?: PlaceFragment; at?: PlaceAt }) => 
   const [sync, { loading }] = useSyncPlacesMutation({ refetchQueries: REFETCH });
   const ready = name.trim() !== "" && pin != null;
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!ready || !pin) return;
-    try {
+  // The place shows up in the list and on the map: closing is the
+  // confirmation. Only a phone's newer copy winning is said.
+  const { submit: save } = useDialogSubmit(
+    async (point: Point) => {
       const { data } = await sync({
         variables: {
           deleted: [],
@@ -50,8 +49,8 @@ const PlaceFields = ({ place, at }: { place?: PlaceFragment; at?: PlaceAt }) => 
               // An edit keeps the phone-minted key; a new place gets its own.
               clientId: place?.clientId ?? crypto.randomUUID(),
               name: name.trim(),
-              lat: pin.latitude,
-              lon: pin.longitude,
+              lat: point.latitude,
+              lon: point.longitude,
               radius,
               updatedAt: new Date().toISOString(),
             },
@@ -60,11 +59,13 @@ const PlaceFields = ({ place, at }: { place?: PlaceFragment; at?: PlaceAt }) => 
       });
       // Last write wins: a phone's newer edit beats this one and comes back.
       if (data?.syncPlaces.stale.length) toast.info("A phone changed this place more recently; its version was kept");
-      else toast.success(place ? "Place saved" : "Place added");
-      closeDialog();
-    } catch (error) {
-      toast.error("Could not save the place: " + errorText(error));
-    }
+    },
+    { errorTitle: place ? "Couldn't save the place" : "Couldn't add the place" },
+  );
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (ready && pin) save(pin);
   };
 
   return (

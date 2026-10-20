@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { PageAction } from "@/core/ui/page-action";
 import { RekuestDashboard } from "@/core/linkers";
 import { useCreateDashboardMutation } from "../api/graphql";
@@ -24,7 +25,7 @@ const Page = () => {
                   name: "New Dashboard",
                 },
               },
-            });
+            }).catch(reportErrorAs("Couldn't create the dashboard"));
           }}
         >
           Create Dashboard

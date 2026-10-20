@@ -9,7 +9,11 @@ import { ConnectionDoctorSheet } from "@/core/connection/ui/doctor/ConnectionDoc
 import { endpointToProbeTargets } from "@/core/connection/arkitekt/doctor/targets";
 import { discover } from "@/core/connection/arkitekt/fakts/discover";
 import { popOutWindowOpen } from "@/core/connection/arkitekt/fakts/popout";
-import { AlertCircle, ExternalLink, Loader2, Plus, X } from "lucide-react";
+import { endSession, startSession } from "@/core/connection/progress/store";
+import { useSessionProgress } from "@/core/connection/progress/hooks";
+import { describeSessionStep } from "@/core/connection/progress/describe";
+import { GrantProgress } from "@/core/connection/ui/progress/GrantProgress";
+import { AlertCircle, Loader2, Plus } from "lucide-react";
 import React from "react";
 
 export type AddProfileButtonProps = {
@@ -51,6 +55,10 @@ export const AddProfileButton = ({
       setIsConnecting(true);
       setConnectionError(null);
       setVerificationUri(null);
+      startSession("granting", "discover", {
+        deployment: DEFAULT_COORDINATION_SERVER_HOST,
+        endpointUrl: DEFAULT_COORDINATION_SERVER_URL,
+      });
 
       const endpoint = await discover({
         url: DEFAULT_COORDINATION_SERVER_URL,
@@ -76,6 +84,9 @@ export const AddProfileButton = ({
         controllerRef.current = null;
         setIsConnecting(false);
         setVerificationUri(null);
+        // A grant that got going ends its narration when it settles; one that
+        // failed before it started (discovery) ends it here.
+        endSession();
       }
     }
   };
@@ -89,25 +100,19 @@ export const AddProfileButton = ({
     );
   };
 
-  /** While the grant waits on the browser: a way back to it, and a way out. */
+  /** While the grant runs: its steps, the way back to the browser, and a way out. */
   const waiting = isConnecting && (
-    <div className="flex items-center justify-center gap-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleReopen}
-        disabled={!verificationUri}
-        className="text-muted-foreground"
-      >
-        <ExternalLink className="h-3.5 w-3.5" />
-        Open browser again
-      </Button>
-      <Button variant="ghost" size="sm" onClick={handleCancel} className="text-muted-foreground">
-        <X className="h-3.5 w-3.5" />
-        Cancel
-      </Button>
-    </div>
+    <GrantProgress
+      onReopen={handleReopen}
+      canReopen={!!verificationUri}
+      onCancel={handleCancel}
+      className="w-full max-w-sm"
+    />
   );
+  const session = useSessionProgress();
+  /** The running step in a few words, for the button and its tooltip. */
+  const busyLabel =
+    session?.kind === "granting" ? `${describeSessionStep(session.step, session)}…` : "Signing in…";
 
   const label = `Add an account on ${DEFAULT_COORDINATION_SERVER_HOST}`;
 
@@ -145,7 +150,7 @@ export const AddProfileButton = ({
           {isConnecting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Waiting for approval in your browser…
+              {busyLabel}
             </>
           ) : (
             <>
@@ -184,7 +189,7 @@ export const AddProfileButton = ({
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          {isConnecting ? "Waiting for approval in your browser…" : label}
+          {isConnecting ? busyLabel : label}
         </TooltipContent>
       </Tooltip>
 

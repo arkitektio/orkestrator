@@ -1,4 +1,5 @@
 import { AutoHideTitleBar } from "@/app/components/chrome/AutoHideTitleBar";
+import { ToastIsland } from "@/core/notify";
 import { UpdateIsland } from "@/core/updates/UpdateIsland";
 import { dragZoneDoubleClick, getChromeMode } from "@/core/util/platform";
 import { cn } from "@/core/util/utils";
@@ -53,10 +54,12 @@ export const WelcomeLayout = ({ children }: WelcomeLayoutProps) => {
         {children}
       </div>
 
-      {/* The one island that belongs here: an update downloads whether or not
-          anyone is signed in, and there is no rail to put it in. Same component
-          and same store as in the rail — only the container differs. */}
+      {/* The islands that belong here: toasts (a sign-in can fail), and an
+          update, which downloads whether or not anyone is signed in. There is
+          no rail to put them in. Same components and same stores as in the
+          rail — only the container differs. */}
       <div className="app-no-drag pointer-events-none fixed bottom-2 left-2 z-50 w-72 [&>*]:pointer-events-auto">
+        <ToastIsland />
         <UpdateIsland />
       </div>
     </div>

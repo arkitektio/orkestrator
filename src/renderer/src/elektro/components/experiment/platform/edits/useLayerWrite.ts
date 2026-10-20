@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import {
   useUpdateEventsLayerMutation,
   useUpdateLayerMutation,
@@ -108,11 +108,7 @@ export const useLayerWrite = () => {
         return true;
       } catch (error) {
         rollback();
-        toast.error(
-          `Could not save the change to ${layer.label}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-        );
+        reportError(error, `Couldn't save the change to ${layer.label}`);
         return false;
       }
     },

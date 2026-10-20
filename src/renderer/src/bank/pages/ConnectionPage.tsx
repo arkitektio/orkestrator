@@ -21,7 +21,7 @@ import AccountCard from "../components/cards/AccountCard";
 import { ConnectionStatusBadge } from "../components/ConnectionStatus";
 import { InfoList } from "@/core/ui/info-list";
 import { ProblemBanner, useRelink } from "../components/ProblemBanner";
-import { toastText } from "../errors";
+import { reportBankErrorAs } from "../errors";
 import { formatDay } from "../format";
 import { syncBudget } from "../sync";
 import { BANK_HELP } from "../help";
@@ -124,11 +124,8 @@ const ConnectionPage = asDetailQueryRoute(useGetBankConnectionQuery, ({ data }) 
 
   const cancelLogin = (state: string) =>
     cancel({ variables: { state } })
-      .then(() => {
-        toast.success("Login cancelled");
-        navigate("/bank/connections", { replace: true });
-      })
-      .catch((e) => toast.error(toastText(e)));
+      .then(() => navigate("/bank/connections", { replace: true }))
+      .catch(reportBankErrorAs("Couldn't cancel the login"));
 
   return (
     <BankConnection.ModelPage
@@ -147,7 +144,7 @@ const ConnectionPage = asDetailQueryRoute(useGetBankConnectionQuery, ({ data }) 
               onClick={() =>
                 sync()
                   .then((r) => toast.success(`Synced ${r.data?.syncConnection.length ?? 0} accounts`))
-                  .catch((e) => toast.error(toastText(e, connection)))
+                  .catch(reportBankErrorAs("Couldn't sync the accounts", connection))
               }
             >
               Sync all

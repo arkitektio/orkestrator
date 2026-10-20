@@ -1,10 +1,16 @@
 import { RekuestMaterializedBlok } from "@/core/linkers";
+import { BlokOriginToggle, useBlokOrigin } from "../components/BlokOriginToggle";
 import MaterializedBlokList from "../components/lists/MaterializedBlokList";
 import { REKUEST_HELP } from "../help";
 
 const Page = () => {
+  const { origin, setOrigin, provided } = useBlokOrigin();
   return (
-    <RekuestMaterializedBlok.ListPage help={REKUEST_HELP.materializedBloks} title={"Materialized Bloks"}>
+    <RekuestMaterializedBlok.ListPage
+      help={REKUEST_HELP.materializedBloks}
+      title={"Materialized Bloks"}
+      pageActions={<BlokOriginToggle origin={origin} setOrigin={setOrigin} />}
+    >
       <div className="p-6">
         <div className="col-span-4 mb-3 grid gap-4 md:grid-cols-2 md:items-center md:gap-8 xl:gap-20">
           <div>
@@ -13,12 +19,13 @@ const Page = () => {
             </h1>
             <p className="mt-3 text-xl text-muted-foreground">
               Materialized bloks are deployed instances of a blok bound into a dashboard
-              with concrete agent mappings.
+              with concrete agent mappings. An agent keeps its own for the bloks its
+              app provides.
             </p>
           </div>
         </div>
 
-        <MaterializedBlokList />
+        <MaterializedBlokList filters={provided === undefined ? undefined : { provided }} />
       </div>
     </RekuestMaterializedBlok.ListPage>
   );

@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { ButtonGroup } from "@/core/ui/button-group";
 import {
@@ -59,7 +60,10 @@ export const SceneModeControls = () => {
   const preferredView = useSceneStore((state) => state.preferredView);
   const { savePreferredView, saving } = useScenePreferencesEditor();
   const isDefaultView = preferredView === displayModeToPreferredView(displayMode);
-  const onPinView = () => savePreferredView(displayModeToPreferredView(displayMode));
+  const onPinView = () =>
+    void savePreferredView(displayModeToPreferredView(displayMode)).catch(
+      reportErrorAs("Couldn't pin the view"),
+    );
 
   const nextDisplayMode = displayMode === "2D" ? "3D" : "2D";
 

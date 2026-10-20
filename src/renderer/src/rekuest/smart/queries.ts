@@ -46,14 +46,22 @@ export const shortcutsVariables = (
   pagination: { limit: options.limit ?? SMART_SHORTCUT_LIMIT },
 });
 
+/**
+ * `app` keeps only that app's actions, `exceptApp` drops them: a supervised
+ * agent's supervisor actions are listed under Supervisor, so Run leaves them out.
+ */
+export type ActionScopeOptions = { collection?: string; app?: string; exceptApp?: string };
+
 export const actionsVariables = (
   demands: PortDemandInput[],
-  options: SearchOptions & { collection?: string } = {},
+  options: SearchOptions & ActionScopeOptions = {},
 ): AllPrimaryActionsQueryVariables => ({
   filters: {
     demands,
     ...searchField(options.search),
     ...(options.collection ? { inCollection: options.collection } : {}),
+    ...(options.app ? { appIdentifier: options.app } : {}),
+    ...(options.exceptApp ? { NOT: { appIdentifier: options.exceptApp } } : {}),
   },
   ordering: RUNNABLE_FIRST_ACTION_ORDERING,
   pagination: { limit: options.limit ?? SMART_ACTION_LIMIT },

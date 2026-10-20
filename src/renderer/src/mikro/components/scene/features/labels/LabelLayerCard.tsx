@@ -1,3 +1,4 @@
+import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import { Eye, EyeOff, Save, Shapes, Spline, Trash2 } from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
@@ -321,9 +322,8 @@ export const LabelLayerCard = memo(
           }
           setDirty(false);
         })
-        .catch((error) => {
-          console.warn("[label] could not save the layer:", error);
-        });
+        // Still dirty, so Save stays offered.
+        .catch(reportErrorAs("Couldn't save the layer"));
     }, [layerId, foldRender, updateLabelLayer, registry]);
 
     /** Memoized because it crosses the sections' memo boundary as an object. */

@@ -73,6 +73,7 @@ export const REKUEST_HELP = {
       tips={[
         <>Running an action from an agent uses exactly that app’s implementation, instead of letting the server pick one.</>,
         <>The same menu also holds <b>Bounce Agent</b>, <b>Kick Agent</b>, <b>Block Agent</b> and <b>Unblock Agent</b>.</>,
+        <><b>Filter</b> → <b>By supervisor</b> keeps the agents that name an app as their supervisor, for example the plugin engine that started them.</>,
       ]}
     />
   ),
@@ -90,6 +91,7 @@ export const REKUEST_HELP = {
       tips={[
         <>The dot next to the name is green when the agent is online and red when it is offline, with the time it was last seen.</>,
         <>A <b>Blocked</b> badge means the agent has been blocked. <b>Unblock Agent</b> in the menu at the right end of the header lifts it.</>,
+        <>A <b>Supervised by</b> badge names the app that controls the agent’s lifecycle, for example the plugin engine that started its container. Its actions on the agent (stop, start, restart, …) are under <b>Supervisor</b> in the menu at the right end of the header. The agent says this about itself; the supervisor checks before it acts.</>,
       ]}
     />
   ),
@@ -140,19 +142,22 @@ export const REKUEST_HELP = {
       ]}
       tips={[
         <>An empty list means no blok has been materialized with this agent yet. Open a blok and press <b>Materialize Blok</b> to make one.</>,
+        <>For a blok its app provides, the agent keeps its own materialization, in step with its registrations.</>,
       ]}
     />
   ),
   bloks: (
     <PageHelp
-      intro="Bloks are pieces of user interface that apps provide: panels that show an agent’s state and offer its controls. They are the building blocks of dashboards."
+      intro="Bloks are pieces of user interface: panels that show an agent’s state and offer its controls. They are the building blocks of dashboards. An app’s agents provide some; the others are custom bloks people made."
       steps={[
         <>Click a blok to see a preview and where it is already in use.</>,
-        <>Open a blok and press <b>Materialize Blok</b> to connect it to your agents.</>,
-        <>Right-click a blok and choose <b>Delete Blok</b> to remove it.</>,
+        <>Press <b>Provided</b> or <b>Custom</b> in the header to see only the bloks apps provide, or only the custom ones. <b>All</b> shows both.</>,
+        <>Open a custom blok and press <b>Materialize Blok</b> to connect it to your agents.</>,
+        <>Right-click a blok an app provides and choose <b>Fork Blok</b> to make a custom copy you can change.</>,
+        <>Right-click a custom blok and choose <b>Delete Blok</b> to remove it.</>,
       ]}
       tips={[
-        <>Bloks are registered by apps. An empty list means no connected app has provided one.</>,
+        <>A provided blok carries its app’s name. It changes, and goes, with its agents’ registrations, so it can’t be changed, materialized or deleted by hand.</>,
       ]}
     />
   ),
@@ -161,13 +166,15 @@ export const REKUEST_HELP = {
       intro="One blok: a preview of its interface with demo values, what it depends on, and the materialized copies that are connected to real agents."
       steps={[
         <>Press <b>Materialize Blok</b>, choose an agent for each dependency and press <b>Submit</b> to make a working copy.</>,
+        <>For a blok an app provides, press <b>Fork Blok</b> instead, give the copy a name and press <b>Fork</b>. The new custom blok opens.</>,
         <>Click an entry in <b>Materialized Blok Index</b> to open a working copy.</>,
         <>Look at <b>Preview Workspace</b> to see what the blok looks like before connecting it.</>,
-        <>Press <b>Delete Blok</b> to remove the blok. You are taken back to the list.</>,
+        <>Press <b>Delete Blok</b> to remove a custom blok. You are taken back to the list.</>,
       ]}
       tips={[
         <>The preview is filled with demo state, not with live values from an agent.</>,
         <>A <b>Diagnostics</b> box lists problems found in the blok’s definition.</>,
+        <><b>Provided by</b> names the app whose agents provide the blok and lists those agents, with a green dot for the connected ones.</>,
       ]}
     />
   ),
@@ -263,6 +270,7 @@ export const REKUEST_HELP = {
         <>Click a materialized blok to open it and use it.</>,
         <>Right-click one and choose <b>Delete Materialized Blok</b> to remove it.</>,
         <>To make a new one, open a blok from the <b>Bloks</b> page and press <b>Materialize Blok</b>.</>,
+        <>Press <b>Provided</b> or <b>Custom</b> in the header to see only the agents’ own materializations of the bloks their app provides, or only the ones people made.</>,
       ]}
     />
   ),
@@ -282,6 +290,7 @@ export const REKUEST_HELP = {
         <>A revision number counts within one run of an agent and starts again when the agent restarts. The other agents are shown as they were at the moment of the revision.</>,
         <>A yellow notice at the top names what stops the panel from working: a part that is <b>Not bound</b> to any agent, or a bound agent that is offline.</>,
         <>In the <b>Bindings</b> tab a green dot means the agent is connected, a grey one that it is offline.</>,
+        <><b>Belongs to</b> in the <b>Bindings</b> tab names the agent that keeps this materialization, for a blok its app provides.</>,
       ]}
     />
   ),
@@ -618,12 +627,14 @@ export const REKUEST_HELP = {
         <>Click a view in the scene, or its row under <b>In this space</b>, to select it.</>,
         <>With <b>Move</b> chosen, drag the arrows to move the selected view. With <b>Turn</b> chosen, drag the ring to turn it.</>,
         <>Type into <b>X</b>, <b>Y</b>, <b>Z</b> or <b>Turn</b> in the selected row to place it exactly, in meters and degrees.</>,
+        <>With <b>Scale</b> chosen, drag a handle to make the selected view larger or smaller. Type into <b>Scale</b> in its row to set it exactly, or press <b>Fit</b> to size it like a device on a bench.</>,
         <>Press <b>Remove</b> in the selected row to take the view out of the space.</>,
         <>Press <b>View</b> in the header to go back to the live scene.</>,
       ]}
       tips={[
         <>Changes are saved automatically; there is no save button.</>,
         <><b>Snap</b> moves in steps of 5 cm and turns in steps of 15°. Switch it off to place freely.</>,
+        <>A view whose model is ten times too large or too small (one drawn in millimeters, say) is fitted when you place it. Set <b>Scale</b> to 1 to show it as it was made.</>,
         <>An app stands in a space once. Clicking another view of an app that is already placed shows it with that view instead, on the same spot.</>,
         <>While editing, clicks select and never reach a device. You can also drop an agent card onto the scene to add its 3D view.</>,
       ]}

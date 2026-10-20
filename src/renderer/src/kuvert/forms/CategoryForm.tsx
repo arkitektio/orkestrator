@@ -1,5 +1,4 @@
-import { useDialog } from "@/core/dialogs/registry";
-import { toast } from "@/core/notify";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Alert, AlertDescription } from "@/core/ui/alert";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
@@ -24,7 +23,7 @@ import {
   useUpdateCategoryMutation,
 } from "../api/graphql";
 import { CATEGORY_COLORS } from "../components/categories/CategoryDot";
-import { toastText } from "../errors";
+import { inKuvertWords } from "../errors";
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
@@ -72,7 +71,6 @@ const ColorField = ({ value, onChange }: { value: string; onChange: (color: stri
 );
 
 const Edit = ({ account, category }: { account: string; category?: CategoryFragment }) => {
-  const { closeDialog } = useDialog();
   const [name, setName] = useState(category?.name ?? "");
   const [color, setColor] = useState(category?.color || CATEGORY_COLORS[5]);
   const [sync, setSync] = useState(category?.sync ?? CategorySync.Local);
@@ -82,48 +80,48 @@ const Edit = ({ account, category }: { account: string; category?: CategoryFragm
   const refetchQueries = [GetMailAccountDocument, ListCategoriesDocument, ListThreadsDocument, ListMessagesDocument];
   const [create, created] = useCreateCategoryMutation({ refetchQueries });
   const [update, updated] = useUpdateCategoryMutation({ refetchQueries });
-  const loading = created.loading || updated.loading;
+  const busy = created.loading || updated.loading;
 
   // Folders that do not keep keywords: a KEYWORD category stays local in them.
   const noKeywords = (mailbox?.mailAccount.folders ?? []).filter((f) => f.syncEnabled && !f.keywordsAllowed);
   const toLocal = category?.sync === CategorySync.Keyword && sync === CategorySync.Local;
   const valid = name.trim() !== "" && (!color || HEX.test(color));
 
-  const submit = () => {
-    const work = category
-      ? update({
-          variables: {
-            input: {
-              id: category.id,
-              name: name.trim() !== category.name ? name.trim() : undefined,
-              color: color !== category.color ? color : undefined,
-              sync: sync !== category.sync ? sync : undefined,
-              keyword:
-                sync === CategorySync.Keyword && keyword.trim() && keyword.trim() !== category.keyword
-                  ? keyword.trim()
-                  : undefined,
-              removeKeywords: toLocal && removeKeywords,
+  // The category shows where it was asked for: closing is the confirmation.
+  const { submit, submitting } = useDialogSubmit(
+    () => {
+      const work = category
+        ? update({
+            variables: {
+              input: {
+                id: category.id,
+                name: name.trim() !== category.name ? name.trim() : undefined,
+                color: color !== category.color ? color : undefined,
+                sync: sync !== category.sync ? sync : undefined,
+                keyword:
+                  sync === CategorySync.Keyword && keyword.trim() && keyword.trim() !== category.keyword
+                    ? keyword.trim()
+                    : undefined,
+                removeKeywords: toLocal && removeKeywords,
+              },
             },
-          },
-        })
-      : create({
-          variables: {
-            input: {
-              account,
-              name: name.trim(),
-              color,
-              sync,
-              keyword: sync === CategorySync.Keyword && keyword.trim() ? keyword.trim() : undefined,
+          })
+        : create({
+            variables: {
+              input: {
+                account,
+                name: name.trim(),
+                color,
+                sync,
+                keyword: sync === CategorySync.Keyword && keyword.trim() ? keyword.trim() : undefined,
+              },
             },
-          },
-        });
-    return work
-      .then(() => {
-        toast.success(category ? "Category updated" : `Created ${name.trim()}`);
-        closeDialog();
-      })
-      .catch((e) => toast.error(toastText(e)));
-  };
+          });
+      return inKuvertWords<unknown>(work);
+    },
+    { errorTitle: category ? "Couldn't save the category" : "Couldn't create the category" },
+  );
+  const loading = busy || submitting;
 
   return (
     <form

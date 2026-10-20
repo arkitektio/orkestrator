@@ -1,8 +1,7 @@
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { useGraphQLDialog } from "@/core/dialogs/useGraphQLDialog";
-import { useDialog } from "@/core/dialogs/registry";
 import { QueryError } from "@/core/layout/fallbacks/ErrorPage";
 import { MikroArrayLens } from "@/core/linkers";
-import { toast } from "@/core/notify";
 import { Button } from "@/core/ui/button";
 import {
   DialogDescription,
@@ -177,7 +176,6 @@ const CREATE_WINDOW_LENS: Record<
 const CreateWindowLensFields = ({ lens }: { lens: WindowLens }) => {
   const navigate = useNavigate();
   const client = useMikro();
-  const { closeDialog } = useDialog();
   const { info, container } = describeLens(lens);
 
   // The axes of the space the windows are stated in. A container whose space
@@ -186,15 +184,13 @@ const CreateWindowLensFields = ({ lens }: { lens: WindowLens }) => {
   const fixedAxes = axes.length > 0;
   const [drafts, setDrafts] = useState<WindowDraft[]>(() => draftsFor(axes, lens.windows));
   const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
 
   const windows = windowsFromDrafts(drafts);
   const whole = windows.length === 0;
 
-  const submit = async () => {
-    const { document, field } = CREATE_WINDOW_LENS[lens.__typename];
-    setBusy(true);
-    try {
+  const { submit, submitting: busy } = useDialogSubmit(
+    async () => {
+      const { document, field } = CREATE_WINDOW_LENS[lens.__typename];
       const result = await client.mutate<Record<string, { id: string; name?: string | null }>>({
         mutation: document,
         variables: { input: { [info.filterKey]: container.id, windows } },
@@ -214,15 +210,13 @@ const CreateWindowLensFields = ({ lens }: { lens: WindowLens }) => {
       }
       // The lists showing this container's lenses hold one more now.
       client.refetchQueries({ include: [ListLensesDocument] });
-      toast.success("Lens ready");
-      closeDialog();
-      navigate(MikroArrayLens.linkBuilder(created.id));
-    } catch (error) {
-      toast.error(`Error: ${(error as Error).message}`);
-    } finally {
-      setBusy(false);
-    }
-  };
+      return created.id;
+    },
+    {
+      errorTitle: "Couldn't create the lens",
+      onSuccess: (id) => navigate(MikroArrayLens.linkBuilder(id)),
+    },
+  );
 
   return (
     <form
@@ -277,7 +271,7 @@ const CreateLensFields = ({ subject }: { subject: Subject }) => {
     refetchQueries: ["GetArrayDataset"],
   });
   const submit = useGraphQLDialog(createLens, {
-    successMessage: "Lens ready",
+    errorTitle: "Couldn't create the lens",
     onSuccess: (data) => {
       if (data?.createLens) navigate(MikroArrayLens.linkBuilder(data.createLens.id));
     },

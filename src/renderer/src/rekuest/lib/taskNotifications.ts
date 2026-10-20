@@ -2,8 +2,7 @@ import { useSyncExternalStore } from "react";
 
 /**
  * Owns which task notifications are currently visible in the global
- * TaskNotificationStack. This replaces sonner's id registry / dismiss
- * bookkeeping with a tiny dependency-free external store so it can be mutated
+ * TaskNotificationStack: a tiny dependency-free external store, so it can be mutated
  * from the non-React WatchMyTasks subscription callback (in TaskUpdater) and
  * observed reactively from the stack component. Mirrors the module-level
  * pattern used in `lib/taskTracker.ts`.
@@ -65,6 +64,16 @@ export const dismiss = (id: string) => {
     return;
   }
   active = active.filter((x) => x !== id);
+  emit();
+};
+
+/** Hide every task notification at once (one emit); none of them is re-shown. */
+export const dismissAll = () => {
+  if (active.length === 0) {
+    return;
+  }
+  active.forEach(rememberDismissed);
+  active = [];
   emit();
 };
 

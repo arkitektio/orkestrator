@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as z from 'zod';
 import {StructurePickerControl, type PickerRequest} from '@/core/forms/StructurePickerControl';
 import {useServiceQuery} from '@/core/modules/hooks/useServiceQuery';
-import {useStructureOptions} from '@/core/modules/hooks/useStructureOptions';
+import {useOptionSourceHonoursRequires, useStructureOptions} from '@/core/modules/hooks/useStructureOptions';
 import {queryVariables, requiredQueryVariables} from '@/core/ports/engine/constraints';
 import {StructureDisplay} from '@/core/smart/display/StructureDisplay';
 import {StructureViewer} from '@/core/smart/display/StructureViewer';
@@ -155,6 +155,7 @@ export const StructurePickerBlok = createBlokComponent(
     const onChange = useEventAction(blok.onChange);
 
     const source = useStructureOptions(identifier ?? '');
+    const sourceHonoursRequires = useOptionSourceHonoursRequires(identifier ?? '');
     const run = useServiceQuery(ward);
     const controlled = useControlledValue<StructureValue | null>({
       bind,
@@ -198,7 +199,10 @@ export const StructurePickerBlok = createBlokComponent(
       async (request: PickerRequest): Promise<Option[]> => {
         if (!queried) {
           if (!source) return [];
-          return source(request.ids ? {values: request.ids} : {search: request.search});
+          // A held value is resolved by its id alone, as below.
+          return source(
+            request.ids ? {values: request.ids} : {search: request.search, requires: JSON.parse(requiresKey)},
+          );
         }
         const bound = JSON.parse(boundKey) as unknown[];
         // A held value is resolved by its id alone, so it shows even when it
@@ -249,7 +253,9 @@ export const StructurePickerBlok = createBlokComponent(
         keyOf={keyOf}
         renderRow={renderOption}
         renderValue={renderChosen}
-        requires={queried && declared.includes('requires') ? port?.requires : undefined}
+        requires={
+          (queried ? declared.includes('requires') : sourceHonoursRequires) ? port?.requires : undefined
+        }
         scope={
           narrowedBy.length > 0
             ? {

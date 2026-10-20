@@ -1,7 +1,7 @@
 import type { ApolloClient, NormalizedCache } from "@apollo/client";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import { useElektro } from "@/elektro/api/funcs";
 import { ElektroExperiment } from "@/core/linkers";
 import { findOrCreateExperimentForWorld } from "./openOnTimeline";
@@ -23,9 +23,7 @@ export const useOpenClockOnTimeline = () => {
       const id = await findOrCreateExperimentForWorld(client, clock.id, clock.name);
       navigate(ElektroExperiment.linkBuilder(id));
     } catch (error) {
-      toast.error(
-        `Could not open the run on a timeline: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      reportError(error, "Couldn't open the run on a timeline");
     } finally {
       setOpening(false);
     }

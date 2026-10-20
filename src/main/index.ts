@@ -33,6 +33,7 @@ import { VoiceService } from "./voice/VoiceService";
 import { ModelStore } from "./voice/ModelStore";
 import { MeshService } from "./mesh/MeshService";
 import { meshdBinaryPath } from "./mesh/meshdLocate";
+import { windowsFirewallState } from "./mesh/firewall";
 import { spawn } from "node:child_process";
 import { hostname as osHostname } from "node:os";
 import { APP_ORIGIN, APP_SCHEME } from "./scheme";
@@ -168,14 +169,16 @@ const uploadService = new UploadService(transport);
 // binary ships in `extraResources` and is spawned with a literal argv; every
 // setting reaches it as JSON over stdin.
 const meshRoot = join(app.getPath("userData"), "mesh");
+const meshdBinary = meshdBinaryPath({
+  packaged: app.isPackaged,
+  resourcesPath: process.resourcesPath,
+  appRoot: join(__dirname, "..", ".."),
+  platform: process.platform,
+  arch: process.arch,
+});
 const meshService = new MeshService(transport, windowManager, {
-  binaryPath: meshdBinaryPath({
-    packaged: app.isPackaged,
-    resourcesPath: process.resourcesPath,
-    appRoot: join(__dirname, "..", ".."),
-    platform: process.platform,
-    arch: process.arch,
-  }),
+  binaryPath: meshdBinary,
+  firewall: () => windowsFirewallState(meshdBinary),
   spawn: (binary) => spawn(binary, ["--stdio"], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true }),
   stateRoot: meshRoot,
   hostname: `orkestrator-${osHostname().split(".")[0].toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 40) || "device"}`,

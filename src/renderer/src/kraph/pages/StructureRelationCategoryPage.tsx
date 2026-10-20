@@ -1,4 +1,5 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
+import { reportError } from "@/core/notify";
 import { FormSheet } from "@/core/dialogs/FormDialog";
 import { Sidebars } from "@/core/layout/Sidebars";
 import { PageAction } from "@/core/ui/page-action";
@@ -23,17 +24,21 @@ const Page = asDetailQueryRoute(
     const [update] = useUpdateStructureRelationCategoryMutation();
 
     const createFile = async (file: File) => {
-      const response = await uploadFile(file);
-      if (response) {
-        await update({
-          variables: {
-            input: {
-              id: data.structureRelationCategory.id,
-              image: response,
+      try {
+        const response = await uploadFile(file);
+        if (response) {
+          await update({
+            variables: {
+              input: {
+                id: data.structureRelationCategory.id,
+                image: response,
+              },
             },
-          },
-        });
-        await refetch();
+          });
+          await refetch();
+        }
+      } catch (e) {
+        reportError(e, "Couldn't set the image");
       }
     };
 

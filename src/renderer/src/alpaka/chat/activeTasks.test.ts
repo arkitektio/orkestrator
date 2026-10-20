@@ -138,3 +138,97 @@ describe("settling a pill from the task itself", () => {
     ).toBe(unbound);
   });
 });
+
+// The server writes HELD (with `held`, the child's id) on the root the pill
+// tracks, and DECIDED with the same `held` once the user answered.
+describe("a pill whose replyer waits for the user", () => {
+  const heldValue = {
+    kind: "assign",
+    held: "c7",
+    prompt: { title: "Delegate to Segmenter", description: "It counts nuclei." },
+    action: { id: "a1", name: "Segmenter", hash: "h1" },
+    agent: { id: "ag2", name: "segmenter-app" },
+    caller_agent: { id: "ag1", name: "blok-assistant" },
+    args: { sigma: 2 },
+  };
+  const held = () =>
+    applyTaskEvent(
+      applyTaskEvent(started(), event(TaskEventKind.Progress, { message: "Round 2..." })),
+      event(TaskEventKind.Held, { id: "e-held", value: heldValue, message: "Delegate to Segmenter" }),
+    );
+
+  it("is HELD with what waits, and keeps its own message", () => {
+    const [pill] = held();
+    expect(pill.status).toBe("HELD");
+    expect(pill.message).toBe("Round 2...");
+    expect(pill.holds).toEqual([
+      {
+        task: "c7",
+        kind: "assign",
+        title: "Delegate to Segmenter",
+        description: "It counts nuclei.",
+        action: { id: "a1", name: "Segmenter", hash: "h1" },
+        agent: { id: "ag2", name: "segmenter-app" },
+        callerAgent: { id: "ag1", name: "blok-assistant" },
+        args: { sigma: 2 },
+      },
+    ]);
+  });
+
+  it("stays HELD through a log, and runs again once decided", () => {
+    const logged = applyTaskEvent(held(), event(TaskEventKind.Log, { id: "e-log", message: "still here" }));
+    expect(statusOf(logged)).toBe("HELD");
+
+    const decided = applyTaskEvent(
+      logged,
+      event(TaskEventKind.Decided, { id: "e-dec", value: { held: "c7", approved: true, answer: null, auto: false } }),
+    );
+    expect(statusOf(decided)).toBe("RUNNING");
+    expect(decided[0].holds).toEqual([]);
+  });
+
+  it("keeps what was decided, with the hold it answered, for the conversation to show", () => {
+    const declined = applyTaskEvent(
+      held(),
+      event(TaskEventKind.Decided, {
+        id: "e-dec",
+        value: { held: "c7", approved: false, answer: "not that plate", auto: false },
+      }),
+    );
+    expect(declined[0].decided).toEqual([
+      expect.objectContaining({
+        task: "c7",
+        approved: false,
+        auto: false,
+        answer: "not that plate",
+        hold: expect.objectContaining({ title: "Delegate to Segmenter" }),
+      }),
+    ]);
+  });
+
+  it("recalls nothing for a decision about a hold it never showed", () => {
+    const [pill] = applyTaskEvent(
+      started(),
+      event(TaskEventKind.Decided, { id: "e-dec", value: { held: "c9", approved: true, auto: true } }),
+    );
+    expect(pill.decided).toBeUndefined();
+  });
+
+  it("holds itself without `held`, and a DENIED kind settles as cancelled", () => {
+    const self = applyTaskEvent(
+      started(),
+      event(TaskEventKind.Held, { value: { kind: "self", prompt: { title: "Overwrite?" } } }),
+    );
+    expect(statusOf(self)).toBe("HELD");
+    expect(self[0].holds?.[0]).toMatchObject({ task: "t1", kind: "self", title: "Overwrite?" });
+
+    expect(statusForKind(TaskEventKind.Denied)).toBe("CANCELLED");
+    expect(statusOf(applyTaskEvent(self, event(TaskEventKind.Completed)))).toBe("DONE");
+  });
+
+  it("goes back to HELD, not RUNNING, when the assign result arrives late", () => {
+    expect(statusOf(bindTask(held(), "ref", { id: "t1", isDone: false, latestEventKind: TaskEventKind.Progress }))).toBe(
+      "HELD",
+    );
+  });
+});

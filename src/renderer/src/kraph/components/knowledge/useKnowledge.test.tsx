@@ -12,7 +12,10 @@ vi.mock("@/kraph/api/graphql", () => ({
   useKnowledgeForStructureQuery: (o: unknown) => query(o),
   useAssertEntityExistsMutation: () => [assertEntity, { loading: false }],
 }));
-vi.mock("sonner", () => ({ toast: { error: (...a: unknown[]) => toastError(...a), success: vi.fn() } }));
+vi.mock("@/core/notify", () => ({
+  toast: { error: vi.fn(), success: vi.fn() },
+  reportError: (...a: unknown[]) => toastError(...a),
+}));
 
 import { useKnowledge } from "./useKnowledge";
 

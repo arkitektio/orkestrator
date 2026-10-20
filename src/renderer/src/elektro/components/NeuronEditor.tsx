@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/core/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/ui/tabs";
 import { Check, Copy, GitBranch, HelpCircle, Pencil, Save, Trash2, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { toast } from "@/core/notify";
 import { v4 as uuidv4 } from 'uuid';
@@ -97,6 +97,11 @@ export const NeuronEditor = ({
   const [rebranchingId, setRebranchingId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  // Why a rename or a rebranch was refused, shown next to where it was tried.
+  const [renameProblem, setRenameProblem] = useState<string | null>(null);
+  const [rebranchProblem, setRebranchProblem] = useState<string | null>(null);
+  useEffect(() => setRenameProblem(null), [renamingId, renameValue]);
+  useEffect(() => setRebranchProblem(null), [rebranchingId]);
 
   // Model-wide config lives in its own state (the editor mutates only `cells`
   // for topology/biophysics; these scalars + lists round-trip via the Model tab).
@@ -188,11 +193,8 @@ export const NeuronEditor = ({
     if (!original) return;
 
     // Roots have no parent connection; a duplicate would be a second free-floating
-    // root rather than a copy in place, so disallow it.
-    if (!getParentInfo(original)) {
-      toast.error("Root sections cannot be duplicated");
-      return;
-    }
+    // root rather than a copy in place, so disallow it (its button says so).
+    if (!getParentInfo(original)) return;
 
     const newId = uuidv4();
     // Copy every parameter verbatim, including the parent connection, so the
@@ -216,7 +218,6 @@ export const NeuronEditor = ({
       };
     }));
     setSelectedSectionId(newId);
-    toast.success("Section duplicated");
   };
 
   const renameSection = (oldId: string, newId: string) => {
@@ -243,7 +244,7 @@ export const NeuronEditor = ({
   const commitRename = (oldId: string) => {
     const next = renameValue.trim();
     if (!next) {
-      toast.error("Name cannot be empty");
+      setRenameProblem("Name cannot be empty");
       return;
     }
     if (next === oldId) {
@@ -251,12 +252,11 @@ export const NeuronEditor = ({
       return;
     }
     if (sections.some(s => s.id === next)) {
-      toast.error("A section with that name already exists");
+      setRenameProblem("A section with that name already exists");
       return;
     }
     renameSection(oldId, next);
     setRenamingId(null);
-    toast.success("Section renamed");
   };
 
   const deleteSection = (id: string) => {
@@ -301,12 +301,11 @@ export const NeuronEditor = ({
     }));
 
     if (selectedSectionId === id) setSelectedSectionId(null);
-    toast.success("Section deleted");
   };
 
   const handleRebranch = (childId: string, newParentId: string) => {
     if (childId === newParentId) {
-      toast.error("Cannot rebranch to itself");
+      setRebranchProblem("Cannot rebranch to itself");
       return;
     }
 
@@ -324,7 +323,7 @@ export const NeuronEditor = ({
     }
 
     if (isCycle) {
-      toast.error("Cannot rebranch to a descendant (cycle detected)");
+      setRebranchProblem("Cannot rebranch to a descendant (cycle detected)");
       return;
     }
 
@@ -332,7 +331,6 @@ export const NeuronEditor = ({
       parent: { parent: newParentId, parentLocation: 1, childEnd: 0 }
     });
     setRebranchingId(null);
-    toast.success("Section rebranched");
   };
 
   const handleSegmentSelect = (id: string) => {
@@ -514,7 +512,7 @@ export const NeuronEditor = ({
               <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded text-xs flex justify-between items-center gap-2">
                 <span className="flex items-center gap-1.5">
                   <GitBranch className="w-3 h-3 flex-none" />
-                  Select the new parent in the view…
+                  {rebranchProblem ?? "Select the new parent in the view…"}
                 </span>
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0 flex-none" onClick={() => setRebranchingId(null)}>
                   <X className="w-4 h-4" />
@@ -629,6 +627,9 @@ export const NeuronEditor = ({
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
                           </div>
+                        )}
+                        {renamingId === section.id && renameProblem && (
+                          <p className="text-xs text-destructive">{renameProblem}</p>
                         )}
                       </div>
 

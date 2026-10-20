@@ -1,4 +1,5 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { DialogError } from "@/core/dialogs/DialogError";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { Button } from "@/core/ui/button";
 import { DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/ui/select";
@@ -33,7 +34,7 @@ import { fileIcon } from "../components/fileIcon";
 import type { ComposeMode } from "../components/MessageView";
 import { useAttachmentUpload } from "../datalayer/upload";
 import { fromText, MailNode, toMailHtml, toText } from "../editor/serialize";
-import { toastText } from "../errors";
+import { codedError, describeKuvertError } from "../errors";
 import {
   formatBytes,
   forwardSubject,
@@ -130,7 +131,6 @@ const Compose = ({
   original?: MessageFragment;
   senders: SenderAccountFragment[];
 }) => {
-  const { closeDialog } = useDialog();
   const navigate = useNavigate();
   const start = initial(props, original);
   const [from, setFrom] = useState(
@@ -154,7 +154,9 @@ const Compose = ({
       setUploads((u) => [...u, { key, file }]);
       upload(file)
         .then((store) => setUploads((u) => u.map((x) => (x.key === key ? { ...x, store } : x))))
-        .catch((e: Error) => setUploads((u) => u.map((x) => (x.key === key ? { ...x, error: e.message } : x))));
+        .catch((e) =>
+          setUploads((u) => u.map((x) => (x.key === key ? { ...x, error: describeKuvertError(e).message } : x))),
+        );
     }
   };
 
@@ -164,37 +166,39 @@ const Compose = ({
   const uploading = uploads.some((u) => !u.store && !u.error);
   const ready = !!from && count > 0 && invalid.length === 0 && !uploading && !loading;
 
-  const submit = () =>
-    send({
-      variables: {
-        input: {
-          account: from,
-          to: recipients.to.recipients,
-          cc: recipients.cc.recipients,
-          bcc: recipients.bcc.recipients,
-          subject,
-          text: toText(editor.children as MailNode[]),
-          html: toMailHtml(editor.children as MailNode[]),
-          inReplyTo: original && props.mode !== "forward" ? original.id : null,
-          attachments: uploads.flatMap((u) => (u.store ? [u.store] : [])),
+  // A mail that failed to go out keeps the dialog open with the reason in it;
+  // one that went is out of sight, so it says so.
+  const { submit, submitting } = useDialogSubmit(
+    async () => {
+      const r = await send({
+        variables: {
+          input: {
+            account: from,
+            to: recipients.to.recipients,
+            cc: recipients.cc.recipients,
+            bcc: recipients.bcc.recipients,
+            subject,
+            text: toText(editor.children as MailNode[]),
+            html: toMailHtml(editor.children as MailNode[]),
+            inReplyTo: original && props.mode !== "forward" ? original.id : null,
+            attachments: uploads.flatMap((u) => (u.store ? [u.store] : [])),
+          },
         },
-      },
-    })
-      .then((r) => {
-        const sent = r.data?.sendMessage;
-        const open = sent ? { label: "Show", onClick: () => navigate(OutgoingMail.linkBuilder(sent.id)) } : undefined;
-        if (sent?.status === OutgoingStatus.Failed) {
-          toast.error(sent.error || "The mail could not be sent", { action: open });
-          return;
-        }
-        if (sent?.refused.length) {
-          toast.warning(`Sent, but refused for ${sent.refused.map((x) => x.address).join(", ")}`, { action: open });
-        } else {
-          toast.success("Sent");
-        }
-        closeDialog();
-      })
-      .catch((e) => toast.error(toastText(e)));
+      });
+      const sent = r.data?.sendMessage;
+      if (sent?.status === OutgoingStatus.Failed) {
+        throw codedError(sent.errorCode, sent.error, "The outgoing server did not take the mail.");
+      }
+      const open = sent ? { label: "Show", onClick: () => navigate(OutgoingMail.linkBuilder(sent.id)) } : undefined;
+      if (sent?.refused.length) {
+        toast.warning(`Sent, but refused for ${sent.refused.map((x) => x.address).join(", ")}`, { action: open });
+      } else {
+        toast.success("Sent");
+      }
+    },
+    { errorTitle: "Couldn't send the mail" },
+  );
+  const canSend = ready && !submitting;
 
   const title = props.mode === "forward" ? "Forward" : props.mode ? "Reply" : "New mail";
 
@@ -203,10 +207,10 @@ const Compose = ({
       className="flex h-full flex-col gap-3"
       onSubmit={(e) => {
         e.preventDefault();
-        if (ready) void submit();
+        if (canSend) void submit();
       }}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && ready) {
+        if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && canSend) {
           e.preventDefault();
           void submit();
         }
@@ -303,12 +307,13 @@ const Compose = ({
         </span>
       )}
       <DialogFooter className="items-center gap-2">
+        <DialogError variant="line" className="mr-auto" />
         <input ref={fileInput} type="file" multiple hidden onChange={(e) => attach(e.target.files)} />
         <Button type="button" variant="ghost" size="sm" onClick={() => fileInput.current?.click()}>
           <Paperclip />
           Attach
         </Button>
-        <Button type="submit" disabled={!ready} className="gap-2">
+        <Button type="submit" disabled={!canSend} className="gap-2">
           {(loading || uploading) && <Spinner />}
           {loading ? "Sending…" : uploading ? "Uploading…" : "Send"}
           <Kbd className="bg-primary-foreground/15 text-primary-foreground">⌘↵</Kbd>

@@ -1,3 +1,4 @@
+import { describeError as describeAnyError, isAbort, reportError, type DescribedError } from "@/core/notify";
 import { BankErrorCode } from "./api/graphql";
 import { formatDay } from "./format";
 
@@ -66,3 +67,43 @@ export const describeError = (
 /** A failed request as a toast line. */
 export const toastText = (error: unknown, context?: { nextSyncAllowedAt?: string | null }) =>
   describeError(errorCodeOf(error), { message: errorMessageOf(error), ...context }).text;
+
+/**
+ * A failure as the core reads it, with a coded bank error worded from the
+ * table above; an uncoded one (network, signed out, a plain message) reads as
+ * any other error. The raw text stays in `technical` for "Copy details".
+ */
+export const describeBankError = (
+  error: unknown,
+  context?: { nextSyncAllowedAt?: string | null },
+): DescribedError => {
+  const any = describeAnyError(error);
+  const code = errorCodeOf(error);
+  if (!code) return any;
+  return { kind: any.kind, message: describeError(code, { message: errorMessageOf(error), ...context }).text, technical: any.technical };
+};
+
+/** A failure outside a dialog: one island toast, worded from the table. */
+export const reportBankError = (
+  error: unknown,
+  title: string,
+  context?: { nextSyncAllowedAt?: string | null },
+) => reportError(error, { title, describe: (e) => describeBankError(e, context) });
+
+/** `reportBankError` for a `.catch`. */
+export const reportBankErrorAs =
+  (title: string, context?: { nextSyncAllowedAt?: string | null }) =>
+  (error: unknown): void => {
+    reportBankError(error, title, context);
+  };
+
+/**
+ * A failure rethrown so that whoever shows it (a dialog's inline note, the
+ * local-action island) prints the table's sentence and keeps the raw text as
+ * its details. An abort passes through untouched.
+ */
+export const asBankError = (error: unknown, context?: { nextSyncAllowedAt?: string | null }) => {
+  if (isAbort(error)) return error;
+  const { kind, message, technical } = describeBankError(error, context);
+  return Object.assign(new Error(message), { kind, technical });
+};

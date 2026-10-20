@@ -45,9 +45,11 @@ import {
 } from "./api/graphql";
 import { LOGIN_ANCHOR } from "./components/settings/anchors";
 import { MailAccount } from "./linkers";
-import { toastText } from "./errors";
+import { relinkProps } from "./relink";
+import { asKuvertError } from "./errors";
 import { CATEGORY_ACTIONS } from "./localactions/categories";
 import { CHANGE_ACTIONS } from "./localactions/changes";
+import { PROVIDER_ACTIONS } from "./localactions/providers";
 import { TASK_ACTIONS } from "./localactions/tasks";
 import { formatAddress } from "./format";
 import { deleteMail, MAIL_VIEWS, markRead, moveTo, moveToRole, setFlagged, threadMessages } from "./mailOps";
@@ -76,7 +78,7 @@ const kuvertMutate = async (
   try {
     return await kuvertClient(services).mutate(options);
   } catch (e) {
-    throw new Error(toastText(e));
+    throw asKuvertError(e);
   }
 };
 
@@ -380,11 +382,7 @@ export const KUVERT_ACTIONS: Record<string, Action> = {
       });
       const account = data.mailAccount;
       if (account.authMethod === AuthMethod.Xoauth2) {
-        dialog.openDialog(
-          "kuvertlink",
-          { relink: id, provider: account.provider, address: account.emailAddress },
-          { size: "medium" },
-        );
+        dialog.openDialog("kuvertlink", relinkProps(account), { size: "medium" });
       } else {
         navigate(`${MailAccount.linkBuilder(id)}#${LOGIN_ANCHOR}`);
       }
@@ -473,4 +471,5 @@ export const KUVERT_ACTIONS: Record<string, Action> = {
   ...TASK_ACTIONS,
   ...CATEGORY_ACTIONS,
   ...CHANGE_ACTIONS,
+  ...PROVIDER_ACTIONS,
 };

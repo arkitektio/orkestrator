@@ -1,5 +1,4 @@
-import { toast } from "@/core/notify";
-import { copyText } from "@/core/tabs/sharing/universalLink";
+import { useCopyToClipboard } from "@/core/ui/copy-button";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Input } from "@/core/ui/input";
@@ -94,6 +93,7 @@ const PasteFallback = ({
 export const AuthFlowPanel = ({ auth, onRestart }: { auth: AuthFlowState; onRestart: () => void }) => {
   const session = auth.session;
   const phase = auth.phase;
+  const { copy, copied } = useCopyToClipboard();
   if (!session || !phase) return null;
 
   if (phase.kind === "expired" || phase.kind === "failed" || phase.kind === "cancelled") {
@@ -128,11 +128,15 @@ export const AuthFlowPanel = ({ auth, onRestart }: { auth: AuthFlowState; onRest
           <button
             type="button"
             className="group flex items-center gap-3 font-mono text-3xl font-semibold tracking-[0.25em]"
-            onClick={async () => (await copyText(session.userCode!)) && toast.success("Code copied")}
-            title="Copy the code"
+            onClick={() => void copy(session.userCode!)}
+            title={copied ? "Copied" : "Copy the code"}
           >
             {session.userCode}
-            <Copy className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-60" />
+            {copied ? (
+              <Check className="h-4 w-4 opacity-60" />
+            ) : (
+              <Copy className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-60" />
+            )}
           </button>
           <Button type="button" variant="outline" size="sm" onClick={auth.reopen}>
             <ExternalLink className="h-4 w-4" /> Open login page
@@ -223,10 +227,8 @@ export const AuthFlow = ({
   const auth = useAuthFlow({
     flow,
     open,
-    onDone: (session) => {
-      toast.success(`${session.result?.label ?? title} linked`);
-      onDone(session);
-    },
+    // No toast: the dialog closes onto the linked account.
+    onDone,
   });
   const started = useRef(false);
 

@@ -334,3 +334,41 @@ to it gather the context (`useStatusContext`, the buttons in
   nothing (sections with nothing to show render null).
 - Like role gates, these are cosmetic: "denied" is read off the server's
   answer, it does not decide anything.
+
+## 8. Feedback: toasts and errors
+
+There is one toast surface: the toast island (`core/notify`), in the rail
+of a signed-in window, lower-left on the welcome screen, under the quick
+bar's palette. No sonner, no other toaster. `import { toast } from
+"@/core/notify"`.
+
+- **The caller owns its errors.** The module `useMutation` wrappers set no
+  `onError`, so a failed mutation REJECTS and nothing is shown for it. Every
+  call site handles it: in a dialog through `useDialogSubmit`, elsewhere
+  `.catch(reportErrorAs("Couldn't move the folder"))` or a try/catch with
+  `reportError(e, title)`. In a local action's `execute`, just let it throw —
+  the local-action island reports it. (An uncaught ApolloError still reaches
+  the island through `UnhandledErrorNet`, with a console warning: that is a
+  bug net, not a pattern.)
+- **Errors read as sentences.** `describeError` (`core/notify`) turns any
+  error into one human sentence plus the raw text; `reportError` shows the
+  sentence with a "Copy details" action. Never put `e.message`,
+  `String(e)` or codes/paths into a toast or a label.
+- **A dialog shows its own failure.** Every registry dialog/sheet is in a
+  `DialogErrorScope` (`core/dialogs/DialogError.tsx`). Submit with
+  `useDialogSubmit(fn, { errorTitle, successMessage?, close? })` (or
+  `useGraphQLDialog` for one mutation): on a throw the dialog stays open with
+  the reason at its foot; render `<DialogError />` to place it elsewhere.
+  Never `closeDialog()` in a `finally`. Port-form validation reports the
+  same way (`useReportValidation`). Inline errors outside dialogs use
+  `ErrorNote` (`core/ui/error-note.tsx`).
+- **Success toasts only for what the user cannot see**: sent, invited,
+  queued, exported, or a toast carrying Undo. Not when the dialog navigates
+  to the result, the result appears in place, or a toggle/inline edit shows
+  it. Never a generic "Success".
+- **Copy confirms on the button**: `CopyButton` / `useCopyToClipboard`
+  (`core/ui/copy-button.tsx`) flip to a check. A toast only where no button
+  remains (a menu item, a local action).
+- No toasts in loops (one summary), for routine state ("Loading…",
+  "Connected"), for developer invariants (`console.error` + throw), or for
+  background effects (console).

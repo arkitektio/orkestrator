@@ -17,6 +17,13 @@ mutation UpdateBlok($input: UpdateBlokInput!) {
   }
 }
 
+# Copies a blok an app provides into a custom one, to edit it or bind other agents.
+mutation ForkBlok($input: ForkBlokInput!) {
+  forkBlok(input: $input) {
+    ...Blok
+  }
+}
+
 mutation DeleteBlok($input: DeleteBlokInput!) {
   deleteBlok(input: $input)
 }

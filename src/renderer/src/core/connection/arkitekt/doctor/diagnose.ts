@@ -3,6 +3,7 @@ import type {
   NetworkProbeResult,
   ProbeTarget,
 } from "../../../../../../main/doctor/protocol";
+import { MESH_DIAL_FAILED_CODE, MESH_PROXY_DOWN_CODE } from "../../../../../../main/doctor/networkErrors";
 import { controlDomain, type MeshPeer, type MeshSnapshot, type MeshStatusPayload } from "../../../../../../main/mesh/protocol";
 import { classifyHost, isMeshClass } from "./classify";
 import type { DiagnoseInput, Finding } from "./findings";
@@ -89,6 +90,22 @@ const meshCovers = (mesh: MeshSnapshot, rawHost: string): boolean => {
   if (suffix && (host === suffix || host.endsWith(`.${suffix}`))) return true;
   return !!peerFor(mesh, host);
 };
+
+/**
+ * A name under the mesh's MagicDNS suffix, with the peer list in: only a peer
+ * can carry it, so not finding one is the answer. A host routed by the control
+ * domain or an explicit pin may be served by something that is no peer.
+ */
+const namesAPeer = (mesh: MeshSnapshot, rawHost: string): boolean => {
+  const suffix = mesh.status.magicDnsSuffix ? norm(mesh.status.magicDnsSuffix) : undefined;
+  return !!suffix && norm(rawHost).endsWith(`.${suffix}`) && (mesh.status.peers ?? []).length > 0;
+};
+
+/** The probe through the mesh for this host was turned down by the proxy. */
+const meshRefused = (input: DiagnoseInput, rawHost: string): boolean =>
+  input.network.some(
+    (probe) => !!probe.viaMeshProxy && norm(probe.target.host) === norm(rawHost) && probe.tcp.code === MESH_DIAL_FAILED_CODE,
+  );
 
 /**
  * The running mesh that routes a host. The precise rules first; then the
@@ -197,6 +214,23 @@ const sidecarFindings = (input: DiagnoseInput, targets: ProbeTarget[]): Finding[
           "machine it names is not connected right now — switched off, asleep, or " +
           "its own mesh client stopped. Nothing on this computer can fix that.",
         evidence: [`peer: ${peer.dnsName ?? peer.hostName ?? target.host}`, `mesh: ${mesh.config.controlUrl}`],
+        targetLabel: label,
+      });
+    } else if (!peer && namesAPeer(mesh, target.host) && meshRefused(input, target.host)) {
+      // A MagicDNS name only a peer can answer, the mesh lists its peers, and
+      // none is called that: the dial failed because there is nobody to dial.
+      findings.push({
+        id: "mesh.sidecar.peer-unknown",
+        severity: "blocker",
+        title: `No machine called ${target.host} is on the ${mesh.config.label} mesh`,
+        detail:
+          "The name is a mesh name, but none of the machines this computer can see " +
+          "on the mesh carries it. It may have been renamed or removed, or the mesh's " +
+          "access rules hide it from this computer.",
+        evidence: [
+          `mesh: ${mesh.config.controlUrl}`,
+          `peers: ${(mesh.status.peers ?? []).map((other) => other.dnsName ?? other.hostName).join(", ")}`,
+        ],
         targetLabel: label,
       });
     }
@@ -693,6 +727,43 @@ const tcpFindings = (probe: NetworkProbeResult): Finding[] => {
     ];
   }
 
+  // Through the mesh proxy: the socket that failed is the one to 127.0.0.1,
+  // or the dial the proxy made for us. Neither says anything about the
+  // target's port in the way ECONNREFUSED does above.
+  if (tcp.code === MESH_PROXY_DOWN_CODE) {
+    return [
+      {
+        id: "mesh.proxy.down",
+        severity: "blocker",
+        title: "Orkestrator's mesh client is not answering",
+        detail:
+          "Addresses on the mesh go through a small proxy on this computer, and " +
+          "that proxy refused the connection — the mesh client stopped or is " +
+          "restarting. Turning the mesh off and on again in its settings starts it anew.",
+        evidence: [probe.url, `proxy 127.0.0.1:${probe.viaMeshProxy ?? "?"}`, tcp.message ?? tcp.code],
+        remedy: { kind: "navigate", label: "Open mesh settings", path: MESH_SETTINGS },
+        targetLabel: label,
+      },
+    ];
+  }
+
+  if (tcp.code === MESH_DIAL_FAILED_CODE) {
+    return [
+      {
+        id: "net.tcp.mesh-refused",
+        severity: "blocker",
+        title: `The mesh could not open a connection to ${host}:${port}`,
+        detail:
+          "Orkestrator's mesh client is running, but it turned the connection down " +
+          "at once. Either no machine on the mesh has that name, the machine has " +
+          "nothing listening on that port, or the mesh's access rules do not let " +
+          "this computer reach it. The mesh client's log names which.",
+        evidence: [probe.url, tcp.message ?? tcp.code, `after ${tcp.ms}ms`],
+        targetLabel: label,
+      },
+    ];
+  }
+
   if (tcp.code === "EHOSTUNREACH" || tcp.code === "ENETUNREACH") {
     return [
       {
@@ -1075,7 +1146,7 @@ const demoteSymptoms = (findings: Finding[]): Finding[] => {
   );
   if (!causeBlocker) return findings;
 
-  const SYMPTOMS = ["net.tcp.timeout", "net.tcp.unreachable", "net.dns.nxdomain"];
+  const SYMPTOMS = ["net.tcp.timeout", "net.tcp.unreachable", "net.dns.nxdomain", "net.tcp.mesh-refused"];
   return findings.map((finding) =>
     SYMPTOMS.includes(finding.id) ? { ...finding, severity: "info" as const } : finding,
   );

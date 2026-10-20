@@ -24,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { relinkProps } from "./relink";
-import { toastText } from "./errors";
+import { asBankError } from "./errors";
 import {
   CancelAuthDocument,
   AssignMerchantDocument,
@@ -78,7 +78,7 @@ const bankMutate = async (services: ActionParams["services"], options: Parameter
   try {
     return await bankClient(services).mutate(options);
   } catch (e) {
-    throw new Error(toastText(e));
+    throw asBankError(e);
   }
 };
 

@@ -1,13 +1,11 @@
-import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLCreatableSearchField } from "@/core/forms/GraphQLCreateableSearchField";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
 import { StringField } from "@/core/forms/StringField";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "@/core/notify";
 import {
   AssignMerchantInput,
   ListMerchantsDocument,
@@ -17,7 +15,7 @@ import {
   useSearchMerchantLocationsLazyQuery,
   useSearchMerchantsLazyQuery,
 } from "../api/graphql";
-import { toastText } from "../errors";
+import { asBankError } from "../errors";
 
 type Values = { merchant: string | null; location: string | null; storeCode: string };
 
@@ -35,25 +33,17 @@ export const AssignMerchantForm = (props: { ids: string[]; merchant?: string | n
   const [createMerchant] = useCreateMerchantOptionMutation({
     refetchQueries: [ListMerchantsDocument, MerchantCandidatesDocument],
   });
-  const { closeDialog } = useDialog();
-  const [busy, setBusy] = useState(false);
   const form = useForm<Values>({
     defaultValues: { merchant: props.merchant ?? null, location: props.location ?? null, storeCode: "" },
   });
   const merchant = form.watch("merchant");
 
-  const apply = async (input: AssignMerchantInput, done: string) => {
-    setBusy(true);
-    try {
-      await assign({ variables: { input } });
-      toast.success(done);
-      closeDialog();
-    } catch (e) {
-      toast.error("Could not set the merchant: " + toastText(e));
-    } finally {
-      setBusy(false);
-    }
-  };
+  // The transactions show their merchant where the dialog was opened from:
+  // closing is the confirmation.
+  const { submit: apply, submitting: busy } = useDialogSubmit(
+    (input: AssignMerchantInput) => assign({ variables: { input } }).catch((e) => Promise.reject(asBankError(e))),
+    { errorTitle: "Couldn't set the merchant" },
+  );
 
   return (
     <Form {...form}>
@@ -70,7 +60,6 @@ export const AssignMerchantForm = (props: { ids: string[]; merchant?: string | n
                       ? { storeCode: data.storeCode.trim() }
                       : null,
                 },
-                "Merchant set",
               )
             : form.setError("merchant", { message: "Pick a merchant, or clear it" }),
         )}
@@ -116,7 +105,7 @@ export const AssignMerchantForm = (props: { ids: string[]; merchant?: string | n
             type="button"
             variant="ghost"
             disabled={busy}
-            onClick={() => apply({ transactions: props.ids, merchant: null }, "Merchant cleared")}
+            onClick={() => apply({ transactions: props.ids, merchant: null })}
           >
             Clear, let aliases decide
           </Button>

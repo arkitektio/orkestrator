@@ -129,8 +129,7 @@ export const RegisterEdgeForm = (props: {
 
   const [create, { loading }] = useCreateTransformationMutation();
   const submit = useGraphQLDialog(create, {
-    successMessage: "Registered",
-    errorPrefix: "Could not register",
+    errorTitle: "Couldn't create the registration",
   });
 
   const setRow = (index: number, patch: Partial<MappingRow>) =>

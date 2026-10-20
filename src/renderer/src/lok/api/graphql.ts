@@ -87,6 +87,8 @@ export type ApproveMembershipRequestInput = {
 
 export type CancelInviteInput = {
   id: Scalars['ID']['input'];
+  /** For a collaboration invite: also take back the collaborations it granted from everyone who accepted it. */
+  revokeShared?: Scalars['Boolean']['input'];
 };
 
 /**
@@ -244,7 +246,13 @@ export type CreateGroupProfileInput = {
 };
 
 export type CreateInviteInput = {
+  /** For a collaboration invite: whether the guests' apps may join the organization's mesh. They then reach only the hubs the granted collaborations run on, nothing else of the mesh. */
+  allowMesh?: Scalars['Boolean']['input'];
+  /** Grant only these collaborations of the organization's service instances, each with the roles that hold inside it, instead of making the holder a member. */
+  collaborations?: InputMaybe<Array<SharedCollaborationInput>>;
   expiresInDays?: InputMaybe<Scalars['Int']['input']>;
+  /** For a collaboration invite: how many people may accept it. Null: anyone with the link until it expires. */
+  maxUses?: InputMaybe<Scalars['Int']['input']>;
   organization?: InputMaybe<Scalars['ID']['input']>;
   roles?: InputMaybe<Array<Scalars['String']['input']>>;
 };
@@ -525,6 +533,8 @@ export type InstanceHealth = {
 export type Invite = {
   __typename?: 'Invite';
   acceptedBy?: Maybe<User>;
+  /** The collaborations this invite grants, with the roles that hold inside each. Null for an invite that makes its holder a member. */
+  collaborations?: Maybe<Array<SharedCollaboration>>;
   createdAt: Scalars['DateTime']['output'];
   createdBy: User;
   createdFor: Organization;
@@ -535,10 +545,18 @@ export type Invite = {
   id: Scalars['ID']['output'];
   /** Get the full URL for accepting this invite */
   inviteUrl: Scalars['String']['output'];
+  /** For a collaboration invite: how many people may accept it. Null: anyone with the link until it expires. */
+  maxUses?: Maybe<Scalars['Int']['output']>;
+  /** For a collaboration invite: whether its guests' apps may join the organization's mesh, reaching only the hubs the granted collaborations run on. */
+  mesh: Scalars['Boolean']['output'];
+  /** Whether anyone with the link can preview the invitation before signing in. */
+  public: Scalars['Boolean']['output'];
   respondedAt?: Maybe<Scalars['DateTime']['output']>;
   roles: Array<Role>;
   status: Scalars['String']['output'];
   token: Scalars['String']['output'];
+  /** How many people accepted it so far. */
+  uses: Scalars['Int']['output'];
   /** Check if the invite is still valid and pending */
   valid: Scalars['Boolean']['output'];
 };
@@ -559,7 +577,7 @@ export type InviteRolesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** Invite(id, token, email, created_by, created_for, created_at, expires_at, public, status, accepted_by, declined_by, responded_at) */
+/** Invite(id, token, email, created_by, created_for, created_at, expires_at, public, status, accepted_by, declined_by, responded_at, shared_collaborations, max_uses, uses, mesh) */
 export type InviteFilter = {
   AND?: InputMaybe<InviteFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1682,7 +1700,13 @@ export type ServiceInstanceMappingsArgs = {
   ordering?: Array<ServiceInstanceMappingOrdering>;
 };
 
-/** ServiceInstance(id, hub, release, logo, instance_id, private_key, steward, organization, device, template, public_key, token) */
+/**
+ * One service running in a hub: a hub runs one instance of a service per ``instance_id``.
+ *
+ * Its id is what a token composed for it names (``aud``) and what a guest's collaborations are
+ * listed under, so it must not change when the hub is authorized again by another admin or
+ * upgraded to another release of the service: those are updated on the instance, in place.
+ */
 export type ServiceInstanceFilter = {
   AND?: InputMaybe<ServiceInstanceFilter>;
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1748,6 +1772,26 @@ export type ServiceReleaseFilter = {
 
 export type ServiceReleaseOrdering =
   { id: Ordering; };
+
+/** One collaboration a collaboration invite grants: a collaboration of a service instance, with the roles that hold inside it. */
+export type SharedCollaboration = {
+  __typename?: 'SharedCollaboration';
+  /** The collaboration's id in that service. */
+  collaboration: Scalars['String']['output'];
+  /** The service instance the collaboration lives in. */
+  instance: Scalars['ID']['output'];
+  /** Identifiers of the organization's roles that hold inside the collaboration. Empty: view only. */
+  roles: Array<Scalars['String']['output']>;
+};
+
+export type SharedCollaborationInput = {
+  /** The collaboration's id in that service. */
+  collaboration: Scalars['String']['input'];
+  /** The service instance the collaboration lives in (on a hub of the organization). */
+  instance: Scalars['ID']['input'];
+  /** Identifiers of the organization's roles that hold for the guest inside the collaboration. Empty: view only. */
+  roles?: Array<Scalars['String']['input']>;
+};
 
 export type StrFilterLookup = {
   contains?: InputMaybe<Scalars['String']['input']>;
@@ -2089,6 +2133,8 @@ export type InviteFragment = { __typename?: 'Invite', id: string, token: string,
     & OrganizationFragment
   ), acceptedBy?: { __typename?: 'User', id: string, username: string, profile: { __typename?: 'Profile', id: string, avatar?: { __typename?: 'MediaStore', presignedUrl: string } | null } } | null };
 
+export type CollaborationLinkFragment = { __typename?: 'Invite', id: string, inviteUrl: string, expiresAt?: any | null, uses: number, maxUses?: number | null, mesh: boolean, valid: boolean, collaborations?: Array<{ __typename?: 'SharedCollaboration', instance: string, collaboration: string, roles: Array<string> }> | null };
+
 export type LayerFragment = { __typename?: 'Layer', id: string, name: string, identifier: any, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
 
 export type ListLayerFragment = { __typename?: 'Layer', id: string, name: string, identifier: any, description?: string | null, logo?: { __typename?: 'MediaStore', presignedUrl: string } | null };
@@ -2246,6 +2292,23 @@ export type CreateInviteMutation = { __typename?: 'Mutation', createInvite: (
     { __typename?: 'Invite' }
     & InviteFragment
   ) };
+
+export type ShareCollaborationMutationVariables = Exact<{
+  input: CreateInviteInput;
+}>;
+
+
+export type ShareCollaborationMutation = { __typename?: 'Mutation', createInvite: (
+    { __typename?: 'Invite' }
+    & CollaborationLinkFragment
+  ) };
+
+export type RevokeCollaborationLinkMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RevokeCollaborationLinkMutation = { __typename?: 'Mutation', cancelInvite: { __typename?: 'Invite', id: string } };
 
 export type CreateMandateMutationVariables = Exact<{
   input: CreateMandateInput;
@@ -2559,6 +2622,14 @@ export type MyHubHealthQuery = { __typename?: 'Query', mycontext: { __typename?:
       { __typename?: 'Hub' }
       & HubHealthFragment
     ) | null } };
+
+export type CollaborationLinksQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CollaborationLinksQuery = { __typename?: 'Query', invites: Array<(
+    { __typename?: 'Invite' }
+    & CollaborationLinkFragment
+  )> };
 
 export type LayersQueryVariables = Exact<{
   filters?: InputMaybe<LayerFilter>;
@@ -3196,6 +3267,22 @@ export const InviteFragmentDoc = gql`
   expiresAt
 }
     ${OrganizationFragmentDoc}`;
+export const CollaborationLinkFragmentDoc = gql`
+    fragment CollaborationLink on Invite {
+  id
+  inviteUrl
+  expiresAt
+  uses
+  maxUses
+  mesh
+  valid
+  collaborations {
+    instance
+    collaboration
+    roles
+  }
+}
+    `;
 export const LayerFragmentDoc = gql`
     fragment Layer on Layer {
   id
@@ -3716,6 +3803,72 @@ export function useCreateInviteMutation(baseOptions?: ApolloReactHooks.MutationH
 export type CreateInviteMutationHookResult = ReturnType<typeof useCreateInviteMutation>;
 export type CreateInviteMutationResult = Apollo.MutationResult<CreateInviteMutation>;
 export type CreateInviteMutationOptions = Apollo.BaseMutationOptions<CreateInviteMutation, CreateInviteMutationVariables>;
+export const ShareCollaborationDocument = gql`
+    mutation ShareCollaboration($input: CreateInviteInput!) {
+  createInvite(input: $input) {
+    ...CollaborationLink
+  }
+}
+    ${CollaborationLinkFragmentDoc}`;
+export type ShareCollaborationMutationFn = Apollo.MutationFunction<ShareCollaborationMutation, ShareCollaborationMutationVariables>;
+
+/**
+ * __useShareCollaborationMutation__
+ *
+ * To run a mutation, you first call `useShareCollaborationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useShareCollaborationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [shareCollaborationMutation, { data, loading, error }] = useShareCollaborationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useShareCollaborationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<ShareCollaborationMutation, ShareCollaborationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<ShareCollaborationMutation, ShareCollaborationMutationVariables>(ShareCollaborationDocument, options);
+      }
+export type ShareCollaborationMutationHookResult = ReturnType<typeof useShareCollaborationMutation>;
+export type ShareCollaborationMutationResult = Apollo.MutationResult<ShareCollaborationMutation>;
+export type ShareCollaborationMutationOptions = Apollo.BaseMutationOptions<ShareCollaborationMutation, ShareCollaborationMutationVariables>;
+export const RevokeCollaborationLinkDocument = gql`
+    mutation RevokeCollaborationLink($id: ID!) {
+  cancelInvite(input: {id: $id, revokeShared: true}) {
+    id
+  }
+}
+    `;
+export type RevokeCollaborationLinkMutationFn = Apollo.MutationFunction<RevokeCollaborationLinkMutation, RevokeCollaborationLinkMutationVariables>;
+
+/**
+ * __useRevokeCollaborationLinkMutation__
+ *
+ * To run a mutation, you first call `useRevokeCollaborationLinkMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRevokeCollaborationLinkMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [revokeCollaborationLinkMutation, { data, loading, error }] = useRevokeCollaborationLinkMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRevokeCollaborationLinkMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RevokeCollaborationLinkMutation, RevokeCollaborationLinkMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RevokeCollaborationLinkMutation, RevokeCollaborationLinkMutationVariables>(RevokeCollaborationLinkDocument, options);
+      }
+export type RevokeCollaborationLinkMutationHookResult = ReturnType<typeof useRevokeCollaborationLinkMutation>;
+export type RevokeCollaborationLinkMutationResult = Apollo.MutationResult<RevokeCollaborationLinkMutation>;
+export type RevokeCollaborationLinkMutationOptions = Apollo.BaseMutationOptions<RevokeCollaborationLinkMutation, RevokeCollaborationLinkMutationVariables>;
 export const CreateMandateDocument = gql`
     mutation CreateMandate($input: CreateMandateInput!) {
   createMandate(input: $input) {
@@ -4854,6 +5007,40 @@ export function useMyHubHealthLazyQuery(baseOptions?: ApolloReactHooks.LazyQuery
 export type MyHubHealthQueryHookResult = ReturnType<typeof useMyHubHealthQuery>;
 export type MyHubHealthLazyQueryHookResult = ReturnType<typeof useMyHubHealthLazyQuery>;
 export type MyHubHealthQueryResult = Apollo.QueryResult<MyHubHealthQuery, MyHubHealthQueryVariables>;
+export const CollaborationLinksDocument = gql`
+    query CollaborationLinks {
+  invites {
+    ...CollaborationLink
+  }
+}
+    ${CollaborationLinkFragmentDoc}`;
+
+/**
+ * __useCollaborationLinksQuery__
+ *
+ * To run a query within a React component, call `useCollaborationLinksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCollaborationLinksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCollaborationLinksQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useCollaborationLinksQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<CollaborationLinksQuery, CollaborationLinksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<CollaborationLinksQuery, CollaborationLinksQueryVariables>(CollaborationLinksDocument, options);
+      }
+export function useCollaborationLinksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<CollaborationLinksQuery, CollaborationLinksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<CollaborationLinksQuery, CollaborationLinksQueryVariables>(CollaborationLinksDocument, options);
+        }
+export type CollaborationLinksQueryHookResult = ReturnType<typeof useCollaborationLinksQuery>;
+export type CollaborationLinksLazyQueryHookResult = ReturnType<typeof useCollaborationLinksLazyQuery>;
+export type CollaborationLinksQueryResult = Apollo.QueryResult<CollaborationLinksQuery, CollaborationLinksQueryVariables>;
 export const LayersDocument = gql`
     query Layers($filters: LayerFilter, $pagination: OffsetPaginationInput) {
   layers(filters: $filters, pagination: $pagination) {

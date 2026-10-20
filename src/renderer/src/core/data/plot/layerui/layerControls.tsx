@@ -2,7 +2,7 @@ import { MoreHorizontal, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Color, SRGBColorSpace } from "three";
 import { SwatchColorPicker } from "@/core/ui/SwatchColorPicker";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -142,11 +142,7 @@ export const LayerMenu = ({
               variant="destructive"
               disabled={deleting}
               onClick={() =>
-                void onDelete().catch((error: unknown) =>
-                  toast.error(
-                    `Could not delete the layer: ${error instanceof Error ? error.message : String(error)}`,
-                  ),
-                )
+                void onDelete().catch(reportErrorAs("Couldn't delete the layer"))
               }
             >
               Delete

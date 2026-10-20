@@ -1,5 +1,5 @@
 import { AudioLines, ChevronDown } from "lucide-react";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import {
@@ -76,11 +76,12 @@ export const CreateExperimentControl = ({
     refetchQueries: ["GetArrayDataset"],
     awaitRefetchQueries: true,
     onCompleted: (result) => onCreated(result.createExperimentFromCoordinateSystem.id),
-    onError: (error) => toast.error(`Could not create the experiment: ${error.message}`),
   });
 
   const stage = (coordinateSystem: string, name: string) =>
-    create({ variables: { input: { coordinateSystem, name } } });
+    void create({ variables: { input: { coordinateSystem, name } } }).catch(
+      reportErrorAs("Couldn't create the experiment"),
+    );
 
   const label = loading ? "Creating experiment…" : "Create experiment";
 

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from "react";
-import { toast } from "@/core/notify";
+import { describeError, reportError, toast } from "@/core/notify";
 import {
   CreatableTransformKind,
   PlacementValidity,
@@ -129,7 +129,7 @@ export const useRegistrationSave = () => {
         created = true;
         await remove({ variables: { input: { id: plan.deleteId } }, ...REFETCH });
       }
-      toast.success("Registration saved");
+      // No toast: the layer settling into its new placement is the answer.
 
       // The session leaves `saving` when the SCENE shows the new edge state
       // (`SessionWatcher` → `rebase`). If it never does, do not sit there
@@ -141,12 +141,20 @@ export const useRegistrationSave = () => {
         api.getState().end();
       }, SAVE_WATCHDOG_MS);
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : String(cause);
-      toast.error(
-        created
-          ? `The new registration was created, but the old one could not be removed: ${message}. Both now exist — delete the older edge from the coordinate system's page.`
-          : `Could not save the registration: ${message}`,
-      );
+      if (created) {
+        reportError(cause, {
+          title: "Couldn't remove the old registration",
+          describe: (error) => {
+            const described = describeError(error);
+            return {
+              ...described,
+              message: `${described.message} The new one was created, so both now exist — delete the older edge from the coordinate system's page.`,
+            };
+          },
+        });
+      } else {
+        reportError(cause, "Couldn't save the registration");
+      }
       if (created) {
         // The graph changed under the session (two rival edges). Whatever the
         // server now resolves, the draft was computed against a state that is

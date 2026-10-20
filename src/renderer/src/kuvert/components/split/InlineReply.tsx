@@ -1,11 +1,12 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
+import { ErrorNote } from "@/core/ui/error-note";
 import { Kbd } from "@/core/ui/kbd";
 import { Spinner } from "@/core/ui/spinner";
 import { useState } from "react";
 import { toast } from "@/core/notify";
 import { ListOutboxDocument, MessageFragment, OutgoingStatus, useSendMessageMutation } from "../../api/graphql";
-import { toastText } from "../../errors";
+import { asKuvertError, codedError } from "../../errors";
 import { fromText, isEmpty, MailNode, toMailHtml, toText } from "../../editor/serialize";
 import { addressLabel, quoteForReply, replyRecipients, replySubject } from "../../format";
 import { MailContent, MailEditor, MailToolbar, useMailEditor } from "../editor/MailEditor";
@@ -22,8 +23,11 @@ export const InlineReply = ({ message }: { message: MessageFragment }) => {
   const { openSheet } = useDialog();
   const [send, { loading }] = useSendMessageMutation({ refetchQueries: [ListOutboxDocument] });
   const { to } = replyRecipients(message, message.account.emailAddress, false);
+  // A reply that did not go out says why under the editor, which keeps the text.
+  const [failure, setFailure] = useState<unknown>(null);
 
   const submit = () => {
+    setFailure(null);
     const doc = [...(editor.children as MailNode[]), ...fromText(quoteForReply(message))];
     return send({
       variables: {
@@ -40,14 +44,14 @@ export const InlineReply = ({ message }: { message: MessageFragment }) => {
       .then((r) => {
         const sent = r.data?.sendMessage;
         if (sent?.status === OutgoingStatus.Failed) {
-          toast.error(sent.error || "The reply could not be sent");
+          setFailure(codedError(sent.errorCode, sent.error, "The outgoing server did not take the reply."));
           return;
         }
         toast.success("Reply sent");
         editor.tf.reset();
         setEmpty(true);
       })
-      .catch((e) => toast.error(toastText(e)));
+      .catch((e) => setFailure(asKuvertError(e)));
   };
 
   const ready = !empty && to.length > 0 && !loading;
@@ -68,6 +72,7 @@ export const InlineReply = ({ message }: { message: MessageFragment }) => {
     >
       <MailEditor editor={editor} onEmptyChange={setEmpty}>
         <MailContent className="max-h-96 min-h-24 overflow-y-auto" placeholder={`Reply ${to.map(addressLabel).join(", ")}…`} />
+        <ErrorNote error={failure} title="Couldn't send the reply" variant="line" className="px-3 pb-2" />
         <div className="flex items-center gap-2 px-3 pb-3">
           <MailToolbar />
           <Button

@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import {
   AnnotationKind,
   AxisType,
@@ -57,7 +57,6 @@ const KIND: Record<Commit["tool"], AnnotationKind> = {
 
 const AXIS_TYPE = { TIME: AxisType.Time, CHANNEL: AxisType.Channel, VALUE: AxisType.Value };
 
-const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 export const useAnnotationCommit = () => {
   const experimentApi = useExperimentStoreApi();
@@ -218,7 +217,7 @@ export const useAnnotationCommit = () => {
     (commit: Commit) => {
       const write = commit.row ? commitRow(commit) : commitTime(commit);
       void write.catch((error: unknown) =>
-        toast.error(`Could not save the ${commit.tool.toLowerCase()}: ${messageOf(error)}`),
+        reportError(error, `Couldn't save the ${commit.tool.toLowerCase()}`),
       );
     },
     [commitRow, commitTime],

@@ -1,5 +1,6 @@
 import { StreamPort } from "@/fluss/types";
 import {
+  ActionKind,
   DemandKind,
   ListActionFragment,
   PortDemandInput,
@@ -37,6 +38,7 @@ export type ActionSearchArgs = {
   demands?: PortDemandInput[];
   stateful?: boolean;
   appIdentifier?: string;
+  kind?: ActionKind;
   limit?: number;
 };
 
@@ -55,11 +57,12 @@ export const useActionSearch = (args: ActionSearchArgs) => {
         demands: args.demands,
         stateful: args.stateful,
         appIdentifier: args.appIdentifier,
+        kind: args.kind,
       },
       pagination: { limit: args.limit ?? 5 },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [args.search, args.protocol, demandsKey, args.stateful, args.appIdentifier, args.limit],
+    [args.search, args.protocol, demandsKey, args.stateful, args.appIdentifier, args.kind, args.limit],
   );
 
   const { data, error, loading } = useAllActionsQuery({ variables });

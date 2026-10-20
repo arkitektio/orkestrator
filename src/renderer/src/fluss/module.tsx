@@ -1,4 +1,5 @@
 import { defineModule } from "@/core/modules/host/define";
+import { FLUSS_ACTIONS } from "./actions";
 import { FLUSS_DIALOGS } from "./dialogRegistry";
 import { manifest } from "./manifest";
 import { service } from "./service";
@@ -13,6 +14,7 @@ export const FLUSS_MODULE = defineModule({
     page: () => import("./ReaktionModule"),
     navLinks: FLUSS_NAV_LINKS,
     dialogs: FLUSS_DIALOGS,
+    actions: FLUSS_ACTIONS,
     pageSections: [
       {
         id: "fluss.implementationflow",

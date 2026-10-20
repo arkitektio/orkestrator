@@ -1,20 +1,9 @@
 import { Button } from "@/core/ui/button";
 import { setBrandRemote } from "@/core/settings/store/brandTheme";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "@/core/notify";
-import type { UpdateMembershipColorsMutation } from "../api/graphql";
+import { reportError } from "@/core/notify";
 import { useMyContextQuery, useUpdateMembershipColorsMutation } from "../api/graphql";
 import { resolveContextBrand } from "../lib/membershipBrand";
-
-/**
- * lok's hook wrapper sets `onError` on every mutation, which flips Apollo's
- * contract: the promise RESOLVES on failure instead of rejecting, and the error
- * is already reported by `onApolloError`. So failure is read off the result —
- * and never re-toasted here, or the user would see the same error twice.
- */
-const failed = (
-  result: { data?: UpdateMembershipColorsMutation | null; errors?: readonly unknown[] } | null,
-) => !result?.data || (result.errors?.length ?? 0) > 0;
 
 /** Long enough that dragging a slider sends one write at the end of the drag
  * rather than one per frame, short enough that a click on a preset settles
@@ -81,20 +70,19 @@ export const MembershipBrandWriter = ({ brand, onCleared }: MembershipBrandWrite
 
     // Deliberately NOT cleared on unmount: navigating away from the settings
     // page mid-debounce should still save the edit, not silently drop it. The
-    // timer only touches the Apollo client and the global toaster, both of
+    // timer only touches the Apollo client and the toast island, both of
     // which outlive this component.
     pending.current = setTimeout(() => {
       pending.current = null;
+      // A failed write rejects: put the confirmed colour back — the optimistic
+      // one never saved — and say why, since the tint snapping back alone
+      // reads like a glitch.
       updateColors({
         variables: { input: { brandHue: brand.hue, brandChroma: brand.chroma } },
-      })
-        .then((result) => {
-          if (failed(result)) {
-            // Put the confirmed colour back — the optimistic one never saved.
-            setBrandRemote(confirmed.current);
-          }
-        })
-        .catch(() => setBrandRemote(confirmed.current));
+      }).catch((error) => {
+        setBrandRemote(confirmed.current);
+        reportError(error, { title: "Couldn't save your brand colour", id: "membership-brand" });
+      });
     }, DEBOUNCE_MS);
   }, [brand, updateColors]);
 
@@ -113,13 +101,13 @@ export const MembershipBrandWriter = ({ brand, onCleared }: MembershipBrandWrite
 
     setClearing(true);
     try {
-      const result = await updateColors({
+      // The tint changing back is the confirmation; only a failure is said.
+      await updateColors({
         variables: { input: { brandHue: null, brandChroma: null } },
       });
-      if (!failed(result)) {
-        onCleared?.();
-        toast.success("Using your organization's brand colour.");
-      }
+      onCleared?.();
+    } catch (error) {
+      reportError(error, { title: "Couldn't reset your brand colour", id: "membership-brand" });
     } finally {
       setClearing(false);
     }

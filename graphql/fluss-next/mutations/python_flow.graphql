@@ -1,0 +1,33 @@
+mutation CreatePythonFlow($input: CreatePythonFlowInput!) {
+  createPythonFlow(input: $input) {
+    ...PythonFlow
+  }
+}
+
+mutation UpdatePythonFlow($input: UpdatePythonFlowInput!) {
+  updatePythonFlow(input: $input) {
+    id
+    title
+    description
+  }
+}
+
+mutation PublishPythonFlow($id: ID!) {
+  publishPythonFlow(input: { id: $id }) {
+    id
+    status
+    descriptors
+  }
+}
+
+mutation ArchivePythonFlow($id: ID!) {
+  archivePythonFlow(input: { id: $id }) {
+    id
+    status
+    descriptors
+  }
+}
+
+mutation DeletePythonFlow($id: ID!) {
+  deletePythonFlow(input: { id: $id })
+}

@@ -3,7 +3,7 @@ import { openRailSwitcher } from "@/core/connection/profile/ui/railSwitcher";
 import { useSelf } from "@/core/connection/useSelf";
 import { moduleDefinitions } from "@/core/modules/registries";
 import { Button } from "@/core/ui/button";
-import { ArrowLeft, Bug, House, LayoutGrid, RefreshCw, UserRound } from "lucide-react";
+import { ArrowLeft, Bug, House, LayoutGrid, Network, RefreshCw, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { StatusDetail } from "./StatusPage";
@@ -55,6 +55,17 @@ export const HomeButton = () => {
     <Button type="button" size="lg" variant="outline" onClick={() => navigate("/")}>
       <House />
       Home
+    </Button>
+  );
+};
+
+/** To Settings → Mesh: where a mesh waiting for approval or a sign-in is explained. */
+export const MeshSettingsButton = ({ size = "lg" }: { size?: "sm" | "lg" }) => {
+  const navigate = useNavigate();
+  return (
+    <Button type="button" size={size} variant="outline" onClick={() => navigate("/settings/mesh")}>
+      <Network />
+      Mesh settings
     </Button>
   );
 };

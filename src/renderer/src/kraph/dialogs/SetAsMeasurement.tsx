@@ -1,3 +1,4 @@
+import { useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
@@ -22,7 +23,6 @@ import { Structure } from "@/core/types";
 import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { Activity, CircleDot } from "lucide-react";
 import { useState } from "react";
-import { toast } from "@/core/notify";
 
 /**
  * Measuring is a claim: this structure measures that entity, under the word the
@@ -35,6 +35,7 @@ export const SetAsMeasurement = (props: {
   category: ListMeasurementCategoryWithGraphFragment;
 }) => {
   const { closeDialog } = useDialog();
+  const { report, clear } = useDialogError();
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
   const source = props.left[0];
@@ -46,6 +47,7 @@ export const SetAsMeasurement = (props: {
   const attach = async (entityId: string) => {
     if (!source) return;
     setAttaching(entityId);
+    clear();
     try {
       const structure = await ensureStructure({
         variables: {
@@ -69,14 +71,9 @@ export const SetAsMeasurement = (props: {
           },
         },
       });
-      toast.success(`Measured as ${props.category.label}`);
       closeDialog();
     } catch (e) {
-      toast.error(
-        `Could not attach measurement: ${
-          e instanceof Error ? e.message : String(e)
-        }`,
-      );
+      report(e, "Couldn't attach the measurement");
     } finally {
       setAttaching(null);
     }

@@ -1,7 +1,7 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { Sidebars } from "@/core/layout/Sidebars";
-import { toast } from "@/core/notify";
+import { reportErrorAs } from "@/core/notify";
 import { Badge } from "@/core/ui/badge";
 import { Button } from "@/core/ui/button";
 import { MikroCoordinateSystem } from "@/core/linkers";
@@ -54,14 +54,13 @@ export const CoordinateSystemPage = asDetailQueryRoute(
     const navigate = useNavigate();
 
     // The server reads the axes and answers with a chart or a scene; a space
-    // that is neither is refused, and its prose is the toast. A toast because
-    // the button sits both in the header and in the rail.
+    // that is neither is refused, and its prose is the toast's sentence. A
+    // toast because the button sits both in the header and in the rail.
     const [visualize, { loading: visualizing }] =
       useAutoVisualizeMutation({
         variables: { input: { coordinateSystem: system.id } },
         refetchQueries: [GetScenesDocument, GetChartsDocument, GetCoordinateSystemDocument],
         onCompleted: (result) => navigate(visualizationLink(result.autoVisualize)),
-        onError: (error) => toast.error(error.message),
       });
 
     const visualizeButton = (
@@ -69,7 +68,7 @@ export const CoordinateSystemPage = asDetailQueryRoute(
         variant="outline"
         size="sm"
         disabled={visualizing}
-        onClick={() => visualize()}
+        onClick={() => void visualize().catch(reportErrorAs("Couldn't visualize the space"))}
       >
         <Eye className="mr-2 h-4 w-4" />
         {visualizing ? "Visualizing…" : "Visualize"}

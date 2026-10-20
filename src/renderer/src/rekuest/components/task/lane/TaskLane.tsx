@@ -40,6 +40,7 @@ const BAR_COLOR: Record<TaskStatusBucket, string> = {
   cancelled: "bg-muted-foreground/40",
   lost: "bg-amber-500/70",
   paused: "bg-amber-500/50",
+  held: "bg-amber-500/50",
   queued: "bg-muted-foreground/25",
   running: "bg-primary/60",
 };

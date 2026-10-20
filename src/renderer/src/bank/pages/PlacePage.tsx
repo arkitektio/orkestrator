@@ -15,7 +15,7 @@ import { LocationInsightsTab } from "../components/insights/tabs/LocationInsight
 import ReviewTransactionList from "../components/lists/ReviewTransactionList";
 import { LocationsMap } from "../components/map/LocationsMap";
 import { MerchantLogo } from "../components/MerchantLogo";
-import { toastText } from "../errors";
+import { reportBankErrorAs } from "../errors";
 import { formatDay } from "../format";
 import { BANK_HELP } from "../help";
 
@@ -25,14 +25,13 @@ const PlacePage = asDetailQueryRoute(useGetMerchantLocationQuery, ({ data }) => 
   const [geocode, { loading: locating }] = useGeocodeMerchantLocationMutation();
   const base = useMemo(() => ({ locations: [place.id] }), [place.id]);
   const { filters, ordering, actions } = useTransactionFilterBar(base);
+  // Found, the pin shows on the map; only a miss is said.
   const locate = () =>
     geocode({ variables: { id: place.id } })
-      .then((r) =>
-        r.data?.geocodeMerchantLocation.latitude != null
-          ? toast.success("Found it")
-          : toast.info("No match; add or fix the address and try again"),
-      )
-      .catch((e) => toast.error("Could not look it up: " + toastText(e)));
+      .then((r) => {
+        if (r.data?.geocodeMerchantLocation.latitude == null) toast.info("No match; add or fix the address and try again");
+      })
+      .catch(reportBankErrorAs("Couldn't look up the place"));
 
   return (
     <BankPlace.ModelPage

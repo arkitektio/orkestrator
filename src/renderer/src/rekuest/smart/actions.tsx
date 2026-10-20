@@ -1,7 +1,7 @@
 import { toWire } from "@/core/smart/structure";
 import { useDialog } from "@/core/dialogs/registry";
 import { Button } from "@/core/ui/button";
-import { toast } from "@/core/notify";
+import { reportError } from "@/core/notify";
 import { assignErrorMessage, notifyAssignError } from "../lib/assignError";
 import { v4 as uuidv4 } from "uuid";
 import React from "react";
@@ -14,6 +14,7 @@ import {
   useImplementationsQuery,
 } from "@/rekuest/api/graphql";
 import { buildAssignInput } from "@/rekuest/assign";
+import { assignAutoKey, rememberedPolicy } from "@/rekuest/components/AutoModeToggle";
 import { failureFallback } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Boxes, PlayCircle } from "lucide-react";
@@ -73,30 +74,37 @@ export const needsAgentChoice = (
   action: Pick<PrimaryActionFragment, "stateful" | "liveImplementations">,
 ) => action.stateful && action.liveImplementations > 1;
 
+/**
+ * A selection the action's arguments cannot take. The menu only offers rows
+ * whose arguments match, so this is a bug: the detail goes to the console, the
+ * row says it could not run.
+ */
+const selectionMismatch = (detail: string, action: { id: string }) => {
+  console.error(`[rekuest] ${detail}`, action.id);
+  return new Error("This action can't take the selected objects.");
+};
+
 const buildActionArgs = (
   action: AssignableAction,
   props: SmartContextProps,
-): Record<string, unknown> | null => {
+): Record<string, unknown> => {
   const keys: Record<string, unknown> = {};
 
   if (props.objects.length === 1) {
     const key = action.args?.at(0)?.key;
     if (!key) {
-      toast.error("No key found for self");
-      return null;
+      throw selectionMismatch("No key found for self", action);
     }
     keys[key] = toWire(props.objects[0]);
   }
 
   if (props.objects.length > 1) {
     if (action.args.at(0)?.kind !== PortKind.List) {
-      toast.error("Should be a list but is not");
-      return null;
+      throw selectionMismatch("Should be a list but is not", action);
     }
     const key = action.args?.at(0)?.key;
     if (!key) {
-      toast.error("No key found for self");
-      return null;
+      throw selectionMismatch("No key found for self", action);
     }
     keys[key] = props.objects.map((item) => (toWire(item)));
   }
@@ -104,21 +112,18 @@ const buildActionArgs = (
   if (props.partners && props.partners.length === 1) {
     const key = action.args?.at(1)?.key;
     if (!key) {
-      toast.error("No key found for partner");
-      return null;
+      throw selectionMismatch("No key found for partner", action);
     }
     keys[key] = toWire(props.partners[0]);
   }
 
   if (props.partners && props.partners.length > 1) {
     if (action.args.at(1)?.kind !== PortKind.List) {
-      toast.error("Should be a list but is not");
-      return null;
+      throw selectionMismatch("Should be a list but is not", action);
     }
     const key = action.args?.at(1)?.key;
     if (!key) {
-      toast.error("No key found for partner");
-      return null;
+      throw selectionMismatch("No key found for partner", action);
     }
     keys[key] = props.partners.map((item) => (toWire(item)));
   }
@@ -152,11 +157,14 @@ export const DirectImplementationAssignment = (
       run = await resolveRun(props);
     } catch (error) {
       // The picker closes as the run starts: there is no row left to mark.
-      toast.error(materializeErrorMessage(error));
+      reportError(error, "Couldn't prepare what this runs on");
       return;
     }
-    const keys = buildActionArgs(action, run);
-    if (!keys) {
+    let keys: Record<string, unknown>;
+    try {
+      keys = buildActionArgs(action, run);
+    } catch (error) {
+      reportError(error, "Couldn't run the action");
       return;
     }
 
@@ -185,6 +193,8 @@ export const DirectImplementationAssignment = (
         implementation: implementation.id,
         args: keys,
         reference,
+        // As the assign form last ran it.
+        policy: rememberedPolicy(assignAutoKey({ implementation: implementation.id })),
       }));
     } catch (error) {
       untrack();
@@ -234,7 +244,7 @@ export const DirectImplementationAssignment = (
           try {
             run = await resolveRun(props);
           } catch (error) {
-            toast.error(materializeErrorMessage(error));
+            reportError(error, "Couldn't prepare what this runs on");
             return;
           }
           const firstObject = run.objects[0];
@@ -378,8 +388,11 @@ export const AssignButton = (
       }
       setDoing(false);
     }
-    const keys = buildActionArgs(action, run);
-    if (!keys) {
+    let keys: Record<string, unknown>;
+    try {
+      keys = buildActionArgs(action, run);
+    } catch (error) {
+      triggerErrorFeedback(getErrorMessage(error));
       return;
     }
 
@@ -404,6 +417,8 @@ export const AssignButton = (
         action: action.id,
         args: keys,
         reference,
+        // As the assign form last ran it.
+        policy: rememberedPolicy(assignAutoKey({ action: action.id })),
       }));
 
       setDoing(true);
@@ -477,7 +492,7 @@ export const BatchAssignButton = (
   const conditionalAssign = async (action: PrimaryActionFragment) => {
     const key = action.args?.at(0)?.key;
     if (!key) {
-      toast.error("No key found for self");
+      triggerErrorFeedback(selectionMismatch("No key found for self", action).message);
       return;
     }
 
@@ -499,7 +514,7 @@ export const BatchAssignButton = (
       if (run.partners && run.partners.length === 1) {
         const partnerKey = action.args?.at(1)?.key;
         if (!partnerKey) {
-          toast.error("No key found for partner");
+          triggerErrorFeedback(selectionMismatch("No key found for partner", action).message);
           return;
         }
         keys[partnerKey] = toWire(run.partners[0]);
@@ -507,12 +522,12 @@ export const BatchAssignButton = (
 
       if (run.partners && run.partners.length > 1) {
         if (action.args.at(1)?.kind !== PortKind.List) {
-          toast.error("Should be a list but is not");
+          triggerErrorFeedback(selectionMismatch("Should be a list but is not", action).message);
           return;
         }
         const partnerKey = action.args?.at(1)?.key;
         if (!partnerKey) {
-          toast.error("No key found for partner");
+          triggerErrorFeedback(selectionMismatch("No key found for partner", action).message);
           return;
         }
         keys[partnerKey] = run.partners.map((partner) => (toWire(partner)));

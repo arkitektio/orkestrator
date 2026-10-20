@@ -1,5 +1,5 @@
 import { RekuestSchedule, RekuestTrigger } from "@/core/linkers";
-import { toast } from "@/core/notify";
+import { reportError, reportErrorAs, toast } from "@/core/notify";
 import { CommandActionIcon } from "@/core/smart/extensions/CommandActionRow";
 import { useTabActions } from "@/core/tabs/TabsProvider";
 import { Button } from "@/core/ui/button";
@@ -72,7 +72,7 @@ const RowActions = ({ row }: { row: Row }) => {
       row.kind === "clock"
         ? updateSchedule({ variables: { input } })
         : updateTrigger({ variables: { input } });
-    done.catch((error) => toast.error(`Could not change ${row.name}: ${error.message}`));
+    done.catch((error) => reportError(error, `Couldn't ${row.enabled ? "pause" : "resume"} ${row.name}`));
   };
 
   return (
@@ -95,7 +95,7 @@ const RowActions = ({ row }: { row: Row }) => {
           onClick={() =>
             runNow({ variables: { id: row.id } }).then(
               () => toast.success(`${row.name} started`),
-              (error) => toast.error(`Could not start it: ${error.message}`),
+              reportErrorAs(`Couldn't start ${row.name}`),
             )
           }
         >
@@ -139,6 +139,7 @@ const AutomationRowItem = ({ row }: { row: Row }) => {
     row.onlyIf.length > 0 ? `${row.when} if ${row.onlyIf.join(" and ")}` : row.when,
     row.name !== row.action.name && `runs ${row.action.name}`,
     row.agent && `on ${row.agent.name}`,
+    row.auto && "auto-mode",
   ].filter(Boolean);
 
   return (

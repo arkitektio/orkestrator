@@ -1,9 +1,9 @@
 import { Button } from "@/core/ui/button";
 import { DialogFooter } from "@/core/ui/dialog";
 import { Form } from "@/core/ui/form";
+import { ErrorNote } from "@/core/ui/error-note";
 import { cn } from "@/core/util/utils";
-import { ApolloError } from "@apollo/client";
-import { toast } from "@/core/notify";
+import { useState } from "react";
 import {
   ListDependencyFragment,
   MaterializedBlok,
@@ -54,7 +54,10 @@ export type MaterializeBlokFormProps = {
 export const MaterializeBlokForm = (
   props: MaterializeBlokFormProps,
 ) => {
-  const [materialize, { loading, error }] = useMaterializeBlokMutation();
+  const [materialize, { loading }] = useMaterializeBlokMutation();
+  // Shown above the button: the form lives in a plain <Dialog>, which stays
+  // open to try again.
+  const [failure, setFailure] = useState<unknown>(null);
 
   const normalizedDependencies: ListDependencyFragment[] = props.dependencies.map(
     (dependency) => ({
@@ -90,6 +93,7 @@ export const MaterializeBlokForm = (
   });
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    setFailure(null);
     try {
       const result = await materialize({
         variables: {
@@ -107,19 +111,13 @@ export const MaterializeBlokForm = (
           props.onMaterialized?.(result.data.materializeBlok as MaterializedBlok);
       }
     } catch (e) {
-      const message = (e as ApolloError).message;
       if (props.onError) {
-        props.onError?.(e);
+        props.onError(e);
       } else {
-        toast.error(message || "Failed to materialize blok");
+        setFailure(e);
       }
     }
   };
-
-
-  if (error) {
-    return <p className="text-red-500">{error.message}</p>;
-  }
 
   return (
     <Form {...form}>
@@ -130,6 +128,7 @@ export const MaterializeBlokForm = (
               <DependenciesContainer dependencies={normalizedDependencies} bound={"blok"} owner="blok" />
             )}
           </div>
+          <ErrorNote error={failure} title="Couldn't materialize the blok" className="mb-2" />
           <DialogFooter className="flex-initial">
             <Button
               type="submit"

@@ -2,6 +2,7 @@ import { PageAction } from "@/core/ui/page-action";
 import { DialogButton } from "@/core/ui/dialog-button";
 import { BankRule } from "@/bank/linkers";
 import { toast } from "@/core/notify";
+import { reportBankErrorAs } from "../errors";
 import { ListTransactionsDocument, useReapplyRulesMutation } from "../api/graphql";
 import RuleList from "../components/lists/RuleList";
 import { BANK_HELP } from "../help";
@@ -25,7 +26,7 @@ const RulesPage = () => {
             onClick={() =>
               reapply()
                 .then((r) => toast.success(`${r.data?.reapplyRules ?? 0} transactions re-categorized`))
-                .catch((e: Error) => toast.error(e.message))
+                .catch(reportBankErrorAs("Couldn't re-apply the rules"))
             }
           >
             {loading ? "Applying..." : "Reapply rules"}

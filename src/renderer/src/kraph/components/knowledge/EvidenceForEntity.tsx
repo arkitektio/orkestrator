@@ -3,7 +3,7 @@ import { useAssertInformsMutation } from "@/kraph/api/graphql";
 import { AssignedEntity, EntityAssigner } from "@/kraph/components/EntityAssigner";
 import type { Identifier, Object } from "@/core/types";
 import { useState } from "react";
-import { toast } from "@/core/notify";
+import { reportError, toast } from "@/core/notify";
 
 /**
  * The other way to relate a datum to something already known: not "this is the
@@ -41,7 +41,7 @@ export const EvidenceForEntity = ({
       setEntity(null);
       onDone?.();
     } catch (e) {
-      toast.error(`Could not link: ${(e as Error).message}`);
+      reportError(e, `Couldn't use it as evidence for ${entity.label}`);
     }
   };
 

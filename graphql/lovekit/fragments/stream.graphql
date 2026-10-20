@@ -1,8 +1,23 @@
 fragment Stream on Stream {
   id
+  key
+  title
+  kind
+  description
+  createdAt
+  live
+  agent {
+    ...AgentOwner
+  }
 }
-
 
 fragment ListStream on Stream {
   id
+  key
+  title
+  kind
+  live
+  agent {
+    ...AgentOwner
+  }
 }

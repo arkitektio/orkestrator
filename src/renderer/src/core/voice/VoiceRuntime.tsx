@@ -149,10 +149,12 @@ export const VoiceRuntime = () => {
 
         const { status, error } = voiceStore.getState();
         if (status !== "ready") {
+          // The key did nothing else visible, so say why — once, not per press.
           toast.message(
             status === "error"
               ? `Voice input is unavailable: ${error ?? "engine error"}`
               : "Voice input is still loading…",
+            { id: "voice-not-ready" },
           );
           return;
         }

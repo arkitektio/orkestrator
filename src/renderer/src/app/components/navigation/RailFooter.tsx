@@ -1,4 +1,5 @@
 import { Arkitekt } from "@/core/connection/arkitekt/host";
+import { AgentEngageToggle } from "@/core/agent/AgentEngageToggle";
 import ProfileSwitcher from "@/app/components/profile/ProfileSwitcher";
 import { profileDetail, profileTitle } from "@/core/connection/profile/ui/profileLabels";
 import { ProfileBrandAvatar } from "@/core/connection/profile/ui/ProfileBrandAvatar";
@@ -218,6 +219,9 @@ export const RailFooter = () => {
         </DropdownMenuContent>
       </DropdownMenu>
       </div>
+
+      {/* Whether apps you run may ask you something here (the agent). */}
+      <AgentEngageToggle />
 
       {/* Settings is a destination, not a menu item — one gear, no nesting.
           Appearance (light / dark) lives there too, not here. */}

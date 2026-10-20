@@ -1,5 +1,6 @@
 import { useDialog } from "@/core/dialogs/registry";
 import { buildAssignInput } from "@/rekuest/assign";
+import { assignAutoKey, rememberedPolicy } from "@/rekuest/components/AutoModeToggle";
 import { Button } from "@/core/ui/button";
 import {
   DropdownMenu,
@@ -82,7 +83,9 @@ export const EnhanceButton = (props: EnhanceButtonProps) => {
         action: action.id,
         args: {
           [key]: props.object
-        }
+        },
+        // As the assign form last ran it.
+        policy: rememberedPolicy(assignAutoKey({ action: action.id })),
       }))
       toast.success("Enhancement started");
     } catch (e) {

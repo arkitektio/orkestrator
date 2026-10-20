@@ -1,4 +1,6 @@
+import { useDialogError } from "@/core/dialogs/DialogError";
 import { useDialog } from "@/core/dialogs/registry";
+import { useDialogSubmit } from "@/core/dialogs/useDialogSubmit";
 import { GraphQLSearchField } from "@/core/forms/GraphQLSearchField";
 import { Button } from "@/core/ui/button";
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/core/ui/dialog";
@@ -14,7 +16,7 @@ import {
   useRestoreBaseCategoryMutation,
   useSearchCategoriesLazyQuery,
 } from "../api/graphql";
-import { toastText } from "../errors";
+import { asBankError, reportBankErrorAs } from "../errors";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -30,6 +32,8 @@ export const DeleteCategoryForm = (props: { id: string; name?: string }) => {
   const location = useLocation();
   const [searchCategories] = useSearchCategoriesLazyQuery();
   const [preview, setPreview] = useState<CategoryDeletionFragment | null>(null);
+  const [checkFailed, setCheckFailed] = useState(false);
+  const { report } = useDialogError();
   const [previewDelete] = useDeleteCategoryMutation();
   const [deleteCategory, { loading }] = useDeleteCategoryMutation({
     refetchQueries: [ListCategoriesDocument],
@@ -44,31 +48,37 @@ export const DeleteCategoryForm = (props: { id: string; name?: string }) => {
   useEffect(() => {
     previewDelete({ variables: { id: props.id, dryRun: true } })
       .then((r) => setPreview(r.data?.deleteCategory ?? null))
-      .catch((e) => toast.error("Could not check the category: " + toastText(e)));
+      .catch((e) => {
+        setCheckFailed(true);
+        report(asBankError(e), "Couldn't check the category");
+      });
   }, [props.id]);
 
-  const submit = async ({ reassignTo }: { reassignTo: string | null }) => {
-    try {
-      const { data } = await deleteCategory({ variables: { id: props.id, reassignTo: reassignTo || null } });
-      const keys = data?.deleteCategory.dismissedBaseKeys ?? [];
-      toast.success("Category deleted", {
-        action:
-          keys.length > 0
-            ? {
-                label: "Restore",
-                onClick: () =>
-                  Promise.all(keys.map((key) => restore({ variables: { key } })))
-                    .then(() => toast.success("Restored"))
-                    .catch((e) => toast.error("Could not restore: " + toastText(e))),
-              }
-            : undefined,
-      });
-      closeDialog();
-      if (location.pathname.includes(`/categories/${props.id}`)) navigate("/bank/categories");
-    } catch (e) {
-      toast.error("Could not delete: " + toastText(e));
-    }
-  };
+  // The list drops it in place; only a deleted default category gets a toast,
+  // to carry its Restore.
+  const { submit } = useDialogSubmit(
+    ({ reassignTo }: { reassignTo: string | null }) =>
+      deleteCategory({ variables: { id: props.id, reassignTo: reassignTo || null } }).catch((e) =>
+        Promise.reject(asBankError(e)),
+      ),
+    {
+      errorTitle: "Couldn't delete the category",
+      onSuccess: ({ data }) => {
+        const keys = data?.deleteCategory.dismissedBaseKeys ?? [];
+        if (keys.length > 0)
+          toast.success("Category deleted", {
+            action: {
+              label: "Restore",
+              onClick: () =>
+                Promise.all(keys.map((key) => restore({ variables: { key } })))
+                  .then(() => toast.success("Category restored"))
+                  .catch(reportBankErrorAs("Couldn't restore the category")),
+            },
+          });
+        if (location.pathname.includes(`/categories/${props.id}`)) navigate("/bank/categories");
+      },
+    },
+  );
 
   const children = preview ? preview.categories - 1 : 0;
   const goes = preview
@@ -86,7 +96,9 @@ export const DeleteCategoryForm = (props: { id: string; name?: string }) => {
           <DialogTitle>Delete {props.name ? `"${props.name}"` : "category"}</DialogTitle>
           <DialogDescription>
             {!preview
-              ? "Checking what depends on it…"
+              ? checkFailed
+                ? "Couldn't check what depends on it."
+                : "Checking what depends on it…"
               : goes.length > 0
                 ? `Also deletes ${goes.join(", ")}.`
                 : "Nothing else is deleted with it."}

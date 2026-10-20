@@ -70,6 +70,8 @@ fragment Agent on Agent {
   active
   connected
   lastSeen
+  # The app the agent says controls its lifecycle (descriptor @rekuest/supervisor).
+  supervisor
   tasks(pagination: { limit: 5 }, ordering: { createdAt: DESC }) {
     ...ListTask
   }
@@ -89,6 +91,7 @@ fragment ListAgent on Agent {
   lastSeen
   pinned
   blocked
+  supervisor
   client {
     clientId
   }
@@ -163,6 +166,7 @@ fragment HoverAgent on Agent {
   blocked
   pinned
   lastSeen
+  supervisor
   app {
     identifier
   }

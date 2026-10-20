@@ -58,6 +58,14 @@ export const useCoordinationEndpoint = (): string | undefined => {
   return useMemo(() => (baseUrl ? coordinationBase(baseUrl) : undefined), [baseUrl]);
 };
 
+/**
+ * The coordination server's id of the instance a service key is served by: what a token
+ * composed for it names (`aud`), and what a guest's collaborations there are listed under.
+ * Undefined while the service is not configured.
+ */
+export const useServiceInstanceId = (serviceKey: string): string | undefined =>
+  useArkitektStore((state) => state.connection?.serviceInstanceMap?.[serviceKey]?.identifier);
+
 export const useDatalayerEndpoint = (): string | undefined =>
   (Arkitekt.usePotentialService("datalayer")?.client as { url?: string } | undefined)?.url;
 

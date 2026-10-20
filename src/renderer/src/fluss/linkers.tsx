@@ -8,3 +8,5 @@ export const FlussFlow = smartOf(manifest, "@fluss/flow");
 export const FlussWorkspace = smartOf(manifest, "@fluss/workspace");
 export const FlussReactiveTemplate = smartOf(manifest, "@fluss/reactive_template");
 export const FlussRun = smartOf(manifest, "@fluss/run");
+export const FlussPythonFlow = smartOf(manifest, "@fluss/pythonflow");
+export const FlussPythonRun = smartOf(manifest, "@fluss/pythonrun");

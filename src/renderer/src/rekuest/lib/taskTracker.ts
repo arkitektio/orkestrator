@@ -29,6 +29,9 @@ export const registeredCallbacks = new Map<
  * to `QUEUED` and resends it with its journal. That is a non-terminal kind
  * again, so the task simply reads as live until the resumed run ends it.
  *
+ * `DENIED` is terminal too: a person refused to let a held child run, so it
+ * ended without ever starting.
+ *
  * `UNASSIGN` is retained by the server for historical rows only and never
  * written for new tasks; it is left out.
  */
@@ -39,6 +42,7 @@ export const TERMINAL_EVENT_KINDS = [
   TaskEventKind.Failed,
   TaskEventKind.Interrupted,
   TaskEventKind.Lost,
+  TaskEventKind.Denied,
 ] as const;
 
 export const isTerminalEvent = (kind: TaskEventKind) =>

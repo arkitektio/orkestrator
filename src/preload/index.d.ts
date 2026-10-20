@@ -34,6 +34,7 @@ import type {
 import type {
   MeshClaimRequest,
   MeshEvent,
+  MeshFirewallState,
   MeshLockInitRequest,
   MeshLockInitResult,
   MeshLockSignRequest,
@@ -92,6 +93,8 @@ export type MeshApi = {
   lockInit: (request: MeshLockInitRequest) => Promise<MeshLockInitResult>;
   /** Restart the mesh client and reconnect every claimed mesh ("check again"). */
   restart: () => Promise<MeshStatusPayload>;
+  /** Windows' inbound firewall rules for the mesh sidecar (`none`: Windows has not asked yet). */
+  firewall: () => Promise<MeshFirewallState>;
   onEvent: (cb: (event: MeshEvent) => void) => () => void;
 };
 
