@@ -1,26 +1,24 @@
 import { Button } from "@/core/ui/button";
-import { Spinner } from "@/core/ui/spinner";
 import { TooltipButton } from "@/core/ui/tooltip-button";
 import type { Identifier, Object } from "@/core/types";
 import { useListCallsQuery } from "@/lovekit/api/graphql";
-import { PanelRight, Phone, Users } from "lucide-react";
+import { PanelRight, Users } from "lucide-react";
 
 import { useCallState } from "./store";
 import { toStructureInput } from "./structureInput";
 import { useOpenCall } from "./useOpenCall";
-import { useStartCall } from "./useStartCall";
 
 /**
  * The live calls about the object of any model page, in the host's Chat
  * sidebar beside the text conversations (a `chat` slot section). Each row
- * joins; without one there is a button to start the call.
+ * joins; without a live call it renders nothing. Starting one is the
+ * "Call about this" local action (context menu, ObjectButton).
  */
 export const StructureCallsSection = ({ identifier, object }: { identifier: Identifier; object: Object }) => {
   const about = toStructureInput({ identifier, id: object.id });
   const active = useCallState((state) => state.call);
   const openCall = useOpenCall();
-  const { start, starting, error } = useStartCall();
-  const { data, loading } = useListCallsQuery({
+  const { data } = useListCallsQuery({
     variables: { filter: { about: about ?? { identifier, object: -1 }, live: true } },
     skip: !about,
     pollInterval: 15_000,
@@ -30,6 +28,7 @@ export const StructureCallsSection = ({ identifier, object }: { identifier: Iden
   // A structure without a numeric id cannot be called about.
   if (!about) return null;
   const calls = data?.calls ?? [];
+  if (calls.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-2 p-2" data-testid="structure-calls">
@@ -61,20 +60,6 @@ export const StructureCallsSection = ({ identifier, object }: { identifier: Iden
           </div>
         );
       })}
-      {calls.length === 0 && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="justify-start"
-          disabled={starting}
-          onClick={() => void start([{ identifier, id: object.id }])}
-          data-testid="start-call"
-        >
-          {starting || loading ? <Spinner className="size-3" /> : <Phone />}
-          Start a call about this
-        </Button>
-      )}
-      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 };

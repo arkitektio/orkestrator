@@ -11,8 +11,7 @@ type Open = (id: string, title: string) => void;
 
 /**
  * The live call about the selection, or a new one, and straight into it:
- * the same ensure-then-join as `useStartCall`, through the service client an
- * action is handed. On a call itself it is simply the way in. `open` says
+ * ensure-then-join through the service client an action is handed. On a call itself it is simply the way in. `open` says
  * where the call's page goes.
  */
 const callAbout = async (
