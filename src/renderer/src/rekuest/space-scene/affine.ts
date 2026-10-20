@@ -80,3 +80,38 @@ export const freeSpot = (taken: readonly unknown[]): Affine => {
     }
   }
 };
+
+/** The size, in meters, a model is fitted to: a device on a bench, a little under a spot. */
+export const FIT_SIZE = 0.4;
+
+/** How far off a model's own size has to be before it is fitted on placing: ten times. */
+export const AUTO_FIT_RATIO = 10;
+
+/** The uniform scale of a placement: the largest of its axes, to four significant digits. */
+export const readScale = (affine: unknown): number => {
+  const scale = new Vector3();
+  toMatrix4(affine).decompose(new Vector3(), new Quaternion(), scale);
+  return Number(Math.max(Math.abs(scale.x), Math.abs(scale.y), Math.abs(scale.z)).toPrecision(4));
+};
+
+/** The affine scaled evenly to `scale`; its position and rotation are kept. */
+export const writeScale = (affine: unknown, scale: number): Affine => {
+  const position = new Vector3();
+  const quaternion = new Quaternion();
+  toMatrix4(affine).decompose(position, quaternion, new Vector3());
+  return fromMatrix4(new Matrix4().compose(position, quaternion, new Vector3(scale, scale, scale)));
+};
+
+/** The scale that makes a model whose largest extent is `extent` meters {@link FIT_SIZE} large. */
+export const fitScale = (extent: number): number => FIT_SIZE / extent;
+
+/**
+ * The scale a model is given when it is placed: a fit when its own size is
+ * {@link AUTO_FIT_RATIO} times too large or too small for the room (a model
+ * drawn in millimeters, say), `null` when it can stand as it was made.
+ */
+export const autoFitScale = (extent: number): number | null => {
+  if (!(extent > 0) || !Number.isFinite(extent)) return null;
+  const ratio = extent / FIT_SIZE;
+  return ratio >= AUTO_FIT_RATIO || ratio <= 1 / AUTO_FIT_RATIO ? fitScale(extent) : null;
+};

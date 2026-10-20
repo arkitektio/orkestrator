@@ -627,12 +627,14 @@ export const REKUEST_HELP = {
         <>Click a view in the scene, or its row under <b>In this space</b>, to select it.</>,
         <>With <b>Move</b> chosen, drag the arrows to move the selected view. With <b>Turn</b> chosen, drag the ring to turn it.</>,
         <>Type into <b>X</b>, <b>Y</b>, <b>Z</b> or <b>Turn</b> in the selected row to place it exactly, in meters and degrees.</>,
+        <>With <b>Scale</b> chosen, drag a handle to make the selected view larger or smaller. Type into <b>Scale</b> in its row to set it exactly, or press <b>Fit</b> to size it like a device on a bench.</>,
         <>Press <b>Remove</b> in the selected row to take the view out of the space.</>,
         <>Press <b>View</b> in the header to go back to the live scene.</>,
       ]}
       tips={[
         <>Changes are saved automatically; there is no save button.</>,
         <><b>Snap</b> moves in steps of 5 cm and turns in steps of 15°. Switch it off to place freely.</>,
+        <>A view whose model is ten times too large or too small (one drawn in millimeters, say) is fitted when you place it. Set <b>Scale</b> to 1 to show it as it was made.</>,
         <>An app stands in a space once. Clicking another view of an app that is already placed shows it with that view instead, on the same spot.</>,
         <>While editing, clicks select and never reach a device. You can also drop an agent card onto the scene to add its 3D view.</>,
       ]}
