@@ -1,3 +1,10 @@
+## [4.0.3](https://github.com/arkitektio/orkestrator/compare/v4.0.2...v4.0.3) (2026-10-20)
+
+
+### Bug Fixes
+
+* **mesh:** never hand another organisation's mesh to a new grant ([b427740](https://github.com/arkitektio/orkestrator/commit/b42774095cdf0e0291f1085cd79cb280f18e0ca8))
+
 ## [4.0.2](https://github.com/arkitektio/orkestrator/compare/v4.0.1...v4.0.2) (2026-10-20)
 
 
