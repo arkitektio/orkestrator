@@ -13,6 +13,7 @@ import {
 } from "@/rekuest/api/graphql";
 import { AgentStatusDot } from "@/rekuest/components/displays/AgentStatusDot";
 import { ActionLogo } from "@/rekuest/components/logo/ActionLogo";
+import { ActionMonogram } from "@/rekuest/components/logo/ActionMonogram";
 import { Availability, deriveAvailability } from "@/rekuest/lib/actionBrowse";
 
 // The catalog selects BrowseAction; every other list (Home, search) selects
@@ -44,35 +45,48 @@ const notes = (item: Item) =>
     item.isDev ? "dev" : null,
   ].filter(Boolean);
 
+/** The logo up front: the action's blok, or its monogram when it has none. */
+const LogoTile = ({ item }: Props) => (
+  <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg ring-1 ring-foreground/10">
+    {item.logo ? (
+      <ActionLogo action={item} className="size-full p-1" />
+    ) : (
+      <ActionMonogram name={item.name} className="size-full text-sm" />
+    )}
+  </span>
+);
+
 const TheCard = ({ item }: Props) => {
   const availability = deriveAvailability(item.implementations);
   const { openDialog } = useDialog();
+  const itemNotes = notes(item);
 
   return (
     <RekuestAction.Smart object={item} hover>
-      <Card className="group flex h-full flex-col gap-1.5 p-3 ring ring-0 group-data-[selected=true]:ring-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="flex min-w-0 items-center gap-1.5">
-            <ActionLogo action={item} className="h-4 w-4 self-center" />
+      <Card className="group flex h-full flex-col gap-2 p-3 ring ring-0 group-data-[selected=true]:ring-1">
+        <div className="flex items-start gap-3">
+          <LogoTile item={item} />
+          <div className="min-w-0 flex-1 pt-0.5">
             <RekuestAction.DetailLink
               object={item}
-              className="min-w-0 truncate text-sm font-medium leading-tight hover:text-primary transition-colors"
+              className="block truncate text-sm font-medium leading-tight transition-colors hover:text-primary"
             >
               {item.name}
             </RekuestAction.DetailLink>
-          </span>
-          <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
-            <AgentStatusDot
-              status={
-                availability.status === "none" ? "offline" : availability.status
-              }
-            />
-            {availabilityLabel(availability)}
-          </span>
-        </div>
-
-        <div className="truncate text-xs text-muted-foreground">
-          {item.app.identifier}
+            <div className="mt-0.5 truncate text-xs text-muted-foreground">
+              {item.app.identifier}
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            aria-label={`Run ${item.name}`}
+            title="Run"
+            onClick={() => openDialog("assign", { target: { action: item.id } })}
+          >
+            <Play className="h-3.5 w-3.5" />
+          </Button>
         </div>
 
         {item.description && (
@@ -81,18 +95,18 @@ const TheCard = ({ item }: Props) => {
           </div>
         )}
 
-        <div className="mt-auto flex h-6 items-center justify-between gap-2 pt-1 text-xs text-muted-foreground/60">
-          <span className="truncate">{notes(item).join(" · ")}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-            aria-label={`Run ${item.name}`}
-            title="Run"
-            onClick={() => openDialog("assign", { target: { action: item.id } })}
-          >
-            <Play className="h-3.5 w-3.5" />
-          </Button>
+        <div className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
+          <AgentStatusDot
+            status={
+              availability.status === "none" ? "offline" : availability.status
+            }
+          />
+          <span className="shrink-0">{availabilityLabel(availability)}</span>
+          {itemNotes.length > 0 && (
+            <span className="truncate text-muted-foreground/60">
+              · {itemNotes.join(" · ")}
+            </span>
+          )}
         </div>
       </Card>
     </RekuestAction.Smart>
