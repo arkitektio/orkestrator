@@ -102,6 +102,7 @@ describe("host registries", () => {
       "lokatedeleteservercopy",
       "lokateplace",
       "measureterm",
+      "meshfirewall",
       "movetofolder",
       "neuroneditorhelp",
       "notifyusers",

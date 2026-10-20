@@ -457,7 +457,7 @@ describe("MeshService", () => {
 
   it("exposes the IPC surface as a closed set of channels", () => {
     expect([...h.handlers.keys()].sort()).toEqual(
-["mesh:claim", "mesh:lock-init", "mesh:lock-sign", "mesh:ping", "mesh:restart", "mesh:status"].sort(),
+["mesh:claim", "mesh:firewall", "mesh:lock-init", "mesh:lock-sign", "mesh:ping", "mesh:restart", "mesh:status"].sort(),
     );
   });
 });

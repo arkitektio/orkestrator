@@ -102,6 +102,7 @@ import { GcOnNavigate } from "@/app/hooks/use-gc-on-navigate";
 import { OrganizationBrandSync } from "@/lok/components/OrganizationBrandSync";
 import { ProfileIdentitySync } from "@/lok/components/ProfileIdentitySync";
 import { MeshSync } from "../core/connection/ui/mesh/MeshSync";
+import { MeshFirewallPrompt } from "../core/connection/ui/mesh/MeshFirewallPrompt";
 import { CommandPaletteProvider } from "@/core/command/CommandPaletteProvider";
 import { CommandMenuHost } from "@/core/command/Host";
 import { ActiveTabRouter } from "@/core/tabs/ActiveTabRouter";
@@ -175,6 +176,7 @@ export const AppProvider = ({
                                     <CommandPaletteProvider>
                                     <WardRegistrar />
                                     <MeshSync />
+                                    {!quick && <MeshFirewallPrompt />}
                                     {/* The cached brand, from the first frame — not after lok answers. */}
                                     <OrganizationBrandSync />
                                     {/* One palette for the whole app. It used to

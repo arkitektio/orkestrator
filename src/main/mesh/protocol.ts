@@ -29,6 +29,14 @@ export const MESH_PING_CHANNEL = "mesh:ping";
 export const MESH_LOCK_SIGN_CHANNEL = "mesh:lock-sign";
 export const MESH_LOCK_INIT_CHANNEL = "mesh:lock-init";
 export const MESH_RESTART_CHANNEL = "mesh:restart";
+export const MESH_FIREWALL_CHANNEL = "mesh:firewall";
+
+/**
+ * Windows Defender Firewall's inbound rules for meshd (`firewall.ts`).
+ * `none`: Windows has not asked yet, so it will when meshd first starts.
+ * `mixed`: rules for some network profiles allow and others block.
+ */
+export type MeshFirewallState = "none" | "allow" | "block" | "mixed" | "unknown" | "not-windows";
 
 /**
  * One organisation mesh. It belongs to a PROFILE (organisation + hub), not to

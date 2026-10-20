@@ -60,6 +60,7 @@ import {
 import {
   MESH_CLAIM_CHANNEL,
   MESH_EVENT_CHANNEL,
+  MESH_FIREWALL_CHANNEL,
   MESH_LOCK_INIT_CHANNEL,
   MESH_LOCK_SIGN_CHANNEL,
   MESH_PING_CHANNEL,
@@ -67,6 +68,7 @@ import {
   MESH_STATUS_CHANNEL,
   type MeshClaimRequest,
   type MeshEvent,
+  type MeshFirewallState,
   type MeshLockInitRequest,
   type MeshLockInitResult,
   type MeshLockSignRequest,
@@ -284,6 +286,7 @@ const api = {
     lockInit: (request: MeshLockInitRequest): Promise<MeshLockInitResult> =>
       ipcRenderer.invoke(MESH_LOCK_INIT_CHANNEL, request),
     restart: (): Promise<MeshStatusPayload> => ipcRenderer.invoke(MESH_RESTART_CHANNEL),
+    firewall: (): Promise<MeshFirewallState> => ipcRenderer.invoke(MESH_FIREWALL_CHANNEL),
     onEvent: (cb: (event: MeshEvent) => void) => subscribe<MeshEvent>(MESH_EVENT_CHANNEL, cb),
   },
   /**

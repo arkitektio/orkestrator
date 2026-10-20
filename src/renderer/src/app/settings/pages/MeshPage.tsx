@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/cor
 import { Switch } from "@/core/ui/switch";
 import type { ProfileMesh } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import { useMeshes } from "@/core/connection/mesh/useMeshes";
+import { useMeshFirewallState } from "@/core/connection/mesh/firewallNotice";
 import { cn } from "@/core/util/utils";
 import { AlertTriangle, Clock, Loader2, Lock, Network, Radio, RotateCw, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -118,6 +119,8 @@ export const MeshPage = () => {
           The mesh client stopped unexpectedly ({mesh.sidecar.detail}). Restarting Orkestrator starts it again.
         </Notice>
       )}
+
+      {own?.enabled && <FirewallNotice />}
 
       {mesh.error && (
         <Notice icon={AlertTriangle} tone="bad">
@@ -338,6 +341,41 @@ const MeshCard = ({
       )}
     </>
   );
+};
+
+/**
+ * Windows only: whether the firewall lets other machines reach this one
+ * first. Without it the mesh still works, but more of it goes through a relay.
+ */
+const FirewallNotice = () => {
+  const state = useMeshFirewallState();
+  switch (state) {
+    case "none":
+      return (
+        <Notice icon={ShieldCheck}>
+          Windows will ask whether the mesh may accept incoming connections when it starts. Click Allow access (needs
+          administrator rights) so machines can connect directly.
+        </Notice>
+      );
+    case "block":
+      return (
+        <Notice icon={ShieldCheck} tone="warn">
+          Windows Firewall blocks incoming connections to the mesh. It still works, but some connections go through a
+          relay and are slower. An administrator can allow “meshd” under Windows Security → Firewall &amp; network
+          protection → Allow an app through firewall.
+        </Notice>
+      );
+    case "mixed":
+      return (
+        <Notice icon={ShieldCheck} tone="warn">
+          Windows Firewall allows incoming connections to the mesh on some kinds of network only (for example Private
+          but not Public). On the others, some connections go through a relay. An administrator can change it under
+          Windows Security → Firewall &amp; network protection → Allow an app through firewall.
+        </Notice>
+      );
+    default:
+      return null;
+  }
 };
 
 /** What the state means for the user, when it is not simply "connected". */

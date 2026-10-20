@@ -8,6 +8,7 @@ import {
 } from "@/core/connection/arkitekt/fakts/profileStorageSchema";
 import { isValidControlUrl, type MeshConfig } from "../../../../../main/mesh/protocol";
 import { meshBridge } from "./bridge";
+import { meshFirewallGate } from "./firewallNotice";
 import { watchMesh, type GateOutcome } from "./meshGate";
 
 /**
@@ -89,6 +90,9 @@ export const meshClaimFor = (mesh: ProfileMesh | undefined): MeshConfig | null =
 export const claimProfileMesh = async (mesh: ProfileMesh | undefined, authKey?: string): Promise<void> => {
   const bridge = meshBridge();
   if (!bridge) return;
+  // Starting meshd is when Windows asks about incoming connections.
+  const firewall = meshFirewallGate(!!meshClaimFor(mesh));
+  if (firewall) await firewall;
   try {
     await bridge.claim({ mesh: meshClaimFor(mesh), authKey: authKey || undefined });
   } catch (error) {
@@ -136,6 +140,9 @@ export const joinAndPark = async (
   if (!meshBridge() || !mesh.enabled) return "none";
   joining.add(mesh.id);
   publishJoining();
+  // The join's clock starts once the user has read the firewall explainer.
+  const firewall = meshFirewallGate(true);
+  if (firewall) await firewall;
   const gate = watchMesh(mesh, { timeoutMs });
   try {
     await claimProfileMesh(mesh, authKey);
