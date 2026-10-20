@@ -376,14 +376,16 @@ export class WindowManager implements AppModule {
             return { action: "deny" };
         });
 
+        // `?role=popout`: the renderer knows it is not the main window, which
+        // alone runs the agent (see renderer `windowRole`).
         if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-            const loaded_url = process.env["ELECTRON_RENDERER_URL"] + "#" + path;
+            const loaded_url = process.env["ELECTRON_RENDERER_URL"] + "?role=popout#" + path;
             secondaryWindow.loadURL(loaded_url);
         } else {
             // HashRouter: the route is just a fragment, so we can load it
             // directly instead of navigating after load. This also serves the
             // secondary window over app:// so it is cross-origin isolated too.
-            secondaryWindow.loadURL(`${APP_ORIGIN}/index.html#${path}`);
+            secondaryWindow.loadURL(`${APP_ORIGIN}/index.html?role=popout#${path}`);
         }
 
         secondaryWindow.on('closed', () => {

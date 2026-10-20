@@ -14,7 +14,7 @@ function App() {
     );
   }
   return (
-    <AppProvider>
+    <AppProvider role={windowRole()}>
       <AppShell />
     </AppProvider>
   );

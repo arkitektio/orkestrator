@@ -144,6 +144,7 @@ export const AppProvider = ({
    * palette source and action works — but tabs FORWARD to the main window,
    * the shell renders the palette itself, and the always-on background work
    * (module pollers, updater, dictation) stays with the real windows.
+   * `popout`: a window beside the main one, the same app, but not its agent.
    */
   role?: WindowRole;
 }) => {
@@ -172,7 +173,8 @@ export const AppProvider = ({
                               <DialogProvider forward={quick ? forwardDialogToMain : undefined}>
                                 <SelectionProvider>
                                   <SmartPrefetchProvider>
-                                  <AgentProvider disabled={false}>
+                                  {/* One window is this app's agent: the main one. */}
+                                  <AgentProvider disabled={role !== "app"}>
                                     <CommandPaletteProvider>
                                     <WardRegistrar />
                                     <MeshSync />
