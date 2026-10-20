@@ -67,6 +67,16 @@ export const dismiss = (id: string) => {
   emit();
 };
 
+/** Hide every task notification at once (one emit); none of them is re-shown. */
+export const dismissAll = () => {
+  if (active.length === 0) {
+    return;
+  }
+  active.forEach(rememberDismissed);
+  active = [];
+  emit();
+};
+
 /** Reactively read the ordered (newest-first) list of active notification ids. */
 export const useTaskNotifications = () =>
   useSyncExternalStore(subscribe, () => active);

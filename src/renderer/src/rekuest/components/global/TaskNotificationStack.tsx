@@ -3,7 +3,7 @@ import { cn } from '@/core/util/utils'
 import { LiveTaskFragment, TaskEventKind } from '@/rekuest/api/graphql'
 import { useTasks } from '@/rekuest/hooks/useTasks'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, X } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   MAX_VISIBLE_ROWS,
@@ -15,7 +15,7 @@ import {
   splitVisible,
   TaskRank
 } from '../../lib/taskIsland'
-import { dismiss, useTaskNotifications } from '../../lib/taskNotifications'
+import { dismiss, dismissAll, useTaskNotifications } from '../../lib/taskNotifications'
 import { TaskIslandRow, taskIslandHeaderId } from './TaskIslandRow'
 
 /** How long a quietly finished task stays before it clears on its own. */
@@ -321,40 +321,64 @@ export const TaskNotificationStack = () => {
                 out below the island, like a stack, with one dot per hidden
                 task in the colour of its state — "there is more, and this is
                 how it is doing" said without a +N counter. */}
+            {/* Resting on the peek grows it a little and slides out a mini
+                "Close all" at its end: with this many tasks, clearing them
+                one by one is the chore. It only hides them, like a row's ×. */}
             <AnimatePresence initial={false}>
               {overflowing && (
-                <motion.button
+                <motion.div
                   key="stack-peek"
-                  type="button"
-                  data-testid="task-stack-peek"
-                  aria-expanded={showAll}
-                  aria-label={
-                    showAll
-                      ? 'Show fewer tasks'
-                      : `Show ${hidden.length} more ${hidden.length === 1 ? 'task' : 'tasks'}`
-                  }
-                  onClick={() => {
-                    freeze()
-                    setShowAll((current) => !current)
-                  }}
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="relative mx-2.5 -mt-px flex h-3.5 w-[calc(100%-1.25rem)] cursor-pointer items-center justify-center gap-1 rounded-b-xl border border-t-0 border-border/50 bg-background/60 text-muted-foreground shadow-sm shadow-black/5 hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="group/peek relative mx-2.5 -mt-px flex h-3.5 w-[calc(100%-1.25rem)] overflow-hidden rounded-b-xl border border-t-0 border-border/50 bg-background/60 text-muted-foreground shadow-sm shadow-black/5 transition-[height] duration-150 focus-within:h-5 hover:h-5"
                 >
-                  {showAll ? (
-                    <ChevronDown className="h-3 w-3" />
-                  ) : (
-                    overflowDots(hidden).map((id) => (
-                      <span
-                        key={id}
-                        data-testid="task-stack-dot"
-                        className={cn('h-1 w-1 rounded-full', DOT[rankById.get(id) ?? 0])}
-                      />
-                    ))
-                  )}
-                </motion.button>
+                  <button
+                    type="button"
+                    data-testid="task-stack-peek"
+                    aria-expanded={showAll}
+                    aria-label={
+                      showAll
+                        ? 'Show fewer tasks'
+                        : `Show ${hidden.length} more ${hidden.length === 1 ? 'task' : 'tasks'}`
+                    }
+                    onClick={() => {
+                      freeze()
+                      setShowAll((current) => !current)
+                    }}
+                    className="flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                  >
+                    {showAll ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      overflowDots(hidden).map((id) => (
+                        <span
+                          key={id}
+                          data-testid="task-stack-dot"
+                          className={cn('h-1 w-1 rounded-full', DOT[rankById.get(id) ?? 0])}
+                        />
+                      ))
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="task-stack-close-all"
+                    aria-label="Close all tasks"
+                    title="Close all"
+                    onClick={() => {
+                      cancelOpen(intent.current)
+                      setHoverId(null)
+                      setPinnedId(null)
+                      setShowAll(false)
+                      dismissAll()
+                    }}
+                    className="flex max-w-0 shrink-0 cursor-pointer items-center gap-0.5 overflow-hidden whitespace-nowrap border-l border-transparent text-[10px] leading-none opacity-0 transition-all duration-150 hover:bg-background hover:text-destructive focus-visible:max-w-20 focus-visible:px-1.5 focus-visible:opacity-100 focus-visible:outline-none group-hover/peek:max-w-20 group-hover/peek:border-border/50 group-hover/peek:px-1.5 group-hover/peek:opacity-100"
+                  >
+                    <X className="h-2.5 w-2.5 shrink-0" />
+                    Close all
+                  </button>
+                </motion.div>
               )}
             </AnimatePresence>
           </motion.div>
