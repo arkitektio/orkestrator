@@ -1,3 +1,50 @@
+# [4.0.0](https://github.com/arkitektio/orkestrator/compare/v3.5.0...v4.0.0) (2026-10-20)
+
+
+* feat!: lovekit shows the streams agents offer, live ([1ca81c6](https://github.com/arkitektio/orkestrator/commit/1ca81c6eb287003db0ca516ee739f81adb680f76))
+
+
+### Bug Fixes
+
+* a stale retry never joins an agent's room a second time ([502126c](https://github.com/arkitektio/orkestrator/commit/502126cab3e86c37407ffa3a1f1973b4f573eebe))
+* a stale retry never joins an agent's room a second time ([cfd1112](https://github.com/arkitektio/orkestrator/commit/cfd1112b3abb16c59776f0d01a74c968120b92b7))
+* **agent:** give every agent frame an id, and send agent:done on return ([c6b70be](https://github.com/arkitektio/orkestrator/commit/c6b70be1812f0c91407d808c34bd1fdddc25d297))
+* benes dock problem ([aeb00ee](https://github.com/arkitektio/orkestrator/commit/aeb00eebf4eab45a72789b10867e7a15efbce0d0))
+* **doctor:** a failed mesh dial says why, not just MESH_DIAL_FAILED ([0fa7d4d](https://github.com/arkitektio/orkestrator/commit/0fa7d4d955da26039fad02dd2a503d82bdbbd232))
+
+
+### Features
+
+* **agent:** actions that ask the person, with logos of their own ([003836a](https://github.com/arkitektio/orkestrator/commit/003836a7a2a1c8d888d07032f4306104d6a8e1b4))
+* **agent:** engage / disengage toggle in the rail footer ([c1e0466](https://github.com/arkitektio/orkestrator/commit/c1e0466767734db77030d767c9f8787c7a943c07))
+* **agent:** only the main window runs the agent ([3847bc5](https://github.com/arkitektio/orkestrator/commit/3847bc5750400cd9b6aad3212bb4ba1d9cf59a33))
+* **alpaka:** holds in the conversation, and what was decided ([3fe9c79](https://github.com/arkitektio/orkestrator/commit/3fe9c799e32e3e59c7d60d55f5048ddde434e3d2))
+* **alpaka:** replyers that take the structure a room is about ([e3c7f2f](https://github.com/arkitektio/orkestrator/commit/e3c7f2f5533d1e108937423ae927922da3a64515))
+* better file page ([83249f8](https://github.com/arkitektio/orkestrator/commit/83249f8a0169ff5beb691f137742bf4580c478ef))
+* **connection:** start the mesh only when needed, and show each step of connecting ([06b513f](https://github.com/arkitektio/orkestrator/commit/06b513f3028466d41de995dd52facb72b26231cb))
+* **dialogs:** awaitDialog, a dialog whose answer you wait for ([f84122d](https://github.com/arkitektio/orkestrator/commit/f84122df58643638c578bf052c6589370e4e7409))
+* **fluss:** Python flows: a Monaco editor checked live by the server, deploy and run ([717de34](https://github.com/arkitektio/orkestrator/commit/717de3428952c31a7c7b5b95e2b29d6a0c00b4d1))
+* **kuvert:** organization mail providers ([2efb340](https://github.com/arkitektio/orkestrator/commit/2efb340a058cb196bd942c8dbd4d6d6cbec3fb81))
+* **lok:** share a collaboration by link, list its links, revoke one ([31f63e7](https://github.com/arkitektio/orkestrator/commit/31f63e7451e866dd793b2059fc6d35242361c710))
+* lovekit shows the streams agents offer, live ([948d17d](https://github.com/arkitektio/orkestrator/commit/948d17d2834bfa8215bc8176b96a4da1ee9f936a))
+* **lovekit:** informative stream and broadcast cards, a player that says what it is doing ([d221c01](https://github.com/arkitektio/orkestrator/commit/d221c01d5d35155e2f22a2cf9def39bba3ef4063))
+* **mesh:** explain Windows' firewall question before the mesh first starts ([22a6ccb](https://github.com/arkitektio/orkestrator/commit/22a6ccb0e75801e516618c797b7d577d83f79c54))
+* **notify:** one toast surface, errors as sentences, dialogs show their own failures ([e411c59](https://github.com/arkitektio/orkestrator/commit/e411c59ee589474055b4e5fcd65e8a5e42336584))
+* **rekuest:** action cards lead with the logo, or a monogram without one ([ff88d46](https://github.com/arkitektio/orkestrator/commit/ff88d462da1026383992c791083362a1481bef37))
+* **rekuest:** approve held work, and an Auto toggle for runs that should not ask ([f5f3204](https://github.com/arkitektio/orkestrator/commit/f5f3204a59d75becb4f14919fffccfb2a5b23739))
+* **rekuest:** close every task notification at once ([f2c5e79](https://github.com/arkitektio/orkestrator/commit/f2c5e7922e41acc5e6dd753e6c9e3ab643a4ca95))
+* **rekuest:** scale a view in a space, and fit one drawn at the wrong size ([fd796b1](https://github.com/arkitektio/orkestrator/commit/fd796b17bfec2d95f7db20b13e47b01310c5a5a7))
+* **rekuest:** supervisor actions on agents, provided bloks you can fork ([288eb33](https://github.com/arkitektio/orkestrator/commit/288eb335239bd00f8c3203af673c15bafde58d51))
+* with collabs ([0e98e43](https://github.com/arkitektio/orkestrator/commit/0e98e4311f0939f28b832c3fc04e1bb99163d5ac))
+
+
+### BREAKING CHANGES
+
+* solo broadcasts are gone (pages, display, widget), and with them the
+`StreamRender` blok: a blok shows a stream with `<StructureDisplay value=... />`.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 # [3.5.0](https://github.com/arkitektio/orkestrator/compare/v3.4.0...v3.5.0) (2026-10-16)
 
 
