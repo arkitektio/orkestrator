@@ -153,7 +153,7 @@ export class AgentGateway {
                   sender.send("agent:yield", { task: task.task, returns });
               },
               return: (returns) => {
-                  sender.send("agent:return", { task: task.task, returns });
+                  sender.send("agent:done", { task: task.task, returns });
               },
               error: (error) => {
                   sender.send("agent:error", { task: task.task, error });
