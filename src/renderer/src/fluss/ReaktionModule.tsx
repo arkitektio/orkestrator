@@ -9,6 +9,11 @@ import Workspace from "./pages/Workspace";
 import Workspaces from "./pages/Workspaces";
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import Flows from "./pages/Flows";
+import NewPythonFlow from "./pages/NewPythonFlow";
+import PythonFlow from "./pages/PythonFlow";
+import PythonFlows from "./pages/PythonFlows";
+import PythonRun from "./pages/PythonRun";
+import PythonRuns from "./pages/PythonRuns";
 
 interface Props { }
 
@@ -32,6 +37,11 @@ const Module: React.FC<Props> = () => {
         <Route path="runs/:id" element={<Run />} />
         <Route path="home" element={<Home />} />
         <Route path="flows" element={<Flows />} />
+        <Route path="python" element={<PythonFlows />} />
+        <Route path="python/new" element={<NewPythonFlow />} />
+        <Route path="python/:id" element={<PythonFlow />} />
+        <Route path="pythonruns" element={<PythonRuns />} />
+        <Route path="pythonruns/:id" element={<PythonRun />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ModuleLayout>

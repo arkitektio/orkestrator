@@ -1,0 +1,104 @@
+fragment ManifestEntry on ManifestEntry {
+  alias
+  actionHash
+  app
+  key
+  version
+  effect
+}
+
+fragment PythonFlowVersion on PythonFlow {
+  id
+  title
+  status
+  hash
+  createdAt
+}
+
+fragment PythonFlow on PythonFlow {
+  id
+  title
+  description
+  lineage
+  source
+  entrypoint
+  runtime
+  status
+  hash
+  physical
+  createdAt
+  descriptors
+  previous {
+    id
+  }
+  args {
+    ...FlussArgPort
+  }
+  returns {
+    ...FlussReturnPort
+  }
+  manifest {
+    ...ManifestEntry
+  }
+  versions {
+    ...PythonFlowVersion
+  }
+}
+
+fragment ListPythonFlow on PythonFlow {
+  id
+  title
+  description
+  lineage
+  status
+  hash
+  physical
+  createdAt
+  descriptors
+}
+
+fragment ListPythonRun on PythonRun {
+  id
+  taskId
+  status
+  createdAt
+  finishedAt
+  flow {
+    id
+    title
+  }
+}
+
+fragment DetailPythonRun on PythonRun {
+  id
+  taskId
+  status
+  createdAt
+  finishedAt
+  flow {
+    id
+    title
+    source
+    entrypoint
+    status
+    manifest {
+      ...ManifestEntry
+    }
+  }
+}
+
+fragment PythonFlowValidation on PythonFlowValidation {
+  ok
+  stubs
+  runtime
+  diagnostics {
+    message
+    line
+  }
+  args {
+    ...FlussArgPort
+  }
+  returns {
+    ...FlussReturnPort
+  }
+}

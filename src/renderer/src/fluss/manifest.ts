@@ -19,5 +19,7 @@ export const manifest: ModuleManifest = {
     { identifier: "@fluss/workspace", name: "Workspace", datum: false, path: "workspaces/:id" },
     { identifier: "@fluss/reactive_template", name: "Reactive Template", datum: false, path: "reactive_templates/:id" },
     { identifier: "@fluss/run", name: "Run", datum: false, path: "runs/:id" },
+    { identifier: "@fluss/pythonflow", name: "Python Flow", datum: false, path: "python/:id" },
+    { identifier: "@fluss/pythonrun", name: "Python Run", datum: false, path: "pythonruns/:id" },
   ],
 };

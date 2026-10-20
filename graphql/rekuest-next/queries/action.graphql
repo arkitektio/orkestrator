@@ -156,3 +156,21 @@ query SimilarActions($id: ID!, $limit: Int!) {
     ...ListAction
   }
 }
+
+# An action's signature by hash: what a caller (a Python flow's manifest)
+# checks its calls against.
+query ActionSignatureByHash($hash: ActionHash!) {
+  action(hash: $hash) {
+    id
+    name
+    description
+    hash
+    kind
+    key
+    version
+    app {
+      identifier
+    }
+    ...Ports
+  }
+}

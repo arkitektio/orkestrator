@@ -25,7 +25,9 @@ const TAB_LABEL: Record<StageTab, string> = {
 /** The stage views this task has something for, in switcher order. */
 export const stageTabs = (task: DetailTaskFragment): StageTab[] => {
   const tabs: StageTab[] = [];
-  if (task.implementation?.higherOrderFor?.action?.key === "run_flow") {
+  // fluss's runners: a graph flow, or a Python flow (deployed, or called bare).
+  const runner = task.implementation?.higherOrderFor?.action?.key ?? task.implementation?.interface;
+  if (runner === "run_flow" || runner === "run_python_flow") {
     tabs.push("flow");
   }
   // Only when one of its agents stands somewhere: there is no room to show otherwise.

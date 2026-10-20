@@ -1,3 +1,7 @@
+directive @auth(allow_scoped: Boolean, any_org_role_of: [String!], any_role_of: [String!], any_scope_of: [String!], required_org_roles: [String!], required_roles: [String!], required_scopes: [String!]) on FIELD_DEFINITION
+
+directive @identified(by: String!) on OBJECT
+
 directive @unionElementOf(discriminator: String!, key: String!, union: String!) repeatable on INPUT_OBJECT
 
 """A JSON-serializable argument entry for a multi-agent action trigger."""
@@ -243,7 +247,7 @@ input ArgPortInput {
   effects: [EffectInput!] = null
 
   """
-  The identifier of a structure port. This is used to uniquely identify a specific type of structure.
+  The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it.
   """
   identifier: String = null
 
@@ -483,6 +487,49 @@ input CloseRunInput {
   run: ID!
 }
 
+"""
+What a guest granted it sees of the organization: the objects put in it, and what is part of them.
+"""
+type Collaboration {
+  createdAt: DateTime!
+  description: String
+  id: ID!
+
+  """What is in the collaboration; what is part of these is in it too"""
+  items: [CollaborationItem!]!
+  name: String!
+}
+
+"""
+One object in a collaboration: put there, or brought along with one that needs it to be seen.
+"""
+type CollaborationItem {
+  addedAt: DateTime!
+
+  """
+  Whether it is in the collaboration only as what another object in it needs to be seen
+  """
+  brought: Boolean!
+  id: ID!
+
+  """The structure the object is known by across the hub: @mikro/scene"""
+  identifier: String
+
+  """The object's id, in its structure"""
+  objectId: String!
+}
+
+"""An object to put in, or take out of, a collaboration"""
+input CollaborationObjectInput {
+  collaboration: ID!
+
+  """The structure the object is known by: @mikro/scene"""
+  identifier: String!
+
+  """The object's id"""
+  object: ID!
+}
+
 """A single key-value prop configuration for a component layout node."""
 type ComponentProp {
   agentCall: AgentCall
@@ -522,18 +569,26 @@ input ComponentPropInput {
   utilCall: UtilCallInput = null
 }
 
+"""A new collaboration"""
+input CreateCollaborationInput {
+  description: String = null
+  name: String!
+}
+
 """
-A new PythonFlow version, carrying the report the executor's validation produced for its source.
+A new PythonFlow version: its source and the actions it may call. The server validates it and derives its ports and runtime.
 """
 input CreatePythonFlowInput {
-  args: [ArgPortInput!]! = []
   description: String = null
   entrypoint: String! = "main"
   manifest: [ManifestEntryInput!]! = []
   previous: ID = null
-  returns: [ReturnPortInput!]! = []
-  runtime: String!
   source: String!
+
+  """
+  Structure identifiers the entrypoint's signature uses that no action mentions
+  """
+  structures: [String!]! = []
   title: String = null
 }
 
@@ -690,14 +745,6 @@ interface Effect {
   source: String
 }
 
-"""
-The effect class of an implementation — declared by the implementation, never the caller. NONE work is freely retryable/reclaimable; PHYSICAL work touches the real world (no UPSERT), so an ambiguous failure is terminal and must not be retried.
-"""
-enum EffectClass {
-  NONE
-  PHYSICAL
-}
-
 "\n    An effect is a way to modify a port based on a condition. For example,\n    you could have an effect that hides the port if another port meets a condition,\n    e.g. when the user selects a certain option in a dropdown, another port is hidden.\n\n    The condition is a pure blok UtilCall (`call`) evaluated client-side against the\n    catalog; it must return a boolean deciding whether the effect applies. `dependencies`\n    is the authoritative list of other ports the call may reference (plus `value` for the\n    port's own value).\n    "
 input EffectInput {
   """
@@ -736,6 +783,16 @@ enum EffectKind {
   MESSAGE
 }
 
+"""
+What running an implementation again would do to the world. Purely informational: shown to whoever decides about a lost task.
+"""
+enum Effects {
+  IRREVERSIBLE
+  NONE
+  REPEATABLE
+  UNKNOWN
+}
+
 """The JSON-serializable payload carried by a run event."""
 scalar EventValue
 
@@ -748,6 +805,11 @@ type Flow {
 
   """An optional longer description of what the flow does."""
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@fluss/status`). The keys are the ones fluss declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """
   The full node-and-edge graph (nodes, edges and globals) that defines the flow.
@@ -786,6 +848,11 @@ input FlowFilter {
 
   """Filter by whether the current user has pinned the item"""
   pinned: Boolean
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [RequiresInput!]
 
   """
   Search by title (case-insensitive substring) or by the meaning of the query against title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking
@@ -996,6 +1063,11 @@ The `Identifier` scalar is a structure identifier of the form `@package/key` (e.
 scalar Identifier
 
 """
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf).
+"""
+scalar JSON @specifiedBy(url: "https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf")
+
+"""
 The `JSONSerializable` scalar type represents a JSON-serializable value.
 """
 scalar JSONSerializable
@@ -1044,8 +1116,10 @@ type ManifestEntry {
   """The app that provides the action, if pinned."""
   app: String
 
-  """Whether calling the action touches the real world (PHYSICAL)."""
-  effect: EffectClass!
+  """
+  What calling the action again would do to the world. IRREVERSIBLE marks the flow physical.
+  """
+  effect: Effects!
 
   """The key of the action within its app, if pinned."""
   key: String
@@ -1055,7 +1129,7 @@ type ManifestEntry {
 }
 
 """
-One action a Python flow may call, as the executor's validation resolved it.
+One action a Python flow may call, with the ports of that action: the source is checked against them, and only the hash is stored.
 """
 input ManifestEntryInput {
   actionHash: String!
@@ -1063,8 +1137,19 @@ input ManifestEntryInput {
   """The name the action is injected under in the source"""
   alias: String!
   app: String = null
-  effect: EffectClass! = NONE
+
+  """The action's arg ports, which the source's calls are checked against"""
+  args: [ArgPortInput!]! = []
+  effect: Effects! = UNKNOWN
   key: String = null
+
+  """The action's kind: a Python flow can only call FUNCTION actions"""
+  kind: ActionKind!
+
+  """
+  The action's return ports, which the source's use of its results is checked against
+  """
+  returns: [ReturnPortInput!]! = []
   version: String = null
 }
 
@@ -1089,7 +1174,12 @@ type MessageEffect implements Effect {
 
 type Mutation {
   """
-  Archive a PUBLISHED Python flow version, so it is no longer registered.
+  Put an object in a collaboration, with what it needs to be seen: a run brings its flow, a flow its workspace, a workspace its flows
+  """
+  addToCollaboration(input: CollaborationObjectInput!): Collaboration!
+
+  """
+  Archive a PUBLISHED Python flow version, so it no longer runs (its runs keep pointing at it).
   """
   archivePythonFlow(input: PythonFlowRefInput!): PythonFlow!
 
@@ -1099,8 +1189,11 @@ type Mutation {
   """Mark a run as COMPLETED."""
   closeRun(input: CloseRunInput!): Run!
 
+  """Create an empty collaboration, to put objects in and grant a guest"""
+  createCollaboration(input: CreateCollaborationInput!): Collaboration!
+
   """
-  Store a new DRAFT Python flow version (or return the existing one with the same content in its lineage).
+  Validate a Python flow's source against the actions it may call and store it as a new DRAFT version, with the ports and runtime the validation derives (or return the existing one with the same content in its lineage). A source that does not validate is refused.
   """
   createPythonFlow(input: CreatePythonFlowInput!): PythonFlow!
 
@@ -1115,6 +1208,11 @@ type Mutation {
   """Create a new workspace, seeded with an initial flow."""
   createWorkspace(input: CreateWorkspaceInput!): Workspace!
 
+  """
+  Delete a collaboration: whoever was granted it sees nothing of it any more
+  """
+  deleteCollaboration(id: ID!): ID!
+
   """Delete a DRAFT Python flow version."""
   deletePythonFlow(input: PythonFlowRefInput!): ID!
 
@@ -1125,9 +1223,14 @@ type Mutation {
   deleteSnapshot(input: DeleteSnapshotInput!): ID!
 
   """
-  Publish a DRAFT (or re-publish an ARCHIVED) Python flow version, so it is registered as an action.
+  Publish a DRAFT (or re-publish an ARCHIVED) Python flow version, so it can run and be deployed as an action.
   """
   publishPythonFlow(input: PythonFlowRefInput!): PythonFlow!
+
+  """
+  Take an object out of a collaboration, with what it brought that nothing else there needs
+  """
+  removeFromCollaboration(input: CollaborationObjectInput!): Collaboration!
 
   """Capture a state snapshot of a run at a logical time."""
   snapshot(input: SnapshotRunInput!): Snapshot!
@@ -1248,7 +1351,7 @@ type Provides {
 
 input ProvidesInput {
   """
-  The key of the provision: the path into the object the constraint reads
+  The key of the provision: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes')
   """
   key: String!
 
@@ -1292,7 +1395,7 @@ type ProxyWidget implements AssignWidget {
 }
 
 """
-A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions are registered as actions.
+A PythonFlow is one immutable version of a flow written as Python source. Versions of the same flow share a lineage; identical content within a lineage is deduplicated. Only PUBLISHED versions run, and only they can be deployed as actions.
 """
 type PythonFlow {
   """The arguments of the entrypoint, as rekuest ports."""
@@ -1303,6 +1406,11 @@ type PythonFlow {
 
   """An optional longer description of what the flow does."""
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@fluss/status`). The keys are the ones fluss declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """The function in the source that is called."""
   entrypoint: String!
@@ -1322,7 +1430,7 @@ type PythonFlow {
   """The versions derived from this one."""
   nextVersions(filters: PythonFlowFilter, ordering: [PythonFlowOrder!]! = [], pagination: OffsetPaginationInput): [PythonFlow!]!
 
-  """Whether any action in the manifest has a PHYSICAL effect."""
+  """Whether any action in the manifest has an IRREVERSIBLE effect."""
   physical: Boolean!
 
   """The version this one was derived from, if any."""
@@ -1342,7 +1450,7 @@ type PythonFlow {
   """The Python source of the flow."""
   source: String!
 
-  """DRAFT, PUBLISHED (registered as an action) or ARCHIVED."""
+  """DRAFT, PUBLISHED (runs, and can be deployed as an action) or ARCHIVED."""
   status: PythonFlowStatus!
 
   """A human-readable title for the flow."""
@@ -1350,6 +1458,15 @@ type PythonFlow {
 
   """Every version in this flow's lineage, oldest first."""
   versions: [PythonFlow!]!
+}
+
+"""One problem with a Python flow's source."""
+type PythonFlowDiagnostic {
+  """The line of the source it is on, when known."""
+  line: Int
+
+  """What is wrong, as the checker reports it."""
+  message: String!
 }
 
 input PythonFlowFilter {
@@ -1374,6 +1491,11 @@ input PythonFlowFilter {
   pinned: Boolean
 
   """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [RequiresInput!]
+
+  """
   Search by title (case-insensitive substring) or by the meaning of the query against title and description. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking
   """
   search: String
@@ -1394,7 +1516,21 @@ input PythonFlowRefInput {
 }
 
 """
-The lifecycle of a PythonFlow version: only PUBLISHED versions are registered as actions.
+A Python flow's source and the actions it may call: what validatePythonFlow checks.
+"""
+input PythonFlowSourceInput {
+  entrypoint: String! = "main"
+  manifest: [ManifestEntryInput!]! = []
+  source: String!
+
+  """
+  Structure identifiers the entrypoint's signature uses that no action mentions
+  """
+  structures: [String!]! = []
+}
+
+"""
+The lifecycle of a PythonFlow version: only PUBLISHED versions run, and only they can be deployed as actions (a higher-order implementation of run_python_flow).
 """
 enum PythonFlowStatus {
   ARCHIVED
@@ -1403,11 +1539,41 @@ enum PythonFlowStatus {
 }
 
 """
+What validating a Python flow's source found: the ports, stubs and runtime a version of it would be stored with, or why it would be refused.
+"""
+type PythonFlowValidation {
+  """The entrypoint's arguments, as rekuest ports (empty unless ok)."""
+  args: [ArgPort!]!
+
+  """Why it would not, when it would not."""
+  diagnostics: [PythonFlowDiagnostic!]!
+
+  """Whether createPythonFlow would store this source."""
+  ok: Boolean!
+
+  """The entrypoint's return values, as rekuest ports (empty unless ok)."""
+  returns: [ReturnPort!]!
+
+  """The interpreter and helpers the source was checked against."""
+  runtime: String!
+
+  """
+  The stubs the source is checked against: the manifest's actions and the structures they use, for an editor's completion.
+  """
+  stubs: String!
+}
+
+"""
 A PythonRun is one execution of a published PythonFlow for a task; its step-by-step history is that task's child tasks in rekuest.
 """
 type PythonRun {
   """The time at which the run started."""
   createdAt: DateTime!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@fluss/status`). The keys are the ones fluss declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """The time at which the run finished, if it has."""
   finishedAt: DateTime
@@ -1446,6 +1612,11 @@ input PythonRunFilter {
   """Filter by whether the current user has pinned the item"""
   pinned: Boolean
 
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [RequiresInput!]
+
   """Search by task id (case-insensitive substring)"""
   search: String
 
@@ -1460,6 +1631,7 @@ input PythonRunOrder @oneOf {
 
 """The status of a PythonRun."""
 enum PythonRunStatus {
+  CANCELLED
   COMPLETED
   FAILED
   RUNNING
@@ -1468,6 +1640,14 @@ enum PythonRunStatus {
 type Query {
   _entities(representations: [_Any!]!): [_Entity]!
   _service: _Service!
+
+  """Get a single collaboration by ID"""
+  collaboration(id: ID!): Collaboration!
+
+  """
+  List the organization's collaborations: what a guest granted one sees of it (a guest: the collaborations granted to them)
+  """
+  collaborations: [Collaboration!]!
 
   """
   Fetch the events of a run between two logical times, seeded from the latest snapshot at or before the lower bound.
@@ -1488,6 +1668,9 @@ type Query {
 
   """Fetch a single Python flow run by id."""
   pythonRun(id: ID!): PythonRun!
+
+  """Fetch the Python flow run created for a given task id."""
+  pythonRunForTask(id: ID!): PythonRun!
 
   """List all Python flow runs in your organization."""
   pythonRuns(filters: PythonRunFilter, ordering: [PythonRunOrder!]! = [], pagination: OffsetPaginationInput): [PythonRun!]!
@@ -1512,6 +1695,11 @@ type Query {
 
   """List all run snapshots in your organization."""
   snapshots(filters: SnapshotFilter, ordering: [SnapshotOrder!]! = [], pagination: OffsetPaginationInput): [Snapshot!]!
+
+  """
+  Check a Python flow's source against the actions it may call, as createPythonFlow would, without storing it: its ports, stubs and runtime, or why it would be refused.
+  """
+  validatePythonFlow(input: PythonFlowSourceInput!): PythonFlowValidation!
 
   """Fetch a single workspace by id."""
   workspace(id: ID!): Workspace!
@@ -1843,7 +2031,7 @@ type Requires {
 
 input RequiresInput {
   """
-  The key of the requirement: the path into the object the constraint reads
+  The key of the requirement: the descriptor name the constraint reads, matched verbatim as one flat key of the candidate object (any non-empty string, e.g. 'axes' or '@mikro/n_space_axes')
   """
   key: String!
 
@@ -1956,7 +2144,7 @@ input ReturnPortInput {
   effects: [EffectInput!] = null
 
   """
-  The identifier of a structure port. This is used to uniquely identify a specific type of structure.
+  The identifier of the port's type, of the form @package/key. Required for STRUCTURE, MEMORY_STRUCTURE and INTERFACE, where it is the only identity a value has; optional for MODEL and ENUM, where it names the class or enum the port was built from so that agents can map a value back to it.
   """
   identifier: String = null
 
@@ -2033,6 +2221,11 @@ A Run is a single live execution of a Flow, tied to a task. As it executes it ac
 type Run {
   """The time at which the run was started."""
   createdAt: DateTime!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@fluss/status`). The keys are the ones fluss declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """All events emitted during this run, in order."""
   events(filters: RunEventFilter, ordering: [RunEventOrder!]! = [], pagination: OffsetPaginationInput): [RunEvent!]!
@@ -2139,6 +2332,11 @@ input RunFilter {
 
   """Filter by whether the current user has pinned the item"""
   pinned: Boolean
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port (`RequiresInput`), handed on unchanged, so a picker offers what the port accepts. Answered from the stored descriptors, in one indexed query
+  """
+  requires: [RequiresInput!]
 
   """Search by task id (case-insensitive substring)"""
   search: String
@@ -2522,6 +2720,11 @@ type Workspace {
 
   """An optional longer description of the workspace."""
   description: String
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@fluss/status`). The keys are the ones fluss declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
 
   """All flows contained in this workspace."""
   flows(filters: FlowFilter, ordering: [FlowOrder!]! = [], pagination: OffsetPaginationInput): [Flow!]!

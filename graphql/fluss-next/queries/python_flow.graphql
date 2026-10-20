@@ -1,0 +1,35 @@
+query PythonFlows($filters: PythonFlowFilter, $pagination: OffsetPaginationInput, $ordering: [PythonFlowOrder!]) {
+  pythonFlows(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...ListPythonFlow
+  }
+}
+
+query PythonFlow($id: ID!) {
+  pythonFlow(id: $id) {
+    ...PythonFlow
+  }
+}
+
+query ValidatePythonFlow($input: PythonFlowSourceInput!) {
+  validatePythonFlow(input: $input) {
+    ...PythonFlowValidation
+  }
+}
+
+query PythonRuns($filters: PythonRunFilter, $pagination: OffsetPaginationInput, $ordering: [PythonRunOrder!]) {
+  pythonRuns(filters: $filters, pagination: $pagination, ordering: $ordering) {
+    ...ListPythonRun
+  }
+}
+
+query PythonRun($id: ID!) {
+  pythonRun(id: $id) {
+    ...DetailPythonRun
+  }
+}
+
+query PythonRunForTask($id: ID!) {
+  pythonRunForTask(id: $id) {
+    ...DetailPythonRun
+  }
+}

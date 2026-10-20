@@ -710,6 +710,45 @@ export const flowToDefinition = (flow: FlowFragment): DefinitionInput => {
   };
 };
 
+/** The interface a deployed Python flow version has on its runner's agent. */
+export const pythonFlowInterface = (id: string) => `pythonflow:${id}`;
+
+/**
+ * The action a published Python flow version is, as fluss's
+ * `python_flow_definition` builds it: its own ports, as a FUNCTION.
+ */
+export const pythonFlowToDefinition = (flow: {
+  id: string;
+  title: string;
+  description?: string | null;
+  args: FlussArgPortFragment[];
+  returns: FlussReturnPortFragment[];
+}): DefinitionInput => ({
+  name: flow.title,
+  key: `pythonflow_${flow.id}`,
+  version: "1",
+  kind: ActionKind.Function,
+  description: flow.description || `The Python flow ${flow.title}`,
+  args: flow.args.map(flowPortToArgSignature),
+  returns: flow.returns.map(flowPortToReturnSignature),
+  stateful: false,
+  isDev: false,
+  collections: [],
+  portGroups: [],
+  isTestFor: [],
+});
+
+/**
+ * How rekuest binds a deployed version onto `run_python_flow`: the version is
+ * bound, the flow's own arguments are packed into `kwargs` and its values
+ * unpacked from `returns` (fluss's `adeploy_python_flow`).
+ */
+export const pythonFlowDeployConfig = (id: string) => ({
+  bound: { flow: id },
+  args_key: "kwargs",
+  returns_key: "returns",
+});
+
 export const flowToDependencies = (flow: FlowFragment): AgentDependencyInput[] => {
   const dependencies =
     flow.graph?.nodes

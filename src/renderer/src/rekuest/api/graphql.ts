@@ -8168,6 +8168,16 @@ export type DeleteImplementationMutationVariables = Exact<{
 
 export type DeleteImplementationMutation = { __typename?: 'Mutation', deleteImplementation: string };
 
+export type CreateHigherOrderImplementationMutationVariables = Exact<{
+  input: CreateHigherOrderImplementationInput;
+}>;
+
+
+export type CreateHigherOrderImplementationMutation = { __typename?: 'Mutation', createHigherOrderImplementation: (
+    { __typename?: 'Implementation' }
+    & ListImplementationFragment
+  ) };
+
 export type RegisterUiCatalogMutationVariables = Exact<{
   input: RegisterUiCatalogInput;
 }>;
@@ -8347,6 +8357,16 @@ export type SimilarActionsQuery = { __typename?: 'Query', similarActions: Array<
     { __typename?: 'Action' }
     & ListActionFragment
   )> };
+
+export type ActionSignatureByHashQueryVariables = Exact<{
+  hash: Scalars['ActionHash']['input'];
+}>;
+
+
+export type ActionSignatureByHashQuery = { __typename?: 'Query', action: (
+    { __typename?: 'Action', id: string, name: string, description?: string | null, hash: any, kind: ActionKind, key: string, version: string, app: { __typename?: 'App', identifier: string } }
+    & PortsFragment
+  ) };
 
 export type AgentsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -14265,6 +14285,39 @@ export function useDeleteImplementationMutation(baseOptions?: ApolloReactHooks.M
 export type DeleteImplementationMutationHookResult = ReturnType<typeof useDeleteImplementationMutation>;
 export type DeleteImplementationMutationResult = Apollo.MutationResult<DeleteImplementationMutation>;
 export type DeleteImplementationMutationOptions = Apollo.BaseMutationOptions<DeleteImplementationMutation, DeleteImplementationMutationVariables>;
+export const CreateHigherOrderImplementationDocument = gql`
+    mutation CreateHigherOrderImplementation($input: CreateHigherOrderImplementationInput!) {
+  createHigherOrderImplementation(input: $input) {
+    ...ListImplementation
+  }
+}
+    ${ListImplementationFragmentDoc}`;
+export type CreateHigherOrderImplementationMutationFn = Apollo.MutationFunction<CreateHigherOrderImplementationMutation, CreateHigherOrderImplementationMutationVariables>;
+
+/**
+ * __useCreateHigherOrderImplementationMutation__
+ *
+ * To run a mutation, you first call `useCreateHigherOrderImplementationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateHigherOrderImplementationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createHigherOrderImplementationMutation, { data, loading, error }] = useCreateHigherOrderImplementationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateHigherOrderImplementationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateHigherOrderImplementationMutation, CreateHigherOrderImplementationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateHigherOrderImplementationMutation, CreateHigherOrderImplementationMutationVariables>(CreateHigherOrderImplementationDocument, options);
+      }
+export type CreateHigherOrderImplementationMutationHookResult = ReturnType<typeof useCreateHigherOrderImplementationMutation>;
+export type CreateHigherOrderImplementationMutationResult = Apollo.MutationResult<CreateHigherOrderImplementationMutation>;
+export type CreateHigherOrderImplementationMutationOptions = Apollo.BaseMutationOptions<CreateHigherOrderImplementationMutation, CreateHigherOrderImplementationMutationVariables>;
 export const RegisterUiCatalogDocument = gql`
     mutation RegisterUiCatalog($input: RegisterUiCatalogInput!) {
   registerUiCatalog(input: $input) {
@@ -14894,6 +14947,51 @@ export function useSimilarActionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQu
 export type SimilarActionsQueryHookResult = ReturnType<typeof useSimilarActionsQuery>;
 export type SimilarActionsLazyQueryHookResult = ReturnType<typeof useSimilarActionsLazyQuery>;
 export type SimilarActionsQueryResult = Apollo.QueryResult<SimilarActionsQuery, SimilarActionsQueryVariables>;
+export const ActionSignatureByHashDocument = gql`
+    query ActionSignatureByHash($hash: ActionHash!) {
+  action(hash: $hash) {
+    id
+    name
+    description
+    hash
+    kind
+    key
+    version
+    app {
+      identifier
+    }
+    ...Ports
+  }
+}
+    ${PortsFragmentDoc}`;
+
+/**
+ * __useActionSignatureByHashQuery__
+ *
+ * To run a query within a React component, call `useActionSignatureByHashQuery` and pass it any options that fit your needs.
+ * When your component renders, `useActionSignatureByHashQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useActionSignatureByHashQuery({
+ *   variables: {
+ *      hash: // value for 'hash'
+ *   },
+ * });
+ */
+export function useActionSignatureByHashQuery(baseOptions: ApolloReactHooks.QueryHookOptions<ActionSignatureByHashQuery, ActionSignatureByHashQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<ActionSignatureByHashQuery, ActionSignatureByHashQueryVariables>(ActionSignatureByHashDocument, options);
+      }
+export function useActionSignatureByHashLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<ActionSignatureByHashQuery, ActionSignatureByHashQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<ActionSignatureByHashQuery, ActionSignatureByHashQueryVariables>(ActionSignatureByHashDocument, options);
+        }
+export type ActionSignatureByHashQueryHookResult = ReturnType<typeof useActionSignatureByHashQuery>;
+export type ActionSignatureByHashLazyQueryHookResult = ReturnType<typeof useActionSignatureByHashLazyQuery>;
+export type ActionSignatureByHashQueryResult = Apollo.QueryResult<ActionSignatureByHashQuery, ActionSignatureByHashQueryVariables>;
 export const AgentsDocument = gql`
     query Agents($pagination: OffsetPaginationInput, $filters: AgentFilter, $ordering: [AgentOrder!]) {
   agents(ordering: $ordering, pagination: $pagination, filters: $filters) {

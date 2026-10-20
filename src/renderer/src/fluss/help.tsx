@@ -76,4 +76,66 @@ export const FLUSS_HELP = {
       ]}
     />
   ),
+  pythonFlows: (
+    <PageHelp
+      intro="Flows written as Python instead of drawn as a graph. Each row is one flow, shown by its newest version; every save of a flow is a new version."
+      steps={[
+        <>Press <b>New Python flow</b> to write one.</>,
+        <>Search by title, or by what a flow is about, and narrow the list with <b>Drafts</b>, <b>Published</b> or <b>Archived</b>.</>,
+        <>Click a flow to open its newest version in the editor.</>,
+      ]}
+      tips={[
+        <><b>Irreversible</b> marks a flow that calls an action whose effect cannot be repeated safely.</>,
+      ]}
+    />
+  ),
+  newPythonFlow: (
+    <PageHelp
+      intro="Write a new Python flow. It is an async function, main, that calls the actions in its manifest by name. Its arguments and return values become the flow's ports."
+      steps={[
+        <>Give the flow a title in the field above the editor.</>,
+        <>Press <b>Add action</b> in the <b>Manifest</b> tab, or start typing an action's name in the editor and accept a suggestion, to make an action callable.</>,
+        <>Call it with <b>await</b>, e.g. <code>await segment(image)</code>. Problems are underlined as you type.</>,
+        <>Press <b>Save</b> once the line above the editor reads <b>Checks out</b>.</>,
+      ]}
+      tips={[
+        <>Your edits are kept in this browser until you save, even if the flow does not check out yet.</>,
+        <>The <b>Ports</b> tab shows the arguments and returns the server read from <b>main</b>.</>,
+      ]}
+    />
+  ),
+  pythonFlow: (
+    <PageHelp
+      intro="One version of a Python flow. A version never changes: editing it and pressing Save as new version makes the next version of the same flow."
+      steps={[
+        <>Edit the source or the <b>Manifest</b>, then press <b>Save as new version</b> once it checks out.</>,
+        <>Publish a version from the object menu (the button at the top right, or right-click) to make it runnable.</>,
+        <>Press <b>Deploy and run</b> on a published version to pick an agent that runs Python flows; after that, <b>Run</b> opens the run form.</>,
+        <>Open the <b>Versions</b> tab to move between the versions of this flow.</>,
+      ]}
+      tips={[
+        <>Set an action's effect in the <b>Manifest</b> tab. A resumed run may call an <b>Irreversible</b> action again.</>,
+        <>Only a draft can be deleted; archive a published version instead.</>,
+      ]}
+    />
+  ),
+  pythonRuns: (
+    <PageHelp
+      intro="Every run of a Python flow, newest first. A run is one execution of a published version, carried out as a task in Rekuest."
+      steps={[
+        <>Click a run to see it on its source.</>,
+        <>Click <b>version</b> to open the version that ran, or <b>task</b> to open the task with its calls and log.</>,
+        <>Narrow the list with <b>Running</b>, <b>Completed</b> or <b>Failed</b>.</>,
+      ]}
+    />
+  ),
+  pythonRun: (
+    <PageHelp
+      intro="One run of a Python flow, drawn on its source: each line that calls an action is marked with how that action's calls went."
+      steps={[
+        <>Hover a marked line to see how many calls it made and how they ended: blue is running, green done, red failed, grey not called yet.</>,
+        <>Press <b>Open task</b> for the calls one by one and the run's printed output.</>,
+      ]}
+    />
+  ),
 };
