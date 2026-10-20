@@ -4,7 +4,7 @@ import type { AppContext } from "@/core/connection/arkitekt/provider";
 import type { AvailableService } from "@/core/connection/arkitekt/types";
 import { TokenResponse } from "@/core/connection/arkitekt/fakts/tokenSchema";
 import { selectAlias, selectApolloClient } from "@/core/connection/arkitekt/utils";
-import { DefinitionInput, EnsureAgentDocument, EnsureAgentMutation, EnsureAgentMutationVariables, ImplementAgentDocument, ImplementAgentMutation, ImplementAgentMutationVariables, ImplementationInput} from "@/rekuest/api/graphql";
+import { BlokImplementationInput, ComponentContext, DefinitionInput, EnsureAgentDocument, EnsureAgentMutation, EnsureAgentMutationVariables, ImplementAgentDocument, ImplementAgentMutation, ImplementAgentMutationVariables, ImplementationInput} from "@/rekuest/api/graphql";
 import { ApolloClient, NormalizedCache } from "@apollo/client";
 import {
   AgentMode,
@@ -23,9 +23,10 @@ import {
   ToAgentMessage,
   YieldEvent,
 } from "./message";
+import { ACTION_LOGOS } from "./logos";
 import { globalRegistry } from "./registry";
 import { expandArgs, shrinkReturns, SerPort } from "./serialization";
-import { AgentFunction, AssignContext, InferDefinition } from "./types";
+import { AgentFunction, AgentUi, AssignContext, InferDefinition } from "./types";
 
 export type AgentState = {
   assignments: Assign[];
@@ -90,6 +91,7 @@ export class OrkestratorAgent {
   token: string
   agentUrl: string;
   navigate: (path: string) => void;
+  ui: AgentUi;
 
   // Per-process identity: a stable session_id across transient reconnects tells
   // the backend the process survived (reclaim in-flight work). A fresh
@@ -110,10 +112,12 @@ export class OrkestratorAgent {
 
   constructor(
     context: AppContext,
-    navigate: (path: string) => void
+    navigate: (path: string) => void,
+    ui: AgentUi,
   ) {
     this.context = context;
     this.navigate = navigate;
+    this.ui = ui;
     this.rekuestClient = selectApolloClient(context, "rekuest");
     this.agentUrl = aliasToWsPath(selectAlias(
       this.context,
@@ -198,11 +202,29 @@ export class OrkestratorAgent {
     this.implementations = this.implementations.filter(
       (impl) => impl.interface !== name,
     );
+    const logo = ACTION_LOGOS[name];
     this.implementations.push({
       interface: name,
       definition: definition,
       dependencies: [],
+      // Only when there is one: an absent field keeps the wire bytes, and the hash.
+      ...(logo ? { logo: logo.key } : {}),
     });
+  }
+
+  /** The action logos the registered implementations name, as bloks to declare with them. */
+  private logoBloks(implementations: ImplementationInput[]): BlokImplementationInput[] {
+    const named = new Set(implementations.map((impl) => impl.logo).filter(Boolean));
+    return Object.values(ACTION_LOGOS)
+      .filter((logo) => named.has(logo.key))
+      .map((logo) => ({
+        key: logo.key,
+        description: logo.description,
+        source: logo.source,
+        context: ComponentContext.ActionLogo,
+        // An action logo reads only `@task`, the viewer's own last task of it: none yet.
+        demoState: { task: null },
+      }));
   }
 
   private getAvailableServices(): AvailableService[] {
@@ -383,9 +405,10 @@ export class OrkestratorAgent {
     );
 
     const implementations = this.normalizedImplementations();
+    const bloks = this.logoBloks(implementations);
 
     console.log("Electron agent implementations:", implementations);
-    const localHash = this.computeImplementationsHash(implementations);
+    const localHash = this.computeDeclarationHash(implementations, bloks);
     const serverHash = ensured.data?.ensureAgent?.hash;
 
     // Nothing registered → nothing to publish (still a valid caller/observer).
@@ -403,7 +426,7 @@ export class OrkestratorAgent {
             implementations,
             states: [],
             locks: [],
-            bloks: [],
+            bloks,
             hash: localHash,
           },
         },
@@ -437,11 +460,12 @@ export class OrkestratorAgent {
     });
   }
 
-  /** Stable FNV-1a hash of the registered implementations (change detection). */
-  private computeImplementationsHash(
-    implementations: ImplementationInput[] = this.implementations,
+  /** Stable FNV-1a hash of what is declared: implementations and their logos (change detection). */
+  private computeDeclarationHash(
+    implementations: ImplementationInput[],
+    bloks: BlokImplementationInput[],
   ): string {
-    const serialized = JSON.stringify(implementations);
+    const serialized = JSON.stringify({ implementations, bloks });
     let hash = 0x811c9dc5;
     for (let i = 0; i < serialized.length; i++) {
       hash ^= serialized.charCodeAt(i);
@@ -732,6 +756,7 @@ export class OrkestratorAgent {
         },
         controller: newController,
         navigate: this.navigate,
+        ui: this.ui,
       });
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : String(e);

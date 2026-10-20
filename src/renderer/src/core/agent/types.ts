@@ -35,6 +35,17 @@ export type InferArgs<P extends ReadonlyArray<ArgPortInput>> = {
 export type InferDefinition<D extends DefinitionInput> =
   D['args'] extends ReadonlyArray<ArgPortInput> ? InferArgs<D['args']> : Record<string, unknown>
 
+/**
+ * What a handler may do with the person in front of this window: ask them in a
+ * dialog (and wait for the answer), or open something in a window of its own.
+ */
+export type AgentUi = {
+  /** Open a dialog and wait: resolves with its answer, rejects when it is closed. */
+  awaitDialog: <T>(id: string, props: Record<string, unknown>) => Promise<T>
+  /** Open an app route in a window beside this one (in place, without Electron). */
+  openWindow: (path: string) => void
+}
+
 export type AssignContext<
   A extends { [key: string]: unknown } = Record<string, unknown>,
   R extends { [key: string]: unknown } = Record<string, unknown>
@@ -48,6 +59,7 @@ export type AssignContext<
   return: (returns: R) => void
   navigate: (path: string) => void
   error: (error: string) => void
+  ui: AgentUi
 }
 
 export type AgentFunction<T extends AssignContext<Record<string, unknown>, never>> = (

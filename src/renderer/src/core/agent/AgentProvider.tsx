@@ -1,4 +1,5 @@
 import { useArkitektActions, useArkitektStore } from "@/core/connection/arkitekt/provider";
+import { useDialog } from "@/core/dialogs/registry";
 import { useArkitektStoreApi } from "@/core/connection/arkitekt/hooks";
 import { useSettings } from "@/core/settings/store/SettingsContext";
 import React, {
@@ -11,6 +12,7 @@ import React, {
 } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useNavigate } from "react-router-dom";
+import "./actions";
 import { AgentState, OrkestratorAgent } from "./Agent";
 import { resetAgentState, setAgentState, useAgentState } from "./store";
 
@@ -71,6 +73,10 @@ export const AgentProvider: React.FC<{
   // tear down and reconnect the agent.
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
+  // Same for the dialogs: what a handler asks the person goes through them.
+  const { awaitDialog } = useDialog();
+  const awaitDialogRef = useRef(awaitDialog);
+  awaitDialogRef.current = awaitDialog;
 
   // A stable identity for "the connection we're bound to": the endpoint. Token
   // refresh keeps the same endpoint, so it does not churn the agent.
@@ -93,6 +99,12 @@ export const AgentProvider: React.FC<{
       const newAgent = new OrkestratorAgent(
         { ...store.getState(), ...actions },
         (path) => navigateRef.current(path),
+        {
+          awaitDialog: <T,>(id: string, props: Record<string, unknown>) =>
+            (awaitDialogRef.current as (id: string, props: Record<string, unknown>) => Promise<T>)(id, props),
+          openWindow: (path) =>
+            window.api?.openSecondWindow ? window.api.openSecondWindow(path) : navigateRef.current(path),
+        },
       );
       agentRef.current = newAgent;
       setAgent(newAgent);
