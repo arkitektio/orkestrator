@@ -50,6 +50,10 @@ import React, {
  *   side: "bottom",
  *   className: "!h-[80vh]"
  * });
+ *
+ * 7. A dialog whose answer you wait for (the dialog takes `onResolve` and
+ *    `onCancel`; closing it any other way counts as a cancel):
+ * const id = await awaitDialog<"installrelease", string>("installrelease", { release });
  */
 
 // --- 1. Utility Types ---
@@ -83,6 +87,22 @@ type ModalState = {
    * from a page covers that page, not the rail. Null means the whole window.
    */
   container?: HTMLElement | null;
+  /** Called once when this dialog goes away without an answer (`awaitDialog`). */
+  onDismiss?: () => void;
+};
+
+/** What `awaitDialog` rejects with when the dialog is closed without an answer. */
+export class DialogDismissedError extends Error {
+  constructor() {
+    super("The dialog was closed without an answer");
+    this.name = "DialogDismissedError";
+  }
+}
+
+/** The props `awaitDialog` adds: the dialog calls one of them to answer. */
+export type AwaitedDialogProps<T> = {
+  onResolve?: (value: T) => void;
+  onCancel?: () => void;
 };
 
 /**
@@ -150,10 +170,17 @@ export function createDialogProvider<
       options?: OpenOptions,
     ) => void;
     closeDialog: () => void;
+    /** Open a dialog and wait for its answer: `onResolve(value)` resolves, a close rejects. */
+    awaitDialog: <T, K extends DialogId = DialogId>(
+      id: K,
+      props: Omit<DialogPropsMap[K], "onResolve" | "onCancel">,
+      options?: Omit<OpenOptions, "side">,
+    ) => Promise<T>;
   }>({
     openDialog: () => { },
     openSheet: () => { },
     closeDialog: () => { },
+    awaitDialog: () => Promise.reject(new DialogDismissedError()),
   });
 
   /**
@@ -171,6 +198,8 @@ export function createDialogProvider<
           ctx.openDialog(id, props, { container: pageHost, ...options })) as typeof ctx.openDialog,
         openSheet: ((id, props, options) =>
           ctx.openSheet(id, props, { container: pageHost, ...options })) as typeof ctx.openSheet,
+        awaitDialog: ((id, props, options) =>
+          ctx.awaitDialog(id, props, { container: pageHost, ...options })) as typeof ctx.awaitDialog,
       }),
       [ctx, pageHost],
     );
@@ -196,6 +225,15 @@ export function createDialogProvider<
     // Read at call time, so the open callbacks stay stable.
     const forwardRef = useRef(forward);
     forwardRef.current = forward;
+    // The open dialog's `onDismiss`: told when anything replaces or closes it.
+    const dismissRef = useRef<(() => void) | undefined>(undefined);
+
+    const show = useCallback((next: ModalState) => {
+      const dismiss = dismissRef.current;
+      dismissRef.current = next.onDismiss;
+      setModalState(next);
+      dismiss?.();
+    }, []);
 
     const tryForward = (type: DialogRequest["type"], id: string, props: unknown, options?: OpenOptions) => {
       if (!forwardRef.current) return false;
@@ -208,9 +246,9 @@ export function createDialogProvider<
     // The receiving side: pushed while up, or waiting in main from a boot.
     useEffect(() => {
       if (forward) return;
-      const show = (request: DialogRequest) => {
+      const showForwarded = (request: DialogRequest) => {
         if (!(request.id in registry)) return;
-        setModalState({
+        show({
           id: request.id,
           props: request.props,
           type: request.type,
@@ -219,10 +257,10 @@ export function createDialogProvider<
           size: request.options?.size,
         });
       };
-      const dispose = window.api?.dialogs?.onOpen?.(show);
-      void window.api?.dialogs?.takePending?.().then((request) => request && show(request));
+      const dispose = window.api?.dialogs?.onOpen?.(showForwarded);
+      void window.api?.dialogs?.takePending?.().then((request) => request && showForwarded(request));
       return dispose;
-    }, [forward]);
+    }, [forward, show]);
 
     const openDialog = useCallback(
       <K extends DialogId>(
@@ -231,7 +269,7 @@ export function createDialogProvider<
         options?: Omit<OpenOptions, "side">,
       ) => {
         if (tryForward("dialog", id as string, props, options)) return;
-        setModalState({
+        show({
           id: id as string,
           props,
           type: "dialog",
@@ -240,7 +278,7 @@ export function createDialogProvider<
           container: options?.container,
         });
       },
-      [],
+      [show],
     );
 
     const openSheet = useCallback(
@@ -250,7 +288,7 @@ export function createDialogProvider<
         options?: OpenOptions,
       ) => {
         if (tryForward("sheet", id as string, props, options)) return;
-        setModalState({
+        show({
           id: id as string,
           props,
           type: "sheet",
@@ -260,12 +298,51 @@ export function createDialogProvider<
           container: options?.container,
         });
       },
-      [],
+      [show],
     );
 
     const closeDialog = useCallback(() => {
-      setModalState({ id: null, props: {}, type: "dialog" });
-    }, []);
+      show({ id: null, props: {}, type: "dialog" });
+    }, [show]);
+
+    // Never forwarded: its answer comes back through functions, which cannot
+    // cross a window. It opens where it was asked for.
+    const awaitDialog = useCallback(
+      <T, K extends DialogId = DialogId>(
+        id: K,
+        props: Omit<DialogPropsMap[K], "onResolve" | "onCancel">,
+        options?: Omit<OpenOptions, "side">,
+      ) =>
+        new Promise<T>((resolve, reject) => {
+          let settled = false;
+          const settle = (finish: () => void) => {
+            if (settled) return;
+            settled = true;
+            finish();
+          };
+          const dismissed = () => settle(() => reject(new DialogDismissedError()));
+          const answers: AwaitedDialogProps<T> = {
+            onResolve: (value) => {
+              settle(() => resolve(value));
+              closeDialog();
+            },
+            onCancel: () => {
+              dismissed();
+              closeDialog();
+            },
+          };
+          show({
+            id: id as string,
+            props: { ...(props as Record<string, unknown>), ...answers },
+            type: "dialog",
+            className: options?.className,
+            size: options?.size,
+            container: options?.container,
+            onDismiss: dismissed,
+          });
+        }),
+      [closeDialog, show],
+    );
 
     const Component = modalState.id ? registry[modalState.id] : null;
     // The caller's size, else the one the dialog declared (`prefersSize`).
@@ -276,8 +353,8 @@ export function createDialogProvider<
     // otherwise every dialog open/close republishes and rerenders all
     // `useDialog()` consumers (mostly list cards).
     const contextValue = useMemo(
-      () => ({ openDialog, openSheet, closeDialog }),
-      [openDialog, openSheet, closeDialog],
+      () => ({ openDialog, openSheet, closeDialog, awaitDialog }),
+      [openDialog, openSheet, closeDialog, awaitDialog],
     );
 
     return (
