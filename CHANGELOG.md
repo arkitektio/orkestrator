@@ -1,3 +1,12 @@
+## [4.0.1](https://github.com/arkitektio/orkestrator/compare/v4.0.0...v4.0.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **alpaka:** les crowede sidebar ([c0dd2bf](https://github.com/arkitektio/orkestrator/commit/c0dd2bf016717a619147675fc07fa94270f4be00))
+* **alpaka:** less crowded sidebar ([51ed992](https://github.com/arkitektio/orkestrator/commit/51ed992676751670954c738dfb2805c1b29231e4))
+* org switcher better visually aligned ([db13662](https://github.com/arkitektio/orkestrator/commit/db13662c4f8405f8a6b233b6291189adaae39dbd))
+
 # [4.0.0](https://github.com/arkitektio/orkestrator/compare/v3.5.0...v4.0.0) (2026-10-20)
 
 
