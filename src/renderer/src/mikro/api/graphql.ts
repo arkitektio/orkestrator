@@ -2301,6 +2301,11 @@ export type CreateMeshLensInput = {
   windows?: InputMaybe<Array<WindowInput>>;
 };
 
+/** Many metrics in one transaction, at most 5000 */
+export type CreateMetricsInput = {
+  metrics: Array<MetricInput>;
+};
+
 /** Input for registering an immutable network collection. The collection gets a coordinate system of its own, and an edge relates it to the space the network was traced in */
 export type CreateNetworkCollectionInput = {
   axes: Array<AxisInput>;
@@ -2713,6 +2718,11 @@ export type DeleteLensInput = {
 /** Input for deleting a mesh collection by ID */
 export type DeleteMeshCollectionInput = {
   /** The ID of the mesh collection to delete */
+  id: Scalars['ID']['input'];
+};
+
+/** The metric to delete */
+export type DeleteMetricInput = {
   id: Scalars['ID']['input'];
 };
 
@@ -5346,6 +5356,95 @@ export type MetaSchema = {
   schema: Scalars['Any']['output'];
 };
 
+/** One value recorded about an annotation or a dataset, by an app or a person: a quantity (`magnitude` in `unit`) or a `code` a process emitted. Immutable: a correction is a new metric that `supersedes` it. What a metric means is not said here: kraph, reading every metric from mikro's change feed, says it */
+export type Metric = {
+  __typename?: 'Metric';
+  /** (code) The category a process emitted */
+  code?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  /** The user it was recorded as */
+  creator?: Maybe<User>;
+  /** This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
+  descriptors: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  /** What was measured, namespaced by who measured it: `ais_suite.measure_profile/threshold_distance`, `user:<sub>/spine_count` */
+  key: Scalars['String']['output'];
+  /** (quantity) The number, in `unit` */
+  magnitude?: Maybe<Scalars['Float']['output']>;
+  /** The identifier of the app that recorded it; null when recorded by hand */
+  producerApp?: Maybe<Scalars['String']['output']>;
+  /** The release of that app */
+  producerVersion?: Maybe<Scalars['String']['output']>;
+  /** The metric this one corrects, if any */
+  supersedes?: Maybe<Metric>;
+  /** The object this value is about */
+  target: MetricTarget;
+  /** (quantity) The unit of `magnitude` */
+  unit?: Maybe<Scalars['String']['output']>;
+  /** What a reader of the change feed keys this metric on */
+  uuid: Scalars['String']['output'];
+};
+
+export type MetricFilter = {
+  AND?: InputMaybe<MetricFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<MetricFilter>;
+  OR?: InputMaybe<MetricFilter>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  /** Filter by list of IDs */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Filter to the metrics correcting nothing, or only to corrections */
+  isCorrection?: InputMaybe<Scalars['Boolean']['input']>;
+  key?: InputMaybe<StrFilterLookup>;
+  /** Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored */
+  requires?: InputMaybe<Array<DescriptorConstraintInput>>;
+  /** Filter to the metrics about one object */
+  target?: InputMaybe<MetricTargetFilter>;
+  /** Filter to the metrics about objects of this structure: @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset */
+  targetIdentifier?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** One value about one object: a quantity (magnitude and unit) or a code, exactly one */
+export type MetricInput = {
+  code?: InputMaybe<Scalars['String']['input']>;
+  key: Scalars['String']['input'];
+  magnitude?: InputMaybe<Scalars['Float']['input']>;
+  supersedes?: InputMaybe<Scalars['ID']['input']>;
+  target: MetricTargetInput;
+  unit?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MetricOrder =
+  { createdAt: Ordering; id?: never; key?: never; }
+  |  { createdAt?: never; id: Ordering; key?: never; }
+  |  { createdAt?: never; id?: never; key: Ordering; };
+
+/** An object metrics are recorded about: its structure and id, as rekuest's signals and STRUCTURE ports spell them, and a uuid of its own */
+export type MetricTarget = {
+  __typename?: 'MetricTarget';
+  id: Scalars['ID']['output'];
+  /** The structure of the object: @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset */
+  identifier: Scalars['String']['output'];
+  /** The id of the object within its structure */
+  object: Scalars['ID']['output'];
+  /** The object's uuid as a metric target: what a reader of the change feed keys it on */
+  uuid: Scalars['String']['output'];
+};
+
+/** An object metrics are about: its structure and id, as a signal spells them */
+export type MetricTargetFilter = {
+  /** @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset */
+  identifier: Scalars['String']['input'];
+  /** The id of the object within its structure */
+  object: Scalars['ID']['input'];
+};
+
+/** The object a metric is about: its structure and id, as rekuest's signals and STRUCTURE ports spell them */
+export type MetricTargetInput = {
+  identifier: Scalars['String']['input'];
+  object: Scalars['ID']['input'];
+};
+
 /** Mirror */
 export type MirrorElement = OpticalElement & {
   __typename?: 'MirrorElement';
@@ -5449,6 +5548,10 @@ export type Mutation = {
   createMeshLayer: MeshLayer;
   /** The lens keeping these windows of a mesh collection's own space: the one that exists, or a new one */
   createMeshLens: MeshLens;
+  /** Record one value about an annotation or a dataset: a quantity or a code. Announced to the hub's rekuest (a CREATED @mikro/metric signal) once committed */
+  createMetric: Metric;
+  /** Record many values in one transaction. No signal is sent for each: a reader finds them in mikro's change feed */
+  createMetrics: Array<Metric>;
   /** Register an immutable network collection from an uploaded konnektion store, in a coordinate system of its own */
   createNetworkCollection: NetworkCollection;
   /** Create a layer that renders a node/edge network -- a traced arbor, a vessel tree, a connectome -- in a scene */
@@ -5519,6 +5622,8 @@ export type Mutation = {
   deleteLens: Scalars['ID']['output'];
   /** Delete an existing mesh collection */
   deleteMeshCollection: Scalars['ID']['output'];
+  /** Delete a metric. One a correction supersedes is kept while the correction stands */
+  deleteMetric: Scalars['ID']['output'];
   /** Delete an existing network collection */
   deleteNetworkCollection: Scalars['ID']['output'];
   /** Delete every orphaned shared space in the organization -- no scene rooted in it, no edge touching it -- and return the deleted ids. The cleanup sweep for the no-garbage-collection policy: scene deletion never deletes a space, this call takes the leftovers back. Org admins sweep every orphan; anyone else sweeps only their own */
@@ -5814,6 +5919,16 @@ export type MutationCreateMeshLensArgs = {
 };
 
 
+export type MutationCreateMetricArgs = {
+  input: MetricInput;
+};
+
+
+export type MutationCreateMetricsArgs = {
+  input: CreateMetricsInput;
+};
+
+
 export type MutationCreateNetworkCollectionArgs = {
   input: CreateNetworkCollectionInput;
 };
@@ -5986,6 +6101,11 @@ export type MutationDeleteLensArgs = {
 
 export type MutationDeleteMeshCollectionArgs = {
   input: DeleteMeshCollectionInput;
+};
+
+
+export type MutationDeleteMetricArgs = {
+  input: DeleteMetricInput;
 };
 
 
@@ -7657,6 +7777,10 @@ export type Query = {
   meshCollection: MeshCollection;
   /** List mesh collections (immutable Parquet-backed mesh sets, each in a coordinate system of its own) */
   meshCollections: Array<MeshCollection>;
+  /** Get a single metric by ID */
+  metric: Metric;
+  /** List metrics: values recorded about annotations and datasets, by apps and people */
+  metrics: Array<Metric>;
   /** List files created by the current user */
   myfiles: Array<File>;
   /** List folders created by the current user */
@@ -7947,6 +8071,18 @@ export type QueryMeshCollectionArgs = {
 
 export type QueryMeshCollectionsArgs = {
   filters?: InputMaybe<MeshCollectionFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type QueryMetricArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryMetricsArgs = {
+  filters?: InputMaybe<MetricFilter>;
+  ordering?: Array<MetricOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
@@ -10536,7 +10672,7 @@ export type ZarrUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
-export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -11499,6 +11635,11 @@ export type FileFragment = { __typename?: 'File', descriptors: any, id: string, 
     { __typename?: 'ProvenanceEntry' }
     & ProvenanceEntryFragment
   )>, organization: { __typename?: 'Organization', slug: string }, folder?: { __typename?: 'Folder', id: string, name: string } | null };
+
+export type DetailFileFragment = (
+  { __typename?: 'File', creator: { __typename?: 'User', sub: string }, createdThrough?: { __typename?: 'Task', id: string, taskId: string, createdAt: any, assigner?: { __typename?: 'User', sub: string } | null } | null, store: { __typename?: 'BigFileStore', id: string, originalFileName?: string | null, sizeBytes?: number | null, contentType?: string | null } }
+  & FileFragment
+);
 
 export type ListFileFragment = { __typename?: 'File', descriptors: any, id: string, name: string, size?: number | null, contentType?: string | null, creator: { __typename?: 'User', sub: string } };
 
@@ -15446,7 +15587,7 @@ export type GetFileQueryVariables = Exact<{
 
 export type GetFileQuery = { __typename?: 'Query', file: (
     { __typename?: 'File' }
-    & FileFragment
+    & DetailFileFragment
   ) };
 
 export type GetFilesQueryVariables = Exact<{
@@ -17829,6 +17970,28 @@ export const FileFragmentDoc = gql`
 }
     ${BigFileStoreFragmentDoc}
 ${ProvenanceEntryFragmentDoc}`;
+export const DetailFileFragmentDoc = gql`
+    fragment DetailFile on File {
+  ...File
+  creator {
+    sub
+  }
+  createdThrough {
+    id
+    taskId
+    createdAt
+    assigner {
+      sub
+    }
+  }
+  store {
+    id
+    originalFileName
+    sizeBytes
+    contentType
+  }
+}
+    ${FileFragmentDoc}`;
 export const FileLinkFragmentDoc = gql`
     fragment FileLink on FileLink {
   id
@@ -24464,10 +24627,10 @@ export type GetRegistrationEdgeQueryResult = Apollo.QueryResult<GetRegistrationE
 export const GetFileDocument = gql`
     query GetFile($id: ID!) {
   file(id: $id) {
-    ...File
+    ...DetailFile
   }
 }
-    ${FileFragmentDoc}`;
+    ${DetailFileFragmentDoc}`;
 
 /**
  * __useGetFileQuery__

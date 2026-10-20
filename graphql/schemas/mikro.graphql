@@ -3022,6 +3022,11 @@ input CreateMeshLensInput {
   windows: [WindowInput!] = null
 }
 
+"""Many metrics in one transaction, at most 5000"""
+input CreateMetricsInput {
+  metrics: [MetricInput!]!
+}
+
 """
 Input for registering an immutable network collection. The collection gets a coordinate system of its own, and an edge relates it to the space the network was traced in
 """
@@ -3529,6 +3534,11 @@ input DeleteLensInput {
 """Input for deleting a mesh collection by ID"""
 input DeleteMeshCollectionInput {
   """The ID of the mesh collection to delete"""
+  id: ID!
+}
+
+"""The metric to delete"""
+input DeleteMetricInput {
   id: ID!
 }
 
@@ -7032,6 +7042,137 @@ type MetaSchema {
   schema: Any!
 }
 
+"""
+One value recorded about an annotation or a dataset, by an app or a person: a quantity (`magnitude` in `unit`) or a `code` a process emitted. Immutable: a correction is a new metric that `supersedes` it. What a metric means is not said here: kraph, reading every metric from mikro's change feed, says it
+"""
+type Metric {
+  """(code) The category a process emitted"""
+  code: String
+  createdAt: DateTime!
+
+  """The user it was recorded as"""
+  creator: User
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+  id: ID!
+
+  """
+  What was measured, namespaced by who measured it: `ais_suite.measure_profile/threshold_distance`, `user:<sub>/spine_count`
+  """
+  key: String!
+
+  """(quantity) The number, in `unit`"""
+  magnitude: Float
+
+  """The identifier of the app that recorded it; null when recorded by hand"""
+  producerApp: String
+
+  """The release of that app"""
+  producerVersion: String
+
+  """The metric this one corrects, if any"""
+  supersedes: Metric
+
+  """The object this value is about"""
+  target: MetricTarget!
+
+  """(quantity) The unit of `magnitude`"""
+  unit: String
+
+  """What a reader of the change feed keys this metric on"""
+  uuid: String!
+}
+
+input MetricFilter {
+  AND: MetricFilter
+  DISTINCT: Boolean
+  NOT: MetricFilter
+  OR: MetricFilter
+  id: ID
+
+  """Filter by list of IDs"""
+  ids: [ID!]
+
+  """Filter to the metrics correcting nothing, or only to corrections"""
+  isCorrection: Boolean
+  key: StrFilterLookup
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
+
+  """Filter to the metrics about one object"""
+  target: MetricTargetFilter
+
+  """
+  Filter to the metrics about objects of this structure: @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset
+  """
+  targetIdentifier: String
+}
+
+"""
+One value about one object: a quantity (magnitude and unit) or a code, exactly one
+"""
+input MetricInput {
+  code: String = null
+  key: String!
+  magnitude: Float = null
+  supersedes: ID = null
+  target: MetricTargetInput!
+  unit: String = null
+}
+
+input MetricOrder @oneOf {
+  createdAt: Ordering
+  id: Ordering
+  key: Ordering
+}
+
+"""
+An object metrics are recorded about: its structure and id, as rekuest's signals and STRUCTURE ports spell them, and a uuid of its own
+"""
+type MetricTarget {
+  id: ID!
+
+  """
+  The structure of the object: @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset
+  """
+  identifier: String!
+
+  """The id of the object within its structure"""
+  object: ID!
+
+  """
+  The object's uuid as a metric target: what a reader of the change feed keys it on
+  """
+  uuid: String!
+}
+
+"""
+An object metrics are about: its structure and id, as a signal spells them
+"""
+input MetricTargetFilter {
+  """
+  @mikro/annotation, @mikro/arraydataset, @mikro/tabledataset or @mikro/sparsedataset
+  """
+  identifier: String!
+
+  """The id of the object within its structure"""
+  object: ID!
+}
+
+"""
+The object a metric is about: its structure and id, as rekuest's signals and STRUCTURE ports spell them
+"""
+input MetricTargetInput {
+  identifier: String!
+  object: ID!
+}
+
 """Mirror"""
 type MirrorElement implements OpticalElement {
   angleDeg: Float
@@ -7211,6 +7352,16 @@ type Mutation {
   createMeshLens(input: CreateMeshLensInput!): MeshLens!
 
   """
+  Record one value about an annotation or a dataset: a quantity or a code. Announced to the hub's rekuest (a CREATED @mikro/metric signal) once committed
+  """
+  createMetric(input: MetricInput!): Metric!
+
+  """
+  Record many values in one transaction. No signal is sent for each: a reader finds them in mikro's change feed
+  """
+  createMetrics(input: CreateMetricsInput!): [Metric!]!
+
+  """
   Register an immutable network collection from an uploaded konnektion store, in a coordinate system of its own
   """
   createNetworkCollection(input: CreateNetworkCollectionInput!): NetworkCollection!
@@ -7366,6 +7517,11 @@ type Mutation {
 
   """Delete an existing mesh collection"""
   deleteMeshCollection(input: DeleteMeshCollectionInput!): ID!
+
+  """
+  Delete a metric. One a correction supersedes is kept while the correction stands
+  """
+  deleteMetric(input: DeleteMetricInput!): ID!
 
   """Delete an existing network collection"""
   deleteNetworkCollection(input: DeleteNetworkCollectionInput!): ID!
@@ -9378,6 +9534,14 @@ type Query {
   List mesh collections (immutable Parquet-backed mesh sets, each in a coordinate system of its own)
   """
   meshCollections(filters: MeshCollectionFilter, pagination: OffsetPaginationInput): [MeshCollection!]!
+
+  """Get a single metric by ID"""
+  metric(id: ID!): Metric!
+
+  """
+  List metrics: values recorded about annotations and datasets, by apps and people
+  """
+  metrics(filters: MetricFilter, ordering: [MetricOrder!]! = [], pagination: OffsetPaginationInput): [Metric!]!
 
   """List files created by the current user"""
   myfiles(filters: FileFilter, ordering: [FileOrder!]! = [], pagination: OffsetPaginationInput): [File!]!
@@ -12748,7 +12912,7 @@ type ZarrUploadGrant {
 
 scalar _Any
 
-union _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
+union _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
 
 type _Service {
   sdl: String!

@@ -151,6 +151,8 @@
       "MeshCollection",
       "MeshLayer",
       "MeshLens",
+      "Metric",
+      "MetricTarget",
       "NetworkCollection",
       "NetworkLayer",
       "NetworkLens",

@@ -239,15 +239,15 @@ export const MIKRO_HELP = {
   ),
   file: (
     <PageHelp
-      intro="One uploaded file: its size, type and the array datasets that were converted out of it."
+      intro="One uploaded file: its size and type, who made it and through which task, and everything that was converted out of it."
       steps={[
         <>Press <b>Download</b> to save the original file to your computer.</>,
         <>Use the folder button in the header (it shows the current folder, or <b>Unfiled</b>) to move the file.</>,
-        <>Click a dataset under <b>Derived Datasets</b> to open what was made from this file.</>,
-        <>Open the <b>Info</b> tab of the sidebar for the file’s history.</>,
+        <>Click an entry under <b>What it became</b> to open a dataset or table made from this file.</>,
+        <>Open the <b>Info</b> tab of the sidebar for storage details (bucket, key, ids to copy) and the file’s history.</>,
       ]}
       tips={[
-        <>“No datasets from this file” means nothing has been converted out of it yet.</>,
+        <>No <b>What it became</b> section means nothing has been converted out of the file yet.</>,
       ]}
     />
   ),

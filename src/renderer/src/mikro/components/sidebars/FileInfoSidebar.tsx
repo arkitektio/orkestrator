@@ -1,7 +1,7 @@
 import { Badge } from "@/core/ui/badge";
-import { GetFileQuery, LineageNodeKind, useGetFileDerivedQuery } from "../../api/graphql";
+import { CopyButton } from "@/core/ui/copy-button";
+import { GetFileQuery, LineageNodeKind } from "../../api/graphql";
 import { formatBytes } from "../../specs";
-import { FileLinksSection } from "./FileLinksSection";
 import { LineageLink } from "../lineage/LineageLink";
 import { ProvenanceSection } from "./ProvenanceSection";
 
@@ -9,36 +9,20 @@ type PageFile = GetFileQuery["file"];
 
 /**
  * Everything about a file that is not its bytes — the counterpart of
- * `DatasetInfoSidebar` and `TableDatasetInfoSidebar`, section for section, so
- * the three detail pages read the same way.
+ * `DatasetInfoSidebar` and `TableDatasetInfoSidebar`, so the detail pages read
+ * the same way.
  *
- * Where the array rail says shape/dtype/levels and the table rail says its
- * declared columns, a file says the only things it structurally IS: how many
- * bytes, of what content type, in whose organization. There is nothing else to
- * know about a file until something has read it.
+ * A file structurally IS only a few things: how many bytes, of what content
+ * type, in whose organization, kept where. Those are here, with the storage
+ * internals (bucket, key, ids) a person copies into a script or a bug report.
  *
- * The lineage is the interesting half, and it is deliberately NOT called a
- * derivation: a file has no coordinate system, so `derivedContainers` and
- * `exportedFrom` claim no geometry and place nothing. They say which containers
- * these bytes became and which container these bytes were written from — the
- * same relation in its two directions. That is also why there is no
- * `DerivedFromSection` here: nothing computes a file from other data in a way
- * this schema records as a transformation.
- *
- * The static facts come from the page's own query; the links are one extra round
- * trip made here, exactly as on the array and table pages — the tab is unmounted
- * while inactive (Radix `TabsContent`) so it costs nothing until someone opens
- * it.
+ * What the bytes became and what they were exported from used to be listed
+ * here too; they are the page body's "What it became" now, where every kind of
+ * container has room. The rail keeps the way into the lineage graph and the
+ * edit history, which rides on the page's own query.
  */
 export const FileInfoSidebar = ({ file }: { file: PageFile }) => {
   const extension = file.name.split(".").pop()?.toUpperCase();
-
-  // cache-and-network so reopening the tab after a converter ran shows what it
-  // wrote rather than the answer from before it started.
-  const { data, error, loading } = useGetFileDerivedQuery({
-    variables: { id: file.id },
-    fetchPolicy: "cache-and-network",
-  });
 
   return (
     <div className="flex flex-col gap-4 overflow-y-auto p-4">
@@ -81,42 +65,43 @@ export const FileInfoSidebar = ({ file }: { file: PageFile }) => {
         </div>
       </div>
 
+      <div className="flex flex-col gap-1.5">
+        <div className="text-xs font-semibold">Storage</div>
+        <StorageRow label="File ID" value={file.id} />
+        <StorageRow label="Bucket" value={file.store.bucket} />
+        <StorageRow label="Key" value={file.store.key} />
+        {file.store.originalFileName && file.store.originalFileName !== file.name && (
+          <StorageRow label="Uploaded as" value={file.store.originalFileName} />
+        )}
+        {/* Null while the upload is unfinished, and for stores written before
+            the size was recorded: then there is no row rather than a guess. */}
+        {file.store.sizeBytes != null && (
+          <StorageRow label="Stored" value={formatBytes(file.store.sizeBytes)} copy={false} />
+        )}
+        {file.store.contentType && file.store.contentType !== file.contentType && (
+          <StorageRow label="Stored as" value={file.store.contentType} copy={false} />
+        )}
+      </div>
+
       <LineageLink kind={LineageNodeKind.File} id={file.id} />
-
-      {/* The links, with one failure message for both directions: they come from
-          one query, so a partial rendering would be a lie about which one is
-          missing. The history below stays outside the branch — it rides on the
-          page's own query, so it is there whether or not this round trip
-          lands. */}
-      {error ? (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-          <p className="text-sm text-destructive">
-            Could not load lineage: {error.message}
-          </p>
-        </div>
-      ) : !data ? (
-        <div className="text-xs text-muted-foreground">
-          {loading ? "Loading lineage…" : null}
-        </div>
-      ) : (
-        <>
-          <FileLinksSection
-            title="Converted into"
-            links={data.file.derivedContainers}
-            emptyTitle="Nothing read out of it"
-            emptyDescription="No converter has written a dataset, table, mesh collection or annotation collection from these bytes."
-          />
-
-          <FileLinksSection
-            title="Exported from"
-            links={data.file.exportedFrom}
-            emptyTitle="Not an export"
-            emptyDescription="These bytes were uploaded rather than written out of data already held here."
-          />
-        </>
-      )}
 
       <ProvenanceSection entries={file.provenanceEntries} />
     </div>
   );
 };
+
+const StorageRow = ({
+  label,
+  value,
+  copy = true,
+}: {
+  label: string;
+  value: string;
+  copy?: boolean;
+}) => (
+  <div className="flex items-start gap-2">
+    <span className="w-20 shrink-0 pt-0.5 text-xs text-muted-foreground">{label}</span>
+    <span className="min-w-0 flex-1 break-all pt-0.5 font-mono text-xs">{value}</span>
+    {copy && <CopyButton value={value} title={`Copy ${label.toLowerCase()}`} />}
+  </div>
+);
