@@ -14,6 +14,7 @@ import {
   useImplementationsQuery,
 } from "@/rekuest/api/graphql";
 import { buildAssignInput } from "@/rekuest/assign";
+import { assignAutoKey, rememberedPolicy } from "@/rekuest/components/AutoModeToggle";
 import { failureFallback } from "@/rekuest/lib/taskTracker";
 import { useAssign } from "@/rekuest/hooks/useAssign";
 import { Boxes, PlayCircle } from "lucide-react";
@@ -192,6 +193,8 @@ export const DirectImplementationAssignment = (
         implementation: implementation.id,
         args: keys,
         reference,
+        // As the assign form last ran it.
+        policy: rememberedPolicy(assignAutoKey({ implementation: implementation.id })),
       }));
     } catch (error) {
       untrack();
@@ -414,6 +417,8 @@ export const AssignButton = (
         action: action.id,
         args: keys,
         reference,
+        // As the assign form last ran it.
+        policy: rememberedPolicy(assignAutoKey({ action: action.id })),
       }));
 
       setDoing(true);

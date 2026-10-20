@@ -53,6 +53,8 @@ import {
   isResumable,
 } from "../lib/taskStatus";
 import { TaskFiredBy } from "../components/task/TaskFiredBy";
+import { HoldCard } from "../components/task/HoldCard";
+import { pendingHolds } from "../lib/holds";
 import { REKUEST_HELP } from "../help";
 
 // Only stats the main column doesn't already show — status, progress and
@@ -170,6 +172,8 @@ export const TPage = asDetailQueryRoute(
     const [resume] = useResumeMutation();
 
     const [selection, setSelection] = useState<LaneSelection>(null);
+    // What waits for a decision: this task's own hold, or a child it asked for.
+    const holds = useMemo(() => pendingHolds(data.task.events), [data.task.events]);
     const resolved = useMemo(
       () => resolveSelection(data.task, selection),
       [data.task, selection],
@@ -382,6 +386,13 @@ export const TPage = asDetailQueryRoute(
           <div className="shrink-0 px-4 pt-3">
             <TaskStatusHero task={data.task} />
           </div>
+          {holds.length > 0 && (
+            <div className="flex shrink-0 flex-col gap-2 px-4 pt-3">
+              {holds.map((hold) => (
+                <HoldCard key={hold.task} hold={hold} />
+              ))}
+            </div>
+          )}
           {stageOpen ? (
             <ResizablePanelGroup
               direction="vertical"

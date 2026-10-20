@@ -18,6 +18,7 @@ import { Link } from "react-router-dom";
 import {
   ArgumentsRow,
   FromRow,
+  PolicyRow,
   RuleHeader,
   RuleRow,
   RuleRows,
@@ -142,6 +143,7 @@ export const TriggerPage = asDetailQueryRoute(useTriggerQuery, ({ data }) => {
             args={trigger.args}
             receiving={{ port: trigger.port, identifier: trigger.identifier }}
           />
+          <PolicyRow rule={trigger} />
           <RuleRow label="Where">
             {trigger.agent ? (
               <RekuestAgent.DetailLink object={trigger.agent} className="hover:underline">

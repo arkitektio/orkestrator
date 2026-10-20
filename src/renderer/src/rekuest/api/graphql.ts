@@ -888,6 +888,8 @@ export type AssignInput = {
   interface?: InputMaybe<Scalars['String']['input']>;
   /** Hold the task back until then: it is persisted now but only dispatched once due. A time in the past (or none) dispatches immediately. */
   notBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Whether the work the agents ask for under this task waits for a person: ASK (the default) holds every child an agent assigns until someone approves it, AUTO runs it without asking (auto-mode). Honoured on a root only: a child always takes its parent's. */
+  policy?: InputMaybe<TaskPolicy>;
   /** The reference of the task. This is used to identify the task in the system. */
   reference?: InputMaybe<Scalars['String']['input']>;
   /** The resolution ID to assign to when assining to a implementation with dependencies */
@@ -1533,6 +1535,8 @@ export type CreateScheduleInput = {
   name: Scalars['String']['input'];
   /** Whether a run may start while the previous one is open. */
   overlap?: ScheduleOverlap;
+  /** The policy of every run it creates: ASK (the default) holds a child an agent asks for until a person approves it; AUTO runs it unattended. */
+  policy?: TaskPolicy;
   timezone?: Scalars['String']['input'];
 };
 
@@ -1620,6 +1624,8 @@ export type CreateTriggerInput = {
   /** Nothing fires once it created this many runs. */
   maxRuns?: InputMaybe<Scalars['Int']['input']>;
   name: Scalars['String']['input'];
+  /** The policy of every run it fires: ASK (the default) holds a child an agent asks for until a person approves it; AUTO runs it unattended. */
+  policy?: TaskPolicy;
   port: Scalars['String']['input'];
 };
 
@@ -1720,6 +1726,16 @@ export type DashboardPlacementFilter = {
 export type DashboardPlacementOrder =
   { createdAt: Ordering; role?: never; }
   |  { createdAt?: never; role: Ordering; };
+
+/** The input for deciding a held task. */
+export type DecideInput = {
+  /** What the person says with the decision. A child gets it as its Assign's message; a task's own hold gets it back. */
+  answer?: InputMaybe<Scalars['String']['input']>;
+  /** Approve (the child runs; a task's own hold carries on approved) or deny (the child ends DENIED without running; a task's own hold carries on denied) */
+  approved: Scalars['Boolean']['input'];
+  /** The held task: a child an agent asked for, or a task that holds itself */
+  task: Scalars['ID']['input'];
+};
 
 /**
  * A definition
@@ -2760,6 +2776,8 @@ export type Mutation = {
   createThreedModel: ThreeDModel;
   /** Create a trigger: run an action when a service signals a matching object. */
   createTrigger: Trigger;
+  /** Answer a held task. A child an agent asked for runs once approved, or ends DENIED without running; a task that holds itself carries on with the decision. Only the user the task runs for may decide, and never from the client of the agent that asked. */
+  decide: Task;
   /** Delete an agent record. */
   deleteAgent: Scalars['ID']['output'];
   /** Delete a blok by ID. */
@@ -2970,6 +2988,12 @@ export type MutationCreateThreedModelArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationCreateTriggerArgs = {
   input: CreateTriggerInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationDecideArgs = {
+  input: DecideInput;
 };
 
 
@@ -4654,6 +4678,8 @@ export type Schedule = {
   nextRun?: Maybe<Task>;
   /** Whether a run may start while the previous one is open. */
   overlap: ScheduleOverlap;
+  /** The policy of every run it creates: ASK holds a child an agent asks for until a person approves it, AUTO runs it unattended. */
+  policy: TaskPolicy;
   /** Runs it created so far. */
   runCount: Scalars['Int']['output'];
   /** The most recent runs, newest first. */
@@ -5518,6 +5544,8 @@ export type Task = {
   parent?: Maybe<Task>;
   /** The parent's step this child took; null for roots and for children of agents without numbering. */
   parentStep?: Maybe<Scalars['Int']['output']>;
+  /** Whether the work agents ask for under this task waits for a person (ASK) or runs without asking (AUTO, auto-mode). A root's is set on its assign; a child takes its parent's. */
+  policy: TaskPolicy;
   /** Optional external reference for tracking. */
   reference?: Maybe<Scalars['String']['output']>;
   /** Resolution used to resolve dependencies for this task. */
@@ -5628,7 +5656,7 @@ export type TaskEvent = {
   step?: Maybe<Scalars['Int']['output']>;
   /** Associated task. */
   task: Task;
-  /** EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline). */
+  /** EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline). HELD: what waits for a decision ({kind: "assign", prompt, action, agent, args, caller_task, caller_agent} for a child an agent asked for, with held: the child's id on its parent and root; {kind: "self", prompt, details} for a task's own hold). DECIDED: the decision ({approved, answer, auto, user}). DENIED: {answer, user}. LOST: what is known about the lost run. */
   value?: Maybe<Scalars['AnyDefault']['output']>;
 };
 
@@ -5665,9 +5693,12 @@ export enum TaskEventKind {
   Cancelling = 'CANCELLING',
   Completed = 'COMPLETED',
   Critical = 'CRITICAL',
+  Decided = 'DECIDED',
   Delegate = 'DELEGATE',
+  Denied = 'DENIED',
   Effect = 'EFFECT',
   Failed = 'FAILED',
+  Held = 'HELD',
   Interrupted = 'INTERRUPTED',
   Interrupting = 'INTERRUPTING',
   LateReport = 'LATE_REPORT',
@@ -5766,6 +5797,12 @@ export enum TaskInstructKind {
 export type TaskOrder =
   { createdAt: Ordering; finishedAt?: never; }
   |  { createdAt?: never; finishedAt: Ordering; };
+
+/** Whether the work an agent asks for waits for a person. ASK: a child an agent assigns is held until a person approves it, and the task's own holds wait for a decision. AUTO: they are approved without asking (auto-mode). Set on a root assign; every child inherits its parent's. */
+export enum TaskPolicy {
+  Ask = 'ASK',
+  Auto = 'AUTO'
+}
 
 export type TaskStats = {
   __typename?: 'TaskStats';
@@ -6061,6 +6098,8 @@ export type Trigger = {
   maxRuns?: Maybe<Scalars['Int']['output']>;
   /** Human-readable name. */
   name: Scalars['String']['output'];
+  /** The policy of every run it fires: ASK holds a child an agent asks for until a person approves it, AUTO runs it unattended. */
+  policy: TaskPolicy;
   /** The STRUCTURE argument that receives the signalled object. */
   port: Scalars['String']['output'];
   /** Runs it created so far. */
@@ -6238,6 +6277,8 @@ export type UpdateScheduleInput = {
   maxRuns?: InputMaybe<Scalars['Int']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   overlap?: InputMaybe<ScheduleOverlap>;
+  /** The policy of every run it creates: ASK (the default) holds a child an agent asks for until a person approves it; AUTO runs it unattended. A waiting run is re-planned with it. */
+  policy?: InputMaybe<TaskPolicy>;
   timezone?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -6283,6 +6324,8 @@ export type UpdateTriggerInput = {
   kind?: InputMaybe<SignalKind>;
   maxRuns?: InputMaybe<Scalars['Int']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
+  /** The policy of every run it fires: ASK (the default) holds a child an agent asks for until a person approves it; AUTO runs it unattended. */
+  policy?: InputMaybe<TaskPolicy>;
   port?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -6420,6 +6463,8 @@ export type WireScheduleInput = {
   name: Scalars['String']['input'];
   /** Whether a run may start while the previous one is open. */
   overlap?: ScheduleOverlap;
+  /** The policy of every run the rule creates: ASK holds a child an agent asks for until a person approves it, AUTO runs it unattended. */
+  policy?: TaskPolicy;
   /** The IANA zone the cron line is read in. */
   timezone?: Scalars['String']['input'];
 };
@@ -6452,6 +6497,8 @@ export type WireTriggerInput = {
   maxRuns?: InputMaybe<Scalars['Int']['input']>;
   /** A human-readable name. */
   name: Scalars['String']['input'];
+  /** The policy of every run the rule creates: ASK holds a child an agent asks for until a person approves it, AUTO runs it unattended. */
+  policy?: TaskPolicy;
   /** The STRUCTURE argument that receives the signalled object. */
   port: Scalars['String']['input'];
 };
@@ -6647,7 +6694,7 @@ export type ModelBlokFragment = { __typename?: 'Blok', id: string, name: string,
     & ListMaterializedBlokFragment
   )> };
 
-export type ListScheduleFragment = { __typename?: 'Schedule', id: string, name: string, enabled: boolean, cron?: string | null, intervalSeconds?: number | null, timezone: string, consecutiveFailures: number, lastError?: string | null, description?: string | null, runCount: number, lastRunAt?: any | null, lastErrorAt?: any | null, exhausted: boolean, endsAt?: any | null, maxRuns?: number | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null, nextRun?: { __typename?: 'Task', id: string, notBefore?: any | null, latestEventKind: TaskEventKind, isDone: boolean } | null };
+export type ListScheduleFragment = { __typename?: 'Schedule', id: string, name: string, enabled: boolean, policy: TaskPolicy, cron?: string | null, intervalSeconds?: number | null, timezone: string, consecutiveFailures: number, lastError?: string | null, description?: string | null, runCount: number, lastRunAt?: any | null, lastErrorAt?: any | null, exhausted: boolean, endsAt?: any | null, maxRuns?: number | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null, nextRun?: { __typename?: 'Task', id: string, notBefore?: any | null, latestEventKind: TaskEventKind, isDone: boolean } | null };
 
 export type DetailScheduleFragment = (
   { __typename?: 'Schedule', args: any, interface?: string | null, ephemeralRuns: boolean, overlap: ScheduleOverlap, catchUp: boolean, lastFiredAt?: any | null, upcoming: Array<any>, wireKey?: string | null, createdAt: any, updatedAt: any, wiregram?: { __typename?: 'Wiregram', id: string, name: string } | null, caller: { __typename?: 'Caller', id: string, user: { __typename?: 'User', id: string, sub: string } }, runs: Array<(
@@ -6657,7 +6704,7 @@ export type DetailScheduleFragment = (
   & ListScheduleFragment
 );
 
-export type ListTriggerFragment = { __typename?: 'Trigger', id: string, name: string, enabled: boolean, identifier: string, kind: SignalKind, port: string, conditions: any, consecutiveFailures: number, lastError?: string | null, description?: string | null, runCount: number, lastRunAt?: any | null, lastErrorAt?: any | null, exhausted: boolean, endsAt?: any | null, maxRuns?: number | null, debounceSeconds?: number | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null };
+export type ListTriggerFragment = { __typename?: 'Trigger', id: string, name: string, enabled: boolean, policy: TaskPolicy, identifier: string, kind: SignalKind, port: string, conditions: any, consecutiveFailures: number, lastError?: string | null, description?: string | null, runCount: number, lastRunAt?: any | null, lastErrorAt?: any | null, exhausted: boolean, endsAt?: any | null, maxRuns?: number | null, debounceSeconds?: number | null, action: { __typename?: 'Action', id: string, name: string }, agent?: { __typename?: 'Agent', id: string, name: string } | null };
 
 export type DetailTriggerFragment = (
   { __typename?: 'Trigger', args: any, interface?: string | null, lastFiredAt?: any | null, createdAt: any, updatedAt: any, wireKey?: string | null, caller: { __typename?: 'Caller', id: string, user: { __typename?: 'User', id: string, sub: string } }, wiregram?: { __typename?: 'Wiregram', id: string, name: string } | null, firings: Array<(
@@ -7486,7 +7533,7 @@ export type StructurePackageFragment = { __typename?: 'StructurePackage', key: s
 
 export type ListStructurePackageFragment = { __typename?: 'StructurePackage', key: string, id: string };
 
-export type PostmanTaskFragment = { __typename?: 'Task', id: string, latestEventKind: TaskEventKind, latestProgress?: number | null, latestMessage?: string | null, latestReturns?: any | null, args: any, reference?: string | null, isDone: boolean, dependencyMethod?: string | null, dependency?: string | null, dependencies: any, createdAt: any, finishedAt?: any | null, events: Array<(
+export type PostmanTaskFragment = { __typename?: 'Task', id: string, policy: TaskPolicy, latestEventKind: TaskEventKind, latestProgress?: number | null, latestMessage?: string | null, latestReturns?: any | null, args: any, reference?: string | null, isDone: boolean, dependencyMethod?: string | null, dependency?: string | null, dependencies: any, createdAt: any, finishedAt?: any | null, events: Array<(
     { __typename?: 'TaskEvent' }
     & TaskEventFragment
   )>, action: (
@@ -7760,6 +7807,16 @@ export type ResumeMutationVariables = Exact<{
 
 
 export type ResumeMutation = { __typename?: 'Mutation', resume: (
+    { __typename?: 'Task' }
+    & PostmanTaskFragment
+  ) };
+
+export type DecideMutationVariables = Exact<{
+  input: DecideInput;
+}>;
+
+
+export type DecideMutation = { __typename?: 'Mutation', decide: (
     { __typename?: 'Task' }
     & PostmanTaskFragment
   ) };
@@ -10596,6 +10653,7 @@ export const ListScheduleFragmentDoc = gql`
   id
   name
   enabled
+  policy
   cron
   intervalSeconds
   timezone
@@ -10659,6 +10717,7 @@ export const ListTriggerFragmentDoc = gql`
   id
   name
   enabled
+  policy
   identifier
   kind
   port
@@ -11491,6 +11550,7 @@ export const TaskEventFragmentDoc = gql`
 export const PostmanTaskFragmentDoc = gql`
     fragment PostmanTask on Task {
   id
+  policy
   latestEventKind
   latestProgress
   latestMessage
@@ -12940,6 +13000,39 @@ export function useResumeMutation(baseOptions?: ApolloReactHooks.MutationHookOpt
 export type ResumeMutationHookResult = ReturnType<typeof useResumeMutation>;
 export type ResumeMutationResult = Apollo.MutationResult<ResumeMutation>;
 export type ResumeMutationOptions = Apollo.BaseMutationOptions<ResumeMutation, ResumeMutationVariables>;
+export const DecideDocument = gql`
+    mutation decide($input: DecideInput!) {
+  decide(input: $input) {
+    ...PostmanTask
+  }
+}
+    ${PostmanTaskFragmentDoc}`;
+export type DecideMutationFn = Apollo.MutationFunction<DecideMutation, DecideMutationVariables>;
+
+/**
+ * __useDecideMutation__
+ *
+ * To run a mutation, you first call `useDecideMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDecideMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [decideMutation, { data, loading, error }] = useDecideMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useDecideMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<DecideMutation, DecideMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<DecideMutation, DecideMutationVariables>(DecideDocument, options);
+      }
+export type DecideMutationHookResult = ReturnType<typeof useDecideMutation>;
+export type DecideMutationResult = Apollo.MutationResult<DecideMutation>;
+export type DecideMutationOptions = Apollo.BaseMutationOptions<DecideMutation, DecideMutationVariables>;
 export const CreateScheduleDocument = gql`
     mutation CreateSchedule($input: CreateScheduleInput!) {
   createSchedule(input: $input) {

@@ -83,6 +83,7 @@ import {
 import { reportError, toast } from "@/core/notify";
 import { v4 as uuidv4 } from "uuid";
 import { assignErrorMessage } from "@/rekuest/lib/assignError";
+import { AutoModeToggle, useAutoMode } from "@/rekuest/components/AutoModeToggle";
 import {
   GENERIC_REPLYER_FILTER,
   replyerSubject,
@@ -445,6 +446,8 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
 
   const [selectedActionId, setSelectedActionId] = useState<string>("none");
+  // Off, what the replyer asks other actions to do waits for the user's approval.
+  const autoMode = useAutoMode(`room:${room.id}`);
   // Once the user picks a replyer (or none), the picker stops choosing for them.
   const [pickedByHand, setPickedByHand] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -675,6 +678,7 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
         action: selectedActionId,
         args: assignArgs,
         reference,
+        policy: autoMode.policy,
       }));
 
       setActiveTasks((prev) => bindTask(prev, reference, task));
@@ -876,6 +880,7 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
         onCancelTask={handleCancelTask}
         onRereply={selectedActionId !== "none" ? handleRereply : undefined}
         replyerControl={
+          <>
           <ReplyerControl
             specificActions={replyers.specific}
             subjectIdentifier={subjectIdentifier}
@@ -891,6 +896,10 @@ export function Chat({ isMobile, room, talkingAbout }: ChatProps) {
             hiddenArgs={hiddenArgs}
             hasPriorTask={!!latestTask}
           />
+          {selectedActionId !== "none" && (
+            <AutoModeToggle auto={autoMode.auto} onChange={autoMode.setAuto} />
+          )}
+          </>
         }
       />
     </div>

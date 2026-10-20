@@ -7,9 +7,10 @@ import { cn } from "@/core/util/utils";
 import { useSelf } from "@/core/connection/useSelf";
 import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Loader2, CheckCircle2, AlertCircle, XCircle, X, Ban, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, XCircle, X, Ban, RefreshCw, Hand } from "lucide-react";
 import { agentDisplayName, displayInitials } from "@/alpaka/agentName";
-import { ActiveTask } from "./activeTasks";
+import { ActiveTask, isLive } from "./activeTasks";
+import { HoldCard } from "@/rekuest/components/task/HoldCard";
 import { isUnconfirmed, settlePending, type PendingMessage } from "./pendingMessages";
 import React, { useCallback, useRef } from "react";
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
@@ -422,6 +423,20 @@ export function ChatList({
         {activeTasks.length > 0 && (
           <div className="absolute inset-x-0 bottom-full z-10 mb-1 flex flex-col gap-2 px-1">
             <AnimatePresence>
+              {activeTasks.flatMap((ass) =>
+                ass.status === "HELD"
+                  ? (ass.holds ?? []).map((hold) => (
+                      <motion.div
+                        key={`${ass.reference}:hold:${hold.task}`}
+                        initial={{ opacity: 0, y: 15, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      >
+                        <HoldCard hold={hold} />
+                      </motion.div>
+                    ))
+                  : [],
+              )}
               {activeTasks.map((ass) => (
                 <motion.div
                   key={ass.reference}
@@ -433,13 +448,17 @@ export function ChatList({
                     ass.status === "DONE" && "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300",
                     ass.status === "ERROR" && "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300",
                     ass.status === "CANCELLED" && "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300",
-                    (ass.status === "RUNNING" || ass.status === "PENDING") && "border-primary/20 bg-primary/5 text-primary-foreground/90 dark:text-primary"
+                    (ass.status === "RUNNING" || ass.status === "PENDING") && "border-primary/20 bg-primary/5 text-primary-foreground/90 dark:text-primary",
+                    ass.status === "HELD" && "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300"
                   )}
                 >
                   {/* Status Indicator Icon */}
                   <div className="flex items-center justify-center shrink-0">
                     {(ass.status === "PENDING" || ass.status === "RUNNING") && (
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-current" />
+                    )}
+                    {ass.status === "HELD" && (
+                      <Hand className="h-3.5 w-3.5 text-current" />
                     )}
                     {ass.status === "DONE" && (
                       <CheckCircle2 className="h-3.5 w-3.5 text-current" />
@@ -485,7 +504,7 @@ export function ChatList({
                   )}
 
                   {/* Close/Cancel Button */}
-                  {ass.status === "PENDING" || ass.status === "RUNNING" ? (
+                  {isLive(ass.status) ? (
                     <button
                       type="button"
                       disabled={!ass.id}

@@ -20,6 +20,7 @@ import {
   ArgumentsRow,
   FromRow,
   RuleHeader,
+  PolicyRow,
   RuleRow,
   RuleRows,
   UntilRow,
@@ -176,6 +177,7 @@ export const SchedulePage = asDetailQueryRoute(useScheduleQuery, ({ data, refetc
             )}
           </RuleRow>
           <ArgumentsRow action={schedule.action.id} args={schedule.args} />
+          <PolicyRow rule={schedule} />
           <RuleRow label="Where">
             {schedule.agent ? (
               <RekuestAgent.DetailLink object={schedule.agent} className="hover:underline">

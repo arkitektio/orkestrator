@@ -30,6 +30,7 @@ import { useDebounce } from "@/core/util/hooks/use-debounce";
 import {
   PortKind,
   ScheduleOverlap,
+  TaskPolicy,
   useCreateScheduleMutation,
   useCreateTriggerMutation,
   useDetailActionQuery,
@@ -39,6 +40,7 @@ import {
   useUpdateTriggerMutation,
 } from "@/rekuest/api/graphql";
 import { AutomationKind, describeDraft } from "@/rekuest/lib/automation";
+import { AutoModeToggle } from "@/rekuest/components/AutoModeToggle";
 import {
   CadenceDraft,
   cadenceToInput,
@@ -257,6 +259,8 @@ export const AutomationBuilder = ({
   const [pin, setPin] = useState<Pin | null>(initial.pin ?? null);
   const [name, setName] = useState(initial.name ?? "");
   const [enabled, setEnabled] = useState(initial.enabled ?? true);
+  // Off (ASK, the server's default): what a run asks other actions to do waits for approval.
+  const [auto, setAuto] = useState(initial.policy === TaskPolicy.Auto);
   const [ephemeralRuns, setEphemeralRuns] = useState(initial.ephemeralRuns ?? false);
   const [description, setDescription] = useState(initial.description ?? "");
   const [endsAt, setEndsAt] = useState(() => toLocalInput(initial.endsAt));
@@ -365,6 +369,7 @@ export const AutomationBuilder = ({
       name: finalName,
       args: values,
       enabled,
+      policy: auto ? TaskPolicy.Auto : TaskPolicy.Ask,
       description: description.trim() || null,
       endsAt: fromLocalInput(endsAt),
       maxRuns: positiveInt(maxRuns),
@@ -628,6 +633,17 @@ export const AutomationBuilder = ({
                     checked={enabled}
                     onChange={setEnabled}
                   />
+                  <label className="flex items-center justify-between gap-4 text-sm">
+                    <span>
+                      Auto-mode
+                      <span className="block text-xs text-muted-foreground">
+                        {auto
+                          ? "What a run asks other actions to do runs without asking."
+                          : "What a run asks other actions to do waits for your approval."}
+                      </span>
+                    </span>
+                    <AutoModeToggle auto={auto} onChange={setAuto} />
+                  </label>
                   {kind === "clock" && (
                     <Toggle
                       label="Ephemeral runs"

@@ -1,4 +1,5 @@
 import { TaskEventFragment, TaskEventKind } from "@/rekuest/api/graphql";
+import { applyHoldEvent, HoldRequest } from "@/rekuest/lib/holds";
 import { isTaskLive, isTerminalEvent } from "@/rekuest/lib/taskTracker";
 
 /**
@@ -10,8 +11,13 @@ import { isTaskLive, isTerminalEvent } from "@/rekuest/lib/taskTracker";
  * that: a settled pill never goes back, and a pill can also be settled from the
  * task itself (the assign result, the cache, a re-query), not only from the
  * event stream.
+ *
+ * A pill is HELD while something under it waits for the user: a child the
+ * replyer asked to run, or the replyer's own hold. The server writes HELD (with
+ * `held`, the child's id) on the root, so the pill's own stream carries it; the
+ * matching DECIDED takes it back to running.
  */
-export type ActiveTaskStatus = "PENDING" | "RUNNING" | "DONE" | "ERROR" | "CANCELLED";
+export type ActiveTaskStatus = "PENDING" | "RUNNING" | "HELD" | "DONE" | "ERROR" | "CANCELLED";
 
 export interface ActiveTask {
   id: string;
@@ -21,9 +27,11 @@ export interface ActiveTask {
   progress?: number | null;
   message?: string | null;
   delegatedName?: string | null;
+  /** What waits for the user's decision, oldest first. */
+  holds?: readonly HoldRequest[];
 }
 
-type SettledStatus = Exclude<ActiveTaskStatus, "PENDING" | "RUNNING">;
+type SettledStatus = Exclude<ActiveTaskStatus, "PENDING" | "RUNNING" | "HELD">;
 
 /** How long a settled pill stays. A failure is read, so it stays longer. */
 export const DISMISS_AFTER_MS: Record<SettledStatus, number> = {
@@ -31,6 +39,10 @@ export const DISMISS_AFTER_MS: Record<SettledStatus, number> = {
   CANCELLED: 3000,
   ERROR: 10000,
 };
+
+/** Still working, waiting or not: what a pill shows a spinner and a cancel for. */
+export const isLive = (status: ActiveTaskStatus) =>
+  status === "PENDING" || status === "RUNNING" || status === "HELD";
 
 export const isSettled = (status: ActiveTaskStatus): status is SettledStatus =>
   status === "DONE" || status === "ERROR" || status === "CANCELLED";
@@ -43,7 +55,11 @@ export const isSettled = (status: ActiveTaskStatus): status is SettledStatus =>
 export const statusForKind = (kind: TaskEventKind): ActiveTaskStatus => {
   if (!isTerminalEvent(kind)) return "RUNNING";
   if (kind === TaskEventKind.Completed) return "DONE";
-  if (kind === TaskEventKind.Cancelled || kind === TaskEventKind.Interrupted) {
+  if (
+    kind === TaskEventKind.Cancelled ||
+    kind === TaskEventKind.Interrupted ||
+    kind === TaskEventKind.Denied
+  ) {
     return "CANCELLED";
   }
   return "ERROR";
@@ -83,13 +99,23 @@ export const applyTaskEvent = (
   const reference = event.task.reference;
   if (!reference) return tasks;
 
-  return update(tasks, reference, (task) => ({
-    ...task,
-    status: statusForKind(event.kind),
-    progress: event.progress ?? task.progress,
-    message: event.message || task.message,
-    delegatedName: event.delegatedTo?.implementation?.action?.name || task.delegatedName,
-  }));
+  return update(tasks, reference, (task) => {
+    const holds = applyHoldEvent(task.holds ?? [], event);
+    const status = statusForKind(event.kind);
+    return {
+      ...task,
+      holds,
+      // Waiting stays waiting through whatever else the task reports, until the
+      // decision comes or the task ends.
+      status: status === "RUNNING" && holds.length > 0 ? "HELD" : status,
+      progress: event.progress ?? task.progress,
+      message:
+        event.kind === TaskEventKind.Held || event.kind === TaskEventKind.Decided
+          ? task.message
+          : event.message || task.message,
+      delegatedName: event.delegatedTo?.implementation?.action?.name || task.delegatedName,
+    };
+  });
 };
 
 type TaskState = { isDone?: boolean | null; latestEventKind: TaskEventKind };
@@ -115,7 +141,7 @@ export const bindTask = (
   update(tasks, reference, (pill) => ({
     ...pill,
     id: task.id,
-    status: settledStatusOf(task) ?? "RUNNING",
+    status: settledStatusOf(task) ?? (pill.holds?.length ? "HELD" : "RUNNING"),
   }));
 
 export const failTask = (

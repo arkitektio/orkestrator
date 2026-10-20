@@ -2,6 +2,7 @@ import {
   CheckCircle,
   CircleHelp,
   Clock,
+  Hand,
   Loader,
   PauseCircle,
   XCircle,
@@ -22,6 +23,7 @@ export type TaskStatusBucket =
   | "cancelled"
   | "lost"
   | "paused"
+  | "held"
   | "queued"
   | "running";
 
@@ -35,6 +37,9 @@ export type TaskStatusBucket =
  * `lost` is its own bucket, not an error: the agent died while the task ran,
  * so how it ended is unknown (it may even have finished — a later report is
  * kept as `LATE_REPORT`, never replacing the LOST).
+ *
+ * `held` waits for a person to approve it (a child an agent asked for, or a
+ * task's own hold); a `DENIED` child never ran, so it files under cancelled.
  */
 export const statusBucket = (
   kind: TaskEventKind | null | undefined,
@@ -52,6 +57,7 @@ export const statusBucket = (
     case TaskEventKind.Cancelling:
     case TaskEventKind.Interrupted:
     case TaskEventKind.Interrupting:
+    case TaskEventKind.Denied:
       return "cancelled";
   }
   if (isDone) return "done";
@@ -60,6 +66,8 @@ export const statusBucket = (
       return "queued";
     case TaskEventKind.Paused:
       return "paused";
+    case TaskEventKind.Held:
+      return "held";
     default:
       return "running";
   }
@@ -89,6 +97,8 @@ export const TaskStatusIcon = ({
       return <CircleHelp className={`${className} text-amber-500`} />;
     case "paused":
       return <PauseCircle className={`${className} text-amber-500`} />;
+    case "held":
+      return <Hand className={`${className} text-amber-500`} />;
     case "queued":
       return <Clock className={`${className} text-muted-foreground`} />;
     default:
@@ -112,6 +122,7 @@ export const statusTextColor = (
       return "text-red-500";
     case "lost":
     case "paused":
+    case "held":
       return "text-amber-500";
     default:
       return "text-muted-foreground";
@@ -141,7 +152,12 @@ export const eventKindColor = (kind: TaskEventKind): string => {
       return "text-yellow-500";
     case TaskEventKind.Lost:
     case TaskEventKind.Paused:
+    case TaskEventKind.Held:
       return "text-amber-500";
+    case TaskEventKind.Decided:
+      return "text-blue-400";
+    case TaskEventKind.Denied:
+      return "text-orange-400";
     default:
       return "text-muted-foreground";
   }
@@ -176,6 +192,7 @@ export const eventKindTint = (
       return "bg-yellow-500/20";
     case TaskEventKind.Lost:
     case TaskEventKind.Paused:
+    case TaskEventKind.Held:
       return "bg-amber-500/25";
     case TaskEventKind.Effect:
     case TaskEventKind.LateReport:
@@ -203,6 +220,7 @@ export const statusBarColor = (
       return "bg-blue-500 border-blue-600";
     case TaskEventKind.Lost:
     case TaskEventKind.Paused:
+    case TaskEventKind.Held:
       return "bg-amber-500 border-amber-600";
     default:
       return "bg-slate-500 border-slate-600";
@@ -242,6 +260,7 @@ export const statusTheme = (task: {
       };
     case "lost":
     case "paused":
+    case "held":
       return {
         ring: "ring-amber-500/20",
         bg: "bg-amber-500/5",
@@ -266,14 +285,19 @@ export const isInterruptable = (task: { isDone?: boolean | null }) =>
   task.isDone !== true;
 
 /**
- * A paused task waits for a person: either a pause someone asked for, or a
- * workflow that held itself (`task.hold`) with a message for whoever decides.
- * Either way `resume` (or cancel) is the answer.
+ * A paused task waits for someone to resume it. A task that waits for a
+ * decision is HELD instead, and is answered with `decide` (see {@link isHeld}).
  */
 export const isResumable = (task: {
   isDone?: boolean | null;
   latestEventKind: TaskEventKind;
 }) => task.isDone !== true && task.latestEventKind === TaskEventKind.Paused;
+
+/** A held task waits for a person to approve or deny it (`decide`). */
+export const isHeld = (task: {
+  isDone?: boolean | null;
+  latestEventKind: TaskEventKind;
+}) => task.isDone !== true && task.latestEventKind === TaskEventKind.Held;
 
 /** Pausing is offered while the task runs and is not already pausing/paused. */
 export const isPausable = (task: {

@@ -1033,6 +1033,11 @@ input AssignInput {
   notBefore: DateTime = null
 
   """
+  Whether the work the agents ask for under this task waits for a person: ASK (the default) holds every child an agent assigns until someone approves it, AUTO runs it without asking (auto-mode). Honoured on a root only: a child always takes its parent's.
+  """
+  policy: TaskPolicy = null
+
+  """
   The reference of the task. This is used to identify the task in the system.
   """
   reference: String = null
@@ -1920,6 +1925,11 @@ input CreateScheduleInput {
 
   """Whether a run may start while the previous one is open."""
   overlap: ScheduleOverlap! = SKIP
+
+  """
+  The policy of every run it creates: ASK (the default) holds a child an agent asks for until a person approves it; AUTO runs it unattended.
+  """
+  policy: TaskPolicy! = ASK
   timezone: String! = "UTC"
 }
 
@@ -2049,6 +2059,11 @@ input CreateTriggerInput {
   """Nothing fires once it created this many runs."""
   maxRuns: Int = null
   name: String!
+
+  """
+  The policy of every run it fires: ASK (the default) holds a child an agent asks for until a person approves it; AUTO runs it unattended.
+  """
+  policy: TaskPolicy! = ASK
   port: String!
 }
 
@@ -2165,6 +2180,22 @@ input DashboardPlacementOrder @oneOf {
 
 """Date with time (isoformat)"""
 scalar DateTime
+
+"""The input for deciding a held task."""
+input DecideInput {
+  """
+  What the person says with the decision. A child gets it as its Assign's message; a task's own hold gets it back.
+  """
+  answer: String = null
+
+  """
+  Approve (the child runs; a task's own hold carries on approved) or deny (the child ends DENIED without running; a task's own hold carries on denied)
+  """
+  approved: Boolean!
+
+  """The held task: a child an agent asked for, or a task that holds itself"""
+  task: ID!
+}
 
 "A definition\n\n    Definitions are the building implementation for Actions and provide the\n    information needed to create a action. They are primarly composed of a name,\n    a description, and a list of ports.\n\n    Definitions provide a protocol of input and output, and do not contain\n    any information about the actual implementation of the action ( this is handled\n    by a implementation that implements a action).\n\n    "
 input DefinitionInput {
@@ -3531,6 +3562,11 @@ type Mutation {
   Create a trigger: run an action when a service signals a matching object.
   """
   createTrigger(input: CreateTriggerInput!): Trigger!
+
+  """
+  Answer a held task. A child an agent asked for runs once approved, or ends DENIED without running; a task that holds itself carries on with the decision. Only the user the task runs for may decide, and never from the client of the agent that asked.
+  """
+  decide(input: DecideInput!): Task!
 
   """Delete an agent record."""
   deleteAgent(input: DeleteAgentInput!): ID!
@@ -4949,6 +4985,11 @@ type Schedule {
   """Whether a run may start while the previous one is open."""
   overlap: ScheduleOverlap!
 
+  """
+  The policy of every run it creates: ASK holds a child an agent asks for until a person approves it, AUTO runs it unattended.
+  """
+  policy: TaskPolicy!
+
   """Runs it created so far."""
   runCount: Int!
 
@@ -6053,6 +6094,11 @@ type Task {
   """
   parentStep: Int
 
+  """
+  Whether the work agents ask for under this task waits for a person (ASK) or runs without asking (AUTO, auto-mode). A root's is set on its assign; a child takes its parent's.
+  """
+  policy: TaskPolicy!
+
   """Optional external reference for tracking."""
   reference: String
 
@@ -6174,7 +6220,7 @@ type TaskEvent {
   task: Task!
 
   """
-  EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline).
+  EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline). HELD: what waits for a decision ({kind: "assign", prompt, action, agent, args, caller_task, caller_agent} for a child an agent asked for, with held: the child's id on its parent and root; {kind: "self", prompt, details} for a task's own hold). DECIDED: the decision ({approved, answer, auto, user}). DENIED: {answer, user}. LOST: what is known about the lost run.
   """
   value: AnyDefault
 }
@@ -6216,9 +6262,12 @@ enum TaskEventKind {
   CANCELLING
   COMPLETED
   CRITICAL
+  DECIDED
   DELEGATE
+  DENIED
   EFFECT
   FAILED
+  HELD
   INTERRUPTED
   INTERRUPTING
   LATE_REPORT
@@ -6341,6 +6390,14 @@ enum TaskInstructKind {
 input TaskOrder @oneOf {
   createdAt: Ordering
   finishedAt: Ordering
+}
+
+"""
+Whether the work an agent asks for waits for a person. ASK: a child an agent assigns is held until a person approves it, and the task's own holds wait for a decision. AUTO: they are approved without asking (auto-mode). Set on a root assign; every child inherits its parent's.
+"""
+enum TaskPolicy {
+  ASK
+  AUTO
 }
 
 type TaskStats {
@@ -6666,6 +6723,11 @@ type Trigger {
   """Human-readable name."""
   name: String!
 
+  """
+  The policy of every run it fires: ASK holds a child an agent asks for until a person approves it, AUTO runs it unattended.
+  """
+  policy: TaskPolicy!
+
   """The STRUCTURE argument that receives the signalled object."""
   port: String!
 
@@ -6891,6 +6953,11 @@ input UpdateScheduleInput {
   maxRuns: Int
   name: String = null
   overlap: ScheduleOverlap = null
+
+  """
+  The policy of every run it creates: ASK (the default) holds a child an agent asks for until a person approves it; AUTO runs it unattended. A waiting run is re-planned with it.
+  """
+  policy: TaskPolicy = null
   timezone: String = null
 }
 
@@ -6945,6 +7012,11 @@ input UpdateTriggerInput {
   kind: SignalKind = null
   maxRuns: Int
   name: String = null
+
+  """
+  The policy of every run it fires: ASK (the default) holds a child an agent asks for until a person approves it; AUTO runs it unattended.
+  """
+  policy: TaskPolicy = null
   port: String = null
 }
 
@@ -7125,6 +7197,11 @@ input WireScheduleInput {
   """Whether a run may start while the previous one is open."""
   overlap: ScheduleOverlap! = SKIP
 
+  """
+  The policy of every run the rule creates: ASK holds a child an agent asks for until a person approves it, AUTO runs it unattended.
+  """
+  policy: TaskPolicy! = ASK
+
   """The IANA zone the cron line is read in."""
   timezone: String! = "UTC"
 }
@@ -7177,6 +7254,11 @@ input WireTriggerInput {
 
   """A human-readable name."""
   name: String!
+
+  """
+  The policy of every run the rule creates: ASK holds a child an agent asks for until a person approves it, AUTO runs it unattended.
+  """
+  policy: TaskPolicy! = ASK
 
   """The STRUCTURE argument that receives the signalled object."""
   port: String!

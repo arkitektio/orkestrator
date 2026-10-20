@@ -23,6 +23,7 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { ReactNode, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { AssignErrorNote } from "../../components/AssignErrorNote";
+import { assignAutoKey, AutoModeToggle, useAutoMode } from "../../components/AutoModeToggle";
 import { DependencyTreeNotice } from "../../components/dependencies/DependencyTreeNotice";
 import { ActionLogo } from "../../components/logo/ActionLogo";
 import { useDependencyTree } from "../../hooks/useDependencyTree";
@@ -79,6 +80,8 @@ export const AssignForm = ({
   className,
 }: AssignFormProps) => {
   const { action, implementation, latestTask, assign, error } = useAssignTarget(target);
+  // Off, what this task's agents ask other actions to do waits for approval.
+  const autoMode = useAutoMode(assignAutoKey(target));
   const formPorts = ports ?? action?.args;
   // A resolution has bound the dependencies already: nothing to pin here.
   const pinning = target.resolution ? undefined : implementation;
@@ -132,6 +135,7 @@ export const AssignForm = ({
         dependencies: pinning ? data.dependencies : undefined,
         reference,
         hooks: [],
+        policy: autoMode.policy,
       });
       onAssigned?.(task, reference);
       if (layout === "dialog" && !keepOpen) closeDialog();
@@ -222,6 +226,7 @@ export const AssignForm = ({
             variant="line"
             className="animate-refuse-reason sm:mr-auto"
           />
+          <AutoModeToggle auto={autoMode.auto} onChange={autoMode.setAuto} className="shrink-0" />
           <Button
             type="submit"
             // Red while it shakes, then back to the plain button.

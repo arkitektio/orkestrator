@@ -139,6 +139,7 @@ const AutomationRowItem = ({ row }: { row: Row }) => {
     row.onlyIf.length > 0 ? `${row.when} if ${row.onlyIf.join(" and ")}` : row.when,
     row.name !== row.action.name && `runs ${row.action.name}`,
     row.agent && `on ${row.agent.name}`,
+    row.auto && "auto-mode",
   ].filter(Boolean);
 
   return (

@@ -149,6 +149,8 @@ export const useCancelTask = () => {
 /** Minimal task shape needed to re-run it (works for Postman and Detail tasks). */
 export type ReassignableTask = {
   args: AssignInput["args"];
+  /** A rerun keeps the original's: it waits for approval exactly as that did. */
+  policy?: AssignInput["policy"];
   action: { id: string };
   implementation?: { id: string } | null;
   resolvedDependencies?: readonly FrozenDependency[] | null;
@@ -181,6 +183,7 @@ export const useReassignFromTask = () => {
             : {}),
           hooks: [],
           capture: opts?.capture ?? false,
+          policy: task.policy,
         }),
       ),
     [assign],
