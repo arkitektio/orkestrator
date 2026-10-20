@@ -1,5 +1,5 @@
 import { TaskEventFragment, TaskEventKind } from "@/rekuest/api/graphql";
-import { applyHoldEvent, HoldRequest } from "@/rekuest/lib/holds";
+import { applyHoldEvent, decisionFromEvent, HoldDecision, HoldRequest } from "@/rekuest/lib/holds";
 import { isTaskLive, isTerminalEvent } from "@/rekuest/lib/taskTracker";
 
 /**
@@ -15,7 +15,8 @@ import { isTaskLive, isTerminalEvent } from "@/rekuest/lib/taskTracker";
  * A pill is HELD while something under it waits for the user: a child the
  * replyer asked to run, or the replyer's own hold. The server writes HELD (with
  * `held`, the child's id) on the root, so the pill's own stream carries it; the
- * matching DECIDED takes it back to running.
+ * matching DECIDED takes it back to running, and is kept as what was decided:
+ * the conversation shows it until the pill goes.
  */
 export type ActiveTaskStatus = "PENDING" | "RUNNING" | "HELD" | "DONE" | "ERROR" | "CANCELLED";
 
@@ -29,7 +30,11 @@ export interface ActiveTask {
   delegatedName?: string | null;
   /** What waits for the user's decision, oldest first. */
   holds?: readonly HoldRequest[];
+  /** What was decided while this pill was up, oldest first: the hold, and how it was answered. */
+  decided?: readonly DecidedHold[];
 }
+
+export type DecidedHold = HoldDecision & { hold: HoldRequest };
 
 type SettledStatus = Exclude<ActiveTaskStatus, "PENDING" | "RUNNING" | "HELD">;
 
@@ -100,11 +105,15 @@ export const applyTaskEvent = (
   if (!reference) return tasks;
 
   return update(tasks, reference, (task) => {
+    const decision = decisionFromEvent(event);
+    const answered = decision && (task.holds ?? []).find((hold) => hold.task === decision.task);
     const holds = applyHoldEvent(task.holds ?? [], event);
     const status = statusForKind(event.kind);
     return {
       ...task,
       holds,
+      // Only what was shown: an auto-mode decision of a hold nobody saw has nothing to recall.
+      decided: answered ? [...(task.decided ?? []), { ...decision, hold: answered }] : task.decided,
       // Waiting stays waiting through whatever else the task reports, until the
       // decision comes or the task ends.
       status: status === "RUNNING" && holds.length > 0 ? "HELD" : status,

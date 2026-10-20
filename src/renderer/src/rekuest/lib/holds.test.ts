@@ -2,7 +2,7 @@
 // (the generated rekuest API module reads `window` on import)
 import { describe, expect, it } from "vitest";
 import { TaskEventKind } from "../api/graphql";
-import { holdFromEvent, pendingHolds } from "./holds";
+import { decisionFromEvent, holdFromEvent, pendingHolds } from "./holds";
 
 const ev = (kind: TaskEventKind, value: unknown, createdAt: string, message: string | null = null) => ({
   kind,
@@ -28,5 +28,17 @@ describe("holds", () => {
       ev(TaskEventKind.Held, { held: "c1", prompt: { title: "first" } }, "2"),
     ];
     expect(pendingHolds(events).map((h) => [h.task, h.title])).toEqual([["c2", "second"]]);
+  });
+
+  it("reads how a hold was answered: by whom it says, and with what", () => {
+    expect(decisionFromEvent(ev(TaskEventKind.Decided, { held: "c1", approved: false, answer: " no ", auto: false }, "1")))
+      .toEqual({ task: "c1", approved: false, auto: false, answer: " no " });
+    expect(decisionFromEvent(ev(TaskEventKind.Decided, { approved: true, auto: true, answer: "" }, "1"))).toEqual({
+      task: "root",
+      approved: true,
+      auto: true,
+      answer: null,
+    });
+    expect(decisionFromEvent(ev(TaskEventKind.Held, { held: "c1" }, "1"))).toBeNull();
   });
 });

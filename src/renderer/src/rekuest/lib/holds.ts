@@ -73,6 +73,30 @@ export const holdFromEvent = (event: HoldEvent): HoldRequest | null => {
 export const decidedTaskOf = (event: HoldEvent): string | null =>
   event.kind === TaskEventKind.Decided ? heldTaskOf(event) : null;
 
+/** How a hold was answered: by a person, or at once because the run is in auto-mode. */
+export interface HoldDecision {
+  /** The held task it answers. */
+  task: string;
+  approved: boolean;
+  /** Nobody was asked: the run is in auto-mode. */
+  auto: boolean;
+  /** What the person wrote with it, if anything. */
+  answer?: string | null;
+}
+
+/** The decision a DECIDED event carries (`{approved, answer, auto, user}`), or null. */
+export const decisionFromEvent = (event: HoldEvent): HoldDecision | null => {
+  const task = decidedTaskOf(event);
+  if (!task) return null;
+  const value = record(event.value) ?? {};
+  return {
+    task,
+    approved: value.approved !== false,
+    auto: value.auto === true,
+    answer: typeof value.answer === "string" && value.answer.trim() ? value.answer : null,
+  };
+};
+
 /** Add or drop a hold as a HELD / DECIDED event arrives; the same array when neither. */
 export const applyHoldEvent = (
   holds: readonly HoldRequest[],

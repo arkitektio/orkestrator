@@ -187,6 +187,33 @@ describe("a pill whose replyer waits for the user", () => {
     expect(decided[0].holds).toEqual([]);
   });
 
+  it("keeps what was decided, with the hold it answered, for the conversation to show", () => {
+    const declined = applyTaskEvent(
+      held(),
+      event(TaskEventKind.Decided, {
+        id: "e-dec",
+        value: { held: "c7", approved: false, answer: "not that plate", auto: false },
+      }),
+    );
+    expect(declined[0].decided).toEqual([
+      expect.objectContaining({
+        task: "c7",
+        approved: false,
+        auto: false,
+        answer: "not that plate",
+        hold: expect.objectContaining({ title: "Delegate to Segmenter" }),
+      }),
+    ]);
+  });
+
+  it("recalls nothing for a decision about a hold it never showed", () => {
+    const [pill] = applyTaskEvent(
+      started(),
+      event(TaskEventKind.Decided, { id: "e-dec", value: { held: "c9", approved: true, auto: true } }),
+    );
+    expect(pill.decided).toBeUndefined();
+  });
+
   it("holds itself without `held`, and a DENIED kind settles as cancelled", () => {
     const self = applyTaskEvent(
       started(),
