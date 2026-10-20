@@ -181,6 +181,9 @@ export class MeshService implements AppModule {
       // keeps its session, and any key is ignored.
       const retry = !up && (!!request.authKey || state !== "needs-login");
       if (!this.wanted.has(config.id) || retry) {
+        // meshd answers a connect for a node it still holds with that node's
+        // last status and drops the key, so a retry tears the node down first.
+        if (retry && this.wanted.has(config.id)) await this.disconnect(config.id, false);
         await this.connect(config, request.authKey, false);
       }
     }

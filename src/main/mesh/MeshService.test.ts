@@ -166,13 +166,17 @@ describe("MeshService", () => {
     await h.service.claim(1, { mesh: LAB });
     expect(h.children[0].commands).toHaveLength(1);
 
+    // meshd ignores a connect for a node it holds, so the stale one goes first.
     await h.service.claim(1, { mesh: LAB, authKey: "tskey-fresh" });
-    expect(h.children[0].commands.at(-1)).toMatchObject({ op: "connect", id: "lab", authKey: "tskey-fresh" });
+    expect(h.children[0].commands.slice(-2)).toEqual([
+      { op: "disconnect", id: "lab" },
+      expect.objectContaining({ op: "connect", id: "lab", authKey: "tskey-fresh" }),
+    ]);
 
     h.children[0].say({ ev: "status", id: "lab", state: "running", proxyPort: 5000 });
     await flush();
     await h.service.claim(1, { mesh: LAB, authKey: "tskey-unused" });
-    expect(h.children[0].commands).toHaveLength(2);
+    expect(h.children[0].commands).toHaveLength(3);
   });
 
   it("reports a logged-in node on disk as hasNodeState", async () => {
