@@ -37,6 +37,7 @@ import { ToolboxDisplay } from "./displays/ToolboxDisplay";
 import { TriggerDisplay } from "./displays/TriggerDisplay";
 import { WiregramDisplay } from "./displays/WiregramDisplay";
 import { manifest } from "./manifest";
+import { REKUEST_OPERATIONS } from "./operations";
 import { REKUEST_OPTION_SOURCES } from "./options";
 import { service } from "./service";
 import { REKUEST_NAV_LINKS } from "./navLinks";
@@ -128,6 +129,7 @@ export const REKUEST_MODULE = defineModule({
     ],
     sections: REKUEST_SECTIONS,
     optionSources: REKUEST_OPTION_SOURCES,
+    operations: REKUEST_OPERATIONS,
     // One "Run on" picker per menu, around (not inside) its command list.
     menuWrappers: [RunOnSubmenu],
     profileSections: REKUEST_PROFILE_SECTIONS,

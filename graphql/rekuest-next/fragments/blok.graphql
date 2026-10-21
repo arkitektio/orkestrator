@@ -77,6 +77,8 @@ fragment Blok on Blok {
   id
   name
   description
+  origin
+  originHash
   # An app's agents provide it (it follows their registrations): forked, never edited.
   provided
   app {
@@ -148,6 +150,9 @@ fragment ListBlok on Blok {
   context
   hash
   provided
+  # Installed from a repository (kabinet's RepoBlok.origin), and what it drew then.
+  origin
+  originHash
   app {
     id
     identifier

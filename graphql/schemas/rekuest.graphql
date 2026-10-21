@@ -664,6 +664,11 @@ input AgentFilter {
   available: Boolean
   blokDependency: ID
 
+  """
+  The agents that called this task, nearest first: its ancestors' agents, then the agent of the app its run was started from. Never the task's own agent. How an app finds what its caller offers (with actionDemands) and calls it.
+  """
+  callerOf: ID
+
   """Filter by client ID of the app the agent is registered to"""
   clientId: String
   dependency: ID
@@ -680,6 +685,11 @@ input AgentFilter {
 
   """Filter by IDs of the agents"""
   ids: [ID!]
+
+  """
+  The agents with at least one implementation listed under any of these protocols, declared as a hint (`on_scene_annotation`) or inferred. Each agent once, however many of its actions match.
+  """
+  implementsProtocols: [String!]
 
   """Filter by pinned agents"""
   pinned: Boolean
@@ -1047,6 +1057,11 @@ input AssignInput {
   """
   resolution: ID = null
 
+  """
+  What the agent's state must hold for the task to run. Refused unless the agent says it tests them, and for a state or path its declaration does not have.
+  """
+  stateRequires: [StateRequirementInput!] = null
+
   """Whether the task should step. Ie. go to the next breakpoint"""
   step: Boolean = null
 }
@@ -1249,6 +1264,16 @@ type Blok {
   materializedBloks(filters: MaterializedBlokFilter, ordering: [MaterializedBlokOrder!]! = [], pagination: OffsetPaginationInput): [MaterializedBlok!]!
   name: String!
 
+  """
+  Where this custom blok was installed from (e.g. kabinet's `RepoBlok.origin`); null for one made here.
+  """
+  origin: String
+
+  """
+  The hash its origin gave what it draws when it was installed. When the origin's hash differs now, it has an update.
+  """
+  originHash: String
+
   """Whether an app's agents provide this blok (see `app`)."""
   provided: Boolean!
 
@@ -1344,6 +1369,14 @@ input BlokFilter {
   Only bloks whose args accept these demands: the bloks an item opens in. Same matching as `ActionFilter.demands`, so a match's `descriptors` are checked against each arg's `requires`. Only `ARGS` demands; a blok without args matches none.
   """
   demands: [PortDemandInput!]
+
+  """
+  Only bloks installed from an origin (true) or only ones made here (false).
+  """
+  hasOrigin: Boolean
+
+  """Only bloks installed from one of these origins."""
+  origins: [String!]
 
   """
   Only bloks an app provides (true) or only custom bloks users made (false).
@@ -1841,6 +1874,16 @@ input CreateBlokInput {
   name: String!
 
   """
+  Where the blok is installed from (kabinet's `RepoBlok.origin`). A blok of the same origin is updated in place instead of matched by name.
+  """
+  origin: String = null
+
+  """
+  The hash its origin gives what it draws, kept to tell when the origin has an update.
+  """
+  originHash: String = null
+
+  """
   The blok as BSX, which the server parses into `components`: send one of the two.
   """
   source: String = null
@@ -2271,6 +2314,11 @@ input DefinitionInput {
   The port groups of the definition. This is used to group ports together in the UI
   """
   portGroups: [PortGroupInput!]! = []
+
+  """
+  Where the action means to hook in (`on_scene_annotation`): hints a caller filters on, stored beside the protocols the server infers. Not a contract, and not part of the action's hash.
+  """
+  protocols: [String!]! = []
 
   """
   Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with IRREVERSIBLE effects.
@@ -2789,7 +2837,7 @@ input HostedStructureFilter {
   package: String
 
   """
-  Keep structures whose identifier, label or description contains this text
+  Keep structures whose identifier, label or description contains this text, or whose label and description mean something close to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
   """
   search: String
 
@@ -2974,10 +3022,16 @@ input ImplementationAgentFilter {
   DISTINCT: Boolean
   NOT: ImplementationAgentFilter
   OR: ImplementationAgentFilter
+
+  """
+  Implementations of the agents that called this task, nearest first: its ancestors' agents, then the agent of the app its run was started from. Never the task's own agent. How an app finds what its caller offers (with actionDemand) and calls it.
+  """
+  callerOf: ID
   clientId: String
   hasImplementations: [String!]
   hasStates: [String!]
   ids: [ID!]
+  implementsProtocols: [String!]
 }
 
 input ImplementationFilter {
@@ -4479,7 +4533,14 @@ type Query {
   """
   The signals this hub's services declare they emit — what triggers can wait for. Hub-wide.
   """
-  signalDeclarations(identifier: String = null): [SignalDeclaration!]!
+  signalDeclarations(
+    identifier: String = null
+
+    """
+    Keep signals whose identifier or description contains this text, or whose description means something close to it; substring matches first, then by similarity
+    """
+    search: String = null
+  ): [SignalDeclaration!]!
 
   """
   Signals services sent about the organization's objects, for inspection.
@@ -5749,6 +5810,27 @@ type StatePatchEvent {
   value: Args!
 }
 
+"""
+What the agent's state must hold for the task to run: the value at `path` (an RFC 6901 pointer into the state `state`) compared with `value` by `operator`. The agent tests it with the task's locks held; on a mismatch the task ends FAILED with code STATE_PRECONDITION and nothing of it runs.
+"""
+input StateRequirementInput {
+  """How the value at `path` is compared with `value`."""
+  operator: DescriptorOperator!
+
+  """
+  An RFC 6901 pointer into the state's value, e.g. '/busy' or '/stage/position/0'.
+  """
+  path: String!
+
+  """The state's interface on the agent."""
+  state: String!
+
+  """
+  What the value is compared with: IN/NOT_IN take a list, LTE/GTE a number, EXISTS true or false.
+  """
+  value: Arg = null
+}
+
 """A plain snapshot of a state's current value."""
 type StateSnapshotEvent {
   agentId: ID!
@@ -5916,7 +5998,9 @@ input StructureDescriptorFilter {
   """Keep the descriptors of structures in this package, e.g. 'mikro'"""
   package: String
 
-  """Keep descriptors whose key or description contains this text"""
+  """
+  Keep descriptors whose key or description contains this text, or whose description means something close to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking.
+  """
   search: String
 
   """Keep the descriptors declared by this service, by its name"""
@@ -6240,7 +6324,7 @@ type TaskEvent {
   task: Task!
 
   """
-  EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline). HELD: what waits for a decision ({kind: "assign", prompt, action, agent, args, caller_task, caller_agent} for a child an agent asked for, with held: the child's id on its parent and root; {kind: "self", prompt, details} for a task's own hold). DECIDED: the decision ({approved, answer, auto, user}). DENIED: {answer, user}. LOST: what is known about the lost run.
+  EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline). HELD: what waits for a decision ({kind: "assign", prompt, action, agent, args, caller_task, caller_agent} for a child an agent asked for, with held: the child's id on its parent and root; {kind: "self", prompt, details} for a task's own hold). DECIDED: the decision ({approved, answer, auto, user}). DENIED: {answer, user}. FAILED: {code} when the failure has one the protocol names (STATE_PRECONDITION: the agent's state did not match the task's stateRequires, and nothing of it ran). LOST: what is known about the lost run.
   """
   value: AnyDefault
 }

@@ -643,6 +643,8 @@ export type AgentFilter = {
   /** Agents that can receive work now: a webhook agent, or a connected one with a fresh heartbeat (takt's rule). */
   available?: InputMaybe<Scalars['Boolean']['input']>;
   blokDependency?: InputMaybe<Scalars['ID']['input']>;
+  /** The agents that called this task, nearest first: its ancestors' agents, then the agent of the app its run was started from. Never the task's own agent. How an app finds what its caller offers (with actionDemands) and calls it. */
+  callerOf?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by client ID of the app the agent is registered to */
   clientId?: InputMaybe<Scalars['String']['input']>;
   dependency?: InputMaybe<Scalars['ID']['input']>;
@@ -655,6 +657,8 @@ export type AgentFilter = {
   hasStates?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Filter by IDs of the agents */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** The agents with at least one implementation listed under any of these protocols, declared as a hint (`on_scene_annotation`) or inferred. Each agent once, however many of its actions match. */
+  implementsProtocols?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Filter by pinned agents */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** Agents meeting a port's descriptor constraints (a picker hands them in as $requires). The only descriptor of @rekuest/agent is @rekuest/supervisor; any other key is refused. */
@@ -894,6 +898,8 @@ export type AssignInput = {
   reference?: InputMaybe<Scalars['String']['input']>;
   /** The resolution ID to assign to when assining to a implementation with dependencies */
   resolution?: InputMaybe<Scalars['ID']['input']>;
+  /** What the agent's state must hold for the task to run. Refused unless the agent says it tests them, and for a state or path its declaration does not have. */
+  stateRequires?: InputMaybe<Array<StateRequirementInput>>;
   /** Whether the task should step. Ie. go to the next breakpoint */
   step?: InputMaybe<Scalars['Boolean']['input']>;
 };
@@ -1016,6 +1022,10 @@ export type Blok = {
   /** Materialized bloks that are instances of this blok. */
   materializedBloks: Array<MaterializedBlok>;
   name: Scalars['String']['output'];
+  /** Where this custom blok was installed from (e.g. kabinet's `RepoBlok.origin`); null for one made here. */
+  origin?: Maybe<Scalars['String']['output']>;
+  /** The hash its origin gave what it draws when it was installed. When the origin's hash differs now, it has an update. */
+  originHash?: Maybe<Scalars['String']['output']>;
   /** Whether an app's agents provide this blok (see `app`). */
   provided: Scalars['Boolean']['output'];
   /** The agents that currently provide this blok, each through its own materialization. */
@@ -1098,6 +1108,10 @@ export type BlokFilter = {
   OR?: InputMaybe<BlokFilter>;
   /** Only bloks whose args accept these demands: the bloks an item opens in. Same matching as `ActionFilter.demands`, so a match's `descriptors` are checked against each arg's `requires`. Only `ARGS` demands; a blok without args matches none. */
   demands?: InputMaybe<Array<PortDemandInput>>;
+  /** Only bloks installed from an origin (true) or only ones made here (false). */
+  hasOrigin?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Only bloks installed from one of these origins. */
+  origins?: InputMaybe<Array<Scalars['String']['input']>>;
   /** Only bloks an app provides (true) or only custom bloks users made (false). */
   provided?: InputMaybe<Scalars['Boolean']['input']>;
   /** Search by name */
@@ -1479,6 +1493,10 @@ export type CreateBlokInput = {
   forNode?: InputMaybe<Scalars['String']['input']>;
   /** The name of the Blok, used for identification in the system. */
   name: Scalars['String']['input'];
+  /** Where the blok is installed from (kabinet's `RepoBlok.origin`). A blok of the same origin is updated in place instead of matched by name. */
+  origin?: InputMaybe<Scalars['String']['input']>;
+  /** The hash its origin gives what it draws, kept to tell when the origin has an update. */
+  originHash?: InputMaybe<Scalars['String']['input']>;
   /** The blok as BSX, which the server parses into `components`: send one of the two. */
   source?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1781,6 +1799,8 @@ export type DefinitionInput = {
   name: Scalars['String']['input'];
   /** The port groups of the definition. This is used to group ports together in the UI */
   portGroups?: Array<PortGroupInput>;
+  /** Where the action means to hook in (`on_scene_annotation`): hints a caller filters on, stored beside the protocols the server infers. Not a contract, and not part of the action's hash. */
+  protocols?: Array<Scalars['String']['input']>;
   /** Whether the action is pure: same args always produce the same result and no side effects — its results are replayable/cacheable. Implies idempotent. Incompatible with stateful and with IRREVERSIBLE effects. */
   pure?: Scalars['Boolean']['input'];
   /** The returns of the definition. This is the output ports of the definition */
@@ -2176,7 +2196,7 @@ export type HostedStructureFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Keep the structures of this package, e.g. 'mikro' */
   package?: InputMaybe<Scalars['String']['input']>;
-  /** Keep structures whose identifier, label or description contains this text */
+  /** Keep structures whose identifier, label or description contains this text, or whose label and description mean something close to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Keep the structures this service hosts, by its name */
   service?: InputMaybe<Scalars['String']['input']>;
@@ -2308,10 +2328,13 @@ export type ImplementationAgentFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ImplementationAgentFilter>;
   OR?: InputMaybe<ImplementationAgentFilter>;
+  /** Implementations of the agents that called this task, nearest first: its ancestors' agents, then the agent of the app its run was started from. Never the task's own agent. How an app finds what its caller offers (with actionDemand) and calls it. */
+  callerOf?: InputMaybe<Scalars['ID']['input']>;
   clientId?: InputMaybe<Scalars['String']['input']>;
   hasImplementations?: InputMaybe<Array<Scalars['String']['input']>>;
   hasStates?: InputMaybe<Array<Scalars['String']['input']>>;
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  implementsProtocols?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type ImplementationFilter = {
@@ -4205,6 +4228,7 @@ export type QuerySignalArgs = {
 
 export type QuerySignalDeclarationsArgs = {
   identifier?: InputMaybe<Scalars['String']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -5244,6 +5268,18 @@ export type StatePatchEvent = {
   value: Scalars['Args']['output'];
 };
 
+/** What the agent's state must hold for the task to run: the value at `path` (an RFC 6901 pointer into the state `state`) compared with `value` by `operator`. The agent tests it with the task's locks held; on a mismatch the task ends FAILED with code STATE_PRECONDITION and nothing of it runs. */
+export type StateRequirementInput = {
+  /** How the value at `path` is compared with `value`. */
+  operator: DescriptorOperator;
+  /** An RFC 6901 pointer into the state's value, e.g. '/busy' or '/stage/position/0'. */
+  path: Scalars['String']['input'];
+  /** The state's interface on the agent. */
+  state: Scalars['String']['input'];
+  /** What the value is compared with: IN/NOT_IN take a list, LTE/GTE a number, EXISTS true or false. */
+  value?: InputMaybe<Scalars['Arg']['input']>;
+};
+
 /** A plain snapshot of a state's current value. */
 export type StateSnapshotEvent = {
   __typename?: 'StateSnapshotEvent';
@@ -5372,7 +5408,7 @@ export type StructureDescriptorFilter = {
   key?: InputMaybe<Scalars['String']['input']>;
   /** Keep the descriptors of structures in this package, e.g. 'mikro' */
   package?: InputMaybe<Scalars['String']['input']>;
-  /** Keep descriptors whose key or description contains this text */
+  /** Keep descriptors whose key or description contains this text, or whose description means something close to it. Substring matches rank first, then by similarity; an explicit `ordering` replaces that ranking. */
   search?: InputMaybe<Scalars['String']['input']>;
   /** Keep the descriptors declared by this service, by its name */
   service?: InputMaybe<Scalars['String']['input']>;
@@ -5664,7 +5700,7 @@ export type TaskEvent = {
   step?: Maybe<Scalars['Int']['output']>;
   /** Associated task. */
   task: Task;
-  /** EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline). HELD: what waits for a decision ({kind: "assign", prompt, action, agent, args, caller_task, caller_agent} for a child an agent asked for, with held: the child's id on its parent and root; {kind: "self", prompt, details} for a task's own hold). DECIDED: the decision ({approved, answer, auto, user}). DENIED: {answer, user}. LOST: what is known about the lost run. */
+  /** EFFECT events: the value the task took (NOW: epoch seconds, RANDOM: hex, SLEEP: deadline). HELD: what waits for a decision ({kind: "assign", prompt, action, agent, args, caller_task, caller_agent} for a child an agent asked for, with held: the child's id on its parent and root; {kind: "self", prompt, details} for a task's own hold). DECIDED: the decision ({approved, answer, auto, user}). DENIED: {answer, user}. FAILED: {code} when the failure has one the protocol names (STATE_PRECONDITION: the agent's state did not match the task's stateRequires, and nothing of it ran). LOST: what is known about the lost run. */
   value?: Maybe<Scalars['AnyDefault']['output']>;
 };
 
@@ -6808,7 +6844,7 @@ export type BlokComponentPropFragment = { __typename?: 'ComponentProp', key: str
 
 export type BlokDiagnosticFragment = { __typename?: 'Diagnostic', level: DiagnosticLevel, code: string, message: string, path?: string | null };
 
-export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, demoState: any, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
+export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, origin?: string | null, originHash?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, demoState: any, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
     { __typename?: 'MaterializedBlok' }
     & ListMaterializedBlokFragment
   )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, args: Array<(
@@ -6824,7 +6860,7 @@ export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: st
     & BlokFragment
   ), agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
-export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string, provided: boolean, app?: { __typename?: 'App', id: string, identifier: string } | null };
+export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string, provided: boolean, origin?: string | null, originHash?: string | null, app?: { __typename?: 'App', id: string, identifier: string } | null };
 
 export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
@@ -11015,6 +11051,8 @@ export const ListBlokFragmentDoc = gql`
   context
   hash
   provided
+  origin
+  originHash
   app {
     id
     identifier
@@ -11077,6 +11115,8 @@ export const BlokFragmentDoc = gql`
   id
   name
   description
+  origin
+  originHash
   provided
   app {
     id
