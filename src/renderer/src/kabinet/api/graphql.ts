@@ -242,7 +242,7 @@ export type ApproveReleaseInput = {
   backends?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** The release's approvalDigest you reviewed; refused if the release changed since. */
   digest: Scalars['String']['input'];
-  /** The lok mandate (createMandate) that lets the agent provision this release as you. */
+  /** The lok agent mandate (createMandate) that lets the deployer issue mandate keys that run this release as you. */
   mandate: Scalars['ID']['input'];
   /** The release to approve. */
   release: Scalars['ID']['input'];
@@ -1303,6 +1303,8 @@ export type GithubRepo = {
   __typename?: 'GithubRepo';
   /** When this repository was first added to Kabinet. */
   addedAt: Scalars['DateTime']['output'];
+  /** The bloks this repository publishes on its own, in its `.arkitekt/bloks.yaml`. */
+  bloks: Array<RepoBlok>;
   /** The branch that is scanned for app manifests. */
   branch: Scalars['String']['output'];
   /** This object's descriptors, a flat mapping of key to value: the facts about it that a trigger can test (e.g. `@kabinet/status`). The keys are the ones kabinet declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none */
@@ -1326,6 +1328,13 @@ export type GithubRepo = {
   url: Scalars['String']['output'];
   /** The GitHub owner (user or organization) of the repository. */
   user: Scalars['String']['output'];
+};
+
+
+/** A GitHub repository tracked by Kabinet and scanned for deployable Arkitekt apps. */
+export type GithubRepoBloksArgs = {
+  filters?: InputMaybe<RepoBlokFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -2070,6 +2079,10 @@ export type Query = {
   releaseApprovals: Array<ReleaseApproval>;
   /** List all app releases visible to the current organization. */
   releases: Array<Release>;
+  /** Return a single blok a repository publishes by its ID. */
+  repoBlok: RepoBlok;
+  /** List the bloks the tracked GitHub repositories publish on their own, visible to the current organization. */
+  repoBloks: Array<RepoBlok>;
   /** Return a single backend resource by its ID. */
   resource: Resource;
   /** List all backend resources visible to the current organization. */
@@ -2215,6 +2228,17 @@ export type QueryReleasesArgs = {
 };
 
 
+export type QueryRepoBlokArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryRepoBloksArgs = {
+  filters?: InputMaybe<RepoBlokFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
 export type QueryResourceArgs = {
   id: Scalars['ID']['input'];
 };
@@ -2311,7 +2335,7 @@ export type ReleaseFlavoursArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
-/** A user's standing approval to run a release, backed by a lok mandate that lets a deployer provision it as them. */
+/** A user's standing approval to run a release, backed by a lok agent mandate that lets a deployer issue mandate keys that run it as them. */
 export type ReleaseApproval = {
   __typename?: 'ReleaseApproval';
   /** The deployer app the mandate names. */
@@ -2339,7 +2363,7 @@ export type ReleaseApproval = {
 };
 
 
-/** A user's standing approval to run a release, backed by a lok mandate that lets a deployer provision it as them. */
+/** A user's standing approval to run a release, backed by a lok agent mandate that lets a deployer issue mandate keys that run it as them. */
 export type ReleaseApprovalBackendsArgs = {
   filters?: InputMaybe<BackendFilter>;
   ordering?: Array<BackendOrder>;
@@ -2387,6 +2411,66 @@ export type ReleaseOrder =
   |  { createdAt?: never; id: Ordering; releasedAt?: never; version?: never; }
   |  { createdAt?: never; id?: never; releasedAt: Ordering; version?: never; }
   |  { createdAt?: never; id?: never; releasedAt?: never; version: Ordering; };
+
+/** A blok a GitHub repository publishes on its own, in its `.arkitekt/bloks.yaml`. Read when its repository is scanned; nothing of it runs here. It is installed by copying it into rekuest as a custom blok (`installInput`), which keeps its `origin`. */
+export type RepoBlok = {
+  __typename?: 'RepoBlok';
+  /** When a scan first found it. */
+  addedAt: Scalars['DateTime']['output'];
+  /** The whole component tree as one JSON value (a list of roots, snake_case keys). Null when the source does not parse. */
+  componentTree?: Maybe<Scalars['JSON']['output']>;
+  /** The renderer its root lives in. */
+  context: ComponentContext;
+  /** The state the blok is drawn against when it is shown on its own. */
+  demoState?: Maybe<Scalars['JSON']['output']>;
+  /** The agents it draws from, as rekuest_core AgentDependencyInputs (snake_case keys). */
+  dependencies: Scalars['JSON']['output'];
+  /** What the repository says it shows. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** The model ('sha256:...') this blok decorates, if any. */
+  forModel?: Maybe<Scalars['String']['output']>;
+  /** The node of `forModel` it attaches to; the model's root when null. */
+  forNode?: Maybe<Scalars['String']['output']>;
+  /** A SHA-256 of what the blok draws: its component tree, demo state and context. A client keeps its preview under it; whether an installed copy is out of date is `installHash`'s to say. */
+  hash: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  /** A SHA-256 of everything installing it writes: its name, description, BSX, demo state, dependencies and target. It is the `originHash` an installed copy keeps, so a copy whose `originHash` differs is out of date, whatever changed. */
+  installHash: Scalars['String']['output'];
+  /** What installs it: rekuest's `CreateBlokInput`, camelCase, with its `origin` and `originHash` (= `installHash`). Sent to rekuest's `createBlok` as it is; sending it again updates the installed copy in place. */
+  installInput: Scalars['JSON']['output'];
+  /** Unique in its repository: what a scan finds it again by. */
+  key: Scalars['String']['output'];
+  /** The name it is installed under in rekuest. */
+  name: Scalars['String']['output'];
+  /** Where it comes from, as rekuest keeps it on an installed copy (`Blok.origin`): `github:<owner>/<repo>:<branch>#<key>`. The same whenever the repository is tracked again. */
+  origin: Scalars['String']['output'];
+  /** Why its BSX does not parse, or null. */
+  parseError?: Maybe<Scalars['String']['output']>;
+  /** The repository that publishes it. */
+  repo: GithubRepo;
+  /** The blok as BSX, as the repository publishes it. */
+  source: Scalars['String']['output'];
+  /** The file of the repository its BSX was read from; null when it is written inline. */
+  sourcePath?: Maybe<Scalars['String']['output']>;
+  /** When a scan last wrote it. */
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+/** Filter for the bloks repositories publish. */
+export type RepoBlokFilter = {
+  AND?: InputMaybe<RepoBlokFilter>;
+  DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
+  NOT?: InputMaybe<RepoBlokFilter>;
+  OR?: InputMaybe<RepoBlokFilter>;
+  /** Keep only bloks of this context (HTML or SCENE). */
+  context?: InputMaybe<Scalars['String']['input']>;
+  /** Keep only bloks whose ID is in this list. */
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Keep only bloks of these repositories. */
+  repos?: InputMaybe<Array<Scalars['ID']['input']>>;
+  /** Case-insensitive substring of the blok's name, key or description. */
+  search?: InputMaybe<Scalars['String']['input']>;
+};
 
 /** A service that a flavour requires in order to run (e.g. mikro, rekuest). */
 export type Requirement = {
@@ -3562,11 +3646,16 @@ export type ListReleaseFragment = { __typename?: 'Release', id: string, version:
     & ListFlavourFragment
   )> };
 
+export type StoreRepoBlokFragment = { __typename?: 'RepoBlok', id: string, key: string, name: string, description?: string | null, context: ComponentContext, hash: string, installHash: string, parseError?: string | null, origin: string, sourcePath?: string | null, repo: { __typename?: 'GithubRepo', id: string, name: string } };
+
 export type ListRepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string };
 
 export type RepoFragment = { __typename?: 'GithubRepo', id: string, name: string, branch: string, user: string, repo: string, url: string, issueUrl: string, addedAt: any, updatedAt: any, organization: { __typename?: 'Organization', slug: string }, flavours: Array<(
     { __typename?: 'Flavour', image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }> }
     & ListFlavourFragment
+  )>, bloks: Array<(
+    { __typename?: 'RepoBlok' }
+    & StoreRepoBlokFragment
   )> };
 
 export type ResourceFragment = { __typename?: 'Resource', id: string, name: string, qualifiers?: any | null, backend: { __typename?: 'Backend', id: string, name: string }, pods: Array<(
@@ -3594,7 +3683,9 @@ type StoreSelector_RocmSelector_Fragment = { __typename: 'RocmSelector', apiVers
 
 export type StoreSelectorFragment = StoreSelector_CpuSelector_Fragment | StoreSelector_CudaSelector_Fragment | StoreSelector_LabelSelector_Fragment | StoreSelector_OneApiSelector_Fragment | StoreSelector_RamSelector_Fragment | StoreSelector_RocmSelector_Fragment;
 
-export type StoreFlavourFragment = { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }>, selectors: Array<(
+export type StoreBlokFragment = { __typename?: 'FlavourBlok', id: string, flavourId: string, key: string, context: ComponentContext, default: boolean, description?: string | null, hash: string, parseError?: string | null };
+
+export type StoreFlavourFragment = { __typename?: 'Flavour', id: string, name: string, logo?: string | null, originalLogo?: string | null, assets: any, image: { __typename?: 'DockerImage', imageString: string, buildAt: any }, requirements: Array<{ __typename?: 'Requirement', key: string, service: string, optional: boolean, description?: string | null }>, selectors: Array<(
     { __typename?: 'CPUSelector' }
     & StoreSelector_CpuSelector_Fragment
   ) | (
@@ -3615,7 +3706,10 @@ export type StoreFlavourFragment = { __typename?: 'Flavour', id: string, name: s
   )>, repo?: { __typename?: 'GithubRepo', id: string, name: string, user: string, repo: string, url: string } | null, definitions: Array<{ __typename?: 'Definition', id: string, name: string, description?: string | null, kind: ActionKind, logo?: (
       { __typename?: 'FlavourBlok' }
       & KabinetLogoBlokFragment
-    ) | null }>, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }> };
+    ) | null }>, deployments: Array<{ __typename?: 'Deployment', id: string, status: PodStatus }>, blokImplementations: Array<(
+    { __typename?: 'FlavourBlok' }
+    & StoreBlokFragment
+  )> };
 
 export type StoreReleaseFragment = { __typename?: 'Release', id: string, name: string, version: string, logo?: string | null, originalLogo?: string | null, scopes: Array<string>, entrypoint: string, logoBlok?: (
     { __typename?: 'FlavourBlok' }
@@ -3915,6 +4009,31 @@ export type GetReleaseQuery = { __typename?: 'Query', release: (
     & ReleaseFragment
   ) };
 
+export type RepoBloksQueryVariables = Exact<{
+  filters?: InputMaybe<RepoBlokFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type RepoBloksQuery = { __typename?: 'Query', repoBloks: Array<(
+    { __typename?: 'RepoBlok' }
+    & StoreRepoBlokFragment
+  )> };
+
+export type RepoBlokTreeQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RepoBlokTreeQuery = { __typename?: 'Query', repoBlok: { __typename?: 'RepoBlok', id: string, hash: string, componentTree?: any | null, demoState?: any | null } };
+
+export type RepoBlokInstallQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RepoBlokInstallQuery = { __typename?: 'Query', repoBlok: { __typename?: 'RepoBlok', id: string, name: string, hash: string, origin: string, installInput: any } };
+
 export type GetRepoQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -4004,6 +4123,18 @@ export const StoreSelectorFragmentDoc = gql`
   }
 }
     `;
+export const StoreBlokFragmentDoc = gql`
+    fragment StoreBlok on FlavourBlok {
+  id
+  flavourId
+  key
+  context
+  default
+  description
+  hash
+  parseError
+}
+    `;
 export const StoreFlavourFragmentDoc = gql`
     fragment StoreFlavour on Flavour {
   id
@@ -4043,9 +4174,14 @@ export const StoreFlavourFragmentDoc = gql`
     id
     status
   }
+  blokImplementations {
+    ...StoreBlok
+  }
+  assets
 }
     ${StoreSelectorFragmentDoc}
-${KabinetLogoBlokFragmentDoc}`;
+${KabinetLogoBlokFragmentDoc}
+${StoreBlokFragmentDoc}`;
 export const StoreReleaseFragmentDoc = gql`
     fragment StoreRelease on Release {
   id
@@ -5133,6 +5269,24 @@ export const ListRepoFragmentDoc = gql`
   repo
 }
     `;
+export const StoreRepoBlokFragmentDoc = gql`
+    fragment StoreRepoBlok on RepoBlok {
+  id
+  key
+  name
+  description
+  context
+  hash
+  installHash
+  parseError
+  origin
+  sourcePath
+  repo {
+    id
+    name
+  }
+}
+    `;
 export const RepoFragmentDoc = gql`
     fragment Repo on GithubRepo {
   id
@@ -5160,8 +5314,12 @@ export const RepoFragmentDoc = gql`
       description
     }
   }
+  bloks {
+    ...StoreRepoBlok
+  }
 }
-    ${ListFlavourFragmentDoc}`;
+    ${ListFlavourFragmentDoc}
+${StoreRepoBlokFragmentDoc}`;
 export const ResourceFragmentDoc = gql`
     fragment Resource on Resource {
   id
@@ -6319,6 +6477,119 @@ export function useGetReleaseLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryH
 export type GetReleaseQueryHookResult = ReturnType<typeof useGetReleaseQuery>;
 export type GetReleaseLazyQueryHookResult = ReturnType<typeof useGetReleaseLazyQuery>;
 export type GetReleaseQueryResult = Apollo.QueryResult<GetReleaseQuery, GetReleaseQueryVariables>;
+export const RepoBloksDocument = gql`
+    query RepoBloks($filters: RepoBlokFilter, $pagination: OffsetPaginationInput) {
+  repoBloks(filters: $filters, pagination: $pagination) {
+    ...StoreRepoBlok
+  }
+}
+    ${StoreRepoBlokFragmentDoc}`;
+
+/**
+ * __useRepoBloksQuery__
+ *
+ * To run a query within a React component, call `useRepoBloksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRepoBloksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRepoBloksQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useRepoBloksQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<RepoBloksQuery, RepoBloksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RepoBloksQuery, RepoBloksQueryVariables>(RepoBloksDocument, options);
+      }
+export function useRepoBloksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RepoBloksQuery, RepoBloksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RepoBloksQuery, RepoBloksQueryVariables>(RepoBloksDocument, options);
+        }
+export type RepoBloksQueryHookResult = ReturnType<typeof useRepoBloksQuery>;
+export type RepoBloksLazyQueryHookResult = ReturnType<typeof useRepoBloksLazyQuery>;
+export type RepoBloksQueryResult = Apollo.QueryResult<RepoBloksQuery, RepoBloksQueryVariables>;
+export const RepoBlokTreeDocument = gql`
+    query RepoBlokTree($id: ID!) {
+  repoBlok(id: $id) {
+    id
+    hash
+    componentTree
+    demoState
+  }
+}
+    `;
+
+/**
+ * __useRepoBlokTreeQuery__
+ *
+ * To run a query within a React component, call `useRepoBlokTreeQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRepoBlokTreeQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRepoBlokTreeQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRepoBlokTreeQuery(baseOptions: ApolloReactHooks.QueryHookOptions<RepoBlokTreeQuery, RepoBlokTreeQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RepoBlokTreeQuery, RepoBlokTreeQueryVariables>(RepoBlokTreeDocument, options);
+      }
+export function useRepoBlokTreeLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RepoBlokTreeQuery, RepoBlokTreeQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RepoBlokTreeQuery, RepoBlokTreeQueryVariables>(RepoBlokTreeDocument, options);
+        }
+export type RepoBlokTreeQueryHookResult = ReturnType<typeof useRepoBlokTreeQuery>;
+export type RepoBlokTreeLazyQueryHookResult = ReturnType<typeof useRepoBlokTreeLazyQuery>;
+export type RepoBlokTreeQueryResult = Apollo.QueryResult<RepoBlokTreeQuery, RepoBlokTreeQueryVariables>;
+export const RepoBlokInstallDocument = gql`
+    query RepoBlokInstall($id: ID!) {
+  repoBlok(id: $id) {
+    id
+    name
+    hash
+    origin
+    installInput
+  }
+}
+    `;
+
+/**
+ * __useRepoBlokInstallQuery__
+ *
+ * To run a query within a React component, call `useRepoBlokInstallQuery` and pass it any options that fit your needs.
+ * When your component renders, `useRepoBlokInstallQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useRepoBlokInstallQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRepoBlokInstallQuery(baseOptions: ApolloReactHooks.QueryHookOptions<RepoBlokInstallQuery, RepoBlokInstallQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<RepoBlokInstallQuery, RepoBlokInstallQueryVariables>(RepoBlokInstallDocument, options);
+      }
+export function useRepoBlokInstallLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<RepoBlokInstallQuery, RepoBlokInstallQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<RepoBlokInstallQuery, RepoBlokInstallQueryVariables>(RepoBlokInstallDocument, options);
+        }
+export type RepoBlokInstallQueryHookResult = ReturnType<typeof useRepoBlokInstallQuery>;
+export type RepoBlokInstallLazyQueryHookResult = ReturnType<typeof useRepoBlokInstallLazyQuery>;
+export type RepoBlokInstallQueryResult = Apollo.QueryResult<RepoBlokInstallQuery, RepoBlokInstallQueryVariables>;
 export const GetRepoDocument = gql`
     query GetRepo($id: ID!) {
   repo: githubRepo(id: $id) {

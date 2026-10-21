@@ -1,0 +1,26 @@
+query RepoBloks($filters: RepoBlokFilter, $pagination: OffsetPaginationInput) {
+  repoBloks(filters: $filters, pagination: $pagination) {
+    ...StoreRepoBlok
+  }
+}
+
+# A repository blok's drawing, fetched only when no preview of its hash is kept.
+query RepoBlokTree($id: ID!) {
+  repoBlok(id: $id) {
+    id
+    hash
+    componentTree
+    demoState
+  }
+}
+
+# What installs it: rekuest's CreateBlokInput, with its origin.
+query RepoBlokInstall($id: ID!) {
+  repoBlok(id: $id) {
+    id
+    name
+    hash
+    origin
+    installInput
+  }
+}

@@ -1,7 +1,9 @@
 import {
+  ComponentContext,
   PodStatus,
   StoreFlavourFragment,
   StoreReleaseFragment,
+  StoreRepoBlokFragment,
 } from "../../api/graphql";
 // The identity helpers are shared with the release and flavour surfaces now;
 // re-exported here because the store has always reached for them by this name.
@@ -11,6 +13,14 @@ export { hueFor, logoFor, splitIdentifier };
 
 export type StoreSelector = StoreFlavourFragment["selectors"][number];
 export type StoreDefinition = StoreFlavourFragment["definitions"][number];
+export type StoreBlok = StoreFlavourFragment["blokImplementations"][number];
+
+/**
+ * What the store offers as a blok: panels and scenes. Logos only dress up
+ * their app and its actions, so they are no thing to install.
+ */
+export const isOfferedBlok = (blok: Pick<StoreBlok, "context">): boolean =>
+  blok.context === ComponentContext.Html || blok.context === ComponentContext.Scene;
 
 export type Hardware = "gpu" | "cpu";
 
@@ -29,6 +39,11 @@ export type StoreApp = {
   latest: StoreReleaseFragment;
   flavours: StoreFlavourFragment[];
   definitions: StoreDefinition[];
+  /**
+   * The panels and scenes its latest release brings, one per key: every
+   * build of a release declares the same bloks, so the first build's is shown.
+   */
+  bloks: StoreBlok[];
   hardware: Hardware[];
   accelerators: string[];
   services: string[];
@@ -137,6 +152,10 @@ export const groupApps = (releases: StoreReleaseFragment[]): StoreApp[] => {
         (latestFlavours.length ? latestFlavours : flavours).flatMap((f) => f.definitions),
         (d) => d.id,
       ),
+      bloks: uniqueBy(
+        latestFlavours.flatMap((f) => f.blokImplementations).filter(isOfferedBlok),
+        (b) => b.key,
+      ),
       hardware,
       accelerators,
       services: [
@@ -160,7 +179,8 @@ export const groupApps = (releases: StoreReleaseFragment[]): StoreApp[] => {
   });
 };
 
-export type StoreFilter = "all" | "gpu" | "cpu" | "installed";
+/** `bloks` lists the panels and scenes instead of the apps. */
+export type StoreFilter = "all" | "gpu" | "cpu" | "installed" | "bloks";
 export type StoreSort = "recent" | "name" | "actions";
 
 export const filterApps = (
@@ -176,6 +196,7 @@ export const filterApps = (
     if (filter === "gpu" && !app.hardware.includes("gpu")) return false;
     if (filter === "cpu" && !app.hardware.includes("cpu")) return false;
     if (filter === "installed" && app.deploymentCount === 0) return false;
+    if (filter === "bloks" && app.bloks.length === 0) return false;
     if (service && !app.services.includes(service)) return false;
     if (!needle) return true;
     return (
@@ -185,8 +206,36 @@ export const filterApps = (
         (d) =>
           d.name.toLowerCase().includes(needle) ||
           d.description?.toLowerCase().includes(needle),
-      )
+      ) ||
+      app.bloks.some((b) => blokMatches(b, needle))
     );
+  });
+};
+
+const blokMatches = (blok: StoreBlok, needle: string): boolean =>
+  blok.key.toLowerCase().includes(needle) ||
+  !!blok.description?.toLowerCase().includes(needle);
+
+/** A blok the store offers, with the app that brings it (and installs it). */
+export type StoreAppBlok = { app: StoreApp; blok: StoreBlok };
+
+/**
+ * The app bloks the store shows: those of the apps the filters keep, narrowed
+ * to the bloks the search names unless it names their app.
+ */
+export const filterAppBloks = (
+  apps: StoreApp[],
+  { search, service }: { search: string; service: string | null },
+): StoreAppBlok[] => {
+  const needle = search.trim().toLowerCase();
+  return filterApps(apps, { search, filter: "bloks", service }).flatMap((app) => {
+    const appMatches =
+      !needle ||
+      app.identifier.toLowerCase().includes(needle) ||
+      app.name.toLowerCase().includes(needle);
+    return app.bloks
+      .filter((blok) => appMatches || blokMatches(blok, needle))
+      .map((blok) => ({ app, blok }));
   });
 };
 
@@ -210,3 +259,43 @@ export const pickFeatured = (apps: StoreApp[]): StoreApp | null =>
         : best,
     null,
   );
+
+/** The repository bloks the search names: by their name, key, description or repository. */
+export const filterRepoBloks = (bloks: StoreRepoBlokFragment[], search: string): StoreRepoBlokFragment[] => {
+  const needle = search.trim().toLowerCase();
+  if (!needle) return bloks;
+  return bloks.filter(
+    (blok) =>
+      blok.name.toLowerCase().includes(needle) ||
+      blok.key.toLowerCase().includes(needle) ||
+      !!blok.description?.toLowerCase().includes(needle) ||
+      blok.repo.name.toLowerCase().includes(needle),
+  );
+};
+
+/** An installed copy of a repository blok, as rekuest keeps it. */
+export type InstalledCopy = { id: string; origin?: string | null; originHash?: string | null };
+
+/**
+ * Where a repository blok stands in rekuest: not there, there as published
+ * (`installed`), or there as an older version (`outdated`). An installed copy
+ * keeps the `installHash` it was installed with, which changes with anything
+ * installing writes (its dependencies too, not only what it draws).
+ */
+export type RepoBlokState =
+  | { kind: "missing" }
+  | { kind: "installed"; copy: InstalledCopy }
+  | { kind: "outdated"; copy: InstalledCopy };
+
+export const repoBlokState = (
+  blok: Pick<StoreRepoBlokFragment, "origin" | "installHash">,
+  installed: ReadonlyMap<string, InstalledCopy>,
+): RepoBlokState => {
+  const copy = installed.get(blok.origin);
+  if (!copy) return { kind: "missing" };
+  return copy.originHash === blok.installHash ? { kind: "installed", copy } : { kind: "outdated", copy };
+};
+
+/** rekuest's custom bloks by the origin they were installed from. */
+export const installedByOrigin = (bloks: readonly InstalledCopy[]): ReadonlyMap<string, InstalledCopy> =>
+  new Map(bloks.flatMap((blok) => (blok.origin ? [[blok.origin, blok] as const] : [])));

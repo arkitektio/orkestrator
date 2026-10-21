@@ -5,11 +5,16 @@ vi.mock("@/kabinet/api/hooks", () => ({}));
 
 import {
   ActionKind,
+  ComponentContext,
   PodStatus,
   StoreFlavourFragment,
   StoreReleaseFragment,
 } from "../../api/graphql";
 import {
+  filterAppBloks,
+  filterRepoBloks,
+  installedByOrigin,
+  repoBlokState,
   filterApps,
   groupApps,
   logoFor,
@@ -29,6 +34,8 @@ const flavour = (
   selectors: [],
   definitions: [],
   deployments: [],
+  blokImplementations: [],
+  assets: [],
   ...overrides,
 });
 
@@ -54,6 +61,16 @@ const def = (id: string, name: string, description?: string) => ({
   kind: ActionKind.Function,
 });
 
+const blok = (flavourId: string, key: string, context: ComponentContext, description?: string) => ({
+  id: `${flavourId}:${key}`,
+  flavourId,
+  key,
+  context,
+  default: false,
+  description,
+  hash: `hash-${key}`,
+});
+
 describe("storeModel", () => {
   const releases = [
     release("r3", "org.lab.napari-viewer", "2.0.0", [
@@ -61,10 +78,16 @@ describe("storeModel", () => {
         definitions: [def("d1", "Show image", "Opens an image"), def("d2", "Segment")],
         requirements: [{ key: "mikro", service: "live.arkitekt.mikro", optional: false }],
         deployments: [{ id: "x", status: PodStatus.Running }],
+        blokImplementations: [
+          blok("f3", "logo", ComponentContext.Logo),
+          blok("f3", "layers", ComponentContext.Html, "Pick the visible layers"),
+          blok("f3", "volume", ComponentContext.Scene),
+        ],
       }),
       flavour("f4", {
         name: "cuda",
         selectors: [{ __typename: "CudaSelector", kind: "cuda", required: true }],
+        blokImplementations: [blok("f4", "layers", ComponentContext.Html, "Pick the visible layers")],
       }),
     ]),
     release("r2", "stardist", "0.1.0", [flavour("f2", { definitions: [def("d3", "Predict")] })]),
@@ -112,6 +135,50 @@ describe("storeModel", () => {
       "org.lab.napari-viewer",
     ]);
     expect(ids({ search: "", filter: "all", service: "live.arkitekt.mikro" })).toHaveLength(1);
+  });
+
+  it("offers the latest release's panels and scenes once per key", () => {
+    const [napari, stardist] = groupApps(releases);
+    // Logos are left out, and the cuda build's copy of "layers" is the same blok.
+    expect(napari.bloks.map((b) => b.id)).toEqual(["f3:layers", "f3:volume"]);
+    expect(stardist.bloks).toEqual([]);
+  });
+
+  it("filters bloks by their key, description or app", () => {
+    const apps = groupApps(releases);
+    const keys = (search: string) =>
+      filterAppBloks(apps, { search, service: null }).map(({ blok }) => blok.key);
+    expect(keys("")).toEqual(["layers", "volume"]);
+    expect(keys("visible")).toEqual(["layers"]);
+    expect(keys("napari")).toEqual(["layers", "volume"]);
+    expect(keys("predict")).toEqual([]);
+    // An app is found by its bloks, too.
+    expect(filterApps(apps, { search: "volume", filter: "all", service: null })).toHaveLength(1);
+    expect(filterApps(apps, { search: "", filter: "bloks", service: null })).toHaveLength(1);
+  });
+
+  it("searches repository bloks and tells installed from outdated", () => {
+    const repoBlok = (key: string, hash: string) => ({
+      id: key,
+      key,
+      name: `The ${key}`,
+      description: null,
+      context: ComponentContext.Html,
+      hash: `draws-${key}`,
+      installHash: hash,
+      origin: `github:lab/bloks:main#${key}`,
+      repo: { id: "1", name: "lab/bloks:main" },
+    });
+    const bloks = [repoBlok("layers", "h1"), repoBlok("volume", "h2"), repoBlok("plot", "h3")];
+    expect(filterRepoBloks(bloks, "vol").map((b) => b.key)).toEqual(["volume"]);
+    expect(filterRepoBloks(bloks, "lab/bloks")).toHaveLength(3);
+
+    const installed = installedByOrigin([
+      { id: "a", origin: bloks[0].origin, originHash: "h1" },
+      { id: "b", origin: bloks[1].origin, originHash: "old" },
+      { id: "c", origin: null },
+    ]);
+    expect(bloks.map((b) => repoBlokState(b, installed).kind)).toEqual(["installed", "outdated", "missing"]);
   });
 
   it("sorts and features", () => {

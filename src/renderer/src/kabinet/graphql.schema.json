@@ -1381,7 +1381,7 @@
           },
           {
             "name": "mandate",
-            "description": "The lok mandate (createMandate) that lets the agent provision this release as you.",
+            "description": "The lok agent mandate (createMandate) that lets the deployer issue mandate keys that run this release as you.",
             "type": {
               "kind": "NON_NULL",
               "name": null,
@@ -8498,6 +8498,55 @@
             "deprecationReason": null
           },
           {
+            "name": "bloks",
+            "description": "The bloks this repository publishes on its own, in its `.arkitekt/bloks.yaml`.",
+            "args": [
+              {
+                "name": "filters",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "RepoBlokFilter",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "OffsetPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "RepoBlok",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "branch",
             "description": "The branch that is scanned for app manifests.",
             "args": [],
@@ -14222,6 +14271,88 @@
             "deprecationReason": null
           },
           {
+            "name": "repoBlok",
+            "description": "Return a single blok a repository publishes by its ID.",
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "name": "ID",
+                    "kind": "SCALAR",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "RepoBlok",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "repoBloks",
+            "description": "List the bloks the tracked GitHub repositories publish on their own, visible to the current organization.",
+            "args": [
+              {
+                "name": "filters",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "RepoBlokFilter",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "pagination",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "OffsetPaginationInput",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "LIST",
+                "ofType": {
+                  "name": null,
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "name": "RepoBlok",
+                    "kind": "OBJECT",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "resource",
             "description": "Return a single backend resource by its ID.",
             "args": [
@@ -14921,7 +15052,7 @@
       {
         "kind": "OBJECT",
         "name": "ReleaseApproval",
-        "description": "A user's standing approval to run a release, backed by a lok mandate that lets a deployer provision it as them.",
+        "description": "A user's standing approval to run a release, backed by a lok agent mandate that lets a deployer issue mandate keys that run it as them.",
         "isOneOf": null,
         "fields": [
           {
@@ -15496,6 +15627,434 @@
             "type": {
               "kind": "ENUM",
               "name": "Ordering",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "RepoBlok",
+        "description": "A blok a GitHub repository publishes on its own, in its `.arkitekt/bloks.yaml`. Read when its repository is scanned; nothing of it runs here. It is installed by copying it into rekuest as a custom blok (`installInput`), which keeps its `origin`.",
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "addedAt",
+            "description": "When a scan first found it.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "DateTime",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "componentTree",
+            "description": "The whole component tree as one JSON value (a list of roots, snake_case keys). Null when the source does not parse.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSON",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "context",
+            "description": "The renderer its root lives in.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ComponentContext",
+                "kind": "ENUM",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "demoState",
+            "description": "The state the blok is drawn against when it is shown on its own.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "JSON",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "dependencies",
+            "description": "The agents it draws from, as rekuest_core AgentDependencyInputs (snake_case keys).",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "description",
+            "description": "What the repository says it shows.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "forModel",
+            "description": "The model ('sha256:...') this blok decorates, if any.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "forNode",
+            "description": "The node of `forModel` it attaches to; the model's root when null.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "hash",
+            "description": "A SHA-256 of what the blok draws: its component tree, demo state and context. A client keeps its preview under it; whether an installed copy is out of date is `installHash`'s to say.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "id",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "ID",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "installHash",
+            "description": "A SHA-256 of everything installing it writes: its name, description, BSX, demo state, dependencies and target. It is the `originHash` an installed copy keeps, so a copy whose `originHash` differs is out of date, whatever changed.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "installInput",
+            "description": "What installs it: rekuest's `CreateBlokInput`, camelCase, with its `origin` and `originHash` (= `installHash`). Sent to rekuest's `createBlok` as it is; sending it again updates the installed copy in place.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "JSON",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "key",
+            "description": "Unique in its repository: what a scan finds it again by.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "name",
+            "description": "The name it is installed under in rekuest.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "origin",
+            "description": "Where it comes from, as rekuest keeps it on an installed copy (`Blok.origin`): `github:<owner>/<repo>:<branch>#<key>`. The same whenever the repository is tracked again.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "parseError",
+            "description": "Why its BSX does not parse, or null.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "repo",
+            "description": "The repository that publishes it.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "GithubRepo",
+                "kind": "OBJECT",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "source",
+            "description": "The blok as BSX, as the repository publishes it.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "String",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "sourcePath",
+            "description": "The file of the repository its BSX was read from; null when it is written inline.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "updatedAt",
+            "description": "When a scan last wrote it.",
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "name": "DateTime",
+                "kind": "SCALAR",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "RepoBlokFilter",
+        "description": "Filter for the bloks repositories publish.",
+        "isOneOf": false,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "AND",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "RepoBlokFilter",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "DISTINCT",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "NOT",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "RepoBlokFilter",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "OR",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "RepoBlokFilter",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "context",
+            "description": "Keep only bloks of this context (HTML or SCENE).",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "ids",
+            "description": "Keep only bloks whose ID is in this list.",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "repos",
+            "description": "Keep only bloks of these repositories.",
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "name": null,
+                "kind": "NON_NULL",
+                "ofType": {
+                  "name": "ID",
+                  "kind": "SCALAR",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "search",
+            "description": "Case-insensitive substring of the blok's name, key or description.",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
               "ofType": null
             },
             "defaultValue": null,

@@ -17,6 +17,18 @@ fragment StoreSelector on Selector {
   }
 }
 
+# A blok the store offers: what a tile shows, and the hash its preview is kept under.
+fragment StoreBlok on FlavourBlok {
+  id
+  flavourId
+  key
+  context
+  default
+  description
+  hash
+  parseError
+}
+
 fragment StoreFlavour on Flavour {
   id
   name
@@ -55,6 +67,14 @@ fragment StoreFlavour on Flavour {
     id
     status
   }
+  # Panels and scenes are offered in the store as bloks of their own; logos
+  # are filtered out client-side. No trees here: a tile draws from
+  # KabinetLogoTree only when no preview of its hash is kept.
+  blokImplementations {
+    ...StoreBlok
+  }
+  # What `@self.assets.<name>` answers while a blok is previewed.
+  assets
 }
 
 fragment StoreRelease on Release {

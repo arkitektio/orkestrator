@@ -15,14 +15,17 @@ import {
   LucideIcon,
   PlayCircle,
   Search,
+  Shapes,
   ShoppingBag,
   X,
   Zap,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAppStoreQuery } from "../api/graphql";
+import { useAppStoreQuery, useRepoBloksQuery } from "../api/graphql";
 import { AppShelfTile, AppStoreCard, appStorePath } from "../components/store/AppStoreCard";
+import { AppBlokGrid, CustomBlokSection } from "../components/store/BlokStoreCard";
+import { RepoBlokSection } from "../components/store/RepoBlokCard";
 import { AppIcon, appGradient } from "../components/AppIcon";
 import { KABINET_HELP } from "../help";
 import {
@@ -31,7 +34,9 @@ import {
   FeaturedBadge,
 } from "../components/store/StoreParts";
 import {
+  filterAppBloks,
   filterApps,
+  filterRepoBloks,
   groupApps,
   pickFeatured,
   sortApps,
@@ -45,7 +50,13 @@ const FILTERS: { value: StoreFilter; label: string; icon: LucideIcon }[] = [
   { value: "gpu", label: "GPU accelerated", icon: Zap },
   { value: "cpu", label: "Runs on CPU", icon: Cpu },
   { value: "installed", label: "Deployed", icon: PlayCircle },
+  { value: "bloks", label: "Bloks", icon: Shapes },
 ];
+
+const CUSTOM_BLOKS = {
+  title: "Made in your organization",
+  description: "Custom bloks: install one to bind it to your agents.",
+};
 
 const SORTS: { value: StoreSort; label: string }[] = [
   { value: "recent", label: "Newest" },
@@ -229,6 +240,22 @@ export const AppStorePage = () => {
     [apps, debouncedSearch, filter, service, sort],
   );
   const featured = useMemo(() => pickFeatured(apps), [apps]);
+  const appBloks = useMemo(
+    () => filterAppBloks(apps, { search: debouncedSearch, service }),
+    [apps, debouncedSearch, service],
+  );
+  // Bloks GitHub repositories publish on their own. They need no service, so
+  // a service chip leaves none of them.
+  const { data: repoData } = useRepoBloksQuery({ fetchPolicy: "cache-and-network" });
+  const repoBloks = useMemo(
+    () => (service ? [] : filterRepoBloks(repoData?.repoBloks ?? [], debouncedSearch)),
+    [repoData, debouncedSearch, service],
+  );
+  const repoBlokCount = repoData?.repoBloks.length ?? 0;
+  const customBloks = useMemo(
+    () => ({ ...CUSTOM_BLOKS, listedOrigins: new Set((repoData?.repoBloks ?? []).map((blok) => blok.origin)) }),
+    [repoData],
+  );
 
   const browsing = !debouncedSearch && filter === "all" && !service;
   const totals = useMemo(
@@ -236,8 +263,9 @@ export const AppStorePage = () => {
       actions: apps.reduce((n, a) => n + a.definitions.length, 0),
       flavours: apps.reduce((n, a) => n + a.flavours.length, 0),
       running: apps.reduce((n, a) => n + a.runningCount, 0),
+      bloks: apps.reduce((n, a) => n + a.bloks.length, 0) + repoBlokCount,
     }),
-    [apps],
+    [apps, repoBlokCount],
   );
 
   return (
@@ -262,14 +290,15 @@ export const AppStorePage = () => {
             <div>
               <h1 className="text-4xl font-bold tracking-tight">Discover apps</h1>
               <p className="mt-1 text-sm text-muted-foreground">
-                Browse the apps registered with your organization, and deploy them to on a running engine.
+                Browse the apps registered with your organization and the bloks they bring, and deploy them on a running engine.
               </p>
             </div>
-            {apps.length > 0 && (
+            {(apps.length > 0 || repoBlokCount > 0) && (
               <div className="flex gap-8">
                 <Stat value={apps.length} label="Apps" />
                 <Stat value={totals.actions} label="Actions" />
                 <Stat value={totals.flavours} label="Flavours" />
+                <Stat value={totals.bloks} label="Bloks" />
                 <Stat value={totals.running} label="Running" />
               </div>
             )}
@@ -280,7 +309,7 @@ export const AppStorePage = () => {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search apps, identifiers or actions…"
+              placeholder="Search apps, identifiers, actions or bloks…"
               className="h-11 rounded-full pl-10 pr-10 text-sm"
             />
             {search && (
@@ -340,8 +369,39 @@ export const AppStorePage = () => {
 
         {loading && !data ? (
           <LoadingGrid />
-        ) : apps.length === 0 ? (
-          !error && <EmptyStore />
+        ) : apps.length === 0 && repoBlokCount === 0 ? (
+          !error && (
+            <>
+              <EmptyStore />
+              <CustomBlokSection search={debouncedSearch} {...customBloks} />
+            </>
+          )
+        ) : filter === "bloks" || apps.length === 0 ? (
+          // An organization whose repositories publish only bloks lands here too.
+          <>
+            {apps.length > 0 && (
+              <section className="flex flex-col gap-3">
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <h3 className="text-base font-semibold tracking-tight">From apps</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Panels and scenes an app brings: get the app to use them.
+                    </p>
+                  </div>
+                  <Badge variant="secondary">{appBloks.length}</Badge>
+                </div>
+                {appBloks.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed py-10 text-center text-sm text-muted-foreground">
+                    No app brings a panel or scene that matches.
+                  </div>
+                ) : (
+                  <AppBlokGrid bloks={appBloks} />
+                )}
+              </section>
+            )}
+            <RepoBlokSection bloks={repoBloks} />
+            <CustomBlokSection search={debouncedSearch} {...customBloks} />
+          </>
         ) : (
           <>
             {browsing && featured && <FeaturedApp app={featured} />}
@@ -364,6 +424,39 @@ export const AppStorePage = () => {
                   apps={apps.filter((a) => a.runningCount > 0)}
                 />
               </div>
+            )}
+
+            {browsing && appBloks.length > 0 && (
+              <section className="flex flex-col gap-3">
+                <div className="flex items-end justify-between gap-2">
+                  <div>
+                    <h3 className="text-base font-semibold tracking-tight">Panels & scenes</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Bloks your apps bring along, drawn with their demo data.
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => setFilter("bloks")}
+                  >
+                    All bloks <ArrowRight />
+                  </Button>
+                </div>
+                <AppBlokGrid bloks={appBloks.slice(0, 4)} />
+              </section>
+            )}
+
+            {browsing && <RepoBlokSection bloks={repoBloks} limit={4} onShowAll={() => setFilter("bloks")} />}
+
+            {browsing && (
+              <CustomBlokSection
+                search=""
+                limit={4}
+                onShowAll={() => setFilter("bloks")}
+                {...customBloks}
+              />
             )}
 
             <section className="flex flex-col gap-3">
@@ -397,6 +490,9 @@ export const AppStorePage = () => {
                 </div>
               )}
             </section>
+
+            {debouncedSearch && <RepoBlokSection bloks={repoBloks} />}
+            {debouncedSearch && <CustomBlokSection search={debouncedSearch} {...customBloks} />}
           </>
         )}
       </div>

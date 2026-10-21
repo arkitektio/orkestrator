@@ -42,7 +42,7 @@ export type InspectedAsset = {
   path?: string | null;
 };
 
-const asAssets = (value: unknown): InspectedAsset[] =>
+export const asAssets = (value: unknown): InspectedAsset[] =>
   Array.isArray(value)
     ? value.filter(
         (asset): asset is InspectedAsset =>
@@ -59,7 +59,7 @@ const hostOf = (source: string): string => {
 };
 
 /** Answers `@self.assets.<name>` from what the flavour declares: known, not stored. */
-const useInspectedAssetHost = (assets: InspectedAsset[]): BlokAssetHost =>
+export const useInspectedAssetHost = (assets: InspectedAsset[]): BlokAssetHost =>
   React.useMemo(() => {
     const byName = new Map(assets.map((asset) => [asset.name, asset]));
     return {

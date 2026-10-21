@@ -34,4 +34,7 @@ fragment Repo on GithubRepo {
       description
     }
   }
+  bloks {
+    ...StoreRepoBlok
+  }
 }

@@ -26,13 +26,15 @@ export const KABINET_HELP = {
   ),
   appStore: (
     <PageHelp
-      intro="Every app registered with your organization, with the actions it brings and the hardware it runs on. Come here to find an app and install it."
+      intro="Every app registered with your organization, with the actions and bloks it brings and the hardware it runs on, the bloks your repositories publish and the bloks made in your organization. Come here to find an app or a blok and install it."
       steps={[
         <>Type into the search field to find an app by its name, its identifier or one of its actions.</>,
-        <>Narrow the list with the chips <b>GPU accelerated</b>, <b>Runs on CPU</b> or <b>Deployed</b>, and reorder it with <b>Newest</b>, <b>Most actions</b> or <b>A–Z</b>.</>,
+        <>Narrow the list with the chips <b>GPU accelerated</b>, <b>Runs on CPU</b>, <b>Deployed</b> or <b>Bloks</b>, and reorder it with <b>Newest</b>, <b>Most actions</b> or <b>A–Z</b>.</>,
         <>Click an app tile to open its page with its actions, builds and versions.</>,
         <>Press <b>Get</b> on a tile to install the app’s latest release. The dialog lists what the app may do as you; confirm with <b>Authorize</b>.</>,
         <>The dialog then asks where to run it: choose a backend and press <b>Deploy</b> to actually start the app. An app you already authorized opens on this step.</>,
+        <>Press <b>Bloks</b> to see the panels and scenes on offer. One from an app comes with it: <b>Get app</b> installs the app. One made in your organization is installed on its own: <b>Install</b> asks which agents it draws from.</>,
+        <>A blok <b>From repositories</b> is published on GitHub. <b>Install</b> makes it a blok of your organization and then asks which agents it draws from. When its repository changes it, the tile says <b>Update</b>; once it is installed, <b>Materialize</b> binds it to agents again.</>,
         <>Press <b>Add Repo</b> if the app you are looking for is not listed yet.</>,
       ]}
       tips={[
@@ -57,7 +59,7 @@ export const KABINET_HELP = {
   ),
   repos: (
     <PageHelp
-      intro="The GitHub repositories Kabinet reads apps from. Each repository publishes one or more apps."
+      intro="The GitHub repositories Kabinet reads apps and bloks from. A repository publishes apps (in .arkitekt/deployments.yaml), bloks (in .arkitekt/bloks.yaml), or both."
       steps={[
         <>Press <b>Add Repo</b> and enter a repository as “user/repo”, or paste its GitHub URL.</>,
         <>Click a repository to see the builds found in it.</>,
@@ -68,10 +70,11 @@ export const KABINET_HELP = {
   ),
   repo: (
     <PageHelp
-      intro="One GitHub repository and the flavours found in it. A flavour is one build of an app version for a particular kind of hardware, for example CUDA or plain CPU."
+      intro="One GitHub repository: the flavours found in it and the bloks it publishes. A flavour is one build of an app version for a particular kind of hardware, for example CUDA or plain CPU."
       steps={[
         <>Click a flavour card to see what it does, what it needs and where it runs.</>,
-        <>Press <b>Rescan</b> after the repository published something new to pick up the new flavours.</>,
+        <>Press <b>Rescan</b> after the repository published something new to pick up the new flavours and bloks.</>,
+        <>Under <b>Bloks</b>, press <b>Install</b> on a blok to make it a blok of your organization, or <b>Update</b> when the repository changed one you installed.</>,
         <>Press <b>Copy install link</b> and send the link to a colleague. Opening it asks them to add this repository to their own Kabinet.</>,
         <>Press <b>Copy README badge</b> to get the same link as a badge for the repository’s README.</>,
         <>Press <b>Open Repo</b> or <b>Issues</b> to go to the repository on GitHub.</>,

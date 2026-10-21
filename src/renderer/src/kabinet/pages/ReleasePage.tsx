@@ -5,6 +5,7 @@ import { KabinetApp, KabinetRelease } from "@/core/linkers";
 import { Boxes, KeyRound, Layers, Shapes, ShieldCheck } from "lucide-react";
 import { bringsBloks, ReleaseBloks } from "../components/bloks/FlavourBloks";
 import { lazy, Suspense, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useGetReleaseQuery, useListReleaseApprovalsQuery } from "../api/graphql";
 import { hasOwnLogo, releaseIdentity } from "../appIdentity";
 import { AppIcon, appGradient } from "../components/AppIcon";
@@ -88,6 +89,8 @@ const ApprovalsTab = ({ release }: { release: string }) => {
  * their panels rather than growing its own copies.
  */
 export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => {
+  // `?tab=bloks`: the store opens a release on the bloks it offers.
+  const tab = useSearchParams()[0].get("tab");
   const release = data.release;
   const app = useMemo(() => releaseIdentity(release), [release]);
   const summary = useMemo(() => groupApps([release])[0], [release]);
@@ -169,7 +172,7 @@ export const ReleasePage = asDetailQueryRoute(useGetReleaseQuery, ({ data }) => 
         </header>
 
         {summary && (
-          <Tabs defaultValue="flavours" className="flex flex-col gap-4">
+          <Tabs defaultValue={tab ?? "flavours"} className="flex flex-col gap-4">
             <TabsList>
               <TabsTrigger value="flavours">
                 <Layers /> Flavours

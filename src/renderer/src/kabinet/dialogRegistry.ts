@@ -1,6 +1,7 @@
-import { needsServices } from "@/core/modules/host/dialogNeeds";
+import { needsServices, prefersSize } from "@/core/modules/host/dialogNeeds";
 import { DeployReleaseDialog } from "./dialogs/DeployReleaseDialog";
 import { InstallReleaseDialog } from "./dialogs/InstallReleaseDialog";
+import { InstallRepoBlokDialog } from "./dialogs/InstallRepoBlokDialog";
 import { RevokeApprovalDialog } from "./dialogs/RevokeApprovalDialog";
 import { CreateRepoForm } from "./forms/CreateRepoForm";
 import { ImportOciRepoForm } from "./forms/ImportOciRepoForm";
@@ -18,4 +19,6 @@ export const KABINET_DIALOGS = {
   installrelease: needsServices(["rekuest"], InstallReleaseDialog),
   deployrelease: needsServices(["rekuest"], DeployReleaseDialog),
   revokeapproval: RevokeApprovalDialog,
+  // a repository's blok → a custom rekuest blok that keeps its origin
+  installrepoblok: prefersSize("small", needsServices(["rekuest"], InstallRepoBlokDialog)),
 };

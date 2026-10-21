@@ -37,7 +37,7 @@ export const HardwareBadges = ({
   </div>
 );
 
-export const SelectorBadges = ({ flavour }: { flavour: StoreFlavourFragment }) => (
+export const SelectorBadges = ({ flavour }: { flavour: Pick<StoreFlavourFragment, "selectors"> }) => (
   <div className="flex flex-wrap gap-1">
     {flavour.selectors.length === 0 && (
       <Badge variant="secondary" className="gap-1">

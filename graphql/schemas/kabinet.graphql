@@ -320,7 +320,7 @@ input ApproveReleaseInput {
   digest: String!
 
   """
-  The lok mandate (createMandate) that lets the agent provision this release as you.
+  The lok agent mandate (createMandate) that lets the deployer issue mandate keys that run this release as you.
   """
   mandate: ID!
 
@@ -1738,6 +1738,11 @@ type GithubRepo {
   """When this repository was first added to Kabinet."""
   addedAt: DateTime!
 
+  """
+  The bloks this repository publishes on its own, in its `.arkitekt/bloks.yaml`.
+  """
+  bloks(filters: RepoBlokFilter, pagination: OffsetPaginationInput): [RepoBlok!]!
+
   """The branch that is scanned for app manifests."""
   branch: String!
 
@@ -2688,6 +2693,14 @@ type Query {
   """List all app releases visible to the current organization."""
   releases(filters: ReleaseFilter, ordering: [ReleaseOrder!]! = [], pagination: OffsetPaginationInput): [Release!]!
 
+  """Return a single blok a repository publishes by its ID."""
+  repoBlok(id: ID!): RepoBlok!
+
+  """
+  List the bloks the tracked GitHub repositories publish on their own, visible to the current organization.
+  """
+  repoBloks(filters: RepoBlokFilter, pagination: OffsetPaginationInput): [RepoBlok!]!
+
   """Return a single backend resource by its ID."""
   resource(id: ID!): Resource!
 
@@ -2804,7 +2817,7 @@ type Release {
 }
 
 """
-A user's standing approval to run a release, backed by a lok mandate that lets a deployer provision it as them.
+A user's standing approval to run a release, backed by a lok agent mandate that lets a deployer issue mandate keys that run it as them.
 """
 type ReleaseApproval {
   """The deployer app the mandate names."""
@@ -2899,6 +2912,103 @@ input ReleaseOrder @oneOf {
   id: Ordering
   releasedAt: Ordering
   version: Ordering
+}
+
+"""
+A blok a GitHub repository publishes on its own, in its `.arkitekt/bloks.yaml`. Read when its repository is scanned; nothing of it runs here. It is installed by copying it into rekuest as a custom blok (`installInput`), which keeps its `origin`.
+"""
+type RepoBlok {
+  """When a scan first found it."""
+  addedAt: DateTime!
+
+  """
+  The whole component tree as one JSON value (a list of roots, snake_case keys). Null when the source does not parse.
+  """
+  componentTree: JSON
+
+  """The renderer its root lives in."""
+  context: ComponentContext!
+
+  """The state the blok is drawn against when it is shown on its own."""
+  demoState: JSON
+
+  """
+  The agents it draws from, as rekuest_core AgentDependencyInputs (snake_case keys).
+  """
+  dependencies: JSON!
+
+  """What the repository says it shows."""
+  description: String
+
+  """The model ('sha256:...') this blok decorates, if any."""
+  forModel: String
+
+  """The node of `forModel` it attaches to; the model's root when null."""
+  forNode: String
+
+  """
+  A SHA-256 of what the blok draws: its component tree, demo state and context. A client keeps its preview under it; whether an installed copy is out of date is `installHash`'s to say.
+  """
+  hash: String!
+  id: ID!
+
+  """
+  A SHA-256 of everything installing it writes: its name, description, BSX, demo state, dependencies and target. It is the `originHash` an installed copy keeps, so a copy whose `originHash` differs is out of date, whatever changed.
+  """
+  installHash: String!
+
+  """
+  What installs it: rekuest's `CreateBlokInput`, camelCase, with its `origin` and `originHash` (= `installHash`). Sent to rekuest's `createBlok` as it is; sending it again updates the installed copy in place.
+  """
+  installInput: JSON!
+
+  """Unique in its repository: what a scan finds it again by."""
+  key: String!
+
+  """The name it is installed under in rekuest."""
+  name: String!
+
+  """
+  Where it comes from, as rekuest keeps it on an installed copy (`Blok.origin`): `github:<owner>/<repo>:<branch>#<key>`. The same whenever the repository is tracked again.
+  """
+  origin: String!
+
+  """Why its BSX does not parse, or null."""
+  parseError: String
+
+  """The repository that publishes it."""
+  repo: GithubRepo!
+
+  """The blok as BSX, as the repository publishes it."""
+  source: String!
+
+  """
+  The file of the repository its BSX was read from; null when it is written inline.
+  """
+  sourcePath: String
+
+  """When a scan last wrote it."""
+  updatedAt: DateTime!
+}
+
+"""Filter for the bloks repositories publish."""
+input RepoBlokFilter {
+  AND: RepoBlokFilter
+  DISTINCT: Boolean
+  NOT: RepoBlokFilter
+  OR: RepoBlokFilter
+
+  """Keep only bloks of this context (HTML or SCENE)."""
+  context: String
+
+  """Keep only bloks whose ID is in this list."""
+  ids: [ID!]
+
+  """Keep only bloks of these repositories."""
+  repos: [ID!]
+
+  """Case-insensitive substring of the blok's name, key or description."""
+  search: String
 }
 
 """

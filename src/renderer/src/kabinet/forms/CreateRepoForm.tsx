@@ -52,8 +52,8 @@ export const CreateRepoForm = (props: {
         <DialogHeader>
           <DialogTitle>Add a GitHub repo</DialogTitle>
           <DialogDescription className="font-light text-sm mt-2">
-            Kabinet reads the repository's manifest and offers every app it finds there as a
-            flavour you can run. Nothing is installed on your machine.
+            Kabinet reads the repository and offers every app it publishes as a flavour you can
+            run, and every blok it publishes in the App Store. Nothing is installed on your machine.
           </DialogDescription>
         </DialogHeader>
 

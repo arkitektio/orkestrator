@@ -1,0 +1,20 @@
+# A blok a GitHub repository publishes on its own (`.arkitekt/bloks.yaml`):
+# what a store tile shows, the hash its preview is kept under (`hash`), and the
+# origin and installHash rekuest keeps on an installed copy (how a tile knows
+# Installed from Update).
+fragment StoreRepoBlok on RepoBlok {
+  id
+  key
+  name
+  description
+  context
+  hash
+  installHash
+  parseError
+  origin
+  sourcePath
+  repo {
+    id
+    name
+  }
+}

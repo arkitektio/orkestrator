@@ -10,11 +10,13 @@ import { useCopyToClipboard } from "@/core/ui/copy-button";
 import { useGetRepoQuery, useScanRepoMutation } from "../api/graphql";
 import FlavourCard from "../components/cards/FlavourCard";
 import { RepoInfoSidebar } from "../components/sidebars/RepoInfoSidebar";
+import { RepoBlokGrid } from "../components/store/RepoBlokCard";
 import { installBadgeMarkdown, installRepoLink } from "../repoLink";
 import { KABINET_HELP } from "../help";
 
 /**
- * A repository is its flavours: the body lists them and nothing else. What
+ * A repository is its flavours and the bloks it publishes on its own: the
+ * body lists them and nothing else. What
  * the repo IS (branch, owner, links, when it was scanned) is the Info rail's
  * job, as on the mikro detail pages, so it is not repeated here.
  */
@@ -75,7 +77,7 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
             size="sm"
             onClick={rescan}
             disabled={scanning}
-            title="Read the manifest again and pick up new flavours"
+            title="Read the repository again and pick up new flavours and bloks"
           >
             Rescan
           </PageAction>
@@ -123,6 +125,18 @@ const RepoPage = asDetailQueryRoute(useGetRepoQuery, ({ data, refetch }) => {
         >
           {(flavour) => <FlavourCard key={flavour.id} item={flavour} />}
         </ListRender>
+
+        {repo.bloks.length > 0 && (
+          <section className="flex flex-col gap-3">
+            <div>
+              <h2 className="text-2xl font-bold">Bloks</h2>
+              <div className="text-xs text-muted-foreground">
+                {repo.bloks.length} bloks published in <code>.arkitekt/bloks.yaml</code>
+              </div>
+            </div>
+            <RepoBlokGrid bloks={repo.bloks} />
+          </section>
+        )}
       </div>
     </KabinetRepo.ModelPage>
   );

@@ -2,11 +2,14 @@ import { CachedBlokLogo, type LogoTree } from "@/core/blok/logo/CachedBlokLogo";
 import { KabinetLogoBlokFragment, useKabinetLogoTreeQuery } from "@/kabinet/api/graphql";
 
 /** kabinet's blok ids (`<flavour id>:<key>`) are kept apart from every other service's. */
-const CACHE_PREFIX = "kabinet:";
+export const KABINET_CACHE_PREFIX = "kabinet:";
 
-/** A flavour blok's tree, fetched only for a first drawing. */
-const useKabinetLogoTree = (cacheId: string): LogoTree | null => {
-  const { data } = useKabinetLogoTreeQuery({ variables: { id: cacheId.slice(CACHE_PREFIX.length) } });
+/**
+ * A flavour blok's tree (any context: a logo, a panel's preview), fetched only
+ * for a first drawing. Takes the `kabinet:`-prefixed cache id.
+ */
+export const useKabinetBlokTree = (cacheId: string): LogoTree | null => {
+  const { data } = useKabinetLogoTreeQuery({ variables: { id: cacheId.slice(KABINET_CACHE_PREFIX.length) } });
   return data?.flavourBlok ?? null;
 };
 
@@ -25,9 +28,9 @@ export const KabinetBlokLogo = ({
   if (!blok) return null;
   return (
     <CachedBlokLogo
-      cacheId={`${CACHE_PREFIX}${blok.id}`}
+      cacheId={`${KABINET_CACHE_PREFIX}${blok.id}`}
       hash={blok.hash}
-      useTree={useKabinetLogoTree}
+      useTree={useKabinetBlokTree}
       className={className}
     />
   );
