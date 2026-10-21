@@ -144,6 +144,14 @@ export type BlokRefuseActionHandler = (
 ) => boolean;
 
 /**
+ * The dependencies a host cannot act through right now, by key, each with
+ * why ("Stage is offline", "No agent is bound to stage"). A control whose
+ * action calls one shows as unavailable before it is pressed, with the reason
+ * on hover, instead of the host announcing it in a banner.
+ */
+export type BlokUnavailableDependencies = ReadonlyMap<string, string>;
+
+/**
  * Lexical scope introduced by `foreach` and by a child's `basePath`.
  *
  * - `aliases` maps a scope name to an absolute data-model path. Reads *and*
@@ -193,6 +201,7 @@ export type BlokRuntimeContext = {
   invokeFunction: BlokInvokeFunctionHandler;
   dispatchAction: BlokDispatchActionHandler;
   refuseAction: BlokRefuseActionHandler | undefined;
+  unavailableDependencies: BlokUnavailableDependencies;
   setInitialDataModel: (dataModel: unknown) => void;
   resetRuntimeValues: () => void;
   setRuntimeValue: (path: string, value: unknown) => void;
@@ -209,6 +218,7 @@ export type BlokRuntimeContext = {
   setInvokeFunction: (invokeFunction: BlokInvokeFunctionHandler) => void;
   setDispatchAction: (dispatchAction: BlokDispatchActionHandler) => void;
   setRefuseAction: (refuseAction: BlokRefuseActionHandler | undefined) => void;
+  setUnavailableDependencies: (unavailable: BlokUnavailableDependencies) => void;
 };
 
 export type BlokObjectSchema = z.ZodObject<Record<string, z.ZodTypeAny>>;

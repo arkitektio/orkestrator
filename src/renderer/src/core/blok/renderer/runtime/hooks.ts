@@ -14,6 +14,7 @@ import {isActionSchema} from './schemas';
 import {readScopedPath, resolveScopedPath, useBlokScope} from './scope';
 import {bindTask} from './task';
 import type {
+  BlokActionArgument,
   BlokComponentNode,
   BlokComponentProp,
   BlokObjectSchema,
@@ -304,6 +305,45 @@ export function useAction(
   }, [actionCall, component, scope, store]);
 }
 
+/** Every dependency an action prop calls, nested calls in its arguments included. */
+export const actionDependenciesOf = (prop: BlokComponentProp | undefined): string[] => {
+  const found = new Set<string>();
+  const visit = (argument: BlokActionArgument) => {
+    if (argument.agent_call) {
+      found.add(argument.agent_call.dependency);
+      argument.agent_call.arguments?.forEach(visit);
+    }
+    argument.util_call?.arguments?.forEach(visit);
+    argument.value_list?.forEach(visit);
+    argument.value_dict?.forEach(visit);
+  };
+  if (prop?.agent_call) {
+    found.add(prop.agent_call.dependency);
+    prop.agent_call.arguments?.forEach(visit);
+  }
+  prop?.util_call?.arguments?.forEach(visit);
+  return [...found];
+};
+
+/**
+ * Why an action prop cannot run right now, or `undefined` when it can: it
+ * calls a dependency the host marks unavailable (offline, not bound). A
+ * control shows itself disabled with this as its tooltip.
+ */
+export function useActionUnavailable<TSchema extends z.ZodTypeAny>(
+  handle: BlokPropHandle<TSchema> | undefined,
+): string | undefined {
+  const prop = handle?.prop;
+  const dependencies = React.useMemo(() => actionDependenciesOf(prop), [prop]);
+  return useBlokRuntime(state => {
+    for (const dependency of dependencies) {
+      const reason = state.unavailableDependencies.get(dependency);
+      if (reason) return reason;
+    }
+    return undefined;
+  });
+}
+
 /**
  * `useAction` plus whether what it started is still running: `pending` stays
  * true until every promise the host returned for this handler's calls has
@@ -312,7 +352,8 @@ export function useAction(
  */
 export function usePendingAction<TSchema extends z.ZodTypeAny>(
   handle: BlokPropHandle<TSchema> | undefined,
-): {run: (() => void) | undefined; pending: boolean} {
+): {run: (() => void) | undefined; pending: boolean; unavailable: string | undefined} {
+  const unavailable = useActionUnavailable(handle);
   const store = useBlokRuntimeStoreApi();
   const scope = useBlokScope();
   const actionCall = handle ? getPropActionCall(handle.prop) : undefined;
@@ -351,7 +392,7 @@ export function usePendingAction<TSchema extends z.ZodTypeAny>(
     };
   }, [actionCall, component, scope, store]);
 
-  return {run, pending: inFlight > 0};
+  return {run, pending: inFlight > 0, unavailable};
 }
 
 /** The scope name a change handler's arguments address the new value by. */

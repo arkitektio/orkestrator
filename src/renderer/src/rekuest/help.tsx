@@ -335,7 +335,7 @@ export const REKUEST_HELP = {
       tips={[
         <>While the bar says <b>PAST</b> the panel only shows what was: its controls run nothing.</>,
         <>A revision number counts within one run of an agent and starts again when the agent restarts. The other agents are shown as they were at the moment of the revision.</>,
-        <>A yellow notice at the top names what stops the panel from working: a part that is <b>Not bound</b> to any agent, or a bound agent that is offline.</>,
+        <>A button that needs an agent which is offline, or a part no agent is bound to, is grayed out: hover it to see why. The <b>Bindings</b> tab lists what is <b>Not bound</b>.</>,
         <>In the <b>Bindings</b> tab a green dot means the agent is connected, a grey one that it is offline.</>,
         <><b>Belongs to</b> in the <b>Bindings</b> tab names the agent that keeps this materialization, for a blok its app provides.</>,
       ]}

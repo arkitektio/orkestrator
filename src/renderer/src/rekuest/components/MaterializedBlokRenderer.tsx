@@ -44,8 +44,13 @@ type MaterializedBlokData = {
     key: string;
     agent: {
       id: string;
+      name?: string | null;
+      /** Left out when the caller does not know: then it counts as reachable. */
+      connected?: boolean;
     };
   }>;
+  /** Required dependencies of the revision shown that no agent is bound to here. */
+  unboundDependencies?: readonly string[] | null;
 };
 
 type MaterializedBlokRendererProps = Omit<
@@ -276,6 +281,26 @@ const refuseWhileTravelling: BlokRefuseActionHandler = () => {
   return true;
 };
 
+/**
+ * The dependencies it cannot act through now, and why: unbound ones, and
+ * bound agents that are offline. Their controls show disabled, the reason on
+ * hover, rather than a banner over the blok.
+ */
+export const unavailableDependenciesOf = (
+  materializedBlok: Pick<MaterializedBlokData, 'agentMappings' | 'unboundDependencies'>,
+): ReadonlyMap<string, string> => {
+  const unavailable = new Map<string, string>();
+  for (const key of materializedBlok.unboundDependencies ?? []) {
+    unavailable.set(key, `No agent is bound to "${key}", so this does nothing`);
+  }
+  for (const mapping of materializedBlok.agentMappings) {
+    if (mapping.agent.connected === false) {
+      unavailable.set(mapping.key, `${mapping.agent.name || mapping.key} is offline`);
+    }
+  }
+  return unavailable;
+};
+
 /** What a materialization draws: the revision it shows, else (a provided blok) its blok. */
 export const shownContent = (materializedBlok: Pick<MaterializedBlokData, 'blok' | 'revision'>) =>
   materializedBlok.revision ?? materializedBlok.blok;
@@ -285,6 +310,11 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
   const travelling = useBlokTravelSource() !== null;
   const shown = shownContent(materializedBlok);
+  const unavailableDependencies = React.useMemo(
+    () => unavailableDependenciesOf(materializedBlok),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [materializedBlok.agentMappings, materializedBlok.unboundDependencies],
+  );
   const {roots, truncatedIds} = useBlokDocument(shown.componentTree as unknown[] | null);
   const boundAgents = React.useMemo(
     () => new Map(materializedBlok.agentMappings.map(mapping => [mapping.key, mapping.agent.id] as const)),
@@ -311,6 +341,7 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
         initialState={initialState}
         dispatchAction={dispatchAction}
         refuseAction={travelling ? refuseWhileTravelling : undefined}
+        unavailableDependencies={unavailableDependencies}
       >
         {/* Inside a host's canvas nothing can render the notice's element. */}
         {rendererProps.embedded ? null : <BlokTruncationNotice truncatedIds={truncatedIds} />}

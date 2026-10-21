@@ -16,6 +16,7 @@ import {
   type BlokDispatchActionHandler,
   type BlokInvokeFunctionHandler,
   type BlokRefuseActionHandler,
+  type BlokUnavailableDependencies,
   type BlokTree,
 } from './runtime';
 
@@ -29,6 +30,8 @@ type BlokRendererProps = {
   dispatchAction?: BlokDispatchActionHandler;
   /** Drops the agent calls it answers `true` for, before they start. */
   refuseAction?: BlokRefuseActionHandler;
+  /** Dependencies it cannot act through now, with why: controls calling them show disabled. */
+  unavailableDependencies?: BlokUnavailableDependencies;
   /** `none` draws no frame at all and lets a scene fill the surface: the blok is a backdrop. */
   chrome?: 'default' | 'minimal' | 'none';
   sizing?: 'fill' | 'intrinsic';
@@ -81,6 +84,7 @@ export default function BlokRenderer({
   invokeFunction,
   dispatchAction,
   refuseAction,
+  unavailableDependencies,
   chrome = 'default',
   sizing = 'fill',
   embedded = false,
@@ -130,6 +134,7 @@ export default function BlokRenderer({
       invokeFunction: resolvedInvokeFunction,
       dispatchAction: resolvedDispatchAction,
       refuseAction,
+      unavailableDependencies,
     }),
   );
 
@@ -148,6 +153,10 @@ export default function BlokRenderer({
   useEffect(() => {
     runtimeStore.getState().setRefuseAction(refuseAction);
   }, [refuseAction, runtimeStore]);
+
+  useEffect(() => {
+    if (unavailableDependencies) runtimeStore.getState().setUnavailableDependencies(unavailableDependencies);
+  }, [unavailableDependencies, runtimeStore]);
 
   // Swapping the payload in place must not carry the previous blok's local
   // edits — the paths they were written against no longer mean the same thing.

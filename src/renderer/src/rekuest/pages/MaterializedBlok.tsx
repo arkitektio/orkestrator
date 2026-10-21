@@ -29,35 +29,6 @@ import { useSearchParams } from "react-router-dom";
 import { MaterializedBlokFragment, useMaterializedBlokQuery } from "../api/graphql";
 import { REKUEST_HELP } from "../help";
 
-/**
- * Only what stops the blok from working: a declared dependency nobody is
- * bound to, or a bound agent that is offline. Renders nothing otherwise.
- */
-const BindingNotice = ({ materializedBlok }: { materializedBlok: MaterializedBlokFragment }) => {
-  // The server knows which dependencies of the revision shown are unbound here.
-  const unbound = materializedBlok.unboundDependencies;
-  const offline = materializedBlok.agentMappings.filter((mapping) => !mapping.agent.connected);
-
-  if (unbound.length === 0 && offline.length === 0) return null;
-
-  return (
-    <div className="mb-2 flex flex-col gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-      {unbound.length > 0 && (
-        <span>
-          Not bound: <span className="font-mono text-xs">{unbound.join(", ")}</span> — actions
-          on {unbound.length === 1 ? "it" : "them"} won't run.
-        </span>
-      )}
-      {offline.map((mapping) => (
-        <span key={mapping.key}>
-          {mapping.agent.name || mapping.agent.id} is offline — its actions won't run and its
-          state won't update.
-        </span>
-      ))}
-    </div>
-  );
-};
-
 const BindingsSidebar = ({ materializedBlok }: { materializedBlok: MaterializedBlokFragment }) => (
   <div className="flex flex-col gap-4 p-3 text-sm">
     <div className="flex flex-col gap-1">
@@ -106,6 +77,19 @@ const BindingsSidebar = ({ materializedBlok }: { materializedBlok: MaterializedB
             <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
               {mapping.key}
             </span>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {materializedBlok.unboundDependencies.length > 0 && (
+      <div className="flex flex-col gap-1">
+        <div className="text-xs text-muted-foreground">Not bound</div>
+        {materializedBlok.unboundDependencies.map((key) => (
+          <div key={key} className="flex items-center gap-2 py-1 text-muted-foreground">
+            <span className="size-2 shrink-0 rounded-full border border-muted-foreground/60" />
+            <span className="font-mono text-xs">{key}</span>
+            <span className="ml-auto text-xs">its controls are grayed out</span>
           </div>
         ))}
       </div>
@@ -245,7 +229,6 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
       }
     >
       <div className="flex h-full w-full flex-col p-3">
-        <BindingNotice materializedBlok={materializedBlok} />
         <div className="min-h-0 flex-1">
           {/* Around the renderer, not in it: the cards a scene opens are bloks of their own and follow the same clock. */}
           {asking ? (

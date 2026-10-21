@@ -118,7 +118,7 @@ export const Button = createBlokComponent(
     const child = useValue(blok.child);
     const children = useValue(blok.children);
     const icon = useValue(blok.icon);
-    const {run: onClick, pending} = usePendingAction(blok.onClick);
+    const {run: onClick, pending, unavailable} = usePendingAction(blok.onClick);
     const className = useValue(blok.className);
     const rawVariant = useValue(blok.variant);
     const size = useValue(blok.size);
@@ -134,8 +134,9 @@ export const Button = createBlokComponent(
           : rawVariant;
 
     // `checks` are the author-facing guard; validation failures are a payload
-    // bug and disable the button too, with the reason in the tooltip.
-    const blockingReason = checks.failures[0] ?? validation.validationErrors[0];
+    // bug, and an agent its action needs being offline or unbound is the
+    // host's: each disables the button, with the reason in the tooltip.
+    const blockingReason = checks.failures[0] ?? validation.validationErrors[0] ?? unavailable;
     const isDisabled = disabled === true || Boolean(blockingReason);
 
     return (
