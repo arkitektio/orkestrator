@@ -6,7 +6,7 @@ import { cn } from "@/core/util/utils";
 import { useState } from "react";
 import {
   ListDependencyFragment,
-  MaterializedBlok,
+  MaterializedBlokFragment,
   useMaterializeBlokMutation
 } from "../api/graphql";
 import { useForm } from "react-hook-form";
@@ -45,7 +45,7 @@ export type MaterializeBlokFormProps = {
     maxViableInstances?: number | null;
     singular?: boolean;
   }>;
-  onMaterialized?: (materialized: MaterializedBlok) => void;
+  onMaterialized?: (materialized: MaterializedBlokFragment) => void;
   onError?: (error: unknown) => void;
 };
 
@@ -108,7 +108,7 @@ export const MaterializeBlokForm = (
         }
       });
       if (result.data?.materializeBlok) {
-          props.onMaterialized?.(result.data.materializeBlok as MaterializedBlok);
+          props.onMaterialized?.(result.data.materializeBlok);
       }
     } catch (e) {
       if (props.onError) {

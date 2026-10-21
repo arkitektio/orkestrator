@@ -3,6 +3,7 @@ import * as React from 'react';
 import BlokRenderer from '@/core/blok/renderer/BlokRenderer';
 import {
   useBlokRuntime,
+  useBlokRuntimeStoreApi,
   type BlokDispatchActionHandler,
   type BlokRefuseActionHandler,
   type BlokTaskRecord,
@@ -21,6 +22,7 @@ import {usePastLatestTasks} from './usePastLatestTasks';
 import {RekuestAssetHost} from '@/rekuest/scene/RekuestAssetHost';
 import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
+import {BLOK_ARGS_ROOT, seededBlokArgs, type BlokArgs} from './blokArgs';
 
 type MaterializedBlokData = {
   id: string;
@@ -29,6 +31,8 @@ type MaterializedBlokData = {
     componentTree?: unknown;
     demoState: unknown;
     dependencies?: Array<{key: string}> | null;
+    /** What the blok is opened for, read at `@args.<key>`. */
+    args?: Array<{key: string}> | null;
   };
   agentMappings: Array<{
     key: string;
@@ -43,6 +47,10 @@ type MaterializedBlokRendererProps = Omit<
   'uiComponents' | 'initialState' | 'dispatchAction' | 'refuseAction' | 'children'
 > & {
   materializedBlok: MaterializedBlokData;
+  /** The items the blok is opened for, by arg key; a declared arg left out reads null. */
+  args?: BlokArgs;
+  /** The tree changed what it is opened for (a picker bound to `args.<key>`). */
+  onArgsChange?: (args: BlokArgs) => void;
 };
 
 const RECORD_FIELDS = ['status', 'running', 'done', 'failed', 'progress', 'message', 'error', 'result', 'returns'] as const;
@@ -223,6 +231,36 @@ const useMaterializedDispatchAction = (
   );
 };
 
+const sameArgs = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/**
+ * Keeps `@args` on what the blok is opened for, and tells the page when the
+ * tree changed it. The page's args win: when they change (another item opened
+ * in the same blok), what the tree wrote below `args` is cleared first.
+ */
+const BlokArgsSync = (props: {args: BlokArgs; onArgsChange?: (args: BlokArgs) => void}) => {
+  const {args, onArgsChange} = props;
+  const store = useBlokRuntimeStoreApi();
+  const current = useBlokRuntime(state => (state.dataModel as Record<string, unknown> | null)?.[BLOK_ARGS_ROOT]);
+
+  React.useEffect(() => {
+    const state = store.getState();
+    if (sameArgs((state.dataModel as Record<string, unknown> | null)?.[BLOK_ARGS_ROOT], args)) return;
+    for (const path of Object.keys(state.runtimePathValues)) {
+      if (path.startsWith(`${BLOK_ARGS_ROOT}.`) || path.startsWith(`${BLOK_ARGS_ROOT}/`)) state.clearRuntimeValue(path);
+    }
+    state.setRuntimeValue(BLOK_ARGS_ROOT, args);
+  }, [args, store]);
+
+  React.useEffect(() => {
+    if (current && typeof current === 'object' && !sameArgs(current, args)) onArgsChange?.(current as BlokArgs);
+    // Only a change the tree made: `args` arriving is the effect above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current]);
+
+  return null;
+};
+
 /**
  * The past cannot be acted on: while the blok shows a moment from it, its
  * agent calls are dropped before they start, with one notice that says why.
@@ -233,13 +271,24 @@ const refuseWhileTravelling: BlokRefuseActionHandler = () => {
 };
 
 export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) => {
-  const {materializedBlok, ...rendererProps} = props;
+  const {materializedBlok, args, onArgsChange, ...rendererProps} = props;
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
   const travelling = useBlokTravelSource() !== null;
   const {roots, truncatedIds} = useBlokDocument(materializedBlok.blok.componentTree as unknown[] | null);
   const boundAgents = React.useMemo(
     () => new Map(materializedBlok.agentMappings.map(mapping => [mapping.key, mapping.agent.id] as const)),
     [materializedBlok.agentMappings],
+  );
+  const ports = materializedBlok.blok.args;
+  const seeded = React.useMemo(() => (ports?.length ? seededBlokArgs(ports, args ?? {}) : undefined), [args, ports]);
+  // Seeded once with what it is opened for; `BlokArgsSync` follows later changes.
+  const initialState = React.useMemo(
+    () =>
+      seeded
+        ? {...((materializedBlok.blok.demoState as Record<string, unknown> | null) ?? {}), [BLOK_ARGS_ROOT]: seeded}
+        : materializedBlok.blok.demoState,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [materializedBlok.blok.demoState],
   );
 
   return (
@@ -248,13 +297,14 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
       <BlokRenderer
         {...rendererProps}
         uiComponents={roots}
-        initialState={materializedBlok.blok.demoState}
+        initialState={initialState}
         dispatchAction={dispatchAction}
         refuseAction={travelling ? refuseWhileTravelling : undefined}
       >
         {/* Inside a host's canvas nothing can render the notice's element. */}
         {rendererProps.embedded ? null : <BlokTruncationNotice truncatedIds={truncatedIds} />}
         <MaterializedBlokRuntimeSync materializedBlok={materializedBlok} roots={roots} />
+        {seeded && <BlokArgsSync args={seeded} onArgsChange={onArgsChange} />}
       </BlokRenderer>
      </RekuestAssetHost>
     </RekuestSceneHost>

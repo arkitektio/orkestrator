@@ -49,8 +49,6 @@ const formatAssignErrorToast = (message: string) => ({
   detail: message,
 });
 
-type AssignableAction = PrimaryActionFragment | DetailImplementationFragment["action"];
-
 /**
  * Whether a row can run right now, as the server answers it — rows that cannot
  * are drawn receded and asked for last (`queries.ts`). Advisory only: choosing
@@ -84,8 +82,15 @@ const selectionMismatch = (detail: string, action: { id: string }) => {
   return new Error("This action can't take the selected objects.");
 };
 
-const buildActionArgs = (
-  action: AssignableAction,
+/**
+ * The selection as the args of whatever takes it: objects at the first arg,
+ * partners at the second (a list of them for a multi-selection). An action's,
+ * or a blok's (the items "Open in…" opens it for).
+ */
+export const buildActionArgs = (
+  action: Pick<PrimaryActionFragment | DetailImplementationFragment["action"], "id"> & {
+    args: ReadonlyArray<{ key: string; kind: PortKind }>;
+  },
   props: SmartContextProps,
 ): Record<string, unknown> => {
   const keys: Record<string, unknown> = {};

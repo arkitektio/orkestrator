@@ -91,7 +91,7 @@ describe("the smart menu's module parts", () => {
     const { SMART_SECTIONS } = await import("@/core/smart/smartcontext");
     const { moduleMenuWrappers } = await import("../../core/modules/registries");
     const palette = SMART_SECTIONS.sections.filter((section) => section.palette).map((section) => section.id);
-    expect(palette).toEqual(["local.actions", "rekuest.shortcuts", "rekuest.actions", "kabinet.definitions"]);
+    expect(palette).toEqual(["local.actions", "rekuest.shortcuts", "rekuest.actions", "rekuest.bloks", "kabinet.definitions"]);
     expect(moduleMenuWrappers().map((wrapper) => wrapper.name)).toEqual(["RunOnSubmenu"]);
   }, 60_000);
 });

@@ -2,12 +2,15 @@ import { RekuestGuard } from "@/rekuest/api/hooks";
 import {
   ListShortcutFragment,
   AllPrimaryActionsDocument,
+  OpenableBlokFragment,
+  OpenableBloksDocument,
   PrimaryActionFragment,
   ShortcutsDocument,
   useAllPrimaryActionsQuery,
+  useOpenableBloksQuery,
   useShortcutsQuery,
 } from "@/rekuest/api/graphql";
-import { Boxes, PlayCircle, ShieldCheck, Zap } from "lucide-react";
+import { AppWindow, Boxes, PlayCircle, ShieldCheck, Zap } from "lucide-react";
 import { buildDemands, useSmartDemands } from "@/rekuest/smart/demands";
 import { supervisorOf } from "@/rekuest/smart/agent";
 import type {
@@ -18,12 +21,13 @@ import type {
 import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { useStableData } from "@/core/smart/extensions/useStableData";
 import { AssignButton, BatchAssignButton } from "./actions";
-import { actionsVariables, shortcutsVariables } from "./queries";
+import { OpenInBlokRow } from "./bloks";
+import { actionsVariables, openableBloksVariables, shortcutsVariables } from "./queries";
 import { ShortcutButton } from "./shortcuts";
 
 /**
- * The rekuest sections of the smart context menu: Shortcuts, Run, and Batch
- * for a multi-selection. No section lists implementations: an action row runs
+ * The rekuest sections of the smart context menu: Shortcuts, Run, Batch
+ * for a multi-selection, and Open in (the bloks whose args take the selection). No section lists implementations: an action row runs
  * on whichever agent can take it, and a stateful one with several asks which
  * (`AssignButton`, the "Run on" picker).
  *
@@ -107,6 +111,19 @@ const useBatchActionItems = (ctx: SmartSectionContext): SectionItems<PrimaryActi
 };
 
 const actionParts = (action: PrimaryActionFragment) => [action.name, action.description];
+
+// Only a selection: a blok is opened FOR something, never to make a return type.
+const useOpenableBlokItems = (ctx: SmartSectionContext): SectionItems<OpenableBlokFragment> => {
+  const demands = useSmartDemands(ctx);
+  const skip = ctx.objects.length === 0;
+  const result = useOpenableBloksQuery({
+    ...QUERY_OPTIONS,
+    variables: openableBloksVariables(demands.single, { search: ctx.filter }),
+    skip,
+  });
+  const stable = useStableData(result, skip);
+  return { items: stable.data?.materializedBloks, status: stable.status, error: stable.error };
+};
 
 export const REKUEST_SHORTCUTS_SECTION: SmartContextSection<ListShortcutFragment> = {
   id: "rekuest.shortcuts",
@@ -204,11 +221,39 @@ export const REKUEST_BATCH_ACTIONS_SECTION: SmartContextSection<PrimaryActionFra
   Row: ({ item, context }) => <BatchAssignButton action={item} {...context} />,
 };
 
+export const REKUEST_BLOKS_SECTION: SmartContextSection<OpenableBlokFragment> = {
+  id: "rekuest.bloks",
+  palette: true,
+  module: "rekuest",
+  title: "Open in",
+  icon: AppWindow,
+  priority: 45,
+  tier: "remote",
+  Guard: RekuestGuard,
+  applies: (props) => props.objects.length > 0,
+  useItems: useOpenableBlokItems,
+  itemKey: (blok) => blok.id,
+  searchParts: (blok) => [blok.name, blok.blok.name, blok.description, blok.blok.description],
+  Row: ({ item, context }) => <OpenInBlokRow blok={item} {...context} />,
+  prefetch: (target) =>
+    target.objects.length > 0
+      ? [
+          {
+            service: "rekuest",
+            name: "bloks",
+            query: OpenableBloksDocument,
+            variables: openableBloksVariables(buildDemands(target).single),
+          },
+        ]
+      : [],
+};
+
 export const REKUEST_SECTIONS: SmartContextSection<any>[] = [
   REKUEST_SHORTCUTS_SECTION,
   REKUEST_SUPERVISOR_SECTION,
   REKUEST_ACTIONS_SECTION,
   REKUEST_BATCH_ACTIONS_SECTION,
+  REKUEST_BLOKS_SECTION,
 ];
 
 /* Standalone forms, for callers that compose sections themselves (the palette). */

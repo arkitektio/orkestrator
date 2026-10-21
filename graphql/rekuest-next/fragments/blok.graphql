@@ -107,6 +107,10 @@ fragment Blok on Blok {
   forNode
   componentTree
   demoState
+  # What it is opened for (`@args.<key>`): asked for with a port form when missing.
+  args {
+    ...ArgPort
+  }
   diagnostics {
     ...BlokDiagnostic
   }
@@ -173,6 +177,29 @@ fragment ListMaterializedBlok on MaterializedBlok {
       id
       name
       connected
+    }
+  }
+}
+
+# A row of "Open in…": a blok an item opens in, with the args the item is bound to.
+fragment OpenableBlok on MaterializedBlok {
+  id
+  name
+  description
+  declaredBy {
+    id
+    name
+    connected
+  }
+  blok {
+    id
+    name
+    description
+    args {
+      key
+      identifier
+      kind
+      nullable
     }
   }
 }

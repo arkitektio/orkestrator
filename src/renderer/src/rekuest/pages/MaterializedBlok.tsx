@@ -10,11 +10,20 @@ import {
 } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
 import MaterializedBlokRenderer from "@/rekuest/components/MaterializedBlokRenderer";
+import { BlokArgsForm } from "@/rekuest/components/BlokArgsForm";
+import {
+  BLOK_ARGS_PARAM,
+  blokArgsSearch,
+  missingBlokArgs,
+  readBlokArgs,
+  type BlokArgs,
+} from "@/rekuest/components/blokArgs";
 import { BlokTravelProvider } from "@/rekuest/travel/context";
 import { TravelBar } from "@/rekuest/travel/TravelBar";
 import { useBlokTravel } from "@/rekuest/travel/useBlokTravel";
 import { History } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { MaterializedBlokFragment, useMaterializedBlokQuery } from "../api/graphql";
 import { REKUEST_HELP } from "../help";
 
@@ -98,9 +107,43 @@ const BindingsSidebar = ({ materializedBlok }: { materializedBlok: MaterializedB
   </div>
 );
 
+/**
+ * What the blok is opened for lives in the link (`?args=`): "Open in…" writes
+ * it, a reload keeps it, and what the tree picks (a picker bound to
+ * `args.<key>`) replaces it, so the history steps back through items.
+ */
+const useBlokArgs = () => {
+  const [search, setSearch] = useSearchParams();
+  const args = useMemo(() => readBlokArgs(search), [search]);
+  // Only `args`: whatever else the page keeps in its search string stays.
+  const setArgs = useCallback(
+    (next: BlokArgs) =>
+      setSearch((previous) => {
+        const merged = new URLSearchParams(previous);
+        const value = new URLSearchParams(blokArgsSearch(next)).get(BLOK_ARGS_PARAM);
+        if (value === null) merged.delete(BLOK_ARGS_PARAM);
+        else merged.set(BLOK_ARGS_PARAM, value);
+        return merged;
+      }),
+    [setSearch],
+  );
+  return [args, setArgs] as const;
+};
+
 export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery, ({ data }) => {
   const materializedBlok = data.materializedBlok;
   const travel = useBlokTravel();
+  const [args, setArgs] = useBlokArgs();
+  const ports = materializedBlok.blok.args;
+  // Asked for once on the way in; changing the item later is the tree's to do.
+  const [asking, setAsking] = useState(() => missingBlokArgs(ports, args).length > 0);
+  const openFor = useCallback(
+    (next: BlokArgs) => {
+      setArgs(next);
+      setAsking(false);
+    },
+    [setArgs],
+  );
   const agentNames = useMemo(
     () =>
       new Map(
@@ -154,14 +197,25 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
         <BindingNotice materializedBlok={materializedBlok} />
         <div className="min-h-0 flex-1">
           {/* Around the renderer, not in it: the cards a scene opens are bloks of their own and follow the same clock. */}
-          <BlokTravelProvider source={travel.source}>
-            <MaterializedBlokRenderer
-              key={materializedBlok.id}
-              materializedBlok={materializedBlok}
-              surfaceId={materializedBlok.id}
-              chrome="minimal"
+          {asking ? (
+            <BlokArgsForm
+              name={materializedBlok.name || materializedBlok.blok.name}
+              ports={ports}
+              args={args}
+              onOpen={openFor}
             />
-          </BlokTravelProvider>
+          ) : (
+            <BlokTravelProvider source={travel.source}>
+              <MaterializedBlokRenderer
+                key={materializedBlok.id}
+                materializedBlok={materializedBlok}
+                surfaceId={materializedBlok.id}
+                chrome="minimal"
+                args={args}
+                onArgsChange={setArgs}
+              />
+            </BlokTravelProvider>
+          )}
         </div>
         {travel.open && <TravelBar travel={travel} names={agentNames} revisions className="mt-2 shrink-0" />}
       </div>

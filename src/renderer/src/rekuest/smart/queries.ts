@@ -1,7 +1,9 @@
 import {
   ActionOrder,
   AllPrimaryActionsQueryVariables,
+  DemandKind,
   ImplementationOrder,
+  OpenableBloksQueryVariables,
   Ordering,
   PortDemandInput,
   ShortcutOrder,
@@ -24,6 +26,7 @@ import {
 export const SMART_SHORTCUT_LIMIT = 12;
 export const SMART_ACTION_LIMIT = 20;
 export const SMART_IMPLEMENTATION_PAGE_SIZE = 12;
+export const SMART_BLOK_LIMIT = 12;
 
 export const ACTIVE_IMPLEMENTATION_ORDERING = [
   { active: Ordering.Desc },
@@ -65,4 +68,17 @@ export const actionsVariables = (
   },
   ordering: RUNNABLE_FIRST_ACTION_ORDERING,
   pagination: { limit: options.limit ?? SMART_ACTION_LIMIT },
+});
+
+/**
+ * The bloks the selection opens in: their args, matched like an action's
+ * (`requires` included). Only the args demands: a blok returns nothing, and the
+ * server refuses a returns demand on one rather than answer it with nothing.
+ */
+export const openableBloksVariables = (
+  demands: PortDemandInput[],
+  options: SearchOptions = {},
+): OpenableBloksQueryVariables => ({
+  filters: { demands: demands.filter((demand) => demand.kind === DemandKind.Args), ...searchField(options.search) },
+  pagination: { limit: options.limit ?? SMART_BLOK_LIMIT },
 });

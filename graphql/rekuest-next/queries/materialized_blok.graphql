@@ -9,3 +9,10 @@ query ListMaterializedBloks($filters: MaterializedBlokFilter, $pagination: Offse
     ...ListMaterializedBlok
   }
 }
+
+# The bloks an item opens in: `filters.demands` matched against each blok's args.
+query OpenableBloks($filters: MaterializedBlokFilter, $pagination: OffsetPaginationInput) {
+  materializedBloks(filters: $filters, pagination: $pagination) {
+    ...OpenableBlok
+  }
+}

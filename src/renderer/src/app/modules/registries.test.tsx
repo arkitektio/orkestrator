@@ -472,6 +472,7 @@ describe("host registries", () => {
       "rekuest.supervisor",
       "rekuest.actions",
       "rekuest.batchActions",
+      "rekuest.bloks",
       "kabinet.definitions",
     ]);
   });

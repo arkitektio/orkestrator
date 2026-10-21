@@ -989,6 +989,8 @@ export type Blok = {
   __typename?: 'Blok';
   /** The app whose agents provide this blok; null for a custom blok a user made. A provided blok changes and goes with its agents' registrations and cannot be edited or materialized by hand: fork it. */
   app?: Maybe<App>;
+  /** The items this blok is opened for, declared like an action's args and read under `@args.<key>`; empty for a blok that is opened on its own. */
+  args: Array<ArgPort>;
   catalog: UiCatalog;
   /** The whole component tree as one JSON value, in the wire spelling (snake_case keys). Unlike `components` it has no depth limit, which a selection set always has. */
   componentTree: Scalars['AnyDefault']['output'];
@@ -1094,6 +1096,8 @@ export type BlokFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<BlokFilter>;
   OR?: InputMaybe<BlokFilter>;
+  /** Only bloks whose args accept these demands: the bloks an item opens in. Same matching as `ActionFilter.demands`, so a match's `descriptors` are checked against each arg's `requires`. Only `ARGS` demands; a blok without args matches none. */
+  demands?: InputMaybe<Array<PortDemandInput>>;
   /** Only bloks an app provides (true) or only custom bloks users made (false). */
   provided?: InputMaybe<Scalars['Boolean']['input']>;
   /** Search by name */
@@ -1102,6 +1106,8 @@ export type BlokFilter = {
 
 /** Which locks does the agent provide in general */
 export type BlokImplementationInput = {
+  /** The items this Blok is opened for, declared like an action's args and read under `@args.<key>`. A UI offers the Blok on any item its args accept (`MaterializedBlokFilter.demands`). HTML bloks only. */
+  args?: Array<ArgPortInput>;
   /** The optional catalog name if this Blok should be registered inside a specific namespace in your Electron app's UI component registry. */
   catalog?: InputMaybe<Scalars['String']['input']>;
   /** The UI component tree blueprint for this Blok, unless it is sent as its `source`. */
@@ -2562,6 +2568,8 @@ export type MaterializedBlokFilter = {
   agent?: InputMaybe<Scalars['ID']['input']>;
   /** Only bloks that render in one of these contexts: HTML and SCENE are interfaces to open, LOGO and ACTION_LOGO draw an agent or an action. */
   contexts?: InputMaybe<Array<ComponentContext>>;
+  /** Only materialized bloks whose blok's args accept these demands: what an item opens in. See `BlokFilter.demands`. */
+  demands?: InputMaybe<Array<PortDemandInput>>;
   /** Filter by IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Only agents' own materializations of the bloks they provide (true) or only ones users made (false). */
@@ -6803,7 +6811,10 @@ export type BlokDiagnosticFragment = { __typename?: 'Diagnostic', level: Diagnos
 export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, demoState: any, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
     { __typename?: 'MaterializedBlok' }
     & ListMaterializedBlokFragment
-  )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, diagnostics: Array<(
+  )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, args: Array<(
+    { __typename?: 'ArgPort' }
+    & ArgPortFragment
+  )>, diagnostics: Array<(
     { __typename?: 'Diagnostic' }
     & BlokDiagnosticFragment
   )> };
@@ -6816,6 +6827,8 @@ export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: st
 export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string, provided: boolean, app?: { __typename?: 'App', id: string, identifier: string } | null };
 
 export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
+
+export type OpenableBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean }> } };
 
 export type ClientFragment = { __typename?: 'Client', id: string, clientId: string };
 
@@ -8931,6 +8944,17 @@ export type ListMaterializedBloksQuery = { __typename?: 'Query', materializedBlo
     & ListMaterializedBlokFragment
   )> };
 
+export type OpenableBloksQueryVariables = Exact<{
+  filters?: InputMaybe<MaterializedBlokFilter>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
+}>;
+
+
+export type OpenableBloksQuery = { __typename?: 'Query', materializedBloks: Array<(
+    { __typename?: 'MaterializedBlok' }
+    & OpenableBlokFragment
+  )> };
+
 export type MemoryShelvesQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
   filters?: InputMaybe<MemoryShelveFilter>;
@@ -10997,6 +11021,29 @@ export const ListBlokFragmentDoc = gql`
   }
 }
     `;
+export const OpenableBlokFragmentDoc = gql`
+    fragment OpenableBlok on MaterializedBlok {
+  id
+  name
+  description
+  declaredBy {
+    id
+    name
+    connected
+  }
+  blok {
+    id
+    name
+    description
+    args {
+      key
+      identifier
+      kind
+      nullable
+    }
+  }
+}
+    `;
 export const ClientFragmentDoc = gql`
     fragment Client on Client {
   id
@@ -11059,11 +11106,15 @@ export const BlokFragmentDoc = gql`
   forNode
   componentTree
   demoState
+  args {
+    ...ArgPort
+  }
   diagnostics {
     ...BlokDiagnostic
   }
 }
     ${ListMaterializedBlokFragmentDoc}
+${ArgPortFragmentDoc}
 ${BlokDiagnosticFragmentDoc}`;
 export const MaterializedBlokFragmentDoc = gql`
     fragment MaterializedBlok on MaterializedBlok {
@@ -17095,6 +17146,42 @@ export function useListMaterializedBloksLazyQuery(baseOptions?: ApolloReactHooks
 export type ListMaterializedBloksQueryHookResult = ReturnType<typeof useListMaterializedBloksQuery>;
 export type ListMaterializedBloksLazyQueryHookResult = ReturnType<typeof useListMaterializedBloksLazyQuery>;
 export type ListMaterializedBloksQueryResult = Apollo.QueryResult<ListMaterializedBloksQuery, ListMaterializedBloksQueryVariables>;
+export const OpenableBloksDocument = gql`
+    query OpenableBloks($filters: MaterializedBlokFilter, $pagination: OffsetPaginationInput) {
+  materializedBloks(filters: $filters, pagination: $pagination) {
+    ...OpenableBlok
+  }
+}
+    ${OpenableBlokFragmentDoc}`;
+
+/**
+ * __useOpenableBloksQuery__
+ *
+ * To run a query within a React component, call `useOpenableBloksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useOpenableBloksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOpenableBloksQuery({
+ *   variables: {
+ *      filters: // value for 'filters'
+ *      pagination: // value for 'pagination'
+ *   },
+ * });
+ */
+export function useOpenableBloksQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<OpenableBloksQuery, OpenableBloksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<OpenableBloksQuery, OpenableBloksQueryVariables>(OpenableBloksDocument, options);
+      }
+export function useOpenableBloksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<OpenableBloksQuery, OpenableBloksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<OpenableBloksQuery, OpenableBloksQueryVariables>(OpenableBloksDocument, options);
+        }
+export type OpenableBloksQueryHookResult = ReturnType<typeof useOpenableBloksQuery>;
+export type OpenableBloksLazyQueryHookResult = ReturnType<typeof useOpenableBloksLazyQuery>;
+export type OpenableBloksQueryResult = Apollo.QueryResult<OpenableBloksQuery, OpenableBloksQueryVariables>;
 export const MemoryShelvesDocument = gql`
     query MemoryShelves($pagination: OffsetPaginationInput, $filters: MemoryShelveFilter, $ordering: [MemoryShelveOrder!]) {
   memoryShelves(ordering: $ordering, pagination: $pagination, filters: $filters) {

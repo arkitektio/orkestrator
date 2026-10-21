@@ -1200,6 +1200,11 @@ type Blok {
   The app whose agents provide this blok; null for a custom blok a user made. A provided blok changes and goes with its agents' registrations and cannot be edited or materialized by hand: fork it.
   """
   app: App
+
+  """
+  The items this blok is opened for, declared like an action's args and read under `@args.<key>`; empty for a blok that is opened on its own.
+  """
+  args: [ArgPort!]!
   catalog: UICatalog!
 
   """
@@ -1336,6 +1341,11 @@ input BlokFilter {
   OR: BlokFilter
 
   """
+  Only bloks whose args accept these demands: the bloks an item opens in. Same matching as `ActionFilter.demands`, so a match's `descriptors` are checked against each arg's `requires`. Only `ARGS` demands; a blok without args matches none.
+  """
+  demands: [PortDemandInput!]
+
+  """
   Only bloks an app provides (true) or only custom bloks users made (false).
   """
   provided: Boolean
@@ -1346,6 +1356,11 @@ input BlokFilter {
 
 """Which locks does the agent provide in general"""
 input BlokImplementationInput {
+  """
+  The items this Blok is opened for, declared like an action's args and read under `@args.<key>`. A UI offers the Blok on any item its args accept (`MaterializedBlokFilter.demands`). HTML bloks only.
+  """
+  args: [ArgPortInput!]! = []
+
   """
   The optional catalog name if this Blok should be registered inside a specific namespace in your Electron app's UI component registry.
   """
@@ -3314,6 +3329,11 @@ input MaterializedBlokFilter {
   Only bloks that render in one of these contexts: HTML and SCENE are interfaces to open, LOGO and ACTION_LOGO draw an agent or an action.
   """
   contexts: [ComponentContext!]
+
+  """
+  Only materialized bloks whose blok's args accept these demands: what an item opens in. See `BlokFilter.demands`.
+  """
+  demands: [PortDemandInput!]
 
   """Filter by IDs"""
   ids: [ID!]
