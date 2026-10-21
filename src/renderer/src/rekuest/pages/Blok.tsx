@@ -1,6 +1,7 @@
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { useDialog } from "@/core/dialogs/registry";
 import { registry } from "@/core/smart/localactions/registry";
+import { Sidebars } from "@/core/layout/Sidebars";
 import { LocalActionButton } from "@/core/ui/localactionbutton";
 import { RekuestAgent, RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
@@ -10,6 +11,7 @@ import { useGetBlokQuery } from "../api/graphql";
 import { Button } from "@/core/ui/button";
 import { PageAction } from "@/core/ui/page-action";
 import { GitFork } from "lucide-react";
+import { BlokHistory } from "../components/editor/BlokHistory";
 import { REKUEST_HELP } from "../help";
 
 export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
@@ -23,6 +25,15 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
       title={data.blok.name || "New Blok"}
       help={REKUEST_HELP.blok}
       object={data.blok}
+      sidebars={
+        provided ? undefined : (
+          <Sidebars>
+            <Sidebars.Tab label="History">
+              <BlokHistory blokId={data.blok.id} />
+            </Sidebars.Tab>
+          </Sidebars>
+        )
+      }
       pageActions={provided ? (
         <PageAction.Slot alwaysShow>
           <Button
@@ -35,6 +46,18 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
         </PageAction.Slot>
       ) : (
         <>
+            <LocalActionButton
+                name={"rekuest-edit-blok" as keyof typeof registry}
+                state={{
+                  left: [
+                    {
+                      identifier: '@rekuest/blok',
+                      id: data.blok.id,
+                    },
+                  ],
+                  isCommand: false,
+                }}
+            />
             <LocalActionButton
                 priority={-20}
                 name={"rekuest-delete-blok" as keyof typeof registry}

@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { DependenciesContainer } from "@/rekuest/ports/DependenciesContainer";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import type { BlokMapping } from "../components/blokRematerialize";
 
 const dependencySelectionSchema = z.object({
   key: z.string(),
@@ -33,6 +34,8 @@ export type MaterializeBlokFormProps = {
   blokId: string;
   dashboardId?: string;
   prefilledAgentId?: string;
+  /** Per-dependency agents to start from (a rematerialization's old bindings). */
+  prefilledMappings?: BlokMapping[];
   dependencies: Array<{
     id: string;
     key: string;
@@ -90,7 +93,13 @@ export const MaterializeBlokForm = (
               },
             ],
           }))
-        : [],
+        : (props.prefilledMappings ?? [])
+            .filter((mapping) => normalizedDependencies.some((dependency) => dependency.key === mapping.key))
+            .map((mapping) => ({
+              key: mapping.key,
+              autoResolve: false,
+              mappedAgents: [mapping],
+            })),
     },
   });
 

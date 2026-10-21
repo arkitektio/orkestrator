@@ -1258,6 +1258,11 @@ type Blok {
   A SHA-256 of what the blok renders: its component tree, demo state and context. Two bloks with the same hash draw the same thing, so a client may cache what it rendered under it.
   """
   hash: String!
+
+  """
+  The revision this custom blok is at: what an edit names as its `base`. Null for a provided blok, which changes with its agents' registrations instead.
+  """
+  head: BlokRevision
   id: ID!
 
   """Materialized bloks that are instances of this blok."""
@@ -1281,6 +1286,11 @@ type Blok {
   The agents that currently provide this blok, each through its own materialization.
   """
   providers: [Agent!]!
+
+  """
+  The revisions of this custom blok, newest first. An undo is a revision too, so history only grows.
+  """
+  revisions(limit: Int! = 20, offset: Int! = 0): [BlokRevision!]!
 }
 
 type BlokAgentMapping {
@@ -1356,6 +1366,35 @@ input BlokDependencyFilter {
   NOT: BlokDependencyFilter
   OR: BlokDependencyFilter
   ids: [ID!]
+}
+
+"""What an edit of a blok did, or with `dryRun` would do."""
+type BlokEdit {
+  """Whether anything was written; false for a dry run."""
+  applied: Boolean!
+
+  """
+  The blok the edit landed on: the one edited, or the custom copy of a provided one. An editor of the blok follows it here.
+  """
+  blok: Blok!
+
+  """
+  Non-fatal findings about the new content, e.g. util calls no catalog provides.
+  """
+  diagnostics: [Diagnostic!]!
+
+  """
+  Whether the blok was provided and the edit made a custom copy of it to land on: `blok` is the copy, and an edit made through a materialization has a new one of it.
+  """
+  forked: Boolean!
+
+  """
+  The materialization that shows the edit: the one it was made through, or the fork's new one. Null for an edit of the blok itself.
+  """
+  materializedBlok: MaterializedBlok
+
+  """The revision the blok is at after the edit; null for a dry run."""
+  revision: BlokRevision
 }
 
 """A way to filter bloks"""
@@ -1444,6 +1483,57 @@ input BlokImplementationInput {
   The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent.
   """
   source: String = null
+}
+
+"""
+One state of a custom blok, never changed once written. Every write to a custom blok commits one; the blok is a copy of its head.
+"""
+type BlokRevision {
+  """The user it was written as."""
+  author: User
+  blok: Blok!
+  catalog: UICatalog!
+
+  """
+  The whole component tree as one JSON value, in the wire spelling (snake_case keys).
+  """
+  componentTree: AnyDefault!
+
+  """The typed component tree of this revision."""
+  components: [ComponentNode!]!
+
+  """
+  sha256 of everything this revision holds, its dependencies included (unlike `hash`).
+  """
+  contentHash: String!
+
+  """The renderer for this revision's root."""
+  context: ComponentContext!
+  createdAt: DateTime!
+
+  """The local state of this revision."""
+  demoState: Props!
+
+  """The agent dependencies of this revision."""
+  dependencies: [RevisionDependency!]!
+
+  """
+  A SHA-256 of what this revision renders, as `Blok.hash` is of the head.
+  """
+  hash: String!
+  id: ID!
+
+  """What changed and why, in a sentence."""
+  message: String
+
+  """The place of this revision in its blok's history, from 1."""
+  number: Int!
+
+  """The revision this one was made from; null for the first."""
+  parent: BlokRevision
+
+  """The task that wrote it, e.g. the assistant turn that designed it."""
+  task: Task
 }
 
 """The input for bouncing an agent."""
@@ -2570,6 +2660,65 @@ input DynamicValueInput {
   path: String = null
 }
 
+"""
+Edit a blok, on it or through a materialization of it (and its bindings there), as one new revision.
+"""
+input EditBlokInput {
+  """
+  Bindings on `materialized_blok`, by dependency key, over the ones it has. Bindings of keys the edit removes go. Refused with `blok`: a blok binds no agents, its materializations do.
+  """
+  agentMappings: [MappedAgentInput!] = null
+
+  """
+  The revision the edit starts from. It must still be the blok's head, or the edit is refused. Required for a custom blok; a provided blok has no revisions and is forked.
+  """
+  base: ID = null
+
+  """
+  The blok to edit, as an editor of the blok itself does. Send it or `materialized_blok`, not both.
+  """
+  blok: ID = null
+
+  """
+  Name of the UI catalog (in the caller's organization) the blok renders against. Kept when omitted.
+  """
+  catalog: String = null
+
+  """The full component tree. Kept when omitted."""
+  components: [ComponentNodeInput!] = null
+
+  """The full local state. Kept when omitted."""
+  demoState: Args = null
+
+  """
+  The full list of agent dependencies. Kept when omitted; keys not listed are removed.
+  """
+  dependencies: [AgentDependencyInput!] = null
+
+  """
+  Check everything and return the findings, keeping nothing. Off when omitted.
+  """
+  dryRun: Boolean = null
+
+  """
+  The materialization the edit is made through, which also takes `agent_mappings`. Send it or `blok`, not both.
+  """
+  materializedBlok: ID = null
+
+  """What changed and why, in a sentence; kept with the revision."""
+  message: String = null
+
+  """
+  The full component tree as BSX, which the server parses: send it or `components`, not both.
+  """
+  source: String = null
+
+  """
+  The task making the edit (one the caller's agent runs), kept with the revision.
+  """
+  task: ID = null
+}
+
 interface Effect {
   call: UtilCall!
 
@@ -3364,8 +3513,23 @@ type MaterializedBlok {
   isDefault: Boolean!
   name: String
 
+  """
+  The revision this materialization stays at; null when it follows its blok's head.
+  """
+  pinnedRevision: BlokRevision
+
   """Placements of this materialized blok."""
   placements(filters: PlacementFilter, ordering: [PlacementOrder!]! = [], pagination: OffsetPaginationInput): [Placement!]!
+
+  """
+  The revision this materialization shows: the pinned one, else its blok's head. Null for a provided blok, which has none.
+  """
+  revision: BlokRevision
+
+  """
+  The required dependencies of the revision shown that no agent is bound to here. An edit made elsewhere can add one: bind it with updateMaterializedBlok.
+  """
+  unboundDependencies: [String!]!
   updatedAt: DateTime!
 }
 
@@ -3678,6 +3842,11 @@ type Mutation {
   """Delete a wiregram and the rules it owns."""
   deleteWiregram(input: WiregramIdInput!): ID!
 
+  """
+  Edit a blok as one new revision on top of the head the editor read: on the blok itself (an editor of the blok), or through a materialization, with its bindings there (an assistant at a dashboard). A provided blok is forked first. With dryRun, every check runs and nothing is kept.
+  """
+  editBlok(input: EditBlokInput!): BlokEdit!
+
   """Ensure agent record exists or is up to date."""
   ensureAgent(input: AgentInput!): Agent!
 
@@ -3730,6 +3899,11 @@ type Mutation {
   pinAgent(input: PinInput!): Agent!
 
   """
+  Keep a materialization at one revision of its blok, or let it follow the head again.
+  """
+  pinMaterializedBlok(input: PinMaterializedBlokInput!): MaterializedBlok!
+
+  """
   Fire a probe at an agent — zero persistence, redis-held state under a TTL, never appears in task history. For high-frequency interactive work (previews, live parameter tweaks).
   """
   probe(input: ProbeInput!): Probe!
@@ -3757,6 +3931,11 @@ type Mutation {
   Resume a paused probe. Idempotent on finished probes; the agent's Resumed report settles the state.
   """
   resumeProbe(input: ResumeProbeInput!): Probe!
+
+  """
+  Make an earlier revision's content a custom blok's head again, as a new revision.
+  """
+  revertBlok(input: RevertBlokInput!): BlokRevision!
 
   """Shelve data into a memory drawer."""
   shelveInMemoryDrawer(input: ShelveInMemoryDrawerInput!): MemoryDrawer!
@@ -3901,6 +4080,17 @@ input PinInput {
 
   """Boolean flag indicating whether to pin or unpin."""
   pin: Boolean!
+}
+
+"""
+Keep a materialization at one revision of its blok, or let it follow the head.
+"""
+input PinMaterializedBlokInput {
+  """The materialization."""
+  id: ID!
+
+  """The revision to stay at; null follows the head again."""
+  revision: ID = null
 }
 
 """A placement of an agent in a space."""
@@ -4957,6 +5147,38 @@ input ReturnWidgetInput {
 enum ReturnWidgetKind {
   CHOICE
   CUSTOM
+}
+
+"""Make an earlier revision's content a blok's head again."""
+input RevertBlokInput {
+  """
+  The revision the caller saw as the head; refused when the head moved since.
+  """
+  base: ID!
+
+  """The custom blok."""
+  blok: ID!
+
+  """Why, in a sentence. Defaults to 'Back to revision <n>'."""
+  message: String = null
+
+  """The task making the change (one the caller's agent runs)."""
+  task: ID = null
+
+  """The revision whose content comes back."""
+  to: ID!
+}
+
+"""A dependency as a blok revision declares it."""
+type RevisionDependency {
+  """Only agents of this app may be bound to it."""
+  app: String
+  description: String
+  key: String!
+  optional: Boolean!
+
+  """Only agents of this version may be bound to it."""
+  version: String
 }
 
 """Slim snapshot of a schedule or trigger for the change feeds."""
@@ -6956,22 +7178,22 @@ input UpdateBlokInput {
   """
   Name of the UI catalog (in the caller's organization) this blok renders against. Created if missing.
   """
-  catalog: String = null
+  catalog: String = null @deprecated(reason: "Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.")
 
   """
   The full component tree of the blok. Replaces the existing tree when provided.
   """
-  components: [ComponentNodeInput!] = null
+  components: [ComponentNodeInput!] = null @deprecated(reason: "Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.")
 
   """
   The demo state used to preview this blok. Replaces the existing demo state when provided.
   """
-  demoState: Args = null
+  demoState: Args = null @deprecated(reason: "Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.")
 
   """
   The full list of agent dependencies. When provided it replaces the existing set: keys not listed are deleted and their agent mappings on materialized bloks lose their dependency reference.
   """
-  dependencies: [AgentDependencyInput!] = null
+  dependencies: [AgentDependencyInput!] = null @deprecated(reason: "Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.")
 
   """The description of the blok and its purpose."""
   description: String = null
@@ -6985,7 +7207,7 @@ input UpdateBlokInput {
   """
   The blok as BSX, which the server parses into the tree it replaces the existing one with: send it or `components`, not both.
   """
-  source: String = null
+  source: String = null @deprecated(reason: "Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.")
 }
 
 """

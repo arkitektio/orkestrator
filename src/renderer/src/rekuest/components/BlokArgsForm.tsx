@@ -20,6 +20,8 @@ export const BlokArgsForm = (props: {
   args: BlokArgs;
   hidden?: BlokArgs;
   onOpen: (args: BlokArgs) => void;
+  /** Back without opening anew (reinstantiating a blok that is already open). */
+  onCancel?: () => void;
   layout?: "page" | "dialog";
 }) => {
   const { hidden } = props;
@@ -70,9 +72,14 @@ export const BlokArgsForm = (props: {
       <Form {...form}>
         <form onSubmit={submit} className="flex flex-col gap-4">
           {fields}
-          <Button type="submit" className="self-end">
-            Open
-          </Button>
+          <div className="flex justify-end gap-2">
+            {props.onCancel && (
+              <Button type="button" variant="ghost" onClick={props.onCancel}>
+                Cancel
+              </Button>
+            )}
+            <Button type="submit">Open</Button>
+          </div>
         </form>
       </Form>
     </div>

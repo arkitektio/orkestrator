@@ -17,6 +17,61 @@ mutation UpdateBlok($input: UpdateBlokInput!) {
   }
 }
 
+# The editor's saves: the same, answered with what the editor holds.
+mutation CreateEditorBlok($input: CreateBlokInput!) {
+  createBlok(input: $input) {
+    ...BlokEditor
+  }
+}
+
+# Name and description: what updateBlok still keeps. Content is saved with EditBlok.
+mutation UpdateEditorBlok($input: UpdateBlokInput!) {
+  updateBlok(input: $input) {
+    ...BlokEditor
+  }
+}
+
+# A save: one new revision on the head the editor read (`base`), or a fork of a provided blok.
+mutation EditBlok($input: EditBlokInput!) {
+  editBlok(input: $input) {
+    applied
+    forked
+    blok {
+      ...BlokEditor
+    }
+    revision {
+      ...BlokRevisionListItem
+    }
+    diagnostics {
+      ...BlokDiagnostic
+    }
+  }
+}
+
+# The same edit with `dryRun`: only the findings, so a check writes nothing to the cache.
+mutation CheckBlok($input: EditBlokInput!) {
+  editBlok(input: $input) {
+    applied
+    diagnostics {
+      ...BlokDiagnostic
+    }
+  }
+}
+
+# An earlier revision's content as the new head.
+mutation RevertBlok($input: RevertBlokInput!) {
+  revertBlok(input: $input) {
+    ...BlokRevisionListItem
+  }
+}
+
+# Keep a materialization at one revision, or (revision null) follow the head again.
+mutation PinMaterializedBlok($input: PinMaterializedBlokInput!) {
+  pinMaterializedBlok(input: $input) {
+    ...MaterializedBlok
+  }
+}
+
 # Copies a blok an app provides into a custom one, to edit it or bind other agents.
 mutation ForkBlok($input: ForkBlokInput!) {
   forkBlok(input: $input) {

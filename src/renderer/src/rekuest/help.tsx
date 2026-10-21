@@ -146,15 +146,48 @@ export const REKUEST_HELP = {
       ]}
     />
   ),
-  bloks: (
+  customBloks: (
     <PageHelp
-      intro="Bloks are pieces of user interface: panels that show an agent’s state and offer its controls. They are the building blocks of dashboards. An app’s agents provide some; the others are custom bloks people made."
+      intro="Bloks are pieces of user interface: panels that show an agent’s state and offer its controls. They are the building blocks of dashboards. This page lists the custom bloks: the ones people made, installed from a repository or forked from an app."
       steps={[
         <>Click a blok to see a preview and where it is already in use.</>,
-        <>Press <b>Provided</b> or <b>Custom</b> in the header to see only the bloks apps provide, or only the custom ones. <b>All</b> shows both.</>,
-        <>Open a custom blok and press <b>Materialize Blok</b> to connect it to your agents.</>,
-        <>Right-click a blok an app provides and choose <b>Fork Blok</b> to make a custom copy you can change.</>,
-        <>Right-click a custom blok and choose <b>Delete Blok</b> to remove it.</>,
+        <>Press <b>New Blok</b> in the header to write one in BSX, or right-click a blok and choose <b>Edit Blok</b> to change it.</>,
+        <>Open a blok and press <b>Materialize Blok</b> to connect it to your agents.</>,
+        <>Right-click a blok and choose <b>Delete Blok</b> to remove it.</>,
+      ]}
+      tips={[
+        <>The bloks your apps bring along are on the <b>App-provided Bloks</b> page.</>,
+      ]}
+    />
+  ),
+  blokEditor: (
+    <PageHelp
+      intro="Write a blok in BSX: tags for the components, attributes for their props. The preview on the right follows as you type, drawn against the demo state."
+      steps={[
+        <>Type <b>&lt;</b> to see the components that fit where the cursor is; a part of its parent (a <b>SelectItem</b> in a <b>Select</b>) comes first. Accepting one fills in the props it needs.</>,
+        <>Inside a tag, start typing to see its props; hover a tag or a prop to read what it does.</>,
+        <>A value starting with <b>@</b> reads or calls something: <b>@stage.position</b> reads a state, <b>@stage.move(x=event.value)</b> calls an action when a handler fires, <b>@utils.…</b> calls a util function, <b>@args.…</b> reads what the blok is opened for.</>,
+        <>Add <b>.into(run)</b> after an action call to keep its task under <b>run</b>, and read <b>@run.running</b> or <b>@run.result</b> elsewhere.</>,
+        <>Declare the agents it draws from in the <b>Dependencies</b> tab: a key, the app, and the actions and states it uses. Completion offers exactly those.</>,
+        <>Fill the <b>Demo state</b> tab with JSON to see the preview with values, keyed by dependency.</>,
+        <>Press <b>Create blok</b> or <b>Save</b>, say in a sentence what changed if you like, and press <b>Save revision</b>. Every save is a revision of its own.</>,
+        <>A moment after you stop typing the server checks the draft too: the line under the editor says what it found, and its warnings are underlined.</>,
+        <>If someone saved while you were editing, a yellow bar says so: press <b>Save on top</b> to save yours after theirs, or <b>Load it</b> to drop your changes and take theirs.</>,
+        <>Open the <b>History</b> tab to see every revision, who made it and when. Hover one and press <b>Restore</b> to make it the latest again; that is a revision too, so nothing is lost.</>,
+      ]}
+      tips={[
+        <>A red underline marks what will not save: BSX that does not parse, a prop the component does not have, or a name no dependency declares.</>,
+        <>Text between tags is not shown: pass it as a prop, e.g. <b>&lt;Text text="Hello" /&gt;</b>.</>,
+        <>A blok an app provides can be edited too: its first save makes a copy of your own, and the editor moves to the copy.</>,
+      ]}
+    />
+  ),
+  providedBloks: (
+    <PageHelp
+      intro="The bloks your apps provide. Their agents keep each one in step with what they register, and materialize it themselves."
+      steps={[
+        <>Click a blok to see a preview and which agents provide it.</>,
+        <>Right-click a blok and choose <b>Fork Blok</b> to make a custom copy you can change and bind to other agents.</>,
       ]}
       tips={[
         <>A provided blok carries its app’s name. It changes, and goes, with its agents’ registrations, so it can’t be changed, materialized or deleted by hand.</>,
@@ -269,8 +302,19 @@ export const REKUEST_HELP = {
       steps={[
         <>Click a materialized blok to open it and use it.</>,
         <>Right-click one and choose <b>Delete Materialized Blok</b> to remove it.</>,
-        <>To make a new one, open a blok from the <b>Bloks</b> page and press <b>Materialize Blok</b>.</>,
-        <>Press <b>Provided</b> or <b>Custom</b> in the header to see only the agents’ own materializations of the bloks their app provides, or only the ones people made.</>,
+        <>To make a new one, open a blok from the <b>Custom Bloks</b> page and press <b>Materialize Blok</b>.</>,
+      ]}
+      tips={[
+        <>This page lists the ones people made. The agents’ own materializations of the bloks their app provides are on their own page.</>,
+      ]}
+    />
+  ),
+  providedMaterializedBloks: (
+    <PageHelp
+      intro="The agents’ own materializations of the bloks their app provides. Each agent keeps its own, in step with its registrations."
+      steps={[
+        <>Click a materialized blok to open it and use it.</>,
+        <>Open one and press <b>Rematerialize</b> to fork its blok and make a materialization of your own, with the same agents filled in.</>,
       ]}
     />
   ),
@@ -283,6 +327,9 @@ export const REKUEST_HELP = {
         <>Click the blok name in the <b>Bindings</b> tab to go back to the blok this was made from.</>,
         <>Press <b>History</b> in the header to see the panel as it was earlier. In the bar below it, drag the slider, press the arrows to go to the change before or after, or press play to let it run on from there. Click the time to jump to another one. Press <b>Go live</b> to return to the present.</>,
         <>Press <b>Revisions</b> in that bar to go through the past one recorded change of an agent at a time instead: the arrows go to the revision before or after, the slider runs over all revisions since the agent started, and typing a number into <b>Revision</b> and pressing Enter goes straight to it. With more than one agent, choose whose revisions to step through. Press <b>Time</b> to get the slider back.</>,
+        <>Press <b>Reinstantiate</b> to choose again what the blok is opened for. The form starts from what it shows now; press <b>Open</b> to show the new items, or <b>Cancel</b> to keep them.</>,
+        <>Press <b>Rematerialize</b> to make a new materialization of the original blok, with the current agents filled in. A blok an app provides is forked first, so name the copy and press <b>Fork</b>. The new one opens; this one stays as it is.</>,
+        <>Press the <b>Rev</b> button in the header to choose which revision of its blok this shows: the latest, which follows every save, or one it stays at while the blok changes on.</>,
         <>Press <b>Delete Materialized Blok</b> to remove it. You are taken back to the list.</>,
       ]}
       tips={[

@@ -25,6 +25,12 @@ import {
   DeleteDashboardMutationVariables,
   DeleteAgentDocument,
   DeleteMaterializedBlokDocument,
+  MaterializedBlokDocument,
+  MaterializedBlokQuery,
+  MaterializedBlokQueryVariables,
+  PinMaterializedBlokDocument,
+  PinMaterializedBlokMutation,
+  PinMaterializedBlokMutationVariables,
   DeleteMaterializedBlokMutation,
   DeleteMaterializedBlokMutationVariables,
   DeletePlacementDocument,
@@ -79,7 +85,7 @@ import {
 import type { ModuleServices } from '@/core/connection/arkitekt/host'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { AlarmClock, Ban, Bookmark, Copy, Download, Eraser, FastForward, Hash, LogOut, PauseCircle, Pencil, Pin, Play, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
+import { AlarmClock, Ban, Bookmark, Code, Copy, Download, Eraser, FastForward, Hash, LogOut, PauseCircle, Pencil, Pin, Play, RefreshCw, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
 import { toast } from "@/core/notify";
 import { isPausable, isResumable } from '@/rekuest/lib/taskStatus'
 import { initialFromSchedule, initialFromTrigger } from './components/automation/builder/initial'
@@ -181,6 +187,64 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     },
     collections: ['io'],
   },
+  'rekuest-edit-blok': {
+    title: 'Edit Blok',
+    description: 'Open a blok as BSX, with a live preview, to change it; a blok an app provides is copied on its first save',
+    icon: Code,
+    conditions: only('@rekuest/blok'),
+    execute: async ({ state, navigate }) => {
+      navigate(`/rekuest/bloks/${selected(state, '@rekuest/blok')}/edit`)
+    },
+  },
+  'rekuest-edit-materialized-blok': {
+    title: 'Edit Blok',
+    description: 'Open the blok this shows as BSX, to change it',
+    icon: Code,
+    conditions: only('@rekuest/materialized_blok'),
+    execute: async ({ services, state, navigate }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const { data } = await services.rekuest.client.query<MaterializedBlokQuery, MaterializedBlokQueryVariables>({
+        query: MaterializedBlokDocument,
+        variables: { id: selected(state, '@rekuest/materialized_blok') },
+      })
+      navigate(`/rekuest/bloks/${data.materializedBlok.blok.id}/edit`)
+    },
+  },
+  'rekuest-pin-materialized-blok': {
+    title: 'Choose Revision',
+    description: "Keep a materialized blok at one revision of its blok, or let it follow the latest",
+    icon: Pin,
+    conditions: only('@rekuest/materialized_blok'),
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('pinrevision', { id: selected(state, '@rekuest/materialized_blok') })
+    },
+  },
+  'rekuest-follow-latest-revision': {
+    title: 'Follow Latest Revision',
+    description: 'Let a pinned materialized blok show its blok\'s latest revision again',
+    icon: RotateCcw,
+    conditions: only('@rekuest/materialized_blok'),
+    execute: async ({ services, state }) => {
+      if (!services.rekuest) {
+        throw new Error('Rekuest service not available')
+      }
+      const id = selected(state, '@rekuest/materialized_blok')
+      const { data } = await services.rekuest.client.query<MaterializedBlokQuery, MaterializedBlokQueryVariables>({
+        query: MaterializedBlokDocument,
+        variables: { id },
+        fetchPolicy: 'network-only',
+      })
+      if (!data.materializedBlok.pinnedRevision) {
+        throw new Error(`${data.materializedBlok.name || data.materializedBlok.blok.name} already follows the latest revision`)
+      }
+      await services.rekuest.client.mutate<PinMaterializedBlokMutation, PinMaterializedBlokMutationVariables>({
+        mutation: PinMaterializedBlokDocument,
+        variables: { input: { id, revision: null } },
+      })
+    },
+  },
   'rekuest-materialize-blok': {
     title: 'Materialize Blok',
     description: 'Bind a custom blok to agents and open it',
@@ -188,6 +252,15 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
     conditions: only('@rekuest/blok'),
     execute: async ({ state, dialog }) => {
       dialog.openDialog('materializeblok', { id: selected(state, '@rekuest/blok') })
+    },
+  },
+  'rekuest-rematerialize-blok': {
+    title: 'Rematerialize',
+    description: 'Materialize the original blok again, with the same agents; a blok an app provides is forked first',
+    icon: RefreshCw,
+    conditions: only('@rekuest/materialized_blok'),
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('rematerializeblok', { id: selected(state, '@rekuest/materialized_blok') })
     },
   },
   'rekuest-delete-blok': {

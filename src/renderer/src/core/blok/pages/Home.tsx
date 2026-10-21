@@ -10,10 +10,16 @@ const destinations = [
     cta: "Open Dashboards",
   },
   {
-    title: "Bloks",
-    description: "Browse blok definitions and materialize them from the current Rekuest pages.",
+    title: "Custom Bloks",
+    description: "Bloks you made, installed or forked: edit them and materialize them with your agents.",
     to: "/rekuest/bloks",
-    cta: "Open Bloks",
+    cta: "Open Custom Bloks",
+  },
+  {
+    title: "App-provided Bloks",
+    description: "Bloks your apps' agents provide and keep in step with their registrations.",
+    to: "/rekuest/bloks/provided",
+    cta: "Open App-provided Bloks",
   },
   {
     title: "Materialized Bloks",
@@ -37,7 +43,7 @@ export const Home = () => {
           </p>
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-2">
           {destinations.map((destination) => (
             <div
               key={destination.to}

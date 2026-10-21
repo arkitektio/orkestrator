@@ -1,3 +1,4 @@
+import { useDialog } from "@/core/dialogs/registry";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
 import { registry } from "@/core/smart/localactions/registry";
 import { Sidebars } from "@/core/layout/Sidebars";
@@ -22,7 +23,7 @@ import {
 import { BlokTravelProvider } from "@/rekuest/travel/context";
 import { TravelBar } from "@/rekuest/travel/TravelBar";
 import { useBlokTravel } from "@/rekuest/travel/useBlokTravel";
-import { History } from "lucide-react";
+import { History, Pin, SlidersHorizontal } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { MaterializedBlokFragment, useMaterializedBlokQuery } from "../api/graphql";
@@ -33,10 +34,8 @@ import { REKUEST_HELP } from "../help";
  * bound to, or a bound agent that is offline. Renders nothing otherwise.
  */
 const BindingNotice = ({ materializedBlok }: { materializedBlok: MaterializedBlokFragment }) => {
-  const bound = new Set(materializedBlok.agentMappings.map((mapping) => mapping.key));
-  const unbound = materializedBlok.blok.dependencies
-    .filter((dependency) => !bound.has(dependency.key))
-    .map((dependency) => dependency.key);
+  // The server knows which dependencies of the revision shown are unbound here.
+  const unbound = materializedBlok.unboundDependencies;
   const offline = materializedBlok.agentMappings.filter((mapping) => !mapping.agent.connected);
 
   if (unbound.length === 0 && offline.length === 0) return null;
@@ -140,10 +139,14 @@ const useBlokArgs = () => {
 export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery, ({ data }) => {
   const materializedBlok = data.materializedBlok;
   const travel = useBlokTravel();
+  const { openDialog } = useDialog();
   const [args, setArgs] = useBlokArgs();
   const ports = materializedBlok.blok.args;
-  // Asked for once on the way in; changing the item later is the tree's to do.
+  // Asked for on the way in, and again on "Reinstantiate"; between those
+  // changing the item is the tree's to do.
   const [asking, setAsking] = useState(() => missingBlokArgs(ports, args).length > 0);
+  // Back to what is open, once there is something complete to go back to.
+  const complete = missingBlokArgs(ports, args).length === 0;
   const openFor = useCallback(
     (next: BlokArgs) => {
       setArgs(next);
@@ -178,6 +181,47 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
             <History className="h-4 w-4" />
             History
           </PageAction>
+          {ports.length > 0 && (
+            <PageAction
+              size="sm"
+              variant={asking ? "secondary" : "outline"}
+              onClick={() => setAsking(true)}
+              disabled={asking}
+              title="Choose again what this blok is opened for"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Reinstantiate
+            </PageAction>
+          )}
+          {materializedBlok.revision && (
+            <PageAction
+              size="sm"
+              variant={materializedBlok.pinnedRevision ? "secondary" : "outline"}
+              onClick={() => openDialog("pinrevision", { id: materializedBlok.id })}
+              title={
+                materializedBlok.pinnedRevision
+                  ? "It stays at this revision of its blok. Choose another, or follow the latest again."
+                  : "It follows its blok's latest revision. Keep it at one instead."
+              }
+            >
+              <Pin className="h-4 w-4" />
+              {materializedBlok.pinnedRevision
+                ? `Pinned · rev ${materializedBlok.pinnedRevision.number}`
+                : `Rev ${materializedBlok.revision.number} · latest`}
+            </PageAction>
+          )}
+          <LocalActionButton
+            name={"rekuest-rematerialize-blok" as keyof typeof registry}
+            state={{
+              left: [
+                {
+                  identifier: '@rekuest/materialized_blok',
+                  id: materializedBlok.id,
+                },
+              ],
+              isCommand: false,
+            }}
+          />
           <LocalActionButton
             name={"rekuest-delete-materialized-blok" as keyof typeof registry}
             state={{
@@ -210,6 +254,7 @@ export const MaterializedBlokPage = asDetailQueryRoute(useMaterializedBlokQuery,
               ports={ports}
               args={args}
               onOpen={openFor}
+              onCancel={complete ? () => setAsking(false) : undefined}
             />
           ) : (
             <BlokTravelProvider source={travel.source}>

@@ -19,3 +19,25 @@ query LogoBlok($id: ID!) {
     demoState
   }
 }
+
+# What the BSX editor opens: the tree it prints back as source, and all a save sends again.
+query BlokEditor($id: ID!) {
+  blok(id: $id) {
+    ...BlokEditor
+  }
+}
+
+# A custom blok's history, newest first; the head is what a restore names as `base`.
+query BlokRevisions($id: ID!, $limit: Int!, $offset: Int!) {
+  blok(id: $id) {
+    id
+    provided
+    head {
+      id
+      number
+    }
+    revisions(limit: $limit, offset: $offset) {
+      ...BlokRevisionListItem
+    }
+  }
+}

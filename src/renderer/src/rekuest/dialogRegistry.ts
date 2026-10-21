@@ -6,6 +6,8 @@ import { FireTriggerDialog } from "./dialogs/FireTriggerDialog";
 import { ForkBlokDialog } from "./dialogs/ForkBlokDialog";
 import { MaterializeBlokDialog } from "./dialogs/MaterializeBlokDialog";
 import { OpenBlokDialog } from "./dialogs/OpenBlokDialog";
+import { PinRevisionDialog } from "./dialogs/PinRevisionDialog";
+import { RematerializeBlokDialog } from "./dialogs/RematerializeBlokDialog";
 import { ReplyerAssignForm } from "./dialogs/ReplyerAssignForm";
 import { ReportBugDialog } from "./dialogs/ReportBugDialog";
 import { RerunLostDialog } from "./dialogs/RerunLostDialog";
@@ -41,6 +43,10 @@ export const REKUEST_DIALOGS = {
   forkblok: prefersSize("small", ForkBlokDialog),
   // a custom blok → bound to agents and materialized (the store's "Install")
   materializeblok: prefersSize("medium", MaterializeBlokDialog),
+  // a materialized blok → a new one of its blok (forked first when an app provides it)
+  rematerializeblok: prefersSize("medium", RematerializeBlokDialog),
+  // a materialization → which revision of its blok it shows (latest, or one it stays at)
+  pinrevision: prefersSize("small", PinRevisionDialog),
   // "Open in…" a blok whose args the selection leaves open: ask for the rest, then open it
   openblok: prefersSize("medium", OpenBlokDialog),
   // a failed task → lok's report form, prefilled

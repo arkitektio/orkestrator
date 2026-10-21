@@ -81,6 +81,11 @@ fragment Blok on Blok {
   originHash
   # An app's agents provide it (it follows their registrations): forked, never edited.
   provided
+  # The revision a custom blok is at; null for a provided one.
+  head {
+    id
+    number
+  }
   app {
     id
     identifier
@@ -132,6 +137,19 @@ fragment MaterializedBlok on MaterializedBlok {
   blok {
     ...Blok
   }
+  # What it shows: the pinned revision, else its blok's head (null for a provided blok).
+  revision {
+    id
+    number
+    componentTree
+    demoState
+  }
+  pinnedRevision {
+    id
+    number
+  }
+  # Required dependencies of the revision shown that no agent is bound to here.
+  unboundDependencies
   agentMappings {
     key
     agent {
@@ -206,5 +224,132 @@ fragment OpenableBlok on MaterializedBlok {
       kind
       nullable
     }
+  }
+}
+
+# --- Blok editor ---------------------------------------------------------------
+# Everything the BSX editor writes back. `dependencies` replaces a blok's whole
+# set on update, so a dependency is read in full: its demands are sent again as
+# they came. A port match nests; three levels are read, and the fourth only
+# says whether there is one (then the demand cannot be sent back whole).
+
+fragment BlokEditorPortMatchLeaf on PortMatch {
+  at
+  key
+  kind
+  identifier
+  nullable
+  dimension
+}
+
+fragment BlokEditorPortMatch on PortMatch {
+  ...BlokEditorPortMatchLeaf
+  children {
+    ...BlokEditorPortMatchLeaf
+    children {
+      ...BlokEditorPortMatchLeaf
+      children {
+        key
+      }
+    }
+  }
+}
+
+fragment BlokEditorActionDependency on ActionDependency {
+  key
+  description
+  optional
+  demand {
+    app
+    argMatches {
+      ...BlokEditorPortMatch
+    }
+    forceArgLength
+    forceReturnLength
+    hash
+    idempotent
+    key
+    name
+    protocols
+    pure
+    returnMatches {
+      ...BlokEditorPortMatch
+    }
+    stateful
+    version
+  }
+}
+
+fragment BlokEditorStateDependency on StateDependency {
+  key
+  description
+  optional
+  demand {
+    app
+    hash
+    key
+    matches {
+      ...BlokEditorPortMatch
+    }
+    protocols
+  }
+}
+
+fragment BlokEditorDependency on BlokDependency {
+  id
+  key
+  description
+  appFilter
+  versionFilter
+  optional
+  autoResolvable
+  minViableInstances
+  maxViableInstances
+  actionDependencies {
+    ...BlokEditorActionDependency
+  }
+  stateDependencies {
+    ...BlokEditorStateDependency
+  }
+}
+
+fragment BlokEditor on Blok {
+  id
+  name
+  description
+  context
+  provided
+  # What a save names as its `base`: refused once someone saved on top of it.
+  head {
+    id
+    number
+  }
+  componentTree
+  demoState
+  args {
+    ...ArgPort
+  }
+  dependencies {
+    ...BlokEditorDependency
+  }
+}
+
+# --- Revisions -------------------------------------------------------------------
+
+# A row of a blok's history.
+fragment BlokRevisionListItem on BlokRevision {
+  id
+  number
+  message
+  createdAt
+  hash
+  author {
+    sub
+  }
+  task {
+    id
+  }
+  parent {
+    id
   }
 }

@@ -34,6 +34,12 @@ type MaterializedBlokData = {
     /** What the blok is opened for, read at `@args.<key>`. */
     args?: Array<{key: string}> | null;
   };
+  /**
+   * The revision it shows (the pinned one, else its blok's head); null for a
+   * provided blok, which has none. Drawn in place of the blok's own tree, so a
+   * pinned materialization stays as it was.
+   */
+  revision?: {componentTree?: unknown; demoState: unknown} | null;
   agentMappings: Array<{
     key: string;
     agent: {
@@ -270,11 +276,16 @@ const refuseWhileTravelling: BlokRefuseActionHandler = () => {
   return true;
 };
 
+/** What a materialization draws: the revision it shows, else (a provided blok) its blok. */
+export const shownContent = (materializedBlok: Pick<MaterializedBlokData, 'blok' | 'revision'>) =>
+  materializedBlok.revision ?? materializedBlok.blok;
+
 export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) => {
   const {materializedBlok, args, onArgsChange, ...rendererProps} = props;
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
   const travelling = useBlokTravelSource() !== null;
-  const {roots, truncatedIds} = useBlokDocument(materializedBlok.blok.componentTree as unknown[] | null);
+  const shown = shownContent(materializedBlok);
+  const {roots, truncatedIds} = useBlokDocument(shown.componentTree as unknown[] | null);
   const boundAgents = React.useMemo(
     () => new Map(materializedBlok.agentMappings.map(mapping => [mapping.key, mapping.agent.id] as const)),
     [materializedBlok.agentMappings],
@@ -285,10 +296,10 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
   const initialState = React.useMemo(
     () =>
       seeded
-        ? {...((materializedBlok.blok.demoState as Record<string, unknown> | null) ?? {}), [BLOK_ARGS_ROOT]: seeded}
-        : materializedBlok.blok.demoState,
+        ? {...((shown.demoState as Record<string, unknown> | null) ?? {}), [BLOK_ARGS_ROOT]: seeded}
+        : shown.demoState,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [materializedBlok.blok.demoState],
+    [shown.demoState],
   );
 
   return (

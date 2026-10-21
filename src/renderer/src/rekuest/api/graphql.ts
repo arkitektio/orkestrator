@@ -1018,6 +1018,8 @@ export type Blok = {
   forNode?: Maybe<Scalars['String']['output']>;
   /** A SHA-256 of what the blok renders: its component tree, demo state and context. Two bloks with the same hash draw the same thing, so a client may cache what it rendered under it. */
   hash: Scalars['String']['output'];
+  /** The revision this custom blok is at: what an edit names as its `base`. Null for a provided blok, which changes with its agents' registrations instead. */
+  head?: Maybe<BlokRevision>;
   id: Scalars['ID']['output'];
   /** Materialized bloks that are instances of this blok. */
   materializedBloks: Array<MaterializedBlok>;
@@ -1030,6 +1032,8 @@ export type Blok = {
   provided: Scalars['Boolean']['output'];
   /** The agents that currently provide this blok, each through its own materialization. */
   providers: Array<Agent>;
+  /** The revisions of this custom blok, newest first. An undo is a revision too, so history only grows. */
+  revisions: Array<BlokRevision>;
 };
 
 
@@ -1043,6 +1047,12 @@ export type BlokMaterializedBloksArgs = {
   filters?: InputMaybe<MaterializedBlokFilter>;
   ordering?: Array<MaterializedBlokOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
+};
+
+
+export type BlokRevisionsArgs = {
+  limit?: Scalars['Int']['input'];
+  offset?: Scalars['Int']['input'];
 };
 
 export type BlokAgentMapping = {
@@ -1100,6 +1110,23 @@ export type BlokDependencyFilter = {
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
+/** What an edit of a blok did, or with `dryRun` would do. */
+export type BlokEdit = {
+  __typename?: 'BlokEdit';
+  /** Whether anything was written; false for a dry run. */
+  applied: Scalars['Boolean']['output'];
+  /** The blok the edit landed on: the one edited, or the custom copy of a provided one. An editor of the blok follows it here. */
+  blok: Blok;
+  /** Non-fatal findings about the new content, e.g. util calls no catalog provides. */
+  diagnostics: Array<Diagnostic>;
+  /** Whether the blok was provided and the edit made a custom copy of it to land on: `blok` is the copy, and an edit made through a materialization has a new one of it. */
+  forked: Scalars['Boolean']['output'];
+  /** The materialization that shows the edit: the one it was made through, or the fork's new one. Null for an edit of the blok itself. */
+  materializedBlok?: Maybe<MaterializedBlok>;
+  /** The revision the blok is at after the edit; null for a dry run. */
+  revision?: Maybe<BlokRevision>;
+};
+
 /** A way to filter bloks */
 export type BlokFilter = {
   AND?: InputMaybe<BlokFilter>;
@@ -1144,6 +1171,39 @@ export type BlokImplementationInput = {
   key: Scalars['String']['input'];
   /** The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent. */
   source?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** One state of a custom blok, never changed once written. Every write to a custom blok commits one; the blok is a copy of its head. */
+export type BlokRevision = {
+  __typename?: 'BlokRevision';
+  /** The user it was written as. */
+  author?: Maybe<User>;
+  blok: Blok;
+  catalog: UiCatalog;
+  /** The whole component tree as one JSON value, in the wire spelling (snake_case keys). */
+  componentTree: Scalars['AnyDefault']['output'];
+  /** The typed component tree of this revision. */
+  components: Array<ComponentNode>;
+  /** sha256 of everything this revision holds, its dependencies included (unlike `hash`). */
+  contentHash: Scalars['String']['output'];
+  /** The renderer for this revision's root. */
+  context: ComponentContext;
+  createdAt: Scalars['DateTime']['output'];
+  /** The local state of this revision. */
+  demoState: Scalars['Props']['output'];
+  /** The agent dependencies of this revision. */
+  dependencies: Array<RevisionDependency>;
+  /** A SHA-256 of what this revision renders, as `Blok.hash` is of the head. */
+  hash: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  /** What changed and why, in a sentence. */
+  message?: Maybe<Scalars['String']['output']>;
+  /** The place of this revision in its blok's history, from 1. */
+  number: Scalars['Int']['output'];
+  /** The revision this one was made from; null for the first. */
+  parent?: Maybe<BlokRevision>;
+  /** The task that wrote it, e.g. the assistant turn that designed it. */
+  task?: Maybe<Task>;
 };
 
 /** The input for bouncing an agent. */
@@ -1984,6 +2044,34 @@ export type DynamicValueInput = {
   path?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Edit a blok, on it or through a materialization of it (and its bindings there), as one new revision. */
+export type EditBlokInput = {
+  /** Bindings on `materialized_blok`, by dependency key, over the ones it has. Bindings of keys the edit removes go. Refused with `blok`: a blok binds no agents, its materializations do. */
+  agentMappings?: InputMaybe<Array<MappedAgentInput>>;
+  /** The revision the edit starts from. It must still be the blok's head, or the edit is refused. Required for a custom blok; a provided blok has no revisions and is forked. */
+  base?: InputMaybe<Scalars['ID']['input']>;
+  /** The blok to edit, as an editor of the blok itself does. Send it or `materialized_blok`, not both. */
+  blok?: InputMaybe<Scalars['ID']['input']>;
+  /** Name of the UI catalog (in the caller's organization) the blok renders against. Kept when omitted. */
+  catalog?: InputMaybe<Scalars['String']['input']>;
+  /** The full component tree. Kept when omitted. */
+  components?: InputMaybe<Array<ComponentNodeInput>>;
+  /** The full local state. Kept when omitted. */
+  demoState?: InputMaybe<Scalars['Args']['input']>;
+  /** The full list of agent dependencies. Kept when omitted; keys not listed are removed. */
+  dependencies?: InputMaybe<Array<AgentDependencyInput>>;
+  /** Check everything and return the findings, keeping nothing. Off when omitted. */
+  dryRun?: InputMaybe<Scalars['Boolean']['input']>;
+  /** The materialization the edit is made through, which also takes `agent_mappings`. Send it or `blok`, not both. */
+  materializedBlok?: InputMaybe<Scalars['ID']['input']>;
+  /** What changed and why, in a sentence; kept with the revision. */
+  message?: InputMaybe<Scalars['String']['input']>;
+  /** The full component tree as BSX, which the server parses: send it or `components`, not both. */
+  source?: InputMaybe<Scalars['String']['input']>;
+  /** The task making the edit (one the caller's agent runs), kept with the revision. */
+  task?: InputMaybe<Scalars['ID']['input']>;
+};
+
 export type Effect = {
   call: UtilCall;
   /** The full call tree as raw JSON, so deep trees are not truncated by fragment depth. */
@@ -2560,8 +2648,14 @@ export type MaterializedBlok = {
   /** Whether this is its declaring agent's default blok for the blok's context. */
   isDefault: Scalars['Boolean']['output'];
   name?: Maybe<Scalars['String']['output']>;
+  /** The revision this materialization stays at; null when it follows its blok's head. */
+  pinnedRevision?: Maybe<BlokRevision>;
   /** Placements of this materialized blok. */
   placements: Array<Placement>;
+  /** The revision this materialization shows: the pinned one, else its blok's head. Null for a provided blok, which has none. */
+  revision?: Maybe<BlokRevision>;
+  /** The required dependencies of the revision shown that no agent is bound to here. An edit made elsewhere can add one: bind it with updateMaterializedBlok. */
+  unboundDependencies: Array<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
 };
 
@@ -2833,6 +2927,8 @@ export type Mutation = {
   deleteTrigger: Scalars['ID']['output'];
   /** Delete a wiregram and the rules it owns. */
   deleteWiregram: Scalars['ID']['output'];
+  /** Edit a blok as one new revision on top of the head the editor read: on the blok itself (an editor of the blok), or through a materialization, with its bindings there (an assistant at a dashboard). A provided blok is forked first. With dryRun, every check runs and nothing is kept. */
+  editBlok: BlokEdit;
   /** Ensure agent record exists or is up to date. */
   ensureAgent: Agent;
   /** Write existing schedules and triggers down as a wiregram document, to import elsewhere. Changes nothing. */
@@ -2859,6 +2955,8 @@ export type Mutation = {
   pauseProbe: Probe;
   /** Pin an agent to the user. */
   pinAgent: Agent;
+  /** Keep a materialization at one revision of its blok, or let it follow the head again. */
+  pinMaterializedBlok: MaterializedBlok;
   /** Fire a probe at an agent — zero persistence, redis-held state under a TTL, never appears in task history. For high-frequency interactive work (previews, live parameter tweaks). */
   probe: Probe;
   /** Register the components and operations a UI app can render and evaluate (upsert by name in the caller's organization). Bloks and definitions that name the catalog are validated against it. */
@@ -2873,6 +2971,8 @@ export type Mutation = {
   resume: Task;
   /** Resume a paused probe. Idempotent on finished probes; the agent's Resumed report settles the state. */
   resumeProbe: Probe;
+  /** Make an earlier revision's content a custom blok's head again, as a new revision. */
+  revertBlok: BlokRevision;
   /** Shelve data into a memory drawer. */
   shelveInMemoryDrawer: MemoryDrawer;
   /** Run a schedule now: its waiting run is moved to now. Refused while a run is executing. */
@@ -3101,6 +3201,12 @@ export type MutationDeleteWiregramArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationEditBlokArgs = {
+  input: EditBlokInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationEnsureAgentArgs = {
   input: AgentInput;
 };
@@ -3179,6 +3285,12 @@ export type MutationPinAgentArgs = {
 
 
 /** Root mutation type for executing write operations on the API. */
+export type MutationPinMaterializedBlokArgs = {
+  input: PinMaterializedBlokInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
 export type MutationProbeArgs = {
   input: ProbeInput;
 };
@@ -3217,6 +3329,12 @@ export type MutationResumeArgs = {
 /** Root mutation type for executing write operations on the API. */
 export type MutationResumeProbeArgs = {
   input: ResumeProbeInput;
+};
+
+
+/** Root mutation type for executing write operations on the API. */
+export type MutationRevertBlokArgs = {
+  input: RevertBlokInput;
 };
 
 
@@ -3385,6 +3503,14 @@ export type PinInput = {
   id: Scalars['ID']['input'];
   /** Boolean flag indicating whether to pin or unpin. */
   pin: Scalars['Boolean']['input'];
+};
+
+/** Keep a materialization at one revision of its blok, or let it follow the head. */
+export type PinMaterializedBlokInput = {
+  /** The materialization. */
+  id: Scalars['ID']['input'];
+  /** The revision to stay at; null follows the head again. */
+  revision?: InputMaybe<Scalars['ID']['input']>;
 };
 
 /** A placement of an agent in a space. */
@@ -4637,6 +4763,32 @@ export enum ReturnWidgetKind {
   Choice = 'CHOICE',
   Custom = 'CUSTOM'
 }
+
+/** Make an earlier revision's content a blok's head again. */
+export type RevertBlokInput = {
+  /** The revision the caller saw as the head; refused when the head moved since. */
+  base: Scalars['ID']['input'];
+  /** The custom blok. */
+  blok: Scalars['ID']['input'];
+  /** Why, in a sentence. Defaults to 'Back to revision <n>'. */
+  message?: InputMaybe<Scalars['String']['input']>;
+  /** The task making the change (one the caller's agent runs). */
+  task?: InputMaybe<Scalars['ID']['input']>;
+  /** The revision whose content comes back. */
+  to: Scalars['ID']['input'];
+};
+
+/** A dependency as a blok revision declares it. */
+export type RevisionDependency = {
+  __typename?: 'RevisionDependency';
+  /** Only agents of this app may be bound to it. */
+  app?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  key: Scalars['String']['output'];
+  optional: Scalars['Boolean']['output'];
+  /** Only agents of this version may be bound to it. */
+  version?: Maybe<Scalars['String']['output']>;
+};
 
 /** Slim snapshot of a schedule or trigger for the change feeds. */
 export type RuleChange = {
@@ -6256,13 +6408,25 @@ export type UpdateAgentInput = {
 
 /** The input for updating a blok. Omitted (null) fields are left unchanged; list fields replace wholesale. */
 export type UpdateBlokInput = {
-  /** Name of the UI catalog (in the caller's organization) this blok renders against. Created if missing. */
+  /**
+   * Name of the UI catalog (in the caller's organization) this blok renders against. Created if missing.
+   * @deprecated Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.
+   */
   catalog?: InputMaybe<Scalars['String']['input']>;
-  /** The full component tree of the blok. Replaces the existing tree when provided. */
+  /**
+   * The full component tree of the blok. Replaces the existing tree when provided.
+   * @deprecated Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.
+   */
   components?: InputMaybe<Array<ComponentNodeInput>>;
-  /** The demo state used to preview this blok. Replaces the existing demo state when provided. */
+  /**
+   * The demo state used to preview this blok. Replaces the existing demo state when provided.
+   * @deprecated Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.
+   */
   demoState?: InputMaybe<Scalars['Args']['input']>;
-  /** The full list of agent dependencies. When provided it replaces the existing set: keys not listed are deleted and their agent mappings on materialized bloks lose their dependency reference. */
+  /**
+   * The full list of agent dependencies. When provided it replaces the existing set: keys not listed are deleted and their agent mappings on materialized bloks lose their dependency reference.
+   * @deprecated Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.
+   */
   dependencies?: InputMaybe<Array<AgentDependencyInput>>;
   /** The description of the blok and its purpose. */
   description?: InputMaybe<Scalars['String']['input']>;
@@ -6270,7 +6434,10 @@ export type UpdateBlokInput = {
   id: Scalars['ID']['input'];
   /** The name of the blok, used for identification in the system. */
   name?: InputMaybe<Scalars['String']['input']>;
-  /** The blok as BSX, which the server parses into the tree it replaces the existing one with: send it or `components`, not both. */
+  /**
+   * The blok as BSX, which the server parses into the tree it replaces the existing one with: send it or `components`, not both.
+   * @deprecated Use editBlok: it checks the write is made on the head you read, keeps a message with the revision, and has a dry run. updateBlok keeps name and description.
+   */
   source?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -6844,7 +7011,7 @@ export type BlokComponentPropFragment = { __typename?: 'ComponentProp', key: str
 
 export type BlokDiagnosticFragment = { __typename?: 'Diagnostic', level: DiagnosticLevel, code: string, message: string, path?: string | null };
 
-export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, origin?: string | null, originHash?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, demoState: any, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
+export type BlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, origin?: string | null, originHash?: string | null, provided: boolean, context: ComponentContext, forModel?: string | null, forNode?: string | null, componentTree: any, demoState: any, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, app?: { __typename?: 'App', id: string, identifier: string } | null, providers: Array<{ __typename?: 'Agent', id: string, name: string, connected: boolean }>, materializedBloks: Array<(
     { __typename?: 'MaterializedBlok' }
     & ListMaterializedBlokFragment
   )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, args: Array<(
@@ -6855,16 +7022,60 @@ export type BlokFragment = { __typename?: 'Blok', id: string, name: string, desc
     & BlokDiagnosticFragment
   )> };
 
-export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, isDefault: boolean, createdAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: (
+export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, isDefault: boolean, createdAt: any, unboundDependencies: Array<string>, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: (
     { __typename?: 'Blok' }
     & BlokFragment
-  ), agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
+  ), revision?: { __typename?: 'BlokRevision', id: string, number: number, componentTree: any, demoState: any } | null, pinnedRevision?: { __typename?: 'BlokRevision', id: string, number: number } | null, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type ListBlokFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string, provided: boolean, origin?: string | null, originHash?: string | null, app?: { __typename?: 'App', id: string, identifier: string } | null };
 
 export type ListMaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, isDefault: boolean, updatedAt: any, declaredBy?: { __typename?: 'Agent', id: string, name: string } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, hash: string }, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
 export type OpenableBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, description?: string | null, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: { __typename?: 'Blok', id: string, name: string, description?: string | null, args: Array<{ __typename?: 'ArgPort', key: string, identifier?: any | null, kind: PortKind, nullable: boolean }> } };
+
+export type BlokEditorPortMatchLeafFragment = { __typename?: 'PortMatch', at?: number | null, key?: string | null, kind?: PortKind | null, identifier?: string | null, nullable?: boolean | null, dimension?: string | null };
+
+export type BlokEditorPortMatchFragment = (
+  { __typename?: 'PortMatch', children?: Array<(
+    { __typename?: 'PortMatch', children?: Array<(
+      { __typename?: 'PortMatch', children?: Array<{ __typename?: 'PortMatch', key?: string | null }> | null }
+      & BlokEditorPortMatchLeafFragment
+    )> | null }
+    & BlokEditorPortMatchLeafFragment
+  )> | null }
+  & BlokEditorPortMatchLeafFragment
+);
+
+export type BlokEditorActionDependencyFragment = { __typename?: 'ActionDependency', key: string, description?: string | null, optional: boolean, demand?: { __typename?: 'ActionDemand', app?: string | null, forceArgLength?: number | null, forceReturnLength?: number | null, hash?: any | null, idempotent?: boolean | null, key?: string | null, name?: string | null, protocols?: Array<string> | null, pure?: boolean | null, stateful?: boolean | null, version?: string | null, argMatches?: Array<(
+      { __typename?: 'PortMatch' }
+      & BlokEditorPortMatchFragment
+    )> | null, returnMatches?: Array<(
+      { __typename?: 'PortMatch' }
+      & BlokEditorPortMatchFragment
+    )> | null } | null };
+
+export type BlokEditorStateDependencyFragment = { __typename?: 'StateDependency', key: string, description?: string | null, optional: boolean, demand?: { __typename?: 'StateDemand', app?: string | null, hash?: any | null, key?: string | null, protocols?: Array<string> | null, matches?: Array<(
+      { __typename?: 'PortMatch' }
+      & BlokEditorPortMatchFragment
+    )> | null } | null };
+
+export type BlokEditorDependencyFragment = { __typename?: 'BlokDependency', id: string, key: string, description?: string | null, appFilter?: string | null, versionFilter?: string | null, optional: boolean, autoResolvable: boolean, minViableInstances?: number | null, maxViableInstances?: number | null, actionDependencies: Array<(
+    { __typename?: 'ActionDependency' }
+    & BlokEditorActionDependencyFragment
+  )>, stateDependencies: Array<(
+    { __typename?: 'StateDependency' }
+    & BlokEditorStateDependencyFragment
+  )> };
+
+export type BlokEditorFragment = { __typename?: 'Blok', id: string, name: string, description?: string | null, context: ComponentContext, provided: boolean, componentTree: any, demoState: any, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, args: Array<(
+    { __typename?: 'ArgPort' }
+    & ArgPortFragment
+  )>, dependencies: Array<(
+    { __typename?: 'BlokDependency' }
+    & BlokEditorDependencyFragment
+  )> };
+
+export type BlokRevisionListItemFragment = { __typename?: 'BlokRevision', id: string, number: number, message?: string | null, createdAt: any, hash: string, author?: { __typename?: 'User', sub: string } | null, task?: { __typename?: 'Task', id: string } | null, parent?: { __typename?: 'BlokRevision', id: string } | null };
 
 export type ClientFragment = { __typename?: 'Client', id: string, clientId: string };
 
@@ -7998,6 +8209,72 @@ export type UpdateBlokMutation = { __typename?: 'Mutation', updateBlok: (
     & BlokFragment
   ) };
 
+export type CreateEditorBlokMutationVariables = Exact<{
+  input: CreateBlokInput;
+}>;
+
+
+export type CreateEditorBlokMutation = { __typename?: 'Mutation', createBlok: (
+    { __typename?: 'Blok' }
+    & BlokEditorFragment
+  ) };
+
+export type UpdateEditorBlokMutationVariables = Exact<{
+  input: UpdateBlokInput;
+}>;
+
+
+export type UpdateEditorBlokMutation = { __typename?: 'Mutation', updateBlok: (
+    { __typename?: 'Blok' }
+    & BlokEditorFragment
+  ) };
+
+export type EditBlokMutationVariables = Exact<{
+  input: EditBlokInput;
+}>;
+
+
+export type EditBlokMutation = { __typename?: 'Mutation', editBlok: { __typename?: 'BlokEdit', applied: boolean, forked: boolean, blok: (
+      { __typename?: 'Blok' }
+      & BlokEditorFragment
+    ), revision?: (
+      { __typename?: 'BlokRevision' }
+      & BlokRevisionListItemFragment
+    ) | null, diagnostics: Array<(
+      { __typename?: 'Diagnostic' }
+      & BlokDiagnosticFragment
+    )> } };
+
+export type CheckBlokMutationVariables = Exact<{
+  input: EditBlokInput;
+}>;
+
+
+export type CheckBlokMutation = { __typename?: 'Mutation', editBlok: { __typename?: 'BlokEdit', applied: boolean, diagnostics: Array<(
+      { __typename?: 'Diagnostic' }
+      & BlokDiagnosticFragment
+    )> } };
+
+export type RevertBlokMutationVariables = Exact<{
+  input: RevertBlokInput;
+}>;
+
+
+export type RevertBlokMutation = { __typename?: 'Mutation', revertBlok: (
+    { __typename?: 'BlokRevision' }
+    & BlokRevisionListItemFragment
+  ) };
+
+export type PinMaterializedBlokMutationVariables = Exact<{
+  input: PinMaterializedBlokInput;
+}>;
+
+
+export type PinMaterializedBlokMutation = { __typename?: 'Mutation', pinMaterializedBlok: (
+    { __typename?: 'MaterializedBlok' }
+    & MaterializedBlokFragment
+  ) };
+
 export type ForkBlokMutationVariables = Exact<{
   input: ForkBlokInput;
 }>;
@@ -8727,6 +9004,28 @@ export type LogoBlokQueryVariables = Exact<{
 
 
 export type LogoBlokQuery = { __typename?: 'Query', blok: { __typename?: 'Blok', id: string, hash: string, componentTree: any, demoState: any } };
+
+export type BlokEditorQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type BlokEditorQuery = { __typename?: 'Query', blok: (
+    { __typename?: 'Blok' }
+    & BlokEditorFragment
+  ) };
+
+export type BlokRevisionsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  limit: Scalars['Int']['input'];
+  offset: Scalars['Int']['input'];
+}>;
+
+
+export type BlokRevisionsQuery = { __typename?: 'Query', blok: { __typename?: 'Blok', id: string, provided: boolean, head?: { __typename?: 'BlokRevision', id: string, number: number } | null, revisions: Array<(
+      { __typename?: 'BlokRevision' }
+      & BlokRevisionListItemFragment
+    )> } };
 
 export type ClientsQueryVariables = Exact<{
   pagination?: InputMaybe<OffsetPaginationInput>;
@@ -11082,6 +11381,132 @@ export const OpenableBlokFragmentDoc = gql`
   }
 }
     `;
+export const BlokEditorPortMatchLeafFragmentDoc = gql`
+    fragment BlokEditorPortMatchLeaf on PortMatch {
+  at
+  key
+  kind
+  identifier
+  nullable
+  dimension
+}
+    `;
+export const BlokEditorPortMatchFragmentDoc = gql`
+    fragment BlokEditorPortMatch on PortMatch {
+  ...BlokEditorPortMatchLeaf
+  children {
+    ...BlokEditorPortMatchLeaf
+    children {
+      ...BlokEditorPortMatchLeaf
+      children {
+        key
+      }
+    }
+  }
+}
+    ${BlokEditorPortMatchLeafFragmentDoc}`;
+export const BlokEditorActionDependencyFragmentDoc = gql`
+    fragment BlokEditorActionDependency on ActionDependency {
+  key
+  description
+  optional
+  demand {
+    app
+    argMatches {
+      ...BlokEditorPortMatch
+    }
+    forceArgLength
+    forceReturnLength
+    hash
+    idempotent
+    key
+    name
+    protocols
+    pure
+    returnMatches {
+      ...BlokEditorPortMatch
+    }
+    stateful
+    version
+  }
+}
+    ${BlokEditorPortMatchFragmentDoc}`;
+export const BlokEditorStateDependencyFragmentDoc = gql`
+    fragment BlokEditorStateDependency on StateDependency {
+  key
+  description
+  optional
+  demand {
+    app
+    hash
+    key
+    matches {
+      ...BlokEditorPortMatch
+    }
+    protocols
+  }
+}
+    ${BlokEditorPortMatchFragmentDoc}`;
+export const BlokEditorDependencyFragmentDoc = gql`
+    fragment BlokEditorDependency on BlokDependency {
+  id
+  key
+  description
+  appFilter
+  versionFilter
+  optional
+  autoResolvable
+  minViableInstances
+  maxViableInstances
+  actionDependencies {
+    ...BlokEditorActionDependency
+  }
+  stateDependencies {
+    ...BlokEditorStateDependency
+  }
+}
+    ${BlokEditorActionDependencyFragmentDoc}
+${BlokEditorStateDependencyFragmentDoc}`;
+export const BlokEditorFragmentDoc = gql`
+    fragment BlokEditor on Blok {
+  id
+  name
+  description
+  context
+  provided
+  head {
+    id
+    number
+  }
+  componentTree
+  demoState
+  args {
+    ...ArgPort
+  }
+  dependencies {
+    ...BlokEditorDependency
+  }
+}
+    ${ArgPortFragmentDoc}
+${BlokEditorDependencyFragmentDoc}`;
+export const BlokRevisionListItemFragmentDoc = gql`
+    fragment BlokRevisionListItem on BlokRevision {
+  id
+  number
+  message
+  createdAt
+  hash
+  author {
+    sub
+  }
+  task {
+    id
+  }
+  parent {
+    id
+  }
+}
+    `;
 export const ClientFragmentDoc = gql`
     fragment Client on Client {
   id
@@ -11118,6 +11543,10 @@ export const BlokFragmentDoc = gql`
   origin
   originHash
   provided
+  head {
+    id
+    number
+  }
   app {
     id
     identifier
@@ -11170,6 +11599,17 @@ export const MaterializedBlokFragmentDoc = gql`
   blok {
     ...Blok
   }
+  revision {
+    id
+    number
+    componentTree
+    demoState
+  }
+  pinnedRevision {
+    id
+    number
+  }
+  unboundDependencies
   agentMappings {
     key
     agent {
@@ -13598,6 +14038,219 @@ export function useUpdateBlokMutation(baseOptions?: ApolloReactHooks.MutationHoo
 export type UpdateBlokMutationHookResult = ReturnType<typeof useUpdateBlokMutation>;
 export type UpdateBlokMutationResult = Apollo.MutationResult<UpdateBlokMutation>;
 export type UpdateBlokMutationOptions = Apollo.BaseMutationOptions<UpdateBlokMutation, UpdateBlokMutationVariables>;
+export const CreateEditorBlokDocument = gql`
+    mutation CreateEditorBlok($input: CreateBlokInput!) {
+  createBlok(input: $input) {
+    ...BlokEditor
+  }
+}
+    ${BlokEditorFragmentDoc}`;
+export type CreateEditorBlokMutationFn = Apollo.MutationFunction<CreateEditorBlokMutation, CreateEditorBlokMutationVariables>;
+
+/**
+ * __useCreateEditorBlokMutation__
+ *
+ * To run a mutation, you first call `useCreateEditorBlokMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateEditorBlokMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createEditorBlokMutation, { data, loading, error }] = useCreateEditorBlokMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCreateEditorBlokMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CreateEditorBlokMutation, CreateEditorBlokMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CreateEditorBlokMutation, CreateEditorBlokMutationVariables>(CreateEditorBlokDocument, options);
+      }
+export type CreateEditorBlokMutationHookResult = ReturnType<typeof useCreateEditorBlokMutation>;
+export type CreateEditorBlokMutationResult = Apollo.MutationResult<CreateEditorBlokMutation>;
+export type CreateEditorBlokMutationOptions = Apollo.BaseMutationOptions<CreateEditorBlokMutation, CreateEditorBlokMutationVariables>;
+export const UpdateEditorBlokDocument = gql`
+    mutation UpdateEditorBlok($input: UpdateBlokInput!) {
+  updateBlok(input: $input) {
+    ...BlokEditor
+  }
+}
+    ${BlokEditorFragmentDoc}`;
+export type UpdateEditorBlokMutationFn = Apollo.MutationFunction<UpdateEditorBlokMutation, UpdateEditorBlokMutationVariables>;
+
+/**
+ * __useUpdateEditorBlokMutation__
+ *
+ * To run a mutation, you first call `useUpdateEditorBlokMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateEditorBlokMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateEditorBlokMutation, { data, loading, error }] = useUpdateEditorBlokMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateEditorBlokMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<UpdateEditorBlokMutation, UpdateEditorBlokMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<UpdateEditorBlokMutation, UpdateEditorBlokMutationVariables>(UpdateEditorBlokDocument, options);
+      }
+export type UpdateEditorBlokMutationHookResult = ReturnType<typeof useUpdateEditorBlokMutation>;
+export type UpdateEditorBlokMutationResult = Apollo.MutationResult<UpdateEditorBlokMutation>;
+export type UpdateEditorBlokMutationOptions = Apollo.BaseMutationOptions<UpdateEditorBlokMutation, UpdateEditorBlokMutationVariables>;
+export const EditBlokDocument = gql`
+    mutation EditBlok($input: EditBlokInput!) {
+  editBlok(input: $input) {
+    applied
+    forked
+    blok {
+      ...BlokEditor
+    }
+    revision {
+      ...BlokRevisionListItem
+    }
+    diagnostics {
+      ...BlokDiagnostic
+    }
+  }
+}
+    ${BlokEditorFragmentDoc}
+${BlokRevisionListItemFragmentDoc}
+${BlokDiagnosticFragmentDoc}`;
+export type EditBlokMutationFn = Apollo.MutationFunction<EditBlokMutation, EditBlokMutationVariables>;
+
+/**
+ * __useEditBlokMutation__
+ *
+ * To run a mutation, you first call `useEditBlokMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEditBlokMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [editBlokMutation, { data, loading, error }] = useEditBlokMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useEditBlokMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<EditBlokMutation, EditBlokMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<EditBlokMutation, EditBlokMutationVariables>(EditBlokDocument, options);
+      }
+export type EditBlokMutationHookResult = ReturnType<typeof useEditBlokMutation>;
+export type EditBlokMutationResult = Apollo.MutationResult<EditBlokMutation>;
+export type EditBlokMutationOptions = Apollo.BaseMutationOptions<EditBlokMutation, EditBlokMutationVariables>;
+export const CheckBlokDocument = gql`
+    mutation CheckBlok($input: EditBlokInput!) {
+  editBlok(input: $input) {
+    applied
+    diagnostics {
+      ...BlokDiagnostic
+    }
+  }
+}
+    ${BlokDiagnosticFragmentDoc}`;
+export type CheckBlokMutationFn = Apollo.MutationFunction<CheckBlokMutation, CheckBlokMutationVariables>;
+
+/**
+ * __useCheckBlokMutation__
+ *
+ * To run a mutation, you first call `useCheckBlokMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCheckBlokMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [checkBlokMutation, { data, loading, error }] = useCheckBlokMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useCheckBlokMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<CheckBlokMutation, CheckBlokMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<CheckBlokMutation, CheckBlokMutationVariables>(CheckBlokDocument, options);
+      }
+export type CheckBlokMutationHookResult = ReturnType<typeof useCheckBlokMutation>;
+export type CheckBlokMutationResult = Apollo.MutationResult<CheckBlokMutation>;
+export type CheckBlokMutationOptions = Apollo.BaseMutationOptions<CheckBlokMutation, CheckBlokMutationVariables>;
+export const RevertBlokDocument = gql`
+    mutation RevertBlok($input: RevertBlokInput!) {
+  revertBlok(input: $input) {
+    ...BlokRevisionListItem
+  }
+}
+    ${BlokRevisionListItemFragmentDoc}`;
+export type RevertBlokMutationFn = Apollo.MutationFunction<RevertBlokMutation, RevertBlokMutationVariables>;
+
+/**
+ * __useRevertBlokMutation__
+ *
+ * To run a mutation, you first call `useRevertBlokMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRevertBlokMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [revertBlokMutation, { data, loading, error }] = useRevertBlokMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useRevertBlokMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<RevertBlokMutation, RevertBlokMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<RevertBlokMutation, RevertBlokMutationVariables>(RevertBlokDocument, options);
+      }
+export type RevertBlokMutationHookResult = ReturnType<typeof useRevertBlokMutation>;
+export type RevertBlokMutationResult = Apollo.MutationResult<RevertBlokMutation>;
+export type RevertBlokMutationOptions = Apollo.BaseMutationOptions<RevertBlokMutation, RevertBlokMutationVariables>;
+export const PinMaterializedBlokDocument = gql`
+    mutation PinMaterializedBlok($input: PinMaterializedBlokInput!) {
+  pinMaterializedBlok(input: $input) {
+    ...MaterializedBlok
+  }
+}
+    ${MaterializedBlokFragmentDoc}`;
+export type PinMaterializedBlokMutationFn = Apollo.MutationFunction<PinMaterializedBlokMutation, PinMaterializedBlokMutationVariables>;
+
+/**
+ * __usePinMaterializedBlokMutation__
+ *
+ * To run a mutation, you first call `usePinMaterializedBlokMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `usePinMaterializedBlokMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [pinMaterializedBlokMutation, { data, loading, error }] = usePinMaterializedBlokMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function usePinMaterializedBlokMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<PinMaterializedBlokMutation, PinMaterializedBlokMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<PinMaterializedBlokMutation, PinMaterializedBlokMutationVariables>(PinMaterializedBlokDocument, options);
+      }
+export type PinMaterializedBlokMutationHookResult = ReturnType<typeof usePinMaterializedBlokMutation>;
+export type PinMaterializedBlokMutationResult = Apollo.MutationResult<PinMaterializedBlokMutation>;
+export type PinMaterializedBlokMutationOptions = Apollo.BaseMutationOptions<PinMaterializedBlokMutation, PinMaterializedBlokMutationVariables>;
 export const ForkBlokDocument = gql`
     mutation ForkBlok($input: ForkBlokInput!) {
   forkBlok(input: $input) {
@@ -16233,6 +16886,86 @@ export function useLogoBlokLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHoo
 export type LogoBlokQueryHookResult = ReturnType<typeof useLogoBlokQuery>;
 export type LogoBlokLazyQueryHookResult = ReturnType<typeof useLogoBlokLazyQuery>;
 export type LogoBlokQueryResult = Apollo.QueryResult<LogoBlokQuery, LogoBlokQueryVariables>;
+export const BlokEditorDocument = gql`
+    query BlokEditor($id: ID!) {
+  blok(id: $id) {
+    ...BlokEditor
+  }
+}
+    ${BlokEditorFragmentDoc}`;
+
+/**
+ * __useBlokEditorQuery__
+ *
+ * To run a query within a React component, call `useBlokEditorQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBlokEditorQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBlokEditorQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useBlokEditorQuery(baseOptions: ApolloReactHooks.QueryHookOptions<BlokEditorQuery, BlokEditorQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BlokEditorQuery, BlokEditorQueryVariables>(BlokEditorDocument, options);
+      }
+export function useBlokEditorLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BlokEditorQuery, BlokEditorQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BlokEditorQuery, BlokEditorQueryVariables>(BlokEditorDocument, options);
+        }
+export type BlokEditorQueryHookResult = ReturnType<typeof useBlokEditorQuery>;
+export type BlokEditorLazyQueryHookResult = ReturnType<typeof useBlokEditorLazyQuery>;
+export type BlokEditorQueryResult = Apollo.QueryResult<BlokEditorQuery, BlokEditorQueryVariables>;
+export const BlokRevisionsDocument = gql`
+    query BlokRevisions($id: ID!, $limit: Int!, $offset: Int!) {
+  blok(id: $id) {
+    id
+    provided
+    head {
+      id
+      number
+    }
+    revisions(limit: $limit, offset: $offset) {
+      ...BlokRevisionListItem
+    }
+  }
+}
+    ${BlokRevisionListItemFragmentDoc}`;
+
+/**
+ * __useBlokRevisionsQuery__
+ *
+ * To run a query within a React component, call `useBlokRevisionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useBlokRevisionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useBlokRevisionsQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *      limit: // value for 'limit'
+ *      offset: // value for 'offset'
+ *   },
+ * });
+ */
+export function useBlokRevisionsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<BlokRevisionsQuery, BlokRevisionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<BlokRevisionsQuery, BlokRevisionsQueryVariables>(BlokRevisionsDocument, options);
+      }
+export function useBlokRevisionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<BlokRevisionsQuery, BlokRevisionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<BlokRevisionsQuery, BlokRevisionsQueryVariables>(BlokRevisionsDocument, options);
+        }
+export type BlokRevisionsQueryHookResult = ReturnType<typeof useBlokRevisionsQuery>;
+export type BlokRevisionsLazyQueryHookResult = ReturnType<typeof useBlokRevisionsLazyQuery>;
+export type BlokRevisionsQueryResult = Apollo.QueryResult<BlokRevisionsQuery, BlokRevisionsQueryVariables>;
 export const ClientsDocument = gql`
     query Clients($pagination: OffsetPaginationInput, $filters: ClientFilter, $ordering: [ClientOrder!]) {
   clients(ordering: $ordering, pagination: $pagination, filters: $filters) {

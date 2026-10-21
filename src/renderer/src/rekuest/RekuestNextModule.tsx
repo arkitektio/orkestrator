@@ -7,6 +7,8 @@ import AgentPage from "./pages/AgentPage";
 import TaskPage from "./pages/TaskPage";
 import Blok from "./pages/Blok";
 import Bloks from "./pages/Bloks";
+import ProvidedBloks from "./pages/ProvidedBloks";
+import { EditBlokEditorPage, NewBlokEditorPage } from "./pages/BlokEditor";
 import Dashboard from "./pages/Dashboard";
 import Dashboards from "./pages/Dashboards";
 import Dependency from "./pages/Dependency";
@@ -16,6 +18,7 @@ import Implementation from "./pages/ImplementationPage";
 import MemoryShelve from "./pages/MemoryShelve";
 import MaterializedBlokPage from "./pages/MaterializedBlok";
 import MaterializedBloks from "./pages/MaterializedBloks";
+import ProvidedMaterializedBloks from "./pages/ProvidedMaterializedBloks";
 import Shortcut from "./pages/Shortcut";
 import Shortcuts from "./pages/Shortcuts";
 import AutomationsPage from "./pages/AutomationsPage";
@@ -101,8 +104,12 @@ const Module: React.FC = () => {
         <Route path="interfaces/:id" element={<InterfacePage />} />
         <Route path="interfaces" element={<InterfacesPage />} />
         <Route path="memoryshelves/:id" element={<MemoryShelve />} />
+        <Route path="bloks/provided" element={<ProvidedBloks />} />
+        <Route path="bloks/new" element={<NewBlokEditorPage />} />
+        <Route path="bloks/:id/edit" element={<EditBlokEditorPage />} />
         <Route path="bloks/:id" element={<Blok />} />
         <Route path="bloks" element={<Bloks />} />
+        <Route path="materialized_bloks/provided" element={<ProvidedMaterializedBloks />} />
         <Route path="materialized_bloks" element={<MaterializedBloks />} />
         <Route path="materialized_bloks/:id" element={<MaterializedBlokPage />} />
         <Route path="dependencies/:id" element={<Dependency />} />
