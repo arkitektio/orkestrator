@@ -1,3 +1,4 @@
+import type { BlokComponentDefinition } from "@/core/blok/renderer/runtime";
 import type { ComponentType } from "react";
 
 import type { RoleRequirement } from "@/core/connection/roles";
@@ -105,6 +106,12 @@ export type ModuleBuiltins = {
   displays?: Record<string, ComponentType<DisplayWidgetProps>>;
   /** EXTENSION: interactive viewers, by the identifier they open (a scene, an image). */
   viewers?: Record<string, ComponentType<ViewerWidgetProps>>;
+  /**
+   * EXTENSION: blok components the module adds to the app's catalog (mikro's
+   * `MikroScene` parts), so an app's blok can compose what the module renders.
+   * Their definitions must import nothing heavy: the catalog is exported offline.
+   */
+  bloks?: readonly BlokComponentDefinition[];
   /** EXTENSION: hover cards, by identifier (the spec renders hovers from `describe`). */
   hovers?: Record<string, ComponentType<{ object: any }>>;
   /** `dialog` surfaces, by dialog id. */

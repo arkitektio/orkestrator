@@ -3,6 +3,7 @@ import React, { type ComponentType, type ReactNode } from "react";
 import { Arkitekt, serviceGuard } from "@/core/connection/arkitekt/host";
 import { DialogDescription, DialogTitle } from "@/core/ui/dialog";
 import type { DisplayWidgetProps, ViewerWidgetProps } from "@/core/smart/display/registry";
+import type { BlokComponentDefinition } from "@/core/blok/renderer/runtime";
 import type { FileDownloader } from "@/core/modules/export/fileDownloaders";
 import type { Action } from "@/core/smart/localactions/LocalActionProvider";
 import type {
@@ -233,6 +234,18 @@ export const MODULE_VIEWERS = derivedRecord(() => {
   }
   return viewers;
 });
+
+/**
+ * Blok components, each rendered behind its module's guard: a mikro scene part
+ * runs mikro's queries. `app/modules/install` adds them to the blok catalog.
+ */
+export const moduleBloks = (): BlokComponentDefinition[] =>
+  (moduleDefinitions() as readonly ModuleDefinition[]).flatMap((definition) =>
+    (definition.builtins.bloks ?? []).map((blok) => ({
+      ...blok,
+      render: guarded(namespaceOf(definition), blok.render),
+    })),
+  );
 
 export type HoverCardEntry = {
   Component: ComponentType<{ object: any }>;

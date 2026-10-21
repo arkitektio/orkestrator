@@ -8,6 +8,8 @@ import { KRAPH_MODULE } from "@/kraph/module";
 import { KUVERT_MODULE } from "@/kuvert/module";
 import type { ModuleBuiltins } from "@/core/modules/host/define";
 import { registerModules } from "@/core/modules/host/host";
+import { moduleBloks } from "@/core/modules/registries";
+import { addBlokComponents } from "@/core/blok/renderer/catalog";
 import { LOK_MODULE } from "@/lok/module";
 import { LOKATE_MODULE } from "@/lokate/module";
 import { LOVEKIT_MODULE } from "@/lovekit/module";
@@ -42,11 +44,17 @@ export const MODULE_DEFINITIONS = [
 ] as const;
 
 const unregister = registerModules(MODULE_DEFINITIONS);
+// The blok components the modules bring join the one catalog every blok is
+// rendered, registered and exported against.
+const removeBloks = addBlokComponents(moduleBloks());
 
 // Dev: editing a module hot-reloads this file (through AppProvider's refresh
 // boundary) while the module host store keeps its state, so the new run would
 // be refused as a duplicate. The old run leaves the host first.
-import.meta.hot?.dispose(unregister);
+import.meta.hot?.dispose(() => {
+  removeBloks();
+  unregister();
+});
 
 type UnionToIntersection<U> = (U extends unknown ? (value: U) => void : never) extends (
   value: infer I,
