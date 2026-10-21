@@ -5,7 +5,7 @@ import {
   renderChildList,
   useControlledValue,
 } from "@/core/blok/renderer/bloks/shared";
-import { useBlok, useEventAction, useValue, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
+import { useBinding, useBlok, useEventAction, useValue, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
 import { cn } from "@/core/util/utils";
 import { useGetSceneQuery, type SceneFragment } from "@/mikro/api/graphql";
 import { Scene } from "@/mikro/components/scene/Scene";
@@ -99,8 +99,22 @@ const SceneWiring = ({ component, sceneId }: { component: BlokRenderArgs["compon
     onLayersChange,
   });
 
+  useBoundWorld(useValue(blok.bindWorld));
   useLiveScene(sceneId, live);
   return live ? <LiveCollections /> : null;
+};
+
+const WORLD = "@mikro/coordinatesystem";
+
+/** Keeps `bindWorld` on the scene's world space. Written only when it differs: a write is a new binding. */
+const useBoundWorld = (bind: string | undefined) => {
+  const binding = useBinding(bind);
+  const world = React.useContext(MikroSceneContext)?.worldCoordinateSystem?.id ?? null;
+  const held = asStructure(binding?.value)?.object ?? null;
+  React.useEffect(() => {
+    if (!binding || String(held ?? "") === String(world ?? "")) return;
+    binding.setValue(world ? { object: world, __identifier: WORLD } : null);
+  }, [binding, held, world]);
 };
 
 const LiveCollections = () => (

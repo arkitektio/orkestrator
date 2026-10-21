@@ -61,6 +61,9 @@ export const mikroSceneSchema = z
     bind: bindSchema.describe(
       'Where the selection is written: {"annotation", "lens"} (structure references), or null when nothing is selected.',
     ),
+    bindWorld: bindSchema.describe(
+      'Where the scene\'s world coordinate system is written, a structure reference ({"object", "__identifier": "@mikro/coordinatesystem"}), once the scene has loaded. What a picker of what this scene can show asks the server with: `lenses(filters: {placeableIn: {space: $world}})`, `$world` read from this path.',
+    ),
     live: boolSchema.describe(
       "Follow the scene as others change it, an action writing a layer included. Defaults to true.",
     ),

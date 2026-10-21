@@ -13,7 +13,7 @@ const handlers: { current: Record<string, ((payload: unknown) => void) | undefin
 // The scene itself is tested in `components/scene`: here, what the parts hand it and what they do with its events.
 vi.mock("@/mikro/api/graphql", () => ({
   useGetSceneQuery: ({ skip }: { skip: boolean }) =>
-    skip ? { data: undefined, loading: false } : { data: { scene: { id: "s1", name: "AIS" } }, loading: false },
+    skip ? { data: undefined, loading: false } : { data: { scene: { id: "s1", name: "AIS", worldCoordinateSystem: { id: "w1" } } }, loading: false },
 }));
 vi.mock("@/mikro/components/scene/Scene", () => {
   const Pass = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
@@ -108,6 +108,20 @@ describe("MikroScene", () => {
     const lens = { __identifier: "@mikro/arraylens", object: "l1" };
     act(() => handlers.current.onSelect?.({ annotation, annotations: [annotation], lens }));
     expect(record).toHaveBeenCalledWith({ annotation, lens });
+  });
+
+  it("writes the scene's world space to bindWorld, for a picker of what the scene can show", async () => {
+    renderBlokDocument(catalog, [
+      {
+        id: "scene",
+        component: "MikroScene",
+        props: [scene, { key: "bindWorld", static_value: "form.world" }, { key: "onPick", ...recordAt("form.world") }],
+        children: [view],
+      },
+    ]);
+    await screen.findByTestId("viewport");
+    act(() => handlers.current.onPick?.({ layer: "l1", world: null, voxel: [0, 0, 0], lens: null }));
+    expect(record).toHaveBeenCalledWith({ object: "w1", __identifier: "@mikro/coordinatesystem" });
   });
 
   it("listens only for the events the blok declares", async () => {
