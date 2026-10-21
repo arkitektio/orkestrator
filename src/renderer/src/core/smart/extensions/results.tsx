@@ -12,8 +12,22 @@ import type { Structure } from "@/core/types";
  *
  * The sink is read at render and kept by the run, not looked up when it ends:
  * the menu that started it is usually gone by then.
+ *
+ * `origin` says which run the results came from: the action and the args the
+ * menu filled in (the structures it ran on). A sink that wants a rerun to
+ * replace what an earlier run added keys on it (`resultOriginKey`).
  */
-export type ResultSink = (results: Structure[]) => void;
+export type ResultSink = (results: Structure[], origin?: ResultOrigin) => void;
+
+/** The action a run started, and the args the menu filled in for it. */
+export type ResultOrigin = { action: string; on: Record<string, unknown> };
+
+/** One string per (action, args): the same action on the same objects, whatever else the form changed. */
+export const resultOriginKey = (origin: ResultOrigin): string =>
+  `${origin.action}|${Object.keys(origin.on)
+    .sort()
+    .map((key) => `${key}=${JSON.stringify(origin.on[key])}`)
+    .join("&")}`;
 
 const ResultSinkContext = React.createContext<ResultSink | null>(null);
 

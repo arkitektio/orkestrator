@@ -44,7 +44,8 @@ export const capabilitiesFrom = (data: AddLayerLensCapabilitiesQuery | undefined
     : null;
 
 export type StageOutcome =
-  | { status: "added"; kind: LayerKind; label: string }
+  /** `layer` is the new layer's id, when the server answered with one. */
+  | { status: "added"; kind: LayerKind; label: string; layer?: string }
   /** The scene already draws it (a rerun hands the same lens back). */
   | { status: "present"; label: string }
   /** The world does not reach it, or nothing here would draw it. */
@@ -139,12 +140,14 @@ export const stageLens = async (
   const request = lensLayerRequest({ kind, scene: input.scene, lens: lens.id, lenses, defaults: suggestion.defaults });
   if (!request) return { status: "unplaceable" };
 
-  await client.mutate({
+  const created = await client.mutate({
     mutation: request.document,
     variables: request.variables,
     // The scene view reinitializes its stores when GetScene changes, so the
     // layer appears without any store plumbing (as the form's does).
     refetchQueries: ["GetScene"],
   } as Parameters<typeof client.mutate>[0]);
-  return { status: "added", kind, label };
+  // Every create mutation answers with the one layer it made, under its own field name.
+  const answered = Object.values((created.data ?? {}) as Record<string, { id?: string } | null>)[0];
+  return { status: "added", kind, label, layer: answered?.id };
 };

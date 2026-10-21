@@ -167,7 +167,8 @@ describe("returned structures and the result sink", () => {
   it("hands the sink the last yield's structures once, on completion, and passes every event on", () => {
     const sink = vi.fn();
     const onEvent = vi.fn();
-    const wrapped = deliverResults(sink, [image], onEvent);
+    const origin = { action: "a1", on: { image: { __identifier: "@test/image", object: "7" } } };
+    const wrapped = deliverResults(sink, [image], onEvent, origin);
 
     wrapped(event(TaskEventKind.Progress));
     wrapped(event(TaskEventKind.Yield, { out: { __identifier: "@test/image", object: "1" } }));
@@ -175,7 +176,7 @@ describe("returned structures and the result sink", () => {
     wrapped(event(TaskEventKind.Completed));
 
     expect(sink).toHaveBeenCalledTimes(1);
-    expect(sink).toHaveBeenCalledWith([{ identifier: "@test/image", id: "1" }]);
+    expect(sink).toHaveBeenCalledWith([{ identifier: "@test/image", id: "1" }], origin);
     expect(onEvent).toHaveBeenCalledTimes(3);
   });
 

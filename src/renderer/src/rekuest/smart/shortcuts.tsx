@@ -160,7 +160,7 @@ export const ShortcutButton = (
           target: { action: shortcut.action.id },
           args: { ...keys, ...shortcut.savedArgs },
           hidden: { ...keys, ...shortcut.savedArgs },
-          track: runTracker(sink, shortcut.returns, doStuff),
+          track: runTracker(sink, shortcut.returns, doStuff, { action: shortcut.action.id, on: keys }),
         });
         return;
       }
@@ -172,6 +172,7 @@ export const ShortcutButton = (
         sink,
         shortcut.returns,
         open ? thenOpen(open, doStuff) : doStuff,
+        { action: shortcut.action.id, on: keys },
       )(reference);
 
       try {

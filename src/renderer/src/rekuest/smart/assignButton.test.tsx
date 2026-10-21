@@ -164,7 +164,12 @@ describe("AssignButton", () => {
     tracked!({ kind: "YIELD", returns: { return0: { __identifier: "@mikro/arraylens", object: "42" } } });
     expect(sink).not.toHaveBeenCalled();
     tracked!({ kind: "COMPLETED", returns: null });
-    expect(sink).toHaveBeenCalledWith([{ identifier: "@mikro/arraylens", id: "42" }]);
+    // With where it came from: the action and what the menu filled in, so a
+    // scene can replace what an earlier run of the same thing added.
+    expect(sink).toHaveBeenCalledWith(
+      [{ identifier: "@mikro/arraylens", id: "42" }],
+      { action: cropping.id, on: { image: expect.anything() } },
+    );
   });
 
   it("follows a run that needed the dialog like a direct one: results to the sink, then onDone", async () => {
@@ -193,7 +198,11 @@ describe("AssignButton", () => {
     expect(tracked).not.toBeNull();
 
     tracked!({ kind: "COMPLETED", returns: { return0: { __identifier: "@mikro/arraylens", object: "42" } } });
-    expect(sink).toHaveBeenCalledWith([{ identifier: "@mikro/arraylens", id: "42" }]);
+    // The menu's args only: what the dialog added (sigma) is a setting, not the object.
+    expect(sink).toHaveBeenCalledWith(
+      [{ identifier: "@mikro/arraylens", id: "42" }],
+      { action: wider.id, on: { image: expect.anything() } },
+    );
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(assign).not.toHaveBeenCalled();
   });

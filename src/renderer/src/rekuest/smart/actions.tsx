@@ -175,9 +175,14 @@ export const DirectImplementationAssignment = (
 
     // The tracker lives in the "Run on" picker, which closes the instant the
     // run starts: on the rail too (`runTracker`), or it runs with no indicator.
-    const track = runTracker(sink, action.returns, (event) => {
-      props.onDone?.({ event, kind: "action" });
-    });
+    const track = runTracker(
+      sink,
+      action.returns,
+      (event) => {
+        props.onDone?.({ event, kind: "action" });
+      },
+      { action: action.id, on: keys },
+    );
 
     const unknownKeys = action.args.filter((arg) => arg.key && !keys[arg.key]);
     if (unknownKeys.length >= 1) {
@@ -407,15 +412,18 @@ export const AssignButton = (
         target: { action: action.id },
         args: keys,
         hidden: keys,
-        track: runTracker(sink, action.returns, onEvent),
+        track: runTracker(sink, action.returns, onEvent, { action: action.id, on: keys }),
       });
       return;
     }
 
     const reference = uuidv4();
-    const untrack = runTracker(sink, action.returns, open ? thenOpen(open, onEvent) : onEvent)(
-      reference,
-    );
+    const untrack = runTracker(
+      sink,
+      action.returns,
+      open ? thenOpen(open, onEvent) : onEvent,
+      { action: action.id, on: keys },
+    )(reference);
 
     try {
       await assign(buildAssignInput({
@@ -544,13 +552,13 @@ export const BatchAssignButton = (
           target: { action: action.id },
           args: keys,
           hidden: keys,
-          track: runTracker(sink, action.returns, onEvent),
+          track: runTracker(sink, action.returns, onEvent, { action: action.id, on: keys }),
         });
         return;
       }
 
       const reference = uuidv4();
-      const untrack = runTracker(sink, action.returns, onEvent)(reference);
+      const untrack = runTracker(sink, action.returns, onEvent, { action: action.id, on: keys })(reference);
 
       try {
         await assign(buildAssignInput({

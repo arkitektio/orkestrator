@@ -73,6 +73,19 @@ describe("stageLens", () => {
     );
   });
 
+  it("answers with the layer the server made, so a rerun can replace it", async () => {
+    sections.mockReturnValue(rowOf(crop));
+    const { client, mutate } = clientWith([]);
+    mutate.mockResolvedValueOnce({ data: { createIntensityLayer: { id: "layer-9" } } } as never);
+
+    expect(await stageLens(client, registry, { scene: "s", lens: "42" })).toEqual({
+      status: "added",
+      kind: "INTENSITY",
+      label: "soma crop",
+      layer: "layer-9",
+    });
+  });
+
   it("adds nothing the scene already draws", async () => {
     sections.mockReturnValue(rowOf(crop));
     const { client, mutate } = clientWith([{ __typename: "IntensityLayer", id: "l1", lens: { id: "42", dataset: { id: "d" } } }]);

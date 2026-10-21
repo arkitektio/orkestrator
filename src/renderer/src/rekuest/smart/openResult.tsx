@@ -1,5 +1,5 @@
 import { RowIconButton } from "@/core/smart/extensions/CommandActionRow";
-import type { ResultSink } from "@/core/smart/extensions/results";
+import type { ResultOrigin, ResultSink } from "@/core/smart/extensions/results";
 import type { SmartContextProps } from "@/core/smart/extensions/types";
 import { smartRegistry } from "@/core/smart/registry";
 import { structure } from "@/core/smart/structure";
@@ -116,6 +116,7 @@ export const deliverResults = (
   sink: ResultSink | null,
   ports: readonly OpenableReturn[] | null | undefined,
   onEvent: OnTaskEvent,
+  origin?: ResultOrigin,
 ): OnTaskEvent => {
   if (!sink) return onEvent;
   let returns: unknown = null;
@@ -124,7 +125,7 @@ export const deliverResults = (
     onEvent(event);
     if (event.kind !== TaskEventKind.Completed) return;
     const results = returnedStructures(ports, returns);
-    if (results.length > 0) sink(results);
+    if (results.length > 0) sink(results, origin);
   };
 };
 
@@ -138,9 +139,10 @@ export const runTracker =
     sink: ResultSink | null,
     ports: readonly OpenableReturn[] | null | undefined,
     onEvent: OnTaskEvent,
+    origin?: ResultOrigin,
   ): AssignTrack =>
   (reference) =>
-    trackTask(reference, deliverResults(sink, ports, onEvent), { notifyGlobally: true });
+    trackTask(reference, deliverResults(sink, ports, onEvent, origin), { notifyGlobally: true });
 
 /** "Run, then open Image"; the port's label too when two returns share a type. */
 export const openResultLabel = (port: OpenableReturn, all: readonly OpenableReturn[]) => {
