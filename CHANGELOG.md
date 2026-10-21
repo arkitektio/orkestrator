@@ -1,3 +1,10 @@
+# [4.1.0](https://github.com/arkitektio/orkestrator/compare/v4.0.3...v4.1.0) (2026-10-21)
+
+
+### Features
+
+* **rekuest:** open a blok for an item ([813ab9a](https://github.com/arkitektio/orkestrator/commit/813ab9a681ec80c873f142ec3583e29b6b248f1e))
+
 ## [4.0.3](https://github.com/arkitektio/orkestrator/compare/v4.0.2...v4.0.3) (2026-10-20)
 
 
