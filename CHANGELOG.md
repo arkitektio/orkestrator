@@ -1,3 +1,10 @@
+# [4.4.0](https://github.com/arkitektio/orkestrator/compare/v4.3.0...v4.4.0) (2026-10-21)
+
+
+### Features
+
+* **blok:** gray out controls whose agent is offline or unbound ([4e996c4](https://github.com/arkitektio/orkestrator/commit/4e996c4ad8e5bc3c06366c3e2b31d01b27c3238c))
+
 # [4.3.0](https://github.com/arkitektio/orkestrator/compare/v4.2.1...v4.3.0) (2026-10-21)
 
 
