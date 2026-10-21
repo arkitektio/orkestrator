@@ -4,6 +4,8 @@ import { AssignDialog } from "./forms/assign/AssignForm";
 import { ExportToFileDialog } from "./dialogs/ExportToFileDialog";
 import { FireTriggerDialog } from "./dialogs/FireTriggerDialog";
 import { ForkBlokDialog } from "./dialogs/ForkBlokDialog";
+import { MaterializeBlokDialog } from "./dialogs/MaterializeBlokDialog";
+import { OpenBlokDialog } from "./dialogs/OpenBlokDialog";
 import { ReplyerAssignForm } from "./dialogs/ReplyerAssignForm";
 import { ReportBugDialog } from "./dialogs/ReportBugDialog";
 import { RerunLostDialog } from "./dialogs/RerunLostDialog";
@@ -37,6 +39,10 @@ export const REKUEST_DIALOGS = {
   updateagent: UpdateAgentForm,
   // a blok an app provides → a custom copy to edit or bind to other agents
   forkblok: prefersSize("small", ForkBlokDialog),
+  // a custom blok → bound to agents and materialized (the store's "Install")
+  materializeblok: prefersSize("medium", MaterializeBlokDialog),
+  // "Open in…" a blok whose args the selection leaves open: ask for the rest, then open it
+  openblok: prefersSize("medium", OpenBlokDialog),
   // a failed task → lok's report form, prefilled
   reportbug: ReportBugDialog,
   // a LOST task that may already have acted → confirm before running again

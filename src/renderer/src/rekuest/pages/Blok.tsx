@@ -5,17 +5,14 @@ import { LocalActionButton } from "@/core/ui/localactionbutton";
 import { RekuestAgent, RekuestBlok, RekuestMaterializedBlok } from "@/core/linkers";
 import { cn } from "@/core/util/utils";
 import DemoBlokRenderer from "@/rekuest/components/DemoBlokRenderer";
+import { ArgPortRows, SignatureColumn } from "@/rekuest/components/action/ActionSignature";
 import { useGetBlokQuery } from "../api/graphql";
 import { Button } from "@/core/ui/button";
 import { PageAction } from "@/core/ui/page-action";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/core/ui/dialog";
-import { MaterializeBlokForm } from "../forms/MaterializeBlokForm";
 import { GitFork } from "lucide-react";
-import { useState } from "react";
 import { REKUEST_HELP } from "../help";
 
 export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
-  const [open, setOpen] = useState(false);
   const { openDialog } = useDialog();
   // An app's agents keep a provided blok in step with their registrations:
   // it is forked, never edited, materialized or deleted by hand.
@@ -53,30 +50,9 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
             />
 
             <PageAction.Slot alwaysShow>
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="default">Materialize Blok</Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Materialize Blok</DialogTitle>
-                    </DialogHeader>
-                    {data.blok.dependencies && (
-                        <MaterializeBlokForm
-                            blokId={data.blok.id}
-                            dependencies={data.blok.dependencies.map((dependency) => ({
-                              id: dependency.id,
-                              key: dependency.key,
-                              description: dependency.description,
-                            }))}
-                          onMaterialized={(_materializedBlok) => {
-                                setOpen(false);
-                                // navigate to the materialized dashboard/blok here if applicable
-                            }}
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
+              <Button variant="default" onClick={() => openDialog("materializeblok", { id: data.blok.id })}>
+                Materialize Blok
+              </Button>
             </PageAction.Slot>
         </>
       )}
@@ -118,6 +94,17 @@ export const BlokPage = asDetailQueryRoute(useGetBlokQuery, ({ data }) => {
                 <p className="mt-1 text-sm font-medium">{data.blok.materializedBloks.length}</p>
               </div>
             </div>
+
+            {data.blok.args.length > 0 && (
+              <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
+                <SignatureColumn title="Opened for">
+                  <ArgPortRows ports={data.blok.args} />
+                </SignatureColumn>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Offered under "Tailored Interfaces" on what these take, and read at <span className="font-mono">@args.&lt;key&gt;</span>.
+                </p>
+              </div>
+            )}
 
             {provided && (
               <div className="grid gap-2 rounded-2xl border border-border/60 bg-background/70 p-4">

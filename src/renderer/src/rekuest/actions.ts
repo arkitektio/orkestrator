@@ -79,7 +79,7 @@ import {
 import type { ModuleServices } from '@/core/connection/arkitekt/host'
 import { buildDeleteAction } from '@/core/smart/localactions/builders/deleteAction'
 import { Action } from '@/core/smart/localactions/LocalActionProvider'
-import { AlarmClock, Ban, Bookmark, Copy, Eraser, FastForward, Hash, LogOut, PauseCircle, Pencil, Pin, Play, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
+import { AlarmClock, Ban, Bookmark, Copy, Download, Eraser, FastForward, Hash, LogOut, PauseCircle, Pencil, Pin, Play, RotateCcw, Share, ShieldCheck, ToggleLeft, Trash2, Upload, Zap } from 'lucide-react'
 import { toast } from "@/core/notify";
 import { isPausable, isResumable } from '@/rekuest/lib/taskStatus'
 import { initialFromSchedule, initialFromTrigger } from './components/automation/builder/initial'
@@ -180,6 +180,15 @@ export const REKUEST_ACTIONS: Record<string, RekuestAction> = {
       dialog.openDialog('forkblok', { id: data.blok.id, name: data.blok.name })
     },
     collections: ['io'],
+  },
+  'rekuest-materialize-blok': {
+    title: 'Materialize Blok',
+    description: 'Bind a custom blok to agents and open it',
+    icon: Download,
+    conditions: only('@rekuest/blok'),
+    execute: async ({ state, dialog }) => {
+      dialog.openDialog('materializeblok', { id: selected(state, '@rekuest/blok') })
+    },
   },
   'rekuest-delete-blok': {
     title: 'Delete Blok',

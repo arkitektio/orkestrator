@@ -11,6 +11,7 @@ import {
 import { cn } from "@/core/util/utils";
 import MaterializedBlokRenderer from "@/rekuest/components/MaterializedBlokRenderer";
 import { BlokArgsForm } from "@/rekuest/components/BlokArgsForm";
+import { ArgPortRows, SignatureColumn } from "@/rekuest/components/action/ActionSignature";
 import {
   BLOK_ARGS_PARAM,
   blokArgsSearch,
@@ -69,6 +70,12 @@ const BindingsSidebar = ({ materializedBlok }: { materializedBlok: MaterializedB
         <p className="text-xs text-muted-foreground">{materializedBlok.blok.description}</p>
       )}
     </div>
+
+    {materializedBlok.blok.args.length > 0 && (
+      <SignatureColumn title="Opened for">
+        <ArgPortRows ports={materializedBlok.blok.args} />
+      </SignatureColumn>
+    )}
 
     {materializedBlok.declaredBy && (
       <div className="flex flex-col gap-1">

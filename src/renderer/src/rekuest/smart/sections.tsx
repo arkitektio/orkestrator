@@ -27,7 +27,7 @@ import { ShortcutButton } from "./shortcuts";
 
 /**
  * The rekuest sections of the smart context menu: Shortcuts, Run, Batch
- * for a multi-selection, and Open in (the bloks whose args take the selection). No section lists implementations: an action row runs
+ * for a multi-selection, and Tailored Interfaces (the bloks whose args take the selection). No section lists implementations: an action row runs
  * on whichever agent can take it, and a stateful one with several asks which
  * (`AssignButton`, the "Run on" picker).
  *
@@ -225,7 +225,7 @@ export const REKUEST_BLOKS_SECTION: SmartContextSection<OpenableBlokFragment> = 
   id: "rekuest.bloks",
   palette: true,
   module: "rekuest",
-  title: "Open in",
+  title: "Tailored Interfaces",
   icon: AppWindow,
   priority: 45,
   tier: "remote",

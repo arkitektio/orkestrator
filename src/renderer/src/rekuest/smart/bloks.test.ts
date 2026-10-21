@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { OpenableBloksDocument, PortKind } from "@/rekuest/api/graphql";
+import { missingBlokArgs } from "@/rekuest/components/blokArgs";
 import { buildActionArgs } from "./actions";
 import { buildDemands } from "./demands";
 import { openableBloksVariables } from "./queries";
@@ -43,5 +44,18 @@ describe("Open in", () => {
         { __identifier: "@mikro/arraydataset", object: "8" },
       ],
     });
+  });
+
+  it("leaves to the form what the selection does not fill", () => {
+    const blok = {
+      id: "m3",
+      args: [
+        { key: "dataset", kind: PortKind.Structure, nullable: false },
+        { key: "channel", kind: PortKind.Int, nullable: false },
+        { key: "note", kind: PortKind.String, nullable: true },
+      ],
+    };
+    const args = buildActionArgs(blok, { objects: [dataset("7")] });
+    expect(missingBlokArgs(blok.args, args).map((port) => port.key)).toEqual(["channel"]);
   });
 });

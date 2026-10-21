@@ -54,7 +54,9 @@ export type MaterializeBlokFormProps = {
 export const MaterializeBlokForm = (
   props: MaterializeBlokFormProps,
 ) => {
-  const [materialize, { loading }] = useMaterializeBlokMutation();
+  const [materialize, { loading }] = useMaterializeBlokMutation({
+    refetchQueries: ["GetBlok", "ListMaterializedBloks"],
+  });
   // Shown above the button: the form lives in a plain <Dialog>, which stays
   // open to try again.
   const [failure, setFailure] = useState<unknown>(null);

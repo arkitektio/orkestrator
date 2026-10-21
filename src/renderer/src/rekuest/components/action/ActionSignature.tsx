@@ -1,10 +1,10 @@
-import { ActionKind, DetailActionFragment } from "@/rekuest/api/graphql";
+import { ActionKind, ArgPortFragment, DetailActionFragment } from "@/rekuest/api/graphql";
 import PortConstraintBadges, {
   PortConstraint,
 } from "@/core/ports/widgets/PortConstraintBadges";
 import { portToLabel } from "@/core/ports/engine/utils";
 
-type ArgPort = DetailActionFragment["args"][number];
+type ArgPort = ArgPortFragment;
 type ReturnPort = DetailActionFragment["returns"][number];
 
 const formatDefault = (value: unknown) => {
@@ -44,13 +44,22 @@ const argNote = (port: ArgPort) => {
   return port.nullable ? "optional" : undefined;
 };
 
-const Column = (props: { title: string; children: React.ReactNode }) => (
+export const SignatureColumn = (props: { title: string; children: React.ReactNode }) => (
   <div>
     <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
       {props.title}
     </h2>
     <div className="mt-1 divide-y divide-border">{props.children}</div>
   </div>
+);
+
+/** Arg ports as "Takes" lists them: label, type, description, optional/default, `requires`. */
+export const ArgPortRows = ({ ports }: { ports: readonly ArgPort[] }) => (
+  <>
+    {ports.map((port) => (
+      <PortRow key={port.key} port={port} constraints={port.requires} note={argNote(port)} />
+    ))}
+  </>
 );
 
 /**
@@ -64,19 +73,12 @@ export const ActionSignature = ({ action }: { action: DetailActionFragment }) =>
   return (
     <div className="grid max-w-4xl gap-x-12 gap-y-6 @2xl:grid-cols-2">
       {action.args.length > 0 && (
-        <Column title="Takes">
-          {action.args.map((port) => (
-            <PortRow
-              key={port.key}
-              port={port}
-              constraints={port.requires}
-              note={argNote(port)}
-            />
-          ))}
-        </Column>
+        <SignatureColumn title="Takes">
+          <ArgPortRows ports={action.args} />
+        </SignatureColumn>
       )}
       {action.returns.length > 0 && (
-        <Column title={action.kind === ActionKind.Generator ? "Yields" : "Returns"}>
+        <SignatureColumn title={action.kind === ActionKind.Generator ? "Yields" : "Returns"}>
           {action.returns.map((port) => (
             <PortRow
               key={port.key}
@@ -85,7 +87,7 @@ export const ActionSignature = ({ action }: { action: DetailActionFragment }) =>
               note={port.nullable ? "may be empty" : undefined}
             />
           ))}
-        </Column>
+        </SignatureColumn>
       )}
     </div>
   );
