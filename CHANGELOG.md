@@ -1,3 +1,10 @@
+## [4.2.1](https://github.com/arkitektio/orkestrator/compare/v4.2.0...v4.2.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* mikro scene ([9a8145a](https://github.com/arkitektio/orkestrator/commit/9a8145a58f08cbe5cba0e93ba577bfa779f7204d))
+
 # [4.2.0](https://github.com/arkitektio/orkestrator/compare/v4.1.0...v4.2.0) (2026-10-21)
 
 
