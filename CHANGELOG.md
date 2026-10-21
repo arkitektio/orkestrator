@@ -1,3 +1,10 @@
+# [4.3.0](https://github.com/arkitektio/orkestrator/compare/v4.2.1...v4.3.0) (2026-10-21)
+
+
+### Features
+
+* **rekuest:** BSX blok editor with revisions; split custom and app-provided bloks ([1b18a30](https://github.com/arkitektio/orkestrator/commit/1b18a30a36f87bebf50d9441ae76f53974fa7397))
+
 ## [4.2.1](https://github.com/arkitektio/orkestrator/compare/v4.2.0...v4.2.1) (2026-10-21)
 
 
