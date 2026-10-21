@@ -325,7 +325,16 @@ export const DefaultScenePanels = () => (
  * rules as the scene's own overlays (P17 two-plane rule, P20 handler
  * attachment).
  */
-export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNode }) => {
+export const SceneViewport = (props: {
+  children?: ReactNode;
+  inCanvas?: ReactNode;
+  /**
+   * The card a shape unfolds into, with what runs on it (default on). Off where
+   * the host decides what a shape does: a blok composing the scene runs its own
+   * action on a draw, and the full action card would pop up inside its UI.
+   */
+  annotationCards?: boolean;
+}) => {
   const status = useSceneScopeStatus();
 
   if (status.phase !== "ready") {
@@ -445,7 +454,7 @@ export const SceneViewport = (props: { children?: ReactNode; inCanvas?: ReactNod
               into — what is known about the shape and what runs on it with
               the image; a click on a shape opens the same card. The one
               overlay that follows a shape rather than a corner. */}
-          <AnnotationHoverCard />
+          {props.annotationCards !== false && <AnnotationHoverCard />}
           <VisibilityManager />
           <AttributeProbeTracker />
           <ProbePointPinner />

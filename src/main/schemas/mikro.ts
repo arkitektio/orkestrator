@@ -12708,6 +12708,13 @@ export type WatchSceneAnnotationsSubscriptionVariables = Exact<{
 
 export type WatchSceneAnnotationsSubscription = { __typename?: 'Subscription', annotations: { __typename?: 'AnnotationEvent', delete?: string | null, create?: { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind, vectors: Array<Array<number>>, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }> } | null, update?: { __typename?: 'Annotation', id: any, name: string, kind: AnnotationKind, vectors: Array<Array<number>>, strokeColor?: Array<number> | null, fillColor?: Array<number> | null, strokeWidth: number, filled: boolean, coordinates: Array<{ __typename?: 'Coordinate', name: string, value: number }> } | null } };
 
+export type WatchSceneLayersSubscriptionVariables = Exact<{
+  scene: Scalars['ID']['input'];
+}>;
+
+
+export type WatchSceneLayersSubscription = { __typename?: 'Subscription', layers: { __typename?: 'LayerEvent', delete?: string | null, create?: { __typename?: 'AnnotationLayer', id: string } | { __typename?: 'ImageLayer', id: string } | { __typename?: 'IntensityLayer', id: string } | { __typename?: 'LabelLayer', id: string } | { __typename?: 'MeshLayer', id: string } | { __typename?: 'NetworkLayer', id: string } | { __typename?: 'PhasorLayer', id: string } | { __typename?: 'PointLayer', id: string } | { __typename?: 'RgbLayer', id: string } | { __typename?: 'TrackLayer', id: string } | { __typename?: 'VectorLayer', id: string } | null, update?: { __typename?: 'AnnotationLayer', id: string } | { __typename?: 'ImageLayer', id: string } | { __typename?: 'IntensityLayer', id: string } | { __typename?: 'LabelLayer', id: string } | { __typename?: 'MeshLayer', id: string } | { __typename?: 'NetworkLayer', id: string } | { __typename?: 'PhasorLayer', id: string } | { __typename?: 'PointLayer', id: string } | { __typename?: 'RgbLayer', id: string } | { __typename?: 'TrackLayer', id: string } | { __typename?: 'VectorLayer', id: string } | null } };
+
 export type WatchLensesSubscriptionVariables = Exact<{
   kind?: InputMaybe<LensKind>;
   container?: InputMaybe<Scalars['ID']['input']>;
@@ -17612,6 +17619,19 @@ export const WatchSceneAnnotationsDocument = gql`
   }
 }
     ${SceneAnnotationFragmentDoc}`;
+export const WatchSceneLayersDocument = gql`
+    subscription WatchSceneLayers($scene: ID!) {
+  layers(scene: $scene) {
+    create {
+      id
+    }
+    update {
+      id
+    }
+    delete
+  }
+}
+    `;
 export const WatchLensesDocument = gql`
     subscription WatchLenses($kind: LensKind, $container: ID) {
   lenses(kind: $kind, container: $container) {
@@ -18184,6 +18204,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     WatchSceneAnnotations(variables: WatchSceneAnnotationsSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchSceneAnnotationsSubscription> {
       return withWrapper((wrappedRequestHeaders) => client.request<WatchSceneAnnotationsSubscription>({ document: WatchSceneAnnotationsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchSceneAnnotations', 'subscription', variables);
+    },
+    WatchSceneLayers(variables: WatchSceneLayersSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchSceneLayersSubscription> {
+      return withWrapper((wrappedRequestHeaders) => client.request<WatchSceneLayersSubscription>({ document: WatchSceneLayersDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchSceneLayers', 'subscription', variables);
     },
     WatchLenses(variables?: WatchLensesSubscriptionVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<WatchLensesSubscription> {
       return withWrapper((wrappedRequestHeaders) => client.request<WatchLensesSubscription>({ document: WatchLensesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'WatchLenses', 'subscription', variables);

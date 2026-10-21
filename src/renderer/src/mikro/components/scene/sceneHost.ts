@@ -26,6 +26,23 @@ import { useModeStore, useModeStoreApi, type DisplayMode, type InteractionMode }
 import { useSceneStore, useSceneStoreApi, type SceneLayer } from "./platform/stores/sceneStore";
 import { useViewerStoreApi } from "./platform/stores/viewerStore";
 import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
+import { useMikro } from "@/mikro/api/funcs";
+import { useWatchSceneLayersSubscription } from "@/mikro/api/graphql";
+import { useSceneEventsApi } from "./platform/events/sceneEvents";
+import {
+  drawnPayload,
+  isPick,
+  layersKey,
+  layersPayload,
+  pickPayload,
+  probeLens,
+  selectionPayload,
+  type SceneAnnotationPayload,
+  type SceneLayersPayload,
+  type ScenePickPayload,
+  type SceneSelectPayload,
+} from "./platform/events/eventPayloads";
+import { useRoiSelectionStoreApi } from "./features/annotations/roiSelectionStore";
 
 export type { DisplayMode, InteractionMode };
 
@@ -226,4 +243,137 @@ export const useScenePick = (options: {
   }, [enabled, layerId, modeApi, viewerApi]);
 
   return { active: enabled && layerId !== null && interactionMode === "PROBE" };
+};
+
+export type {
+  SceneAnnotationPayload,
+  SceneLayersPayload,
+  ScenePickPayload,
+  SceneSelectPayload,
+  StructureRef,
+} from "./platform/events/eventPayloads";
+
+export type SceneEventHandlers = {
+  /** A shape was drawn here. */
+  onAnnotation?: (payload: SceneAnnotationPayload) => void;
+  /** The selection changed by the user (a draw's auto-selection is the draw's, not reported). */
+  onSelect?: (payload: SceneSelectPayload) => void;
+  /** A deliberate click read a voxel (probe readout, not a vertex being placed). */
+  onPick?: (payload: ScenePickPayload) => void;
+  /** A layer came, went, or now draws another lens. */
+  onLayersChange?: (payload: SceneLayersPayload) => void;
+};
+
+/**
+ * What happens in THIS mounted scene, told to a host as plain data (structure
+ * references slot straight into action ports). Only the handlers passed are
+ * listened for; the latest handlers are always the ones called.
+ *
+ * A host that runs an action on `onLayersChange` which itself writes layers is
+ * told again: `added` names the new ones, so it can tell its own run's apart.
+ */
+export const useSceneEvents = (handlers: SceneEventHandlers): void => {
+  const events = useSceneEventsApi();
+  const sceneApi = useSceneStoreApi();
+  const viewerApi = useViewerStoreApi();
+  const selectionApi = useRoiSelectionStoreApi();
+  const current = useRef(handlers);
+  current.current = handlers;
+  // The shape a draw just auto-selected: that selection is the draw's.
+  const drawn = useRef<string | null>(null);
+
+  const wantsSelect = !!handlers.onSelect;
+  const wantsPick = !!handlers.onPick;
+  const wantsLayers = !!handlers.onLayersChange;
+
+  // Always heard: the selection filter below needs to know what a draw selected.
+  useEffect(
+    () =>
+      events.subscribeDrawn((event) => {
+        drawn.current = event.annotation;
+        current.current.onAnnotation?.(drawnPayload(event));
+      }),
+    [events],
+  );
+
+  useEffect(() => {
+    if (!wantsSelect) return;
+    return selectionApi.subscribe((state, previous) => {
+      if (state.selectedRois === previous.selectedRois) return;
+      const ids = state.selectedRois.map((roi) => roi.id);
+      if (ids.join(",") === previous.selectedRois.map((roi) => roi.id).join(",")) return;
+      if (ids.length === 1 && ids[0] === drawn.current) {
+        drawn.current = null;
+        return;
+      }
+      const layers = sceneApi.getState().sceneLayers;
+      current.current.onSelect?.(selectionPayload(ids, probeLens(layers, viewerApi.getState().probeLayerId)));
+    });
+  }, [wantsSelect, selectionApi, sceneApi, viewerApi]);
+
+  useEffect(() => {
+    if (!wantsPick) return;
+    return viewerApi.subscribe((state, previous) => {
+      const probe = state.probedCoordinate;
+      if (!probe || probe === previous.probedCoordinate || !isPick(probe)) return;
+      current.current.onPick?.(pickPayload(probe, sceneApi.getState().sceneLayers));
+    });
+  }, [wantsPick, viewerApi, sceneApi]);
+
+  const key = useSceneStore((state) => layersKey(state.sceneLayers));
+  const seen = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    const layers = sceneApi.getState().sceneLayers;
+    const previous = seen.current;
+    seen.current = new Set(layers.map((layer) => layer.id));
+    // The first answer is what the scene opened with, not a change.
+    if (!wantsLayers || previous === null) return;
+    current.current.onLayersChange?.(layersPayload(layers, previous));
+  }, [key, wantsLayers, sceneApi]);
+};
+
+/** How long layer events are gathered before the scene is fetched again. */
+const LIVE_REFETCH_AFTER_MS = 250;
+
+/**
+ * Follow the scene as others change it: an action writing a layer or a shape
+ * into it shows up here without a reload. Layers through `WatchSceneLayers`
+ * (any event refetches `GetScene`, debounced, the same store-free path a layer
+ * made here takes), shapes through each annotation collection's live list.
+ */
+export const useLiveScene = (sceneId: string, enabled = true): void => {
+  const client = useMikro();
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+  useWatchSceneLayersSubscription({
+    variables: { scene: sceneId },
+    skip: !enabled,
+    onData: () => {
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => {
+        timer.current = null;
+        void client.refetchQueries({ include: ["GetScene"] });
+      }, LIVE_REFETCH_AFTER_MS);
+    },
+    onError: (error) => console.error(`Live layers of scene ${sceneId} failed:`, error),
+  });
+};
+
+/** The scene's annotation collections, as a stable comma-joined key (the store-selector rule). */
+export const useSceneAnnotationCollections = (): string[] => {
+  const key = useSceneStore((state) =>
+    [
+      ...new Set(
+        state.sceneLayers.flatMap((layer) =>
+          layer.__typename === "AnnotationLayer" && layer.annotationCollection ? [layer.annotationCollection.id] : [],
+        ),
+      ),
+    ].join(","),
+  );
+  return useMemo(() => (key ? key.split(",") : []), [key]);
 };

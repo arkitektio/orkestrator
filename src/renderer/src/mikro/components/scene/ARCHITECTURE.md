@@ -57,6 +57,7 @@ one host, it belongs in that host.
 | `perf/` | perf monitor, cold-open timeline, rAF coalescing, commit profiler | what it is measuring |
 | `sources/` | zarr store construction and array opening | rendering |
 | `stores/` | the scene-scoped zustand stores | feature internals |
+| `events/` | the per-scene event bus: a shape drawn, published by the drawing path | who listens to it |
 
 ### `features/`
 

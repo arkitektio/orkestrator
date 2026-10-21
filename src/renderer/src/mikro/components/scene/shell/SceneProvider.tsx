@@ -52,6 +52,7 @@ import {
 } from "../platform/stores/selectionStore";
 import { ViewStoreContext, createViewStore } from "../platform/stores/viewStore";
 import { ViewerStoreContext, createViewerStore } from "../platform/stores/viewerStore";
+import { SceneEventsContext, createSceneEvents } from "../platform/events/sceneEvents";
 import { createBrickSlice } from "../features/bricks/store/brickSlice";
 import { createMeshSlice } from "../features/meshes/store/meshSlice";
 import { createNetworkSlice } from "../features/network/store/networkSlice";
@@ -201,6 +202,9 @@ export const SceneProvider = (props: {
   const client = useMikro();
   const datalayer = useDatalayerEndpoint();
   const scene = props.scene ?? null;
+  // One per mounted provider, for its whole life: what happens here is told to
+  // whoever listens here (`platform/events/sceneEvents.ts`).
+  const [events] = useState(createSceneEvents);
 
   // The rebuild key. Content-only cache re-emissions (a saved render graph, a
   // pinned view, a new animation) and layer-set changes alike leave this
@@ -476,6 +480,7 @@ export const SceneProvider = (props: {
   }, [needsReconcile, scope, built, layerSignature, client, datalayer]);
 
   return (
+    <SceneEventsContext.Provider value={events}>
     <SceneScopeStatusContext.Provider value={status}>
       <ModeStoreContext.Provider value={scope?.modeStore ?? null}>
         <ViewStoreContext.Provider value={scope?.viewStore ?? null}>
@@ -512,5 +517,6 @@ export const SceneProvider = (props: {
         </ViewStoreContext.Provider>
       </ModeStoreContext.Provider>
     </SceneScopeStatusContext.Provider>
+    </SceneEventsContext.Provider>
   );
 };

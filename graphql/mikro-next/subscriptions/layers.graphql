@@ -1,0 +1,15 @@
+# One scene's layers changing: added, edited or removed by anybody, an agent bound
+# to the scene included. The scene does not apply the event itself: any event
+# refetches `GetScene`, the same store-free path a layer created here takes, so
+# the selection is only what says that something happened.
+subscription WatchSceneLayers($scene: ID!) {
+  layers(scene: $scene) {
+    create {
+      id
+    }
+    update {
+      id
+    }
+    delete
+  }
+}

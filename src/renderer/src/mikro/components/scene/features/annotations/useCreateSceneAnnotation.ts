@@ -14,6 +14,8 @@ import { useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { layerLensPartner, pairLayerId } from "./hover/annotationActionTarget";
 import { primeCardDescriptors } from "./hover/primeCardDescriptors";
+import { useSceneEventsApi } from "../../platform/events/sceneEvents";
+import { descriptorsOf } from "@/core/smart/structure";
 
 export type CreatedSceneAnnotation = CreateAnnotationMutation["createAnnotation"];
 
@@ -42,6 +44,7 @@ export const useCreateSceneAnnotation = () => {
   const sceneStoreApi = useSceneStoreApi();
   const roiSelectionApi = useRoiSelectionStoreApi();
   const viewerStoreApi = useViewerStoreApi();
+  const events = useSceneEventsApi();
   const [createAnnotation] = useCreateAnnotationMutation();
   const [createWithCut] = useCreateSceneAnnotationMutation();
 
@@ -109,6 +112,16 @@ export const useCreateSceneAnnotation = () => {
         if (!answered) return null;
         const created = inSceneOrder(answered);
 
+        // Whoever composed this scene hears of it (`sceneHost.useSceneEvents`).
+        // A draw on a lens also carries the lens and the descriptors the server
+        // answered with; without one, the shape alone.
+        events.publishDrawn({
+          annotation: answered.id,
+          kind: answered.kind,
+          descriptors: "descriptors" in answered ? descriptorsOf(answered.descriptors) : undefined,
+          lens: lens?.id,
+        });
+
         // Auto-select the confirmed annotation. On the very first annotation
         // the AnnotationLayer does not exist yet (GetScene refetch in flight)
         // — layerId stays "" here, and the layer REPAIRS the entry when it
@@ -153,7 +166,7 @@ export const useCreateSceneAnnotation = () => {
         return null;
       }
     },
-    [createAnnotation, createWithCut, sceneStoreApi, viewerStoreApi, roiSelectionApi],
+    [createAnnotation, createWithCut, sceneStoreApi, viewerStoreApi, roiSelectionApi, events],
   );
 
   const createPointAnnotation = useCallback(

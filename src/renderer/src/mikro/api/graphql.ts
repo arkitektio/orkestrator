@@ -16124,6 +16124,13 @@ export type WatchSceneAnnotationsSubscription = { __typename?: 'Subscription', a
       & SceneAnnotationFragment
     ) | null } };
 
+export type WatchSceneLayersSubscriptionVariables = Exact<{
+  scene: Scalars['ID']['input'];
+}>;
+
+
+export type WatchSceneLayersSubscription = { __typename?: 'Subscription', layers: { __typename?: 'LayerEvent', delete?: string | null, create?: { __typename?: 'AnnotationLayer', id: string } | { __typename?: 'ImageLayer', id: string } | { __typename?: 'IntensityLayer', id: string } | { __typename?: 'LabelLayer', id: string } | { __typename?: 'MeshLayer', id: string } | { __typename?: 'NetworkLayer', id: string } | { __typename?: 'PhasorLayer', id: string } | { __typename?: 'PointLayer', id: string } | { __typename?: 'RgbLayer', id: string } | { __typename?: 'TrackLayer', id: string } | { __typename?: 'VectorLayer', id: string } | null, update?: { __typename?: 'AnnotationLayer', id: string } | { __typename?: 'ImageLayer', id: string } | { __typename?: 'IntensityLayer', id: string } | { __typename?: 'LabelLayer', id: string } | { __typename?: 'MeshLayer', id: string } | { __typename?: 'NetworkLayer', id: string } | { __typename?: 'PhasorLayer', id: string } | { __typename?: 'PointLayer', id: string } | { __typename?: 'RgbLayer', id: string } | { __typename?: 'TrackLayer', id: string } | { __typename?: 'VectorLayer', id: string } | null } };
+
 export type WatchLensesSubscriptionVariables = Exact<{
   kind?: InputMaybe<LensKind>;
   container?: InputMaybe<Scalars['ID']['input']>;
@@ -26081,6 +26088,42 @@ export function useWatchSceneAnnotationsSubscription(baseOptions: ApolloReactHoo
       }
 export type WatchSceneAnnotationsSubscriptionHookResult = ReturnType<typeof useWatchSceneAnnotationsSubscription>;
 export type WatchSceneAnnotationsSubscriptionResult = Apollo.SubscriptionResult<WatchSceneAnnotationsSubscription>;
+export const WatchSceneLayersDocument = gql`
+    subscription WatchSceneLayers($scene: ID!) {
+  layers(scene: $scene) {
+    create {
+      id
+    }
+    update {
+      id
+    }
+    delete
+  }
+}
+    `;
+
+/**
+ * __useWatchSceneLayersSubscription__
+ *
+ * To run a query within a React component, call `useWatchSceneLayersSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useWatchSceneLayersSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useWatchSceneLayersSubscription({
+ *   variables: {
+ *      scene: // value for 'scene'
+ *   },
+ * });
+ */
+export function useWatchSceneLayersSubscription(baseOptions: ApolloReactHooks.SubscriptionHookOptions<WatchSceneLayersSubscription, WatchSceneLayersSubscriptionVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useSubscription<WatchSceneLayersSubscription, WatchSceneLayersSubscriptionVariables>(WatchSceneLayersDocument, options);
+      }
+export type WatchSceneLayersSubscriptionHookResult = ReturnType<typeof useWatchSceneLayersSubscription>;
+export type WatchSceneLayersSubscriptionResult = Apollo.SubscriptionResult<WatchSceneLayersSubscription>;
 export const WatchLensesDocument = gql`
     subscription WatchLenses($kind: LensKind, $container: ID) {
   lenses(kind: $kind, container: $container) {

@@ -1,3 +1,4 @@
+import { MIKRO_BLOKS } from "./bloks";
 import { defineModule } from "@/core/modules/host/define";
 import { MIKRO_ACTIONS } from "./actions";
 import ArrayDatasetHoverCard from "./components/hovers/ArrayDatasetHoverCard";
@@ -49,6 +50,8 @@ export const MIKRO_MODULE = defineModule({
       "@mikro/scene": SceneViewer,
       "@mikro/arraydataset": ArrayDatasetViewer,
     },
+    // The scene as parts an app's blok composes (`mikro/bloks`).
+    bloks: MIKRO_BLOKS,
     hovers: {
       "@mikro/file": FileHoverCard,
       "@mikro/folder": FolderHoverCard,
