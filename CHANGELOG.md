@@ -1,3 +1,15 @@
+# [4.2.0](https://github.com/arkitektio/orkestrator/compare/v4.1.0...v4.2.0) (2026-10-21)
+
+
+### Features
+
+* **blok:** let modules add components to the blok catalog ([aa139f6](https://github.com/arkitektio/orkestrator/commit/aa139f6743af12d4a3dcd84e48d18df3d6bc7e48))
+* **kabinet:** bloks in the app store ([d2f890d](https://github.com/arkitektio/orkestrator/commit/d2f890d7fa36ab5ad18348bab02bde84f722e916))
+* **mikro:** scene events and the MikroScene blok ([b6cef21](https://github.com/arkitektio/orkestrator/commit/b6cef2112e187ca5dc3d4db765b452186f109b6b))
+* **rekuest:** install a blok from elsewhere by its origin ([339aad8](https://github.com/arkitektio/orkestrator/commit/339aad8b9c5fd01b36126f472a2d356590d03b07))
+* **rekuest:** materialize and open bloks through registry dialogs ([7a25503](https://github.com/arkitektio/orkestrator/commit/7a255033bffb8e102ba94c9c7d71c57511b0cb91))
+* **scene:** a rerun replaces its previous result ([e6095d6](https://github.com/arkitektio/orkestrator/commit/e6095d6492bb862c1b0526ecb49379bcbcf248d1))
+
 # [4.1.0](https://github.com/arkitektio/orkestrator/compare/v4.0.3...v4.1.0) (2026-10-21)
 
 
