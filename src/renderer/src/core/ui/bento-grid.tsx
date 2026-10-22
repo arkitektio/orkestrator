@@ -406,10 +406,13 @@ function BentoItem({
   className,
   ...props
 }: BentoItemProps) {
+  // One `minmax(0, 1fr)` track each way: an implicit `auto` track would grow
+  // to the child's min-content (a long untruncated title), past the cell and
+  // over its neighbours.
   return (
     <div
       data-slot="bento-item"
-      className={cn("grid min-h-0 min-w-0", className)}
+      className={cn("grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]", className)}
       {...props}
     />
   )
@@ -669,7 +672,13 @@ function BentoGrid({
       if (x.rect !== null || exitsRef.current.has(key)) continue
       const el = nodes.get(key)
       const r = first?.get(key)
-      if (!el || !r) continue
+      // Nothing to fade from (e.g. effects re-run on reveal without a
+      // snapshot): drop it, or it would stay in the flow at its old cell
+      // until something else re-renders.
+      if (!el || !r) {
+        lifted = true
+        continue
+      }
       cancelAnimations(el)
       const rect: Rect = {
         left: r.left - gridRect.left - grid.clientLeft,

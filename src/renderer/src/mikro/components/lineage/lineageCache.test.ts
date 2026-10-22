@@ -5,6 +5,9 @@ import {
   GetLineageDocument,
   GetLineageQuery,
   GetLineageQueryVariables,
+  HomeRootsDocument,
+  HomeRootsQuery,
+  HomeRootsQueryVariables,
   LineageNodeKind,
 } from "@/mikro/api/graphql";
 import mikroResult from "@/mikro/api/fragments";
@@ -54,5 +57,28 @@ describe("the lineage in mikro's cache", () => {
       [LineageNodeKind.Dataset, 0],
       [LineageNodeKind.File, -1],
     ]);
+  });
+});
+
+describe("the recent roots in mikro's cache", () => {
+  it("lists a file and a dataset sharing an id as two roots", () => {
+    const cache = new InMemoryCache({ possibleTypes: mikroResult.possibleTypes, typePolicies: MIKRO_TYPE_POLICIES });
+    const root = (kind: LineageNodeKind, id: string) => ({
+      __typename: "RootNode" as const,
+      key: `${kind}:${id}`,
+      kind,
+      id,
+      name: `${kind} ${id}`,
+      createdAt: null,
+    });
+    const variables: HomeRootsQueryVariables = { pagination: { limit: 12 } };
+    cache.writeQuery({
+      query: HomeRootsDocument,
+      variables,
+      data: { roots: [root(LineageNodeKind.File, "4"), root(LineageNodeKind.Dataset, "4")] },
+    });
+
+    const read = cache.readQuery<HomeRootsQuery, HomeRootsQueryVariables>({ query: HomeRootsDocument, variables });
+    expect(read?.roots.map((r) => r.key)).toEqual([`${LineageNodeKind.File}:4`, `${LineageNodeKind.Dataset}:4`]);
   });
 });

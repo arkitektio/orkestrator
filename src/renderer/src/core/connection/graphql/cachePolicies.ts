@@ -279,6 +279,10 @@ export const MIKRO_TYPE_POLICIES: TypePolicies = {
   // the first's. Embedded in each answer instead (the node's `key` is what is
   // unique, and only within the graph the view merges).
   LineageNode: { keyFields: false },
+  // The same for `roots`: `id` alone would merge a file and a dataset that
+  // share one into a single `RootNode`, listing it twice. `key` is
+  // `<kind>:<id>` and unique.
+  RootNode: { keyFields: ["key"] },
 };
 export const REKUEST_TYPE_POLICIES: TypePolicies = {
   ...buildOffsetPaginationPolicies(REKUEST_PAGINATED_FIELDS),
