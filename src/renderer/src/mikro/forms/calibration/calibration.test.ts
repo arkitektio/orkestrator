@@ -66,7 +66,7 @@ describe("buildCalibrationInput", () => {
 
     expect(input.axes.map((a) => a.name)).toEqual(["c", "y", "x"]);
     // scale[i] is the pixel size of axes[i] — the pairing is positional.
-    expect(input.registrations[0].transform.scale).toEqual([1, 0.5, 0.25]);
+    expect(input.registrations[0].transform.parts[0].scale).toEqual([1, 0.5, 0.25]);
   });
 
   it("states one scale registration from the dataset being calibrated", () => {
@@ -79,6 +79,7 @@ describe("buildCalibrationInput", () => {
     expect(input.registrations).toHaveLength(1);
     expect(input.registrations[0].dataset).toBe("ds-1");
     expect(input.registrations[0].transform.kind).toBe("BY_DIMENSION");
+    expect(input.registrations[0].transform.parts.map((part) => part.kind)).toEqual(["SCALE"]);
   });
 
   it("names the scale order on both ends of the edge", () => {
@@ -86,9 +87,9 @@ describe("buildCalibrationInput", () => {
     // renames nothing, so outputAxes is the same list.
     const input = buildCalibrationInput(draftOf(prefillCalibration(CYX)));
 
-    expect(input.registrations[0].transform.inputAxes).toEqual(["c", "y", "x"]);
-    expect(input.registrations[0].transform.outputAxes).toEqual(["c", "y", "x"]);
-    expect(input.registrations[0].transform.inputAxes).toEqual(
+    expect(input.registrations[0].transform.parts[0].inputAxes).toEqual(["c", "y", "x"]);
+    expect(input.registrations[0].transform.parts[0].outputAxes).toEqual(["c", "y", "x"]);
+    expect(input.registrations[0].transform.parts[0].inputAxes).toEqual(
       input.axes.map((a) => a.name),
     );
   });
@@ -101,8 +102,8 @@ describe("buildCalibrationInput", () => {
     const input = buildCalibrationInput(draftOf(rows));
 
     expect(input.axes.map((a) => a.name)).toEqual(["c", "y", "x"]);
-    expect(input.registrations[0].transform.scale).toEqual([1, 0.5, 0.25]);
-    expect(input.registrations[0].transform.inputAxes).toEqual(["c", "y", "x"]);
+    expect(input.registrations[0].transform.parts[0].scale).toEqual([1, 0.5, 0.25]);
+    expect(input.registrations[0].transform.parts[0].inputAxes).toEqual(["c", "y", "x"]);
   });
 
   it("coerces the strings the inputs hand back", () => {
@@ -110,7 +111,7 @@ describe("buildCalibrationInput", () => {
     rows[0].scale = "0.325";
 
     expect(
-      buildCalibrationInput(draftOf(rows)).registrations[0].transform.scale,
+      buildCalibrationInput(draftOf(rows)).registrations[0].transform.parts[0].scale,
     ).toEqual([0.325]);
   });
 

@@ -46,6 +46,7 @@ import {
   createRoiSelectionStore,
 } from "../features/annotations/roiSelectionStore";
 import { SceneStoreContext, createSceneStore } from "../platform/stores/sceneStore";
+import { useSceneViewAxes } from "../platform/stores/sceneViewAxes";
 import {
   SelectionStoreContext,
   createSelectionStore,
@@ -225,6 +226,15 @@ export const SceneProvider = (props: {
   const sceneRef = useRef(scene);
   sceneRef.current = scene;
 
+  // The plane the scene is looked at in. Every layer's axes and lattice are
+  // derived from it (`viewLayer`), so a change rebuilds the scope like a
+  // structural change does; it is its own key so the layer fold below, which
+  // compares structure signatures, is untouched by it.
+  const viewAxes = useSceneViewAxes(scene?.id);
+  const viewKey = viewAxes.join("");
+  const viewRef = useRef(viewAxes);
+  viewRef.current = viewAxes;
+
   // `built` remembers WHICH scope it is, and WHICH layer set is currently
   // folded into it. Between a structural change and the rebuild effect firing
   // there is one commit where the old scope still exists — matching signatures
@@ -237,6 +247,7 @@ export const SceneProvider = (props: {
   // again) instead of being dropped.
   const [built, setBuilt] = useState<{
     scopeSignature: string;
+    viewKey: string;
     layerSignature: string;
     scope: SceneScope;
   } | null>(null);
@@ -284,7 +295,7 @@ export const SceneProvider = (props: {
 
         const lensesInTime = lensLookup ? await settledInBudget(lensLookup.settled) : true;
 
-        const sceneStore = createSceneStore({ scene, resolveLens: registry.peek });
+        const sceneStore = createSceneStore({ scene, resolveLens: registry.peek, viewAxes: viewRef.current });
         if (lensLookup && (!lensesInTime || registry.missing(lensLookup.ids).length > 0)) {
           followUpLensLookup(registry, lensLookup, () => {
             if (!cancelled) sceneStore.getState().refreshLensSelections();
@@ -324,6 +335,7 @@ export const SceneProvider = (props: {
         if (!cancelled) {
           setBuilt({
             scopeSignature,
+            viewKey,
             layerSignature: builtLayerSignature,
             scope,
           });
@@ -343,7 +355,7 @@ export const SceneProvider = (props: {
     return () => {
       cancelled = true;
     };
-  }, [scopeSignature, client, datalayer]);
+  }, [scopeSignature, viewKey, client, datalayer]);
 
   // `status.scene` is always the LIVE fragment: content the viewport reads
   // reactively (backgroundColor, …) keeps updating without a rebuild.
@@ -354,7 +366,7 @@ export const SceneProvider = (props: {
     ? { phase: "no-scene", scene: null, error: null }
     : failure && failure.scopeSignature === scopeSignature
       ? { phase: "error", scene, error: failure.error }
-      : built && built.scopeSignature === scopeSignature
+      : built && built.scopeSignature === scopeSignature && built.viewKey === viewKey
         ? { phase: "ready", scene, error: null }
         : { phase: "initializing", scene, error: null };
 

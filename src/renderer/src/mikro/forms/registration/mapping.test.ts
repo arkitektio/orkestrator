@@ -142,8 +142,8 @@ describe("buildRegistrationInput", () => {
     const input = buildRegistrationInput(draftOf({ rows, mode: "IDENTITY" }));
 
     // `c` is unmapped, so it is absent — but y still precedes x.
-    expect(input.transform.inputAxes).toEqual(["y", "x"]);
-    expect(input.transform.outputAxes).toEqual(["y", "x"]);
+    expect(input.transform.parts[0].inputAxes).toEqual(["y", "x"]);
+    expect(input.transform.parts[0].outputAxes).toEqual(["y", "x"]);
   });
 
   it("orders scale by inputAxes, not by the target system's axis order", () => {
@@ -156,8 +156,8 @@ describe("buildRegistrationInput", () => {
 
     const input = buildRegistrationInput(draftOf({ rows, mode: "SCALE" }));
 
-    expect(input.transform.inputAxes).toEqual(["y", "x"]);
-    expect(input.transform.scale).toEqual([0.5, 0.25]);
+    expect(input.transform.parts[0].inputAxes).toEqual(["y", "x"]);
+    expect(input.transform.parts[0].scale).toEqual([0.5, 0.25]);
   });
 
   it("marks the edge MANUAL and leaves valueRelation unset", () => {
@@ -180,7 +180,7 @@ describe("buildRegistrationInput", () => {
 
     const input = buildRegistrationInput(draftOf({ rows, mode: "SCALE" }));
 
-    expect(input.transform.scale).toEqual([0.325, 0.325]);
+    expect(input.transform.parts[0].scale).toEqual([0.325, 0.325]);
   });
 
   it("builds an M x (N+1) affine with the translation in the last column", () => {
@@ -195,7 +195,7 @@ describe("buildRegistrationInput", () => {
     );
 
     // 2 mapped axes -> 2 rows x 3 columns, diagonal, translation at index N=2.
-    expect(input.transform.affine).toEqual([
+    expect(input.transform.parts[0].affine).toEqual([
       [0.5, 0, 10],
       [0, 0.25, -4],
     ]);
@@ -277,18 +277,13 @@ describe("the rename rule", () => {
 
 describe("round-trip: what we author is what evalTransform renders", () => {
   /**
-   * The server materializes an authored BY_DIMENSION edge as a
-   * `ByDimensionTransformation` whose children carry the payload and
-   * self-describe the axis subset they act on — so that is the shape the
-   * round-trip feeds back to the evaluator. The composite's own axes are the
-   * FULL system orders, exactly what `composeLayerAffine`'s prefix evaluation passes.
+   * The server stores an authored BY_DIMENSION as its parts, read back as
+   * `ByDimensionTransformation.parts`, each self-describing the axes it acts on --
+   * so that is the shape the round-trip feeds back to the evaluator.
    */
-  const materialized = (
-    childTypename: string,
-    transform: Record<string, unknown>,
-  ) => ({
+  const materialized = (transform: { parts: readonly Record<string, unknown>[] }) => ({
     __typename: "ByDimensionTransformation",
-    transformations: [{ __typename: childTypename, ...transform }],
+    parts: transform.parts,
   });
 
   it("renders a SCALE edge with each axis's factor on its own diagonal entry", () => {
@@ -299,7 +294,7 @@ describe("round-trip: what we author is what evalTransform renders", () => {
     const input = buildRegistrationInput(draftOf({ rows, mode: "SCALE" }));
 
     const matrix = evalTransform(
-      materialized("ScaleTransformation", input.transform),
+      materialized(input.transform),
       ["c", "y", "x"],
       ["t", "z", "y", "x"],
       // evalTransform's spatial slots are (x, y, z) — the renderer's row order.
@@ -323,7 +318,7 @@ describe("round-trip: what we author is what evalTransform renders", () => {
     );
 
     const matrix = evalTransform(
-      materialized("AffineTransformation", input.transform),
+      materialized(input.transform),
       ["c", "y", "x"],
       ["t", "z", "y", "x"],
       ["x", "y", null],
@@ -338,24 +333,21 @@ describe("round-trip: what we author is what evalTransform renders", () => {
     expect(matrix?.[1][3]).toBe(10); // y offset
   });
 
-  it("leaves the world's unmapped axes alone on a rank-changing edge", () => {
-    // (c,y,x) -> (t,z,y,x): z is not produced by this edge, so it must come
-    // back as an identity row — "the world's other axes are untouched".
+  it("says nothing about the world's unmapped axes on a rank-changing edge", () => {
+    // (c,y,x) -> (t,z,y,x): z is produced by no part, so the edge says nothing
+    // about it -- a 4x4 cannot state that, so asking for z gets no matrix, and a
+    // planar reading (no z slot) gets the y/x scale.
     const rows = prefillMapping(CYX, TZYX);
     rowFor(rows, "y").scale = 0.5;
     rowFor(rows, "x").scale = 0.5;
 
     const input = buildRegistrationInput(draftOf({ rows, mode: "SCALE" }));
+    const edge = materialized(input.transform);
 
-    const matrix = evalTransform(
-      materialized("ScaleTransformation", input.transform),
-      ["c", "y", "x"],
-      ["t", "z", "y", "x"],
-      ["x", "y", "z"],
-    );
-
-    expect(matrix?.[2][2]).toBe(1);
-    expect(matrix?.[2][3]).toBe(0);
+    expect(evalTransform(edge, ["c", "y", "x"], ["t", "z", "y", "x"], ["x", "y", "z"])).toBeNull();
+    const planar = evalTransform(edge, ["c", "y", "x"], ["t", "z", "y", "x"], ["x", "y", null]);
+    expect(planar?.[0][0]).toBe(0.5);
+    expect(planar?.[1][1]).toBe(0.5);
   });
 
   it("renders an IDENTITY edge as the identity matrix", () => {
@@ -364,7 +356,7 @@ describe("round-trip: what we author is what evalTransform renders", () => {
     );
 
     const matrix = evalTransform(
-      materialized("IdentityTransformation", input.transform),
+      materialized(input.transform),
       ["t", "z", "y", "x"],
       ["t", "z", "y", "x"],
       ["x", "y", "z"],

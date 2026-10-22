@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { selectionsFor } from "../../platform/model/worldSelections";
 
 import { collectionSpatialAxes } from "../../platform/model/collectionPlacement";
 import { probeAxisCoords } from "../../platform/probe/probeCoords";
@@ -50,7 +51,7 @@ export function ProbePointPinner() {
       if (!layer || !systemId) return null;
       return {
         systemId,
-        coords: probeAxisCoords(layer, probe.voxelIndex, viewerStore.getState().dimSelections),
+        coords: probeAxisCoords(layer, probe.voxelIndex, selectionsFor(viewerStore.getState(), layer.id)),
       };
     };
 
@@ -60,7 +61,7 @@ export function ProbePointPinner() {
       if (probe.strategy === "mesh") return null;
       const layer = sceneStore.getState().layers.find((candidate) => candidate.id === probe.layerId);
       return layer
-        ? probeAxisCoords(layer, probe.voxelIndex, viewerStore.getState().dimSelections)
+        ? probeAxisCoords(layer, probe.voxelIndex, selectionsFor(viewerStore.getState(), layer.id))
         : null;
     };
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {cleanup, fireEvent, screen} from '@testing-library/react';
-import {afterEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeAll, describe, expect, it} from 'vitest';
 import {defaultBlokCatalog} from '../catalog';
 import {renderBlokDocument} from './testing';
 
@@ -378,5 +378,65 @@ describe('control-flow bloks', () => {
 
     expect(screen.queryByText('enabled')).not.toBeNull();
     expect(screen.queryByText('disabled')).toBeNull();
+  });
+});
+
+describe('bento bloks', () => {
+  beforeAll(() => {
+    // jsdom has neither; the grid measures itself and reads reduced motion.
+    globalThis.ResizeObserver ??= class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    window.matchMedia ??= (() => ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    })) as unknown as typeof window.matchMedia;
+  });
+
+  it('places BentoItems by their static spans and other children as 1x1', () => {
+    const text = (id: string, value: string) => ({
+      id,
+      component: 'Text',
+      props: [{key: 'text', static_value: value}],
+    });
+    const {errors} = render([
+      {
+        id: 'grid',
+        component: 'BentoGrid',
+        props: [
+          {key: 'columns', static_value: 4},
+          {key: 'animate', static_value: false},
+        ],
+        children: [
+          {
+            id: 'hero',
+            component: 'BentoItem',
+            props: [
+              {key: 'cols', static_value: 2},
+              {key: 'rows', static_value: 2},
+            ],
+            children: [text('hero-text', 'hero')],
+          },
+          {
+            id: 'wide',
+            component: 'BentoItem',
+            props: [{key: 'cols', static_value: {base: 2}}],
+            children: [text('wide-text', 'wide')],
+          },
+          text('loose', 'loose'),
+        ],
+      },
+    ]);
+
+    expect(errors).toEqual([]);
+    const cell = (value: string) => screen.getByText(value).closest('[data-slot="bento-item"]') as HTMLElement;
+    expect(cell('hero').style.gridColumn).toBe('1 / span 2');
+    expect(cell('hero').style.gridRow).toBe('1 / span 2');
+    expect(cell('wide').style.gridColumn).toBe('3 / span 2');
+    expect(cell('loose').style.gridColumn).toBe('3 / span 1');
+    expect(cell('loose').style.gridRow).toBe('2 / span 1');
   });
 });

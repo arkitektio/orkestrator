@@ -110,7 +110,7 @@ describe("foldExperiment", () => {
     );
     expect(folded.layers[0].placeability).toMatchObject({
       drawable: true,
-      timeSource: "LOOKUP",
+      timeSource: "FIELD",
     });
   });
 

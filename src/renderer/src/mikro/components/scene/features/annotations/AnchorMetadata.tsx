@@ -1,5 +1,6 @@
 import { useGetLensAnchorsQuery } from "@/mikro/api/graphql";
 import { useMemo, useState } from "react";
+import { selectionsFor } from "../../platform/model/worldSelections";
 import {
   type AnchorMatch,
   layerCoverage,
@@ -111,7 +112,14 @@ export const AnchorMetadata = ({
 }) => {
   // The dim sliders move under us — re-partition on every selection change so
   // the panel never claims metadata for a slice that scrolled off.
-  const dimSelections = useViewerStore((state) => state.dimSelections);
+  const rawDimSelections = useViewerStore((state) => state.dimSelections);
+  const worldSelections = useViewerStore((state) => state.worldSelections);
+  const layerAxisInstants = useViewerStore((state) => state.layerAxisInstants);
+  // This layer's own frame on a world-timed dim, not a scene-wide index.
+  const dimSelections = useMemo(
+    () => selectionsFor({ dimSelections: rawDimSelections, worldSelections, layerAxisInstants }, layer.id),
+    [rawDimSelections, worldSelections, layerAxisInstants, layer.id],
+  );
 
   const { active, hidden } = useMemo(
     () => partitionAnchors(layer, anchors, dimSelections),

@@ -15,7 +15,8 @@
  *
  * Transformation arrays (`scale`, `translation`, affine rows/columns) are in
  * the axis order of their edge's input coordinate system; the spatial subset
- * is extracted by axis NAME via the layer's server-derived `renderAxes`.
+ * is extracted by axis NAME via the layer's `renderAxes`, which the client
+ * derives from its placement and the view (`viewAxes.ts`).
  * Anything the evaluator cannot interpret (displacement fields, bijections,
  * axis permutations, singular inverses) degrades to identity with a console
  * warning rather than rendering the layer somewhere wrong silently.
@@ -36,7 +37,16 @@ export type TransformLike = {
   transformations?: readonly TransformLike[] | null;
   /** mikro: a SEQUENCE's map as steps, each in the sequence's input axis order. */
   steps?: readonly TransformStepLike[] | null;
+  /** mikro: a BY_DIMENSION's map as parts, side by side, each naming its own axes. */
+  parts?: readonly TransformPartLike[] | null;
 } | null;
+
+/** One part of a mikro BY_DIMENSION: its own axes, by one kind; a FIELD part names its array. */
+export type TransformPartLike = TransformStepLike & {
+  inputAxes: readonly string[];
+  outputAxes: readonly string[];
+  field?: { field?: { id: string } | null; dereference?: boolean | null } | null;
+};
 
 /** One step of a SEQUENCE: a kind and the parameters that kind reads. */
 export type TransformStepLike = {
@@ -64,19 +74,31 @@ const STEP_TYPENAMES: Record<string, string> = {
  * edges (`transformations`), returned as they are. mikro's carries no rows:
  * a SEQUENCE has `steps`, which name no axes of their own (they are in the
  * sequence's input axis order, and only the last one lands on its output
- * names), and a BY_DIMENSION is itself the map over the axes it names — a
- * `scale` and/or a `translation` (scale first), or an `affine`, or nothing,
- * which is the identity on those axes. A BY_DIMENSION that states both a scale
- * and a translation comes back as ONE affine leaf: it is one map, and a reader
- * that lays children side by side must not see two writers of the same axes.
+ * names), and a BY_DIMENSION has `parts`, side by side, each naming the axes
+ * it maps and mapping them by one kind -- already leaf-shaped. A FIELD part
+ * becomes a `FieldTransformation` leaf: no matrix, which every walker already
+ * reads as "given by an array". An axis no part names is one the edge says
+ * nothing about.
  */
 export const childrenOf = (transform: TransformLike): readonly TransformLike[] => {
   if (!transform) return [];
   if (transform.transformations) return transform.transformations;
-  const inputAxes = transform.inputAxes ?? [];
-  const outputAxes = transform.outputAxes ?? inputAxes;
+
+  if (transform.parts) {
+    return transform.parts.map((part) => ({
+      __typename: STEP_TYPENAMES[part.kind ?? ""] ?? part.kind,
+      kind: part.kind,
+      scale: part.scale,
+      translation: part.translation,
+      affine: part.affine,
+      inputAxes: part.inputAxes,
+      outputAxes: part.outputAxes,
+    }));
+  }
 
   if (transform.steps) {
+    const inputAxes = transform.inputAxes ?? [];
+    const outputAxes = transform.outputAxes ?? inputAxes;
     const last = transform.steps.length - 1;
     return transform.steps.map((step, i) => ({
       __typename: STEP_TYPENAMES[step.kind ?? ""] ?? step.kind,
@@ -89,50 +111,27 @@ export const childrenOf = (transform: TransformLike): readonly TransformLike[] =
     }));
   }
 
-  if (transform.__typename !== "ByDimensionTransformation") return [];
-  const { scale, translation, affine } = transform;
-  const leaf = { inputAxes, outputAxes };
-  if (affine?.length) return [{ ...leaf, __typename: "AffineTransformation", kind: "AFFINE", affine }];
-  const n = inputAxes.length;
-  if (scale?.length === n && translation?.length === n) {
-    return [
-      {
-        ...leaf,
-        __typename: "AffineTransformation",
-        kind: "AFFINE",
-        affine: inputAxes.map((_, r) => [
-          ...inputAxes.map((_, c) => (r === c ? scale[r] : 0)),
-          translation[r],
-        ]),
-      },
-    ];
-  }
-  const leaves: TransformLike[] = [];
-  if (scale?.length) {
-    leaves.push({
-      __typename: "ScaleTransformation",
-      kind: "SCALE",
-      scale,
-      inputAxes,
-      outputAxes: translation?.length ? inputAxes : outputAxes,
-    });
-  }
-  if (translation?.length) {
-    leaves.push({ ...leaf, __typename: "TranslationTransformation", kind: "TRANSLATION", translation });
-  }
-  return leaves.length ? leaves : [{ ...leaf, __typename: "IdentityTransformation", kind: "IDENTITY" }];
+  return [];
 };
 
 export type CoordinateSystemLike = {
   id: string;
   name?: string | null;
-  axes?: readonly { name: string; type?: string | null; order?: number | null }[] | null;
+  /** The space's wall-clock reference: `wall_clock = epoch + t * unit`. */
+  epoch?: string | null;
+  axes?: readonly { name: string; type?: string | null; order?: number | null; unit?: unknown }[] | null;
 } | null;
 
 /** Structural subset of the `Scene` fragment this module needs. */
 export type SceneTransformContext = {
   worldCoordinateSystem?: CoordinateSystemLike;
   coordinateSystems?: readonly NonNullable<CoordinateSystemLike>[] | null;
+  /**
+   * Which world spatial slot each screen slot shows (`viewAxes.ts`): a
+   * permutation of [0, 1, 2], identity when absent. Three-space is VIEW space,
+   * so every placement's output side is the world triple in this order.
+   */
+  viewAxes?: readonly [0 | 1 | 2, 0 | 1 | 2, 0 | 1 | 2] | null;
 };
 
 /** One step of a server-resolved placement path. */
@@ -160,8 +159,8 @@ export type LayerTransformSource = {
     outputAxes: readonly string[];
     total?: boolean;
   } | null;
-  /** Which axes of the lens are screen x, y, z. Stated on the LAYER: a lens
-   *  is a selection and does not choose how it is looked at. */
+  /** Which axes of the lens are screen x, y, z: derived on ingest from the
+   *  layer's placement under the view (`deriveRenderAxes`). */
   renderAxes: { x: string; y: string; z?: string | null };
   lens: {
     axisNames: readonly string[];
@@ -466,6 +465,28 @@ export const evalTransform = (
     }
     case "SequenceTransformation":
     case "ByDimensionTransformation": {
+      if (transform.parts) {
+        // mikro: parts act SIDE BY SIDE on disjoint axes, each reading the original
+        // input -- never a sibling's output, which a renaming pair would otherwise
+        // read -- so each rendered slot takes its row from the part that names its
+        // output axis. A rendered axis no part names is one the edge says nothing
+        // about, which a 4x4 cannot state: no matrix. A part that cannot be
+        // evaluated (a FIELD) is fine as long as it touches no rendered slot.
+        const m = identity4();
+        const named = new Set<number>();
+        for (const part of childrenOf(transform)) {
+          const outputs = part?.outputAxes ?? [];
+          const slots = spatialOut.flatMap((name, slot) => (name && outputs.includes(name) ? [slot] : []));
+          if (slots.length === 0) continue;
+          const cm = evalTransform(part, part?.inputAxes ?? [], outputs, spatial, spatialOut);
+          if (!cm) return null;
+          for (const slot of slots) {
+            m[slot] = [...cm[slot]];
+            named.add(slot);
+          }
+        }
+        return spatialOut.some((name, slot) => name && !named.has(slot)) ? null : m;
+      }
       // Children are applied first to last. They self-describe their
       // parameter order (`inputAxes`/`outputAxes` — for ByDimension children
       // that is the SUBSET of axes they act on; unnamed axes pass through
@@ -611,10 +632,12 @@ export function composeLayerAffine(
   // axis types (older payloads, structural fixtures) keeps the lens names,
   // which is exactly what those composed with before.
   const world = scene.worldCoordinateSystem;
+  const worldTriple = spatialAxisTriple(world);
+  const view = scene.viewAxes ?? [0, 1, 2];
   const worldSpatial: readonly (string | null | undefined)[] = world?.axes?.some(
     (axis) => axis.type != null,
   )
-    ? spatialAxisTriple(world)
+    ? [worldTriple[view[0]], worldTriple[view[1]], worldTriple[view[2]]]
     : spatial;
 
   const axesById = buildAxesIndex(scene);

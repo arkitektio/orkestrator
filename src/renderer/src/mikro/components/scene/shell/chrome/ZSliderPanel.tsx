@@ -6,6 +6,7 @@ import { useModeStore } from '../../platform/stores/modeStore'
 import { layersPlanKey } from '../../platform/model/layerPlanKey'
 import { useSceneStore, useSceneStoreApi } from '../../platform/stores/sceneStore'
 import { useViewerStore } from '../../platform/stores/viewerStore'
+import { worldViewTriple } from '@/core/data/scene/coords/viewAxes'
 import {
   buildAffineMatrix,
   getLayerZSize,
@@ -37,6 +38,8 @@ export const ZSliderPanel = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [layersKey, sceneStoreApi]
   )
+  // The world axis screen depth is under the view: "z" in XY, "y" in XZ.
+  const depthAxis = useSceneStore((s) => worldViewTriple(s.transformContext)[2])
   const currentZ = useViewerStore((s) => s.currentZ)
   const setCurrentZ = useViewerStore((s) => s.setCurrentZ)
 
@@ -97,7 +100,7 @@ export const ZSliderPanel = ({
         vertical ? 'flex-col gap-1 px-1.5 py-2' : 'flex-row gap-2 px-2 py-1.5'
       )}
     >
-      <span className="text-[10px] font-medium text-muted-foreground select-none">Z</span>
+      <span className="text-[10px] font-medium text-muted-foreground select-none">{(depthAxis ?? 'z').toUpperCase()}</span>
       <div className={vertical ? 'h-48' : 'w-48'}>
         <Slider
           orientation={orientation}

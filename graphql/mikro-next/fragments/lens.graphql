@@ -40,9 +40,8 @@ fragment PhasorContext on PhasorContext {
 
 # What the RENDERER reads of a lens, and only an array lens is rendered through
 # this: a table, mesh, network or annotation layer draws its container, narrowed
-# by its lens' windows (`LensSubject`). Which axis is x, y, z is no longer here —
-# "a selection does not choose how it is looked at" — it is the LAYER's
-# `renderAxes` (`LayerRenderAxes`).
+# by its lens' windows (`LensSubject`). Which axis is x, y, z is derived on the
+# client from the layer's placement and the view (`viewAxes.ts`).
 fragment SceneLens on ArrayLens {
   __typename
   descriptors
@@ -58,12 +57,17 @@ fragment SceneLens on ArrayLens {
   phasor {
     ...PhasorContext
   }
-  # Id-only: the lens CS's axes are its axisNames by contract ("a selection
-  # never drops or reorders an axis"), so selecting them would only duplicate
-  # axisNames.
+  # The lens CS's axes are its axisNames by contract ("a selection never drops
+  # or reorders an axis"); selected for their TYPES, which say which axis is
+  # time, channel, phasor or displacement, and which are spatial. Which spatial
+  # axis is screen x, y, z is read off the layer's placement (`viewAxes.ts`).
   coordinateSystem {
     id
     name
+    axes {
+      name
+      type
+    }
   }
   toParent {
     ...Transformation

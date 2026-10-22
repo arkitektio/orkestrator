@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { selectionsFor } from "../../platform/model/worldSelections";
 import { useDatalayerEndpoint } from "@/core/connection/arkitekt/host";
 import { useMikro } from "@/mikro/api/funcs";
 import { acquireAttributeService } from "@/mikro/lib/attributes/attributeService";
@@ -78,7 +79,7 @@ export function AttributeProbeTracker() {
 
     /** The probed point as named level-0 coordinates (`probeAxisCoords`). */
     const coordsFor = (layer: LayerState, probe: SceneAttributeKey): AxisCoords =>
-      probeAxisCoords(layer, probe.voxelIndex, viewerStore.getState().dimSelections);
+      probeAxisCoords(layer, probe.voxelIndex, selectionsFor(viewerStore.getState(), layer.id));
 
     const layerById = (layerId: string): LayerState | null =>
       sceneStore.getState().layers.find((layer) => layer.id === layerId) ?? null;

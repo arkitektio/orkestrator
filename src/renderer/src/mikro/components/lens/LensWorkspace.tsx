@@ -1,17 +1,11 @@
 import { Sidebars } from "@/core/layout/Sidebars";
 import { lensSmart } from "@/core/linkers";
-import { useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
-import {
-  DetailLensFragment,
-  GetArrayDatasetQuery,
-  useGetSceneQuery,
-} from "../../api/graphql";
+import { DetailLensFragment, GetArrayDatasetQuery } from "../../api/graphql";
 import { MIKRO_HELP } from "../../help";
 import { describeLens, isWholeLens } from "../../lenses";
-import { useSceneOpen } from "../../lib/zarr/useDatalayerWarmup";
 import { DatasetBackdrop } from "../arraydataset/DatasetBackdrop";
 import { Scene } from "../scene/Scene";
+import { sceneSidebarTabs, useWorkspaceScene, WorkspaceViewport } from "../scene/workspaceScene";
 import { DatasetFacts } from "../sidebars/DatasetInfoSidebar";
 import { LensBackdrop } from "./LensBackdrop";
 import { LensInfoSection } from "./LensInfoSection";
@@ -20,8 +14,7 @@ import { LensesSidebar } from "./LensesSidebar";
 
 type PageDataset = GetArrayDatasetQuery["arrayDataset"];
 
-/** The query parameter naming the scene on screen: `/mikro/lenses/12?scene=40`. */
-export const SCENE_PARAM = "scene";
+export { SCENE_PARAM } from "../scene/workspaceScene";
 
 /**
  * The page people work on data in: a viewport, the scenes that draw it, and the
@@ -58,32 +51,9 @@ export const LensWorkspace = ({
   dataset?: PageDataset;
   lens: DetailLensFragment;
 }) => {
-  // Which scene is on screen lives in the URL (`?scene=`), not in component
-  // state: an action that stages a scene from elsewhere — the context menu, the
-  // object button — can then send someone straight to it, on this page, without
-  // the page having to be told. `replace` so flipping between scenes does not
-  // fill the back stack.
-  const [searchParams, setSearchParams] = useSearchParams();
-  const selectScene = useCallback(
-    (sceneId: string) =>
-      setSearchParams(
-        (previous) => {
-          const next = new URLSearchParams(previous);
-          next.set(SCENE_PARAM, sceneId);
-          return next;
-        },
-        { replace: true },
-      ),
-    [setSearchParams],
-  );
-
   // Every scene with a layer drawing this lens or a selection within it, for
   // every kind of lens: the server derives it from the coordinate graph.
   const scenes = lens.scenes;
-  // Only a scene this page actually lists: a stale link must fall back to the
-  // nomination rather than open a scene of something else under this title.
-  const requested = searchParams.get(SCENE_PARAM);
-  const selectedSceneId = scenes.find((scene) => scene.id === requested)?.id;
   const defaultSceneId = lens.defaultScene?.id;
   const sliced = !isWholeLens(lens);
 
@@ -100,22 +70,7 @@ export const LensWorkspace = ({
   const nominated = sliced
     ? scenes.find((scene) => scene.id === defaultSceneId)?.id
     : defaultSceneId;
-  const activeSceneId = selectedSceneId ?? nominated ?? scenes.at(0)?.id;
-
-  // Start the cold-open timeline and warm the datalayer the moment we know
-  // WHICH scene to open — this is the route most users actually arrive through.
-  useSceneOpen(activeSceneId);
-
-  // The page only carries ListScene (id + name) for the switcher — the renderer
-  // needs layers and the world, so the active scene is fetched in full the same
-  // way ScenePage does. Apollo caches it, so switching back is free.
-  const { data: sceneData, loading: sceneLoading } = useGetSceneQuery({
-    variables: { id: activeSceneId as string },
-    skip: !activeSceneId,
-    // See ScenePage: a layer whose `asAffine` cannot condense must null that
-    // one field, not discard the scene.
-    errorPolicy: "all",
-  });
+  const { activeSceneId, selectScene, scene, sceneLoading } = useWorkspaceScene({ scenes, landOn: nominated });
 
   const description = describeLens(lens);
   const LensSmart = lensSmart(lens.__typename);
@@ -124,7 +79,7 @@ export const LensWorkspace = ({
     // The provider wraps the WHOLE ModelPage so the Layers sidebar tab (a
     // sibling panel of the content area) reaches the scene stores. Null scene
     // = "no scene selected"; the tab says so instead of listing layers.
-    <Scene.Provider scene={sceneData?.scene ?? null}>
+    <Scene.Provider scene={scene}>
       <LensSmart.ModelPage
         object={lens}
         help={MIKRO_HELP.lens}
@@ -142,13 +97,7 @@ export const LensWorkspace = ({
         }
         additionalSidebars={
           <>
-            <Sidebars.Tab label="Layers"><Scene.LayersSidebar /></Sidebars.Tab>
-            <Sidebars.Tab label="Annotations"><Scene.AnnotationsSidebar /></Sidebars.Tab>
-            <Sidebars.Tab label="Probe"><Scene.ProbeSidebar /></Sidebars.Tab>
-            {/* Only when there is something to list — see Scene.hasMeshLayer. */}
-            {Scene.hasMeshLayer(sceneData?.scene) && (
-              <Sidebars.Tab label="Meshes"><Scene.MeshesSidebar /></Sidebars.Tab>
-            )}
+            {sceneSidebarTabs(scene)}
             <Sidebars.Tab label="Lenses">
               <LensesSidebar lens={lens} dataset={dataset} />
             </Sidebars.Tab>
@@ -172,42 +121,28 @@ export const LensWorkspace = ({
         sidebarKey="SceneDetail"
       >
         <div className="relative h-full w-full">
-          {/* Keyed on the scene id: the renderer builds its stores per scene, so
-              switching scenes must remount rather than feed a new scene into
-              components primed for the old one. */}
-          {sceneData?.scene ? (
-            // Just the scrubbers: the view settings are a gear in the
-            // viewport's bottom-right HUD, so the title card below has the
-            // top-left corner to itself.
-            <Scene.Viewport key={sceneData.scene.id}>
-              <Scene.Dock side="right">
-                <Scene.ZSlider />
-              </Scene.Dock>
-              <Scene.Dock side="bottom">
-                <Scene.DimSliders />
-              </Scene.Dock>
-            </Scene.Viewport>
-          ) : activeSceneId ? (
-            <div className="flex h-full w-full items-center justify-center">
-              <div className="text-sm text-muted-foreground">Loading scene…</div>
-            </div>
-          ) : lens.__typename === "ArrayLens" && dataset ? (
-            <DatasetBackdrop
-              dataset={dataset}
-              lens={lens}
-              // Creating a scene here does NOT leave the page: this page
-              // already renders scenes, so the new one is simply the one now
-              // selected — the switcher lists it (the mutation awaits a
-              // refetch) and the viewport remounts on its id.
-              onSceneCreated={selectScene}
-            />
-          ) : (
-            <LensBackdrop lens={lens} onSceneCreated={selectScene} />
-          )}
+          <WorkspaceViewport
+            scene={scene}
+            activeSceneId={activeSceneId}
+            empty={
+              lens.__typename === "ArrayLens" && dataset ? (
+                <DatasetBackdrop
+                  dataset={dataset}
+                  lens={lens}
+                  // Creating a scene here does NOT leave the page: this page
+                  // already renders scenes, so the new one is simply the one now
+                  // selected — the switcher lists it (the mutation awaits a
+                  // refetch) and the viewport remounts on its id.
+                  onSceneCreated={selectScene}
+                />
+              ) : (
+                <LensBackdrop lens={lens} onSceneCreated={selectScene} />
+              )
+            }
+          />
 
-          {/* Page chrome, not scene chrome: outside the branch above, so it is
-              the same card in the same place whether or not a scene is on
-              screen. */}
+          {/* Page chrome, not scene chrome: outside the viewport, so it is the
+              same card in the same place whether or not a scene is on screen. */}
           <LensTitleOverlay
             dataset={dataset}
             lens={lens}

@@ -1,8 +1,7 @@
 import { NotFound } from "@/core/layout/fallbacks/NotFound";
 import { ModuleLayout } from "@/core/layout/ModuleLayout";
 import { Route, Routes } from "react-router-dom";
-import ArrayDatasetPage, { ArrayDatasetOpenPage } from "./pages/ArrayDatasetPage";
-import { CONTAINER_SUBROUTE } from "./lenses";
+import ArrayDatasetPage from "./pages/ArrayDatasetPage";
 import ArrayDatasetSpecPage from "./pages/ArrayDatasetSpecPage";
 import ArrayDatasetsPage from "./pages/ArrayDatasetsPage";
 import AnnotationPage from "./pages/AnnotationPage";
@@ -40,8 +39,7 @@ export const MikroNextModule = () => {
         <Route path="folders" element={<FoldersPage />} />
         {/* Three segments, so it cannot be mistaken for arrayDatasets/:id. */}
         <Route path="arraydatasets/spec/:spec" element={<ArrayDatasetSpecPage />} />
-        <Route path="arraydatasets/:id" element={<ArrayDatasetOpenPage />} />
-        <Route path={`arraydatasets/:id/${CONTAINER_SUBROUTE}`} element={<ArrayDatasetPage />} />
+        <Route path="arraydatasets/:id" element={<ArrayDatasetPage />} />
         <Route path="arraydatasets" element={<ArrayDatasetsPage />} />
         <Route
           path="coordinatesystems/:id"

@@ -131,8 +131,7 @@ annotations follow with no per-feature code. The rules:
   origin-anchored affine before anything is stored (§0).
 
 **R2 — Store what was authored or measured; derive everything else.**
-Server-derived (we consume, never re-implement): `Lens.renderAxes` (axis
-mapping from axis TYPES), `Lens.toParent` (crop translation from slice
+Server-derived (we consume, never re-implement): `Lens.toParent` (crop translation from slice
 starts), `DataArray.toParent` (per-level pixel scale from actual shapes),
 `Layer.pathToWorld` / `ImageLayer.levelPaths` (path resolution over the
 graph), `Layer.asAffine` (that path composed). Client-derived (we own): the
@@ -168,8 +167,7 @@ Scene
       │                             #   layer + relative factors. Reselect when
       │                             #   per-level placement lands (§3.1).
       └─ lens
-         ├─ renderAxes {x y z t intensity}   # derived from axis types (server)
-         ├─ coordinateSystem                 # the lens' own (cropped) space
+         ├─ coordinateSystem { axes {name type} }  # the lens' own space; TYPES say t/c/phasor/vector
          ├─ toParent                         # lens → level-0 array space
          ├─ slices[]                         # authored selection
          └─ dataset
@@ -244,14 +242,14 @@ have. The migration is an adapter, not a rewrite.
 | Derived fact | From | Where | Consumed by |
 | --- | --- | --- | --- |
 | `LayerState.affineMatrix` (LATTICE→world 4×4, x/y/z rows; §0) | the half-voxel corner→centre shift, then local prefix (`lens.toParent`, level-0 `toParent`) ∘ the server's `asAffine` | `composeLatticeAffine` (`@/core/data/scene/coords/transformGraph.ts`, over `composeLayerAffine`, the index→world map), once per scene load in `normalizeLayer` and again on a placement preview | `worldTransform.buildAffineMatrix` (the rendered frame — corner-anchored, §0), `nodePlanning` 2D slab inverse, `visibility`, `RoiDrawer` |
-| `LayerState.xAxis/yAxis/zAxis/tAxis/intensityAxis` | `lens.renderAxes` | `normalizeLayer` (`platform/model/layerModel.ts`) | `resolveAxisIndices` and ~15 call sites (slice signature, probes, panels) |
+| `layer.renderAxes` → `LayerState.xAxis/yAxis/zAxis/tAxis/intensityAxis` | spatial slots: the dominant lens axis of each `asAffine` row, rows taken in VIEW order; t/c/phasor/vector: a type scan of the lens' axes | `deriveRenderAxes` (`@/core/data/scene/coords/viewAxes.ts`) via `viewLayer`, on every ingest into the scene store; then `normalizeLayer` | `resolveAxisIndices` and ~15 call sites (slice signature, probes, panels) |
 | Relative level factors (old `scaleFactors` semantics) | `toParent` pixel scales, `rel = abs_L / abs_0` (a no-op now that level 0 = 1) | `relativeLevelScaleFactors` / `buildLevelSources` (`platform/coords/levelGeometry.ts`) | level geometry, plan tracker, residency, pool viability, probe geometry |
 | `spatialUnit` | first SPACE axis of the world CS | `sceneStore` | `ScaleBar` |
 | Mesh transforms | `MeshLayer.asAffine` via `placementToSpatialAffine` | `platform/model/collectionPlacement.ts` | `features/meshes/FabriksCollectionLayer` |
 
-Raw-fragment code paths that run BEFORE normalization (`lodPlanning`,
-`renderCost`, `renderGraph.defaultLayerGraph`, `colormap-utils`) read
-`layer.lens.renderAxes` directly.
+Code paths that run BEFORE normalization (`lodPlanning`, `renderCost`,
+`renderGraph.defaultLayerGraph`, `colormap-utils`) read the store layer's
+derived `renderAxes` directly. The server no longer states it on a layer.
 
 ### 3.1 `composeLayerAffine` — local prefix + server path
 
@@ -409,7 +407,15 @@ provenance only — never used for resolution.
 
 ### 3.5 Axis mapping is structural now
 
-`renderAxes` is derived server-side from axis TYPES (SPACE/TIME/CHANNEL), so
+Which lens axis is screen x/y/z is read off the placement under the VIEW
+(`viewAxes.ts`): the view picks which world axis each screen axis shows
+(XY / XZ / YZ, session-only, `sceneViewAxes.ts`; a change rebuilds the scope),
+every placement's OUTPUT side is the world triple in that order
+(`worldViewTriple`), and each screen slot takes the lens axis dominating that
+row — so the lattice→screen map stays near-diagonal and the 2D slab path keeps
+slicing along lattice z. Writes back to the world (drawn annotations,
+registration deltas) go through the same order; camera tours stay XY-only.
+The non-spatial roles come from the lens' axis TYPES (SPACE/TIME/CHANNEL), so
 the P16 class of bug (`intensityAxis === zAxis`, 16 phantom channels, 512 MB
 atlas) is structurally impossible — a dim cannot be two types. The
 `resolveAxisIndices` collision guard stays as defense in depth. The spatial

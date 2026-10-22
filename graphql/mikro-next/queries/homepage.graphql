@@ -56,3 +56,98 @@ query PeerHomePageStats($id: ID!){
     }
   }
 }
+
+# The home page's recent data: the newest parentless data of every kind it shows,
+# newest first. Keys only -- each kind's tiles come from its own list in
+# `HomeRootDetails`, where the tile fields are prefetched. `filters` is the home
+# page's filter row: who made it, which collaboration it is in, and when it was
+# created or acquired.
+query HomeRoots($pagination: OffsetPaginationInput, $filters: RootFilter) {
+  roots(
+    kinds: [FILE, DATASET, TABLE_DATASET, MESH_COLLECTION, SPARSE_DATASET, NETWORK_COLLECTION]
+    pagination: $pagination
+    filters: $filters
+  ) {
+    key
+    kind
+    id
+    name
+    createdAt
+  }
+}
+
+# The tiles for a page of roots, one constant-cost list per kind. A file comes with
+# the series a converter wrote out of it, so its card can show its images.
+query HomeRootDetails(
+  $files: [ID!]!
+  $datasets: [ID!]!
+  $tables: [ID!]!
+  $sparse: [ID!]!
+  $hasFiles: Boolean!
+  $hasDatasets: Boolean!
+  $hasTables: Boolean!
+  $hasSparse: Boolean!
+) {
+  files(filters: { ids: $files }, pagination: { limit: 100 }) @include(if: $hasFiles) {
+    ...ListFile
+    derivedContainers(filters: { direction: SOURCE }) {
+      id
+      seriesIdentifier
+      container {
+        __typename
+        ... on ArrayDataset {
+          ...ListArrayDataset
+        }
+        ... on TableDataset {
+          id
+        }
+        ... on MeshCollection {
+          id
+        }
+        ... on AnnotationCollection {
+          id
+        }
+      }
+    }
+  }
+  arrayDatasets(filters: { ids: $datasets }, pagination: { limit: 100 }) @include(if: $hasDatasets) {
+    ...ListArrayDataset
+  }
+  tableDatasets(filters: { ids: $tables }, pagination: { limit: 100 }) @include(if: $hasTables) {
+    ...ListTableDataset
+  }
+  sparseDatasets(filters: { ids: $sparse }, pagination: { limit: 100 }) @include(if: $hasSparse) {
+    ...ListSparseDataset
+  }
+}
+
+# What was made from every tile on the home page -- each converted series, each image
+# or table that came without a file -- in one walk on the server, rather than one
+# lineage per card. Only what a chip needs.
+query HomeResults($starts: [LineageRootInput!]!, $down: Int! = 3) {
+  descendants(starts: $starts, down: $down) {
+    root
+    more
+    nodes {
+      key
+      kind
+      id
+      name
+      depth
+    }
+  }
+}
+
+# What the home page's filter row offers: the organization's members (by sub, the
+# key `RootFilter.owner` takes) and its collaborations, by name only.
+query HomeFilterOptions {
+  members {
+    user {
+      sub
+    }
+  }
+  collaborations {
+    id
+    name
+  }
+}

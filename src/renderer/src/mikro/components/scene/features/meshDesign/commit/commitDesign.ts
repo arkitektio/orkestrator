@@ -1,6 +1,7 @@
 import {
   AxisType,
   CreatableTransformKind,
+  PartKind,
   MeshShading,
   CreateMeshCollectionDocument,
   CreateMeshLayerDocument,
@@ -81,9 +82,14 @@ export const translationForAxes = (axisNames: readonly string[], offset: readonl
  */
 export const placementTransform = (axisNames: readonly string[], offset: readonly [number, number, number]) => ({
   kind: CreatableTransformKind.ByDimension,
-  translation: translationForAxes(axisNames, offset),
-  inputAxes: [...axisNames],
-  outputAxes: [...axisNames],
+  parts: [
+    {
+      kind: PartKind.Translation,
+      translation: translationForAxes(axisNames, offset),
+      inputAxes: [...axisNames],
+      outputAxes: [...axisNames],
+    },
+  ],
 });
 
 export const toBakeMeshes = (meshes: readonly DesignMesh[]): DesignBakeMesh[] =>

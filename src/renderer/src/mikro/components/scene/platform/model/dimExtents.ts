@@ -1,4 +1,5 @@
-import type { DimSliceFragment, SceneLayerFragment } from "@/mikro/api/graphql";
+import type { DimSliceFragment } from "@/mikro/api/graphql";
+import type { SceneLayerFragment } from "./layerGuards";
 import { buildSliceMap, resolveCollapsedSelection } from "../coords/selection";
 import { isVectorLayer } from "./layerGuards";
 

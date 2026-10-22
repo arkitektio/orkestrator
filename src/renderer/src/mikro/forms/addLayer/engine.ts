@@ -579,7 +579,7 @@ const downstreamEvidence = (
   const evidence: Evidence[] = [];
   for (const { node: child, edge, depth } of descendants(graph, node, 3)) {
     const decay = Math.pow(WITNESS_DECAY, depth - 1);
-    if (isDereference(edge, graph)) {
+    if (isDereference(edge)) {
       evidence.push({
         rule: "keyed-by-table",
         kind: "LABEL",

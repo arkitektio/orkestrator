@@ -29,6 +29,7 @@ import {
   parseNodeKey,
 } from "../octree/nodeAddress";
 import { scheduleBackgroundTask } from "./pumpScheduler";
+import { selectionsFor } from "../../../platform/model/worldSelections";
 import { gpuRepackIsCheaper } from "./repackRouting";
 import { haloStillWanted, initialFetchPhase } from "./twoPhase";
 import {
@@ -904,7 +905,7 @@ export class BrickResidencyManager {
       derivation.layer,
       derivation.geometry,
       derivation.levels as LevelSource[],
-      this.deps.viewerStore.getState().dimSelections,
+      selectionsFor(this.deps.viewerStore.getState(), derivation.layer.id),
     );
     const same =
       JSON.stringify(fixedChunkCoords) === JSON.stringify(pool.fixedChunkCoords) &&
@@ -1326,7 +1327,7 @@ export class BrickResidencyManager {
       ensureGpuRepacker: () => {
         this.ensureGpuRepacker();
       },
-      dimSelections: () => this.deps.viewerStore.getState().dimSelections,
+      dimSelections: () => selectionsFor(this.deps.viewerStore.getState(), derivation.layer.id),
     });
     if (!pool) return null;
     this.pools.set(poolKey, pool);
@@ -2111,7 +2112,7 @@ export class BrickResidencyManager {
         layer,
         pool.geometry,
         levels,
-        this.deps.viewerStore.getState().dimSelections,
+        selectionsFor(this.deps.viewerStore.getState(), layer.id),
       ),
     );
     this.flushedAt = performance.now();

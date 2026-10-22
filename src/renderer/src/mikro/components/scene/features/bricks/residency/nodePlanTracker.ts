@@ -16,6 +16,7 @@ import { assessPoolViability } from "../octree/poolViability";
 import { buildPlanInputSignature } from "../octree/planInputSignature";
 import { buildPoolKey, poolValueSemantics } from "../octree/poolKey";
 import { buildSliceSignature } from "../../../platform/model/sliceSignature";
+import { selectionsFor } from "../../../platform/model/worldSelections";
 import {
   layerPlanSignature,
   layersPlanKey,
@@ -267,7 +268,7 @@ export function startNodePlanTracking({
         spec,
         geometry,
         levels,
-        sliceSignature: buildSliceSignature(layer, viewerState.dimSelections),
+        sliceSignature: buildSliceSignature(layer, selectionsFor(viewerState, layer.id)),
         dataRange: resolveLayerDataRange(layer, geometry.levels[0].dtype),
         valueSemantics: poolValueSemantics(layer),
       });
@@ -424,7 +425,7 @@ export function startNodePlanTracking({
       const prevCompatible =
         prevRepresentative !== null &&
         prevRepresentative.mode === mode &&
-        prevRepresentative.sliceSignature === buildSliceSignature(layer, viewerState.dimSelections);
+        prevRepresentative.sliceSignature === buildSliceSignature(layer, selectionsFor(viewerState, layer.id));
       // The crop box is scene-wide and the affine is part of the class
       // signature, so one voxel box serves every member of the class.
       const cropBox = viewerState.cropBox;
@@ -445,7 +446,7 @@ export function startNodePlanTracking({
         camera,
         lodBias: viewerState.lodBias,
         currentZ: viewerState.currentZ,
-        dimSelections: viewerState.dimSelections,
+        dimSelections: selectionsFor(viewerState, layer.id),
         maxPlanBytes,
         decodeCacheShareBytes,
         // COLD-OPEN gate: plan #1 (no previous plan for this class) skips
@@ -559,6 +560,8 @@ export function startNodePlanTracking({
   let lastLodBias = initialViewer.lodBias;
   let lastCurrentZ = initialViewer.currentZ;
   let lastDimSelections = initialViewer.dimSelections;
+  let lastWorldSelections = initialViewer.worldSelections;
+  let lastLayerAxisInstants = initialViewer.layerAxisInstants;
   const unsubscribeViewer = viewerStore.subscribe((state) => {
     if (
       state.layerViewRanges !== lastViewRanges ||
@@ -573,7 +576,9 @@ export function startNodePlanTracking({
       state.cropBox !== lastCropBox ||
       state.lodBias !== lastLodBias ||
       state.currentZ !== lastCurrentZ ||
-      state.dimSelections !== lastDimSelections
+      state.dimSelections !== lastDimSelections ||
+      state.worldSelections !== lastWorldSelections ||
+      state.layerAxisInstants !== lastLayerAxisInstants
     ) {
       lastViewRanges = state.layerViewRanges;
       lastViewSnapshot = state.viewSnapshot;
@@ -581,6 +586,8 @@ export function startNodePlanTracking({
       lastLodBias = state.lodBias;
       lastCurrentZ = state.currentZ;
       lastDimSelections = state.dimSelections;
+      lastWorldSelections = state.worldSelections;
+      lastLayerAxisInstants = state.layerAxisInstants;
       schedule();
     }
   });

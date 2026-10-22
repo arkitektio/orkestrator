@@ -4,9 +4,9 @@ import { memo } from "react";
 import {
   ColorMap,
   useUpdatePointLayerMutation,
-  type SceneLayerFragment,
   type UpdatePointLayerInput,
 } from "@/mikro/api/graphql";
+import type { SceneLayerFragment } from "../../platform/model/layerGuards";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import {
   Badge,

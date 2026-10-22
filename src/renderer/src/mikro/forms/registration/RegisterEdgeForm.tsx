@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 import {
   CoordinateSystemFragment,
   CreatableTransformKind,
+  PartKind,
   PlacementValidity,
   useCreateTransformationMutation,
 } from "../../api/graphql";
@@ -513,8 +514,8 @@ const buildInputForMutation = (draft: RegistrationDraft) => {
     ...built,
     validity: built.validity as PlacementValidity,
     transform: {
-      ...built.transform,
       kind: built.transform.kind as CreatableTransformKind,
+      parts: built.transform.parts.map((part) => ({ ...part, kind: part.kind as PartKind })),
     },
   };
 };

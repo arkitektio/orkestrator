@@ -1,7 +1,7 @@
 import type { PathStep, PathTransformLike } from "../coords/pathTypes";
 
 /**
- * Attribute-plan data model — the read side of a FIELD edge. A plan is a set
+ * Attribute-plan data model — the read side of a key (a BY_DIMENSION whose FIELD part keys a table). A plan is a set
  * of instructions the server hands the client once: sample a zarr array at
  * the probed point (mapped along `path` when the plan is not rooted where the
  * probe lives), then run the chain of HOPS — the landing (a parquet row read
@@ -195,7 +195,7 @@ export type ValueAxisMapLike = {
 
 /**
  * What every hop of a plan's chain carries. `hops[0]` is the landing — the
- * table or matrix the FIELD edge's id keys, bound from `sample`; every later
+ * table or matrix the key's id keys, bound from `sample`; every later
  * hop binds from what its `parent` returned, under the name `via` states.
  */
 export type AttributeHopBase = {
@@ -300,7 +300,7 @@ export const isArrayHop = (hop: AttributeHopLike): hop is ArrayHopLike =>
   hop.lookup.kind === "ARRAY";
 
 export type AttributePlanLike = {
-  /** The FIELD edge the plan was built from — half of the staleness key. */
+  /** The key the plan was built from — half of the staleness key. */
   edge: { id: string; version: number };
   path: readonly AttributePathStep[];
   sample: SampleLike;
@@ -325,7 +325,7 @@ export const hopSource = (
       : { id: hop.table.id, name: hop.table.name, kind: "TABLE" };
 
 /**
- * The plan's full identity: the landing plus the FIELD edge plus every path
+ * The plan's full identity: the landing plus the key plus every path
  * step, each as `(id, version)`. This is the ONLY staleness vector a plan has
  * — parquet contents changing never stales one — so it doubles as the cache
  * key for prepared statements and result LRUs.

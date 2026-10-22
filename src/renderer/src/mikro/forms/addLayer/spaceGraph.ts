@@ -78,7 +78,7 @@ export type SpaceNode = {
 
 export type GraphEdge = {
   id: string;
-  /** TransformKind wire value: IDENTITY, TRANSLATION, FIELD, UNMAPPABLE, … */
+  /** TransformKind wire value: IDENTITY, TRANSLATION, BY_DIMENSION, UNMAPPABLE, … */
   kind: string;
   /** ValueRelation wire value, or null when the author did not say. */
   valueRelation: string | null;
@@ -86,7 +86,12 @@ export type GraphEdge = {
   input: string | null;
   /** The space it maps into — the edge's `output`. */
   output: string | null;
-  /** For a FIELD edge, the space of the array whose values are the map. */
+  /**
+   * Whether the edge is a key: a BY_DIMENSION whose FIELD part's values are ids
+   * (a mask's) keying a table's rows, as the server materialized it.
+   */
+  key?: boolean;
+  /** For a key, the space of the array whose values are the ids -- the mask's own. */
   fieldId?: string | null;
   reason?: string | null;
   /**
@@ -120,9 +125,12 @@ export type EdgeLike = {
   valueRelation?: string | null;
   input?: { id: string } | null;
   output?: { id: string } | null;
-  field?: { id: string } | null;
+  parts?: readonly { kind: string; field?: { dereference: boolean; field: { id: string } } | null }[] | null;
   reason?: string | null;
 };
+
+/** The part of an edge that keys a table's rows, if it is a key. */
+const keyPartOf = (edge: EdgeLike) => edge.parts?.find((part) => part.field?.dereference) ?? null;
 
 export type DatasetLike = {
   id: string;
@@ -318,7 +326,11 @@ const addEdge = (
     if (claim.derivation) existing.derivation = true;
     if (existing.ordinal === null && claim.ordinal !== null)
       existing.ordinal = claim.ordinal;
-    if (!existing.fieldId && edge.field?.id) existing.fieldId = edge.field.id;
+    const key = keyPartOf(edge);
+    if (key) {
+      existing.key = true;
+      existing.fieldId = key.field?.field.id ?? null;
+    }
     if (!existing.reason && edge.reason) existing.reason = edge.reason;
     if (!existing.valueRelation && edge.valueRelation)
       existing.valueRelation = edge.valueRelation;
@@ -330,7 +342,8 @@ const addEdge = (
     valueRelation: edge.valueRelation ?? null,
     input: edge.input?.id ?? null,
     output: edge.output?.id ?? null,
-    fieldId: edge.field?.id ?? null,
+    key: !!keyPartOf(edge),
+    fieldId: keyPartOf(edge)?.field?.field.id ?? null,
     reason: edge.reason ?? null,
     derivation: claim.derivation,
     ordinal: claim.ordinal,
@@ -508,7 +521,7 @@ export const graphFromComponent = (component: ComponentLike): DerivationGraph =>
     const next: string[] = [];
     for (const parent of frontier) {
       for (const edge of graph.edges.values()) {
-        if (edge.output !== parent || !edge.input || isDereference(edge, graph)) continue;
+        if (edge.output !== parent || !edge.input || isDereference(edge)) continue;
         const child = upsertSpace(graph, { id: edge.input }, null);
         if (child.depth !== null) continue;
         child.depth = (graph.spaces.get(parent)?.depth ?? 0) + 1;
@@ -642,6 +655,7 @@ export const mergeGraphs = (
       } else {
         if (edge.derivation) existing.derivation = true;
         if (existing.ordinal === null && edge.ordinal !== null) existing.ordinal = edge.ordinal;
+        if (edge.key) existing.key = true;
         if (!existing.fieldId && edge.fieldId) existing.fieldId = edge.fieldId;
         if (!existing.valueRelation && edge.valueRelation) existing.valueRelation = edge.valueRelation;
       }
@@ -671,21 +685,13 @@ export const childSpacesOf = (graph: DerivationGraph, space: string): GraphEdge[
   [...graph.edges.values()].filter((edge) => edge.output === space && !!edge.input);
 
 /**
- * A FIELD edge that keys a mask's pixels to a table of objects. The schema's
- * own definition is "the field IS the input"; where the tree gave the edge
- * without its field (the interface-only `TreeEdge`), it is told apart by
- * where it lands — a dereference maps INTO a table's space, a warp maps a grid
- * into another grid. It runs mask → table, the opposite way to every
- * derivation, and it is a dereference rather than a parent: the upstream walk
- * skips it, or a mask would read as derived from its own object table.
+ * A key: an edge whose FIELD part keys a mask's pixels to a table of objects
+ * -- the server says so (`dereference`), a placing field (a warp) is not one.
+ * It runs mask → table, the opposite way to every derivation, and it is a
+ * dereference rather than a parent: the upstream walk skips it, or a mask
+ * would read as derived from its own object table.
  */
-export const isDereference = (edge: GraphEdge, graph?: DerivationGraph): boolean => {
-  if (edge.kind !== "FIELD") return false;
-  if (edge.fieldId) return edge.fieldId === edge.input;
-  if (!graph) return false;
-  const landing = ownerOf(graph, edge.output);
-  return !!landing && landing.kind !== "dataset";
-};
+export const isDereference = (edge: GraphEdge): boolean => !!edge.key;
 
 const byOrdinal = (a: GraphEdge, b: GraphEdge) =>
   (a.ordinal ?? Number.MAX_SAFE_INTEGER) - (b.ordinal ?? Number.MAX_SAFE_INTEGER) ||
@@ -703,7 +709,7 @@ export const parentEdgesOf = (graph: DerivationGraph, node: GraphNode): GraphEdg
         !!edge.input &&
         node.spaces.has(edge.input) &&
         !node.spaces.has(edge.output ?? "") &&
-        !isDereference(edge, graph),
+        !isDereference(edge),
     )
     .sort(byOrdinal);
 
@@ -715,7 +721,7 @@ export const parentEdgesOf = (graph: DerivationGraph, node: GraphNode): GraphEdg
 export const childEdgesOf = (graph: DerivationGraph, node: GraphNode): GraphEdge[] =>
   [...graph.edges.values()]
     .filter((edge) => {
-      if (isDereference(edge, graph)) return !!edge.input && node.spaces.has(edge.fieldId ?? edge.input);
+      if (isDereference(edge)) return !!edge.input && node.spaces.has(edge.fieldId ?? edge.input);
       if (!edge.output || !node.spaces.has(edge.output)) return false;
       if (!!edge.input && node.spaces.has(edge.input)) return false;
       // A child the tree knows only as an edge still counts; a registration
@@ -727,7 +733,7 @@ export const childEdgesOf = (graph: DerivationGraph, node: GraphNode): GraphEdge
 
 /** The container a child edge leads to: the child, or the keyed table. */
 export const childOfEdge = (graph: DerivationGraph, edge: GraphEdge): GraphNode | undefined =>
-  ownerOf(graph, isDereference(edge, graph) ? edge.output : edge.input);
+  ownerOf(graph, isDereference(edge) ? edge.output : edge.input);
 
 export type ChainStep = {
   edge: GraphEdge;

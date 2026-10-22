@@ -19,9 +19,24 @@ import {
   type AnchorLike,
   type ChannelSite,
 } from "./anchors";
-import { placeabilityOf, type Placeability } from "@/core/data/plot/model/placeable";
+import { placeabilityOf, type PlacementLike, type Placeability } from "@/core/data/plot/model/placeable";
 import { channelColoringOf, type ChannelColoring } from "@/core/data/plot/model/channelColor";
 import { colorForLayerId } from "@/core/data/plot/model/layerColor";
+
+/**
+ * elektro's server still errors at `asAffine` for a FIELD step -- every spike train,
+ * irregularly sampled signal and variable-time-step run -- rather than composing it
+ * into `fields`. So here, and only here, an error (or a DIFFEOMORPHIC path, which is
+ * precisely one that crosses a field) on a PLACED view reads as "timed by an array".
+ */
+export const elektroPlaceabilityOf = (view: PlacementLike, asAffineError?: string | null): Placeability => {
+  const placeability = placeabilityOf(view, asAffineError);
+  if (!placeability.drawable && placeability.reason === "uncondensable" && (asAffineError || view.placementInvariance === "DIFFEOMORPHIC")) {
+    return { drawable: true, timeSource: "FIELD", reason: asAffineError ?? null };
+  }
+  return placeability;
+};
+
 
 /**
  * A layer, normalized into what the renderer and the panel read.
@@ -292,7 +307,7 @@ export const normalizeTraceLayer = (
    */
   keptSource?: TraceSource | null,
 ): LayerState => {
-  const placeability = placeabilityOf(layer, asAffineError);
+  const placeability = elektroPlaceabilityOf(layer, asAffineError);
 
   let source: TraceSource | null = keptSource ?? null;
   let sourceFailure: SourceFailure | null = null;
@@ -357,7 +372,7 @@ export const normalizeSpikesLayer = (
   worldUnitMs: number | null = null,
 ): LayerState => {
   const persisted = persistedOf(layer);
-  const placeability = placeabilityOf(layer, asAffineError);
+  const placeability = elektroPlaceabilityOf(layer, asAffineError);
   let spikes: SpikeSource | null = null;
   let sourceFailure: string | null = null;
   if (placeability.drawable && placeability.timeSource === "AFFINE") {
@@ -397,7 +412,7 @@ export const normalizeEventsLayer = (
   asAffineError?: string | null,
 ): LayerState => {
   const persisted = persistedOf(layer);
-  const placeability = placeabilityOf(layer, asAffineError);
+  const placeability = elektroPlaceabilityOf(layer, asAffineError);
   let events: EventSource | null = null;
   let sourceFailure: string | null = null;
   if (placeability.drawable && placeability.timeSource === "AFFINE") {
@@ -426,7 +441,7 @@ export const normalizeAnnotationLayer = (
   layer: AnnotationLayerLike,
   asAffineError?: string | null,
 ): LayerState => ({
-  ...base(layer, "annotation", persistedOf(layer), placeabilityOf(layer, asAffineError)),
+  ...base(layer, "annotation", persistedOf(layer), elektroPlaceabilityOf(layer, asAffineError)),
   label: layer.name ?? layer.annotationCollection.name,
 });
 

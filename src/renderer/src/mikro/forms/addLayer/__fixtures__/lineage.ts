@@ -21,7 +21,7 @@ import type { StagedLayerLike } from "../engine";
 export type EdgeOverrides = {
   kind?: string;
   valueRelation?: string | null;
-  field?: string | null;
+  parts?: EdgeLike["parts"];
   reason?: string | null;
 };
 
@@ -37,13 +37,20 @@ export const edge = (
   valueRelation: overrides.valueRelation ?? null,
   input: { id: input },
   output: { id: output },
-  field: overrides.field ? { id: overrides.field } : null,
+  parts: overrides.parts ?? null,
   reason: overrides.reason ?? null,
 });
 
-/** The FIELD edge keying a mask's pixels to a table of objects: mask → table. */
+/** One FIELD part reading `field`'s array; a key when its values are ids. */
+const fieldPart = (field: string, dereference: boolean) => ({ kind: "FIELD", field: { dereference, field: { id: field } } });
+
+/** The key from a mask's pixels to a table of objects: mask → table, a BY_DIMENSION whose FIELD part dereferences. */
 export const keyEdge = (id: string, mask: string, table: string): EdgeLike =>
-  edge(id, mask, table, { kind: "FIELD", field: mask });
+  edge(id, mask, table, { kind: "BY_DIMENSION", parts: [fieldPart(mask, true)] });
+
+/** A warp: a BY_DIMENSION whose FIELD part places, reading a separate array. */
+export const warpEdge = (id: string, input: string, output: string, field: string): EdgeLike =>
+  edge(id, input, output, { kind: "BY_DIMENSION", parts: [fieldPart(field, false)] });
 
 export type DatasetOverrides = {
   name?: string;

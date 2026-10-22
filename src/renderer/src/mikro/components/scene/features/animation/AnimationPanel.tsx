@@ -17,6 +17,9 @@ import { Easing } from "@/mikro/api/graphql";
 import { tourDurationMs } from "../../platform/camera/animation";
 import { useAnimationStore } from "../../platform/stores/animationStore";
 import { useModeStore } from "../../platform/stores/modeStore";
+import { useSceneStore } from "../../platform/stores/sceneStore";
+import { useSceneViewAxes } from "../../platform/stores/sceneViewAxes";
+import { isIdentityView } from "@/core/data/scene/coords/viewAxes";
 import { useAnimationEditor } from "./useAnimationEditor";
 
 const EASING_LABELS: Record<Easing, string> = {
@@ -175,16 +178,44 @@ const DraftRow = ({ index }: { index: number }) => {
  * the view it was taken in (`captureCameraState` fills only that view's
  * orientation/scale pair), which is why the capture button names the mode.
  */
-export const AnimationPanel = ({
-  variant = "floating",
-}: {
+type AnimationPanelProps = {
   /**
    * Where the panel is hosted. "floating" is the in-viewport card (fixed
    * width, own chrome); "sidebar" fills a page-rail tab, which hands the
    * panel a plain full-height flex box and expects it to own its scroll.
    */
   variant?: "floating" | "sidebar";
-} = {}) => {
+};
+
+const panelClass = (variant: AnimationPanelProps["variant"]) =>
+  variant === "sidebar"
+    ? "flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2"
+    : "pointer-events-auto flex max-h-[60vh] w-60 flex-col gap-2 overflow-y-auto rounded-lg border border-black/10 bg-black/40 p-2 backdrop-blur-md";
+
+/**
+ * A tour's poses are camera positions in the XY view's space. Turned to
+ * another plane the camera lives in a permuted space (`viewAxes.ts`), so a
+ * tour would play from the wrong side and a stop taken there would be stored
+ * wrong: the panel waits for the view to turn back.
+ */
+export const AnimationPanel = ({ variant = "floating" }: AnimationPanelProps = {}) => {
+  const sceneId = useSceneStore((s) => s.id);
+  const view = useSceneViewAxes(sceneId);
+  if (isIdentityView(view)) return <AnimationPanelBody variant={variant} />;
+  return (
+    <div className={panelClass(variant)}>
+      <div className="flex items-center gap-1 text-[10px] font-medium text-white/60">
+        <Clapperboard className="h-3 w-3" />
+        <span>Animations</span>
+      </div>
+      <p className="text-[10px] text-white/50">
+        Tours are recorded and played in the XY view. Switch the plane back to XY to play or edit them.
+      </p>
+    </div>
+  );
+};
+
+const AnimationPanelBody = ({ variant = "floating" }: AnimationPanelProps) => {
   const displayMode = useModeStore((s) => s.displayMode);
   const draft = useAnimationStore((s) => s.draft);
   const editingId = useAnimationStore((s) => s.editingId);
@@ -222,11 +253,7 @@ export const AnimationPanel = ({
 
   return (
     <div
-      className={
-        variant === "sidebar"
-          ? "flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2"
-          : "pointer-events-auto flex max-h-[60vh] w-60 flex-col gap-2 overflow-y-auto rounded-lg border border-black/10 bg-black/40 p-2 backdrop-blur-md"
-      }
+      className={panelClass(variant)}
     >
       <div className="flex items-center gap-1 text-[10px] font-medium text-white/60">
         <Clapperboard className="h-3 w-3" />

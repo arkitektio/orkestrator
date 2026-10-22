@@ -68,7 +68,7 @@ export type SaveContext = {
 };
 
 const REPLACE_REASON: Record<string, string> = {
-  ByDimensionTransformation: "a per-dimension edge has no matrix of its own to refine",
+  ByDimensionTransformation: "a per-dimension edge is its parts, not one matrix to refine",
   SequenceTransformation: "a sequence edge has no matrix of its own to refine",
   ScaleTransformation: "a scale edge cannot hold a rotation or an offset",
   TranslationTransformation: "a translation edge cannot hold a rotation or a scale",
@@ -128,9 +128,7 @@ export const planSave = (context: SaveContext): SavePlan => {
       validity: "MANUAL",
       transform: {
         kind: "BY_DIMENSION",
-        inputAxes: [...ordered.inputAxes],
-        outputAxes: [...ordered.outputAxes],
-        affine: ordered.matrix,
+        parts: [{ kind: "AFFINE", inputAxes: [...ordered.inputAxes], outputAxes: [...ordered.outputAxes], affine: ordered.matrix }],
       },
     },
   };

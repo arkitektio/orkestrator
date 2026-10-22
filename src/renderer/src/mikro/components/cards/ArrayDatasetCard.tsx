@@ -1,6 +1,6 @@
 import React from "react";
 import { HomeCard } from '@/core/ui/home-card'
-import { MikroArrayDataset, MikroArrayLens } from '@/core/linkers'
+import { MikroArrayDataset } from '@/core/linkers'
 import { cn } from '@/core/util/utils'
 import { ListArrayDatasetFragment } from '../../api/graphql'
 import { ArrayDatasetReadout } from './ArrayDatasetReadout'
@@ -40,22 +40,10 @@ const TheCard = ({ item: arrayDataset, fill }: Props) => {
             multiscale={arrayDataset.multiscale}
             defaultScene={arrayDataset.defaultScene}
             title={
-              <>
-                {/* A dataset is opened by opening the lens that selects all of
-                    it — the viewer is a lens' page. The tile itself is still
-                    the DATASET (its menu, its drag payload), and its own page,
-                    with every lens cut from it, is one step up from the
-                    viewer. Only a dataset with no pixel grid has no such lens. */}
-                {arrayDataset.fullLens ? (
-                  <MikroArrayLens.DetailLink object={arrayDataset.fullLens}>
-                    {arrayDataset.name}
-                  </MikroArrayLens.DetailLink>
-                ) : (
-                  <MikroArrayDataset.DetailLink object={arrayDataset}>
-                    {arrayDataset.name}
-                  </MikroArrayDataset.DetailLink>
-                )}
-              </>
+              // Opens the dataset's page: its scene, in a viewport.
+              <MikroArrayDataset.DetailLink object={arrayDataset}>
+                {arrayDataset.name}
+              </MikroArrayDataset.DetailLink>
             }
           />
         </SnapshotBackdrop>

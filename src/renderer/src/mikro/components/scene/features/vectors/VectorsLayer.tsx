@@ -17,6 +17,7 @@
  * Null auto-normalizes: the longest sampled vector draws just short of one sampling
  * stride, so neighbouring glyphs cannot overlap into unreadability.
  */
+import { selectionsFor } from "../../platform/model/worldSelections";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
@@ -49,6 +50,8 @@ export const VectorLayerRenderer = ({ layerId }: { layerId: string }) => {
  * same slider drives both, and matching the cadence is what makes a flow field
  * and the image beneath it land on the new frame together.
  */
+type ViewerSelectionState = Parameters<typeof selectionsFor>[0];
+
 const VECTOR_REREAD_SETTLE_MS = 200;
 
 /** The GraphQL enum's members, lowered to the material's vocabulary. */
@@ -151,16 +154,16 @@ const VectorField = ({ layer }: { layer: VectorLayerFragment }) => {
     let first = true;
     const unsubscribe = bindFields(
       viewerApi,
-      scrubbableDims.map((dim) => (state: { dimSelections: Readonly<Record<string, number>> }) =>
-        state.dimSelections[dim],
-      ),
+      // Through `selectionsFor`, so a world-timed dim follows the world slider:
+      // the frame this field shows at the selected instant, not a shared index.
+      scrubbableDims.map((dim) => (state: ViewerSelectionState) => selectionsFor(state, layer.id)[dim]),
       (state) => {
         if (first) {
           first = false;
-          read(state.dimSelections);
+          read(selectionsFor(state, layer.id));
           return;
         }
-        settler.push(state.dimSelections);
+        settler.push(selectionsFor(state, layer.id));
       },
     );
 

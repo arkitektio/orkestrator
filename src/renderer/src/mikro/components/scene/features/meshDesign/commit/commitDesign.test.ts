@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { CreatableTransformKind } from "@/mikro/api/graphql";
+import { CreatableTransformKind, PartKind } from "@/mikro/api/graphql";
 import { placementTransform, translationForAxes } from "./commitDesign";
 
 describe("placing a designed collection", () => {
@@ -15,9 +15,7 @@ describe("placing a designed collection", () => {
     // `inputAxes`"), which is how registering a designed collection failed.
     expect(placementTransform(["z", "y", "x"], [10, 20, 30])).toEqual({
       kind: CreatableTransformKind.ByDimension,
-      translation: [30, 20, 10],
-      inputAxes: ["z", "y", "x"],
-      outputAxes: ["z", "y", "x"],
+      parts: [{ kind: PartKind.Translation, translation: [30, 20, 10], inputAxes: ["z", "y", "x"], outputAxes: ["z", "y", "x"] }],
     });
   });
 });

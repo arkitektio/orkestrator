@@ -42,6 +42,7 @@ const EXPECTED_KEYS = [
   "registerBrickSystem", "registerCanvas", "registerCapture", "registerFollowAttributeReference",
   "registerMeshSystem", "registerVolumeCompositor", "renderBudget", "residencyVersion",
   "sampledBrandTarget", "setCurrentZ", "setDebug", "setDimSelection",
+  "worldSelections", "setWorldSelection", "layerAxisInstants", "setLayerAxisInstants",
   "setLayerViewRanges", "setLodBias", "setMarkProbedInstances", "setMeshSelection",
   "setNodePlans", "setProbeLayerId", "setProbeMode", "setProbeReadout",
   "setProbeThreshold", "setProbedCoordinate", "setRenderBudget", "setSampledBrandTarget",

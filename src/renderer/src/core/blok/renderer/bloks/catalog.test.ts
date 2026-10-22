@@ -79,6 +79,8 @@ describe('the blok catalog', () => {
       'Fragment',
       'Flex',
       'Grid',
+      'BentoGrid',
+      'BentoItem',
       'ScrollArea',
       'Separator',
       // html

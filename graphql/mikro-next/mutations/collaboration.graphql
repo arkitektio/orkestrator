@@ -19,3 +19,9 @@ mutation RemoveFromCollaboration($input: CollaborationObjectInput!) {
 mutation DeleteCollaboration($id: ID!) {
   deleteCollaboration(id: $id)
 }
+
+mutation AddManyToCollaboration($input: AddManyToCollaborationInput!) {
+  addManyToCollaboration(input: $input) {
+    ...Collaboration
+  }
+}

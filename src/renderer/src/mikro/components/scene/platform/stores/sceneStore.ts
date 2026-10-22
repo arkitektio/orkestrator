@@ -1,9 +1,11 @@
 import { createStore } from "zustand/vanilla";
 import { immer } from "zustand/middleware/immer";
-import { AxisType, PreferredView, SceneFragment, SceneLayerFragment } from "@/mikro/api/graphql";
+import { AxisType, PreferredView, SceneFragment, SceneLayerFragment as RawSceneLayerFragment } from "@/mikro/api/graphql";
 import { createScopedStoreHooks } from "@/core/util/createScopedStore";
 import { sameDimExtents, type DimExtent } from "../model/dimExtents";
-import { isBrickLayer, type BrickLayerFragment } from "../model/layerGuards";
+import { isBrickLayer, type BrickLayerFragment, type SceneLayerFragment } from "../model/layerGuards";
+import { viewLayer } from "../model/viewLayer";
+import { worldViewTriple, type ViewAxes } from "@/core/data/scene/coords/viewAxes";
 import { reconcileSceneLayers } from "../model/layerReconcile";
 import { layerStructureKey } from "../model/sceneStructure";
 import {
@@ -19,7 +21,7 @@ import {
 import { planDefaultVolumeLods } from "../quality/lodPlanning";
 import { hydrateLayerEntries } from "../attributes/sparseEntry";
 import type { LensLookup } from "@/mikro/lib/lenses/lensSelection";
-import { composeLatticeAffine, spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
+import { composeLatticeAffine } from "@/core/data/scene/coords/transformGraph";
 import type { FabriksInstanceColormap } from "../gpu/instanceColormaps";
 
 // Re-exported for the store's many consumers (the model lives in core/).
@@ -148,7 +150,7 @@ export interface SceneState {
    * world.
    */
   syncSceneLayers: (
-    nextLayers: readonly SceneLayerFragment[],
+    nextLayers: readonly RawSceneLayerFragment[],
   ) => { addedLayerIds: string[]; removedLayerIds: string[] };
   /**
    * Republish `layers` with a NEW array reference and identical elements. The
@@ -238,6 +240,7 @@ export interface SceneState {
 export const createSceneStore = ({
   scene,
   resolveLens = () => undefined,
+  viewAxes,
 }: {
   scene: SceneFragment;
   /**
@@ -247,10 +250,25 @@ export const createSceneStore = ({
    * Synchronous by contract — the provider resolves before it folds.
    */
   resolveLens?: LensLookup;
+  /**
+   * Which world axis each screen axis shows (`viewAxes.ts`); identity when
+   * absent. A store is built for ONE view: the provider rebuilds the scope
+   * when it changes, since every layer's axes and lattice are derived from it.
+   */
+  viewAxes?: ViewAxes | null;
 }) => {
+  // No `coordinateSystems` or `registrations`: edges self-describe their
+  // axis order (inputAxes/outputAxes) and placement comes from each layer's
+  // pathToWorld, so the fragment ships neither global list.
+  const transformContext = {
+    worldCoordinateSystem: scene.worldCoordinateSystem,
+    viewAxes: viewAxes ?? null,
+  };
   // Sparse picker entries get their matrix and position here, once, so every
-  // reader downstream sees the entry shape it always read (`sparseEntry.ts`).
-  const hydrate = <L extends object>(layer: L): L => hydrateLayerEntries(layer, resolveLens);
+  // reader downstream sees the entry shape it always read (`sparseEntry.ts`);
+  // an array-lens layer gets the axes it is drawn by under the view.
+  const hydrate = <L extends RawSceneLayerFragment>(layer: L) =>
+    viewLayer(hydrateLayerEntries(layer, resolveLens), transformContext);
   const sceneLayers = scene.layers.map(hydrate);
   // Every LENS-backed layer — images, label masks and the three fixed-shape
   // kinds alike: all are a Lens over an array, so all plan, pool and stream
@@ -280,18 +298,13 @@ export const createSceneStore = ({
       // shows "px" rather than claiming a physical unit that was never
       // measured.
       spatialUnit: String(spaceAxis?.unit ?? "").trim() || "px",
-      // No `coordinateSystems` or `registrations`: edges self-describe their
-      // axis order (inputAxes/outputAxes) and placement comes from each
-      // layer's pathToWorld, so the fragment ships neither global list.
-      transformContext: {
-        worldCoordinateSystem: scene.worldCoordinateSystem,
-      },
+      transformContext,
       trackTailWindows: {},
       layerDimExtents: {},
       placementPreviewBases: {},
       setPlacementPreview: (layerIds, worldDelta) => {
         const { sceneLayers, layers, placementPreviewBases, transformContext } = get();
-        const worldSpatial = spatialAxisTriple(transformContext.worldCoordinateSystem);
+        const worldSpatial = worldViewTriple(transformContext);
         const result = applyPlacementPreview<SceneLayer, LayerState>({
           sceneLayers,
           layers,
@@ -342,7 +355,7 @@ export const createSceneStore = ({
           if (index !== -1) {
             // A label card folds the server's answer in through here, and that
             // answer names sparse entries by lens again.
-            state.layers[index] = hydrate(updatedLayer);
+            state.layers[index] = hydrateLayerEntries(updatedLayer, resolveLens);
           }
         }),
       setTrackTailWindow: (layerId, window) =>
@@ -369,7 +382,7 @@ export const createSceneStore = ({
           if (index !== -1) {
             // `hydrate` for the same reason as in `updateLayer`: a saved mesh or
             // network layer's pickers come back naming lenses.
-            Object.assign(state.sceneLayers[index], hydrate(patch));
+            Object.assign(state.sceneLayers[index], hydrateLayerEntries(patch, resolveLens));
           }
         }),
       refreshLensSelections: () => {
@@ -408,7 +421,7 @@ export const createSceneStore = ({
         const result = reconcileSceneLayers<SceneLayer, SceneLayer & BrickLayerFragment, LayerState>({
           previousSceneLayers: sceneLayers,
           previousLayers: layers,
-          nextLayers: (nextLayers as readonly SceneLayer[]).map(hydrate),
+          nextLayers: nextLayers.map(hydrate) as SceneLayer[],
           // Named `isImage` by the generic; what it MEANS is "normalize this
           // one into `layers`", which is every brick-backed layer.
           isImage: (layer): layer is SceneLayer & BrickLayerFragment => isBrickLayer(layer),

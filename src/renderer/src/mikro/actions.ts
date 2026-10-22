@@ -80,6 +80,7 @@ import {
 } from "lucide-react";
 import { Action } from "@/core/smart/localactions/LocalActionProvider";
 import { getRefetchableQueriesForEntities } from "@/core/smart/localactions/helpers/refetch";
+import { lineageRootOf } from "./forms/collaboration/derivedSelection";
 
 type MikroAction = Action<ModuleServices<"mikro">>;
 
@@ -211,7 +212,9 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
         .filter((item) => (COLLABORATION_IDENTIFIERS as readonly string[]).includes(item.identifier))
         .map((item) => ({ identifier: item.identifier, id: item.id }))
       if (objects.length === 0) throw new Error('Nothing selected can be put in a collaboration')
-      dialog.openDialog('addtocollaboration', { objects }, { className: 'max-w-lg' })
+      // Room for the lineage graph when something selected has derived data to pick from.
+      const walkable = objects.some((object) => lineageRootOf(object) !== null)
+      dialog.openDialog('addtocollaboration', { objects }, walkable ? { size: 'large' } : { className: 'max-w-lg' })
     },
   },
   'share-collaboration': {

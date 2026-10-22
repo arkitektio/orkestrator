@@ -16,7 +16,7 @@ import { instancePaletteColor, qualitativePalette } from "../layerui/colormap-ut
  * masks.
  *
  * Both answer the same per-object question over the same relation — a mask's
- * pixel values dereference into a table by exactly the FIELD edge a collection's
+ * pixel values dereference into a table by exactly the key a collection's
  * object ids do — so the semantics live here once. They are semantics that must
  * NOT drift between the two features: `exclude` inverts the test and not the
  * answer; an unconfigured rule keeps everything; a column that could not be read

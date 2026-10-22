@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { SceneLayerFragment } from "@/mikro/api/graphql";
+import type { SceneLayerFragment } from "../../platform/model/layerGuards";
 
 import type { LayerState } from "../../platform/stores/sceneStore";
 import { AnnotationLayerCard } from "../../features/annotations/AnnotationLayerCard";

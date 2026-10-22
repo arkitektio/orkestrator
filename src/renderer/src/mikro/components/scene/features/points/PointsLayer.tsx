@@ -27,14 +27,17 @@ import {
   type ColorByEntry,
   type FilterByEntry,
 } from "../../platform/layerui/columnOptions";
-import type { SceneLayerFragment } from "@/mikro/api/graphql";
+import type { SceneLayerFragment } from "../../platform/model/layerGuards";
 import { TIME_DIM, type DimExtent } from "../../platform/model/dimExtents";
 import { useSceneStore } from "../../platform/stores/sceneStore";
-import { usePublishDimExtents } from "../../platform/stores/useLayerDimExtents";
+import { usePublishDimExtents, usePublishWorldTimeline } from "../../platform/stores/useLayerDimExtents";
+import { selectionsFor } from "../../platform/model/worldSelections";
+import { columnInstants } from "@/core/data/scene/coords/axisTime";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { useViewStoreApi } from "../../platform/stores/viewStore";
 import type { FrustumClipCoordinateSystem } from "../../platform/visibility/frustumClip";
-import { placementToSpatialAffine, spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
+import { placementToSpatialAffine } from "@/core/data/scene/coords/transformGraph";
+import { worldViewTriple } from "@/core/data/scene/coords/viewAxes";
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { StorageInstancedBufferAttribute } from "three/webgpu";
 import { createPointMaterial, setPointValues, type PointMaterialBundle } from "./pointsMaterial";
@@ -97,7 +100,8 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
 
   // The world's own axis order, needed to read `asAffine`'s ROWS. Not the
   // scene's spatial unit — the names, which mikro writes with x last.
-  const worldSystem = useSceneStore((s) => s.transformContext.worldCoordinateSystem);
+  // The world's axes in SCREEN order: the rows of every placement (`viewAxes.ts`).
+  const transformContext = useSceneStore((s) => s.transformContext);
 
   /**
    * `asAffine` is `M × (N+1)` over NAMED axes, and both sides need naming
@@ -118,10 +122,10 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
         placementToSpatialAffine(
           layer.asAffine,
           [layer.xColumn ?? null, layer.yColumn ?? null, layer.zColumn ?? null],
-          spatialAxisTriple(worldSystem),
+          worldViewTriple(transformContext),
         ),
       ),
-    [layer.asAffine, layer.xColumn, layer.yColumn, layer.zColumn, worldSystem],
+    [layer.asAffine, layer.xColumn, layer.yColumn, layer.zColumn, transformContext],
   );
 
   // The entries as the scene store holds them: a sparse one carries the matrix
@@ -565,7 +569,9 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
 
     return bindField(
       viewerApi,
-      (state) => state.dimSelections[TIME_DIM],
+      // Through `selectionsFor`: on a world-timed table this is the timeline
+      // position at the world slider's instant, not a shared index.
+      (state) => selectionsFor(state, layer.id)[TIME_DIM],
       (selected) => {
         if (selected === undefined) {
           culling.time.min.value = -Infinity;
@@ -578,7 +584,7 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
         runCull();
       },
     );
-  }, [geometry, bundle, viewerApi, runCull]);
+  }, [geometry, bundle, viewerApi, runCull, layer.id]);
 
   /**
    * Publish the observed timeline so a T slider can exist at all — the same rail
@@ -594,7 +600,19 @@ const PointCloud = ({ layer }: { layer: PointLayerView }) => {
     if (!timeline || layer.visible === false) return null;
     return [{ dim: TIME_DIM, maxIndex: timeline.length - 1, defaultIndex: 0 }];
   }, [geometry, layer.visible]);
-  usePublishDimExtents(layer.id, timeExtents);
+  /**
+   * When the time column reaches a world axis (a row of `asAffine` reading only
+   * that column), the timeline is published in WORLD units instead and the index
+   * slider for it disappears: the world slider scrubs this layer together with
+   * every image on the same clock, whatever their sampling.
+   */
+  const worldTimeline = useMemo(() => {
+    const timeline = geometry?.timeline ?? null;
+    if (!timeline || !layer.tColumn || layer.visible === false) return null;
+    return columnInstants(layer.asAffine, layer.tColumn, TIME_DIM, timeline);
+  }, [geometry, layer.asAffine, layer.tColumn, layer.visible]);
+  usePublishWorldTimeline(layer.id, worldTimeline);
+  usePublishDimExtents(layer.id, worldTimeline ? null : timeExtents);
 
   useEffect(() => {
     if (skipped.length > 0) console.warn("[points] not drawn:", skipped);

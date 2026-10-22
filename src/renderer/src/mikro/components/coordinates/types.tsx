@@ -71,12 +71,6 @@ export const describeTransformation = (
       return "identity";
     case "MapAxisTransformation":
       return `map ${transformation.inputAxes.join(",")} → ${transformation.outputAxes.join(",")}`;
-    // Was DISPLACEMENTS + COORDINATES, now one edge: what the numbers mean is
-    // the field's business, so name the field rather than guess the flavour.
-    case "FieldTransformation":
-      return transformation.field?.name
-        ? `field — ${transformation.field.name}`
-        : "field";
     // Not a map at all: a declared non-correspondence. The reason is the whole
     // content of the edge, so it is what gets shown.
     case "UnmappableTransformation":
@@ -89,16 +83,28 @@ export const describeTransformation = (
         ? `sequence of ${transformation.steps.length}`
         : "sequence";
     case "ByDimensionTransformation": {
-      const axes = transformation.outputAxes.join(",");
-      if (!("scale" in transformation)) return `by dimension on ${axes}`;
-      if (transformation.affine.length) return `affine on ${axes}`;
-      const parts = [
-        transformation.scale.length ? `scale ${transformation.scale.map(fmt).join(" · ")}` : null,
-        transformation.translation.length
-          ? `translate ${transformation.translation.map(fmt).join(" · ")}`
-          : null,
-      ].filter(Boolean);
-      return parts.length ? `${parts.join(", ")} on ${axes}` : `identity on ${axes}`;
+      // The leaf fragment (a field's own edges) selects no parts.
+      if (!("parts" in transformation)) return `by dimension on ${transformation.outputAxes.join(",")}`;
+      // One phrase per part, side by side: what each does to the axes it names. A FIELD
+      // part names its array, whose own axes say what the numbers mean.
+      return transformation.parts
+        .map((part) => {
+          const on = part.outputAxes.join(",");
+          switch (part.kind) {
+            case "SCALE":
+              return `scale ${part.scale.map(fmt).join(" · ")} on ${on}`;
+            case "TRANSLATION":
+              return `translate ${part.translation.map(fmt).join(" · ")} on ${on}`;
+            case "AFFINE":
+            case "ROTATION":
+              return `${part.kind.toLowerCase()} on ${on}`;
+            case "FIELD":
+              return `${part.field?.dereference ? "key" : "field"} ${part.field?.field.name ? `— ${part.field.field.name} ` : ""}on ${on}`;
+            default:
+              return `identity on ${on}`;
+          }
+        })
+        .join("; ");
     }
   }
 };

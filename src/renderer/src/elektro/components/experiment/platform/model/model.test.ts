@@ -7,6 +7,7 @@ import {
 import { placeabilityOf, unplaceableMessage } from "@/core/data/plot/model/placeable";
 import { placementErrorsByLayerId } from "@/core/data/plot/model/placementErrors";
 import {
+  elektroPlaceabilityOf,
   colorForLayerId,
   normalizeAnnotationLayer,
   normalizeEventsLayer,
@@ -127,21 +128,30 @@ describe("placeabilityOf", () => {
     });
   });
 
-  it("draws a PLACED view with an erroring asAffine from a lookup", () => {
-    // The whole reason the page reads GraphQL errors.
+  it("draws an elektro PLACED view with an erroring asAffine from a field", () => {
+    // elektro's server still errors on a FIELD step: the whole reason its page reads GraphQL errors.
     expect(
-      placeabilityOf({ placement: "PLACED", asAffine: null }, "FieldTransformation 42"),
-    ).toEqual({ drawable: true, timeSource: "LOOKUP", reason: "FieldTransformation 42" });
+      elektroPlaceabilityOf({ placement: "PLACED", asAffine: null }, "FieldTransformation 42"),
+    ).toEqual({ drawable: true, timeSource: "FIELD", reason: "FieldTransformation 42" });
   });
 
-  it("recognises a lookup from a DIFFEOMORPHIC path even without the error", () => {
+  it("recognises an elektro field from a DIFFEOMORPHIC path even without the error", () => {
     expect(
-      placeabilityOf({
+      elektroPlaceabilityOf({
         placement: "PLACED",
         asAffine: null,
         placementInvariance: "DIFFEOMORPHIC",
       }),
-    ).toMatchObject({ drawable: true, timeSource: "LOOKUP" });
+    ).toMatchObject({ drawable: true, timeSource: "FIELD" });
+  });
+
+  it("reads a composed field as timed by an array, and an error as nothing composed", () => {
+    expect(placeabilityOf({ placement: "PLACED", asAffine: { fields: [{}] } })).toMatchObject({ drawable: true, timeSource: "FIELD" });
+    expect(placeabilityOf({ placement: "PLACED", asAffine: null }, "a key places nothing")).toEqual({
+      drawable: false,
+      reason: "uncondensable",
+      detail: "a key places nothing",
+    });
   });
 
   it("keeps UNREGISTERED and LOOKUP apart — they need opposite affordances", () => {

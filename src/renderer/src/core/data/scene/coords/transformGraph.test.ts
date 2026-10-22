@@ -872,30 +872,40 @@ describe("composites that carry their own map (mikro)", () => {
     ]);
   });
 
-  it("reads a by-dimension's scale and translation as one map, scale first", () => {
+  it("reads a by-dimension's parts as leaves, each on its own axes", () => {
     const edge = {
       __typename: "ByDimensionTransformation",
       inputAxes: ["y", "x"],
       outputAxes: ["y", "x"],
-      ...empty,
-      scale: [2, 3],
-      translation: [10, 20],
+      parts: [{ kind: "AFFINE", inputAxes: ["y", "x"], outputAxes: ["y", "x"], ...empty, affine: [[2, 0, 10], [0, 3, 20]] }],
     };
-    expect(childrenOf(edge)).toHaveLength(1);
-    const m = evalTransform(edge, ["y", "x"], ["y", "x"], SPATIAL);
+    expect(childrenOf(edge).map((leaf) => leaf?.__typename)).toEqual(["AffineTransformation"]);
+    const m = evalTransform(edge, ["y", "x"], ["y", "x"], ["x", "y", null]);
     expect(m?.[0]).toEqual([3, 0, 0, 20]);
     expect(m?.[1]).toEqual([0, 2, 0, 10]);
     expect(m?.[2]).toEqual([0, 0, 1, 0]);
+    // A rendered z that no part names is one the edge says nothing about.
+    expect(evalTransform(edge, ["y", "x"], ["y", "x"], SPATIAL)).toBeNull();
   });
 
-  it("reads a by-dimension that states nothing as the identity on its axes", () => {
+  it("reads an IDENTITY part as the identity on the axes it names", () => {
     const edge = {
       __typename: "ByDimensionTransformation",
       inputAxes: ["y", "x"],
       outputAxes: ["y", "x"],
-      ...empty,
+      parts: [{ kind: "IDENTITY", inputAxes: ["y", "x"], outputAxes: ["y", "x"], ...empty }],
     };
     expect(childrenOf(edge).map((leaf) => leaf?.__typename)).toEqual(["IdentityTransformation"]);
-    expect(evalTransform(edge, ["y", "x"], ["y", "x"], SPATIAL)?.[0]).toEqual([1, 0, 0, 0]);
+    expect(evalTransform(edge, ["y", "x"], ["y", "x"], ["x", "y", null])?.[0]).toEqual([1, 0, 0, 0]);
+  });
+
+  it("reads a FIELD part as a field leaf, which no matrix states", () => {
+    const edge = {
+      __typename: "ByDimensionTransformation",
+      inputAxes: ["t"],
+      outputAxes: ["t"],
+      parts: [{ kind: "FIELD", inputAxes: ["t"], outputAxes: ["t"], ...empty, field: { dereference: false, field: { id: "times" } } }],
+    };
+    expect(childrenOf(edge).map((leaf) => leaf?.__typename)).toEqual(["FieldTransformation"]);
   });
 });

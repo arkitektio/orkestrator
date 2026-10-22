@@ -61,13 +61,6 @@ export type LensTitleInput = {
   slices: readonly { axis: string; start?: number | null; stop?: number | null }[];
 };
 
-/**
- * The subroute of an array dataset AS A CONTAINER
- * (`/mikro/arraydatasets/12/container`): its lenses, facts and lineage. The
- * dataset's own address opens its whole lens instead.
- */
-export const CONTAINER_SUBROUTE = "container";
-
 /** What an unsliced lens is called everywhere: the dataset, looked at whole. */
 export const WHOLE_ARRAY = "Whole array";
 

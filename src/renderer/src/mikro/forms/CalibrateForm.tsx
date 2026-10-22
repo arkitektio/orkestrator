@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import {
   AxisType,
   CreatableTransformKind,
+  PartKind,
   useCreateCoordinateSystemMutation,
   useGetArrayDatasetQuery,
 } from "../api/graphql";
@@ -109,8 +110,8 @@ const CalibrateFormBody = (props: {
       registrations: built.registrations.map((registration) => ({
         ...registration,
         transform: {
-          ...registration.transform,
           kind: registration.transform.kind as CreatableTransformKind,
+          parts: registration.transform.parts.map((part) => ({ ...part, kind: part.kind as PartKind })),
         },
       })),
     };

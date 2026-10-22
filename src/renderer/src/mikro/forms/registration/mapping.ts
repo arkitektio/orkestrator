@@ -241,18 +241,24 @@ export type RegistrationDraft = {
   matrix?: readonly (readonly unknown[])[];
 };
 
-/**
- * Structurally the `TransformInput` this module emits: always BY_DIMENSION —
- * see the note on `RegistrationMode` — with the mode's parameter arrays
- * ordered by the named axes.
- */
-export type ByDimensionTransformVariables = {
-  kind: "BY_DIMENSION";
+/** Structurally one `DimensionPartInput`: its axes, its kind, and only that kind's parameter. */
+export type DimensionPartVariables = {
+  kind: "IDENTITY" | "SCALE" | "TRANSLATION" | "AFFINE";
   inputAxes: string[];
   outputAxes: string[];
   scale?: number[];
   translation?: number[];
   affine?: number[][];
+};
+
+/**
+ * Structurally the `TransformInput` this module emits: always BY_DIMENSION —
+ * see the note on `RegistrationMode` — with ONE part of the mode's kind over
+ * the mapped axes, its parameter arrays ordered by them.
+ */
+export type ByDimensionTransformVariables = {
+  kind: "BY_DIMENSION";
+  parts: DimensionPartVariables[];
 };
 
 /**
@@ -284,7 +290,6 @@ export const buildRegistrationInput = (
   const mapped = mappedRows(draft.rows);
 
   const axes = {
-    kind: "BY_DIMENSION" as const,
     inputAxes: mapped.map((row) => row.source.name),
     // Paired positionally with inputAxes: inputAxes[i] -> outputAxes[i]. The
     // rename rule forces these two equal for every non-affine mode, so the
@@ -304,35 +309,23 @@ export const buildRegistrationInput = (
     // values do not cross a claim between spaces".
   };
 
-  switch (draft.mode) {
-    case "IDENTITY":
-      // A bare BY_DIMENSION: the named axes correspond one-to-one and the
-      // unnamed ones are untouched.
-      return { ...base, transform: axes };
-    case "SCALE":
-      return {
-        ...base,
-        transform: { ...axes, scale: mapped.map((row) => num(row.scale)) },
-      };
-    case "TRANSLATION":
-      return {
-        ...base,
-        transform: {
-          ...axes,
-          translation: mapped.map((row) => num(row.translation)),
-        },
-      };
-    case "SCALE_TRANSLATE":
-      return { ...base, transform: { ...axes, affine: buildAffineDiagonal(mapped) } };
-    case "AFFINE":
-      return {
-        ...base,
-        transform: {
-          ...axes,
-          affine: (draft.matrix ?? []).map((row) => row.map(num)),
-        },
-      };
-  }
+  const part = ((): DimensionPartVariables => {
+    switch (draft.mode) {
+      case "IDENTITY":
+        // The mapped axes correspond one-to-one; the unmapped ones the edge says
+        // nothing about -- nothing passes through unless a part names it.
+        return { ...axes, kind: "IDENTITY" };
+      case "SCALE":
+        return { ...axes, kind: "SCALE", scale: mapped.map((row) => num(row.scale)) };
+      case "TRANSLATION":
+        return { ...axes, kind: "TRANSLATION", translation: mapped.map((row) => num(row.translation)) };
+      case "SCALE_TRANSLATE":
+        return { ...axes, kind: "AFFINE", affine: buildAffineDiagonal(mapped) };
+      case "AFFINE":
+        return { ...axes, kind: "AFFINE", affine: (draft.matrix ?? []).map((row) => row.map(num)) };
+    }
+  })();
+  return { ...base, transform: { kind: "BY_DIMENSION", parts: [part] } };
 };
 
 export type RegistrationIssue = {

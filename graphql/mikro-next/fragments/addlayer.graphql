@@ -40,9 +40,15 @@ fragment DerivationEdge on Transformation {
   output {
     id
   }
-  ... on FieldTransformation {
-    field {
-      id
+  ... on ByDimensionTransformation {
+    parts {
+      kind
+      field {
+        dereference
+        field {
+          id
+        }
+      }
     }
   }
   ... on UnmappableTransformation {

@@ -1,12 +1,44 @@
-import { SceneLayerFragment } from "@/mikro/api/graphql";
+import type { RenderAxesLike } from "@/core/data/scene/coords/viewAxes";
+import type { SceneLayerFragment as RawSceneLayerFragment } from "@/mikro/api/graphql";
+
+/**
+ * What the scene store adds to every array-lens layer on ingest
+ * (`viewLayer` in `platform/model/viewLayer.ts`): which lens axis is screen x,
+ * y, z, t, the channel, the phasor and the displacement axis — derived from
+ * the layer's placement under the view, not sent by the server — and whether
+ * the view sees the layer edge-on (a 2D lens looked at from the side).
+ */
+export type ViewedAxes = { renderAxes: RenderAxesLike; edgeOn: boolean };
+
+/**
+ * The same for a point or track layer: which coordinate column of its table is
+ * screen x, y, z and the time column. Read off the table's coordinate system
+ * (one typed axis per coordinate column) and the placement stated over it.
+ */
+export type ViewedColumns = {
+  xColumn: string | null;
+  yColumn: string | null;
+  zColumn: string | null;
+  tColumn: string | null;
+  edgeOn: boolean;
+};
+
+type Viewed<L> = L extends { lens: { __typename?: "ArrayLens" } }
+  ? L & ViewedAxes
+  : L extends { __typename?: "PointLayer" | "TrackLayer" }
+    ? L & ViewedColumns
+    : L;
 
 /**
  * `Scene.layers` is a polymorphic `Layer` interface. The generated
  * `SceneLayerFragment` is a `__typename`-discriminated union of the concrete
- * layer variants. This extracts the variant types and provides type guards so
- * consumers can narrow before reading variant-only fields (e.g. `lens`,
- * `renderGraph` on ImageLayer, `labelRender` on LabelLayer).
+ * layer variants; this is that union as the scene store holds it, with the
+ * array-lens arms carrying their derived axes. The aliases below extract the
+ * variant types and provide type guards so consumers can narrow before reading
+ * variant-only fields (e.g. `lens`, `renderGraph` on ImageLayer, `labelRender`
+ * on LabelLayer).
  */
+export type SceneLayerFragment = Viewed<RawSceneLayerFragment>;
 export type ImageLayerFragment = Extract<
   SceneLayerFragment,
   { __typename: "ImageLayer" }
@@ -111,9 +143,14 @@ export type BrickLayerFragment =
   | RgbLayerFragment
   | PhasorLayerFragment;
 
-export const isBrickLayer = (
-  layer: SceneLayerFragment,
-): layer is BrickLayerFragment =>
+/**
+ * Generic over the layer it is asked of, so it narrows a raw fragment (the
+ * stores opened before ingest, `zarrSources.ts`) to the raw arm and a stored
+ * layer to the viewed one, never claiming derived axes a layer does not have.
+ */
+export const isBrickLayer = <L extends { __typename?: string }>(
+  layer: L,
+): layer is Extract<L, { __typename?: BrickLayerFragment["__typename"] }> =>
   layer.__typename === "ImageLayer" ||
   layer.__typename === "LabelLayer" ||
   layer.__typename === "IntensityLayer" ||

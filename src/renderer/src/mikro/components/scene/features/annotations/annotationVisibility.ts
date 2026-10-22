@@ -40,6 +40,8 @@ export type PinnedCoordinate = { name: string; value: number };
  * without a cast and a test needs an object rather than a whole scene.
  */
 export type CoverageLayer = AnchorLayer & {
+  /** Names the layer to a per-layer selections function (`selectionsFor`). */
+  id?: string;
   visible?: boolean;
   zAxis: string | null;
   /** Voxel→world (x, y, z rows). Null = identity. */
@@ -101,13 +103,15 @@ function pinCoverageToPlane(
  */
 export function sceneCoverages(
   layers: readonly CoverageLayer[],
-  dimSelections: Readonly<Record<string, number>>,
+  /** One record for every layer, or each layer's own (`selectionsFor`): a world-timed layer shows its own frame. */
+  dimSelections: Readonly<Record<string, number>> | ((layerId: string) => Readonly<Record<string, number>>),
   planeZ: number | null,
 ): LayerCoverage[] {
   return layers
     .filter((layer) => layer.visible !== false)
     .map((layer) => {
-      const coverage = layerCoverage(layer, dimSelections);
+      const selections = typeof dimSelections === "function" ? dimSelections(layer.id ?? "") : dimSelections;
+      const coverage = layerCoverage(layer, selections);
       return planeZ === null ? coverage : pinCoverageToPlane(coverage, layer, planeZ);
     });
 }

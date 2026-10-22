@@ -164,20 +164,17 @@ const applyTransform = (
       return current;
     }
     case "ByDimensionTransformation": {
-      // The edge's own map over the axes it names, as leaves applied in
-      // order (scale, then translation) — so walking it backwards undoes them
-      // last to first.
-      const children = childrenOf(transform);
-      let current: AxisCoords | null = coords;
-      for (const child of inverted ? [...children].reverse() : children) {
-        current = applyTransform(
-          child as PathTransformLike,
-          inverted,
-          current,
-        );
-        if (current === null) return null;
+      // Parts act side by side on disjoint axes: each reads the ORIGINAL
+      // coordinates (never a sibling's output, which a `y→x` / `x→y` pair would
+      // otherwise read) and writes only the axes it names. An axis no part
+      // names is one the edge says nothing about, so it does not cross.
+      const out: AxisCoords = {};
+      for (const child of childrenOf(transform)) {
+        const applied = applyTransform(child as PathTransformLike, inverted, coords);
+        if (applied === null) return null;
+        for (const axis of (inverted ? child?.inputAxes : child?.outputAxes) ?? []) out[axis] = applied[axis];
       }
-      return current;
+      return out;
     }
     default:
       // Field, Unmappable, Bijection, future kinds: no pointwise evaluation.

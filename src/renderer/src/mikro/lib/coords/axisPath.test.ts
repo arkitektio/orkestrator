@@ -78,29 +78,21 @@ describe("applyStepToCoords", () => {
     expect(applyStepToCoords(step(singular, true), { y: 1, x: 1 })).toBeNull();
   });
 
-  it("ByDimension acts on named subsets; unnamed axes pass through", () => {
-    // The canonical mask edge: identity on kept axes t/y/x — c untouched.
+  it("ByDimension maps the axes its parts name, and nothing else crosses", () => {
+    // The canonical mask edge: IDENTITY on t, a SCALE on y/x -- the image's c is
+    // not the mask's, and no part says it is.
     const byDimension: PathTransformLike = {
       __typename: "ByDimensionTransformation",
       inputAxes: ["t", "y", "x"],
       outputAxes: ["t", "y", "x"],
-      transformations: [
-        {
-          __typename: "IdentityTransformation",
-          inputAxes: ["t"],
-          outputAxes: ["t"],
-        },
-        {
-          __typename: "ScaleTransformation",
-          inputAxes: ["y", "x"],
-          outputAxes: ["y", "x"],
-          scale: [2, 2],
-        },
+      parts: [
+        { kind: "IDENTITY", inputAxes: ["t"], outputAxes: ["t"], scale: [], translation: [], affine: [] },
+        { kind: "SCALE", inputAxes: ["y", "x"], outputAxes: ["y", "x"], scale: [2, 2], translation: [], affine: [] },
       ],
     };
     // Stored mask→image, walked inverted (image→mask): scale divides.
     const out = applyStepToCoords(step(byDimension, true), { t: 3, c: 1, y: 8, x: 6 });
-    expect(out).toEqual({ t: 3, c: 1, y: 4, x: 3 });
+    expect(out).toEqual({ t: 3, y: 4, x: 3 });
   });
 
   it("sequence composes children in order, reversed when inverted", () => {
@@ -181,9 +173,7 @@ describe("applyStepToCoords on composites that carry their own map", () => {
     __typename: "ByDimensionTransformation",
     inputAxes: ["x"],
     outputAxes: ["u"],
-    scale: [2],
-    translation: [1],
-    affine: [],
+    parts: [{ kind: "AFFINE", inputAxes: ["x"], outputAxes: ["u"], scale: [], translation: [], affine: [[2, 1]] }],
   } as PathTransformLike;
   const sequence = {
     __typename: "SequenceTransformation",
@@ -195,12 +185,27 @@ describe("applyStepToCoords on composites that carry their own map", () => {
     ],
   } as PathTransformLike;
 
-  it.each([
-    ["by-dimension", byDimension],
-    ["sequence", sequence],
-  ])("scales, then translates, and passes the rest through (%s)", (_name, transformation) => {
-    expect(applyStepToCoords({ transformation, inverted: false }, { x: 3, c: 1 })).toEqual({ u: 7, c: 1 });
-    expect(applyStepToCoords({ transformation, inverted: true }, { u: 7, c: 1 })).toEqual({ x: 3, c: 1 });
+  it("scales, then translates, and passes the rest through (sequence)", () => {
+    expect(applyStepToCoords({ transformation: sequence, inverted: false }, { x: 3, c: 1 })).toEqual({ u: 7, c: 1 });
+    expect(applyStepToCoords({ transformation: sequence, inverted: true }, { u: 7, c: 1 })).toEqual({ x: 3, c: 1 });
+  });
+
+  it("maps a by-dimension's parts and lets nothing else cross", () => {
+    expect(applyStepToCoords({ transformation: byDimension, inverted: false }, { x: 3, c: 1 })).toEqual({ u: 7 });
+    expect(applyStepToCoords({ transformation: byDimension, inverted: true }, { u: 7, c: 1 })).toEqual({ x: 3 });
+  });
+
+  it("reads every by-dimension part from the original coordinates, side by side", () => {
+    const swap = {
+      __typename: "ByDimensionTransformation",
+      inputAxes: ["y", "x"],
+      outputAxes: ["x", "y"],
+      parts: [
+        { kind: "IDENTITY", inputAxes: ["y"], outputAxes: ["x"], scale: [], translation: [], affine: [] },
+        { kind: "IDENTITY", inputAxes: ["x"], outputAxes: ["y"], scale: [], translation: [], affine: [] },
+      ],
+    } as PathTransformLike;
+    expect(applyStepToCoords({ transformation: swap, inverted: false }, { y: 1, x: 2 })).toEqual({ x: 1, y: 2 });
   });
 });
 

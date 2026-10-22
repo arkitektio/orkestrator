@@ -129,17 +129,6 @@ fragment LeafTransformation on Transformation {
   ... on RotationTransformation {
     affine
   }
-  # A non-affine map given by the VALUES of an array (what DISPLACEMENTS and
-  # COORDINATES used to be, merged: the offsets-vs-absolute-positions
-  # distinction now lives in the field's own axes rather than in two edge
-  # types). The field is a node of the graph, not a payload on the edge — so
-  # this is the system it is a space of, and its lineage and axes are reachable
-  # from there. No closed-form inverse, so a path never walks it backwards.
-  ... on FieldTransformation {
-    field {
-      ...ListCoordinateSystem
-    }
-  }
   # A declared NON-correspondence (a feature table vs. the image it was measured
   # from). No parameters, no matrix, and no placement search walks it — so the
   # only thing to show is why.
@@ -166,10 +155,12 @@ fragment PlacementStep on PlacementStep {
 
 # A composite edge is one row and carries its own map: a Sequence its ordered
 # `steps` (a pyramid level is [SCALE, TRANSLATION]), each in the sequence's
-# input axis order and with no id or endpoints of its own; a ByDimension a
-# `scale` and/or `translation`, or an `affine`, over the axes it names — all
-# empty is the identity on them. `childrenOf` (core transformGraph) turns
-# either into the leaves the walkers read.
+# input axis order and with no id or endpoints of its own; a ByDimension its
+# `parts`, side by side, each mapping the axes it names by one kind -- a FIELD
+# part reading them off an array (a times array, a warp, a mask's ids: a key
+# when `dereference`). An axis no part names is one the edge says nothing
+# about. `childrenOf` (core transformGraph) turns either into the leaves the
+# walkers read.
 fragment Transformation on Transformation {
   ...LeafTransformation
   ... on SequenceTransformation {
@@ -179,14 +170,24 @@ fragment Transformation on Transformation {
       translation
       affine
       reason
-      field {
-        ...ListCoordinateSystem
-      }
     }
   }
   ... on ByDimensionTransformation {
-    scale
-    translation
-    affine
+    parts {
+      kind
+      inputAxes
+      outputAxes
+      scale
+      translation
+      affine
+      field {
+        values
+        spatial
+        dereference
+        field {
+          ...ListCoordinateSystem
+        }
+      }
+    }
   }
 }

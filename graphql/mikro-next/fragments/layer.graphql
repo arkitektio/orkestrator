@@ -377,13 +377,35 @@ fragment SceneLayer on Layer {
     # `outputAxes` and the rest pass through as identity. Surfaced as a
     # warning rather than silently rendering as fully placed.
     total
+    # Axes given by an array's values instead of a matrix row. A field read
+    # along one source axis -- a lookup: the frames of an event-triggered movie
+    # taken at uneven instants -- states inputAxis/innerScale/innerOffset, and
+    # world value of source index i = scale * values[innerScale * i + innerOffset] + offset.
+    # The array is fetched once per dataset (`axisTime.ts`). Any other field (a
+    # warp, a lookup on a RENDERED axis) is placed but not drawable yet (`isPlaceable`).
+    fields {
+      outputAxis
+      inputAxis
+      innerScale
+      innerOffset
+      component
+      scale
+      offset
+      dataset {
+        id
+        dataArrays {
+          level
+          store {
+            id
+            key
+          }
+        }
+      }
+    }
   }
   ... on ImageLayer {
     lens {
       ...SceneLens
-    }
-    renderAxes {
-      ...LayerRenderAxes
     }
     # levelPaths is deliberately NOT selected: the octree renderer uses one
     # matrix per layer + relative level factors, so selecting it would pay a
@@ -402,9 +424,6 @@ fragment SceneLayer on Layer {
   ... on IntensityLayer {
     lens {
       ...SceneLens
-    }
-    renderAxes {
-      ...LayerRenderAxes
     }
     # No channel field: the lens IS one channel, its slice on
     # `renderAxes.intensity` says which.
@@ -429,9 +448,6 @@ fragment SceneLayer on Layer {
     lens {
       ...SceneLens
     }
-    renderAxes {
-      ...LayerRenderAxes
-    }
     # The three planes, each a single-channel crop of `lens`. Slices only
     # (`ChannelLens`): the pyramid and the anchors are the parent's, above.
     redLens {
@@ -454,9 +470,6 @@ fragment SceneLayer on Layer {
     lens {
       ...SceneLens
     }
-    renderAxes {
-      ...LayerRenderAxes
-    }
     phasorRender {
       ...PhasorRender
     }
@@ -469,9 +482,6 @@ fragment SceneLayer on Layer {
   ... on VectorLayer {
     lens {
       ...SceneLens
-    }
-    renderAxes {
-      ...LayerRenderAxes
     }
     vectorAxis
     glyph
@@ -498,9 +508,6 @@ fragment SceneLayer on Layer {
   ... on LabelLayer {
     lens {
       ...SceneLens
-    }
-    renderAxes {
-      ...LayerRenderAxes
     }
     labelRender {
       ...LabelRender
@@ -536,10 +543,10 @@ fragment SceneLayer on Layer {
     windowFilters {
       ...LabelFilterBy
     }
-    xColumn
-    yColumn
-    zColumn
-    tColumn
+    # No x/y/z/t columns: the table's coordinate system (on `tableDataset`) has
+    # one axis per coordinate column, typed, and the placement is stated over
+    # them -- which column faces which screen axis is derived on ingest
+    # (`viewLayer`), like an array lens' axes.
     sizeColumn
     idColumn
     pointSize
@@ -570,10 +577,7 @@ fragment SceneLayer on Layer {
       ...LabelFilterBy
     }
     trackIdColumn
-    xColumn
-    yColumn
-    zColumn
-    tColumn
+    # x/y/z/t columns derived on ingest, as on PointLayer above.
     colorByColumn
     lineWidth
     colormap
@@ -669,9 +673,10 @@ fragment SceneLayer on Layer {
   }
 }
 
-# Which axis of the layer's lens is x, y, z, t, the value axis, the phasor axis
-# and the displacement axis. Derived server-side from the axis types and stated
-# on the LAYER: a lens is a selection and "does not choose how it is looked at".
+# Which axis of a lens is x, y, z, t, the value axis, the phasor axis and the
+# displacement axis, as the server's convention suggests it before a layer
+# exists (`ArrayLens.suggestedRenderAxes`). A drawn layer's axes are derived on
+# the client from its placement and the view (`core/data/scene/coords/viewAxes.ts`).
 fragment LayerRenderAxes on RenderAxes {
   x
   y

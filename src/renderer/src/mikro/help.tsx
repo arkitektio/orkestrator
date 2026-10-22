@@ -8,18 +8,28 @@ import { PageHelp } from "@/core/layout/help";
 export const MIKRO_HELP = {
   home: (
     <PageHelp
-      intro="Where to go in Mikro, and what is new. The top lists every Mikro page (the same ones the right-click menu on Mikro's rail icon shows); below are your pinned folders, the most recent data and the most recent files. Each dataset, table, mesh, network and annotation collection is one tile under Recent data."
+      intro="Where to go in Mikro, and what is new. The top lists every Mikro page (the same ones the right-click menu on Mikro's rail icon shows). Below is your recent data, newest first: everything you brought in that was not made from something else. An uploaded file is a card holding the images converted out of it; an image, a table, a mesh or a matrix that came on its own is a card of its own. Your pinned folders follow."
       steps={[
         <>Click a page under <b>Data</b>, <b>By kind</b> or <b>Files</b> to browse, search and sort everything of that kind.</>,
-        <>Press <b>Upload Files</b> and pick files, or drop files from your computer anywhere on the page, to upload them.</>,
-        <>Click the <b>Recent data</b> or <b>Recent files</b> title to open the full list; the arrows beside it page through the newest ones.</>,
-        <>Click a tile to open it in the viewer.</>,
-        <>Select one or more tiles to start a task on them: each tile is the lens that selects all of its data, and the selection panel and the right-click menu list what can run on it.</>,
-        <>Drag a dataset or table tile onto a pinned folder to file it there. The small database icon on a tile opens the dataset’s own page.</>,
+        <>Press <b>Upload Files</b> and pick files, or drop files from your computer anywhere on the page, to upload them. A file shows up under <b>Recent data</b> at once; its images appear in its card when the conversion has finished.</>,
+        <>Click an image tile to open the dataset’s page. Click a file’s, table’s or mesh’s name to open it.</>,
+        <>A file’s card shows its first five images, the first one largest. When it holds more, click <b>+N more</b> to see all of them on the file’s page.</>,
+        <>What was made from an image or a table (masks, measurements, meshes) shows on its card: as names along the bottom of a large image tile, as a count on a small one and on the other cards. Click a name to open it; click the count or <b>+N</b> to open its lineage.</>,
+        <>Select one or more image tiles to start a task on them: the selection panel and the right-click menu list what can run on them.</>,
+        <>Drag an image or table tile onto a pinned folder to file it there.</>,
+        <>Press <b>Show more</b> to load older data.</>,
+        <>Type into <b>Search by name…</b> above the cards to find data by its name. A file also shows when one of its images has the name.</>,
+        <>Press <b>Anyone</b> above the cards and pick <b>Me</b> or a member to see only what they brought in.</>,
+        <>Press <b>Any collaboration</b> and pick one to see only what was put in it. A file shows when it, or an image converted out of it, is in the collaboration.</>,
+        <>Press <b>Any spec</b> and tick what kind of image to show: one spatial kind (such as <b>Images</b> or <b>Volumes</b>) and any acquisition kinds with it. A file shows when one of its images matches.</>,
+        <>Choose <b>Acquired</b> or <b>Created</b>, then set a date range next to it: <b>Acquired</b> keeps what was recorded at the microscope in that range, <b>Created</b> what was brought in then.</>,
+        <>Press <b>Clear filters</b> to see all of your recent data again.</>,
       ]}
       tips={[
+        <>Only images and the files they came from have an acquisition time: with <b>Acquired</b> and a date range set, tables, meshes and matrices are not listed.</>,
+        <>The filters are part of the page’s address, so a filtered home page can be shared as a link.</>,
         <>The <b>Statistics</b> tab of the sidebar summarizes how much data you have.</>,
-        <>Recent data lists only what was brought in: datasets computed from others (masks, deconvolutions) are left out, and are found on the dataset they came from or in the full list.</>,
+        <><b>Recent data</b> lists only what was brought in: data computed from other data (masks, deconvolutions, measurements) is found on the card of what it came from, or on the list pages above.</>,
       ]}
     />
   ),
@@ -63,17 +73,19 @@ export const MIKRO_HELP = {
   ),
   arrayDataset: (
     <PageHelp
-      intro="One array dataset, as a container. Opening a dataset opens its whole array in the viewer; this page is one step up from there (click the name above the viewer’s title). It lists the dataset’s lenses and holds what is true of the dataset as a whole."
+      intro="One array dataset, in the viewer. The page opens the dataset’s default scene (the one its tile shows), or the first scene it is drawn in."
       steps={[
-        <>Click <b>Whole array</b> under <b>Lenses</b> to open all of the dataset in the viewer.</>,
-        <>Click any other lens to open just that part.</>,
-        <>Press <b>New lens</b> to cut out a part of the dataset: a range of planes, a region, a timepoint.</>,
+        <>Press <b>Visualize</b> to draw the dataset, if it is in no scene yet.</>,
+        <>Pick a scene in the dropdown under the title, and press <b>Make default</b> to open the dataset on it from now on.</>,
+        <>Open the <b>Layers</b> tab to change contrast, channels and visibility, and to see which part of the data each layer draws.</>,
+        <>Press <b>+ Add derived</b> under the layers to add what was computed from what the scene shows (a mask, a projection, a measurement table, meshes): pick one and the <b>Add layer</b> form opens on it.</>,
         <>Use the folder button in the header (it shows the current folder, or <b>Unfiled</b>) to move the dataset.</>,
         <>Press <b>Dataset</b> in the header for what can be done to the dataset itself, such as deleting or calibrating it.</>,
       ]}
       tips={[
-        <>To run a task on the data, open a lens and press <b>Run on lens</b> there.</>,
-        <>Below the lenses the page shows what the dataset was derived from and what was derived from it.</>,
+        <>Drag the sliders at the right and bottom edge to move through Z and the other dimensions.</>,
+        <>To look at a stack from the side, open the view settings (the gear at the bottom right of the canvas) and pick another <b>Plane</b>, e.g. <b>XZ</b>; the Z slider then moves through the axis you now look down. Flat layers show <b>flat in this view</b> until you switch back, and camera tours only play in <b>XY</b>.</>,
+        <>The <b>Info</b> tab shows what the dataset is, what it was derived from and what was derived from it.</>,
       ]}
     />
   ),
@@ -270,11 +282,13 @@ export const MIKRO_HELP = {
       steps={[
         <>Drag to move around, and press <b>F</b> to frame the whole scene.</>,
         <>Open the <b>Layers</b> tab of the sidebar to show or hide layers and change their contrast and channels.</>,
+        <>Press <b>+ Add derived</b> under the layers to add what was computed from what the scene shows (a mask, a projection, a measurement table, meshes): pick one and the <b>Add layer</b> form opens on it.</>,
         <>Hold <b>A</b> and draw to annotate; the shapes are listed in the <b>Annotations</b> tab.</>,
         <>Hold <b>P</b> to probe the value under the cursor, and click to pin a probe point; the <b>Probe</b> tab of the sidebar shows the readings and compares the pinned points.</>,
         <>Press <b>S</b> to crop the scene to a box: click one corner, move to the opposite corner and click, move the mouse up or down to set its depth, and click again. Only what is inside is loaded and shown; <b>Show all</b> brings the rest back.</>,
         <>Open the menu button at the right end of the page header and choose <b>Add Layer</b> to bring more data in, or <b>Align Layers…</b> to line layers up.</>,
         <>Open the <b>Animations</b> tab to build a camera tour: a sequence of stops the camera travels between.</>,
+        <>To look at a stack from the side, open the view settings (the gear at the bottom right of the canvas) and pick another <b>Plane</b>, e.g. <b>XZ</b>; the Z slider then moves through the axis you now look down. Flat layers show <b>flat in this view</b> until you switch back, and camera tours only play in <b>XY</b>.</>,
       ]}
       tips={[
         <>Press <b>?</b> over the viewer for the full list of keyboard shortcuts.</>,
@@ -331,12 +345,14 @@ export const MIKRO_HELP = {
         <>Press <b>Visualize</b> to draw this lens, if it is in no scene yet.</>,
         <>Pick a scene in the dropdown under the title, and press <b>Make default</b> to open this lens on it from now on.</>,
         <>Press <b>Run on lens</b> in the header to run a task on exactly this selection.</>,
+        <>Press <b>+ Add derived</b> under the layers to add what was computed from what the scene shows (a mask, a projection, a measurement table, meshes): pick one and the <b>Add layer</b> form opens on it.</>,
         <>Click the pencil next to the title to name the lens.</>,
         <>Open the <b>Lenses</b> tab to switch to another lens of the same container, or press <b>New lens</b> there to cut a new one.</>,
         <>Click the name above the title to go to the dataset or table the lens was cut from. Mesh, network and annotation collections have no page of their own.</>,
       ]}
       tips={[
         <>Drag the sliders at the right and bottom edge to move through Z and the other dimensions; the <b>Layers</b> tab changes contrast, channels and visibility.</>,
+        <>To look at a stack from the side, open the view settings (the gear at the bottom right of the canvas) and pick another <b>Plane</b>, e.g. <b>XZ</b>; the Z slider then moves through the axis you now look down. Flat layers show <b>flat in this view</b> until you switch back, and camera tours only play in <b>XY</b>.</>,
         <>The <b>Info</b> tab shows the <b>Selection</b>, who created the lens and, for an array, what is <b>Derived from this lens</b>.</>,
         <>Only an array lens lists every scene that draws it; the other kinds list the scene they open on.</>,
       ]}

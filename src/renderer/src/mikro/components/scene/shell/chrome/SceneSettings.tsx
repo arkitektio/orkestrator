@@ -38,6 +38,10 @@ import { identityOf } from "../../platform/model/objectIdentity";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import { useSettings } from "@/core/settings/store/SettingsContext";
+import { ToggleGroup, ToggleGroupItem } from "@/core/ui/toggle-group";
+import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
+import { VIEW_PLANES, viewPlaneOf, type ViewPlane } from "@/core/data/scene/coords/viewAxes";
+import { useSceneViewAxes, useSetSceneViewAxes } from "../../platform/stores/sceneViewAxes";
 
 const SettingRow = ({
   label,
@@ -670,6 +674,50 @@ const ProbeSettingsSection = () => {
  * display toggle. The screenshot moved inside the popover for the same reason:
  * one button in the HUD rather than two.
  */
+/**
+ * Which plane of the world the screen shows: the world's own x/y (XY), or
+ * one of the two side planes. Only the screen axes move — every layer stays
+ * where its registration puts it, and its lens axes are read off that
+ * placement again (`viewAxes.ts`). Session-only; changing it rebuilds the
+ * scene's stores, so the bricks re-plan as slabs of the new plane.
+ */
+const PlaneSection = () => {
+  const sceneId = useSceneStore((s) => s.id);
+  const world = useSceneStore((s) => s.transformContext.worldCoordinateSystem);
+  const view = useSceneViewAxes(sceneId);
+  const setView = useSetSceneViewAxes();
+  const triple = spatialAxisTriple(world);
+  // A plane world has no side to look from.
+  if (!triple[2]) return null;
+  const label = (plane: ViewPlane) => {
+    const [x, y] = VIEW_PLANES[plane];
+    return `${triple[x]}${triple[y]}`.toUpperCase();
+  };
+  return (
+    <div className="mb-1 flex items-center justify-between gap-2 pb-1">
+      <span className="text-xs text-muted-foreground">Plane</span>
+      <ToggleGroup
+        type="single"
+        size="sm"
+        variant="outline"
+        value={viewPlaneOf(view) ?? "XY"}
+        onValueChange={(plane) => plane && setView(sceneId, VIEW_PLANES[plane as ViewPlane])}
+      >
+        {(Object.keys(VIEW_PLANES) as ViewPlane[]).map((plane) => (
+          <ToggleGroupItem
+            key={plane}
+            value={plane}
+            className="h-6 px-2 font-mono text-[10px]"
+            title={`Look at the world's ${label(plane)} plane, down ${triple[VIEW_PLANES[plane][2]]}`}
+          >
+            {label(plane)}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </div>
+  );
+};
+
 export const SceneSettings = () => {
   const displayMode = useModeStore((s) => s.displayMode);
   const zoomToCursor = useModeStore((s) => s.zoomToCursor);
@@ -725,6 +773,8 @@ export const SceneSettings = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56">
+        <PlaneSection />
+
         {/* An action, not a setting — but it belongs to the same question
             ("what does this view look like?"), and it is one click too rare to
             spend a permanent slot in the HUD on. */}

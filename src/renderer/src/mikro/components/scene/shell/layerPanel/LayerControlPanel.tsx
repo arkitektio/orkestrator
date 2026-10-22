@@ -1,5 +1,6 @@
 import { useDialog } from "@/core/dialogs/registry";
-import { useDeleteLayerMutation, type SceneLayerFragment } from "@/mikro/api/graphql";
+import { useDeleteLayerMutation } from "@/mikro/api/graphql";
+import type { SceneLayerFragment } from "../../platform/model/layerGuards";
 import { Fragment, useCallback, useMemo, useRef, useState } from "react";
 import { reportErrorAs } from "@/core/notify";
 import { LongCommitProfiler } from "../../platform/perf/commitProfiler";
@@ -14,6 +15,10 @@ import { unplaceableReason } from "../../platform/model/layerModel";
 import { UnplaceableNotice } from "./UnplaceableNotice";
 import { lensFamilyKey } from "../../platform/model/channelLens";
 import { LayerLensHeader, type HeaderLens } from "./LayerLensHeader";
+import { AddDerivedButton } from "./AddDerivedButton";
+
+const ADD_BUTTON =
+  "rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] text-white/60 backdrop-blur-md transition-colors hover:border-white/20 hover:text-white/90";
 
 // Viewport coverage is deliberately GONE from this panel (and from
 // LayerViewRange entirely). It used to arrive as a bucketed Record and flow
@@ -244,14 +249,19 @@ export const LayerControlPanel = ({
           })}
         </div>
 
-        <button
-          className="mt-1 self-end rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] text-white/60 backdrop-blur-md transition-colors hover:border-white/20 hover:text-white/90"
-          onClick={() =>
-            openDialog("addlayer", { scene: sceneId }, { className: "max-w-3xl" })
-          }
-        >
-          + Add layer
-        </button>
+        <div className="mt-1 flex items-center gap-1 self-end">
+          {/* What was computed from the layers above: the shortest way to the
+              mask or the measurements of what is on screen. */}
+          <AddDerivedButton sceneId={sceneId} className={ADD_BUTTON} />
+          <button
+            className={ADD_BUTTON}
+            onClick={() =>
+              openDialog("addlayer", { scene: sceneId }, { className: "max-w-3xl" })
+            }
+          >
+            + Add layer
+          </button>
+        </div>
       </div>
     </div>
     </LongCommitProfiler>

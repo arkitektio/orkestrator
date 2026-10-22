@@ -1,6 +1,6 @@
 import { renderQueryState } from "@/core/layout/routes/queryState";
 import { asDetailQueryRoute } from "@/core/layout/routes/DetailQueryRoute";
-import { MikroArrayLens } from "@/core/linkers";
+import { MikroArrayDataset } from "@/core/linkers";
 import { Navigate, useLocation } from "react-router-dom";
 
 import { useGetArrayDatasetQuery, useGetLensQuery } from "../api/graphql";
@@ -27,19 +27,20 @@ export const LensPage = asDetailQueryRoute(useGetLensQuery, ({ data }) => {
 });
 
 /**
- * **The whole array has one address.** A dataset written before lenses were
- * deduplicated can carry several lenses that cut nothing; they are the same
- * selection, the server answers alike for all of them, and so every one but the
- * dataset's `fullLens` forwards to it. The other kinds are one row per
+ * **The whole array has one address: the dataset's.** A lens that cuts
+ * nothing — the dataset's `fullLens`, or one of the interchangeable unsliced
+ * lenses a dataset written before deduplication carries — forwards to the
+ * dataset's page, which opens the same scenes. The other kinds are one row per
  * (container, selection) by construction and need no forwarding.
+ *
+ * `replace`, so Back leaves the lens rather than bouncing off the forward.
  */
 const ArrayLensPage = ({ lens }: { lens: ArrayDetailLens }) => {
   const { search } = useLocation();
 
-  const whole = lens.dataset.fullLens?.id;
-  if (lens.slices.length === 0 && whole && whole !== lens.id) {
+  if (lens.slices.length === 0) {
     // The query string travels with it: `?scene=` names the scene to land on.
-    return <Navigate replace to={`${MikroArrayLens.linkBuilder(whole)}${search}`} />;
+    return <Navigate replace to={`${MikroArrayDataset.linkBuilder(lens.dataset.id)}${search}`} />;
   }
 
   return <LensViewerPage lens={lens} />;

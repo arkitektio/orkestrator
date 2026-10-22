@@ -17,12 +17,14 @@ import { buildS3FetchConfig, getGeneralAccess } from "./access";
  * zarrita's main-thread `get()`, and opens stores with the same general zarr
  * grant every other datalayer consumer uses.
  *
- * Its own decoded-chunk cache: the cache key does not include the fidelity, so
- * a promoting reader (this one — samples arrive as float32) must never share
- * one with an exact reader.
+ * Its own decoded-chunk caches, one per fidelity: the cache key does not include
+ * the fidelity, so a promoting read (samples arrive as float32, the default)
+ * must never share one with an exact read (`fidelity: "exact"`, the array's own
+ * dtype — a lookup's float64 instants).
  */
 
 const WINDOW_CHUNK_CACHE = new ByteBudgetChunkCache(64 * 1024 * 1024);
+const WINDOW_EXACT_CHUNK_CACHE = new ByteBudgetChunkCache(16 * 1024 * 1024);
 
 /** What a read needs of a store: its id (the cache key) and its object key. */
 export type WindowStore = { id: string; key: string };
@@ -31,7 +33,7 @@ export type WindowReader = {
   read: (
     store: WindowStore,
     ranges: readonly (WindowRange | null | undefined)[],
-    opts?: { signal?: AbortSignal; priority?: number },
+    opts?: { signal?: AbortSignal; priority?: number; fidelity?: "default" | "exact" },
   ) => Promise<{ shape: number[]; strides: number[]; data: ArrayLike<number> }>;
   /** Forget every opened array (the client or the datalayer changed). */
   dispose: () => void;
@@ -84,9 +86,10 @@ export const createWindowReader = (
       opts.signal?.throwIfAborted();
       return readArrayWindow(array, ranges, {
         pool: workerPool,
-        cache: WINDOW_CHUNK_CACHE,
+        cache: opts.fidelity === "exact" ? WINDOW_EXACT_CHUNK_CACHE : WINDOW_CHUNK_CACHE,
         priority: opts.priority ?? INTERACTIVE_FETCH_PRIORITY,
         signal: opts.signal,
+        fidelity: opts.fidelity ?? "default",
       });
     },
     dispose: () => opened.clear(),

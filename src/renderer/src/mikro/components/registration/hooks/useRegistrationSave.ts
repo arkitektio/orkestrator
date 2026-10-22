@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from "react";
 import { describeError, reportError, toast } from "@/core/notify";
 import {
   CreatableTransformKind,
+  PartKind,
   PlacementValidity,
   useCreateTransformationMutation,
   useDeleteTransformationMutation,
@@ -122,7 +123,10 @@ export const useRegistrationSave = () => {
             input: {
               ...plan.create,
               validity: PlacementValidity.Manual,
-              transform: { ...plan.create.transform, kind: CreatableTransformKind.ByDimension },
+              transform: {
+                kind: CreatableTransformKind.ByDimension,
+                parts: plan.create.transform.parts.map((part) => ({ ...part, kind: part.kind as PartKind })),
+              },
             },
           },
         });

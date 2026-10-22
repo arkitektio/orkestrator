@@ -25,4 +25,20 @@ describe("isPlaceable / unplaceableReason", () => {
     // server; a null one there is still "the server did not compose it".
     expect(unplaceableReason({ asAffine: null, pathToWorld: [] })).toBe("uncomposable");
   });
+
+  it("draws a lookup along time; a lookup along a rendered axis or a warp is placed, not drawable yet", () => {
+    const lookup = { outputAxis: "t", inputAxis: "t", innerScale: 1, innerOffset: 0, component: null, scale: 1, offset: 0 };
+    const timed = { ...AFFINE, fields: [lookup] };
+    const unevenZ = { ...AFFINE, fields: [{ ...lookup, inputAxis: "z", outputAxis: "z" }] };
+    const warp = { ...AFFINE, fields: [{ outputAxis: "z", inputAxis: null, innerScale: null, innerOffset: null, component: 0, scale: 1, offset: 0 }] };
+    const axes = { renderAxes: { x: "x", y: "y", z: "z" } };
+
+    expect(isPlaceable({ ...axes, asAffine: timed })).toBe(true);
+    expect(isPlaceable({ ...axes, asAffine: unevenZ })).toBe(false);
+    expect(unplaceableReason({ ...axes, asAffine: unevenZ, pathToWorld: [{}] })).toBe("field");
+    expect(isPlaceable({ ...axes, asAffine: warp })).toBe(false);
+    expect(unplaceableReason({ ...axes, asAffine: warp, pathToWorld: [{}] })).toBe("field");
+    // A normalized LayerState names its axes directly.
+    expect(isPlaceable({ zAxis: "z", asAffine: unevenZ })).toBe(false);
+  });
 });

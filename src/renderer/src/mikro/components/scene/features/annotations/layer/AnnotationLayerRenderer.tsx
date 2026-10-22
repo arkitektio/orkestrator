@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { selectionsFor } from "../../../platform/model/worldSelections";
 import * as THREE from "three";
 
 
@@ -123,6 +124,8 @@ const AnnotationCollectionGroup = ({
     [imageLayersKey, sceneStoreApi],
   );
   const dimSelections = useViewerStore((s) => s.dimSelections);
+  const worldSelections = useViewerStore((s) => s.worldSelections);
+  const layerAxisInstants = useViewerStore((s) => s.layerAxisInstants);
   const currentZ = useViewerStore((s) => s.currentZ);
   // Moves once per whole wheel step while the box's depth is being set — the
   // z-scrub's cadence, which this component already follows through `currentZ`.
@@ -173,8 +176,13 @@ const AnnotationCollectionGroup = ({
 
   /** What the scene is showing, in the terms an annotation is pinned in. */
   const coverages = useMemo(
-    () => sceneCoverages(imageLayers, dimSelections, flattenToPlane ? currentZ : null),
-    [imageLayers, dimSelections, flattenToPlane, currentZ],
+    () =>
+      sceneCoverages(
+        imageLayers,
+        (layerId) => selectionsFor({ dimSelections, worldSelections, layerAxisInstants }, layerId),
+        flattenToPlane ? currentZ : null,
+      ),
+    [imageLayers, dimSelections, worldSelections, layerAxisInstants, flattenToPlane, currentZ],
   );
 
   /**

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { selectionsFor } from "../../platform/model/worldSelections";
 import { ArrowLeftRight } from "lucide-react";
 
 import { LevelsEditor, type LevelsTrace } from "../../features/volume/LevelsEditor";
@@ -130,7 +131,14 @@ export const RgbChannelEditor = ({
 }) => {
   const [openSlot, setOpenSlot] = useState<number | null>(null);
 
-  const dimSelections = useViewerStore((state) => state.dimSelections);
+  const rawDimSelections = useViewerStore((state) => state.dimSelections);
+  const worldSelections = useViewerStore((state) => state.worldSelections);
+  const layerAxisInstants = useViewerStore((state) => state.layerAxisInstants);
+  // This layer's own frame on a world-timed dim, not a scene-wide index.
+  const dimSelections = useMemo(
+    () => selectionsFor({ dimSelections: rawDimSelections, worldSelections, layerAxisInstants }, layer.id),
+    [rawDimSelections, worldSelections, layerAxisInstants, layer.id],
+  );
   const axis = layer.intensityAxis ?? null;
   const coverage = useMemo(() => layerCoverage(layer, dimSelections), [layer, dimSelections]);
 

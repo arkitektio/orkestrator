@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { SceneLayerFragment } from "@/mikro/api/graphql";
 import {
   placementToSpatialAffine,
-  spatialAxisTriple,
 } from "@/core/data/scene/coords/transformGraph";
+import { worldViewTriple } from "@/core/data/scene/coords/viewAxes";
 import type { SceneTransformContext } from "./layerModel";
 import { affineToMatrix4 } from "../coords/worldTransform";
 
@@ -152,7 +152,7 @@ export function resolveCollectionMatrix(
   const composed = placementToSpatialAffine(
     layer.asAffine,
     spatial,
-    spatialAxisTriple(transformContext.worldCoordinateSystem),
+    worldViewTriple(transformContext),
   );
   return composed ? affineToMatrix4(composed) : new THREE.Matrix4().identity();
 }

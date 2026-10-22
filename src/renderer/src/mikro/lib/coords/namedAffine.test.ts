@@ -207,20 +207,31 @@ describe("namedAffineOf", () => {
   });
 });
 
-describe("namedAffineOf on a by-dimension that carries its own map", () => {
+describe("namedAffineOf on a by-dimension, read off its parts", () => {
   const edge = { __typename: "ByDimensionTransformation", inputAxes: ["y", "x"], outputAxes: ["v", "u"] };
+  const part = (kind: string, more: Record<string, unknown> = {}) => ({
+    kind,
+    inputAxes: ["y", "x"],
+    outputAxes: ["v", "u"],
+    scale: [],
+    translation: [],
+    affine: [],
+    ...more,
+  });
 
-  it("reads scale and translation as one matrix over the named axes", () => {
-    expect(
-      namedAffineOf({ ...edge, scale: [2, 3], translation: [10, 20], affine: [] })?.matrix,
-    ).toEqual([
+  it("reads an AFFINE part as its matrix over the named axes", () => {
+    expect(namedAffineOf({ ...edge, parts: [part("AFFINE", { affine: [[2, 0, 10], [0, 3, 20]] })] })?.matrix).toEqual([
       [2, 0, 10],
       [0, 3, 20],
     ]);
   });
 
-  it("reads an empty one as the identity onto its output names", () => {
-    expect(namedAffineOf({ ...edge, scale: [], translation: [], affine: [] })).toEqual({
+  it("is no affine when a part reads its axes off an array", () => {
+    expect(namedAffineOf({ ...edge, parts: [part("FIELD")] })).toBeNull();
+  });
+
+  it("reads an IDENTITY part as the identity onto its output names", () => {
+    expect(namedAffineOf({ ...edge, parts: [part("IDENTITY")] })).toEqual({
       inputAxes: ["y", "x"],
       outputAxes: ["v", "u"],
       matrix: [

@@ -7,6 +7,7 @@ import {
   type CreateAnnotationMutation,
 } from "@/mikro/api/graphql";
 import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
+import { viewToWorldPoint } from "@/core/data/scene/coords/viewAxes";
 import { upsertSceneAnnotation } from "../../../../lib/annotations/annotationCache";
 import { inSceneOrder, toStoredVector } from "./sceneVectors";
 import { useRoiSelectionStoreApi } from "./roiSelectionStore";
@@ -60,7 +61,10 @@ export const useCreateSceneAnnotation = () => {
         const spaceRank = spatialAxisTriple(transformContext.worldCoordinateSystem).filter(
           (axis) => axis !== null,
         ).length;
-        const vectors = worldVectors.map((vector) => toStoredVector(vector, spaceRank || 3));
+        // Drawn on screen, stored in the world: back from the view's order.
+        const vectors = worldVectors.map((vector) =>
+          toStoredVector(viewToWorldPoint(vector, transformContext.viewAxes), spaceRank || 3),
+        );
         const drawsCollection = (collectionId: string | undefined) =>
           sceneStoreApi
             .getState()

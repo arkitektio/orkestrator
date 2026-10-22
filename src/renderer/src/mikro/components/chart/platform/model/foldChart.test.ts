@@ -187,11 +187,18 @@ describe("foldChart", () => {
     expect(unnamed.sourceFailure).toMatch(/no axis/);
   });
 
-  it("reads an asAffine error as placed by a map with no closed form: not drawn", () => {
+  it("reads an asAffine error as a path that did not compose, in the server's words", () => {
+    // A field composes into `fields` on mikro, so an error is never one: a key, a rank change.
     const layer = trace({ asAffine: null });
-    const { layers } = foldChart(chart([layer]), new Map([["a", "FIELD step"]]), null);
-    expect(layers[0].placeability).toMatchObject({ drawable: true, timeSource: "LOOKUP" });
+    const { layers } = foldChart(chart([layer]), new Map([["a", "a key places nothing"]]), null);
+    expect(layers[0].placeability).toEqual({ drawable: false, reason: "uncondensable", detail: "a key places nothing" });
     expect(layers[0].source).toBeNull();
+  });
+
+  it("reads a composed field as timed by an array, not drawn yet", () => {
+    const layer = trace({ asAffine: { matrix: [], inputAxes: [], outputAxes: [], total: true, fields: [{ outputAxis: "d" }] } });
+    const { layers } = foldChart(chart([layer]), NO_ERRORS, null);
+    expect(layers[0].placeability).toMatchObject({ drawable: true, timeSource: "FIELD" });
   });
 
   it("places a series by its coordinate column and groups it by unit", () => {

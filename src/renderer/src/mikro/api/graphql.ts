@@ -76,16 +76,43 @@ export type Scalars = {
   _Any: { input: any; output: any; }
 };
 
+/** The time truth: when the data at a coordinate anchor's coordinates was acquired, from the first of it to the last */
+export type AcquisitionWindow = {
+  __typename?: 'AcquisitionWindow';
+  /** When the last of it was acquired. Equal to start for one instant */
+  end: Scalars['DateTime']['output'];
+  id: Scalars['ID']['output'];
+  /** When the first of the data at these coordinates was acquired */
+  start: Scalars['DateTime']['output'];
+};
+
+/** Input type for an acquisition window: when the data at an anchor's coordinates was acquired, from the first of it to the last */
+export type AcquisitionWindowInput = {
+  /** When the last of it was acquired. Defaults to start: one instant */
+  end?: InputMaybe<Scalars['DateTime']['input']>;
+  /** When the first of the data at these coordinates was acquired */
+  start: Scalars['DateTime']['input'];
+};
+
+/** Objects to put in a collaboration together */
+export type AddManyToCollaborationInput = {
+  collaboration: Scalars['ID']['input'];
+  /** What to put in, in order: a whole before its parts. Each brings what it needs to be seen; one that is already in stays as it is */
+  objects: Array<CollaborationObjectRef>;
+};
+
 /** A whole placement path composed into one affine map, labelled with the axes it is written over. `matrix` is M x (N+1) with rows outermost -- the same layout an AffineTransformation's `affine` uses -- its columns in `inputAxes` order and its last column the translation. **`outputAxes` names only the destination axes the path actually constrains**: a (c,y,x) dataset registered on (y,x) into a (t,z,y,x) world gets two rows, not four, because the registration says nothing about t and z and a zero row there would pin the data at their origin rather than leave it unstated. `total` is whether the map covers every destination axis */
 export type AffinePlacement = {
   __typename?: 'AffinePlacement';
+  /** The destination axes given by an array's values rather than by a row of `matrix`: the time of each frame of an event-triggered movie, the positions a warp field gives. An axis is in `outputAxes` or here, never both */
+  fields: Array<PlacementField>;
   /** The axes the matrix's columns are in, which is the layer's own source coordinate system's axis order */
   inputAxes: Array<Scalars['String']['output']>;
   /** The composed map, M x (N+1), rows outermost. One row per axis in `outputAxes`, one column per axis in `inputAxes`, plus a final translation column */
   matrix: Array<Array<Scalars['Float']['output']>>;
   /** The destination axes the matrix's rows are in, in the world's own axis order. An axis the path says nothing about has no row at all */
   outputAxes: Array<Scalars['String']['output']>;
-  /** Whether `outputAxes` covers every axis of the destination space. False for a partial registration -- an honest map over the axes it names, and silence about the rest */
+  /** Whether `outputAxes` and `fields` together cover every axis of the destination space. False for a partial registration -- an honest map over the axes it names, and silence about the rest */
   total: Scalars['Boolean']['output'];
 };
 
@@ -107,7 +134,7 @@ export type AffineTransformation = Transformation & {
   id: Scalars['ID']['output'];
   /** The system this edge maps from */
   input: CoordinateSystem;
-  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
+  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about */
   inputAxes: Array<Scalars['String']['output']>;
   /** Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world */
   invariance: TransformInvariance;
@@ -115,7 +142,7 @@ export type AffineTransformation = Transformation & {
   name?: Maybe<Scalars['String']['output']>;
   /** The system this edge maps to */
   output: CoordinateSystem;
-  /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
+  /** The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z */
   outputAxes: Array<Scalars['String']['output']>;
   /** Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -553,7 +580,7 @@ export type AnnotationLayer = Layer & {
   __typename?: 'AnnotationLayer';
   /** The annotation collection whose shapes this layer renders: the container of the lens. Its own coordinate system is the layer's space */
   annotationCollection: AnnotationCollection;
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   /** The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens */
@@ -694,6 +721,10 @@ export type ApertureElementInput = {
 /** A multi-dimensional array dataset. Its dimensions and their types live on the axes of its INTRINSIC (pixel grid) coordinate system; physical units live on the physical spaces it has edges into; its pyramid levels are DataArrays, each mapping into its grid */
 export type ArrayDataset = {
   __typename?: 'ArrayDataset';
+  /** Derived from the coordinate anchors by core.logic.acquisition.end: The latest moment any of its anchors says it was acquired at. Null when no anchor states it, or when they disagree */
+  acquisitionEnd?: Maybe<Scalars['DateTime']['output']>;
+  /** Derived from the coordinate anchors by core.logic.acquisition.start: The earliest moment any of its anchors says it was acquired at. Null when no anchor states it, or when they disagree */
+  acquisitionStart?: Maybe<Scalars['DateTime']['output']>;
   /** The coordinate anchors of this dataset, each pinning metadata spokes -- a microscope state, OME metadata, a value histogram, a channel label -- to some of its level-0 coordinates */
   anchors: Array<CoordinateAnchor>;
   /** The dataset's axis names, in array order. Derived from the axes of its intrinsic coordinate system */
@@ -706,6 +737,8 @@ export type ArrayDataset = {
   dataArrays: Array<DataArray>;
   /** The scene to open for this dataset, and where `latestSnapshot` comes from: the nomination its whole lens holds (`fullLens.defaultScene`), so `setDefaultScene` here and `setLensDefaultScene` on that lens are one write. A nomination, not a derivation: it says nothing about where the data sits and is **not** the answer to which scenes show this dataset -- that is `scenes`, which the coordinate graph answers and which no stored column could contradict. Null until something sets it, with `setDefaultScene`, `setLensDefaultScene`, or `defaultFor` on either scene-creating mutation */
   defaultScene?: Maybe<Scene>;
+  /** Anchors of this dataset that cannot all be true, found while deriving its columns: an anchor contradicting one it holds over. Each leaves its column null. Empty when the metadata is consistent */
+  derivationConflicts: Array<DerivationConflict>;
   /** The datasets computed from this one -- the other end of `derivedFrom`, and the way to ask what a source produced: the deconvolutions, segmentations and projections that named a space of this dataset as their parent. Derived from the same edges, never a stored back-reference that could disagree with them. Every child, not just those this dataset places: a fusion that named this source second is listed here, and so is a child whose derivation is UNMAPPABLE -- it came from here even though its geometry did not survive. The maps themselves are on each child's own `derivedFrom` */
   derivedDatasets: Array<ArrayDataset>;
   /** The edges from this dataset's pixel grid back into the lenses it was computed from, when it is a derived dataset: one for a deconvolution or a resample, several for a fusion of channels or tiles. Empty for a dataset that was acquired rather than derived. The order is the priority its creator declared: the first edge is the primary parent, the one that places the dataset. They are edges, not labels: each carries the map itself, so a client can compose it -- and they are why a derived dataset inherits its sources' placements instead of needing its own registration */
@@ -807,6 +840,10 @@ export type ArrayDatasetFilter = {
   DISTINCT?: InputMaybe<Scalars['Boolean']['input']>;
   NOT?: InputMaybe<ArrayDatasetFilter>;
   OR?: InputMaybe<ArrayDatasetFilter>;
+  /** Filter to datasets acquired, at least in part, after this moment: their `acquisitionEnd` is at or after it. With `acquiredBefore`, the datasets whose acquisition overlaps the window. A dataset with no stated acquisition time never matches */
+  acquiredAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Filter to datasets acquired, at least in part, before this moment: their `acquisitionStart` is at or before it. With `acquiredAfter`, the datasets whose acquisition overlaps the window. A dataset with no stated acquisition time never matches */
+  acquiredBefore?: InputMaybe<Scalars['DateTime']['input']>;
   /** Filter by the sub of the user that assigned the creating task */
   assignedBy?: InputMaybe<Scalars['ID']['input']>;
   /** Filter for items created after this datetime */
@@ -830,8 +867,12 @@ export type ArrayDatasetFilter = {
   hasAxisTypes?: InputMaybe<Array<AxisType>>;
   /** Filter by whether the dataset nominates a scene to open (through its whole lens). False finds the ones with no thumbnail */
   hasDefaultScene?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter by whether the dataset's anchors contradict each other: true finds the nonsensical metadata (`derivationConflicts`), false the consistent */
+  hasDerivationConflicts?: InputMaybe<Scalars['Boolean']['input']>;
   /** Filter by whether the dataset has an edge into a space with real units. False finds the data that is still only pixels, with no pixel size or stage pose recorded. Unrelated to a phasor histogram's `calibrated`, which is about reference correction */
   hasPhysicalSpace?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Filter by whether the dataset was converted out of a file: true for the series a converter read from an upload, false for data written straight in (by an app, an agent, a script). Pair `false` with `notDerived` for the acquired data that came without a file */
+  hasSourceFile?: InputMaybe<Scalars['Boolean']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -859,9 +900,10 @@ export type ArrayDatasetFilter = {
 };
 
 export type ArrayDatasetOrder =
-  { createdAt: Ordering; id?: never; name?: never; }
-  |  { createdAt?: never; id: Ordering; name?: never; }
-  |  { createdAt?: never; id?: never; name: Ordering; };
+  { acquisitionStart: Ordering; createdAt?: never; id?: never; name?: never; }
+  |  { acquisitionStart?: never; createdAt: Ordering; id?: never; name?: never; }
+  |  { acquisitionStart?: never; createdAt?: never; id: Ordering; name?: never; }
+  |  { acquisitionStart?: never; createdAt?: never; id?: never; name: Ordering; };
 
 /** What a dataset structurally is, materialized from the axes of its intrinsic coordinate system at creation; an array lens answers the same vocabulary over the shape its slices cut out, so one plane of a stack is an IMAGE and one row of an image a TRACE. Specs stack: a 3D timelapse is VOLUME, TIMESERIES and MULTICHANNEL at once. Exactly one spatial member (SCALAR/PROFILE/IMAGE/VOLUME/HYPERVOLUME) ever holds; the others are modifiers: one per non-spatial axis type the dataset has more than one position along, and TRACE for a dataset that is a curve along one measured axis. */
 export enum ArrayDatasetSpec {
@@ -995,7 +1037,7 @@ export type ArrayLens = Lens & {
   slices: Array<Slice>;
   /** What this selection structurally is: its dataset's `spec` vocabulary, read over the shape its slices cut out. Materialized when the lens is made -- a lens and its dataset are immutable -- and what the `arraySpec` filter reads. An axis counts only when the lens keeps more than one position along it, so one plane of a [VOLUME, MULTICHANNEL] stack is [IMAGE, MULTICHANNEL], one channel of that is [IMAGE], and one row of an image is [PROFILE, TRACE]. The whole lens answers what its dataset does */
   spec: Array<ArrayDatasetSpec>;
-  /** What a layer over this lens would answer for `renderAxes`, before any layer exists: which of the lens' axes face screen x, y, z, time and intensity under the default convention. A preview for opening a viewer on a bare lens; once a layer exists, its own `renderAxes` is the one to follow -- the mapping is the view's, not the selection's */
+  /** Which of the lens' axes face screen x, y, z, time and intensity under the default convention (spatial axes by name when named x/y/z, else last is x). A suggestion for a bare lens, before anything places it: a viewer that has the lens' placement reads which axis faces which screen axis off that map and its own view, since the mapping is the view's, not the selection's */
   suggestedRenderAxes: RenderAxes;
   /** The edge from this lens' space back into its dataset's intrinsic pixel space. A crop is a translation of the slice starts; a stepped lens also rescales. Without this edge an ROI drawn on a cropped lens has no defined path back to its dataset. Null for an unsliced lens: its space IS the intrinsic space, and there is no shift to record */
   toParent?: Maybe<Transformation>;
@@ -1046,11 +1088,11 @@ export type AssociateInput = {
 /** One executable answer to 'what is under this point?': map the point along `path` if the plan is not rooted where you probed, sample the field array, then run the hops -- the landing first, then every declared reference reachable from it, each bound from the one before. Plans are discovered across the fact component -- probe a source image and the plans of the instance mask derived from it are found through the derivation edge -- but never through a registration: which claims compose is a scene's say-so, and this query has no scene. A plan takes no coordinate -- it is the same plan for every point, so fetch it once, cache it, and execute per hover locally with zero round-trips. attributePlans returns instructions, never attributes: anything that wants values runs the plan */
 export type AttributePlan = {
   __typename?: 'AttributePlan';
-  /** The FIELD edge this plan was built from. The plan's cache key is this edge's (id, version) together with every `path` step's transformation (id, version): the stores and columns of a table are written once, so a deleted or version-bumped edge -- the FIELD, or any step on the way to it -- is the only thing that can stale what a cached plan already says. What it can *reach* still grows: a matrix or a derived array created later extends the chain without touching any of these edges, so refetch when such data arrives */
-  edge: FieldTransformation;
-  /** The chain, in execution order. `hops[0]` is the landing: the table or matrix the FIELD edge's id keys, bound from `sample`. Each later hop crosses one declared reference from a parent hop, up to the query's `maxJoinDepth`. A client that only wants the landing reads `hops[0]` */
+  /** The key this plan was built from: the edge whose dereferencing FIELD part gives the id. The plan's cache key is this edge's (id, version) together with every `path` step's transformation (id, version): the stores and columns of a table are written once, so a deleted or version-bumped edge -- the key, or any step on the way to it -- is the only thing that can stale what a cached plan already says. What it can *reach* still grows: a matrix or a derived array created later extends the chain without touching any of these edges, so refetch when such data arrives */
+  edge: ByDimensionTransformation;
+  /** The chain, in execution order. `hops[0]` is the landing: the table or matrix the key's id keys, bound from `sample`. Each later hop crosses one declared reference from a parent hop, up to the query's `maxJoinDepth`. A client that only wants the landing reads `hops[0]` */
   hops: Array<Hop>;
-  /** The steps from the PROBED system to this plan's root (the FIELD edge's input system -- equal to `sample.system` when the mask's own pixels are the map). Empty when the plan is rooted where you probed. Compose in order, inverting the flagged steps, to map a probed-space point into the space `consumes` and `passthrough` are stated in -- the same contract as `pathToWorld`. The path crosses derivations, levels, lenses and physical spaces, never a registration */
+  /** The steps from the PROBED system to this plan's root (the key's input system -- equal to `sample.system` when the mask's own pixels are the map). Empty when the plan is rooted where you probed. Compose in order, inverting the flagged steps, to map a probed-space point into the space `consumes` and `passthrough` are stated in -- the same contract as `pathToWorld`. The path crosses derivations, levels, lenses and physical spaces, never a registration */
   path: Array<PlacementStep>;
   /** Where the id comes from: an `ArraySample` to read at the (path-mapped) point, or a `MeshSample`/`NetworkSample` whose id the client already picked */
   sample: SampleStep;
@@ -1317,19 +1359,13 @@ export type BoundingBoxInput = {
 
 /** The fields a BY_DIMENSION member of TransformInput reads. Published for codegen; the wire type is the flat TransformInput */
 export type ByDimensionTransformInput = {
-  affine?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
-  inputAxes: Array<Scalars['String']['input']>;
   kind?: CreatableTransformKind;
-  outputAxes: Array<Scalars['String']['input']>;
-  scale?: InputMaybe<Array<Scalars['Float']['input']>>;
-  translation?: InputMaybe<Array<Scalars['Float']['input']>>;
+  parts: Array<DimensionPartInput>;
 };
 
-/** A map over a named subset of the axes: `inputAxes` onto `outputAxes`, one for one, by a `scale` and/or a `translation`, or by an `affine` -- or by none of them, which is the identity on the named axes. The axes it does not name pass through untouched, which is how a registration crosses a rank boundary: a (c,y,x) dataset placed into a (t,z,y,x) world names y and x and says nothing about t and z */
+/** Parts side by side, each mapping its own input axes onto its own output axes by one kind -- a pixel size on (y, x), the instants of each frame read from an array on t, a label mask's ids. Disjoint on both sides, so every axis has one map. An axis no part names is one the edge says nothing about: nothing passes through implicitly, which is how a registration crosses a rank boundary -- a (c,y,x) dataset placed into a (t,z,y,x) world names y and x and says nothing about c, t and z. `inputAxes` and `outputAxes` are the parts' axes, in part order */
 export type ByDimensionTransformation = Transformation & {
   __typename?: 'ByDimensionTransformation';
-  /** The matrix over the named axes, M x (N+1) with rows outermost, in `outputAxes` x `inputAxes` order. Empty when the map is stated per axis or not at all. When present it is the whole map: a `scale` or `translation` beside it is not read */
-  affine: Array<Array<Scalars['Float']['output']>>;
   /** (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection */
   annotation?: Maybe<Annotation>;
   createdAt: Scalars['DateTime']['output'];
@@ -1337,7 +1373,7 @@ export type ByDimensionTransformation = Transformation & {
   id: Scalars['ID']['output'];
   /** The system this edge maps from */
   input: CoordinateSystem;
-  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
+  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about */
   inputAxes: Array<Scalars['String']['output']>;
   /** Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world */
   invariance: TransformInvariance;
@@ -1345,16 +1381,14 @@ export type ByDimensionTransformation = Transformation & {
   name?: Maybe<Scalars['String']['output']>;
   /** The system this edge maps to */
   output: CoordinateSystem;
-  /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
+  /** The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z */
   outputAxes: Array<Scalars['String']['output']>;
+  /** The parts, in order: each maps its own axes by one kind */
+  parts: Array<TransformationPart>;
   /** Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports */
   provenanceEntries: Array<ProvenanceEntry>;
-  /** The per-axis scale factors over the named axes, in `inputAxes` order. Empty when the map states none -- as `ScaleTransformation.scale` is shaped, so one fragment reads both */
-  scale: Array<Scalars['Float']['output']>;
   /** Where along one axis this edge applies, or null for an edge that holds everywhere -- which is almost every edge. A per-channel correction is scoped to {axis: "c", index: 2}; several such edges over one axis are one piecewise map. A path query crosses a scoped edge only when it fixes that coordinate with `at` */
   selector?: Maybe<Selector>;
-  /** The per-axis offsets over the named axes, in `inputAxes` order. Empty when the map states none */
-  translation: Array<Scalars['Float']['output']>;
   /** How much this map is actually known: VALIDATED for a map the server derived (or one someone checked), INFERRED for numbers read from metadata, MANUAL for an authored registration, UNKNOWN for one its author marked as a guess. A layer's validity is the weakest edge on its path to world */
   validity: PlacementValidity;
   /** (derivation edges) What the operation this edge records did to the *values*, orthogonal to `kind`: IDENTICAL (a crop -- statistics transfer), TRANSFORMED (a deconvolution -- same quantity, new numbers), CATEGORIZED (a threshold -- values became labels, and a bootstrapped scene renders the data as a label map). Null when unstated, and never present on a registration -- values do not cross a claim between spaces */
@@ -1364,7 +1398,7 @@ export type ByDimensionTransformation = Transformation & {
 };
 
 
-/** A map over a named subset of the axes: `inputAxes` onto `outputAxes`, one for one, by a `scale` and/or a `translation`, or by an `affine` -- or by none of them, which is the identity on the named axes. The axes it does not name pass through untouched, which is how a registration crosses a rank boundary: a (c,y,x) dataset placed into a (t,z,y,x) world names y and x and says nothing about t and z */
+/** Parts side by side, each mapping its own input axes onto its own output axes by one kind -- a pixel size on (y, x), the instants of each frame read from an array on t, a label mask's ids. Disjoint on both sides, so every axis has one map. An axis no part names is one the edge says nothing about: nothing passes through implicitly, which is how a registration crosses a rank boundary -- a (c,y,x) dataset placed into a (t,z,y,x) world names y and x and says nothing about c, t and z. `inputAxes` and `outputAxes` are the parts' axes, in part order */
 export type ByDimensionTransformationProvenanceEntriesArgs = {
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
@@ -1691,6 +1725,14 @@ export type CollaborationObjectInput = {
   object: Scalars['ID']['input'];
 };
 
+/** One object of a batch, by the structure it is known by and its id */
+export type CollaborationObjectRef = {
+  /** The structure the object is known by: @mikro/arraydataset */
+  identifier: Scalars['String']['input'];
+  /** The object's id */
+  object: Scalars['ID']['input'];
+};
+
 /** One column a layer may be coloured or filtered by, and how it is reached. Both pickers read the same options: `colorBys` and `filterBys` turn on the same measure-vs-categorical split, so two lists would be two copies of one answer. Every option returned is one the mutation that publishes the picker accepts -- `createMeshLayer` over a collection, `createLabelLayer` over a lens -- and every column it omits is one that mutation refuses; that invariant is why this exists rather than a client filtering `attributePlans`, which walks a different set */
 export type ColorByOption = {
   __typename?: 'ColorByOption';
@@ -1882,6 +1924,8 @@ export type Coordinate = {
 /** The axis-agnostic hub that pins metadata spokes (microscope state, OME metadata, value histograms, channel labels, light paths, phasor distributions and calibrations) to specific coordinates of an array, table or sparse dataset. Exactly one of `dataset`, `table` and `sparse` is set */
 export type CoordinateAnchor = {
   __typename?: 'CoordinateAnchor';
+  /** When the data at these coordinates was acquired */
+  acquisitionWindow?: Maybe<AcquisitionWindow>;
   channelLabel?: Maybe<ChannelLabel>;
   /** The coordinates this anchor is pinned to, e.g. {'c': 0, 't': 5}. For an array dataset these are level-0 pixel indices, i.e. coordinates of its INTRINSIC system; for a table dataset they are values of its coordinate columns, keyed by column name; for a sparse dataset they are positions along its enumerated axes. An anchor that omits an axis is global along it */
   coordinates: Scalars['Any']['output'];
@@ -1931,6 +1975,7 @@ export type CoordinateAnchorFilter = {
 
 /** Input type for a coordinate anchor, which specifies a list of dimension anchors to anchor to */
 export type CoordinateAnchorInput = {
+  acquisitionWindow?: InputMaybe<AcquisitionWindowInput>;
   axisAnchors: Array<AxisAnchorInput>;
   label?: InputMaybe<LabelInput>;
   lightGraph?: InputMaybe<LightpathGraphInput>;
@@ -2061,10 +2106,8 @@ export type CoordinateSystemOrder =
 export enum CreatableTransformKind {
   /** A general affine map. Takes `affine`, an M x (N+1) matrix with rows outermost. */
   Affine = 'AFFINE',
-  /** A map acting on a named subset of the axes and saying nothing about the rest. Takes `inputAxes` and `outputAxes`, and optionally `scale`, `translation` or `affine` acting on the named axes. */
+  /** Parts side by side over named axes. Takes `parts`, each naming its `inputAxes` and `outputAxes` and mapping them by one `PartKind`; the axes no part names it says nothing about. */
   ByDimension = 'BY_DIMENSION',
-  /** A non-affine map given by the values of an array rather than by a formula. Takes `field` (the array's coordinate system), `inputAxes` and `outputAxes`. */
-  Field = 'FIELD',
   /** The identity map. Input and output coordinates are the same, so it takes no parameters. */
   Identity = 'IDENTITY',
   /** A permutation of axes, mapping each input axis to an output axis by name. Takes `inputAxes` and `outputAxes`; the matrix is synthesized from them. */
@@ -2773,6 +2816,18 @@ export type DeleteTransformationInput = {
   id: Scalars['ID']['input'];
 };
 
+/** Anchors of a dataset that cannot all be true, found deriving one of its columns: an anchor contradicting one it holds over. The column is left null */
+export type DerivationConflict = {
+  __typename?: 'DerivationConflict';
+  /** The IDs of the anchors that contradict each other */
+  anchors: Array<Scalars['ID']['output']>;
+  /** The derived field the conflict left null, e.g. 'acquisition_start' */
+  field: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  /** What the anchors say that cannot all be true */
+  reason: Scalars['String']['output'];
+};
+
 /** Which kind of thing a derivation names as the source its data was computed from: the discriminator of `DerivedFromInput`. The edge itself is the same whichever is chosen -- child space in, source space out -- so a table named as TABLE_DATASET and the same table named as COORDINATE_SYSTEM write the identical row; the read side reports what lives at the far end through `CoordinateSystem.residents`, not which member was used to say it */
 export enum DerivationSourceKind {
   /** One shape of an annotation collection: the data was computed along it or within it -- a crop to an ROI, an image straightened along a path. The ANNOTATION_COLLECTION arm on the shape's collection, and which shape: the edge lands in the collection's drawing space and carries the annotation, so two shapes of one collection are two sources. Usually named second, behind the lens the pixels came from, and usually without a transform: the shape is why the data is what it is, not where it sits. */
@@ -2813,6 +2868,34 @@ export type DerivedFromInput = {
   transform?: InputMaybe<TransformInput>;
   /** What the derivation did to the *values* -- orthogonal to the transform's `kind`, which only says where the data sits: IDENTICAL for a crop or reorder (statistics transfer), TRANSFORMED for a deconvolution, a normalization, or a table of measurements read off an image, CATEGORIZED for a threshold or segmentation (values became labels -- a bootstrapped scene then renders as a label map). Omit when unstated; the algorithm itself belongs to task provenance */
   valueRelation?: InputMaybe<ValueRelation>;
+};
+
+/** One thing made from a `descendants` root, as a tile names it */
+export type DescendantNode = {
+  __typename?: 'DescendantNode';
+  /** Hops below the root, at its nearest */
+  depth: Scalars['Int']['output'];
+  /** Its ID, as its own query takes it */
+  id: Scalars['ID']['output'];
+  /** `<kind>:<id>`, the same key `lineage` gives it */
+  key: Scalars['ID']['output'];
+  /** What it is */
+  kind: LineageNodeKind;
+  /** Its name; a mesh or network collection without one is named by its store's key */
+  name: Scalars['String']['output'];
+  /** The key of what it was made from on its nearest path to the root -- the root's own key one hop down -- so the nodes read as a tree */
+  parent: Scalars['ID']['output'];
+};
+
+/** What was made from one root: its descendants, without the edges, lenses or arrays `lineage` carries */
+export type Descendants = {
+  __typename?: 'Descendants';
+  /** Whether something made from it was left out -- past `down`, past `fanout` or past the shared `limit`. `lineage` rooted here walks on */
+  more: Scalars['Boolean']['output'];
+  /** Everything made from the root within `down` hops, nearest first, each once */
+  nodes: Array<DescendantNode>;
+  /** The root's node key */
+  root: Scalars['ID']['output'];
 };
 
 /** One constraint on an object's descriptors, in the shape a rekuest port states its `requires` in -- so a picker hands a port's constraints on unchanged. `key` is one of the keys the structure declares (e.g. `@mikro/n_space_axes`); a key it does not declare is refused. */
@@ -2900,6 +2983,17 @@ export type DeviceStateInput = {
   settings?: Array<SettingInput>;
 };
 
+/** One part of a BY_DIMENSION: its own input axes onto its own output axes, by one kind. Each kind reads only its own field beside the axes -- `scale`, `translation`, `affine` or `field` -- and refuses any other */
+export type DimensionPartInput = {
+  affine?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
+  field?: InputMaybe<FieldInput>;
+  inputAxes: Array<Scalars['String']['input']>;
+  kind: PartKind;
+  outputAxes: Array<Scalars['String']['input']>;
+  scale?: InputMaybe<Array<Scalars['Float']['input']>>;
+  translation?: InputMaybe<Array<Scalars['Float']['input']>>;
+};
+
 /** How a viewer eases the camera along the travel into an animation waypoint. */
 export enum Easing {
   /** Start slow, arrive at full speed. Right for the first leg, pulling away from rest. */
@@ -2973,7 +3067,7 @@ export enum ExtentState {
   Inverted = 'INVERTED',
   /** The extent is stated, over the axes it names and only those. */
   Known = 'KNOWN',
-  /** A FIELD edge on the path gives the map as the values of an array rather than as a formula, so there is no closed form to push a box through. The path is real and is returned; `invariance` reads DIFFEOMORPHIC. */
+  /** A step on the path has no form to push a box through -- a key from pixels to a table's rows, or a FIELD inside a SEQUENCE. The path is real and is returned. A field map that places composes instead: its axes are left unbounded in the extent, which says nothing about them rather than something wrong. */
   NonAffine = 'NON_AFFINE',
   /** The source's geometry is not something the server holds: a mesh collection's vertices and a table dataset's rows live in Parquet it never opens. `extent` is null because there is no box to push, not because the path failed -- and the source is returned anyway, because refusing to bound something is not the same as knowing it is out of view. */
   Unreadable = 'UNREADABLE'
@@ -3041,52 +3135,31 @@ export type FabriksUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
-/** The fields a FIELD member of TransformInput reads. Published for codegen; the wire type is the flat TransformInput */
-export type FieldTransformInput = {
-  field: Scalars['ID']['input'];
-  inputAxes: Array<Scalars['String']['input']>;
-  kind?: CreatableTransformKind;
-  outputAxes: Array<Scalars['String']['input']>;
+/** The array a FIELD part reads: a times array, a warp field, a label mask whose pixels are the ids of a table's rows. The array is read at a fractional position by linear interpolation of its sample centres, so a pyramid level's fractional index is still a position */
+export type FieldInput = {
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
+  system: Scalars['ID']['input'];
+  unit?: InputMaybe<Scalars['String']['input']>;
 };
 
-/** A non-affine map given by the values of an array rather than by a formula. The array is a `field`: a node of this graph, not a payload on this edge, so it keeps its own lineage and its axes say what its numbers mean. It has no closed-form inverse, so a placement path never walks it backwards */
-export type FieldTransformation = Transformation & {
-  __typename?: 'FieldTransformation';
-  /** (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection */
-  annotation?: Maybe<Annotation>;
-  createdAt: Scalars['DateTime']['output'];
-  creator?: Maybe<User>;
-  /** The coordinate system of the array whose values are this map. Its value axis says what they mean: COORDINATE for absolute positions, DISPLACEMENT for offsets, none at all for a scalar array whose single value is a position. Equal to `input` when the array's own pixels are the map, as for a label mask keying a table of objects */
-  field?: Maybe<CoordinateSystem>;
-  id: Scalars['ID']['output'];
-  /** The system this edge maps from */
-  input: CoordinateSystem;
-  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
-  inputAxes: Array<Scalars['String']['output']>;
-  /** Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world */
-  invariance: TransformInvariance;
-  kind: TransformKind;
-  name?: Maybe<Scalars['String']['output']>;
-  /** The system this edge maps to */
-  output: CoordinateSystem;
-  /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
-  outputAxes: Array<Scalars['String']['output']>;
-  /** Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports */
-  provenanceEntries: Array<ProvenanceEntry>;
-  /** Where along one axis this edge applies, or null for an edge that holds everywhere -- which is almost every edge. A per-channel correction is scoped to {axis: "c", index: 2}; several such edges over one axis are one piecewise map. A path query crosses a scoped edge only when it fixes that coordinate with `at` */
-  selector?: Maybe<Selector>;
-  /** How much this map is actually known: VALIDATED for a map the server derived (or one someone checked), INFERRED for numbers read from metadata, MANUAL for an authored registration, UNKNOWN for one its author marked as a guess. A layer's validity is the weakest edge on its path to world */
-  validity: PlacementValidity;
-  /** (derivation edges) What the operation this edge records did to the *values*, orthogonal to `kind`: IDENTICAL (a crop -- statistics transfer), TRANSFORMED (a deconvolution -- same quantity, new numbers), CATEGORIZED (a threshold -- values became labels, and a bootstrapped scene renders the data as a label map). Null when unstated, and never present on a registration -- values do not cross a claim between spaces */
-  valueRelation?: Maybe<ValueRelation>;
-  /** How many times this edge has been written, counting the row that created it -- so a new edge reads 1. Only comparison is meaningful: this and the edge's `id` together are the cache key for anything derived from the edge, and a change means refetch. It counts the same provenance rows `provenanceEntries` lists, so the audit trail and the token cannot disagree; a rename moves it too, which errs towards refetching something that did not change rather than trusting something that did */
-  version: Scalars['Int']['output'];
-};
-
-
-/** A non-affine map given by the values of an array rather than by a formula. The array is a `field`: a node of this graph, not a payload on this edge, so it keeps its own lineage and its axes say what its numbers mean. It has no closed-form inverse, so a placement path never walks it backwards */
-export type FieldTransformationProvenanceEntriesArgs = {
-  pagination?: InputMaybe<OffsetPaginationInput>;
+/** The array a FIELD part reads, as its writer declared it. `values` says what the numbers are -- SCALAR (one value: a time, an id), COORDINATE (positions) or DISPLACEMENT (offsets) -- `spatial` whether it gives a SPACE axis (it bends straight lines, so drawing it needs the field evaluated), and `dereference` whether its values are ids keying the rows of a table rather than positions */
+export type FieldPart = {
+  __typename?: 'FieldPart';
+  /** Whether its values are ids keying the rows of a table, so it places nothing */
+  dereference: Scalars['Boolean']['output'];
+  /** The coordinate system of the array whose values are the map. Equal to the edge's `input` when the array's own pixels are the map, as for a label mask */
+  field: CoordinateSystem;
+  /** The largest value, as declared by the writer */
+  max?: Maybe<Scalars['Float']['output']>;
+  /** The smallest value, as declared by the writer */
+  min?: Maybe<Scalars['Float']['output']>;
+  /** Whether it gives a SPACE axis: no matrix states such a map */
+  spatial: Scalars['Boolean']['output'];
+  /** The unit of the values, when stated; they are converted into the output axes' unit when read */
+  unit?: Maybe<Scalars['String']['output']>;
+  /** What the numbers are: SCALAR, COORDINATE or DISPLACEMENT */
+  values: Scalars['String']['output'];
 };
 
 /** A file in its original format (e.g. a microscopy vendor file), stored in a BigFileStore. Files are the raw bytes that array datasets, table datasets and mesh collections are converted from. */
@@ -3685,7 +3758,7 @@ export enum HistoryKind {
   Update = 'UPDATE'
 }
 
-/** One step of a plan's chain through record-land. `hops[0]` is the landing -- the FIELD edge's own target, bound from `sample` -- and every later hop binds from the rows or slice its `parent` returned, under the name `via` states, and lands one declared reference further: a `Column.references`, a matrix axis a table identifies, the same axis walked into the matrix, or a dense array derived from a table with one of its enumerating axes mapped onto the table's row ids. Nothing hops out of an array. Execute in list order; a hop's parent always precedes it. `cardinality` says whether to bind a scalar or a list. The server describes the chain and reads nothing; the client runs it hop by hop with grants it already holds */
+/** One step of a plan's chain through record-land. `hops[0]` is the landing -- the key's own target, bound from `sample` -- and every later hop binds from the rows or slice its `parent` returned, under the name `via` states, and lands one declared reference further: a `Column.references`, a matrix axis a table identifies, the same axis walked into the matrix, or a dense array derived from a table with one of its enumerating axes mapped onto the table's row ids. Nothing hops out of an array. Execute in list order; a hop's parent always precedes it. `cardinality` says whether to bind a scalar or a list. The server describes the chain and reads nothing; the client runs it hop by hop with grants it already holds */
 export type Hop = {
   __typename?: 'Hop';
   /** The dense array this hop lands in, when `lookup.kind` is ARRAY. Its `dataArrays` are the levels to read from, each with its own `store`; level 0 always has one */
@@ -3792,7 +3865,7 @@ export type IdentityTransformation = Transformation & {
   id: Scalars['ID']['output'];
   /** The system this edge maps from */
   input: CoordinateSystem;
-  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
+  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about */
   inputAxes: Array<Scalars['String']['output']>;
   /** Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world */
   invariance: TransformInvariance;
@@ -3800,7 +3873,7 @@ export type IdentityTransformation = Transformation & {
   name?: Maybe<Scalars['String']['output']>;
   /** The system this edge maps to */
   output: CoordinateSystem;
-  /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
+  /** The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z */
   outputAxes: Array<Scalars['String']['output']>;
   /** Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -3823,7 +3896,7 @@ export type IdentityTransformationProvenanceEntriesArgs = {
 /** The general image layer: array (lens) data rendered through a composable render graph. The kind for a layer that actually **composites** -- several channels blended together, a hand-authored transfer curve, a solid tint, per-channel opacity. When the recipe's shape is fixed instead, one of IntensityLayer, RgbLayer or PhasorLayer says so directly and carries its settings as fields, which is why those are not this type with a flag. Its rendering is described entirely by the render graph; its placement, entirely by the coordinate graph. */
 export type ImageLayer = Layer & {
   __typename?: 'ImageLayer';
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   id: Scalars['ID']['output'];
@@ -3843,8 +3916,6 @@ export type ImageLayer = Layer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
-  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
-  renderAxes: RenderAxes;
   /** The composable in-layer render graph, if this layer defines one */
   renderGraph?: Maybe<LayerRenderGraph>;
   scene: Scene;
@@ -3908,7 +3979,7 @@ export type IntFilterLookup = {
 /** A single-channel lens through one colormap -- or one solid tint -- with contrast limits and gamma, optionally projected over z. Which channel is drawn is the lens' selection, not a field here. The fluorescence workhorse, and the layer a renderer can take straight to a single-channel texture and a LUT without walking a tree. Its settings are fields rather than a render graph because there is nothing here to composite: the graph form of this was a blend node with a single child, and additively blending one thing is that thing. Anything that *would* need the tree -- a second channel, an authored transfer curve, per-channel opacity -- is an ImageLayer. A tint is not among them: it names the hue one ramp ends at, which is what `colormap` does, so it is a field here rather than a reason to author a graph. */
 export type IntensityLayer = Layer & {
   __typename?: 'IntensityLayer';
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   climMax?: Maybe<Scalars['Float']['output']>;
@@ -3934,8 +4005,6 @@ export type IntensityLayer = Layer & {
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
   projectionMode?: Maybe<ProjectionMode>;
-  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
-  renderAxes: RenderAxes;
   scene: Scene;
   visible: Scalars['Boolean']['output'];
 };
@@ -4121,7 +4190,7 @@ export type LabelInput = {
 /** A layer that renders array (lens) data whose values are discrete object ids -- a segmentation or an instance map. It shares the image layer's source and the same coordinate-graph placement, and none of its render settings: contrast limits, gamma, colormaps and intensity projections are all meaningless over ids. */
 export type LabelLayer = Layer & {
   __typename?: 'LabelLayer';
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   id: Scalars['ID']['output'];
@@ -4143,8 +4212,6 @@ export type LabelLayer = Layer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
-  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
-  renderAxes: RenderAxes;
   scene: Scene;
   visible: Scalars['Boolean']['output'];
 };
@@ -4310,7 +4377,7 @@ export type LaserElementInput = {
 
 /** A layer placed in a scene and alpha-blended over the layers below it. It carries view state only: a spatial fact is a coordinate system or a transformation edge, never a field here, and every spatial question a layer answers -- `pathToWorld`, `placement`, `placementValidity`, `placementInvariance` -- is derived from the graph on read and stored nowhere, so refining one edge updates every layer that looks through it. Which columns hold a point layer's coordinates is likewise the table dataset's declaration, not a per-layer copy. The concrete kind carries its own data source and render settings: IntensityLayer, RgbLayer, PhasorLayer and LabelLayer each state a recipe of fixed shape as fields, ImageLayer carries a composable render graph for the layers that genuinely composite, and AnnotationLayer, PointLayer, TrackLayer, MeshLayer and NetworkLayer draw through a lens over a collection or a table -- every layer, of every kind, draws through a lens of its source's kind. */
 export type Layer = {
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   id: Scalars['ID']['output'];
@@ -4410,7 +4477,7 @@ export enum LayerKind {
   Rgb = 'RGB',
   /** A track layer rendering trajectories from columns of a table, grouped by a track id. */
   Track = 'TRACK',
-  /** A vector layer rendering a vector-valued lens -- an optical flow, a deformation field, an orientation map -- as glyphs sampled from the grid. The sixth lens-backed kind, and the value axis is what makes it one: the lens carries a DISPLACEMENT axis whose positions are the components of a per-point offset, so the axis is read as geometry rather than composited as channels. Which axis that is is derived (`renderAxes.vector`), never stored; what the layer carries is view state -- a glyph style, a sampling stride, a magnitude scale and a magnitude colormap window. `glyphScale` maps a magnitude in the component axis's unit to a drawn length in scene units, so like `pointSize` it means something only from SIMILARITY up. */
+  /** A vector layer rendering a vector-valued lens -- an optical flow, a deformation field, an orientation map -- as glyphs sampled from the grid. The sixth lens-backed kind, and the value axis is what makes it one: the lens carries a DISPLACEMENT axis whose positions are the components of a per-point offset, so the axis is read as geometry rather than composited as channels. Which axis that is is derived from the axis types (`vectorAxis`), never stored; what the layer carries is view state -- a glyph style, a sampling stride, a magnitude scale and a magnitude colormap window. `glyphScale` maps a magnitude in the component axis's unit to a drawn length in scene units, so like `pointSize` it means something only from SIMILARITY up. */
   Vector = 'VECTOR'
 }
 
@@ -5216,7 +5283,7 @@ export type MeshLayer = Layer & {
   activeColorBy?: Maybe<Scalars['Int']['output']>;
   /** Which entries of `filterBys` are applied, as indices into it. They combine with AND: an object is drawn when every active rule keeps it. Empty applies none of them, so everything draws */
   activeFilterBys: Array<Scalars['Int']['output']>;
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   /** The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens */
@@ -5496,6 +5563,8 @@ export type ModelChange = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  /** Put several objects in a collaboration at once, each with what it needs to be seen; all or none. How a dataset goes in with what was derived from it */
+  addManyToCollaboration: Collaboration;
   /** Put an object in a collaboration, with what it needs to be seen: a scene brings the data its layers draw */
   addToCollaboration: Collaboration;
   /** Attach unstructured metadata to a file */
@@ -5786,6 +5855,11 @@ export type Mutation = {
   updateTransformation: Transformation;
   /** Update a vector layer's glyph style, sampling stride, magnitude scale, colormap window and compositing settings. A patch: what is not sent keeps its current value */
   updateVectorLayer: VectorLayer;
+};
+
+
+export type MutationAddManyToCollaborationArgs = {
+  input: AddManyToCollaborationInput;
 };
 
 
@@ -6681,7 +6755,7 @@ export type NetworkLayer = Layer & {
   activeColorBy?: Maybe<Scalars['Int']['output']>;
   /** Which entries of `filterBys` are applied, as indices into it. They combine with AND: something is drawn when every active rule keeps it. Empty applies none of them, so everything draws */
   activeFilterBys: Array<Scalars['Int']['output']>;
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   /** The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens */
@@ -7161,6 +7235,22 @@ export type ParquetUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
+/** The kind of one part of a BY_DIMENSION: how it maps its own input axes onto its own output axes. */
+export enum PartKind {
+  /** A general affine map. Takes `affine`, one row per output axis of the part and one column per input axis plus the offset. */
+  Affine = 'AFFINE',
+  /** A map given by the values of an array rather than by a formula. Takes `field`: the array's coordinate system (a node of this graph), and the unit and declared range of its values. Whether the values are absolute POSITIONS or per-point OFFSETS is read from the array's value axis -- COORDINATE or DISPLACEMENT -- and a scalar array gives one axis: a time, or an id. Values landing on an INDEX axis are ids, so the part is a key -- a label mask, whose own pixels are the map -- and places nothing. Not invertible in closed form, so a path never walks it backwards. */
+  Field = 'FIELD',
+  /** The same positions, said twice: each input axis onto the output axis in the same place, converted between their units. */
+  Identity = 'IDENTITY',
+  /** A rotation. Takes `affine`: the orthonormal matrix, in the layout an AFFINE uses. */
+  Rotation = 'ROTATION',
+  /** A per-axis multiplication. Takes `scale`, one entry per input axis of the part. */
+  Scale = 'SCALE',
+  /** A per-axis offset. Takes `translation`, one entry per input axis of the part. */
+  Translation = 'TRANSLATION'
+}
+
 export type PermissionOption = {
   __typename?: 'PermissionOption';
   label: Scalars['String']['output'];
@@ -7299,7 +7389,7 @@ export type PhasorHistogramInput = {
 /** One axis of a lens -- MICROTIME or SPECTRUM -- reduced per pixel to a phasor and coloured by it: over microtime the phase reads as a fluorescence lifetime, over a spectrum as a spectral centre of mass. Its recipe lives in `phasorRender` rather than in fields, as a label layer's lives in `labelRender`, because a phasor's transfer maps the *reduction's* output -- a (g, s) pair plus a photon count -- and carries a list of cursors. A phasor composited *with* an ordinary intensity channel is still expressible: that is an ImageLayer whose graph carries a `PhasorNode`. */
 export type PhasorLayer = Layer & {
   __typename?: 'PhasorLayer';
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   id: Scalars['ID']['output'];
@@ -7321,8 +7411,6 @@ export type PhasorLayer = Layer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
-  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
-  renderAxes: RenderAxes;
   scene: Scene;
   visible: Scalars['Boolean']['output'];
 };
@@ -7458,6 +7546,33 @@ export type PinholeElementInput = {
   serialNumber?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** One destination axis of a placement given by an array's values: the world coordinate of a source position `x` (a vector over `AffinePlacement.inputAxes`) is `scale * field[inner · x](component) + base · x`, where `field` is the array of `dataset`, read at the fractional position each row of `inner` gives, one row per axis the array is indexed by, and `component` picks the value-axis position of a vector field (null for a scalar one). `inner` and `base` rows hold one coefficient per source axis and a final constant. `base` is the constant offset for a positions field and adds the source position for a DISPLACEMENT field. The array's values are the positions of the sample *centres*; between samples the map interpolates linearly, so a fractional index (a pyramid level's) is still a position. The server never reads the values: fetch the array and evaluate it. A field read along one source axis -- a lookup, the time of each frame -- also states `inputAxis`, `innerScale` and `innerOffset`, and its values strictly increase, so it can be inverted by binary search */
+export type PlacementField = {
+  __typename?: 'PlacementField';
+  /** The affine part added to the scaled value: one coefficient per source axis plus a constant. Zero coefficients unless the field holds DISPLACEMENT offsets */
+  base: Array<Scalars['Float']['output']>;
+  /** The value-axis position of a vector field (COORDINATE or DISPLACEMENT) this axis reads; null for a scalar field */
+  component?: Maybe<Scalars['Int']['output']>;
+  /** The dataset whose values are the map. Read its level-0 store to evaluate the field */
+  dataset?: Maybe<ArrayDataset>;
+  /** The coordinate system of the array whose values are the map */
+  field: CoordinateSystem;
+  /** Source position to array position: one row per axis the array is indexed by, one coefficient per source axis plus a constant */
+  inner: Array<Array<Scalars['Float']['output']>>;
+  /** For a lookup: source index to array index, the offset */
+  innerOffset?: Maybe<Scalars['Float']['output']>;
+  /** For a lookup: source index to array index, the factor */
+  innerScale?: Maybe<Scalars['Float']['output']>;
+  /** For a field read along one source axis -- a lookup: that axis. Null otherwise */
+  inputAxis?: Maybe<Scalars['String']['output']>;
+  /** Array value to destination coordinate: the constant, `base`'s last entry */
+  offset: Scalars['Float']['output'];
+  /** The destination axis this field gives */
+  outputAxis: Scalars['String']['output'];
+  /** Array value to destination coordinate: the factor, including the unit conversion from the array's values */
+  scale: Scalars['Float']['output'];
+};
+
 /** Whether a layer has a place in its scene's world, and if not, why not. Derived, never stored. */
 export enum PlacementState {
   /** The layer's data is registered, but only at particular coordinates — a per-channel or per-timepoint correction, written as one selector-scoped edge per index. Where it sits genuinely depends on where you are standing, so `pathToWorld` and `asAffine` are null until you pass `at`, and answer for that coordinate when you do. This is a placement, not a gap: there is nothing to author. */
@@ -7507,7 +7622,7 @@ export type PointLayer = Layer & {
   activeColorBy?: Maybe<Scalars['Int']['output']>;
   /** Which entries of `filterBys` are applied, as indices into it. They combine with AND: a point is drawn when every active rule keeps it. Empty applies none of them, so everything draws */
   activeFilterBys: Array<Scalars['Int']['output']>;
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   /** The colourings this layer offers, in the order a picker should show them. Each names a column of a table this layer's ids key into, or one slice of a sparse matrix they index, already checked to be reachable. Empty means there is nothing to pick */
@@ -7535,19 +7650,11 @@ export type PointLayer = Layer & {
   pointSize?: Maybe<Scalars['Float']['output']>;
   scene: Scene;
   sizeColumn?: Maybe<Scalars['String']['output']>;
-  /** The coordinate column whose axis is named 't', if any */
-  tColumn?: Maybe<Scalars['String']['output']>;
   /** The table dataset the points are drawn from: the container of the lens. Its declared coordinate columns provide the coordinates and its own system provides the placement -- the column fields below are derived from its schema, never stored per layer */
   tableDataset: TableDataset;
   visible: Scalars['Boolean']['output'];
   /** The lens' windows as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open), on top of whatever `filterBys` are active. The selection the layer draws, derived from the lens and never stored; empty for a whole lens */
   windowFilters: Array<LabelFilterBy>;
-  /** The coordinate column whose axis is named 'x', from the dataset's declared schema */
-  xColumn?: Maybe<Scalars['String']['output']>;
-  /** The coordinate column whose axis is named 'y' */
-  yColumn?: Maybe<Scalars['String']['output']>;
-  /** The coordinate column whose axis is named 'z', if any */
-  zColumn?: Maybe<Scalars['String']['output']>;
 };
 
 
@@ -7745,6 +7852,8 @@ export type Query = {
   dataArray: DataArray;
   /** List data arrays (the multiscale zarr arrays backing array datasets) */
   dataArrays: Array<DataArray>;
+  /** What was made from each of many containers or files, `down` hops deep, in one walk: a page of tiles asks once rather than once per tile. Kind-blind like `lineage` -- a table uploaded on its own is a root just as a converted series is -- but downstream only, and without the edges, lenses and arrays `lineage` carries. `limit` is shared by every root; `fanout` caps the hops per node. A root another organization owns answers nothing, so the result can be shorter than `starts` */
+  descendants: Array<Descendants>;
   /** Get a single file by ID */
   file: File;
   /** List files (raw microscopy files such as .czi or .ome.tiff) */
@@ -7797,6 +7906,8 @@ export type Query = {
   networkFilterByOptions: Array<FilterByOption>;
   /** Get permissions for a specific object */
   permissions: Array<UserObjectPermission>;
+  /** The newest parentless data, whatever its kind, newest first: what a home page lists. A root has no up-hop in `lineage` -- no derivation edge into another container and no file it was converted from; a file is one unless it was exported from a container. A file's converted series and a dataset's mask are not roots: they are reached from their parent, with `descendants`. Annotation collections are drawn rather than brought in and are never listed. `kinds` narrows it; the default is every other kind. `filters` narrows it further, by creator, collaboration, creation time and acquisition time */
+  roots: Array<RootNode>;
   /** Get a single scene by ID */
   scene: Scene;
   /** Get a single scene snapshot by ID */
@@ -7977,6 +8088,14 @@ export type QueryDataArraysArgs = {
 };
 
 
+export type QueryDescendantsArgs = {
+  down?: Scalars['Int']['input'];
+  fanout?: Scalars['Int']['input'];
+  limit?: Scalars['Int']['input'];
+  starts: Array<LineageRootInput>;
+};
+
+
 export type QueryFileArgs = {
   id: Scalars['ID']['input'];
 };
@@ -8138,6 +8257,13 @@ export type QueryNetworkFilterByOptionsArgs = {
 export type QueryPermissionsArgs = {
   identifier: Scalars['String']['input'];
   object: Scalars['ID']['input'];
+};
+
+
+export type QueryRootsArgs = {
+  filters?: InputMaybe<RootFilter>;
+  kinds?: InputMaybe<Array<LineageNodeKind>>;
+  pagination?: InputMaybe<OffsetPaginationInput>;
 };
 
 
@@ -8360,7 +8486,7 @@ export type RevertInput = {
 /** Three single-channel lenses, each a crop of `lens`, as the red, green and blue components of one picture -- a photograph, a brightfield slide -- sharing one pair of contrast limits. A renderer can upload this as a single RGB texture in one pass. Its own kind rather than a three-child blend because the two are **indistinguishable as graphs**, and a three-marker fluorescence acquisition coloured red/green/blue is by far the commoner reading of that shape -- so as a graph the authored fact was destroyed at write time. Never inferred, for the same reason. There is no per-channel colormap here and no per-channel visibility: the channel *is* the colour, and the three are components of one picture rather than three signals to hide and reorder separately. Wanting to do that means wanting three layers, or an ImageLayer. */
 export type RgbLayer = Layer & {
   __typename?: 'RgbLayer';
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   /** The single-channel lens drawn as blue: a crop of `lens` with its channel axis at one position */
@@ -8388,8 +8514,6 @@ export type RgbLayer = Layer & {
   placementValidity: PlacementValidity;
   /** The single-channel lens drawn as red: a crop of `lens` with its channel axis at one position */
   redLens: ArrayLens;
-  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
-  renderAxes: RenderAxes;
   scene: Scene;
   visible: Scalars['Boolean']['output'];
   /** Per-component gains [red, green, blue], multiplied into the components before the shared contrast limits. Null: no correction, the same as [1, 1, 1] */
@@ -8427,6 +8551,41 @@ export type RgbLayerPlacementValidityArgs = {
   at?: InputMaybe<Array<CoordinateInput>>;
 };
 
+/** What narrows `roots`. A field left out does not narrow */
+export type RootFilter = {
+  /** Only what was acquired, at least in part, at or after this moment -- the same overlap as `ArrayDatasetFilter.acquiredAfter`. A file is judged by the series converted out of it; kinds with no acquisition time drop out */
+  acquiredAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what was acquired, at least in part, at or before this moment -- the same overlap as `ArrayDatasetFilter.acquiredBefore`. A file is judged by the series converted out of it; kinds with no acquisition time drop out */
+  acquiredBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what was put in this collaboration. A file counts when it, or a series converted out of it, was put there */
+  collaboration?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what was created at or after this moment */
+  createdAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what was created at or before this moment */
+  createdBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  /** Only what this user created, by their subject ID. Kinds that record no creator drop out */
+  owner?: InputMaybe<Scalars['ID']['input']>;
+  /** Only what is named with this text, anywhere in the name, ignoring case. A file also matches by the name of a series converted out of it. An unnamed mesh or network collection never matches */
+  search?: InputMaybe<Scalars['String']['input']>;
+  /** Only data satisfying every one of these specs, as `ArrayDatasetFilter.spec` reads them, e.g. [VOLUME, TIMESERIES]. A file is judged by the series converted out of it, and matches only when one series meets both this and the acquisition window; kinds that are not array data drop out */
+  spec?: InputMaybe<Array<ArrayDatasetSpec>>;
+};
+
+/** A piece of parentless data: nothing it was made from is recorded, so it is where a lineage starts */
+export type RootNode = {
+  __typename?: 'RootNode';
+  /** When it was created */
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
+  /** Its ID, as its own query takes it */
+  id: Scalars['ID']['output'];
+  /** `<kind>:<id>`, the same key `lineage` gives it */
+  key: Scalars['ID']['output'];
+  /** What it is */
+  kind: LineageNodeKind;
+  /** Its name; a mesh or network collection without one is named by its store's key */
+  name: Scalars['String']['output'];
+};
+
 /** The fields a ROTATION member of TransformInput reads. Published for codegen; the wire type is the flat TransformInput */
 export type RotationTransformInput = {
   affine: Array<Array<Scalars['Float']['input']>>;
@@ -8445,7 +8604,7 @@ export type RotationTransformation = Transformation & {
   id: Scalars['ID']['output'];
   /** The system this edge maps from */
   input: CoordinateSystem;
-  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
+  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about */
   inputAxes: Array<Scalars['String']['output']>;
   /** Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world */
   invariance: TransformInvariance;
@@ -8453,7 +8612,7 @@ export type RotationTransformation = Transformation & {
   name?: Maybe<Scalars['String']['output']>;
   /** The system this edge maps to */
   output: CoordinateSystem;
-  /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
+  /** The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z */
   outputAxes: Array<Scalars['String']['output']>;
   /** Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -8557,7 +8716,7 @@ export type ScaleTransformation = Transformation & {
   id: Scalars['ID']['output'];
   /** The system this edge maps from */
   input: CoordinateSystem;
-  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
+  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about */
   inputAxes: Array<Scalars['String']['output']>;
   /** Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world */
   invariance: TransformInvariance;
@@ -8565,7 +8724,7 @@ export type ScaleTransformation = Transformation & {
   name?: Maybe<Scalars['String']['output']>;
   /** The system this edge maps to */
   output: CoordinateSystem;
-  /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
+  /** The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z */
   outputAxes: Array<Scalars['String']['output']>;
   /** Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -8775,7 +8934,7 @@ export type SequenceTransformation = Transformation & {
   id: Scalars['ID']['output'];
   /** The system this edge maps from */
   input: CoordinateSystem;
-  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
+  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about */
   inputAxes: Array<Scalars['String']['output']>;
   /** Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world */
   invariance: TransformInvariance;
@@ -8783,7 +8942,7 @@ export type SequenceTransformation = Transformation & {
   name?: Maybe<Scalars['String']['output']>;
   /** The system this edge maps to */
   output: CoordinateSystem;
-  /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
+  /** The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z */
   outputAxes: Array<Scalars['String']['output']>;
   /** Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -9515,6 +9674,8 @@ export type TableDatasetFilter = {
   folders?: InputMaybe<Array<Scalars['ID']['input']>>;
   /** Filter to tables that declare a column of this role, e.g. TRACK_ID */
   hasColumnRole?: InputMaybe<ColumnRole>;
+  /** Filter by whether the table was converted out of a file: true for the tables a converter read from an upload, false for those written straight in */
+  hasSourceFile?: InputMaybe<Scalars['Boolean']['input']>;
   id?: InputMaybe<Scalars['ID']['input']>;
   /** Filter by list of IDs */
   ids?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -9752,7 +9913,7 @@ export type TraceChartLayerPlacementValidityArgs = {
 /** A layer that renders trajectories (e.g. particle/cell tracks) from a table dataset, grouped by its TRACK_ID column. */
 export type TrackLayer = Layer & {
   __typename?: 'TrackLayer';
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   colorByColumn?: Maybe<Scalars['String']['output']>;
@@ -9774,8 +9935,6 @@ export type TrackLayer = Layer & {
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
   scene: Scene;
-  /** The coordinate column whose axis is named 't', if any */
-  tColumn?: Maybe<Scalars['String']['output']>;
   /** The table dataset the tracks are drawn from: the container of the lens. Its coordinate and TRACK_ID columns provide the trajectories -- the column fields below are derived from its schema, never stored per layer */
   tableDataset: TableDataset;
   /** The dataset's TRACK_ID column, which groups rows into tracks */
@@ -9783,12 +9942,6 @@ export type TrackLayer = Layer & {
   visible: Scalars['Boolean']['output'];
   /** The lens' windows as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open), on top of whatever `filterBys` are active. The selection the layer draws, derived from the lens and never stored; empty for a whole lens */
   windowFilters: Array<LabelFilterBy>;
-  /** The coordinate column whose axis is named 'x', from the dataset's declared schema */
-  xColumn?: Maybe<Scalars['String']['output']>;
-  /** The coordinate column whose axis is named 'y' */
-  yColumn?: Maybe<Scalars['String']['output']>;
-  /** The coordinate column whose axis is named 'z', if any */
-  zColumn?: Maybe<Scalars['String']['output']>;
 };
 
 
@@ -9849,21 +10002,21 @@ export type TransferFunctionInput = {
 
 /** One edge of the coordinate graph, as a discriminated union: `kind` selects a member, and only that member's fields are read -- any other supplied field is rejected, never dropped. The member inputs annotated `@unionElementOf(union: "TransformInput")` say which fields each kind reads. Direction is always forward, input -> output */
 export type TransformInput = {
-  /** (AFFINE, ROTATION, BY_DIMENSION) The matrix, M x (N+1), rows outermost */
+  /** (AFFINE, ROTATION) The matrix, M x (N+1), rows outermost */
   affine?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
-  /** (FIELD) The coordinate system of the array whose values are the map */
-  field?: InputMaybe<Scalars['ID']['input']>;
-  /** (MAP_AXIS, BY_DIMENSION, FIELD) The names of the input axes the edge acts on */
+  /** (MAP_AXIS) The names of the input axes the edge permutes */
   inputAxes?: InputMaybe<Array<Scalars['String']['input']>>;
   /** The kind of transformation, which fixes which of the fields below are read. Any field outside the chosen kind's member is rejected */
   kind: CreatableTransformKind;
-  /** (MAP_AXIS, BY_DIMENSION, FIELD) The names of the output axes they map onto */
+  /** (MAP_AXIS) The names of the output axes they map onto */
   outputAxes?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** (BY_DIMENSION) The parts, side by side, each mapping its own axes by one kind */
+  parts?: InputMaybe<Array<DimensionPartInput>>;
   /** (UNMAPPABLE) Why nothing corresponds. Purely descriptive */
   reason?: InputMaybe<Scalars['String']['input']>;
-  /** (SCALE, BY_DIMENSION) The per-axis scale factors */
+  /** (SCALE) The per-axis scale factors */
   scale?: InputMaybe<Array<Scalars['Float']['input']>>;
-  /** (TRANSLATION, BY_DIMENSION) The per-axis offsets */
+  /** (TRANSLATION) The per-axis offsets */
   translation?: InputMaybe<Array<Scalars['Float']['input']>>;
 };
 
@@ -9885,10 +10038,8 @@ export enum TransformInvariance {
 export enum TransformKind {
   /** A general affine map, given as an M x (N+1) matrix with rows outermost. */
   Affine = 'AFFINE',
-  /** A map acting on a named subset of the axes, and the identity on the rest. */
+  /** Parts side by side, each mapping its own input axes onto its own output axes by one kind (`PartKind`) -- a pixel size on (y, x), the instants of each frame read from an array on t. An axis no part names is one the edge says nothing about: nothing passes through implicitly. */
   ByDimension = 'BY_DIMENSION',
-  /** A non-affine map given by the values of an array rather than by a formula. The array is a `field`: a coordinate system, and so a node of this graph, not a payload on this edge. Whether its values are absolute POSITIONS or per-point OFFSETS is read from the value axis of that node -- COORDINATE or DISPLACEMENT -- never restated here. A label mask is the case where the field IS the input: its own pixels are the map. Not invertible in closed form, so a placement path never walks it backwards -- which is also the right semantics for a dereference, an object being a set of pixels. */
-  Field = 'FIELD',
   /** The identity map. Input and output coordinates are the same. */
   Identity = 'IDENTITY',
   /** A permutation of axes, mapping each input axis to an output axis by name. */
@@ -9908,7 +10059,6 @@ export enum TransformKind {
 export enum TransformKindChoices {
   Affine = 'AFFINE',
   ByDimension = 'BY_DIMENSION',
-  Field = 'FIELD',
   Identity = 'IDENTITY',
   MapAxis = 'MAP_AXIS',
   Rotation = 'ROTATION',
@@ -9927,7 +10077,7 @@ export type Transformation = {
   id: Scalars['ID']['output'];
   /** The system this edge maps from */
   input: CoordinateSystem;
-  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
+  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about */
   inputAxes: Array<Scalars['String']['output']>;
   /** Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world */
   invariance: TransformInvariance;
@@ -9935,7 +10085,7 @@ export type Transformation = {
   name?: Maybe<Scalars['String']['output']>;
   /** The system this edge maps to */
   output: CoordinateSystem;
-  /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
+  /** The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z */
   outputAxes: Array<Scalars['String']['output']>;
   /** Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -9984,13 +10134,30 @@ export type TransformationOrder =
   { createdAt: Ordering; id?: never; }
   |  { createdAt?: never; id: Ordering; };
 
+/** One part of a BY_DIMENSION: its own input axes onto its own output axes, by one kind. Each kind fills only its own field: `scale`, `translation`, `affine`, or `field` for a FIELD */
+export type TransformationPart = {
+  __typename?: 'TransformationPart';
+  /** (AFFINE, ROTATION) One row per output axis, one column per input axis plus the offset; empty on any other kind */
+  affine: Array<Array<Scalars['Float']['output']>>;
+  /** (FIELD) The array whose values are the map; null on any other kind */
+  field?: Maybe<FieldPart>;
+  /** The input axes this part maps; for a FIELD, the axes its array is read along, in the array's own order */
+  inputAxes: Array<Scalars['String']['output']>;
+  /** How this part maps its axes */
+  kind: PartKind;
+  /** The output axes they map onto; for a FIELD, the axes its values give, in value-axis order */
+  outputAxes: Array<Scalars['String']['output']>;
+  /** (SCALE) One factor per input axis of the part; empty on any other kind */
+  scale: Array<Scalars['Float']['output']>;
+  /** (TRANSLATION) One offset per input axis of the part; empty on any other kind */
+  translation: Array<Scalars['Float']['output']>;
+};
+
 /** One step of a SEQUENCE transformation: a kind and its parameters, in the axis order of the sequence's input. A step is not an edge -- it has no endpoints, no id and no history of its own -- so it is read here and refined nowhere: the sequence is the ingest's statement of a crop or a pyramid level, derived from the data's own shapes */
 export type TransformationStep = {
   __typename?: 'TransformationStep';
   /** (AFFINE / ROTATION) The matrix, M x (N+1), rows outermost; empty on any other kind */
   affine: Array<Array<Scalars['Float']['output']>>;
-  /** (FIELD) The coordinate system of the array whose values are this step's map */
-  field?: Maybe<CoordinateSystem>;
   /** The kind of this step, which fixes which of the parameters below is read */
   kind: TransformKind;
   /** (UNMAPPABLE) Why nothing corresponds, if the author said */
@@ -10017,7 +10184,7 @@ export type TranslationTransformation = Transformation & {
   id: Scalars['ID']['output'];
   /** The system this edge maps from */
   input: CoordinateSystem;
-  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
+  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about */
   inputAxes: Array<Scalars['String']['output']>;
   /** Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world */
   invariance: TransformInvariance;
@@ -10025,7 +10192,7 @@ export type TranslationTransformation = Transformation & {
   name?: Maybe<Scalars['String']['output']>;
   /** The system this edge maps to */
   output: CoordinateSystem;
-  /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
+  /** The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z */
   outputAxes: Array<Scalars['String']['output']>;
   /** Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -10069,7 +10236,7 @@ export type UnmappableTransformation = Transformation & {
   id: Scalars['ID']['output'];
   /** The system this edge maps from */
   input: CoordinateSystem;
-  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched */
+  /** The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about */
   inputAxes: Array<Scalars['String']['output']>;
   /** Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world */
   invariance: TransformInvariance;
@@ -10077,7 +10244,7 @@ export type UnmappableTransformation = Transformation & {
   name?: Maybe<Scalars['String']['output']>;
   /** The system this edge maps to */
   output: CoordinateSystem;
-  /** The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched */
+  /** The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z */
   outputAxes: Array<Scalars['String']['output']>;
   /** Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports */
   provenanceEntries: Array<ProvenanceEntry>;
@@ -10373,6 +10540,7 @@ export type UpdateTransformationInput = {
   affine?: InputMaybe<Array<Array<Scalars['Float']['input']>>>;
   id: Scalars['ID']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
+  part?: InputMaybe<Scalars['Int']['input']>;
   scale?: InputMaybe<Array<Scalars['Float']['input']>>;
   translation?: InputMaybe<Array<Scalars['Float']['input']>>;
   validity?: InputMaybe<PlacementValidity>;
@@ -10476,7 +10644,7 @@ export enum VectorGlyph {
 /** A vector-valued lens -- an optical flow, a deformation field, an orientation map -- drawn as glyphs sampled from the grid. The sixth lens-backed kind, and the value domain is what earns it one, for LabelLayer's reason: the lens carries a DISPLACEMENT axis whose positions are the components of a per-point offset, so the axis is read as geometry, and none of the intensity vocabulary (a channel, a gamma, a projection) survives that. Which axis holds the components is derived (`vectorAxis`), never stored -- a per-layer copy could disagree with the axes themselves. What the layer carries is honestly view state: a glyph style, a sampling stride, a magnitude scale and a magnitude colormap window, and two layers over one field may disagree about all of it -- a coarse overview beside a dense inset. */
 export type VectorLayer = Layer & {
   __typename?: 'VectorLayer';
-  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
+  /** This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one */
   asAffine?: Maybe<AffinePlacement>;
   blending: Blending;
   climMax?: Maybe<Scalars['Float']['output']>;
@@ -10503,8 +10671,6 @@ export type VectorLayer = Layer & {
   placementInvariance: TransformInvariance;
   /** How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path */
   placementValidity: PlacementValidity;
-  /** Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at */
-  renderAxes: RenderAxes;
   scene: Scene;
   /** The lens axis whose positions are the vector components: the DISPLACEMENT value axis. Derived from the axis types on every read and stored nowhere, so two layers over one field cannot disagree about it. Component ORDER follows the spatial axes' array order -- position i displaces along the i-th spatial axis, slowest-varying first, so the last component displaces along x. Stated here because a standalone layer has no FIELD edge to name the order per-edge, and a renderer and a writer silently disagreeing about it draws every arrow transposed */
   vectorAxis: Scalars['String']['output'];
@@ -10672,7 +10838,7 @@ export type ZarrUploadGrant = {
   uploadFormField: Scalars['String']['output'];
 };
 
-export type _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
+export type _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore;
 
 export type _Service = {
   __typename?: '_Service';
@@ -10681,9 +10847,7 @@ export type _Service = {
 
 type DerivationEdge_AffineTransformation_Fragment = { __typename: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, input: { __typename?: 'CoordinateSystem', id: string }, output: { __typename?: 'CoordinateSystem', id: string } };
 
-type DerivationEdge_ByDimensionTransformation_Fragment = { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, input: { __typename?: 'CoordinateSystem', id: string }, output: { __typename?: 'CoordinateSystem', id: string } };
-
-type DerivationEdge_FieldTransformation_Fragment = { __typename: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, field?: { __typename?: 'CoordinateSystem', id: string } | null, input: { __typename?: 'CoordinateSystem', id: string }, output: { __typename?: 'CoordinateSystem', id: string } };
+type DerivationEdge_ByDimensionTransformation_Fragment = { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, field?: { __typename?: 'FieldPart', dereference: boolean, field: { __typename?: 'CoordinateSystem', id: string } } | null }>, input: { __typename?: 'CoordinateSystem', id: string }, output: { __typename?: 'CoordinateSystem', id: string } };
 
 type DerivationEdge_IdentityTransformation_Fragment = { __typename: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, input: { __typename?: 'CoordinateSystem', id: string }, output: { __typename?: 'CoordinateSystem', id: string } };
 
@@ -10699,7 +10863,7 @@ type DerivationEdge_TranslationTransformation_Fragment = { __typename: 'Translat
 
 type DerivationEdge_UnmappableTransformation_Fragment = { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, input: { __typename?: 'CoordinateSystem', id: string }, output: { __typename?: 'CoordinateSystem', id: string } };
 
-export type DerivationEdgeFragment = DerivationEdge_AffineTransformation_Fragment | DerivationEdge_ByDimensionTransformation_Fragment | DerivationEdge_FieldTransformation_Fragment | DerivationEdge_IdentityTransformation_Fragment | DerivationEdge_MapAxisTransformation_Fragment | DerivationEdge_RotationTransformation_Fragment | DerivationEdge_ScaleTransformation_Fragment | DerivationEdge_SequenceTransformation_Fragment | DerivationEdge_TranslationTransformation_Fragment | DerivationEdge_UnmappableTransformation_Fragment;
+export type DerivationEdgeFragment = DerivationEdge_AffineTransformation_Fragment | DerivationEdge_ByDimensionTransformation_Fragment | DerivationEdge_IdentityTransformation_Fragment | DerivationEdge_MapAxisTransformation_Fragment | DerivationEdge_RotationTransformation_Fragment | DerivationEdge_ScaleTransformation_Fragment | DerivationEdge_SequenceTransformation_Fragment | DerivationEdge_TranslationTransformation_Fragment | DerivationEdge_UnmappableTransformation_Fragment;
 
 export type DatasetLineageFragment = { __typename?: 'ArrayDataset', id: string, name: string, description?: string | null, spec: Array<ArrayDatasetSpec>, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string } | null, derivedFrom: Array<(
     { __typename?: 'AffineTransformation' }
@@ -10707,9 +10871,6 @@ export type DatasetLineageFragment = { __typename?: 'ArrayDataset', id: string, 
   ) | (
     { __typename?: 'ByDimensionTransformation' }
     & DerivationEdge_ByDimensionTransformation_Fragment
-  ) | (
-    { __typename?: 'FieldTransformation' }
-    & DerivationEdge_FieldTransformation_Fragment
   ) | (
     { __typename?: 'IdentityTransformation' }
     & DerivationEdge_IdentityTransformation_Fragment
@@ -10736,7 +10897,7 @@ export type DatasetLineageFragment = { __typename?: 'ArrayDataset', id: string, 
 export type AddLayerArrayLensFragment = { __typename?: 'ArrayLens', id: string, shape: Array<number>, axisNames: Array<string>, lensName?: string | null, slices: Array<(
     { __typename?: 'Slice' }
     & DimSliceFragment
-  )>, lensSpace?: { __typename?: 'CoordinateSystem', id: string } | null, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null, dataset: (
+  )>, lensSpace?: { __typename?: 'CoordinateSystem', id: string } | null, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null, dataset: (
     { __typename?: 'ArrayDataset' }
     & DatasetLineageFragment
   ) };
@@ -10747,9 +10908,6 @@ type AddLayerCandidate_AnnotationCollection_Fragment = { __typename: 'Annotation
   ) | (
     { __typename?: 'ByDimensionTransformation' }
     & DerivationEdge_ByDimensionTransformation_Fragment
-  ) | (
-    { __typename?: 'FieldTransformation' }
-    & DerivationEdge_FieldTransformation_Fragment
   ) | (
     { __typename?: 'IdentityTransformation' }
     & DerivationEdge_IdentityTransformation_Fragment
@@ -10788,7 +10946,7 @@ type AddLayerCandidate_ArrayLens_Fragment = (
   & AddLayerArrayLensFragment
 );
 
-type AddLayerCandidate_DataArray_Fragment = { __typename: 'DataArray', id: string, level: number, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null };
+type AddLayerCandidate_DataArray_Fragment = { __typename: 'DataArray', id: string, level: number, toParent?: { __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string } | null };
 
 type AddLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, label: string, specVersion?: string | null, fullLens?: { __typename?: 'MeshLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<(
     { __typename?: 'AffineTransformation' }
@@ -10796,9 +10954,6 @@ type AddLayerCandidate_MeshCollection_Fragment = { __typename: 'MeshCollection',
   ) | (
     { __typename?: 'ByDimensionTransformation' }
     & DerivationEdge_ByDimensionTransformation_Fragment
-  ) | (
-    { __typename?: 'FieldTransformation' }
-    & DerivationEdge_FieldTransformation_Fragment
   ) | (
     { __typename?: 'IdentityTransformation' }
     & DerivationEdge_IdentityTransformation_Fragment
@@ -10830,9 +10985,6 @@ type AddLayerCandidate_NetworkCollection_Fragment = { __typename: 'NetworkCollec
   ) | (
     { __typename?: 'ByDimensionTransformation' }
     & DerivationEdge_ByDimensionTransformation_Fragment
-  ) | (
-    { __typename?: 'FieldTransformation' }
-    & DerivationEdge_FieldTransformation_Fragment
   ) | (
     { __typename?: 'IdentityTransformation' }
     & DerivationEdge_IdentityTransformation_Fragment
@@ -10872,9 +11024,6 @@ type AddLayerCandidate_TableDataset_Fragment = (
   ) | (
     { __typename?: 'ByDimensionTransformation' }
     & DerivationEdge_ByDimensionTransformation_Fragment
-  ) | (
-    { __typename?: 'FieldTransformation' }
-    & DerivationEdge_FieldTransformation_Fragment
   ) | (
     { __typename?: 'IdentityTransformation' }
     & DerivationEdge_IdentityTransformation_Fragment
@@ -10979,7 +11128,7 @@ type AddLayerSpaceOwner_TableLens_Fragment = { __typename: 'TableLens' };
 
 export type AddLayerSpaceOwnerFragment = AddLayerSpaceOwner_AnnotationCollection_Fragment | AddLayerSpaceOwner_AnnotationLens_Fragment | AddLayerSpaceOwner_ArrayDataset_Fragment | AddLayerSpaceOwner_ArrayLens_Fragment | AddLayerSpaceOwner_DataArray_Fragment | AddLayerSpaceOwner_MeshCollection_Fragment | AddLayerSpaceOwner_MeshLens_Fragment | AddLayerSpaceOwner_NetworkCollection_Fragment | AddLayerSpaceOwner_NetworkLens_Fragment | AddLayerSpaceOwner_SparseDataset_Fragment | AddLayerSpaceOwner_SparseLens_Fragment | AddLayerSpaceOwner_TableDataset_Fragment | AddLayerSpaceOwner_TableLens_Fragment;
 
-type AddLayerLineageNode_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
+type AddLayerLineageNode_AnnotationCollection_Fragment = { __typename: 'AnnotationCollection', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
 
 type AddLayerLineageNode_AnnotationLens_Fragment = { __typename: 'AnnotationLens' };
 
@@ -10992,19 +11141,19 @@ type AddLayerLineageNode_ArrayLens_Fragment = { __typename: 'ArrayLens' };
 
 type AddLayerLineageNode_DataArray_Fragment = { __typename: 'DataArray' };
 
-type AddLayerLineageNode_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, label: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
+type AddLayerLineageNode_MeshCollection_Fragment = { __typename: 'MeshCollection', id: string, label: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
 
 type AddLayerLineageNode_MeshLens_Fragment = { __typename: 'MeshLens' };
 
-type AddLayerLineageNode_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, label: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
+type AddLayerLineageNode_NetworkCollection_Fragment = { __typename: 'NetworkCollection', id: string, label: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
 
 type AddLayerLineageNode_NetworkLens_Fragment = { __typename: 'NetworkLens' };
 
-type AddLayerLineageNode_SparseDataset_Fragment = { __typename: 'SparseDataset', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
+type AddLayerLineageNode_SparseDataset_Fragment = { __typename: 'SparseDataset', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }> };
 
 type AddLayerLineageNode_SparseLens_Fragment = { __typename: 'SparseLens' };
 
-type AddLayerLineageNode_TableDataset_Fragment = { __typename: 'TableDataset', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'FieldTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }>, columns: Array<{ __typename?: 'Column', role: ColumnRole }> };
+type AddLayerLineageNode_TableDataset_Fragment = { __typename: 'TableDataset', id: string, name: string, coordinateSystem: { __typename?: 'CoordinateSystem', id: string }, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string } | { __typename?: 'ByDimensionTransformation', id: string } | { __typename?: 'IdentityTransformation', id: string } | { __typename?: 'MapAxisTransformation', id: string } | { __typename?: 'RotationTransformation', id: string } | { __typename?: 'ScaleTransformation', id: string } | { __typename?: 'SequenceTransformation', id: string } | { __typename?: 'TranslationTransformation', id: string } | { __typename?: 'UnmappableTransformation', id: string }>, columns: Array<{ __typename?: 'Column', role: ColumnRole }> };
 
 type AddLayerLineageNode_TableLens_Fragment = { __typename: 'TableLens' };
 
@@ -11100,9 +11249,6 @@ export type DataArrayFragment = { __typename?: 'DataArray', id: string, level: n
     { __typename?: 'ByDimensionTransformation' }
     & Transformation_ByDimensionTransformation_Fragment
   ) | (
-    { __typename?: 'FieldTransformation' }
-    & Transformation_FieldTransformation_Fragment
-  ) | (
     { __typename?: 'IdentityTransformation' }
     & Transformation_IdentityTransformation_Fragment
   ) | (
@@ -11142,7 +11288,7 @@ export type ArrayDatasetFragment = { __typename?: 'ArrayDataset', descriptors: a
   )> };
 
 export type DerivedDatasetFragment = (
-  { __typename?: 'ArrayDataset', derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } }> }
+  { __typename?: 'ArrayDataset', derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string } }> }
   & ListArrayDatasetFragment
 );
 
@@ -11178,15 +11324,12 @@ export type AttributePlanHopFragment = { __typename?: 'Hop', index: number, pare
         & SparseStoreReadFragment
       ) } | null, keyMap?: { __typename?: 'KeyMap', scale: number, offset: number } | null } };
 
-export type AttributePlanFragment = { __typename?: 'AttributePlan', edge: { __typename?: 'FieldTransformation', id: string, version: number }, path: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: (
+export type AttributePlanFragment = { __typename?: 'AttributePlan', edge: { __typename?: 'ByDimensionTransformation', id: string, version: number }, path: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: (
       { __typename?: 'AffineTransformation', version: number }
       & Transformation_AffineTransformation_Fragment
     ) | (
       { __typename?: 'ByDimensionTransformation', version: number }
       & Transformation_ByDimensionTransformation_Fragment
-    ) | (
-      { __typename?: 'FieldTransformation', version: number }
-      & Transformation_FieldTransformation_Fragment
     ) | (
       { __typename?: 'IdentityTransformation', version: number }
       & Transformation_IdentityTransformation_Fragment
@@ -11222,22 +11365,22 @@ export type AttributePlanFragment = { __typename?: 'AttributePlan', edge: { __ty
     & AttributePlanHopFragment
   )> };
 
-export type ChartAffineFragment = { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean };
+export type ChartAffineFragment = { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string }> };
 
 type ChartLayerCommon_AnnotationChartLayer_Fragment = { __typename: 'AnnotationChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
     { __typename?: 'AffinePlacement' }
     & ChartAffineFragment
-  ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'FieldTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
+  ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
 type ChartLayerCommon_SeriesChartLayer_Fragment = { __typename: 'SeriesChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
     { __typename?: 'AffinePlacement' }
     & ChartAffineFragment
-  ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'FieldTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
+  ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
 type ChartLayerCommon_TraceChartLayer_Fragment = { __typename: 'TraceChartLayer', id: string, kind: ChartLayerKind, name?: string | null, visible: boolean, order: number, opacity: number, color?: Array<number> | null, placement: PlacementState, placementValidity: PlacementValidity, placementInvariance: TransformInvariance, alongAxis?: string | null, asAffine?: (
     { __typename?: 'AffinePlacement' }
     & ChartAffineFragment
-  ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'FieldTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
+  ) | null, pathToWorld?: Array<{ __typename?: 'PlacementStep', inverted: boolean, transformation: { __typename?: 'AffineTransformation', id: string, version: number } | { __typename?: 'ByDimensionTransformation', id: string, version: number } | { __typename?: 'IdentityTransformation', id: string, version: number } | { __typename?: 'MapAxisTransformation', id: string, version: number } | { __typename?: 'RotationTransformation', id: string, version: number } | { __typename?: 'ScaleTransformation', id: string, version: number } | { __typename?: 'SequenceTransformation', id: string, version: number } | { __typename?: 'TranslationTransformation', id: string, version: number } | { __typename?: 'UnmappableTransformation', id: string, version: number } }> | null };
 
 export type ChartLayerCommonFragment = ChartLayerCommon_AnnotationChartLayer_Fragment | ChartLayerCommon_SeriesChartLayer_Fragment | ChartLayerCommon_TraceChartLayer_Fragment;
 
@@ -11250,9 +11393,6 @@ export type ChartLensFragment = { __typename?: 'ArrayLens', id: string, shape: A
       ) | (
         { __typename?: 'ByDimensionTransformation' }
         & Transformation_ByDimensionTransformation_Fragment
-      ) | (
-        { __typename?: 'FieldTransformation' }
-        & Transformation_FieldTransformation_Fragment
       ) | (
         { __typename?: 'IdentityTransformation' }
         & Transformation_IdentityTransformation_Fragment
@@ -11492,11 +11632,6 @@ type LeafTransformation_AffineTransformation_Fragment = { __typename: 'AffineTra
 
 type LeafTransformation_ByDimensionTransformation_Fragment = { __typename: 'ByDimensionTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } };
 
-type LeafTransformation_FieldTransformation_Fragment = { __typename: 'FieldTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, field?: (
-    { __typename?: 'CoordinateSystem' }
-    & ListCoordinateSystemFragment
-  ) | null, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } };
-
 type LeafTransformation_IdentityTransformation_Fragment = { __typename: 'IdentityTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } };
 
 type LeafTransformation_MapAxisTransformation_Fragment = { __typename: 'MapAxisTransformation', id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } };
@@ -11511,7 +11646,7 @@ type LeafTransformation_TranslationTransformation_Fragment = { __typename: 'Tran
 
 type LeafTransformation_UnmappableTransformation_Fragment = { __typename: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, name?: string | null, inputAxes: Array<string>, outputAxes: Array<string>, validity: PlacementValidity, input: { __typename?: 'CoordinateSystem', id: string, name: string }, output: { __typename?: 'CoordinateSystem', id: string, name: string } };
 
-export type LeafTransformationFragment = LeafTransformation_AffineTransformation_Fragment | LeafTransformation_ByDimensionTransformation_Fragment | LeafTransformation_FieldTransformation_Fragment | LeafTransformation_IdentityTransformation_Fragment | LeafTransformation_MapAxisTransformation_Fragment | LeafTransformation_RotationTransformation_Fragment | LeafTransformation_ScaleTransformation_Fragment | LeafTransformation_SequenceTransformation_Fragment | LeafTransformation_TranslationTransformation_Fragment | LeafTransformation_UnmappableTransformation_Fragment;
+export type LeafTransformationFragment = LeafTransformation_AffineTransformation_Fragment | LeafTransformation_ByDimensionTransformation_Fragment | LeafTransformation_IdentityTransformation_Fragment | LeafTransformation_MapAxisTransformation_Fragment | LeafTransformation_RotationTransformation_Fragment | LeafTransformation_ScaleTransformation_Fragment | LeafTransformation_SequenceTransformation_Fragment | LeafTransformation_TranslationTransformation_Fragment | LeafTransformation_UnmappableTransformation_Fragment;
 
 export type PlacementStepFragment = { __typename?: 'PlacementStep', inverted: boolean, transformation: (
     { __typename?: 'AffineTransformation', version: number }
@@ -11519,9 +11654,6 @@ export type PlacementStepFragment = { __typename?: 'PlacementStep', inverted: bo
   ) | (
     { __typename?: 'ByDimensionTransformation', version: number }
     & Transformation_ByDimensionTransformation_Fragment
-  ) | (
-    { __typename?: 'FieldTransformation', version: number }
-    & Transformation_FieldTransformation_Fragment
   ) | (
     { __typename?: 'IdentityTransformation', version: number }
     & Transformation_IdentityTransformation_Fragment
@@ -11551,13 +11683,11 @@ type Transformation_AffineTransformation_Fragment = (
 );
 
 type Transformation_ByDimensionTransformation_Fragment = (
-  { __typename?: 'ByDimensionTransformation', scale: Array<number>, translation: Array<number>, affine: Array<Array<number>> }
+  { __typename?: 'ByDimensionTransformation', parts: Array<{ __typename?: 'TransformationPart', kind: PartKind, inputAxes: Array<string>, outputAxes: Array<string>, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, field?: { __typename?: 'FieldPart', values: string, spatial: boolean, dereference: boolean, field: (
+        { __typename?: 'CoordinateSystem' }
+        & ListCoordinateSystemFragment
+      ) } | null }> }
   & LeafTransformation_ByDimensionTransformation_Fragment
-);
-
-type Transformation_FieldTransformation_Fragment = (
-  { __typename?: 'FieldTransformation' }
-  & LeafTransformation_FieldTransformation_Fragment
 );
 
 type Transformation_IdentityTransformation_Fragment = (
@@ -11581,10 +11711,7 @@ type Transformation_ScaleTransformation_Fragment = (
 );
 
 type Transformation_SequenceTransformation_Fragment = (
-  { __typename?: 'SequenceTransformation', steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null, field?: (
-      { __typename?: 'CoordinateSystem' }
-      & ListCoordinateSystemFragment
-    ) | null }> }
+  { __typename?: 'SequenceTransformation', steps: Array<{ __typename?: 'TransformationStep', kind: TransformKind, scale: Array<number>, translation: Array<number>, affine: Array<Array<number>>, reason?: string | null }> }
   & LeafTransformation_SequenceTransformation_Fragment
 );
 
@@ -11598,7 +11725,7 @@ type Transformation_UnmappableTransformation_Fragment = (
   & LeafTransformation_UnmappableTransformation_Fragment
 );
 
-export type TransformationFragment = Transformation_AffineTransformation_Fragment | Transformation_ByDimensionTransformation_Fragment | Transformation_FieldTransformation_Fragment | Transformation_IdentityTransformation_Fragment | Transformation_MapAxisTransformation_Fragment | Transformation_RotationTransformation_Fragment | Transformation_ScaleTransformation_Fragment | Transformation_SequenceTransformation_Fragment | Transformation_TranslationTransformation_Fragment | Transformation_UnmappableTransformation_Fragment;
+export type TransformationFragment = Transformation_AffineTransformation_Fragment | Transformation_ByDimensionTransformation_Fragment | Transformation_IdentityTransformation_Fragment | Transformation_MapAxisTransformation_Fragment | Transformation_RotationTransformation_Fragment | Transformation_ScaleTransformation_Fragment | Transformation_SequenceTransformation_Fragment | Transformation_TranslationTransformation_Fragment | Transformation_UnmappableTransformation_Fragment;
 
 export type BigFileUploadGrantFragment = { __typename?: 'BigFileUploadGrant', accessKey: string, secretKey: string, sessionToken: string, path: string, key: string, bucket: string, expiresIn: number, store: string };
 
@@ -11825,46 +11952,37 @@ type SceneLayer_AnnotationLayer_Fragment = { __typename: 'AnnotationLayer', id: 
   )>, pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
 type SceneLayer_ImageLayer_Fragment = { __typename: 'ImageLayer', id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
     { __typename?: 'ArrayLens' }
     & SceneLensFragment
-  ), renderAxes: (
-    { __typename?: 'RenderAxes' }
-    & LayerRenderAxesFragment
   ), renderGraph?: (
     { __typename?: 'LayerRenderGraph' }
     & LayerRenderGraphFragment
   ) | null, pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
 type SceneLayer_IntensityLayer_Fragment = { __typename: 'IntensityLayer', color?: Array<number> | null, climMin?: number | null, climMax?: number | null, gamma?: number | null, projectionMode?: ProjectionMode | null, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, intensityColormap: ColorMap, lens: (
     { __typename?: 'ArrayLens' }
     & SceneLensFragment
-  ), renderAxes: (
-    { __typename?: 'RenderAxes' }
-    & LayerRenderAxesFragment
   ), pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
 type SceneLayer_LabelLayer_Fragment = { __typename: 'LabelLayer', id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
     { __typename?: 'ArrayLens' }
     & SceneLensFragment
-  ), renderAxes: (
-    { __typename?: 'RenderAxes' }
-    & LayerRenderAxesFragment
   ), labelRender?: (
     { __typename?: 'LabelRender' }
     & LabelRenderFragment
   ) | null, pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
 type SceneLayer_MeshLayer_Fragment = { __typename: 'MeshLayer', materialColor?: Array<number> | null, wireframe: boolean, shading: MeshShading, activeColorBy?: number | null, activeFilterBys: Array<number>, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, collection?: (
     { __typename?: 'MeshCollection' }
@@ -11884,7 +12002,7 @@ type SceneLayer_MeshLayer_Fragment = { __typename: 'MeshLayer', materialColor?: 
   )>, pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
 type SceneLayer_NetworkLayer_Fragment = { __typename: 'NetworkLayer', materialColor?: Array<number> | null, lineWidth?: number | null, nodeSizeColumn?: string | null, edgeWidthColumn?: string | null, directed: boolean, showNodes: boolean, maxLevel?: number | null, activeColorBy?: number | null, activeFilterBys: Array<number>, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, collection?: (
     { __typename?: 'NetworkCollection' }
@@ -11904,23 +12022,20 @@ type SceneLayer_NetworkLayer_Fragment = { __typename: 'NetworkLayer', materialCo
   )>, pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
 type SceneLayer_PhasorLayer_Fragment = { __typename: 'PhasorLayer', id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
     { __typename?: 'ArrayLens' }
     & SceneLensFragment
-  ), renderAxes: (
-    { __typename?: 'RenderAxes' }
-    & LayerRenderAxesFragment
   ), phasorRender?: (
     { __typename?: 'PhasorRender' }
     & PhasorRenderFragment
   ) | null, pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
-type SceneLayer_PointLayer_Fragment = { __typename: 'PointLayer', xColumn?: string | null, yColumn?: string | null, zColumn?: string | null, tColumn?: string | null, sizeColumn?: string | null, idColumn?: string | null, pointSize?: number | null, colormap?: ColorMap | null, activeColorBy?: number | null, activeFilterBys: Array<number>, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
+type SceneLayer_PointLayer_Fragment = { __typename: 'PointLayer', sizeColumn?: string | null, idColumn?: string | null, pointSize?: number | null, colormap?: ColorMap | null, activeColorBy?: number | null, activeFilterBys: Array<number>, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
     { __typename?: 'TableDataset' }
     & TableDatasetFragment
   ), lens: (
@@ -11938,14 +12053,11 @@ type SceneLayer_PointLayer_Fragment = { __typename: 'PointLayer', xColumn?: stri
   )>, pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
 type SceneLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', climMin?: number | null, climMax?: number | null, whiteBalance?: Array<number> | null, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, lens: (
     { __typename?: 'ArrayLens' }
     & SceneLensFragment
-  ), renderAxes: (
-    { __typename?: 'RenderAxes' }
-    & LayerRenderAxesFragment
   ), redLens: (
     { __typename?: 'ArrayLens' }
     & ChannelLensFragment
@@ -11958,9 +12070,9 @@ type SceneLayer_RgbLayer_Fragment = { __typename: 'RgbLayer', climMin?: number |
   ), pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
-type SceneLayer_TrackLayer_Fragment = { __typename: 'TrackLayer', trackIdColumn?: string | null, xColumn?: string | null, yColumn?: string | null, zColumn?: string | null, tColumn?: string | null, colorByColumn?: string | null, lineWidth?: number | null, colormap?: ColorMap | null, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
+type SceneLayer_TrackLayer_Fragment = { __typename: 'TrackLayer', trackIdColumn?: string | null, colorByColumn?: string | null, lineWidth?: number | null, colormap?: ColorMap | null, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, tableDataset: (
     { __typename?: 'TableDataset' }
     & TableDatasetFragment
   ), lens: (
@@ -11972,18 +12084,15 @@ type SceneLayer_TrackLayer_Fragment = { __typename: 'TrackLayer', trackIdColumn?
   )>, pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
 type SceneLayer_VectorLayer_Fragment = { __typename: 'VectorLayer', vectorAxis: string, glyph: VectorGlyph, glyphStride?: number | null, glyphScale?: number | null, color?: Array<number> | null, climMin?: number | null, climMax?: number | null, placementInvariance: TransformInvariance, id: string, kind: LayerKind, name?: string | null, blending: Blending, opacity: number, visible: boolean, order: number, vectorColormap: ColorMap, lens: (
     { __typename?: 'ArrayLens' }
     & SceneLensFragment
-  ), renderAxes: (
-    { __typename?: 'RenderAxes' }
-    & LayerRenderAxesFragment
   ), pathToWorld?: Array<(
     { __typename?: 'PlacementStep' }
     & PlacementStepFragment
-  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean } | null };
+  )> | null, asAffine?: { __typename?: 'AffinePlacement', matrix: Array<Array<number>>, inputAxes: Array<string>, outputAxes: Array<string>, total: boolean, fields: Array<{ __typename?: 'PlacementField', outputAxis: string, inputAxis?: string | null, innerScale?: number | null, innerOffset?: number | null, component?: number | null, scale: number, offset: number, dataset?: { __typename?: 'ArrayDataset', id: string, dataArrays: Array<{ __typename?: 'DataArray', level: number, store: { __typename?: 'ZarrStore', id: string, key: string } }> } | null }> } | null };
 
 export type SceneLayerFragment = SceneLayer_AnnotationLayer_Fragment | SceneLayer_ImageLayer_Fragment | SceneLayer_IntensityLayer_Fragment | SceneLayer_LabelLayer_Fragment | SceneLayer_MeshLayer_Fragment | SceneLayer_NetworkLayer_Fragment | SceneLayer_PhasorLayer_Fragment | SceneLayer_PointLayer_Fragment | SceneLayer_RgbLayer_Fragment | SceneLayer_TrackLayer_Fragment | SceneLayer_VectorLayer_Fragment;
 
@@ -11996,15 +12105,12 @@ export type PhasorContextFragment = { __typename?: 'PhasorContext', axis: string
 export type SceneLensFragment = { __typename: 'ArrayLens', descriptors: any, id: string, name?: string | null, shape: Array<number>, axisNames: Array<string>, phasor?: (
     { __typename?: 'PhasorContext' }
     & PhasorContextFragment
-  ) | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null, toParent?: (
+  ) | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<{ __typename?: 'Axis', name: string, type: AxisType }> } | null, toParent?: (
     { __typename?: 'AffineTransformation' }
     & Transformation_AffineTransformation_Fragment
   ) | (
     { __typename?: 'ByDimensionTransformation' }
     & Transformation_ByDimensionTransformation_Fragment
-  ) | (
-    { __typename?: 'FieldTransformation' }
-    & Transformation_FieldTransformation_Fragment
   ) | (
     { __typename?: 'IdentityTransformation' }
     & Transformation_IdentityTransformation_Fragment
@@ -12035,9 +12141,6 @@ export type SceneLensFragment = { __typename: 'ArrayLens', descriptors: any, id:
       ) | (
         { __typename?: 'ByDimensionTransformation' }
         & Transformation_ByDimensionTransformation_Fragment
-      ) | (
-        { __typename?: 'FieldTransformation' }
-        & Transformation_FieldTransformation_Fragment
       ) | (
         { __typename?: 'IdentityTransformation' }
         & Transformation_IdentityTransformation_Fragment
@@ -12189,9 +12292,6 @@ type DetailLens_ArrayLens_Fragment = (
   ) | (
     { __typename?: 'ByDimensionTransformation' }
     & Transformation_ByDimensionTransformation_Fragment
-  ) | (
-    { __typename?: 'FieldTransformation' }
-    & Transformation_FieldTransformation_Fragment
   ) | (
     { __typename?: 'IdentityTransformation' }
     & Transformation_IdentityTransformation_Fragment
@@ -12964,6 +13064,16 @@ export type DeleteCollaborationMutationVariables = Exact<{
 
 
 export type DeleteCollaborationMutation = { __typename?: 'Mutation', deleteCollaboration: string };
+
+export type AddManyToCollaborationMutationVariables = Exact<{
+  input: AddManyToCollaborationInput;
+}>;
+
+
+export type AddManyToCollaborationMutation = { __typename?: 'Mutation', addManyToCollaboration: (
+    { __typename?: 'Collaboration' }
+    & CollaborationFragment
+  ) };
 
 export type CreateCoordinateSystemMutationVariables = Exact<{
   input: CreateCoordinateSystemInput;
@@ -13784,9 +13894,6 @@ export type CreateTransformationMutation = { __typename?: 'Mutation', createTran
     { __typename?: 'ByDimensionTransformation' }
     & Transformation_ByDimensionTransformation_Fragment
   ) | (
-    { __typename?: 'FieldTransformation' }
-    & Transformation_FieldTransformation_Fragment
-  ) | (
     { __typename?: 'IdentityTransformation' }
     & Transformation_IdentityTransformation_Fragment
   ) | (
@@ -13820,9 +13927,6 @@ export type UpdateTransformationMutation = { __typename?: 'Mutation', updateTran
   ) | (
     { __typename?: 'ByDimensionTransformation', version: number }
     & Transformation_ByDimensionTransformation_Fragment
-  ) | (
-    { __typename?: 'FieldTransformation', version: number }
-    & Transformation_FieldTransformation_Fragment
   ) | (
     { __typename?: 'IdentityTransformation', version: number }
     & Transformation_IdentityTransformation_Fragment
@@ -13908,9 +14012,6 @@ export type AddLayerWorldGraphQuery = { __typename?: 'Query', coordinateGraph: {
     ) | (
       { __typename?: 'ByDimensionTransformation' }
       & DerivationEdge_ByDimensionTransformation_Fragment
-    ) | (
-      { __typename?: 'FieldTransformation' }
-      & DerivationEdge_FieldTransformation_Fragment
     ) | (
       { __typename?: 'IdentityTransformation' }
       & DerivationEdge_IdentityTransformation_Fragment
@@ -14151,87 +14252,6 @@ export type AddLayerLineageQuery = { __typename?: 'Query', lineageGraph: { __typ
           & AddLayerSpaceOwner_TableLens_Fragment
         )> } }
       & DerivationEdge_ByDimensionTransformation_Fragment
-    ) | (
-      { __typename?: 'FieldTransformation', input: { __typename?: 'CoordinateSystem', residents: Array<(
-          { __typename?: 'AnnotationCollection' }
-          & AddLayerSpaceOwner_AnnotationCollection_Fragment
-        ) | (
-          { __typename?: 'AnnotationLens' }
-          & AddLayerSpaceOwner_AnnotationLens_Fragment
-        ) | (
-          { __typename?: 'ArrayDataset' }
-          & AddLayerSpaceOwner_ArrayDataset_Fragment
-        ) | (
-          { __typename?: 'ArrayLens' }
-          & AddLayerSpaceOwner_ArrayLens_Fragment
-        ) | (
-          { __typename?: 'DataArray' }
-          & AddLayerSpaceOwner_DataArray_Fragment
-        ) | (
-          { __typename?: 'MeshCollection' }
-          & AddLayerSpaceOwner_MeshCollection_Fragment
-        ) | (
-          { __typename?: 'MeshLens' }
-          & AddLayerSpaceOwner_MeshLens_Fragment
-        ) | (
-          { __typename?: 'NetworkCollection' }
-          & AddLayerSpaceOwner_NetworkCollection_Fragment
-        ) | (
-          { __typename?: 'NetworkLens' }
-          & AddLayerSpaceOwner_NetworkLens_Fragment
-        ) | (
-          { __typename?: 'SparseDataset' }
-          & AddLayerSpaceOwner_SparseDataset_Fragment
-        ) | (
-          { __typename?: 'SparseLens' }
-          & AddLayerSpaceOwner_SparseLens_Fragment
-        ) | (
-          { __typename?: 'TableDataset' }
-          & AddLayerSpaceOwner_TableDataset_Fragment
-        ) | (
-          { __typename?: 'TableLens' }
-          & AddLayerSpaceOwner_TableLens_Fragment
-        )> }, output: { __typename?: 'CoordinateSystem', residents: Array<(
-          { __typename?: 'AnnotationCollection' }
-          & AddLayerSpaceOwner_AnnotationCollection_Fragment
-        ) | (
-          { __typename?: 'AnnotationLens' }
-          & AddLayerSpaceOwner_AnnotationLens_Fragment
-        ) | (
-          { __typename?: 'ArrayDataset' }
-          & AddLayerSpaceOwner_ArrayDataset_Fragment
-        ) | (
-          { __typename?: 'ArrayLens' }
-          & AddLayerSpaceOwner_ArrayLens_Fragment
-        ) | (
-          { __typename?: 'DataArray' }
-          & AddLayerSpaceOwner_DataArray_Fragment
-        ) | (
-          { __typename?: 'MeshCollection' }
-          & AddLayerSpaceOwner_MeshCollection_Fragment
-        ) | (
-          { __typename?: 'MeshLens' }
-          & AddLayerSpaceOwner_MeshLens_Fragment
-        ) | (
-          { __typename?: 'NetworkCollection' }
-          & AddLayerSpaceOwner_NetworkCollection_Fragment
-        ) | (
-          { __typename?: 'NetworkLens' }
-          & AddLayerSpaceOwner_NetworkLens_Fragment
-        ) | (
-          { __typename?: 'SparseDataset' }
-          & AddLayerSpaceOwner_SparseDataset_Fragment
-        ) | (
-          { __typename?: 'SparseLens' }
-          & AddLayerSpaceOwner_SparseLens_Fragment
-        ) | (
-          { __typename?: 'TableDataset' }
-          & AddLayerSpaceOwner_TableDataset_Fragment
-        ) | (
-          { __typename?: 'TableLens' }
-          & AddLayerSpaceOwner_TableLens_Fragment
-        )> } }
-      & DerivationEdge_FieldTransformation_Fragment
     ) | (
       { __typename?: 'IdentityTransformation', input: { __typename?: 'CoordinateSystem', residents: Array<(
           { __typename?: 'AnnotationCollection' }
@@ -14898,6 +14918,30 @@ export type AddLayerWindowLensesQuery = { __typename?: 'Query', points: Array<(
     & LayerLens_TableLens_Fragment
   )> };
 
+export type SceneDerivedQueryVariables = Exact<{
+  starts: Array<LineageRootInput> | LineageRootInput;
+  down?: Scalars['Int']['input'];
+}>;
+
+
+export type SceneDerivedQuery = { __typename?: 'Query', descendants: Array<{ __typename?: 'Descendants', root: string, more: boolean, nodes: Array<{ __typename?: 'DescendantNode', key: string, kind: LineageNodeKind, id: string, name: string, depth: number, parent: string }> }> };
+
+export type SceneDerivedDetailsQueryVariables = Exact<{
+  datasets: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  tables: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  meshes: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  networks: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  annotations: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  hasDatasets: Scalars['Boolean']['input'];
+  hasTables: Scalars['Boolean']['input'];
+  hasMeshes: Scalars['Boolean']['input'];
+  hasNetworks: Scalars['Boolean']['input'];
+  hasAnnotations: Scalars['Boolean']['input'];
+}>;
+
+
+export type SceneDerivedDetailsQuery = { __typename?: 'Query', arrayDatasets?: Array<{ __typename?: 'ArrayDataset', id: string, name: string, spec: Array<ArrayDatasetSpec>, fullLens?: { __typename?: 'ArrayLens', id: string } | null, intrinsicSystem?: { __typename?: 'CoordinateSystem', id: string } | null }>, tableDatasets?: Array<{ __typename?: 'TableDataset', id: string, name: string, fullLens?: { __typename?: 'TableLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string } }>, meshCollections?: Array<{ __typename?: 'MeshCollection', id: string, name?: string | null, fullLens?: { __typename?: 'MeshLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string } }>, networkCollections?: Array<{ __typename?: 'NetworkCollection', id: string, name?: string | null, fullLens?: { __typename?: 'NetworkLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string } }>, annotationCollections?: Array<{ __typename?: 'AnnotationCollection', id: string, name: string, fullLens?: { __typename?: 'AnnotationLens', id: string } | null, coordinateSystem: { __typename?: 'CoordinateSystem', id: string } }> };
+
 export type GetAnnotationQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -15037,7 +15081,7 @@ export type GetArrayDatasetDerivedQuery = { __typename?: 'Query', arrayDataset: 
     )>, exports: Array<(
       { __typename?: 'FileLink' }
       & FileLinkFragment
-    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } }>, derivedDatasets: Array<(
+    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } }>, derivedDatasets: Array<(
       { __typename?: 'ArrayDataset' }
       & DerivedDatasetFragment
     )> }, lenses: Array<{ __typename: 'AnnotationLens', id: string, name?: string | null, coordinateSystem?: { __typename?: 'CoordinateSystem', id: string, name: string } | null } | { __typename: 'ArrayLens', axisNames: Array<string>, shape: Array<number>, id: string, name?: string | null, slices: Array<(
@@ -15226,6 +15270,14 @@ export type GetCollaborationQuery = { __typename?: 'Query', collaboration: (
     & CollaborationFragment
   ) };
 
+export type CollaborationDerivedQueryVariables = Exact<{
+  starts: Array<LineageRootInput> | LineageRootInput;
+  down: Scalars['Int']['input'];
+}>;
+
+
+export type CollaborationDerivedQuery = { __typename?: 'Query', descendants: Array<{ __typename?: 'Descendants', root: string, more: boolean, nodes: Array<{ __typename?: 'DescendantNode', key: string, kind: LineageNodeKind, id: string, name: string, depth: number, parent: string }> }> };
+
 export type ColumnOptionJoinStepFragment = { __typename?: 'ColumnOptionJoinStep', table: { __typename?: 'TableDataset', id: string, name: string, store: (
       { __typename?: 'ParquetStore' }
       & ParquetStoreFragment
@@ -15391,9 +15443,6 @@ export type GetCoordinateGraphQuery = { __typename?: 'Query', coordinateGraph: {
       { __typename?: 'ByDimensionTransformation' }
       & Transformation_ByDimensionTransformation_Fragment
     ) | (
-      { __typename?: 'FieldTransformation' }
-      & Transformation_FieldTransformation_Fragment
-    ) | (
       { __typename?: 'IdentityTransformation' }
       & Transformation_IdentityTransformation_Fragment
     ) | (
@@ -15506,15 +15555,6 @@ export type GetRegistrationEdgeQuery = { __typename?: 'Query', transformation: (
         & AxisFragment
       )> } }
     & Transformation_ByDimensionTransformation_Fragment
-  ) | (
-    { __typename?: 'FieldTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
-        { __typename?: 'Axis' }
-        & AxisFragment
-      )> }, output: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
-        { __typename?: 'Axis' }
-        & AxisFragment
-      )> } }
-    & Transformation_FieldTransformation_Fragment
   ) | (
     { __typename?: 'IdentityTransformation', version: number, invariance: TransformInvariance, valueRelation?: ValueRelation | null, selector?: { __typename?: 'Selector', axis: string, index: number } | null, input: { __typename?: 'CoordinateSystem', id: string, name: string, axes: Array<(
         { __typename?: 'Axis' }
@@ -15708,6 +15748,56 @@ export type PeerHomePageStatsQueryVariables = Exact<{
 
 
 export type PeerHomePageStatsQuery = { __typename?: 'Query', arrayDatasetsStats: { __typename?: 'ArrayDatasetStats', count: number, series: Array<{ __typename?: 'TimeBucket', count: number }> } };
+
+export type HomeRootsQueryVariables = Exact<{
+  pagination?: InputMaybe<OffsetPaginationInput>;
+  filters?: InputMaybe<RootFilter>;
+}>;
+
+
+export type HomeRootsQuery = { __typename?: 'Query', roots: Array<{ __typename?: 'RootNode', key: string, kind: LineageNodeKind, id: string, name: string, createdAt?: any | null }> };
+
+export type HomeRootDetailsQueryVariables = Exact<{
+  files: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  datasets: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  tables: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  sparse: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+  hasFiles: Scalars['Boolean']['input'];
+  hasDatasets: Scalars['Boolean']['input'];
+  hasTables: Scalars['Boolean']['input'];
+  hasSparse: Scalars['Boolean']['input'];
+}>;
+
+
+export type HomeRootDetailsQuery = { __typename?: 'Query', files?: Array<(
+    { __typename?: 'File', derivedContainers: Array<{ __typename?: 'FileLink', id: string, seriesIdentifier?: string | null, container: { __typename: 'AnnotationCollection', id: string } | (
+        { __typename: 'ArrayDataset' }
+        & ListArrayDatasetFragment
+      ) | { __typename: 'MeshCollection', id: string } | { __typename: 'TableDataset', id: string } }> }
+    & ListFileFragment
+  )>, arrayDatasets?: Array<(
+    { __typename?: 'ArrayDataset' }
+    & ListArrayDatasetFragment
+  )>, tableDatasets?: Array<(
+    { __typename?: 'TableDataset' }
+    & ListTableDatasetFragment
+  )>, sparseDatasets?: Array<(
+    { __typename?: 'SparseDataset' }
+    & ListSparseDatasetFragment
+  )> };
+
+export type HomeResultsQueryVariables = Exact<{
+  starts: Array<LineageRootInput> | LineageRootInput;
+  down?: Scalars['Int']['input'];
+}>;
+
+
+export type HomeResultsQuery = { __typename?: 'Query', descendants: Array<{ __typename?: 'Descendants', root: string, more: boolean, nodes: Array<{ __typename?: 'DescendantNode', key: string, kind: LineageNodeKind, id: string, name: string, depth: number }> }> };
+
+export type HomeFilterOptionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type HomeFilterOptionsQuery = { __typename?: 'Query', members: Array<{ __typename?: 'Membership', user: { __typename?: 'User', sub: string } }>, collaborations: Array<{ __typename?: 'Collaboration', id: string, name: string }> };
 
 export type GetLensPhasorQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -16037,7 +16127,7 @@ export type GetSparseDatasetDerivedQuery = { __typename?: 'Query', sparseDataset
     )>, sourceFiles: Array<(
       { __typename?: 'FileLink' }
       & FileLinkFragment
-    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } }> } };
+    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } }> } };
 
 export type GetSparseDatasetAnchorsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -16080,7 +16170,7 @@ export type GetTableDatasetDerivedQuery = { __typename?: 'Query', tableDataset: 
     )>, exports: Array<(
       { __typename?: 'FileLink' }
       & FileLinkFragment
-    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'FieldTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } }> } };
+    )>, derivedFrom: Array<{ __typename?: 'AffineTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ByDimensionTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'IdentityTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'MapAxisTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'RotationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'ScaleTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'SequenceTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'TranslationTransformation', id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } } | { __typename?: 'UnmappableTransformation', reason?: string | null, id: string, kind: TransformKind, valueRelation?: ValueRelation | null, output: { __typename?: 'CoordinateSystem', id: string, name: string, residents: Array<{ __typename: 'AnnotationCollection' } | { __typename: 'AnnotationLens' } | { __typename: 'ArrayDataset', id: string, name: string } | { __typename: 'ArrayLens', id: string, dataset: { __typename?: 'ArrayDataset', id: string, name: string } } | { __typename: 'DataArray' } | { __typename: 'MeshCollection' } | { __typename: 'MeshLens' } | { __typename: 'NetworkCollection' } | { __typename: 'NetworkLens' } | { __typename: 'SparseDataset' } | { __typename: 'SparseLens' } | { __typename: 'TableDataset' } | { __typename: 'TableLens' }> } }> } };
 
 export type GetTableDatasetsQueryVariables = Exact<{
   filters?: InputMaybe<TableDatasetFilter>;
@@ -16323,9 +16413,15 @@ export const DerivationEdgeFragmentDoc = gql`
   output {
     id
   }
-  ... on FieldTransformation {
-    field {
-      id
+  ... on ByDimensionTransformation {
+    parts {
+      kind
+      field {
+        dereference
+        field {
+          id
+        }
+      }
     }
   }
   ... on UnmappableTransformation {
@@ -17129,16 +17225,11 @@ export const LeafTransformationFragmentDoc = gql`
   ... on RotationTransformation {
     affine
   }
-  ... on FieldTransformation {
-    field {
-      ...ListCoordinateSystem
-    }
-  }
   ... on UnmappableTransformation {
     reason
   }
 }
-    ${ListCoordinateSystemFragmentDoc}`;
+    `;
 export const TransformationFragmentDoc = gql`
     fragment Transformation on Transformation {
   ...LeafTransformation
@@ -17149,15 +17240,25 @@ export const TransformationFragmentDoc = gql`
       translation
       affine
       reason
-      field {
-        ...ListCoordinateSystem
-      }
     }
   }
   ... on ByDimensionTransformation {
-    scale
-    translation
-    affine
+    parts {
+      kind
+      inputAxes
+      outputAxes
+      scale
+      translation
+      affine
+      field {
+        values
+        spatial
+        dereference
+        field {
+          ...ListCoordinateSystem
+        }
+      }
+    }
   }
 }
     ${LeafTransformationFragmentDoc}
@@ -17488,6 +17589,9 @@ export const ChartAffineFragmentDoc = gql`
   inputAxes
   outputAxes
   total
+  fields {
+    outputAxis
+  }
 }
     `;
 export const ChartLayerCommonFragmentDoc = gql`
@@ -18075,6 +18179,17 @@ export const FolderFragmentDoc = gql`
     ${ProvenanceEntryFragmentDoc}
 ${ListFileFragmentDoc}
 ${ListFolderFragmentDoc}`;
+export const LayerRenderAxesFragmentDoc = gql`
+    fragment LayerRenderAxes on RenderAxes {
+  x
+  y
+  z
+  t
+  intensity
+  phasor
+  vector
+}
+    `;
 export const LensSelectionFragmentDoc = gql`
     fragment LensSelection on Lens {
   __typename
@@ -18323,6 +18438,10 @@ export const SceneLensFragmentDoc = gql`
   coordinateSystem {
     id
     name
+    axes {
+      name
+      type
+    }
   }
   toParent {
     ...Transformation
@@ -18395,17 +18514,6 @@ ${TransformationFragmentDoc}
 ${DimSliceFragmentDoc}
 ${ZarrStoreFragmentDoc}
 ${LightpathGraphFragmentDoc}`;
-export const LayerRenderAxesFragmentDoc = gql`
-    fragment LayerRenderAxes on RenderAxes {
-  x
-  y
-  z
-  t
-  intensity
-  phasor
-  vector
-}
-    `;
 export const TransferFunctionFragmentDoc = gql`
     fragment TransferFunction on TransferFunction {
   climMin
@@ -18733,13 +18841,29 @@ export const SceneLayerFragmentDoc = gql`
     inputAxes
     outputAxes
     total
+    fields {
+      outputAxis
+      inputAxis
+      innerScale
+      innerOffset
+      component
+      scale
+      offset
+      dataset {
+        id
+        dataArrays {
+          level
+          store {
+            id
+            key
+          }
+        }
+      }
+    }
   }
   ... on ImageLayer {
     lens {
       ...SceneLens
-    }
-    renderAxes {
-      ...LayerRenderAxes
     }
     renderGraph {
       ...LayerRenderGraph
@@ -18748,9 +18872,6 @@ export const SceneLayerFragmentDoc = gql`
   ... on IntensityLayer {
     lens {
       ...SceneLens
-    }
-    renderAxes {
-      ...LayerRenderAxes
     }
     intensityColormap: colormap
     color
@@ -18762,9 +18883,6 @@ export const SceneLayerFragmentDoc = gql`
   ... on RgbLayer {
     lens {
       ...SceneLens
-    }
-    renderAxes {
-      ...LayerRenderAxes
     }
     redLens {
       ...ChannelLens
@@ -18783,9 +18901,6 @@ export const SceneLayerFragmentDoc = gql`
     lens {
       ...SceneLens
     }
-    renderAxes {
-      ...LayerRenderAxes
-    }
     phasorRender {
       ...PhasorRender
     }
@@ -18793,9 +18908,6 @@ export const SceneLayerFragmentDoc = gql`
   ... on VectorLayer {
     lens {
       ...SceneLens
-    }
-    renderAxes {
-      ...LayerRenderAxes
     }
     vectorAxis
     glyph
@@ -18810,9 +18922,6 @@ export const SceneLayerFragmentDoc = gql`
   ... on LabelLayer {
     lens {
       ...SceneLens
-    }
-    renderAxes {
-      ...LayerRenderAxes
     }
     labelRender {
       ...LabelRender
@@ -18839,10 +18948,6 @@ export const SceneLayerFragmentDoc = gql`
     windowFilters {
       ...LabelFilterBy
     }
-    xColumn
-    yColumn
-    zColumn
-    tColumn
     sizeColumn
     idColumn
     pointSize
@@ -18868,10 +18973,6 @@ export const SceneLayerFragmentDoc = gql`
       ...LabelFilterBy
     }
     trackIdColumn
-    xColumn
-    yColumn
-    zColumn
-    tColumn
     colorByColumn
     lineWidth
     colormap
@@ -18929,7 +19030,6 @@ export const SceneLayerFragmentDoc = gql`
 }
     ${PlacementStepFragmentDoc}
 ${SceneLensFragmentDoc}
-${LayerRenderAxesFragmentDoc}
 ${LayerRenderGraphFragmentDoc}
 ${ChannelLensFragmentDoc}
 ${PhasorRenderFragmentDoc}
@@ -19979,6 +20079,39 @@ export function useDeleteCollaborationMutation(baseOptions?: ApolloReactHooks.Mu
 export type DeleteCollaborationMutationHookResult = ReturnType<typeof useDeleteCollaborationMutation>;
 export type DeleteCollaborationMutationResult = Apollo.MutationResult<DeleteCollaborationMutation>;
 export type DeleteCollaborationMutationOptions = Apollo.BaseMutationOptions<DeleteCollaborationMutation, DeleteCollaborationMutationVariables>;
+export const AddManyToCollaborationDocument = gql`
+    mutation AddManyToCollaboration($input: AddManyToCollaborationInput!) {
+  addManyToCollaboration(input: $input) {
+    ...Collaboration
+  }
+}
+    ${CollaborationFragmentDoc}`;
+export type AddManyToCollaborationMutationFn = Apollo.MutationFunction<AddManyToCollaborationMutation, AddManyToCollaborationMutationVariables>;
+
+/**
+ * __useAddManyToCollaborationMutation__
+ *
+ * To run a mutation, you first call `useAddManyToCollaborationMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAddManyToCollaborationMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [addManyToCollaborationMutation, { data, loading, error }] = useAddManyToCollaborationMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAddManyToCollaborationMutation(baseOptions?: ApolloReactHooks.MutationHookOptions<AddManyToCollaborationMutation, AddManyToCollaborationMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useMutation<AddManyToCollaborationMutation, AddManyToCollaborationMutationVariables>(AddManyToCollaborationDocument, options);
+      }
+export type AddManyToCollaborationMutationHookResult = ReturnType<typeof useAddManyToCollaborationMutation>;
+export type AddManyToCollaborationMutationResult = Apollo.MutationResult<AddManyToCollaborationMutation>;
+export type AddManyToCollaborationMutationOptions = Apollo.BaseMutationOptions<AddManyToCollaborationMutation, AddManyToCollaborationMutationVariables>;
 export const CreateCoordinateSystemDocument = gql`
     mutation CreateCoordinateSystem($input: CreateCoordinateSystemInput!) {
   createCoordinateSystem(input: $input) {
@@ -22992,6 +23125,143 @@ export function useAddLayerWindowLensesLazyQuery(baseOptions?: ApolloReactHooks.
 export type AddLayerWindowLensesQueryHookResult = ReturnType<typeof useAddLayerWindowLensesQuery>;
 export type AddLayerWindowLensesLazyQueryHookResult = ReturnType<typeof useAddLayerWindowLensesLazyQuery>;
 export type AddLayerWindowLensesQueryResult = Apollo.QueryResult<AddLayerWindowLensesQuery, AddLayerWindowLensesQueryVariables>;
+export const SceneDerivedDocument = gql`
+    query SceneDerived($starts: [LineageRootInput!]!, $down: Int! = 3) {
+  descendants(starts: $starts, down: $down) {
+    root
+    more
+    nodes {
+      key
+      kind
+      id
+      name
+      depth
+      parent
+    }
+  }
+}
+    `;
+
+/**
+ * __useSceneDerivedQuery__
+ *
+ * To run a query within a React component, call `useSceneDerivedQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSceneDerivedQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSceneDerivedQuery({
+ *   variables: {
+ *      starts: // value for 'starts'
+ *      down: // value for 'down'
+ *   },
+ * });
+ */
+export function useSceneDerivedQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SceneDerivedQuery, SceneDerivedQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SceneDerivedQuery, SceneDerivedQueryVariables>(SceneDerivedDocument, options);
+      }
+export function useSceneDerivedLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SceneDerivedQuery, SceneDerivedQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SceneDerivedQuery, SceneDerivedQueryVariables>(SceneDerivedDocument, options);
+        }
+export type SceneDerivedQueryHookResult = ReturnType<typeof useSceneDerivedQuery>;
+export type SceneDerivedLazyQueryHookResult = ReturnType<typeof useSceneDerivedLazyQuery>;
+export type SceneDerivedQueryResult = Apollo.QueryResult<SceneDerivedQuery, SceneDerivedQueryVariables>;
+export const SceneDerivedDetailsDocument = gql`
+    query SceneDerivedDetails($datasets: [ID!]!, $tables: [ID!]!, $meshes: [ID!]!, $networks: [ID!]!, $annotations: [ID!]!, $hasDatasets: Boolean!, $hasTables: Boolean!, $hasMeshes: Boolean!, $hasNetworks: Boolean!, $hasAnnotations: Boolean!) {
+  arrayDatasets(filters: {ids: $datasets}, pagination: {limit: 100}) @include(if: $hasDatasets) {
+    id
+    name
+    spec
+    fullLens {
+      id
+    }
+    intrinsicSystem {
+      id
+    }
+  }
+  tableDatasets(filters: {ids: $tables}, pagination: {limit: 100}) @include(if: $hasTables) {
+    id
+    name
+    fullLens {
+      id
+    }
+    coordinateSystem {
+      id
+    }
+  }
+  meshCollections(filters: {ids: $meshes}, pagination: {limit: 100}) @include(if: $hasMeshes) {
+    id
+    name
+    fullLens {
+      id
+    }
+    coordinateSystem {
+      id
+    }
+  }
+  networkCollections(filters: {ids: $networks}, pagination: {limit: 100}) @include(if: $hasNetworks) {
+    id
+    name
+    fullLens {
+      id
+    }
+    coordinateSystem {
+      id
+    }
+  }
+  annotationCollections(filters: {ids: $annotations}, pagination: {limit: 100}) @include(if: $hasAnnotations) {
+    id
+    name
+    fullLens {
+      id
+    }
+    coordinateSystem {
+      id
+    }
+  }
+}
+    `;
+
+/**
+ * __useSceneDerivedDetailsQuery__
+ *
+ * To run a query within a React component, call `useSceneDerivedDetailsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useSceneDerivedDetailsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useSceneDerivedDetailsQuery({
+ *   variables: {
+ *      datasets: // value for 'datasets'
+ *      tables: // value for 'tables'
+ *      meshes: // value for 'meshes'
+ *      networks: // value for 'networks'
+ *      annotations: // value for 'annotations'
+ *      hasDatasets: // value for 'hasDatasets'
+ *      hasTables: // value for 'hasTables'
+ *      hasMeshes: // value for 'hasMeshes'
+ *      hasNetworks: // value for 'hasNetworks'
+ *      hasAnnotations: // value for 'hasAnnotations'
+ *   },
+ * });
+ */
+export function useSceneDerivedDetailsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<SceneDerivedDetailsQuery, SceneDerivedDetailsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<SceneDerivedDetailsQuery, SceneDerivedDetailsQueryVariables>(SceneDerivedDetailsDocument, options);
+      }
+export function useSceneDerivedDetailsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<SceneDerivedDetailsQuery, SceneDerivedDetailsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<SceneDerivedDetailsQuery, SceneDerivedDetailsQueryVariables>(SceneDerivedDetailsDocument, options);
+        }
+export type SceneDerivedDetailsQueryHookResult = ReturnType<typeof useSceneDerivedDetailsQuery>;
+export type SceneDerivedDetailsLazyQueryHookResult = ReturnType<typeof useSceneDerivedDetailsLazyQuery>;
+export type SceneDerivedDetailsQueryResult = Apollo.QueryResult<SceneDerivedDetailsQuery, SceneDerivedDetailsQueryVariables>;
 export const GetAnnotationDocument = gql`
     query GetAnnotation($id: ID!) {
   annotation(id: $id) {
@@ -23946,6 +24216,51 @@ export function useGetCollaborationLazyQuery(baseOptions?: ApolloReactHooks.Lazy
 export type GetCollaborationQueryHookResult = ReturnType<typeof useGetCollaborationQuery>;
 export type GetCollaborationLazyQueryHookResult = ReturnType<typeof useGetCollaborationLazyQuery>;
 export type GetCollaborationQueryResult = Apollo.QueryResult<GetCollaborationQuery, GetCollaborationQueryVariables>;
+export const CollaborationDerivedDocument = gql`
+    query CollaborationDerived($starts: [LineageRootInput!]!, $down: Int!) {
+  descendants(starts: $starts, down: $down, fanout: 200, limit: 2000) {
+    root
+    more
+    nodes {
+      key
+      kind
+      id
+      name
+      depth
+      parent
+    }
+  }
+}
+    `;
+
+/**
+ * __useCollaborationDerivedQuery__
+ *
+ * To run a query within a React component, call `useCollaborationDerivedQuery` and pass it any options that fit your needs.
+ * When your component renders, `useCollaborationDerivedQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useCollaborationDerivedQuery({
+ *   variables: {
+ *      starts: // value for 'starts'
+ *      down: // value for 'down'
+ *   },
+ * });
+ */
+export function useCollaborationDerivedQuery(baseOptions: ApolloReactHooks.QueryHookOptions<CollaborationDerivedQuery, CollaborationDerivedQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<CollaborationDerivedQuery, CollaborationDerivedQueryVariables>(CollaborationDerivedDocument, options);
+      }
+export function useCollaborationDerivedLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<CollaborationDerivedQuery, CollaborationDerivedQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<CollaborationDerivedQuery, CollaborationDerivedQueryVariables>(CollaborationDerivedDocument, options);
+        }
+export type CollaborationDerivedQueryHookResult = ReturnType<typeof useCollaborationDerivedQuery>;
+export type CollaborationDerivedLazyQueryHookResult = ReturnType<typeof useCollaborationDerivedLazyQuery>;
+export type CollaborationDerivedQueryResult = Apollo.QueryResult<CollaborationDerivedQuery, CollaborationDerivedQueryVariables>;
 export const MeshColorByOptionsDocument = gql`
     query MeshColorByOptions($meshCollection: ID!, $filters: ColumnOptionFilter, $maxJoinDepth: Int) {
   options: colorByOptions(
@@ -25035,6 +25350,207 @@ export function usePeerHomePageStatsLazyQuery(baseOptions?: ApolloReactHooks.Laz
 export type PeerHomePageStatsQueryHookResult = ReturnType<typeof usePeerHomePageStatsQuery>;
 export type PeerHomePageStatsLazyQueryHookResult = ReturnType<typeof usePeerHomePageStatsLazyQuery>;
 export type PeerHomePageStatsQueryResult = Apollo.QueryResult<PeerHomePageStatsQuery, PeerHomePageStatsQueryVariables>;
+export const HomeRootsDocument = gql`
+    query HomeRoots($pagination: OffsetPaginationInput, $filters: RootFilter) {
+  roots(
+    kinds: [FILE, DATASET, TABLE_DATASET, MESH_COLLECTION, SPARSE_DATASET, NETWORK_COLLECTION]
+    pagination: $pagination
+    filters: $filters
+  ) {
+    key
+    kind
+    id
+    name
+    createdAt
+  }
+}
+    `;
+
+/**
+ * __useHomeRootsQuery__
+ *
+ * To run a query within a React component, call `useHomeRootsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useHomeRootsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useHomeRootsQuery({
+ *   variables: {
+ *      pagination: // value for 'pagination'
+ *      filters: // value for 'filters'
+ *   },
+ * });
+ */
+export function useHomeRootsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<HomeRootsQuery, HomeRootsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<HomeRootsQuery, HomeRootsQueryVariables>(HomeRootsDocument, options);
+      }
+export function useHomeRootsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<HomeRootsQuery, HomeRootsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<HomeRootsQuery, HomeRootsQueryVariables>(HomeRootsDocument, options);
+        }
+export type HomeRootsQueryHookResult = ReturnType<typeof useHomeRootsQuery>;
+export type HomeRootsLazyQueryHookResult = ReturnType<typeof useHomeRootsLazyQuery>;
+export type HomeRootsQueryResult = Apollo.QueryResult<HomeRootsQuery, HomeRootsQueryVariables>;
+export const HomeRootDetailsDocument = gql`
+    query HomeRootDetails($files: [ID!]!, $datasets: [ID!]!, $tables: [ID!]!, $sparse: [ID!]!, $hasFiles: Boolean!, $hasDatasets: Boolean!, $hasTables: Boolean!, $hasSparse: Boolean!) {
+  files(filters: {ids: $files}, pagination: {limit: 100}) @include(if: $hasFiles) {
+    ...ListFile
+    derivedContainers(filters: {direction: SOURCE}) {
+      id
+      seriesIdentifier
+      container {
+        __typename
+        ... on ArrayDataset {
+          ...ListArrayDataset
+        }
+        ... on TableDataset {
+          id
+        }
+        ... on MeshCollection {
+          id
+        }
+        ... on AnnotationCollection {
+          id
+        }
+      }
+    }
+  }
+  arrayDatasets(filters: {ids: $datasets}, pagination: {limit: 100}) @include(if: $hasDatasets) {
+    ...ListArrayDataset
+  }
+  tableDatasets(filters: {ids: $tables}, pagination: {limit: 100}) @include(if: $hasTables) {
+    ...ListTableDataset
+  }
+  sparseDatasets(filters: {ids: $sparse}, pagination: {limit: 100}) @include(if: $hasSparse) {
+    ...ListSparseDataset
+  }
+}
+    ${ListFileFragmentDoc}
+${ListArrayDatasetFragmentDoc}
+${ListTableDatasetFragmentDoc}
+${ListSparseDatasetFragmentDoc}`;
+
+/**
+ * __useHomeRootDetailsQuery__
+ *
+ * To run a query within a React component, call `useHomeRootDetailsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useHomeRootDetailsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useHomeRootDetailsQuery({
+ *   variables: {
+ *      files: // value for 'files'
+ *      datasets: // value for 'datasets'
+ *      tables: // value for 'tables'
+ *      sparse: // value for 'sparse'
+ *      hasFiles: // value for 'hasFiles'
+ *      hasDatasets: // value for 'hasDatasets'
+ *      hasTables: // value for 'hasTables'
+ *      hasSparse: // value for 'hasSparse'
+ *   },
+ * });
+ */
+export function useHomeRootDetailsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<HomeRootDetailsQuery, HomeRootDetailsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<HomeRootDetailsQuery, HomeRootDetailsQueryVariables>(HomeRootDetailsDocument, options);
+      }
+export function useHomeRootDetailsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<HomeRootDetailsQuery, HomeRootDetailsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<HomeRootDetailsQuery, HomeRootDetailsQueryVariables>(HomeRootDetailsDocument, options);
+        }
+export type HomeRootDetailsQueryHookResult = ReturnType<typeof useHomeRootDetailsQuery>;
+export type HomeRootDetailsLazyQueryHookResult = ReturnType<typeof useHomeRootDetailsLazyQuery>;
+export type HomeRootDetailsQueryResult = Apollo.QueryResult<HomeRootDetailsQuery, HomeRootDetailsQueryVariables>;
+export const HomeResultsDocument = gql`
+    query HomeResults($starts: [LineageRootInput!]!, $down: Int! = 3) {
+  descendants(starts: $starts, down: $down) {
+    root
+    more
+    nodes {
+      key
+      kind
+      id
+      name
+      depth
+    }
+  }
+}
+    `;
+
+/**
+ * __useHomeResultsQuery__
+ *
+ * To run a query within a React component, call `useHomeResultsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useHomeResultsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useHomeResultsQuery({
+ *   variables: {
+ *      starts: // value for 'starts'
+ *      down: // value for 'down'
+ *   },
+ * });
+ */
+export function useHomeResultsQuery(baseOptions: ApolloReactHooks.QueryHookOptions<HomeResultsQuery, HomeResultsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<HomeResultsQuery, HomeResultsQueryVariables>(HomeResultsDocument, options);
+      }
+export function useHomeResultsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<HomeResultsQuery, HomeResultsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<HomeResultsQuery, HomeResultsQueryVariables>(HomeResultsDocument, options);
+        }
+export type HomeResultsQueryHookResult = ReturnType<typeof useHomeResultsQuery>;
+export type HomeResultsLazyQueryHookResult = ReturnType<typeof useHomeResultsLazyQuery>;
+export type HomeResultsQueryResult = Apollo.QueryResult<HomeResultsQuery, HomeResultsQueryVariables>;
+export const HomeFilterOptionsDocument = gql`
+    query HomeFilterOptions {
+  members {
+    user {
+      sub
+    }
+  }
+  collaborations {
+    id
+    name
+  }
+}
+    `;
+
+/**
+ * __useHomeFilterOptionsQuery__
+ *
+ * To run a query within a React component, call `useHomeFilterOptionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useHomeFilterOptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useHomeFilterOptionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useHomeFilterOptionsQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<HomeFilterOptionsQuery, HomeFilterOptionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<HomeFilterOptionsQuery, HomeFilterOptionsQueryVariables>(HomeFilterOptionsDocument, options);
+      }
+export function useHomeFilterOptionsLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<HomeFilterOptionsQuery, HomeFilterOptionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<HomeFilterOptionsQuery, HomeFilterOptionsQueryVariables>(HomeFilterOptionsDocument, options);
+        }
+export type HomeFilterOptionsQueryHookResult = ReturnType<typeof useHomeFilterOptionsQuery>;
+export type HomeFilterOptionsLazyQueryHookResult = ReturnType<typeof useHomeFilterOptionsLazyQuery>;
+export type HomeFilterOptionsQueryResult = Apollo.QueryResult<HomeFilterOptionsQuery, HomeFilterOptionsQueryVariables>;
 export const GetLensPhasorDocument = gql`
     query GetLensPhasor($id: ID!, $axis: String, $harmonic: Int!) {
   lens(id: $id) {

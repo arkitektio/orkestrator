@@ -12,3 +12,21 @@ query GetCollaboration($id: ID!) {
     ...Collaboration
   }
 }
+
+# What was made from the objects being put in a collaboration, as trees: the
+# "Derived data" choice of the Add to Collaboration dialog. Fan-out and limit
+# are raised past the defaults so "All derived" does not quietly drop a mask.
+query CollaborationDerived($starts: [LineageRootInput!]!, $down: Int!) {
+  descendants(starts: $starts, down: $down, fanout: 200, limit: 2000) {
+    root
+    more
+    nodes {
+      key
+      kind
+      id
+      name
+      depth
+      parent
+    }
+  }
+}

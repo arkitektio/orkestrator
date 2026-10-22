@@ -6,9 +6,20 @@ import {
   ResizablePanelGroup as ShadResizablePanelGroup,
 } from '@/core/ui/resizable';
 import {Separator as ShadSeparator} from '@/core/ui/separator';
+import {
+  BentoGrid as ShadBentoGrid,
+  BentoItem as ShadBentoItem,
+  type BentoItemProps as ShadBentoItemProps,
+} from '@/core/ui/bento-grid';
 import {cn} from '@/core/util/utils';
 import * as z from 'zod';
-import {createBlokComponent, useBlok, useValue} from '../runtime';
+import {
+  createBlokComponent,
+  useBlok,
+  useBlokTree,
+  useValue,
+  type BlokComponentNode,
+} from '../runtime';
 import {
   boolSchema,
   buildLayoutStyle,
@@ -342,6 +353,173 @@ export const ResizableHandle = createBlokComponent(
   },
 );
 
+/**
+ * A per-breakpoint value: `{base: 2, md: 4}`, mobile first, measured on the
+ * grid's own width (sm 640, md 768, lg 1024, xl 1280, 2xl 1536).
+ */
+const responsive = <T extends z.ZodTypeAny>(value: T) =>
+  z.union([
+    value,
+    z
+      .object({
+        base: value.optional(),
+        sm: value.optional(),
+        md: value.optional(),
+        lg: value.optional(),
+        xl: value.optional(),
+        '2xl': value.optional(),
+      })
+      .strict(),
+  ]);
+
+const bentoSpanSchema = z.union([
+  z.number().int().min(1),
+  z.object({
+    min: z.number().int().min(1).optional(),
+    ideal: z.union([z.number(), z.templateLiteral([z.number(), '%'])]),
+    max: z.number().int().min(1).optional(),
+  }),
+]);
+
+/**
+ * The layout props a `BentoItem` hands its parent. The grid solves the layout
+ * from them before any item renders, so it reads them off the payload: they
+ * must be static literals.
+ */
+const bentoItemLayoutFields = {
+  cols: responsive(bentoSpanSchema)
+    .optional()
+    .describe(
+      'Column span: 2, {"min":1,"ideal":2,"max":3}, {"ideal":"50%"}, or one per breakpoint ({"base":1,"md":2}). Static; read by the parent BentoGrid. Defaults to 1.',
+    ),
+  rows: responsive(bentoSpanSchema)
+    .optional()
+    .describe('Row span, same forms as cols. Static; read by the parent BentoGrid. Defaults to 1.'),
+  priority: responsive(z.number().min(0))
+    .optional()
+    .describe(
+      'How strongly the item holds its ideal size: 1 normal, 2-3 key tiles, 0.5 fillers that flex first, 0 takes whatever closes the layout. Static.',
+    ),
+  show: responsive(z.boolean())
+    .optional()
+    .describe('false leaves the item out, optionally per breakpoint. Static.'),
+};
+
+type BentoItemLayout = Pick<ShadBentoItemProps, 'cols' | 'rows' | 'priority' | 'show'>;
+
+const bentoItemLayoutSchema = z.object(bentoItemLayoutFields);
+
+export const BentoGrid = createBlokComponent(
+  {
+    name: 'BentoGrid',
+    schema: z
+      .object({
+        children: childListSchema.describe(
+          'BentoItem children (their cols/rows/priority/show place them). Any other child, a foreach included, is one 1x1 tile.',
+        ),
+        columns: responsive(z.number().int().min(1))
+          .optional()
+          .describe('Column count, optionally per breakpoint: {"base":2,"md":4,"lg":6}. Defaults to 4.'),
+        rowHeight: responsive(z.union([z.number(), z.string()]))
+          .optional()
+          .describe('Row height in px or a CSS length, optionally per breakpoint. Defaults to "10rem".'),
+        holeCost: numberSchema.describe('Cost per empty cell inside the layout. Default 10.'),
+        raggedCost: numberSchema.describe('Cost per empty cell along the bottom edge. Defaults to holeCost.'),
+        animate: boolSchema.describe('Animate items entering, leaving and moving. Default true.'),
+        appear: boolSchema.describe('Also animate the items present on first render.'),
+        className: classNameSchema,
+        ...layoutFields,
+      })
+      .describe(
+        'A bento grid: tiles in order, each sized as close to its preferred span as the columns allow, packed without holes.',
+      ),
+  },
+  ({buildChild, component, schema}) => {
+    const blok = useBlok(component, schema);
+    const layoutProps = useBaseLayoutProps(blok);
+    const children = useValue(blok.children);
+    const columns = useValue(blok.columns);
+    const rowHeight = useValue(blok.rowHeight);
+    const holeCost = useValue(blok.holeCost);
+    const raggedCost = useValue(blok.raggedCost);
+    const animate = useValue(blok.animate);
+    const appear = useValue(blok.appear);
+    const className = useValue(blok.className);
+    const {nodes} = useBlokTree();
+
+    const seen = new Set<string>();
+    const items = (Array.isArray(children) ? children : []).map(child => {
+      const id = typeof child === 'string' ? child : child.id;
+      const basePath = typeof child === 'string' ? undefined : child.basePath;
+      const key = seen.has(id) ? `${id}:${seen.size}` : id;
+      seen.add(key);
+      const node = nodes.get(id)?.node;
+      return (
+        <ShadBentoItem key={key} {...(node?.component === 'BentoItem' ? staticBentoLayout(node.props) : {})}>
+          {buildChild(id, basePath)}
+        </ShadBentoItem>
+      );
+    });
+
+    return (
+      <ShadBentoGrid
+        columns={columns ?? 4}
+        rowHeight={rowHeight}
+        holeCost={holeCost}
+        raggedCost={raggedCost}
+        animate={animate}
+        appear={appear}
+        className={className}
+        style={buildLayoutStyle(layoutProps)}
+      >
+        {items}
+      </ShadBentoGrid>
+    );
+  },
+);
+
+/** A BentoItem's layout props, from their static values; a bad or dynamic one is left at the default. */
+const staticBentoLayout = (props: BlokComponentNode['props']): BentoItemLayout => {
+  const out: Record<string, unknown> = {};
+  for (const prop of props ?? []) {
+    const field = bentoItemLayoutSchema.shape[prop.key as keyof typeof bentoItemLayoutFields];
+    if (!field || prop.static_value === undefined) continue;
+    const parsed = field.safeParse(prop.static_value);
+    if (parsed.success) out[prop.key] = parsed.data;
+  }
+  return out as BentoItemLayout;
+};
+
+export const BentoItem = createBlokComponent(
+  {
+    name: 'BentoItem',
+    placement: {downstreamOf: ['BentoGrid']},
+    schema: z
+      .object({
+        children: childListSchema,
+        ...bentoItemLayoutFields,
+        className: classNameSchema,
+        ...layoutFields,
+      })
+      .describe('One tile of a BentoGrid; fills the cells the grid gives it.'),
+  },
+  ({buildChild, component, schema}) => {
+    const blok = useBlok(component, schema);
+    const layoutProps = useBaseLayoutProps(blok);
+    const children = useValue(blok.children);
+    const className = useValue(blok.className);
+
+    return (
+      <div
+        className={cn('flex h-full min-h-0 w-full min-w-0 flex-col', className)}
+        style={buildLayoutStyle(layoutProps)}
+      >
+        {renderChildList(children, buildChild)}
+      </div>
+    );
+  },
+);
+
 export const layoutBlokComponents = [
   Flex,
   Row,
@@ -355,4 +533,6 @@ export const layoutBlokComponents = [
   Resizable,
   ResizablePanel,
   ResizableHandle,
+  BentoGrid,
+  BentoItem,
 ];

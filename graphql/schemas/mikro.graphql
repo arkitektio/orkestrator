@@ -5,9 +5,47 @@ directive @identified(by: String!) on OBJECT
 directive @unionElementOf(discriminator: String!, key: String!, union: String!) repeatable on INPUT_OBJECT
 
 """
+The time truth: when the data at a coordinate anchor's coordinates was acquired, from the first of it to the last
+"""
+type AcquisitionWindow {
+  """When the last of it was acquired. Equal to start for one instant"""
+  end: DateTime!
+  id: ID!
+
+  """When the first of the data at these coordinates was acquired"""
+  start: DateTime!
+}
+
+"""
+Input type for an acquisition window: when the data at an anchor's coordinates was acquired, from the first of it to the last
+"""
+input AcquisitionWindowInput {
+  """When the last of it was acquired. Defaults to start: one instant"""
+  end: DateTime = null
+
+  """When the first of the data at these coordinates was acquired"""
+  start: DateTime!
+}
+
+"""Objects to put in a collaboration together"""
+input AddManyToCollaborationInput {
+  collaboration: ID!
+
+  """
+  What to put in, in order: a whole before its parts. Each brings what it needs to be seen; one that is already in stays as it is
+  """
+  objects: [CollaborationObjectRef!]!
+}
+
+"""
 A whole placement path composed into one affine map, labelled with the axes it is written over. `matrix` is M x (N+1) with rows outermost -- the same layout an AffineTransformation's `affine` uses -- its columns in `inputAxes` order and its last column the translation. **`outputAxes` names only the destination axes the path actually constrains**: a (c,y,x) dataset registered on (y,x) into a (t,z,y,x) world gets two rows, not four, because the registration says nothing about t and z and a zero row there would pin the data at their origin rather than leave it unstated. `total` is whether the map covers every destination axis
 """
 type AffinePlacement {
+  """
+  The destination axes given by an array's values rather than by a row of `matrix`: the time of each frame of an event-triggered movie, the positions a warp field gives. An axis is in `outputAxes` or here, never both
+  """
+  fields: [PlacementField!]!
+
   """
   The axes the matrix's columns are in, which is the layer's own source coordinate system's axis order
   """
@@ -24,7 +62,7 @@ type AffinePlacement {
   outputAxes: [String!]!
 
   """
-  Whether `outputAxes` covers every axis of the destination space. False for a partial registration -- an honest map over the axes it names, and silence about the rest
+  Whether `outputAxes` and `fields` together cover every axis of the destination space. False for a partial registration -- an honest map over the axes it names, and silence about the rest
   """
   total: Boolean!
 }
@@ -56,7 +94,7 @@ type AffineTransformation implements Transformation {
   input: CoordinateSystem!
 
   """
-  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
+  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about
   """
   inputAxes: [String!]!
 
@@ -71,7 +109,7 @@ type AffineTransformation implements Transformation {
   output: CoordinateSystem!
 
   """
-  The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
+  The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z
   """
   outputAxes: [String!]!
 
@@ -641,7 +679,7 @@ type AnnotationLayer implements Layer {
   annotationCollection: AnnotationCollection!
 
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -821,6 +859,16 @@ A multi-dimensional array dataset. Its dimensions and their types live on the ax
 """
 type ArrayDataset {
   """
+  Derived from the coordinate anchors by core.logic.acquisition.end: The latest moment any of its anchors says it was acquired at. Null when no anchor states it, or when they disagree
+  """
+  acquisitionEnd: DateTime
+
+  """
+  Derived from the coordinate anchors by core.logic.acquisition.start: The earliest moment any of its anchors says it was acquired at. Null when no anchor states it, or when they disagree
+  """
+  acquisitionStart: DateTime
+
+  """
   The coordinate anchors of this dataset, each pinning metadata spokes -- a microscope state, OME metadata, a value histogram, a channel label -- to some of its level-0 coordinates
   """
   anchors(filters: CoordinateAnchorFilter, pagination: OffsetPaginationInput): [CoordinateAnchor!]!
@@ -843,6 +891,11 @@ type ArrayDataset {
   The scene to open for this dataset, and where `latestSnapshot` comes from: the nomination its whole lens holds (`fullLens.defaultScene`), so `setDefaultScene` here and `setLensDefaultScene` on that lens are one write. A nomination, not a derivation: it says nothing about where the data sits and is **not** the answer to which scenes show this dataset -- that is `scenes`, which the coordinate graph answers and which no stored column could contradict. Null until something sets it, with `setDefaultScene`, `setLensDefaultScene`, or `defaultFor` on either scene-creating mutation
   """
   defaultScene: Scene
+
+  """
+  Anchors of this dataset that cannot all be true, found while deriving its columns: an anchor contradicting one it holds over. Each leaves its column null. Empty when the metadata is consistent
+  """
+  derivationConflicts: [DerivationConflict!]!
 
   """
   The datasets computed from this one -- the other end of `derivedFrom`, and the way to ask what a source produced: the deconvolutions, segmentations and projections that named a space of this dataset as their parent. Derived from the same edges, never a stored back-reference that could disagree with them. Every child, not just those this dataset places: a fusion that named this source second is listed here, and so is a child whose derivation is UNMAPPABLE -- it came from here even though its geometry did not survive. The maps themselves are on each child's own `derivedFrom`
@@ -961,6 +1014,16 @@ input ArrayDatasetFilter {
   NOT: ArrayDatasetFilter
   OR: ArrayDatasetFilter
 
+  """
+  Filter to datasets acquired, at least in part, after this moment: their `acquisitionEnd` is at or after it. With `acquiredBefore`, the datasets whose acquisition overlaps the window. A dataset with no stated acquisition time never matches
+  """
+  acquiredAfter: DateTime
+
+  """
+  Filter to datasets acquired, at least in part, before this moment: their `acquisitionStart` is at or before it. With `acquiredAfter`, the datasets whose acquisition overlaps the window. A dataset with no stated acquisition time never matches
+  """
+  acquiredBefore: DateTime
+
   """Filter by the sub of the user that assigned the creating task"""
   assignedBy: ID
 
@@ -1006,9 +1069,19 @@ input ArrayDatasetFilter {
   hasDefaultScene: Boolean
 
   """
+  Filter by whether the dataset's anchors contradict each other: true finds the nonsensical metadata (`derivationConflicts`), false the consistent
+  """
+  hasDerivationConflicts: Boolean
+
+  """
   Filter by whether the dataset has an edge into a space with real units. False finds the data that is still only pixels, with no pixel size or stage pose recorded. Unrelated to a phasor histogram's `calibrated`, which is about reference correction
   """
   hasPhysicalSpace: Boolean
+
+  """
+  Filter by whether the dataset was converted out of a file: true for the series a converter read from an upload, false for data written straight in (by an app, an agent, a script). Pair `false` with `notDerived` for the acquired data that came without a file
+  """
+  hasSourceFile: Boolean
   id: ID
 
   """Filter by list of IDs"""
@@ -1065,6 +1138,7 @@ input ArrayDatasetFilter {
 }
 
 input ArrayDatasetOrder @oneOf {
+  acquisitionStart: Ordering
   createdAt: Ordering
   id: Ordering
   name: Ordering
@@ -1270,7 +1344,7 @@ type ArrayLens implements Lens {
   spec: [ArrayDatasetSpec!]!
 
   """
-  What a layer over this lens would answer for `renderAxes`, before any layer exists: which of the lens' axes face screen x, y, z, time and intensity under the default convention. A preview for opening a viewer on a bare lens; once a layer exists, its own `renderAxes` is the one to follow -- the mapping is the view's, not the selection's
+  Which of the lens' axes face screen x, y, z, time and intensity under the default convention (spatial axes by name when named x/y/z, else last is x). A suggestion for a bare lens, before anything places it: a viewer that has the lens' placement reads which axis faces which screen axis off that map and its own view, since the mapping is the view's, not the selection's
   """
   suggestedRenderAxes: RenderAxes!
 
@@ -1331,17 +1405,17 @@ One executable answer to 'what is under this point?': map the point along `path`
 """
 type AttributePlan {
   """
-  The FIELD edge this plan was built from. The plan's cache key is this edge's (id, version) together with every `path` step's transformation (id, version): the stores and columns of a table are written once, so a deleted or version-bumped edge -- the FIELD, or any step on the way to it -- is the only thing that can stale what a cached plan already says. What it can *reach* still grows: a matrix or a derived array created later extends the chain without touching any of these edges, so refetch when such data arrives
+  The key this plan was built from: the edge whose dereferencing FIELD part gives the id. The plan's cache key is this edge's (id, version) together with every `path` step's transformation (id, version): the stores and columns of a table are written once, so a deleted or version-bumped edge -- the key, or any step on the way to it -- is the only thing that can stale what a cached plan already says. What it can *reach* still grows: a matrix or a derived array created later extends the chain without touching any of these edges, so refetch when such data arrives
   """
-  edge: FieldTransformation!
+  edge: ByDimensionTransformation!
 
   """
-  The chain, in execution order. `hops[0]` is the landing: the table or matrix the FIELD edge's id keys, bound from `sample`. Each later hop crosses one declared reference from a parent hop, up to the query's `maxJoinDepth`. A client that only wants the landing reads `hops[0]`
+  The chain, in execution order. `hops[0]` is the landing: the table or matrix the key's id keys, bound from `sample`. Each later hop crosses one declared reference from a parent hop, up to the query's `maxJoinDepth`. A client that only wants the landing reads `hops[0]`
   """
   hops: [Hop!]!
 
   """
-  The steps from the PROBED system to this plan's root (the FIELD edge's input system -- equal to `sample.system` when the mask's own pixels are the map). Empty when the plan is rooted where you probed. Compose in order, inverting the flagged steps, to map a probed-space point into the space `consumes` and `passthrough` are stated in -- the same contract as `pathToWorld`. The path crosses derivations, levels, lenses and physical spaces, never a registration
+  The steps from the PROBED system to this plan's root (the key's input system -- equal to `sample.system` when the mask's own pixels are the map). Empty when the plan is rooted where you probed. Compose in order, inverting the flagged steps, to map a probed-space point into the space `consumes` and `passthrough` are stated in -- the same contract as `pathToWorld`. The path crosses derivations, levels, lenses and physical spaces, never a registration
   """
   path: [PlacementStep!]!
 
@@ -1685,23 +1759,14 @@ input BoundingBoxInput {
 The fields a BY_DIMENSION member of TransformInput reads. Published for codegen; the wire type is the flat TransformInput
 """
 input ByDimensionTransformInput {
-  affine: [[Float!]!] = null
-  inputAxes: [String!]!
   kind: CreatableTransformKind! = BY_DIMENSION
-  outputAxes: [String!]!
-  scale: [Float!] = null
-  translation: [Float!] = null
+  parts: [DimensionPartInput!]!
 }
 
 """
-A map over a named subset of the axes: `inputAxes` onto `outputAxes`, one for one, by a `scale` and/or a `translation`, or by an `affine` -- or by none of them, which is the identity on the named axes. The axes it does not name pass through untouched, which is how a registration crosses a rank boundary: a (c,y,x) dataset placed into a (t,z,y,x) world names y and x and says nothing about t and z
+Parts side by side, each mapping its own input axes onto its own output axes by one kind -- a pixel size on (y, x), the instants of each frame read from an array on t, a label mask's ids. Disjoint on both sides, so every axis has one map. An axis no part names is one the edge says nothing about: nothing passes through implicitly, which is how a registration crosses a rank boundary -- a (c,y,x) dataset placed into a (t,z,y,x) world names y and x and says nothing about c, t and z. `inputAxes` and `outputAxes` are the parts' axes, in part order
 """
 type ByDimensionTransformation implements Transformation {
-  """
-  The matrix over the named axes, M x (N+1) with rows outermost, in `outputAxes` x `inputAxes` order. Empty when the map is stated per axis or not at all. When present it is the whole map: a `scale` or `translation` beside it is not read
-  """
-  affine: [[Float!]!]!
-
   """
   (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
   """
@@ -1714,7 +1779,7 @@ type ByDimensionTransformation implements Transformation {
   input: CoordinateSystem!
 
   """
-  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
+  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about
   """
   inputAxes: [String!]!
 
@@ -1729,9 +1794,12 @@ type ByDimensionTransformation implements Transformation {
   output: CoordinateSystem!
 
   """
-  The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
+  The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z
   """
   outputAxes: [String!]!
+
+  """The parts, in order: each maps its own axes by one kind"""
+  parts: [TransformationPart!]!
 
   """
   Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports
@@ -1739,19 +1807,9 @@ type ByDimensionTransformation implements Transformation {
   provenanceEntries(pagination: OffsetPaginationInput): [ProvenanceEntry!]!
 
   """
-  The per-axis scale factors over the named axes, in `inputAxes` order. Empty when the map states none -- as `ScaleTransformation.scale` is shaped, so one fragment reads both
-  """
-  scale: [Float!]!
-
-  """
   Where along one axis this edge applies, or null for an edge that holds everywhere -- which is almost every edge. A per-channel correction is scoped to {axis: "c", index: 2}; several such edges over one axis are one piecewise map. A path query crosses a scoped edge only when it fixes that coordinate with `at`
   """
   selector: Selector
-
-  """
-  The per-axis offsets over the named axes, in `inputAxes` order. Empty when the map states none
-  """
-  translation: [Float!]!
 
   """
   How much this map is actually known: VALIDATED for a map the server derived (or one someone checked), INFERRED for numbers read from metadata, MANUAL for an authored registration, UNKNOWN for one its author marked as a guess. A layer's validity is the weakest edge on its path to world
@@ -2154,6 +2212,15 @@ input CollaborationObjectInput {
   object: ID!
 }
 
+"""One object of a batch, by the structure it is known by and its id"""
+input CollaborationObjectRef {
+  """The structure the object is known by: @mikro/arraydataset"""
+  identifier: String!
+
+  """The object's id"""
+  object: ID!
+}
+
 """
 One column a layer may be coloured or filtered by, and how it is reached. Both pickers read the same options: `colorBys` and `filterBys` turn on the same measure-vs-categorical split, so two lists would be two copies of one answer. Every option returned is one the mutation that publishes the picker accepts -- `createMeshLayer` over a collection, `createLabelLayer` over a lens -- and every column it omits is one that mutation refuses; that invariant is why this exists rather than a client filtering `attributePlans`, which walks a different set
 """
@@ -2474,6 +2541,8 @@ type Coordinate {
 The axis-agnostic hub that pins metadata spokes (microscope state, OME metadata, value histograms, channel labels, light paths, phasor distributions and calibrations) to specific coordinates of an array, table or sparse dataset. Exactly one of `dataset`, `table` and `sparse` is set
 """
 type CoordinateAnchor {
+  """When the data at these coordinates was acquired"""
+  acquisitionWindow: AcquisitionWindow
   channelLabel: ChannelLabel
 
   """
@@ -2525,6 +2594,7 @@ input CoordinateAnchorFilter {
 Input type for a coordinate anchor, which specifies a list of dimension anchors to anchor to
 """
 input CoordinateAnchorInput {
+  acquisitionWindow: AcquisitionWindowInput = null
   axisAnchors: [AxisAnchorInput!]!
   label: LabelInput = null
   lightGraph: LightpathGraphInput = null
@@ -2693,14 +2763,9 @@ enum CreatableTransformKind {
   AFFINE
 
   """
-  A map acting on a named subset of the axes and saying nothing about the rest. Takes `inputAxes` and `outputAxes`, and optionally `scale`, `translation` or `affine` acting on the named axes.
+  Parts side by side over named axes. Takes `parts`, each naming its `inputAxes` and `outputAxes` and mapping them by one `PartKind`; the axes no part names it says nothing about.
   """
   BY_DIMENSION
-
-  """
-  A non-affine map given by the values of an array rather than by a formula. Takes `field` (the array's coordinate system), `inputAxes` and `outputAxes`.
-  """
-  FIELD
 
   """
   The identity map. Input and output coordinates are the same, so it takes no parameters.
@@ -3593,6 +3658,21 @@ input DeleteTransformationInput {
 }
 
 """
+Anchors of a dataset that cannot all be true, found deriving one of its columns: an anchor contradicting one it holds over. The column is left null
+"""
+type DerivationConflict {
+  """The IDs of the anchors that contradict each other"""
+  anchors: [ID!]!
+
+  """The derived field the conflict left null, e.g. 'acquisition_start'"""
+  field: String!
+  id: ID!
+
+  """What the anchors say that cannot all be true"""
+  reason: String!
+}
+
+"""
 Which kind of thing a derivation names as the source its data was computed from: the discriminator of `DerivedFromInput`. The edge itself is the same whichever is chosen -- child space in, source space out -- so a table named as TABLE_DATASET and the same table named as COORDINATE_SYSTEM write the identical row; the read side reports what lives at the far end through `CoordinateSystem.residents`, not which member was used to say it
 """
 enum DerivationSourceKind {
@@ -3679,6 +3759,49 @@ input DerivedFromInput {
   What the derivation did to the *values* -- orthogonal to the transform's `kind`, which only says where the data sits: IDENTICAL for a crop or reorder (statistics transfer), TRANSFORMED for a deconvolution, a normalization, or a table of measurements read off an image, CATEGORIZED for a threshold or segmentation (values became labels -- a bootstrapped scene then renders as a label map). Omit when unstated; the algorithm itself belongs to task provenance
   """
   valueRelation: ValueRelation = null
+}
+
+"""One thing made from a `descendants` root, as a tile names it"""
+type DescendantNode {
+  """Hops below the root, at its nearest"""
+  depth: Int!
+
+  """Its ID, as its own query takes it"""
+  id: ID!
+
+  """`<kind>:<id>`, the same key `lineage` gives it"""
+  key: ID!
+
+  """What it is"""
+  kind: LineageNodeKind!
+
+  """
+  Its name; a mesh or network collection without one is named by its store's key
+  """
+  name: String!
+
+  """
+  The key of what it was made from on its nearest path to the root -- the root's own key one hop down -- so the nodes read as a tree
+  """
+  parent: ID!
+}
+
+"""
+What was made from one root: its descendants, without the edges, lenses or arrays `lineage` carries
+"""
+type Descendants {
+  """
+  Whether something made from it was left out -- past `down`, past `fanout` or past the shared `limit`. `lineage` rooted here walks on
+  """
+  more: Boolean!
+
+  """
+  Everything made from the root within `down` hops, nearest first, each once
+  """
+  nodes: [DescendantNode!]!
+
+  """The root's node key"""
+  root: ID!
 }
 
 """
@@ -3785,6 +3908,19 @@ input DeviceStateInput {
   """The device's identity in the setup, e.g. 'filter-wheel-1'"""
   label: String!
   settings: [SettingInput!]! = []
+}
+
+"""
+One part of a BY_DIMENSION: its own input axes onto its own output axes, by one kind. Each kind reads only its own field beside the axes -- `scale`, `translation`, `affine` or `field` -- and refuses any other
+"""
+input DimensionPartInput {
+  affine: [[Float!]!] = null
+  field: FieldInput = null
+  inputAxes: [String!]!
+  kind: PartKind!
+  outputAxes: [String!]!
+  scale: [Float!] = null
+  translation: [Float!] = null
 }
 
 """
@@ -3903,7 +4039,7 @@ enum ExtentState {
   KNOWN
 
   """
-  A FIELD edge on the path gives the map as the values of an array rather than as a formula, so there is no closed form to push a box through. The path is real and is returned; `invariance` reads DIFFEOMORPHIC.
+  A step on the path has no form to push a box through -- a key from pixels to a table's rows, or a FIELD inside a SEQUENCE. The path is real and is returned. A field map that places composes instead: its axes are left unbounded in the extent, which says nothing about them rather than something wrong.
   """
   NON_AFFINE
 
@@ -3986,79 +4122,45 @@ type FabriksUploadGrant {
 }
 
 """
-The fields a FIELD member of TransformInput reads. Published for codegen; the wire type is the flat TransformInput
+The array a FIELD part reads: a times array, a warp field, a label mask whose pixels are the ids of a table's rows. The array is read at a fractional position by linear interpolation of its sample centres, so a pyramid level's fractional index is still a position
 """
-input FieldTransformInput {
-  field: ID!
-  inputAxes: [String!]!
-  kind: CreatableTransformKind! = FIELD
-  outputAxes: [String!]!
+input FieldInput {
+  max: Float = null
+  min: Float = null
+  system: ID!
+  unit: String = null
 }
 
 """
-A non-affine map given by the values of an array rather than by a formula. The array is a `field`: a node of this graph, not a payload on this edge, so it keeps its own lineage and its axes say what its numbers mean. It has no closed-form inverse, so a placement path never walks it backwards
+The array a FIELD part reads, as its writer declared it. `values` says what the numbers are -- SCALAR (one value: a time, an id), COORDINATE (positions) or DISPLACEMENT (offsets) -- `spatial` whether it gives a SPACE axis (it bends straight lines, so drawing it needs the field evaluated), and `dereference` whether its values are ids keying the rows of a table rather than positions
 """
-type FieldTransformation implements Transformation {
+type FieldPart {
   """
-  (derivation edges into an annotation collection's space) The shape this data was computed along or within: the ROI a crop was cut to, the path an image was straightened along. Named with the ANNOTATION source of `derivedFrom`. A record of the act and no part of the map -- moving the shape afterwards moves nothing -- and null on every other edge, and once that shape is deleted: the edge then still says which collection
+  Whether its values are ids keying the rows of a table, so it places nothing
   """
-  annotation: Annotation
-  createdAt: DateTime!
-  creator: User
+  dereference: Boolean!
 
   """
-  The coordinate system of the array whose values are this map. Its value axis says what they mean: COORDINATE for absolute positions, DISPLACEMENT for offsets, none at all for a scalar array whose single value is a position. Equal to `input` when the array's own pixels are the map, as for a label mask keying a table of objects
+  The coordinate system of the array whose values are the map. Equal to the edge's `input` when the array's own pixels are the map, as for a label mask
   """
-  field: CoordinateSystem
-  id: ID!
+  field: CoordinateSystem!
 
-  """The system this edge maps from"""
-  input: CoordinateSystem!
+  """The largest value, as declared by the writer"""
+  max: Float
 
-  """
-  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
-  """
-  inputAxes: [String!]!
+  """The smallest value, as declared by the writer"""
+  min: Float
 
-  """
-  Which geometric properties survive this edge's map, derived from `kind`: ISOMETRY (distances, angles and areas all transfer), SIMILARITY (angles and length ratios transfer, absolute lengths scale by one common factor), AFFINE (parallelism and area ratios transfer, angles and distances do not), DIFFEOMORPHIC (topology at best, and only locally -- the Jacobian varies with position), NONE (nothing corresponds). A SEQUENCE is the weakest of its steps, a BY_DIMENSION reads the map it carries. Stated by kind, never by inspecting the numbers: an AFFINE edge reads AFFINE even when its matrix happens to be rigid, because separating those needs an SVD. A layer's `placementInvariance` is the minimum of this over its whole path to world
-  """
-  invariance: TransformInvariance!
-  kind: TransformKind!
-  name: String
-
-  """The system this edge maps to"""
-  output: CoordinateSystem!
+  """Whether it gives a SPACE axis: no matrix states such a map"""
+  spatial: Boolean!
 
   """
-  The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
+  The unit of the values, when stated; they are converted into the output axes' unit when read
   """
-  outputAxes: [String!]!
+  unit: String
 
-  """
-  Provenance entries for this edge: who authored it, and every refinement since. A refinement rewrites the edge in place, so this audit trail is where the placement's earlier states live -- and counting these rows along a chain is what `CoordinateSystem.transformVersion` reports
-  """
-  provenanceEntries(pagination: OffsetPaginationInput): [ProvenanceEntry!]!
-
-  """
-  Where along one axis this edge applies, or null for an edge that holds everywhere -- which is almost every edge. A per-channel correction is scoped to {axis: "c", index: 2}; several such edges over one axis are one piecewise map. A path query crosses a scoped edge only when it fixes that coordinate with `at`
-  """
-  selector: Selector
-
-  """
-  How much this map is actually known: VALIDATED for a map the server derived (or one someone checked), INFERRED for numbers read from metadata, MANUAL for an authored registration, UNKNOWN for one its author marked as a guess. A layer's validity is the weakest edge on its path to world
-  """
-  validity: PlacementValidity!
-
-  """
-  (derivation edges) What the operation this edge records did to the *values*, orthogonal to `kind`: IDENTICAL (a crop -- statistics transfer), TRANSFORMED (a deconvolution -- same quantity, new numbers), CATEGORIZED (a threshold -- values became labels, and a bootstrapped scene renders the data as a label map). Null when unstated, and never present on a registration -- values do not cross a claim between spaces
-  """
-  valueRelation: ValueRelation
-
-  """
-  How many times this edge has been written, counting the row that created it -- so a new edge reads 1. Only comparison is meaningful: this and the edge's `id` together are the cache key for anything derived from the edge, and a change means refetch. It counts the same provenance rows `provenanceEntries` lists, so the audit trail and the token cannot disagree; a rename moves it too, which errs towards refetching something that did not change rather than trusting something that did
-  """
-  version: Int!
+  """What the numbers are: SCALAR, COORDINATE or DISPLACEMENT"""
+  values: String!
 }
 
 """
@@ -4818,7 +4920,7 @@ enum HistoryKind {
 }
 
 """
-One step of a plan's chain through record-land. `hops[0]` is the landing -- the FIELD edge's own target, bound from `sample` -- and every later hop binds from the rows or slice its `parent` returned, under the name `via` states, and lands one declared reference further: a `Column.references`, a matrix axis a table identifies, the same axis walked into the matrix, or a dense array derived from a table with one of its enumerating axes mapped onto the table's row ids. Nothing hops out of an array. Execute in list order; a hop's parent always precedes it. `cardinality` says whether to bind a scalar or a list. The server describes the chain and reads nothing; the client runs it hop by hop with grants it already holds
+One step of a plan's chain through record-land. `hops[0]` is the landing -- the key's own target, bound from `sample` -- and every later hop binds from the rows or slice its `parent` returned, under the name `via` states, and lands one declared reference further: a `Column.references`, a matrix axis a table identifies, the same axis walked into the matrix, or a dense array derived from a table with one of its enumerating axes mapped onto the table's row ids. Nothing hops out of an array. Execute in list order; a hop's parent always precedes it. `cardinality` says whether to bind a scalar or a list. The server describes the chain and reads nothing; the client runs it hop by hop with grants it already holds
 """
 type Hop {
   """
@@ -5004,7 +5106,7 @@ type IdentityTransformation implements Transformation {
   input: CoordinateSystem!
 
   """
-  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
+  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about
   """
   inputAxes: [String!]!
 
@@ -5019,7 +5121,7 @@ type IdentityTransformation implements Transformation {
   output: CoordinateSystem!
 
   """
-  The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
+  The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z
   """
   outputAxes: [String!]!
 
@@ -5059,7 +5161,7 @@ The general image layer: array (lens) data rendered through a composable render 
 """
 type ImageLayer implements Layer {
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -5099,11 +5201,6 @@ type ImageLayer implements Layer {
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
 
-  """
-  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
-  """
-  renderAxes: RenderAxes!
-
   """The composable in-layer render graph, if this layer defines one"""
   renderGraph: LayerRenderGraph
   scene: Scene!
@@ -5140,7 +5237,7 @@ A single-channel lens through one colormap -- or one solid tint -- with contrast
 """
 type IntensityLayer implements Layer {
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -5185,11 +5282,6 @@ type IntensityLayer implements Layer {
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
   projectionMode: ProjectionMode
-
-  """
-  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
-  """
-  renderAxes: RenderAxes!
   scene: Scene!
   visible: Boolean!
 }
@@ -5377,7 +5469,7 @@ A layer that renders array (lens) data whose values are discrete object ids -- a
 """
 type LabelLayer implements Layer {
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -5421,11 +5513,6 @@ type LabelLayer implements Layer {
   How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
-
-  """
-  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
-  """
-  renderAxes: RenderAxes!
   scene: Scene!
   visible: Boolean!
 }
@@ -5609,7 +5696,7 @@ A layer placed in a scene and alpha-blended over the layers below it. It carries
 """
 interface Layer {
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -5726,7 +5813,7 @@ enum LayerKind {
   TRACK
 
   """
-  A vector layer rendering a vector-valued lens -- an optical flow, a deformation field, an orientation map -- as glyphs sampled from the grid. The sixth lens-backed kind, and the value axis is what makes it one: the lens carries a DISPLACEMENT axis whose positions are the components of a per-point offset, so the axis is read as geometry rather than composited as channels. Which axis that is is derived (`renderAxes.vector`), never stored; what the layer carries is view state -- a glyph style, a sampling stride, a magnitude scale and a magnitude colormap window. `glyphScale` maps a magnitude in the component axis's unit to a drawn length in scene units, so like `pointSize` it means something only from SIMILARITY up.
+  A vector layer rendering a vector-valued lens -- an optical flow, a deformation field, an orientation map -- as glyphs sampled from the grid. The sixth lens-backed kind, and the value axis is what makes it one: the lens carries a DISPLACEMENT axis whose positions are the components of a per-point offset, so the axis is read as geometry rather than composited as channels. Which axis that is is derived from the axis types (`vectorAxis`), never stored; what the layer carries is view state -- a glyph style, a sampling stride, a magnitude scale and a magnitude colormap window. `glyphScale` maps a magnitude in the component axis's unit to a drawn length in scene units, so like `pointSize` it means something only from SIMILARITY up.
   """
   VECTOR
 }
@@ -6844,7 +6931,7 @@ type MeshLayer implements Layer {
   activeFilterBys: [Int!]!
 
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -7231,6 +7318,11 @@ type ModelChange {
 }
 
 type Mutation {
+  """
+  Put several objects in a collaboration at once, each with what it needs to be seen; all or none. How a dataset goes in with what was derived from it
+  """
+  addManyToCollaboration(input: AddManyToCollaborationInput!): Collaboration!
+
   """
   Put an object in a collaboration, with what it needs to be seen: a scene brings the data its layers draw
   """
@@ -8080,7 +8172,7 @@ type NetworkLayer implements Layer {
   activeFilterBys: [Int!]!
 
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -8698,6 +8790,41 @@ type ParquetUploadGrant {
   uploadFormField: String!
 }
 
+"""
+The kind of one part of a BY_DIMENSION: how it maps its own input axes onto its own output axes.
+"""
+enum PartKind {
+  """
+  A general affine map. Takes `affine`, one row per output axis of the part and one column per input axis plus the offset.
+  """
+  AFFINE
+
+  """
+  A map given by the values of an array rather than by a formula. Takes `field`: the array's coordinate system (a node of this graph), and the unit and declared range of its values. Whether the values are absolute POSITIONS or per-point OFFSETS is read from the array's value axis -- COORDINATE or DISPLACEMENT -- and a scalar array gives one axis: a time, or an id. Values landing on an INDEX axis are ids, so the part is a key -- a label mask, whose own pixels are the map -- and places nothing. Not invertible in closed form, so a path never walks it backwards.
+  """
+  FIELD
+
+  """
+  The same positions, said twice: each input axis onto the output axis in the same place, converted between their units.
+  """
+  IDENTITY
+
+  """
+  A rotation. Takes `affine`: the orthonormal matrix, in the layout an AFFINE uses.
+  """
+  ROTATION
+
+  """
+  A per-axis multiplication. Takes `scale`, one entry per input axis of the part.
+  """
+  SCALE
+
+  """
+  A per-axis offset. Takes `translation`, one entry per input axis of the part.
+  """
+  TRANSLATION
+}
+
 type PermissionOption {
   label: String!
   value: ID!
@@ -8889,7 +9016,7 @@ One axis of a lens -- MICROTIME or SPECTRUM -- reduced per pixel to a phasor and
 """
 type PhasorLayer implements Layer {
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -8933,11 +9060,6 @@ type PhasorLayer implements Layer {
   How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
-
-  """
-  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
-  """
-  renderAxes: RenderAxes!
   scene: Scene!
   visible: Boolean!
 }
@@ -9058,6 +9180,58 @@ input PinholeElementInput {
 }
 
 """
+One destination axis of a placement given by an array's values: the world coordinate of a source position `x` (a vector over `AffinePlacement.inputAxes`) is `scale * field[inner · x](component) + base · x`, where `field` is the array of `dataset`, read at the fractional position each row of `inner` gives, one row per axis the array is indexed by, and `component` picks the value-axis position of a vector field (null for a scalar one). `inner` and `base` rows hold one coefficient per source axis and a final constant. `base` is the constant offset for a positions field and adds the source position for a DISPLACEMENT field. The array's values are the positions of the sample *centres*; between samples the map interpolates linearly, so a fractional index (a pyramid level's) is still a position. The server never reads the values: fetch the array and evaluate it. A field read along one source axis -- a lookup, the time of each frame -- also states `inputAxis`, `innerScale` and `innerOffset`, and its values strictly increase, so it can be inverted by binary search
+"""
+type PlacementField {
+  """
+  The affine part added to the scaled value: one coefficient per source axis plus a constant. Zero coefficients unless the field holds DISPLACEMENT offsets
+  """
+  base: [Float!]!
+
+  """
+  The value-axis position of a vector field (COORDINATE or DISPLACEMENT) this axis reads; null for a scalar field
+  """
+  component: Int
+
+  """
+  The dataset whose values are the map. Read its level-0 store to evaluate the field
+  """
+  dataset: ArrayDataset
+
+  """The coordinate system of the array whose values are the map"""
+  field: CoordinateSystem!
+
+  """
+  Source position to array position: one row per axis the array is indexed by, one coefficient per source axis plus a constant
+  """
+  inner: [[Float!]!]!
+
+  """For a lookup: source index to array index, the offset"""
+  innerOffset: Float
+
+  """For a lookup: source index to array index, the factor"""
+  innerScale: Float
+
+  """
+  For a field read along one source axis -- a lookup: that axis. Null otherwise
+  """
+  inputAxis: String
+
+  """
+  Array value to destination coordinate: the constant, `base`'s last entry
+  """
+  offset: Float!
+
+  """The destination axis this field gives"""
+  outputAxis: String!
+
+  """
+  Array value to destination coordinate: the factor, including the unit conversion from the array's values
+  """
+  scale: Float!
+}
+
+"""
 Whether a layer has a place in its scene's world, and if not, why not. Derived, never stored.
 """
 enum PlacementState {
@@ -9150,7 +9324,7 @@ type PointLayer implements Layer {
   activeFilterBys: [Int!]!
 
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -9202,9 +9376,6 @@ type PointLayer implements Layer {
   scene: Scene!
   sizeColumn: String
 
-  """The coordinate column whose axis is named 't', if any"""
-  tColumn: String
-
   """
   The table dataset the points are drawn from: the container of the lens. Its declared coordinate columns provide the coordinates and its own system provides the placement -- the column fields below are derived from its schema, never stored per layer
   """
@@ -9215,17 +9386,6 @@ type PointLayer implements Layer {
   The lens' windows as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open), on top of whatever `filterBys` are active. The selection the layer draws, derived from the lens and never stored; empty for a whole lens
   """
   windowFilters: [LabelFilterBy!]!
-
-  """
-  The coordinate column whose axis is named 'x', from the dataset's declared schema
-  """
-  xColumn: String
-
-  """The coordinate column whose axis is named 'y'"""
-  yColumn: String
-
-  """The coordinate column whose axis is named 'z', if any"""
-  zColumn: String
 }
 
 """A polarization filter, at an angle"""
@@ -9467,6 +9627,11 @@ type Query {
   """List data arrays (the multiscale zarr arrays backing array datasets)"""
   dataArrays(filters: DataArrayFilter, ordering: [DataArrayOrder!]! = [], pagination: OffsetPaginationInput): [DataArray!]!
 
+  """
+  What was made from each of many containers or files, `down` hops deep, in one walk: a page of tiles asks once rather than once per tile. Kind-blind like `lineage` -- a table uploaded on its own is a root just as a converted series is -- but downstream only, and without the edges, lenses and arrays `lineage` carries. `limit` is shared by every root; `fanout` caps the hops per node. A root another organization owns answers nothing, so the result can be shorter than `starts`
+  """
+  descendants(down: Int! = 3, fanout: Int! = 20, limit: Int! = 500, starts: [LineageRootInput!]!): [Descendants!]!
+
   """Get a single file by ID"""
   file(
     """The unique identifier of an object"""
@@ -9574,6 +9739,11 @@ type Query {
 
   """Get permissions for a specific object"""
   permissions(identifier: String!, object: ID!): [UserObjectPermission!]!
+
+  """
+  The newest parentless data, whatever its kind, newest first: what a home page lists. A root has no up-hop in `lineage` -- no derivation edge into another container and no file it was converted from; a file is one unless it was exported from a container. A file's converted series and a dataset's mask are not roots: they are reached from their parent, with `descendants`. Annotation collections are drawn rather than brought in and are never listed. `kinds` narrows it; the default is every other kind. `filters` narrows it further, by creator, collaboration, creation time and acquisition time
+  """
+  roots(filters: RootFilter = null, kinds: [LineageNodeKind!] = null, pagination: OffsetPaginationInput = null): [RootNode!]!
 
   """Get a single scene by ID"""
   scene(id: ID!): Scene!
@@ -9794,7 +9964,7 @@ Three single-channel lenses, each a crop of `lens`, as the red, green and blue c
 """
 type RgbLayer implements Layer {
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -9850,11 +10020,6 @@ type RgbLayer implements Layer {
   The single-channel lens drawn as red: a crop of `lens` with its channel axis at one position
   """
   redLens: ArrayLens!
-
-  """
-  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
-  """
-  renderAxes: RenderAxes!
   scene: Scene!
   visible: Boolean!
 
@@ -9862,6 +10027,67 @@ type RgbLayer implements Layer {
   Per-component gains [red, green, blue], multiplied into the components before the shared contrast limits. Null: no correction, the same as [1, 1, 1]
   """
   whiteBalance: [Float!]
+}
+
+"""What narrows `roots`. A field left out does not narrow"""
+input RootFilter {
+  """
+  Only what was acquired, at least in part, at or after this moment -- the same overlap as `ArrayDatasetFilter.acquiredAfter`. A file is judged by the series converted out of it; kinds with no acquisition time drop out
+  """
+  acquiredAfter: DateTime = null
+
+  """
+  Only what was acquired, at least in part, at or before this moment -- the same overlap as `ArrayDatasetFilter.acquiredBefore`. A file is judged by the series converted out of it; kinds with no acquisition time drop out
+  """
+  acquiredBefore: DateTime = null
+
+  """
+  Only what was put in this collaboration. A file counts when it, or a series converted out of it, was put there
+  """
+  collaboration: ID = null
+
+  """Only what was created at or after this moment"""
+  createdAfter: DateTime = null
+
+  """Only what was created at or before this moment"""
+  createdBefore: DateTime = null
+
+  """
+  Only what this user created, by their subject ID. Kinds that record no creator drop out
+  """
+  owner: ID = null
+
+  """
+  Only what is named with this text, anywhere in the name, ignoring case. A file also matches by the name of a series converted out of it. An unnamed mesh or network collection never matches
+  """
+  search: String = null
+
+  """
+  Only data satisfying every one of these specs, as `ArrayDatasetFilter.spec` reads them, e.g. [VOLUME, TIMESERIES]. A file is judged by the series converted out of it, and matches only when one series meets both this and the acquisition window; kinds that are not array data drop out
+  """
+  spec: [ArrayDatasetSpec!] = null
+}
+
+"""
+A piece of parentless data: nothing it was made from is recorded, so it is where a lineage starts
+"""
+type RootNode {
+  """When it was created"""
+  createdAt: DateTime
+
+  """Its ID, as its own query takes it"""
+  id: ID!
+
+  """`<kind>:<id>`, the same key `lineage` gives it"""
+  key: ID!
+
+  """What it is"""
+  kind: LineageNodeKind!
+
+  """
+  Its name; a mesh or network collection without one is named by its store's key
+  """
+  name: String!
 }
 
 """
@@ -9889,7 +10115,7 @@ type RotationTransformation implements Transformation {
   input: CoordinateSystem!
 
   """
-  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
+  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about
   """
   inputAxes: [String!]!
 
@@ -9904,7 +10130,7 @@ type RotationTransformation implements Transformation {
   output: CoordinateSystem!
 
   """
-  The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
+  The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z
   """
   outputAxes: [String!]!
 
@@ -10065,7 +10291,7 @@ type ScaleTransformation implements Transformation {
   input: CoordinateSystem!
 
   """
-  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
+  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about
   """
   inputAxes: [String!]!
 
@@ -10080,7 +10306,7 @@ type ScaleTransformation implements Transformation {
   output: CoordinateSystem!
 
   """
-  The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
+  The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z
   """
   outputAxes: [String!]!
 
@@ -10361,7 +10587,7 @@ type SequenceTransformation implements Transformation {
   input: CoordinateSystem!
 
   """
-  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
+  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about
   """
   inputAxes: [String!]!
 
@@ -10376,7 +10602,7 @@ type SequenceTransformation implements Transformation {
   output: CoordinateSystem!
 
   """
-  The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
+  The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z
   """
   outputAxes: [String!]!
 
@@ -11331,6 +11557,11 @@ input TableDatasetFilter {
 
   """Filter to tables that declare a column of this role, e.g. TRACK_ID"""
   hasColumnRole: ColumnRole
+
+  """
+  Filter by whether the table was converted out of a file: true for the tables a converter read from an upload, false for those written straight in
+  """
+  hasSourceFile: Boolean
   id: ID
 
   """Filter by list of IDs"""
@@ -11669,7 +11900,7 @@ A layer that renders trajectories (e.g. particle/cell tracks) from a table datas
 """
 type TrackLayer implements Layer {
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -11708,9 +11939,6 @@ type TrackLayer implements Layer {
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
   scene: Scene!
 
-  """The coordinate column whose axis is named 't', if any"""
-  tColumn: String
-
   """
   The table dataset the tracks are drawn from: the container of the lens. Its coordinate and TRACK_ID columns provide the trajectories -- the column fields below are derived from its schema, never stored per layer
   """
@@ -11724,17 +11952,6 @@ type TrackLayer implements Layer {
   The lens' windows as row filters, always applied: a row is drawn when every one keeps it (`min <= column <= max`, an omitted side open), on top of whatever `filterBys` are active. The selection the layer draws, derived from the lens and never stored; empty for a whole lens
   """
   windowFilters: [LabelFilterBy!]!
-
-  """
-  The coordinate column whose axis is named 'x', from the dataset's declared schema
-  """
-  xColumn: String
-
-  """The coordinate column whose axis is named 'y'"""
-  yColumn: String
-
-  """The coordinate column whose axis is named 'z', if any"""
-  zColumn: String
 }
 
 """
@@ -11769,15 +11986,10 @@ input TransferFunctionInput {
 One edge of the coordinate graph, as a discriminated union: `kind` selects a member, and only that member's fields are read -- any other supplied field is rejected, never dropped. The member inputs annotated `@unionElementOf(union: "TransformInput")` say which fields each kind reads. Direction is always forward, input -> output
 """
 input TransformInput {
-  """(AFFINE, ROTATION, BY_DIMENSION) The matrix, M x (N+1), rows outermost"""
+  """(AFFINE, ROTATION) The matrix, M x (N+1), rows outermost"""
   affine: [[Float!]!] = null
 
-  """(FIELD) The coordinate system of the array whose values are the map"""
-  field: ID = null
-
-  """
-  (MAP_AXIS, BY_DIMENSION, FIELD) The names of the input axes the edge acts on
-  """
+  """(MAP_AXIS) The names of the input axes the edge permutes"""
   inputAxes: [String!] = null
 
   """
@@ -11785,18 +11997,21 @@ input TransformInput {
   """
   kind: CreatableTransformKind!
 
-  """
-  (MAP_AXIS, BY_DIMENSION, FIELD) The names of the output axes they map onto
-  """
+  """(MAP_AXIS) The names of the output axes they map onto"""
   outputAxes: [String!] = null
+
+  """
+  (BY_DIMENSION) The parts, side by side, each mapping its own axes by one kind
+  """
+  parts: [DimensionPartInput!] = null
 
   """(UNMAPPABLE) Why nothing corresponds. Purely descriptive"""
   reason: String = null
 
-  """(SCALE, BY_DIMENSION) The per-axis scale factors"""
+  """(SCALE) The per-axis scale factors"""
   scale: [Float!] = null
 
-  """(TRANSLATION, BY_DIMENSION) The per-axis offsets"""
+  """(TRANSLATION) The per-axis offsets"""
   translation: [Float!] = null
 }
 
@@ -11840,14 +12055,9 @@ enum TransformKind {
   AFFINE
 
   """
-  A map acting on a named subset of the axes, and the identity on the rest.
+  Parts side by side, each mapping its own input axes onto its own output axes by one kind (`PartKind`) -- a pixel size on (y, x), the instants of each frame read from an array on t. An axis no part names is one the edge says nothing about: nothing passes through implicitly.
   """
   BY_DIMENSION
-
-  """
-  A non-affine map given by the values of an array rather than by a formula. The array is a `field`: a coordinate system, and so a node of this graph, not a payload on this edge. Whether its values are absolute POSITIONS or per-point OFFSETS is read from the value axis of that node -- COORDINATE or DISPLACEMENT -- never restated here. A label mask is the case where the field IS the input: its own pixels are the map. Not invertible in closed form, so a placement path never walks it backwards -- which is also the right semantics for a dereference, an object being a set of pixels.
-  """
-  FIELD
 
   """The identity map. Input and output coordinates are the same."""
   IDENTITY
@@ -11880,7 +12090,6 @@ enum TransformKind {
 enum TransformKindChoices {
   AFFINE
   BY_DIMENSION
-  FIELD
   IDENTITY
   MAP_AXIS
   ROTATION
@@ -11906,7 +12115,7 @@ interface Transformation {
   input: CoordinateSystem!
 
   """
-  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
+  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about
   """
   inputAxes: [String!]!
 
@@ -11921,7 +12130,7 @@ interface Transformation {
   output: CoordinateSystem!
 
   """
-  The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
+  The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z
   """
   outputAxes: [String!]!
 
@@ -11994,6 +12203,40 @@ input TransformationOrder @oneOf {
 }
 
 """
+One part of a BY_DIMENSION: its own input axes onto its own output axes, by one kind. Each kind fills only its own field: `scale`, `translation`, `affine`, or `field` for a FIELD
+"""
+type TransformationPart {
+  """
+  (AFFINE, ROTATION) One row per output axis, one column per input axis plus the offset; empty on any other kind
+  """
+  affine: [[Float!]!]!
+
+  """(FIELD) The array whose values are the map; null on any other kind"""
+  field: FieldPart
+
+  """
+  The input axes this part maps; for a FIELD, the axes its array is read along, in the array's own order
+  """
+  inputAxes: [String!]!
+
+  """How this part maps its axes"""
+  kind: PartKind!
+
+  """
+  The output axes they map onto; for a FIELD, the axes its values give, in value-axis order
+  """
+  outputAxes: [String!]!
+
+  """(SCALE) One factor per input axis of the part; empty on any other kind"""
+  scale: [Float!]!
+
+  """
+  (TRANSLATION) One offset per input axis of the part; empty on any other kind
+  """
+  translation: [Float!]!
+}
+
+"""
 One step of a SEQUENCE transformation: a kind and its parameters, in the axis order of the sequence's input. A step is not an edge -- it has no endpoints, no id and no history of its own -- so it is read here and refined nowhere: the sequence is the ingest's statement of a crop or a pyramid level, derived from the data's own shapes
 """
 type TransformationStep {
@@ -12001,11 +12244,6 @@ type TransformationStep {
   (AFFINE / ROTATION) The matrix, M x (N+1), rows outermost; empty on any other kind
   """
   affine: [[Float!]!]!
-
-  """
-  (FIELD) The coordinate system of the array whose values are this step's map
-  """
-  field: CoordinateSystem
 
   """
   The kind of this step, which fixes which of the parameters below is read
@@ -12048,7 +12286,7 @@ type TranslationTransformation implements Transformation {
   input: CoordinateSystem!
 
   """
-  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
+  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about
   """
   inputAxes: [String!]!
 
@@ -12063,7 +12301,7 @@ type TranslationTransformation implements Transformation {
   output: CoordinateSystem!
 
   """
-  The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
+  The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z
   """
   outputAxes: [String!]!
 
@@ -12137,7 +12375,7 @@ type UnmappableTransformation implements Transformation {
   input: CoordinateSystem!
 
   """
-  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION edge names only the subset of axes it acts on; the axes it does not name are the ones it leaves untouched
+  The names of the input axes this edge's parameters are ordered by. `scale`, `translation` and the columns of `affine` follow this order -- which is the input system's axis order, NOT the reading layer's axis names, and the two differ often enough that indexing the arrays against them silently misplaces them. A BY_DIMENSION's are its parts' input axes, in part order; an axis it does not name is one it says nothing about
   """
   inputAxes: [String!]!
 
@@ -12152,7 +12390,7 @@ type UnmappableTransformation implements Transformation {
   output: CoordinateSystem!
 
   """
-  The names of the output axes this edge produces. For a rank-changing BY_DIMENSION edge (placing a (c,y,x) dataset into a (t,z,y,x) world) this is the subset it maps onto; the world's other axes are untouched
+  The names of the output axes this edge produces. A BY_DIMENSION's are its parts' output axes, in part order: placing a (c,y,x) dataset into a (t,z,y,x) world names y and x, and says nothing about t and z
   """
   outputAxes: [String!]!
 
@@ -12561,6 +12799,7 @@ input UpdateTransformationInput {
   affine: [[Float!]!] = null
   id: ID!
   name: String = null
+  part: Int = null
   scale: [Float!] = null
   translation: [Float!] = null
   validity: PlacementValidity = null
@@ -12697,7 +12936,7 @@ A vector-valued lens -- an optical flow, a deformation field, an orientation map
 """
 type VectorLayer implements Layer {
   """
-  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. It errors rather than returning null when a path exists but does not condense: a FIELD step gives its map as the values of an array and has no closed form, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. Note that `placementInvariance` being AFFINE or stronger is necessary but not sufficient for this to succeed. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
   """
   asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
   blending: Blending!
@@ -12743,11 +12982,6 @@ type VectorLayer implements Layer {
   How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path
   """
   placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
-
-  """
-  Which axis of this layer's lens faces screen x, y, z, time and intensity (and which carries the phasor or the vector components). A convention of the *view*, which is why it is a field of the layer: a lens is a selection and a coordinate system is a container of axes, and neither chooses how it is looked at. Derived on every read from the axis types and names by the one server-side rule (`core.logic.coords.resolve_render_axes`), never stored, so two layers over one lens -- and two clients over one layer -- cannot transpose the axes differently. A lens has no such field: a selection does not choose how it is looked at
-  """
-  renderAxes: RenderAxes!
   scene: Scene!
 
   """
@@ -12912,7 +13146,7 @@ type ZarrUploadGrant {
 
 scalar _Any
 
-union _Entity = AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | FabriksStore | FieldTransformation | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
+union _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
 
 type _Service {
   sdl: String!

@@ -9,6 +9,7 @@ import {
   placementToSpatialAffine,
   spatialAxisTriple,
 } from "@/core/data/scene/coords/transformGraph";
+import { worldViewTriple } from "@/core/data/scene/coords/viewAxes";
 
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { padDegenerateAxes } from "@/core/data/scene/camera/cameraFit";
@@ -224,7 +225,7 @@ export function resolveCollectionMatrix(
   const composed = placementToSpatialAffine(
     layer.asAffine,
     spatial,
-    spatialAxisTriple(transformContext.worldCoordinateSystem),
+    worldViewTriple(transformContext),
   );
   return composed ? affineToMatrix4(composed) : new THREE.Matrix4().identity();
 }

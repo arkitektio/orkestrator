@@ -145,3 +145,90 @@ query AddLayerWindowLenses($space: ID!) {
     ...LayerLens
   }
 }
+
+# What was made from the containers a scene draws, as trees: one walk for all of
+# them (the home page's `descendants`), each node naming what it was made from.
+# The scene's "Add derived" list.
+query SceneDerived($starts: [LineageRootInput!]!, $down: Int! = 3) {
+  descendants(starts: $starts, down: $down) {
+    root
+    more
+    nodes {
+      key
+      kind
+      id
+      name
+      depth
+      parent
+    }
+  }
+}
+
+# For each derived child: the whole lens the Add layer form opens on, and the
+# space that lens lives in (whether the scene's world reaches it). The drawn
+# containers ride along for their names, the list's headings. One
+# constant-cost list per kind, as `HomeRootDetails`.
+query SceneDerivedDetails(
+  $datasets: [ID!]!
+  $tables: [ID!]!
+  $meshes: [ID!]!
+  $networks: [ID!]!
+  $annotations: [ID!]!
+  $hasDatasets: Boolean!
+  $hasTables: Boolean!
+  $hasMeshes: Boolean!
+  $hasNetworks: Boolean!
+  $hasAnnotations: Boolean!
+) {
+  arrayDatasets(filters: { ids: $datasets }, pagination: { limit: 100 }) @include(if: $hasDatasets) {
+    id
+    name
+    spec
+    fullLens {
+      id
+    }
+    intrinsicSystem {
+      id
+    }
+  }
+  tableDatasets(filters: { ids: $tables }, pagination: { limit: 100 }) @include(if: $hasTables) {
+    id
+    name
+    fullLens {
+      id
+    }
+    coordinateSystem {
+      id
+    }
+  }
+  meshCollections(filters: { ids: $meshes }, pagination: { limit: 100 }) @include(if: $hasMeshes) {
+    id
+    name
+    fullLens {
+      id
+    }
+    coordinateSystem {
+      id
+    }
+  }
+  networkCollections(filters: { ids: $networks }, pagination: { limit: 100 }) @include(if: $hasNetworks) {
+    id
+    name
+    fullLens {
+      id
+    }
+    coordinateSystem {
+      id
+    }
+  }
+  annotationCollections(filters: { ids: $annotations }, pagination: { limit: 100 }) @include(if: $hasAnnotations) {
+    id
+    name
+    fullLens {
+      id
+    }
+    coordinateSystem {
+      id
+    }
+  }
+}

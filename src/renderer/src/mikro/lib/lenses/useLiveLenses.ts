@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import type { DocumentNode } from "@apollo/client";
 import {
   ListLensesDocument,
   useWatchLensesSubscription,
@@ -8,6 +9,7 @@ import { LENS_KIND_ORDER } from "@/mikro/lenses";
 
 /** Lenses arriving in a burst (a task cutting a hundred crops) refetch once. */
 const REFETCH_DELAY_MS = 400;
+const DEFAULT_REFETCH = [ListLensesDocument];
 
 /**
  * Keep the lens lists on screen current: every lens someone else (or a task)
@@ -22,12 +24,15 @@ const REFETCH_DELAY_MS = 400;
  * - **delete** evicts the lens under each of its six possible typenames (the
  *   event carries only an id), and the lists drop the dangling reference.
  *
- * Mount it where a lens list is shown; mounting IS listening.
+ * Mount it where a lens list is shown; mounting IS listening. `refetch` names
+ * the queries a create refetches, for a page whose lists are not lens lists
+ * but grow with every new whole lens (a converted file's series).
  */
 export const useLiveLenses = ({
   kind,
   container,
-}: { kind?: LensKind; container?: string } = {}): void => {
+  refetch = DEFAULT_REFETCH,
+}: { kind?: LensKind; container?: string; refetch?: DocumentNode[] } = {}): void => {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
@@ -46,7 +51,7 @@ export const useLiveLenses = ({
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => {
           timer.current = null;
-          client.refetchQueries({ include: [ListLensesDocument] });
+          client.refetchQueries({ include: refetch });
         }, REFETCH_DELAY_MS);
       }
 

@@ -12,11 +12,11 @@ import { HomeEmpty, ModuleHome } from "@/core/layout/ModuleHome";
 import { HookFunction } from "@/core/layout/routes/ParamlessRoute";
 import { OperationVariables, QueryHookOptions } from "@apollo/client";
 import {
-  FileOrder,
+  HomeResultsDocument,
+  HomeRootDetailsDocument,
+  HomeRootsDocument,
   HomePageQuery,
   HomePageQueryVariables,
-  LensOrder,
-  Ordering,
   useHomePageQuery,
 } from "../api/graphql";
 
@@ -32,38 +32,37 @@ const useHomePageQueryForRoute: HookFunction<HomePageQuery, OperationVariables> 
   ) as unknown as ReturnType<HookFunction<HomePageQuery, OperationVariables>>;
 import { UploadDialog } from "../components/dialogs/UploadDialog";
 import { PinnedFolders } from "../components/folder/PinnedFolders";
-import FileList from "../components/lists/FileList";
-import { DataLensList } from "../components/lists/LensList";
+import { RecentData } from "../components/home/RecentData";
+import { HomeFilterBar, useHomeFilters } from "../components/home/HomeFilters";
+import { HomeResultsProvider } from "../components/home/homeResults";
 import { useLiveLenses } from "../lib/lenses/useLiveLenses";
 import { StatisticsSidebar } from "../components/sidebars/StatisticsSidebar";
 import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
 import { MIKRO_HELP } from "../help";
 
-/** Newest first: the dashboard shows what just arrived, the list pages the rest. */
-const RECENT_LENSES: LensOrder[] = [{ createdAt: Ordering.Desc }];
-const RECENT_FILES: FileOrder[] = [{ createdAt: Ordering.Desc }];
 /**
- * The whole lens of every container: one tile per dataset, table, mesh, …
- * Only what was brought in: a dataset computed from another (a mask, a
- * result) is reached from its source, not listed here.
+ * A converter writing a series creates its whole lens, and so does a task
+ * writing a mask or a table from one: those events are when a file's card
+ * gains an image or a result.
  */
-const RECENT_DATA = { sliced: false, notDerived: true } as const;
+const LIVE_REFETCH = [HomeRootsDocument, HomeRootDetailsDocument, HomeResultsDocument];
 
 /**
  * mikro's front door: where to go, then what is new.
  *
- * It used to be a browser of everything — search, sort and a date range over
- * every list. Those live on the list pages now, which this page links to
- * first (the same pages as the right-click card on mikro's rail tile). What
- * stays is the short list: pinned folders, the newest data, the newest files.
- * Each list's title opens its full page.
+ * The newest parentless data comes first, whatever its kind: an upload as a
+ * card holding the images converted out of it, an image or a table that came
+ * on its own as its own card. Then pinned folders. No lenses here: a tile is
+ * the dataset and opens the dataset's page. The filter row over the grid
+ * narrows it by who made it, the collaboration it is in, and when it was
+ * acquired or created; search and sort live on the list pages.
  */
 const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
-  // The data grid follows the server: an upload adds a whole lens.
-  useLiveLenses();
+  useLiveLenses({ refetch: LIVE_REFETCH });
   const performDataLayerUpload = useMikroBigFileUpload();
   const createFile = useCreateFile();
   const { startUpload } = useUpload();
+  const homeFilters = useHomeFilters();
 
   const handleFilesSelected = (files: File[]) => {
     files.forEach((file) => {
@@ -116,7 +115,7 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
         <ModuleHome
           moduleKey="mikro"
           title="Mikro"
-          description="Your images, tables, meshes and annotations in one place."
+          description="Your images, the files they came from, and everything else you brought in."
         >
           {isEmpty ? (
             <HomeEmpty title="No data yet">
@@ -124,18 +123,15 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
               in your first data.
             </HomeEmpty>
           ) : (
-            <>
+            // Every tile below asks what was made from it through one query.
+            <HomeResultsProvider>
+              {/* The filter row belongs to the grid it narrows, not to the page. */}
+              <div className="flex flex-col gap-3">
+                <HomeFilterBar filters={homeFilters} />
+                <RecentData filters={homeFilters.filters} onClear={homeFilters.clear} />
+              </div>
               <PinnedFolders />
-              {/* A tile IS its whole lens, so selecting tiles here is how a
-                  task is handed its input. */}
-              <DataLensList
-                title="Recent data"
-                filters={RECENT_DATA}
-                ordering={RECENT_LENSES}
-                defaultLimit={12}
-              />
-              <FileList title="Recent files" ordering={RECENT_FILES} defaultLimit={6} />
-            </>
+            </HomeResultsProvider>
           )}
         </ModuleHome>
       </UploadWrapper>

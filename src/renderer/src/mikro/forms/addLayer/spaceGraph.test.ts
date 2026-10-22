@@ -5,6 +5,7 @@ import {
   edge,
   graphFromSpaces,
   keyEdge,
+  warpEdge,
   lens,
   lineage,
   lineageDataset,
@@ -127,13 +128,12 @@ describe("graphFromComponent — the children tree", () => {
         [
           register("reg", "grid-mask", "world"),
           edge("m", "space-t", "grid-mask", { kind: "UNMAPPABLE" }),
-          // The key edge as the tree gives it: FIELD, mask → table, no field.
-          edge("key", "grid-mask", "space-t", { kind: "FIELD" }),
+          keyEdge("key", "grid-mask", "space-t"),
         ],
       ),
     );
     const key = graph.edges.get("key")!;
-    expect(isDereference(key, graph)).toBe(true);
+    expect(isDereference(key)).toBe(true);
     const mask = graph.nodes.get(datasetKey("mask"))!;
     expect(parentEdgesOf(graph, mask)).toEqual([]);
     expect(childEdgesOf(graph, mask).map((e) => e.id).sort()).toEqual(["key", "m"]);
@@ -180,17 +180,17 @@ describe("graphFromComponent — the children tree", () => {
 });
 
 describe("dereference edges", () => {
-  it("is a FIELD edge whose field is its input, and nothing else, when the field is known", () => {
+  it("is an edge whose FIELD part the server marks dereferencing, never a placing field", () => {
     const graph = graphFromSpaces([
       space("grid-mask", [
         datasetResident("mask", {
-          derivedFrom: [edge("warp", "grid-mask", "grid-raw", { kind: "FIELD", field: "grid-field" })],
+          derivedFrom: [warpEdge("warp", "grid-mask", "grid-raw", "grid-field")],
         }),
       ]),
       space("space-t", [table("t", { derivedFrom: [keyEdge("key", "grid-mask", "space-t")] })]),
     ]);
-    expect(isDereference(graph.edges.get("key")!, graph)).toBe(true);
-    expect(isDereference(graph.edges.get("warp")!, graph)).toBe(false);
+    expect(isDereference(graph.edges.get("key")!)).toBe(true);
+    expect(isDereference(graph.edges.get("warp")!)).toBe(false);
   });
 
   it("is a child of the mask it keys, never a parent of it", () => {

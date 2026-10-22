@@ -4,9 +4,9 @@ import { memo, useMemo } from "react";
 import {
   ColorMap,
   useUpdateTrackLayerMutation,
-  type SceneLayerFragment,
   type UpdateTrackLayerInput,
 } from "@/mikro/api/graphql";
+import type { SceneLayerFragment } from "../../platform/model/layerGuards";
 import { publishedMaxIndex, TIME_DIM } from "../../platform/model/dimExtents";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import {

@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 
 import type { DimExtent } from "../model/dimExtents";
+import type { AxisInstants } from "@/core/data/scene/coords/axisTime";
 import { useSceneStore } from "./sceneStore";
+import { useViewerStoreApi } from "./viewerStore";
 
 /**
  * Publish what this layer OBSERVED in its data, so a scrubber for it can exist.
@@ -35,4 +37,27 @@ export function usePublishDimExtents(layerId: string, extents: DimExtent[] | nul
     // `digest` STANDS FOR `extents` — the value the store actually compares.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [publish, layerId, digest]);
+}
+
+/**
+ * Publish a table-backed layer's timeline in WORLD units, when its time column
+ * reaches a world axis through `asAffine` — the counterpart of
+ * `usePublishDimExtents` for a layer the world slider scrubs instead of an index
+ * slider. Exactly one of the two should be non-null for a timed layer.
+ *
+ * Clears on unmount and while `instants` is null, like the extents.
+ */
+export function usePublishWorldTimeline(layerId: string, instants: AxisInstants | null): void {
+  const viewerApi = useViewerStoreApi();
+  const digest = instants
+    ? `${instants.worldAxis}:${instants.dim}:${instants.times.length}:${instants.times[0]}:${instants.times[instants.times.length - 1]}`
+    : "";
+
+  useEffect(() => {
+    const publish = viewerApi.getState().setLayerAxisInstants;
+    publish(layerId, instants ? [instants] : null);
+    return () => publish(layerId, null);
+    // `digest` STANDS FOR `instants`; the store compares by value anyway.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewerApi, layerId, digest]);
 }

@@ -44,6 +44,7 @@ import { BrickSystemProvider } from "../features/bricks/residency/BrickSystemPro
 import { VisibilityManager } from "./VisibilityManager";
 import { coldOpenTimeline } from "../platform/perf/coldOpenTimeline";
 import { BrickSystemHost } from "../features/bricks/residency/BrickSystemHost";
+import { WorldTimeHost } from "./WorldTimeHost";
 import { BrickResidencyOverlay } from "../features/bricks/BrickResidencyOverlay";
 import { SceneModeControls } from "./chrome/SceneModeControls";
 import { SceneShortcuts } from "./keyboard/SceneShortcuts";
@@ -379,6 +380,8 @@ export const SceneViewport = (props: {
             repack need no device — starting here overlaps the network with
             GPU setup. BrickSystemProvider (inside) binds the renderer. */}
         <BrickSystemHost />
+        {/* Where each layer's frames sit in world time; feeds the world slider. Renders null. */}
+        <WorldTimeHost />
         <SceneWrapper>
           <LongCommitProfiler id="scene-canvas">
           <ToneMappingSync />

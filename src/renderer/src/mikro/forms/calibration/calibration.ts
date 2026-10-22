@@ -116,17 +116,15 @@ export type CreateCalibrationVariables = {
     dataset: string;
     transform: {
       kind: "BY_DIMENSION";
-      scale: number[];
-      inputAxes: string[];
-      outputAxes: string[];
+      parts: { kind: "SCALE"; scale: number[]; inputAxes: string[]; outputAxes: string[] }[];
     };
   }[];
 };
 
 /**
- * The draft -> `CreateCoordinateSystemInput`. `axes`, `scale`, `inputAxes` and
- * `outputAxes` are built from one pass over one ordered list, so entry i of
- * each is the same axis by construction.
+ * The draft -> `CreateCoordinateSystemInput`: one SCALE part over every axis.
+ * `axes`, `scale`, `inputAxes` and `outputAxes` are built from one pass over one
+ * ordered list, so entry i of each is the same axis by construction.
  *
  * The calibration does not rename anything — the physical space keeps the
  * intrinsic axis names — so `inputAxes` and `outputAxes` are the same list.
@@ -151,9 +149,7 @@ export const buildCalibrationInput = (
         dataset: draft.dataset,
         transform: {
           kind: "BY_DIMENSION",
-          scale: draft.rows.map((row) => num(row.scale)),
-          inputAxes: axisNames,
-          outputAxes: axisNames,
+          parts: [{ kind: "SCALE", scale: draft.rows.map((row) => num(row.scale)), inputAxes: axisNames, outputAxes: axisNames }],
         },
       },
     ],

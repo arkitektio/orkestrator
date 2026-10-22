@@ -15,7 +15,8 @@ import { useFrom_File_LikeMutation } from "@/mikro/api/graphql";
  */
 export const useCreateFile = (folder?: string) => {
   const [createFile] = useFrom_File_LikeMutation({
-    refetchQueries: folder ? ["GetFiles", "Children"] : ["GetFiles"],
+    // HomeRoots: the home page lists the newest uploads among its recent data.
+    refetchQueries: folder ? ["GetFiles", "HomeRoots", "Children"] : ["GetFiles", "HomeRoots"],
   });
 
   const upload = async (file: File, key: string): Promise<UploadRefs | void> => {

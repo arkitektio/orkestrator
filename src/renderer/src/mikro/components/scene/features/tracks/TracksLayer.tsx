@@ -32,14 +32,16 @@ import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeome
 import { useAttributeServiceOrNull } from "@/mikro/lib/attributes/AttributeServiceProvider";
 import {
   placementToSpatialAffine,
-  spatialAxisTriple,
 } from "@/core/data/scene/coords/transformGraph";
-import type { SceneLayerFragment } from "@/mikro/api/graphql";
+import { worldViewTriple } from "@/core/data/scene/coords/viewAxes";
+import type { SceneLayerFragment } from "../../platform/model/layerGuards";
 import { affineToMatrix4 } from "../../platform/coords/worldTransform";
 import { paletteRowFor, DEFAULT_MEASURE_COLORMAP } from "../../platform/attributes/valueLut";
 import { TIME_DIM, type DimExtent } from "../../platform/model/dimExtents";
 import { useSceneStore } from "../../platform/stores/sceneStore";
-import { usePublishDimExtents } from "../../platform/stores/useLayerDimExtents";
+import { usePublishDimExtents, usePublishWorldTimeline } from "../../platform/stores/useLayerDimExtents";
+import { selectionsFor } from "../../platform/model/worldSelections";
+import { columnInstants } from "@/core/data/scene/coords/axisTime";
 import { useViewerStoreApi } from "../../platform/stores/viewerStore";
 import { createTrackMaterial, setTrackPalette } from "./tracksMaterial";
 import { bindCropUniforms } from "../../platform/gpu/cropNodes";
@@ -73,7 +75,8 @@ const TrackLines = ({ layer }: { layer: TrackLayerView }) => {
 
 
   // ------------------------------------------------------------------ placement
-  const worldSystem = useSceneStore((s) => s.transformContext.worldCoordinateSystem);
+  // The world's axes in SCREEN order: the rows of every placement (`viewAxes.ts`).
+  const transformContext = useSceneStore((s) => s.transformContext);
 
   /**
    * The same two-sided reduction the point layer does, and for the same reason:
@@ -88,10 +91,10 @@ const TrackLines = ({ layer }: { layer: TrackLayerView }) => {
         placementToSpatialAffine(
           layer.asAffine,
           [layer.xColumn ?? null, layer.yColumn ?? null, layer.zColumn ?? null],
-          spatialAxisTriple(worldSystem),
+          worldViewTriple(transformContext),
         ),
       ),
-    [layer.asAffine, layer.xColumn, layer.yColumn, layer.zColumn, worldSystem],
+    [layer.asAffine, layer.xColumn, layer.yColumn, layer.zColumn, transformContext],
   );
 
   // ------------------------------------------------------------------ the read
@@ -260,7 +263,9 @@ const TrackLines = ({ layer }: { layer: TrackLayerView }) => {
     const maxIndex = geometry?.timeline ? geometry.timeline.length - 1 : null;
     return bindField(
       viewerApi,
-      (state) => state.dimSelections[TIME_DIM],
+      // Through `selectionsFor`: on a world-timed table this is the timeline
+      // position at the world slider's instant, not a shared index.
+      (state) => selectionsFor(state, layer.id)[TIME_DIM],
       (selected) => {
         // No t column means no tail: a non-positive window is the material's
         // "draw the trajectory whole" sentinel.
@@ -273,7 +278,7 @@ const TrackLines = ({ layer }: { layer: TrackLayerView }) => {
         invalidate();
       },
     );
-  }, [bundle, geometry, tailWindow, invalidate, viewerApi]);
+  }, [bundle, geometry, tailWindow, invalidate, viewerApi, layer.id]);
 
   // The crop box: segments outside it fade to nothing in the material.
   useEffect(
@@ -303,7 +308,19 @@ const TrackLines = ({ layer }: { layer: TrackLayerView }) => {
     const maxIndex = timeline.length - 1;
     return [{ dim: TIME_DIM, maxIndex, defaultIndex: maxIndex }];
   }, [geometry, layer.visible]);
-  usePublishDimExtents(layer.id, timeExtents);
+  /**
+   * When the time column reaches a world axis (a row of `asAffine` reading only
+   * that column), the timeline is published in WORLD units instead and the index
+   * slider for it disappears: the world slider scrubs this layer together with
+   * every image on the same clock, whatever their sampling.
+   */
+  const worldTimeline = useMemo(() => {
+    const timeline = geometry?.timeline ?? null;
+    if (!timeline || !layer.tColumn || layer.visible === false) return null;
+    return columnInstants(layer.asAffine, layer.tColumn, TIME_DIM, timeline);
+  }, [geometry, layer.asAffine, layer.tColumn, layer.visible]);
+  usePublishWorldTimeline(layer.id, worldTimeline);
+  usePublishDimExtents(layer.id, worldTimeline ? null : timeExtents);
 
   if (layer.visible === false) return null;
   // Never mount a Line2 whose geometry has no segments: the shader would be

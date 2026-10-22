@@ -8,10 +8,12 @@ import { Input } from "@/core/ui/input";
 import { Check, Plus, Share2 } from "lucide-react";
 import { useState } from "react";
 import {
-  useAddToCollaborationMutation,
+  useAddManyToCollaborationMutation,
   useCreateCollaborationMutation,
   useGetCollaborationsQuery,
 } from "../api/graphql";
+import { DerivedDataPicker, useDerivedSelection } from "./collaboration/DerivedDataPicker";
+import { collaborationRefs } from "./collaboration/derivedSelection";
 
 /** What is being put in a collaboration: objects of mikro, by structure identifier and id. */
 export type CollaborationSubject = { identifier: string; id: string }[];
@@ -21,20 +23,27 @@ export type AddToCollaborationFormProps = { objects: CollaborationSubject };
 const describe = (objects: CollaborationSubject) =>
   objects.length === 1 ? "this object" : `${objects.length} objects`;
 
+const describeWith = (objects: CollaborationSubject, derived: number) =>
+  derived === 0 ? describe(objects) : `${describe(objects)} and ${derived} derived`;
+
 /**
  * Pick the collaboration to put objects in, or name a new one. What each object needs to be
- * seen (a scene's datasets, a dataset's stores) comes along: mikro puts that in too.
+ * seen (a scene's datasets, a dataset's stores) comes along: mikro puts that in too. What was
+ * derived from them (masks, measurements, meshes) goes in only as chosen under "Derived data".
  */
 export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps) => {
   const { openDialog } = useDialog();
   const [name, setName] = useState("");
   const [pending, setPending] = useState<string>();
   const { data, loading } = useGetCollaborationsQuery();
-  const [add] = useAddToCollaborationMutation({ refetchQueries: ["GetCollaborations", "GetCollaboration"] });
+  const [addMany] = useAddManyToCollaborationMutation({ refetchQueries: ["GetCollaborations", "GetCollaboration"] });
+  const derived = useDerivedSelection(objects);
+  const refs = collaborationRefs(objects, derived.picked);
+  const derivedCount = refs.length - objects.length;
   const [create] = useCreateCollaborationMutation({ refetchQueries: ["GetCollaborations"] });
 
   const holdsAll = (items: { identifier?: string | null; objectId: string }[]) =>
-    objects.every((object) => items.some((item) => item.identifier === object.identifier && item.objectId === object.id));
+    refs.every((object) => items.some((item) => item.identifier === object.identifier && item.objectId === object.id));
 
   // A failure stays in the dialog; the toast on success is for its Share action.
   const { submit } = useDialogSubmit(
@@ -47,9 +56,14 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
           if (!created) throw new Error("the collaboration was not created");
           collaboration = created;
         }
-        for (const object of objects) {
-          await add({ variables: { input: { collaboration: collaboration.id, identifier: object.identifier, object: object.id } } });
-        }
+        await addMany({
+          variables: {
+            input: {
+              collaboration: collaboration.id,
+              objects: refs.map((ref) => ({ identifier: ref.identifier, object: ref.id })),
+            },
+          },
+        });
         return collaboration;
       } finally {
         setPending(undefined);
@@ -58,7 +72,7 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
     {
       errorTitle: "Couldn't add to the collaboration",
       onSuccess: (collaboration) =>
-        toast.success(`Put ${describe(objects)} in ${collaboration.name}`, {
+        toast.success(`Put ${describeWith(objects, derivedCount)} in ${collaboration.name}`, {
           action: { label: "Share", onClick: () => openDialog("sharecollaboration", { collaboration: collaboration.id }, { size: "medium" }) },
         }),
     },
@@ -73,11 +87,12 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
       <DialogHeader>
         <DialogTitle>Add to Collaboration</DialogTitle>
         <DialogDescription>
-          Put {describe(objects)} in a collaboration. What it needs to be seen comes along; whoever the
-          collaboration is shared with sees nothing else.
+          Put {describe(objects)} in a collaboration. What it needs to be seen comes along, and what was
+          derived from it as chosen below; whoever the collaboration is shared with sees nothing else.
         </DialogDescription>
       </DialogHeader>
       <div className="mt-2 flex flex-col gap-2">
+        <DerivedDataPicker selection={derived} />
         <form
           className="flex items-center gap-2"
           onSubmit={(e) => {
@@ -86,7 +101,7 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
           }}
         >
           <Input placeholder="New collaboration…" value={name} onChange={(e) => setName(e.target.value)} />
-          <Button type="submit" variant="outline" disabled={!name.trim() || pending !== undefined} className="shrink-0 gap-2">
+          <Button type="submit" variant="outline" disabled={!name.trim() || pending !== undefined || derived.pending} className="shrink-0 gap-2">
             <Plus className="h-4 w-4" />
             Create
           </Button>
@@ -104,7 +119,7 @@ export const AddToCollaborationForm = ({ objects }: AddToCollaborationFormProps)
                 type="button"
                 variant="ghost"
                 className="justify-start gap-2"
-                disabled={already || pending !== undefined}
+                disabled={already || pending !== undefined || derived.pending}
                 onClick={() => void putIn(collaboration)}
               >
                 {already ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}

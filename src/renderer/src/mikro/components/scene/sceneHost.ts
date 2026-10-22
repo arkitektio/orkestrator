@@ -25,7 +25,7 @@ import { hostLayersKey, toHostLayers, type HostLayer } from "./platform/model/ho
 import { useModeStore, useModeStoreApi, type DisplayMode, type InteractionMode } from "./platform/stores/modeStore";
 import { useSceneStore, useSceneStoreApi, type SceneLayer } from "./platform/stores/sceneStore";
 import { useViewerStoreApi } from "./platform/stores/viewerStore";
-import { spatialAxisTriple } from "@/core/data/scene/coords/transformGraph";
+import { worldViewTriple } from "@/core/data/scene/coords/viewAxes";
 import { useMikro } from "@/mikro/api/funcs";
 import { useWatchSceneLayersSubscription } from "@/mikro/api/graphql";
 import { useSceneEventsApi } from "./platform/events/sceneEvents";
@@ -73,19 +73,24 @@ export const useSceneHostLayers = (): SceneHostLayer[] => {
   return useMemo(read, [read, key]);
 };
 
-/** The world every layer is placed in: its id, axes and [x, y, z] axis names. */
+/**
+ * The world every layer is placed in: its id, axes and the [x, y, z] axis
+ * names of SCREEN space — the world's own triple in the view's order, since a
+ * host's world-space deltas are taken on screen (`viewAxes.ts`).
+ */
 export const useSceneWorld = () => {
-  const world = useSceneStore((state) => state.transformContext.worldCoordinateSystem);
+  const transformContext = useSceneStore((state) => state.transformContext);
+  const world = transformContext.worldCoordinateSystem;
   const unit = useSceneStore((state) => state.spatialUnit);
   return useMemo(
     () => ({
       id: world?.id ?? null,
       name: world?.name ?? null,
       axes: (world?.axes ?? []).map((axis) => axis.name),
-      spatialTriple: spatialAxisTriple(world),
+      spatialTriple: worldViewTriple(transformContext),
       unit,
     }),
-    [world, unit],
+    [world, transformContext, unit],
   );
 };
 

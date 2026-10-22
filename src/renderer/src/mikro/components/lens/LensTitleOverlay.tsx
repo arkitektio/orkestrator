@@ -2,14 +2,7 @@ import { reportErrorAs } from '@/core/notify'
 import { useDialog } from '@/core/dialogs/registry'
 import { Badge } from '@/core/ui/badge'
 import { Button } from '@/core/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/core/ui/select'
-import { ChevronLeft, Pencil, Star } from 'lucide-react'
+import { ChevronLeft, Pencil } from 'lucide-react'
 import {
   DetailLensFragment,
   GetArrayDatasetQuery,
@@ -19,6 +12,7 @@ import { describeLens } from '../../lenses'
 import { baseDtypeOf } from '../../specs'
 import { INVERTED, InvertedText } from './InvertedText'
 import { LensContainerLink } from './LensContainerLink'
+import { SceneSwitcher } from '../scene/SceneSwitcher'
 
 type PageDataset = GetArrayDatasetQuery['arrayDataset']
 
@@ -123,57 +117,20 @@ export const LensTitleOverlay = ({
       {/* Below the title, full width: this is the page's only way to change
           which scene is drawn, so it gets the room to show a whole scene name
           rather than being squeezed alongside the heading. */}
-      {scenes.length > 0 ? (
-        <div className={`flex flex-row items-center gap-2 ${INVERTED}`}>
-          <Select value={activeSceneId} onValueChange={onSelectScene}>
-            <SelectTrigger className="h-7 w-[20%] border-white/60 bg-transparent dark:bg-transparent">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {scenes.map((scene) => (
-                <SelectItem key={scene.id} value={scene.id}>
-                  {scene.name}
-                  {/* Which one the lens opens on and takes its tile from —
-                      otherwise the nomination is invisible and "Make default"
-                      beside it reads as a toggle with no state. A star rather
-                      than the word: `SelectItem` children are cloned into the
-                      trigger, and the trigger is narrow enough that a second
-                      word in it would truncate the scene's name. */}
-                  {scene.id === defaultSceneId && (
-                    <Star
-                      className="h-3 w-3 shrink-0 text-muted-foreground"
-                      aria-label="default scene"
-                    />
-                  )}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Offered for whatever is on screen, because that is the picture
-              someone just decided they want to be the lens'. Hidden for the
-              nominated scene itself rather than disabled: there is nothing to
-              undo here — clearing a nomination is not a thing this page asks for. */}
-          {activeSceneId && activeSceneId !== defaultSceneId && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1.5 px-2 text-xs text-white hover:text-white"
-              disabled={nominating}
-              onClick={() =>
-                setDefaultScene({ variables: { lens: lens.id, scene: activeSceneId } }).catch(
-                  reportErrorAs("Couldn't make this the default scene")
-                )
-              }
-            >
-              <Star className="h-3.5 w-3.5" />
-              {nominating ? 'Setting…' : 'Make default'}
-            </Button>
-          )}
-        </div>
-      ) : (
-        <InvertedText className="text-xs">No scenes yet</InvertedText>
-      )}
+      <SceneSwitcher
+        scenes={scenes}
+        activeSceneId={activeSceneId}
+        defaultSceneId={defaultSceneId}
+        onSelectScene={onSelectScene}
+        nominating={nominating}
+        // Selecting `latestSnapshot` in the mutation is what makes this cheap:
+        // see the comment on `setDefaultScene` above.
+        onMakeDefault={(scene) =>
+          setDefaultScene({ variables: { lens: lens.id, scene } }).catch(
+            reportErrorAs("Couldn't make this the default scene")
+          )
+        }
+      />
 
       {sceneLoading && <InvertedText className="text-xs">Loading scene…</InvertedText>}
     </div>

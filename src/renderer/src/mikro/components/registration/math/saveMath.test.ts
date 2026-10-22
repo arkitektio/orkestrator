@@ -38,12 +38,14 @@ const byDimension: RegistrationEdgeLike = {
   output: WORLD,
   inputAxes: ["t", "y", "x"],
   outputAxes: ["t", "y", "x"],
-  transformations: [
-    { __typename: "ScaleTransformation", inputAxes: ["t"], scale: [60] },
+  parts: [
+    { kind: "SCALE", inputAxes: ["t"], outputAxes: ["t"], scale: [60], translation: [], affine: [] },
     {
-      __typename: "AffineTransformation",
+      kind: "AFFINE",
       inputAxes: ["y", "x"],
       outputAxes: ["y", "x"],
+      scale: [],
+      translation: [],
       affine: [
         [0.5, 0, 10],
         [0, 0.5, 20],
@@ -96,8 +98,8 @@ describe("planSave", () => {
     expect(plan.create.output).toBe("world");
     expect(plan.create.validity).toBe("MANUAL");
     expect(plan.create.transform.kind).toBe("BY_DIMENSION");
-    expect(plan.create.transform.inputAxes).toEqual(["t", "y", "x"]);
-    expect(plan.create.transform.affine?.[0]).toEqual([60, 0, 0, 0]); // the t row survived
+    expect(plan.create.transform.parts[0].inputAxes).toEqual(["t", "y", "x"]);
+    expect(plan.create.transform.parts[0].affine?.[0]).toEqual([60, 0, 0, 0]); // the t row survived
   });
 
   it("replaces, never updates, when the delta needs an axis the edge lacks", () => {
@@ -121,8 +123,8 @@ describe("planSave", () => {
     if (plan.kind !== "replace") throw new Error(plan.kind);
     expect(plan.because).toMatch(/did not cover/);
     // Re-ordered into the systems' axis order, not left appended.
-    expect(plan.create.transform.inputAxes).toEqual(["z", "y", "x"]);
-    expect(plan.create.transform.outputAxes).toEqual(["z", "y", "x"]);
+    expect(plan.create.transform.parts[0].inputAxes).toEqual(["z", "y", "x"]);
+    expect(plan.create.transform.parts[0].outputAxes).toEqual(["z", "y", "x"]);
     expectClose(reduce(plan.affine), mul(TILT, reduce({ inputAxes: flat.inputAxes!, outputAxes: flat.outputAxes!, matrix: flat.affine as number[][] })));
   });
 

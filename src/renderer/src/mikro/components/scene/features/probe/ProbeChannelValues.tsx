@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import type { LayerState } from "../../platform/model/layerModel";
 import type { ProbeResult } from "../../platform/probe/probeTypes";
 import { formatProbeValue } from "../../platform/probe/valueFormat";
+import { ProbeTime } from "./ProbeTime";
 import { useSceneStore, useSceneStoreApi } from "../../platform/stores/sceneStore";
 
 /**
@@ -79,6 +80,7 @@ export const ProbeChannelValues = memo(
           <span className="text-white/50">Voxel</span>
           <span className="font-mono text-white/90">[{probe.voxelIndex.join(", ")}]</span>
         </div>
+        <ProbeTime layerId={probe.layerId} />
 
         <div className="space-y-0.5 rounded border border-white/10 bg-white/5 px-2 py-1.5">
           {probe.strategy === "mesh" ? (

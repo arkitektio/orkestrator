@@ -18,6 +18,11 @@ fragment ChartAffine on AffinePlacement {
   inputAxes
   outputAxes
   total
+  # The chart's axis given by an array's values (irregular sampling) instead of
+  # a matrix row: placed, read from that array (`placeabilityOf`).
+  fields {
+    outputAxis
+  }
 }
 
 fragment ChartLayerCommon on ChartLayer {

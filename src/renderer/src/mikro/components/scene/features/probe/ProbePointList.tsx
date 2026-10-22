@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ProbeTime } from "./ProbeTime";
 import {
   useAttributeServiceOrNull,
   useAttributesAt,
@@ -174,6 +175,10 @@ const LegendRow = ({
   onRemove?: () => void;
 }) => {
   const { point, probe } = reading;
+  // A pinned point keeps the frame it was pinned on; the live one (no entry) follows the slider.
+  const pinnedCoords = useViewerStore(
+    (s) => s.probePoints.find((candidate) => candidate.id === point.id)?.coords ?? null,
+  );
   // A SCALAR selector: the name string is all the row needs.
   const layerName = useSceneStore(
     (s) => s.sceneLayers.find((candidate) => candidate.id === probe.layerId)?.name ?? "",
@@ -190,6 +195,7 @@ const LegendRow = ({
         </span>
       )}
       <span className="font-mono text-white/60">[{probe.voxelIndex.join(", ")}]</span>
+      <ProbeTime layerId={probe.layerId} coords={pinnedCoords} compact />
       {onRemove ? (
         <button
           className="rounded px-1 text-white/50 hover:bg-white/15 hover:text-white"

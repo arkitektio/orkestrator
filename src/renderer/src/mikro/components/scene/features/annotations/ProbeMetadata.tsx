@@ -1,4 +1,5 @@
 import { memo, useMemo, useState } from "react";
+import { selectionsFor } from "../../platform/model/worldSelections";
 import type { AxisCoords } from "@/mikro/lib/coords/axisPath";
 import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
 import { probeAxisCoords } from "../../platform/probe/probeCoords";
@@ -159,6 +160,8 @@ export const ProbeMetadata = () => {
   // The SETTLED live probe, never the hot field (P17).
   const liveProbe = useViewerStore((state) => state.probeReadout);
   const dimSelections = useViewerStore((state) => state.dimSelections);
+  const worldSelections = useViewerStore((state) => state.worldSelections);
+  const layerAxisInstants = useViewerStore((state) => state.layerAxisInstants);
   // The live probe's layer only, as a scalar-ish selector: its lens decides
   // the axis names the live coordinates are stated in.
   const liveLayer = useSceneStore((state) =>
@@ -192,7 +195,12 @@ export const ProbeMetadata = () => {
         name: "live",
         color: LIVE_PROBE_COLOR,
         layerId: liveProbe.layerId,
-        coords: probeAxisCoords(liveLayer, liveProbe.voxelIndex, dimSelections),
+        // The frame on screen for THIS layer: a world-timed dim has no scene-wide index.
+        coords: probeAxisCoords(
+          liveLayer,
+          liveProbe.voxelIndex,
+          selectionsFor({ dimSelections, worldSelections, layerAxisInstants }, liveLayer.id),
+        ),
       });
     }
     const groups = new Map<string, Reading[]>();
@@ -202,7 +210,7 @@ export const ProbeMetadata = () => {
       else groups.set(reading.layerId, [reading]);
     }
     return [...groups.entries()];
-  }, [points, liveProbe, liveLayer, dimSelections]);
+  }, [points, liveProbe, liveLayer, dimSelections, worldSelections, layerAxisInstants]);
 
   if (byLayer.length === 0) return <ActiveLayer />;
   return (

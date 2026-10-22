@@ -450,7 +450,7 @@ export const normalizeAnnotationLayer = (
 /** The line a card shows under an undrawn chart layer. */
 export const unplacedMessage = (p: Placeability): string | null => {
   if (p.drawable) {
-    return p.timeSource === "LOOKUP" ? "Placed by a map with no closed form — not drawn" : null;
+    return p.timeSource === "FIELD" ? "Placed through a field — not drawn yet" : null;
   }
   switch (p.reason) {
     case "conditional":

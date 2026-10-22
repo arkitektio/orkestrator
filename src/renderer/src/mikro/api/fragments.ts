@@ -100,7 +100,6 @@
     "Transformation": [
       "AffineTransformation",
       "ByDimensionTransformation",
-      "FieldTransformation",
       "IdentityTransformation",
       "MapAxisTransformation",
       "RotationTransformation",
@@ -114,6 +113,7 @@
       "Scene"
     ],
     "_Entity": [
+      "AcquisitionWindow",
       "AffineTransformation",
       "Animation",
       "AnimationWaypoint",
@@ -134,8 +134,8 @@
       "CoordinateAnchor",
       "CoordinateSystem",
       "DataArray",
+      "DerivationConflict",
       "FabriksStore",
-      "FieldTransformation",
       "File",
       "FileLink",
       "Folder",
