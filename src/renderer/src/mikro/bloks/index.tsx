@@ -138,7 +138,7 @@ export const MikroSceneLayersBlok = panel(
 );
 export const MikroSceneAnnotationsBlok = panel(
   "MikroSceneAnnotations",
-  "The scene's shapes and the selection, as the scene page's Annotations tab lists them. Placed inside a MikroScene.",
+  "The scene's annotation layers, each card with its shapes and the selection in it. Placed inside a MikroScene.",
   Parts.MikroSceneAnnotations,
 );
 export const MikroSceneProbeBlok = panel(

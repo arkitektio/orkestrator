@@ -13,8 +13,6 @@ import { useViewerStore } from "../../platform/stores/viewerStore";
 import { useBrickStore } from "../../features/bricks/store/brickSlice";
 import { unplaceableReason } from "../../platform/model/layerModel";
 import { UnplaceableNotice } from "./UnplaceableNotice";
-import { lensFamilyKey } from "../../platform/model/channelLens";
-import { LayerLensHeader, type HeaderLens } from "./LayerLensHeader";
 import { AddDerivedButton } from "./AddDerivedButton";
 
 const ADD_BUTTON =
@@ -27,34 +25,14 @@ const ADD_BUTTON =
 // card's whole render-graph editor subtree (measured 54–174 ms commits, the
 // sidebar's share of gesture jank).
 
-// The lens a card's layer reads. Every layer has one: an array lens for the
-// normalized `LayerState` kinds, a table, mesh, network or annotation lens on
-// the fragment the other cards consume straight. A fragment from before every
-// layer carried its lens (or an arm that selects none) simply has no header.
-const lensOf = (
-  _entry: AnyLayerCardEntry,
-  layer: LayerState | SceneLayerFragment,
-): HeaderLens | undefined => ("lens" in layer ? (layer.lens ?? undefined) : undefined);
-
-// The layer kinds whose renderer draws exactly what their lens selects: the
-// array kinds read through the lens' slices, and a point layer applies its
-// lens' windows as row filters. Tracks, meshes, networks and annotations do not
-// narrow to a windowed lens yet; their header says so (`drawnWhole`).
-const APPLIES_ITS_LENS: ReadonlySet<string> = new Set([
-  "ImageLayer",
-  "IntensityLayer",
-  "RgbLayer",
-  "PhasorLayer",
-  "LabelLayer",
-  "VectorLayer",
-  "PointLayer",
-]);
-
 export const LayerControlPanel = ({
   sceneId,
   variant = "floating",
+  kinds,
 }: {
   sceneId: string;
+  /** Only these layer kinds (`__typename`), and no add buttons. Left out, all. */
+  kinds?: readonly string[];
   /**
    * Where the panel is hosted. "floating" is the in-viewport overlay stack
    * (pointer events opt back in per card, height bounded by the column);
@@ -147,12 +125,15 @@ export const LayerControlPanel = ({
     // RENDERER reads. A layer appears exactly once: `source` on its registry
     // entry decides which list it is taken from, so the two passes cannot both
     // claim it.
+    const wanted = (typename: string) => !kinds || kinds.includes(typename);
     for (const layer of layers) {
+      if (!wanted(layer.__typename)) continue;
       const entry = LAYER_CARDS[layer.__typename];
       if (entry.source !== "layerState") continue;
       entries.push({ key: layer.id, rank: entry.rank, entry, layer });
     }
     for (const layer of sceneLayers) {
+      if (!wanted(layer.__typename)) continue;
       const entry = LAYER_CARDS[layer.__typename];
       if (entry.source !== "fragment") continue;
       entries.push({ key: layer.id, rank: entry.rank, entry, layer });
@@ -160,7 +141,7 @@ export const LayerControlPanel = ({
     // Stable within a rank: `sort` preserves the order each list was walked in,
     // which is scene order.
     return entries.sort((a, b) => a.rank - b.rank);
-  }, [layers, sceneLayers]);
+  }, [layers, sceneLayers, kinds]);
 
   // NO auto-expand: unfolding used to be space-derived (`fitsExpanded`), which
   // meant a rail resize could pop every editor open at once — mounting every
@@ -199,19 +180,7 @@ export const LayerControlPanel = ({
             width. `items-start` keeps an unfolded card from dragging its row
             mates taller. */}
         <div className="grid grid-cols-1 items-start gap-1 @2xl/layers:grid-cols-2 @5xl/layers:grid-cols-3">
-          {cards.map(({ key, entry, layer }, index) => {
-            // Cards are headed by the lens they read, once per run of cards
-            // over the same lens — a multi-channel dataset's layers are
-            // consecutive, so that is one line per lens, not one per layer.
-            // "The same lens" is the FAMILY: each channel layer has a lens of
-            // its own now (one channel of the dataset), and four of them are
-            // still one selection of one dataset to whoever reads this panel.
-            const lens = lensOf(entry, layer);
-            const previous = index > 0 ? cards[index - 1] : undefined;
-            const previousLens = previous ? lensOf(previous.entry, previous.layer) : undefined;
-            const startsLens =
-              lens !== undefined &&
-              (previousLens === undefined || lensFamilyKey(previousLens) !== lensFamilyKey(lens));
+          {cards.map(({ key, entry, layer }) => {
             // The row IS the button: selecting it unfolds the editor inline
             // within the same card (one border around header + body), rather
             // than popping a separate flyout window.
@@ -230,12 +199,6 @@ export const LayerControlPanel = ({
             const unplaceable = unplaceableReason(layer);
             return (
               <Fragment key={key}>
-                {startsLens && lens && (
-                  <LayerLensHeader
-                    lens={lens}
-                    drawnWhole={!APPLIES_ITS_LENS.has(layer.__typename ?? "")}
-                  />
-                )}
                 {unplaceable ? (
                   <div className="flex flex-col">
                     {renderLayerCard(entry, layer, common)}
@@ -249,6 +212,7 @@ export const LayerControlPanel = ({
           })}
         </div>
 
+        {!kinds && (
         <div className="mt-1 flex items-center gap-1 self-end">
           {/* What was computed from the layers above: the shortest way to the
               mask or the measurements of what is on screen. */}
@@ -262,6 +226,7 @@ export const LayerControlPanel = ({
             + Add layer
           </button>
         </div>
+        )}
       </div>
     </div>
     </LongCommitProfiler>

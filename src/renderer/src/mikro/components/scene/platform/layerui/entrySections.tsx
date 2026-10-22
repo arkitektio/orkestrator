@@ -400,7 +400,7 @@ const FilterByRow = memo(function FilterByRow({
           onClick={() => onToggleApply(index)}
           className="grid h-4 w-4 shrink-0 place-items-center rounded transition-colors hover:bg-white/10"
         >
-          <Filter className={`h-3 w-3 ${applied ? "text-sky-200" : "text-white/30"}`} />
+          <Filter className={`h-3 w-3 ${applied ? "text-brand-light" : "text-white/30"}`} />
         </button>
       }
       label={

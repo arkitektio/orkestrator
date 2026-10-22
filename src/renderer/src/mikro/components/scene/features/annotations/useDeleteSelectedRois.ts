@@ -18,7 +18,7 @@ export function selectionLayerIds(selected: readonly Pick<SelectedRoi, "layerId"
 /**
  * Delete every selected annotation, one mutation each, dropping only the
  * fulfilled ones from the selection — a partial failure leaves the failed
- * ROIs selected so the user can retry. Shared by the annotations panel's
+ * ROIs selected so the user can retry. Shared by the annotation layer card's
  * Delete button and the Backspace keybinding (`RoiDeleteKeybinding`).
  */
 export const useDeleteSelectedRois = (): {
@@ -40,7 +40,7 @@ export const useDeleteSelectedRois = (): {
     const layerIds = selectionLayerIds(selectedRois);
     if (layerIds.length > 1) {
       toast.warning(
-        `Selection spans ${layerIds.length} annotation collections — narrow it (or delete per collection from the annotations panel).`,
+        `Selection spans ${layerIds.length} annotation collections — narrow it to one layer's shapes first.`,
       );
       return;
     }

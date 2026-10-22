@@ -1,6 +1,6 @@
 import { reportErrorAs } from "@/core/notify";
 import { Button } from "@/core/ui/button";
-import { Eye, EyeOff, Save, Shapes, Spline, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Puzzle, Save, Spline, Trash2 } from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import {
   useUpdateLabelLayerMutation,
@@ -9,7 +9,6 @@ import {
 import { perfMonitor } from "../../platform/perf/perfMonitor";
 import { useSceneStore, type LayerState } from "../../platform/stores/sceneStore";
 import {
-  Badge,
   CardSection,
   IconToggle,
   LayerCardShell,
@@ -26,6 +25,8 @@ import {
 import { colorByEntryToInput, filterByEntryToInput } from "../../platform/layerui/columnOptions";
 import { resolveEntryInputs } from "../../platform/layerui/entryInputs";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
+import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
+import { LensButton } from "../../platform/layerui/LensButton";
 
 /**
  * The card for a `LabelLayer` — an array whose values are discrete object ids
@@ -141,7 +142,7 @@ const OutlineSection = memo(function OutlineSection({
               onClick={() => persistSetting({ contourWidth: width })}
               className={`rounded-md border px-1.5 py-0.5 text-[9px] leading-none transition-colors ${
                 Math.round(contourWidth) === width
-                  ? "border-sky-400/40 bg-sky-400/15 text-sky-100"
+                  ? "border-brand/40 bg-brand/15 text-brand-soft"
                   : "border-white/10 bg-black/30 text-white/45 hover:text-white/80"
               }`}
             >
@@ -345,15 +346,15 @@ export const LabelLayerCard = memo(
 
     return (
       <LayerCardShell
-        icon={<Shapes className="h-3 w-3 text-emerald-300" />}
+        icon={<Puzzle className="h-3 w-3 text-emerald-300" />}
         tile="bg-emerald-400/15"
         title={lens.dataset?.name?.trim() || `Labels ${layerId}`}
         hidden={hidden}
         expanded={expanded}
         onToggle={() => onSelect(layerId, expanded)}
-        badges={<Badge>labels</Badge>}
         actions={
           <>
+            <LensButton lens={layer.lens} className={LENS_BUTTON} />
             {/* The one server write — same affordance as the image layer card's
                 graph save: visible only while there is something to save. */}
             {dirty && (

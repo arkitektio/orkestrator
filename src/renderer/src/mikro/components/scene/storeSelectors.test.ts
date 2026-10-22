@@ -31,14 +31,13 @@ const SCENE = dirname(fileURLToPath(import.meta.url));
  *  - LayerControlPanel: the layer cards PREVIEW live values (a clim drag must
  *    move the card's own sliders), and every card is memo'd with stable
  *    handlers, so only the edited card actually re-renders.
- *  - MeshesPanel / AnnotationsPanel: subscribe to `sceneLayers`, which
+ *  - MeshesPanel: subscribes to `sceneLayers`, which
  *    churns on `patchSceneLayer` (card-cadence edits), never on a brick
  *    layer's contrast drag.
  */
 const KNOWN_WHOLE_ARRAY = new Set([
   "shell/layerPanel/LayerControlPanel.tsx",
   "features/meshes/MeshesPanel.tsx",
-  "features/annotations/AnnotationsPanel.tsx",
 ]);
 
 const walk = (dir: string, out: string[] = []): string[] => {

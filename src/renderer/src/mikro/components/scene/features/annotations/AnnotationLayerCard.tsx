@@ -1,5 +1,5 @@
 import { Button } from "@/core/ui/button";
-import { Eye, EyeOff, Radio, Shapes, Trash2 } from "lucide-react";
+import { Eye, EyeOff, Radio, SquareDashed, Trash2 } from "lucide-react";
 import { memo, useMemo } from "react";
 import { type SceneLayerFragment } from "@/mikro/api/graphql";
 import { useSceneAnnotations } from "./sceneVectors";
@@ -14,15 +14,17 @@ import {
   RowLabel,
   formatCount,
 } from "@/core/data/scene/layerui/cardControls";
+import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
+import { LensButton } from "../../platform/layerui/LensButton";
+import { AnnotationList, AnnotationSelection } from "./AnnotationList";
 
 /**
  * A compact card for an `AnnotationLayer` in the Layers panel.
  *
- * Scope on purpose: this is the card for the LAYER, not for its shapes. The
- * Annotations sidebar tab already lists every annotation with its measure and
- * a go-to button; repeating that here would give the same list two homes that
- * can disagree. What the Layers panel answers is what it answers for every
- * other layer — is it on, what is in it, and what is it.
+ * The card for the layer AND its shapes: what used to be the Annotations
+ * sidebar tab lives here now (`AnnotationList`). The shapes selected in the
+ * scene sit under the header whether the card is folded or not; every shape,
+ * with its measure, actions and a go-to, is in the fold.
  *
  * Every control is a SESSION-LOCAL patch (`patchSceneLayer`): there is no
  * `updateAnnotationLayer` mutation, so visibility lives for the session and no
@@ -103,9 +105,22 @@ export const AnnotationLayerCard = memo(
 
     const total = annotations?.length ?? 0;
 
+    // The whole selection (a stable array, rewritten only on a selection
+    // change), narrowed here: a selector that filtered would return a new
+    // array on every store write, `visibleRois` included (P17).
+    const selectedRois = useRoiSelectionStore((s) => s.selectedRois);
+    const selectedHere = useMemo(
+      () => selectedRois.filter((roi) => roi.layerId === layer.id),
+      [selectedRois, layer.id],
+    );
+    const selectedIds = useMemo(
+      () => new Set(selectedHere.map((roi) => roi.id)),
+      [selectedHere],
+    );
+
     return (
       <LayerCardShell
-        icon={<Shapes className="h-3 w-3 text-amber-300" />}
+        icon={<SquareDashed className="h-3 w-3 text-amber-300" />}
         tile="bg-amber-400/15"
         title={
           collection?.name?.trim() ||
@@ -114,6 +129,13 @@ export const AnnotationLayerCard = memo(
         hidden={hidden}
         expanded={expanded}
         onToggle={() => onSelect(layer.id, expanded)}
+        pinned={
+          <AnnotationSelection
+            annotations={annotations}
+            selected={selectedHere}
+            selectedTotal={selectedRois.length}
+          />
+        }
         // The one fact a user can get nowhere else, kept out from behind the
         // fold: shapes are pinned to discrete coordinates, so a fully visible
         // layer can still draw nothing on the current slice.
@@ -135,12 +157,13 @@ export const AnnotationLayerCard = memo(
         }
         actions={
           <>
+            <LensButton lens={layer.lens} className={LENS_BUTTON} />
             {collection && (
               <Button
                 variant="ghost"
                 size="icon"
                 className={`h-5 w-5 shrink-0 ${
-                  live ? "text-sky-300 hover:text-sky-200" : "text-white/45 hover:text-white/90"
+                  live ? "text-brand-light hover:text-brand-light" : "text-white/45 hover:text-white/90"
                 }`}
                 title={
                   live
@@ -205,6 +228,10 @@ export const AnnotationLayerCard = memo(
             </>
           )}
         </div>
+
+        {collection && annotations && annotations.length > 0 && (
+          <AnnotationList layer={layer} annotations={annotations} selectedIds={selectedIds} />
+        )}
 
         {/* What the layer actually is: the collection it draws and the frame
             its vectors live in — the two facts that explain where the shapes

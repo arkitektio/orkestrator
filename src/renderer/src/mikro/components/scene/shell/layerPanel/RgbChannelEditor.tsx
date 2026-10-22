@@ -295,7 +295,7 @@ export const RgbChannelEditor = ({
                         onClick={() => pick(slot, candidate.index)}
                         className={`flex items-center gap-1.5 rounded px-1 py-0.5 text-left text-[10px] transition-colors ${
                           candidate.index === plane.index
-                            ? "bg-sky-400/20 text-sky-100"
+                            ? "bg-brand/20 text-brand-soft"
                             : "text-white/60 hover:bg-white/5 hover:text-white/85"
                         }`}
                       >

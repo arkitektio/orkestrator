@@ -40,7 +40,7 @@ const DESIGN_EDIT_MAX_INDICES = 6_000_000;
  *
  * Mesh selection is a scene-wide SINGLETON (`viewerStore.meshSelection`), so a
  * row click replaces the selection rather than accumulating one — the opposite
- * of the annotations panel's multi-select, and the same thing a probe click on
+ * of the annotation cards' multi-select, and the same thing a probe click on
  * the canvas does.
  */
 
@@ -403,7 +403,7 @@ const MeshLayerSection = ({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Filter by object id"
-            className="h-6 w-full rounded-md border border-white/10 bg-black/30 px-2 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-sky-400/40"
+            className="h-6 w-full rounded-md border border-white/10 bg-black/30 px-2 text-xs text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-brand/40"
           />
           {matches.length > ROW_CAP && (
             <div className="px-0.5 text-[10px] text-muted-foreground/60">
@@ -447,7 +447,7 @@ const MeshObjectRow = ({
     className={`group flex flex-row cursor-pointer items-center gap-2 px-2 py-1 transition-colors ${
       isSelected
         ? // Sky — the mesh card's selection color, not the annotations' amber.
-          "border-sky-400/40 bg-sky-400/10"
+          "border-brand/40 bg-brand/10"
         : "hover:bg-accent/50"
     }`}
     title={isSelected ? "Click to deselect" : "Click to select"}

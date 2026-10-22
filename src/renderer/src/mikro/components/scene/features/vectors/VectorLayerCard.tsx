@@ -31,6 +31,7 @@ import { useSceneStore } from "../../platform/stores/sceneStore";
 import {
   Badge,
   CardSection,
+  LayerTile,
   OpacityRow,
   RowLabel,
 } from "@/core/data/scene/layerui/cardControls";
@@ -38,6 +39,8 @@ import { ColormapSelect } from "@/core/data/scene/layerui/ColormapSelect";
 import { CONTINUOUS_COLORMAP_CHOICES } from "../../platform/layerui/colormap-utils";
 import type { VectorLayerFragment } from "../../platform/model/layerGuards";
 import { useOptimisticLayerPatch } from "../../platform/layerui/useOptimisticLayerPatch";
+import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
+import { LensButton } from "../../platform/layerui/LensButton";
 
 type VectorPatch = Omit<UpdateVectorLayerInput, "id">;
 
@@ -73,13 +76,14 @@ export const VectorLayerCard = memo(
       >
         {/* ------------------------------------------------ header --------- */}
         <div className="flex items-center gap-1.5 px-2 py-1.5">
-          <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-teal-400/15">
+          <LayerTile tint="bg-teal-400/15">
             <Wind className="h-3 w-3 text-teal-300" />
-          </span>
+          </LayerTile>
           <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-white/90">
             {layer.name?.trim() || layer.lens.dataset.name?.trim() || `Vectors ${layer.id}`}
           </span>
 
+          <LensButton lens={layer.lens} className={LENS_BUTTON} />
           <Button
             variant="ghost"
             size="icon"

@@ -35,7 +35,6 @@ const DetailPage = asDetailQueryRoute(
           additionalSidebars={
             <>
               <Sidebars.Tab label="Layers"><Scene.LayersSidebar /></Sidebars.Tab>
-              <Sidebars.Tab label="Annotations"><Scene.AnnotationsSidebar /></Sidebars.Tab>
               <Sidebars.Tab label="Probe"><Scene.ProbeSidebar /></Sidebars.Tab>
               {/* Only when there is something to list — see Scene.hasMeshLayer. */}
               {Scene.hasMeshLayer(data.scene) && (

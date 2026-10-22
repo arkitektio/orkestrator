@@ -68,9 +68,6 @@ const Page = asDetailQueryRoute(useGetAnnotationQuery, ({ data }) => {
             <Sidebars.Tab label="Layers">
               <Scene.LayersSidebar />
             </Sidebars.Tab>
-            <Sidebars.Tab label="Annotations">
-              <Scene.AnnotationsSidebar />
-            </Sidebars.Tab>
             <Sidebars.Tab label="Probe">
               <Scene.ProbeSidebar />
             </Sidebars.Tab>

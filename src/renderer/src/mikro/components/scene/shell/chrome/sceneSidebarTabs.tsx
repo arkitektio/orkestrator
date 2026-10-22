@@ -2,7 +2,6 @@ import { SceneGuard, useSceneScopeStatus } from "../SceneProvider";
 import { SceneResultSink } from "../../features/results/SceneResultSink";
 import { useSceneStore } from "../../platform/stores/sceneStore";
 import { AnimationPanel } from "../../features/animation/AnimationPanel";
-import { AnnotationsPanel } from "../../features/annotations/AnnotationsPanel";
 import { ProbeMetadata } from "../../features/annotations/ProbeMetadata";
 import { LayerControlPanel } from "../layerPanel/LayerControlPanel";
 import { MeshesPanel } from "../../features/meshes/MeshesPanel";
@@ -59,14 +58,25 @@ export const SceneAnimationsSidebar = () => (
   </SceneGuard>
 );
 
-/** Every annotation in the scene, with selection details, as a sidebar tab. */
+/**
+ * The scene's annotation layers — their cards, each with its shapes and the
+ * selection in it. No page mounts this as a tab any more (the Layers tab has
+ * the same cards); it stays for the `MikroSceneAnnotations` blok part.
+ */
 export const SceneAnnotationsSidebar = () => (
   <SceneGuard fallback={<SidebarFallback />}>
     <SceneResultSink>
-    <AnnotationsPanel variant="sidebar" />
+    <SceneAnnotationLayersBody />
     </SceneResultSink>
   </SceneGuard>
 );
+
+const ANNOTATION_KINDS = ["AnnotationLayer"] as const;
+
+const SceneAnnotationLayersBody = () => {
+  const sceneId = useSceneStore((s) => s.id);
+  return <LayerControlPanel sceneId={sceneId} variant="sidebar" kinds={ANNOTATION_KINDS} />;
+};
 
 /**
  * Every mesh instance in the scene, as a sidebar tab. Hosts mount it only when

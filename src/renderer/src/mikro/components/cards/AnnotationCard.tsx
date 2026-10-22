@@ -11,13 +11,13 @@ interface Props {
   item: ListAnnotationFragment;
 }
 
-/** `RECTANGLE` → `Rectangle`. Mirrors the annotations panel's own formatter. */
+/** `RECTANGLE` → `Rectangle`. Mirrors the annotation layer card's own formatter. */
 const formatAnnotationKind = (kind: string) =>
   kind.charAt(0) + kind.slice(1).toLowerCase().replaceAll("_", " ");
 
 /**
  * The KIND leads, because an annotation's name does not: the labels are
- * machine-minted (`AnnotationsPanel` refuses to show them at all, and numbers
+ * machine-minted (`AnnotationList` refuses to show them at all, and numbers
  * its rows instead). So the card is the three facts that place a shape without
  * its geometry — what kind it is, which slices it is pinned to, and where it
  * was drawn.

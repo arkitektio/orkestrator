@@ -7,8 +7,8 @@
  *    body every kind shares. A card supplies its identity and its sections;
  *    the shell owns the border, the fold and the click-to-toggle header.
  *  - SEGMENTED groups (`SegmentGroup` + `Segment`) for mutually-exclusive
- *    choices: one joined pill, the active segment filled sky.
- *  - ICON TOGGLES (`IconToggle`) for independent booleans: icon + label, sky
+ *    choices: one joined pill, the active segment filled in the brand.
+ *  - ICON TOGGLES (`IconToggle`) for independent booleans: icon + label, brand
  *    when on, muted when off.
  *  - `CardSection` for a titled block: the label sits ABOVE its controls, the
  *    way the image card's render-graph editor stacks its groups, so a control
@@ -44,6 +44,20 @@ export const layerCardShellClasses = (expanded: boolean, hidden: boolean): strin
   } ${hidden ? "opacity-50" : ""}`;
 
 /**
+ * The leading tile of every layer card: a squircle (`corner-shape`, a plain
+ * rounded square where unsupported) tinted by the kind, its mark inside. One
+ * component, so the image cards' drawn mark and the other kinds' glyphs read
+ * as one set.
+ */
+export const LayerTile = ({ tint, children }: { tint: string; children: React.ReactNode }) => (
+  <span
+    className={`grid h-5 w-5 shrink-0 place-items-center rounded-[50%] [corner-shape:squircle] ${tint}`}
+  >
+    {children}
+  </span>
+);
+
+/**
  * The collapsible card every collection- and table-backed layer kind wears —
  * the sibling of the brick-backed cards' `LayerRow`-headed collapsible, built
  * from the same pieces so the panel reads as one list.
@@ -65,6 +79,7 @@ export const LayerCardShell = ({
   title,
   badges,
   actions,
+  pinned,
   hidden,
   expanded,
   onToggle,
@@ -79,6 +94,11 @@ export const LayerCardShell = ({
   badges?: React.ReactNode;
   /** Trailing header buttons. Clicks here never toggle the fold. */
   actions?: React.ReactNode;
+  /**
+   * Under the header whether folded or not: what the user is in the middle of
+   * (the shapes they selected in the scene) must not hide behind a fold.
+   */
+  pinned?: React.ReactNode;
   hidden: boolean;
   expanded: boolean;
   onToggle: () => void;
@@ -90,9 +110,7 @@ export const LayerCardShell = ({
       title={expanded ? "Collapse the layer's controls" : "Unfold the layer's controls"}
       onClick={onToggle}
     >
-      <span className={`grid h-5 w-5 shrink-0 place-items-center rounded ${tile}`}>
-        {icon}
-      </span>
+      <LayerTile tint={tile}>{icon}</LayerTile>
       <span
         className="min-w-0 flex-1 truncate text-[11px] font-medium text-white/90"
         title={title}
@@ -107,6 +125,7 @@ export const LayerCardShell = ({
         {actions}
       </div>
     </div>
+    {pinned}
     <CollapsibleContent className="overflow-hidden">
       <div className="flex flex-col border-t border-white/10">{children}</div>
     </CollapsibleContent>
@@ -199,7 +218,7 @@ export const EntryRow = ({
   <div
     className={`rounded-md border transition-colors ${
       active
-        ? "border-sky-400/40 bg-sky-400/15"
+        ? "border-brand/40 bg-brand/15"
         : "border-white/10 bg-black/30 hover:border-white/20 hover:bg-white/5"
     }`}
   >
@@ -215,7 +234,7 @@ export const EntryRow = ({
         <span className="min-w-0 flex-1">
           <span
             className={`block truncate text-[10px] leading-tight ${
-              active ? "font-medium text-sky-100" : "text-white/70"
+              active ? "font-medium text-brand-soft" : "text-white/70"
             }`}
           >
             {label}
@@ -285,7 +304,7 @@ export const Segment = ({
     onClick={onClick}
     className={`px-1.5 py-0.5 text-[9px] leading-none transition-colors ${
       active
-        ? "bg-sky-400/25 font-medium text-sky-100"
+        ? "bg-brand/25 font-medium text-brand-soft"
         : "text-white/45 hover:bg-white/5 hover:text-white/80"
     }`}
   >
@@ -299,7 +318,7 @@ export const SegmentGroup = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-/** An independent boolean: icon + label, sky when on. */
+/** An independent boolean: icon + label, brand when on. */
 export const IconToggle = ({
   active,
   title,
@@ -318,7 +337,7 @@ export const IconToggle = ({
     onClick={onClick}
     className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] leading-none transition-colors ${
       active
-        ? "border-sky-400/40 bg-sky-400/15 text-sky-100"
+        ? "border-brand/40 bg-brand/15 text-brand-soft"
         : "border-white/10 bg-black/30 text-white/45 hover:text-white/80"
     }`}
   >

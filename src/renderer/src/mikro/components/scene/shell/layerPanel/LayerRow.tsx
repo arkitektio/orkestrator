@@ -4,12 +4,10 @@ import { Crosshair, Eye, EyeOff, Focus, Save, Trash2 } from "lucide-react";
 import { LayerState, useSceneStore } from "../../platform/stores/sceneStore";
 import { useViewerStore } from "../../platform/stores/viewerStore";
 import { effectiveProbeLayerId } from "../../platform/probe/probeTargeting";
-import {
-  FLAVOR_BADGE_CLASSES,
-  layerDisplayLabel,
-  layerFlavor,
-} from "../../platform/layerui/layerIdentity";
-import { layerSwatchBackground } from "../../platform/layerui/renderGraphSwatch";
+import { layerDisplayLabel } from "../../platform/layerui/layerIdentity";
+import { LayerGlyph } from "../../platform/layerui/LayerGlyph";
+import { LayerTile } from "@/core/data/scene/layerui/cardControls";
+import { LensButton } from "../../platform/layerui/LensButton";
 
 /**
  * A single compact layer row for the right-hand Layers panel. Displays a
@@ -65,7 +63,6 @@ export const LayerRow = ({
   onSaveGraph?: () => void;
 }) => {
   const label = layerDisplayLabel(layer);
-  const flavor = layerFlavor(layer);
   const hidden = layer.visible === false;
   // The highlight follows the EFFECTIVE target — the first visible layer by
   // default — so default probing never looks untargeted; the click keys on the
@@ -97,31 +94,18 @@ export const LayerRow = ({
       } ${hidden ? "opacity-50" : ""}`}
       onClick={onSelect}
     >
-      {/* The leading mark. Compact reads it as the other cards' icon TILE —
-          same geometry as their kind icon — except the tile is the layer's
-          own colormap, which says more than a generic glyph would. */}
-      <span
-        className={
-          compact
-            ? "h-5 w-5 shrink-0 rounded ring-1 ring-white/10"
-            : "h-3 w-3 shrink-0 rounded-full ring-1 ring-black/30"
-        }
-        style={{ background: layerSwatchBackground(layer.channels) }}
-      />
+      {/* The leading mark: what the layer paints, drawn (three disks for
+          RGB, one in the channel's colour or colormap for an image), in the
+          same squircle tile every other card leads with. */}
+      <LayerTile tint="bg-white/10">
+        <LayerGlyph layer={layer} className="h-3.5 w-3.5" />
+      </LayerTile>
       <span
         className={`min-w-0 flex-1 truncate font-medium text-white/90 ${
           compact ? "text-[11px]" : "text-xs"
         }`}
       >
         {label}
-      </span>
-      {/* Secondary to the name: the flavor badge only competes for width once
-          the card is wide enough to seat both without truncating. */}
-      <span
-        className={`hidden shrink-0 rounded-full border px-1.5 text-[9px] leading-4 @3xs/card:inline-block ${FLAVOR_BADGE_CLASSES[flavor]}`}
-        title="What kind of data this layer paints"
-      >
-        {flavor}
       </span>
       {graphDirty && onSaveGraph && (
         <button
@@ -147,7 +131,7 @@ export const LayerRow = ({
           size="xs"
           className={
             isProbeTarget
-              ? `${buttonSize} text-sky-300 hover:text-sky-200`
+              ? `${buttonSize} text-brand-light hover:text-brand-light`
               : `${buttonSize} ${iconMuted}`
           }
           // A hidden layer draws no mesh, so it can answer no probe — pinning
@@ -173,6 +157,8 @@ export const LayerRow = ({
         >
           <Crosshair className="h-3 w-3" />
         </Button>
+        {/* What the layer reads, to act on: the lens' smart menu. */}
+        <LensButton lens={layer.lens} className={`${buttonSize} ${iconMuted}`} />
         <Button
           variant="ghost"
           size="xs"

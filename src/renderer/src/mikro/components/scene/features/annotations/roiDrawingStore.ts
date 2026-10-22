@@ -113,7 +113,7 @@ export interface DrawnRoi {
   persistedId?: string;
   /**
    * The collection the annotation landed in. A scene can carry SEVERAL
-   * annotation layers (one per collection — see `AnnotationsPanel`), each
+   * annotation layers (one per collection — see `AnnotationLayerCard`), each
    * polling its own query, so a layer may only expire previews it is actually
    * responsible for. Without this an unrelated layer's poll would time out a
    * preview whose annotation only ever appears in another layer's result.

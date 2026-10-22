@@ -51,6 +51,8 @@ import { colorByEntryToInput, filterByEntryToInput } from "../../platform/layeru
 import { resolveEntryInputs } from "../../platform/layerui/entryInputs";
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 import { useMeshStore } from "./store/meshSlice";
+import { LENS_BUTTON } from "../../platform/layerui/LayerCardActions";
+import { LensButton } from "../../platform/layerui/LensButton";
 
 /**
  * A compact card for a `MeshLayer` in the Layers panel.
@@ -245,7 +247,7 @@ const MeshInstanceSection = memo(function MeshInstanceSection({
               onChange={(event) => setIdQuery(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && selectById()}
               placeholder="object id"
-              className="h-5 w-16 rounded-md border border-white/10 bg-black/30 px-1.5 text-[9px] text-white/80 outline-none transition-colors placeholder:text-white/25 focus:border-sky-400/40"
+              className="h-5 w-16 rounded-md border border-white/10 bg-black/30 px-1.5 text-[9px] text-white/80 outline-none transition-colors placeholder:text-white/25 focus:border-brand/40"
             />
             <IconToggle
               active={false}
@@ -505,6 +507,7 @@ export const MeshLayerCard = memo(
         onToggle={() => onSelect(layerId, expanded)}
         actions={
           <>
+            <LensButton lens={layer.lens} className={LENS_BUTTON} />
             {/* The one server write — same affordance as the image layer card's
                 graph save: visible only while there is something to save. */}
             {dirty && (
@@ -521,7 +524,7 @@ export const MeshLayerCard = memo(
               variant="ghost"
               size="icon"
               className={`h-5 w-5 shrink-0 ${
-                layer.wireframe ? "bg-sky-400/15 text-sky-300" : "text-white/45 hover:text-white/90"
+                layer.wireframe ? "bg-brand/15 text-brand-light" : "text-white/45 hover:text-white/90"
               }`}
               title={layer.wireframe ? "Solid surface (session)" : "Wireframe (session)"}
               onClick={() => patchSceneLayer(layerId, { wireframe: !layer.wireframe })}

@@ -255,6 +255,7 @@ export const NetworkLayerCard = memo(
         onToggle={() => onSelect(layer.id, expanded)}
         actions={
           <LayerCardActions
+            lens={layer.lens}
             hidden={hidden}
             onToggleVisible={() => persist({ visible: hidden })}
             onRemove={onRemove ? () => onRemove(layer.id) : undefined}

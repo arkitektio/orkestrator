@@ -127,7 +127,7 @@ export const SceneModeControls = () => {
         variant={"outline"}
         size={"xs"}
         className={
-          isDefaultView ? "h-7 bg-black text-sky-400" : "h-7 bg-black text-white/60"
+          isDefaultView ? "h-7 bg-black text-brand" : "h-7 bg-black text-white/60"
         }
         onClick={onPinView}
         disabled={saving}

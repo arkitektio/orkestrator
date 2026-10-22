@@ -75,7 +75,7 @@ const FocusBody = ({ annotation }: { annotation: DetailAnnotationFragment }) => 
       // The detail query answers in stored order; the scene reads its own.
       const current = inSceneOrder(annotationRef.current);
       const system = layer.annotationCollection?.coordinateSystem ?? null;
-      // The same SelectedRoi the canvas layer and the annotations panel build:
+      // The same SelectedRoi the canvas layer and the annotation list build:
       // RAW collection-space vectors plus the collection's own system, because
       // attribute plans do any frame conversion themselves. The canvas
       // highlight matches by annotation id, so this lands even before the

@@ -5,7 +5,7 @@ import { isTypingTarget } from "../../platform/input/keyboardTarget";
 
 /**
  * Backspace deletes the selected annotations. Headless and mounted in
- * `SceneViewport` — it cannot live in the annotations panel, because sidebar
+ * `SceneViewport` — it cannot live in an annotation layer card, because sidebar
  * tabs unmount when inactive and the keybinding must not depend on which tab
  * the user happens to have open.
  */
