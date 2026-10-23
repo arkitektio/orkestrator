@@ -9,10 +9,12 @@ import { useDeleteChartLayerMutation } from "@/mikro/api/graphql";
 export const ChartLayerMenu = ({
   layerId,
   label,
+  triggerClassName,
   children,
 }: {
   layerId: string;
   label: string;
+  triggerClassName?: string;
   children?: ReactNode;
 }) => {
   const [remove, { loading }] = useDeleteChartLayerMutation({ refetchQueries: ["GetChart"] });
@@ -21,6 +23,7 @@ export const ChartLayerMenu = ({
       label={label}
       deleting={loading}
       onDelete={() => remove({ variables: { id: layerId } })}
+      triggerClassName={triggerClassName}
       consequence="The layer leaves this chart, with its colour and style. The data it draws is kept."
     >
       {children}

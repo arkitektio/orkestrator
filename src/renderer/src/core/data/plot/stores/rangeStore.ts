@@ -102,6 +102,13 @@ export type RangeState = {
   setLiveRange: (w: TimeWindow) => void;
   /** UI plane: adopt the live window as committed. Called by the settler. */
   commitRange: () => void;
+  /**
+   * Hold commits back while a gesture is still deciding — the overview strip's
+   * wheel, whose notches arrive further apart than the settler waits. The live
+   * window keeps moving; nothing loads until every hold is released, and the
+   * last release commits.
+   */
+  holdCommits: () => () => void;
   /** A deliberate jump: moves both planes and records history. */
   jumpTo: (w: TimeWindow) => void;
   fit: () => void;
@@ -128,6 +135,8 @@ export const createRangeStore = (initial?: {
      * it zooms into arrives.
      */
     let explicit = initial?.range != null;
+    /** Open `holdCommits` holds; `commitRange` waits while any is. */
+    let holds = 0;
 
     return {
       liveRange: start,
@@ -162,9 +171,21 @@ export const createRangeStore = (initial?: {
       },
 
       commitRange: () => {
+        if (holds > 0) return;
         const { liveRange, committedRange } = get();
         if (windowsEqual(liveRange, committedRange)) return;
         set({ committedRange: liveRange });
+      },
+
+      holdCommits: () => {
+        holds += 1;
+        let released = false;
+        return () => {
+          if (released) return;
+          released = true;
+          holds -= 1;
+          get().commitRange();
+        };
       },
 
       jumpTo: (w) => {

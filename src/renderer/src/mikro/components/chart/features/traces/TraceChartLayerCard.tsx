@@ -1,10 +1,15 @@
 import { Scaling } from "lucide-react";
-import { CardFact, CardShell, type LayerCardProps } from "@/core/data/plot/layerui/cardShell";
+import type { LayerCardProps } from "@/core/data/plot/layerui/cardShell";
 import { formatValue } from "@/core/data/plot/probe/formatValue";
 import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
+import { CardSection } from "@/core/data/scene/layerui/cardControls";
 import { Button } from "@/core/ui/button";
-import { ChartLayerMenu } from "../../platform/edits/ChartLayerMenu";
-import { ChartLayerPlacement } from "../../platform/edits/ChartLayerPlacement";
+import {
+  CHART_CARD_BUTTON,
+  ChartFact,
+  ChartFacts,
+  ChartLayerCardShell,
+} from "../../platform/edits/ChartLayerCardShell";
 import { ChartLayerStyle } from "../../platform/edits/ChartLayerStyle";
 import { useChartAutoscale } from "../../platform/edits/useChartAutoscale";
 import { ChannelTags } from "../../platform/lines/ChannelTags";
@@ -32,55 +37,50 @@ export const TraceChartLayerCard = ({ layer, hidden, onToggleHidden }: LayerCard
       : null;
 
   return (
-    <CardShell
-      surface="chart"
-      color={layer.color}
-      title={layer.label}
-      subtitle={layer.reads}
+    <ChartLayerCardShell
+      layer={layer}
       hidden={hidden}
-      onToggle={() => onToggleHidden(layer.id, !hidden)}
-      aside={
-        <>
-          {layer.source && (
-            <Button
-              size="icon-xs"
-              variant="ghost"
-              title="Autoscale to what is on screen"
-              onClick={() => autoscale(layer.id)}
-            >
-              <Scaling />
-            </Button>
-          )}
-          <ChartLayerMenu layerId={layer.id} label={layer.label} />
-        </>
+      onToggleHidden={onToggleHidden}
+      actions={
+        layer.source && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className={CHART_CARD_BUTTON}
+            title="Autoscale to what is on screen"
+            onClick={() => autoscale(layer.id)}
+          >
+            <Scaling className="h-3 w-3" />
+          </Button>
+        )
       }
     >
-      <ChartLayerPlacement layer={layer} />
-      {layer.source && !hidden && (
-        <div className="flex flex-col gap-0.5">
+      {layer.source && (
+        <>
           <ChartLayerStyle layer={layer} />
-          <CardFact label="Along" value={layer.alongAxis} />
-          <CardFact
-            label="Lines"
-            value={layer.seriesAxis ? `${layer.channelCount} along ${layer.seriesAxis}` : null}
-          />
-          <ChannelTags color={layer.color} labels={layer.channelLabels} />
-          <CardFact label="Drawn from" value={levelLine} />
-          <CardFact
-            label="Coverage"
-            value={stats ? `${Math.round(stats.coverage * 100)}%${stats.loading ? " …" : ""}` : null}
-          />
-          <CardFact
-            label="Scale"
-            value={clim ? `${formatValue(clim.lo)} … ${formatValue(clim.hi)}` : null}
-          />
-          {stats?.error && (
-            <div className="truncate text-[11px] text-destructive" title={stats.error}>
-              {stats.error}
-            </div>
+          {layer.channelLabels.length > 1 && (
+            <CardSection title={layer.seriesAxis ? `lines · along ${layer.seriesAxis}` : "lines"}>
+              <ChannelTags color={layer.color} labels={layer.channelLabels} />
+            </CardSection>
           )}
-        </div>
+          <ChartFacts error={stats?.error}>
+            <ChartFact label="Along" value={layer.alongAxis} />
+            <ChartFact
+              label="Lines"
+              value={layer.seriesAxis ? `${layer.channelCount} along ${layer.seriesAxis}` : null}
+            />
+            <ChartFact label="Drawn from" value={levelLine} />
+            <ChartFact
+              label="Coverage"
+              value={stats ? `${Math.round(stats.coverage * 100)}%${stats.loading ? " …" : ""}` : null}
+            />
+            <ChartFact
+              label="Scale"
+              value={clim ? `${formatValue(clim.lo)} … ${formatValue(clim.hi)}` : null}
+            />
+          </ChartFacts>
+        </>
       )}
-    </CardShell>
+    </ChartLayerCardShell>
   );
 };

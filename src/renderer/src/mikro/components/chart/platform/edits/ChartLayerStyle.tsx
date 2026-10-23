@@ -1,4 +1,5 @@
 import { ColorInput, LineWidthSelect } from "@/core/data/plot/layerui/layerControls";
+import { CardSection } from "@/core/data/scene/layerui/cardControls";
 import {
   Select,
   SelectContent,
@@ -30,11 +31,16 @@ const toBytes = (color: readonly number[]) =>
 const toUnit = (rgba: readonly number[]) => rgba.map((v) => v / 255);
 
 const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="flex items-center gap-2 text-[11px]">
-    <span className="text-muted-foreground">{label}</span>
+  <div className="flex items-center gap-2">
+    <span className="shrink-0 text-[9px] font-medium uppercase tracking-[0.08em] text-white/35">
+      {label}
+    </span>
     <span className="ml-auto flex items-center gap-1.5">{children}</span>
   </div>
 );
+
+/** The scene cards' select look: a dark well, muted until hovered. */
+const SELECT = "h-5 rounded border border-white/10 bg-black/30 px-1.5 text-[10px] text-white/70";
 
 /**
  * How a trace or a series is drawn: colour, mark, widths, opacity. Each commits
@@ -44,15 +50,15 @@ const Row = ({ label, children }: { label: string; children: React.ReactNode }) 
 export const ChartLayerStyle = ({ layer }: { layer: ChartLayerState }) => {
   const write = useChartLayerWrite();
   return (
-    <div className="flex flex-col gap-1">
-      <Row label="Style">
+    <CardSection title="style">
+      <Row label="Look">
         <ColorInput
           value={layer.persisted.color ? toBytes(layer.persisted.color) : null}
           resolved={layer.color}
           onCommit={(rgba) => void write(layer.id, { color: toUnit(rgba) })}
         />
         <Select value={layer.mark} onValueChange={(mark) => void write(layer.id, { mark: mark as ChartMark })}>
-          <SelectTrigger className="h-5 w-28 px-1.5 text-[11px]">
+          <SelectTrigger className={`${SELECT} w-28`}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent align="end">
@@ -76,7 +82,7 @@ export const ChartLayerStyle = ({ layer }: { layer: ChartLayerState }) => {
         <Row label="Markers">
           <select
             title="Marker size (px)"
-            className="h-5 rounded border border-border/60 bg-transparent px-1 font-mono text-[10px]"
+            className={`${SELECT} font-mono`}
             value={MARKER_SIZES.includes(layer.markerSize) ? layer.markerSize : ""}
             onChange={(event) => void write(layer.id, { markerSize: Number(event.currentTarget.value) })}
           >
@@ -93,7 +99,7 @@ export const ChartLayerStyle = ({ layer }: { layer: ChartLayerState }) => {
         {/* Committed on release: every edit is a persisted write, and a drag
             must be one mutation, not fifty. */}
         <Slider
-          className="w-24"
+          className="w-24 py-1"
           min={0.1}
           max={1}
           step={0.05}
@@ -102,6 +108,6 @@ export const ChartLayerStyle = ({ layer }: { layer: ChartLayerState }) => {
           onValueCommit={([opacity]) => void write(layer.id, { opacity })}
         />
       </Row>
-    </div>
+    </CardSection>
   );
 };

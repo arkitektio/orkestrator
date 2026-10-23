@@ -101,6 +101,7 @@ export const LayerMenu = ({
   onDelete,
   deleting = false,
   consequence,
+  triggerClassName,
   children,
 }: {
   label: string;
@@ -109,6 +110,8 @@ export const LayerMenu = ({
   deleting?: boolean;
   /** What deleting throws away, and what it keeps — said in the confirm. */
   consequence: string;
+  /** The trigger's look where the card has its own button dialect. */
+  triggerClassName?: string;
   children?: ReactNode;
 }) => {
   const [confirming, setConfirming] = useState(false);
@@ -117,7 +120,7 @@ export const LayerMenu = ({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="icon-xs" variant="ghost" title="Layer options">
+          <Button size="icon-xs" variant="ghost" title="Layer options" className={triggerClassName}>
             <MoreHorizontal />
           </Button>
         </DropdownMenuTrigger>

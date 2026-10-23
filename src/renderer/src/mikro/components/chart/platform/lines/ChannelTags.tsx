@@ -27,10 +27,10 @@ export const ChannelTags = ({
       {labels.slice(0, CHANNEL_TAG_CAP).map((label, line) => (
         <span key={line} className="flex min-w-0 items-center gap-1">
           <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: colors[line] }} />
-          <span className="truncate text-[10px] text-foreground/80 drop-shadow">{label}</span>
+          <span className="truncate text-[10px] text-white/70">{label}</span>
         </span>
       ))}
-      {rest > 0 && <span className="shrink-0 text-[10px] text-muted-foreground">+{rest} more</span>}
+      {rest > 0 && <span className="shrink-0 text-[10px] text-white/35">+{rest} more</span>}
     </div>
   );
 };

@@ -9,7 +9,7 @@ export const ChartLayerPlacement = ({ layer }: { layer: ChartLayerState }) => {
   if (!message && !layer.sourceFailure) return null;
   return (
     <div
-      className="text-[11px] text-amber-500"
+      className="text-[10px] leading-tight text-amber-300/90"
       title={!layer.placeability.drawable ? (layer.placeability.detail ?? undefined) : undefined}
     >
       {message ?? "Cannot be drawn"}

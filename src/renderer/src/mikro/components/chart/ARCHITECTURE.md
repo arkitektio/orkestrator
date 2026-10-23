@@ -38,7 +38,7 @@ is in `@/core/data/plot`, and what it shares with the scene is in `@/mikro/lib`.
 | `LayerDriverRegistry`, `TileLineDriver` | `SeriesTableDriver` (a table has no pyramid) |
 | `AxisCamera`, `AxisTicks`, grid, value axis, overview strip, HUD | `ChartRowLabels` (the legend) |
 | `PackedLine`, `markerDots`, `stepped` | `ChartLines` (a layer's `mark`) |
-| `LayerControlPanel`, `CardShell`, `LayerMenu` | the three cards, `ChartLayerStyle` |
+| `LayerControlPanel`, `LayerMenu`; the scene's `LayerCardShell` (`@/core/data/scene/layerui`) | `ChartLayerCardShell`, the three cards, `ChartLayerStyle` |
 | `createGestureMachine` | `chartTools` (its tool table), the drawer, the SVG overlay |
 
 ## Placement

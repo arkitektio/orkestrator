@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { bindFields } from "@/core/data/scene/stores/bindStore";
 import { isLayerHidden, usePlotStore } from "../stores/plotStore";
-import { useRangeStoreApi } from "../stores/rangeStore";
+import { zoomFactorForWheel } from "../camera/rangeToCamera";
+import { panBy, useRangeStoreApi, zoomAbout } from "../stores/rangeStore";
 
 /**
  * A minimap of the whole axis, under the plot: where each view HAS data, and
@@ -17,13 +18,20 @@ import { useRangeStoreApi } from "../stores/rangeStore";
  *  - **click** — centre the window there;
  *  - **drag the window box** — move it. A box covering nearly the whole rail
  *    (the zoomed-out default) is not grabbable: there, a drag selects instead,
- *    or there would be nowhere to select from.
+ *    or there would be nowhere to select from;
+ *  - **wheel** — widen (down) or narrow (up) the window about its OWN centre, so
+ *    it grows to both sides at once; a horizontal swipe slides it. The window
+ *    moves live, but the load waits: commits are held until the wheel has been
+ *    quiet for `WHEEL_SETTLE_MS`, so a run of notches is one read, not one each.
  *
  * The window box follows the LIVE range imperatively (one `style` write per change,
  * no React render — P17); the bars change only when the views do.
  */
 /** A press that moves less than this is a click, not a selection. */
 const CLICK_SLOP_PX = 4;
+
+/** How long the wheel must rest before the widened window is loaded. */
+const WHEEL_SETTLE_MS = 300;
 
 /** A box wider than this share of the world is too wide to grab. */
 const GRABBABLE_MAX_SHARE = 0.9;
@@ -73,7 +81,45 @@ export const OverviewStrip = () => {
     );
   }, [rangeApi, worldSpan]);
 
-  if (!worldSpan || !(worldSpan.end > worldSpan.start)) return null;
+  // --- the wheel: native, because React's wheel listener is passive and the
+  // page would scroll under the zoom ---
+  const hasWorld = worldSpan != null && worldSpan.end > worldSpan.start;
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip || !hasWorld) return;
+    let release: (() => void) | null = null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const settle = () => {
+      release?.();
+      release = null;
+    };
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const range = rangeApi.getState();
+      const { liveRange } = range;
+      release ??= range.holdCommits();
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+        const rect = strip.getBoundingClientRect();
+        const world = range.worldSpan;
+        if (rect.width > 0 && world) {
+          range.setLiveRange(panBy(liveRange, (event.deltaX / rect.width) * (world.end - world.start)));
+        }
+      } else {
+        const centre = (liveRange.start + liveRange.end) / 2;
+        range.setLiveRange(zoomAbout(liveRange, centre, zoomFactorForWheel(event.deltaY)));
+      }
+      clearTimeout(timer);
+      timer = setTimeout(settle, WHEEL_SETTLE_MS);
+    };
+    strip.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      strip.removeEventListener("wheel", onWheel);
+      clearTimeout(timer);
+      settle();
+    };
+  }, [rangeApi, hasWorld]);
+
+  if (!worldSpan || !hasWorld) return null;
   const worldWidth = worldSpan.end - worldSpan.start;
 
   const timeAtClientX = (clientX: number) => {

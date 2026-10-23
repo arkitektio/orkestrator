@@ -136,3 +136,23 @@ describe("range store", () => {
     expect(store.getState().committedRange).toEqual({ start: 0, end: 1000 });
   });
 });
+
+describe("holdCommits", () => {
+  it("keeps the live window moving but commits only on the last release", () => {
+    const store = createRangeStore({ worldSpan: world, range: { start: 400, end: 600 } });
+    const releaseA = store.getState().holdCommits();
+    const releaseB = store.getState().holdCommits();
+
+    store.getState().setLiveRange({ start: 300, end: 700 });
+    store.getState().commitRange(); // the camera's settler, firing mid-wheel
+    expect(store.getState().liveRange).toEqual({ start: 300, end: 700 });
+    expect(store.getState().committedRange).toEqual({ start: 400, end: 600 });
+
+    releaseA();
+    releaseA(); // a second call is a no-op, not a second release
+    expect(store.getState().committedRange).toEqual({ start: 400, end: 600 });
+
+    releaseB();
+    expect(store.getState().committedRange).toEqual({ start: 300, end: 700 });
+  });
+});

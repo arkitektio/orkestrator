@@ -1,10 +1,15 @@
 import { Scaling } from "lucide-react";
-import { CardFact, CardShell, type LayerCardProps } from "@/core/data/plot/layerui/cardShell";
+import type { LayerCardProps } from "@/core/data/plot/layerui/cardShell";
 import { formatValue } from "@/core/data/plot/probe/formatValue";
 import { useViewerStore } from "@/core/data/plot/stores/viewerStore";
+import { Badge } from "@/core/data/scene/layerui/cardControls";
 import { Button } from "@/core/ui/button";
-import { ChartLayerMenu } from "../../platform/edits/ChartLayerMenu";
-import { ChartLayerPlacement } from "../../platform/edits/ChartLayerPlacement";
+import {
+  CHART_CARD_BUTTON,
+  ChartFact,
+  ChartFacts,
+  ChartLayerCardShell,
+} from "../../platform/edits/ChartLayerCardShell";
 import { ChartLayerStyle } from "../../platform/edits/ChartLayerStyle";
 import { useChartAutoscale } from "../../platform/edits/useChartAutoscale";
 import type { ChartLayerState } from "../../platform/model/chartLayerModel";
@@ -26,47 +31,39 @@ export const SeriesChartLayerCard = ({ layer, hidden, onToggleHidden }: LayerCar
       : null;
 
   return (
-    <CardShell
-      surface="chart"
-      color={layer.color}
-      title={layer.label}
-      subtitle={[layer.reads, layer.valueUnit].filter(Boolean).join(" · ")}
+    <ChartLayerCardShell
+      layer={layer}
       hidden={hidden}
-      onToggle={() => onToggleHidden(layer.id, !hidden)}
-      aside={
-        <>
-          {layer.series && (
-            <Button
-              size="icon-xs"
-              variant="ghost"
-              title="Autoscale to what is on screen"
-              onClick={() => autoscale(layer.id)}
-            >
-              <Scaling />
-            </Button>
-          )}
-          <ChartLayerMenu layerId={layer.id} label={layer.label} />
-        </>
+      onToggleHidden={onToggleHidden}
+      badges={layer.valueUnit && <Badge>{layer.valueUnit}</Badge>}
+      actions={
+        layer.series && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className={CHART_CARD_BUTTON}
+            title="Autoscale to what is on screen"
+            onClick={() => autoscale(layer.id)}
+          >
+            <Scaling className="h-3 w-3" />
+          </Button>
+        )
       }
     >
-      <ChartLayerPlacement layer={layer} />
-      {layer.series && !hidden && (
-        <div className="flex flex-col gap-0.5">
+      {layer.series && (
+        <>
           <ChartLayerStyle layer={layer} />
-          <CardFact label="Against" value={layer.series.coordinateColumn} />
-          <CardFact label="Rows" value={rows ? `${rows}${readout?.loading ? " …" : ""}` : null} />
-          <CardFact
-            label="Scale"
-            value={clim ? `${formatValue(clim.lo)} … ${formatValue(clim.hi)}` : null}
-          />
-          {readout?.note && <div className="text-[11px] text-muted-foreground">{readout.note}</div>}
-          {readout?.error && (
-            <div className="truncate text-[11px] text-destructive" title={readout.error}>
-              {readout.error}
-            </div>
-          )}
-        </div>
+          <ChartFacts error={readout?.error}>
+            <ChartFact label="Against" value={layer.series.coordinateColumn} />
+            <ChartFact label="Rows" value={rows ? `${rows}${readout?.loading ? " …" : ""}` : null} />
+            <ChartFact
+              label="Scale"
+              value={clim ? `${formatValue(clim.lo)} … ${formatValue(clim.hi)}` : null}
+            />
+            {readout?.note && <div className="text-[10px] text-white/40">{readout.note}</div>}
+          </ChartFacts>
+        </>
       )}
-    </CardShell>
+    </ChartLayerCardShell>
   );
 };
