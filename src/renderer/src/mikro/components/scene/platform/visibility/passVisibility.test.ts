@@ -86,6 +86,16 @@ describe("collectPassSets", () => {
     expect(sets.occluders).toEqual([]);
     expect(sets.otherRenderables).toEqual([mesh]);
   });
+
+  it("never takes a transmissive (glTF glass) mesh as an occluder, though it is not `transparent`", () => {
+    const scene = new THREE.Scene();
+    const glass = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshPhysicalMaterial({ transmission: 1 }));
+    expect((glass.material as THREE.Material).transparent).toBe(false);
+    scene.add(glass);
+    const sets = collectPassSets(scene);
+    expect(sets.occluders).toEqual([]);
+    expect(sets.otherRenderables).toEqual([glass]);
+  });
 });
 
 describe("hideObjects", () => {

@@ -18,5 +18,8 @@ query BaseCatalog {
     operations {
       ...CatalogOperation
     }
+    components {
+      ...CatalogComponent
+    }
   }
 }

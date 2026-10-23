@@ -70,8 +70,18 @@ const isOpaqueDepthWriter = (object: LeafRenderable): boolean => {
   return true;
 };
 
+/**
+ * three's own rule for what is NOT opaque (`RenderList`): transparent, or
+ * transmissive. A glTF glass part arrives with `transmission > 0` and
+ * `transparent: false` — three draws it after the opaque pass, so it must not
+ * write depth into the volume prepass either, or the volume behind the glass
+ * is cut away.
+ */
 const isOpaqueMaterial = (m: THREE.Material): boolean =>
-  m.depthWrite === true && m.transparent === false && m.visible !== false;
+  m.depthWrite === true &&
+  m.transparent === false &&
+  m.visible !== false &&
+  !((m as THREE.MeshPhysicalMaterial).transmission > 0);
 
 /**
  * One walk classifying every EFFECTIVELY visible leaf renderable under `root`

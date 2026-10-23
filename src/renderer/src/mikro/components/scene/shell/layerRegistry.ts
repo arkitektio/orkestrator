@@ -9,6 +9,7 @@ import { TrackLayerRenderer } from "../features/tracks/TracksLayer";
 import { PointLayerRenderer } from "../features/points/PointsLayer";
 import { NetworkCollectionLayer } from "../features/network/NetworkCollectionLayer";
 import { VectorLayerRenderer } from "../features/vectors/VectorsLayer";
+import { CadModelLayerRenderer } from "../features/models/CadModelLayer";
 
 export type LayerRendererProps = { layerId: string };
 
@@ -40,6 +41,7 @@ const registered = {
   FabriksCollectionLayer: memoized(FabriksCollectionLayer),
   NetworkCollectionLayer: memoized(NetworkCollectionLayer),
   VectorLayerRenderer: memoized(VectorLayerRenderer),
+  CadModelLayerRenderer: memoized(CadModelLayerRenderer),
 };
 
 /**
@@ -76,4 +78,7 @@ export const LAYER_RENDERERS: Record<SceneLayerFragment["__typename"], LayerRend
   // Lens-backed but NOT on the brick path (the layerGuards carve-out): one
   // strided CPU read into instanced glyphs, one component for both modes.
   VectorLayer: { Layer2D: registered.VectorLayerRenderer, Layer3D: registered.VectorLayerRenderer },
+  // A glTF of hardware around the sample. The collection layers' shape: one
+  // component, which clips itself to the slab in 2D.
+  CadModelLayer: { Layer2D: registered.CadModelLayerRenderer, Layer3D: registered.CadModelLayerRenderer },
 };

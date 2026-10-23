@@ -14,15 +14,19 @@ import {describeBlokCatalog} from '@/core/blok/renderer/runtime';
  * Kept free of `fs` so it stays testable; `scripts/export-blok-catalog.mjs`
  * does the writing.
  *
- * Unlike `UiCatalogRegistrar`, this passes no `reservedOperations` — there is
- * no server to ask at build time. The published file is therefore the client's
- * complete offer, and an importing server still applies its own reserved-name
- * rules to it.
+ * There is no server to ask at build time, so what the base catalog holds is
+ * taken from this client's own (`baseBlokCatalog`, which mirrors the server's
+ * `base@1`): the published file is what this app adds to it, as the registrar
+ * sends it.
  */
 export const buildCatalogExport = () => ({
-  catalog: buildRegisterUiCatalogInput(defaultBlokCatalog, {
-    name: UI_CATALOG_NAME,
-    description: UI_CATALOG_DESCRIPTION,
-  }),
+  catalog: buildRegisterUiCatalogInput(
+    defaultBlokCatalog,
+    {name: UI_CATALOG_NAME, description: UI_CATALOG_DESCRIPTION},
+    {
+      reservedOperations: new Set(defaultBlokCatalog.base?.functions.keys()),
+      reservedComponents: new Set(defaultBlokCatalog.base?.components.keys()),
+    },
+  ),
   manifest: describeBlokCatalog(defaultBlokCatalog),
 });

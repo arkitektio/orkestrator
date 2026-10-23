@@ -39,11 +39,13 @@ export function ProbePointPinner() {
         // No objectId yet: the layer re-publishes when it lands, and the
         // refresh fills the lookup in then.
         if (!collection || instanceValue == null) return null;
+        // A store naming no slots has no coordinates to give: never a guessed order.
+        const spatial = collectionSpatialAxes(collection);
+        if (!spatial) return null;
         const coords: ProbePointLookup["coords"] = {};
-        collectionSpatialAxes(collection).forEach((axis, slot) => {
-          if (axis) coords[axis] = probe.voxelIndex[slot];
+        spatial.forEach((axis, slot) => {
+          coords[axis] = probe.voxelIndex[slot];
         });
-        if (Object.keys(coords).length === 0) return null;
         return { systemId: collection.coordinateSystem.id, coords, instanceValue };
       }
       const layer = scene.layers.find((candidate) => candidate.id === probe.layerId);

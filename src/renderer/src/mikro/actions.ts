@@ -18,6 +18,16 @@ import {
   DeleteCollaborationDocument,
   DeleteFolderDocument,
   DeleteFileDocument,
+  DeleteCadModelDocument,
+  CadModelPlacementDocument,
+  type CadModelPlacementQuery,
+  type CadModelPlacementQueryVariables,
+  PlaceableCadModelLensesDocument,
+  type PlaceableCadModelLensesQuery,
+  type PlaceableCadModelLensesQueryVariables,
+  GetCadModelDocument,
+  type GetCadModelQuery,
+  type GetCadModelQueryVariables,
   DeleteLensDocument,
   DeleteSceneDocument,
   GetWholeLensDocument,
@@ -62,6 +72,7 @@ import { visualizationLink } from "@/mikro/lib/visualize";
 import { LENS_IDENTIFIERS, isLensIdentifier } from "@/mikro/lenses";
 import {
   Aperture,
+  Box,
   Share2,
   Boxes,
   ChartSpline,
@@ -77,6 +88,7 @@ import {
   ScanSearch,
   Waypoints,
   GitBranch,
+  Upload,
 } from "lucide-react";
 import { Action } from "@/core/smart/localactions/LocalActionProvider";
 import { getRefetchableQueriesForEntities } from "@/core/smart/localactions/helpers/refetch";
@@ -895,6 +907,105 @@ export const MIKRO_ACTIONS: Record<string, MikroAction> = {
       }
     },
   },
+  // CAD models: hardware around the sample, one glTF each. Uploaded into a
+  // folder, dropped on a scene like any container.
+  'upload-cad-model': {
+    title: 'Upload CAD Model…',
+    description: 'Upload a binary glTF (.glb) of a coverslip, dish or holder into this folder',
+    icon: Upload,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/folder' },
+      { type: 'nopartner' },
+    ],
+    collections: ['folder'],
+    execute: async ({ state, dialog }) => {
+      const folder = state.left.find((item) => item.identifier === '@mikro/folder');
+      dialog.openDialog('uploadcadmodel', { folder: folder?.id }, { size: 'small' });
+    },
+  },
+  // The model itself dropped on a scene, as `add-lens-to-scene` takes its lens:
+  // the add-layer dialog, already past the picker.
+  'add-cad-model-to-scene': {
+    title: 'Add as Layer…',
+    description: 'Place this CAD model in the scene it was dropped on',
+    icon: Box,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/scene' },
+      { type: 'pidentifier', identifier: '@mikro/cadmodel' },
+    ],
+    collections: ['scene'],
+    execute: async ({ state, services, dialog }) => {
+      const scene = state.left.find((item) => item.identifier === '@mikro/scene');
+      const model = (state.right ?? []).find((item) => item.identifier === '@mikro/cadmodel');
+      if (!scene?.id || !model?.id) {
+        throw new Error('Add as Layer needs both a scene and a CAD model');
+      }
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+      // A model nobody registered into this world is not one the dialog would
+      // list: say so here, rather than open a picker without it.
+      const { data } = await mikro.client.query<CadModelPlacementQuery, CadModelPlacementQueryVariables>({
+        query: CadModelPlacementDocument,
+        variables: { scene: scene.id, model: model.id },
+        fetchPolicy: 'network-only',
+      });
+      const { data: placeable } = await mikro.client.query<
+        PlaceableCadModelLensesQuery,
+        PlaceableCadModelLensesQueryVariables
+      >({
+        query: PlaceableCadModelLensesDocument,
+        variables: { model: model.id, space: data.scene.worldCoordinateSystem.id },
+        fetchPolicy: 'network-only',
+      });
+      const lens = placeable.lenses.at(0)?.id;
+      if (!lens) {
+        throw new Error(
+          `${data.cadModel.label} has no placement in this scene's world yet. Register it into the world first: "Register Into…" on the model.`,
+        );
+      }
+      dialog.openDialog('addlayer', { scene: scene.id, lens }, { className: 'max-w-3xl' });
+    },
+  },
+  // Placing a model is registering its space: the edge from the model's own
+  // axes (and unit) into a world. The register dialog, with the model's space
+  // as the source.
+  'register-cad-model': {
+    title: 'Register Into…',
+    description: 'Place this CAD model in a coordinate system, such as a scene\'s world or a stage frame',
+    icon: Ruler,
+    conditions: [
+      { type: 'identifier', identifier: '@mikro/cadmodel' },
+      { type: 'nopartner' },
+    ],
+    collections: ['cadModel'],
+    execute: async ({ state, services, dialog }) => {
+      const model = state.left.find((item) => item.identifier === '@mikro/cadmodel');
+      if (!model?.id) {
+        throw new Error('No CAD model selected for Register Into… action');
+      }
+      const mikro = services.mikro;
+      if (!mikro) {
+        throw new Error('Mikro service is not available');
+      }
+      const { data } = await mikro.client.query<GetCadModelQuery, GetCadModelQueryVariables>({
+        query: GetCadModelDocument,
+        variables: { id: model.id },
+      });
+      dialog.openDialog('register', {
+        source: { kind: 'coordinatesystem', id: data.cadModel.coordinateSystem.id },
+      });
+    },
+  },
+  'delete-cad-model': buildDeleteAction<ModuleServices<"mikro">>({
+    title: 'Delete CAD Model',
+    identifier: '@mikro/cadmodel',
+    description: 'Delete the CAD model. Its layers go with it',
+    service: 'mikro',
+    typename: 'CadModel',
+    mutation: DeleteCadModelDocument,
+  }),
   'delete-mikro-file': buildDeleteAction<ModuleServices<"mikro">>({
     title: 'Delete File',
     identifier: '@mikro/file',

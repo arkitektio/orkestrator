@@ -1,5 +1,6 @@
 import {useEffect, useId, useMemo, useRef, useState} from 'react';
 import {cn} from '@/core/util/utils';
+import {useBlokTailwind} from '@/core/blok/tailwind/useBlokTailwind';
 import BlokDebugState from './BlokDebugState';
 import {SceneModelScopeProvider, useSceneNotice} from './bloks/scene/context';
 import {BlokSceneFillProvider} from './bloks/scene/host';
@@ -191,6 +192,9 @@ export default function BlokRenderer({
   );
 
   const modelScope = `${useId()}/`;
+  // The blok's own Tailwind classes, compiled at run time: the build never saw them.
+  const containerRef = useRef<HTMLDivElement>(null);
+  useBlokTailwind(preflight.nodes, embedded ? undefined : containerRef);
 
   if (embedded) {
     return (
@@ -216,7 +220,7 @@ export default function BlokRenderer({
       <BlokTreeProvider tree={tree}>
         {children}
         <BlokSceneFillProvider value={chrome === 'none'}>
-        <div className={containerClassName}>
+        <div ref={containerRef} className={containerClassName}>
           {debug && <BlokDebugState surfaceId={surfaceId} />}
 
           {documentErrors.length > 0 && (

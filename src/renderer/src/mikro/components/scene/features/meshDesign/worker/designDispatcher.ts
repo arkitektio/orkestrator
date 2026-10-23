@@ -1,4 +1,5 @@
 import { bakeDesign, type DesignBake, type DesignBakeMesh } from "../commit/bakeDesign";
+import type { SlotAxes } from "../../meshes/fabriks/writer/fabriksPrefix";
 import { runDesignJob, type DesignJob, type DesignJobResult } from "./designJob";
 import type { DesignWorkerRequest, DesignWorkerResponse } from "./design-worker";
 
@@ -32,7 +33,7 @@ export type DesignDispatcher = {
   /** Null = dropped while queued (`superseded`). Rejects on a worker error. */
   run(job: DesignJob, options?: DesignJobOptions): Promise<DesignJobResult | null>;
   /** Bake the meshes into a fabriks prefix (a commit). Queues behind the jobs. */
-  bake(meshes: DesignBakeMesh[]): Promise<DesignBake>;
+  bake(meshes: DesignBakeMesh[], axes: SlotAxes): Promise<DesignBake>;
   dispose(): void;
 };
 
@@ -40,7 +41,7 @@ export type DesignDispatcher = {
 export function createSyncDesignDispatcher(): DesignDispatcher {
   return {
     run: async (job, options) => (options?.superseded?.() ? null : runDesignJob(job)),
-    bake: async (meshes) => bakeDesign(meshes),
+    bake: async (meshes, axes) => bakeDesign(meshes, axes),
     dispose: () => {},
   };
 }
@@ -140,8 +141,8 @@ export function createWorkerDesignDispatcher(spawn: () => Worker = spawnDesignWo
 
   return {
     run: (job, options) => enqueue({ job }, () => runDesignJob(job), options?.superseded),
-    bake: async (meshes) => {
-      const baked = await enqueue({ bake: meshes }, async () => bakeDesign(meshes));
+    bake: async (meshes, axes) => {
+      const baked = await enqueue({ bake: meshes, axes }, async () => bakeDesign(meshes, axes));
       // Only a disposed dispatcher answers null to a bake: nothing supersedes one.
       if (!baked) throw new Error("design dispatcher disposed");
       return baked;

@@ -11,6 +11,7 @@
  * because each array caller selects its own subset of the fields.
  */
 import {
+  Box,
   Grid3x3,
   Layers,
   Share2,
@@ -37,6 +38,7 @@ const KIND = {
   Mesh: "MESH" as LensKind,
   Network: "NETWORK" as LensKind,
   Annotation: "ANNOTATION" as LensKind,
+  CadModel: "CAD_MODEL" as LensKind,
 };
 
 export type LensLabelInput = {
@@ -98,9 +100,10 @@ export type LensContainerRef = Pick<
   | "meshCollection"
   | "networkCollection"
   | "annotationCollection"
+  | "cadModel"
 >;
 
-/** The six lens structures, one per kind of container. */
+/** The lens structures, one per kind of container. */
 export const LENS_IDENTIFIERS = [
   "@mikro/arraylens",
   "@mikro/tablelens",
@@ -108,6 +111,7 @@ export const LENS_IDENTIFIERS = [
   "@mikro/meshlens",
   "@mikro/networklens",
   "@mikro/annotationlens",
+  "@mikro/cadmodellens",
 ] as const;
 
 export type LensIdentifier = (typeof LENS_IDENTIFIERS)[number];
@@ -189,6 +193,15 @@ export const LENS_KINDS: Record<LensTypename, LensKindInfo> = {
     icon: Tags,
     filterKey: "annotationCollection",
   },
+  CadModelLens: {
+    identifier: "@mikro/cadmodellens",
+    kind: KIND.CadModel,
+    label: "CAD model lens",
+    whole: "Whole model",
+    container: "CAD model",
+    icon: Box,
+    filterKey: "cadModel",
+  },
 };
 
 /** The kinds in the order a filter lists them: arrays first, as the most common. */
@@ -199,6 +212,7 @@ export const LENS_KIND_ORDER: readonly LensTypename[] = [
   "MeshLens",
   "NetworkLens",
   "AnnotationLens",
+  "CadModelLens",
 ];
 
 export const lensKindInfo = (kind: LensKind): LensKindInfo =>
@@ -255,6 +269,8 @@ const containerOf = (lens: LensSubjectFragment): LensDescription["container"] =>
       };
     case "AnnotationLens":
       return lens.annotationCollection;
+    case "CadModelLens":
+      return { id: lens.cadModel.id, name: lens.cadModel.label };
   }
 };
 

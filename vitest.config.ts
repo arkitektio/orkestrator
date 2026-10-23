@@ -20,6 +20,10 @@ export default defineConfig({
     // docblock at the top of the file.
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
+    // CSS is stubbed out in tests, `?raw` imports included. The stylesheets the
+    // runtime Tailwind compiler for bloks reads (`core/blok/tailwind`) must be
+    // real text, so these alone are processed.
+    css: { include: [/tailwindcss\/(theme|utilities)\.css/, /src\/renderer\/src\/theme\.css/] },
     include: [
       "src/renderer/src/**/*.{test,spec}.{ts,tsx}",
       // Main-process code is mostly untestable here (it imports `electron`),

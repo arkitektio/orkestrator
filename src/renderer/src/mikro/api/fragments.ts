@@ -20,6 +20,7 @@
     "FolderChild": [
       "AnnotationCollection",
       "ArrayDataset",
+      "CadModel",
       "File",
       "Folder",
       "MeshCollection",
@@ -33,6 +34,7 @@
     ],
     "Layer": [
       "AnnotationLayer",
+      "CadModelLayer",
       "ImageLayer",
       "IntensityLayer",
       "LabelLayer",
@@ -53,6 +55,7 @@
     "Lens": [
       "AnnotationLens",
       "ArrayLens",
+      "CadModelLens",
       "MeshLens",
       "NetworkLens",
       "SparseLens",
@@ -82,6 +85,8 @@
       "AnnotationLens",
       "ArrayDataset",
       "ArrayLens",
+      "CadModel",
+      "CadModelLens",
       "DataArray",
       "MeshCollection",
       "MeshLens",
@@ -127,6 +132,9 @@
       "Axis",
       "BigFileStore",
       "ByDimensionTransformation",
+      "CadModel",
+      "CadModelLayer",
+      "CadModelLens",
       "ChannelLabel",
       "Chart",
       "Client",

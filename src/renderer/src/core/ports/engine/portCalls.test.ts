@@ -10,7 +10,7 @@ import {
 } from "./portCalls";
 
 const eqCall = {
-  operation: "compare.eq",
+  operation: "eq",
   arguments: [
     { key: "a", value_path: "value" },
     { key: "b", value_literal: "advanced" },
@@ -26,7 +26,7 @@ describe("parsePortCall", () => {
   it("accepts a JSON-encoded UtilCall", () => {
     const parsed = parsePortCall(JSON.stringify(eqCall));
     expect(parsed.ok).toBe(true);
-    if (parsed.ok) expect(parsed.value.operation).toBe("compare.eq");
+    if (parsed.ok) expect(parsed.value.operation).toBe("eq");
   });
 
   it("rejects malformed payloads without throwing", () => {
@@ -45,11 +45,11 @@ describe("parsePortCall", () => {
   it("accepts the GraphQL camelCase shape and drops __typename markers", () => {
     const fromGraphql = {
       __typename: "UtilCall",
-      operation: "logic.not",
+      operation: "not",
       arguments: [
         {
           __typename: "ActionArgument",
-          key: "value",
+          key: "a",
           valueLiteral: null,
           valuePath: null,
           utilCall: {
@@ -100,7 +100,7 @@ describe("evaluatePortCall", () => {
 
   it("reads declared dependencies by name", () => {
     const call = {
-      operation: "compare.gt",
+      operation: "gt",
       arguments: [
         { key: "a", value_path: "value" },
         { key: "b", value_path: "min" },
@@ -112,13 +112,13 @@ describe("evaluatePortCall", () => {
 
   it("resolves nested util calls", () => {
     const call = {
-      operation: "logic.not",
+      operation: "not",
       arguments: [
         {
-          key: "value",
+          key: "a",
           util_call: {
-            operation: "type.isEmpty",
-            arguments: [{ key: "value", value_path: "value" }],
+            operation: "is_empty",
+            arguments: [{ key: "a", value_path: "value" }],
           },
         },
       ],
@@ -152,11 +152,8 @@ describe("evaluatePortCall", () => {
 
   it("reports invalid arguments", () => {
     const parsed = parsePortCall({
-      operation: "compare.gt",
-      arguments: [
-        { key: "a", value_literal: "abc" },
-        { key: "b", value_literal: 1 },
-      ],
+      operation: "math.round",
+      arguments: [{ key: "value", value_literal: "abc" }],
     });
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
@@ -197,7 +194,7 @@ describe("port functions", () => {
 
   it("are all pure and described in the manifest", () => {
     const manifest = describePortCallCatalog();
-    for (const name of ["port.isSet", "port.isOneOf", "str.matches", "compare.eq", "logic.not"]) {
+    for (const name of ["port.isSet", "port.isOneOf", "str.matches", "eq", "not"]) {
       const entry = manifest.functions.find((fn) => fn.name === name);
       expect(entry, name).toBeDefined();
       expect(entry?.purity).toBe("pure");

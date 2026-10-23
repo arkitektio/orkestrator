@@ -8,8 +8,8 @@ import { createBlokFunction, type BlokFunctionDefinition } from "@/core/blok/ren
  * every form change.
  *
  * Add a function only when a real rule cannot be expressed with the standard
- * library (`compare.*`, `logic.*`, `type.isNil`, `type.isEmpty`,
- * `list.includes`, `str.*`, `math.*`).
+ * library (the base operations `eq`, `gt`, `not`, `is_null`, `is_empty`, `in`, …,
+ * and `str.*`, `math.*`).
  */
 
 const isSetFunction = createBlokFunction(

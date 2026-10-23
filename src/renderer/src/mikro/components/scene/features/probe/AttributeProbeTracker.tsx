@@ -102,12 +102,14 @@ export function AttributeProbeTracker() {
     const meshCoordsFor = (layerId: string, key: SceneAttributeKey): AxisCoords | null => {
       const layer = meshLayerById(layerId);
       if (!layer || !layer.collection) return null;
+      // A store naming no slots has no coordinates to give: never a guessed order.
       const spatial = collectionSpatialAxes(layer.collection);
+      if (!spatial) return null;
       const coords: AxisCoords = {};
       spatial.forEach((axis, slot) => {
-        if (axis) coords[axis] = key.voxelIndex[slot];
+        coords[axis] = key.voxelIndex[slot];
       });
-      return Object.keys(coords).length > 0 ? coords : null;
+      return coords;
     };
 
     /**

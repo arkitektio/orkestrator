@@ -553,6 +553,11 @@ type AnnotationEvent {
   update: Annotation
 }
 
+"""Numeric/aggregatable fields of Annotation"""
+enum AnnotationField {
+  PK
+}
+
 input AnnotationFilter {
   AND: AnnotationFilter
   DISTINCT: Boolean
@@ -811,6 +816,26 @@ input AnnotationSpecInput {
   strokeColor: [Int!] = null
   strokeWidth: Float = null
   vectors: [ThreeDVector!]!
+}
+
+type AnnotationStats {
+  """Average"""
+  avg(field: AnnotationField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: AnnotationField!): Int!
+
+  """Maximum"""
+  max(field: AnnotationField!): Float
+
+  """Minimum"""
+  min(field: AnnotationField!): Float
+
+  """Sum"""
+  sum(field: AnnotationField!): Float
 }
 
 """The `Any` scalar any type"""
@@ -1871,6 +1896,227 @@ input CCDElementInput {
 }
 
 """
+A CAD model of hardware around the sample -- a coverslip, a dish, a holder -- stored as one binary glTF. Ask its `store` for a `presignedUrl` and load the file whole; its space's axes carry the units its vertices are in
+"""
+type CadModel {
+  """
+  The model's axis-aligned bounding box in its own space, as `{min: [x, y, z], max: [x, y, z]}` in the axes' order and unit, read from the file's accessor bounds at registration. Null when the file declares none
+  """
+  bounds: Any
+
+  """
+  The unit-carrying coordinate system the model's vertices are expressed in. Its axes carry the unit the exporter wrote, so an IDENTITY registration into a micrometre world converts by the units
+  """
+  coordinateSystem: CoordinateSystem!
+
+  """When the model was registered"""
+  createdAt: DateTime!
+
+  """
+  Every edge from this model's space back into data it was made from, in declared order. Usually empty: a model of hardware derives from nothing and is placed by a registration instead
+  """
+  derivedFrom: [Transformation!]!
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+
+  """
+  The folder this model is filed in. Organisational only: it says where a user keeps the model, never where it sits in space -- that is `coordinateSystem` and the edges out of it
+  """
+  folder: Folder
+
+  """
+  The lens that selects this whole model: what a layer draws through, and the handle to pass wherever a `Lens` is asked for. Every model is created with one
+  """
+  fullLens: CadModelLens
+  id: ID!
+
+  """
+  What to call this model: its name, or its file's original name when it has none
+  """
+  label: String!
+
+  """
+  The lenses over this model, oldest first: its whole lens and every clip box someone has cut. `windowed: true` keeps the clip boxes, `windowed: false` the whole lens, which is also `fullLens`
+  """
+  lenses(windowed: Boolean = null): [CadModelLens!]!
+  name: String
+
+  """
+  The media store holding the binary glTF. Ask it for a `presignedUrl` and fetch the file whole: a viewer loads a model in one request
+  """
+  store: MediaStore!
+}
+
+input CadModelFilter {
+  AND: CadModelFilter
+  DISTINCT: Boolean
+  NOT: CadModelFilter
+  OR: CadModelFilter
+
+  """
+  Filter by the coordinate system the model's vertices are expressed in (the model's own)
+  """
+  coordinateSystem: ID
+
+  """Filter for items created after this datetime"""
+  createdAfter: DateTime
+
+  """Filter for items created before this datetime"""
+  createdBefore: DateTime
+
+  """Filter by the folder this CAD model is filed in"""
+  folder: ID
+  id: ID
+
+  """Filter by list of IDs"""
+  ids: [ID!]
+  name: StrFilterLookup
+
+  """Filter by the creator's subject ID"""
+  owner: ID
+
+  """
+  Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
+  """
+  requires: [DescriptorConstraintInput!]
+
+  """
+  Search by the model's label: its name, or its file's original name (case-insensitive substring)
+  """
+  search: String
+}
+
+"""
+A layer that renders a CAD model -- a coverslip, a dish, a holder -- placed in a scene. The model's own materials are drawn unless `materialColor` overrides them.
+"""
+type CadModelLayer implements Layer {
+  """
+  This layer's whole `pathToWorld` composed into one affine map -- the same path, same edges, same order, with the flagged steps inverted. Derived on read and stored nowhere, exactly as the path itself is, so refining one registration moves it. **Null when `pathToWorld` is null** and for the same two reasons; `placement` is what tells them apart. A field map on the path (a times array, a warp) gives its axes as the values of an array: they are in `fields`, not in the matrix, and the rest stays affine. It errors rather than returning null when a path exists but does not compose: a key from pixels to a table's rows places nothing, and a singular step cannot be walked backwards -- the error names the transformation that stopped it. `outputAxes` names only the destination axes the path constrains, so pass `strict: true` to be refused a partial map instead of handed one
+  """
+  asAffine(at: [CoordinateInput!] = null, strict: Boolean! = false): AffinePlacement
+  blending: Blending!
+
+  """
+  The lens' windows as a clip box in the collection's own space: geometry outside it is not drawn. The selection the layer draws, derived from the lens; empty for a whole lens
+  """
+  clip: [Window!]!
+  id: ID!
+  kind: LayerKind!
+
+  """The CAD model lens this layer draws through"""
+  lens: CadModelLens!
+
+  """
+  One RGBA colour replacing every material of the model, each component 0..255. Null draws the model's own materials as authored
+  """
+  materialColor: [Int!]
+
+  """
+  The CAD model this layer renders: the container of the lens. Its geometry is the glTF file in the model's `store`, fetched whole rather than through this API
+  """
+  model: CadModel
+  name: String
+  opacity: Float!
+  order: Int!
+
+  """
+  The path of transformation edges from this layer's source coordinate system to its scene's world system. A layer belongs to exactly one scene, so this is the one 'to world' question with a single right answer -- the path uses the layer's dataset facts plus the world's registrations, which are the same for every scene over that space. Null when the layer is unregistered or has no source system; empty when the source already is the world system. Every step is here in full, with its own validity, invariance and provenance, which is what to ask for when you care *how* the data got placed; `asAffine` is the same path composed, for when you only need the map
+  """
+  pathToWorld(at: [CoordinateInput!] = null): [PlacementStep!]
+
+  """
+  Whether this layer has a place in its scene's world, and if not, why not. A null `pathToWorld` means three different things -- nobody has registered this data yet, its geometry did not survive the operation that produced it and it can never be placed, or it is registered per index and you have not said which index -- and a client should not have to guess which. UNREGISTERED is a gap to close; UNMAPPABLE is a fact to badge; CONDITIONAL is a placement to ask again for with `at`. Pass the same `at` you would pass `pathToWorld` to be told about that coordinate. Derived, never stored
+  """
+  placement(at: [CoordinateInput!] = null): PlacementState!
+
+  """
+  Which geometric properties survive the whole walk from this layer's data to its scene's world: the weakest edge on its path. ISOMETRY means a distance measured in the data IS that distance in world; SIMILARITY means shapes and angles transfer and every length needs one common factor; AFFINE means only parallelism and area ratios do, so an angle or a distance read in the data means nothing in world; DIFFEOMORPHIC means nothing metric survives anywhere; NONE means there is no path at all. This is what says whether a scalar length in scene units (`pointSize`, `lineWidth`, a stroke width, a camera zoom) is well defined for this layer: it is, from SIMILARITY up. A layer placed per index reports one of its scoped routes rather than NONE; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `invariance`, this being the minimum over the whole path. `placement` says which of the reasons a NONE layer has
+  """
+  placementInvariance(at: [CoordinateInput!] = null): TransformInvariance!
+
+  """
+  How much this layer's placement is actually known: the weakest edge on its path to world. UNKNOWN while the path rests on an edge a client marked as guessed, and when there is no path at all; MANUAL once someone authored the registration; VALIDATED once it was checked, and by construction when the path is empty -- data in its own space is placed exactly. A layer placed per index reports one of its scoped routes rather than UNKNOWN; pass `at` for that coordinate's exact answer. Derived, never stored -- and distinct from a single edge's `validity`: this is the minimum over the whole path
+  """
+  placementValidity(at: [CoordinateInput!] = null): PlacementValidity!
+  scene: Scene!
+  visible: Boolean!
+
+  """Whether the model is drawn as a wireframe instead of solid surfaces"""
+  wireframe: Boolean!
+}
+
+"""
+A selection over a CAD model by windows in its own space: a clip box, or the whole model
+"""
+type CadModelLens implements Lens {
+  """
+  The coordinate anchors inside this selection: an anchor global along an axis, or pinned inside the lens' range on it. Empty for a container kind that carries no anchors (meshes, networks, annotation collections)
+  """
+  activeAnchors: [CoordinateAnchor!]!
+  cadModel: CadModel!
+
+  """
+  The coordinate system the lens' selection is expressed in. A sliced array lens owns one (the space its slices cut out, with the derived edge recording the shift); every other lens selects within its container's own space and resolves to it
+  """
+  coordinateSystem: CoordinateSystem
+
+  """
+  When this selection was first asked for; a whole lens, when its container was made
+  """
+  createdAt: DateTime!
+
+  """The task this selection was made under, if any"""
+  createdThrough: Task
+
+  """The assigner of the creating task, if any"""
+  createdThroughBy: User
+
+  """
+  Who made this selection: the first to ask for it. The container's creator for a whole lens, which exists from the container's creation. Asking for a selection that exists hands back the row and changes nothing
+  """
+  creator: User
+
+  """
+  The scene to open for this lens: its own nomination (`setLensDefaultScene`, or `createSceneFromLens`), falling back to its container's whole lens' while it has none. A container's nomination is its whole lens', so a whole lens answers for the container. A nomination, not a derivation
+  """
+  defaultScene: Scene
+
+  """
+  This object's descriptors, a flat mapping of key to value: the facts about it that an action's port can `require` and a trigger can test (e.g. `@mikro/n_channels`). The keys are the ones mikro declares for this structure, and the values are the ones a signal about the object carries. Empty for a structure that declares none
+  """
+  descriptors: JSON!
+  id: ID!
+
+  """
+  What this lens selects over: an array by slices, or a table, a sparse dataset, a mesh, a network or an annotation collection by windows
+  """
+  kind: LensKind!
+
+  """
+  What to call this lens in a list, never empty: its `name` when it has one, else its container's name followed by what it selects of it (`cells.zarr · c[0:1]`); a whole lens is called by its container. What a picker shows for an option
+  """
+  label: String!
+
+  """
+  What someone called this selection, or null when nobody has. A label only: it is no part of what the lens selects, and a client shows the selection -- or 'the whole container' -- in its place
+  """
+  name: String
+
+  """
+  The scenes this lens is rendered in: those with a layer drawing through it or through any selection within it, of any kind. Derived, never stored, exactly as `ArrayDataset.scenes` is. A layer over one channel of a crop draws the crop, and a layer over any crop draws the whole lens -- so a whole lens answers for the whole container and a window or a crop for what it contains; a scene showing a selection that reaches outside this one is that selection's to report
+  """
+  scenes: [Scene!]!
+
+  """
+  The windows, in the one normalized spelling: container axis order, floats, an open side as null. Empty for the whole lens
+  """
+  windows: [Window!]!
+}
+
+"""
 Where a viewer's camera is in a scene, and how it is looking at it. Carries a flat cross-section view and a volumetric projection view of one position, so a single pose serves both and `Scene.preferredView` picks which is used. Every number is read against the scene's world coordinate system, whose axes carry the units
 """
 type CameraState {
@@ -2000,6 +2246,11 @@ type Chart implements Visualization {
   worldCoordinateSystem: CoordinateSystem!
 }
 
+"""Numeric/aggregatable fields of Chart"""
+enum ChartField {
+  PK
+}
+
 input ChartFilter {
   AND: ChartFilter
   DISTINCT: Boolean
@@ -2008,6 +2259,12 @@ input ChartFilter {
 
   """Filter to the charts laid out over this coordinate system"""
   coordinateSystem: ID
+
+  """Filter for items created after this datetime"""
+  createdAfter: DateTime
+
+  """Filter for items created before this datetime"""
+  createdBefore: DateTime
   id: ID
 
   """Filter by list of IDs"""
@@ -2122,6 +2379,34 @@ input ChartOrder @oneOf {
 """How a chart is drawn from what is already placed in a space"""
 input ChartPolicyInput {
   nchildren: Int! = 32
+}
+
+type ChartStats {
+  """Average"""
+  avg(field: ChartField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: ChartField!): Int!
+
+  """Maximum"""
+  max(field: ChartField!): Float
+
+  """Minimum"""
+  min(field: ChartField!): Float
+
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: ChartField!, timestampField: ChartTimestampField!): [TimeBucket!]!
+
+  """Sum"""
+  sum(field: ChartField!): Float
+}
+
+"""Datetime fields of Chart for bucketing"""
+enum ChartTimestampField {
+  CREATED_AT
 }
 
 input ChildrenOrder {
@@ -2670,6 +2955,16 @@ type CoordinateSystem {
   provenanceEntries(pagination: OffsetPaginationInput): [ProvenanceEntry!]!
 
   """
+  The frame this space is, by which callers find it again instead of minting a second one: a URI (`nifti:mni152`) names a frame shared by everyone in the organization, a plain key (`stage`) one of `referenceApp`'s own. The spatial counterpart of `epoch`, an identity rather than a value. Null for a space nobody needs to find again
+  """
+  reference: String
+
+  """
+  The identifier of the app an app-scoped `reference` belongs to; null for a URI reference, which belongs to nobody
+  """
+  referenceApp: String
+
+  """
   Every edge landing in this space -- the claims that place something here. They belong to the space, so every scene composing over this system sees the same list, each entry unique for its data-tree, and `layers.pathToWorld` searches exactly these plus the datasets' own facts. On a shared world these are the registrations a client authored; on a container's own grid they are the lens crops and derived children that land in it. Composing the matrices stays the client's job. Not filtered by kind, so a table's own system also lists the FIELD edge of any mask keying it -- that one places nothing (a FIELD has no inverse, so no path walks it backwards); it is a dereference, and `attributePlans` is what reads it
   """
   registrations: [Transformation!]!
@@ -2705,6 +3000,11 @@ input CoordinateSystemDerivedFromInput {
   valueRelation: ValueRelation = null
 }
 
+"""Numeric/aggregatable fields of CoordinateSystem"""
+enum CoordinateSystemField {
+  PK
+}
+
 input CoordinateSystemFilter {
   AND: CoordinateSystemFilter
   DISTINCT: Boolean
@@ -2731,6 +3031,11 @@ input CoordinateSystemFilter {
   owner: ID
 
   """
+  Filter to the space holding this reference, in the scope it resolves to: a URI (`nifti:mni152`) finds the organization's one space for that frame, a plain key (`stage`) finds the calling app's own -- never another app's space under the same key
+  """
+  reference: String
+
+  """
   Filter to the objects satisfying every one of these descriptor constraints: the `requires` of a port, handed on unchanged, so a picker offers what the port accepts. Answered in SQL from the descriptors stored on every row. A key the structure does not declare is refused rather than ignored
   """
   requires: [DescriptorConstraintInput!]
@@ -2751,6 +3056,34 @@ input CoordinateSystemOrder @oneOf {
   createdAt: Ordering
   id: Ordering
   name: Ordering
+}
+
+type CoordinateSystemStats {
+  """Average"""
+  avg(field: CoordinateSystemField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: CoordinateSystemField!): Int!
+
+  """Maximum"""
+  max(field: CoordinateSystemField!): Float
+
+  """Minimum"""
+  min(field: CoordinateSystemField!): Float
+
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: CoordinateSystemField!, timestampField: CoordinateSystemTimestampField!): [TimeBucket!]!
+
+  """Sum"""
+  sum(field: CoordinateSystemField!): Float
+}
+
+"""Datetime fields of CoordinateSystem for bucketing"""
+enum CoordinateSystemTimestampField {
+  CREATED_AT
 }
 
 """
@@ -2908,6 +3241,51 @@ input CreateArrayDatasetInput {
 }
 
 """
+Input for registering a CAD model: one binary glTF, in a unit-carrying coordinate system of its own
+"""
+input CreateCadModelInput {
+  axes: [PhysicalAxisInput!]!
+  derivedFrom: [DerivedFromInput!] = null
+  folder: ID = null
+  name: String = null
+  provenanceMetadata: Any = null
+  store: GltfLike!
+}
+
+"""
+Create a layer that renders a CAD model in a scene. The model's own coordinate system is the layer's space, so it must already have a path to the scene's world
+"""
+input CreateCadModelLayerInput {
+  blending: Blending = null
+  lens: ID!
+  materialColor: [Int!] = null
+  name: String = null
+  opacity: Float = null
+  order: Int = null
+  scene: ID!
+  visible: Boolean = null
+  wireframe: Boolean = null
+}
+
+"""
+Input for the lens making a selection over a CAD model, by windows in its own space: a clip box
+"""
+input CreateCadModelLensInput {
+  """The CAD model to select over. Exactly one of this and `lens`"""
+  cadModel: ID = null
+
+  """
+  A lens over the CAD model to select within, in place of the container: the windows then intersect with its own, and the result is the model's lens for what that keeps
+  """
+  lens: ID = null
+
+  """
+  Windows, one per axis to restrict, in the model's own axes and unit: a clip box. Omit for everything: the model's whole lens, or the lens cut from
+  """
+  windows: [WindowInput!] = null
+}
+
+"""
 Bootstrap a chart over an existing coordinate system, drawing what is already laid along its axis: each array placed in it that is a trace, each table that is a series, each annotation collection. Authors no edges -- what places each layer is the registration already in the graph -- and leaves out anything placed in the space that no layer kind reads. Rerunning makes another chart over the same space
 """
 input CreateChartFromCoordinateSystemInput {
@@ -2949,6 +3327,7 @@ input CreateCoordinateSystemInput {
   axes: [PhysicalAxisInput!]!
   epoch: DateTime = null
   name: String!
+  reference: String = null
   registrations: [RegistrationPathInput!]! = []
 }
 
@@ -3286,6 +3665,7 @@ input CreateSceneInput {
   epoch: DateTime = null
   name: String!
   preferredView: PreferredView = null
+  reference: String = null
 }
 
 """
@@ -3547,6 +3927,12 @@ input DeleteAnnotationInput {
 """Input for deleting an array dataset by ID"""
 input DeleteArrayDatasetInput {
   """The ID of the array dataset to delete"""
+  id: ID!
+}
+
+"""Input for deleting a CAD model by ID"""
+input DeleteCadModelInput {
+  """The ID of the CAD model to delete"""
   id: ID!
 }
 
@@ -4219,6 +4605,11 @@ type FileEvent {
   update: File
 }
 
+"""Numeric/aggregatable fields of File"""
+enum FileField {
+  PK
+}
+
 input FileFilter {
   AND: FileFilter
   DISTINCT: Boolean
@@ -4516,6 +4907,34 @@ input FileOrder @oneOf {
   size: Ordering
 }
 
+type FileStats {
+  """Average"""
+  avg(field: FileField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: FileField!): Int!
+
+  """Maximum"""
+  max(field: FileField!): Float
+
+  """Minimum"""
+  min(field: FileField!): Float
+
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: FileField!, timestampField: FileTimestampField!): [TimeBucket!]!
+
+  """Sum"""
+  sum(field: FileField!): Float
+}
+
+"""Datetime fields of File for bucketing"""
+enum FileTimestampField {
+  CREATED_AT
+}
+
 """
 One column a layer may be filtered by, and how it is reached. The same set the colour-options query returns, under the name that reads right where a rule is being authored: both pickers turn on the same measure-vs-categorical split, so the candidates are one answer and this is the second way to ask for it. Every option returned is one the mutation that publishes the picker accepts -- `createMeshLayer(filterBys:)` over a collection, `createLabelLayer(render: {filterBys: ...})` over a lens
 """
@@ -4653,6 +5072,9 @@ type Folder {
 
   """The array datasets filed in this folder"""
   arrayDatasets(filters: ArrayDatasetFilter, ordering: [ArrayDatasetOrder!]! = [], pagination: OffsetPaginationInput): [ArrayDataset!]!
+
+  """The CAD models filed in this folder"""
+  cadModels(filters: CadModelFilter, pagination: OffsetPaginationInput): [CadModel!]!
   children(filters: FolderFilter, ordering: [FolderOrder!]! = [], pagination: OffsetPaginationInput): [Folder!]!
   createdAt: DateTime!
 
@@ -4694,7 +5116,7 @@ type Folder {
 """
 Anything filed in a folder: a sub-folder, a file, or one of the four containers
 """
-union FolderChild = AnnotationCollection | ArrayDataset | File | Folder | MeshCollection | TableDataset
+union FolderChild = AnnotationCollection | ArrayDataset | CadModel | File | Folder | MeshCollection | TableDataset
 
 input FolderChildrenFilter {
   search: String = null
@@ -4704,6 +5126,11 @@ input FolderChildrenFilter {
   Also list the containers that were converted from a file (those with a SOURCE file link). Hidden unless this is true, because the file they were made from is listed already. Any SOURCE link hides a container, wherever its file is kept; a RENDITION link (an export) never does
   """
   showConverted: Boolean = null
+}
+
+"""Numeric/aggregatable fields of Folder"""
+enum FolderField {
+  PK
 }
 
 input FolderFilter {
@@ -4766,6 +5193,34 @@ input FolderOrder @oneOf {
   createdAt: Ordering
   id: Ordering
   name: Ordering
+}
+
+type FolderStats {
+  """Average"""
+  avg(field: FolderField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: FolderField!): Int!
+
+  """Maximum"""
+  max(field: FolderField!): Float
+
+  """Minimum"""
+  min(field: FolderField!): Float
+
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: FolderField!, timestampField: FolderTimestampField!): [TimeBucket!]!
+
+  """Sum"""
+  sum(field: FolderField!): Float
+}
+
+"""Datetime fields of Folder for bucketing"""
+enum FolderTimestampField {
+  CREATED_AT
 }
 
 """A quantity of frequency (``"50 Hz"``, ``"1 kHz"``)."""
@@ -4874,6 +5329,11 @@ it is a string; validating it against an expected dimension (e.g. a declared
 mechanism parameter) is the caller's job.
 """
 scalar GenericQuantity
+
+"""
+A reference to an uploaded **binary glTF** (`.glb`) media object: one file holding a CAD model's scene, materials and buffers. Upload it with `requestMediaUpload` / `finishMediaUpload`; `createCadModel` reads its header and refuses anything that is not glTF 2.0
+"""
+scalar GltfLike
 
 enum Granularity {
   DAY
@@ -5770,6 +6230,11 @@ enum LayerKind {
   ANNOTATION
 
   """
+  A layer rendering a CAD model -- a glTF scene of hardware around the sample: a coverslip, a dish, a holder, an objective housing. Not data: the model's own materials are drawn as authored, optionally overridden by one `materialColor` or shown as a `wireframe`. Its vertices are in the model's own unit-carrying space, so a registration into the world converts millimetres into micrometres by the axes' units rather than by a stated factor.
+  """
+  CAD_MODEL
+
+  """
   The general image layer: array (lens) data rendered through a composable render graph. The kind for a layer that actually composites -- several channels blended together, a hand-authored transfer curve, an inverted mapping, per-channel opacity. When the recipe's shape is fixed, one of INTENSITY, RGB or PHASOR says so directly and carries its settings as fields.
   """
   IMAGE
@@ -5820,6 +6285,7 @@ enum LayerKind {
 
 enum LayerKindChoices {
   ANNOTATION
+  CAD_MODEL
   IMAGE
   INTENSITY
   LABEL
@@ -6020,6 +6486,11 @@ type LensEvent {
   update: Lens
 }
 
+"""Numeric/aggregatable fields of Lens"""
+enum LensField {
+  PK
+}
+
 input LensFilter {
   AND: LensFilter
   DISTINCT: Boolean
@@ -6036,6 +6507,9 @@ input LensFilter {
 
   """Filter by the sub of the user that assigned the creating task"""
   assignedBy: ID
+
+  """Filter to the lenses over this CAD model"""
+  cadModel: ID
 
   """Filter for items created after this datetime"""
   createdAfter: DateTime
@@ -6128,11 +6602,12 @@ input LensFilter {
 }
 
 """
-What a lens selects over: an array (by index slices, re-indexing into a space of its own), or a table, a sparse dataset, a mesh collection, a network collection or an annotation collection (by value windows, in the container's own space).
+What a lens selects over: an array (by index slices, re-indexing into a space of its own), or a table, a sparse dataset, a mesh collection, a network collection, an annotation collection or a CAD model (by value windows, in the container's own space).
 """
 enum LensKind {
   ANNOTATION
   ARRAY
+  CAD_MODEL
   MESH
   NETWORK
   SPARSE
@@ -6163,6 +6638,34 @@ input LensPlaceableFilter {
   The space to be placed into. A *space*, not a scene: every scene over one world offers the same candidates, so a scene-shaped argument would ask for more than the answer depends on. Pass `scene.worldCoordinateSystem.id` to ask it of a scene
   """
   space: ID!
+}
+
+type LensStats {
+  """Average"""
+  avg(field: LensField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: LensField!): Int!
+
+  """Maximum"""
+  max(field: LensField!): Float
+
+  """Minimum"""
+  min(field: LensField!): Float
+
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: LensField!, timestampField: LensTimestampField!): [TimeBucket!]!
+
+  """Sum"""
+  sum(field: LensField!): Float
+}
+
+"""Datetime fields of Lens for bucketing"""
+enum LensTimestampField {
+  CREATED_AT
 }
 
 """
@@ -6441,6 +6944,7 @@ type LineageNode {
 """What a lineage node is: one of the containers, or a file"""
 enum LineageNodeKind {
   ANNOTATION_COLLECTION
+  CAD_MODEL
   DATASET
   FILE
   MESH_COLLECTION
@@ -7385,6 +7889,19 @@ type Mutation {
   createArrayDataset(input: CreateArrayDatasetInput!): ArrayDataset!
 
   """
+  Register a CAD model -- a coverslip, a dish, a holder -- from an uploaded binary glTF, in a unit-carrying coordinate system of its own
+  """
+  createCadModel(input: CreateCadModelInput!): CadModel!
+
+  """Create a layer that renders a CAD model in a scene"""
+  createCadModelLayer(input: CreateCadModelLayerInput!): CadModelLayer!
+
+  """
+  The lens keeping these windows of a CAD model's own space -- a clip box: the one that exists, or a new one
+  """
+  createCadModelLens(input: CreateCadModelLensInput!): CadModelLens!
+
+  """
   Create a chart: a composition of data laid out along one metric axis. Over an existing coordinate system with exactly one metric, unit-carrying axis, or over one created from a single axis
   """
   createChart(input: CreateChartInput!): Chart!
@@ -7575,6 +8092,9 @@ type Mutation {
   """Delete an existing array dataset"""
   deleteArrayDataset(input: DeleteArrayDatasetInput!): ID!
 
+  """Delete an existing CAD model"""
+  deleteCadModel(input: DeleteCadModelInput!): ID!
+
   """
   Delete a chart and its layers. The data they drew and the chart's world are untouched
   """
@@ -7693,6 +8213,9 @@ type Mutation {
   """File array datasets in a folder"""
   putArrayDatasetsInFolder(input: AssociateInput!): Folder!
 
+  """File CAD models in a folder"""
+  putCadModelsInFolder(input: AssociateInput!): Folder!
+
   """Add files to a folder"""
   putFilesInFolder(input: AssociateInput!): Folder!
 
@@ -7724,6 +8247,9 @@ type Mutation {
   Unfile array datasets from a folder. They are not deleted, only unfiled
   """
   releaseArrayDatasetsFromFolder(input: DesociateInput!): Folder!
+
+  """Unfile CAD models from a folder. They are not deleted, only unfiled"""
+  releaseCadModelsFromFolder(input: DesociateInput!): Folder!
 
   """Remove files from a folder"""
   releaseFilesFromFolder(input: DesociateInput!): Folder!
@@ -7858,6 +8384,11 @@ type Mutation {
   Rename a dataset or redescribe it -- the whole of what is editable, and audited on `provenanceEntries`. Its arrays, axes and coordinate systems are fixed at creation; a recomputation is a new dataset
   """
   updateArrayDataset(input: UpdateArrayDatasetInput!): ArrayDataset!
+
+  """
+  Retune how a CAD model layer is drawn: its material override, wireframe and compositing. A patch -- an omitted field keeps its value
+  """
+  updateCadModelLayer(input: UpdateCadModelLayerInput!): CadModelLayer!
 
   """Rename or re-describe a chart. Its world is fixed"""
   updateChart(input: UpdateChartInput!): Chart!
@@ -9556,6 +10087,11 @@ type Query {
   """
   annotations(filters: AnnotationFilter, ordering: [AnnotationOrder!]! = [], pagination: OffsetPaginationInput): [Annotation!]!
 
+  """
+  Get statistics about annotations: counts over the annotations of the current organization
+  """
+  annotationsStats(filters: AnnotationFilter = null): AnnotationStats!
+
   """Get a single array dataset by ID"""
   arrayDataset(id: ID!): ArrayDataset!
 
@@ -9577,6 +10113,14 @@ type Query {
   """Get available permissions for a specific identifier"""
   availablePermissions(identifier: String!, search: String = null, values: [ID!] = null): [PermissionOption!]!
 
+  """Get a single CAD model by ID"""
+  cadModel(id: ID!): CadModel!
+
+  """
+  List CAD models (binary glTF scenes of hardware around the sample, each in a unit-carrying coordinate system of its own)
+  """
+  cadModels(filters: CadModelFilter, pagination: OffsetPaginationInput): [CadModel!]!
+
   """Get a single chart by ID"""
   chart(id: ID!): Chart!
 
@@ -9588,6 +10132,11 @@ type Query {
 
   """List charts (compositions of data laid out along one metric axis)"""
   charts(filters: ChartFilter, ordering: [ChartOrder!]! = [], pagination: OffsetPaginationInput): [Chart!]!
+
+  """
+  Get statistics about charts: counts and time-bucketed series over the charts of the current organization
+  """
+  chartsStats(filters: ChartFilter = null): ChartStats!
 
   """List the child folders of a folder"""
   children(filters: FolderChildrenFilter = null, order: ChildrenOrder = null, pagination: ChildrenPaginationInput = null, parent: ID!): [FolderChild!]!
@@ -9621,6 +10170,11 @@ type Query {
   """List coordinate systems (the nodes of the RFC-5 coordinate graph)"""
   coordinateSystems(filters: CoordinateSystemFilter, ordering: [CoordinateSystemOrder!]! = [], pagination: OffsetPaginationInput): [CoordinateSystem!]!
 
+  """
+  Get statistics about coordinate systems: counts and time-bucketed series over the coordinate systems of the current organization
+  """
+  coordinateSystemsStats(filters: CoordinateSystemFilter = null): CoordinateSystemStats!
+
   """Get a single data array by ID"""
   dataArray(id: ID!): DataArray!
 
@@ -9642,6 +10196,11 @@ type Query {
   files(filters: FileFilter, ordering: [FileOrder!]! = [], pagination: OffsetPaginationInput): [File!]!
 
   """
+  Get statistics about files: counts and time-bucketed series over the files of the current organization
+  """
+  filesStats(filters: FileFilter = null): FileStats!
+
+  """
   Every column a mesh collection's objects can be filtered by -- **the same set `colorByOptions` returns**, under the name that reads right where a rule is being authored. One relation, one walk, two names: a colouring and a rule reach the same column through the same join and branch on the same measure-vs-categorical split, so two different sets would mean one of them was wrong. What differs is what a control *means*: MEASURE takes a `min`/`max` bound here and a colormap there. Same arguments, same `joinPath` to pass back, same invariant -- everything returned is something `createMeshLayer(filterBys:)` accepts
   """
   filterByOptions(filters: ColumnOptionFilter = null, maxJoinDepth: Int! = 1, meshCollection: ID!, pagination: OffsetPaginationInput = null): [FilterByOption!]!
@@ -9654,6 +10213,11 @@ type Query {
 
   """List folders (collections of images, files and tables)"""
   folders(filters: FolderFilter, ordering: [FolderOrder!]! = [], pagination: OffsetPaginationInput): [Folder!]!
+
+  """
+  Get statistics about folders: counts and time-bucketed series over the folders of the current organization
+  """
+  foldersStats(filters: FolderFilter = null): FolderStats!
 
   """
   Every column a mask's objects can be coloured or filtered by: `colorByOptions` rooted on the lens a label layer renders instead of on a mesh collection, and the same answer for the same reason -- a mask's pixel values dereference into a table by exactly the FIELD edge a collection's ids do, so the walk, the measure-vs-categorical rule and the `joinPath` to pass back are one. **The set this returns is exactly the set `createLabelLayer(render: {colorBys: ...})` and `filterBys` accept.** The columns' *values* are not here: a picker wanting a class list or a numeric range reads them from the parquet it already has an `accessGrant` for
@@ -9678,6 +10242,11 @@ type Query {
   List lenses: selections over array datasets (by slices) and over tables, sparse datasets, meshes, networks and annotation collections (by windows), a heterogeneous list of lens kinds
   """
   lenses(filters: LensFilter, ordering: [LensOrder!]! = [], pagination: OffsetPaginationInput): [Lens!]!
+
+  """
+  Get statistics about lenses: counts and time-bucketed series over the lenses of the current organization
+  """
+  lensesStats(filters: LensFilter = null): LensStats!
 
   """
   The directed lineage around one container or file: `up` hops of what it was made from and `down` hops of what was made from it, with the tasks that made each step and the files it was ingested from or exported to. One recursive walk per direction, so the cost follows the lineage and not the organization. A node whose hops were cut off -- by depth, by `fanout` per node or by `limit` overall -- says so in `hasMoreUp`/`hasMoreDown`; walk again rooted there to continue. Unlike `lineageGraph` it never turns sideways: a node's siblings appear once its parent is walked from
@@ -9762,6 +10331,11 @@ type Query {
   """List scenes (compositions of layers over array datasets)"""
   scenes(filters: SceneFilter, ordering: [SceneOrder!]! = [], pagination: OffsetPaginationInput): [Scene!]!
 
+  """
+  Get statistics about scenes: counts over the scenes of the current organization
+  """
+  scenesStats(filters: SceneFilter = null): SceneStats!
+
   """Get a single sparse dataset by ID"""
   sparseDataset(id: ID!): SparseDataset!
 
@@ -9770,6 +10344,11 @@ type Query {
   """
   sparseDatasets(filters: SparseDatasetFilter, ordering: [SparseDatasetOrder!]! = [], pagination: OffsetPaginationInput): [SparseDataset!]!
 
+  """
+  Get statistics about sparse datasets: counts and time-bucketed series over the sparse datasets of the current organization
+  """
+  sparseDatasetsStats(filters: SparseDatasetFilter = null): SparseDatasetStats!
+
   """Get a single table dataset by ID"""
   tableDataset(id: ID!): TableDataset!
 
@@ -9777,6 +10356,11 @@ type Query {
   List table datasets (Parquet-backed tables of scientific records: measurements, localizations, expression levels)
   """
   tableDatasets(filters: TableDatasetFilter, ordering: [TableDatasetOrder!]! = [], pagination: OffsetPaginationInput): [TableDataset!]!
+
+  """
+  Get statistics about table datasets: counts and time-bucketed series over the table datasets of the current organization
+  """
+  tableDatasetsStats(filters: TableDatasetFilter = null): TableDatasetStats!
 
   """Get a single Rekuest task by ID"""
   task(
@@ -9948,7 +10532,7 @@ input RequestZarrUploadInput {
 """
 A piece of data living in a coordinate system. Data belongs to a space; the space belongs to nobody
 """
-union Resident = AnnotationCollection | AnnotationLens | ArrayDataset | ArrayLens | DataArray | MeshCollection | MeshLens | NetworkCollection | NetworkLens | SparseDataset | SparseLens | TableDataset | TableLens
+union Resident = AnnotationCollection | AnnotationLens | ArrayDataset | ArrayLens | CadModel | CadModelLens | DataArray | MeshCollection | MeshLens | NetworkCollection | NetworkLens | SparseDataset | SparseLens | TableDataset | TableLens
 
 """Input for reverting a folder to a previous history revision"""
 input RevertInput {
@@ -10406,6 +10990,11 @@ type SceneEvent {
   update: Scene
 }
 
+"""Numeric/aggregatable fields of Scene"""
+enum SceneField {
+  PK
+}
+
 input SceneFilter {
   AND: SceneFilter
   DISTINCT: Boolean
@@ -10552,6 +11141,26 @@ input SceneSnapshotOrder @oneOf {
   createdAt: Ordering
   id: Ordering
   name: Ordering
+}
+
+type SceneStats {
+  """Average"""
+  avg(field: SceneField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: SceneField!): Int!
+
+  """Maximum"""
+  max(field: SceneField!): Float
+
+  """Minimum"""
+  min(field: SceneField!): Float
+
+  """Sum"""
+  sum(field: SceneField!): Float
 }
 
 """Where along one axis a transformation applies"""
@@ -11039,6 +11648,11 @@ type SparseDataset {
   spec: [SparseDatasetSpec!]!
 }
 
+"""Numeric/aggregatable fields of SparseDataset"""
+enum SparseDatasetField {
+  PK
+}
+
 input SparseDatasetFilter {
   AND: SparseDatasetFilter
   DISTINCT: Boolean
@@ -11121,6 +11735,34 @@ enum SparseDatasetSpec {
   One axis left free: one value per position along it -- one feature across every object, or one object's whole profile.
   """
   VECTOR
+}
+
+type SparseDatasetStats {
+  """Average"""
+  avg(field: SparseDatasetField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: SparseDatasetField!): Int!
+
+  """Maximum"""
+  max(field: SparseDatasetField!): Float
+
+  """Minimum"""
+  min(field: SparseDatasetField!): Float
+
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: SparseDatasetField!, timestampField: SparseDatasetTimestampField!): [TimeBucket!]!
+
+  """Sum"""
+  sum(field: SparseDatasetField!): Float
+}
+
+"""Datetime fields of SparseDataset for bucketing"""
+enum SparseDatasetTimestampField {
+  CREATED_AT
 }
 
 """
@@ -11515,6 +12157,11 @@ input TableDatasetExportOfInput {
   valueRelation: ValueRelation = null
 }
 
+"""Numeric/aggregatable fields of TableDataset"""
+enum TableDatasetField {
+  PK
+}
+
 input TableDatasetFilter {
   AND: TableDatasetFilter
   DISTINCT: Boolean
@@ -11653,6 +12300,34 @@ enum TableDatasetSpec {
   Declares a TRACK_ID column: rows group into trajectories. With POINTS_2D or more, what a track layer draws.
   """
   TRACKED
+}
+
+type TableDatasetStats {
+  """Average"""
+  avg(field: TableDatasetField!): Float
+
+  """Total number of items in the selection"""
+  count: Int!
+
+  """Number of distinct values for the field"""
+  distinctCount(field: TableDatasetField!): Int!
+
+  """Maximum"""
+  max(field: TableDatasetField!): Float
+
+  """Minimum"""
+  min(field: TableDatasetField!): Float
+
+  """Time-bucketed stats over a datetime field."""
+  series(by: Granularity!, field: TableDatasetField!, timestampField: TableDatasetTimestampField!): [TimeBucket!]!
+
+  """Sum"""
+  sum(field: TableDatasetField!): Float
+}
+
+"""Datetime fields of TableDataset for bucketing"""
+enum TableDatasetTimestampField {
+  CREATED_AT
 }
 
 """
@@ -12491,6 +13166,34 @@ input UpdateArrayDatasetInput {
 }
 
 """
+Retune how a CAD model layer is drawn. A patch: an omitted field keeps its value, and an explicit `null` for `materialColor` returns to the model's own materials. The model and the scene are not editable
+"""
+input UpdateCadModelLayerInput {
+  """Layer-level blend mode"""
+  blending: Blending = null
+
+  """The ID of the CAD model layer to update"""
+  id: ID!
+
+  """
+  One RGBA colour replacing every material of the model, each component 0..255. Null draws the model's own materials as authored. Omit to keep the current one
+  """
+  materialColor: [Int!]
+
+  """Layer alpha, from 0 (transparent) to 1 (opaque)"""
+  opacity: Float = null
+
+  """Explicit z-index for back-to-front compositing"""
+  order: Int = null
+
+  """Whether the layer participates in compositing"""
+  visible: Boolean = null
+
+  """Whether to draw the model as a wireframe"""
+  wireframe: Boolean = null
+}
+
+"""
 Input for renaming or re-describing a chart. Its world is not editable: a chart along another axis is another chart
 """
 input UpdateChartInput {
@@ -12515,12 +13218,13 @@ input UpdateChartLayerInput {
 }
 
 """
-Input for renaming a shared coordinate system or anchoring its clock. Shared spaces only: every other system is named by the container that owns it
+Input for renaming a shared coordinate system, anchoring its clock or giving it a reference. Shared spaces only: every other system is named by the container that owns it
 """
 input UpdateCoordinateSystemInput {
   epoch: DateTime = null
   id: ID!
   name: String = null
+  reference: String = null
 }
 
 """
@@ -13146,7 +13850,7 @@ type ZarrUploadGrant {
 
 scalar _Any
 
-union _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
+union _Entity = AcquisitionWindow | AffineTransformation | Animation | AnimationWaypoint | Annotation | AnnotationChartLayer | AnnotationCollection | AnnotationLayer | AnnotationLens | ArrayDataset | ArrayLens | Axis | BigFileStore | ByDimensionTransformation | CadModel | CadModelLayer | CadModelLens | ChannelLabel | Chart | Client | Column | CoordinateAnchor | CoordinateSystem | DataArray | DerivationConflict | FabriksStore | File | FileLink | Folder | IdentityTransformation | ImageLayer | IntensityLayer | KonnektionStore | LabelLayer | LightPath | MapAxisTransformation | MediaStore | Membership | MeshCollection | MeshLayer | MeshLens | Metric | MetricTarget | NetworkCollection | NetworkLayer | NetworkLens | OmeMetadata | OptikitState | Organization | ParquetStore | PhasorCalibration | PhasorHistogram | PhasorLayer | PointLayer | RgbLayer | RotationTransformation | ScaleTransformation | Scene | SceneSnapshot | SequenceTransformation | SeriesChartLayer | SparseArray | SparseAxisReference | SparseDataset | SparseLens | SparseStore | TableDataset | TableLens | Task | TraceChartLayer | TrackLayer | TranslationTransformation | UnmappableTransformation | User | ValueHistogram | VectorLayer | ZarrStore
 
 type _Service {
   sdl: String!

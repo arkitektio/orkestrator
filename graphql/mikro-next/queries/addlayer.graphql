@@ -144,6 +144,9 @@ query AddLayerWindowLenses($space: ID!) {
   ) {
     ...LayerLens
   }
+  models: lenses(filters: { sliced: true, placeableIn: { space: $space, asLayer: CAD_MODEL } }) {
+    ...LayerLens
+  }
 }
 
 # What was made from the containers a scene draws, as trees: one walk for all of

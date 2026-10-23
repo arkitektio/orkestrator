@@ -106,7 +106,7 @@ describe("isWholeLens / containerFilter", () => {
 describe("the kind catalogue", () => {
   it("covers each kind once and finds it by its enum value", () => {
     const kinds = LENS_KIND_ORDER.map((typename) => LENS_KINDS[typename].kind);
-    expect(new Set(kinds).size).toBe(6);
+    expect(new Set(kinds).size).toBe(7);
     for (const kind of kinds) expect(lensKindInfo(kind).kind).toBe(kind);
   });
 });

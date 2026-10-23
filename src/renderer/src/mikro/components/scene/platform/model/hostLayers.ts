@@ -35,7 +35,11 @@ export type HostLayerSource = {
   // container fields below.
   lens?: { id?: string | null; dataset?: { id?: string | null } | null } | null;
   tableDataset?: { id?: string | null } | null;
-  collection?: { coordinateSystem?: { id?: string | null } | null } | null;
+  /** `store.axes` is read by `isPlaceable`: a collection naming no vertex slots is not drawn. */
+  collection?: {
+    coordinateSystem?: { id?: string | null } | null;
+    store?: { axes?: readonly string[] | null } | null;
+  } | null;
   annotationCollection?: { coordinateSystem?: { id?: string | null } | null } | null;
 };
 

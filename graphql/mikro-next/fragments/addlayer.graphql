@@ -209,6 +209,21 @@ fragment AddLayerCandidate on Resident {
       ...DerivationEdge
     }
   }
+  # A CAD model: hardware drawn around the sample (a coverslip, a dish). Named
+  # optionally, labelled by its file's name.
+  ... on CadModel {
+    id
+    label
+    fullLens {
+      id
+    }
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      ...DerivationEdge
+    }
+  }
   # Never a row, but a space owner: a derivation may land in a sparse dataset's
   # space, and the engine has to know who lives there.
   ... on SparseDataset {
@@ -323,6 +338,14 @@ fragment AddLayerStagedLayer on Layer {
       }
     }
   }
+  ... on CadModelLayer {
+    model {
+      id
+      coordinateSystem {
+        id
+      }
+    }
+  }
 }
 
 # Who lives at the far end of a lineage edge. An edge names a SPACE, and the
@@ -349,6 +372,9 @@ fragment AddLayerSpaceOwner on Resident {
     id
   }
   ... on AnnotationCollection {
+    id
+  }
+  ... on CadModel {
     id
   }
   ... on SparseDataset {
@@ -401,6 +427,16 @@ fragment AddLayerLineageNode on Resident {
   ... on AnnotationCollection {
     id
     name
+    coordinateSystem {
+      id
+    }
+    derivedFrom {
+      id
+    }
+  }
+  ... on CadModel {
+    id
+    label
     coordinateSystem {
       id
     }

@@ -1,15 +1,12 @@
 /**
  * The action logos this app draws its agent's actions with: ACTION_LOGO bloks,
- * declared with the agent and named by its implementations (`logo`).
- *
- * BSX on a 24 px grid, painted with the viewer's palette only (`ink muted brand
- * brand-strong brand-soft surface none`): the server refuses any other colour.
- * Strokes are ink and round unless a shape says otherwise; fills are off, since
- * SVG's own default fill is black. `animate` plays on hover and while the
- * viewer's task of the action runs.
+ * declared with the agent and named by its implementations (`logo`). Drawn
+ * with the shared pen (`core/blok/logo/actionLogoSource.ts`).
  *
  * Blok keys are organization-wide, so every one is named for this app.
  */
+
+import { actionLogoSource } from "@/core/blok/logo/actionLogoSource";
 
 export type ActionLogoDeclaration = {
   /** The blok's key: what `ImplementationInput.logo` names. */
@@ -18,12 +15,10 @@ export type ActionLogoDeclaration = {
   source: string;
 };
 
-const PEN = 'fill="none" stroke="ink" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"';
-
 const actionLogo = (interfaceName: string, title: string, body: string): ActionLogoDeclaration => ({
   key: `orkestrator_${interfaceName}_logo`,
   description: `${title}.`,
-  source: `<ActionLogo viewBox="0 0 24 24" title="${title}"><G ${PEN}>${body}</G></ActionLogo>`,
+  source: actionLogoSource(title, body),
 });
 
 /** By the interface of the action each one draws. */
@@ -57,5 +52,40 @@ export const ACTION_LOGOS: Record<string, ActionLogoDeclaration> = {
     '<Path d="M2.5 6.5A1.5 1.5 0 0 1 4 5h4.5l2 2.2H20a1.5 1.5 0 0 1 1.5 1.5v10.3A1.5 1.5 0 0 1 20 20.5H4A1.5 1.5 0 0 1 2.5 19z" fill="surface" />' +
       '<Path d="M6.5 14s2.2-3.3 5.5-3.3 5.5 3.3 5.5 3.3-2.2 3.3-5.5 3.3S6.5 14 6.5 14z" fill="brand-soft" stroke="brand-strong" strokeWidth="1.6" />' +
       '<Circle cx="12" cy="14" r="1.6" fill="brand-strong" stroke="none" animate="blink" />',
+  ),
+  // A tray, and an arrow lifting out of it.
+  upload_file: actionLogo(
+    "upload_file",
+    "Upload a file you choose",
+    '<Path d="M3.5 15.5v3a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-3" />' +
+      '<G stroke="brand-strong" strokeWidth="2" animate="float">' +
+      '<Path d="M12 15V4M7.5 8.5L12 4l4.5 4.5" />' +
+      "</G>",
+  ),
+  // A file, and an arrow carrying it down into a tray.
+  download_file: actionLogo(
+    "download_file",
+    "Save a file to your disk",
+    '<Path d="M3.5 15.5v3a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-3" />' +
+      '<Path d="M8.5 2.5h5l2.5 2.5v4.5h-7.5z" fill="surface" stroke="muted" strokeWidth="1.4" />' +
+      '<G stroke="brand-strong" strokeWidth="2" animate="float">' +
+      '<Path d="M12 7v9M8.5 12.5L12 16l3.5-3.5" />' +
+      "</G>",
+  ),
+  // A bell, its dot pulsing.
+  notify: actionLogo(
+    "notify",
+    "Show you a message",
+    '<Path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z" fill="surface" />' +
+      '<Path d="M10 20.5a2.2 2.2 0 0 0 4 0" />' +
+      '<Circle cx="18" cy="5.5" r="2.6" fill="brand" stroke="brand-strong" strokeWidth="1.4" animate="pulse" />',
+  ),
+  // A folder, and the check of the one chosen drawing itself.
+  choose_directory: actionLogo(
+    "choose_directory",
+    "Ask you to choose a folder",
+    '<Path d="M2.5 6.5A1.5 1.5 0 0 1 4 5h4.5l2 2.2H20a1.5 1.5 0 0 1 1.5 1.5v10.3A1.5 1.5 0 0 1 20 20.5H4A1.5 1.5 0 0 1 2.5 19z" fill="surface" />' +
+      '<Circle cx="12" cy="14" r="4" fill="brand-soft" stroke="brand-strong" strokeWidth="1.5" />' +
+      '<Path d="M10.2 14l1.3 1.3 2.4-2.6" stroke="brand-strong" strokeWidth="1.8" animate="draw" />',
   ),
 };

@@ -18,6 +18,7 @@ import { useMikro } from "../api/funcs";
 import {
   CreateAnnotationLensDocument,
   CreateMeshLensDocument,
+  CreateCadModelLensDocument,
   CreateNetworkLensDocument,
   CreateSparseLensDocument,
   CreateTableLensDocument,
@@ -162,6 +163,7 @@ const CREATE_WINDOW_LENS: Record<
   MeshLens: { document: CreateMeshLensDocument, field: "createMeshLens" },
   NetworkLens: { document: CreateNetworkLensDocument, field: "createNetworkLens" },
   AnnotationLens: { document: CreateAnnotationLensDocument, field: "createAnnotationLens" },
+  CadModelLens: { document: CreateCadModelLensDocument, field: "createCadModelLens" },
 };
 
 /**

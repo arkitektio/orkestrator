@@ -225,8 +225,8 @@ describe("buildRegisterUiCatalogInput", () => {
       expect(defaultBlokCatalog.functions.has(name)).toBe(true);
       expect(names.has(name)).toBe(false);
     }
-    // The canonical (non-alias) names stay registered.
-    expect(names.has("compare.eq")).toBe(true);
+    // Everything else stays registered.
+    expect(names.has("gt")).toBe(true);
   });
 });
 

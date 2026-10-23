@@ -19,7 +19,7 @@ import {
   PageActionGroup,
 } from "@/core/ui/page-action";
 import { cn } from "@/core/util/utils";
-import { MikroArrayDataset, MikroFile, MikroFolder, MikroTableDataset } from "@/core/linkers";
+import { MikroArrayDataset, MikroCadModel, MikroFile, MikroFolder, MikroTableDataset } from "@/core/linkers";
 
 import { useTabActions } from "@/core/tabs/TabsProvider";
 import { SmartObjectButtonProps } from "@/core/smart/buildSmartAdapters";
@@ -55,6 +55,7 @@ import {
   RefreshCw,
   Search,
   Shapes,
+  Box,
   SortAsc,
   SortDesc,
   Table,
@@ -114,6 +115,7 @@ const RENDERABLE_KINDS = [
   "TableDataset",
   "MeshCollection",
   "AnnotationCollection",
+  "CadModel",
 ] as const;
 
 type ExplorerKind = (typeof RENDERABLE_KINDS)[number];
@@ -135,12 +137,13 @@ const KIND_ORDER: Record<ExplorerKind, number> = {
   TableDataset: 2,
   MeshCollection: 3,
   AnnotationCollection: 4,
-  File: 5,
+  CadModel: 5,
+  File: 6,
 };
 
-/** A mesh collection's name is optional: its label is that, or its store's key. */
+/** A mesh collection's and a CAD model's name is optional: their label is that, or what names their file. */
 const itemName = (item: ExplorerItem) =>
-  item.__typename === "MeshCollection" ? item.label : item.name;
+  item.__typename === "MeshCollection" || item.__typename === "CadModel" ? item.label : item.name;
 
 const formatFileSize = (fileSizeInBytes?: number | null) => {
   if (!fileSizeInBytes) return "-";
@@ -181,6 +184,8 @@ const getItemTypeLabel = (item: ExplorerItem) => {
       return "Meshes";
     case "AnnotationCollection":
       return "Annotations";
+    case "CadModel":
+      return "CAD model";
     case "File":
       return "File";
   }
@@ -205,6 +210,8 @@ const getItemMeta = (item: ExplorerItem): React.ReactNode => {
       return "Mesh collection";
     case "AnnotationCollection":
       return "Annotation collection";
+    case "CadModel":
+      return "CAD model";
     case "File":
       return item.contentType || formatFileSize(item.size);
   }
@@ -216,19 +223,21 @@ const ITEM_ICONS: Record<ExplorerKind, typeof Folder> = {
   TableDataset: Table2,
   MeshCollection: Shapes,
   AnnotationCollection: PenLine,
+  CadModel: Box,
   File: FileIcon,
 };
 
 /**
- * The structure identifier each kind drags as. Only the four the folder can
- * file are listed — a mesh or annotation collection has no smart model, so
- * neither drags nor is ever recognised in a drop.
+ * The structure identifier each kind drags as: the kinds with a smart model.
+ * A mesh or annotation collection has none, so neither drags nor is ever
+ * recognised in a drop. A CAD model drags so it can be dropped on a scene.
  */
 const KIND_IDENTIFIERS: Partial<Record<ExplorerKind, string>> = {
   Folder: "@mikro/folder",
   File: "@mikro/file",
   ArrayDataset: "@mikro/arraydataset",
   TableDataset: "@mikro/tabledataset",
+  CadModel: "@mikro/cadmodel",
 };
 
 const structureKey = (identifier: string, id: string) => `${identifier}:${id}`;
@@ -239,6 +248,7 @@ const KIND_LINKS: Partial<Record<ExplorerKind, (id: string) => string>> = {
   File: MikroFile.linkBuilder,
   ArrayDataset: MikroArrayDataset.linkBuilder,
   TableDataset: MikroTableDataset.linkBuilder,
+  CadModel: MikroCadModel.linkBuilder,
 };
 
 const KIND_OBJECT_BUTTONS: Partial<
@@ -248,6 +258,7 @@ const KIND_OBJECT_BUTTONS: Partial<
   File: MikroFile.ObjectButton,
   ArrayDataset: MikroArrayDataset.ObjectButton,
   TableDataset: MikroTableDataset.ObjectButton,
+  CadModel: MikroCadModel.ObjectButton,
 };
 
 /**
@@ -327,6 +338,8 @@ const ExplorerItemSmart = (props: {
       return <MikroTableDataset.Smart object={props.item}>{props.children}</MikroTableDataset.Smart>;
     case "File":
       return <MikroFile.Smart object={props.item}>{props.children}</MikroFile.Smart>;
+    case "CadModel":
+      return <MikroCadModel.Smart object={props.item}>{props.children}</MikroCadModel.Smart>;
     // Mesh and annotation collections have no smart model yet.
     default:
       return <>{props.children}</>;
@@ -362,6 +375,12 @@ const ExplorerItemLink = (props: {
         <MikroFile.DetailLink object={props.item} className={props.className}>
           {props.children}
         </MikroFile.DetailLink>
+      );
+    case "CadModel":
+      return (
+        <MikroCadModel.DetailLink object={props.item} className={props.className}>
+          {props.children}
+        </MikroCadModel.DetailLink>
       );
     // No detail route for these yet — show the label, unlinked.
     default:

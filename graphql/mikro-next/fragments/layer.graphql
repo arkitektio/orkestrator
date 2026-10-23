@@ -618,6 +618,22 @@ fragment SceneLayer on Layer {
     }
     activeFilterBys
   }
+  # A CAD model: one glTF scene of hardware around the sample. No data, so no
+  # pickers: the model's own materials, or one `materialColor` over all of
+  # them (null = as authored), and a wireframe toggle.
+  ... on CadModelLayer {
+    model {
+      ...CadModel
+    }
+    lens {
+      ...LayerLens
+    }
+    clip {
+      ...LensWindow
+    }
+    materialColor
+    wireframe
+  }
   # A node/edge graph from a konnektion collection: a traced arbor, a vessel
   # tree, a connectome. Distinct from TrackLayer, which draws trajectories from
   # a table and can only express a PATH — a network has branch points.

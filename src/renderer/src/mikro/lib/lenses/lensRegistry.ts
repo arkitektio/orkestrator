@@ -2,6 +2,7 @@ import type { MikroClient } from "@/core/data/zarr/store/types";
 import {
   EnsureAnnotationLensDocument,
   EnsureArrayLensDocument,
+  EnsureCadModelLensDocument,
   EnsureMeshLensDocument,
   EnsureNetworkLensDocument,
   EnsureSparseLensDocument,
@@ -102,6 +103,7 @@ const WHOLE_LENS_MUTATIONS = {
     document: EnsureAnnotationLensDocument,
     field: "createAnnotationLens",
   },
+  cadModel: { document: EnsureCadModelLensDocument, field: "createCadModelLens" },
 } as const;
 
 function createLensRegistry(client: MikroClient): LensRegistry {

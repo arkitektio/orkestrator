@@ -117,12 +117,12 @@ export const StructurePickerBlok = createBlokComponent(
           .string()
           .optional()
           .describe(
-            'The GraphQL query that lists the candidates, run on `ward`. It selects a list aliased `options` with `value` (the id), `label` and optionally `description`, and may declare: $search: String (what the user typed), $values: [ID!] (ids to resolve), $limit: Int and $offset: Int (a page), $requires (the constraints of the action input being filled). Any other variable is read from `variables`, else from the data path of the same name; a structure held there is passed as its id. A nullable one narrows the list while it has a value and the user may lift it; the picker waits for one declared non-null. Without a query the module that owns the structure answers.',
+            'The GraphQL query that lists the candidates, run on the `schema` service: one `query` operation, never a mutation. It selects a list aliased `options` with `value` (the id), `label` and optionally `description`, and may declare: $search: String (what the user typed), $values: [ID!] (ids to resolve), $limit: Int and $offset: Int (a page), $requires (the constraints of the action input being filled). Any other variable is read from `variables`, else from the data path of the same name; a structure held there is passed as its id. A nullable one narrows the list while it has a value and the user may lift it; the picker waits for one declared non-null. Without a query the module that owns the structure answers.',
           ),
-        ward: z
+        schema: z
           .string()
           .optional()
-          .describe('The service that runs `query`, by its key, e.g. "mikro".'),
+          .describe('The service whose schema `query` is written against, and which runs it, by its key: "mikro".'),
         variables: z
           .record(z.string(), z.unknown())
           .nullish()
@@ -147,7 +147,7 @@ export const StructurePickerBlok = createBlokComponent(
     const bind = useValue(blok.bind);
     const value = useValue(blok.value);
     const query = useValue(blok.query);
-    const ward = useValue(blok.ward);
+    const schemaKey = useValue(blok.schema);
     const explicit = useValue(blok.variables);
     const placeholder = useValue(blok.placeholder);
     const disabled = useValue(blok.disabled);
@@ -156,7 +156,7 @@ export const StructurePickerBlok = createBlokComponent(
 
     const source = useStructureOptions(identifier ?? '');
     const sourceHonoursRequires = useOptionSourceHonoursRequires(identifier ?? '');
-    const run = useServiceQuery(ward);
+    const run = useServiceQuery(schemaKey);
     const controlled = useControlledValue<StructureValue | null>({
       bind,
       // `undefined` leaves the control to its binding; `null` is a held value.
@@ -194,7 +194,7 @@ export const StructurePickerBlok = createBlokComponent(
     const [liftedFor, setLiftedFor] = React.useState<string | undefined>(undefined);
     const narrowed = narrowedBy.length > 0 && liftedFor !== boundKey;
 
-    const queried = Boolean(query && ward);
+    const queried = Boolean(query && schemaKey);
     const load = React.useCallback(
       async (request: PickerRequest): Promise<Option[]> => {
         if (!queried) {

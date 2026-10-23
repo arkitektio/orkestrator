@@ -18,7 +18,7 @@ const PlainWidget = (props: InputWidgetProps) => {
  * component an app author names in a CUSTOM widget.
  *
  * A SEARCH widget is a query and a ward, so it becomes the picker's `query`
- * and `ward`, and its dependencies are the data the query's own variables are
+ * and `schema`, and its dependencies are the data the query's own variables are
  * read from. A port with no widget gets the picker with no query, and the
  * module that owns the structure answers.
  *
@@ -36,7 +36,7 @@ export const StructurePickerWidget = (props: InputWidgetProps) => {
       ...(query && ward
         ? [
             { key: "query", static_value: query },
-            { key: "ward", static_value: ward },
+            { key: "schema", static_value: ward },
           ]
         : []),
     ],

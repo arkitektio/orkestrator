@@ -5,7 +5,6 @@ import {integerSchema, textSchema} from './argumentSchemas';
 const concatFunction = createVariadicBlokFunction(
   {
     name: 'str.concat',
-    aliases: ['concat'],
     description: 'Joins every value into one string.',
     returnType: 'string',
     purity: 'pure',
@@ -67,33 +66,6 @@ const createUnaryStringFunction = (
     },
     args => apply(args.value),
   );
-
-const createPredicateFunction = (
-  name: string,
-  description: string,
-  apply: (value: string, search: string) => boolean,
-) =>
-  createBlokFunction(
-    {
-      name,
-      description,
-      returnType: 'boolean',
-      purity: 'pure',
-      schema: z.object({value: textSchema, search: textSchema}),
-    },
-    args => apply(args.value, args.search),
-  );
-
-const lengthFunction = createBlokFunction(
-  {
-    name: 'str.length',
-    description: 'Number of characters in a string.',
-    returnType: 'number',
-    purity: 'pure',
-    schema: z.object({value: textSchema}),
-  },
-  args => args.value.length,
-);
 
 const sliceFunction = createBlokFunction(
   {
@@ -173,25 +145,15 @@ const defaultFunction = createBlokFunction(
   },
 );
 
+/** Variadic or open-keyword: not base operations, whose positional order is their parameter order. */
+export const stringVariadicFunctions = [concatFunction, joinFunction, templateFunction];
+
 export const stringFunctions = [
-  concatFunction,
-  joinFunction,
-  templateFunction,
   createUnaryStringFunction('str.upper', 'Uppercases a string.', value => value.toUpperCase()),
   createUnaryStringFunction('str.lower', 'Lowercases a string.', value => value.toLowerCase()),
   createUnaryStringFunction('str.trim', 'Removes surrounding whitespace.', value => value.trim()),
   createUnaryStringFunction('str.capitalize', 'Uppercases the first character.', value =>
     value.length === 0 ? value : `${value[0].toUpperCase()}${value.slice(1)}`,
-  ),
-  lengthFunction,
-  createPredicateFunction('str.contains', 'True when a string contains a substring.', (value, search) =>
-    value.includes(search),
-  ),
-  createPredicateFunction('str.startsWith', 'True when a string starts with a prefix.', (value, search) =>
-    value.startsWith(search),
-  ),
-  createPredicateFunction('str.endsWith', 'True when a string ends with a suffix.', (value, search) =>
-    value.endsWith(search),
   ),
   sliceFunction,
   truncateFunction,

@@ -3,25 +3,9 @@ import {createBlokFunction, getValueAtPath} from '../runtime';
 import {recordSchema} from './argumentSchemas';
 
 /**
- * `obj.get` reads a path *inside a value the payload already has* — a
- * `foreach` item, a util-call result — which a `dynamic_value` path cannot do,
- * since those are always resolved against the data-model root.
+ * Reading a path inside a value is the base catalog's `get` (a JSON pointer);
+ * these are the rest of what a blok asks of an object.
  */
-const getFunction = createBlokFunction(
-  {
-    name: 'obj.get',
-    aliases: ['get'],
-    description: 'Reads a nested path out of a value.',
-    returnType: 'unknown',
-    purity: 'pure',
-    schema: z.object({value: z.unknown(), path: z.string(), fallback: z.unknown().optional()}),
-  },
-  args => {
-    const resolved = getValueAtPath(args.value, args.path);
-    return resolved === undefined ? args.fallback : resolved;
-  },
-);
-
 const hasFunction = createBlokFunction(
   {
     name: 'obj.has',
@@ -67,7 +51,6 @@ const entriesFunction = createBlokFunction(
 );
 
 export const objectFunctions = [
-  getFunction,
   hasFunction,
   keysFunction,
   valuesFunction,

@@ -1,11 +1,13 @@
 import {
   MikroArrayDataset,
   MikroArrayLens,
+  MikroCadModel,
   MikroSparseDataset,
   MikroTableDataset,
 } from "@/core/linkers";
 import {
   Aperture,
+  Box,
   Grid2x2,
   Grid3x3,
   Layers,
@@ -47,6 +49,8 @@ export const RESIDENT_ICON: Record<Kind, LucideIcon> = {
   DataArray: Grid2x2,
   SparseDataset: Grid3x3,
   NetworkCollection: Share2,
+  CadModel: Box,
+  CadModelLens: Aperture,
 };
 
 /** What to call the kind itself, in place of the raw `__typename`. */
@@ -64,6 +68,8 @@ export const RESIDENT_KIND_LABEL: Record<Kind, string> = {
   DataArray: "pyramid level",
   SparseDataset: "sparse dataset",
   NetworkCollection: "network collection",
+  CadModel: "CAD model",
+  CadModelLens: "CAD model lens",
 };
 
 /**
@@ -104,10 +110,17 @@ export const ResidentLink = (props: {
     case "MeshLens":
     case "NetworkLens":
     case "AnnotationLens":
+    case "CadModelLens":
       return (
         <MikroArrayLens.DetailLink object={resident} className={className}>
           a lens of {describeLens(resident).container.name}
         </MikroArrayLens.DetailLink>
+      );
+    case "CadModel":
+      return (
+        <MikroCadModel.DetailLink object={resident} className={className}>
+          {residentName(resident)}
+        </MikroCadModel.DetailLink>
       );
     default:
       // AnnotationCollection names itself; DataArray has only a level and a

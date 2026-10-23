@@ -11,6 +11,9 @@ import {
 } from "@/core/blok/renderer/bloks/shared";
 import { createBlokComponent, type BlokComponentDefinition, type BlokRenderArgs } from "@/core/blok/renderer/runtime";
 
+import { lazily } from "./lazily";
+import { MIKRO_TABLE_BLOKS } from "./table";
+
 /**
  * The mikro scene, as blok components an app's blok composes: a `MikroScene`
  * owns one scene, and the parts placed inside it share it (its viewport, its
@@ -44,14 +47,6 @@ const Parts = {
     import("./MikroSceneParts").then((module) => ({ default: module.MikroSceneProbeRender })),
   ),
 };
-
-const lazily =
-  (Part: React.ComponentType<BlokRenderArgs>) =>
-  (args: BlokRenderArgs): React.ReactElement => (
-    <React.Suspense fallback={null}>
-      <Part {...args} />
-    </React.Suspense>
-  );
 
 const INSIDE = { downstreamOf: ["MikroScene"] } as const;
 
@@ -153,4 +148,5 @@ export const MIKRO_BLOKS: readonly BlokComponentDefinition[] = [
   MikroSceneLayersBlok,
   MikroSceneAnnotationsBlok,
   MikroSceneProbeBlok,
+  ...MIKRO_TABLE_BLOKS,
 ];

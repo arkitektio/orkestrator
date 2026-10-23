@@ -82,6 +82,7 @@ const SourcePicker = (props: {
   const collections = [
     { title: "Mesh collections", rows: data?.meshCollections ?? [] },
     { title: "Network collections", rows: data?.networkCollections ?? [] },
+    { title: "CAD models", rows: data?.cadModels ?? [] },
   ];
 
   return (

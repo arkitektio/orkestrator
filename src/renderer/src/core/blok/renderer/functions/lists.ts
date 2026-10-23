@@ -4,29 +4,6 @@ import {integerSchema, listSchema, numericSchema, textSchema} from './argumentSc
 
 const listOnly = z.object({value: listSchema});
 
-const lengthFunction = createBlokFunction(
-  {
-    name: 'list.length',
-    aliases: ['list.count'],
-    description: 'Number of items in a list.',
-    returnType: 'number',
-    purity: 'pure',
-    schema: listOnly,
-  },
-  args => args.value.length,
-);
-
-const isEmptyFunction = createBlokFunction(
-  {
-    name: 'list.isEmpty',
-    description: 'True when a list has no items.',
-    returnType: 'boolean',
-    purity: 'pure',
-    schema: listOnly,
-  },
-  args => args.value.length === 0,
-);
-
 const firstFunction = createBlokFunction(
   {
     name: 'list.first',
@@ -58,17 +35,6 @@ const atFunction = createBlokFunction(
     schema: z.object({value: listSchema, index: integerSchema}),
   },
   args => args.value.at(args.index),
-);
-
-const includesFunction = createBlokFunction(
-  {
-    name: 'list.includes',
-    description: 'True when a list contains a value.',
-    returnType: 'boolean',
-    purity: 'pure',
-    schema: z.object({value: listSchema, search: z.unknown()}),
-  },
-  args => args.value.includes(args.search),
 );
 
 const joinFunction = createBlokFunction(
@@ -186,13 +152,33 @@ const sortFunction = createBlokFunction(
   },
 );
 
+/** Above this a range is a mistake, not a list a blok draws. */
+const RANGE_LIMIT = 10_000;
+
+const rangeFunction = createBlokFunction(
+  {
+    name: 'list.range',
+    description: `The numbers start, start + step, … : count of them (at most ${RANGE_LIMIT}). What a foreach iterates when there is no list.`,
+    returnType: 'list',
+    purity: 'pure',
+    schema: z.object({
+      count: integerSchema,
+      start: numericSchema.optional(),
+      step: numericSchema.optional(),
+    }),
+  },
+  args => {
+    const count = Math.min(Math.max(args.count, 0), RANGE_LIMIT);
+    const start = args.start ?? 0;
+    const step = args.step ?? 1;
+    return Array.from({length: count}, (_, index) => start + index * step);
+  },
+);
+
 export const listFunctions = [
-  lengthFunction,
-  isEmptyFunction,
   firstFunction,
   lastFunction,
   atFunction,
-  includesFunction,
   joinFunction,
   sliceFunction,
   reverseFunction,
@@ -201,4 +187,5 @@ export const listFunctions = [
   pluckFunction,
   sumFunction,
   sortFunction,
+  rangeFunction,
 ];

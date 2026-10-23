@@ -1,0 +1,28 @@
+# Register an uploaded binary glTF as a CAD model. `store` is the finished
+# MediaStore id (`uploadMediaBlob`); the bounds are read from the file
+# server-side, and `axes` carry the unit the exporter wrote.
+mutation CreateCadModel($input: CreateCadModelInput!) {
+  createCadModel(input: $input) {
+    ...CadModel
+  }
+}
+
+mutation DeleteCadModel($id: ID!) {
+  deleteCadModel(input: { id: $id })
+}
+
+mutation CreateCadModelLayer($input: CreateCadModelLayerInput!) {
+  createCadModelLayer(input: $input) {
+    id
+  }
+}
+
+mutation UpdateCadModelLayer($input: UpdateCadModelLayerInput!) {
+  updateCadModelLayer(input: $input) {
+    id
+    materialColor
+    wireframe
+    opacity
+    visible
+  }
+}

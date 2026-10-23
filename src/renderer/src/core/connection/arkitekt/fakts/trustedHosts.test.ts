@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { emptyProfileBook, type StoredProfileBook } from "./profileStorageSchema";
+import { PROFILE_BOOK_STORAGE_KEY as SEED_STORAGE_KEY, hostsOfProfileBook, trustOfProfileBook } from "../../../../../../main/trust/hosts";
+import { PROFILE_BOOK_STORAGE_KEY, emptyProfileBook, type StoredProfileBook } from "./profileStorageSchema";
 import { faktsHostsOf } from "./trustedHosts";
 
 const endpointFor = (host: string, tokenHost = host) => ({
@@ -65,5 +66,57 @@ describe("faktsHostsOf", () => {
       "mikro.lab.local",
       "next.lab",
     ]);
+  });
+});
+
+describe("the preload's view of the book", () => {
+  it("reads the same storage key the renderer writes", () => {
+    expect(SEED_STORAGE_KEY).toBe(PROFILE_BOOK_STORAGE_KEY);
+  });
+
+  it("skips what it cannot read instead of throwing", () => {
+    expect(hostsOfProfileBook(null)).toEqual([]);
+    expect(hostsOfProfileBook("nope")).toEqual([]);
+    expect(
+      hostsOfProfileBook({
+        lastEndpoint: { base_url: "not a url" },
+        profiles: {
+          broken: { session: { fakts: { instances: { x: { aliases: [{ host: 3 }, null] } } } } },
+          ok: { session: { fakts: { self: { alias: { host: "Lab.Local" } }, instances: {} } } },
+        },
+      }),
+    ).toEqual(["lab.local"]);
+  });
+});
+
+describe("pins", () => {
+  const PEM = "-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----";
+  it("pin a strict instance's TLS hosts to its certificates, and nothing else", () => {
+    const book = {
+      profiles: {
+        a: {
+          session: {
+            fakts: {
+              self: { alias: { host: "lab.local" } },
+              instances: {
+                mikro: {
+                  tls: { certificates: [PEM] },
+                  aliases: [
+                    { host: "lab.local", ssl: true },
+                    { host: "lab.local", ssl: false },
+                    { host: "mikro.lab.ts.net", ssl: false },
+                  ],
+                },
+                plain: { aliases: [{ host: "other.local", ssl: true }] },
+              },
+            },
+          },
+        },
+      },
+    };
+    const { hosts, pins } = trustOfProfileBook(book);
+    expect(pins).toEqual({ "lab.local": [PEM] });
+    expect(hosts).toContain("other.local");
+    expect(hosts).toContain("mikro.lab.ts.net");
   });
 });

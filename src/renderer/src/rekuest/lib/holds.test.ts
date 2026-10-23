@@ -2,7 +2,7 @@
 // (the generated rekuest API module reads `window` on import)
 import { describe, expect, it } from "vitest";
 import { TaskEventKind } from "../api/graphql";
-import { decisionFromEvent, holdFromEvent, pendingHolds } from "./holds";
+import { decisionFromEvent, holdFromEvent, informFromEvent, pendingHolds } from "./holds";
 
 const ev = (kind: TaskEventKind, value: unknown, createdAt: string, message: string | null = null) => ({
   kind,
@@ -40,5 +40,26 @@ describe("holds", () => {
       answer: null,
     });
     expect(decisionFromEvent(ev(TaskEventKind.Held, { held: "c1" }, "1"))).toBeNull();
+  });
+});
+
+describe("bloks a task shows", () => {
+  it("reads the blok a hold asks through, and the values it was answered with", () => {
+    expect(holdFromEvent(ev(TaskEventKind.Held, { kind: "self", blok: "m3" }, "1"))?.blok).toBe("m3");
+    expect(holdFromEvent(ev(TaskEventKind.Held, { kind: "self" }, "1"))?.blok).toBeUndefined();
+    const values = { image: { __identifier: "@mikro/image", object: "8" } };
+    expect(decisionFromEvent(ev(TaskEventKind.Decided, { approved: true, values, user: "s1" }, "2"))).toMatchObject({
+      values,
+      user: "s1",
+    });
+  });
+
+  it("reads what an inform shows", () => {
+    expect(informFromEvent(ev(TaskEventKind.Inform, { blok: "m4" }, "1", "Halfway"))).toEqual({
+      task: "root",
+      blok: "m4",
+      message: "Halfway",
+    });
+    expect(informFromEvent(ev(TaskEventKind.Log, { blok: "m4" }, "1"))).toBeNull();
   });
 });

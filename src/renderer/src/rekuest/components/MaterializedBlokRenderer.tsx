@@ -23,6 +23,13 @@ import {RekuestAssetHost} from '@/rekuest/scene/RekuestAssetHost';
 import {RekuestSceneHost} from '@/rekuest/scene/RekuestSceneHost';
 import {BlokTruncationNotice, useBlokDocument} from './blokDocument';
 import {BLOK_ARGS_ROOT, seededBlokArgs, type BlokArgs} from './blokArgs';
+import {defaultBlokCatalog} from '@/core/blok/renderer/catalog';
+import {returningInvokeFunction} from '@/core/blok/renderer/returns';
+import type {BlokInvokeFunctionHandler} from '@/core/blok/renderer/runtime';
+
+/** Where an asking blok's tree reads its answer, and where its ask stands. */
+export const BLOK_RETURNS_ROOT = 'returns';
+export const BLOK_ASK_ROOT = 'ask';
 
 type MaterializedBlokData = {
   id: string;
@@ -62,6 +69,13 @@ type MaterializedBlokRendererProps = Omit<
   args?: BlokArgs;
   /** The tree changed what it is opened for (a picker bound to `args.<key>`). */
   onArgsChange?: (args: BlokArgs) => void;
+  /**
+   * The ask this blok answers, when a task holds on it: its tree reads
+   * `@ask.status` and, once answered, `@returns`. `onReturn` takes the answer
+   * `blok.answer(...)` gives, and only while the ask waits.
+   */
+  ask?: {status: string; values?: unknown};
+  onReturn?: (values: Record<string, unknown>) => unknown;
 };
 
 const RECORD_FIELDS = ['status', 'running', 'done', 'failed', 'progress', 'message', 'error', 'result', 'returns'] as const;
@@ -272,6 +286,25 @@ const BlokArgsSync = (props: {args: BlokArgs; onArgsChange?: (args: BlokArgs) =>
   return null;
 };
 
+/** Keeps `@ask` and `@returns` on where the ask stands as it moves (answered elsewhere, gone). */
+const AskSync = (props: {ask: {status: string; values?: unknown}}) => {
+  const store = useBlokRuntimeStoreApi();
+  const {status, values} = props.ask;
+  React.useEffect(() => {
+    const state = store.getState();
+    state.setRuntimeValue(BLOK_ASK_ROOT, {status});
+    state.setRuntimeValue(BLOK_RETURNS_ROOT, values ?? null);
+  }, [status, values, store]);
+  return null;
+};
+
+/** `blok.answer(...)` to `onReturn`, while there is one (`returningInvokeFunction`). */
+const useReturningInvoke = (
+  catalog: typeof defaultBlokCatalog,
+  onReturn: ((values: Record<string, unknown>) => unknown) | undefined,
+): BlokInvokeFunctionHandler | undefined =>
+  React.useMemo(() => (onReturn ? returningInvokeFunction(catalog, onReturn) : undefined), [catalog, onReturn]);
+
 /**
  * The past cannot be acted on: while the blok shows a moment from it, its
  * agent calls are dropped before they start, with one notice that says why.
@@ -306,7 +339,8 @@ export const shownContent = (materializedBlok: Pick<MaterializedBlokData, 'blok'
   materializedBlok.revision ?? materializedBlok.blok;
 
 export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) => {
-  const {materializedBlok, args, onArgsChange, ...rendererProps} = props;
+  const {materializedBlok, args, onArgsChange, ask, onReturn, ...rendererProps} = props;
+  const invokeFunction = useReturningInvoke(rendererProps.catalog ?? defaultBlokCatalog, onReturn);
   const dispatchAction = useMaterializedDispatchAction(materializedBlok.agentMappings);
   const travelling = useBlokTravelSource() !== null;
   const shown = shownContent(materializedBlok);
@@ -321,13 +355,22 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
     [materializedBlok.agentMappings],
   );
   const ports = materializedBlok.blok.args;
-  const seeded = React.useMemo(() => (ports?.length ? seededBlokArgs(ports, args ?? {}) : undefined), [args, ports]);
-  // Seeded once with what it is opened for; `BlokArgsSync` follows later changes.
+  // A blok a task made from its BSX declares no arg ports: it reads what the task opened it on.
+  const seeded = React.useMemo(
+    () => (ports?.length ? seededBlokArgs(ports, args ?? {}) : args && Object.keys(args).length > 0 ? args : undefined),
+    [args, ports],
+  );
+  // Seeded once with what it is opened for (and its ask); the syncs follow later changes.
   const initialState = React.useMemo(
-    () =>
-      seeded
-        ? {...((shown.demoState as Record<string, unknown> | null) ?? {}), [BLOK_ARGS_ROOT]: seeded}
-        : shown.demoState,
+    () => {
+      const state = (shown.demoState as Record<string, unknown> | null) ?? {};
+      if (!seeded && !ask) return shown.demoState;
+      return {
+        ...state,
+        ...(seeded ? {[BLOK_ARGS_ROOT]: seeded} : {}),
+        ...(ask ? {[BLOK_ASK_ROOT]: {status: ask.status}, [BLOK_RETURNS_ROOT]: ask.values ?? null} : {}),
+      };
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [shown.demoState],
   );
@@ -340,6 +383,7 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
         uiComponents={roots}
         initialState={initialState}
         dispatchAction={dispatchAction}
+        invokeFunction={invokeFunction ?? rendererProps.invokeFunction}
         refuseAction={travelling ? refuseWhileTravelling : undefined}
         unavailableDependencies={unavailableDependencies}
       >
@@ -347,6 +391,7 @@ export const MaterializedBlokRenderer = (props: MaterializedBlokRendererProps) =
         {rendererProps.embedded ? null : <BlokTruncationNotice truncatedIds={truncatedIds} />}
         <MaterializedBlokRuntimeSync materializedBlok={materializedBlok} roots={roots} />
         {seeded && <BlokArgsSync args={seeded} onArgsChange={onArgsChange} />}
+        {ask && <AskSync ask={ask} />}
       </BlokRenderer>
      </RekuestAssetHost>
     </RekuestSceneHost>

@@ -29,19 +29,31 @@ export type UseLogoTree = (cacheId: string) => LogoTree | null | undefined;
  * it inline, without fetching the tree. A module prefixes its `cacheId`s so two
  * services' blok ids never meet.
  *
- * Its box is a `data-logo-host`: hovering it plays the logo's animations.
+ * Its box is a `data-logo-host`: hovering it plays the logo's animations, as
+ * does `active` (an action of it running).
  */
 export const CachedBlokLogo = ({
   cacheId,
   hash,
   useTree,
   className,
+  active,
 }: {
   cacheId: string;
   hash: string;
   useTree: UseLogoTree;
   className?: string;
-}) => <CachedLogo key={`${cacheId}:${hash}`} cacheId={cacheId} hash={hash} useTree={useTree} className={className} />;
+  active?: boolean;
+}) => (
+  <CachedLogo
+    key={`${cacheId}:${hash}`}
+    cacheId={cacheId}
+    hash={hash}
+    useTree={useTree}
+    className={className}
+    active={active}
+  />
+);
 
 type Cached = { status: "loading" } | { status: "hit"; svg: string } | { status: "miss" };
 
@@ -50,11 +62,13 @@ const CachedLogo = ({
   hash,
   useTree,
   className,
+  active,
 }: {
   cacheId: string;
   hash: string;
   useTree: UseLogoTree;
   className?: string;
+  active?: boolean;
 }) => {
   const [cached, setCached] = React.useState<Cached>({ status: "loading" });
   const prefix = `logo${React.useId().replace(/[^A-Za-z0-9]/g, "")}`;
@@ -76,11 +90,21 @@ const CachedLogo = ({
   }, [cacheId, hash]);
 
   const box = cn("relative shrink-0 overflow-hidden", className);
+  const playing = active ? "" : undefined;
   if (cached.status === "loading") return <span className={box} aria-hidden />;
   if (markup) {
-    return <span data-logo-host="" className={cn(box, "[&>svg]:size-full")} dangerouslySetInnerHTML={{ __html: markup }} />;
+    return (
+      <span
+        data-logo-host=""
+        data-logo-active={playing}
+        className={cn(box, "[&>svg]:size-full")}
+        dangerouslySetInnerHTML={{ __html: markup }}
+      />
+    );
   }
-  return <FirstDrawing cacheId={cacheId} hash={hash} useTree={useTree} className={box} onDrawn={drawn} />;
+  return (
+    <FirstDrawing cacheId={cacheId} hash={hash} useTree={useTree} className={box} active={playing} onDrawn={drawn} />
+  );
 };
 
 /** Renders the logo blok once, and keeps what it drew. */
@@ -89,12 +113,14 @@ const FirstDrawing = ({
   hash,
   useTree,
   className,
+  active,
   onDrawn,
 }: {
   cacheId: string;
   hash: string;
   useTree: UseLogoTree;
   className: string;
+  active?: "";
   onDrawn: (svg: string) => void;
 }) => {
   const tree = useTree(cacheId);
@@ -129,7 +155,7 @@ const FirstDrawing = ({
   }, [tree, cacheId, hash, onDrawn]);
 
   return (
-    <span ref={container} data-logo-host="" className={className}>
+    <span ref={container} data-logo-host="" data-logo-active={active} className={className}>
       {tree && roots.length > 0 && (
         <BlokRenderer
           surfaceId={`logo-${cacheId}`}

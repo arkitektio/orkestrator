@@ -145,6 +145,15 @@ query RegisterSourceCandidates($search: String) {
       name
     }
   }
+  cadModels(filters: { search: $search }, pagination: { limit: 20 }) {
+    id
+    name
+    label
+    coordinateSystem {
+      id
+      name
+    }
+  }
 }
 
 # One edge, with everything an interactive registration must know before it may

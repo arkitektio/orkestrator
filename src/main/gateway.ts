@@ -2,6 +2,7 @@ import { IpcMain } from "electron";
 import { electronRegistry } from "./agent-registry";
 import { Assign } from "./message";
 import { registerWatcher } from "./watcher";
+import { registerDirectoryChooser } from "./directoryChooser";
 import { GraphQLClient } from 'graphql-request';
 import { ProxyAgent, fetch as undiciFetch } from 'undici';
 import { ImplementationInput as SchemaImplementationInput } from './schemas/rekuest'; // Generated file
@@ -65,6 +66,7 @@ export class AgentGateway {
     this.fetch = meshAwareFetch(proxyPortForHost);
 
     registerWatcher();
+    registerDirectoryChooser();
     this.setup();
   }
 

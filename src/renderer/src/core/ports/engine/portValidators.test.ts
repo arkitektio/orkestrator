@@ -4,7 +4,7 @@ import { runPortValidators } from "./portValidators";
 
 const gtMin = {
   call: {
-    operation: "compare.gt",
+    operation: "gt",
     arguments: [
       { key: "a", value_path: "value" },
       { key: "b", value_path: "min" },

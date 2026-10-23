@@ -9,6 +9,7 @@ import { NetworkLayerCard } from "../../features/network/NetworkLayerCard";
 import { PointLayerCard } from "../../features/points/PointLayerCard";
 import { TrackLayerCard } from "../../features/tracks/TrackLayerCard";
 import { VectorLayerCard } from "../../features/vectors/VectorLayerCard";
+import { CadModelLayerCard } from "../../features/models/CadModelLayerCard";
 import { FixedShapeLayerCard } from "./FixedShapeLayerCard";
 import { ImageLayerCard } from "./ImageLayerCard";
 import type { LayerCardProps } from "./cardShell";
@@ -93,6 +94,8 @@ export const LAYER_CARDS: LayerCardRegistry = {
   // skips the brick path (see layerGuards' carve-out), so the raw fragment is
   // what its renderer reads too.
   VectorLayer: { source: "fragment", rank: 2, Card: VectorLayerCard },
+  // Last: hardware around the sample is context for everything above it.
+  CadModelLayer: { source: "fragment", rank: 7, Card: CadModelLayerCard },
 };
 
 /**

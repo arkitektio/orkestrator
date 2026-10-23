@@ -219,14 +219,14 @@ describe('StructurePicker with a query of its own', () => {
         {key: 'identifier', static_value: '@mikro/arraylens'},
         {key: 'bind', static_value: 'value'},
         {key: 'query', static_value: query},
-        {key: 'ward', static_value: 'mikro'},
+        {key: 'schema', static_value: 'mikro'},
         ...extra,
       ],
     },
   ];
   const lastRun = () => service.run.mock.calls.at(-1) as [string, Record<string, unknown>];
 
-  it('runs its query on its ward, and reads the candidates off `options`', async () => {
+  it('runs its query on its schema service, and reads the candidates off `options`', async () => {
     service.run.mockClear();
     loaded.mockClear();
     renderBlokDocument(catalog, lensPicker(), {value: null, path: null});

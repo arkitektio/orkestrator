@@ -1,5 +1,5 @@
 import { DisplayLine, DisplayLinePlaceholder } from "@/core/smart/display/DisplayLine";
-import type { DisplayWidgetProps } from "@/core/smart/display/registry";
+import { showsCard, type DisplayWidgetProps } from "@/core/smart/display/registry";
 import { cn } from "@/core/util/utils";
 import { StreamKind, useGetStreamQuery } from "@/lovekit/api/graphql";
 import { Loader2, Mic, Video } from "lucide-react";
@@ -14,7 +14,7 @@ export const StreamDisplay = (props: DisplayWidgetProps) => {
   const { data } = useGetStreamQuery({ variables: { id: props.id }, pollInterval: 15_000 });
   const stream = data?.stream;
 
-  if ((props.variant && props.variant !== "card") || props.context === "command") {
+  if (!showsCard(props.variant) || props.context === "command") {
     if (!stream) return <DisplayLinePlaceholder {...props} icon={Video} />;
     return (
       <DisplayLine

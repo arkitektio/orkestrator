@@ -88,20 +88,20 @@ export const collectionAxisOrder = (node: {
 }): string[] | null => (node.axes && node.axes.length > 0 ? [...node.axes] : null);
 
 /**
- * The collection's spatial axis names in VERTEX-COMPONENT (x, y, z slot)
- * order — the one place the slot↔axis convention lives (used by placement
- * AND by the attribute tracker turning a mesh probe's voxelIndex into named
- * coordinates).
+ * The collection's axis names in VERTEX-COMPONENT (slot 0, 1, 2) order, or
+ * null when its store names none — the one place the slot↔axis convention
+ * lives (used by placement AND by the attribute tracker turning a mesh probe's
+ * voxelIndex into named coordinates).
+ *
+ * There is no fallback. The store's manifest is the only statement of which
+ * slot is which axis; inferring one from the coordinate system is a guess, and
+ * a wrong guess draws transposed with nothing to say so. A collection without
+ * it is not drawn (`placeable.ts` `hasUnnamedSlots`), and the server refuses to
+ * register a new one.
  */
 export const collectionSpatialAxes = (
-  collection: PlaceableCollection,
-): [string | undefined, string | undefined, string | undefined] => {
-  const names = (collection.coordinateSystem.axes ?? []).map((axis) => axis.name);
-  const declared = collectionAxisOrder(collection.store);
-  return declared
-    ? [declared[0], declared[1], declared[2]]
-    : [names[names.length - 1], names[names.length - 2], names[names.length - 3]];
-};
+  collection: Pick<PlaceableCollection, "store">,
+): readonly string[] | null => collectionAxisOrder(collection.store);
 
 /** Placement warnings fire once per collection, not once per recompute — the
  * caller's matrix memo re-runs on unrelated store identity churn. */
@@ -112,24 +112,23 @@ export function resolveCollectionMatrix(
   collection: PlaceableCollection,
   transformContext: SceneTransformContext,
 ): THREE.Matrix4 {
-  const names = (collection.coordinateSystem.axes ?? []).map((axis) => axis.name);
   // Components are slots: slot 0 is the vertex's first component, which is the
-  // matrix's x. The store names them in that order when it can; fabriks itself
-  // addresses components by position and says nothing about physical axes, so
-  // the store's declaration is the only trustworthy source for the mapping.
-  const declared = collectionAxisOrder(collection.store);
-  const spatial = declared
-    ? [declared[0], declared[1], declared[2]]
-    : [names[names.length - 1], names[names.length - 2], names[names.length - 3]];
+  // matrix's x. Only the store's manifest says which axis each slot is; fabriks
+  // itself addresses components by position.
+  const spatial = collectionSpatialAxes(collection);
 
   const firstResolve = !warnedCollections.has(collection.id);
   if (firstResolve) warnedCollections.add(collection.id);
-  if (!declared && firstResolve) {
-    console.warn(
-      `[collection] store ${collection.store.id} declares no axis order; assuming the coordinate ` +
-        `system's last three axes map to vertex components 0, 1, 2. A collection written in a ` +
-        `different component order will render transposed.`,
-    );
+  if (!spatial) {
+    // Never drawn (`hasUnnamedSlots`); panels that still ask for a matrix get
+    // the collection's own space, never a guessed order.
+    if (firstResolve) {
+      console.warn(
+        `[collection] store ${collection.store.id} names no vertex slots in its manifest; ` +
+          `not drawn — rebuild it with build_collection(..., axes=[...]).`,
+      );
+    }
+    return new THREE.Matrix4().identity();
   }
 
   if (!layer.asAffine) {

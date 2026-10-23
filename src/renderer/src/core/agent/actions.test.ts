@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 const findModel = vi.hoisted(() => vi.fn());
 vi.mock("@/core/smart/registry", () => ({ smartRegistry: { findModel } }));
+const requestExport = vi.hoisted(() => vi.fn());
+vi.mock("@/core/modules/export/exportRequests", () => ({ requestExport }));
+const toast = vi.hoisted(() => vi.fn());
+vi.mock("@/core/notify", () => ({ toast }));
 
 import { DialogDismissedError } from "@/core/dialogs/DialogProvider";
 import "./actions";
@@ -63,6 +67,43 @@ describe("open_in_separate_window", () => {
 
     expect(openWindow).toHaveBeenCalledTimes(1);
     expect(openWindow.mock.calls[0][0]).toContain("12");
+    expect(outcome).toEqual({ returned: {} });
+  });
+});
+
+describe("upload_file", () => {
+  it("asks for a file in mikro's upload dialog, into the folder given, and returns it", async () => {
+    const awaitDialog = vi.fn().mockResolvedValue("99");
+
+    const outcome = await run("upload_file", { folder: "3", reason: "The protocol" }, { awaitDialog });
+
+    expect(awaitDialog).toHaveBeenCalledWith("agentuploadfile", { folder: "3", reason: "The protocol" });
+    expect(outcome).toEqual({ returned: { file: "99" } });
+  });
+
+  it("fails when the person closes the dialog", async () => {
+    const awaitDialog = vi.fn().mockRejectedValue(new DialogDismissedError());
+
+    const outcome = await run("upload_file", {}, { awaitDialog });
+
+    expect(outcome.error).toMatch(/No file was uploaded/);
+  });
+});
+
+describe("download_file", () => {
+  it("hands the file to the app's export path", async () => {
+    const outcome = await run("download_file", { file: "5" }, {});
+
+    expect(requestExport).toHaveBeenCalledWith([{ identifier: "@mikro/file", id: "5" }]);
+    expect(outcome).toEqual({ returned: {} });
+  });
+});
+
+describe("notify", () => {
+  it("shows the message as a toast", async () => {
+    const outcome = await run("notify", { title: "Done", message: "All 12 stacks are in" }, {});
+
+    expect(toast).toHaveBeenCalledWith("Done", { description: "All 12 stacks are in" });
     expect(outcome).toEqual({ returned: {} });
   });
 });

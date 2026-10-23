@@ -77,7 +77,19 @@ import {
   type MeshPingResult,
   type MeshStatusPayload,
 } from "../main/mesh/protocol";
-import { TRUST_DISCOVERY_HOSTS_CHANNEL, TRUST_FAKTS_HOSTS_CHANNEL } from "../main/trust/protocol";
+import { TRUST_DISCOVERY_HOSTS_CHANNEL, TRUST_FAKTS_HOSTS_CHANNEL, TRUST_SEED_HOSTS_CHANNEL } from "../main/trust/protocol";
+import { PROFILE_BOOK_STORAGE_KEY, trustOfProfileBook, type TrustPayload } from "../main/trust/hosts";
+
+// Seed main's certificate trust with the stored profiles' hosts before any page
+// script can make a request: Chromium caches a refusal, so a self-signed host
+// asked before main knows it would stay refused (main/trust/protocol.ts). The
+// renderer keeps the set current from here on.
+try {
+  const raw = window.localStorage.getItem(PROFILE_BOOK_STORAGE_KEY);
+  if (raw) ipcRenderer.sendSync(TRUST_SEED_HOSTS_CHANNEL, trustOfProfileBook(JSON.parse(raw)));
+} catch (error) {
+  console.warn("[trust] Could not seed the trusted hosts:", error);
+}
 
 // Subscribe `cb` to an ipcRenderer channel and return the disposer. Every
 // event listener exposed to the renderer must be removable, otherwise each
@@ -110,8 +122,8 @@ const api = {
   getNodeId: () => ipcRenderer.invoke("get-node-id"),
   /** Which hosts may present a self-signed certificate (`main/trust/protocol.ts`). */
   trust: {
-    setFaktsHosts: (hosts: string[]): Promise<void> => ipcRenderer.invoke(TRUST_FAKTS_HOSTS_CHANNEL, hosts),
-    allowDiscoveryHosts: (hosts: string[]): Promise<void> => ipcRenderer.invoke(TRUST_DISCOVERY_HOSTS_CHANNEL, hosts),
+    setFaktsHosts: (trust: TrustPayload): Promise<void> => ipcRenderer.invoke(TRUST_FAKTS_HOSTS_CHANNEL, trust),
+    allowDiscoveryHosts: (trust: TrustPayload): Promise<void> => ipcRenderer.invoke(TRUST_DISCOVERY_HOSTS_CHANNEL, trust),
   },
   /** Wipes everything this computer stored and relaunches as a fresh install. */
   factoryReset: () => ipcRenderer.invoke("app:factory-reset"),

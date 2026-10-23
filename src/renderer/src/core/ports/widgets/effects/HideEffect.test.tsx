@@ -16,7 +16,7 @@ const showWhenAdvanced = {
   fade: false,
   dependencies: ["mode"],
   call: {
-    operation: "compare.eq",
+    operation: "eq",
     arguments: [
       { key: "a", value_path: "mode" },
       { key: "b", value_literal: "advanced" },
@@ -92,7 +92,7 @@ describe("HideEffect", () => {
       ...showWhenAdvanced,
       dependencies: ["/mode"],
       call: {
-        operation: "compare.eq",
+        operation: "eq",
         arguments: [
           { key: "a", value_path: "/mode" },
           { key: "b", value_literal: "advanced" },

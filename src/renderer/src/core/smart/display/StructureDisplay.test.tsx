@@ -5,7 +5,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { DisplayWidgetProps } from "@/core/smart/display/registry";
 
 const Shown = (props: DisplayWidgetProps) => (
-  <span data-testid="shown" data-by={props.by ?? ""} data-variant={props.variant ?? ""}>
+  <span
+    data-testid="shown"
+    data-by={props.by ?? ""}
+    data-variant={props.variant ?? ""}
+    data-alongside={(props.alongside ?? []).map((s) => `${s.identifier}:${s.id}`).join(",")}
+  >
     {props.id}
   </span>
 );
@@ -26,6 +31,15 @@ describe("StructureDisplay", () => {
     expect(shown.dataset.by).toBe("clientId");
     expect(shown.dataset.variant).toBe("inline");
     expect(shown).toHaveTextContent("abc");
+  });
+
+  it("hands an embed the objects shown with it", () => {
+    render(
+      <StructureDisplay identifier="@lok/client" id="1" variant="embed" alongside={[{ identifier: "@mikro/arraydataset", id: "7" }]} />,
+    );
+    const shown = screen.getByTestId("shown");
+    expect(shown.dataset.variant).toBe("embed");
+    expect(shown.dataset.alongside).toBe("@mikro/arraydataset:7");
   });
 
   it("links only by the model's own id: a foreign key is not an address", () => {

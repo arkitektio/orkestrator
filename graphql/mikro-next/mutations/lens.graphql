@@ -42,6 +42,12 @@ mutation CreateMeshLens($input: CreateMeshLensInput!) {
   }
 }
 
+mutation CreateCadModelLens($input: CreateCadModelLensInput!) {
+  createCadModelLens(input: $input) {
+    ...ListLens
+  }
+}
+
 mutation CreateNetworkLens($input: CreateNetworkLensInput!) {
   createNetworkLens(input: $input) {
     ...ListLens
@@ -79,6 +85,12 @@ mutation EnsureSparseLens($input: CreateSparseLensInput!) {
 
 mutation EnsureMeshLens($input: CreateMeshLensInput!) {
   createMeshLens(input: $input) {
+    ...LensSelection
+  }
+}
+
+mutation EnsureCadModelLens($input: CreateCadModelLensInput!) {
+  createCadModelLens(input: $input) {
     ...LensSelection
   }
 }

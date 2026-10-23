@@ -21,6 +21,13 @@ const COPY: Record<UnplaceableReason, { label: string; title: string; quiet?: bo
       "values: unevenly spaced z planes, or a warp field moving every voxel. The scene scrubs such " +
       "an axis when it is not drawn (time), but cannot yet bend voxels on screen, so the layer is not drawn.",
   },
+  "unnamed-slots": {
+    label: "not drawn — the collection does not say which axis each slot is",
+    title:
+      "This collection's store names no axes in its manifest, so nothing says which vertex " +
+      "component is x, y or z. Guessing an order would draw it transposed with nothing to say so. " +
+      "Rebuild it with build_collection(..., axes=[...]) naming the slots in order.",
+  },
   // Not a fault: the view, not the layer, decides this one.
   "edge-on": {
     label: "flat in this view",

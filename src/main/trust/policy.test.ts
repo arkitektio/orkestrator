@@ -25,8 +25,16 @@ describe("certificate policy", () => {
     expect(allowsBadCertificate("arkitekt.live", new Set(["arkitekt.live"]))).toBe(false);
   });
 
-  it("never overrides a revoked or blocklisted certificate", () => {
+  it("accepts the other ways a private certificate fails", () => {
+    // ERR_CERT_INVALID (malformed), _WEAK_SIGNATURE_ALGORITHM, _WEAK_KEY, _NAME_CONSTRAINT_VIOLATION
+    for (const errorCode of [-207, -208, -211, -212]) {
+      expect(verifyResult({ hostname: "lab.local", errorCode }, trusted)).toBe(0);
+    }
+  });
+
+  it("never overrides a revoked, blocklisted or interception certificate", () => {
     expect(verifyResult({ hostname: "lab.local", errorCode: REVOKED }, trusted)).toBe(-3);
+    expect(verifyResult({ hostname: "lab.local", errorCode: -217 }, trusted)).toBe(-3);
   });
 
   it("leaves a certificate that verified alone", () => {

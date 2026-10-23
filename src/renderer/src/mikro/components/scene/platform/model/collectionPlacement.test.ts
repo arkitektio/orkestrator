@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { hasUnnamedSlots, isPlaceable, unplaceableReason } from "./placeable";
 import {
   resolveCollectionMatrix,
   type MeshCollectionRef,
@@ -71,16 +72,18 @@ describe("resolveCollectionMatrix", () => {
     expect(m.elements[10]).toBe(0);
   });
 
-  it("falls back to the CS's last three axes reversed, warning once", () => {
+  it("never guesses a slot order: a store naming none is identity, warning once", () => {
+    // The old fallback read the CS's last three axes reversed, which turned an
+    // (x, y, z)-declared collection into (z, y, x) and drew it transposed.
+    // Such a layer is not dispatched at all (`hasUnnamedSlots`); a panel that
+    // still asks for a matrix gets the collection's own space.
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     try {
-      const col = collection({ id: "col:fallback", storeAxes: null });
+      const col = collection({ id: "col:unnamed", axes: ["x", "y", "z"], storeAxes: null });
       const m = resolveCollectionMatrix(layerWith(SCALE_AS_AFFINE), col, CONTEXT);
-      // Last-three-reversed over (z, y, x) puts x in slot 0.
-      expect(m.elements[0]).toBeCloseTo(4);
-      expect(m.elements[5]).toBeCloseTo(3);
-      expect(m.elements[10]).toBeCloseTo(2);
+      expect(m.elements).toEqual([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
       expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("names no vertex slots"));
 
       // Recomputes (identity churn upstream) never warn again.
       resolveCollectionMatrix(layerWith(SCALE_AS_AFFINE), col, CONTEXT);
@@ -137,5 +140,25 @@ describe("resolveCollectionMatrix", () => {
     } finally {
       warn.mockRestore();
     }
+  });
+});
+
+describe("a collection whose store names no slots", () => {
+  const placed = { asAffine: SCALE_AS_AFFINE };
+
+  it("is not placeable, and says why", () => {
+    const layer = { ...placed, collection: { store: { axes: null } } };
+    expect(hasUnnamedSlots(layer)).toBe(true);
+    expect(isPlaceable(layer)).toBe(false);
+    expect(unplaceableReason(layer)).toBe("unnamed-slots");
+  });
+
+  it("is placeable once the store names them", () => {
+    expect(isPlaceable({ ...placed, collection: { store: { axes: ["x", "y", "z"] } } })).toBe(true);
+  });
+
+  it("leaves a layer without a store alone (annotations, images)", () => {
+    expect(hasUnnamedSlots({ ...placed, collection: {} })).toBe(false);
+    expect(hasUnnamedSlots(placed)).toBe(false);
   });
 });

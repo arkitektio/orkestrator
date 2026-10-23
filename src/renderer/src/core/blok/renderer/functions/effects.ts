@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import { toast } from "@/core/notify";
 import {createBlokFunction, createVariadicBlokFunction} from '../runtime';
-import {textSchema} from './argumentSchemas';
+import {recordSchema, textSchema} from './argumentSchemas';
 
 /**
  * Effectful functions. These are refused in value position by the preflight and
@@ -92,7 +92,34 @@ const toastFunction = createBlokFunction(
   },
 );
 
+/** The name a host intercepts (`invokeFunction`) to take a blok's answer. */
+export const BLOK_ANSWER_FUNCTION = 'blok.answer';
+
+/**
+ * A blok's answer to the task that asks with it: one object, keyed by the
+ * blok's returns (`blok.answer(values={'image': img})`). One declared argument,
+ * because a catalog operation names its arguments: the server refuses a call
+ * with keys its declaration lacks, and the returns differ per blok. Only a host
+ * showing an ask that still waits takes it; anywhere else nobody answers.
+ */
+const answerFunction = createBlokFunction(
+  {
+    name: BLOK_ANSWER_FUNCTION,
+    description:
+      "Answers the task that asks with this blok. `values` is the answer, keyed by the blok's returns: blok.answer(values={'image': img}). Only where a task waits for the answer.",
+    returnType: 'void',
+    purity: 'effect',
+    schema: z.object({
+      values: recordSchema.describe("The answer, keyed by the blok's returns."),
+    }),
+  },
+  () => {
+    throw new Error('Nothing is waiting for an answer here.');
+  },
+);
+
 export const effectFunctions = [
+  answerFunction,
   createLoggerFunction('info'),
   createLoggerFunction('warn'),
   createLoggerFunction('error'),

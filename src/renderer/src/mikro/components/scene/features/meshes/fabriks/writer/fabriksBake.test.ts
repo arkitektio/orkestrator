@@ -134,15 +134,17 @@ describe("fabriksBake", () => {
     expect(baked.cells).toHaveLength(1);
     expect(baked.cells[0].objectCount).toBe(2);
     expect(baked.quantizationVoxels).toBeCloseTo(baked.grid.cellSize[0] / 65535, 9);
-    const prefix = buildFabriksPrefix(meshes, { cells: "single" });
+    const prefix = buildFabriksPrefix(meshes, ["x", "y", "z"], { cells: "single" });
     const { decoded, rows } = await readBack(prefix.files);
     expect(rows).toHaveLength(1);
     expect(decoded.size).toBe(1);
   });
 
   it("round-trips through the production reader", async () => {
-    const prefix = buildFabriksPrefix(meshes, { maxIndicesPerCell: 600, rowGroupBytes: 4096 });
+    const prefix = buildFabriksPrefix(meshes, ["x", "y", "z"], { maxIndicesPerCell: 600, rowGroupBytes: 4096 });
     expect([...prefix.files.keys()].at(-1)).toBe("fabriks.json");
+    // The slot names are the manifest's own statement; the viewer reads nothing else.
+    expect(prefix.manifest.axes).toEqual(["x", "y", "z"]);
 
     const manifest = parseFabriksManifest(prefix.manifest);
     expect(rootLevel(manifest)).toBe(0);
@@ -193,7 +195,7 @@ describe("fabriksBake", () => {
   it("reproduces vertices exactly (to quantization) when nothing straddles a cell", async () => {
     // One cell of 256 voxels holds the whole sphere: no clipping happens.
     const mesh = sphere(11, [100, 100, 100], 20, 8);
-    const prefix = buildFabriksPrefix([mesh], { cellSize: 256 });
+    const prefix = buildFabriksPrefix([mesh], ["x", "y", "z"], { cellSize: 256 });
     const { decoded, rows } = await readBack(prefix.files);
     expect(rows.length).toBe(1);
     const cell = [...decoded.values()][0];
@@ -214,7 +216,7 @@ describe("fabriksBake", () => {
   });
 
   it("writes the same Parquet schema as the Python producer", async () => {
-    const prefix = buildFabriksPrefix(meshes);
+    const prefix = buildFabriksPrefix(meshes, ["x", "y", "z"]);
     for (const [ours, theirs] of [
       ["level=0/part-00000.parquet", "level=0/part-00000.parquet"],
       ["catalog/cells.parquet", "catalog/cells.parquet"],
@@ -230,7 +232,7 @@ describe("fabriksBake", () => {
   // which the server reads the footer with, refuses the file. The schema must
   // not ask for the annotation at all (`parquetWrite.ts`, `child_mask`).
   it("declares no INTEGER logical type, which the writer cannot serialize for a strict reader", () => {
-    const prefix = buildFabriksPrefix(meshes);
+    const prefix = buildFabriksPrefix(meshes, ["x", "y", "z"]);
     for (const [path, bytes] of prefix.files) {
       if (!path.endsWith(".parquet")) continue;
       const { schema } = parquetMetadata(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));

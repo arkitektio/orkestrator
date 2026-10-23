@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import {describe, expect, it} from 'vitest';
+import {baseBlokCatalog} from '@/core/blok/renderer/baseCatalog';
 import {UI_CATALOG_NAME} from '@/core/blok/renderer/catalog';
 import {buildCatalogExport} from './catalogExport';
 
@@ -31,7 +32,21 @@ describe('buildCatalogExport', () => {
     expect(manifest.functions.length).toBeGreaterThan(10);
   });
 
-  it('carries the same components in both documents', () => {
+  it('publishes what this app adds to the base catalog, never the base itself', () => {
+    const {catalog, manifest} = buildCatalogExport();
+    const inCatalog = new Set(catalog.components.map(component => component.name));
+    const operations = new Set(catalog.operations.map(operation => operation.name));
+
+    for (const name of baseBlokCatalog.components.keys()) {
+      expect(inCatalog.has(name), name).toBe(false);
+      // The manifest describes what the renderer offers, base included.
+      expect(manifest.components.some(component => component.name === name), name).toBe(true);
+    }
+    for (const name of baseBlokCatalog.functions.keys()) expect(operations.has(name), name).toBe(false);
+    expect(operations.has('str.concat')).toBe(true);
+  });
+
+  it('carries the same UI components in both documents', () => {
     const {catalog, manifest} = buildCatalogExport();
     const inCatalog = new Set(catalog.components.map(component => component.name));
     const inManifest = new Set(manifest.components.map(component => component.name));
@@ -42,6 +57,7 @@ describe('buildCatalogExport', () => {
       expect(inCatalog.has(name)).toBe(true);
       expect(inManifest.has(name)).toBe(true);
     }
-    expect(inCatalog).toEqual(inManifest);
+    const base = new Set(baseBlokCatalog.components.keys());
+    expect(inCatalog).toEqual(new Set([...inManifest].filter(name => !base.has(name))));
   });
 });

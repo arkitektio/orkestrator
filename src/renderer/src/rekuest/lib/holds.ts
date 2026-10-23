@@ -21,6 +21,8 @@ export interface HoldRequest {
   agent?: { id: string; name: string } | null;
   callerAgent?: { id: string; name: string } | null;
   args?: unknown;
+  /** A task's hold through a blok (an ask): the materialization the person answers in. */
+  blok?: string | null;
 }
 
 type HoldEvent = {
@@ -66,7 +68,23 @@ export const holdFromEvent = (event: HoldEvent): HoldRequest | null => {
     agent: named(value.agent),
     callerAgent,
     args: value.args,
+    ...(value.blok != null ? { blok: String(value.blok) } : {}),
   };
+};
+
+/** A blok a task showed while it carried on (an INFORM event). */
+export interface TaskInform {
+  task: string;
+  /** The materialization it shows. */
+  blok: string;
+  message?: string | null;
+}
+
+/** What an INFORM event shows, or null for any other event. */
+export const informFromEvent = (event: HoldEvent): TaskInform | null => {
+  if (event.kind !== TaskEventKind.Inform) return null;
+  const blok = record(event.value)?.blok;
+  return blok != null ? { task: event.task.id, blok: String(blok), message: event.message ?? null } : null;
 };
 
 /** The held task a DECIDED event answers, or null for any other event. */
@@ -82,6 +100,10 @@ export interface HoldDecision {
   auto: boolean;
   /** What the person wrote with it, if anything. */
   answer?: string | null;
+  /** What they answered through the hold's blok, by its returns. */
+  values?: Record<string, unknown> | null;
+  /** Who decided (their sub); none in auto-mode. */
+  user?: string | null;
 }
 
 /** The decision a DECIDED event carries (`{approved, answer, auto, user}`), or null. */
@@ -94,6 +116,8 @@ export const decisionFromEvent = (event: HoldEvent): HoldDecision | null => {
     approved: value.approved !== false,
     auto: value.auto === true,
     answer: typeof value.answer === "string" && value.answer.trim() ? value.answer : null,
+    ...(record(value.values) ? { values: record(value.values) } : {}),
+    ...(typeof value.user === "string" ? { user: value.user } : {}),
   };
 };
 

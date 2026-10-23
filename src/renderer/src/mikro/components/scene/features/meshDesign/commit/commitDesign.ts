@@ -12,6 +12,7 @@ import {
 } from "@/mikro/api/graphql";
 import type { MikroClient } from "@/core/data/zarr/store/types";
 import { lensRegistry } from "@/mikro/lib/lenses/lensRegistry";
+import type { SlotAxes } from "../../meshes/fabriks/writer/fabriksPrefix";
 import { uploadFabriksPrefix, type FabriksUploadProgress } from "../../meshes/fabriks/writer/fabriksUpload";
 import type { DesignMesh, DesignOrigin, DesignStatus } from "../store/meshDesignStore";
 import { designDispatcher } from "../worker/designDispatcher";
@@ -28,16 +29,14 @@ import type { DesignBakeMesh } from "./bakeDesign";
  * voxel frame; this module records that translation as the collection's
  * placement so it renders exactly where it was designed:
  *
- *  - The collection's coordinate system copies the world's SPACE axes in the
- *    world's own order. `collectionSpatialAxes` reads slots back to front —
- *    the LAST axis is vertex component 0 — which is the same convention the
- *    annotation collection (registered into the world by identity, vectors
- *    read as THREE xyz) already relies on. So slot 0 ↔ last world axis ↔
- *    THREE x, consistently with everything else in the scene.
+ *  - The collection's axes are the world's SPACE axes in VERTEX-SLOT order:
+ *    slot 0 is THREE's x, which is the world's LAST space axis, so a (z, y, x)
+ *    world gives (x, y, z). The same triple is the manifest's `axes` — the
+ *    server refuses a collection whose declaration and manifest differ, and
+ *    the viewer reads the slots from the manifest alone, never guessing.
  *  - `derivedFrom` carries ONE mappable edge from the collection's space
  *    into the world (`world = voxel + offset`): a BY_DIMENSION naming the
- *    space axes on both sides, with the per-axis offsets in the axes'
- *    declared order (`placementTransform`).
+ *    space axes on both sides, the offsets in slot order (`placementTransform`).
  *  - An edit-and-commit adds a second, lineage-only edge to the collection
  *    it was loaded from.
  *
@@ -65,9 +64,18 @@ const worldSpaceAxes = (world: WorldSystemLike): string[] => {
   return ordered.filter((axis) => axis.type === AxisType.Space).map((axis) => axis.name);
 };
 
-/** The per-axis translation in the axes' declared order (last axis = slot 0). */
-export const translationForAxes = (axisNames: readonly string[], offset: readonly [number, number, number]): number[] =>
-  axisNames.map((_, i) => offset[axisNames.length - 1 - i] ?? 0);
+/**
+ * The world's SPACE axes in vertex-slot order — slot 0 is THREE's x, the
+ * world's last space axis. What the collection declares AND what its manifest
+ * names, so the two cannot disagree.
+ */
+export const slotAxesOf = (world: WorldSystemLike): SlotAxes => {
+  const axes = worldSpaceAxes(world);
+  if (axes.length !== 3) {
+    throw new Error(`The scene's world declares ${axes.length} spatial axes; a mesh collection needs three.`);
+  }
+  return [axes[2], axes[1], axes[0]];
+};
 
 /**
  * The edge that places the collection in the world: the bake's translation,
@@ -80,14 +88,15 @@ export const translationForAxes = (axisNames: readonly string[], offset: readonl
  * the axes it acts on and leaves the rest of the world untouched, which is
  * exactly what placing a three-axis collection means.
  */
-export const placementTransform = (axisNames: readonly string[], offset: readonly [number, number, number]) => ({
+export const placementTransform = (slotAxes: SlotAxes, offset: readonly [number, number, number]) => ({
   kind: CreatableTransformKind.ByDimension,
   parts: [
     {
       kind: PartKind.Translation,
-      translation: translationForAxes(axisNames, offset),
-      inputAxes: [...axisNames],
-      outputAxes: [...axisNames],
+      // The bake's offset is in slot order too, so it lines up with the names as-is.
+      translation: [...offset],
+      inputAxes: [...slotAxes],
+      outputAxes: [...slotAxes],
     },
   ],
 });
@@ -109,13 +118,10 @@ export async function commitMeshDesign(opts: {
 }): Promise<CommitResult> {
   const { client, datalayer, sceneId, world, meshes, origin, onProgress } = opts;
   if (meshes.length === 0) throw new Error("Nothing to commit — the design holds no meshes.");
-  const axisNames = worldSpaceAxes(world);
-  if (axisNames.length !== 3) {
-    throw new Error(`The scene's world declares ${axisNames.length} spatial axes; a mesh collection needs three.`);
-  }
+  const slotAxes = slotAxesOf(world);
 
   onProgress?.({ status: "baking", message: "Baking the collection…" });
-  const bake = await designDispatcher().bake(toBakeMeshes(meshes));
+  const bake = await designDispatcher().bake(toBakeMeshes(meshes), slotAxes);
   if (opts.signal?.aborted) throw new Error("Commit cancelled");
 
   onProgress?.({ status: "uploading", message: "Uploading…", upload: { done: 0, total: bake.files.size, bytesDone: 0, bytesTotal: bake.totalBytes } });
@@ -129,14 +135,14 @@ export async function commitMeshDesign(opts: {
     mutation: CreateMeshCollectionDocument,
     variables: {
       input: {
-        axes: axisNames.map((name) => ({ name, type: AxisType.Space })),
+        axes: slotAxes.map((name) => ({ name, type: AxisType.Space })),
         store: storeId,
         name: opts.name?.trim() || undefined,
         derivedFrom: [
           {
             kind: DerivationSourceKind.CoordinateSystem,
             coordinateSystem: world.id,
-            transform: placementTransform(axisNames, bake.offset),
+            transform: placementTransform(slotAxes, bake.offset),
             valueRelation: ValueRelation.Identical,
           },
           ...(origin

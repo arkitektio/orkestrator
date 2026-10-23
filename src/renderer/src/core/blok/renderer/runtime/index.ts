@@ -8,6 +8,7 @@ export * from './port';
 export * from './preflight';
 export * from './schemas';
 export * from './scope';
+export * from './resource';
 export * from './task';
 export * from './tree';
 export * from './types';

@@ -1,5 +1,5 @@
 import { singleCellQuantization, type BakeMesh } from "../../meshes/fabriks/writer/fabriksBake";
-import { buildFabriksPrefix } from "../../meshes/fabriks/writer/fabriksPrefix";
+import { buildFabriksPrefix, type SlotAxes } from "../../meshes/fabriks/writer/fabriksPrefix";
 
 /**
  * A design session as a fabriks PREFIX: the bake and the Parquet encoding,
@@ -34,9 +34,9 @@ export type DesignBake = {
  * culling-friendly auto grid. Decided from the bounds, so the design is
  * baked once.
  */
-export function bakeDesign(meshes: readonly DesignBakeMesh[]): DesignBake {
+export function bakeDesign(meshes: readonly DesignBakeMesh[], axes: SlotAxes): DesignBake {
   const cells = singleCellQuantization(meshes) <= SINGLE_CELL_MAX_QUANTIZATION ? "single" : "auto";
-  const prefix = buildFabriksPrefix(meshes, { cells });
+  const prefix = buildFabriksPrefix(meshes, axes, { cells });
   return {
     files: prefix.files,
     totalBytes: prefix.totalBytes,

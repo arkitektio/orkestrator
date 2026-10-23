@@ -3,12 +3,14 @@ import {logoBlokComponents} from './bloks/logo';
 import {sceneBlokComponents} from './bloks/scene';
 import {structureBlokComponents} from './bloks/structure';
 import {shadcnComposableComponents} from './bloks';
-import {standardBlokFunctions} from './functions';
-import {createBlokCatalog, type BlokCatalog, type BlokComponentDefinition} from './runtime';
+import {baseBlokCatalog} from './baseCatalog';
+import {effectFunctions, variadicBlokFunctions} from './functions';
+import {extendBlokCatalog, type BlokCatalog, type BlokComponentDefinition} from './runtime';
 
 /**
  * The catalog a blok payload is validated and rendered against: which
- * components exist, which functions a `utilCall` may name.
+ * components exist, which functions a `utilCall` may name. Orkestrator's UI
+ * catalog, extending the base one (`./baseCatalog.ts`) with what this app draws.
  *
  * The backend does not enumerate either — `ComponentNode.component` and
  * `UtilCall.operation` are free-form strings — so this module is the authority,
@@ -23,7 +25,8 @@ export const UI_CATALOG_NAME = 'orkestrator';
 export const UI_CATALOG_DESCRIPTION =
   'Components and functions rendered by the Orkestrator desktop app';
 
-export const defaultBlokCatalog: BlokCatalog = createBlokCatalog(
+export const defaultBlokCatalog: BlokCatalog = extendBlokCatalog(
+  baseBlokCatalog,
   'https://arkitekt.live/catalogs/v1.json',
   [
     ...shadcnComposableComponents,
@@ -32,7 +35,7 @@ export const defaultBlokCatalog: BlokCatalog = createBlokCatalog(
     ...logoBlokComponents,
     RawInspector,
   ],
-  standardBlokFunctions,
+  [...variadicBlokFunctions, ...effectFunctions],
 );
 
 /**

@@ -5,6 +5,7 @@ import { useDisplay } from "@/core/smart/display/displays";
 import { useModuleHostVersion } from "@/core/modules/host/host";
 import type { DisplayVariant, DisplayWidgetProps } from "@/core/smart/display/registry";
 import { SmartLink } from "@/core/smart/builder";
+import type { Structure } from "@/core/types";
 
 /**
  * Any structure, shown by the module that owns it: the host's slot for
@@ -21,6 +22,7 @@ export const StructureDisplay = ({
   className,
   link,
   by,
+  alongside,
   fallback = null,
 }: {
   identifier: string;
@@ -36,6 +38,8 @@ export const StructureDisplay = ({
   link?: boolean;
   /** Which key `id` is, when it is not the model's own id (see DisplayWidgetProps). */
   by?: string;
+  /** The objects shown together with this one (see DisplayWidgetProps). */
+  alongside?: readonly Structure[];
   /**
    * Shown when nothing can display it: no module displays this identifier,
    * or the owning module's service is not ready.
@@ -54,6 +58,7 @@ export const StructureDisplay = ({
         id={id}
         variant={variant}
         by={by}
+        alongside={alongside}
         small={small}
         className={className}
         fallback={fallback}

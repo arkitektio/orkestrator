@@ -83,6 +83,12 @@ export type Action<TAppOrServices = ServiceMap> = {
   title: string;
   description: string;
   icon?: LucideIcon;
+  /**
+   * BSX of an ActionLogo blok (`actionLogoSource`), drawn in the icon's place
+   * where there is room for a picture: menu rows, the context menu. The icon
+   * stays for the small buttons.
+   */
+  logo?: string;
   pinned?: boolean;
   conditions: readonly Condition[];
   /**
@@ -98,7 +104,7 @@ export type ActionRegistry<TAppOrServices = ServiceMap> = Record<string, Action<
 
 type ActionMetadata = Pick<
   Action,
-  "title" | "description" | "icon" | "pinned" | "conditions" | "roles" | "collections"
+  "title" | "description" | "icon" | "logo" | "pinned" | "conditions" | "roles" | "collections"
 >;
 
 type RegistryActionId<TRegistry extends Record<string, unknown>> = Extract<

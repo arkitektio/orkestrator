@@ -1,74 +1,21 @@
 import { reportErrorAs } from "@/core/notify";
-import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
 import { Button } from "@/core/ui/button";
 import { Textarea } from "@/core/ui/textarea";
 import { cn } from "@/core/util/utils";
-import { ArgPortFragment, PortKind, useDecideMutation, useDetailActionQuery } from "@/rekuest/api/graphql";
+import { ArgPortFragment, useDecideMutation, useDetailActionQuery } from "@/rekuest/api/graphql";
 import { ActionLogo } from "@/rekuest/components/logo/ActionLogo";
 import { ActionMonogram } from "@/rekuest/components/logo/ActionMonogram";
 import { HoldDecision, HoldRequest } from "@/rekuest/lib/holds";
 import { Check, CheckCircle2, Hand, Loader2, MessageSquarePlus, X, XCircle, Zap } from "lucide-react";
 import { useState } from "react";
-
-/** A structure as the wire carries it: `{__identifier, object}`. */
-const asWireStructure = (value: unknown): { identifier: string; id: string } | null => {
-  if (!value || typeof value !== "object") return null;
-  const r = value as Record<string, unknown>;
-  return typeof r.__identifier === "string" && r.object != null
-    ? { identifier: r.__identifier, id: String(r.object) }
-    : null;
-};
+import { PortValue } from "./PortValue";
+import { MaterializedBlokEmbedById } from "../MaterializedBlokEmbed";
+import { TaskBlokStatus } from "@/rekuest/api/graphql";
 
 const isEmpty = (value: unknown) =>
   value === undefined ||
   value === null ||
   (typeof value === "object" && Object.keys(value as object).length === 0);
-
-const compact = (value: unknown): string => {
-  if (typeof value === "string") return value;
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-};
-
-/**
- * One argument as a person reads it: a structure is shown as itself (an image,
- * a release), whether the wire wrapped it or the port says what its id is; a
- * list counts and shows its first few; anything else is its value.
- */
-const ArgValue = ({ value, port }: { value: unknown; port?: ArgPortFragment }) => {
-  const wire = asWireStructure(value);
-  const structure =
-    wire ??
-    (port?.kind === PortKind.Structure && port.identifier && (typeof value === "string" || typeof value === "number")
-      ? { identifier: String(port.identifier), id: String(value) }
-      : null);
-  if (structure) {
-    return (
-      <StructureDisplay
-        identifier={structure.identifier}
-        id={structure.id}
-        small
-        fallback={<span className="font-mono text-[11px]">{`${structure.identifier} ${structure.id}`}</span>}
-      />
-    );
-  }
-  if (Array.isArray(value)) {
-    const child = port?.children?.[0] as ArgPortFragment | undefined;
-    return (
-      <span className="flex min-w-0 flex-wrap items-center gap-1">
-        {value.slice(0, 3).map((item, index) => (
-          <ArgValue key={index} value={item} port={child} />
-        ))}
-        {value.length > 3 && <span className="text-muted-foreground">+{value.length - 3} more</span>}
-      </span>
-    );
-  }
-  if (typeof value === "boolean") return <span className="font-medium">{value ? "yes" : "no"}</span>;
-  return <span className="line-clamp-2 break-all font-mono text-[11px]">{compact(value)}</span>;
-};
 
 /** The arguments, labelled by the action's ports where it is known, in their order. */
 const HoldArgs = ({ args, ports }: { args: unknown; ports?: readonly ArgPortFragment[] }) => {
@@ -89,7 +36,7 @@ const HoldArgs = ({ args, ports }: { args: unknown; ports?: readonly ArgPortFrag
               {port?.label || key}
             </dt>
             <dd className="min-w-0 text-xs">
-              <ArgValue value={values[key]} port={port} />
+              <PortValue value={values[key]} port={port} />
             </dd>
           </div>
         );
@@ -134,17 +81,19 @@ export const HoldCard = ({ hold, className }: { hold: HoldRequest; className?: s
   });
   const action = data?.action;
 
-  const send = (approved: boolean) => {
+  const send = (approved: boolean, values?: Record<string, unknown>) => {
     setSending(approved ? "approve" : "deny");
     // Sent, the card stays busy: it goes when the decision comes back as an event.
     // Only a refusal hands the buttons back.
-    decide({
-      variables: { input: { task: hold.task, approved, answer: answer.trim() || null } },
+    return decide({
+      variables: { input: { task: hold.task, approved, answer: answer.trim() || null, values: values ?? null } },
     }).catch((error: unknown) => {
       setSending(null);
-      reportErrorAs(approved ? "Couldn't approve it" : "Couldn't deny it")(error);
+      reportErrorAs(approved ? (values ? "Couldn't send your answer" : "Couldn't approve it") : "Couldn't deny it")(error);
     });
   };
+  // An ask through a blok is answered in the blok: there is nothing to approve, only to dismiss.
+  const asksThroughBlok = hold.kind === "self" && !!hold.blok;
 
   const speaker = hold.callerAgent?.name ?? (hold.kind === "self" ? "A task" : "An agent");
 
@@ -196,6 +145,22 @@ export const HoldCard = ({ hold, className }: { hold: HoldRequest; className?: s
         </div>
       )}
 
+      {asksThroughBlok && hold.blok && (
+        <MaterializedBlokEmbedById
+          id={hold.blok}
+          className="pl-1"
+          ask={{
+            status:
+              sending === "deny"
+                ? TaskBlokStatus.Dismissed
+                : sending === "approve"
+                  ? TaskBlokStatus.Answered
+                  : TaskBlokStatus.Waiting,
+          }}
+          onReturn={(values) => send(true, values)}
+        />
+      )}
+
       {answering && (
         <Textarea
           value={answer}
@@ -220,11 +185,16 @@ export const HoldCard = ({ hold, className }: { hold: HoldRequest; className?: s
           </Button>
         )}
         <Button size="sm" variant="outline" className="h-8 text-xs" disabled={sending !== null} onClick={() => send(false)}>
-          {sending === "deny" ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />} Deny
+          {sending === "deny" ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />}{" "}
+          {asksThroughBlok ? "Dismiss" : "Deny"}
         </Button>
-        <Button size="sm" className="h-8 text-xs" disabled={sending !== null} onClick={() => send(true)}>
-          {sending === "approve" ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />} Approve
-        </Button>
+        {asksThroughBlok ? (
+          sending === "approve" && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+        ) : (
+          <Button size="sm" className="h-8 text-xs" disabled={sending !== null} onClick={() => send(true)}>
+            {sending === "approve" ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />} Approve
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -245,6 +215,20 @@ export const HoldDecisionLine = ({
 }) => {
   const Icon = decision.auto ? Zap : decision.approved ? CheckCircle2 : XCircle;
   const verb = decision.auto ? "Ran without asking" : decision.approved ? "You approved" : "You declined";
+  if (hold.blok) {
+    // An ask through a blok stays as the blok, frozen, with what was answered in it.
+    return (
+      <MaterializedBlokEmbedById
+        id={hold.blok}
+        className={className}
+        ask={{
+          status: decision.approved ? TaskBlokStatus.Answered : TaskBlokStatus.Dismissed,
+          values: decision.values,
+          decidedBy: decision.user,
+        }}
+      />
+    );
+  }
   return (
     <div
       className={cn(

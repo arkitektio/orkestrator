@@ -63,3 +63,15 @@ query HoverTask($id: ID!) {
     ...HoverTask
   }
 }
+
+# The bloks a task showed, for where it is embedded (a chat message attaching the task).
+query TaskBloks($id: ID!) {
+  task(id: $id) {
+    id
+    isDone
+    latestEventKind
+    bloks {
+      ...TaskBlok
+    }
+  }
+}

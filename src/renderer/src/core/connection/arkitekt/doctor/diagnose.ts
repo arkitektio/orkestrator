@@ -4,6 +4,7 @@ import type {
   ProbeTarget,
 } from "../../../../../../main/doctor/protocol";
 import { MESH_DIAL_FAILED_CODE, MESH_PROXY_DOWN_CODE } from "../../../../../../main/doctor/networkErrors";
+import { isStrictHost, normalizeHost } from "../../../../../../main/trust/policy";
 import { controlDomain, type MeshPeer, type MeshSnapshot, type MeshStatusPayload } from "../../../../../../main/mesh/protocol";
 import { classifyHost, isMeshClass } from "./classify";
 import type { DiagnoseInput, Finding } from "./findings";
@@ -815,6 +816,26 @@ const tlsFindings = (probe: NetworkProbeResult): Finding[] => {
   }
 
   if (tls.ok) return [];
+
+  // A host that always serves a publicly valid certificate gets no leniency
+  // (main/trust/policy.ts), so a bad one blocks the connection here too.
+  const normalized = normalizeHost(host);
+  if (normalized && isStrictHost(normalized)) {
+    return [
+      {
+        id: "net.tls.strict-invalid",
+        severity: "blocker",
+        title: `The certificate for ${host} is not valid`,
+        detail:
+          "This server always has a valid public certificate, so Orkestrator " +
+          "refuses any other. Something between you and the server may be " +
+          "intercepting the connection (a company proxy, a captive portal), " +
+          "or the computer's clock is wrong.",
+        evidence: [probe.url, tls.authorizationError || tls.message || ""].filter(Boolean),
+        targetLabel: label,
+      },
+    ];
+  }
 
   if (tls.expired) {
     return [

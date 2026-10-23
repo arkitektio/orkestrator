@@ -1,4 +1,4 @@
-import { standardBlokFunctions } from "@/core/blok/renderer/functions";
+import { effectFunctions, standardBlokFunctions, variadicBlokFunctions } from "@/core/blok/renderer/functions";
 import {
   BlokSchemas,
   createBlokCatalog,
@@ -33,7 +33,7 @@ export const PORT_CALL_SELF_PATH = "value";
 export const portCallCatalog = createBlokCatalog(
   "https://arkitekt.live/catalogs/port-calls/v1.json",
   [],
-  [...standardBlokFunctions, ...portFunctions],
+  [...standardBlokFunctions, ...variadicBlokFunctions, ...effectFunctions, ...portFunctions],
 );
 
 /** Serializable manifest for authoring UIs (function names, args, purity). */

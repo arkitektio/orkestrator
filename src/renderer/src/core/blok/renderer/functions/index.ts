@@ -1,59 +1,47 @@
-import {z} from 'zod';
-import {createBlokFunction, type BlokFunctionDefinition} from '../runtime';
+import type {BlokFunctionDefinition} from '../runtime';
+import {baseFunctions} from './base';
 import {coerceFunctions} from './coerce';
-import {compareFunctions} from './compare';
-import {effectFunctions} from './effects';
 import {formatFunctions} from './format';
 import {listFunctions} from './lists';
-import {logicFunctions} from './logic';
-import {mathFunctions} from './math';
+import {logicVariadicFunctions} from './logic';
+import {mathFunctions, mathVariadicFunctions} from './math';
 import {objectFunctions} from './objects';
-import {stringFunctions} from './strings';
+import {stringFunctions, stringVariadicFunctions} from './strings';
 
 /**
- * `is_admin` is a business rule, not a utility — it hard-codes one role name
- * into the shared catalog. `compare.eq` expresses it, so this stays only so
- * payloads already referencing it keep rendering.
- */
-const isAdminFunction = createBlokFunction(
-  {
-    name: 'is_admin',
-    description: 'Deprecated. Use compare.eq with the role you mean.',
-    returnType: 'boolean',
-    purity: 'pure',
-    deprecated: 'Use compare.eq({a: role, b: "admin"}) instead.',
-    schema: z.object({role: z.string()}),
-  },
-  args => args.role === 'admin',
-);
-
-/**
- * The standard function library.
+ * The standard function library: the base catalog's functions, every one of
+ * them pure and of a fixed signature (positional order is parameter order,
+ * which is how the reference parser and the server read a call). Orkestrator's
+ * catalog adds the rest: `variadicBlokFunctions` (`math.sum(a, b, c)`,
+ * `str.template(template, name=…)`) and the effectful `effectFunctions`
+ * (toast, clipboard, logger), which depend on the UI that runs them.
  *
- * Names are namespaced by domain (`math.*`, `str.*`, `list.*`, …). The bare
- * names some functions also answer to (`if`, `gt`, `eq`) are registered as
- * aliases rather than as separate definitions, so stored payloads written
- * against the old flat names keep working while new ones read consistently.
+ * The bare names (`eq`, `if`, `sub`, …) are the server's base operations
+ * (`./base.ts`), with the base catalog's own argument keys and semantics. The
+ * rest are namespaced by domain (`math.*`, `str.*`, `list.*`, …).
  */
+export const variadicBlokFunctions: BlokFunctionDefinition[] = [
+  ...logicVariadicFunctions,
+  ...mathVariadicFunctions,
+  ...stringVariadicFunctions,
+];
+
 export const standardBlokFunctions: BlokFunctionDefinition[] = [
-  ...logicFunctions,
-  ...compareFunctions,
+  ...baseFunctions,
   ...mathFunctions,
   ...stringFunctions,
   ...listFunctions,
   ...objectFunctions,
   ...formatFunctions,
   ...coerceFunctions,
-  ...effectFunctions,
-  isAdminFunction,
 ];
 
+export {baseFunctions} from './base';
 export {coerceFunctions} from './coerce';
-export {compareFunctions} from './compare';
-export {effectFunctions} from './effects';
+export {BLOK_ANSWER_FUNCTION, effectFunctions} from './effects';
 export {formatFunctions} from './format';
 export {listFunctions} from './lists';
-export {logicFunctions} from './logic';
-export {mathFunctions} from './math';
+export {logicVariadicFunctions} from './logic';
+export {mathFunctions, mathVariadicFunctions} from './math';
 export {objectFunctions} from './objects';
-export {stringFunctions} from './strings';
+export {stringFunctions, stringVariadicFunctions} from './strings';

@@ -1,4 +1,4 @@
-import { Identifier } from "@/core/types";
+import type { Identifier, Structure } from "@/core/types";
 import React, { createContext, useContext } from "react";
 import { DisplayLinePlaceholder } from "./DisplayLine";
 
@@ -14,10 +14,17 @@ export type DisplayWidgetProps = {
   /**
    * SPEC ADDITION: how much of the object to show where it is embedded in
    * someone else's UI. "inline": its name, as text; "avatar": its picture;
-   * "chip": picture and name; "card" (default): the full display. A display
-   * that knows no variant renders its default.
+   * "chip": picture and name; "card" (default): the full display; "embed":
+   * the object itself, live, in someone else's flow (a blok in a chat
+   * message). A display that knows no variant renders its default.
    */
   variant?: DisplayVariant;
+  /**
+   * SPEC ADDITION: the objects shown together with this one (a message's
+   * other attachments). An embed may open itself on them, e.g. a blok on the
+   * image it was posted with.
+   */
+  alongside?: readonly Structure[];
   /**
    * SPEC ADDITION: which of the model's keys `id` is, when the caller holds a
    * foreign key rather than the model's own id (lok clients by their OAuth
@@ -30,7 +37,14 @@ export type DisplayWidgetProps = {
   context?: "command" | "widget"; // "command" = compact, "widget" = full display
 };
 
-export type DisplayVariant = "inline" | "avatar" | "chip" | "card";
+export type DisplayVariant = "inline" | "avatar" | "chip" | "card" | "embed";
+
+/**
+ * Whether a display shows its full card: no variant, "card", or "embed" (an
+ * object with no live embed of its own shows its card there).
+ */
+export const showsCard = (variant: DisplayVariant | undefined): boolean =>
+  !variant || variant === "card" || variant === "embed";
 
 /**
  * What a viewer surface is handed: like a display, but the object itself to

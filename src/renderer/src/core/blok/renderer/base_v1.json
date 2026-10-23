@@ -1,0 +1,1541 @@
+{
+  "name": "base",
+  "version": 1,
+  "description": "Pure, total operations and the control-flow components every UI must implement, for port validators, effects, blok util calls and blok trees. Argument order is positional order. Additive evolution only.",
+  "operations": [
+    {
+      "name": "eq",
+      "description": "True if a equals b (deep JSON equality).",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "ANY",
+          "required": true,
+          "description": "Left operand."
+        },
+        {
+          "key": "b",
+          "kind": "ANY",
+          "required": true,
+          "description": "Right operand."
+        }
+      ]
+    },
+    {
+      "name": "ne",
+      "description": "True if a does not equal b (deep JSON equality).",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "ANY",
+          "required": true,
+          "description": "Left operand."
+        },
+        {
+          "key": "b",
+          "kind": "ANY",
+          "required": true,
+          "description": "Right operand."
+        }
+      ]
+    },
+    {
+      "name": "gt",
+      "description": "True if a > b. Non-numbers compare false.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Left operand."
+        },
+        {
+          "key": "b",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Right operand."
+        }
+      ]
+    },
+    {
+      "name": "gte",
+      "description": "True if a >= b. Non-numbers compare false.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Left operand."
+        },
+        {
+          "key": "b",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Right operand."
+        }
+      ]
+    },
+    {
+      "name": "lt",
+      "description": "True if a < b. Non-numbers compare false.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Left operand."
+        },
+        {
+          "key": "b",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Right operand."
+        }
+      ]
+    },
+    {
+      "name": "lte",
+      "description": "True if a <= b. Non-numbers compare false.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Left operand."
+        },
+        {
+          "key": "b",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Right operand."
+        }
+      ]
+    },
+    {
+      "name": "between",
+      "description": "True if min <= value <= max (inclusive). Non-numbers compare false.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "The number to test."
+        },
+        {
+          "key": "min",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Lower bound, inclusive."
+        },
+        {
+          "key": "max",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Upper bound, inclusive."
+        }
+      ]
+    },
+    {
+      "name": "and",
+      "description": "Logical conjunction of two booleans. Nest calls for more operands.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "BOOL",
+          "required": true,
+          "description": "First operand."
+        },
+        {
+          "key": "b",
+          "kind": "BOOL",
+          "required": true,
+          "description": "Second operand."
+        }
+      ]
+    },
+    {
+      "name": "or",
+      "description": "Logical disjunction of two booleans. Nest calls for more operands.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "BOOL",
+          "required": true,
+          "description": "First operand."
+        },
+        {
+          "key": "b",
+          "kind": "BOOL",
+          "required": true,
+          "description": "Second operand."
+        }
+      ]
+    },
+    {
+      "name": "not",
+      "description": "Logical negation.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "BOOL",
+          "required": true,
+          "description": "The boolean to negate."
+        }
+      ]
+    },
+    {
+      "name": "if",
+      "description": "Returns then if condition is true, otherwise otherwise.",
+      "returns": "ANY",
+      "arguments": [
+        {
+          "key": "condition",
+          "kind": "BOOL",
+          "required": true,
+          "description": "The condition."
+        },
+        {
+          "key": "then",
+          "kind": "ANY",
+          "required": true,
+          "description": "Value when the condition holds."
+        },
+        {
+          "key": "otherwise",
+          "kind": "ANY",
+          "required": true,
+          "description": "Value when it does not."
+        }
+      ]
+    },
+    {
+      "name": "is_null",
+      "description": "True if a is null or missing.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to test."
+        }
+      ]
+    },
+    {
+      "name": "is_set",
+      "description": "True if a is neither null nor missing.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to test."
+        }
+      ]
+    },
+    {
+      "name": "len",
+      "description": "Length of a string, list or dict. Null counts as 0.",
+      "returns": "INT",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to measure."
+        }
+      ]
+    },
+    {
+      "name": "len_between",
+      "description": "True if min <= len(value) <= max (inclusive). Omit max for no upper bound.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to measure."
+        },
+        {
+          "key": "min",
+          "kind": "INT",
+          "required": true,
+          "description": "Minimum length, inclusive."
+        },
+        {
+          "key": "max",
+          "kind": "INT",
+          "required": false,
+          "description": "Maximum length, inclusive."
+        }
+      ]
+    },
+    {
+      "name": "is_empty",
+      "description": "True if a is null or has length 0.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to test."
+        }
+      ]
+    },
+    {
+      "name": "contains",
+      "description": "True if haystack contains needle: substring for strings, membership for lists, key presence for dicts.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "haystack",
+          "kind": "ANY",
+          "required": true,
+          "description": "The container."
+        },
+        {
+          "key": "needle",
+          "kind": "ANY",
+          "required": true,
+          "description": "The element or substring to look for."
+        }
+      ]
+    },
+    {
+      "name": "in",
+      "description": "True if value is a member of options.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to test."
+        },
+        {
+          "key": "options",
+          "kind": "LIST",
+          "required": true,
+          "description": "The allowed values."
+        }
+      ]
+    },
+    {
+      "name": "matches",
+      "description": "True if the whole of value matches the regular expression pattern.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "STRING",
+          "required": true,
+          "description": "The string to test."
+        },
+        {
+          "key": "pattern",
+          "kind": "STRING",
+          "required": true,
+          "description": "A regular expression (ECMAScript and Python common subset)."
+        }
+      ]
+    },
+    {
+      "name": "starts_with",
+      "description": "True if value starts with prefix.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "STRING",
+          "required": true,
+          "description": "The string to test."
+        },
+        {
+          "key": "prefix",
+          "kind": "STRING",
+          "required": true,
+          "description": "The prefix."
+        }
+      ]
+    },
+    {
+      "name": "ends_with",
+      "description": "True if value ends with suffix.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "STRING",
+          "required": true,
+          "description": "The string to test."
+        },
+        {
+          "key": "suffix",
+          "kind": "STRING",
+          "required": true,
+          "description": "The suffix."
+        }
+      ]
+    },
+    {
+      "name": "get",
+      "description": "Reads path (a JSON pointer) out of value; null when the path does not resolve.",
+      "returns": "ANY",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to read from."
+        },
+        {
+          "key": "path",
+          "kind": "STRING",
+          "required": true,
+          "description": "A JSON pointer such as /items/0/name."
+        }
+      ]
+    },
+    {
+      "name": "coalesce",
+      "description": "The first of a, b that is not null.",
+      "returns": "ANY",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "ANY",
+          "required": true,
+          "description": "Preferred value."
+        },
+        {
+          "key": "b",
+          "kind": "ANY",
+          "required": true,
+          "description": "Fallback value."
+        }
+      ]
+    },
+    {
+      "name": "add",
+      "description": "a + b. Non-numbers yield null.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Left operand."
+        },
+        {
+          "key": "b",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Right operand."
+        }
+      ]
+    },
+    {
+      "name": "sub",
+      "description": "a - b. Non-numbers yield null.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Left operand."
+        },
+        {
+          "key": "b",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Right operand."
+        }
+      ]
+    },
+    {
+      "name": "mul",
+      "description": "a * b. Non-numbers yield null.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Left operand."
+        },
+        {
+          "key": "b",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Right operand."
+        }
+      ]
+    },
+    {
+      "name": "div",
+      "description": "a / b (float division). Non-numbers and division by zero yield null.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Dividend."
+        },
+        {
+          "key": "b",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Divisor."
+        }
+      ]
+    },
+    {
+      "name": "mod",
+      "description": "a modulo b, with the sign of the divisor (Python semantics). Non-numbers and a zero divisor yield null.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Dividend."
+        },
+        {
+          "key": "b",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "Divisor."
+        }
+      ]
+    },
+    {
+      "name": "neg",
+      "description": "-a. Non-numbers yield null.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "a",
+          "kind": "FLOAT",
+          "required": true,
+          "description": "The number to negate."
+        }
+      ]
+    },
+    {
+      "name": "fmt.bytes",
+      "description": "Formats a byte count with a unit suffix.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to format."
+        },
+        {
+          "key": "precision",
+          "kind": "ANY",
+          "required": false,
+          "description": "Digits after the decimal point."
+        }
+      ]
+    },
+    {
+      "name": "fmt.currency",
+      "description": "Formats a number as a currency amount.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to format."
+        },
+        {
+          "key": "currency",
+          "kind": "ANY",
+          "required": true,
+          "description": "ISO 4217 code, e.g. EUR."
+        }
+      ]
+    },
+    {
+      "name": "fmt.date",
+      "description": "Formats a date for the viewer locale.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to format."
+        },
+        {
+          "key": "dateStyle",
+          "kind": "STRING",
+          "required": false,
+          "description": "full, long, medium or short."
+        }
+      ]
+    },
+    {
+      "name": "fmt.datetime",
+      "description": "Formats a date and time for the viewer locale.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to format."
+        },
+        {
+          "key": "dateStyle",
+          "kind": "STRING",
+          "required": false,
+          "description": "full, long, medium or short."
+        },
+        {
+          "key": "timeStyle",
+          "kind": "STRING",
+          "required": false,
+          "description": "full, long, medium or short."
+        }
+      ]
+    },
+    {
+      "name": "fmt.json",
+      "description": "Renders any value as JSON.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": false,
+          "description": "The value to format."
+        },
+        {
+          "key": "indent",
+          "kind": "ANY",
+          "required": false,
+          "description": "Spaces to indent by; none prints one line."
+        }
+      ]
+    },
+    {
+      "name": "fmt.number",
+      "description": "Formats a number for the viewer locale.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to format."
+        },
+        {
+          "key": "minimumFractionDigits",
+          "kind": "ANY",
+          "required": false,
+          "description": "At least this many fraction digits."
+        },
+        {
+          "key": "maximumFractionDigits",
+          "kind": "ANY",
+          "required": false,
+          "description": "At most this many fraction digits."
+        }
+      ]
+    },
+    {
+      "name": "fmt.percent",
+      "description": "Formats a 0–1 ratio as a percentage.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to format."
+        },
+        {
+          "key": "precision",
+          "kind": "ANY",
+          "required": false,
+          "description": "Digits after the decimal point."
+        }
+      ]
+    },
+    {
+      "name": "fmt.relativeTime",
+      "description": "Formats a date relative to now (\"3 hours ago\").",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The value to format."
+        }
+      ]
+    },
+    {
+      "name": "list.at",
+      "description": "The item at an index. Negative indexes count from the end.",
+      "returns": "ANY",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        },
+        {
+          "key": "index",
+          "kind": "ANY",
+          "required": true,
+          "description": "Position; negative counts from the end."
+        }
+      ]
+    },
+    {
+      "name": "list.compact",
+      "description": "Removes null and undefined items from a list.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        }
+      ]
+    },
+    {
+      "name": "list.first",
+      "description": "The first item of a list.",
+      "returns": "ANY",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        }
+      ]
+    },
+    {
+      "name": "list.join",
+      "description": "Joins a list into a string.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        },
+        {
+          "key": "separator",
+          "kind": "ANY",
+          "required": false,
+          "description": "What goes between the parts."
+        }
+      ]
+    },
+    {
+      "name": "list.last",
+      "description": "The last item of a list.",
+      "returns": "ANY",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        }
+      ]
+    },
+    {
+      "name": "list.pluck",
+      "description": "Reads the same path out of every item in a list.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        },
+        {
+          "key": "path",
+          "kind": "STRING",
+          "required": true,
+          "description": "A path inside each item (a/b or a.b)."
+        }
+      ]
+    },
+    {
+      "name": "list.range",
+      "description": "The numbers start, start + step, … : count of them (at most 10000). What a foreach iterates when there is no list.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "count",
+          "kind": "ANY",
+          "required": true,
+          "description": "How many numbers."
+        },
+        {
+          "key": "start",
+          "kind": "ANY",
+          "required": false,
+          "description": "Where to start."
+        },
+        {
+          "key": "step",
+          "kind": "ANY",
+          "required": false,
+          "description": "The distance between two numbers."
+        }
+      ]
+    },
+    {
+      "name": "list.reverse",
+      "description": "Reverses a list.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        }
+      ]
+    },
+    {
+      "name": "list.slice",
+      "description": "Takes a section of a list.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        },
+        {
+          "key": "start",
+          "kind": "ANY",
+          "required": false,
+          "description": "Where to start."
+        },
+        {
+          "key": "end",
+          "kind": "ANY",
+          "required": false,
+          "description": "Where to stop, exclusive."
+        }
+      ]
+    },
+    {
+      "name": "list.sort",
+      "description": "Sorts a list, optionally by a path on each item.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        },
+        {
+          "key": "path",
+          "kind": "STRING",
+          "required": false,
+          "description": "A path inside each item (a/b or a.b)."
+        },
+        {
+          "key": "descending",
+          "kind": "BOOL",
+          "required": false,
+          "description": "Sort from the largest."
+        }
+      ]
+    },
+    {
+      "name": "list.sum",
+      "description": "Adds up the numbers in a list.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        }
+      ]
+    },
+    {
+      "name": "list.unique",
+      "description": "Removes duplicate items from a list.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "LIST",
+          "required": true,
+          "description": "The list."
+        }
+      ]
+    },
+    {
+      "name": "math.abs",
+      "description": "Absolute value of a number.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The number."
+        }
+      ]
+    },
+    {
+      "name": "math.ceil",
+      "description": "Rounds a number up.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The number."
+        }
+      ]
+    },
+    {
+      "name": "math.clamp",
+      "description": "Constrains a number to an inclusive range.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The number."
+        },
+        {
+          "key": "min",
+          "kind": "ANY",
+          "required": true,
+          "description": "Lower bound, inclusive."
+        },
+        {
+          "key": "max",
+          "kind": "ANY",
+          "required": true,
+          "description": "Upper bound, inclusive."
+        }
+      ]
+    },
+    {
+      "name": "math.floor",
+      "description": "Rounds a number down.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The number."
+        }
+      ]
+    },
+    {
+      "name": "math.round",
+      "description": "Rounds a number to the given number of decimal places.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The number."
+        },
+        {
+          "key": "precision",
+          "kind": "ANY",
+          "required": false,
+          "description": "Digits after the decimal point."
+        }
+      ]
+    },
+    {
+      "name": "obj.entries",
+      "description": "An object as a list of {key, value} records, ready for foreach.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "DICT",
+          "required": true,
+          "description": "The object."
+        }
+      ]
+    },
+    {
+      "name": "obj.has",
+      "description": "True when a nested path resolves to a value.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": false,
+          "description": "The object."
+        },
+        {
+          "key": "path",
+          "kind": "STRING",
+          "required": true,
+          "description": "A path inside each item (a/b or a.b)."
+        }
+      ]
+    },
+    {
+      "name": "obj.keys",
+      "description": "The keys of an object.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "DICT",
+          "required": true,
+          "description": "The object."
+        }
+      ]
+    },
+    {
+      "name": "obj.values",
+      "description": "The values of an object.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "DICT",
+          "required": true,
+          "description": "The object."
+        }
+      ]
+    },
+    {
+      "name": "str.capitalize",
+      "description": "Uppercases the first character.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The string."
+        }
+      ]
+    },
+    {
+      "name": "str.default",
+      "description": "Falls back to another string when the value is empty.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": false,
+          "description": "The string."
+        },
+        {
+          "key": "fallback",
+          "kind": "ANY",
+          "required": true,
+          "description": "What to answer when there is no usable value."
+        }
+      ]
+    },
+    {
+      "name": "str.lower",
+      "description": "Lowercases a string.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The string."
+        }
+      ]
+    },
+    {
+      "name": "str.replace",
+      "description": "Replaces every occurrence of a substring.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The string."
+        },
+        {
+          "key": "search",
+          "kind": "ANY",
+          "required": true,
+          "description": "The text to look for."
+        },
+        {
+          "key": "replacement",
+          "kind": "ANY",
+          "required": true,
+          "description": "What replaces each match."
+        }
+      ]
+    },
+    {
+      "name": "str.slice",
+      "description": "Extracts part of a string by character index.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The string."
+        },
+        {
+          "key": "start",
+          "kind": "ANY",
+          "required": false,
+          "description": "Where to start."
+        },
+        {
+          "key": "end",
+          "kind": "ANY",
+          "required": false,
+          "description": "Where to stop, exclusive."
+        }
+      ]
+    },
+    {
+      "name": "str.split",
+      "description": "Splits a string into a list on a separator.",
+      "returns": "LIST",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The string."
+        },
+        {
+          "key": "separator",
+          "kind": "ANY",
+          "required": false,
+          "description": "What goes between the parts."
+        }
+      ]
+    },
+    {
+      "name": "str.trim",
+      "description": "Removes surrounding whitespace.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The string."
+        }
+      ]
+    },
+    {
+      "name": "str.truncate",
+      "description": "Shortens a string to a maximum length, adding an ellipsis.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The string."
+        },
+        {
+          "key": "length",
+          "kind": "ANY",
+          "required": true,
+          "description": "The longest result, suffix included."
+        },
+        {
+          "key": "suffix",
+          "kind": "ANY",
+          "required": false,
+          "description": "Appended when cut. Defaults to an ellipsis."
+        }
+      ]
+    },
+    {
+      "name": "str.upper",
+      "description": "Uppercases a string.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": true,
+          "description": "The string."
+        }
+      ]
+    },
+    {
+      "name": "type.of",
+      "description": "Names the type of a value: null, list, object, string, number, or boolean.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": false,
+          "description": "The value to convert."
+        }
+      ]
+    },
+    {
+      "name": "type.toBoolean",
+      "description": "Converts a value to a boolean, treating \"false\" and \"0\" as false.",
+      "returns": "BOOL",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": false,
+          "description": "The value to convert."
+        }
+      ]
+    },
+    {
+      "name": "type.toNumber",
+      "description": "Converts a value to a number, or falls back when it cannot.",
+      "returns": "FLOAT",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": false,
+          "description": "The value to convert."
+        },
+        {
+          "key": "fallback",
+          "kind": "FLOAT",
+          "required": false,
+          "description": "What to answer when there is no usable value."
+        }
+      ]
+    },
+    {
+      "name": "type.toString",
+      "description": "Converts any value to a string.",
+      "returns": "STRING",
+      "arguments": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": false,
+          "description": "The value to convert."
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "name": "case",
+      "description": "One branch of a `match`: its children render when the matched value is `is`.",
+      "props": [
+        {
+          "key": "is",
+          "kind": "ANY",
+          "required": false,
+          "description": "The literal this case matches, or a list of them. A literal: it is read off the blok, not resolved."
+        }
+      ],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [
+        "match"
+      ],
+      "not_downstream_of": []
+    },
+    {
+      "name": "default",
+      "description": "The branch of a `match` that renders when no `case` matches.",
+      "props": [],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [
+        "match"
+      ],
+      "not_downstream_of": []
+    },
+    {
+      "name": "empty",
+      "description": "Renders its children when a read answered with nothing: no rows, every field empty.",
+      "props": [
+        {
+          "key": "of",
+          "kind": "ANY",
+          "required": false,
+          "description": "The record to follow: a read bound with `bind` (`@cells`) or a run bound with `.into(job)` (`@job`). Inside a `query` it defaults to the query's."
+        }
+      ],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [],
+      "not_downstream_of": []
+    },
+    {
+      "name": "failed",
+      "description": "Renders its children when a read (or a run) failed. The reason is `<record>.error`.",
+      "props": [
+        {
+          "key": "of",
+          "kind": "ANY",
+          "required": false,
+          "description": "The record to follow: a read bound with `bind` (`@cells`) or a run bound with `.into(job)` (`@job`). Inside a `query` it defaults to the query's."
+        }
+      ],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [],
+      "not_downstream_of": []
+    },
+    {
+      "name": "foreach",
+      "description": "Renders its declared children once per item of a list.",
+      "props": [
+        {
+          "key": "items",
+          "kind": "LIST",
+          "required": false,
+          "description": "The list to iterate. Bind it to a data-model path to make it writable."
+        },
+        {
+          "key": "let",
+          "kind": "STRING",
+          "required": false,
+          "description": "Scope name each item is addressable by inside the loop body."
+        }
+      ],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [],
+      "not_downstream_of": []
+    },
+    {
+      "name": "fragment",
+      "description": "Renders its children without introducing an element.",
+      "props": [
+        {
+          "key": "children",
+          "kind": "LIST",
+          "required": false,
+          "description": "Ids of child components to render here."
+        }
+      ],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [],
+      "not_downstream_of": []
+    },
+    {
+      "name": "if",
+      "description": "Renders one of two children depending on a condition.",
+      "props": [
+        {
+          "key": "else",
+          "kind": "STRING",
+          "required": false,
+          "description": "Rendered when it does not."
+        },
+        {
+          "key": "then",
+          "kind": "STRING",
+          "required": false,
+          "description": "Rendered when the condition holds."
+        },
+        {
+          "key": "when",
+          "kind": "BOOL",
+          "required": false,
+          "description": "Condition. Bind it to a path or compute it with a pure util call."
+        }
+      ],
+      "accepts_children": false,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [],
+      "not_downstream_of": []
+    },
+    {
+      "name": "match",
+      "description": "Renders the first `case` child whose `is` names the value, else its `default` child. The way to compare against several values, since a blok expression has no `==`.",
+      "props": [
+        {
+          "key": "value",
+          "kind": "ANY",
+          "required": false,
+          "description": "The value to match, typically a path: `@job.status`."
+        }
+      ],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [],
+      "not_downstream_of": []
+    },
+    {
+      "name": "pending",
+      "description": "Renders its children while a read (or a run) is under way and there is no earlier answer to show.",
+      "props": [
+        {
+          "key": "of",
+          "kind": "ANY",
+          "required": false,
+          "description": "The record to follow: a read bound with `bind` (`@cells`) or a run bound with `.into(job)` (`@job`). Inside a `query` it defaults to the query's."
+        }
+      ],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [],
+      "not_downstream_of": []
+    },
+    {
+      "name": "query",
+      "description": "Runs a GraphQL query (reads only, never a mutation) against one service and writes its record under `bind`. Renders its children always; the record slots inside it (`pending`, `failed`, `empty`, `ready`) follow its record.",
+      "props": [
+        {
+          "key": "bind",
+          "kind": "STRING",
+          "required": false,
+          "description": "Where the record is written: {\"status\", \"loading\", \"ready\", \"failed\", \"empty\", \"stale\", \"error\", \"data\"}. `data` is the query's answer, typed by its selection when the validator knows the schema. The validator seeds an idle record in demo_state; a preview, which runs no query, shows what demo_state holds there."
+        },
+        {
+          "key": "clearOnUnmount",
+          "kind": "BOOL",
+          "required": false,
+          "description": "Remove the record when this query leaves the screen, instead of keeping it marked stale."
+        },
+        {
+          "key": "poll",
+          "kind": "FLOAT",
+          "required": false,
+          "description": "Ask again every this many seconds while the blok is open."
+        },
+        {
+          "key": "query",
+          "kind": "STRING",
+          "required": false,
+          "description": "The GraphQL query, run on the `schema` service: one `query` operation, never a mutation or subscription (a change goes through an action). Each variable it declares is read from `variables`, else from the data path of the same name; a structure held there is passed as its id. The query waits for every variable declared non-null."
+        },
+        {
+          "key": "schema",
+          "kind": "STRING",
+          "required": false,
+          "description": "The service whose schema `query` is written against, and which runs it, by its key: \"mikro\". A validator that knows the service type-checks the query and what the blok reads of its answer."
+        },
+        {
+          "key": "variables",
+          "kind": "DICT",
+          "required": false,
+          "description": "Values for the variables `query` declares, ahead of the data paths of the same name."
+        }
+      ],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [],
+      "not_downstream_of": []
+    },
+    {
+      "name": "ready",
+      "description": "Renders its children once a read answered with something (or a run is done), including while a newer read refreshes it.",
+      "props": [
+        {
+          "key": "of",
+          "kind": "ANY",
+          "required": false,
+          "description": "The record to follow: a read bound with `bind` (`@cells`) or a run bound with `.into(job)` (`@job`). Inside a `query` it defaults to the query's."
+        }
+      ],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [],
+      "not_downstream_of": []
+    },
+    {
+      "name": "when",
+      "description": "Renders its declared children while a condition holds: an `if` without naming the children by id.",
+      "props": [
+        {
+          "key": "not",
+          "kind": "BOOL",
+          "required": false,
+          "description": "Render when the condition does NOT hold."
+        },
+        {
+          "key": "test",
+          "kind": "BOOL",
+          "required": false,
+          "description": "Condition. Bind it to a path (`@cells.ready`) or compute it with a pure util call (`@utils.gt(count, 0)`)."
+        }
+      ],
+      "accepts_children": true,
+      "context": "HTML",
+      "children_context": null,
+      "inherits_context": true,
+      "downstream_of": [],
+      "not_downstream_of": []
+    }
+  ]
+}

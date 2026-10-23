@@ -21,9 +21,22 @@ export type AliasAttemptEvent =
  * either way the mesh aliases are then tried, so a failure is still reported
  * as the service being unreachable — with the doctor to say why.
  *
+ * An instance whose hub registered its certificate (`instance.tls`) is strict:
+ * its plain-HTTP aliases are not used unless they go through the mesh, which is
+ * encrypted itself — they are there for the apps that predate the certificate.
+ *
  * `onAttempt` and `onMeshWait` narrate the walk for the progress surfaces;
  * they never change it.
  */
+
+/** Whether `instance`'s hub registered the certificate its TLS aliases present. */
+export const isStrictInstance = (instance: Instance): boolean =>
+  (instance.tls?.certificates.length ?? 0) > 0;
+
+/** The aliases of `instance` an app may use: all of them, or for a strict instance its TLS and mesh ones. */
+export const usableAliases = (instance: Instance, routed: (alias: Alias) => boolean): Alias[] =>
+  isStrictInstance(instance) ? instance.aliases.filter((alias) => alias.ssl || routed(alias)) : instance.aliases;
+
 export const resolveServiceAlias = async ({
   instance,
   cached,
@@ -65,12 +78,14 @@ export const resolveServiceAlias = async ({
     return ok;
   };
 
-  if (cached) {
+  const usable = usableAliases(instance, routed);
+  // A cached plain alias of an instance that has since become strict is not used again.
+  if (cached && usable.some((alias) => sameAlias(alias, cached))) {
     if (routed(cached)) await waitForMesh();
     if (await probe(cached)) return cached;
   }
 
-  const untried = instance.aliases.filter((alias) => !sameAlias(alias, cached));
+  const untried = usable.filter((alias) => !sameAlias(alias, cached));
   /** The first that answers, in fakts' order; only the caller's cancel throws. */
   const tryAll = async (aliases: Alias[]): Promise<Alias | undefined> => {
     for (const candidate of aliases) {

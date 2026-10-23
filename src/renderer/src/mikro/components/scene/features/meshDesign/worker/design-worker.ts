@@ -1,4 +1,5 @@
 import { bakeDesign, bakeTransfers, type DesignBake, type DesignBakeMesh } from "../commit/bakeDesign";
+import type { SlotAxes } from "../../meshes/fabriks/writer/fabriksPrefix";
 import { resultTransfers, runDesignJob, type DesignJob, type DesignJobResult } from "./designJob";
 
 /**
@@ -15,7 +16,7 @@ import { resultTransfers, runDesignJob, type DesignJob, type DesignJobResult } f
  * here, on the first job that needs it. See `designDispatcher.ts`.
  */
 
-export type DesignWorkerRequest = { id: number; job: DesignJob } | { id: number; bake: DesignBakeMesh[] };
+export type DesignWorkerRequest = { id: number; job: DesignJob } | { id: number; bake: DesignBakeMesh[]; axes: SlotAxes };
 
 export type DesignWorkerResponse =
   | { id: number; result: DesignJobResult }
@@ -28,7 +29,7 @@ ctx.onmessage = async (event: MessageEvent<DesignWorkerRequest>) => {
   const request = event.data;
   try {
     if ("bake" in request) {
-      const baked = bakeDesign(request.bake);
+      const baked = bakeDesign(request.bake, request.axes);
       const response: DesignWorkerResponse = { id: request.id, baked };
       ctx.postMessage(response, bakeTransfers(baked));
       return;

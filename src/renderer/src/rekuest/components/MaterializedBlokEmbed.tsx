@@ -1,0 +1,188 @@
+import * as React from "react";
+import { Link } from "react-router-dom";
+import { LayoutDashboard } from "lucide-react";
+import { RekuestMaterializedBlok } from "@/core/linkers";
+import { DisplayLinePlaceholder } from "@/core/smart/display/DisplayLine";
+import { StructureDisplay } from "@/core/smart/display/StructureDisplay";
+import type { Structure } from "@/core/types";
+import { cn } from "@/core/util/utils";
+import {
+  ArgPortFragment,
+  ComponentContext,
+  MaterializedBlokFragment,
+  TaskBlokStatus,
+  useMaterializedBlokQuery,
+} from "../api/graphql";
+import { blokArgsSearch, missingBlokArgs, type BlokArgs } from "./blokArgs";
+import { blokArgsFromStructures } from "./blokArgsFromStructures";
+import MaterializedBlokRenderer from "./MaterializedBlokRenderer";
+import { RekuestBlokPreview } from "./preview/RekuestBlokPreview";
+import { PortValue } from "./task/PortValue";
+import { BlokServiceNotice } from "@/core/blok/services/BlokServiceNotice";
+import { BlokServiceChips, BlokServicesGuard } from "./BlokServices";
+
+/** Where an ask through a blok stands, and its answer once there is one. */
+export type BlokAsk = {
+  status: TaskBlokStatus;
+  values?: Record<string, unknown> | null;
+  /** The user (sub) who answered or dismissed it. */
+  decidedBy?: string | null;
+};
+
+/**
+ * Whether `ref`'s element is on screen (with a margin), both ways: unlike
+ * `useNearViewport` it turns false again once the element is scrolled away.
+ */
+const useOnScreen = (ref: React.RefObject<Element | null>) => {
+  const [onScreen, setOnScreen] = React.useState(() => typeof IntersectionObserver === "undefined");
+  React.useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => setOnScreen(entries.some((entry) => entry.isIntersecting)), {
+      rootMargin: "200px",
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return onScreen;
+};
+
+/** What a person answered through the blok, each value as itself (an image as the image). */
+const AnswerLine = ({ ask, returns }: { ask: BlokAsk; returns: readonly ArgPortFragment[] }) => {
+  const by = ask.decidedBy ? (
+    <StructureDisplay identifier="@lok/user" id={ask.decidedBy} variant="inline" fallback="someone" />
+  ) : (
+    "someone"
+  );
+  if (ask.status === TaskBlokStatus.Dismissed) return <span>Dismissed by {by}</span>;
+  if (ask.status === TaskBlokStatus.Gone) return <span>Nobody answered before the task ended</span>;
+  const values = ask.values ?? {};
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+      <span>Answered by {by}:</span>
+      {Object.entries(values).map(([key, value]) => (
+        <span key={key} className="flex min-w-0 items-center gap-1">
+          {Object.keys(values).length > 1 && <span className="text-muted-foreground/70">{key}</span>}
+          <PortValue value={value} port={returns.find((port) => port.key === key)} />
+        </span>
+      ))}
+    </span>
+  );
+};
+
+/**
+ * A materialization shown in the flow of another surface (a chat message, a
+ * held task's card): its name and a link to its page over the blok itself,
+ * live while on screen and its kept preview otherwise.
+ *
+ * It opens on the args its task gave it, else on the objects shown with it
+ * (`alongside`, matched by identifier). With an `ask`, its tree reads
+ * `@ask.status` / `@returns`; while the ask waits `blok.answer(...)` goes to
+ * `onReturn`, and once settled the blok is frozen with the answer under it.
+ */
+export const MaterializedBlokEmbed = ({
+  materialized,
+  alongside,
+  ask,
+  onReturn,
+  className,
+}: {
+  materialized: MaterializedBlokFragment;
+  alongside?: readonly Structure[];
+  ask?: BlokAsk;
+  onReturn?: (values: Record<string, unknown>) => unknown;
+  className?: string;
+}) => {
+  const { blok } = materialized;
+  const given = materialized.args as BlokArgs | null | undefined;
+  // Kept here, not in the renderer: scrolled away and back, the blok opens on what it was showing.
+  const [args, setArgs] = React.useState<BlokArgs>(() =>
+    given && Object.keys(given).length > 0 ? given : blokArgsFromStructures(blok.args, alongside ?? []),
+  );
+  const missing = missingBlokArgs(blok.args, args);
+  const name = materialized.name || blok.name;
+  const page = RekuestMaterializedBlok.linkBuilder(materialized.id) + blokArgsSearch(args);
+  // A chat holds many: only the bloks on screen run their tasks and subscriptions, the rest show their preview.
+  const box = React.useRef<HTMLDivElement>(null);
+  const onScreen = useOnScreen(box);
+  const agents = React.useMemo(
+    () => new Map(materialized.agentMappings.map((mapping) => [mapping.key, mapping.agent.id])),
+    [materialized.agentMappings],
+  );
+  // A scene fills its box, so it gets one; a panel takes the height it needs.
+  const scene = blok.context === ComponentContext.Scene;
+  const waiting = ask?.status === TaskBlokStatus.Waiting;
+  const frozen = ask !== undefined && !waiting;
+  const shownAsk = React.useMemo(
+    () => (ask ? { status: ask.status, values: ask.values ?? null } : undefined),
+    [ask?.status, ask?.values], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  return (
+    <div ref={box} className={cn("flex flex-col gap-1", className)}>
+      <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+        <LayoutDashboard className="size-3.5 shrink-0" />
+        <span className="truncate">{name}</span>
+        <BlokServiceChips services={blok.services} />
+        <Link className="ml-auto shrink-0 underline-offset-2 hover:underline" to={page}>
+          Open
+        </Link>
+      </div>
+      {missing.length > 0 ? (
+        <div className="px-1 text-sm text-muted-foreground">
+          Opens for {missing.map((port) => port.label || port.key).join(", ")}:{" "}
+          <Link className="underline" to={page}>
+            choose one
+          </Link>
+          .
+        </div>
+      ) : !onScreen ? (
+        <RekuestBlokPreview blok={blok} agents={agents} className="rounded-md" />
+      ) : (
+        <div
+          className={cn(
+            "overflow-auto rounded-md",
+            scene ? "aspect-[8/5] w-full" : "max-h-[60vh]",
+            // Settled, the blok shows what was chosen but takes no more input.
+            frozen && "pointer-events-none select-none opacity-80",
+          )}
+          aria-disabled={frozen || undefined}
+        >
+          {/* Its queries read these services: from the outside, so none runs without its client. */}
+          <BlokServicesGuard services={blok.services}>
+            {/* Inside the guards: a service the blok was written for may now serve another schema. */}
+            <BlokServiceNotice services={blok.services} className="px-1 pb-1" />
+            <MaterializedBlokRenderer
+              materializedBlok={materialized}
+              surfaceId={`embed-${materialized.id}`}
+              args={args}
+              onArgsChange={setArgs}
+              ask={shownAsk}
+              onReturn={waiting ? onReturn : undefined}
+              chrome={scene ? "none" : "minimal"}
+              sizing={scene ? "fill" : "intrinsic"}
+            />
+          </BlokServicesGuard>
+        </div>
+      )}
+      {frozen && ask && (
+        <div className="px-1 text-[11px] text-muted-foreground">
+          <AnswerLine ask={ask} returns={blok.returns as unknown as readonly ArgPortFragment[]} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** {@link MaterializedBlokEmbed}, for a materialization known by its id. */
+export const MaterializedBlokEmbedById = ({
+  id,
+  ...props
+}: Omit<React.ComponentProps<typeof MaterializedBlokEmbed>, "materialized"> & { id: string }) => {
+  const { data } = useMaterializedBlokQuery({ variables: { id } });
+  const materialized = data?.materializedBlok;
+  if (!materialized) {
+    return <DisplayLinePlaceholder identifier="@rekuest/materialized_blok" id={id} icon={LayoutDashboard} />;
+  }
+  return <MaterializedBlokEmbed materialized={materialized} {...props} />;
+};

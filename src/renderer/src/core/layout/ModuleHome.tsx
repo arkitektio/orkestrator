@@ -85,6 +85,84 @@ export const ModulePageLinks = ({ moduleKey, className }: { moduleKey: string; c
   );
 };
 
+/** What a page row in the sidebar list says next to its label. */
+export type ModulePageStat = {
+  /** How many there are, drawn right-aligned. */
+  count?: number;
+  /** One line under the label instead of the page's description, e.g. "45 new this week". */
+  note?: React.ReactNode;
+};
+
+/** One page as a row of the sidebar list: icon, label, its line, its number. */
+const PageRow = ({ link, stat }: { link: CatalogRoute; stat?: ModulePageStat }) => {
+  const Icon = link.icon;
+  const line = stat?.note ?? link.description;
+  return (
+    <DroppableNavLink to={link.route} className="block">
+      <span className="group/page flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary [&_svg]:h-3.5 [&_svg]:w-3.5">
+          {Icon && <Icon />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm leading-tight text-foreground">{link.label}</span>
+          {line && <span className="block truncate text-xs leading-snug text-muted-foreground">{line}</span>}
+        </span>
+        {stat?.count !== undefined && (
+          <span className="shrink-0 text-sm font-medium tabular-nums text-foreground">
+            {stat.count.toLocaleString()}
+          </span>
+        )}
+      </span>
+    </DroppableNavLink>
+  );
+};
+
+/**
+ * A module's pages as its home page's sidebar lists them: the same groups as
+ * `ModulePageLinks`, as compact rows that carry the module's numbers next to
+ * each page (`stats`, keyed by route) — "Array Datasets · 312 · 45 new this
+ * week". A page with no number shows its description; a group without
+ * descriptions stays pills.
+ */
+export const ModulePageList = ({
+  moduleKey,
+  stats,
+  className,
+}: {
+  moduleKey: string;
+  stats?: Partial<Record<string, ModulePageStat>>;
+  className?: string;
+}) => {
+  const nav = useModuleNav(moduleKey);
+  if (nav.groups.length === 0) return null;
+
+  return (
+    <div className={cn("flex flex-col gap-4", className)}>
+      {nav.groups.map(({ title, links }) => {
+        const chips = links.every((link) => !link.description && !stats?.[link.route]);
+        return (
+          <section key={title}>
+            <HomeSectionHeading className="px-2">{title}</HomeSectionHeading>
+            {chips ? (
+              <div className="flex flex-wrap gap-1.5 px-2">
+                {links.map((link) => (
+                  <PageChip key={link.route} link={link} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {links.map((link) => (
+                  <PageRow key={link.route} link={link} stat={stats?.[link.route]} />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+};
+
 /** The small uppercase label over a block of a module's home page. */
 export const HomeSectionHeading = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <h2
@@ -186,7 +264,9 @@ export const ModuleHomeHeader = ({
  *
  * `lead` sits between the header and the pages, for the one thing a module's
  * home is mostly used for (alpaka's composer, a headline figure); most have
- * none.
+ * none. *
+ * `pages={false}` leaves the pages out, for a home that lists them in its
+ * sidebar (`ModulePageList`) so what is new can take the whole stage.
  */
 export const ModuleHome = ({
   moduleKey,
@@ -194,6 +274,7 @@ export const ModuleHome = ({
   description,
   icon,
   lead,
+  pages = true,
   className,
   children,
 }: {
@@ -202,13 +283,14 @@ export const ModuleHome = ({
   description?: React.ReactNode;
   icon?: React.ReactNode;
   lead?: React.ReactNode;
+  pages?: boolean;
   className?: string;
   children?: React.ReactNode;
 }) => (
   <div className={cn("flex w-full flex-col gap-8 p-3", className)}>
     <ModuleHomeHeader moduleKey={moduleKey} title={title} description={description} icon={icon} />
     {lead}
-    <ModulePageLinks moduleKey={moduleKey} />
+    {pages && <ModulePageLinks moduleKey={moduleKey} />}
     {children}
   </div>
 );

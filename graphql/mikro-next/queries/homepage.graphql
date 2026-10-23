@@ -151,3 +151,29 @@ query HomeFilterOptions {
     name
   }
 }
+
+# The home sidebar's page list: how many of each kind there are and how many
+# came in since `since` (a week back). Annotations and scenes carry no
+# timestamp, so they only count. Collaborations have no aggregate (they come
+# from the shared collaborations package); there are few, so the list is it.
+query HomeOverview($since: DateTime!) {
+  lenses: lensesStats { count }
+  newLenses: lensesStats(filters: { createdAfter: $since }) { count }
+  arrayDatasets: arrayDatasetsStats { count }
+  newArrayDatasets: arrayDatasetsStats(filters: { createdAfter: $since }) { count }
+  coordinateSystems: coordinateSystemsStats { count }
+  newCoordinateSystems: coordinateSystemsStats(filters: { createdAfter: $since }) { count }
+  tableDatasets: tableDatasetsStats { count }
+  newTableDatasets: tableDatasetsStats(filters: { createdAfter: $since }) { count }
+  sparseDatasets: sparseDatasetsStats { count }
+  newSparseDatasets: sparseDatasetsStats(filters: { createdAfter: $since }) { count }
+  folders: foldersStats { count }
+  newFolders: foldersStats(filters: { createdAfter: $since }) { count }
+  files: filesStats { count }
+  newFiles: filesStats(filters: { createdAfter: $since }) { count }
+  charts: chartsStats { count }
+  newCharts: chartsStats(filters: { createdAfter: $since }) { count }
+  annotations: annotationsStats { count }
+  scenes: scenesStats { count }
+  collaborations { id }
+}

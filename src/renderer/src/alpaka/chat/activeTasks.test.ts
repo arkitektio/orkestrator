@@ -232,3 +232,17 @@ describe("a pill whose replyer waits for the user", () => {
     );
   });
 });
+
+describe("bloks a replyer shows", () => {
+  it("keeps each inform once, and its message is not the pill's", () => {
+    const inform = event(TaskEventKind.Inform, { message: "Halfway", value: { blok: "m4" } } as Partial<TaskEventFragment>);
+    let tasks = applyTaskEvent(
+      bindTask(started(), "ref", { id: "t1", isDone: false, latestEventKind: TaskEventKind.Started }),
+      inform,
+    );
+    tasks = applyTaskEvent(tasks, inform);
+    expect(tasks[0].informs).toEqual([{ task: "t1", blok: "m4", message: "Halfway" }]);
+    expect(tasks[0].message).not.toBe("Halfway");
+    expect(statusOf(tasks)).toBe("RUNNING");
+  });
+});

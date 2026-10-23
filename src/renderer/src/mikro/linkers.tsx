@@ -19,6 +19,7 @@ export const MikroSparseLens = smartOf(manifest, "@mikro/sparselens");
 export const MikroMeshLens = smartOf(manifest, "@mikro/meshlens");
 export const MikroNetworkLens = smartOf(manifest, "@mikro/networklens");
 export const MikroAnnotationLens = smartOf(manifest, "@mikro/annotationlens");
+export const MikroCadModelLens = smartOf(manifest, "@mikro/cadmodellens");
 
 const LENS_SMARTS = {
   ArrayLens: MikroArrayLens,
@@ -27,6 +28,7 @@ const LENS_SMARTS = {
   MeshLens: MikroMeshLens,
   NetworkLens: MikroNetworkLens,
   AnnotationLens: MikroAnnotationLens,
+  CadModelLens: MikroCadModelLens,
 };
 
 /** The smart object of a lens, by its `__typename`: it hands the lens over as
@@ -43,5 +45,6 @@ export const MikroTableDataset = smartOf(manifest, "@mikro/tabledataset");
 export const MikroSparseDataset = smartOf(manifest, "@mikro/sparsedataset");
 export const MikroAnnotation = smartOf(manifest, "@mikro/annotation");
 export const MikroMeshCollection = smartOf(manifest, "@mikro/meshcollection");
+export const MikroCadModel = smartOf(manifest, "@mikro/cadmodel");
 export const MikroEntityRelation = smartOf(manifest, "@mikro/entityrelation");
 export const MikroSpecimen = smartOf(manifest, "@mikro/specimen");

@@ -24,7 +24,7 @@ export type BlokComponentPlacement = {
   childrenContext?: BlokComponentContext;
   /**
    * Placed in whichever context is in force, which its children inherit:
-   * control flow that renders nothing of its own (`foreach`, `if`, `Fragment`).
+   * control flow that renders nothing of its own (`foreach`, `if`, `fragment`).
    * `context` and `childrenContext` are then ignored.
    */
   inheritsContext?: boolean;
@@ -42,6 +42,12 @@ type BlokComponentApi = {
   acceptsChildren?: boolean;
   placement?: BlokComponentPlacement;
   propKinds?: Readonly<Record<string, BlokPropKind>>;
+  /**
+   * The prop naming where this component writes a record it owns (a read's
+   * `BlokResourceRecord`): `"bind"` on `Query`. The editor warns when another
+   * node binds the same path, since only one may write it.
+   */
+  writesRecordTo?: string;
 };
 
 export type BlokComponentDefinition = BlokComponentApi & {
@@ -59,6 +65,7 @@ export const createBlokComponent = <TSchema extends BlokObjectSchema>(
   acceptsChildren: api.acceptsChildren,
   placement: api.placement,
   propKinds: api.propKinds,
+  writesRecordTo: api.writesRecordTo,
   render: render as React.ComponentType<BlokRenderArgs>,
 });
 

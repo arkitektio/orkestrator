@@ -60,6 +60,7 @@ export const KIND_ICON: Record<LineageNodeKind, LucideIcon> = {
   [LineageNodeKind.MeshCollection]: Shapes,
   [LineageNodeKind.NetworkCollection]: Network,
   [LineageNodeKind.AnnotationCollection]: PenTool,
+  [LineageNodeKind.CadModel]: Box,
 };
 
 /**

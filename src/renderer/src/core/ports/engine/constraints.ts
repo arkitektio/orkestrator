@@ -24,6 +24,30 @@ type Constrained = {
 export const portRequires = (port: Constrained | null | undefined): DescriptorConstraint[] =>
   (port?.requires ?? []).map(({ key, operator, value }) => ({ key, operator, value }));
 
+/**
+ * Why a GraphQL document that arrives as data (a blok's `Query`, a picker's
+ * search) may not be run, or null when it may. Such a document only ever
+ * READS: exactly one `query` operation (fragments beside it are fine). A
+ * mutation or a subscription is refused, whatever it would do — a change goes
+ * through an action, so it is the agent's and is recorded as such.
+ */
+export const NOT_GRAPHQL = "The query is not valid GraphQL.";
+
+export const readOnlyQueryProblem = (query: string): string | null => {
+  let definitions: readonly { kind: string; operation?: string }[];
+  try {
+    definitions = gql(query).definitions;
+  } catch {
+    return NOT_GRAPHQL;
+  }
+  const operations = definitions.filter((d): d is OperationDefinitionNode => d.kind === "OperationDefinition");
+  if (operations.some((operation) => operation.operation !== "query")) {
+    return "Only queries can run here: a change goes through an action, never a mutation.";
+  }
+  if (operations.length !== 1) return "The document must hold exactly one query.";
+  return null;
+};
+
 /** The variables a query document declares; none for one that does not parse. */
 export const queryVariables = (query: string): string[] => {
   try {

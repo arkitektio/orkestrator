@@ -16,6 +16,14 @@ import { writeCellCatalog, writeGeometryPart, writeObjectCatalog } from "./parqu
 export const CELL_CATALOG_PATH = "catalog/cells.parquet";
 export const OBJECT_CATALOG_PATH = "catalog/objects.parquet";
 
+/**
+ * What the three vertex slots are, in slot order — written into the manifest
+ * as `axes`. Required: fabriks components are positional, so the manifest is
+ * the only place a reader learns which slot is which axis, and a collection
+ * without it is refused by the server and not drawn by the viewer.
+ */
+export type SlotAxes = readonly [string, string, string];
+
 export type FabriksPrefix = {
   files: Map<string, Uint8Array>;
   manifest: Record<string, unknown>;
@@ -25,12 +33,14 @@ export type FabriksPrefix = {
 
 export function buildFabriksManifest(
   baked: BakedCollection,
+  axes: SlotAxes,
   sizes: { cells: number; objects: number; parts: { path: string; bytes: number; rowGroups: number }[] },
 ): Record<string, unknown> {
   return {
     specVersion: FABRIKS_SPEC_VERSION,
     grid: { cellSize: baked.grid.cellSize, levels: baked.grid.levels, sortKey: baked.grid.sortKey },
     encoding: { ...baked.encoding },
+    axes: [...axes],
     counts: { objects: baked.objects.length, cellsPerLevel: [baked.cells.length] },
     files: {
       cells: { path: CELL_CATALOG_PATH, bytes: sizes.cells },
@@ -41,7 +51,7 @@ export function buildFabriksManifest(
 }
 
 /** Bake and encode. The manifest is the last entry of `files`. */
-export function buildFabriksPrefix(meshes: readonly BakeMesh[], options?: BakeOptions): FabriksPrefix {
+export function buildFabriksPrefix(meshes: readonly BakeMesh[], axes: SlotAxes, options?: BakeOptions): FabriksPrefix {
   const baked = bakeFabriksCollection(meshes, options);
   const files = new Map<string, Uint8Array>();
   const parts = baked.parts.map((part) => {
@@ -53,7 +63,7 @@ export function buildFabriksPrefix(meshes: readonly BakeMesh[], options?: BakeOp
   files.set(CELL_CATALOG_PATH, cells);
   const objects = writeObjectCatalog(baked.objects);
   files.set(OBJECT_CATALOG_PATH, objects);
-  const manifest = buildFabriksManifest(baked, { cells: cells.byteLength, objects: objects.byteLength, parts });
+  const manifest = buildFabriksManifest(baked, axes, { cells: cells.byteLength, objects: objects.byteLength, parts });
   files.set(MANIFEST_NAME, new TextEncoder().encode(JSON.stringify(manifest, null, 2)));
   let totalBytes = 0;
   for (const bytes of files.values()) totalBytes += bytes.byteLength;

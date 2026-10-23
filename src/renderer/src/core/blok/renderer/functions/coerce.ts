@@ -3,44 +3,6 @@ import {createBlokFunction} from '../runtime';
 
 const anyValue = z.object({value: z.unknown()});
 
-const isNilFunction = createBlokFunction(
-  {
-    name: 'type.isNil',
-    description: 'True when a value is null or undefined.',
-    returnType: 'boolean',
-    purity: 'pure',
-    schema: anyValue,
-  },
-  args => args.value == null,
-);
-
-const isEmptyFunction = createBlokFunction(
-  {
-    name: 'type.isEmpty',
-    description: 'True for null, undefined, an empty string, list, or object.',
-    returnType: 'boolean',
-    purity: 'pure',
-    schema: anyValue,
-  },
-  args => {
-    const value = args.value;
-
-    if (value == null) {
-      return true;
-    }
-
-    if (typeof value === 'string' || Array.isArray(value)) {
-      return value.length === 0;
-    }
-
-    if (typeof value === 'object') {
-      return Object.keys(value).length === 0;
-    }
-
-    return false;
-  },
-);
-
 const typeOfFunction = createBlokFunction(
   {
     name: 'type.of',
@@ -130,8 +92,6 @@ const toBooleanFunction = createBlokFunction(
 );
 
 export const coerceFunctions = [
-  isNilFunction,
-  isEmptyFunction,
   typeOfFunction,
   toStringFunction,
   toNumberFunction,

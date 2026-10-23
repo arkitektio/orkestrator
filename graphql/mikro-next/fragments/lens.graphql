@@ -209,6 +209,11 @@ fragment LensSelection on Lens {
       id
     }
   }
+  ... on CadModelLens {
+    cadModel {
+      id
+    }
+  }
 }
 
 # What a selection structurally IS, in its container's vocabulary read over what
@@ -319,6 +324,15 @@ fragment LensSubject on Lens {
     annotationCollection {
       id
       name
+    }
+  }
+  ... on CadModelLens {
+    windows {
+      ...LensWindow
+    }
+    cadModel {
+      id
+      label
     }
   }
 }

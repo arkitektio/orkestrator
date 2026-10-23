@@ -230,6 +230,11 @@ export type BuildUiCatalogOptions = {
    * simply validates them against its own definition.
    */
   reservedOperations?: ReadonlySet<string>;
+  /**
+   * Component names the server's base catalog already defines (its control
+   * flow: `foreach`, `if`, `match`, …). Left out for the same reason.
+   */
+  reservedComponents?: ReadonlySet<string>;
 };
 
 export const buildRegisterUiCatalogInput = (
@@ -240,6 +245,7 @@ export const buildRegisterUiCatalogInput = (
   name: meta.name,
   description: meta.description ?? null,
   components: [...catalog.components.values()]
+    .filter((component) => !options.reservedComponents?.has(component.name))
     .map(componentInput)
     .sort((left, right) => left.name.localeCompare(right.name)),
   operations: catalog.functionDefinitions

@@ -116,6 +116,7 @@ export const lensCandidateOf = (
 export type TableCandidate = Extract<Candidate, { __typename: "TableDataset" }>;
 export type MeshCandidate = Extract<Candidate, { __typename: "MeshCollection" }>;
 export type NetworkCandidate = Extract<Candidate, { __typename: "NetworkCollection" }>;
+export type CadModelCandidate = Extract<Candidate, { __typename: "CadModel" }>;
 export type AnnotationCandidate = Extract<
   Candidate,
   { __typename: "AnnotationCollection" }
@@ -205,6 +206,15 @@ export type NetworkEntry = Related & {
   space: SpaceRef;
 };
 
+export type CadModelEntry = Related & {
+  kind: "model";
+  key: string;
+  model: CadModelCandidate;
+  name: string;
+  secondary?: string;
+  space: SpaceRef;
+};
+
 export type AnnotationEntry = Related & {
   kind: "annotation";
   key: string;
@@ -214,9 +224,9 @@ export type AnnotationEntry = Related & {
   space: SpaceRef;
 };
 
-export type Entry = DatasetEntry | TableEntry | MeshEntry | NetworkEntry | AnnotationEntry;
+export type Entry = DatasetEntry | TableEntry | MeshEntry | NetworkEntry | AnnotationEntry | CadModelEntry;
 
-export type SectionId = "datasets" | "meshes" | "networks" | "tables" | "annotations";
+export type SectionId = "datasets" | "meshes" | "networks" | "tables" | "annotations" | "models";
 
 export type Section = {
   id: SectionId;
@@ -230,7 +240,8 @@ export type Source =
   | { kind: "table"; entry: TableEntry }
   | { kind: "mesh"; entry: MeshEntry }
   | { kind: "network"; entry: NetworkEntry }
-  | { kind: "annotation"; entry: AnnotationEntry };
+  | { kind: "annotation"; entry: AnnotationEntry }
+  | { kind: "model"; entry: CadModelEntry };
 
 // ---------------------------------------------------------------------------
 // Building the sections
@@ -303,6 +314,7 @@ export const buildSections = (input: {
   const meshes: MeshEntry[] = [];
   const networks: NetworkEntry[] = [];
   const annotations: AnnotationEntry[] = [];
+  const models: CadModelEntry[] = [];
 
   const datasetEntry = (
     dataset: { id: string; name: string; description?: string | null },
@@ -429,6 +441,18 @@ export const buildSections = (input: {
             ...relate(resident),
           });
           break;
+        // Hardware around the sample. It relates to nothing the scene draws by
+        // lineage, so it is offered only as itself.
+        case "CadModel":
+          models.push({
+            kind: "model",
+            key: `CadModel:${resident.id}`,
+            model: resident,
+            name: residentName(resident),
+            space: spaceRef,
+            ...relate(resident),
+          });
+          break;
         case "DataArray":
           // A pyramid level of its dataset. Never a layer, never a row.
           break;
@@ -472,6 +496,7 @@ export const buildSections = (input: {
     { id: "networks", title: "Networks", entries: networks.sort(byName) },
     { id: "tables", title: "Measurements", entries: tables.sort(byName) },
     { id: "annotations", title: "Annotations", entries: annotations.sort(byName) },
+    { id: "models", title: "CAD models", entries: models.sort(byName) },
   ];
 
   if (!search) return sections.filter((section) => section.entries.length > 0);

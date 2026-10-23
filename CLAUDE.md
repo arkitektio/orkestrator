@@ -92,7 +92,8 @@ Model-specific actions (open a dialog, navigate, run a mutation) should be
 
 - **Definition:** an `Action`
   (`src/renderer/src/core/smart/localactions/LocalActionProvider.tsx`) has `title`,
-  `description`, `icon?`, `pinned?`, `conditions` (readonly), optional
+  `description`, `icon?`, `logo?` (ActionLogo BSX via `actionLogoSource`,
+  drawn in the icon's place in menu rows), `pinned?`, `conditions` (readonly), optional
   `collections`, and `execute(params)`. `conditions` decide when it applies, e.g.
   `{ type: "identifier", identifier: "@kraph/graph" }`, `{ type: "nopartner" }`,
   `{ type: "pidentifier", identifier: "@kraph/entitycategory" }` (partner /

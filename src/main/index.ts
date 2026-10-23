@@ -196,8 +196,8 @@ const meshProxyPort = (host: string) => meshService.proxyPortForHost(host);
 // main because the renderer's fetch cannot tell those failures apart. A host
 // the built-in mesh routes is probed through that mesh's proxy.
 const doctorService = new DoctorService(transport, { ...defaultDoctorDeps(), proxyPortForHost: meshProxyPort });
-const bigFileUploadService = new BigFileUploadService(transport, meshProxyPort, certificateTrust.allows);
-const bigFileDownloadService = new BigFileDownloadService(transport, meshProxyPort, certificateTrust.allows);
+const bigFileUploadService = new BigFileUploadService(transport, meshProxyPort, certificateTrust);
+const bigFileDownloadService = new BigFileDownloadService(transport, meshProxyPort, certificateTrust);
 const shellService = new ShellService(transport);
 const hardwareService = new HardwareService(transport);
 // BLE for device provisioning: a native addon (btleplug), loaded on first use.

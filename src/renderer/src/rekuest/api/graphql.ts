@@ -970,9 +970,11 @@ export type AutoResolveInput = {
   implementation: Scalars['ID']['input'];
 };
 
-/** The built-in base catalog: the pure operations every UI implements, applied to every definition and blok before any registered UI catalog. Virtual: shipped with the server, not registered, identical in every organization. */
+/** The built-in base catalog: the pure operations and control-flow components every UI implements, applied to every definition and blok before any registered UI catalog. Virtual: shipped with the server, not registered, identical in every organization. */
 export type BaseCatalog = {
   __typename?: 'BaseCatalog';
+  /** The base components: control flow (foreach, if, match, …), named in lowercase. A UI catalog may not redefine them. */
+  components: Array<CatalogComponent>;
   /** What the base catalog is for. */
   description?: Maybe<Scalars['String']['output']>;
   /** Always 'base'. */
@@ -1021,7 +1023,7 @@ export type Blok = {
   /** The revision this custom blok is at: what an edit names as its `base`. Null for a provided blok, which changes with its agents' registrations instead. */
   head?: Maybe<BlokRevision>;
   id: Scalars['ID']['output'];
-  /** Materialized bloks that are instances of this blok. */
+  /** Materialized bloks that are instances of this blok, but the ones made for a message. */
   materializedBloks: Array<MaterializedBlok>;
   name: Scalars['String']['output'];
   /** Where this custom blok was installed from (e.g. kabinet's `RepoBlok.origin`); null for one made here. */
@@ -1032,8 +1034,12 @@ export type Blok = {
   provided: Scalars['Boolean']['output'];
   /** The agents that currently provide this blok, each through its own materialization. */
   providers: Array<Agent>;
+  /** What a person answers through this blok when a task asks with it, declared like an action's returns: the values `blok.answer` hands back. Empty for a blok that answers nothing. */
+  returns: Array<ReturnPort>;
   /** The revisions of this custom blok, newest first. An undo is a revision too, so history only grows. */
   revisions: Array<BlokRevision>;
+  /** The backend services this blok reads from (its `query` components name them), each frozen at the version it was written against. A client warns when the live service differs. */
+  services: Array<BlokService>;
 };
 
 
@@ -1169,6 +1175,8 @@ export type BlokImplementationInput = {
   forNode?: InputMaybe<Scalars['String']['input']>;
   /** The key of this Blok implementation. */
   key: Scalars['String']['input'];
+  /** The backend services this Blok reads from (its `query` components name them), each frozen at the version it was written against. */
+  services?: Array<BlokServiceInput>;
   /** The Blok as BSX, parsed by the server into its component tree: three times fewer bytes than the tree. Exactly one of `components` and `source` is sent. */
   source?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1204,6 +1212,27 @@ export type BlokRevision = {
   parent?: Maybe<BlokRevision>;
   /** The task that wrote it, e.g. the assistant turn that designed it. */
   task?: Maybe<Task>;
+};
+
+/** A backend service a blok reads from, frozen at the version it was written against. */
+export type BlokService = {
+  __typename?: 'BlokService';
+  key: Scalars['String']['output'];
+  schemaHash?: Maybe<Scalars['String']['output']>;
+  service?: Maybe<Scalars['String']['output']>;
+  version?: Maybe<Scalars['String']['output']>;
+};
+
+/** A backend service a blok reads from, frozen at the version it was written against. */
+export type BlokServiceInput = {
+  /** The service's key, as a `query`'s `schema` names it: 'mikro'. */
+  key: Scalars['String']['input'];
+  /** 'sha256:<hex>' of the canonical GraphQL schema the blok's queries were checked against. */
+  schemaHash?: InputMaybe<Scalars['String']['input']>;
+  /** The service type, in reverse-domain form: 'live.arkitekt.mikro'. */
+  service?: InputMaybe<Scalars['String']['input']>;
+  /** The server version the blok was written against, as the service declaration names it ('8'). */
+  version?: InputMaybe<Scalars['String']['input']>;
 };
 
 /** The input for bouncing an agent. */
@@ -1557,6 +1586,8 @@ export type CreateBlokInput = {
   origin?: InputMaybe<Scalars['String']['input']>;
   /** The hash its origin gives what it draws, kept to tell when the origin has an update. */
   originHash?: InputMaybe<Scalars['String']['input']>;
+  /** The backend services the blok's queries read from, each frozen at the version it was written against. Every `query`'s `schema` must name one. */
+  services?: InputMaybe<Array<BlokServiceInput>>;
   /** The blok as BSX, which the server parses into `components`: send one of the two. */
   source?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1819,6 +1850,8 @@ export type DecideInput = {
   approved: Scalars['Boolean']['input'];
   /** The held task: a child an agent asked for, or a task that holds itself */
   task: Scalars['ID']['input'];
+  /** The answer through the blok a task asks with (a hold on a blok), by the blok's returns, and checked against them. Only an approved ask takes them. */
+  values?: InputMaybe<Scalars['Args']['input']>;
 };
 
 /**
@@ -2048,6 +2081,8 @@ export type DynamicValueInput = {
 export type EditBlokInput = {
   /** Bindings on `materialized_blok`, by dependency key, over the ones it has. Bindings of keys the edit removes go. Refused with `blok`: a blok binds no agents, its materializations do. */
   agentMappings?: InputMaybe<Array<MappedAgentInput>>;
+  /** The full list of the items the blok is opened for, read under `@args.<key>` (html bloks only). Kept when omitted; an empty list removes them. */
+  args?: InputMaybe<Array<ArgPortInput>>;
   /** The revision the edit starts from. It must still be the blok's head, or the edit is refused. Required for a custom blok; a provided blok has no revisions and is forked. */
   base?: InputMaybe<Scalars['ID']['input']>;
   /** The blok to edit, as an editor of the blok itself does. Send it or `materialized_blok`, not both. */
@@ -2066,6 +2101,8 @@ export type EditBlokInput = {
   materializedBlok?: InputMaybe<Scalars['ID']['input']>;
   /** What changed and why, in a sentence; kept with the revision. */
   message?: InputMaybe<Scalars['String']['input']>;
+  /** The full list of the backend services the blok's queries read from, each frozen at its version. Kept when omitted; an empty list removes them. */
+  services?: InputMaybe<Array<BlokServiceInput>>;
   /** The full component tree as BSX, which the server parses: send it or `components`, not both. */
   source?: InputMaybe<Scalars['String']['input']>;
   /** The task making the edit (one the caller's agent runs), kept with the revision. */
@@ -2619,6 +2656,13 @@ export type MappedAgentInput = {
   key: Scalars['String']['input'];
 };
 
+/** Where a materialization lives: DASHBOARD ones are listed and placed on dashboards; a MESSAGE one belongs to the message it was made for, a TASK one to the task that showed it (to ask or to inform). Neither is listed; each is reached by its id. */
+export enum MaterializationScope {
+  Dashboard = 'DASHBOARD',
+  Message = 'MESSAGE',
+  Task = 'TASK'
+}
+
 /** The input for creating a blok. */
 export type MaterializeBlokInput = {
   /** The agent mappings for the blok. This is used to map the blok dependencies to agents in the system. */
@@ -2630,6 +2674,8 @@ export type MaterializeBlokInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   /** Display name of this materialization. Defaults to the blok's name. */
   name?: InputMaybe<Scalars['String']['input']>;
+  /** MESSAGE: made for one chat message, to show inline in it. It is never listed, takes no dashboard, and may materialize a blok an app provides (bound to any agents). */
+  scope?: MaterializationScope;
 };
 
 /** A materialized instance of a Blok that can be placed on dashboards and linked to agent states. */
@@ -2637,6 +2683,8 @@ export type MaterializedBlok = {
   __typename?: 'MaterializedBlok';
   /** Mappings of states to this materialized blok. */
   agentMappings: Array<BlokAgentMapping>;
+  /** What it is opened on, by arg key (read under `@args.<key>`): set by the task that showed it. Empty when whoever shows it chooses. */
+  args: Scalars['Args']['output'];
   blok: Blok;
   createdAt: Scalars['DateTime']['output'];
   /** Placements of this materialized blok on dashboards. */
@@ -2654,6 +2702,10 @@ export type MaterializedBlok = {
   placements: Array<Placement>;
   /** The revision this materialization shows: the pinned one, else its blok's head. Null for a provided blok, which has none. */
   revision?: Maybe<BlokRevision>;
+  /** Where it lives: DASHBOARD, MESSAGE when it was made for one chat message to show inline, or TASK when a task showed it. */
+  scope: MaterializationScope;
+  /** Why its task showed it (scope TASK): ASK holds the task until a person answers through it, INFORM shows it while the task carries on. Null for any other. */
+  taskRole?: Maybe<TaskBlokRole>;
   /** The required dependencies of the revision shown that no agent is bound to here. An edit made elsewhere can add one: bind it with updateMaterializedBlok. */
   unboundDependencies: Array<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
@@ -3838,7 +3890,7 @@ export type Query = {
   baseCatalog: BaseCatalog;
   /** Get a blok by ID. */
   blok: Blok;
-  /** List of UI Blok. */
+  /** List of UI Blok. Leaves out the bloks a task made from its BSX to show: each goes with its task. */
   bloks: Array<Blok>;
   /** The html bloks registered to decorate the model of this reference. */
   bloksForModel: Array<Blok>;
@@ -3886,7 +3938,7 @@ export type Query = {
   matchingSignals: Array<Signal>;
   /** Get a materialized blok by ID. */
   materializedBlok: MaterializedBlok;
-  /** List of UI Blok. */
+  /** List of UI Blok. Leaves out the materializations made for a message: each is shown in its message and reached by its id. */
   materializedBloks: Array<MaterializedBlok>;
   /** Fetch a memory drawer by ID. */
   memoryDrawer: MemoryDrawer;
@@ -5694,6 +5746,8 @@ export type Task = {
   args: Scalars['AnyDefault']['output'];
   /** Canonical sha256 of the assign args — the replay-discovery key. */
   argsHash?: Maybe<Scalars['String']['output']>;
+  /** The bloks this task showed a person, oldest first: asks it holds on (or held on) and informs. */
+  bloks: Array<TaskBlok>;
   /** What the parent calls this child; null for roots and for keyless agents. */
   callKey?: Maybe<Scalars['String']['output']>;
   /** Caller that created this task. */
@@ -5783,6 +5837,40 @@ export type TaskEventsArgs = {
   ordering?: Array<TaskEventOrder>;
   pagination?: InputMaybe<OffsetPaginationInput>;
 };
+
+/** A blok a task showed a person: to ask (the task holds until they answer through it) or to inform. */
+export type TaskBlok = {
+  __typename?: 'TaskBlok';
+  /** When the task showed it. */
+  createdAt: Scalars['DateTime']['output'];
+  /** The user (sub) who answered or dismissed an ask. */
+  decidedBy?: Maybe<Scalars['String']['output']>;
+  /** What it shows: a materialization of scope TASK, opened on its args. */
+  materializedBlok: MaterializedBlok;
+  /** What the task said with it. */
+  message?: Maybe<Scalars['String']['output']>;
+  /** ASK or INFORM. */
+  role: TaskBlokRole;
+  /** Where it stands: an ask WAITING, ANSWERED, DISMISSED or GONE (the task ended first); an inform SHOWN. */
+  status: TaskBlokStatus;
+  /** The answer to an ask, by the blok's returns. */
+  values?: Maybe<Scalars['Args']['output']>;
+};
+
+/** Why a task showed a blok: ASK holds the task until a person answers through it, INFORM shows it while the task carries on. */
+export enum TaskBlokRole {
+  Ask = 'ASK',
+  Inform = 'INFORM'
+}
+
+/** Where a blok a task showed stands. WAITING: an ask nobody answered yet. ANSWERED / DISMISSED: a person answered it, or turned it down. GONE: the task ended before anyone did. SHOWN: an inform. */
+export enum TaskBlokStatus {
+  Answered = 'ANSWERED',
+  Dismissed = 'DISMISSED',
+  Gone = 'GONE',
+  Shown = 'SHOWN',
+  Waiting = 'WAITING'
+}
 
 export type TaskBoundary = {
   __typename?: 'TaskBoundary';
@@ -5895,6 +5983,7 @@ export enum TaskEventKind {
   Effect = 'EFFECT',
   Failed = 'FAILED',
   Held = 'HELD',
+  Inform = 'INFORM',
   Interrupted = 'INTERRUPTED',
   Interrupting = 'INTERRUPTING',
   LateReport = 'LATE_REPORT',
@@ -7017,13 +7106,16 @@ export type BlokFragment = { __typename?: 'Blok', id: string, name: string, desc
   )>, dependencies: Array<{ __typename?: 'BlokDependency', id: string, key: string, description?: string | null }>, catalog: { __typename?: 'UICatalog', id: string, name: string, description?: string | null, isRegistered: boolean }, args: Array<(
     { __typename?: 'ArgPort' }
     & ArgPortFragment
-  )>, diagnostics: Array<(
+  )>, returns: Array<(
+    { __typename?: 'ReturnPort' }
+    & ReturnPortFragment
+  )>, services: Array<{ __typename?: 'BlokService', key: string, service?: string | null, version?: string | null, schemaHash?: string | null }>, diagnostics: Array<(
     { __typename?: 'Diagnostic' }
     & BlokDiagnosticFragment
   )> };
 
-export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, isDefault: boolean, createdAt: any, unboundDependencies: Array<string>, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: (
-    { __typename?: 'Blok' }
+export type MaterializedBlokFragment = { __typename?: 'MaterializedBlok', id: string, name?: string | null, isDefault: boolean, createdAt: any, unboundDependencies: Array<string>, args: any, taskRole?: TaskBlokRole | null, declaredBy?: { __typename?: 'Agent', id: string, name: string, connected: boolean } | null, blok: (
+    { __typename?: 'Blok', hash: string }
     & BlokFragment
   ), revision?: { __typename?: 'BlokRevision', id: string, number: number, componentTree: any, demoState: any } | null, pinnedRevision?: { __typename?: 'BlokRevision', id: string, number: number } | null, agentMappings: Array<{ __typename?: 'BlokAgentMapping', key: string, agent: { __typename?: 'Agent', id: string, name: string, connected: boolean } }> };
 
@@ -7076,6 +7168,11 @@ export type BlokEditorFragment = { __typename?: 'Blok', id: string, name: string
   )> };
 
 export type BlokRevisionListItemFragment = { __typename?: 'BlokRevision', id: string, number: number, message?: string | null, createdAt: any, hash: string, author?: { __typename?: 'User', sub: string } | null, task?: { __typename?: 'Task', id: string } | null, parent?: { __typename?: 'BlokRevision', id: string } | null };
+
+export type TaskBlokFragment = { __typename?: 'TaskBlok', role: TaskBlokRole, status: TaskBlokStatus, message?: string | null, values?: any | null, decidedBy?: string | null, createdAt: any, materializedBlok: (
+    { __typename?: 'MaterializedBlok' }
+    & MaterializedBlokFragment
+  ) };
 
 export type ClientFragment = { __typename?: 'Client', id: string, clientId: string };
 
@@ -9643,6 +9740,16 @@ export type HoverTaskQuery = { __typename?: 'Query', task: (
     & HoverTaskFragment
   ) };
 
+export type TaskBloksQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TaskBloksQuery = { __typename?: 'Query', task: { __typename?: 'Task', id: string, isDone: boolean, latestEventKind: TaskEventKind, bloks: Array<(
+      { __typename?: 'TaskBlok' }
+      & TaskBlokFragment
+    )> } };
+
 export type ThreeDModelOptionsQueryVariables = Exact<{
   search?: InputMaybe<Scalars['String']['input']>;
   values?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -9697,6 +9804,9 @@ export type BaseCatalogQueryVariables = Exact<{ [key: string]: never; }>;
 export type BaseCatalogQuery = { __typename?: 'Query', baseCatalog: { __typename?: 'BaseCatalog', name: string, version: number, description?: string | null, operations: Array<(
       { __typename?: 'CatalogOperation' }
       & CatalogOperationFragment
+    )>, components: Array<(
+      { __typename?: 'CatalogComponent' }
+      & CatalogComponentFragment
     )> } };
 
 export type WatchAgentsSubscriptionVariables = Exact<{ [key: string]: never; }>;
@@ -11507,26 +11617,6 @@ export const BlokRevisionListItemFragmentDoc = gql`
   }
 }
     `;
-export const ClientFragmentDoc = gql`
-    fragment Client on Client {
-  id
-  clientId
-}
-    `;
-export const ListClientFragmentDoc = gql`
-    fragment ListClient on Client {
-  id
-  clientId
-  release {
-    id
-    version
-    app {
-      id
-      identifier
-    }
-  }
-}
-    `;
 export const BlokDiagnosticFragmentDoc = gql`
     fragment BlokDiagnostic on Diagnostic {
   level
@@ -11578,12 +11668,22 @@ export const BlokFragmentDoc = gql`
   args {
     ...ArgPort
   }
+  returns {
+    ...ReturnPort
+  }
+  services {
+    key
+    service
+    version
+    schemaHash
+  }
   diagnostics {
     ...BlokDiagnostic
   }
 }
     ${ListMaterializedBlokFragmentDoc}
 ${ArgPortFragmentDoc}
+${ReturnPortFragmentDoc}
 ${BlokDiagnosticFragmentDoc}`;
 export const MaterializedBlokFragmentDoc = gql`
     fragment MaterializedBlok on MaterializedBlok {
@@ -11598,6 +11698,7 @@ export const MaterializedBlokFragmentDoc = gql`
   }
   blok {
     ...Blok
+    hash
   }
   revision {
     id
@@ -11610,6 +11711,8 @@ export const MaterializedBlokFragmentDoc = gql`
     number
   }
   unboundDependencies
+  args
+  taskRole
   agentMappings {
     key
     agent {
@@ -11620,6 +11723,39 @@ export const MaterializedBlokFragmentDoc = gql`
   }
 }
     ${BlokFragmentDoc}`;
+export const TaskBlokFragmentDoc = gql`
+    fragment TaskBlok on TaskBlok {
+  role
+  status
+  message
+  values
+  decidedBy
+  createdAt
+  materializedBlok {
+    ...MaterializedBlok
+  }
+}
+    ${MaterializedBlokFragmentDoc}`;
+export const ClientFragmentDoc = gql`
+    fragment Client on Client {
+  id
+  clientId
+}
+    `;
+export const ListClientFragmentDoc = gql`
+    fragment ListClient on Client {
+  id
+  clientId
+  release {
+    id
+    version
+    app {
+      id
+      identifier
+    }
+  }
+}
+    `;
 export const DashboardFragmentDoc = gql`
     fragment Dashboard on Dashboard {
   id
@@ -19200,6 +19336,46 @@ export function useHoverTaskLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHo
 export type HoverTaskQueryHookResult = ReturnType<typeof useHoverTaskQuery>;
 export type HoverTaskLazyQueryHookResult = ReturnType<typeof useHoverTaskLazyQuery>;
 export type HoverTaskQueryResult = Apollo.QueryResult<HoverTaskQuery, HoverTaskQueryVariables>;
+export const TaskBloksDocument = gql`
+    query TaskBloks($id: ID!) {
+  task(id: $id) {
+    id
+    isDone
+    latestEventKind
+    bloks {
+      ...TaskBlok
+    }
+  }
+}
+    ${TaskBlokFragmentDoc}`;
+
+/**
+ * __useTaskBloksQuery__
+ *
+ * To run a query within a React component, call `useTaskBloksQuery` and pass it any options that fit your needs.
+ * When your component renders, `useTaskBloksQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useTaskBloksQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useTaskBloksQuery(baseOptions: ApolloReactHooks.QueryHookOptions<TaskBloksQuery, TaskBloksQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<TaskBloksQuery, TaskBloksQueryVariables>(TaskBloksDocument, options);
+      }
+export function useTaskBloksLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<TaskBloksQuery, TaskBloksQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<TaskBloksQuery, TaskBloksQueryVariables>(TaskBloksDocument, options);
+        }
+export type TaskBloksQueryHookResult = ReturnType<typeof useTaskBloksQuery>;
+export type TaskBloksLazyQueryHookResult = ReturnType<typeof useTaskBloksLazyQuery>;
+export type TaskBloksQueryResult = Apollo.QueryResult<TaskBloksQuery, TaskBloksQueryVariables>;
 export const ThreeDModelOptionsDocument = gql`
     query ThreeDModelOptions($search: String, $values: [ID!]) {
   options: threedModels(
@@ -19390,9 +19566,13 @@ export const BaseCatalogDocument = gql`
     operations {
       ...CatalogOperation
     }
+    components {
+      ...CatalogComponent
+    }
   }
 }
-    ${CatalogOperationFragmentDoc}`;
+    ${CatalogOperationFragmentDoc}
+${CatalogComponentFragmentDoc}`;
 
 /**
  * __useBaseCatalogQuery__

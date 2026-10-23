@@ -156,8 +156,8 @@ declare global {
       }) => Promise<void>;
       getNodeId: () => Promise<string>;
       trust: {
-        setFaktsHosts: (hosts: string[]) => Promise<void>;
-        allowDiscoveryHosts: (hosts: string[]) => Promise<void>;
+        setFaktsHosts: (trust: import("../main/trust/hosts").TrustPayload) => Promise<void>;
+        allowDiscoveryHosts: (trust: import("../main/trust/hosts").TrustPayload) => Promise<void>;
       };
       factoryReset: () => Promise<void>;
       windowControls: {

@@ -17,12 +17,22 @@ export const ChallengeKeySchema = z.object({
   key: z.string(),
 });
 
+/**
+ * The certificate(s) an instance's TLS aliases present, when its hub registered
+ * one: trusted as themselves (no CA, no chain) for those aliases, and nothing
+ * else is (`src/main/trust`). Absent for a plain-HTTP hub.
+ */
+export const TlsClaimSchema = z.object({
+  certificates: z.array(z.string()).default([]),
+});
+
 // Instance type
 export const InstanceSchema = z.object({
   identifier: z.string(),
   service: z.string(),
   aliases: z.array(AliasSchema),
   challenge_key: ChallengeKeySchema.optional().nullable(),
+  tls: TlsClaimSchema.optional().nullable(),
 });
 
 // SelfFakt type

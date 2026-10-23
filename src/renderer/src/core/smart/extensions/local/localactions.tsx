@@ -1,6 +1,7 @@
 import { usePerformAction } from "@/core/smart/localactions/useLocalAction";
 import { Action, ActionState } from "@/core/smart/localactions/LocalActionProvider";
 import { Sparkles } from "lucide-react";
+import { SourceLogo } from "@/core/blok/logo/SourceLogo";
 import { CommandActionRow } from "../CommandActionRow";
 import type { OnDone } from "../types";
 
@@ -17,7 +18,7 @@ export const LocalActionCommand = (props: {
   /** Registry id, so a reopened palette re-attaches to a run already going. */
   actionId?: string;
 }) => {
-  const { assign, progress, confirmationDialog } = usePerformAction(props);
+  const { assign, progress, running, confirmationDialog } = usePerformAction(props);
   const Icon = props.action.icon ?? Sparkles;
 
   return (
@@ -30,6 +31,11 @@ export const LocalActionCommand = (props: {
         title={props.action.title}
         description={props.action.description}
         icon={Icon}
+        leading={
+          props.action.logo ? (
+            <SourceLogo source={props.action.logo} active={running} className="h-full w-full" />
+          ) : undefined
+        }
         progress={progress}
       />
       {confirmationDialog}

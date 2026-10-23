@@ -72,6 +72,11 @@ export type PhasorLayerFragment = Extract<
   { __typename: "PhasorLayer" }
 >;
 
+export type CadModelLayerFragment = Extract<
+  SceneLayerFragment,
+  { __typename: "CadModelLayer" }
+>;
+
 export const isImageLayer = (
   layer: SceneLayerFragment,
 ): layer is ImageLayerFragment => layer.__typename === "ImageLayer";

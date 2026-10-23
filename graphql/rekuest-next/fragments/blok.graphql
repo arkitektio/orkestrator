@@ -118,6 +118,17 @@ fragment Blok on Blok {
   args {
     ...ArgPort
   }
+  # What a person answers through it when a task asks with it (`blok.return`).
+  returns {
+    ...ReturnPort
+  }
+  # The services its `query` components read: guarded around it, named for the person.
+  services {
+    key
+    service
+    version
+    schemaHash
+  }
   diagnostics {
     ...BlokDiagnostic
   }
@@ -136,6 +147,8 @@ fragment MaterializedBlok on MaterializedBlok {
   }
   blok {
     ...Blok
+    # Keys its kept preview (core/blok/preview): an embed off screen shows that.
+    hash
   }
   # What it shows: the pinned revision, else its blok's head (null for a provided blok).
   revision {
@@ -150,6 +163,10 @@ fragment MaterializedBlok on MaterializedBlok {
   }
   # Required dependencies of the revision shown that no agent is bound to here.
   unboundDependencies
+  # What it is opened on, when the task that showed it set that (`@args.<key>`).
+  args
+  # Why a task showed it (ASK / INFORM); null for any other materialization.
+  taskRole
   agentMappings {
     key
     agent {
@@ -351,5 +368,18 @@ fragment BlokRevisionListItem on BlokRevision {
   }
   parent {
     id
+  }
+}
+
+# A blok a task showed a person: an ask (waiting, answered, dismissed, gone) or an inform.
+fragment TaskBlok on TaskBlok {
+  role
+  status
+  message
+  values
+  decidedBy
+  createdAt
+  materializedBlok {
+    ...MaterializedBlok
   }
 }

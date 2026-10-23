@@ -1,4 +1,3 @@
-import {controlBlokComponents} from './control';
 import {dataBlokComponents} from './data';
 import {feedbackBlokComponents} from './feedback';
 import {formBlokComponents} from './forms';
@@ -25,11 +24,9 @@ export const shadcnComposableComponents = [
   ...feedbackBlokComponents,
   ...dataBlokComponents,
   ...iconBlokComponents,
-  ...controlBlokComponents,
 ];
 
 export {
-  controlBlokComponents,
   dataBlokComponents,
   feedbackBlokComponents,
   formBlokComponents,

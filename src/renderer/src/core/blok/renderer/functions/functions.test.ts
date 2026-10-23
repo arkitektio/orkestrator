@@ -1,9 +1,9 @@
 import {describe, expect, it, vi} from "vitest";
 
 import {createBlokCatalog, describeBlokCatalog} from "../runtime";
-import {standardBlokFunctions} from "./index";
+import {effectFunctions, standardBlokFunctions, variadicBlokFunctions} from "./index";
 
-const catalog = createBlokCatalog("test", [], standardBlokFunctions);
+const catalog = createBlokCatalog("test", [], [...standardBlokFunctions, ...variadicBlokFunctions, ...effectFunctions]);
 
 /** Invokes a pure function the way a value-position prop would. */
 const call = (name: string, args: Record<string, unknown>) =>
@@ -30,9 +30,12 @@ describe("catalog registration", () => {
   });
 
   it("registers aliases without duplicating definitions", () => {
-    expect(catalog.functions.get("gt")).toBe(catalog.functions.get("compare.gt"));
-    expect(catalog.functions.get("if")).toBe(catalog.functions.get("logic.if"));
-    expect(catalog.functionDefinitions).toHaveLength(standardBlokFunctions.length);
+    expect(catalog.functionDefinitions).toHaveLength(standardBlokFunctions.length + variadicBlokFunctions.length + effectFunctions.length);
+  });
+
+  it("leaves the bare base names to the base operations", () => {
+    expect(catalog.functions.get("gt")?.name).toBe("gt");
+    expect(catalog.functions.get("if")?.name).toBe("if");
   });
 
   it("does not let an alias collide with another function's name", () => {
@@ -51,12 +54,12 @@ describe("catalog registration", () => {
 
   it("describes itself as a serializable manifest", () => {
     const manifest = describeBlokCatalog(catalog);
-    const gt = manifest.functions.find(fn => fn.name === "compare.gt");
+    const gt = manifest.functions.find(fn => fn.name === "gt");
 
     expect(gt).toEqual({
-      name: "compare.gt",
-      aliases: ["gt"],
-      description: "True when a is greater than b.",
+      name: "gt",
+      aliases: [],
+      description: "True if a > b. Non-numbers compare false.",
       returnType: "boolean",
       purity: "pure",
       variadic: false,
@@ -68,19 +71,19 @@ describe("catalog registration", () => {
 
 describe("argument shapes", () => {
   it("accepts positional arguments in schema order", () => {
-    expect(value("compare.gt", {0: 5, 1: 3})).toBe(true);
+    expect(value("gt", {0: 5, 1: 3})).toBe(true);
   });
 
   it("accepts named arguments", () => {
-    expect(value("compare.gt", {a: 5, b: 3})).toBe(true);
+    expect(value("gt", {a: 5, b: 3})).toBe(true);
   });
 
   it("accepts numeric strings where a number is expected", () => {
-    expect(value("math.add", {a: "2", b: 3})).toBe(5);
+    expect(value("add", {a: "2", b: 3})).toBe(5);
   });
 
   it("rejects a non-numeric string with a message naming the value", () => {
-    expect(failure("math.add", {a: "abc", b: 3})).toContain('"abc"');
+    expect(failure("math.round", {value: "abc"})).toContain('"abc"');
   });
 
   it("collects variadic values from positional keys", () => {
@@ -104,31 +107,32 @@ describe("argument shapes", () => {
 
 describe("logic", () => {
   it.each([
-    ["logic.if", {condition: true, trueValue: "y", falseValue: "n"}, "y"],
-    ["logic.if", {condition: 0, trueValue: "y", falseValue: "n"}, "n"],
+    ["if", {condition: true, then: "y", otherwise: "n"}, "y"],
+    ["if", {condition: 1, then: "y", otherwise: "n"}, "n"],
     ["logic.and", {values: [true, 1, "x"]}, true],
     ["logic.and", {values: [true, 0]}, false],
     ["logic.or", {values: [false, "", 1]}, true],
     ["logic.or", {values: [false, ""]}, false],
-    ["logic.not", {value: ""}, true],
+    ["not", {a: false}, true],
+    ["and", {a: true, b: 1}, false],
     ["logic.coalesce", {values: [null, undefined, 0, 5]}, 0],
   ])("%s %o -> %o", (name, args, expected) => {
     expect(value(name, args)).toEqual(expected);
   });
 });
 
-describe("compare", () => {
+describe("comparison", () => {
   it.each([
-    ["compare.eq", {a: 3, b: "3"}, true],
-    ["compare.eq", {a: "abc", b: "abc"}, true],
-    ["compare.eq", {a: {x: 1}, b: {x: 1}}, true],
-    ["compare.eq", {a: "abc", b: "abd"}, false],
-    ["compare.ne", {a: 1, b: 2}, true],
-    ["compare.gte", {a: 3, b: 3}, true],
-    ["compare.lt", {a: 3, b: 3}, false],
-    ["compare.lte", {a: "2", b: 3}, true],
-    ["compare.between", {value: 5, min: 1, max: 5}, true],
-    ["compare.between", {value: 6, min: 1, max: 5}, false],
+    ["eq", {a: 3, b: "3"}, false],
+    ["eq", {a: "abc", b: "abc"}, true],
+    ["eq", {a: {x: 1}, b: {x: 1}}, true],
+    ["eq", {a: "abc", b: "abd"}, false],
+    ["ne", {a: 1, b: 2}, true],
+    ["gte", {a: 3, b: 3}, true],
+    ["lt", {a: 3, b: 3}, false],
+    ["lte", {a: "2", b: 3}, true],
+    ["between", {value: 5, min: 1, max: 5}, true],
+    ["between", {value: 6, min: 1, max: 5}, false],
   ])("%s %o -> %o", (name, args, expected) => {
     expect(value(name, args)).toEqual(expected);
   });
@@ -136,15 +140,15 @@ describe("compare", () => {
 
 describe("math", () => {
   it.each([
-    ["math.subtract", {a: 10, b: 4}, 6],
+    ["sub", {a: 10, b: 4}, 6],
     ["math.multiply", {values: [2, 3, 4]}, 24],
-    ["math.divide", {a: 10, b: 4}, 2.5],
-    ["math.modulo", {a: 10, b: 3}, 1],
+    ["div", {a: 10, b: 4}, 2.5],
+    ["mod", {a: 10, b: 3}, 1],
     ["math.round", {value: 3.14159, precision: 2}, 3.14],
     ["math.round", {value: 3.6}, 4],
     ["math.floor", {value: 3.9}, 3],
     ["math.abs", {value: -3}, 3],
-    ["math.negate", {value: 3}, -3],
+    ["neg", {a: 3}, -3],
     ["math.min", {values: [3, 1, 2]}, 1],
     ["math.max", {values: [3, 1, 2]}, 3],
     ["math.clamp", {value: 12, min: 0, max: 10}, 10],
@@ -152,9 +156,9 @@ describe("math", () => {
     expect(value(name, args)).toEqual(expected);
   });
 
-  it("reports division by zero instead of returning Infinity", () => {
-    expect(failure("math.divide", {a: 1, b: 0})).toContain("Division by zero");
-    expect(failure("math.modulo", {a: 1, b: 0})).toContain("Modulo by zero");
+  it("answers null for a division by zero instead of Infinity", () => {
+    expect(value("div", {a: 1, b: 0})).toBeNull();
+    expect(value("mod", {a: 1, b: 0})).toBeNull();
   });
 });
 
@@ -165,9 +169,9 @@ describe("strings", () => {
     ["str.upper", {value: "abc"}, "ABC"],
     ["str.capitalize", {value: "abc"}, "Abc"],
     ["str.trim", {value: "  x  "}, "x"],
-    ["str.length", {value: "abcd"}, 4],
-    ["str.contains", {value: "abcd", search: "bc"}, true],
-    ["str.startsWith", {value: "abcd", search: "ab"}, true],
+    ["len", {a: "abcd"}, 4],
+    ["contains", {haystack: "abcd", needle: "bc"}, true],
+    ["starts_with", {value: "abcd", prefix: "ab"}, true],
     ["str.slice", {value: "abcdef", start: 1, end: 3}, "bc"],
     ["str.replace", {value: "a-b-c", search: "-", replacement: "+"}, "a+b+c"],
     ["str.split", {value: "a,b", separator: ","}, ["a", "b"]],
@@ -193,12 +197,12 @@ describe("lists", () => {
   const rows = [{n: 3}, {n: 1}, {n: 2}];
 
   it.each([
-    ["list.length", {value: [1, 2]}, 2],
-    ["list.isEmpty", {value: []}, true],
+    ["len", {a: [1, 2]}, 2],
+    ["is_empty", {a: []}, true],
     ["list.first", {value: [1, 2]}, 1],
     ["list.last", {value: [1, 2]}, 2],
     ["list.at", {value: [1, 2, 3], index: -1}, 3],
-    ["list.includes", {value: [1, 2], search: 2}, true],
+    ["in", {value: 2, options: [1, 2]}, true],
     ["list.join", {value: ["a", "b"], separator: "-"}, "a-b"],
     ["list.slice", {value: [1, 2, 3], start: 1}, [2, 3]],
     ["list.reverse", {value: [1, 2]}, [2, 1]],
@@ -235,8 +239,8 @@ describe("objects", () => {
   const record = {user: {name: "Ada", tags: ["x"]}};
 
   it.each([
-    ["obj.get", {value: record, path: "user/name"}, "Ada"],
-    ["obj.get", {value: record, path: "user/missing", fallback: "-"}, "-"],
+    ["get", {value: record, path: "/user/name"}, "Ada"],
+    ["get", {value: record, path: "/user/missing"}, null],
     ["obj.has", {value: record, path: "user/name"}, true],
     ["obj.has", {value: record, path: "user/nope"}, false],
     ["obj.keys", {value: {a: 1, b: 2}}, ["a", "b"]],
@@ -272,10 +276,10 @@ describe("formatting", () => {
 
 describe("type coercion", () => {
   it.each([
-    ["type.isNil", {value: null}, true],
-    ["type.isEmpty", {value: []}, true],
-    ["type.isEmpty", {value: {}}, true],
-    ["type.isEmpty", {value: 0}, false],
+    ["is_null", {a: null}, true],
+    ["is_empty", {a: []}, true],
+    ["is_empty", {a: {}}, true],
+    ["is_empty", {a: 0}, false],
     ["type.of", {value: []}, "list"],
     ["type.of", {value: null}, "null"],
     ["type.toString", {value: null}, ""],
@@ -311,12 +315,5 @@ describe("effects", () => {
     expect(result).toEqual({ok: true, value: "hello"});
     expect(consoleInfo).toHaveBeenCalledWith("blok logger.info", "hello");
     consoleInfo.mockRestore();
-  });
-});
-
-describe("deprecations", () => {
-  it("keeps is_admin working but marks it deprecated", () => {
-    expect(value("is_admin", {role: "admin"})).toBe(true);
-    expect(catalog.functions.get("is_admin")?.deprecated).toContain("compare.eq");
   });
 });

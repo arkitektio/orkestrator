@@ -3,6 +3,9 @@ import { AppModule } from './AppModule';
 import { ipcMain } from 'electron';
 import fs from 'fs';
 import https from 'https';
+import type { ClientRequestArgs } from 'http';
+import type { Duplex } from 'stream';
+import { TLSSocket } from 'tls';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
@@ -12,16 +15,61 @@ import { BigFileUploadGrant } from '../schemas/mikro'; // or whatever the type i
 // verify proc (src/main/trust) does not cover — that only applies to
 // Chromium's net stack. Datalayer deployments routinely use self-signed or
 // expired certs, so a datalayer the user's fakts name is let through here too
-// (`allowsBadCertificate`); any other host is verified as usual. keepAlive
+// (`trust.allows`); a strict hub's datalayer is verified against its pinned
+// certificate alone (`trust.pinsFor`); any other host is verified as usual. keepAlive
 // mirrors the SDK's default agent; dropping it would force a fresh TLS
 // handshake per multipart part.
-const httpsAgents = {
-    strict: new https.Agent({ keepAlive: true, maxSockets: 50 }),
-    lenient: new https.Agent({ keepAlive: true, maxSockets: 50, rejectUnauthorized: false }),
+//
+// Lenient still refuses a chain Electron's Node reports as revoked: that is
+// how its compiled-in SPKI blocklist (the compromised eMudhra intermediates)
+// fails, and `rejectUnauthorized: false` would otherwise swallow it.
+const refuseRevoked = <T extends Duplex | null | undefined>(socket: T): T => {
+    if (!(socket instanceof TLSSocket)) return socket;
+    const check = () => {
+        const reason = socket.authorizationError as unknown;
+        const code = typeof reason === 'string' ? reason : (reason as { code?: string } | undefined)?.code;
+        if (code === 'CERT_REVOKED') socket.destroy(new Error('The server presented a revoked or blocked certificate'));
+    };
+    if (socket.authorizationError) check();
+    else socket.once('secureConnect', check);
+    return socket;
 };
 
-/** Whether a host may present a certificate that fails verification. */
-export type AllowsBadCertificate = (host: string) => boolean;
+class LenientHttpsAgent extends https.Agent {
+    createConnection(options: ClientRequestArgs, callback?: (err: Error | null, stream: Duplex) => void) {
+        return refuseRevoked(super.createConnection(options, callback));
+    }
+}
+
+const httpsAgents = {
+    strict: new https.Agent({ keepAlive: true, maxSockets: 50 }),
+    lenient: new LenientHttpsAgent({ keepAlive: true, maxSockets: 50, rejectUnauthorized: false }),
+};
+
+/**
+ * What the datalayer agents ask of `src/main/trust`: whether a host may present a
+ * certificate that fails verification, and which certificates a strict host is
+ * pinned to (then those, and only those, are its trust roots).
+ */
+export type DatalayerTrust = {
+    allows: (host: string) => boolean;
+    pinsFor: (host: string) => readonly string[] | undefined;
+};
+
+const NO_TRUST: DatalayerTrust = { allows: () => false, pinsFor: () => undefined };
+
+/** One pinned agent per set of certificates: keepAlive is only worth anything if it is reused. */
+const pinnedAgents = new Map<string, https.Agent>();
+const pinnedAgent = (pems: readonly string[]): https.Agent => {
+    const key = pems.join("\n");
+    let agent = pinnedAgents.get(key);
+    if (!agent) {
+        // Node verifies the chain and the name against these alone; no public roots.
+        agent = new https.Agent({ keepAlive: true, maxSockets: 50, ca: [...pems] });
+        pinnedAgents.set(key, agent);
+    }
+    return agent;
+};
 
 /**
  * A datalayer behind an organisation mesh is only reachable from main through
@@ -32,7 +80,7 @@ export type AllowsBadCertificate = (host: string) => boolean;
 export const datalayerAgentFor = (
     endpointUrl: string | undefined,
     proxyPortForHost?: (host: string) => number | undefined,
-    allowsBadCertificate: AllowsBadCertificate = () => false,
+    trust: DatalayerTrust = NO_TRUST,
 ): { httpAgent: SocksProxyAgent | undefined; httpsAgent: SocksProxyAgent | https.Agent } => {
     let host: string | undefined;
     try {
@@ -40,20 +88,43 @@ export const datalayerAgentFor = (
     } catch {
         host = undefined;
     }
-    const lenient = host != null && allowsBadCertificate(host);
+    const pins = host != null ? trust.pinsFor(host) : undefined;
+    const lenient = !pins && host != null && trust.allows(host);
     const port = host ? proxyPortForHost?.(host) : undefined;
-    if (!port) return { httpAgent: undefined, httpsAgent: lenient ? httpsAgents.lenient : httpsAgents.strict };
+    if (!port) {
+        return {
+            httpAgent: undefined,
+            httpsAgent: pins ? pinnedAgent(pins) : lenient ? httpsAgents.lenient : httpsAgents.strict,
+        };
+    }
     const options = { keepAlive: true, maxSockets: 50 };
-    const agent = lenient
-        ? new LenientSocksProxyAgent(`socks5h://127.0.0.1:${port}`, options)
-        : new SocksProxyAgent(`socks5h://127.0.0.1:${port}`, options);
+    const agent = pins
+        ? new PinnedSocksProxyAgent(`socks5h://127.0.0.1:${port}`, options, pins)
+        : lenient
+          ? new LenientSocksProxyAgent(`socks5h://127.0.0.1:${port}`, options)
+          : new SocksProxyAgent(`socks5h://127.0.0.1:${port}`, options);
     return { httpAgent: agent, httpsAgent: agent };
 };
 
-/** The SOCKS agent for a host whose bad certificate is allowed. */
-class LenientSocksProxyAgent extends SocksProxyAgent {
+/** The SOCKS agent for a strict host: its pinned certificates are the only trust roots. */
+class PinnedSocksProxyAgent extends SocksProxyAgent {
+    constructor(
+        uri: string,
+        options: ConstructorParameters<typeof SocksProxyAgent>[1],
+        private readonly pins: readonly string[],
+    ) {
+        super(uri, options);
+    }
+
     connect(req: Parameters<SocksProxyAgent["connect"]>[0], opts: Parameters<SocksProxyAgent["connect"]>[1]) {
-        return super.connect(req, { ...opts, rejectUnauthorized: false } as typeof opts);
+        return super.connect(req, { ...opts, ca: [...this.pins], rejectUnauthorized: true } as typeof opts);
+    }
+}
+
+/** The SOCKS agent for a host whose bad certificate is allowed (revoked still refused). */
+class LenientSocksProxyAgent extends SocksProxyAgent {
+    async connect(req: Parameters<SocksProxyAgent["connect"]>[0], opts: Parameters<SocksProxyAgent["connect"]>[1]) {
+        return refuseRevoked(await super.connect(req, { ...opts, rejectUnauthorized: false } as typeof opts));
     }
 }
 
@@ -66,16 +137,16 @@ export class BigFileUploadService implements AppModule {
     }
 
     private readonly proxyPortForHost?: (host: string) => number | undefined;
-    private readonly allowsBadCertificate?: AllowsBadCertificate;
+    private readonly trust?: DatalayerTrust;
 
     constructor(
         ipcTransport: IpcTransport,
         proxyPortForHost?: (host: string) => number | undefined,
-        allowsBadCertificate?: AllowsBadCertificate,
+        trust?: DatalayerTrust,
     ) {
         this.ipcTransport = ipcTransport;
         this.proxyPortForHost = proxyPortForHost;
-        this.allowsBadCertificate = allowsBadCertificate;
+        this.trust = trust;
 
         ipcMain.handle("upload:bigFile", async (event, args: { uploadId: string, path: string, grant: BigFileUploadGrant, endpointUrl: string }) => {
             return this.handleUpload(event, args);
@@ -102,7 +173,7 @@ export class BigFileUploadService implements AppModule {
                 sessionToken: grant.sessionToken,
             },
             forcePathStyle: true,
-            requestHandler: datalayerAgentFor(args.endpointUrl, this.proxyPortForHost, this.allowsBadCertificate),
+            requestHandler: datalayerAgentFor(args.endpointUrl, this.proxyPortForHost, this.trust),
         });
 
         const fileStream = fs.createReadStream(path);

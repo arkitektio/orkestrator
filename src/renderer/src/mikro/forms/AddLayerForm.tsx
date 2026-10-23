@@ -29,6 +29,7 @@ import {
 import { useLensRegistry } from "@/mikro/lib/lenses/useLensRegistry";
 import { modifierSpecsOf, spatialSpecOf } from "@/mikro/specs";
 import {
+  Box,
   ChevronDown,
   ChevronRight,
   Image as ImageIcon,
@@ -55,6 +56,7 @@ import {
   useCreateIntensityLayerMutation,
   useCreateLabelLayerMutation,
   useCreateMeshLayerMutation,
+  useCreateCadModelLayerMutation,
   useCreateNetworkLayerMutation,
   useCreatePhasorLayerMutation,
   useCreatePointLayerMutation,
@@ -73,6 +75,7 @@ import {
   LAYER_KIND_INFO,
   LayerKind,
   MeshEntry,
+  CadModelEntry,
   NetworkEntry,
   Section,
   Source,
@@ -439,6 +442,17 @@ const EntryView = (props: {
           badge="mesh"
           relation={entry.relation}
           onClick={() => props.onSelect({ kind: "mesh", entry })}
+        />
+      );
+    case "model":
+      return (
+        <EntryRow
+          icon={Box}
+          title={entry.name}
+          subtitle={<SpaceCaption space={entry.space} />}
+          badge="CAD model"
+          relation={entry.relation}
+          onClick={() => props.onSelect({ kind: "model", entry })}
         />
       );
     case "network":
@@ -1016,6 +1030,74 @@ const MeshLayerForm = (props: {
 };
 
 /**
+ * Step 2c-ter: a CadModel becomes a CAD model layer. Like a mesh collection,
+ * its own space is the layer's and the picker offered it because that space
+ * reaches the world. The file's own materials are the default; a colour
+ * override and the wireframe stay on the layer card, where the model is in
+ * view while they are chosen.
+ */
+const CadModelLayerForm = (props: {
+  scene: string;
+  entry: CadModelEntry;
+  lenses: readonly WindowLens[];
+  preselect?: string;
+  onBack: () => void;
+}) => {
+  const [lens, setLens] = useState(() => initialLensOf(props.lenses, props.preselect));
+  const containerLens = useContainerLens();
+  const lensFailed = useLensFailed();
+  const [createModel] = useCreateCadModelLayerMutation();
+  const submitModel = useGraphQLDialog(createModel, DIALOG_OPTIONS);
+
+  const form = useForm({
+    defaultValues: {
+      opacity: undefined as number | undefined,
+    },
+  });
+
+  const onSubmit = form.handleSubmit(async (data) => {
+    const model = props.entry.model;
+    let lensId: string;
+    try {
+      lensId = await containerLens(lens, model.fullLens?.id, { cadModel: model.id });
+    } catch (error) {
+      lensFailed(error);
+      return;
+    }
+    return submitModel({
+      variables: {
+        input: {
+          scene: props.scene,
+          lens: lensId,
+          opacity: data.opacity ?? undefined,
+        },
+      },
+      ...REFETCH_SCENE,
+    });
+  });
+
+  return (
+    <Form {...form}>
+      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <LensChoice typename="CadModelLens" lenses={props.lenses} value={lens} onChange={setLens} />
+        <FloatField
+          name="opacity"
+          label="Opacity"
+          description="Below 1 the model is see-through and stops hiding the volume behind it. Leave empty for opaque"
+        />
+
+        <DialogFooter className="mt-2">
+          <Button type="button" variant="outline" onClick={props.onBack}>
+            Back
+          </Button>
+          <Button type="submit">Add layer</Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  );
+};
+
+/**
  * Step 2c-bis: a NetworkCollection becomes a network layer.
  *
  * The same shape as the mesh form and the same placement rule: the collection's
@@ -1185,6 +1267,8 @@ const stepDescription = (source: Source): string => {
       return `Draw the nodes and edges of ${source.entry.name} in this scene.`;
     case "annotation":
       return `Draw the shapes of "${source.entry.name}" in this scene.`;
+    case "model":
+      return `Place ${source.entry.name} in this scene.`;
   }
 };
 
@@ -1260,6 +1344,7 @@ const AddLayerFormInner = (props: AddLayerProps) => {
       ...(windowData?.meshes ?? []),
       ...(windowData?.networks ?? []),
       ...(windowData?.annotations ?? []),
+      ...(windowData?.models ?? []),
     ]) {
       if (seen.has(lens.id)) continue;
       seen.add(lens.id);
@@ -1356,6 +1441,11 @@ const AddLayerFormInner = (props: AddLayerProps) => {
           offers("AnnotationLens", entry.collection.id))
       ) {
         found = { kind: "annotation", entry };
+      } else if (
+        entry.kind === "model" &&
+        (entry.model.fullLens?.id === wanted || offers("CadModelLens", entry.model.id))
+      ) {
+        found = { kind: "model", entry };
       }
       if (found) {
         preselected.current = true;
@@ -1425,6 +1515,14 @@ const AddLayerFormInner = (props: AddLayerProps) => {
           scene={props.scene}
           entry={source.entry}
           lenses={lensesOf("MeshLens", source.entry.mesh.id)}
+          preselect={props.lens}
+          onBack={() => setSource(null)}
+        />
+      ) : source.kind === "model" ? (
+        <CadModelLayerForm
+          scene={props.scene}
+          entry={source.entry}
+          lenses={lensesOf("CadModelLens", source.entry.model.id)}
           preselect={props.lens}
           onBack={() => setSource(null)}
         />

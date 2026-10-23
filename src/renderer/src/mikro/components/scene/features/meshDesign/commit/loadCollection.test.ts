@@ -69,7 +69,7 @@ describe("loadObjectsFromCollection", () => {
       positions: new Float32Array([0, 0, 0, 10, 0, 0, 0, 10, 0, 10, 10, 0]),
       indices: new Uint32Array([0, 1, 2, 1, 3, 2]),
     };
-    const prefix = buildFabriksPrefix([tri], { cellSize: 4 });
+    const prefix = buildFabriksPrefix([tri], ["x", "y", "z"], { cellSize: 4 });
     const collection = await FabriksCollection.open(memoryTransport(prefix.files));
     const offset = new THREE.Matrix4().makeTranslation(...prefix.baked.offset);
     const [loaded] = await loadObjectsFromCollection(collection, offset);

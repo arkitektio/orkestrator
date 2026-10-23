@@ -143,6 +143,11 @@ export type BlokCatalog = {
   functions: Map<string, BlokFunctionDefinition>;
   /** Each function once, in registration order. */
   functionDefinitions: BlokFunctionDefinition[];
+  /**
+   * The catalog this one extends (`extendBlokCatalog`): its components and
+   * functions are part of this one's maps too. Unset on the base catalog.
+   */
+  base?: BlokCatalog;
   invokeFunction: (
     name: string,
     args: Record<string, unknown>,
@@ -198,7 +203,7 @@ const prepareFunctionArgs = (
 /**
  * Statically checks the argument *keys* of a call. Values are only known at
  * render time, but the keys are in the payload, so a typo like `{a, bb}` for
- * `compare.gt` can be reported by the preflight instead of failing later.
+ * `gt` can be reported by the preflight instead of failing later.
  */
 export const validateUtilCallArgumentKeys = (
   fn: BlokFunctionDefinition,
@@ -249,7 +254,19 @@ export const createBlokCatalog = (
   functions: ReadonlyArray<BlokFunctionDefinition> = [],
 ): BlokCatalog => {
   const componentMap = new Map(components.map(component => [component.name, component]));
+  // A name is one component: a second one would silently shadow the first.
+  if (componentMap.size !== components.length) {
+    const seen = new Set<string>();
+    const repeated = components.filter(component => seen.has(component.name) || !seen.add(component.name));
+    throw new Error(`Blok components named twice: ${repeated.map(component => component.name).join(', ')}`);
+  }
   const functionMap = new Map<string, BlokFunctionDefinition>();
+  const taken = functions.flatMap(fn => [fn.name, ...fn.aliases]);
+  // Same rule as components: a second definition would silently shadow the first.
+  if (new Set(taken).size !== taken.length) {
+    const seen = new Set<string>();
+    throw new Error(`Blok functions named twice: ${taken.filter(name => seen.has(name) || !seen.add(name)).join(', ')}`);
+  }
 
   functions.forEach(fn => {
     functionMap.set(fn.name, fn);
@@ -292,6 +309,35 @@ export const createBlokCatalog = (
         };
       }
     },
+  };
+};
+
+/**
+ * A UI catalog over a base one: everything the base offers, and what this one
+ * adds. It may add, never redefine: a component or function name the base
+ * already holds is refused, as the server refuses a UI catalog that shadows a
+ * base operation (arkitekt-spec `check_extension_does_not_shadow_base`).
+ */
+export const extendBlokCatalog = (
+  base: BlokCatalog,
+  id: string,
+  components: ReadonlyArray<BlokComponentDefinition>,
+  functions: ReadonlyArray<BlokFunctionDefinition> = [],
+): BlokCatalog => {
+  const shadowed = [
+    ...components.filter(component => base.components.has(component.name)).map(component => component.name),
+    ...functions.flatMap(fn => [fn.name, ...fn.aliases]).filter(name => base.functions.has(name)),
+  ];
+  if (shadowed.length > 0) {
+    throw new Error(`Catalog ${id} cannot redefine base names: ${shadowed.join(', ')}`);
+  }
+  return {
+    ...createBlokCatalog(
+      id,
+      [...base.components.values(), ...components],
+      [...base.functionDefinitions, ...functions],
+    ),
+    base,
   };
 };
 

@@ -4,12 +4,22 @@ import { useHoverTaskQuery } from "../api/graphql";
 import { formatEventKind, statusTextColor } from "../lib/taskStatus";
 import { formatDuration } from "../lib/taskTimeline";
 import { TaskProgressRing } from "../components/task/TaskProgressRing";
+import { TaskBloks } from "../components/TaskBloks";
 
 /**
  * `@rekuest/task` elsewhere: its status ring, the action it ran, where it
- * stands and on which agent. Same query as its hover card.
+ * stands and on which agent. Same query as its hover card. As an `embed`, the
+ * bloks it showed a person.
  */
 export const TaskDisplay = (props: DisplayWidgetProps) => {
+  if (props.variant === "embed") {
+    // In a message: the bloks it showed (an ask to answer, what it informs), else its line.
+    return <TaskBloks task={props.id} alongside={props.alongside} fallback={<TaskLine {...props} />} />;
+  }
+  return <TaskLine {...props} />;
+};
+
+const TaskLine = (props: DisplayWidgetProps) => {
   const { data } = useHoverTaskQuery({ variables: { id: props.id } });
   const task = data?.task;
   if (!task) return <DisplayLinePlaceholder {...props} />;

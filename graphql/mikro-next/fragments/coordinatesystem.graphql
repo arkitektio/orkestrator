@@ -67,6 +67,10 @@ fragment Resident on Resident {
     id
     label
   }
+  ... on CadModel {
+    id
+    label
+  }
 }
 
 fragment CoordinateSystem on CoordinateSystem {

@@ -114,3 +114,45 @@ describe("resolveServiceAlias", () => {
     ).rejects.toThrow("No working alias found for service: live.arkitekt.mikro");
   });
 });
+
+describe("a strict instance (its hub registered a certificate)", () => {
+  const plain = (id: string, host: string): Alias => ({ ...alias(id, host), ssl: false });
+  const strict = (...aliases: Alias[]): Instance => ({
+    ...instance(...aliases),
+    tls: { certificates: ["-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----"] },
+  });
+  const TLS = alias("lab", "lab.local");
+  const PLAIN = plain("lab+http", "lab.local");
+  const PLAIN_MESH = plain("mesh", "mikro.lab.ts.net");
+
+  it("never uses a plain alias off the mesh, even when it is the only one answering", async () => {
+    const probed = answering(PLAIN.host);
+    vi.mocked(checkAliasHealth).mockImplementation(async (a) => {
+      probed.push(`${a.id}`);
+      return !a.ssl;
+    });
+    await expect(
+      resolveServiceAlias({ instance: strict(TLS, PLAIN), controller: new AbortController(), routed }),
+    ).rejects.toThrow("No working alias");
+    expect(probed).toEqual(["lab"]);
+  });
+
+  it("uses a plain alias that goes through the mesh", async () => {
+    answering(PLAIN_MESH.host);
+    const result = await resolveServiceAlias({ instance: strict(TLS, PLAIN, PLAIN_MESH), controller: new AbortController(), routed });
+    expect(result.id).toBe("mesh");
+  });
+
+  it("drops a cached plain alias from before the hub became strict", async () => {
+    const probed = answering(TLS.host);
+    const result = await resolveServiceAlias({ instance: strict(TLS, PLAIN), cached: PLAIN, controller: new AbortController(), routed });
+    expect(result.id).toBe("lab");
+    expect(probed).toEqual([TLS.host]);
+  });
+
+  it("leaves a plain-HTTP hub alone", async () => {
+    answering(PLAIN.host);
+    const result = await resolveServiceAlias({ instance: instance(PLAIN), controller: new AbortController(), routed });
+    expect(result.id).toBe("lab+http");
+  });
+});

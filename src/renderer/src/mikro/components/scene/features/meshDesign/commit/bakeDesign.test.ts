@@ -18,7 +18,7 @@ const sphere = (objectId: number, centre: [number, number, number], radius: numb
 describe("bakeDesign", () => {
   it("bakes a small design into ONE cell, and says where it sits", () => {
     const meshes = [sphere(1, [40.5, 12, 30], 10), sphere(2, [80, 20, 35], 12)];
-    const bake = bakeDesign(meshes);
+    const bake = bakeDesign(meshes, ["x", "y", "z"]);
     expect(bake.cells).toBe("single");
     expect(bake.quantizationVoxels).toBeLessThanOrEqual(SINGLE_CELL_MAX_QUANTIZATION);
     // The same answer the bake itself gives — decided from the bounds alone.
@@ -32,7 +32,7 @@ describe("bakeDesign", () => {
   });
 
   it("takes the auto grid once a single cell would quantize too coarsely", () => {
-    const bake = bakeDesign([sphere(1, [10, 10, 10], 8), sphere(2, [5000, 10, 10], 8)]);
+    const bake = bakeDesign([sphere(1, [10, 10, 10], 8), sphere(2, [5000, 10, 10], 8)], ["x", "y", "z"]);
     expect(bake.cells).toBe("auto");
     expect(bake.quantizationVoxels).toBeLessThan(SINGLE_CELL_MAX_QUANTIZATION);
   });

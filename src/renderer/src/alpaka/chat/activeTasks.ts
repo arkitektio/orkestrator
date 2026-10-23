@@ -1,5 +1,5 @@
 import { TaskEventFragment, TaskEventKind } from "@/rekuest/api/graphql";
-import { applyHoldEvent, decisionFromEvent, HoldDecision, HoldRequest } from "@/rekuest/lib/holds";
+import { applyHoldEvent, decisionFromEvent, HoldDecision, HoldRequest, informFromEvent, TaskInform } from "@/rekuest/lib/holds";
 import { isTaskLive, isTerminalEvent } from "@/rekuest/lib/taskTracker";
 
 /**
@@ -32,6 +32,8 @@ export interface ActiveTask {
   holds?: readonly HoldRequest[];
   /** What was decided while this pill was up, oldest first: the hold, and how it was answered. */
   decided?: readonly DecidedHold[];
+  /** The bloks it showed while this pill was up, oldest first (`INFORM`). */
+  informs?: readonly TaskInform[];
 }
 
 export type DecidedHold = HoldDecision & { hold: HoldRequest };
@@ -108,10 +110,15 @@ export const applyTaskEvent = (
     const decision = decisionFromEvent(event);
     const answered = decision && (task.holds ?? []).find((hold) => hold.task === decision.task);
     const holds = applyHoldEvent(task.holds ?? [], event);
+    const inform = informFromEvent(event);
     const status = statusForKind(event.kind);
     return {
       ...task,
       holds,
+      informs:
+        inform && !(task.informs ?? []).some((shown) => shown.blok === inform.blok)
+          ? [...(task.informs ?? []), inform]
+          : task.informs,
       // Only what was shown: an auto-mode decision of a hold nobody saw has nothing to recall.
       decided: answered ? [...(task.decided ?? []), { ...decision, hold: answered }] : task.decided,
       // Waiting stays waiting through whatever else the task reports, until the
@@ -119,7 +126,7 @@ export const applyTaskEvent = (
       status: status === "RUNNING" && holds.length > 0 ? "HELD" : status,
       progress: event.progress ?? task.progress,
       message:
-        event.kind === TaskEventKind.Held || event.kind === TaskEventKind.Decided
+        event.kind === TaskEventKind.Held || event.kind === TaskEventKind.Decided || event.kind === TaskEventKind.Inform
           ? task.message
           : event.message || task.message,
       delegatedName: event.delegatedTo?.implementation?.action?.name || task.delegatedName,

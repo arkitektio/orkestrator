@@ -15,6 +15,22 @@ vi.mock("@/core/smart/display/StructureDisplay", () => ({
   StructureDisplay: ({ identifier, id }: { identifier: string; id: string }) => <span>{`${identifier}:${id}`}</span>,
 }));
 vi.mock("@/rekuest/components/logo/ActionLogo", () => ({ ActionLogo: () => <span data-testid="logo" /> }));
+// The blok itself is the renderer's: here it says what it was handed, and answers when pressed.
+vi.mock("../MaterializedBlokEmbed", () => ({
+  MaterializedBlokEmbedById: (props: {
+    id: string;
+    ask?: { status: string; values?: unknown };
+    onReturn?: (values: Record<string, unknown>) => unknown;
+  }) => (
+    <button
+      data-testid="blok"
+      data-ask={`${props.ask?.status}:${JSON.stringify(props.ask?.values ?? null)}`}
+      onClick={() => props.onReturn?.({ image: { __identifier: "@mikro/image", object: "8" } })}
+    >
+      {`blok ${props.id}`}
+    </button>
+  ),
+}));
 
 import { PortKind } from "@/rekuest/api/graphql";
 import { HoldCard, HoldDecisionLine } from "./HoldCard";
@@ -74,7 +90,7 @@ describe("HoldCard", () => {
     detailAction.current = undefined;
     const { unmount } = render(<HoldCard hold={hold} />);
     fireEvent.click(screen.getByText("Approve"));
-    expect(decide).toHaveBeenLastCalledWith({ variables: { input: { task: "c7", approved: true, answer: null } } });
+    expect(decide).toHaveBeenLastCalledWith({ variables: { input: { task: "c7", approved: true, answer: null, values: null } } });
     unmount();
 
     render(<HoldCard hold={hold} />);
@@ -82,7 +98,7 @@ describe("HoldCard", () => {
     fireEvent.change(screen.getByPlaceholderText(/Anything to tell it/), { target: { value: " use plate 2 " } });
     fireEvent.click(screen.getByText("Deny"));
     expect(decide).toHaveBeenLastCalledWith({
-      variables: { input: { task: "c7", approved: false, answer: "use plate 2" } },
+      variables: { input: { task: "c7", approved: false, answer: "use plate 2", values: null } },
     });
   });
 });
@@ -97,5 +113,27 @@ describe("HoldDecisionLine", () => {
 
     rerender(<HoldDecisionLine hold={hold} decision={{ task: "c7", approved: true, auto: true }} />);
     expect(screen.getByText(/Ran without asking/)).toBeTruthy();
+  });
+});
+
+const ask = { task: "t9", kind: "self" as const, title: "Which image?", blok: "m3" };
+
+describe("a hold through a blok", () => {
+  it("is answered in the blok, and can only be dismissed besides", () => {
+    render(<HoldCard hold={ask} />);
+    expect(screen.queryByText("Approve")).toBeNull();
+    expect(screen.getByTestId("blok").dataset.ask).toBe("WAITING:null");
+    fireEvent.click(screen.getByTestId("blok"));
+    expect(decide).toHaveBeenLastCalledWith({
+      variables: {
+        input: { task: "t9", approved: true, answer: null, values: { image: { __identifier: "@mikro/image", object: "8" } } },
+      },
+    });
+  });
+
+  it("stays as the blok once answered, with the answer", () => {
+    const values = { image: { __identifier: "@mikro/image", object: "8" } };
+    render(<HoldDecisionLine hold={ask} decision={{ task: "t9", approved: true, auto: false, values, user: "s1" }} />);
+    expect(screen.getByTestId("blok").dataset.ask).toBe(`ANSWERED:${JSON.stringify(values)}`);
   });
 });

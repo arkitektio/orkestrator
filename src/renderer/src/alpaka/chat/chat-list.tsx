@@ -11,7 +11,8 @@ import { Loader2, AlertCircle, XCircle, X, RefreshCw, Hand } from "lucide-react"
 import { agentDisplayName, displayInitials } from "@/alpaka/agentName";
 import { ActiveTask, isLive } from "./activeTasks";
 import { HoldCard, HoldDecisionLine } from "@/rekuest/components/task/HoldCard";
-import type { HoldRequest } from "@/rekuest/lib/holds";
+import type { HoldRequest, TaskInform } from "@/rekuest/lib/holds";
+import { MaterializedBlokEmbedById } from "@/rekuest/components/MaterializedBlokEmbed";
 import { isUnconfirmed, settlePending, type PendingMessage } from "./pendingMessages";
 import React, { useCallback, useRef } from "react";
 import { useLatestRef } from "@/core/util/hooks/useLatestRef";
@@ -159,6 +160,8 @@ const ChatMessage = React.memo(function ChatMessage({
     </motion.div>
   );
 
+  const attached = message.attachedStructures.map((s) => ({ identifier: s.identifier, id: String(s.object) }));
+
   return (
     <motion.div
       layoutId={layoutId}
@@ -213,7 +216,14 @@ const ChatMessage = React.memo(function ChatMessage({
                       key={`${message.id}-${s.identifier}-${s.object}-${structureIndex}`}
                       className="overflow-hidden rounded-lg"
                     >
-                      <StructureDisplay identifier={s.identifier} id={String(s.object)} small />
+                      <StructureDisplay
+                        identifier={s.identifier}
+                        id={String(s.object)}
+                        small
+                        // An agent may attach a blok to show next to what it posted.
+                        variant="embed"
+                        alongside={attached.filter((_, index) => index !== structureIndex)}
+                      />
                     </div>
                   ))}
                 </motion.div>
@@ -288,6 +298,34 @@ const HoldRow = ({ hold }: { hold: HoldRequest }) => {
       </Avatar>
       <div className="flex min-w-0 max-w-[85%] flex-1 flex-col">
         <HoldCard hold={hold} />
+      </div>
+    </motion.div>
+  );
+};
+
+/**
+ * A blok a replyer shows while it works (an inform): on its side, like its
+ * messages, live; it carries on without waiting for anyone.
+ */
+const InformRow = ({ inform, asker }: { inform: TaskInform; asker: string }) => {
+  const reduceMotion = useReducedMotion();
+  return (
+    <motion.div
+      layout={reduceMotion ? false : "position"}
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.97, x: -12 }}
+      animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97, height: 0 }}
+      transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.7, opacity: { duration: 0.15 } }}
+      className="flex w-full items-end gap-3"
+    >
+      <Avatar size="lg" className="relative mt-1 shrink-0 border bg-muted/60 shadow-sm" title={asker}>
+        <AvatarFallback className="bg-muted/60 text-xs font-semibold text-muted-foreground">
+          {displayInitials(asker, "AI")}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex min-w-0 max-w-[85%] flex-1 flex-col gap-1 rounded-2xl border border-border/60 bg-card p-3 shadow-sm">
+        {inform.message && <div className="px-1 text-xs text-muted-foreground">{inform.message}</div>}
+        <MaterializedBlokEmbedById id={inform.blok} />
       </div>
     </motion.div>
   );
@@ -456,6 +494,10 @@ export function ChatList({
       hold,
     })),
   ]);
+  // What the replyers showed while they work, while their pill is up.
+  const informRows = activeTasks.flatMap((ass) =>
+    (ass.informs ?? []).map((inform) => ({ key: `${ass.reference}:inform:${inform.blok}`, inform, asker: ass.actionName })),
+  );
   // What is still worth a line: a run at work, failed or stopped. A finished one
   // says nothing (its answer is in the conversation), and neither does one whose
   // hold card is there to say it waits.
@@ -463,7 +505,7 @@ export function ChatList({
     (task) => task.status !== "DONE" && !(task.status === "HELD" && task.holds?.length),
   );
   // A new hold, or a run starting, is followed down to like a new message.
-  const holdCount = holdRows.length + activityRows.length;
+  const holdCount = holdRows.length + activityRows.length + informRows.length;
 
   React.useEffect(() => {
     const container = messagesContainerRef.current;
@@ -553,11 +595,19 @@ export function ChatList({
                   exit={{ opacity: 0 }}
                   className="flex justify-center"
                 >
-                  <HoldDecisionLine hold={decided.hold} decision={decided} className="max-w-[85%]" />
+                  <HoldDecisionLine
+                    hold={decided.hold}
+                    decision={decided}
+                    // An ask through a blok stays as the blok: it takes the width a message does.
+                    className={decided.hold.blok ? "w-full max-w-[85%]" : "max-w-[85%]"}
+                  />
                 </motion.div>
               )
             ),
           )}
+          {informRows.map(({ key, inform, asker }) => (
+            <InformRow key={key} inform={inform} asker={asker} />
+          ))}
           {activityRows.map((task) => (
             <TaskActivityRow
               key={`${task.reference}:activity`}

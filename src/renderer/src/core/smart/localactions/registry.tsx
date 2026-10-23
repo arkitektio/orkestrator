@@ -12,6 +12,7 @@ import { structureTabTarget } from "@/core/smart/tabTargets";
 import { requestExport } from "@/core/modules/export/exportRequests";
 import { Bug, Columns2, Download, ExternalLink, FolderOpen, Link2, Link2Off, PanelLeftOpen } from "lucide-react";
 import { toast } from "@/core/notify";
+import { HOST_ACTION_LOGOS } from "./logos";
 import {
   getActiveProfile,
   loadStoredProfileBook,
@@ -24,6 +25,7 @@ const NavigateAction: Action = {
   title: "Open",
   description: "Open the structure",
   icon: FolderOpen,
+  logo: HOST_ACTION_LOGOS.navigate,
   pinned: true,
   conditions: [
     {
@@ -58,6 +60,7 @@ const OpenInNewTabAction: Action = {
   title: "Open in new tab",
   description: "Open the structure in a tab of its own",
   icon: PanelLeftOpen,
+  logo: HOST_ACTION_LOGOS.newtab,
   conditions: [
     {
       type: "nopartner",
@@ -80,6 +83,7 @@ const OpenToTheSideAction: Action = {
   title: "Open to the side",
   description: "Show the structure beside this page, in a split view",
   icon: Columns2,
+  logo: HOST_ACTION_LOGOS.opentotheside,
   conditions: [
     {
       type: "nopartner",
@@ -103,6 +107,7 @@ const ExportToFileAction: Action = {
   title: "Export to file",
   description: "Download it, or run an exporter that turns it into a file",
   icon: Download,
+  logo: HOST_ACTION_LOGOS.exporttofile,
   conditions: [{ type: "nopartner" }, { type: "datum" }],
   execute: async ({ state }) => {
     requestExport(state.left);
@@ -114,6 +119,7 @@ const PopOutAction: Action = {
   title: "Open in new window",
   description: "Open the structure in a new window",
   icon: ExternalLink,
+  logo: HOST_ACTION_LOGOS.popout,
   pinned: true,
   conditions: [
     {
@@ -176,6 +182,7 @@ const CopyLinkAction: Action = {
   title: "Copy link",
   description: "Copy a link to this object that opens it in Arkitekt",
   icon: Link2,
+  logo: HOST_ACTION_LOGOS.copylink,
   conditions: [
     {
       type: "nopartner",
@@ -206,6 +213,7 @@ const CopyPrivateLinkAction: Action = {
   description:
     "Copy a link that names neither the server nor the organization, for pasting in public",
   icon: Link2Off,
+  logo: HOST_ACTION_LOGOS.copyprivatelink,
   conditions: [
     {
       type: "nopartner",
@@ -235,6 +243,7 @@ const DebugDescribeAction: Action = {
   title: "Debug describe",
   description: "Show the identifiers, ids and descriptors of the selected structures",
   icon: Bug,
+  logo: HOST_ACTION_LOGOS.debugdescribe,
   conditions: [],
   execute: async ({ state, dialog }) => {
     dialog.openDialog(

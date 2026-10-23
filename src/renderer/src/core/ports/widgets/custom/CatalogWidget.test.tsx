@@ -63,7 +63,7 @@ const PICKER_PROPS = [
   // As the server spells a prop (camelCase), which the host normalizes.
   { __typename: "ComponentProp", key: "bind", staticValue: "value" },
   { __typename: "ComponentProp", key: "query", staticValue: QUERY },
-  { __typename: "ComponentProp", key: "ward", staticValue: "mikro" },
+  { __typename: "ComponentProp", key: "schema", staticValue: "mikro" },
 ];
 
 const Harness = ({

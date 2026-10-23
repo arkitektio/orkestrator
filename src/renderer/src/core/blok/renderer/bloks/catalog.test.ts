@@ -76,7 +76,7 @@ describe('the blok catalog', () => {
       // control flow and layout
       'foreach',
       'if',
-      'Fragment',
+      'fragment',
       'Flex',
       'Grid',
       'BentoGrid',

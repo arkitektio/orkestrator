@@ -15,6 +15,7 @@ import {
   type BlokComponentNode,
   type BlokRuntimeStore,
 } from "../runtime";
+import {controlBlokComponents} from "./control";
 import {shadcnComposableComponents} from "./index";
 
 afterEach(cleanup);
@@ -31,7 +32,7 @@ const sideEffect = vi.fn();
 
 const catalog = createBlokCatalog(
   "test-catalog",
-  [...shadcnComposableComponents, Exploder],
+  [...controlBlokComponents, ...shadcnComposableComponents, Exploder],
   [
     createBlokFunction(
       {

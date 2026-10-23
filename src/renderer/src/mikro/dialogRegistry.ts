@@ -1,3 +1,4 @@
+import { prefersSize } from "@/core/modules/host/dialogNeeds";
 import { LightPath3DDialog } from "./components/lightpath/LightPath3DDialog";
 import { CommitMeshDesignDialog } from "./components/scene/features/meshDesign/ui/CommitMeshDesignDialog";
 import { AddChartLayerForm } from "./forms/AddChartLayerForm";
@@ -13,6 +14,8 @@ import { MoveToFolderForm } from "./forms/MoveToFolderForm";
 import { RegisterForm } from "./forms/RegisterForm";
 import { RenameLensForm } from "./forms/RenameLensForm";
 import { UpdateFolderForm } from "./forms/UpdateFolderForm";
+import { UploadCadModelForm } from "./forms/UploadCadModelForm";
+import { AgentUploadFileForm } from "./forms/AgentUploadFileForm";
 
 /**
  * mikro's dialogs, by id (a `dialogs` builtin). Its own file, apart from
@@ -38,4 +41,7 @@ export const MIKRO_DIALOGS = {
   renamelens: RenameLensForm,
   movetofolder: MoveToFolderForm,
   updatefolder: UpdateFolderForm,
+  uploadcadmodel: UploadCadModelForm,
+  // a file the Orkestrator agent's `upload_file` asks the person for (awaited)
+  agentuploadfile: prefersSize("small", AgentUploadFileForm),
 };

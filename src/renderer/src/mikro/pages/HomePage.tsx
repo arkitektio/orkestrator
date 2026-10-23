@@ -36,7 +36,7 @@ import { RecentData } from "../components/home/RecentData";
 import { HomeFilterBar, useHomeFilters } from "../components/home/HomeFilters";
 import { HomeResultsProvider } from "../components/home/homeResults";
 import { useLiveLenses } from "../lib/lenses/useLiveLenses";
-import { StatisticsSidebar } from "../components/sidebars/StatisticsSidebar";
+import { HomeOverviewSidebar } from "../components/sidebars/HomeOverviewSidebar";
 import { useMikroBigFileUpload } from "@/mikro/datalayer/useMikroBigFileUpload";
 import { MIKRO_HELP } from "../help";
 
@@ -48,7 +48,9 @@ import { MIKRO_HELP } from "../help";
 const LIVE_REFETCH = [HomeRootsDocument, HomeRootDetailsDocument, HomeResultsDocument];
 
 /**
- * mikro's front door: where to go, then what is new.
+ * mikro's front door: what is new, on the whole stage. Where to go — every
+ * page, with how much it holds and how much came this week — is the sidebar's
+ * Overview tab.
  *
  * The newest parentless data comes first, whatever its kind: an upload as a
  * card holding the images converted out of it, an image or a table that came
@@ -100,8 +102,9 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
         </PageAction.Slot>
       }
       sidebars={
-        <Sidebars>
-          <Sidebars.Tab label="Statistics"><StatisticsSidebar /></Sidebars.Tab>
+        <Sidebars defaultTab="Overview">
+          {/* mikro's pages live here, each with its numbers, so the stage is the data. */}
+          <Sidebars.Tab label="Overview"><HomeOverviewSidebar /></Sidebars.Tab>
           <Sidebars.Tab label="Help"><HelpSidebar /></Sidebars.Tab>
         </Sidebars>
       }
@@ -114,6 +117,7 @@ const Page = asParamlessRoute(useHomePageQueryForRoute, ({ data }) => {
       >
         <ModuleHome
           moduleKey="mikro"
+          pages={false}
           title="Mikro"
           description="Your images, the files they came from, and everything else you brought in."
         >

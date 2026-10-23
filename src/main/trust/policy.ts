@@ -4,9 +4,12 @@
  * A bad certificate is accepted only when BOTH hold:
  *  - the host is one the user's fakts name (or one they typed to discover), and
  *    not under a domain that always serves a publicly valid certificate;
- *  - the error is one a private deployment produces — an unknown issuer, a
- *    wrong name, an expired date. A revoked or blocklisted certificate (such
- *    as the compromised eMudhra intermediates) is never overridden.
+ *  - the error is not one that marks the certificate as known-bad. A
+ *    self-signed or private-CA deployment fails in many ways (unknown issuer,
+ *    wrong name, expired, malformed, SHA-1, weak key…) and the old blanket
+ *    bypass accepted all of them, so only REVOKED — which is how Chromium's
+ *    SPKI blocklist reports the compromised eMudhra intermediates — and a
+ *    known interception certificate are never overridden.
  * Everything else gets Chromium's own verdict.
  */
 
@@ -17,8 +20,8 @@
  */
 export const STRICT_DOMAINS: readonly string[] = ["arkitekt.live"];
 
-/** net::ERR_CERT_COMMON_NAME_INVALID, _DATE_INVALID, _AUTHORITY_INVALID. */
-export const OVERRIDABLE_CERT_ERRORS: ReadonlySet<number> = new Set([-200, -201, -202]);
+/** net::ERR_CERT_REVOKED, net::ERR_CERT_KNOWN_INTERCEPTION_BLOCKED. */
+export const NEVER_OVERRIDDEN_CERT_ERRORS: ReadonlySet<number> = new Set([-206, -217]);
 
 /** `Example.org.` → `example.org`, `[::1]` → `::1`; undefined for junk. */
 export const normalizeHost = (host: unknown): string | undefined => {
@@ -43,7 +46,7 @@ export const verifyResult = (
   trusted: ReadonlySet<string>,
 ): 0 | -3 =>
   request.errorCode !== 0 &&
-  OVERRIDABLE_CERT_ERRORS.has(request.errorCode) &&
+  !NEVER_OVERRIDDEN_CERT_ERRORS.has(request.errorCode) &&
   allowsBadCertificate(request.hostname, trusted)
     ? 0
     : -3;

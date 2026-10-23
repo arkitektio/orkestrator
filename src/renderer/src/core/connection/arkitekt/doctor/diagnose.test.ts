@@ -248,6 +248,17 @@ describe("tls findings", () => {
     expect(finding?.detail).toContain("browser");
   });
 
+  it("a bad certificate on arkitekt.live blocks, because it is never accepted", () => {
+    const strict = probe({
+      target: { ...probe().target, host: "go.arkitekt.live" },
+      tls: { attempted: true, ok: false, selfSigned: true },
+      http: { attempted: false, ok: false },
+    });
+    const found = run({ network: [strict] });
+    expect(byId(found, "net.tls.strict-invalid")?.severity).toBe("blocker");
+    expect(ids(found)).not.toContain("net.tls.self-signed");
+  });
+
   it("an expired certificate", () => {
     expect(ids(run({ network: [tlsProbe({ attempted: true, ok: false, expired: true, validTo: "2026-01-01" })] }))).toContain("net.tls.expired");
   });

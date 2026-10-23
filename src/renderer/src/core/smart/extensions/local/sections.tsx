@@ -22,6 +22,7 @@ import {
 } from "@/core/ui/context-menu";
 import { InputGroupButton } from "@/core/ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/core/ui/tooltip";
+import { SourceLogo } from "@/core/blok/logo/SourceLogo";
 import { LocalActionCommand } from "./localactions";
 
 type LocalActionEntry = { id: string; action: Action };
@@ -96,7 +97,11 @@ const AlternativeItem = ({
   return (
     <>
       <ContextMenuItem onSelect={() => void assign()}>
-        <Icon className="h-3.5 w-3.5" />
+        {entry.action.logo ? (
+          <SourceLogo source={entry.action.logo} className="h-3.5 w-3.5" />
+        ) : (
+          <Icon className="h-3.5 w-3.5" />
+        )}
         {label ?? entry.action.title}
       </ContextMenuItem>
       {confirmationDialog}

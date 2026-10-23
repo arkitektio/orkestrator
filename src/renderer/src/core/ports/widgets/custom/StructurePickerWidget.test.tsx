@@ -39,7 +39,7 @@ describe("a structure port drawn by the catalog's picker", () => {
       componentProps: [
         { key: "bind", static_value: "value" },
         { key: "query", static_value: QUERY },
-        { key: "ward", static_value: "mikro" },
+        { key: "schema", static_value: "mikro" },
       ],
       dependencies: ["path"],
     });

@@ -23,10 +23,15 @@ import { buildRegisterUiCatalogInput, catalogMatches } from "./uiCatalogInput";
  */
 export const UiCatalogRegistrar = () => {
   // The server refuses a UI catalog that redefines its built-in base
-  // operations (`eq`, `if`, `get`, …), so those are excluded from what we send.
+  // operations (`eq`, `if`, `get`, …) or components (`foreach`, `match`, …), so
+  // those are excluded from what we send: it holds them already.
   const base = useBaseCatalogQuery({ fetchPolicy: "network-only" });
   const reservedOperations = useMemo(
     () => new Set(base.data?.baseCatalog.operations.map((operation) => operation.name) ?? []),
+    [base.data],
+  );
+  const reservedComponents = useMemo(
+    () => new Set(base.data?.baseCatalog.components.map((component) => component.name) ?? []),
     [base.data],
   );
   const input = useMemo(
@@ -34,9 +39,9 @@ export const UiCatalogRegistrar = () => {
       buildRegisterUiCatalogInput(
         defaultBlokCatalog,
         { name: UI_CATALOG_NAME, description: UI_CATALOG_DESCRIPTION },
-        { reservedOperations },
+        { reservedOperations, reservedComponents },
       ),
-    [reservedOperations],
+    [reservedOperations, reservedComponents],
   );
 
   const catalogs = useUiCatalogsQuery({ fetchPolicy: "network-only" });

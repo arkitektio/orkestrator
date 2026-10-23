@@ -19,6 +19,11 @@
  * which needs a shader that samples the field. Drawing either with the matrix
  * alone would put the data in the wrong place with nothing to say so.
  *
+ * A COLLECTION layer (mesh, network) is also unplaceable when its store names
+ * no vertex slots (`axes` in the manifest). Its components are positional, so
+ * without that statement nothing says which one is x; guessing an order is how
+ * a collection draws transposed with nothing to say so, so it is not drawn.
+ *
  * A LEAF module on purpose: it is imported by pure-core code (`sceneFit`)
  * whose tests run without a DOM, and `layerModel` reaches the generated
  * GraphQL barrel, which touches `window` on load. Works on the raw fragment
@@ -35,6 +40,8 @@ type PlaceableLike = {
   zAxis?: string | null;
   /** The view looks at this layer from the side (`deriveRenderAxes`). */
   edgeOn?: boolean;
+  /** A mesh or network layer's collection; only its store's slot names are read. */
+  collection?: { store?: { axes?: readonly string[] | null } | null } | null;
 };
 
 /** The layer's own axes it draws across the screen. */
@@ -63,21 +70,34 @@ export const hasUndrawableField = (layer: PlaceableLike): boolean => {
   return fields.some((field) => !isLookup(field) || rendered.has(field.inputAxis));
 };
 
+/**
+ * Whether the layer draws a collection whose store does not say which vertex
+ * slot is which axis. Only a layer with a STORE can: an annotation collection
+ * has none, and its vectors are in axis order by definition.
+ */
+export const hasUnnamedSlots = (layer: PlaceableLike): boolean => {
+  const store = layer.collection?.store;
+  return store != null && !(store.axes && store.axes.length > 0);
+};
+
 export const isPlaceable = (layer: PlaceableLike): boolean =>
-  layer.asAffine != null && !hasUndrawableField(layer) && !layer.edgeOn;
+  layer.asAffine != null && !hasUndrawableField(layer) && !hasUnnamedSlots(layer) && !layer.edgeOn;
 
 /**
+ * `unnamed-slots`: a collection whose store's manifest names no vertex slots.
+ *
  * `edge-on`: placed, but the scene's view looks at it from the side — a 2D
  * layer in an XZ or YZ view is a line, and is not drawn until the view turns
  * back.
  */
-export type UnplaceableReason = "unregistered" | "uncomposable" | "field" | "edge-on";
+export type UnplaceableReason = "unregistered" | "uncomposable" | "field" | "unnamed-slots" | "edge-on";
 
 /** Why a layer is not placeable, or null when it is. */
 export const unplaceableReason = (
   layer: PlaceableLike & { pathToWorld?: unknown | null },
 ): UnplaceableReason | null => {
   if (isPlaceable(layer)) return null;
+  if (hasUnnamedSlots(layer)) return "unnamed-slots";
   if (layer.asAffine != null) return layer.edgeOn ? "edge-on" : "field";
   return layer.pathToWorld == null ? "unregistered" : "uncomposable";
 };

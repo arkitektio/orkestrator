@@ -29,6 +29,7 @@ describe("host registries", () => {
       "addlayer",
       "addtocollaboration",
       "addusertoorganization",
+      "agentuploadfile",
       "alpakareplyerassign",
       "answermembershiprequest",
       "assign",
@@ -126,6 +127,7 @@ describe("host registries", () => {
       "updatedevice",
       "updatefolder",
       "updateserviceinstance",
+      "uploadcadmodel",
       "usemodelfor",
     ]);
   });
@@ -186,6 +188,7 @@ describe("host registries", () => {
       "@mikro/annotationlens",
       "@mikro/arraydataset",
       "@mikro/arraylens",
+      "@mikro/cadmodellens",
       "@mikro/chart",
       "@mikro/file",
       "@mikro/folder",
@@ -228,6 +231,7 @@ describe("host registries", () => {
   it("hold every local action", () => {
     expect(Object.keys(ACTIONS).sort()).toEqual([
       "add-arraydataset-to-chart",
+      "add-cad-model-to-scene",
       "add-layer-to-chart",
       "add-layer-to-scene",
       "add-lens-to-chart",
@@ -293,6 +297,7 @@ describe("host registries", () => {
       "createElektroWorkspaceFromModel",
       "debugdescribe",
       "delete-backend",
+      "delete-cad-model",
       "delete-collaboration",
       "delete-kraph-entitycategory",
       "delete-kraph-graph",
@@ -407,6 +412,7 @@ describe("host registries", () => {
       "publish-pythonflow",
       "register-arrayDataset-into",
       "register-arrayDataset-into-coordinatesystem",
+      "register-cad-model",
       "register-into-coordinatesystem",
       "register-scene-interactively",
       "register-tabledataset-into-coordinatesystem",
@@ -464,6 +470,7 @@ describe("host registries", () => {
       "share-collaboration",
       "show-term",
       "update-mikro-folder",
+      "upload-cad-model",
       "visualize-arrayDataset",
       "visualize-coordinatesystem",
       "visualize-lens",
