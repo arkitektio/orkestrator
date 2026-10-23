@@ -37,6 +37,7 @@ import { windowsFirewallState } from "./mesh/firewall";
 import { spawn } from "node:child_process";
 import { hostname as osHostname } from "node:os";
 import { APP_ORIGIN, APP_SCHEME } from "./scheme";
+import { CertificateTrust } from "./trust/CertificateTrust";
 
 // Minimal extension -> MIME map for the app:// static file handler. Kept inline
 // to avoid adding a dependency. text/javascript for .js/.mjs is mandatory (ES
@@ -127,7 +128,6 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-app.commandLine.appendSwitch("ignore-certificate-errors", "true");
 // The scene renderer requires WebGPU and no longer has a WebGL2 fallback — a
 // machine without it gets an explicit "cannot be rendered" message from the
 // scene rather than a degraded picture. This Chromium enables WebGPU by default
@@ -142,6 +142,9 @@ const exitingForFactoryReset = finishFactoryReset();
 // Core Services
 const appManager = new AppManager();
 const transport = new IpcTransport();
+// Self-signed certificates are accepted only from the hosts the user's fakts
+// name (never arkitekt.live); every other host gets Chromium's own verdict.
+const certificateTrust = new CertificateTrust(transport);
 const windowManager = new WindowManager(transport);
 // The floating quick bar (Alfred-style ⌘K over any app) and the system-wide
 // shortcut that summons it. Picks that navigate land as tabs in the main window.
@@ -193,8 +196,8 @@ const meshProxyPort = (host: string) => meshService.proxyPortForHost(host);
 // main because the renderer's fetch cannot tell those failures apart. A host
 // the built-in mesh routes is probed through that mesh's proxy.
 const doctorService = new DoctorService(transport, { ...defaultDoctorDeps(), proxyPortForHost: meshProxyPort });
-const bigFileUploadService = new BigFileUploadService(transport, meshProxyPort);
-const bigFileDownloadService = new BigFileDownloadService(transport, meshProxyPort);
+const bigFileUploadService = new BigFileUploadService(transport, meshProxyPort, certificateTrust.allows);
+const bigFileDownloadService = new BigFileDownloadService(transport, meshProxyPort, certificateTrust.allows);
 const shellService = new ShellService(transport);
 const hardwareService = new HardwareService(transport);
 // BLE for device provisioning: a native addon (btleplug), loaded on first use.
@@ -222,6 +225,7 @@ const voiceService = new VoiceService(transport, windowManager, {
       : undefined,
 });
 
+appManager.register(certificateTrust);
 appManager.register(windowManager);
 appManager.register(globalShortcutService);
 appManager.register(quickPalette);
@@ -427,13 +431,6 @@ if (!gotTheLock) {
 
 // App event lifecycle overrides
 // app.on("window-all-closed", ...) is handled by the AppManager.
-
-app.on("certificate-error", (event, _, __, ___, ____, callback) => {
-  event.preventDefault();
-  // Check if we this is a certificate error we want to ignore (you can add more logic here if needed)
-  // By default we should only ignore errors for the configure fakt domains, but for now we ignore all to avoid issues with self-signed certs in development and testing
-  callback(true);
-});
 
 app.whenReady().then(() => {
   maybeInstallReactDevTools();

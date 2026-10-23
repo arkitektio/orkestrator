@@ -7,7 +7,7 @@ import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { pipeline } from 'stream/promises';
 import { Readable, Transform } from 'stream';
 import { BigFileAccessGrant } from '../schemas/mikro';
-import { datalayerAgentFor } from './BigFileUploadService';
+import { datalayerAgentFor, type AllowsBadCertificate } from './BigFileUploadService';
 
 type DownloadArgs = {
     downloadId: string;
@@ -26,10 +26,16 @@ export class BigFileDownloadService implements AppModule {
     }
 
     private readonly proxyPortForHost?: (host: string) => number | undefined;
+    private readonly allowsBadCertificate?: AllowsBadCertificate;
 
-    constructor(ipcTransport: IpcTransport, proxyPortForHost?: (host: string) => number | undefined) {
+    constructor(
+        ipcTransport: IpcTransport,
+        proxyPortForHost?: (host: string) => number | undefined,
+        allowsBadCertificate?: AllowsBadCertificate,
+    ) {
         this.ipcTransport = ipcTransport;
         this.proxyPortForHost = proxyPortForHost;
+        this.allowsBadCertificate = allowsBadCertificate;
 
         ipcMain.handle("download:bigFile", async (event, args: DownloadArgs) => {
             return this.handleDownload(event, args);
@@ -83,7 +89,7 @@ export class BigFileDownloadService implements AppModule {
                 sessionToken: grant.sessionToken,
             },
             forcePathStyle: true,
-            requestHandler: datalayerAgentFor(endpoint, this.proxyPortForHost),
+            requestHandler: datalayerAgentFor(endpoint, this.proxyPortForHost, this.allowsBadCertificate),
         });
 
         const abortController = new AbortController();

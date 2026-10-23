@@ -8,28 +8,31 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { BigFileUploadGrant } from '../schemas/mikro'; // or whatever the type is, I can use any here
 
-// The AWS SDK talks over Node's TLS stack, which is NOT covered by the app-wide
-// `ignore-certificate-errors` switch / `certificate-error` handler in
-// src/main/index.ts — those only apply to Chromium's net stack. Datalayer
-// deployments routinely use self-signed or expired certs, so without this a
-// big-file transfer fails with `certificate has expired` while every other
-// request in the app succeeds. keepAlive mirrors the SDK's default agent;
-// dropping it would force a fresh TLS handshake per multipart part.
-const datalayerHttpsAgent = new https.Agent({
-    keepAlive: true,
-    maxSockets: 50,
-    rejectUnauthorized: false,
-});
+// The AWS SDK talks over Node's TLS stack, which the session's certificate
+// verify proc (src/main/trust) does not cover — that only applies to
+// Chromium's net stack. Datalayer deployments routinely use self-signed or
+// expired certs, so a datalayer the user's fakts name is let through here too
+// (`allowsBadCertificate`); any other host is verified as usual. keepAlive
+// mirrors the SDK's default agent; dropping it would force a fresh TLS
+// handshake per multipart part.
+const httpsAgents = {
+    strict: new https.Agent({ keepAlive: true, maxSockets: 50 }),
+    lenient: new https.Agent({ keepAlive: true, maxSockets: 50, rejectUnauthorized: false }),
+};
+
+/** Whether a host may present a certificate that fails verification. */
+export type AllowsBadCertificate = (host: string) => boolean;
 
 /**
  * A datalayer behind an organisation mesh is only reachable from main through
  * the mesh sidecar's SOCKS5 port (the renderer gets there via the session's
  * PAC script; Node does not). `socks5h` = the sidecar resolves the name, so
- * MagicDNS works without touching the OS resolver. Same TLS leniency as above.
+ * MagicDNS works without touching the OS resolver. Same TLS policy as above.
  */
 export const datalayerAgentFor = (
     endpointUrl: string | undefined,
     proxyPortForHost?: (host: string) => number | undefined,
+    allowsBadCertificate: AllowsBadCertificate = () => false,
 ): { httpAgent: SocksProxyAgent | undefined; httpsAgent: SocksProxyAgent | https.Agent } => {
     let host: string | undefined;
     try {
@@ -37,13 +40,17 @@ export const datalayerAgentFor = (
     } catch {
         host = undefined;
     }
+    const lenient = host != null && allowsBadCertificate(host);
     const port = host ? proxyPortForHost?.(host) : undefined;
-    if (!port) return { httpAgent: undefined, httpsAgent: datalayerHttpsAgent };
-    const agent = new LenientSocksProxyAgent(`socks5h://127.0.0.1:${port}`, { keepAlive: true, maxSockets: 50 });
+    if (!port) return { httpAgent: undefined, httpsAgent: lenient ? httpsAgents.lenient : httpsAgents.strict };
+    const options = { keepAlive: true, maxSockets: 50 };
+    const agent = lenient
+        ? new LenientSocksProxyAgent(`socks5h://127.0.0.1:${port}`, options)
+        : new SocksProxyAgent(`socks5h://127.0.0.1:${port}`, options);
     return { httpAgent: agent, httpsAgent: agent };
 };
 
-/** The SOCKS agent with the same TLS leniency as `datalayerHttpsAgent`. */
+/** The SOCKS agent for a host whose bad certificate is allowed. */
 class LenientSocksProxyAgent extends SocksProxyAgent {
     connect(req: Parameters<SocksProxyAgent["connect"]>[0], opts: Parameters<SocksProxyAgent["connect"]>[1]) {
         return super.connect(req, { ...opts, rejectUnauthorized: false } as typeof opts);
@@ -59,10 +66,16 @@ export class BigFileUploadService implements AppModule {
     }
 
     private readonly proxyPortForHost?: (host: string) => number | undefined;
+    private readonly allowsBadCertificate?: AllowsBadCertificate;
 
-    constructor(ipcTransport: IpcTransport, proxyPortForHost?: (host: string) => number | undefined) {
+    constructor(
+        ipcTransport: IpcTransport,
+        proxyPortForHost?: (host: string) => number | undefined,
+        allowsBadCertificate?: AllowsBadCertificate,
+    ) {
         this.ipcTransport = ipcTransport;
         this.proxyPortForHost = proxyPortForHost;
+        this.allowsBadCertificate = allowsBadCertificate;
 
         ipcMain.handle("upload:bigFile", async (event, args: { uploadId: string, path: string, grant: BigFileUploadGrant, endpointUrl: string }) => {
             return this.handleUpload(event, args);
@@ -89,7 +102,7 @@ export class BigFileUploadService implements AppModule {
                 sessionToken: grant.sessionToken,
             },
             forcePathStyle: true,
-            requestHandler: datalayerAgentFor(args.endpointUrl, this.proxyPortForHost),
+            requestHandler: datalayerAgentFor(args.endpointUrl, this.proxyPortForHost, this.allowsBadCertificate),
         });
 
         const fileStream = fs.createReadStream(path);

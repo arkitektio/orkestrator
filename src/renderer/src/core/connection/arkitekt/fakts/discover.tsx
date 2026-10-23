@@ -1,5 +1,6 @@
 import { fetchWithTimeout } from "../utils";
 import { FaktsEndpoint, FaktsEndpointSchema } from "./endpointSchema";
+import { allowDiscoveryHosts, endpointUrls } from "./trustedHosts";
 
 export const discover = async ({
   url,
@@ -21,6 +22,10 @@ export const discover = async ({
 
   const normalizedUrls = baseUrls.map((u) => (u.endsWith("/") ? u : u + "/"));
 
+  // The user named this host, so it may be self-signed while we find out what
+  // it is; once a login stores its fakts, the profile book keeps it trusted.
+  await allowDiscoveryHosts(normalizedUrls);
+
   const attempts = await Promise.allSettled(
     normalizedUrls.map(async (base) => {
       const response = await fetchWithTimeout(base + ".well-known/fakts", {
@@ -33,7 +38,11 @@ export const discover = async ({
       }
 
       const json = await response.json();
-      return FaktsEndpointSchema.parse(json);
+      const endpoint = FaktsEndpointSchema.parse(json);
+      // The login runs against the endpoints the document names, which need
+      // not be on the host we asked.
+      await allowDiscoveryHosts(endpointUrls(endpoint));
+      return endpoint;
     }),
   );
 

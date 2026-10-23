@@ -32,11 +32,10 @@ import {
  * `diagnose()` (pure, tested). Nothing here decides what a failure *means*,
  * which is why it needs no unit test of its own.
  *
- * It uses Node's stack, NOT `electron.net`, on purpose: main sets
- * `ignore-certificate-errors` and a blanket `certificate-error → allow`
- * (src/main/index.ts), which neuters Chromium's verification. Node's TLS is
- * untouched, so this is the only way left to give an honest answer about a
- * certificate.
+ * It uses Node's stack, NOT `electron.net`, on purpose: the session's verify
+ * proc (src/main/trust) accepts a self-signed certificate from a fakts host,
+ * which would hide exactly what is being diagnosed. Node's TLS is untouched,
+ * so this gives an honest answer about a certificate.
  */
 
 const portOf = (target: ProbeTarget): number =>

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { FaktsEndpointSchema } from "./endpointSchema";
+import { syncTrustedHosts } from "./trustedHosts";
 import { StoredArkitektSession, StoredArkitektSessionSchema } from "../session/record";
 
 /**
@@ -595,9 +596,11 @@ export function writeStoredProfileBook(
   book: StoredProfileBook,
   storage: Storage = localStorage,
 ): boolean {
-  const serialized = JSON.stringify(StoredProfileBookSchema.parse(book));
+  const parsed = StoredProfileBookSchema.parse(book);
+  const serialized = JSON.stringify(parsed);
   if (storage.getItem(PROFILE_BOOK_STORAGE_KEY) === serialized) return false;
   storage.setItem(PROFILE_BOOK_STORAGE_KEY, serialized);
+  syncTrustedHosts(parsed);
   return true;
 }
 
@@ -654,10 +657,14 @@ export function loadStoredProfileBook(
       ? outer.data.activeProfileId
       : null;
 
-  return {
+  const loaded: StoredProfileBook = {
     version: 2,
     activeProfileId,
     profiles,
     lastEndpoint: lastEndpoint.success ? lastEndpoint.data : null,
   };
+  // Main keeps the last set on disk; this catches a book written before it
+  // did (or by another window) up. Sends nothing when the hosts are the same.
+  syncTrustedHosts(loaded);
+  return loaded;
 }

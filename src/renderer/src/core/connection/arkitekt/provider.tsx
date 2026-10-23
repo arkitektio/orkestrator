@@ -30,6 +30,7 @@ import {
 import { flow } from "./fakts/flow";
 import { grantHintForProfile } from "./fakts/grantHint";
 import { Manifest } from "./fakts/manifestSchema";
+import { allowSessionHosts } from "./fakts/trustedHosts";
 import type { StoredArkitektSession } from "./session/record";
 import {
   admitGrantedProfile,
@@ -697,6 +698,7 @@ export const ArkitektProvider = <T extends ServiceBuilderMap, S extends ServiceB
         const profileMesh = profileId ? state.profileBook.profiles[profileId]?.mesh : undefined;
         const mesh = meshNeeded(session.fakts, profileMesh) ? profileMesh : undefined;
         const routed = (alias: Alias) => isMeshRouted(alias.host, mesh);
+        await allowSessionHosts(session);
         const resolved = await resolveServiceAlias({
           instance,
           cached: session.aliasMap.aliasMap[serviceKey],

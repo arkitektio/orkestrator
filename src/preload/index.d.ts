@@ -155,6 +155,10 @@ declare global {
         hardware?: string[];
       }) => Promise<void>;
       getNodeId: () => Promise<string>;
+      trust: {
+        setFaktsHosts: (hosts: string[]) => Promise<void>;
+        allowDiscoveryHosts: (hosts: string[]) => Promise<void>;
+      };
       factoryReset: () => Promise<void>;
       windowControls: {
         minimize: () => void;

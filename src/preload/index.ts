@@ -77,6 +77,7 @@ import {
   type MeshPingResult,
   type MeshStatusPayload,
 } from "../main/mesh/protocol";
+import { TRUST_DISCOVERY_HOSTS_CHANNEL, TRUST_FAKTS_HOSTS_CHANNEL } from "../main/trust/protocol";
 
 // Subscribe `cb` to an ipcRenderer channel and return the disposer. Every
 // event listener exposed to the renderer must be removable, otherwise each
@@ -107,6 +108,11 @@ const api = {
     ipcRenderer.send("open-second-window", path);
   },
   getNodeId: () => ipcRenderer.invoke("get-node-id"),
+  /** Which hosts may present a self-signed certificate (`main/trust/protocol.ts`). */
+  trust: {
+    setFaktsHosts: (hosts: string[]): Promise<void> => ipcRenderer.invoke(TRUST_FAKTS_HOSTS_CHANNEL, hosts),
+    allowDiscoveryHosts: (hosts: string[]): Promise<void> => ipcRenderer.invoke(TRUST_DISCOVERY_HOSTS_CHANNEL, hosts),
+  },
   /** Wipes everything this computer stored and relaunches as a fresh install. */
   factoryReset: () => ipcRenderer.invoke("app:factory-reset"),
   /**
